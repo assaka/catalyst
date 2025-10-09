@@ -38,7 +38,7 @@ const retryApiCall = async (apiCall, maxRetries = 5, baseDelay = 3000) => {
 
 export default function WishlistDropdown({ iconVariant = 'outline' }) {
   const { store, settings, taxes, selectedCountry } = useStore(); // Added store context
-  const currencySymbol = settings?.currency_symbol || '$';
+  const currencySymbol = settings?.currency_symbol || '🔴13';
   const [wishlistItems, setWishlistItems] = useState([]);
   const [user, setUser] = useState(null); // Preserve user state
   const [loading, setLoading] = useState(false); // Changed initial loading state to false

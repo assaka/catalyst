@@ -14,7 +14,7 @@ export default function HeaderSearch({ styles = {} }) {
   const { store, settings, taxes, selectedCountry } = useStore();
 
   // Get currency symbol from settings
-  const currencySymbol = settings?.currency_symbol || '$';
+  const currencySymbol = settings?.currency_symbol || '🔴18';
 
   // Extract input styles from slot configuration
   const inputStyles = {

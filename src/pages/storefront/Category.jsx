@@ -651,7 +651,7 @@ export default function Category() {
     breadcrumbs: buildCategoryBreadcrumbs(currentCategory, storeCode, categories, settings),
     selectedFilters: activeFilters,
     priceRange: {},
-    currencySymbol: settings?.currency_symbol || '$',
+    currencySymbol: settings?.currency_symbol || '🔴7',
     settings: {
       ...settings,
       // Ensure defaults for view mode toggle
@@ -675,7 +675,7 @@ export default function Category() {
       // Handle if product is passed instead of price value
       const priceValue = typeof product === 'object' ? product.price : product;
       const numPrice = parseFloat(priceValue || 0);
-      return `${settings?.currency_symbol || '$'}${numPrice.toFixed(2)}`;
+      return `${settings?.currency_symbol || '🔴8'}${numPrice.toFixed(2)}`;
     },
     getProductImageUrl: (product) => product?.images?.[0] || '/placeholder-product.jpg',
     navigate: (url) => window.location.href = url,

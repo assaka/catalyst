@@ -57,7 +57,7 @@ export function ProductInfoSlot({ productContext, content }) {
 
   if (!product) return null;
 
-  const currencySymbol = settings?.currency_symbol || '$';
+  const currencySymbol = settings?.currency_symbol || '🔴13';
   const hasComparePrice = product.compare_price && parseFloat(product.compare_price) > 0 &&
                          parseFloat(product.compare_price) !== parseFloat(product.price);
 
@@ -345,7 +345,7 @@ export function ProductRecommendationsSlot({ productContext, content }) {
 
   if (!relatedProducts || relatedProducts.length === 0) return null;
 
-  const currencySymbol = settings?.currency_symbol || '$';
+  const currencySymbol = settings?.currency_symbol || '🔴14';
 
   return (
     <div className="product-recommendations mt-16">

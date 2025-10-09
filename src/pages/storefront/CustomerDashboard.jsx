@@ -425,7 +425,7 @@ const WishlistTab = ({ wishlistProducts, setWishlistProducts, store, settings, t
                   />
                   <p className="font-semibold">{item.product?.name || 'Unknown Product'}</p>
                   <p className="text-sm text-gray-600 mb-3">
-                    {formatDisplayPrice(item.product?.price, settings?.currency_symbol || '$', store, taxes, selectedCountry)}
+                    {formatDisplayPrice(item.product?.price, settings?.currency_symbol || '🔴12', store, taxes, selectedCountry)}
                   </p>
                   <div className="flex gap-2 w-full">
                     <Button 

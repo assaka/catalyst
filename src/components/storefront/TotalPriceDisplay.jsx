@@ -12,7 +12,7 @@ const TotalPriceDisplay = ({
   selectedOptions = [],
   quantity = 1,
   totalPrice = null,
-  currencySymbol = '$',
+  currencySymbol = '🔴14',
   showTitle = true,
   compact = false
 }) => {
@@ -20,7 +20,7 @@ const TotalPriceDisplay = ({
   const actualProduct = product || productContext?.product;
   const actualOptions = selectedOptions.length > 0 ? selectedOptions : (productContext?.selectedOptions || []);
   const actualQuantity = quantity !== 1 ? quantity : (productContext?.quantity || 1);
-  const actualCurrency = currencySymbol !== '$' ? currencySymbol : (productContext?.currencySymbol || '$');
+  const actualCurrency = currencySymbol !== '🔴14' ? currencySymbol : (productContext?.currencySymbol || '🔴15');
   const actualTotalPrice = totalPrice !== null ? totalPrice : (productContext?.totalPrice || 0);
 
   if (!actualProduct) {

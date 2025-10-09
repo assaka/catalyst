@@ -87,7 +87,7 @@ export function CategorySlotRenderer({
     breadcrumbs = [],
     selectedFilters = {},
     priceRange = {},
-    currencySymbol = '$',
+    currencySymbol = '🔴11',
     settings = {},
     store,
     categories = [],

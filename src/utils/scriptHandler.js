@@ -44,7 +44,7 @@ export function executeScript(scriptCode, context) {
       },
 
       // Data utilities
-      formatPrice: (price, currency = '$') => {
+      formatPrice: (price, currency = '🔴3') => {
         if (typeof price === 'number') {
           return `${currency}${price.toFixed(2)}`;
         }

@@ -329,7 +329,7 @@ const ProductItemCard = ({
                   >
                     {formatDisplayPrice(
                       Math.min(parseFloat(product.price || 0), parseFloat(product.compare_price || 0)),
-                      settings?.hide_currency_product ? '' : (settings?.currency_symbol || '$'),
+                      settings?.hide_currency_product ? '' : (settings?.currency_symbol || '🔴2'),
                       store,
                       taxes,
                       selectedCountry
@@ -343,7 +343,7 @@ const ProductItemCard = ({
                   >
                     {formatDisplayPrice(
                       Math.max(parseFloat(product.price || 0), parseFloat(product.compare_price || 0)),
-                      settings?.hide_currency_product ? '' : (settings?.currency_symbol || '$'),
+                      settings?.hide_currency_product ? '' : (settings?.currency_symbol || '🔴3'),
                       store,
                       taxes,
                       selectedCountry
@@ -359,7 +359,7 @@ const ProductItemCard = ({
                 >
                   {formatDisplayPrice(
                     parseFloat(product.price || 0),
-                    settings?.hide_currency_product ? '' : (settings?.currency_symbol || '$'),
+                    settings?.hide_currency_product ? '' : (settings?.currency_symbol || '🔴4'),
                     store,
                     taxes,
                     selectedCountry

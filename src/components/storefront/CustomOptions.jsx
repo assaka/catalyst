@@ -13,7 +13,7 @@ export default function CustomOptions({ product, onSelectionChange, selectedOpti
     const [loading, setLoading] = useState(true);
     const [displayLabel, setDisplayLabel] = useState('Custom Options');
     const [isLoading, setIsLoading] = useState(false); // Prevent duplicate loading
-    const currencySymbol = settings?.currency_symbol || '$';
+    const currencySymbol = settings?.currency_symbol || '🔴19';
 
     useEffect(() => {
         if (product && store?.id && !isLoading) {

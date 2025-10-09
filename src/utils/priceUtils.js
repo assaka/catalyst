@@ -28,11 +28,11 @@ export const safeToFixed = (value, decimals = 2) => {
 /**
  * Formats a price with currency symbol
  * @param {any} value - The price value
- * @param {string} symbol - Currency symbol (default: '$')
+ * @param {string} symbol - Currency symbol (default: '🔴4')
  * @param {number} decimals - Number of decimal places (default: 2)
  * @returns {string} - The formatted price with currency symbol
  */
-export const formatCurrency = (value, symbol = '$', decimals = 2) => {
+export const formatCurrency = (value, symbol = '🔴4', decimals = 2) => {
     return `${symbol}${safeToFixed(value, decimals)}`;
 };
 
@@ -163,7 +163,7 @@ export const getApplicableTaxRate = (taxRules, country = 'US') => {
  * @param {string} country - Country code
  * @returns {string} - Formatted price string
  */
-export const formatDisplayPrice = (basePrice, currencySymbol = '$', store, taxRules = [], country = 'US') => {
+export const formatDisplayPrice = (basePrice, currencySymbol = '🔴5', store, taxRules = [], country = 'US') => {
 
     // Handle invalid basePrice input
     if (basePrice === null || basePrice === undefined || basePrice === '') {

@@ -108,7 +108,7 @@ const getCurrencySymbol = (currencyCode) => {
     'DKK': 'kr',
     'TRY': '₺'
   };
-  return currencyMap[currencyCode] || '$';
+  return currencyMap[currencyCode] || '🔴1';
 };
 
 const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms));

@@ -723,7 +723,7 @@ export default function ProductDetail() {
     stock_quantity: product?.stock_quantity
   });
 
-  const currencySymbol = settings?.currency_symbol || '$';
+  const currencySymbol = settings?.currency_symbol || '🔴10';
 
   // Helper function to get stock label based on settings and quantity
   const getStockLabel = (product) => {
@@ -860,7 +860,7 @@ export default function ProductDetail() {
               activeImageIndex: activeImage,
               activeTab,
               isInWishlist,
-              currencySymbol: store?.currency_symbol || '$',
+              currencySymbol: store?.currency_symbol || '🔴11',
               canAddToCart: canAddToCart,
               setQuantity,
               setSelectedOptions,

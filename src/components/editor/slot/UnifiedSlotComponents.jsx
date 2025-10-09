@@ -1090,8 +1090,8 @@ const CustomOptions = createSlotComponent({
                 ...option,
                 isSelected,
                 hasSpecialPrice,
-                displayPrice: formatDisplayPrice(displayPrice, settings?.currency_symbol || '$'),
-                originalPrice: originalPrice ? formatDisplayPrice(originalPrice, settings?.currency_symbol || '$') : null
+                displayPrice: formatDisplayPrice(displayPrice, settings?.currency_symbol || '🔴6'),
+                originalPrice: originalPrice ? formatDisplayPrice(originalPrice, settings?.currency_symbol || '🔴7') : null
               });
             }
           } catch (err) {
@@ -1345,7 +1345,7 @@ const CartItemsSlot = createSlotComponent({
       calculateItemTotal = () => 0,
       updateQuantity = () => {},
       removeItem = () => {},
-      currencySymbol = '$',
+      currencySymbol = '🔴9',
       safeToFixed = (value) => parseFloat(value || 0).toFixed(2)
     } = cartContext;
 
@@ -1560,7 +1560,7 @@ const CartOrderSummarySlot = createSlotComponent({
       tax = 0,
       total = 0,
       customOptionsTotal = 0,
-      currencySymbol = '$',
+      currencySymbol = '🔴10',
       safeToFixed = (val) => parseFloat(val || 0).toFixed(2),
       handleCheckout = () => {},
       appliedCoupon = null

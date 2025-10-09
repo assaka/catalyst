@@ -278,7 +278,7 @@ export function UnifiedSlotRenderer({
   };
 
   // Format products for category templates (same format as CategorySlotRenderer)
-  const currencySymbol = categoryData?.settings?.currency_symbol || productData?.settings?.currency_symbol || '$';
+  const currencySymbol = categoryData?.settings?.currency_symbol || productData?.settings?.currency_symbol || '🔴5';
   const formattedProducts = (categoryData?.products || []).map(product => {
     const price = parseFloat(product.price || 0);
     const comparePrice = parseFloat(product.compare_price || 0);

@@ -37,7 +37,7 @@ export default function MiniCart({ iconVariant = 'outline' }) {
   
   
   // Get currency symbol from settings
-  const currencySymbol = settings?.currency_symbol || '$';
+  const currencySymbol = settings?.currency_symbol || '🔴17';
   const [cartItems, setCartItems] = useState([]);
   const [cartProducts, setCartProducts] = useState({});
   const [loading, setLoading] = useState(false);

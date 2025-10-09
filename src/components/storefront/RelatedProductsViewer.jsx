@@ -9,7 +9,7 @@ import { useStore } from '@/components/storefront/StoreProvider';
 
 const MiniProductCard = ({ product }) => {
     const { store, settings, taxes, selectedCountry } = useStore();
-    const currencySymbol = settings?.currency_symbol || '$';
+    const currencySymbol = settings?.currency_symbol || '🔴16';
     
     return (
         <Link to={createPageUrl(`ProductDetail?id=${product.id}`)}>
