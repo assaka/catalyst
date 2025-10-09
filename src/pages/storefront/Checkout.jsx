@@ -122,54 +122,65 @@ export default function Checkout() {
 
   // Load persisted form data from localStorage on mount
   useEffect(() => {
-    try {
-      const persistedData = localStorage.getItem('checkout_form_data');
-      if (persistedData) {
-        const data = JSON.parse(persistedData);
+    const restoreFormData = () => {
+      try {
+        const persistedData = localStorage.getItem('checkout_form_data');
+        if (persistedData) {
+          const data = JSON.parse(persistedData);
 
-        // Restore shipping address
-        if (data.shippingAddress) {
-          setShippingAddress(data.shippingAddress);
-        }
+          // Restore shipping address
+          if (data.shippingAddress) {
+            setShippingAddress(data.shippingAddress);
+          }
 
-        // Restore billing address
-        if (data.billingAddress) {
-          setBillingAddress(data.billingAddress);
-        }
+          // Restore billing address
+          if (data.billingAddress) {
+            setBillingAddress(data.billingAddress);
+          }
 
-        // Restore selected addresses
-        if (data.selectedShippingAddress) {
-          setSelectedShippingAddress(data.selectedShippingAddress);
-        }
-        if (data.selectedBillingAddress) {
-          setSelectedBillingAddress(data.selectedBillingAddress);
-        }
+          // Restore selected addresses
+          if (data.selectedShippingAddress) {
+            setSelectedShippingAddress(data.selectedShippingAddress);
+          }
+          if (data.selectedBillingAddress) {
+            setSelectedBillingAddress(data.selectedBillingAddress);
+          }
 
-        // Restore delivery settings
-        if (data.deliveryDate) {
-          setDeliveryDate(new Date(data.deliveryDate));
-        }
-        if (data.deliveryTimeSlot) {
-          setDeliveryTimeSlot(data.deliveryTimeSlot);
-        }
-        if (data.deliveryComments) {
-          setDeliveryComments(data.deliveryComments);
-        }
+          // Restore delivery settings
+          if (data.deliveryDate) {
+            setDeliveryDate(new Date(data.deliveryDate));
+          }
+          if (data.deliveryTimeSlot) {
+            setDeliveryTimeSlot(data.deliveryTimeSlot);
+          }
+          if (data.deliveryComments) {
+            setDeliveryComments(data.deliveryComments);
+          }
 
-        // Restore checkboxes
-        if (typeof data.useShippingForBilling === 'boolean') {
-          setUseShippingForBilling(data.useShippingForBilling);
+          // Restore current step
+          if (typeof data.currentStep === 'number') {
+            setCurrentStep(data.currentStep);
+          }
+
+          // Restore checkboxes
+          if (typeof data.useShippingForBilling === 'boolean') {
+            setUseShippingForBilling(data.useShippingForBilling);
+          }
+          if (typeof data.saveShippingAddress === 'boolean') {
+            setSaveShippingAddress(data.saveShippingAddress);
+          }
+          if (typeof data.saveBillingAddress === 'boolean') {
+            setSaveBillingAddress(data.saveBillingAddress);
+          }
         }
-        if (typeof data.saveShippingAddress === 'boolean') {
-          setSaveShippingAddress(data.saveShippingAddress);
-        }
-        if (typeof data.saveBillingAddress === 'boolean') {
-          setSaveBillingAddress(data.saveBillingAddress);
-        }
+      } catch (error) {
+        console.error('Failed to load persisted checkout data:', error);
       }
-    } catch (error) {
-      console.error('Failed to load persisted checkout data:', error);
-    }
+    };
+
+    // Delay restoration to ensure component is fully mounted
+    const timer = setTimeout(restoreFormData, 100);
+    return () => clearTimeout(timer);
   }, []);
 
   // Persist form data to localStorage whenever it changes
@@ -183,6 +194,7 @@ export default function Checkout() {
         deliveryDate: deliveryDate ? deliveryDate.toISOString() : null,
         deliveryTimeSlot,
         deliveryComments,
+        currentStep,
         useShippingForBilling,
         saveShippingAddress,
         saveBillingAddress
@@ -200,6 +212,7 @@ export default function Checkout() {
     deliveryDate,
     deliveryTimeSlot,
     deliveryComments,
+    currentStep,
     useShippingForBilling,
     saveShippingAddress,
     saveBillingAddress
@@ -1688,30 +1701,8 @@ export default function Checkout() {
         );
 
       case 'Summary':
-        return stepsCount > 1 && currentStep > 0 && (
-          <Card key="summary" className="col-span-full" style={{ backgroundColor: '#F3F4F6', borderColor: checkoutSectionBorderColor }}>
-            <CardContent className="py-3">
-              <div className="flex flex-wrap items-center gap-x-6 gap-y-2 text-sm">
-                {getCompletedStepsSummary().flatMap((summary) =>
-                  summary.items.map((item, itemIdx) => (
-                    <div key={`${summary.step}-${itemIdx}`} className="flex items-center gap-2">
-                      <span className="text-gray-600">{item.label}:</span>
-                      <span className="text-gray-900 font-medium">{item.value}</span>
-                    </div>
-                  ))
-                )}
-                <Button
-                  onClick={() => setCurrentStep(0)}
-                  variant="link"
-                  size="sm"
-                  className="p-0 h-auto text-blue-600 hover:text-blue-800 ml-auto"
-                >
-                  Edit
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-        );
+        // Summary is now rendered as a full-width bar outside the grid
+        return null;
 
       default:
         return null;
@@ -1823,6 +1814,32 @@ export default function Checkout() {
         />
       )}
 
+      {/* Summary Bar - Full Width Below Step Indicators */}
+      {stepsCount > 1 && currentStep > 0 && (
+        <Card className="mb-6 lg:mb-8" style={{ backgroundColor: '#F3F4F6', borderColor: checkoutSectionBorderColor }}>
+          <CardContent className="py-3">
+            <div className="flex flex-wrap items-center gap-x-6 gap-y-2 text-sm">
+              {getCompletedStepsSummary().flatMap((summary) =>
+                summary.items.map((item, itemIdx) => (
+                  <div key={`${summary.step}-${itemIdx}`} className="flex items-center gap-2">
+                    <span className="text-gray-600">{item.label}:</span>
+                    <span className="text-gray-900 font-medium">{item.value}</span>
+                  </div>
+                ))
+              )}
+              <Button
+                onClick={() => setCurrentStep(0)}
+                variant="link"
+                size="sm"
+                className="p-0 h-auto text-blue-600 hover:text-blue-800 ml-auto"
+              >
+                Edit
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       <div className={`grid grid-cols-1 lg:grid-cols-${columnCount} gap-6 lg:gap-8`}>
         {/* Dynamically render columns based on layout configuration */}
         {['column1', 'column2', 'column3'].slice(0, columnCount).map((columnKey, columnIndex) => {
@@ -1830,39 +1847,6 @@ export default function Checkout() {
 
           return (
             <div key={columnKey} className="space-y-4 lg:space-y-6">
-              {/* Summary of Previous Steps (always shows first in column 1) */}
-              {columnIndex === 0 && stepsCount > 1 && currentStep > 0 && (
-                <Card style={{ backgroundColor: '#F3F4F6', borderColor: checkoutSectionBorderColor }}>
-                  <CardHeader>
-                    <CardTitle style={{ color: checkoutSectionTitleColor, fontSize: checkoutSectionTitleSize }}>
-                      Summary
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    {getCompletedStepsSummary().map((summary, idx) => (
-                      <div key={idx} className={idx > 0 ? 'mt-4 pt-4 border-t' : ''}>
-                        <h4 className="font-semibold text-sm text-gray-700 mb-2">{summary.step}</h4>
-                        <div className="space-y-2">
-                          {summary.items.map((item, itemIdx) => (
-                            <div key={itemIdx} className="text-sm">
-                              <span className="text-gray-600">{item.label}:</span>{' '}
-                              <span className="text-gray-900">{item.value}</span>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    ))}
-                    <Button
-                      onClick={() => setCurrentStep(0)}
-                      variant="link"
-                      className="mt-3 p-0 h-auto text-blue-600 hover:text-blue-800"
-                    >
-                      Edit
-                    </Button>
-                  </CardContent>
-                </Card>
-              )}
-
               {/* Render sections dynamically for this column */}
               {columnSections.map(sectionName => renderSection(sectionName))}
 
