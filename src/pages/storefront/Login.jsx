@@ -8,6 +8,7 @@ import slotConfigurationService from '@/services/slotConfigurationService';
 import { UnifiedSlotRenderer } from '@/components/editor/slot/UnifiedSlotRenderer';
 import '@/components/editor/slot/AccountLoginSlotComponents'; // Register account/login components
 import { loginConfig } from '@/components/editor/slot/configs/login-config';
+import { LoginProvider } from '@/contexts/LoginContext';
 
 export default function Login() {
   const [showPassword, setShowPassword] = useState(false);
@@ -202,16 +203,17 @@ export default function Login() {
   });
 
   return (
-    <div className="min-h-screen bg-gray-50 py-12 px-4">
-      {hasConfig && hasSlots ? (
-        <UnifiedSlotRenderer
-          slots={loginLayoutConfig.slots}
-          parentId={null}
-          viewMode="login"
-          context="storefront"
-          loginData={loginDataObj}
-        />
-      ) : (
+    <LoginProvider loginData={loginDataObj}>
+      <div className="min-h-screen bg-gray-50 py-12 px-4">
+        {hasConfig && hasSlots ? (
+          <UnifiedSlotRenderer
+            slots={loginLayoutConfig.slots}
+            parentId={null}
+            viewMode="login"
+            context="storefront"
+            loginData={loginDataObj}
+          />
+        ) : (
         <div className="max-w-md w-full mx-auto">
           <div className="bg-white rounded-lg shadow p-6">
             <h2 className="text-2xl font-bold text-center mb-4">Sign In</h2>
@@ -221,6 +223,7 @@ export default function Login() {
           </div>
         </div>
       )}
-    </div>
+      </div>
+    </LoginProvider>
   );
 }

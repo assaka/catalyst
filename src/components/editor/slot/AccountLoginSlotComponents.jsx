@@ -5,6 +5,7 @@
 
 import React from 'react';
 import { createSlotComponent, registerSlotComponent } from './SlotComponentRegistry';
+import { useLoginData } from '@/contexts/LoginContext';
 
 /**
  * UserProfileSlot - User profile display with avatar and info
@@ -187,11 +188,14 @@ const ProfileFormSlot = createSlotComponent({
 const LoginFormSlot = createSlotComponent({
   name: 'LoginFormSlot',
   render: ({ slot, context, variableContext }) => {
-    // Get loginData from variableContext (passed from Login.jsx)
-    const loginData = variableContext?.loginData || {};
+    // PRIORITY 1: Get loginData from React Context (bypasses variableContext chain)
+    const contextLoginData = useLoginData();
+    // PRIORITY 2: Fallback to variableContext if context is null
+    const loginData = contextLoginData || variableContext?.loginData || {};
 
+    console.log('🔍 LoginFormSlot: contextLoginData from useLoginData():', contextLoginData);
     console.log('🔍 LoginFormSlot: variableContext:', variableContext);
-    console.log('🔍 LoginFormSlot: loginData:', loginData);
+    console.log('🔍 LoginFormSlot: final loginData:', loginData);
 
     const {
       formData = { email: '', password: '', rememberMe: false },
@@ -205,7 +209,7 @@ const LoginFormSlot = createSlotComponent({
     } = loginData;
 
     console.log('🔍 LoginFormSlot: formData:', formData);
-    console.log('🔍 LoginFormSlot: handleInputChange:', typeof handleInputChange);
+    console.log('🔍 LoginFormSlot: handleInputChange type:', typeof handleInputChange);
 
     return (
       <div className={slot.className} style={slot.styles}>
