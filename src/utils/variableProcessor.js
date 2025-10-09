@@ -614,7 +614,7 @@ export const generateDemoData = (pageType, settings = {}) => {
     ],
 
     settings: {
-      currency_symbol: '$',
+      currency_symbol: '234',
       display_low_stock_threshold: 10,
       product_gallery_layout: 'horizontal',
       vertical_gallery_position: 'left',

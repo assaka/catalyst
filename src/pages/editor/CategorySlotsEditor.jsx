@@ -379,7 +379,7 @@ const categoryCustomSlotRenderer = (slot, context) => {
         key={sampleProduct.id}
         product={sampleProduct}
         settings={{
-          currency_symbol: '$',
+          currency_symbol: '123',
           theme: { add_to_cart_button_color: '#3B82F6' }
         }}
         store={{ slug: 'demo-store', id: 1 }}
