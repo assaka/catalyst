@@ -304,6 +304,7 @@ export default function OrderSuccess() {
           </div>
           <h1 className="text-3xl font-bold text-gray-900 mb-2">Thank You!</h1>
           <p className="text-lg text-gray-600 mb-4">Your order has been successfully placed</p>
+          <p className="text-sm text-gray-600">A confirmation email has been sent to{' '} <span className="font-medium text-gray-900">{order.customer_email}</span></p>
           <p className="text-sm text-gray-500 mb-4">Order Number: <span className="font-semibold text-gray-900">#{order.order_number}</span></p>
           
           {/* Download Invoice Button */}
@@ -347,11 +348,39 @@ export default function OrderSuccess() {
 
         {/* Account Creation Success Alert */}
         {accountCreationSuccess && (
-          <Alert className="mb-6 border-green-200 bg-green-50">
-            <CheckCircle className="h-4 w-4 text-green-600" />
-            <AlertDescription className="text-green-800">
-              Account created successfully! A welcome email has been sent to {order.customer_email}. Your shipping and billing addresses have been saved to your profile. You can now log in to track your orders.
-            </AlertDescription>
+          <Alert className="mb-6 border-green-500 bg-green-50 shadow-lg">
+            <div className="flex items-start gap-3">
+              <div className="flex-shrink-0">
+                <div className="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center">
+                  <CheckCircle className="h-6 w-6 text-green-600" />
+                </div>
+              </div>
+              <div className="flex-1">
+                <h3 className="text-lg font-semibold text-green-900 mb-2">
+                  🎉 Your Account is Now Created!
+                </h3>
+                <AlertDescription className="text-green-800 space-y-2">
+                  <p className="font-medium">
+                    Welcome! Your account has been successfully created with email: <strong>{order.customer_email}</strong>
+                  </p>
+                  <div className="text-sm space-y-1 mt-3">
+                    <p>✅ You've been automatically logged in</p>
+                    <p>✅ A welcome email has been sent to your inbox</p>
+                    <p>✅ Your shipping and billing addresses have been saved</p>
+                    <p>✅ You can now track your orders and manage your profile</p>
+                  </div>
+                  <div className="mt-4 pt-3 border-t border-green-200">
+                    <Button
+                      onClick={() => navigate('/account/orders')}
+                      className="bg-green-600 hover:bg-green-700 text-white"
+                      size="sm"
+                    >
+                      View My Orders
+                    </Button>
+                  </div>
+                </AlertDescription>
+              </div>
+            </div>
           </Alert>
         )}
 
@@ -749,61 +778,6 @@ export default function OrderSuccess() {
             )}
           </div>
         </div>
-
-        {/* What Happens Next - Bottom Section */}
-        <Card className="mt-8">
-          <CardHeader>
-            <CardTitle className="flex items-center text-center w-full justify-center">
-              <Info className="w-5 h-5 mr-2 text-blue-600" />
-              What Happens Next?
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="grid md:grid-cols-3 gap-6 text-center">
-              <div>
-                <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-3">
-                  <Package className="w-6 h-6 text-blue-600" />
-                </div>
-                <h3 className="font-semibold text-gray-900 mb-2">1. Order Processing</h3>
-                <p className="text-sm text-gray-600">
-                  We'll prepare your order and send you a confirmation email with tracking information.
-                </p>
-              </div>
-              <div>
-                <div className="w-12 h-12 bg-purple-100 rounded-full flex items-center justify-center mx-auto mb-3">
-                  <Truck className="w-6 h-6 text-purple-600" />
-                </div>
-                <h3 className="font-semibold text-gray-900 mb-2">2. Shipping</h3>
-                <p className="text-sm text-gray-600">
-                  Your order will be carefully packed and shipped{order.shipping_method ? ` via ${order.shipping_method}` : ''} to your delivery address.
-                </p>
-              </div>
-              <div>
-                <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-3">
-                  <CheckCircle className="w-6 h-6 text-green-600" />
-                </div>
-                <h3 className="font-semibold text-gray-900 mb-2">3. Delivery</h3>
-                <p className="text-sm text-gray-600">
-                  {order.delivery_date ? (
-                    <>You'll receive your order on {formatDate(order.delivery_date)}{order.delivery_time_slot ? ` during ${order.delivery_time_slot}` : ''}.</>
-                  ) : (
-                    "You'll receive your order according to the shipping method selected."
-                  )}
-                  {order.delivery_instructions && (
-                    <span className="block mt-1 font-medium">Special instructions: {order.delivery_instructions}</span>
-                  )}
-                </p>
-              </div>
-            </div>
-            <div className="mt-6 pt-6 border-t border-gray-200 text-center">
-              <p className="text-sm text-gray-600">
-                A confirmation email has been sent to{' '}
-                <span className="font-medium text-gray-900">{order.customer_email}</span>
-              </p>
-            </div>
-          </CardContent>
-        </Card>
-
         {/* CMS Block - Below Content */}
         <CmsBlockRenderer position="success_below_content" storeId={order?.store_id} />
       </div>
