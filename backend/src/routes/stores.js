@@ -945,6 +945,7 @@ router.put('/:id/settings', authorize(['admin', 'store_owner']), async (req, res
       body: req.body,
       hasSettings: !!req.body.settings,
       settingsKeys: req.body.settings ? Object.keys(req.body.settings) : [],
+      currency: req.body.currency,
       user: req.user?.email
     });
 
@@ -970,8 +971,14 @@ router.put('/:id/settings', authorize(['admin', 'store_owner']), async (req, res
       }
     }
 
-    console.log('📝 Current store settings before update:', JSON.stringify(store.settings));
-    console.log('📝 Incoming request body settings:', JSON.stringify(req.body.settings));
+    console.log('📝 Current store before update:', {
+      currency: store.currency,
+      settings: JSON.stringify(store.settings)
+    });
+    console.log('📝 Incoming request body:', {
+      currency: req.body.currency,
+      settings: JSON.stringify(req.body.settings)
+    });
 
     // Merge with existing settings
     const currentSettings = store.settings || {};
@@ -986,18 +993,21 @@ router.put('/:id/settings', authorize(['admin', 'store_owner']), async (req, res
     // Update store with merged settings
     await store.update({ settings: mergedSettings });
 
-    // Also update other fields if provided (like name, description, contact info, etc.)
+    // Also update other fields if provided (like name, description, contact info, currency, etc.)
     const otherFields = { ...req.body };
     delete otherFields.settings;
 
     if (Object.keys(otherFields).length > 0) {
-      console.log('🔧 Updating other fields:', Object.keys(otherFields));
+      console.log('🔧 Updating other fields:', Object.keys(otherFields), otherFields);
       await store.update(otherFields);
     }
 
     // Reload to verify
     await store.reload();
-    console.log('✅ Store settings saved successfully:', JSON.stringify(store.settings));
+    console.log('✅ Store saved successfully:', {
+      currency: store.currency,
+      settings: JSON.stringify(store.settings)
+    });
 
     res.json({
       success: true,

@@ -368,7 +368,17 @@ export const StoreProvider = ({ children }) => {
         
         // Currency settings - ensure we use the store's currency setting
         currency_code: selectedStore.currency || selectedStore.settings?.currency_code || 'USD',
-        currency_symbol: getCurrencySymbol(selectedStore.currency || selectedStore.settings?.currency_code || 'USD'),
+        currency_symbol: (() => {
+          const currencyCode = selectedStore.currency || selectedStore.settings?.currency_code || 'USD';
+          const symbol = getCurrencySymbol(currencyCode);
+          console.log('💰 StoreProvider currency:', {
+            storeCurrency: selectedStore.currency,
+            settingsCurrencyCode: selectedStore.settings?.currency_code,
+            finalCurrencyCode: currencyCode,
+            symbol: symbol
+          });
+          return symbol;
+        })(),
         
         // Theme defaults (merge with existing theme settings)
         theme: {
