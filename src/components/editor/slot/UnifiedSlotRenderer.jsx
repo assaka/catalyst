@@ -326,10 +326,6 @@ export function UnifiedSlotRenderer({
     loginData: loginData
   };
 
-  // Debug logging for login data flow - ALWAYS log to catch null/undefined cases
-  console.log('🔍 UnifiedSlotRenderer: parentId =', parentId, 'loginData:', loginData, 'type:', typeof loginData, 'isNull:', loginData === null, 'keys:', loginData ? Object.keys(loginData) : 'N/A');
-
-
   /**
    * Wrap element with ResizeWrapper for editor mode
    */

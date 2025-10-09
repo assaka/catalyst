@@ -118,7 +118,8 @@ export default function Account() {
 
       // Ensure we have a valid store slug before redirecting
       if (store?.slug) {
-        const storefrontUrl = createPublicUrl(store.slug, 'STOREFRONT');
+        // Use just /public/{storeCode} without /storefront to match route structure
+        const storefrontUrl = `/public/${store.slug}`;
         console.log('🔴 LOGOUT: Generated storefront URL:', storefrontUrl);
         console.log('🔴 LOGOUT: Navigating to:', storefrontUrl);
         navigate(storefrontUrl);

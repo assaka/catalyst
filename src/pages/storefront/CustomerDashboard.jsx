@@ -836,13 +836,8 @@ export default function CustomerDashboard() {
   // Extracted loadOrders function
   const loadOrders = async (userId) => {
     try {
-        console.log('🔍 CustomerDashboard: Loading orders for user ID:', userId);
-        console.log('🔍 CustomerDashboard: Auth token exists:', !!localStorage.getItem('customer_auth_token'));
         const userOrders = await retryApiCall(() => CustomerOrder.findAll());
-        console.log('🔍 CustomerDashboard: Orders data received:', userOrders);
-        console.log('🔍 CustomerDashboard: Number of orders:', Array.isArray(userOrders) ? userOrders.length : 0);
         if (userOrders && userOrders.length > 0) {
-          console.log('🔍 CustomerDashboard: First order:', userOrders[0]);
         }
         setOrders(userOrders || []);
     } catch (error) {
