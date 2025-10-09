@@ -544,13 +544,12 @@ export default function Settings() {
           params.set('tab', value);
           setSearchParams(params);
         }} className="w-full">
-          <TabsList className="grid w-full grid-cols-6">
+          <TabsList className="grid w-full grid-cols-5">
             <TabsTrigger value="general">General</TabsTrigger>
             <TabsTrigger value="domain">Domain</TabsTrigger>
             <TabsTrigger value="publish">Publish</TabsTrigger>
             <TabsTrigger value="brevo">Brevo</TabsTrigger>
             <TabsTrigger value="contact">Contact</TabsTrigger>
-            <TabsTrigger value="advanced">Advanced</TabsTrigger>
           </TabsList>
 
           <TabsContent value="general" className="mt-6">
@@ -1008,21 +1007,6 @@ export default function Settings() {
                     />
                   </div>
                 </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          <TabsContent value="advanced" className="mt-6">
-            <Card className="material-elevation-1 border-0">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <SettingsIcon className="w-5 h-5" />
-                  Advanced Settings
-                </CardTitle>
-                <CardDescription>Configure other advanced features</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-6">
-                <p className="text-gray-500 text-sm">Advanced settings will be added here as needed.</p>
               </CardContent>
             </Card>
           </TabsContent>
