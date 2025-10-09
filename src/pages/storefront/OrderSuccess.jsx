@@ -27,7 +27,8 @@ import CmsBlockRenderer from '@/components/storefront/CmsBlockRenderer';
 export default function OrderSuccess() {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
-  
+  const [storeCode, setStoreCode] = useState(null);
+
   // Get session ID from URL
   let sessionId = searchParams.get('session_id');
   
@@ -114,6 +115,11 @@ export default function OrderSuccess() {
         if (response.ok && result.success && result.data) {
           const orderData = result.data;
           setOrder(orderData);
+
+          // Get store code from the order's Store object
+          if (orderData.Store?.code) {
+            setStoreCode(orderData.Store.code);
+          }
 
           // Check if customer already has a registered account (has password)
           if (orderData.customer_email && orderData.store_id) {
@@ -652,7 +658,13 @@ export default function OrderSuccess() {
                             </div>
                             <div className="mt-4 pt-3 border-t border-green-200">
                               <Button
-                                onClick={() => navigate('/account/orders')}
+                                onClick={() => {
+                                  if (storeCode) {
+                                    navigate(`/public/${storeCode}/account`);
+                                  } else {
+                                    navigate('/account/orders');
+                                  }
+                                }}
                                 className="bg-green-600 hover:bg-green-700 text-white"
                                 size="sm"
                               >
