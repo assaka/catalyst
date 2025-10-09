@@ -1296,11 +1296,11 @@ export default function Checkout() {
           </Card>
         );
 
-      case 'Delivery Options':
+      case 'Delivery Settings':
         return isSectionVisible('delivery') && deliverySettings && deliverySettings.enable_delivery_date && (
-          <Card key="delivery-options" style={{ backgroundColor: checkoutSectionBgColor, borderColor: checkoutSectionBorderColor }}>
+          <Card key="delivery-settings" style={{ backgroundColor: checkoutSectionBgColor, borderColor: checkoutSectionBorderColor }}>
             <CardHeader>
-              <CardTitle style={{ color: checkoutSectionTitleColor, fontSize: checkoutSectionTitleSize }}>Delivery Options</CardTitle>
+              <CardTitle style={{ color: checkoutSectionTitleColor, fontSize: checkoutSectionTitleSize }}>Delivery Settings</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="space-y-4">

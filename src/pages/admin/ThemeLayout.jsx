@@ -19,14 +19,14 @@ const defaultSectionLayout = {
     '1step': {
         step1: {
             column1: ['Shipping Address', 'Shipping Method', 'Billing Address'],
-            column2: ['Delivery Options', 'Payment Method'],
+            column2: ['Delivery Settings', 'Payment Method'],
             column3: ['Coupon', 'Order Summary']
         }
     },
     '2step': {
         step1: {
             column1: ['Shipping Address', 'Billing Address'],
-            column2: ['Shipping Method', 'Delivery Options']
+            column2: ['Shipping Method', 'Delivery Settings']
         },
         step2: {
             column1: ['Payment Method'],
@@ -39,7 +39,7 @@ const defaultSectionLayout = {
             column2: []
         },
         step2: {
-            column1: ['Shipping Method', 'Delivery Options'],
+            column1: ['Shipping Method', 'Delivery Settings'],
             column2: []
         },
         step3: {
