@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Store } from '@/api/entities';
 import { User } from '@/api/entities';
+import { DeliverySettings as DeliverySettingsEntity } from '@/api/entities';
 import { useStoreSelection } from '@/contexts/StoreSelectionContext.jsx';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -111,6 +112,7 @@ export default function ThemeLayout() {
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
     const [flashMessage, setFlashMessage] = useState(null);
+    const [deliverySettings, setDeliverySettings] = useState(null);
 
     // Drag and drop sensors
     const sensors = useSensors(
@@ -119,6 +121,19 @@ export default function ThemeLayout() {
             coordinateGetter: sortableKeyboardCoordinates,
         })
     );
+
+    // Helper to filter out sections that shouldn't be displayed
+    const filterVisibleSections = (sections) => {
+        return sections.filter(section => {
+            // Hide "Delivery Settings" if both delivery date and comments are disabled
+            if (section === 'Delivery Settings') {
+                const deliveryDateEnabled = deliverySettings?.enable_delivery_date || false;
+                const deliveryCommentsEnabled = deliverySettings?.enable_comments || false;
+                return deliveryDateEnabled || deliveryCommentsEnabled;
+            }
+            return true;
+        });
+    };
 
     useEffect(() => {
         if (selectedStore) {
@@ -243,6 +258,16 @@ export default function ThemeLayout() {
             };
 
             setStore(finalStore);
+
+            // Load delivery settings
+            try {
+                const existingSettings = await DeliverySettingsEntity.filter({ store_id: actualStoreId });
+                if (existingSettings && existingSettings.length > 0) {
+                    setDeliverySettings(existingSettings[0]);
+                }
+            } catch (error) {
+                console.error("Failed to load delivery settings:", error);
+            }
         } catch (error) {
             console.error("Failed to load store:", error);
             setFlashMessage({ type: 'error', message: 'Could not load store settings.' });
@@ -1741,7 +1766,7 @@ export default function ThemeLayout() {
                                             >
                                                 <div className={`grid gap-4 mt-4 ${store.settings?.checkout_1step_columns === 1 ? 'grid-cols-1' : store.settings?.checkout_1step_columns === 2 ? 'grid-cols-2' : 'grid-cols-3'}`}>
                                                     {['column1', 'column2', 'column3'].slice(0, store.settings?.checkout_1step_columns || 3).map((columnKey, idx) => {
-                                                        const columnSections = stepLayout[columnKey] || [];
+                                                        const columnSections = filterVisibleSections(stepLayout[columnKey] || []);
 
                                                         return (
                                                             <div key={columnKey} className="space-y-2">
@@ -1824,7 +1849,7 @@ export default function ThemeLayout() {
                                                     <Label className="text-sm font-semibold text-blue-700">Step 1: {store.settings?.checkout_2step_step1_name || 'Information'}</Label>
                                                     <div className={`grid gap-4 ${store.settings?.checkout_2step_columns === 1 ? 'grid-cols-1' : store.settings?.checkout_2step_columns === 2 ? 'grid-cols-2' : 'grid-cols-3'}`}>
                                                         {['column1', 'column2', 'column3'].slice(0, store.settings?.checkout_2step_columns || 2).map((columnKey, idx) => {
-                                                            const columnSections = step1Layout[columnKey] || [];
+                                                            const columnSections = filterVisibleSections(step1Layout[columnKey] || []);
 
                                                             return (
                                                                 <div key={columnKey} className="space-y-2">
@@ -1851,7 +1876,7 @@ export default function ThemeLayout() {
                                                     <Label className="text-sm font-semibold text-green-700">Step 2: {store.settings?.checkout_2step_step2_name || 'Payment'}</Label>
                                                     <div className={`grid gap-4 ${store.settings?.checkout_2step_columns === 1 ? 'grid-cols-1' : store.settings?.checkout_2step_columns === 2 ? 'grid-cols-2' : 'grid-cols-3'}`}>
                                                         {['column1', 'column2', 'column3'].slice(0, store.settings?.checkout_2step_columns || 2).map((columnKey, idx) => {
-                                                            const columnSections = step2Layout[columnKey] || [];
+                                                            const columnSections = filterVisibleSections(step2Layout[columnKey] || []);
 
                                                             return (
                                                                 <div key={columnKey} className="space-y-2">
@@ -1939,7 +1964,7 @@ export default function ThemeLayout() {
                                                     <Label className="text-sm font-semibold text-blue-700">Step 1: {store.settings?.checkout_3step_step1_name || 'Information'}</Label>
                                                     <div className={`grid gap-4 ${store.settings?.checkout_3step_columns === 1 ? 'grid-cols-1' : store.settings?.checkout_3step_columns === 2 ? 'grid-cols-2' : 'grid-cols-3'}`}>
                                                         {['column1', 'column2', 'column3'].slice(0, store.settings?.checkout_3step_columns || 2).map((columnKey, idx) => {
-                                                            const columnSections = step1Layout[columnKey] || [];
+                                                            const columnSections = filterVisibleSections(step1Layout[columnKey] || []);
 
                                                             return (
                                                                 <div key={columnKey} className="space-y-2">
@@ -1966,7 +1991,7 @@ export default function ThemeLayout() {
                                                     <Label className="text-sm font-semibold text-purple-700">Step 2: {store.settings?.checkout_3step_step2_name || 'Shipping'}</Label>
                                                     <div className={`grid gap-4 ${store.settings?.checkout_3step_columns === 1 ? 'grid-cols-1' : store.settings?.checkout_3step_columns === 2 ? 'grid-cols-2' : 'grid-cols-3'}`}>
                                                         {['column1', 'column2', 'column3'].slice(0, store.settings?.checkout_3step_columns || 2).map((columnKey, idx) => {
-                                                            const columnSections = step2Layout[columnKey] || [];
+                                                            const columnSections = filterVisibleSections(step2Layout[columnKey] || []);
 
                                                             return (
                                                                 <div key={columnKey} className="space-y-2">
@@ -1993,7 +2018,7 @@ export default function ThemeLayout() {
                                                     <Label className="text-sm font-semibold text-green-700">Step 3: {store.settings?.checkout_3step_step3_name || 'Payment'}</Label>
                                                     <div className={`grid gap-4 ${store.settings?.checkout_3step_columns === 1 ? 'grid-cols-1' : store.settings?.checkout_3step_columns === 2 ? 'grid-cols-2' : 'grid-cols-3'}`}>
                                                         {['column1', 'column2', 'column3'].slice(0, store.settings?.checkout_3step_columns || 2).map((columnKey, idx) => {
-                                                            const columnSections = step3Layout[columnKey] || [];
+                                                            const columnSections = filterVisibleSections(step3Layout[columnKey] || []);
 
                                                             return (
                                                                 <div key={columnKey} className="space-y-2">
