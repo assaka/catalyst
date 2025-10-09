@@ -366,9 +366,9 @@ export const StoreProvider = ({ children }) => {
           ? selectedStore.settings.show_category_in_breadcrumb
           : true,
         
-        // Currency settings
-        currency_code: selectedStore.settings?.currency_code || selectedStore.currency || 'USD',
-        currency_symbol: selectedStore.settings?.currency_symbol || getCurrencySymbol(selectedStore.currency || 'USD'),
+        // Currency settings - ensure we use the store's currency setting
+        currency_code: selectedStore.currency || selectedStore.settings?.currency_code || 'USD',
+        currency_symbol: getCurrencySymbol(selectedStore.currency || selectedStore.settings?.currency_code || 'USD'),
         
         // Theme defaults (merge with existing theme settings)
         theme: {
