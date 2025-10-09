@@ -471,6 +471,51 @@ export default function ThemeLayout() {
         }
     };
 
+    // Handler for column count change - merges sections when reducing columns
+    const handleColumnCountChange = (stepType, newColumnCount) => {
+        const oldColumnCount = store.settings?.[`checkout_${stepType}_columns`] || (stepType === '1step' ? 3 : 2);
+
+        // Update column count
+        handleSettingsChange(`checkout_${stepType}_columns`, newColumnCount);
+
+        // If reducing columns, merge sections from removed columns
+        if (newColumnCount < oldColumnCount) {
+            const fullLayout = store.settings?.[`checkout_${stepType}_layout`] || defaultSectionLayout[stepType];
+            const updatedLayout = { ...fullLayout };
+
+            // Get all step keys in the layout
+            const stepKeys = Object.keys(updatedLayout);
+
+            stepKeys.forEach(stepKey => {
+                const stepLayout = { ...updatedLayout[stepKey] };
+                const sectionsToMerge = [];
+
+                // Collect sections from columns that will be removed
+                for (let i = newColumnCount + 1; i <= 3; i++) {
+                    const columnKey = `column${i}`;
+                    if (stepLayout[columnKey] && stepLayout[columnKey].length > 0) {
+                        sectionsToMerge.push(...stepLayout[columnKey]);
+                        stepLayout[columnKey] = []; // Clear the removed column
+                    }
+                }
+
+                // Add collected sections to the last visible column
+                if (sectionsToMerge.length > 0) {
+                    const lastColumnKey = `column${newColumnCount}`;
+                    stepLayout[lastColumnKey] = [
+                        ...(stepLayout[lastColumnKey] || []),
+                        ...sectionsToMerge
+                    ];
+                }
+
+                updatedLayout[stepKey] = stepLayout;
+            });
+
+            // Update the layout with merged sections
+            handleSettingsChange(`checkout_${stepType}_layout`, updatedLayout);
+        }
+    };
+
     const handleSave = async () => {
         if (!store) return;
         setSaving(true);
@@ -1609,7 +1654,7 @@ export default function ThemeLayout() {
                                     <Label htmlFor="checkout_1step_columns">Number of Columns</Label>
                                     <Select
                                         value={String(store.settings?.checkout_1step_columns || 3)}
-                                        onValueChange={(value) => handleSettingsChange('checkout_1step_columns', parseInt(value))}
+                                        onValueChange={(value) => handleColumnCountChange('1step', parseInt(value))}
                                     >
                                         <SelectTrigger className="w-48 mt-1">
                                             <SelectValue />
@@ -1669,7 +1714,7 @@ export default function ThemeLayout() {
                                     <Label htmlFor="checkout_2step_columns">Number of Columns</Label>
                                     <Select
                                         value={String(store.settings?.checkout_2step_columns || 2)}
-                                        onValueChange={(value) => handleSettingsChange('checkout_2step_columns', parseInt(value))}
+                                        onValueChange={(value) => handleColumnCountChange('2step', parseInt(value))}
                                     >
                                         <SelectTrigger className="w-48 mt-1">
                                             <SelectValue />
@@ -1766,7 +1811,7 @@ export default function ThemeLayout() {
                                     <Label htmlFor="checkout_3step_columns">Number of Columns</Label>
                                     <Select
                                         value={String(store.settings?.checkout_3step_columns || 2)}
-                                        onValueChange={(value) => handleSettingsChange('checkout_3step_columns', parseInt(value))}
+                                        onValueChange={(value) => handleColumnCountChange('3step', parseInt(value))}
                                     >
                                         <SelectTrigger className="w-48 mt-1">
                                             <SelectValue />
