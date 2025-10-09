@@ -25,28 +25,19 @@ const cleanCheckoutLayout = (layout) => {
     cleanedLayout[stepKey] = {};
     Object.keys(layout[stepKey]).forEach(columnKey => {
       let sections = layout[stepKey][columnKey] || [];
-      console.log(`Before cleaning ${stepKey}.${columnKey}:`, sections);
 
       // Replace old "Delivery Options" with "Delivery Settings"
-      sections = sections.map(section => {
-        const result = section === 'Delivery Options' ? 'Delivery Settings' : section;
-        if (section === 'Delivery Options') {
-          console.log(`Replacing "${section}" with "${result}"`);
-        }
-        return result;
-      });
-      console.log(`After replacement ${stepKey}.${columnKey}:`, sections);
+      sections = sections.map(section =>
+        section === 'Delivery Options' ? 'Delivery Settings' : section
+      );
 
       // Remove "Account" section (deprecated)
       sections = sections.filter(section => section !== 'Account');
 
       // Remove duplicates while preserving order
       cleanedLayout[stepKey][columnKey] = [...new Set(sections)];
-      console.log(`After dedup ${stepKey}.${columnKey}:`, cleanedLayout[stepKey][columnKey]);
     });
   });
-  console.log('Original layout:', layout);
-  console.log('Cleaned layout:', cleanedLayout);
   return cleanedLayout;
 };
 
