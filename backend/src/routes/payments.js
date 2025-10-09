@@ -1099,10 +1099,11 @@ async function createPreliminaryOrder(session, orderData) {
   let validatedCustomerId = null;
   if (customer_id) {
     try {
-      const { User } = require('../models');
+      const { Customer } = require('../models');
       console.log('🔍 Looking up customer_id in database:', customer_id);
-      const customerExists = await User.findByPk(customer_id);
+      const customerExists = await Customer.findByPk(customer_id);
       console.log('🔍 Customer lookup result:', customerExists ? 'Found' : 'Not found');
+      console.log('🔍 Customer details:', customerExists ? { id: customerExists.id, email: customerExists.email } : 'None');
 
       if (customerExists) {
         validatedCustomerId = customer_id;
@@ -1330,8 +1331,9 @@ async function createOrderFromCheckoutSession(session) {
     const metadataCustomerId = session.metadata?.customer_id;
     if (metadataCustomerId) {
       try {
-        const { User } = require('../models');
-        const customerExists = await User.findByPk(metadataCustomerId);
+        const { Customer } = require('../models');
+        const customerExists = await Customer.findByPk(metadataCustomerId);
+        console.log('🔍 Customer lookup result from metadata:', customerExists ? 'Found' : 'Not found');
         if (customerExists) {
           validatedCustomerId = metadataCustomerId;
           console.log('✅ Validated customer_id from metadata:', metadataCustomerId);
