@@ -120,6 +120,91 @@ export default function Checkout() {
     loadCheckoutData();
   }, [store?.id, storeLoading]);
 
+  // Load persisted form data from localStorage on mount
+  useEffect(() => {
+    try {
+      const persistedData = localStorage.getItem('checkout_form_data');
+      if (persistedData) {
+        const data = JSON.parse(persistedData);
+
+        // Restore shipping address
+        if (data.shippingAddress) {
+          setShippingAddress(data.shippingAddress);
+        }
+
+        // Restore billing address
+        if (data.billingAddress) {
+          setBillingAddress(data.billingAddress);
+        }
+
+        // Restore selected addresses
+        if (data.selectedShippingAddress) {
+          setSelectedShippingAddress(data.selectedShippingAddress);
+        }
+        if (data.selectedBillingAddress) {
+          setSelectedBillingAddress(data.selectedBillingAddress);
+        }
+
+        // Restore delivery settings
+        if (data.deliveryDate) {
+          setDeliveryDate(new Date(data.deliveryDate));
+        }
+        if (data.deliveryTimeSlot) {
+          setDeliveryTimeSlot(data.deliveryTimeSlot);
+        }
+        if (data.deliveryComments) {
+          setDeliveryComments(data.deliveryComments);
+        }
+
+        // Restore checkboxes
+        if (typeof data.useShippingForBilling === 'boolean') {
+          setUseShippingForBilling(data.useShippingForBilling);
+        }
+        if (typeof data.saveShippingAddress === 'boolean') {
+          setSaveShippingAddress(data.saveShippingAddress);
+        }
+        if (typeof data.saveBillingAddress === 'boolean') {
+          setSaveBillingAddress(data.saveBillingAddress);
+        }
+      }
+    } catch (error) {
+      console.error('Failed to load persisted checkout data:', error);
+    }
+  }, []);
+
+  // Persist form data to localStorage whenever it changes
+  useEffect(() => {
+    try {
+      const dataToSave = {
+        shippingAddress,
+        billingAddress,
+        selectedShippingAddress,
+        selectedBillingAddress,
+        deliveryDate: deliveryDate ? deliveryDate.toISOString() : null,
+        deliveryTimeSlot,
+        deliveryComments,
+        useShippingForBilling,
+        saveShippingAddress,
+        saveBillingAddress
+      };
+
+      localStorage.setItem('checkout_form_data', JSON.stringify(dataToSave));
+    } catch (error) {
+      console.error('Failed to persist checkout data:', error);
+    }
+  }, [
+    shippingAddress,
+    billingAddress,
+    selectedShippingAddress,
+    selectedBillingAddress,
+    deliveryDate,
+    deliveryTimeSlot,
+    deliveryComments,
+    useShippingForBilling,
+    saveShippingAddress,
+    saveBillingAddress
+  ]);
+
   // Load applied coupon from service on mount
   useEffect(() => {
     const storedCoupon = couponService.getAppliedCoupon();
@@ -836,8 +921,10 @@ export default function Checkout() {
 
       // Get checkout URL from response
       const checkoutUrl = responseData.checkout_url || responseData.url;
-      
+
       if (checkoutUrl) {
+        // Clear persisted checkout form data on successful checkout
+        localStorage.removeItem('checkout_form_data');
         window.location.href = checkoutUrl;
       } else {
         console.error('No checkout URL in response:', responseData);
@@ -1602,33 +1689,26 @@ export default function Checkout() {
 
       case 'Summary':
         return stepsCount > 1 && currentStep > 0 && (
-          <Card key="summary" style={{ backgroundColor: '#F3F4F6', borderColor: checkoutSectionBorderColor }}>
-            <CardHeader>
-              <CardTitle style={{ color: checkoutSectionTitleColor, fontSize: checkoutSectionTitleSize }}>
-                Summary
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              {getCompletedStepsSummary().map((summary, idx) => (
-                <div key={idx} className={idx > 0 ? 'mt-4 pt-4 border-t' : ''}>
-                  <h4 className="font-semibold text-sm text-gray-700 mb-2">{summary.step}</h4>
-                  <div className="space-y-2">
-                    {summary.items.map((item, itemIdx) => (
-                      <div key={itemIdx} className="text-sm">
-                        <span className="text-gray-600">{item.label}:</span>{' '}
-                        <span className="text-gray-900">{item.value}</span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              ))}
-              <Button
-                onClick={() => setCurrentStep(0)}
-                variant="link"
-                className="mt-3 p-0 h-auto text-blue-600 hover:text-blue-800"
-              >
-                Edit
-              </Button>
+          <Card key="summary" className="col-span-full" style={{ backgroundColor: '#F3F4F6', borderColor: checkoutSectionBorderColor }}>
+            <CardContent className="py-3">
+              <div className="flex flex-wrap items-center gap-x-6 gap-y-2 text-sm">
+                {getCompletedStepsSummary().flatMap((summary) =>
+                  summary.items.map((item, itemIdx) => (
+                    <div key={`${summary.step}-${itemIdx}`} className="flex items-center gap-2">
+                      <span className="text-gray-600">{item.label}:</span>
+                      <span className="text-gray-900 font-medium">{item.value}</span>
+                    </div>
+                  ))
+                )}
+                <Button
+                  onClick={() => setCurrentStep(0)}
+                  variant="link"
+                  size="sm"
+                  className="p-0 h-auto text-blue-600 hover:text-blue-800 ml-auto"
+                >
+                  Edit
+                </Button>
+              </div>
             </CardContent>
           </Card>
         );
