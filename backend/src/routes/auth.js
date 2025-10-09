@@ -930,24 +930,40 @@ router.post('/customer/login', [
     }
 
     // Find customer with this email
+    console.log('🔐 Customer login attempt for:', email);
     const customer = await Customer.findOne({ where: { email } });
-    
+
     if (!customer) {
+      console.log('❌ Customer not found:', email);
       await LoginAttempt.create({
         email,
         ip_address: ipAddress,
         success: false
       });
-      
+
       return res.status(400).json({
         success: false,
         message: 'Invalid credentials'
       });
     }
 
+    console.log('✅ Customer found:', customer.id);
+    console.log('🔍 Customer has password:', !!customer.password);
+
     // Check password
+    if (!customer.password) {
+      console.log('❌ Customer has no password (guest account)');
+      return res.status(400).json({
+        success: false,
+        message: 'This account has not been activated yet. Please create a password first.'
+      });
+    }
+
     const isMatch = await customer.comparePassword(password);
+    console.log('🔍 Password match result:', isMatch);
+
     if (!isMatch) {
+      console.log('❌ Password mismatch for customer:', customer.id);
       await LoginAttempt.create({
         email,
         ip_address: ipAddress,

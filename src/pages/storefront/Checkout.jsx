@@ -915,6 +915,12 @@ export default function Checkout() {
       // Enrich cart items with product details for order creation
       const enrichedCartItems = cartItems.map(item => {
         const product = cartProducts[item.product_id];
+        console.log('Enriching cart item:', {
+          product_id: item.product_id,
+          product_title: product?.title,
+          item_name: item.name,
+          item_product_name: item.product_name
+        });
         return {
           ...item,
           product_name: product?.title || item.product_name || item.name || 'Product',
@@ -923,6 +929,8 @@ export default function Checkout() {
           price: item.price || product?.price || 0
         };
       });
+
+      console.log('Enriched cart items:', enrichedCartItems);
 
       const checkoutData = {
         cartItems: enrichedCartItems,
