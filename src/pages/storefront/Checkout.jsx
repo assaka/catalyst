@@ -119,6 +119,10 @@ export default function Checkout() {
   // Track if data has been restored to prevent overwriting on initial load
   const [dataRestored, setDataRestored] = useState(false);
 
+  // Form validation errors
+  const [shippingErrors, setShippingErrors] = useState({});
+  const [billingErrors, setBillingErrors] = useState({});
+
   useEffect(() => {
     loadCheckoutData();
   }, [store?.id, storeLoading]);
@@ -1086,7 +1090,9 @@ export default function Checkout() {
 
   // Validate current step before proceeding
   const validateCurrentStep = () => {
-    const errors = [];
+    const newShippingErrors = {};
+    const newBillingErrors = {};
+    let hasErrors = false;
 
     // Step 0 validation for both 2-step and 3-step
     if (currentStep === 0) {
@@ -1094,19 +1100,42 @@ export default function Checkout() {
       if (!user || selectedShippingAddress === 'new' || userAddresses.length === 0) {
         // Email validation
         if (!shippingAddress.email) {
-          errors.push('Email is required');
+          newShippingErrors.email = true;
+          hasErrors = true;
         } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(shippingAddress.email)) {
-          errors.push('Please enter a valid email address');
+          newShippingErrors.email = true;
+          hasErrors = true;
         }
 
         // Required field validation
-        if (!shippingAddress.full_name) errors.push('Full name is required');
-        if (!shippingAddress.phone) errors.push('Phone number is required');
-        if (!shippingAddress.street) errors.push('Street address is required');
-        if (!shippingAddress.city) errors.push('City is required');
-        if (!shippingAddress.state) errors.push('State/Province is required');
-        if (!shippingAddress.postal_code) errors.push('Postal code is required');
-        if (!shippingAddress.country) errors.push('Country is required');
+        if (!shippingAddress.full_name) {
+          newShippingErrors.full_name = true;
+          hasErrors = true;
+        }
+        if (!shippingAddress.phone) {
+          newShippingErrors.phone = true;
+          hasErrors = true;
+        }
+        if (!shippingAddress.street) {
+          newShippingErrors.street = true;
+          hasErrors = true;
+        }
+        if (!shippingAddress.city) {
+          newShippingErrors.city = true;
+          hasErrors = true;
+        }
+        if (!shippingAddress.state) {
+          newShippingErrors.state = true;
+          hasErrors = true;
+        }
+        if (!shippingAddress.postal_code) {
+          newShippingErrors.postal_code = true;
+          hasErrors = true;
+        }
+        if (!shippingAddress.country) {
+          newShippingErrors.country = true;
+          hasErrors = true;
+        }
       }
 
       // Validate billing address if different from shipping
@@ -1114,24 +1143,51 @@ export default function Checkout() {
         if (!user || selectedBillingAddress === 'new' || userAddresses.length === 0) {
           // Email validation for billing
           if (!billingAddress.email) {
-            errors.push('Billing email is required');
+            newBillingErrors.email = true;
+            hasErrors = true;
           } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(billingAddress.email)) {
-            errors.push('Please enter a valid billing email address');
+            newBillingErrors.email = true;
+            hasErrors = true;
           }
 
-          if (!billingAddress.full_name) errors.push('Billing full name is required');
-          if (!billingAddress.phone) errors.push('Billing phone number is required');
-          if (!billingAddress.street) errors.push('Billing street address is required');
-          if (!billingAddress.city) errors.push('Billing city is required');
-          if (!billingAddress.state) errors.push('Billing state/province is required');
-          if (!billingAddress.postal_code) errors.push('Billing postal code is required');
-          if (!billingAddress.country) errors.push('Billing country is required');
+          if (!billingAddress.full_name) {
+            newBillingErrors.full_name = true;
+            hasErrors = true;
+          }
+          if (!billingAddress.phone) {
+            newBillingErrors.phone = true;
+            hasErrors = true;
+          }
+          if (!billingAddress.street) {
+            newBillingErrors.street = true;
+            hasErrors = true;
+          }
+          if (!billingAddress.city) {
+            newBillingErrors.city = true;
+            hasErrors = true;
+          }
+          if (!billingAddress.state) {
+            newBillingErrors.state = true;
+            hasErrors = true;
+          }
+          if (!billingAddress.postal_code) {
+            newBillingErrors.postal_code = true;
+            hasErrors = true;
+          }
+          if (!billingAddress.country) {
+            newBillingErrors.country = true;
+            hasErrors = true;
+          }
         }
       }
     }
 
-    if (errors.length > 0) {
-      showError(errors.join('. '));
+    setShippingErrors(newShippingErrors);
+    setBillingErrors(newBillingErrors);
+
+    if (hasErrors) {
+      // Scroll to first error
+      window.scrollTo({ top: 0, behavior: 'smooth' });
       return false;
     }
 
@@ -1230,8 +1286,11 @@ export default function Checkout() {
                       type="email"
                       required
                       value={shippingAddress.email}
-                      onChange={(e) => setShippingAddress(prev => ({ ...prev, email: e.target.value }))}
-                      className={shippingAddress.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(shippingAddress.email) ? 'border-red-500' : ''}
+                      onChange={(e) => {
+                        setShippingAddress(prev => ({ ...prev, email: e.target.value }));
+                        setShippingErrors(prev => ({ ...prev, email: false }));
+                      }}
+                      className={shippingErrors.email ? 'border-red-500' : ''}
                     />
                     {shippingAddress.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(shippingAddress.email) && (
                       <p className="text-xs text-red-600 mt-1">Please enter a valid email address</p>
@@ -1239,50 +1298,75 @@ export default function Checkout() {
                   </div>
                   <Input
                     placeholder="Full Name *"
-                    className="md:col-span-2"
+                    className={`md:col-span-2 ${shippingErrors.full_name ? 'border-red-500' : ''}`}
                     required
                     value={shippingAddress.full_name}
-                    onChange={(e) => setShippingAddress(prev => ({ ...prev, full_name: e.target.value }))}
+                    onChange={(e) => {
+                      setShippingAddress(prev => ({ ...prev, full_name: e.target.value }));
+                      setShippingErrors(prev => ({ ...prev, full_name: false }));
+                    }}
                   />
                   <Input
                     placeholder="Phone Number *"
                     type="tel"
-                    className="md:col-span-2"
+                    className={`md:col-span-2 ${shippingErrors.phone ? 'border-red-500' : ''}`}
                     required
                     value={shippingAddress.phone}
-                    onChange={(e) => setShippingAddress(prev => ({ ...prev, phone: e.target.value }))}
+                    onChange={(e) => {
+                      setShippingAddress(prev => ({ ...prev, phone: e.target.value }));
+                      setShippingErrors(prev => ({ ...prev, phone: false }));
+                    }}
                   />
                   <Input
                     placeholder="Street Address *"
-                    className="md:col-span-2"
+                    className={`md:col-span-2 ${shippingErrors.street ? 'border-red-500' : ''}`}
                     required
                     value={shippingAddress.street}
-                    onChange={(e) => setShippingAddress(prev => ({ ...prev, street: e.target.value }))}
+                    onChange={(e) => {
+                      setShippingAddress(prev => ({ ...prev, street: e.target.value }));
+                      setShippingErrors(prev => ({ ...prev, street: false }));
+                    }}
                   />
                   <Input
                     placeholder="City *"
+                    className={shippingErrors.city ? 'border-red-500' : ''}
                     required
                     value={shippingAddress.city}
-                    onChange={(e) => setShippingAddress(prev => ({ ...prev, city: e.target.value }))}
+                    onChange={(e) => {
+                      setShippingAddress(prev => ({ ...prev, city: e.target.value }));
+                      setShippingErrors(prev => ({ ...prev, city: false }));
+                    }}
                   />
                   <Input
                     placeholder="State/Province *"
+                    className={shippingErrors.state ? 'border-red-500' : ''}
                     required
                     value={shippingAddress.state}
-                    onChange={(e) => setShippingAddress(prev => ({ ...prev, state: e.target.value }))}
+                    onChange={(e) => {
+                      setShippingAddress(prev => ({ ...prev, state: e.target.value }));
+                      setShippingErrors(prev => ({ ...prev, state: false }));
+                    }}
                   />
                   <Input
                     placeholder="Postal Code *"
+                    className={shippingErrors.postal_code ? 'border-red-500' : ''}
                     required
                     value={shippingAddress.postal_code}
-                    onChange={(e) => setShippingAddress(prev => ({ ...prev, postal_code: e.target.value }))}
+                    onChange={(e) => {
+                      setShippingAddress(prev => ({ ...prev, postal_code: e.target.value }));
+                      setShippingErrors(prev => ({ ...prev, postal_code: false }));
+                    }}
                   />
                   <CountrySelect
                     value={shippingAddress.country}
-                    onChange={(country) => setShippingAddress(prev => ({ ...prev, country }))}
+                    onChange={(country) => {
+                      setShippingAddress(prev => ({ ...prev, country }));
+                      setShippingErrors(prev => ({ ...prev, country: false }));
+                    }}
                     placeholder="Select country... *"
                     allowedCountries={settings?.allowed_countries}
                     required
+                    className={shippingErrors.country ? 'border-red-500' : ''}
                   />
 
                   {user && selectedShippingAddress === 'new' && (
@@ -1421,8 +1505,11 @@ export default function Checkout() {
                             type="email"
                             required
                             value={billingAddress.email}
-                            onChange={(e) => setBillingAddress(prev => ({ ...prev, email: e.target.value }))}
-                            className={billingAddress.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(billingAddress.email) ? 'border-red-500' : ''}
+                            onChange={(e) => {
+                              setBillingAddress(prev => ({ ...prev, email: e.target.value }));
+                              setBillingErrors(prev => ({ ...prev, email: false }));
+                            }}
+                            className={billingErrors.email ? 'border-red-500' : ''}
                           />
                           {billingAddress.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(billingAddress.email) && (
                             <p className="text-xs text-red-600 mt-1">Please enter a valid email address</p>
@@ -1430,50 +1517,75 @@ export default function Checkout() {
                         </div>
                         <Input
                           placeholder="Full Name *"
-                          className="md:col-span-2"
+                          className={`md:col-span-2 ${billingErrors.full_name ? 'border-red-500' : ''}`}
                           required
                           value={billingAddress.full_name}
-                          onChange={(e) => setBillingAddress(prev => ({ ...prev, full_name: e.target.value }))}
+                          onChange={(e) => {
+                            setBillingAddress(prev => ({ ...prev, full_name: e.target.value }));
+                            setBillingErrors(prev => ({ ...prev, full_name: false }));
+                          }}
                         />
                         <Input
                           placeholder="Phone Number *"
                           type="tel"
-                          className="md:col-span-2"
+                          className={`md:col-span-2 ${billingErrors.phone ? 'border-red-500' : ''}`}
                           required
                           value={billingAddress.phone}
-                          onChange={(e) => setBillingAddress(prev => ({ ...prev, phone: e.target.value }))}
+                          onChange={(e) => {
+                            setBillingAddress(prev => ({ ...prev, phone: e.target.value }));
+                            setBillingErrors(prev => ({ ...prev, phone: false }));
+                          }}
                         />
                         <Input
                           placeholder="Street Address *"
-                          className="md:col-span-2"
+                          className={`md:col-span-2 ${billingErrors.street ? 'border-red-500' : ''}`}
                           required
                           value={billingAddress.street}
-                          onChange={(e) => setBillingAddress(prev => ({ ...prev, street: e.target.value }))}
+                          onChange={(e) => {
+                            setBillingAddress(prev => ({ ...prev, street: e.target.value }));
+                            setBillingErrors(prev => ({ ...prev, street: false }));
+                          }}
                         />
                         <Input
                           placeholder="City *"
+                          className={billingErrors.city ? 'border-red-500' : ''}
                           required
                           value={billingAddress.city}
-                          onChange={(e) => setBillingAddress(prev => ({ ...prev, city: e.target.value }))}
+                          onChange={(e) => {
+                            setBillingAddress(prev => ({ ...prev, city: e.target.value }));
+                            setBillingErrors(prev => ({ ...prev, city: false }));
+                          }}
                         />
                         <Input
                           placeholder="State/Province *"
+                          className={billingErrors.state ? 'border-red-500' : ''}
                           required
                           value={billingAddress.state}
-                          onChange={(e) => setBillingAddress(prev => ({ ...prev, state: e.target.value }))}
+                          onChange={(e) => {
+                            setBillingAddress(prev => ({ ...prev, state: e.target.value }));
+                            setBillingErrors(prev => ({ ...prev, state: false }));
+                          }}
                         />
                         <Input
                           placeholder="Postal Code *"
+                          className={billingErrors.postal_code ? 'border-red-500' : ''}
                           required
                           value={billingAddress.postal_code}
-                          onChange={(e) => setBillingAddress(prev => ({ ...prev, postal_code: e.target.value }))}
+                          onChange={(e) => {
+                            setBillingAddress(prev => ({ ...prev, postal_code: e.target.value }));
+                            setBillingErrors(prev => ({ ...prev, postal_code: false }));
+                          }}
                         />
                         <CountrySelect
                           value={billingAddress.country}
-                          onChange={(country) => setBillingAddress(prev => ({ ...prev, country }))}
+                          onChange={(country) => {
+                            setBillingAddress(prev => ({ ...prev, country }));
+                            setBillingErrors(prev => ({ ...prev, country: false }));
+                          }}
                           placeholder="Select country... *"
                           allowedCountries={settings?.allowed_countries}
                           required
+                          className={billingErrors.country ? 'border-red-500' : ''}
                         />
 
                         {user && selectedBillingAddress === 'new' && (
