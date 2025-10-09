@@ -1456,97 +1456,6 @@ export default function ThemeLayout() {
                             <CardDescription>Customize the appearance and flow of your checkout page.</CardDescription>
                         </CardHeader>
                         <CardContent className="space-y-6">
-                            {/* Step Count Configuration */}
-                            <div className="p-4 border rounded-lg space-y-4">
-                                <div>
-                                    <Label htmlFor="checkout_steps_count" className="text-base font-medium">Checkout Steps</Label>
-                                    <p className="text-sm text-gray-500">Choose how many steps to display in the checkout process.</p>
-                                </div>
-                                <Select
-                                    value={String(store.settings?.checkout_steps_count || 3)}
-                                    onValueChange={(value) => handleSettingsChange('checkout_steps_count', parseInt(value))}
-                                >
-                                    <SelectTrigger className="w-48">
-                                        <SelectValue />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        <SelectItem value="1">1 Step (Single Page)</SelectItem>
-                                        <SelectItem value="2">2 Steps</SelectItem>
-                                        <SelectItem value="3">3 Steps</SelectItem>
-                                    </SelectContent>
-                                </Select>
-
-                                {/* Step Names Configuration */}
-                                {store.settings?.checkout_steps_count > 1 && (
-                                    <div className="mt-4 space-y-3">
-                                        <Label className="text-sm font-medium">Step Names</Label>
-                                        <p className="text-xs text-gray-500">Customize the names displayed for each step in the checkout process.</p>
-
-                                        {store.settings?.checkout_steps_count === 2 && (
-                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                                                <div>
-                                                    <Label htmlFor="checkout_2step_step1_name" className="text-xs">Step 1 Name</Label>
-                                                    <Input
-                                                        id="checkout_2step_step1_name"
-                                                        value={store.settings?.checkout_2step_step1_name || 'Information'}
-                                                        onChange={(e) => handleSettingsChange('checkout_2step_step1_name', e.target.value)}
-                                                        placeholder="Information"
-                                                        className="mt-1"
-                                                    />
-                                                </div>
-                                                <div>
-                                                    <Label htmlFor="checkout_2step_step2_name" className="text-xs">Step 2 Name</Label>
-                                                    <Input
-                                                        id="checkout_2step_step2_name"
-                                                        value={store.settings?.checkout_2step_step2_name || 'Payment'}
-                                                        onChange={(e) => handleSettingsChange('checkout_2step_step2_name', e.target.value)}
-                                                        placeholder="Payment"
-                                                        className="mt-1"
-                                                    />
-                                                </div>
-                                            </div>
-                                        )}
-
-                                        {store.settings?.checkout_steps_count === 3 && (
-                                            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                                                <div>
-                                                    <Label htmlFor="checkout_3step_step1_name" className="text-xs">Step 1 Name</Label>
-                                                    <Input
-                                                        id="checkout_3step_step1_name"
-                                                        value={store.settings?.checkout_3step_step1_name || 'Information'}
-                                                        onChange={(e) => handleSettingsChange('checkout_3step_step1_name', e.target.value)}
-                                                        placeholder="Information"
-                                                        className="mt-1"
-                                                    />
-                                                </div>
-                                                <div>
-                                                    <Label htmlFor="checkout_3step_step2_name" className="text-xs">Step 2 Name</Label>
-                                                    <Input
-                                                        id="checkout_3step_step2_name"
-                                                        value={store.settings?.checkout_3step_step2_name || 'Shipping'}
-                                                        onChange={(e) => handleSettingsChange('checkout_3step_step2_name', e.target.value)}
-                                                        placeholder="Shipping"
-                                                        className="mt-1"
-                                                    />
-                                                </div>
-                                                <div>
-                                                    <Label htmlFor="checkout_3step_step3_name" className="text-xs">Step 3 Name</Label>
-                                                    <Input
-                                                        id="checkout_3step_step3_name"
-                                                        value={store.settings?.checkout_3step_step3_name || 'Payment'}
-                                                        onChange={(e) => handleSettingsChange('checkout_3step_step3_name', e.target.value)}
-                                                        placeholder="Payment"
-                                                        className="mt-1"
-                                                    />
-                                                </div>
-                                            </div>
-                                        )}
-                                    </div>
-                                )}
-                            </div>
-
-                            <Separator />
-
                             {/* Step Indicator Styling */}
                             <div className="space-y-4">
                                 <Label className="text-base font-medium">Step Indicator Styling</Label>
@@ -1723,6 +1632,95 @@ export default function ThemeLayout() {
                             <CardDescription>Define the column layout and section order for each checkout step configuration.</CardDescription>
                         </CardHeader>
                         <CardContent className="space-y-6">
+                            {/* Step Count Configuration */}
+                            <div className="p-4 border rounded-lg space-y-4">
+                                <div>
+                                    <Label htmlFor="checkout_steps_count" className="text-base font-medium">Checkout Steps</Label>
+                                    <p className="text-sm text-gray-500">Choose how many steps to display in the checkout process.</p>
+                                </div>
+                                <Select
+                                    value={String(store.settings?.checkout_steps_count || 3)}
+                                    onValueChange={(value) => handleSettingsChange('checkout_steps_count', parseInt(value))}
+                                >
+                                    <SelectTrigger className="w-48">
+                                        <SelectValue />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="1">1 Step (Single Page)</SelectItem>
+                                        <SelectItem value="2">2 Steps</SelectItem>
+                                        <SelectItem value="3">3 Steps</SelectItem>
+                                    </SelectContent>
+                                </Select>
+
+                                {/* Step Names Configuration */}
+                                {store.settings?.checkout_steps_count > 1 && (
+                                    <div className="mt-4 space-y-3">
+                                        <Label className="text-sm font-medium">Step Names</Label>
+                                        <p className="text-xs text-gray-500">Customize the names displayed for each step in the checkout process.</p>
+
+                                        {store.settings?.checkout_steps_count === 2 && (
+                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                                <div>
+                                                    <Label htmlFor="checkout_2step_step1_name" className="text-xs">Step 1 Name</Label>
+                                                    <Input
+                                                        id="checkout_2step_step1_name"
+                                                        value={store.settings?.checkout_2step_step1_name || 'Information'}
+                                                        onChange={(e) => handleSettingsChange('checkout_2step_step1_name', e.target.value)}
+                                                        placeholder="Information"
+                                                        className="mt-1"
+                                                    />
+                                                </div>
+                                                <div>
+                                                    <Label htmlFor="checkout_2step_step2_name" className="text-xs">Step 2 Name</Label>
+                                                    <Input
+                                                        id="checkout_2step_step2_name"
+                                                        value={store.settings?.checkout_2step_step2_name || 'Payment'}
+                                                        onChange={(e) => handleSettingsChange('checkout_2step_step2_name', e.target.value)}
+                                                        placeholder="Payment"
+                                                        className="mt-1"
+                                                    />
+                                                </div>
+                                            </div>
+                                        )}
+
+                                        {store.settings?.checkout_steps_count === 3 && (
+                                            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                                                <div>
+                                                    <Label htmlFor="checkout_3step_step1_name" className="text-xs">Step 1 Name</Label>
+                                                    <Input
+                                                        id="checkout_3step_step1_name"
+                                                        value={store.settings?.checkout_3step_step1_name || 'Information'}
+                                                        onChange={(e) => handleSettingsChange('checkout_3step_step1_name', e.target.value)}
+                                                        placeholder="Information"
+                                                        className="mt-1"
+                                                    />
+                                                </div>
+                                                <div>
+                                                    <Label htmlFor="checkout_3step_step2_name" className="text-xs">Step 2 Name</Label>
+                                                    <Input
+                                                        id="checkout_3step_step2_name"
+                                                        value={store.settings?.checkout_3step_step2_name || 'Shipping'}
+                                                        onChange={(e) => handleSettingsChange('checkout_3step_step2_name', e.target.value)}
+                                                        placeholder="Shipping"
+                                                        className="mt-1"
+                                                    />
+                                                </div>
+                                                <div>
+                                                    <Label htmlFor="checkout_3step_step3_name" className="text-xs">Step 3 Name</Label>
+                                                    <Input
+                                                        id="checkout_3step_step3_name"
+                                                        value={store.settings?.checkout_3step_step3_name || 'Payment'}
+                                                        onChange={(e) => handleSettingsChange('checkout_3step_step3_name', e.target.value)}
+                                                        placeholder="Payment"
+                                                        className="mt-1"
+                                                    />
+                                                </div>
+                                            </div>
+                                        )}
+                                    </div>
+                                )}
+                            </div>
+
                             <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
                                 <p className="text-sm text-blue-800">
                                     <strong>How it works:</strong> Based on your selected step count above ({store.settings?.checkout_steps_count || 3} step{(store.settings?.checkout_steps_count || 3) > 1 ? 's' : ''}), configure the layout below.
