@@ -204,9 +204,6 @@ const LoginFormSlotComponent = ({ slot, context, variableContext }) => {
   const [success, setSuccess] = React.useState('');
   const [showPassword, setShowPassword] = React.useState(false);
 
-  // Get loginData from variableContext (for debugging)
-  const loginData = variableContext?.loginData || {};
-  console.log('🔍 LoginFormSlot: loginData from variableContext:', loginData, 'keys:', Object.keys(loginData));
 
   const handleInputChange = (e) => {
     const { name, value, type, checked } = e.target;
@@ -234,16 +231,12 @@ const LoginFormSlotComponent = ({ slot, context, variableContext }) => {
     setSuccess('');
 
     try {
-      console.log('🔐 LoginFormSlot: Starting login for:', formData.email);
-
       const response = await AuthService.login(
         formData.email,
         formData.password,
         formData.rememberMe,
         'customer'
       );
-
-      console.log('🔐 LoginFormSlot: Response received:', response);
 
       let actualResponse = response;
       if (Array.isArray(response)) {
@@ -259,25 +252,20 @@ const LoginFormSlotComponent = ({ slot, context, variableContext }) => {
         const token = actualResponse.data?.token || actualResponse.token;
 
         if (token) {
-          console.log('✅ LoginFormSlot: Token found, setting up session');
           localStorage.removeItem('user_logged_out');
           localStorage.setItem('customer_auth_token', token);
           apiClient.setToken(token);
 
           const accountUrl = await getCustomerAccountUrl();
-          console.log('✅ LoginFormSlot: Navigating to:', accountUrl);
           navigate(accountUrl);
           return;
         } else {
-          console.error('❌ LoginFormSlot: No token in response');
           setError('Login failed: No authentication token received');
         }
       } else {
-        console.error('❌ LoginFormSlot: Response not successful');
         setError('Login failed: Invalid response from server');
       }
     } catch (error) {
-      console.error('❌ LoginFormSlot: Error:', error);
       setError(error.message || 'Login failed');
     } finally {
       setLoading(false);
