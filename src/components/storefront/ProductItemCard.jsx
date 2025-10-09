@@ -37,6 +37,14 @@ const ProductItemCard = ({
 
   if (!product || !store) return null;
 
+  // Debug currency in ProductItemCard
+  console.log('💳 ProductItemCard currency debug:', {
+    productName: product.name,
+    settingsCurrencySymbol: settings?.currency_symbol,
+    storeCurrency: store?.currency,
+    hideProduct: settings?.hide_currency_product
+  });
+
   // Get slot configurations for styling - support both nested and flat structures
   const {
     productTemplate = {},
