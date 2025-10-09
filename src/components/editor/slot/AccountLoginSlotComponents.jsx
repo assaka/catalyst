@@ -184,18 +184,17 @@ const ProfileFormSlot = createSlotComponent({
 
 /**
  * LoginFormSlot - Login form
+ * Wrapper component to use React hooks
  */
-const LoginFormSlot = createSlotComponent({
-  name: 'LoginFormSlot',
-  render: ({ slot, context, variableContext }) => {
-    // PRIORITY 1: Get loginData from React Context (bypasses variableContext chain)
-    const contextLoginData = useLoginData();
-    // PRIORITY 2: Fallback to variableContext if context is null
-    const loginData = contextLoginData || variableContext?.loginData || {};
+const LoginFormSlotComponent = ({ slot, context, variableContext }) => {
+  // PRIORITY 1: Get loginData from React Context (bypasses variableContext chain)
+  const contextLoginData = useLoginData();
+  // PRIORITY 2: Fallback to variableContext if context is null
+  const loginData = contextLoginData || variableContext?.loginData || {};
 
-    console.log('🔍 LoginFormSlot: contextLoginData from useLoginData():', contextLoginData);
-    console.log('🔍 LoginFormSlot: variableContext:', variableContext);
-    console.log('🔍 LoginFormSlot: final loginData:', loginData);
+  console.log('🔍 LoginFormSlot: contextLoginData from useLoginData():', contextLoginData);
+  console.log('🔍 LoginFormSlot: variableContext:', variableContext);
+  console.log('🔍 LoginFormSlot: final loginData:', loginData);
 
     const {
       formData = { email: '', password: '', rememberMe: false },
@@ -281,7 +280,12 @@ const LoginFormSlot = createSlotComponent({
         </form>
       </div>
     );
-  }
+};
+
+// Wrap with createSlotComponent
+const LoginFormSlot = createSlotComponent({
+  name: 'LoginFormSlot',
+  render: (props) => <LoginFormSlotComponent {...props} />
 });
 
 /**
