@@ -89,10 +89,8 @@ export default function OrderSuccess() {
         const userData = await User.me();
         // Only consider authenticated if user is a customer (not store_owner/admin)
         const isCustomerAuth = !!userData?.id && userData?.role === 'customer';
-        console.log('🔐 Auth check:', { userData, role: userData?.role, isCustomerAuth });
         setIsAuthenticated(isCustomerAuth);
       } catch (error) {
-        console.log('🔐 Auth check failed (guest user):', error.message);
         setIsAuthenticated(false);
       }
     };
@@ -102,104 +100,60 @@ export default function OrderSuccess() {
   // Load order data
   useEffect(() => {
     const loadOrder = async () => {
-      console.log('🔵 [OrderSuccess] Starting loadOrder function');
-      console.log('🔵 [OrderSuccess] Session ID:', sessionId);
-
       if (!sessionId) {
-        console.log('❌ [OrderSuccess] No session ID found');
         setLoading(false);
         return;
       }
 
       try {
         const apiUrl = import.meta.env.VITE_API_BASE_URL || import.meta.env.VITE_API_URL;
-        console.log('🔵 [OrderSuccess] API URL:', apiUrl);
-        console.log('🔵 [OrderSuccess] Full request URL:', `${apiUrl}/api/orders/by-payment-reference/${sessionId}`);
-
-        console.log('🔵 [OrderSuccess] Fetching order data...');
         const response = await fetch(`${apiUrl}/api/orders/by-payment-reference/${sessionId}`);
-        console.log('🔵 [OrderSuccess] Response status:', response.status);
-        console.log('🔵 [OrderSuccess] Response ok:', response.ok);
-
         const result = await response.json();
-        console.log('🔵 [OrderSuccess] Response result:', result);
-        console.log('🔵 [OrderSuccess] Result success:', result.success);
-        console.log('🔵 [OrderSuccess] Result data exists:', !!result.data);
 
         if (response.ok && result.success && result.data) {
           const orderData = result.data;
-          console.log('✅ [OrderSuccess] Order data loaded successfully:', orderData);
-          console.log('🔵 [OrderSuccess] Order ID:', orderData.id);
-          console.log('🔵 [OrderSuccess] Order number:', orderData.order_number);
           setOrder(orderData);
 
           // Track purchase event
           if (typeof window !== 'undefined' && window.catalyst?.trackPurchase) {
-            console.log('🔵 [OrderSuccess] Tracking purchase event');
             window.catalyst.trackPurchase(orderData);
           }
 
           // Try different possible keys for order items
           let items = orderData.OrderItems || orderData.items || orderData.orderItems || [];
-          console.log('🔵 [OrderSuccess] Order items found:', items);
-          console.log('🔵 [OrderSuccess] Items count:', items.length);
-          console.log('🔵 [OrderSuccess] Items is array:', Array.isArray(items));
 
           if (items && Array.isArray(items) && items.length > 0) {
-            console.log('✅ [OrderSuccess] Setting order items:', items);
             setOrderItems(items);
           } else {
-            console.log('⚠️ [OrderSuccess] No items found, will retry in 2 seconds');
-
             // If no items found, try to reload the data after a short delay
             // This handles the case where order items might still be being created
             setTimeout(async () => {
               try {
-                console.log('🔵 [OrderSuccess] Retrying order fetch...');
                 const retryResponse = await fetch(`${apiUrl}/api/orders/by-payment-reference/${sessionId}`);
-                console.log('🔵 [OrderSuccess] Retry response status:', retryResponse.status);
                 const retryResult = await retryResponse.json();
-                console.log('🔵 [OrderSuccess] Retry result:', retryResult);
 
                 if (retryResponse.ok && retryResult.success && retryResult.data) {
                   const retryOrderData = retryResult.data;
-                  console.log('✅ [OrderSuccess] Retry successful, order data:', retryOrderData);
-
                   const retryItems = retryOrderData.OrderItems || retryOrderData.items || retryOrderData.orderItems || [];
-                  console.log('🔵 [OrderSuccess] Retry items:', retryItems);
-                  console.log('🔵 [OrderSuccess] Retry items count:', retryItems.length);
 
                   if (retryItems && Array.isArray(retryItems) && retryItems.length > 0) {
-                    console.log('✅ [OrderSuccess] Setting retry items:', retryItems);
                     setOrderItems(retryItems);
-                    setOrder(retryOrderData); // Update order data too
+                    setOrder(retryOrderData);
                   } else {
-                    console.log('⚠️ [OrderSuccess] Still no items found after retry');
                     setOrderItems([]);
                   }
-                } else {
-                  console.error('❌ [OrderSuccess] Retry fetch failed:', retryResult);
                 }
               } catch (retryError) {
-                console.error('❌ [OrderSuccess] Error during retry fetch:', retryError);
-                console.error('❌ [OrderSuccess] Retry error stack:', retryError.stack);
+                console.error('Error during retry fetch:', retryError);
               }
             }, 2000);
 
             setOrderItems([]);
           }
-        } else {
-          console.error('❌ [OrderSuccess] Failed to load order:', result);
-          console.error('❌ [OrderSuccess] Response ok:', response.ok);
-          console.error('❌ [OrderSuccess] Result success:', result.success);
-          console.error('❌ [OrderSuccess] Result data:', result.data);
         }
       } catch (error) {
-        console.error('❌ [OrderSuccess] Error loading order:', error);
-        console.error('❌ [OrderSuccess] Error message:', error.message);
-        console.error('❌ [OrderSuccess] Error stack:', error.stack);
+        console.error('Error loading order:', error);
       } finally {
-        console.log('🔵 [OrderSuccess] Setting loading to false');
         setLoading(false);
       }
     };
@@ -246,15 +200,12 @@ export default function OrderSuccess() {
         throw new Error(result.message || 'Failed to create account');
       }
 
-      console.log('✅ Guest account upgraded successfully');
-
       setAccountCreationSuccess(true);
       setShowCreateAccount(false);
 
-      // Optionally auto-login the user by storing the token
+      // Auto-login the user by storing the token
       if (result.data?.token) {
         localStorage.setItem('token', result.data.token);
-        console.log('🔐 User auto-logged in after account creation');
       }
 
     } catch (error) {
@@ -687,10 +638,7 @@ export default function OrderSuccess() {
             )}
 
             {/* Create Account - Only show for guest users */}
-            {(() => {
-              console.log('🎯 Create Account card condition check:', { isAuthenticated, shouldShow: !isAuthenticated });
-              return !isAuthenticated;
-            })() && (
+            {!isAuthenticated && (
               <Card>
                 <CardHeader>
                   <CardTitle className="flex items-center">
