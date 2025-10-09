@@ -110,23 +110,27 @@ export default function Checkout() {
 
   // Multi-step checkout state
   const [currentStep, setCurrentStep] = useState(0);
-  
+
   // Coupon state
   const [couponCode, setCouponCode] = useState('');
   const [appliedCoupon, setAppliedCoupon] = useState(null);
   const [couponError, setCouponError] = useState('');
 
+  // Track if data has been restored to prevent overwriting on initial load
+  const [dataRestored, setDataRestored] = useState(false);
+
   useEffect(() => {
     loadCheckoutData();
   }, [store?.id, storeLoading]);
 
-  // Load persisted form data from localStorage on mount
+  // Load persisted form data from localStorage after loading completes
   useEffect(() => {
-    const restoreFormData = () => {
+    if (!loading && !dataRestored) {
       try {
         const persistedData = localStorage.getItem('checkout_form_data');
         if (persistedData) {
           const data = JSON.parse(persistedData);
+          console.log('Restoring checkout form data:', data);
 
           // Restore shipping address
           if (data.shippingAddress) {
@@ -172,37 +176,39 @@ export default function Checkout() {
           if (typeof data.saveBillingAddress === 'boolean') {
             setSaveBillingAddress(data.saveBillingAddress);
           }
+
+          setDataRestored(true);
         }
       } catch (error) {
         console.error('Failed to load persisted checkout data:', error);
       }
-    };
+    }
+  }, [loading, dataRestored]);
 
-    // Delay restoration to ensure component is fully mounted
-    const timer = setTimeout(restoreFormData, 100);
-    return () => clearTimeout(timer);
-  }, []);
-
-  // Persist form data to localStorage whenever it changes
+  // Persist form data to localStorage whenever it changes (only after initial load)
   useEffect(() => {
-    try {
-      const dataToSave = {
-        shippingAddress,
-        billingAddress,
-        selectedShippingAddress,
-        selectedBillingAddress,
-        deliveryDate: deliveryDate ? deliveryDate.toISOString() : null,
-        deliveryTimeSlot,
-        deliveryComments,
-        currentStep,
-        useShippingForBilling,
-        saveShippingAddress,
-        saveBillingAddress
-      };
+    if (!loading) {
+      try {
+        const dataToSave = {
+          shippingAddress,
+          billingAddress,
+          selectedShippingAddress,
+          selectedBillingAddress,
+          deliveryDate: deliveryDate ? deliveryDate.toISOString() : null,
+          deliveryTimeSlot,
+          deliveryComments,
+          currentStep,
+          useShippingForBilling,
+          saveShippingAddress,
+          saveBillingAddress,
+          timestamp: new Date().toISOString()
+        };
 
-      localStorage.setItem('checkout_form_data', JSON.stringify(dataToSave));
-    } catch (error) {
-      console.error('Failed to persist checkout data:', error);
+        localStorage.setItem('checkout_form_data', JSON.stringify(dataToSave));
+        console.log('Saved checkout form data to localStorage:', dataToSave);
+      } catch (error) {
+        console.error('Failed to persist checkout data:', error);
+      }
     }
   }, [
     shippingAddress,
@@ -215,7 +221,8 @@ export default function Checkout() {
     currentStep,
     useShippingForBilling,
     saveShippingAddress,
-    saveBillingAddress
+    saveBillingAddress,
+    loading
   ]);
 
   // Load applied coupon from service on mount
