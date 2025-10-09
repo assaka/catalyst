@@ -325,6 +325,11 @@ export function UnifiedSlotRenderer({
     loginData: loginData
   };
 
+  // Debug logging for login data flow
+  if (loginData && Object.keys(loginData).length > 0) {
+    console.log('🔍 UnifiedSlotRenderer: parentId =', parentId, 'loginData exists:', !!loginData, 'keys:', Object.keys(loginData));
+  }
+
 
   /**
    * Wrap element with ResizeWrapper for editor mode
@@ -821,6 +826,12 @@ export function UnifiedSlotRenderer({
 
         if (!renderMethod) {
           throw new Error(`Component ${componentName} must implement a unified 'render' method. Separate renderEditor/renderStorefront methods are no longer supported.`);
+        }
+
+        // Debug logging for login components
+        if (componentName === 'LoginFormSlot') {
+          console.log('🔍 UnifiedSlotRenderer: Rendering LoginFormSlot');
+          console.log('🔍 UnifiedSlotRenderer: variableContext.loginData:', variableContext.loginData);
         }
 
         return renderMethod({
