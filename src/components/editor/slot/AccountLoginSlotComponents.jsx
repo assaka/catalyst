@@ -201,6 +201,7 @@ const LoginFormSlotComponent = ({ slot, context, variableContext }) => {
   });
   const [loading, setLoading] = React.useState(false);
   const [error, setError] = React.useState('');
+  const [success, setSuccess] = React.useState('');
   const [showPassword, setShowPassword] = React.useState(false);
 
   // Get loginData from variableContext (for debugging)
@@ -230,6 +231,7 @@ const LoginFormSlotComponent = ({ slot, context, variableContext }) => {
     e.preventDefault();
     setLoading(true);
     setError('');
+    setSuccess('');
 
     try {
       console.log('🔐 LoginFormSlot: Starting login for:', formData.email);
