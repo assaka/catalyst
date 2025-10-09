@@ -5,6 +5,10 @@
 
 import React from 'react';
 import { createSlotComponent, registerSlotComponent } from './SlotComponentRegistry';
+import { Auth as AuthService } from '@/api/entities';
+import apiClient from '@/api/client';
+import { useNavigate, useParams } from 'react-router-dom';
+import { createPublicUrl } from '@/utils/urlUtils';
 
 /**
  * UserProfileSlot - User profile display with avatar and info
@@ -186,43 +190,97 @@ const ProfileFormSlot = createSlotComponent({
  * Wrapper component to use React hooks
  */
 const LoginFormSlotComponent = ({ slot, context, variableContext }) => {
-  // Use local state for testing if handlers aren't coming through
-  const [localFormData, setLocalFormData] = React.useState({
+  const navigate = useNavigate();
+  const { storeCode } = useParams();
+
+  // Local state - will be used since loginData from variableContext is empty
+  const [formData, setFormData] = React.useState({
     email: '',
     password: '',
     rememberMe: false
   });
+  const [loading, setLoading] = React.useState(false);
+  const [error, setError] = React.useState('');
+  const [showPassword, setShowPassword] = React.useState(false);
 
-  // Get loginData from variableContext
+  // Get loginData from variableContext (for debugging)
   const loginData = variableContext?.loginData || {};
+  console.log('🔍 LoginFormSlot: loginData from variableContext:', loginData, 'keys:', Object.keys(loginData));
 
-  console.log('🔍 LoginFormSlot: variableContext:', variableContext);
-  console.log('🔍 LoginFormSlot: loginData from variableContext:', loginData);
-  console.log('🔍 LoginFormSlot: loginData keys:', loginData ? Object.keys(loginData) : 'none');
+  const handleInputChange = (e) => {
+    const { name, value, type, checked } = e.target;
+    setFormData(prev => ({
+      ...prev,
+      [name]: type === 'checkbox' ? checked : value
+    }));
+  };
 
-  const {
-    formData = localFormData,
-    loading = false,
-    error = '',
-    success = '',
-    showPassword = false,
-    handleInputChange = (e) => {
-      console.log('⚠️ Using LOCAL handleInputChange');
-      const { name, value, type, checked } = e.target;
-      setLocalFormData(prev => ({
-        ...prev,
-        [name]: type === 'checkbox' ? checked : value
-      }));
-    },
-    handleSubmit = (e) => {
-      e.preventDefault();
-      console.log('⚠️ Using default handleSubmit - form data:', localFormData);
-    },
-    setShowPassword = () => { console.log('⚠️ Using default setShowPassword'); }
-  } = loginData;
+  const getCustomerAccountUrl = async () => {
+    if (storeCode) {
+      return createPublicUrl(storeCode, 'CUSTOMER_DASHBOARD');
+    }
+    const savedStoreCode = localStorage.getItem('customer_auth_store_code');
+    if (savedStoreCode) {
+      return createPublicUrl(savedStoreCode, 'CUSTOMER_DASHBOARD');
+    }
+    return createPublicUrl('default', 'CUSTOMER_DASHBOARD');
+  };
 
-  console.log('🔍 LoginFormSlot: formData:', formData);
-  console.log('🔍 LoginFormSlot: handleInputChange type:', typeof handleInputChange);
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setLoading(true);
+    setError('');
+
+    try {
+      console.log('🔐 LoginFormSlot: Starting login for:', formData.email);
+
+      const response = await AuthService.login(
+        formData.email,
+        formData.password,
+        formData.rememberMe,
+        'customer'
+      );
+
+      console.log('🔐 LoginFormSlot: Response received:', response);
+
+      let actualResponse = response;
+      if (Array.isArray(response)) {
+        actualResponse = response[0];
+      }
+
+      const isSuccess = actualResponse?.success ||
+                       actualResponse?.status === 'success' ||
+                       actualResponse?.token ||
+                       (actualResponse && Object.keys(actualResponse).length > 0);
+
+      if (isSuccess) {
+        const token = actualResponse.data?.token || actualResponse.token;
+
+        if (token) {
+          console.log('✅ LoginFormSlot: Token found, setting up session');
+          localStorage.removeItem('user_logged_out');
+          localStorage.setItem('customer_auth_token', token);
+          apiClient.setToken(token);
+
+          const accountUrl = await getCustomerAccountUrl();
+          console.log('✅ LoginFormSlot: Navigating to:', accountUrl);
+          navigate(accountUrl);
+          return;
+        } else {
+          console.error('❌ LoginFormSlot: No token in response');
+          setError('Login failed: No authentication token received');
+        }
+      } else {
+        console.error('❌ LoginFormSlot: Response not successful');
+        setError('Login failed: Invalid response from server');
+      }
+    } catch (error) {
+      console.error('❌ LoginFormSlot: Error:', error);
+      setError(error.message || 'Login failed');
+    } finally {
+      setLoading(false);
+    }
+  };
 
     return (
       <div className={slot.className} style={slot.styles}>
