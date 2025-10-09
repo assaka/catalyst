@@ -1095,19 +1095,27 @@ async function createPreliminaryOrder(session, orderData) {
   console.log('💾 Creating preliminary order with session ID:', session.id);
   console.log('🔍 Received customer_id:', customer_id);
 
-  // Validate customer_id BEFORE starting transaction - ensure it exists in the database
+  // Validate customer_id BEFORE starting transaction - ensure it exists AND matches the email
   let validatedCustomerId = null;
   if (customer_id) {
     try {
       const { Customer } = require('../models');
       console.log('🔍 Looking up customer_id in database:', customer_id);
+      console.log('🔍 Order email:', customer_email);
       const customerExists = await Customer.findByPk(customer_id);
       console.log('🔍 Customer lookup result:', customerExists ? 'Found' : 'Not found');
       console.log('🔍 Customer details:', customerExists ? { id: customerExists.id, email: customerExists.email } : 'None');
 
       if (customerExists) {
-        validatedCustomerId = customer_id;
-        console.log('✅ Validated customer_id:', customer_id);
+        // IMPORTANT: Verify that the customer email matches the order email
+        if (customerExists.email === customer_email) {
+          validatedCustomerId = customer_id;
+          console.log('✅ Validated customer_id and email match:', customer_id);
+        } else {
+          console.log('⚠️ Customer ID exists but email does not match! Customer email:', customerExists.email, 'Order email:', customer_email);
+          console.log('⚠️ This is a data integrity issue - treating as guest checkout to prevent wrong customer assignment');
+          validatedCustomerId = null;
+        }
       } else {
         console.log('⚠️ Customer ID provided but not found in database, treating as guest checkout:', customer_id);
         validatedCustomerId = null; // Explicitly set to null
@@ -1326,17 +1334,29 @@ async function createOrderFromCheckoutSession(session) {
     
     console.log('Generated order_number:', order_number);
 
-    // Validate customer_id from metadata if provided
+    // Validate customer_id from metadata if provided - must exist AND match email
     let validatedCustomerId = null;
     const metadataCustomerId = session.metadata?.customer_id;
+    const sessionEmail = session.customer_email || session.customer_details?.email;
+
     if (metadataCustomerId) {
       try {
         const { Customer } = require('../models');
         const customerExists = await Customer.findByPk(metadataCustomerId);
         console.log('🔍 Customer lookup result from metadata:', customerExists ? 'Found' : 'Not found');
+        console.log('🔍 Session email:', sessionEmail);
+        console.log('🔍 Customer email:', customerExists?.email);
+
         if (customerExists) {
-          validatedCustomerId = metadataCustomerId;
-          console.log('✅ Validated customer_id from metadata:', metadataCustomerId);
+          // IMPORTANT: Verify email match to prevent wrong customer assignment
+          if (customerExists.email === sessionEmail) {
+            validatedCustomerId = metadataCustomerId;
+            console.log('✅ Validated customer_id from metadata and email match:', metadataCustomerId);
+          } else {
+            console.log('⚠️ Customer ID exists but email mismatch! Customer email:', customerExists.email, 'Session email:', sessionEmail);
+            console.log('⚠️ Treating as guest checkout to prevent wrong customer assignment');
+            validatedCustomerId = null;
+          }
         } else {
           console.log('⚠️ Customer ID in metadata not found in database, treating as guest checkout:', metadataCustomerId);
         }
