@@ -654,6 +654,27 @@ export default function Settings() {
                 </div>
               </CardContent>
             </Card>
+
+            <Card className="material-elevation-1 border-0 mt-6">
+              <CardHeader>
+                <CardTitle>Allowed Countries for Shipping/Billing</CardTitle>
+                <CardDescription>Configure which countries are available for customer shipping and billing addresses</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-2">
+                  <Label>Select countries where your store operates</Label>
+                  <CountrySelect
+                    value={Array.isArray(store?.settings?.allowed_countries) ? store.settings.allowed_countries : []}
+                    onChange={(countries) => handleSettingsChange('allowed_countries', countries)}
+                    placeholder="Select countries where your store operates..."
+                    multiple={true}
+                  />
+                  <p className="text-sm text-gray-500">
+                    These countries will be available for shipping and billing addresses
+                  </p>
+                </div>
+              </CardContent>
+            </Card>
           </TabsContent>
 
           <TabsContent value="domain" className="mt-6">
@@ -998,25 +1019,10 @@ export default function Settings() {
                   <SettingsIcon className="w-5 h-5" />
                   Advanced Settings
                 </CardTitle>
-                <CardDescription>Configure checkout options and other advanced features</CardDescription>
+                <CardDescription>Configure other advanced features</CardDescription>
               </CardHeader>
               <CardContent className="space-y-6">
-
-                <div>
-                  <h4 className="font-medium text-gray-800 mb-4">Allowed Countries for Shipping/Billing</h4>
-                  <div className="space-y-2">
-                    <Label>Select countries where your store operates</Label>
-                    <CountrySelect
-                      value={Array.isArray(store?.settings?.allowed_countries) ? store.settings.allowed_countries : []}
-                      onChange={(countries) => handleSettingsChange('allowed_countries', countries)}
-                      placeholder="Select countries where your store operates..."
-                      multiple={true}
-                    />
-                    <p className="text-sm text-gray-500">
-                      These countries will be available for shipping and billing addresses
-                    </p>
-                  </div>
-                </div>
+                <p className="text-gray-500 text-sm">Advanced settings will be added here as needed.</p>
               </CardContent>
             </Card>
           </TabsContent>
