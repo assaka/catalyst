@@ -911,20 +911,27 @@ export default function Checkout() {
 
     if (stepsCount === 1) {
       const fullLayout = settings?.checkout_1step_layout;
-      return fullLayout?.step1 || { column1: [], column2: [], column3: [] };
+      const layoutResult = fullLayout?.step1 || { column1: [], column2: [], column3: [] };
+      console.log('1-step layout from settings:', layoutResult);
+      return layoutResult;
     }
 
     if (stepsCount === 2) {
       const fullLayout = settings?.checkout_2step_layout;
-      return fullLayout?.[stepKey] || { column1: [], column2: [], column3: [] };
+      const layoutResult = fullLayout?.[stepKey] || { column1: [], column2: [], column3: [] };
+      console.log('2-step layout from settings:', layoutResult);
+      return layoutResult;
     }
 
     // stepsCount === 3
     const fullLayout = settings?.checkout_3step_layout;
-    return fullLayout?.[stepKey] || { column1: [], column2: [], column3: [] };
+    const layoutResult = fullLayout?.[stepKey] || { column1: [], column2: [], column3: [] };
+    console.log('3-step layout from settings:', layoutResult);
+    return layoutResult;
   };
 
   const layout = getLayout();
+  console.log('Final layout being used:', layout);
 
   // Define step configurations based on step count
   const getStepConfig = () => {

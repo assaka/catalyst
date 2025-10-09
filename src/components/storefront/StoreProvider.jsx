@@ -31,10 +31,15 @@ const cleanCheckoutLayout = (layout) => {
         section === 'Delivery Options' ? 'Delivery Settings' : section
       );
 
+      // Remove "Account" section (deprecated)
+      sections = sections.filter(section => section !== 'Account');
+
       // Remove duplicates while preserving order
       cleanedLayout[stepKey][columnKey] = [...new Set(sections)];
     });
   });
+  console.log('Original layout:', layout);
+  console.log('Cleaned layout:', cleanedLayout);
   return cleanedLayout;
 };
 
