@@ -88,13 +88,19 @@ export default function StorefrontLayout({ children }) {
         });
     };
 
-    // Custom logout handler for storefront - just reload the page
+    // Custom logout handler for storefront - ONLY clears customer tokens
+    // This ensures store owner sessions are not affected when logging out from storefront
     const handleCustomerLogout = async () => {
         try {
+            // IMPORTANT: Only call CustomerAuth.logout() which only clears customer tokens
+            // This will NOT clear store_owner_auth_token or store_owner_user_data
             await CustomerAuth.logout();
+
+            // Reload page to refresh the UI and show logged out state
             window.location.reload();
         } catch (error) {
             console.error('Customer logout error:', error);
+            // Even on error, reload to ensure clean state
             window.location.reload();
         }
     };

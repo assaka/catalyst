@@ -106,15 +106,24 @@ export default function Account() {
   const handleLogout = async () => {
     try {
       await CustomerAuth.logout();
+      // CustomerAuth.logout() already removes customer tokens, but we ensure they're removed
       localStorage.removeItem('customer_auth_token');
       localStorage.removeItem('customer_auth_store_code');
       localStorage.removeItem('customer_user_data');
       localStorage.setItem('user_logged_out', 'true');
 
-      const storefrontUrl = createPublicUrl(store?.slug || 'default', 'STOREFRONT');
-      navigate(storefrontUrl);
+      // Ensure we have a valid store slug before redirecting
+      if (store?.slug) {
+        const storefrontUrl = createPublicUrl(store.slug, 'STOREFRONT');
+        navigate(storefrontUrl);
+      } else {
+        // Fallback: reload the page if no store slug is available
+        window.location.reload();
+      }
     } catch (error) {
       console.error('Logout error:', error);
+      // On error, reload the page to ensure clean state
+      window.location.reload();
     }
   };
 
