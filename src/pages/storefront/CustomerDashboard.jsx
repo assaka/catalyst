@@ -1162,8 +1162,8 @@ export default function CustomerDashboard() {
       console.log('🔍 Logout redirect - store slug:', storeSlug);
       console.log('🔍 Store object:', store);
 
-      // Redirect to the current store's storefront using the new URL structure
-      const storefrontUrl = createPublicUrl(storeSlug, 'STOREFRONT');
+      // Redirect to the current store's storefront - use /public/{storeCode} without /storefront
+      const storefrontUrl = `/public/${storeSlug}`;
       console.log('🔍 Redirecting to:', storefrontUrl);
       navigate(storefrontUrl);
     } catch (error) {
@@ -1181,8 +1181,8 @@ export default function CustomerDashboard() {
 
       console.log('🔍 Logout redirect (error) - store slug:', storeSlug);
 
-      // Redirect to the current store's storefront using the new URL structure
-      const storefrontUrl = createPublicUrl(storeSlug, 'STOREFRONT');
+      // Redirect to the current store's storefront - use /public/{storeCode} without /storefront
+      const storefrontUrl = `/public/${storeSlug}`;
       console.log('🔍 Redirecting to (error):', storefrontUrl);
       navigate(storefrontUrl);
     }
