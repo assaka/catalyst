@@ -1721,6 +1721,7 @@ export default function Checkout() {
         {/* Dynamically render columns based on layout configuration */}
         {['column1', 'column2', 'column3'].slice(0, columnCount).map((columnKey, columnIndex) => {
           const columnSections = layout[columnKey] || [];
+          console.log(`Rendering ${columnKey}:`, columnSections);
 
           return (
             <div key={columnKey} className="space-y-4 lg:space-y-6">
