@@ -15,7 +15,7 @@ import {
   Eye,
   Download
 } from 'lucide-react';
-import { formatDisplayPrice } from '@/utils/priceUtils';
+import { formatPrice, safeNumber } from '@/utils/priceUtils';
 import { getImageUrlByIndex, getPrimaryImageUrl } from '@/utils/imageUtils';
 
 // ============================================
@@ -57,9 +57,8 @@ export function ProductInfoSlot({ productContext, content }) {
 
   if (!product) return null;
 
-  const currencySymbol = settings?.currency_symbol || '🔴13';
-  const hasComparePrice = product.compare_price && parseFloat(product.compare_price) > 0 &&
-                         parseFloat(product.compare_price) !== parseFloat(product.price);
+  const hasComparePrice = product.compare_price && safeNumber(product.compare_price) > 0 &&
+                         safeNumber(product.compare_price) !== safeNumber(product.price);
 
   // Helper function to get stock label
   const getStockLabel = () => {
@@ -112,15 +111,15 @@ export function ProductInfoSlot({ productContext, content }) {
               {hasComparePrice ? (
                 <>
                   <span className="text-3xl font-bold text-red-600">
-                    {currencySymbol}{Math.min(parseFloat(product.price), parseFloat(product.compare_price)).toFixed(2)}
+                    {formatPrice(Math.min(safeNumber(product.price), safeNumber(product.compare_price)))}
                   </span>
                   <span className="text-xl text-gray-500 line-through">
-                    {currencySymbol}{Math.max(parseFloat(product.price), parseFloat(product.compare_price)).toFixed(2)}
+                    {formatPrice(Math.max(safeNumber(product.price), safeNumber(product.compare_price)))}
                   </span>
                 </>
               ) : (
                 <span className="text-3xl font-bold text-green-600">
-                  {currencySymbol}{parseFloat(product.price || 0).toFixed(2)}
+                  {formatPrice(product.price)}
                 </span>
               )}
             </div>
@@ -200,7 +199,7 @@ export function ProductOptionsSlot({ productContext, content }) {
                     <option value="">Choose {option.name}...</option>
                     {option.options.map((opt) => (
                       <option key={opt.id} value={opt.value}>
-                        {opt.name} {opt.price > 0 && `(+$${opt.price.toFixed(2)})`}
+                        {opt.name} {opt.price > 0 && `(+${formatPrice(opt.price)})`}
                       </option>
                     ))}
                   </select>
@@ -345,8 +344,6 @@ export function ProductRecommendationsSlot({ productContext, content }) {
 
   if (!relatedProducts || relatedProducts.length === 0) return null;
 
-  const currencySymbol = settings?.currency_symbol || '🔴14';
-
   return (
     <div className="product-recommendations mt-16">
       {content ? (
@@ -374,18 +371,18 @@ export function ProductRecommendationsSlot({ productContext, content }) {
                 <CardContent className="p-4">
                   <h3 className="font-medium text-gray-900 mb-2 line-clamp-2">{product.name}</h3>
                   <div className="flex items-center space-x-2 mb-2">
-                    {product.compare_price && parseFloat(product.compare_price) > parseFloat(product.price) ? (
+                    {product.compare_price && safeNumber(product.compare_price) > safeNumber(product.price) ? (
                       <>
                         <span className="font-bold text-red-600">
-                          {currencySymbol}{parseFloat(product.price).toFixed(2)}
+                          {formatPrice(product.price)}
                         </span>
                         <span className="text-sm text-gray-500 line-through">
-                          {currencySymbol}{parseFloat(product.compare_price).toFixed(2)}
+                          {formatPrice(product.compare_price)}
                         </span>
                       </>
                     ) : (
                       <span className="font-bold text-green-600">
-                        {currencySymbol}{parseFloat(product.price).toFixed(2)}
+                        {formatPrice(product.price)}
                       </span>
                     )}
                   </div>

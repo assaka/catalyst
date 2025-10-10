@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Trash2, Plus, Minus, Tag, ShoppingCart } from 'lucide-react';
-import { formatDisplayPrice } from '@/utils/priceUtils';
+import { formatPrice, safeNumber } from '@/utils/priceUtils';
 
 // ============================================
 // Cart-specific Slot Components
@@ -37,9 +37,6 @@ export function CartItemsSlot({ cartContext, content }) {
     calculateItemTotal,
     updateQuantity,
     removeItem,
-    currencySymbol,
-    safeToFixed,
-    formatDisplayPrice,
     getStoreBaseUrl
   } = cartContext;
 
@@ -92,7 +89,7 @@ export function CartItemsSlot({ cartContext, content }) {
                     {item.selected_options.map((option, index) => (
                       <span key={index} className="text-sm text-gray-600">
                         {option.name}: {option.value}
-                        {option.price > 0 && ` (+${currencySymbol}${safeToFixed(option.price)})`}
+                        {option.price > 0 && ` (+${formatPrice(option.price)})`}
                         {index < item.selected_options.length - 1 && ', '}
                       </span>
                     ))}
@@ -102,11 +99,11 @@ export function CartItemsSlot({ cartContext, content }) {
                 {/* Price */}
                 <div className="mt-1">
                   <span className="text-lg font-medium text-gray-900">
-                    {currencySymbol}{safeToFixed(calculateItemTotal(item, item.product))}
+                    {formatPrice(calculateItemTotal(item, item.product))}
                   </span>
                   {item.quantity > 1 && (
                     <span className="text-sm text-gray-600 ml-2">
-                      ({currencySymbol}{safeToFixed(item.price)} each)
+                      ({formatPrice(item.price)} each)
                     </span>
                   )}
                 </div>
@@ -159,8 +156,6 @@ export function CartSummarySlot({ cartContext, content }) {
     discount,
     tax,
     total,
-    currencySymbol,
-    safeToFixed,
     handleCheckout,
     cartItems
   } = cartContext;
@@ -178,14 +173,14 @@ export function CartSummarySlot({ cartContext, content }) {
         {/* Subtotal */}
         <div className="flex justify-between">
           <span>Subtotal</span>
-          <span>{currencySymbol}{safeToFixed(subtotal)}</span>
+          <span>{formatPrice(subtotal)}</span>
         </div>
 
         {/* Discount */}
         {discount > 0 && (
           <div className="flex justify-between text-green-600">
             <span>Discount</span>
-            <span>-{currencySymbol}{safeToFixed(discount)}</span>
+            <span>-{formatPrice(discount)}</span>
           </div>
         )}
 
@@ -193,7 +188,7 @@ export function CartSummarySlot({ cartContext, content }) {
         {tax > 0 && (
           <div className="flex justify-between">
             <span>Tax</span>
-            <span>{currencySymbol}{safeToFixed(tax)}</span>
+            <span>{formatPrice(tax)}</span>
           </div>
         )}
 
@@ -202,7 +197,7 @@ export function CartSummarySlot({ cartContext, content }) {
         {/* Total */}
         <div className="flex justify-between text-lg font-semibold">
           <span>Total</span>
-          <span>{currencySymbol}{safeToFixed(total)}</span>
+          <span>{formatPrice(total)}</span>
         </div>
 
         {/* Checkout Button */}

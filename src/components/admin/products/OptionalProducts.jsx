@@ -2,13 +2,11 @@ import React, { useState } from 'react';
 import { Plus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { formatDisplayPrice } from '@/utils/priceUtils';
+import { formatPriceWithTax } from '@/utils/priceUtils';
 import { useStore } from '@/components/storefront/StoreProvider';
 
 export default function OptionalProducts({ products, onAdd }) {
-  const { store, settings, taxes, selectedCountry } = useStore();
   const [searchTerm, setSearchTerm] = useState('');
-  const currencySymbol = settings?.currency_symbol || '🔴12';
 
   if (!products || products.length === 0) {
     return null;
@@ -43,7 +41,7 @@ export default function OptionalProducts({ products, onAdd }) {
               />
               <div>
                 <p className="font-medium">{product.name}</p>
-                <p className="text-gray-600">{formatDisplayPrice(product.price, currencySymbol, store, taxes, selectedCountry)}</p>
+                <p className="text-gray-600">{formatPriceWithTax(product.price)}</p>
               </div>
             </div>
             <Button size="sm" variant="outline" onClick={() => onAdd(product)}>

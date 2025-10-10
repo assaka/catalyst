@@ -524,12 +524,15 @@ const ProductInfo = createSlotComponent({
     }
 
     // Storefront version - full functionality
-    const { product, settings, currencySymbol } = productContext;
+    const { product, settings } = productContext;
 
     if (!product) return null;
 
-    const hasComparePrice = product.compare_price && parseFloat(product.compare_price) > 0 &&
-                           parseFloat(product.compare_price) !== parseFloat(product.price);
+    // Import utilities at top of component
+    const { formatPrice, safeNumber } = require('@/utils/priceUtils');
+
+    const hasComparePrice = product.compare_price && safeNumber(product.compare_price) > 0 &&
+                           safeNumber(product.compare_price) !== safeNumber(product.price);
 
     return (
       <div className={className} style={styles}>
@@ -543,15 +546,15 @@ const ProductInfo = createSlotComponent({
               {hasComparePrice ? (
                 <>
                   <span className="text-3xl font-bold text-red-600">
-                    {currencySymbol}{Math.min(parseFloat(product.price), parseFloat(product.compare_price)).toFixed(2)}
+                    {formatPrice(Math.min(safeNumber(product.price), safeNumber(product.compare_price)))}
                   </span>
                   <span className="text-xl text-gray-500 line-through">
-                    {currencySymbol}{Math.max(parseFloat(product.price), parseFloat(product.compare_price)).toFixed(2)}
+                    {formatPrice(Math.max(safeNumber(product.price), safeNumber(product.compare_price)))}
                   </span>
                 </>
               ) : (
                 <span className="text-3xl font-bold text-green-600">
-                  {currencySymbol}{parseFloat(product.price || 0).toFixed(2)}
+                  {formatPrice(product.price)}
                 </span>
               )}
             </div>
@@ -628,11 +631,14 @@ const ProductOptions = createSlotComponent({
                     required={option.required}
                   >
                     <option value="">Choose {option.name}...</option>
-                    {option.options.map((opt) => (
-                      <option key={opt.id} value={opt.value}>
-                        {opt.name} {opt.price > 0 && `(+$${opt.price.toFixed(2)})`}
-                      </option>
-                    ))}
+                    {option.options.map((opt) => {
+                      const { formatPrice } = require('@/utils/priceUtils');
+                      return (
+                        <option key={opt.id} value={opt.value}>
+                          {opt.name} {opt.price > 0 && `(+${formatPrice(opt.price)})`}
+                        </option>
+                      );
+                    })}
                   </select>
                 )}
               </div>
@@ -956,7 +962,8 @@ const ProductRecommendations = createSlotComponent({
     }
 
     // Storefront version - full functionality
-    const { relatedProducts, currencySymbol } = productContext;
+    const { relatedProducts } = productContext;
+    const { formatPrice, safeNumber } = require('@/utils/priceUtils');
 
     if (!relatedProducts || relatedProducts.length === 0) return null;
 
@@ -984,18 +991,18 @@ const ProductRecommendations = createSlotComponent({
                 <CardContent className="p-4">
                   <h3 className="font-medium text-gray-900 mb-2 line-clamp-2">{relatedProduct.name}</h3>
                   <div className="flex items-center space-x-2 mb-2">
-                    {relatedProduct.compare_price && parseFloat(relatedProduct.compare_price) > parseFloat(relatedProduct.price) ? (
+                    {relatedProduct.compare_price && safeNumber(relatedProduct.compare_price) > safeNumber(relatedProduct.price) ? (
                       <>
                         <span className="font-bold text-red-600">
-                          {currencySymbol}{parseFloat(relatedProduct.price).toFixed(2)}
+                          {formatPrice(relatedProduct.price)}
                         </span>
                         <span className="text-sm text-gray-500 line-through">
-                          {currencySymbol}{parseFloat(relatedProduct.compare_price).toFixed(2)}
+                          {formatPrice(relatedProduct.compare_price)}
                         </span>
                       </>
                     ) : (
                       <span className="font-bold text-green-600">
-                        {currencySymbol}{parseFloat(relatedProduct.price).toFixed(2)}
+                        {formatPrice(relatedProduct.price)}
                       </span>
                     )}
                   </div>
@@ -1047,7 +1054,7 @@ const CustomOptions = createSlotComponent({
       try {
         const CustomOptionRule = (await import('@/api/entities')).CustomOptionRule;
         const StorefrontProduct = (await import('@/api/storefront-entities')).StorefrontProduct;
-        const formatDisplayPrice = (await import('@/utils/priceUtils')).formatDisplayPrice;
+        const { formatPrice, safeNumber } = await import('@/utils/priceUtils');
 
         const rules = await CustomOptionRule.filter({
           store_id: store.id,
@@ -1078,20 +1085,20 @@ const CustomOptions = createSlotComponent({
             if (products?.[0]?.is_custom_option) {
               const option = products[0];
               const isSelected = selectedOptions?.some(s => s.product_id === option.id);
-              const hasSpecialPrice = option.compare_price && parseFloat(option.compare_price) > 0;
+              const hasSpecialPrice = option.compare_price && safeNumber(option.compare_price) > 0;
               const displayPrice = hasSpecialPrice
-                ? Math.min(parseFloat(option.price || 0), parseFloat(option.compare_price || 0))
-                : parseFloat(option.price || 0);
+                ? Math.min(safeNumber(option.price), safeNumber(option.compare_price))
+                : safeNumber(option.price);
               const originalPrice = hasSpecialPrice
-                ? Math.max(parseFloat(option.price || 0), parseFloat(option.compare_price || 0))
+                ? Math.max(safeNumber(option.price), safeNumber(option.compare_price))
                 : null;
 
               optionProducts.push({
                 ...option,
                 isSelected,
                 hasSpecialPrice,
-                displayPrice: formatDisplayPrice(displayPrice, settings?.currency_symbol || '🔴6'),
-                originalPrice: originalPrice ? formatDisplayPrice(originalPrice, settings?.currency_symbol || '🔴7') : null
+                displayPrice: formatPrice(displayPrice),
+                originalPrice: originalPrice ? formatPrice(originalPrice) : null
               });
             }
           } catch (err) {
@@ -1123,12 +1130,13 @@ const CustomOptions = createSlotComponent({
         const { selectedOptions } = productContext;
         const isSelected = selectedOptions?.some(s => s.product_id === option.id);
 
+        const { safeNumber } = require('@/utils/priceUtils');
         const newSelectedOptions = isSelected
           ? selectedOptions.filter(s => s.product_id !== option.id)
           : [...(selectedOptions || []), {
               product_id: option.id,
               name: option.name,
-              price: parseFloat(option.price || 0)
+              price: safeNumber(option.price)
             }];
 
         productContext.handleOptionChange(newSelectedOptions);
@@ -1344,10 +1352,10 @@ const CartItemsSlot = createSlotComponent({
       cartItems = [],
       calculateItemTotal = () => 0,
       updateQuantity = () => {},
-      removeItem = () => {},
-      currencySymbol = '🔴9',
-      safeToFixed = (value) => parseFloat(value || 0).toFixed(2)
+      removeItem = () => {}
     } = cartContext;
+
+    const { formatPrice } = require('@/utils/priceUtils');
 
     if (cartItems.length === 0) {
       return (
@@ -1385,14 +1393,14 @@ const CartItemsSlot = createSlotComponent({
           // Update item price display
           const priceDisplay = cartItemEl.querySelector('.text-sm.text-gray-600');
           if (priceDisplay && priceDisplay.textContent.includes('×')) {
-            priceDisplay.textContent = `${currencySymbol}${safeToFixed(item.price)} × ${item.quantity}`;
+            priceDisplay.textContent = `${formatPrice(item.price)} × ${item.quantity}`;
           }
 
           // Update item total
           const itemTotalEl = cartItemEl.querySelector('[data-item-total]');
           if (itemTotalEl) {
             const total = calculateItemTotal(item, item.product);
-            itemTotalEl.textContent = `${currencySymbol}${safeToFixed(total)}`;
+            itemTotalEl.textContent = formatPrice(total);
           }
         }
       });
@@ -1408,7 +1416,7 @@ const CartItemsSlot = createSlotComponent({
             container.innerHTML = item.selected_options.map(opt =>
               `<div class="text-sm text-gray-600">
                 <div>+ ${opt.name}</div>
-                <div class="ml-2 text-xs">${currencySymbol}${safeToFixed(opt.price)} × ${item.quantity}</div>
+                <div class="ml-2 text-xs">${formatPrice(opt.price)} × ${item.quantity}</div>
               </div>`
             ).join('');
           }
@@ -1447,7 +1455,7 @@ const CartItemsSlot = createSlotComponent({
           containerRef.current.removeEventListener('click', handleClick);
         }
       };
-    }, [cartItems, calculateItemTotal, updateQuantity, removeItem, currencySymbol, safeToFixed]);
+    }, [cartItems, calculateItemTotal, updateQuantity, removeItem]);
 
     return (
       <div ref={containerRef} className={className} style={styles}
@@ -1560,11 +1568,11 @@ const CartOrderSummarySlot = createSlotComponent({
       tax = 0,
       total = 0,
       customOptionsTotal = 0,
-      currencySymbol = '🔴10',
-      safeToFixed = (val) => parseFloat(val || 0).toFixed(2),
       handleCheckout = () => {},
       appliedCoupon = null
     } = cartContext || {};
+
+    const { formatPrice } = require('@/utils/priceUtils');
 
     const processedContent = processVariables(content, variableContext);
 
@@ -1582,14 +1590,14 @@ const CartOrderSummarySlot = createSlotComponent({
       const totalEl = containerRef.current.querySelector('[data-total]');
       const checkoutBtn = containerRef.current.querySelector('[data-action="checkout"]');
 
-      if (subtotalEl) subtotalEl.textContent = `${currencySymbol}${safeToFixed(subtotal)}`;
-      if (taxEl) taxEl.textContent = `${currencySymbol}${safeToFixed(tax)}`;
-      if (totalEl) totalEl.textContent = `${currencySymbol}${safeToFixed(total)}`;
+      if (subtotalEl) subtotalEl.textContent = formatPrice(subtotal);
+      if (taxEl) taxEl.textContent = formatPrice(tax);
+      if (totalEl) totalEl.textContent = formatPrice(total);
 
       // Show/hide custom options
       if (customOptionsTotal > 0) {
         if (customOptionsRow) customOptionsRow.style.display = 'flex';
-        if (customOptionsEl) customOptionsEl.textContent = `+${currencySymbol}${safeToFixed(customOptionsTotal)}`;
+        if (customOptionsEl) customOptionsEl.textContent = `+${formatPrice(customOptionsTotal)}`;
       } else {
         if (customOptionsRow) customOptionsRow.style.display = 'none';
       }
@@ -1598,7 +1606,7 @@ const CartOrderSummarySlot = createSlotComponent({
       if (appliedCoupon && discount > 0) {
         if (discountRow) discountRow.style.display = 'flex';
         if (discountLabelEl) discountLabelEl.textContent = `Discount (${appliedCoupon.name})`;
-        if (discountEl) discountEl.textContent = `-${currencySymbol}${safeToFixed(discount)}`;
+        if (discountEl) discountEl.textContent = `-${formatPrice(discount)}`;
       } else {
         if (discountRow) discountRow.style.display = 'none';
       }
@@ -1613,7 +1621,7 @@ const CartOrderSummarySlot = createSlotComponent({
           checkoutBtn.removeEventListener('click', handleCheckout);
         }
       };
-    }, [subtotal, discount, tax, total, customOptionsTotal, currencySymbol, safeToFixed, handleCheckout, appliedCoupon]);
+    }, [subtotal, discount, tax, total, customOptionsTotal, handleCheckout, appliedCoupon]);
 
     return (
       <div ref={containerRef} className={className} style={styles}
