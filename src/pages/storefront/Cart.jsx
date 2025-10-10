@@ -41,24 +41,8 @@ const getSessionId = () => {
 
 const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 
-// Safe number formatting helper with hooks
-const formatPrice = (value, context = {}) => {
-  const num = parseFloat(value);
-  const basePrice = isNaN(num) ? 0 : num;
-
-  // Apply pricing hooks
-  return hookSystem.apply('pricing.format', basePrice, context);
-};
-
-// safeToFixed is now replaced with formatPriceUtil from priceUtils
-const safeToFixed = (value) => {
-    return formatPriceUtil(value);
-};
-
-// Price formatting function for cart context (wraps new priceUtils API)
-const formatDisplayPrice = (price) => {
-    return formatPriceWithTax(price);
-};
+// Use centralized price formatting from priceUtils
+// formatPriceUtil already handles currency symbols and decimal places
 
 // Simplified retry function without artificial delays
 const simpleRetry = async (apiCall, maxRetries = 2) => {
@@ -645,7 +629,7 @@ export default function Cart() {
                 couponService.removeAppliedCoupon();
                 setFlashMessage({
                     type: 'warning',
-                    message: `Coupon "${coupon.name}" was removed because the minimum order amount of ${safeToFixed(coupon.min_purchase_amount)} is no longer met.`
+                    message: `Coupon "${coupon.name}" was removed because the minimum order amount of ${formatPriceUtil(coupon.min_purchase_amount)} is no longer met.`
                 });
                 return;
             }
@@ -708,7 +692,7 @@ export default function Cart() {
                 if (coupon.min_purchase_amount && subtotal < coupon.min_purchase_amount) {
                     setFlashMessage({
                         type: 'error',
-                        message: `Minimum order amount of ${safeToFixed(coupon.min_purchase_amount)} required for this coupon.`
+                        message: `Minimum order amount of ${formatPriceUtil(coupon.min_purchase_amount)} required for this coupon.`
                     });
                     return;
                 }
@@ -790,24 +774,24 @@ export default function Cart() {
     const calculateItemTotal = useCallback((item, product) => {
         if (!item || !product) return 0;
 
-        let basePrice = formatPrice(item.price); // Try to use price stored in the cart item itself
+        let basePrice = safeNumber(item.price); // Try to use price stored in the cart item itself
         if (basePrice <= 0) { // If item.price is not a valid positive number
-            basePrice = formatPrice(product.sale_price || product.price || 0); // Fallback to product's current sale_price or price
+            basePrice = safeNumber(product.sale_price || product.price || 0); // Fallback to product's current sale_price or price
         }
-        
+
         let optionsPrice = 0;
         if (item.selected_options && Array.isArray(item.selected_options)) {
-            optionsPrice = item.selected_options.reduce((sum, option) => sum + formatPrice(option.price), 0);
+            optionsPrice = item.selected_options.reduce((sum, option) => sum + safeNumber(option.price), 0);
         }
-        
-        return (basePrice + optionsPrice) * (formatPrice(item.quantity) || 1);
+
+        return (basePrice + optionsPrice) * (safeNumber(item.quantity) || 1);
     }, []);
 
     const calculateSubtotal = useCallback(() => {
         return cartItems.reduce((total, item) => {
             // Subtotal is base product price only (without custom options)
-            const basePrice = formatPrice(item.price) || formatPrice(item.product?.sale_price || item.product?.price || 0);
-            return total + (basePrice * (formatPrice(item.quantity) || 1));
+            const basePrice = safeNumber(item.price) || safeNumber(item.product?.sale_price || item.product?.price || 0);
+            return total + (basePrice * (safeNumber(item.quantity) || 1));
         }, 0);
     }, [cartItems]);
 
@@ -818,9 +802,9 @@ export default function Cart() {
         const calculatedCustomOptionsTotal = cartItems.reduce((total, item) => {
             if (item.selected_options && Array.isArray(item.selected_options)) {
                 const optionsPrice = item.selected_options.reduce((sum, option) =>
-                    sum + formatPrice(option.price), 0
+                    sum + safeNumber(option.price), 0
                 );
-                return total + (optionsPrice * (formatPrice(item.quantity) || 1));
+                return total + (optionsPrice * (safeNumber(item.quantity) || 1));
             }
             return total;
         }, 0);
@@ -831,13 +815,13 @@ export default function Cart() {
         let disc = 0;
         if (appliedCoupon) {
             if (appliedCoupon.discount_type === 'fixed') {
-                disc = formatPrice(appliedCoupon.discount_value);
+                disc = safeNumber(appliedCoupon.discount_value);
             } else if (appliedCoupon.discount_type === 'percentage') {
-                disc = calculatedTotalWithOptions * (formatPrice(appliedCoupon.discount_value) / 100);
+                disc = calculatedTotalWithOptions * (safeNumber(appliedCoupon.discount_value) / 100);
 
                 // Apply max discount limit if specified
-                if (appliedCoupon.max_discount_amount && disc > formatPrice(appliedCoupon.max_discount_amount)) {
-                    disc = formatPrice(appliedCoupon.max_discount_amount);
+                if (appliedCoupon.max_discount_amount && disc > safeNumber(appliedCoupon.max_discount_amount)) {
+                    disc = safeNumber(appliedCoupon.max_discount_amount);
                 }
             } else if (appliedCoupon.discount_type === 'free_shipping') {
                 // For free shipping, the discount is 0 here but would be applied to shipping cost
@@ -971,7 +955,7 @@ export default function Cart() {
         loading,
         storeLoading,
         calculateItemTotal,
-        safeToFixed,
+        formatPrice: formatPriceUtil, // Use centralized formatPrice
         updateQuantity,
         removeItem,
         handleCheckout,
@@ -980,7 +964,7 @@ export default function Cart() {
         handleCouponKeyPress,
         setCouponCode,
         setFlashMessage,
-        formatDisplayPrice,
+        formatDisplayPrice: formatPriceWithTax, // Use centralized formatPriceWithTax
         getStoreBaseUrl,
         getExternalStoreUrl,
         // Layout configuration - merge the cart layout config into the data
@@ -1036,7 +1020,7 @@ export default function Cart() {
                                 taxes,
                                 selectedCountry,
                                 calculateItemTotal,
-                                safeToFixed,
+                                formatPrice: formatPriceUtil, // Use centralized formatPrice
                                 updateQuantity,
                                 removeItem,
                                 handleCheckout,
@@ -1044,7 +1028,7 @@ export default function Cart() {
                                 handleRemoveCoupon,
                                 handleCouponKeyPress,
                                 setCouponCode,
-                                formatDisplayPrice,
+                                formatDisplayPrice: formatPriceWithTax, // Use centralized formatPriceWithTax
                                 getStoreBaseUrl,
                                 navigate
                             }}
