@@ -14,8 +14,41 @@ import { createProductUrl } from '@/utils/urlUtils';
 import { formatPrice, getPriceDisplay } from '@/utils/priceUtils';
 
 /**
- * CategorySlotRenderer - Renders slots with full category functionality
- * Follows the same structure as CartSlotRenderer for consistency
+ * CategorySlotRenderer - Data Processor & Slot Tree Renderer for Category Pages
+ *
+ * ARCHITECTURE FLOW:
+ * Category.jsx (raw data from API)
+ *   → CategorySlotRenderer (THIS FILE - formats data & processes slots)
+ *     → ComponentRegistry.get('ComponentName')
+ *       → CategorySlotComponents (component implementations)
+ *         → UnifiedSlotRenderer (renders individual slot elements)
+ *           → processVariables (replaces {{template}} variables)
+ *
+ * PRIMARY RESPONSIBILITIES:
+ * 1. Format products using getPriceDisplay() - SINGLE SOURCE OF TRUTH for price display
+ * 2. Create variableContext with pre-formatted data
+ * 3. Process slot tree (filter by viewMode, sort by position)
+ * 4. Render slots by type (component, container, text, image, etc.)
+ * 5. Call ComponentRegistry for registered components
+ *
+ * CRITICAL: Price Formatting
+ * - Lines 192-220: Format products using getPriceDisplay() utility
+ * - This is the ONLY place where product prices should be formatted
+ * - All downstream components use pre-formatted prices from variableContext
+ * - DO NOT re-format prices in components - use price_formatted/compare_price_formatted
+ *
+ * DATA FLOW:
+ * Input:  categoryContext (raw products with price, compare_price)
+ * Output: variableContext (formatted products with price_formatted, compare_price_formatted)
+ *
+ * DUAL MODE SUPPORT:
+ * - Storefront mode: Renders for end users
+ * - Editor mode: N/A (editor uses UnifiedSlotsEditor directly)
+ *
+ * @see CategorySlotComponents.jsx - Component implementations
+ * @see UnifiedSlotRenderer.jsx - Individual slot element renderer
+ * @see variableProcessor.js - Template variable replacement
+ * @see priceUtils.js - getPriceDisplay() utility
  */
 export function CategorySlotRenderer({
   slots,
@@ -193,6 +226,9 @@ export function CategorySlotRenderer({
         // Use the centralized getPriceDisplay utility
         const priceInfo = getPriceDisplay(product);
 
+        // Calculate stock status
+        const isInStock = product.infinite_stock || (product.stock_quantity !== undefined && product.stock_quantity > 0);
+
         return {
           ...product,
           // Use getPriceDisplay results for consistent pricing
@@ -205,7 +241,10 @@ export function CategorySlotRenderer({
           formatted_compare_price: priceInfo.hasComparePrice ? formatPrice(priceInfo.originalPrice) : null,
           image_url: getProductImageUrl ? getProductImageUrl(product) : (product.images?.[0]?.url || product.image_url || product.image || ''),
           url: product.url || createProductUrl(store?.public_storecode || store?.slug || store?.code, product.slug || product.id),
-          in_stock: product.infinite_stock || product.stock_quantity > 0, // Check infinite_stock or positive stock_quantity
+          in_stock: isInStock,
+          // Add stock label and class for templates
+          stock_label: isInStock ? 'In Stock' : 'Out of Stock',
+          stock_label_class: isInStock ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800',
           labels: productLabels?.filter(label => {
             // Check if product has this label
             if (label.type === 'new' && product.is_new) return true;
