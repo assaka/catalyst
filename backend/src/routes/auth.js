@@ -29,20 +29,23 @@ const getModelForContext = (endpoint) => {
 const generateToken = (user, rememberMe = false) => {
   const expiresIn = rememberMe ? '30d' : (process.env.JWT_EXPIRES_IN || '24h');
   const sessionId = generateSessionId();
-  
-  return jwt.sign(
-    { 
-      id: user.id, 
-      email: user.email, 
-      role: user.role, 
-      account_type: user.account_type,
-      session_id: sessionId,
-      session_role: user.role,
-      issued_at: Date.now()
-    },
-    process.env.JWT_SECRET,
-    { expiresIn }
-  );
+
+  const payload = {
+    id: user.id,
+    email: user.email,
+    role: user.role,
+    account_type: user.account_type,
+    session_id: sessionId,
+    session_role: user.role,
+    issued_at: Date.now()
+  };
+
+  // Include store_id for customers to enforce store binding
+  if (user.role === 'customer' && user.store_id) {
+    payload.store_id = user.store_id;
+  }
+
+  return jwt.sign(payload, process.env.JWT_SECRET, { expiresIn });
 };
 
 // Generate unique session ID

@@ -1121,6 +1121,8 @@ async function createPreliminaryOrder(session, orderData) {
 
   console.log('💾 Creating preliminary order with session ID:', session.id);
   console.log('🔍 Received customer_id:', customer_id);
+  console.log('🔍 Received shipping_address:', JSON.stringify(shipping_address, null, 2));
+  console.log('🔍 Received billing_address:', JSON.stringify(billing_address, null, 2));
 
   // Validate customer_id BEFORE starting transaction - ensure it exists AND matches the email
   let validatedCustomerId = null;
@@ -1183,6 +1185,13 @@ async function createPreliminaryOrder(session, orderData) {
 
     console.log('💾 Generated order_number:', order_number);
 
+    // Ensure addresses are objects and not null/undefined
+    const finalShippingAddress = shipping_address && typeof shipping_address === 'object' ? shipping_address : {};
+    const finalBillingAddress = billing_address && typeof billing_address === 'object' ? billing_address : (shipping_address && typeof shipping_address === 'object' ? shipping_address : {});
+
+    console.log('💾 Final shipping address for order:', JSON.stringify(finalShippingAddress, null, 2));
+    console.log('💾 Final billing address for order:', JSON.stringify(finalBillingAddress, null, 2));
+
     // Create the preliminary order
     const order = await Order.create({
       order_number: order_number,
@@ -1191,8 +1200,8 @@ async function createPreliminaryOrder(session, orderData) {
       fulfillment_status: 'pending',
       customer_email,
       customer_id: validatedCustomerId, // Only set if customer exists in database
-      billing_address: billing_address || shipping_address,
-      shipping_address,
+      billing_address: finalBillingAddress,
+      shipping_address: finalShippingAddress,
       subtotal: subtotal.toFixed(2),
       tax_amount: taxAmountNum.toFixed(2),
       shipping_amount: shippingCostNum.toFixed(2),
