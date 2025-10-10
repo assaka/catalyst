@@ -2,6 +2,7 @@ const express = require('express');
 const { Customer } = require('../models');
 const { authMiddleware } = require('../middleware/auth');
 const { storeOwnerOnly } = require('../middleware/auth');
+const { enforceCustomerStoreBinding } = require('../middleware/customerStoreAuth');
 const { Op } = require('sequelize');
 
 const router = express.Router();
@@ -63,7 +64,7 @@ router.get('/', storeOwnerOnly, async (req, res) => {
 // @route   GET /api/customers/:id
 // @desc    Get single customer
 // @access  Private
-router.get('/:id', authMiddleware, async (req, res) => {
+router.get('/:id', authMiddleware, enforceCustomerStoreBinding, async (req, res) => {
   try {
     const customer = await Customer.findByPk(req.params.id);
 
@@ -71,6 +72,22 @@ router.get('/:id', authMiddleware, async (req, res) => {
       return res.status(404).json({
         success: false,
         message: 'Customer not found'
+      });
+    }
+
+    // If this is a customer user, ensure they can only view their own profile
+    if (req.user.role === 'customer' && customer.id !== req.user.id) {
+      return res.status(403).json({
+        success: false,
+        message: 'Access denied. You can only view your own profile.'
+      });
+    }
+
+    // If this is a customer user, verify the customer belongs to their store
+    if (req.user.role === 'customer' && customer.store_id !== req.customerStoreId) {
+      return res.status(403).json({
+        success: false,
+        message: 'Access denied. Customer belongs to a different store.'
       });
     }
 
@@ -109,7 +126,7 @@ router.post('/', authMiddleware, async (req, res) => {
 // @route   PUT /api/customers/:id
 // @desc    Update customer
 // @access  Private
-router.put('/:id', authMiddleware, async (req, res) => {
+router.put('/:id', authMiddleware, enforceCustomerStoreBinding, async (req, res) => {
   try {
     const customer = await Customer.findByPk(req.params.id);
 
@@ -117,6 +134,30 @@ router.put('/:id', authMiddleware, async (req, res) => {
       return res.status(404).json({
         success: false,
         message: 'Customer not found'
+      });
+    }
+
+    // If this is a customer user, ensure they can only update their own profile
+    if (req.user.role === 'customer' && customer.id !== req.user.id) {
+      return res.status(403).json({
+        success: false,
+        message: 'Access denied. You can only update your own profile.'
+      });
+    }
+
+    // If this is a customer user, verify the customer belongs to their store
+    if (req.user.role === 'customer' && customer.store_id !== req.customerStoreId) {
+      return res.status(403).json({
+        success: false,
+        message: 'Access denied. Customer belongs to a different store.'
+      });
+    }
+
+    // Prevent customers from changing their store_id
+    if (req.user.role === 'customer' && req.body.store_id && req.body.store_id !== customer.store_id) {
+      return res.status(403).json({
+        success: false,
+        message: 'Access denied. Customers cannot change their store assignment.'
       });
     }
 

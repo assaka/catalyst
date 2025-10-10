@@ -1007,6 +1007,15 @@ router.post('/customer/login', [
       });
     }
 
+    // Verify customer has a store assigned
+    if (!customer.store_id) {
+      console.log('⚠️ Customer has no store assigned:', customer.id);
+      return res.status(403).json({
+        success: false,
+        message: 'Customer account is not assigned to a store. Please contact support.'
+      });
+    }
+
     // Log successful attempt
     await LoginAttempt.create({
       email,

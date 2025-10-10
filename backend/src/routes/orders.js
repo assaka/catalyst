@@ -3,6 +3,7 @@ const { body, validationResult } = require('express-validator');
 const { Order, OrderItem, Store, Product } = require('../models');
 const { Op } = require('sequelize');
 const { authMiddleware } = require('../middleware/auth');
+const { validateCustomerOrderAccess } = require('../middleware/customerStoreAuth');
 const router = express.Router();
 
 // @route   GET /api/orders/test
@@ -222,10 +223,11 @@ router.get('/customer-orders', authMiddleware, async (req, res) => {
     }
 
     const customerId = req.user.id;
-    console.log('🔍 Loading orders for customer ID:', customerId);
+    const customerStoreId = req.user.store_id; // Get from JWT token
+    console.log('🔍 Loading orders for customer ID:', customerId, 'Store ID:', customerStoreId);
     console.log('🔍 Customer ID type:', typeof customerId);
     console.log('🔍 Customer ID length:', customerId?.length);
-    
+
     // Validate that customerId is a valid UUID format
     const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
     if (!customerId || !uuidRegex.test(customerId)) {
@@ -237,11 +239,19 @@ router.get('/customer-orders', authMiddleware, async (req, res) => {
     }
 
     // Enhanced query with full order details including order items and store info
+    // IMPORTANT: Filter by both customer_id AND store_id to prevent cross-store access
     console.log('🔍 About to execute enhanced Sequelize query with customer_id:', customerId);
-    
+
     const whereClause = { customer_id: customerId };
+
+    // Add store_id filter if available from JWT
+    if (customerStoreId) {
+      whereClause.store_id = customerStoreId;
+      console.log('🔒 Enforcing store binding: only orders from store', customerStoreId);
+    }
+
     console.log('🔍 Where clause:', JSON.stringify(whereClause, null, 2));
-    
+
     const orders = await Order.findAll({
       where: whereClause,
       order: [['created_at', 'DESC']],
@@ -327,7 +337,7 @@ router.get('/customer-orders', authMiddleware, async (req, res) => {
 // @route   PUT /api/orders/customer-orders/:orderId/status
 // @desc    Update order status for customer orders
 // @access  Private (customer authentication required)
-router.put('/customer-orders/:orderId/status', authMiddleware, async (req, res) => {
+router.put('/customer-orders/:orderId/status', authMiddleware, validateCustomerOrderAccess, async (req, res) => {
   try {
     const { orderId } = req.params;
     const { status, notes } = req.body;
