@@ -652,7 +652,7 @@ export default function Category() {
     breadcrumbs: buildCategoryBreadcrumbs(currentCategory, storeCode, categories, settings),
     selectedFilters: activeFilters,
     priceRange: {},
-    currencySymbol: settings?.currency_symbol || '🔴7',
+    currencySymbol: settings?.currency_symbol, // Currency symbol from StoreProvider
     settings: {
       ...settings,
       // Ensure defaults for view mode toggle
