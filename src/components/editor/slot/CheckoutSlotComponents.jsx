@@ -5,6 +5,7 @@
 
 import React from 'react';
 import { createSlotComponent, registerSlotComponent } from './SlotComponentRegistry';
+import { formatPrice } from '@/utils/priceUtils';
 
 /**
  * CheckoutStepsSlot - Checkout progress steps
@@ -129,19 +130,19 @@ const OrderSummarySlot = createSlotComponent({
           <div className="space-y-3 mb-4">
             <div className="flex justify-between text-sm">
               <span>Subtotal</span>
-              <span>${subtotal.toFixed(2)}</span>
+              <span>{formatPrice(subtotal)}</span>
             </div>
             <div className="flex justify-between text-sm">
               <span>Shipping</span>
-              <span>$0.00</span>
+              <span>{formatPrice(0)}</span>
             </div>
             <div className="flex justify-between text-sm">
               <span>Tax</span>
-              <span>${tax.toFixed(2)}</span>
+              <span>{formatPrice(tax)}</span>
             </div>
             <div className="border-t pt-3 flex justify-between font-bold">
               <span>Total</span>
-              <span>${total.toFixed(2)}</span>
+              <span>{formatPrice(total)}</span>
             </div>
           </div>
           <button className="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-3 rounded-md">

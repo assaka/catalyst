@@ -9,6 +9,7 @@ import CmsBlockRenderer from '@/components/storefront/CmsBlockRenderer';
 import { useStore } from '@/components/storefront/StoreProvider';
 import { UnifiedSlotRenderer } from './UnifiedSlotRenderer';
 import { processVariables } from '@/utils/variableProcessor';
+import { formatPrice } from '@/utils/priceUtils';
 
 // Active Filters Component with processVariables
 const ActiveFilters = createSlotComponent({
@@ -713,8 +714,8 @@ const ProductItemsGrid = createSlotComponent({
         const isInStock = p.infinite_stock || (p.stock_quantity !== undefined && p.stock_quantity > 0);
         return {
           ...p,
-          price_formatted: p.price_formatted || `$${parseFloat(p.price || 0).toFixed(2)}`,
-          compare_price_formatted: p.compare_price ? `$${parseFloat(p.compare_price).toFixed(2)}` : null,
+          price_formatted: p.price_formatted || formatPrice(p.price || 0),
+          compare_price_formatted: p.compare_price ? formatPrice(p.compare_price) : null,
           image_url: p.image_url || p.images?.[0]?.url || p.images?.[0] || '/placeholder-product.jpg',
           in_stock: p.in_stock !== undefined ? p.in_stock : (p.stock_status === 'in_stock'),
           stock_label: isInStock ? 'In Stock' : 'Out of Stock',
@@ -930,8 +931,8 @@ const ProductItemsGrid = createSlotComponent({
       const isInStock = p.infinite_stock || (p.stock_quantity !== undefined && p.stock_quantity > 0);
       return {
         ...p,
-        price_formatted: p.price_formatted || `$${parseFloat(p.price || 0).toFixed(2)}`,
-        compare_price_formatted: p.compare_price ? `$${parseFloat(p.compare_price).toFixed(2)}` : null,
+        price_formatted: p.price_formatted || formatPrice(p.price || 0),
+        compare_price_formatted: p.compare_price ? formatPrice(p.compare_price) : null,
         image_url: p.image_url || p.images?.[0]?.url || p.images?.[0] || '/placeholder-product.jpg',
         in_stock: p.in_stock !== undefined ? p.in_stock : (p.stock_status === 'in_stock'),
         stock_label: isInStock ? 'In Stock' : 'Out of Stock',
