@@ -129,6 +129,7 @@ export default function CustomerAuth() {
 
         if (!storeId) {
           setError("Store information not available. Please refresh the page.");
+          setAuthLoading(false);
           return;
         }
 
@@ -180,6 +181,7 @@ export default function CustomerAuth() {
 
         if (!storeId) {
           setError("Store information not available. Please refresh the page.");
+          setAuthLoading(false);
           return;
         }
 
@@ -225,7 +227,8 @@ export default function CustomerAuth() {
     }
   };
 
-  if (loading || !configLoaded) {
+  // Wait for both config AND store to be loaded before rendering
+  if (loading || !configLoaded || !store) {
     return (
       <div className="flex items-center justify-center min-h-[50vh]">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
