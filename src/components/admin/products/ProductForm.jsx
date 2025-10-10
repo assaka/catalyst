@@ -63,6 +63,7 @@ export default function ProductForm({ product, categories, stores, taxes, attrib
     dimensions: { length: "", width: "", height: "" },
     category_ids: [],
     images: [], // JSON array of {attribute_code, filepath, filesize}
+    type: "simple", // Product type: simple, configurable, bundle, etc.
     status: "active",
     visibility: "visible",
     manage_stock: true,
@@ -73,6 +74,7 @@ export default function ProductForm({ product, categories, stores, taxes, attrib
     is_custom_option: false,
     is_coupon_eligible: false,
     attribute_set_id: "", // Default to empty string for 'None'
+    configurable_attributes: [], // Array of attribute IDs for configurable products
     attributes: {},
     seo: {
       meta_title: "",
@@ -115,6 +117,7 @@ export default function ProductForm({ product, categories, stores, taxes, attrib
         dimensions: product.dimensions || { length: "", width: "", height: "" },
         category_ids: Array.isArray(product.category_ids) ? product.category_ids : [],
         images: Array.isArray(product.images) ? product.images : [],
+        type: product.type || "simple", // Product type
         status: product.status || "active",
         visibility: product.visibility || "visible",
         manage_stock: product.manage_stock !== undefined ? product.manage_stock : true,
@@ -125,6 +128,7 @@ export default function ProductForm({ product, categories, stores, taxes, attrib
         is_custom_option: product.is_custom_option || false,
         is_coupon_eligible: product.is_coupon_eligible || false,
         attribute_set_id: finalAttrSetId, // Use the validated ID
+        configurable_attributes: Array.isArray(product.configurable_attributes) ? product.configurable_attributes : [], // Configurable attributes
         attributes: product.attributes || product.attribute_values || {},
         seo: product.seo ? { // Ensure product.seo is handled, providing defaults for new fields
           meta_title: product.seo.meta_title || "",
@@ -161,6 +165,7 @@ export default function ProductForm({ product, categories, stores, taxes, attrib
             dimensions: { length: "", width: "", height: "" },
             category_ids: [],
             images: [],
+            type: "simple", // Default to simple product
             status: "active",
             visibility: "visible",
             manage_stock: true,
@@ -171,6 +176,7 @@ export default function ProductForm({ product, categories, stores, taxes, attrib
             is_custom_option: false,
             is_coupon_eligible: false,
             attribute_set_id: "",
+            configurable_attributes: [], // Default empty for new products
             attributes: {},
             seo: { meta_title: "", meta_description: "", meta_keywords: "", url_key: "", meta_robots_tag: "null" }, // Default for new product
             related_product_ids: [],
@@ -568,6 +574,7 @@ export default function ProductForm({ product, categories, stores, taxes, attrib
         // Product images - unified system (JSON array with attribute_code, filepath, filesize)
         images: Array.isArray(formData.images) ? formData.images : [],
         category_ids: Array.isArray(formData.category_ids) ? formData.category_ids : [],
+        type: formData.type || "simple", // Product type
         status: formData.status,
         visibility: formData.visibility,
         manage_stock: Boolean(formData.manage_stock),
@@ -580,6 +587,7 @@ export default function ProductForm({ product, categories, stores, taxes, attrib
         featured: Boolean(formData.featured),
         store_id: storeToUse.id,
         attribute_set_id: formData.attribute_set_id || null, // Ensure null if empty string for API
+        configurable_attributes: Array.isArray(formData.configurable_attributes) ? formData.configurable_attributes : [], // Configurable attributes
         attributes: formData.attributes || {},
         seo: {
           meta_title: formData.seo.meta_title || "",
@@ -771,6 +779,29 @@ export default function ProductForm({ product, categories, stores, taxes, attrib
                     </SelectContent>
                   </Select>
                 </div>
+              </div>
+
+              <div className="mt-4">
+                <Label htmlFor="product_type">Product Type</Label>
+                <Select value={formData.type} onValueChange={(v) => handleInputChange("type", v)}>
+                  <SelectTrigger><SelectValue placeholder="Select product type" /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="simple">Simple Product</SelectItem>
+                    <SelectItem value="configurable">Configurable Product</SelectItem>
+                    <SelectItem value="bundle">Bundle Product</SelectItem>
+                    <SelectItem value="grouped">Grouped Product</SelectItem>
+                    <SelectItem value="virtual">Virtual Product</SelectItem>
+                    <SelectItem value="downloadable">Downloadable Product</SelectItem>
+                  </SelectContent>
+                </Select>
+                <p className="text-xs text-gray-500 mt-1">
+                  {formData.type === 'simple' && 'A standard product with a single SKU'}
+                  {formData.type === 'configurable' && 'A product with multiple variations (e.g., different sizes, colors)'}
+                  {formData.type === 'bundle' && 'A collection of products sold together'}
+                  {formData.type === 'grouped' && 'A set of related simple products'}
+                  {formData.type === 'virtual' && 'A non-physical product (e.g., service, warranty)'}
+                  {formData.type === 'downloadable' && 'A digital product available for download'}
+                </p>
               </div>
 
               <Separator className="my-4" />
@@ -1475,6 +1506,117 @@ export default function ProductForm({ product, categories, stores, taxes, attrib
             )}
           </CardContent>
         </Card>
+
+        {/* Configurable Product Settings - Only show when product type is configurable */}
+        {formData.type === 'configurable' && (
+          <Card>
+            <CardHeader>
+              <CardTitle>Configurable Product Settings</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              <Alert>
+                <AlertDescription className="text-sm">
+                  Configurable products allow you to create a parent product with multiple variant options (e.g., different sizes, colors).
+                  First, select which attributes will be used for configuration, then assign simple products as variants.
+                </AlertDescription>
+              </Alert>
+
+              {/* Select Configurable Attributes */}
+              <div className="space-y-3">
+                <div>
+                  <Label className="text-base font-semibold">1. Select Configurable Attributes</Label>
+                  <p className="text-sm text-gray-500 mt-1">
+                    Choose which attributes customers will use to select variants (e.g., Size, Color).
+                    Only attributes marked as "configurable" are available.
+                  </p>
+                </div>
+
+                <div className="border rounded-lg p-4 bg-gray-50">
+                  {passedAttributes && passedAttributes.filter(attr => attr.is_configurable).length > 0 ? (
+                    <div className="space-y-2">
+                      {passedAttributes.filter(attr => attr.is_configurable).map(attribute => (
+                        <label key={attribute.id} className="flex items-center space-x-3 p-2 hover:bg-white rounded cursor-pointer transition-colors">
+                          <input
+                            type="checkbox"
+                            checked={formData.configurable_attributes.includes(attribute.id)}
+                            onChange={(e) => {
+                              if (e.target.checked) {
+                                handleInputChange("configurable_attributes", [...formData.configurable_attributes, attribute.id]);
+                              } else {
+                                handleInputChange("configurable_attributes", formData.configurable_attributes.filter(id => id !== attribute.id));
+                              }
+                            }}
+                            className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                          />
+                          <div>
+                            <span className="font-medium text-sm">{attribute.name}</span>
+                            <span className="text-xs text-gray-500 ml-2">({attribute.code})</span>
+                            {attribute.options && attribute.options.length > 0 && (
+                              <div className="text-xs text-gray-400 mt-1">
+                                Options: {attribute.options.map(o => o.label).join(', ')}
+                              </div>
+                            )}
+                          </div>
+                        </label>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="text-center py-6">
+                      <p className="text-sm text-gray-500">No configurable attributes found.</p>
+                      <p className="text-xs text-gray-400 mt-1">
+                        Create attributes and mark them as "configurable" to use them here.
+                      </p>
+                    </div>
+                  )}
+                </div>
+
+                {formData.configurable_attributes.length > 0 && (
+                  <div className="mt-2">
+                    <Badge variant="secondary" className="text-sm">
+                      {formData.configurable_attributes.length} attribute{formData.configurable_attributes.length !== 1 ? 's' : ''} selected
+                    </Badge>
+                  </div>
+                )}
+              </div>
+
+              <Separator />
+
+              {/* Manage Variants Section */}
+              <div className="space-y-3">
+                <div>
+                  <Label className="text-base font-semibold">2. Manage Product Variants</Label>
+                  <p className="text-sm text-gray-500 mt-1">
+                    Add simple products as variants of this configurable product. Each variant represents a specific combination of the selected attributes.
+                  </p>
+                </div>
+
+                {!product || !product.id ? (
+                  <Alert className="border-amber-200 bg-amber-50">
+                    <AlertDescription className="text-amber-800 text-sm">
+                      Please save this product first before adding variants.
+                    </AlertDescription>
+                  </Alert>
+                ) : (
+                  <div className="border rounded-lg p-4">
+                    <p className="text-sm text-gray-600 mb-3">
+                      Variant management interface will appear here after the product is saved.
+                      You'll be able to browse available simple products and assign them as variants.
+                    </p>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      className="text-sm"
+                      disabled
+                    >
+                      Manage Variants (Coming Soon)
+                    </Button>
+                  </div>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+        )}
 
         <Card>
           <CardHeader><CardTitle>Settings</CardTitle></CardHeader>
