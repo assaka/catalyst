@@ -132,8 +132,19 @@ class CustomerAuthService {
     this.client = storefrontApiClient;
   }
 
-  async login(email, password, rememberMe = false) {
-    const response = await this.client.postCustomer('auth/login', { email, password, rememberMe });
+  async login(email, password, rememberMe = false, storeId = null) {
+    // Ensure store_id is provided for store-specific customer login
+    if (!storeId) {
+      throw new Error('Store ID is required for customer login');
+    }
+
+    // Use the customer-specific login endpoint that validates email+store_id
+    const response = await this.client.postCustomer('auth/customer/login', {
+      email,
+      password,
+      store_id: storeId,
+      rememberMe
+    });
     const token = response.data?.token || response.token;
 
     if (token) {
@@ -157,7 +168,13 @@ class CustomerAuthService {
   }
 
   async register(userData) {
-    const response = await this.client.postCustomer('auth/register', userData);
+    // Ensure store_id is provided for store-specific customer registration
+    if (!userData.store_id) {
+      throw new Error('Store ID is required for customer registration');
+    }
+
+    // Use the customer-specific register endpoint
+    const response = await this.client.postCustomer('auth/customer/register', userData);
     const token = response.data?.token || response.token;
 
     if (token) {

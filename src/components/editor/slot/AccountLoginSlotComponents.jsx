@@ -232,11 +232,18 @@ const LoginFormSlotComponent = ({ slot, context, variableContext }) => {
     setSuccess('');
 
     try {
+      // Ensure store is loaded before attempting login
+      if (!store?.id) {
+        setError('Store information not available. Please refresh the page.');
+        return;
+      }
+
       // Use CustomerAuth from storefront-entities for store-specific token storage
       const response = await CustomerAuth.login(
         formData.email,
         formData.password,
-        formData.rememberMe
+        formData.rememberMe,
+        store.id
       );
 
       let actualResponse = response;
