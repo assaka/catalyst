@@ -33,11 +33,6 @@ import './CategorySlotComponents.jsx';
 import './HeaderSlotComponents.jsx';
 import './BreadcrumbsSlotComponent.jsx';
 
-// Import functional cart components that handle applied state properly
-import {
-  CartCouponSlot as CartCouponSlotFunctional,
-  CartSummarySlot as CartSummarySlotFunctional
-} from './slotComponentsCart.jsx';
 
 /**
  * QuantitySelector - Unified quantity selector component
@@ -1473,19 +1468,98 @@ const CartItemsSlot = createSlotComponent({
 });
 
 /**
- * CartCouponSlot - Wrapper for the functional component from slotComponentsCart.jsx
- * This component properly handles appliedCoupon state and shows/hides the Remove button
+ * CartCouponSlot - Functional coupon component
  */
 const CartCouponSlot = createSlotComponent({
   name: 'CartCouponSlot',
 
-  render: ({ slot, cartContext, className, styles, context }) => {
-    // Use the functional component from slotComponentsCart.jsx for both editor and storefront
-    // It has the proper logic to show/hide the Remove button based on appliedCoupon state
+  render: ({ slot, cartContext, className, styles, context, variableContext }) => {
+    const containerRef = React.useRef(null);
+    const content = slot?.content || '';
+
+    if (context === 'editor') {
+      // Editor version - use template for preview
+      const processedContent = processVariables(content, variableContext);
+
+      return (
+        <div ref={containerRef} className={className} style={styles}
+             dangerouslySetInnerHTML={{ __html: processedContent }} />
+      );
+    }
+
+    // Storefront version - use template with event handlers
+    const {
+      couponCode = '',
+      setCouponCode = () => {},
+      handleApplyCoupon = () => {},
+      handleRemoveCoupon = () => {},
+      handleCouponKeyPress = () => {},
+      appliedCoupon = null
+    } = cartContext || {};
+
+    const processedContent = processVariables(content, variableContext);
+
+    React.useEffect(() => {
+      if (!containerRef.current) return;
+
+      const input = containerRef.current.querySelector('[data-coupon-input]');
+      const applyButton = containerRef.current.querySelector('[data-action="apply-coupon"]');
+      const removeButton = containerRef.current.querySelector('[data-action="remove-coupon"]');
+
+      // Handle applied coupon display
+      if (appliedCoupon) {
+        // Hide input section if applied
+        const inputSection = containerRef.current.querySelector('[data-coupon-input-section]');
+        if (inputSection) inputSection.style.display = 'none';
+
+        // Show applied coupon section
+        const appliedSection = containerRef.current.querySelector('[data-applied-coupon-section]');
+        if (appliedSection) {
+          appliedSection.style.display = 'block';
+          const couponNameEl = appliedSection.querySelector('[data-coupon-name]');
+          if (couponNameEl) couponNameEl.textContent = appliedCoupon.name || appliedCoupon.code;
+        }
+      } else {
+        // Show input section
+        const inputSection = containerRef.current.querySelector('[data-coupon-input-section]');
+        if (inputSection) inputSection.style.display = 'block';
+
+        // Hide applied coupon section
+        const appliedSection = containerRef.current.querySelector('[data-applied-coupon-section]');
+        if (appliedSection) appliedSection.style.display = 'none';
+      }
+
+      if (input) {
+        input.value = couponCode;
+        input.addEventListener('input', (e) => setCouponCode(e.target.value));
+        input.addEventListener('keypress', handleCouponKeyPress);
+      }
+
+      if (applyButton) {
+        applyButton.addEventListener('click', handleApplyCoupon);
+      }
+
+      if (removeButton) {
+        removeButton.addEventListener('click', handleRemoveCoupon);
+      }
+
+      return () => {
+        if (input) {
+          input.removeEventListener('input', (e) => setCouponCode(e.target.value));
+          input.removeEventListener('keypress', handleCouponKeyPress);
+        }
+        if (applyButton) {
+          applyButton.removeEventListener('click', handleApplyCoupon);
+        }
+        if (removeButton) {
+          removeButton.removeEventListener('click', handleRemoveCoupon);
+        }
+      };
+    }, [couponCode, setCouponCode, handleApplyCoupon, handleRemoveCoupon, handleCouponKeyPress, appliedCoupon]);
+
     return (
-      <div className={className} style={styles}>
-        <CartCouponSlotFunctional cartContext={cartContext} content={slot?.content} />
-      </div>
+      <div ref={containerRef} className={className} style={styles}
+           dangerouslySetInnerHTML={{ __html: processedContent }} />
     );
   }
 });

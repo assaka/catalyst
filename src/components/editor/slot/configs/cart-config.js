@@ -257,7 +257,20 @@ export const cartConfig = {
       component: 'CartCouponSlot',
       content: `
           <h3 class="text-lg font-semibold mb-4">Apply Coupon</h3>
-          <div class="flex space-x-2">
+
+          <!-- Applied Coupon Section (hidden by default) -->
+          <div data-applied-coupon-section style="display: none;">
+            <div class="bg-green-50 p-3 rounded flex items-center justify-between">
+              <div>
+                <span class="font-medium text-green-800" data-coupon-name></span>
+                <p class="text-sm text-green-600">Coupon applied successfully</p>
+              </div>
+              <button class="text-red-600 hover:text-red-700" data-action="remove-coupon">Remove</button>
+            </div>
+          </div>
+
+          <!-- Input Section (shown by default) -->
+          <div data-coupon-input-section class="flex space-x-2">
             <input
               type="text"
               placeholder="Enter coupon code"
