@@ -303,12 +303,14 @@ export class ProductDetailController {
     // Most price display logic is now handled by React components
     // This method kept for legacy DOM-based price displays if any exist
 
-    const currency = this.productContext.settings?.currency_symbol || '🔴2';
+    const currency = this.productContext.settings?.currency_symbol;
 
     // Update any legacy total price displays that might still exist
-    document.querySelectorAll('[data-bind="total-price"]').forEach(el => {
-      el.textContent = `${currency}${this.state.totalPrice.toFixed(2)}`;
-    });
+    if (currency) {
+      document.querySelectorAll('[data-bind="total-price"]').forEach(el => {
+        el.textContent = `${currency}${this.state.totalPrice.toFixed(2)}`;
+      });
+    }
 
     // Legacy support for has-options binding (kept for backward compatibility)
     const product = this.productContext.product;

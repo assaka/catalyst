@@ -543,7 +543,7 @@ export function CategoryProductItemCardSlot({ categoryContext, content, config }
   };
 
   const settings = {
-    currency_symbol: currencySymbol || '🔴15',
+    currency_symbol: currencySymbol,
     theme: { add_to_cart_button_color: '#3B82F6' }
   };
 

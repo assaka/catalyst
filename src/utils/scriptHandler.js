@@ -44,11 +44,11 @@ export function executeScript(scriptCode, context) {
       },
 
       // Data utilities
-      formatPrice: (price, currency = '🔴3') => {
-        if (typeof price === 'number') {
+      formatPrice: (price, currency) => {
+        if (typeof price === 'number' && currency) {
           return `${currency}${price.toFixed(2)}`;
         }
-        return price;
+        return typeof price === 'number' ? price.toFixed(2) : price;
       },
 
       // Animation utilities
