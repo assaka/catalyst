@@ -146,7 +146,7 @@ export default function StorefrontLayout({ children }) {
                 } catch (error) {
                     console.warn('StorefrontLayout: Could not load GTM plugin, skipping:', error.message);
                 }
-                
+
                 try {
                     await delay(200 + Math.random() * 300);
 
@@ -180,6 +180,44 @@ export default function StorefrontLayout({ children }) {
         };
         fetchData();
     }, [loading, store]);
+
+    // Listen for customer auth changes (token activation/deactivation across stores)
+    useEffect(() => {
+        const handleCustomerAuthChanged = async (event) => {
+            const { authenticated, storeSlug } = event.detail;
+            console.log('📢 StorefrontLayout: Customer auth changed', { authenticated, storeSlug });
+
+            setUserLoading(true);
+
+            if (authenticated) {
+                // Token was reactivated - reload user data
+                try {
+                    const userData = await retryApiCall(async () => {
+                        return await CustomerAuth.me();
+                    }, 5, 3000, null);
+
+                    if (userData && userData.role === 'customer') {
+                        setUser(userData);
+                        console.log('✅ StorefrontLayout: User data reloaded after token reactivation');
+                    } else {
+                        setUser(null);
+                    }
+                } catch (e) {
+                    console.error('❌ StorefrontLayout: Failed to reload user data:', e);
+                    setUser(null);
+                }
+            } else {
+                // Token was deactivated - clear user
+                setUser(null);
+                console.log('🔓 StorefrontLayout: User cleared after token deactivation');
+            }
+
+            setUserLoading(false);
+        };
+
+        window.addEventListener('customerAuthChanged', handleCustomerAuthChanged);
+        return () => window.removeEventListener('customerAuthChanged', handleCustomerAuthChanged);
+    }, []);
 
 
     // Flash message event listener

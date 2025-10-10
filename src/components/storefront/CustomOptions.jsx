@@ -19,17 +19,7 @@ export default function CustomOptions({ product, onSelectionChange, selectedOpti
     }, [product?.id, store?.id]);
 
     const loadCustomOptions = async () => {
-        console.log('🔵 CustomOptions: loadCustomOptions() called', {
-            hasProduct: !!product,
-            productId: product?.id,
-            productName: product?.name,
-            hasStore: !!store?.id,
-            storeId: store?.id,
-            isLoading
-        });
-
         if (!product || !store?.id || isLoading) {
-            console.log('⚠️ CustomOptions: Exiting early', { hasProduct: !!product, hasStore: !!store?.id, isLoading });
             setLoading(false);
             return;
         }
@@ -38,19 +28,15 @@ export default function CustomOptions({ product, onSelectionChange, selectedOpti
             setLoading(true);
             setIsLoading(true);
 
-            console.log('🔍 CustomOptions: Fetching custom option rules for store:', store.id);
-
             // Fetch all active custom option rules for the store
-
             let rules = [];
             try {
                 rules = await CustomOptionRule.filter({
                     store_id: store.id,
                     is_active: true
                 });
-                console.log('📋 CustomOptions: Found rules:', rules.length);
             } catch (apiError) {
-                console.error('❌ CustomOptions: Error fetching rules:', apiError);
+                console.error('Error fetching custom option rules:', apiError);
                 setCustomOptions([]);
                 setLoading(false);
                 return;
@@ -65,10 +51,8 @@ export default function CustomOptions({ product, onSelectionChange, selectedOpti
             }
 
             const applicableRules = rules.filter(rule => isRuleApplicable(rule, product));
-            console.log('✅ CustomOptions: Applicable rules found:', applicableRules.length);
 
             if (applicableRules.length === 0) {
-                console.log('⚠️ CustomOptions: No applicable rules for this product');
                 setCustomOptions([]);
                 setLoading(false);
                 return;
@@ -76,7 +60,6 @@ export default function CustomOptions({ product, onSelectionChange, selectedOpti
 
             // Use the first applicable rule (you could enhance this to merge multiple rules)
             const rule = applicableRules[0];
-            console.log('📌 CustomOptions: Using rule:', rule.display_label, 'with', rule.optional_product_ids?.length || 0, 'products');
             setDisplayLabel(rule.display_label || 'Custom Options');
 
             // Load the custom option products
@@ -84,7 +67,6 @@ export default function CustomOptions({ product, onSelectionChange, selectedOpti
                 try {
                     // Load products individually if $in syntax doesn't work
                     const optionProducts = [];
-                    console.log('🔄 CustomOptions: Loading', rule.optional_product_ids.length, 'custom option products...');
                     for (const productId of rule.optional_product_ids) {
                         // Skip if this is the current product being viewed
                         if (productId === product.id) {
@@ -107,35 +89,19 @@ export default function CustomOptions({ product, onSelectionChange, selectedOpti
                                 // Check stock availability - only check products.stock_quantity and products.infinite_stock
                                 const trackStock = settings?.track_stock !== false; // Default to true
 
-                                // Debug logging
-                                console.log(`📦 Checking stock for custom option: ${customOptionProduct.name}`, {
-                                    id: customOptionProduct.id,
-                                    stock_quantity: customOptionProduct.stock_quantity,
-                                    infinite_stock: customOptionProduct.infinite_stock,
-                                    trackStock: trackStock
-                                });
-
                                 const isInStock = trackStock
                                     ? (customOptionProduct.infinite_stock === true || customOptionProduct.stock_quantity > 0)
                                     : true; // If not tracking stock, always show
 
                                 // Only add to optionProducts if in stock
                                 if (isInStock) {
-                                    console.log(`✅ Including custom option: ${customOptionProduct.name} (in stock)`);
                                     optionProducts.push(customOptionProduct);
-                                } else {
-                                    console.log(`❌ Excluding custom option: ${customOptionProduct.name} (out of stock - stock_quantity: ${customOptionProduct.stock_quantity}, infinite_stock: ${customOptionProduct.infinite_stock})`);
                                 }
                             }
                         } catch (productError) {
                             console.error(`Failed to load custom option product ${productId}:`, productError);
                         }
                     }
-
-                    console.log('✅ CustomOptions: Final list of custom options to display:', optionProducts.length);
-                    optionProducts.forEach(opt => {
-                        console.log(`   - ${opt.name} (stock: ${opt.stock_quantity}, infinite: ${opt.infinite_stock})`);
-                    });
 
                     setCustomOptions(optionProducts);
                 } catch (error) {

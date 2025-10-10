@@ -73,6 +73,23 @@ const authMiddleware = async (req, res, next) => {
       });
     }
 
+    // CRITICAL: Validate store_id for customer tokens
+    // The token contains the store_id that was used during login
+    // This ensures customers can only access their own store's data
+    if (decoded.role === 'customer' && decoded.store_id) {
+      // Verify that the customer's actual store_id matches the token's store_id
+      // This prevents token reuse if a customer changes stores in the database
+      if (user.store_id && user.store_id !== decoded.store_id) {
+        console.log('❌ Customer store_id mismatch between token and database');
+        console.log('   Token store_id:', decoded.store_id);
+        console.log('   Database store_id:', user.store_id);
+        return res.status(403).json({
+          error: 'Access denied',
+          message: 'This account session is no longer valid for this store'
+        });
+      }
+    }
+
     req.user = user;
     console.log('✅ Auth middleware completed successfully');
     next();

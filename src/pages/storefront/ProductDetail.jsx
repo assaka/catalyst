@@ -390,21 +390,11 @@ export default function ProductDetail() {
   };
 
   const loadCustomOptions = async (product) => {
-    console.log('🔵 ProductDetail.loadCustomOptions: Function called', {
-      hasProduct: !!product,
-      productId: product?.id,
-      productName: product?.name,
-      hasStore: !!store?.id,
-      storeId: store?.id
-    });
-
     if (!product || !store?.id) {
-      console.log('⚠️ ProductDetail.loadCustomOptions: Exiting early - missing product or store');
       return;
     }
 
     try {
-      console.log('🔍 ProductDetail.loadCustomOptions: Starting to load custom options...');
 
       // Import the CustomOptionRule entity
       const { CustomOptionRule } = await import('@/api/entities');
@@ -413,26 +403,12 @@ export default function ProductDetail() {
       const apiClient = (await import('@/api/client')).default;
       const hasToken = apiClient.getToken();
 
-      // Try different API calls to debug the issue
       try {
-        console.log('📋 ProductDetail.loadCustomOptions: Fetching custom option rules...');
-
-        // First try to fetch all custom option rules without filters
-        const allRules = await CustomOptionRule.filter({});
-
-        // Try fetching with store filter
-        const storeRules = await CustomOptionRule.filter({ store_id: store.id });
-
-        // Try fetching with active filter
-        const activeRules = await CustomOptionRule.filter({
+        // Fetch active custom option rules for this store
+        const rules = await CustomOptionRule.filter({
           store_id: store.id,
           is_active: true
         });
-
-        console.log('📋 ProductDetail.loadCustomOptions: Found', activeRules.length, 'active rules');
-
-        // Use the active rules as our main result
-        const rules = activeRules;
 
         // Find applicable rules for this product
         const applicableRules = rules.filter(rule => {
@@ -469,12 +445,8 @@ export default function ProductDetail() {
         return false;
       });
 
-
-      console.log('✅ ProductDetail.loadCustomOptions: Applicable rules:', applicableRules.length);
-
       if (applicableRules.length > 0) {
         const rule = applicableRules[0];
-        console.log('📌 ProductDetail.loadCustomOptions: Using rule:', rule.display_label, 'with', rule.optional_product_ids?.length || 0, 'products');
         setCustomOptionsLabel(rule.display_label || 'Custom Options');
 
         // Parse optional_product_ids
@@ -488,8 +460,6 @@ export default function ProductDetail() {
           productIds = [];
         }
 
-        console.log('🔄 ProductDetail.loadCustomOptions: Loading', productIds?.length || 0, 'custom option products...');
-
         if (productIds && productIds.length > 0) {
           const optionProducts = [];
           for (const productId of productIds) {
@@ -501,16 +471,8 @@ export default function ProductDetail() {
               if (products && products.length > 0) {
                 const customOptionProduct = products[0];
 
-                console.log('📦 ProductDetail: Checking product:', customOptionProduct.name, {
-                  id: customOptionProduct.id,
-                  is_custom_option: customOptionProduct.is_custom_option,
-                  stock_quantity: customOptionProduct.stock_quantity,
-                  infinite_stock: customOptionProduct.infinite_stock
-                });
-
                 // Only include if it's marked as a custom option
                 if (!customOptionProduct.is_custom_option) {
-                  console.log('⚠️ ProductDetail: Skipping - not marked as custom option');
                   continue;
                 }
 
@@ -521,18 +483,9 @@ export default function ProductDetail() {
                   ? (customOptionProduct.infinite_stock === true || customOptionProduct.stock_quantity > 0)
                   : true; // If not tracking stock, always show
 
-                console.log('🔍 ProductDetail: Stock check result:', {
-                  trackStock,
-                  isInStock,
-                  willInclude: isInStock
-                });
-
                 // Only add to optionProducts if in stock
                 if (isInStock) {
-                  console.log(`✅ ProductDetail: Including "${customOptionProduct.name}"`);
                   optionProducts.push(customOptionProduct);
-                } else {
-                  console.log(`❌ ProductDetail: Excluding custom option "${customOptionProduct.name}" (out of stock - stock_quantity: ${customOptionProduct.stock_quantity}, infinite_stock: ${customOptionProduct.infinite_stock})`);
                 }
               }
             } catch (err) {
@@ -758,19 +711,6 @@ export default function ProductDetail() {
   const trackStock = settings?.track_stock !== false; // Default to true if not explicitly false
   const isInStock = trackStock ? (product?.infinite_stock || product?.stock_quantity > 0) : true;
   const canAddToCart = !loading && isInStock && quantity > 0 && (!trackStock || product?.infinite_stock || product?.stock_quantity >= quantity);
-
-  // Debug logging for add to cart state
-  console.log('🔍 ProductDetail canAddToCart state:', {
-    canAddToCart,
-    loading,
-    isInStock,
-    quantity,
-    trackStock,
-    infinite_stock: product?.infinite_stock,
-    stock_quantity: product?.stock_quantity
-  });
-
-  // Stock labels are now handled by centralized utility (stockLabelUtils.js)
 
 
   return (

@@ -415,6 +415,9 @@ export const clearCustomerSessionIfInvalid = (currentStoreSlug) => {
     setStorefrontCustomerToken(null);
     console.log('🔓 Cleared customer token from both API clients for this store');
 
+    // Dispatch event to notify components that customer auth state changed
+    window.dispatchEvent(new CustomEvent('customerAuthChanged', { detail: { authenticated: false, storeSlug: currentStoreSlug } }));
+
     return true; // Session exists but not valid for this store
   } else {
     // Session is valid for this store - ensure token is active in both clients
@@ -430,6 +433,9 @@ export const clearCustomerSessionIfInvalid = (currentStoreSlug) => {
       if (getStorefrontCustomerToken() !== customerToken) {
         console.log('✅ Reactivating customer token in storefrontApiClient for matching store:', currentStoreSlug);
         setStorefrontCustomerToken(customerToken);
+
+        // Dispatch event to notify components that customer auth state changed
+        window.dispatchEvent(new CustomEvent('customerAuthChanged', { detail: { authenticated: true, storeSlug: currentStoreSlug } }));
       }
     }
     return false; // Session is valid for current store

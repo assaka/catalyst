@@ -146,8 +146,6 @@ const QuantitySelector = createSlotComponent({
 const AddToCartButton = createSlotComponent({
   name: 'AddToCartButton',
   render: ({ slot, productContext, className, styles, context }) => {
-    console.log('🎨 AddToCartButton rendering', { context, productContext, canAddToCart: productContext?.canAddToCart });
-
     if (context === 'editor') {
       // Editor version - visual preview only
       return (
@@ -162,18 +160,9 @@ const AddToCartButton = createSlotComponent({
     // Storefront version - full functionality
     const { handleAddToCart, canAddToCart, product } = productContext;
 
-    console.log('🎨 AddToCartButton storefront render', {
-      hasHandler: !!handleAddToCart,
-      canAddToCart,
-      productId: product?.id
-    });
-
     const handleClick = (e) => {
-      console.log('🛒 AddToCartButton clicked', { handleAddToCart, canAddToCart, product });
       if (handleAddToCart) {
         handleAddToCart(e);
-      } else {
-        console.error('❌ handleAddToCart is not defined in productContext');
       }
     };
 
