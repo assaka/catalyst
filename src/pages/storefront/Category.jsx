@@ -12,6 +12,7 @@ import { Package } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import slotConfigurationService from '@/services/slotConfigurationService';
 import { categoryConfig } from '@/components/editor/slot/configs/category-config';
+import { formatPrice } from '@/utils/priceUtils';
 
 const ensureArray = (data) => {
   if (Array.isArray(data)) return data;
@@ -674,8 +675,7 @@ export default function Category() {
     formatDisplayPrice: (product) => {
       // Handle if product is passed instead of price value
       const priceValue = typeof product === 'object' ? product.price : product;
-      const numPrice = parseFloat(priceValue || 0);
-      return `${settings?.currency_symbol || '🔴8'}${numPrice.toFixed(2)}`;
+      return formatPrice(priceValue);
     },
     getProductImageUrl: (product) => product?.images?.[0] || '/placeholder-product.jpg',
     navigate: (url) => window.location.href = url,

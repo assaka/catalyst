@@ -36,7 +36,7 @@ import FlashMessage from "@/components/storefront/FlashMessage";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { CountrySelect } from '@/components/ui/country-select';
-import { formatDisplayPrice } from '@/utils/priceUtils';
+import { formatPriceWithTax } from '@/utils/priceUtils';
 import cartService from '@/services/cartService';
 
 // --- Utilities ---
@@ -356,7 +356,7 @@ const OrdersTab = ({ orders, getCountryName, onStatusUpdate }) => {
   );
 };
 
-const WishlistTab = ({ wishlistProducts, setWishlistProducts, store, settings, taxes, selectedCountry }) => {
+const WishlistTab = ({ wishlistProducts, setWishlistProducts, store, settings }) => {
   const handleRemove = async (itemId) => {
       try {
           await CustomerWishlist.removeItem(itemId, store?.id);
@@ -425,7 +425,7 @@ const WishlistTab = ({ wishlistProducts, setWishlistProducts, store, settings, t
                   />
                   <p className="font-semibold">{item.product?.name || 'Unknown Product'}</p>
                   <p className="text-sm text-gray-600 mb-3">
-                    {formatDisplayPrice(item.product?.price, settings?.currency_symbol || '🔴12', store, taxes, selectedCountry)}
+                    {formatPriceWithTax(item.product?.price)}
                   </p>
                   <div className="flex gap-2 w-full">
                     <Button 
@@ -1422,13 +1422,11 @@ export default function CustomerDashboard() {
               )}
 
               {activeTab === 'wishlist' && (
-                <WishlistTab 
-                  wishlistProducts={wishlistProducts} 
-                  setWishlistProducts={setWishlistProducts} 
-                  store={store} 
+                <WishlistTab
+                  wishlistProducts={wishlistProducts}
+                  setWishlistProducts={setWishlistProducts}
+                  store={store}
                   settings={settings}
-                  taxes={taxes}
-                  selectedCountry={selectedCountry}
                 />
               )}
             </div>

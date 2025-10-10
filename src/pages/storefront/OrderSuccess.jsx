@@ -23,6 +23,7 @@ import {
   Info
 } from 'lucide-react';
 import CmsBlockRenderer from '@/components/storefront/CmsBlockRenderer';
+import { formatPrice, safeNumber } from '@/utils/priceUtils';
 
 export default function OrderSuccess() {
   const [searchParams] = useSearchParams();
@@ -64,13 +65,18 @@ export default function OrderSuccess() {
   const [accountCreationSuccess, setAccountCreationSuccess] = useState(false);
   const [customerHasAccount, setCustomerHasAccount] = useState(false); // Track if customer already registered
 
-  // Currency formatting helper
+  // Currency formatting helper - uses new priceUtils API
+  // Note: OrderSuccess has special needs since orders can have different currencies
   const formatCurrency = (amount, currency) => {
-    if (!amount || amount === null || amount === undefined) return currency && currency !== 'USD' ? `${currency} 0.00` : '$0.00';
-    const numAmount = parseFloat(amount);
-    if (isNaN(numAmount)) return currency && currency !== 'USD' ? `${currency} 0.00` : '$0.00';
-    const formattedAmount = numAmount.toFixed(2);
-    return currency && currency !== 'USD' ? `${currency} ${formattedAmount}` : `$${formattedAmount}`;
+    const numAmount = safeNumber(amount);
+    try {
+      // Try using the new formatPrice API (context-aware)
+      return formatPrice(numAmount);
+    } catch (error) {
+      // Fallback for edge cases where context isn't available or currency differs
+      const formattedAmount = numAmount.toFixed(2);
+      return currency && currency !== 'USD' ? `${currency} ${formattedAmount}` : `$${formattedAmount}`;
+    }
   };
 
   // Date formatting helper
@@ -346,7 +352,7 @@ export default function OrderSuccess() {
                 Subtotal: ${formatCurrency(order.subtotal, order.currency)}
                 Shipping${order.shipping_method ? ` (${order.shipping_method})` : ''}: ${formatCurrency(order.shipping_amount || order.shipping_cost, order.currency)}
                 Tax: ${formatCurrency(order.tax_amount, order.currency)}
-                ${parseFloat(order.discount_amount || 0) > 0 ? `Discount: -${formatCurrency(order.discount_amount, order.currency)}\n                ` : ''}Total: ${formatCurrency(order.total_amount, order.currency)}
+                ${safeNumber(order.discount_amount) > 0 ? `Discount: -${formatCurrency(order.discount_amount, order.currency)}\n                ` : ''}Total: ${formatCurrency(order.total_amount, order.currency)}
               `;
               
               const blob = new Blob([invoiceContent], { type: 'text/plain' });
@@ -449,10 +455,10 @@ export default function OrderSuccess() {
                         {order.subtotal && (
                           <p><strong>Subtotal:</strong> {formatCurrency(order.subtotal, order.currency)}</p>
                         )}
-                        {parseFloat(order.shipping_amount || 0) > 0 && (
+                        {safeNumber(order.shipping_amount) > 0 && (
                           <p><strong>Shipping:</strong> {formatCurrency(order.shipping_amount, order.currency)}</p>
                         )}
-                        {parseFloat(order.discount_amount || 0) > 0 && (
+                        {safeNumber(order.discount_amount) > 0 && (
                           <p><strong>Discount:</strong> -{formatCurrency(order.discount_amount, order.currency)}</p>
                         )}
                       </div>
@@ -473,13 +479,12 @@ export default function OrderSuccess() {
                       {/* Table Rows */}
                       {orderItems.map((item, index) => {
                         // Calculate base unit price and options price
-                        const quantity = Math.max(1, parseFloat(item.quantity) || 1);
-                        const totalPrice = parseFloat(item.total_price) || (parseFloat(item.unit_price || item.price || 0) * quantity) || 0;
-                        const unitPrice = parseFloat(item.unit_price || item.price || 0);
+                        const quantity = Math.max(1, safeNumber(item.quantity) || 1);
+                        const totalPrice = safeNumber(item.total_price) || (safeNumber(item.unit_price || item.price) * quantity) || 0;
+                        const unitPrice = safeNumber(item.unit_price || item.price);
                         const selectedOptions = item.selected_options || item.product_attributes?.selected_options || [];
                         const optionsPrice = selectedOptions.reduce((sum, option) => {
-                          const optionPrice = parseFloat(option.price || 0);
-                          return sum + (isNaN(optionPrice) ? 0 : optionPrice);
+                          return sum + safeNumber(option.price);
                         }, 0);
                         const baseUnitPrice = Math.max(0, unitPrice - optionsPrice);
                         
@@ -498,7 +503,7 @@ export default function OrderSuccess() {
                                   {selectedOptions.map((option, optIndex) => (
                                     <div key={optIndex} className="text-xs text-gray-600 flex justify-between">
                                       <span>• {option.name}</span>
-                                      {parseFloat(option.price || 0) > 0 && (
+                                      {safeNumber(option.price) > 0 && (
                                         <span className="text-green-600">(+{formatCurrency(option.price, order.currency)})</span>
                                       )}
                                     </div>
@@ -563,7 +568,7 @@ export default function OrderSuccess() {
                     <span className="text-gray-600">Tax</span>
                     <span>{formatCurrency(order.tax_amount, order.currency)}</span>
                   </div>
-                  {parseFloat(order.discount_amount || 0) > 0 && (
+                  {safeNumber(order.discount_amount) > 0 && (
                     <div className="flex justify-between text-green-600">
                       <span>Discount</span>
                       <span>-{formatCurrency(order.discount_amount, order.currency)}</span>

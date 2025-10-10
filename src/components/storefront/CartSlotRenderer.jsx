@@ -207,7 +207,7 @@ export function CartSlotRenderer({
                   <div className="flex-1">
                     <h3 className="text-lg font-semibold">{product.name}</h3>
                     <p className="text-gray-600">
-                      {formatDisplayPrice(basePriceForDisplay, currencySymbol, store, taxes, selectedCountry)} each
+                      {formatDisplayPrice(basePriceForDisplay)} each
                     </p>
                     <div className="flex items-center space-x-3 mt-3">
                       <Button
@@ -237,7 +237,7 @@ export function CartSlotRenderer({
                   </div>
                   <div className="text-right">
                     <p className="text-xl font-bold">
-                      {formatDisplayPrice(itemTotal, currencySymbol, store, taxes, selectedCountry)}
+                      {formatDisplayPrice(itemTotal)}
                     </p>
                   </div>
                 </div>
@@ -281,7 +281,7 @@ export function CartSlotRenderer({
           <div className="flex-1">
             <h3 className="text-lg font-semibold">{product.name}</h3>
             <p className="text-gray-600">
-              {formatDisplayPrice(basePriceForDisplay, currencySymbol, store, taxes, selectedCountry)} each
+              {formatDisplayPrice(basePriceForDisplay)} each
             </p>
             <div className="flex items-center space-x-3 mt-3">
               <Button
@@ -311,7 +311,7 @@ export function CartSlotRenderer({
           </div>
           <div className="text-right">
             <p className="text-xl font-bold">
-              {formatDisplayPrice(itemTotal, currencySymbol, store, taxes, selectedCountry)}
+              {formatDisplayPrice(itemTotal)}
             </p>
           </div>
         </div>
@@ -367,7 +367,7 @@ export function CartSlotRenderer({
       if (id.endsWith('_description')) {
         return (
           <p className={className} style={styles}>
-            {currentProduct.description || `${formatDisplayPrice(currentBasePriceForDisplay, currencySymbol, store, taxes, selectedCountry)} each`}
+            {currentProduct.description || `${formatDisplayPrice(currentBasePriceForDisplay)} each`}
           </p>
         );
       }
@@ -375,7 +375,7 @@ export function CartSlotRenderer({
       if (id.endsWith('_price')) {
         return (
           <p className={className} style={styles}>
-            {formatDisplayPrice(currentItemTotal, currencySymbol, store, taxes, selectedCountry)}
+            {formatDisplayPrice(currentItemTotal)}
           </p>
         );
       }
