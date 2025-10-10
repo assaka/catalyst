@@ -929,6 +929,7 @@ router.post('/customer/register', [
 router.post('/customer/login', [
   body('email').isEmail().normalizeEmail().withMessage('Please enter a valid email'),
   body('password').notEmpty().withMessage('Password is required'),
+  body('store_id').optional().isUUID().withMessage('Store ID must be a valid UUID'),
   body('rememberMe').optional().isBoolean().withMessage('Remember me must be a boolean')
 ], async (req, res) => {
   try {
@@ -940,7 +941,7 @@ router.post('/customer/login', [
       });
     }
 
-    const { email, password, rememberMe } = req.body;
+    const { email, password, store_id, rememberMe } = req.body;
     const ipAddress = req.ip || req.connection.remoteAddress;
 
     // Check rate limiting
@@ -952,26 +953,48 @@ router.post('/customer/login', [
       });
     }
 
-    // Find customer with this email
-    console.log('🔐 Customer login attempt for:', email);
-    const customer = await Customer.findOne({ where: { email } });
+    // CRITICAL: Find customer with this email AND store_id to prevent cross-store login
+    console.log('🔐 Customer login attempt for:', email, 'at store:', store_id);
+
+    const whereClause = { email };
+    if (store_id) {
+      whereClause.store_id = store_id;
+    }
+
+    const customer = await Customer.findOne({ where: whereClause });
 
     if (!customer) {
-      console.log('❌ Customer not found:', email);
+      console.log('❌ Customer not found:', email, store_id ? `for store ${store_id}` : '');
       await LoginAttempt.create({
         email,
         ip_address: ipAddress,
         success: false
       });
 
+      // Don't reveal whether email exists in different store
       return res.status(400).json({
         success: false,
-        message: 'Invalid credentials'
+        message: 'Invalid credentials or you don\'t have an account for this store'
       });
     }
 
-    console.log('✅ Customer found:', customer.id);
+    console.log('✅ Customer found:', customer.id, 'Store:', customer.store_id);
     console.log('🔍 Customer has password:', !!customer.password);
+
+    // Additional security check: Ensure customer's store_id matches requested store_id
+    if (store_id && customer.store_id !== store_id) {
+      console.log('❌ Store mismatch: Customer belongs to', customer.store_id, 'but trying to access', store_id);
+      await LoginAttempt.create({
+        email,
+        ip_address: ipAddress,
+        success: false
+      });
+
+      return res.status(403).json({
+        success: false,
+        message: 'This account is not registered for this store'
+      });
+    }
 
     // Check password
     if (!customer.password) {

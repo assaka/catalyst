@@ -124,11 +124,20 @@ export default function CustomerAuth() {
 
     try {
       if (isLogin) {
+        // Extract store_id from store context for customer login validation
+        const storeId = store?.id;
+
+        if (!storeId) {
+          setError("Store information not available. Please refresh the page.");
+          return;
+        }
+
         const response = await AuthService.login(
           formData.email,
           formData.password,
           formData.rememberMe,
-          'customer'
+          'customer',
+          storeId // Pass store_id to validate customer belongs to this store
         );
 
         // Handle both array and object responses
@@ -166,20 +175,23 @@ export default function CustomerAuth() {
           return;
         }
 
+        // Extract store_id from store context for customer registration
+        const storeId = store?.id;
+
+        if (!storeId) {
+          setError("Store information not available. Please refresh the page.");
+          return;
+        }
+
         const registerData = {
           email: formData.email,
           password: formData.password,
           first_name: formData.firstName,
           last_name: formData.lastName,
           role: 'customer',
-          account_type: 'individual'
+          account_type: 'individual',
+          store_id: storeId // CRITICAL: Bind customer to this specific store
         };
-
-        // Add store_id for customer registration
-        const savedStoreId = localStorage.getItem('customer_auth_store_id');
-        if (savedStoreId) {
-          registerData.store_id = savedStoreId;
-        }
 
         const response = await AuthService.register(registerData);
 

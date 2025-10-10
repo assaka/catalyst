@@ -213,14 +213,20 @@ class BaseEntity {
 
 // Authentication service
 class AuthService {
-  async login(email, password, rememberMe = false, role = 'store_owner') {
-    console.log('🔐 AuthService.login: Starting login', { email, role });
+  async login(email, password, rememberMe = false, role = 'store_owner', store_id = null) {
+    console.log('🔐 AuthService.login: Starting login', { email, role, store_id });
 
     // Use customer-specific endpoint for customer login
     const endpoint = role === 'customer' ? 'auth/customer/login' : 'auth/login';
     console.log('🔐 AuthService.login: Using endpoint:', endpoint);
 
-    const response = await apiClient.post(endpoint, { email, password, rememberMe, role });
+    // Build request payload - include store_id for customer login
+    const payload = { email, password, rememberMe, role };
+    if (role === 'customer' && store_id) {
+      payload.store_id = store_id;
+    }
+
+    const response = await apiClient.post(endpoint, payload);
     console.log('🔐 AuthService.login: Raw response:', response);
 
     let token = null;
