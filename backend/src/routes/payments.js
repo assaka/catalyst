@@ -7,6 +7,32 @@ const router = express.Router();
 // Initialize Stripe
 const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
 
+// Zero-decimal currencies (currencies without decimal places)
+// These should NOT be multiplied by 100 for Stripe
+const ZERO_DECIMAL_CURRENCIES = [
+  'BIF', 'CLP', 'DJF', 'GNF', 'JPY', 'KMF', 'KRW',
+  'MGA', 'PYG', 'RWF', 'UGX', 'VND', 'VUV', 'XAF',
+  'XOF', 'XPF'
+];
+
+/**
+ * Convert amount to Stripe format based on currency
+ * @param {number} amount - Amount in standard units (e.g., dollars, yen)
+ * @param {string} currency - ISO currency code (e.g., 'USD', 'JPY')
+ * @returns {number} - Amount in Stripe format (cents for decimal currencies, same for zero-decimal)
+ */
+function convertToStripeAmount(amount, currency) {
+  const currencyUpper = (currency || 'USD').toUpperCase();
+
+  // Zero-decimal currencies: use amount as-is (already in smallest unit)
+  if (ZERO_DECIMAL_CURRENCIES.includes(currencyUpper)) {
+    return Math.round(amount);
+  }
+
+  // Decimal currencies: multiply by 100 to convert to cents
+  return Math.round(amount * 100);
+}
+
 // @route   GET /api/payments/connect-status
 // @desc    Get Stripe Connect status
 // @access  Private
@@ -403,7 +429,7 @@ router.post('/create-checkout', async (req, res) => {
     items.forEach(item => {
       // Main product line item
       const basePrice = item.price || 0;
-      const unit_amount = Math.round(basePrice * 100); // Convert to cents
+      const unit_amount = convertToStripeAmount(basePrice, storeCurrency); // Convert based on currency type
       
       // Handle different name formats from frontend with database lookup
       let productName = item.product_name || 
@@ -450,7 +476,7 @@ router.post('/create-checkout', async (req, res) => {
       if (item.selected_options && item.selected_options.length > 0) {
         item.selected_options.forEach(option => {
           if (option.price && option.price > 0) {
-            const optionUnitAmount = Math.round(option.price * 100); // Convert to cents
+            const optionUnitAmount = convertToStripeAmount(option.price, storeCurrency); // Convert based on currency type
             
             const optionLineItem = {
               price_data: {
@@ -483,7 +509,8 @@ router.post('/create-checkout', async (req, res) => {
 
     // Add payment fee as line item (no direct rate support like shipping)
     if (paymentFeeNum > 0) {
-      console.log('💳 Adding payment fee line item:', paymentFeeNum, 'cents:', Math.round(paymentFeeNum * 100), 'method:', selected_payment_method, 'name:', selected_payment_method_name);
+      const paymentFeeStripeAmount = convertToStripeAmount(paymentFeeNum, storeCurrency);
+      console.log('💳 Adding payment fee line item:', paymentFeeNum, 'stripe amount:', paymentFeeStripeAmount, 'method:', selected_payment_method, 'name:', selected_payment_method_name);
 
       // Use the payment method name from frontend (e.g., "Bank Transfer", "Credit Card")
       let paymentMethodName = selected_payment_method_name || selected_payment_method || 'Payment Method';
@@ -499,7 +526,7 @@ router.post('/create-checkout', async (req, res) => {
               payment_method_name: selected_payment_method_name || ''
             }
           },
-          unit_amount: Math.round(paymentFeeNum * 100),
+          unit_amount: paymentFeeStripeAmount,
         },
         quantity: 1,
       });
@@ -540,7 +567,7 @@ router.post('/create-checkout', async (req, res) => {
 
         // Create a Stripe coupon for the discount
         const stripeCoupon = await stripe.coupons.create({
-          amount_off: Math.round(discount_amount * 100), // Convert to cents
+          amount_off: convertToStripeAmount(discount_amount, storeCurrency), // Convert based on currency type
           currency: storeCurrency.toLowerCase(),
           duration: 'once',
           name: `Discount: ${applied_coupon.code}`,
@@ -574,7 +601,7 @@ router.post('/create-checkout', async (req, res) => {
       const shippingRateData = {
         type: 'fixed_amount',
         fixed_amount: {
-          amount: Math.round((shipping_cost || 0) * 100), // Convert to cents
+          amount: convertToStripeAmount(shipping_cost || 0, storeCurrency), // Convert based on currency type
           currency: storeCurrency.toLowerCase(),
         },
         display_name: shipping_method.name || selected_shipping_method || 'Selected Shipping',
@@ -617,7 +644,7 @@ router.post('/create-checkout', async (req, res) => {
                 item_type: 'shipping'
               }
             },
-            unit_amount: Math.round((shipping_cost || 0) * 100),
+            unit_amount: convertToStripeAmount(shipping_cost || 0, storeCurrency),
           },
           quantity: 1,
         });
@@ -633,7 +660,7 @@ router.post('/create-checkout', async (req, res) => {
               item_type: 'shipping'
             }
           },
-          unit_amount: Math.round((shipping_cost || 0) * 100),
+          unit_amount: convertToStripeAmount(shipping_cost || 0, storeCurrency),
         },
         quantity: 1,
       });
