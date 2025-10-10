@@ -125,11 +125,15 @@ export default function CustomerAuth() {
     try {
       if (isLogin) {
         // Extract store_id from store context for customer login validation
-        const storeId = store?.id;
+        console.log('🔍 CustomerAuth: Full store object:', JSON.stringify(store, null, 2));
+        console.log('🔍 CustomerAuth: store?.id:', store?.id);
+        console.log('🔍 CustomerAuth: Object.keys(store):', store ? Object.keys(store) : 'store is null/undefined');
 
-        console.log('🔍 CustomerAuth: Store object:', store);
+        const storeId = store?.id;
         console.log('🔍 CustomerAuth: Extracted store_id:', storeId);
         console.log('🔍 CustomerAuth: store_id type:', typeof storeId);
+        console.log('🔍 CustomerAuth: store_id === null:', storeId === null);
+        console.log('🔍 CustomerAuth: store_id === undefined:', storeId === undefined);
 
         if (!storeId) {
           setError("Store information not available. Please refresh the page.");
