@@ -25,24 +25,24 @@ export function getStockLabel(product, settings = {}) {
 
   if (!product) return null;
 
-  // Default stock settings if not configured
+  // Stock settings are required - no fallbacks needed as StockSettings.jsx handles defaults
   const stockSettings = settings?.stock_settings || {};
 
   // Handle infinite stock
   if (product.infinite_stock) {
-    const label = stockSettings.in_stock_label || 'In Stock';
+    const label = stockSettings.in_stock_label;
     const text = processLabel(label, null, settings); // Remove quantity blocks
-    const textColor = stockSettings.in_stock_text_color || '#166534'; // green-800
-    const bgColor = stockSettings.in_stock_bg_color || '#dcfce7'; // green-100
+    const textColor = stockSettings.in_stock_text_color;
+    const bgColor = stockSettings.in_stock_bg_color;
 
     return { text, textColor, bgColor };
   }
 
   // Handle out of stock
   if (product.stock_quantity <= 0) {
-    const text = stockSettings.out_of_stock_label || 'Out of Stock';
-    const textColor = stockSettings.out_of_stock_text_color || '#991b1b'; // red-800
-    const bgColor = stockSettings.out_of_stock_bg_color || '#fee2e2'; // red-100
+    const text = stockSettings.out_of_stock_label;
+    const textColor = stockSettings.out_of_stock_text_color;
+    const bgColor = stockSettings.out_of_stock_bg_color;
 
     return { text, textColor, bgColor };
   }
@@ -53,19 +53,19 @@ export function getStockLabel(product, settings = {}) {
   // Handle low stock
   const lowStockThreshold = product.low_stock_threshold || settings?.display_low_stock_threshold || 0;
   if (lowStockThreshold > 0 && product.stock_quantity <= lowStockThreshold) {
-    const label = stockSettings.low_stock_label || 'Low stock, {just {quantity} left}';
+    const label = stockSettings.low_stock_label;
     const text = processLabel(label, hideStockQuantity ? null : product.stock_quantity, settings);
-    const textColor = stockSettings.low_stock_text_color || '#92400e'; // yellow-800
-    const bgColor = stockSettings.low_stock_bg_color || '#fef3c7'; // yellow-100
+    const textColor = stockSettings.low_stock_text_color;
+    const bgColor = stockSettings.low_stock_bg_color;
 
     return { text, textColor, bgColor };
   }
 
   // Handle regular in stock
-  const label = stockSettings.in_stock_label || 'In Stock';
+  const label = stockSettings.in_stock_label;
   const text = processLabel(label, hideStockQuantity ? null : product.stock_quantity, settings);
-  const textColor = stockSettings.in_stock_text_color || '#166534'; // green-800
-  const bgColor = stockSettings.in_stock_bg_color || '#dcfce7'; // green-100
+  const textColor = stockSettings.in_stock_text_color;
+  const bgColor = stockSettings.in_stock_bg_color;
 
   return { text, textColor, bgColor };
 }

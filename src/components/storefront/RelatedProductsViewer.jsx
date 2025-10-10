@@ -6,6 +6,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { formatPrice } from '@/utils/priceUtils';
 import { useStore } from '@/components/storefront/StoreProvider';
+import { getStockLabel, getStockLabelStyle } from '@/utils/stockLabelUtils';
 
 const MiniProductCard = ({ product }) => {
     const { store, settings, taxes, selectedCountry } = useStore();
@@ -23,11 +24,18 @@ const MiniProductCard = ({ product }) => {
                     <p className="text-lg font-bold text-gray-800">
                         {formatPrice(product.price)}
                     </p>
-                    {product.quantity > 0 || product.has_infinite_stock ? (
-                         <Badge className="bg-green-100 text-green-800 mt-1">In Stock</Badge>
-                    ) : (
-                         <Badge variant="destructive" className="mt-1">Out of Stock</Badge>
-                    )}
+                    {(() => {
+                        const stockLabelInfo = getStockLabel(product, settings);
+                        const stockLabelStyle = getStockLabelStyle(product, settings);
+
+                        if (!stockLabelInfo) return null;
+
+                        return (
+                            <Badge className="mt-1" style={stockLabelStyle}>
+                                {stockLabelInfo.text}
+                            </Badge>
+                        );
+                    })()}
                 </CardContent>
             </Card>
         </Link>

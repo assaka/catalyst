@@ -562,12 +562,19 @@ const ProductInfo = createSlotComponent({
             </div>
           </div>
 
-          {/* Stock Status */}
-          {product.stock_quantity > 0 ? (
-            <Badge variant="outline" className="mb-2">In Stock</Badge>
-          ) : (
-            <Badge variant="destructive" className="mb-2">Out of Stock</Badge>
-          )}
+          {/* Stock Status - uses centralized utility */}
+          {(() => {
+            const stockLabelInfo = getStockLabelUtil(product, settings);
+            const stockLabelStyle = getStockLabelStyle(product, settings);
+
+            if (!stockLabelInfo) return null;
+
+            return (
+              <Badge className="mb-2" style={stockLabelStyle}>
+                {stockLabelInfo.text}
+              </Badge>
+            );
+          })()}
 
           {/* SKU */}
           {product.sku && (
