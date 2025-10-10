@@ -2,6 +2,7 @@ import { Auth } from '@/api/entities';
 import { createPageUrl } from '@/utils';
 import { createAdminUrl, createPublicUrl, getCurrentUrlType, getStoreSlugFromPublicUrl } from '@/utils/urlUtils';
 import apiClient from '@/api/client';
+import { setStorefrontCustomerToken, getStorefrontCustomerToken } from '@/api/storefront-client';
 
 /**
  * Standardized logout function that handles:
@@ -211,7 +212,10 @@ export const setRoleBasedAuthData = (user, token, storeSlug = null) => {
       console.log('🔒 Customer session bound to store:', storeSlug);
     }
 
+    // Set token in BOTH API clients for customer sessions
     apiClient.setToken(token);
+    setStorefrontCustomerToken(token);
+    console.log('✅ Customer session stored in both API clients');
 
   } else if (user.role === 'store_owner' || user.role === 'admin') {
     localStorage.setItem('store_owner_auth_token', token);
@@ -406,17 +410,27 @@ export const clearCustomerSessionIfInvalid = (currentStoreSlug) => {
     console.log('   Note: Session preserved for original store');
 
     // DON'T clear the session from localStorage - just deactivate it
-    // Remove token from apiClient so API calls don't use this customer's token
+    // Remove token from BOTH apiClient and storefrontApiClient
     apiClient.setToken(null);
-    console.log('🔓 Cleared customer token from apiClient for this store');
+    setStorefrontCustomerToken(null);
+    console.log('🔓 Cleared customer token from both API clients for this store');
 
     return true; // Session exists but not valid for this store
   } else {
-    // Session is valid for this store - ensure token is active
+    // Session is valid for this store - ensure token is active in both clients
     const customerToken = localStorage.getItem('customer_auth_token');
-    if (customerToken && apiClient.getToken() !== customerToken) {
-      console.log('✅ Reactivating customer token for matching store:', currentStoreSlug);
-      apiClient.setToken(customerToken);
+    if (customerToken) {
+      // Reactivate in main apiClient if needed
+      if (apiClient.getToken() !== customerToken) {
+        console.log('✅ Reactivating customer token in apiClient for matching store:', currentStoreSlug);
+        apiClient.setToken(customerToken);
+      }
+
+      // Also reactivate in storefront client if needed
+      if (getStorefrontCustomerToken() !== customerToken) {
+        console.log('✅ Reactivating customer token in storefrontApiClient for matching store:', currentStoreSlug);
+        setStorefrontCustomerToken(customerToken);
+      }
     }
     return false; // Session is valid for current store
   }
