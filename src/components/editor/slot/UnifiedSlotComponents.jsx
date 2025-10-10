@@ -33,6 +33,12 @@ import './CategorySlotComponents.jsx';
 import './HeaderSlotComponents.jsx';
 import './BreadcrumbsSlotComponent.jsx';
 
+// Import functional cart components that handle applied state properly
+import {
+  CartCouponSlot as CartCouponSlotFunctional,
+  CartSummarySlot as CartSummarySlotFunctional
+} from './slotComponentsCart.jsx';
+
 /**
  * QuantitySelector - Unified quantity selector component
  */
@@ -1467,65 +1473,19 @@ const CartItemsSlot = createSlotComponent({
 });
 
 /**
- * CartCouponSlot - Functional coupon component
+ * CartCouponSlot - Wrapper for the functional component from slotComponentsCart.jsx
+ * This component properly handles appliedCoupon state and shows/hides the Remove button
  */
 const CartCouponSlot = createSlotComponent({
   name: 'CartCouponSlot',
 
-  render: ({ slot, cartContext, className, styles, context, variableContext }) => {
-    const containerRef = React.useRef(null);
-    const content = slot?.content || '';
-
-    if (context === 'editor') {
-      // Editor version - use template for preview
-      const processedContent = processVariables(content, variableContext);
-
-      return (
-        <div ref={containerRef} className={className} style={styles}
-             dangerouslySetInnerHTML={{ __html: processedContent }} />
-      );
-    }
-
-    // Storefront version - use template with event handlers
-    const {
-      couponCode = '',
-      setCouponCode = () => {},
-      handleApplyCoupon = () => {},
-      handleCouponKeyPress = () => {}
-    } = cartContext || {};
-
-    const processedContent = processVariables(content, variableContext);
-
-    React.useEffect(() => {
-      if (!containerRef.current) return;
-
-      const input = containerRef.current.querySelector('[data-coupon-input]');
-      const applyButton = containerRef.current.querySelector('[data-action="apply-coupon"]');
-
-      if (input) {
-        input.value = couponCode;
-        input.addEventListener('input', (e) => setCouponCode(e.target.value));
-        input.addEventListener('keypress', handleCouponKeyPress);
-      }
-
-      if (applyButton) {
-        applyButton.addEventListener('click', handleApplyCoupon);
-      }
-
-      return () => {
-        if (input) {
-          input.removeEventListener('input', (e) => setCouponCode(e.target.value));
-          input.removeEventListener('keypress', handleCouponKeyPress);
-        }
-        if (applyButton) {
-          applyButton.removeEventListener('click', handleApplyCoupon);
-        }
-      };
-    }, [couponCode, setCouponCode, handleApplyCoupon, handleCouponKeyPress]);
-
+  render: ({ slot, cartContext, className, styles, context }) => {
+    // Use the functional component from slotComponentsCart.jsx for both editor and storefront
+    // It has the proper logic to show/hide the Remove button based on appliedCoupon state
     return (
-      <div ref={containerRef} className={className} style={styles}
-           dangerouslySetInnerHTML={{ __html: processedContent }} />
+      <div className={className} style={styles}>
+        <CartCouponSlotFunctional cartContext={cartContext} content={slot?.content} />
+      </div>
     );
   }
 });

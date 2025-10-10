@@ -225,10 +225,6 @@ export function CartCouponSlot({ cartContext, content }) {
     cartItems
   } = cartContext;
 
-  // Debug: log the coupon state
-  console.log('🎫 CartCouponSlot - appliedCoupon:', appliedCoupon);
-  console.log('🎫 CartCouponSlot - couponCode:', couponCode);
-
   if (cartItems.length === 0) {
     return null;
   }
