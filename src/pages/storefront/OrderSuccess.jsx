@@ -603,7 +603,7 @@ export default function OrderSuccess() {
           <div className="space-y-6">
             
             {/* Shipping Address */}
-            {order.shipping_address && (
+            {order.shipping_address && Object.keys(order.shipping_address).length > 0 && (
               <Card>
                 <CardHeader>
                   <CardTitle className="flex items-center">
@@ -613,24 +613,33 @@ export default function OrderSuccess() {
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-1 text-sm">
-                    <p className="font-medium text-gray-900">
-                      {order.shipping_address.full_name || order.shipping_address.name}
-                    </p>
-                    <p className="text-gray-600">
-                      {order.shipping_address.street || order.shipping_address.line1 || order.shipping_address.address}
-                    </p>
+                    {(order.shipping_address.full_name || order.shipping_address.name) && (
+                      <p className="font-medium text-gray-900">
+                        {order.shipping_address.full_name || order.shipping_address.name}
+                      </p>
+                    )}
+                    {(order.shipping_address.street || order.shipping_address.line1 || order.shipping_address.address) && (
+                      <p className="text-gray-600">
+                        {order.shipping_address.street || order.shipping_address.line1 || order.shipping_address.address}
+                      </p>
+                    )}
                     {(order.shipping_address.line2 || order.shipping_address.address_line2) && (
                       <p className="text-gray-600">
                         {order.shipping_address.line2 || order.shipping_address.address_line2}
                       </p>
                     )}
-                    <p className="text-gray-600">
-                      {order.shipping_address.city}, {order.shipping_address.state || order.shipping_address.province}{' '}
-                      {order.shipping_address.postal_code || order.shipping_address.zip}
-                    </p>
-                    <p className="text-gray-600">{order.shipping_address.country}</p>
-                    {order.shipping_address.phone && (
-                      <p className="text-gray-600">Phone: {order.shipping_address.phone}</p>
+                    {(order.shipping_address.city || order.shipping_address.state || order.shipping_address.province || order.shipping_address.postal_code || order.shipping_address.zip) && (
+                      <p className="text-gray-600">
+                        {order.shipping_address.city ? `${order.shipping_address.city}, ` : ''}
+                        {order.shipping_address.state || order.shipping_address.province || ''}{' '}
+                        {order.shipping_address.postal_code || order.shipping_address.zip || ''}
+                      </p>
+                    )}
+                    {order.shipping_address.country && (
+                      <p className="text-gray-600">{order.shipping_address.country}</p>
+                    )}
+                    {(order.shipping_address.phone || order.customer_phone) && (
+                      <p className="text-gray-600">Phone: {order.shipping_address.phone || order.customer_phone}</p>
                     )}
                   </div>
                 </CardContent>
@@ -638,7 +647,7 @@ export default function OrderSuccess() {
             )}
 
             {/* Billing Address */}
-            {order.billing_address && (
+            {order.billing_address && Object.keys(order.billing_address).length > 0 && (
               <Card>
                 <CardHeader>
                   <CardTitle className="flex items-center">
@@ -648,22 +657,34 @@ export default function OrderSuccess() {
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-1 text-sm">
-                    <p className="font-medium text-gray-900">
-                      {order.billing_address.name || order.billing_address.full_name}
-                    </p>
-                    <p className="text-gray-600">
-                      {order.billing_address.line1 || order.billing_address.street || order.billing_address.address}
-                    </p>
+                    {(order.billing_address.name || order.billing_address.full_name) && (
+                      <p className="font-medium text-gray-900">
+                        {order.billing_address.name || order.billing_address.full_name}
+                      </p>
+                    )}
+                    {(order.billing_address.line1 || order.billing_address.street || order.billing_address.address) && (
+                      <p className="text-gray-600">
+                        {order.billing_address.line1 || order.billing_address.street || order.billing_address.address}
+                      </p>
+                    )}
                     {(order.billing_address.line2 || order.billing_address.address_line2) && (
                       <p className="text-gray-600">
                         {order.billing_address.line2 || order.billing_address.address_line2}
                       </p>
                     )}
-                    <p className="text-gray-600">
-                      {order.billing_address.city}, {order.billing_address.state || order.billing_address.province}{' '}
-                      {order.billing_address.postal_code || order.billing_address.zip}
-                    </p>
-                    <p className="text-gray-600">{order.billing_address.country}</p>
+                    {(order.billing_address.city || order.billing_address.state || order.billing_address.province || order.billing_address.postal_code || order.billing_address.zip) && (
+                      <p className="text-gray-600">
+                        {order.billing_address.city ? `${order.billing_address.city}, ` : ''}
+                        {order.billing_address.state || order.billing_address.province || ''}{' '}
+                        {order.billing_address.postal_code || order.billing_address.zip || ''}
+                      </p>
+                    )}
+                    {order.billing_address.country && (
+                      <p className="text-gray-600">{order.billing_address.country}</p>
+                    )}
+                    {(order.billing_address.phone || order.customer_phone) && (
+                      <p className="text-gray-600">Phone: {order.billing_address.phone || order.customer_phone}</p>
+                    )}
                   </div>
                 </CardContent>
               </Card>

@@ -1392,6 +1392,27 @@ async function createOrderFromCheckoutSession(session) {
       }
     }
 
+    // Prepare shipping address with name included
+    const shippingAddress = session.shipping_details?.address || session.customer_details?.address || {};
+    if (shippingAddress && Object.keys(shippingAddress).length > 0) {
+      // Add name to address object from shipping_details or customer_details
+      const shippingName = session.shipping_details?.name || session.customer_details?.name || '';
+      if (shippingName) {
+        shippingAddress.full_name = shippingName;
+        shippingAddress.name = shippingName; // Add both for compatibility
+      }
+    }
+
+    // Prepare billing address with name included
+    const billingAddress = session.customer_details?.address || {};
+    if (billingAddress && Object.keys(billingAddress).length > 0) {
+      const billingName = session.customer_details?.name || '';
+      if (billingName) {
+        billingAddress.full_name = billingName;
+        billingAddress.name = billingName; // Add both for compatibility
+      }
+    }
+
     // Create the order within transaction
     const order = await Order.create({
       order_number: order_number,
@@ -1399,8 +1420,8 @@ async function createOrderFromCheckoutSession(session) {
       customer_email: session.customer_email || session.customer_details?.email,
       customer_id: validatedCustomerId, // Only set if customer exists in database
       customer_phone: session.customer_details?.phone,
-      billing_address: session.customer_details?.address || {},
-      shipping_address: session.shipping_details?.address || session.customer_details?.address || {},
+      billing_address: billingAddress,
+      shipping_address: shippingAddress,
       subtotal: subtotal,
       tax_amount: final_tax_amount,
       shipping_amount: shipping_cost, // Use shipping_amount instead of shipping_cost
