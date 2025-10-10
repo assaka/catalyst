@@ -29,6 +29,7 @@ import HeatmapTrackerComponent from '@/components/admin/heatmap/HeatmapTracker';
 import FlashMessage from '@/components/storefront/FlashMessage';
 import { HeaderSlotRenderer } from './HeaderSlotRenderer';
 import { useHeaderConfig } from '@/hooks/useHeaderConfig';
+import { useStoreContextValidator } from '@/hooks/useStoreContextValidator';
 
 const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 
@@ -74,6 +75,9 @@ export default function StorefrontLayout({ children }) {
 
     // Load header slot configuration
     const { headerSlots, headerConfigLoaded } = useHeaderConfig(store);
+
+    // Validate customer store context (auto-logout if switching stores)
+    useStoreContextValidator();
 
     // Toggle function for mobile category expansion
     const toggleMobileCategory = (categoryId) => {

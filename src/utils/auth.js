@@ -178,6 +178,7 @@ export const clearRoleBasedAuthData = (role) => {
     localStorage.removeItem('customer_auth_token');
     localStorage.removeItem('customer_user_data');
     localStorage.removeItem('customer_session_id');
+    localStorage.removeItem('customer_store_slug'); // Clear store binding
     localStorage.removeItem('customer_wishlist_id');
     localStorage.removeItem('customer_cart_session');
     localStorage.removeItem('customer_addresses');
@@ -196,14 +197,22 @@ export const clearRoleBasedAuthData = (role) => {
 /**
  * Set role-based authentication data - independent dual sessions
  */
-export const setRoleBasedAuthData = (user, token) => {
+export const setRoleBasedAuthData = (user, token, storeSlug = null) => {
   // Store role-specific data separately to maintain both sessions
   if (user.role === 'customer') {
     localStorage.setItem('customer_auth_token', token);
     localStorage.setItem('customer_user_data', JSON.stringify(user));
     localStorage.setItem('customer_session_id', generateSessionId());
+
+    // CRITICAL: Store the store slug/context with customer session
+    // This ensures customer sessions are bound to specific stores
+    if (storeSlug) {
+      localStorage.setItem('customer_store_slug', storeSlug);
+      console.log('🔒 Customer session bound to store:', storeSlug);
+    }
+
     apiClient.setToken(token);
-    
+
   } else if (user.role === 'store_owner' || user.role === 'admin') {
     localStorage.setItem('store_owner_auth_token', token);
     localStorage.setItem('store_owner_user_data', JSON.stringify(user));
@@ -211,7 +220,7 @@ export const setRoleBasedAuthData = (user, token) => {
     apiClient.setToken(token);
     console.log('✅ Store owner session stored');
   }
-  
+
   localStorage.setItem('session_created_at', new Date().toISOString());
 };
 
@@ -327,22 +336,69 @@ export const activateRoleSession = (targetRole) => {
  * Force set a role as the active session (used for explicit switching)
  */
 export const forceActivateRole = (targetRole) => {
-  
+
   if (targetRole === 'customer') {
     const customerToken = localStorage.getItem('customer_auth_token');
-    
+
     if (customerToken) {
       apiClient.setToken(customerToken);
       return true;
     }
   } else if (targetRole === 'store_owner' || targetRole === 'admin') {
     const storeOwnerToken = localStorage.getItem('store_owner_auth_token');
-    
+
     if (storeOwnerToken) {
       apiClient.setToken(storeOwnerToken);
       return true;
     }
   }
   return false;
+};
+
+/**
+ * Validate if customer session matches current store
+ * Returns true if valid, false if session should be cleared
+ */
+export const validateCustomerStoreContext = (currentStoreSlug) => {
+  const customerToken = localStorage.getItem('customer_auth_token');
+  const storedStoreSlug = localStorage.getItem('customer_store_slug');
+
+  // No customer session = nothing to validate
+  if (!customerToken) {
+    return true;
+  }
+
+  // Customer has session but no store slug stored = legacy session, keep it
+  if (!storedStoreSlug) {
+    console.warn('⚠️ Customer session without store binding detected');
+    return true;
+  }
+
+  // No current store slug provided = can't validate
+  if (!currentStoreSlug) {
+    return true;
+  }
+
+  // Check if customer is accessing a different store
+  if (storedStoreSlug !== currentStoreSlug) {
+    console.log('🚫 Customer store context mismatch');
+    console.log('   Session store:', storedStoreSlug);
+    console.log('   Current store:', currentStoreSlug);
+    return false;
+  }
+
+  return true;
+};
+
+/**
+ * Clear customer session if store context is invalid
+ */
+export const clearCustomerSessionIfInvalid = (currentStoreSlug) => {
+  if (!validateCustomerStoreContext(currentStoreSlug)) {
+    console.log('🔒 Clearing customer session due to store mismatch');
+    clearRoleBasedAuthData('customer');
+    return true; // Session was cleared
+  }
+  return false; // Session is valid
 };
 

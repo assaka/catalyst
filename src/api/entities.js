@@ -240,13 +240,16 @@ class AuthService {
     console.log('🔐 AuthService.login: Result:', result);
 
     // CRITICAL FIX: Store user data if we have both token and user info
+    // For customers, also store the current store slug to bind session to store
+    const currentStoreSlug = role === 'customer' ? this.getCurrentStoreSlug() : null;
+
     if (token && result.user) {
       console.log('✅ AuthService.login: Storing user data (result.user)');
-      setRoleBasedAuthData(result.user, token);
+      setRoleBasedAuthData(result.user, token, currentStoreSlug);
     } else if (token && result.id) {
       console.log('✅ AuthService.login: Storing user data (result has id)');
       // Handle case where user data is at root level
-      setRoleBasedAuthData(result, token);
+      setRoleBasedAuthData(result, token, currentStoreSlug);
     } else if (token) {
       console.log('⚠️ AuthService.login: Token but no user data, fetching from /auth/me');
       // If we have token but no user data, fetch it immediately
@@ -255,7 +258,7 @@ class AuthService {
         const userData = userResponse.data || userResponse;
         if (userData && userData.id) {
           console.log('✅ AuthService.login: User data fetched successfully');
-          setRoleBasedAuthData(userData, token);
+          setRoleBasedAuthData(userData, token, currentStoreSlug);
           // Update result to include user data
           result.user = userData;
         } else {
@@ -279,6 +282,19 @@ class AuthService {
     return result;
   }
 
+  // Get current store slug from URL (for customer sessions)
+  getCurrentStoreSlug() {
+    try {
+      const pathname = window.location.pathname;
+      // Extract store slug from URL pattern: /public/{storeSlug}/...
+      const match = pathname.match(/^\/public\/([^\/]+)/);
+      return match ? match[1] : null;
+    } catch (error) {
+      console.error('Error extracting store slug:', error);
+      return null;
+    }
+  }
+
   googleLogin() {
     window.location.href = `${apiClient.baseURL}/api/auth/google`;
   }
@@ -299,15 +315,18 @@ class AuthService {
     
     // Return the full response to maintain compatibility
     const result = response.data || response;
-    
+
     // CRITICAL FIX: Store user data if we have both token and user info
+    // For customers, also store the current store slug to bind session to store
+    const currentStoreSlug = userData.role === 'customer' ? this.getCurrentStoreSlug() : null;
+
     if (token && result.user) {
-      setRoleBasedAuthData(result.user, token);
+      setRoleBasedAuthData(result.user, token, currentStoreSlug);
     } else if (token && result.id) {
       // Handle case where user data is at root level
-      setRoleBasedAuthData(result, token);
+      setRoleBasedAuthData(result, token, currentStoreSlug);
     }
-    
+
     return result;
   }
 
