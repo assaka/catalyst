@@ -4,7 +4,7 @@ import { createProductUrl } from '@/utils/urlUtils';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import ProductLabelComponent from '@/components/storefront/ProductLabel';
-import { formatDisplayPrice } from '@/utils/priceUtils';
+import { formatPriceWithTax, safeNumber } from '@/utils/priceUtils';
 import cartService from '@/services/cartService';
 import { ShoppingCart } from 'lucide-react';
 import { getPrimaryImageUrl } from '@/utils/imageUtils';
@@ -17,8 +17,6 @@ const ProductItemCard = ({
   product,
   settings = {},
   store,
-  taxes,
-  selectedCountry,
   productLabels = [],
   className = "",
   viewMode = 'grid',
@@ -36,17 +34,6 @@ const ProductItemCard = ({
   const setAddingToCart = onAddToCartStateChange || setLocalIsAddingToCart;
 
   if (!product || !store) return null;
-
-  // Debug currency in ProductItemCard
-  if (!settings?.currency_symbol) {
-    console.warn('⚠️ ProductItemCard missing currency_symbol:', {
-      productName: product.name,
-      settingsCurrencySymbol: settings?.currency_symbol,
-      storeCurrency: store?.currency,
-      hideProduct: settings?.hide_currency_product,
-      fullSettings: settings
-    });
-  }
 
   // Get slot configurations for styling - support both nested and flat structures
   const {
@@ -99,8 +86,8 @@ const ProductItemCard = ({
         if (shouldShow && label.conditions.price_conditions) {
           const conditions = label.conditions.price_conditions;
           if (conditions.has_sale_price) {
-            const hasComparePrice = product.compare_price && parseFloat(product.compare_price) > 0;
-            const pricesAreDifferent = hasComparePrice && parseFloat(product.compare_price) !== parseFloat(product.price);
+            const hasComparePrice = product.compare_price && safeNumber(product.compare_price) > 0;
+            const pricesAreDifferent = hasComparePrice && safeNumber(product.compare_price) !== safeNumber(product.price);
             if (!pricesAreDifferent) {
               shouldShow = false;
             }
@@ -319,7 +306,7 @@ const ProductItemCard = ({
               data-slot-id={isEditorMode ? 'product_card_price_container' : undefined}
               onClick={isEditorMode ? (e) => handleSlotClick(e, 'product_card_price_container') : undefined}
             >
-              {product.compare_price && parseFloat(product.compare_price) > 0 && parseFloat(product.compare_price) !== parseFloat(product.price) ? (
+              {product.compare_price && safeNumber(product.compare_price) > 0 && safeNumber(product.compare_price) !== safeNumber(product.price) ? (
                 <>
                   <p
                     className={priceConfig.className || "font-bold text-red-600 text-xl"}
@@ -327,12 +314,8 @@ const ProductItemCard = ({
                     data-slot-id={isEditorMode ? 'product_card_price' : undefined}
                     onClick={isEditorMode ? (e) => handleSlotClick(e, 'product_card_price') : undefined}
                   >
-                    {formatDisplayPrice(
-                      Math.min(parseFloat(product.price || 0), parseFloat(product.compare_price || 0)),
-                      settings?.hide_currency_product ? '' : (settings?.currency_symbol || '🔴2'),
-                      store,
-                      taxes,
-                      selectedCountry
+                    {settings?.hide_currency_product ? '' : formatPriceWithTax(
+                      Math.min(safeNumber(product.price), safeNumber(product.compare_price))
                     )}
                   </p>
                   <p
@@ -341,12 +324,8 @@ const ProductItemCard = ({
                     data-slot-id={isEditorMode ? 'product_card_compare_price' : undefined}
                     onClick={isEditorMode ? (e) => handleSlotClick(e, 'product_card_compare_price') : undefined}
                   >
-                    {formatDisplayPrice(
-                      Math.max(parseFloat(product.price || 0), parseFloat(product.compare_price || 0)),
-                      settings?.hide_currency_product ? '' : (settings?.currency_symbol || '🔴3'),
-                      store,
-                      taxes,
-                      selectedCountry
+                    {settings?.hide_currency_product ? '' : formatPriceWithTax(
+                      Math.max(safeNumber(product.price), safeNumber(product.compare_price))
                     )}
                   </p>
                 </>
@@ -357,13 +336,7 @@ const ProductItemCard = ({
                   data-slot-id={isEditorMode ? 'product_card_price' : undefined}
                   onClick={isEditorMode ? (e) => handleSlotClick(e, 'product_card_price') : undefined}
                 >
-                  {formatDisplayPrice(
-                    parseFloat(product.price || 0),
-                    settings?.hide_currency_product ? '' : (settings?.currency_symbol || '🔴4'),
-                    store,
-                    taxes,
-                    selectedCountry
-                  )}
+                  {settings?.hide_currency_product ? '' : formatPriceWithTax(safeNumber(product.price))}
                 </p>
               )}
             </div>
