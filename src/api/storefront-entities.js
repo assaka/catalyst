@@ -134,21 +134,49 @@ class CustomerAuthService {
 
   async login(email, password, rememberMe = false) {
     const response = await this.client.postCustomer('auth/login', { email, password, rememberMe });
-    if (response.data && response.data.token) {
-      this.client.setCustomerToken(response.data.token);
-    } else if (response.token) {
-      this.client.setCustomerToken(response.token);
+    const token = response.data?.token || response.token;
+
+    if (token) {
+      // Get store slug - try currentStoreSlug first, fallback to extracting from URL
+      let storeSlug = this.client.currentStoreSlug;
+
+      if (!storeSlug) {
+        // Extract from URL as fallback: /public/{storeSlug}/...
+        const match = window.location.pathname.match(/^\/public\/([^\/]+)/);
+        storeSlug = match ? match[1] : null;
+      }
+
+      if (storeSlug) {
+        this.client.setCustomerToken(token, storeSlug);
+      } else {
+        console.error('Cannot set customer token: No store context available');
+      }
     }
+
     return response.data || response;
   }
 
   async register(userData) {
     const response = await this.client.postCustomer('auth/register', userData);
-    if (response.data && response.data.token) {
-      this.client.setCustomerToken(response.data.token);
-    } else if (response.token) {
-      this.client.setCustomerToken(response.token);
+    const token = response.data?.token || response.token;
+
+    if (token) {
+      // Get store slug - try currentStoreSlug first, fallback to extracting from URL
+      let storeSlug = this.client.currentStoreSlug;
+
+      if (!storeSlug) {
+        // Extract from URL as fallback: /public/{storeSlug}/...
+        const match = window.location.pathname.match(/^\/public\/([^\/]+)/);
+        storeSlug = match ? match[1] : null;
+      }
+
+      if (storeSlug) {
+        this.client.setCustomerToken(token, storeSlug);
+      } else {
+        console.error('Cannot set customer token: No store context available');
+      }
     }
+
     return response.data || response;
   }
 
