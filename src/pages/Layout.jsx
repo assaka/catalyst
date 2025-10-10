@@ -85,6 +85,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { StoreProvider } from "@/components/storefront/StoreProvider";
+import { PriceUtilsProvider } from "@/utils/PriceUtilsProvider";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useStoreSelection } from "@/contexts/StoreSelectionContext";
 
@@ -285,7 +286,9 @@ export default function Layout({ children, currentPageName }) {
   if (isStorefrontPage || isCustomerDashboard) {
       return (
         <StoreProvider>
-            <StorefrontLayout>{children}</StorefrontLayout>
+            <PriceUtilsProvider>
+                <StorefrontLayout>{children}</StorefrontLayout>
+            </PriceUtilsProvider>
         </StoreProvider>
       );
   }
@@ -473,6 +476,7 @@ export default function Layout({ children, currentPageName }) {
 
   return (
     <StoreProvider>
+      <PriceUtilsProvider>
       <div className="min-h-screen bg-gray-50 flex">
         <RoleSwitcher />
       <style>{`
@@ -807,6 +811,7 @@ export default function Layout({ children, currentPageName }) {
         </div>
       </div>
       </div>
+      </PriceUtilsProvider>
     </StoreProvider>
   );
 }

@@ -1,5 +1,29 @@
 // Utility functions for safe price formatting and calculations
 
+// Store context - will be set by useStore hook
+let _storeContext = null;
+
+/**
+ * Internal function to set store context
+ * This should be called by a React component using useStore()
+ * @param {Object} context - The store context from useStore()
+ */
+export const _setStoreContext = (context) => {
+    _storeContext = context;
+};
+
+/**
+ * Internal function to get store context
+ * @returns {Object} - The store context
+ */
+const _getStoreContext = () => {
+    if (!_storeContext) {
+        console.error('❌ Price utils: Store context not initialized! Make sure PriceUtilsProvider wraps your app.');
+        return null;
+    }
+    return _storeContext;
+};
+
 /**
  * Safely converts a value to a number, returning 0 if invalid
  * @param {any} value - The value to convert
@@ -27,12 +51,18 @@ export const safeToFixed = (value, decimals = 2) => {
 
 /**
  * Formats a price with currency symbol
+ * IMPORTANT: This function should ALWAYS receive a currency symbol from settings
+ * If you see an error, it means the currency symbol is not being passed correctly
  * @param {any} value - The price value
- * @param {string} symbol - Currency symbol (default: '🔴4')
+ * @param {string} symbol - Currency symbol (REQUIRED - should come from settings)
  * @param {number} decimals - Number of decimal places (default: 2)
  * @returns {string} - The formatted price with currency symbol
  */
-export const formatCurrency = (value, symbol = '🔴4', decimals = 2) => {
+export const formatCurrency = (value, symbol, decimals = 2) => {
+    if (!symbol) {
+        console.error('❌ formatCurrency called without currency symbol!', new Error().stack);
+        symbol = '❌'; // Show error symbol so it's obvious something is wrong
+    }
     return `${symbol}${safeToFixed(value, decimals)}`;
 };
 
@@ -155,7 +185,60 @@ export const getApplicableTaxRate = (taxRules, country = 'US') => {
 };
 
 /**
- * Format price with tax consideration for display
+ * Format price with tax consideration for display (CONTEXT-AWARE VERSION)
+ * This function automatically gets currency symbol and store from context
+ * @param {number} basePrice - Base price
+ * @param {Array} taxRules - Tax rules (optional, defaults to context taxes)
+ * @param {string} country - Country code (optional, defaults to context selectedCountry)
+ * @returns {string} - Formatted price string
+ */
+export const formatDisplayPrice = (basePrice, taxRules = null, country = null) => {
+    // Handle invalid basePrice input
+    if (basePrice === null || basePrice === undefined || basePrice === '') {
+        console.warn('⚠️ formatDisplayPrice: Invalid basePrice received:', basePrice);
+        // Still need context for currency symbol even for zero price
+        const context = _getStoreContext();
+        if (!context) return '❌0.00';
+        const currencySymbol = context.settings?.currency_symbol || '❌';
+        return formatCurrency(0, currencySymbol);
+    }
+
+    // Get store context
+    const context = _getStoreContext();
+    if (!context) {
+        console.error('❌ formatDisplayPrice: No store context available!');
+        return `❌${basePrice.toFixed(2)}`;
+    }
+
+    // Extract values from context
+    const currencySymbol = context.settings?.currency_symbol;
+    const store = context.store;
+    const contextTaxes = context.taxes || [];
+    const contextCountry = context.selectedCountry || 'US';
+
+    // Use provided values or fall back to context
+    const finalTaxRules = taxRules !== null ? taxRules : contextTaxes;
+    const finalCountry = country !== null ? country : contextCountry;
+
+    // Validate currency symbol
+    if (!currencySymbol) {
+        console.error('❌ formatDisplayPrice: currency_symbol not found in context!', {
+            hasContext: !!context,
+            hasSettings: !!context.settings,
+            settingsKeys: context.settings ? Object.keys(context.settings) : []
+        });
+    }
+
+    const displayPrice = calculateDisplayPrice(basePrice, store, finalTaxRules, finalCountry);
+    const formattedPrice = formatCurrency(displayPrice, currencySymbol || '❌');
+
+    return formattedPrice;
+};
+
+/**
+ * Legacy version of formatDisplayPrice for backward compatibility
+ * This accepts all parameters explicitly (non-context version)
+ * @deprecated Use the context-aware version instead
  * @param {number} basePrice - Base price
  * @param {string} currencySymbol - Currency symbol
  * @param {Object} store - Store object
@@ -163,14 +246,20 @@ export const getApplicableTaxRate = (taxRules, country = 'US') => {
  * @param {string} country - Country code
  * @returns {string} - Formatted price string
  */
-export const formatDisplayPrice = (basePrice, currencySymbol = '🔴5', store, taxRules = [], country = 'US') => {
-
+export const formatDisplayPriceLegacy = (basePrice, currencySymbol, store, taxRules = [], country = 'US') => {
     // Handle invalid basePrice input
     if (basePrice === null || basePrice === undefined || basePrice === '') {
         console.warn('⚠️ formatDisplayPrice: Invalid basePrice received:', basePrice);
         return formatCurrency(0, currencySymbol);
     }
-    
+
+    // Validate currency symbol is provided
+    if (!currencySymbol) {
+        console.error('❌ formatDisplayPrice called without currency symbol!', new Error().stack);
+        console.error('❌ This should come from settings.currency_symbol');
+        currencySymbol = '❌';
+    }
+
     const displayPrice = calculateDisplayPrice(basePrice, store, taxRules, country);
     const formattedPrice = formatCurrency(displayPrice, currencySymbol);
 
