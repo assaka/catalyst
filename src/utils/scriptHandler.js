@@ -3,6 +3,8 @@
  * Manages the execution of JavaScript code attached to slots
  */
 
+import { formatPrice } from './priceUtils';
+
 /**
  * Store for registered script handlers
  */
@@ -45,10 +47,7 @@ export function executeScript(scriptCode, context) {
 
       // Data utilities
       formatPrice: (price, currency) => {
-        if (typeof price === 'number' && currency) {
-          return `${currency}${price.toFixed(2)}`;
-        }
-        return typeof price === 'number' ? price.toFixed(2) : price;
+        return formatPrice(price);
       },
 
       // Animation utilities
@@ -132,9 +131,7 @@ registerScriptHandler('priceFormatter', (context) => {
     const price = productContext?.product?.[priceType];
 
     if (price) {
-      const formatted = typeof price === 'number'
-        ? `$${price.toFixed(2)}`
-        : price;
+      const formatted = formatPrice(price);
       el.textContent = formatted;
     }
   });

@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { ShippingMethod } from "@/api/entities";
 import { useStoreSelection } from "@/contexts/StoreSelectionContext.jsx";
 import NoStoreSelected from "@/components/admin/NoStoreSelected";
+import { formatPrice } from "@/utils/priceUtils";
 import {
   Truck,
   Plus,
@@ -244,8 +245,8 @@ export default function ShippingMethodsPage() {
                           </Badge>
                           <span>•</span>
                           <span>
-                            {method.type === 'flat_rate' ? `$${parseFloat(method.flat_rate_cost || 0).toFixed(2)} Flat Rate` : 
-                             `Free over $${parseFloat(method.free_shipping_min_order || 0).toFixed(2)}`}
+                            {method.type === 'flat_rate' ? `${formatPrice(parseFloat(method.flat_rate_cost || 0))} Flat Rate` :
+                             `Free over ${formatPrice(parseFloat(method.free_shipping_min_order || 0))}`}
                           </span>
                         </div>
                       </div>

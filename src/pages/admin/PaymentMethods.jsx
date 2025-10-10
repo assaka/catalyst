@@ -3,6 +3,7 @@ import { PaymentMethod } from "@/api/entities";
 import { Store } from "@/api/entities";
 import { User } from "@/api/entities";
 import { useStoreSelection } from "@/contexts/StoreSelectionContext.jsx";
+import { formatPrice } from "@/utils/priceUtils";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -308,8 +309,8 @@ export default function PaymentMethods() {
                         )}
                         {method.fee_type && method.fee_type !== 'none' && (
                           <Badge variant="outline" className="bg-yellow-50 text-yellow-700 border-yellow-200">
-                            {method.fee_type === 'fixed' 
-                              ? `$${method.fee_amount || 0} fee` 
+                            {method.fee_type === 'fixed'
+                              ? `${formatPrice(method.fee_amount || 0)} fee`
                               : `${method.fee_amount || 0}% fee`
                             }
                           </Badge>
@@ -321,11 +322,11 @@ export default function PaymentMethods() {
                         )}
                         {(method.min_amount || method.max_amount) && (
                           <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200">
-                            {method.min_amount && method.max_amount 
-                              ? `$${method.min_amount} - $${method.max_amount}`
-                              : method.min_amount 
-                                ? `Min $${method.min_amount}`
-                                : `Max $${method.max_amount}`
+                            {method.min_amount && method.max_amount
+                              ? `${formatPrice(method.min_amount)} - ${formatPrice(method.max_amount)}`
+                              : method.min_amount
+                                ? `Min ${formatPrice(method.min_amount)}`
+                                : `Max ${formatPrice(method.max_amount)}`
                             }
                           </Badge>
                         )}

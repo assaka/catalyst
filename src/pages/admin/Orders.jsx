@@ -5,6 +5,7 @@ import { OrderItem } from "@/api/entities";
 import { User } from "@/api/entities";
 import { useStoreSelection } from "@/contexts/StoreSelectionContext.jsx";
 import NoStoreSelected from "@/components/admin/NoStoreSelected";
+import { formatPrice } from "@/utils/priceUtils";
 import {
   Search,
   ChevronDown,
@@ -147,10 +148,6 @@ export default function Orders() {
     (users[order.user_id]?.full_name || order.customer_name || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
     (users[order.user_id]?.email || order.customer_email || '').toLowerCase().includes(searchQuery.toLowerCase())
   );
-
-  const formatPrice = (price) => {
-    return `$${Number(price || 0).toFixed(2)}`;
-  };
 
   const formatDate = (dateString) => {
     if (!dateString) return 'N/A';

@@ -3,6 +3,7 @@ import React, { useState, useEffect } from "react";
 import { Store } from "@/api/entities";
 import { User } from "@/api/entities";
 import apiClient from "@/api/client";
+import { formatPrice } from "@/utils/priceUtils";
 import { 
   Puzzle, 
   Plus, 
@@ -406,7 +407,7 @@ export default function Plugins() {
                       
                       <div className="flex items-center justify-between">
                         <div className="text-lg font-bold text-gray-900">
-                          {plugin.price === 0 ? 'Free' : `$${plugin.price}`}
+                          {plugin.price === 0 ? 'Free' : formatPrice(plugin.price)}
                         </div>
                         <div className="flex items-center gap-2">
                           {installed ? (

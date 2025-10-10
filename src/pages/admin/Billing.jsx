@@ -9,6 +9,7 @@ import { getStripePublishableKey } from '@/api/functions';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Wallet, DollarSign, CheckCircle, Clock, CreditCard, RefreshCw } from 'lucide-react';
+import { formatPrice } from '@/utils/priceUtils';
 
 const CheckoutForm = ({ selectedPackage, onSuccess, onError }) => {
   const stripe = useStripe();
@@ -70,8 +71,8 @@ const CheckoutForm = ({ selectedPackage, onSuccess, onError }) => {
         />
       </div>
       {error && <p className="text-red-500 text-sm mt-2">{error}</p>}
-      <Button 
-        type="submit" 
+      <Button
+        type="submit"
         disabled={!stripe || processing}
         className="w-full"
       >
@@ -80,7 +81,7 @@ const CheckoutForm = ({ selectedPackage, onSuccess, onError }) => {
                 <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
                 Processing...
             </>
-        ) : `Pay $${selectedPackage.price}`}
+        ) : `Pay ${formatPrice(selectedPackage.price)}`}
       </Button>
     </form>
   );

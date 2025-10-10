@@ -69,14 +69,8 @@ export default function OrderSuccess() {
   // Note: OrderSuccess has special needs since orders can have different currencies
   const formatCurrency = (amount, currency) => {
     const numAmount = safeNumber(amount);
-    try {
-      // Try using the new formatPrice API (context-aware)
-      return formatPrice(numAmount);
-    } catch (error) {
-      // Fallback for edge cases where context isn't available or currency differs
-      const formattedAmount = numAmount.toFixed(2);
-      return currency && currency !== 'USD' ? `${currency} ${formattedAmount}` : `$${formattedAmount}`;
-    }
+    // Always use the centralized formatPrice utility
+    return formatPrice(numAmount);
   };
 
   // Date formatting helper
