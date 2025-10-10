@@ -15,7 +15,7 @@ import {
   Eye,
   Download
 } from 'lucide-react';
-import { formatPrice, safeNumber } from '@/utils/priceUtils';
+import { formatPrice, safeNumber, getPriceDisplay } from '@/utils/priceUtils';
 import { getImageUrlByIndex, getPrimaryImageUrl } from '@/utils/imageUtils';
 
 // ============================================
@@ -57,8 +57,7 @@ export function ProductInfoSlot({ productContext, content }) {
 
   if (!product) return null;
 
-  const hasComparePrice = product.compare_price && safeNumber(product.compare_price) > 0 &&
-                         safeNumber(product.compare_price) !== safeNumber(product.price);
+  const priceInfo = getPriceDisplay(product);
 
   // Helper function to get stock label
   const getStockLabel = () => {
@@ -108,18 +107,18 @@ export function ProductInfoSlot({ productContext, content }) {
           {/* Price Section */}
           <div className="flex items-center space-x-4 mb-4">
             <div className="flex items-baseline space-x-2">
-              {hasComparePrice ? (
+              {priceInfo.hasComparePrice ? (
                 <>
                   <span className="text-3xl font-bold text-red-600">
-                    {formatPrice(Math.min(safeNumber(product.price), safeNumber(product.compare_price)))}
+                    {formatPrice(priceInfo.displayPrice)}
                   </span>
                   <span className="text-xl text-gray-500 line-through">
-                    {formatPrice(Math.max(safeNumber(product.price), safeNumber(product.compare_price)))}
+                    {formatPrice(priceInfo.originalPrice)}
                   </span>
                 </>
               ) : (
                 <span className="text-3xl font-bold text-green-600">
-                  {formatPrice(product.price)}
+                  {formatPrice(priceInfo.displayPrice)}
                 </span>
               )}
             </div>
@@ -371,20 +370,28 @@ export function ProductRecommendationsSlot({ productContext, content }) {
                 <CardContent className="p-4">
                   <h3 className="font-medium text-gray-900 mb-2 line-clamp-2">{product.name}</h3>
                   <div className="flex items-center space-x-2 mb-2">
-                    {product.compare_price && safeNumber(product.compare_price) > 0 && safeNumber(product.compare_price) !== safeNumber(product.price) ? (
-                      <>
-                        <span className="font-bold text-red-600">
-                          {formatPrice(Math.min(safeNumber(product.price), safeNumber(product.compare_price)))}
+                    {(() => {
+                      const priceInfo = getPriceDisplay(product);
+
+                      if (priceInfo.hasComparePrice) {
+                        return (
+                          <>
+                            <span className="font-bold text-red-600">
+                              {formatPrice(priceInfo.displayPrice)}
+                            </span>
+                            <span className="text-sm text-gray-500 line-through">
+                              {formatPrice(priceInfo.originalPrice)}
+                            </span>
+                          </>
+                        );
+                      }
+
+                      return (
+                        <span className="font-bold text-green-600">
+                          {formatPrice(priceInfo.displayPrice)}
                         </span>
-                        <span className="text-sm text-gray-500 line-through">
-                          {formatPrice(Math.max(safeNumber(product.price), safeNumber(product.compare_price)))}
-                        </span>
-                      </>
-                    ) : (
-                      <span className="font-bold text-green-600">
-                        {formatPrice(product.price)}
-                      </span>
-                    )}
+                      );
+                    })()}
                   </div>
                   {product.rating && (
                     <div className="flex items-center space-x-1 text-sm text-gray-600">

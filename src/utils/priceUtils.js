@@ -204,3 +204,48 @@ export const formatPriceWithTax = (basePrice, taxRules = null, country = null) =
     const displayPrice = calculateDisplayPrice(basePrice, taxRules, country);
     return formatPrice(displayPrice);
 };
+
+/**
+ * Get price display information for products with compare_price
+ * Returns the display price (lowest) and original price (highest) for proper rendering
+ *
+ * @param {Object} product - Product object with price and compare_price
+ * @returns {Object} - { hasComparePrice, displayPrice, originalPrice, isSale }
+ *
+ * @example
+ * const priceInfo = getPriceDisplay({ price: 1349, compare_price: 1049 });
+ * // Returns: { hasComparePrice: true, displayPrice: 1049, originalPrice: 1349, isSale: true }
+ */
+export const getPriceDisplay = (product) => {
+    if (!product) {
+        return {
+            hasComparePrice: false,
+            displayPrice: 0,
+            originalPrice: null,
+            isSale: false
+        };
+    }
+
+    const price = safeNumber(product.price);
+    const comparePrice = safeNumber(product.compare_price);
+
+    // Check if compare_price is valid and different from price
+    const hasComparePrice = comparePrice > 0 && comparePrice !== price;
+
+    if (!hasComparePrice) {
+        return {
+            hasComparePrice: false,
+            displayPrice: price,
+            originalPrice: null,
+            isSale: false
+        };
+    }
+
+    // Return lowest as display price, highest as original price
+    return {
+        hasComparePrice: true,
+        displayPrice: Math.min(price, comparePrice),
+        originalPrice: Math.max(price, comparePrice),
+        isSale: true
+    };
+};

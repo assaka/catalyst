@@ -10,7 +10,7 @@ import { User } from "@/api/entities";
 import cartService from "@/services/cartService";
 // ProductLabel entity is no longer imported directly as its data is now provided via useStore.
 import { useStore, cachedApiCall } from "@/components/storefront/StoreProvider";
-import { formatPriceWithTax, calculateDisplayPrice, safeNumber, formatPrice } from "@/utils/priceUtils";
+import { formatPriceWithTax, calculateDisplayPrice, safeNumber, formatPrice, getPriceDisplay } from "@/utils/priceUtils";
 import { getImageUrlByIndex, getPrimaryImageUrl } from "@/utils/imageUtils";
 import {
   ShoppingCart, Star, ChevronLeft, ChevronRight, Minus, Plus, Heart, Download, Eye
@@ -534,12 +534,9 @@ export default function ProductDetail() {
   const getTotalPrice = () => {
     if (!product) return 0;
 
-
-    // Use the lower price (sale price) if compare_price exists and is different
-    let basePrice = safeNumber(product.price);
-    if (product.compare_price && safeNumber(product.compare_price) > 0 && safeNumber(product.compare_price) !== safeNumber(product.price)) {
-      basePrice = Math.min(safeNumber(product.price), safeNumber(product.compare_price));
-    }
+    // Get the correct base price using utility function
+    const priceInfo = getPriceDisplay(product);
+    const basePrice = priceInfo.displayPrice;
 
     // Add selected options price
     const optionsPrice = selectedOptions.reduce((sum, option) => sum + safeNumber(option.price), 0);
@@ -567,11 +564,9 @@ export default function ProductDetail() {
         return;
       }
 
-      // Calculate correct base price (use sale price if available)
-      let basePrice = safeNumber(product.price);
-      if (product.compare_price && safeNumber(product.compare_price) > 0 && safeNumber(product.compare_price) !== safeNumber(product.price)) {
-        basePrice = Math.min(safeNumber(product.price), safeNumber(product.compare_price));
-      }
+      // Get the correct base price using utility function
+      const priceInfo = getPriceDisplay(product);
+      const basePrice = priceInfo.displayPrice;
 
       const result = await cartService.addItem(
         product.id,

@@ -12,7 +12,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
 import { processVariables } from '@/utils/variableProcessor';
-import { formatPrice as formatPriceUtil } from '@/utils/priceUtils';
+import { formatPrice as formatPriceUtil, getPriceDisplay } from '@/utils/priceUtils';
 import {
   ShoppingCart,
   Heart,
@@ -530,10 +530,9 @@ const ProductInfo = createSlotComponent({
     if (!product) return null;
 
     // Use imported utilities from top of file
-    const { formatPrice: formatPriceFn, safeNumber } = { formatPrice: formatPriceUtil, safeNumber: (val) => parseFloat(val) || 0 };
+    const { formatPrice: formatPriceFn } = { formatPrice: formatPriceUtil };
 
-    const hasComparePrice = product.compare_price && safeNumber(product.compare_price) > 0 &&
-                           safeNumber(product.compare_price) !== safeNumber(product.price);
+    const priceInfo = getPriceDisplay(product);
 
     return (
       <div className={className} style={styles}>
@@ -544,18 +543,18 @@ const ProductInfo = createSlotComponent({
           {/* Price Section */}
           <div className="flex items-center space-x-4 mb-4">
             <div className="flex items-baseline space-x-2">
-              {hasComparePrice ? (
+              {priceInfo.hasComparePrice ? (
                 <>
                   <span className="text-3xl font-bold text-red-600">
-                    {formatPriceFn(Math.min(safeNumber(product.price), safeNumber(product.compare_price)))}
+                    {formatPriceFn(priceInfo.displayPrice)}
                   </span>
                   <span className="text-xl text-gray-500 line-through">
-                    {formatPriceFn(Math.max(safeNumber(product.price), safeNumber(product.compare_price)))}
+                    {formatPriceFn(priceInfo.originalPrice)}
                   </span>
                 </>
               ) : (
                 <span className="text-3xl font-bold text-green-600">
-                  {formatPriceFn(product.price)}
+                  {formatPriceFn(priceInfo.displayPrice)}
                 </span>
               )}
             </div>
@@ -961,7 +960,6 @@ const ProductRecommendations = createSlotComponent({
 
     // Storefront version - full functionality
     const { relatedProducts } = productContext;
-    const safeNumber = (val) => parseFloat(val) || 0;
 
     if (!relatedProducts || relatedProducts.length === 0) return null;
 
@@ -989,20 +987,28 @@ const ProductRecommendations = createSlotComponent({
                 <CardContent className="p-4">
                   <h3 className="font-medium text-gray-900 mb-2 line-clamp-2">{relatedProduct.name}</h3>
                   <div className="flex items-center space-x-2 mb-2">
-                    {relatedProduct.compare_price && safeNumber(relatedProduct.compare_price) > 0 && safeNumber(relatedProduct.compare_price) !== safeNumber(relatedProduct.price) ? (
-                      <>
-                        <span className="font-bold text-red-600">
-                          {formatPriceUtil(Math.min(safeNumber(relatedProduct.price), safeNumber(relatedProduct.compare_price)))}
+                    {(() => {
+                      const priceInfo = getPriceDisplay(relatedProduct);
+
+                      if (priceInfo.hasComparePrice) {
+                        return (
+                          <>
+                            <span className="font-bold text-red-600">
+                              {formatPriceUtil(priceInfo.displayPrice)}
+                            </span>
+                            <span className="text-sm text-gray-500 line-through">
+                              {formatPriceUtil(priceInfo.originalPrice)}
+                            </span>
+                          </>
+                        );
+                      }
+
+                      return (
+                        <span className="font-bold text-green-600">
+                          {formatPriceUtil(priceInfo.displayPrice)}
                         </span>
-                        <span className="text-sm text-gray-500 line-through">
-                          {formatPriceUtil(Math.max(safeNumber(relatedProduct.price), safeNumber(relatedProduct.compare_price)))}
-                        </span>
-                      </>
-                    ) : (
-                      <span className="font-bold text-green-600">
-                        {formatPriceUtil(relatedProduct.price)}
-                      </span>
-                    )}
+                      );
+                    })()}
                   </div>
                   {relatedProduct.rating && (
                     <div className="flex items-center space-x-1 text-sm text-gray-600">

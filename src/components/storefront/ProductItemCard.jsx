@@ -4,7 +4,7 @@ import { createProductUrl } from '@/utils/urlUtils';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import ProductLabelComponent from '@/components/storefront/ProductLabel';
-import { formatPriceWithTax, safeNumber } from '@/utils/priceUtils';
+import { formatPriceWithTax, safeNumber, getPriceDisplay } from '@/utils/priceUtils';
 import cartService from '@/services/cartService';
 import { ShoppingCart } from 'lucide-react';
 import { getPrimaryImageUrl } from '@/utils/imageUtils';
@@ -306,39 +306,43 @@ const ProductItemCard = ({
               data-slot-id={isEditorMode ? 'product_card_price_container' : undefined}
               onClick={isEditorMode ? (e) => handleSlotClick(e, 'product_card_price_container') : undefined}
             >
-              {product.compare_price && safeNumber(product.compare_price) > 0 && safeNumber(product.compare_price) !== safeNumber(product.price) ? (
-                <>
+              {(() => {
+                const priceInfo = getPriceDisplay(product);
+
+                if (priceInfo.hasComparePrice) {
+                  return (
+                    <>
+                      <p
+                        className={priceConfig.className || "font-bold text-red-600 text-xl"}
+                        style={priceConfig.styles || {}}
+                        data-slot-id={isEditorMode ? 'product_card_price' : undefined}
+                        onClick={isEditorMode ? (e) => handleSlotClick(e, 'product_card_price') : undefined}
+                      >
+                        {settings?.hide_currency_product ? '' : formatPriceWithTax(priceInfo.displayPrice)}
+                      </p>
+                      <p
+                        className={comparePriceConfig.className || "text-gray-500 line-through text-sm"}
+                        style={comparePriceConfig.styles || {}}
+                        data-slot-id={isEditorMode ? 'product_card_compare_price' : undefined}
+                        onClick={isEditorMode ? (e) => handleSlotClick(e, 'product_card_compare_price') : undefined}
+                      >
+                        {settings?.hide_currency_product ? '' : formatPriceWithTax(priceInfo.originalPrice)}
+                      </p>
+                    </>
+                  );
+                }
+
+                return (
                   <p
-                    className={priceConfig.className || "font-bold text-red-600 text-xl"}
+                    className={priceConfig.className || "font-bold text-xl text-gray-900"}
                     style={priceConfig.styles || {}}
                     data-slot-id={isEditorMode ? 'product_card_price' : undefined}
                     onClick={isEditorMode ? (e) => handleSlotClick(e, 'product_card_price') : undefined}
                   >
-                    {settings?.hide_currency_product ? '' : formatPriceWithTax(
-                      Math.min(safeNumber(product.price), safeNumber(product.compare_price))
-                    )}
+                    {settings?.hide_currency_product ? '' : formatPriceWithTax(priceInfo.displayPrice)}
                   </p>
-                  <p
-                    className={comparePriceConfig.className || "text-gray-500 line-through text-sm"}
-                    style={comparePriceConfig.styles || {}}
-                    data-slot-id={isEditorMode ? 'product_card_compare_price' : undefined}
-                    onClick={isEditorMode ? (e) => handleSlotClick(e, 'product_card_compare_price') : undefined}
-                  >
-                    {settings?.hide_currency_product ? '' : formatPriceWithTax(
-                      Math.max(safeNumber(product.price), safeNumber(product.compare_price))
-                    )}
-                  </p>
-                </>
-              ) : (
-                <p
-                  className={priceConfig.className || "font-bold text-xl text-gray-900"}
-                  style={priceConfig.styles || {}}
-                  data-slot-id={isEditorMode ? 'product_card_price' : undefined}
-                  onClick={isEditorMode ? (e) => handleSlotClick(e, 'product_card_price') : undefined}
-                >
-                  {settings?.hide_currency_product ? '' : formatPriceWithTax(safeNumber(product.price))}
-                </p>
-              )}
+                );
+              })()}
             </div>
 
             {/* Add to Cart Button */}
