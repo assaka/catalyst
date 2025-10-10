@@ -7,14 +7,11 @@ import { Search, X } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import { formatCurrency } from '@/utils/priceUtils';
+import { formatPrice, safeNumber } from '@/utils/priceUtils';
 
 export default function HeaderSearch({ styles = {} }) {
   const navigate = useNavigate();
   const { store, settings, taxes, selectedCountry } = useStore();
-
-  // Get currency symbol from settings
-  const currencySymbol = settings?.currency_symbol || '🔴18';
 
   // Extract input styles from slot configuration
   const inputStyles = {
@@ -162,23 +159,21 @@ export default function HeaderSearch({ styles = {} }) {
                         SKU: {product.sku}
                       </p>
                       <p className="text-sm font-semibold text-gray-900">
-                        {product.compare_price && parseFloat(product.compare_price) > 0 && parseFloat(product.compare_price) !== parseFloat(product.price) ? (
+                        {product.compare_price && safeNumber(product.compare_price) > 0 && safeNumber(product.compare_price) !== safeNumber(product.price) ? (
                           <>
                             <span className="text-red-600">
-                              {formatCurrency(
-                                Math.min(parseFloat(product.price || 0), parseFloat(product.compare_price || 0)),
-                                currencySymbol
+                              {formatPrice(
+                                Math.min(safeNumber(product.price), safeNumber(product.compare_price))
                               )}
                             </span>
                             <span className="text-gray-500 line-through ml-1 text-xs">
-                              {formatCurrency(
-                                Math.max(parseFloat(product.price || 0), parseFloat(product.compare_price || 0)),
-                                currencySymbol
+                              {formatPrice(
+                                Math.max(safeNumber(product.price), safeNumber(product.compare_price))
                               )}
                             </span>
                           </>
                         ) : (
-                          <span>{formatCurrency(product.price, currencySymbol)}</span>
+                          <span>{formatPrice(product.price)}</span>
                         )}
                       </p>
                     </div>

@@ -8,7 +8,7 @@ import { Link } from 'react-router-dom';
 import { createPageUrl } from '@/utils';
 import { getExternalStoreUrl, getStoreBaseUrl } from '@/utils/urlUtils';
 import { useStore } from '@/components/storefront/StoreProvider'; // FIXED: Corrected import path
-import { formatCurrency } from '@/utils/priceUtils';
+import { formatPrice } from '@/utils/priceUtils';
 
 // --- Start of helper functions ---
 const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms));
@@ -38,7 +38,6 @@ const retryApiCall = async (apiCall, maxRetries = 5, baseDelay = 3000) => {
 
 export default function WishlistDropdown({ iconVariant = 'outline' }) {
   const { store, settings, taxes, selectedCountry } = useStore(); // Added store context
-  const currencySymbol = settings?.currency_symbol || '🔴13';
   const [wishlistItems, setWishlistItems] = useState([]);
   const [user, setUser] = useState(null); // Preserve user state
   const [loading, setLoading] = useState(false); // Changed initial loading state to false
@@ -180,7 +179,7 @@ export default function WishlistDropdown({ iconVariant = 'outline' }) {
                       <p className="text-sm font-medium truncate hover:underline">{item.product?.name}</p>
                     </a>
                     <p className="text-sm text-gray-500">
-                      {formatCurrency(item.product?.price, currencySymbol)}
+                      {formatPrice(item.product?.price)}
                     </p>
                   </div>
                   <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handleRemoveFromWishlist(item.product_id)}>

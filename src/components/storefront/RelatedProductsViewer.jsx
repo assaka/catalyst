@@ -4,25 +4,24 @@ import { Link } from 'react-router-dom';
 import { createPageUrl } from '@/utils';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { formatCurrency } from '@/utils/priceUtils';
+import { formatPrice } from '@/utils/priceUtils';
 import { useStore } from '@/components/storefront/StoreProvider';
 
 const MiniProductCard = ({ product }) => {
     const { store, settings, taxes, selectedCountry } = useStore();
-    const currencySymbol = settings?.currency_symbol || '🔴16';
-    
+
     return (
         <Link to={createPageUrl(`ProductDetail?id=${product.id}`)}>
             <Card className="hover:shadow-lg transition-shadow">
                 <CardContent className="p-3">
-                    <img 
-                        src={product.images?.[0] || 'https://placehold.co/150x150?text=No+Image'} 
-                        alt={product.name} 
+                    <img
+                        src={product.images?.[0] || 'https://placehold.co/150x150?text=No+Image'}
+                        alt={product.name}
                         className="w-full h-32 object-cover rounded-md mb-3"
                     />
                     <h4 className="font-semibold text-sm truncate">{product.name}</h4>
                     <p className="text-lg font-bold text-gray-800">
-                        {formatCurrency(product.price, currencySymbol)}
+                        {formatPrice(product.price)}
                     </p>
                     {product.quantity > 0 || product.has_infinite_stock ? (
                          <Badge className="bg-green-100 text-green-800 mt-1">In Stock</Badge>

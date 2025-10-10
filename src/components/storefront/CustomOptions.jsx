@@ -4,16 +4,13 @@ import { StorefrontProduct } from '@/api/storefront-entities';
 import { Badge } from '@/components/ui/badge';
 import { Check } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
-import { formatDisplayPrice } from '@/utils/priceUtils';
-import { useStore } from '@/components/storefront/StoreProvider';
+import { formatPrice, safeNumber, formatPriceWithTax } from '@/utils/priceUtils';
 
 export default function CustomOptions({ product, onSelectionChange, selectedOptions = [], store, settings }) {
-    const { taxes, selectedCountry } = useStore();
     const [customOptions, setCustomOptions] = useState([]);
     const [loading, setLoading] = useState(true);
     const [displayLabel, setDisplayLabel] = useState('Custom Options');
     const [isLoading, setIsLoading] = useState(false); // Prevent duplicate loading
-    const currencySymbol = settings?.currency_symbol || '🔴19';
 
     useEffect(() => {
         if (product && store?.id && !isLoading) {
@@ -191,16 +188,16 @@ export default function CustomOptions({ product, onSelectionChange, selectedOpti
 
     const handleOptionToggle = (option) => {
         const isSelected = selectedOptions.some(selected => selected.product_id === option.id);
-        
+
         let newSelectedOptions;
         if (isSelected) {
             // Remove option
             newSelectedOptions = selectedOptions.filter(selected => selected.product_id !== option.id);
         } else {
             // Add option with price info - use lower price if compare_price exists
-            let optionPrice = parseFloat(option.price || 0);
-            if (option.compare_price && parseFloat(option.compare_price) > 0 && parseFloat(option.compare_price) !== parseFloat(option.price)) {
-                optionPrice = Math.min(parseFloat(option.price), parseFloat(option.compare_price));
+            let optionPrice = safeNumber(option.price);
+            if (option.compare_price && safeNumber(option.compare_price) > 0 && safeNumber(option.compare_price) !== safeNumber(option.price)) {
+                optionPrice = Math.min(safeNumber(option.price), safeNumber(option.compare_price));
             }
             newSelectedOptions = [...selectedOptions, {
                 product_id: option.id,
@@ -208,12 +205,12 @@ export default function CustomOptions({ product, onSelectionChange, selectedOpti
                 price: optionPrice
             }];
         }
-        
+
         onSelectionChange(newSelectedOptions);
     };
 
     const getTotalOptionsPrice = () => {
-        return selectedOptions.reduce((total, option) => total + (parseFloat(option.price) || 0), 0);
+        return selectedOptions.reduce((total, option) => total + safeNumber(option.price), 0);
     };
 
     if (loading) {
@@ -238,11 +235,11 @@ export default function CustomOptions({ product, onSelectionChange, selectedOpti
             <div className="space-y-3">
                 {customOptions.map(option => {
                     const isSelected = selectedOptions.some(selected => selected.product_id === option.id);
-                    
+
                     // Calculate display prices
-                    const hasSpecialPrice = option.compare_price && parseFloat(option.compare_price) > 0 && parseFloat(option.compare_price) !== parseFloat(option.price);
-                    const displayPrice = hasSpecialPrice ? Math.min(parseFloat(option.price || 0), parseFloat(option.compare_price || 0)) : parseFloat(option.price || 0);
-                    const originalPrice = hasSpecialPrice ? Math.max(parseFloat(option.price || 0), parseFloat(option.compare_price || 0)) : null;
+                    const hasSpecialPrice = option.compare_price && safeNumber(option.compare_price) > 0 && safeNumber(option.compare_price) !== safeNumber(option.price);
+                    const displayPrice = hasSpecialPrice ? Math.min(safeNumber(option.price), safeNumber(option.compare_price)) : safeNumber(option.price);
+                    const originalPrice = hasSpecialPrice ? Math.max(safeNumber(option.price), safeNumber(option.compare_price)) : null;
                     
                     return (
                         <div 
@@ -297,16 +294,16 @@ export default function CustomOptions({ product, onSelectionChange, selectedOpti
                                                     <div className="text-right">
                                                         <div className="flex items-center space-x-2">
                                                             <Badge variant={isSelected ? "default" : "outline"} className="font-semibold bg-red-100 text-red-800 border-red-300">
-                                                                +{formatDisplayPrice(displayPrice, currencySymbol, store, taxes, selectedCountry)}
+                                                                +{formatPriceWithTax(displayPrice)}
                                                             </Badge>
                                                         </div>
                                                         <div className="text-xs text-gray-500 line-through mt-1">
-                                                            +{formatDisplayPrice(originalPrice, currencySymbol, store, taxes, selectedCountry)}
+                                                            +{formatPriceWithTax(originalPrice)}
                                                         </div>
                                                     </div>
                                                 ) : (
                                                     <Badge variant={isSelected ? "default" : "outline"} className="font-semibold">
-                                                        +{formatDisplayPrice(displayPrice, currencySymbol, store, taxes, selectedCountry)}
+                                                        +{formatPriceWithTax(displayPrice)}
                                                     </Badge>
                                                 )}
                                             </div>

@@ -14,7 +14,7 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from '@/components/ui/popover';
-import { formatPrice, safeToFixed, calculateDisplayPrice, formatCurrency } from '@/utils/priceUtils';
+import { formatPrice, safeNumber, calculateDisplayPrice } from '@/utils/priceUtils';
 import { getPrimaryImageUrl } from '@/utils/imageUtils';
 
 export default function MiniCart({ iconVariant = 'outline' }) {
@@ -34,10 +34,6 @@ export default function MiniCart({ iconVariant = 'outline' }) {
         return <ShoppingCart className="w-5 h-5" />;
     }
   };
-  
-  
-  // Get currency symbol from settings
-  const currencySymbol = settings?.currency_symbol || '🔴17';
   const [cartItems, setCartItems] = useState([]);
   const [cartProducts, setCartProducts] = useState({});
   const [loading, setLoading] = useState(false);
@@ -329,29 +325,29 @@ export default function MiniCart({ iconVariant = 'outline' }) {
   const getTotalPrice = () => {
     return cartItems.reduce((total, item) => {
       // Use stored price from cart item, fallback to 0 if no price available
-      let itemPrice = formatPrice(item.price || 0);
+      let itemPrice = safeNumber(item.price);
 
       // If we have product details loaded, use product price as fallback
       const productKey = String(item.product_id);
       const product = cartProducts[productKey];
       if (!item.price && product) {
-        itemPrice = formatPrice(product.price);
-        const comparePrice = formatPrice(product.compare_price);
-        if (comparePrice > 0 && comparePrice !== formatPrice(product.price)) {
-          itemPrice = Math.min(formatPrice(product.price), comparePrice);
+        itemPrice = safeNumber(product.price);
+        const comparePrice = safeNumber(product.compare_price);
+        if (comparePrice > 0 && comparePrice !== safeNumber(product.price)) {
+          itemPrice = Math.min(safeNumber(product.price), comparePrice);
         }
       }
 
       // Add selected options price
       if (item.selected_options && Array.isArray(item.selected_options)) {
-        const optionsPrice = item.selected_options.reduce((sum, option) => sum + formatPrice(option.price), 0);
+        const optionsPrice = item.selected_options.reduce((sum, option) => sum + safeNumber(option.price), 0);
         itemPrice += optionsPrice;
       }
 
       // Calculate tax-inclusive price if needed
       const displayItemPrice = calculateDisplayPrice(itemPrice, store, taxes, selectedCountry);
 
-      return total + (displayItemPrice * formatPrice(item.quantity || 1));
+      return total + (displayItemPrice * safeNumber(item.quantity || 1));
     }, 0);
   };
 
@@ -405,7 +401,7 @@ export default function MiniCart({ iconVariant = 'outline' }) {
                           <p className="text-xs text-gray-500">Product details unavailable</p>
                         </div>
                         <div className="text-sm font-medium text-gray-900">
-                          {formatCurrency(item.price || 0, currencySymbol)}
+                          {formatPrice(item.price || 0)}
                         </div>
                         <Button
                           variant="ghost"
@@ -418,16 +414,16 @@ export default function MiniCart({ iconVariant = 'outline' }) {
                       </div>
                     );
                   }
-                  
+
                   // Use the stored price from cart (which should be the sale price)
-                  let basePrice = formatPrice(item.price);
-                  
+                  let basePrice = safeNumber(item.price);
+
                   // If no stored price, calculate from product (use sale price if available)
                   if (!item.price) {
-                    basePrice = formatPrice(product.price);
-                    const comparePrice = formatPrice(product.compare_price);
-                    if (comparePrice > 0 && comparePrice !== formatPrice(product.price)) {
-                      basePrice = Math.min(formatPrice(product.price), comparePrice);
+                    basePrice = safeNumber(product.price);
+                    const comparePrice = safeNumber(product.compare_price);
+                    if (comparePrice > 0 && comparePrice !== safeNumber(product.price)) {
+                      basePrice = Math.min(safeNumber(product.price), comparePrice);
                     }
                   }
 
@@ -440,12 +436,12 @@ export default function MiniCart({ iconVariant = 'outline' }) {
                       />
                       <div className="flex-1 min-w-0">
                         <p className="text-sm font-medium truncate">{product.name}</p>
-                        <p className="text-sm text-gray-500">{formatCurrency(calculateDisplayPrice(basePrice, store, taxes, selectedCountry), currencySymbol)} each</p>
+                        <p className="text-sm text-gray-500">{formatPrice(calculateDisplayPrice(basePrice, store, taxes, selectedCountry))} each</p>
 
                         {item.selected_options && item.selected_options.length > 0 && (
                           <div className="text-xs text-gray-500 mt-1">
                             {item.selected_options.map((option, idx) => (
-                              <div key={idx}>+ {option.name} (+{formatCurrency(calculateDisplayPrice(parseFloat(option.price || 0), store, taxes, selectedCountry), currencySymbol)})</div>
+                              <div key={idx}>+ {option.name} (+{formatPrice(calculateDisplayPrice(safeNumber(option.price), store, taxes, selectedCountry))})</div>
                             ))}
                           </div>
                         )}
@@ -485,7 +481,7 @@ export default function MiniCart({ iconVariant = 'outline' }) {
               
               <div className="border-t pt-3">
                 <div className="flex justify-between items-center mb-3">
-                  <span className="font-semibold">Total: {formatCurrency(getTotalPrice(), currencySymbol)}</span>
+                  <span className="font-semibold">Total: {formatPrice(getTotalPrice())}</span>
                 </div>
                 
                 <div className="space-y-2">

@@ -85,18 +85,32 @@ export const calculateItemTotal = (item, product) => {
 };
 
 /**
- * Calculates display price considering tax-inclusive settings
+ * Calculates display price considering tax-inclusive settings (CONTEXT-AWARE)
+ * Automatically gets store and selectedCountry from context
  * @param {number} basePrice - The base price of the product
- * @param {Object} store - Store object with settings
- * @param {Array} taxRules - Array of tax rules
- * @param {string} country - Country code for tax calculation (default: 'US')
+ * @param {Array} taxRules - Tax rules (optional, defaults to context taxes)
+ * @param {string} country - Country code (optional, defaults to context selectedCountry)
  * @returns {number} - Price adjusted for tax-inclusive display
  */
-export const calculateDisplayPrice = (basePrice, store, taxRules = [], country = 'US') => {
+export const calculateDisplayPrice = (basePrice, taxRules = null, country = null) => {
     const price = safeNumber(basePrice);
     if (price <= 0) {
         return 0;
     }
+
+    const context = _getStoreContext();
+    if (!context) {
+        throw new Error('❌ calculateDisplayPrice: Store context not available!');
+    }
+
+    // Get from context
+    const store = context.store;
+    const contextTaxes = context.taxes || [];
+    const contextCountry = context.selectedCountry || 'US';
+
+    // Use provided values or fall back to context
+    const finalTaxRules = taxRules !== null ? taxRules : contextTaxes;
+    const finalCountry = country !== null ? country : contextCountry;
 
     // Handle missing store or settings gracefully
     const settings = store?.settings || {};
@@ -109,12 +123,12 @@ export const calculateDisplayPrice = (basePrice, store, taxRules = [], country =
     }
 
     // Handle missing or invalid tax rules
-    if (!Array.isArray(taxRules)) {
+    if (!Array.isArray(finalTaxRules)) {
         return price;
     }
 
     // Find applicable tax rate
-    const taxRate = getApplicableTaxRate(taxRules, country);
+    const taxRate = getApplicableTaxRate(finalTaxRules, finalCountry);
 
     if (taxRate === 0) {
         return price;
@@ -180,29 +194,13 @@ export const getApplicableTaxRate = (taxRules, country = 'US') => {
 
 /**
  * Format price with tax consideration for display (CONTEXT-AWARE)
- * Automatically gets currency symbol and store from context
+ * Automatically gets currency symbol, store, taxes, and country from context
  * @param {number} basePrice - Base price
  * @param {Array} taxRules - Tax rules (optional, defaults to context taxes)
  * @param {string} country - Country code (optional, defaults to context selectedCountry)
  * @returns {string} - Formatted price string with currency and tax adjustment
  */
 export const formatPriceWithTax = (basePrice, taxRules = null, country = null) => {
-    const context = _getStoreContext();
-
-    if (!context) {
-        throw new Error('❌ formatPriceWithTax: Store context not available!');
-    }
-
-    // Extract values from context
-    const store = context.store;
-    const contextTaxes = context.taxes || [];
-    const contextCountry = context.selectedCountry || 'US';
-
-    // Use provided values or fall back to context
-    const finalTaxRules = taxRules !== null ? taxRules : contextTaxes;
-    const finalCountry = country !== null ? country : contextCountry;
-
-    const displayPrice = calculateDisplayPrice(basePrice, store, finalTaxRules, finalCountry);
-
+    const displayPrice = calculateDisplayPrice(basePrice, taxRules, country);
     return formatPrice(displayPrice);
 };
