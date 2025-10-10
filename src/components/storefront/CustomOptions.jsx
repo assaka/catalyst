@@ -4,7 +4,7 @@ import { StorefrontProduct } from '@/api/storefront-entities';
 import { Badge } from '@/components/ui/badge';
 import { Check } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
-import { formatPrice, safeNumber, formatPriceWithTax } from '@/utils/priceUtils';
+import { formatPrice, safeNumber, formatPriceWithTax, getPriceDisplay } from '@/utils/priceUtils';
 
 export default function CustomOptions({ product, onSelectionChange, selectedOptions = [], store, settings }) {
     const [customOptions, setCustomOptions] = useState([]);
@@ -194,15 +194,12 @@ export default function CustomOptions({ product, onSelectionChange, selectedOpti
             // Remove option
             newSelectedOptions = selectedOptions.filter(selected => selected.product_id !== option.id);
         } else {
-            // Add option with price info - use lower price if compare_price exists
-            let optionPrice = safeNumber(option.price);
-            if (option.compare_price && safeNumber(option.compare_price) > 0 && safeNumber(option.compare_price) !== safeNumber(option.price)) {
-                optionPrice = Math.min(safeNumber(option.price), safeNumber(option.compare_price));
-            }
+            // Use centralized getPriceDisplay utility for consistent pricing
+            const priceInfo = getPriceDisplay(option);
             newSelectedOptions = [...selectedOptions, {
                 product_id: option.id,
                 name: option.name,
-                price: optionPrice
+                price: priceInfo.displayPrice
             }];
         }
 
@@ -236,10 +233,10 @@ export default function CustomOptions({ product, onSelectionChange, selectedOpti
                 {customOptions.map(option => {
                     const isSelected = selectedOptions.some(selected => selected.product_id === option.id);
 
-                    // Calculate display prices
-                    const hasSpecialPrice = option.compare_price && safeNumber(option.compare_price) > 0 && safeNumber(option.compare_price) !== safeNumber(option.price);
-                    const displayPrice = hasSpecialPrice ? Math.min(safeNumber(option.price), safeNumber(option.compare_price)) : safeNumber(option.price);
-                    const originalPrice = hasSpecialPrice ? Math.max(safeNumber(option.price), safeNumber(option.compare_price)) : null;
+                    // Use centralized getPriceDisplay utility for consistent pricing
+                    const priceInfo = getPriceDisplay(option);
+                    const displayPrice = priceInfo.displayPrice;
+                    const originalPrice = priceInfo.hasComparePrice ? priceInfo.originalPrice : null;
                     
                     return (
                         <div 
@@ -290,7 +287,7 @@ export default function CustomOptions({ product, onSelectionChange, selectedOpti
                                                 )}
                                             </div>
                                             <div className="ml-4 flex-shrink-0">
-                                                {hasSpecialPrice ? (
+                                                {priceInfo.hasComparePrice ? (
                                                     <div className="text-right">
                                                         <div className="flex items-center space-x-2">
                                                             <Badge variant={isSelected ? "default" : "outline"} className="font-semibold bg-red-100 text-red-800 border-red-300">
