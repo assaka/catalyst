@@ -229,6 +229,10 @@ export function CategorySlotRenderer({
         // Calculate stock status
         const isInStock = product.infinite_stock || (product.stock_quantity !== undefined && product.stock_quantity > 0);
 
+        // Get stock label text from admin settings (Admin -> Catalog -> Stock Settings)
+        const inStockText = settings?.stock_in_stock_label || 'In Stock';
+        const outOfStockText = settings?.stock_out_of_stock_label || 'Out of Stock';
+
         return {
           ...product,
           // Use getPriceDisplay results for consistent pricing
@@ -242,8 +246,8 @@ export function CategorySlotRenderer({
           image_url: getProductImageUrl ? getProductImageUrl(product) : (product.images?.[0]?.url || product.image_url || product.image || ''),
           url: product.url || createProductUrl(store?.public_storecode || store?.slug || store?.code, product.slug || product.id),
           in_stock: isInStock,
-          // Add stock label and class for templates
-          stock_label: isInStock ? 'In Stock' : 'Out of Stock',
+          // Add stock label and class for templates (uses admin settings)
+          stock_label: isInStock ? inStockText : outOfStockText,
           stock_label_class: isInStock ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800',
           labels: productLabels?.filter(label => {
             // Check if product has this label

@@ -1,6 +1,53 @@
 /**
- * Category Slot Components
- * Register category-specific slot components with the unified registry
+ * Category Slot Components - Component Library for Category Page
+ *
+ * ARCHITECTURE FLOW:
+ * CategorySlotRenderer (formats data)
+ *   → ComponentRegistry.get('ProductItemsGrid')
+ *     → THIS FILE - ProductItemsGrid.render() (uses formatted data)
+ *       → UnifiedSlotRenderer (renders individual slot elements)
+ *         → processVariables (replaces {{template}} variables)
+ *
+ * PURPOSE:
+ * - Registers all category-specific slot components
+ * - Provides dual-mode rendering (editor + storefront)
+ * - Uses pre-formatted data from CategorySlotRenderer
+ *
+ * REGISTERED COMPONENTS:
+ * - ProductItemsGrid:    Main product grid (dual rendering path)
+ * - LayeredNavigation:   Filters sidebar (price, attributes)
+ * - ActiveFilters:       Selected filters display
+ * - SortSelector:        Sort dropdown
+ * - PaginationComponent: Page navigation
+ * - ProductCountInfo:    "Showing X-Y of Z products"
+ * - ViewModeToggle:      Grid/List switcher
+ *
+ * DUAL RENDERING PATHS:
+ *
+ * Path 1: HTML Template (category-config.js content)
+ * - slot.content contains '{{#each products}}...'
+ * - Uses processVariables() to replace {{variables}}
+ * - Renders as HTML string with dangerouslySetInnerHTML
+ *
+ * Path 2: Slot-based (product_card_template slots)
+ * - Uses UnifiedSlotRenderer for React components
+ * - Renders individual product card slots
+ * - More flexible, allows per-element customization
+ *
+ * CRITICAL: Price Handling
+ * - DO NOT format prices in this file
+ * - Use pre-formatted prices from variableContext.products
+ * - CategorySlotRenderer already called getPriceDisplay()
+ * - Products have: price_formatted, compare_price_formatted
+ *
+ * DUAL MODE SUPPORT:
+ * - Editor mode (context='editor'):   Shows sample data, allows editing
+ * - Storefront mode (context='storefront'): Shows real data, read-only
+ *
+ * @see CategorySlotRenderer.jsx - Formats data before passing to components
+ * @see category-config.js - Template definitions with {{variables}}
+ * @see UnifiedSlotRenderer.jsx - Renders individual slot elements
+ * @see variableProcessor.js - Replaces {{template}} variables
  */
 
 import React, { useRef, useEffect, Fragment, useState, useCallback } from 'react';
@@ -666,7 +713,43 @@ const ProductCountInfo = createSlotComponent({
   }
 });
 
-// Product Items Grid - Renders with dynamic grid from admin settings
+/**
+ * ProductItemsGrid Component - Main Product Display Grid
+ *
+ * DUAL RENDERING PATHS:
+ *
+ * 1. HTML Template Path (most common):
+ *    - slot.content has HTML template with {{variables}}
+ *    - Uses processVariables() for Handlebars-like replacement
+ *    - Renders: {{#each products}} loops, {{#if}} conditionals
+ *    - Output: HTML string rendered with dangerouslySetInnerHTML
+ *
+ * 2. Slot-based Path (for advanced customization):
+ *    - Uses product_card_template slots from allSlots
+ *    - Renders individual React components via UnifiedSlotRenderer
+ *    - Allows per-element editing in page builder
+ *    - Output: React component tree
+ *
+ * CRITICAL: Data Flow
+ * - Input: variableContext.products (ALREADY FORMATTED by CategorySlotRenderer)
+ * - Products have:
+ *   ✅ price_formatted        (lowest price with currency)
+ *   ✅ compare_price_formatted (highest price, only if on sale)
+ *   ✅ stock_label            ('In Stock' or 'Out of Stock')
+ *   ✅ stock_label_class      (CSS classes for label)
+ *   ✅ image_url, url, in_stock, labels
+ *
+ * - DO NOT re-format prices here (was causing bugs)
+ * - Just pass through formatted values to template/renderer
+ *
+ * MODES:
+ * - Editor:     Uses sample products, shows all slots, allows editing
+ * - Storefront: Uses real products, hides empty slots, read-only
+ *
+ * @param {Object} variableContext - Contains pre-formatted products
+ * @param {string} context - 'editor' or 'storefront'
+ * @param {Object} allSlots - All slot configurations (for slot-based path)
+ */
 const ProductItemsGrid = createSlotComponent({
   name: 'ProductItemsGrid',
   render: ({
@@ -923,8 +1006,23 @@ const ProductItemsGrid = createSlotComponent({
     // Use grid-cols-1 for list view, dynamic grid for grid view
     const gridClasses = viewMode === 'list' ? 'grid-cols-1' : getGridClasses(storeSettings);
 
-    // Get products from variableContext - they are already formatted by CategorySlotRenderer
-    // DO NOT re-format prices here as CategorySlotRenderer already uses getPriceDisplay
+    /**
+     * CRITICAL FIX: Use pre-formatted products from variableContext
+     *
+     * BUG HISTORY:
+     * - Before: This code was re-formatting prices incorrectly:
+     *   ```
+     *   price_formatted: p.price_formatted || formatPrice(p.price),
+     *   compare_price_formatted: p.compare_price ? formatPrice(p.compare_price) : null
+     *   ```
+     * - Problem: Ignored getPriceDisplay logic, showed wrong prices
+     *
+     * - After: Now uses products directly from variableContext
+     * - CategorySlotRenderer already formatted them using getPriceDisplay()
+     * - Products already have: price_formatted, compare_price_formatted, stock_label, etc.
+     *
+     * DO NOT re-format prices here or you'll break the fix!
+     */
     const products = variableContext?.products || categoryContext?.products || [];
 
     // Find product card template and descendants
