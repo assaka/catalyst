@@ -11,7 +11,7 @@ import { ComponentRegistry } from '@/components/editor/slot/SlotComponentRegistr
 import '@/components/editor/slot/CategorySlotComponents';
 import '@/components/editor/slot/BreadcrumbsSlotComponent';
 import { createProductUrl } from '@/utils/urlUtils';
-import { formatPrice } from '@/utils/priceUtils';
+import { formatPrice, getPriceDisplay } from '@/utils/priceUtils';
 
 /**
  * CategorySlotRenderer - Renders slots with full category functionality
@@ -190,33 +190,19 @@ export function CategorySlotRenderer({
 
       // Format products with all necessary fields for templates
       const formattedProducts = products.map(product => {
-        // formatDisplayPrice now properly handles both product objects and price values
-        const displayPrice = formatDisplayPrice ? formatDisplayPrice(product) : product.price;
-        const comparePrice = product.compare_price;
-
-        // displayPrice is already a formatted string like "$1349.00"
-        const formattedPriceStr = displayPrice;
-
-        // Calculate lowest and highest prices when compare_price exists
-        const price = parseFloat(product.price || 0);
-        const comparePriceNum = parseFloat(comparePrice || 0);
-        const hasValidComparePrice = comparePriceNum > 0 && comparePriceNum !== price;
-
-        const lowestPrice = hasValidComparePrice ? Math.min(price, comparePriceNum) : price;
-        const highestPrice = hasValidComparePrice ? Math.max(price, comparePriceNum) : price;
+        // Use the centralized getPriceDisplay utility
+        const priceInfo = getPriceDisplay(product);
 
         return {
           ...product,
-          // Main price (what user pays): compare_price if exists, otherwise regular price
-          price_formatted: comparePrice ? formatPrice(comparePriceNum) : formattedPriceStr,
-          // Original/regular price (only populated when compare_price exists)
-          compare_price_formatted: comparePrice ? formattedPriceStr : '',
-          // Lowest and highest price formatted (for sale display)
-          lowest_price_formatted: formatPrice(lowestPrice),
-          highest_price_formatted: formatPrice(highestPrice),
+          // Use getPriceDisplay results for consistent pricing
+          price_formatted: formatPrice(priceInfo.displayPrice), // Lowest price
+          compare_price_formatted: priceInfo.hasComparePrice ? formatPrice(priceInfo.originalPrice) : '', // Highest price (only if sale)
+          lowest_price_formatted: formatPrice(priceInfo.displayPrice),
+          highest_price_formatted: priceInfo.hasComparePrice ? formatPrice(priceInfo.originalPrice) : formatPrice(priceInfo.displayPrice),
           // Also keep old names for backwards compatibility
-          formatted_price: formattedPriceStr,
-          formatted_compare_price: comparePrice ? formatPrice(comparePriceNum) : null,
+          formatted_price: formatPrice(priceInfo.displayPrice),
+          formatted_compare_price: priceInfo.hasComparePrice ? formatPrice(priceInfo.originalPrice) : null,
           image_url: getProductImageUrl ? getProductImageUrl(product) : (product.images?.[0]?.url || product.image_url || product.image || ''),
           url: product.url || createProductUrl(store?.public_storecode || store?.slug || store?.code, product.slug || product.id),
           in_stock: product.infinite_stock || product.stock_quantity > 0, // Check infinite_stock or positive stock_quantity
