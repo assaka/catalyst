@@ -238,10 +238,4 @@ class StorefrontApiClient {
 // Create singleton instance
 const storefrontApiClient = new StorefrontApiClient();
 
-// Export the singleton instance as default
 export default storefrontApiClient;
-
-// Also export instance methods for direct access (avoids circular dependencies)
-export const setStorefrontCustomerToken = (token) => storefrontApiClient.setCustomerToken(token);
-export const getStorefrontCustomerToken = () => storefrontApiClient.getCustomerToken();
-export const isStorefrontCustomerAuthenticated = () => storefrontApiClient.isCustomerAuthenticated();

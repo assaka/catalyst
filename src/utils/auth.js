@@ -204,17 +204,14 @@ export const setRoleBasedAuthData = (user, token, storeSlug = null) => {
     localStorage.setItem('customer_user_data', JSON.stringify(user));
     localStorage.setItem('customer_session_id', generateSessionId());
 
-    // CRITICAL: Store the store slug/context with customer session
-    // This ensures customer sessions are bound to specific stores
+    // Store the store slug for reference (backend validates via JWT)
     if (storeSlug) {
       localStorage.setItem('customer_store_slug', storeSlug);
       console.log('🔒 Customer session bound to store:', storeSlug);
     }
 
-    // Set token in BOTH API clients for customer sessions
     apiClient.setToken(token);
-    setStorefrontCustomerToken(token);
-    console.log('✅ Customer session stored in both API clients');
+    console.log('✅ Customer session stored');
 
   } else if (user.role === 'store_owner' || user.role === 'admin') {
     localStorage.setItem('store_owner_auth_token', token);
@@ -358,86 +355,7 @@ export const forceActivateRole = (targetRole) => {
   return false;
 };
 
-/**
- * Validate if customer session matches current store
- * Returns true if valid, false if session should be cleared
- */
-export const validateCustomerStoreContext = (currentStoreSlug) => {
-  const customerToken = localStorage.getItem('customer_auth_token');
-  const storedStoreSlug = localStorage.getItem('customer_store_slug');
-
-  // No customer session = nothing to validate
-  if (!customerToken) {
-    return true;
-  }
-
-  // Customer has session but no store slug stored = legacy session, keep it
-  if (!storedStoreSlug) {
-    console.warn('⚠️ Customer session without store binding detected');
-    return true;
-  }
-
-  // No current store slug provided = can't validate
-  if (!currentStoreSlug) {
-    return true;
-  }
-
-  // Check if customer is accessing a different store
-  if (storedStoreSlug !== currentStoreSlug) {
-    console.log('🚫 Customer store context mismatch');
-    console.log('   Session store:', storedStoreSlug);
-    console.log('   Current store:', currentStoreSlug);
-    return false;
-  }
-
-  return true;
-};
-
-/**
- * Check if customer session is valid for current store
- * Returns true if session was deactivated (but NOT cleared)
- * IMPORTANT: We don't clear the session - just deactivate it for this store
- * This allows customers to maintain sessions across multiple stores
- */
-export const clearCustomerSessionIfInvalid = (currentStoreSlug) => {
-  const isValid = validateCustomerStoreContext(currentStoreSlug);
-
-  if (!isValid) {
-    console.log('⚠️ Customer logged into different store - session not active for this store');
-    console.log('   Session store:', localStorage.getItem('customer_store_slug'));
-    console.log('   Current store:', currentStoreSlug);
-    console.log('   Note: Session preserved for original store');
-
-    // DON'T clear the session from localStorage - just deactivate it
-    // Remove token from BOTH apiClient and storefrontApiClient
-    apiClient.setToken(null);
-    setStorefrontCustomerToken(null);
-    console.log('🔓 Cleared customer token from both API clients for this store');
-
-    // Dispatch event to notify components that customer auth state changed
-    window.dispatchEvent(new CustomEvent('customerAuthChanged', { detail: { authenticated: false, storeSlug: currentStoreSlug } }));
-
-    return true; // Session exists but not valid for this store
-  } else {
-    // Session is valid for this store - ensure token is active in both clients
-    const customerToken = localStorage.getItem('customer_auth_token');
-    if (customerToken) {
-      // Reactivate in main apiClient if needed
-      if (apiClient.getToken() !== customerToken) {
-        console.log('✅ Reactivating customer token in apiClient for matching store:', currentStoreSlug);
-        apiClient.setToken(customerToken);
-      }
-
-      // Also reactivate in storefront client if needed
-      if (getStorefrontCustomerToken() !== customerToken) {
-        console.log('✅ Reactivating customer token in storefrontApiClient for matching store:', currentStoreSlug);
-        setStorefrontCustomerToken(customerToken);
-
-        // Dispatch event to notify components that customer auth state changed
-        window.dispatchEvent(new CustomEvent('customerAuthChanged', { detail: { authenticated: true, storeSlug: currentStoreSlug } }));
-      }
-    }
-    return false; // Session is valid for current store
-  }
-};
+// NOTE: Store validation is now handled by the backend via JWT store_id
+// The token contains store_id and backend validates it on each request
+// Frontend doesn't need to manage token activation/deactivation anymore
 

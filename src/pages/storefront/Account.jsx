@@ -23,32 +23,31 @@ export default function Account() {
   const [addresses, setAddresses] = useState([]);
   const [wishlistItems, setWishlistItems] = useState([]);
 
-  // Check authentication status with store context validation
+  // Check authentication status
   useEffect(() => {
     const checkAuth = async () => {
-      // Use CustomerAuth.isAuthenticated() which respects apiClient token state
+      // Use CustomerAuth.isAuthenticated() to check token
       if (!CustomerAuth.isAuthenticated()) {
-        console.log('🔒 Account: Customer not authenticated or token deactivated');
         setIsLoggedIn(false);
         setUser(null);
         return;
       }
 
-      // Verify this is a valid customer session for current store
+      // Verify this is a valid customer session
+      // Backend will validate if token's store_id matches the accessed store
       try {
         const userData = await CustomerAuth.me();
         if (!userData || !userData.id || userData.role !== 'customer') {
-          console.log('🔒 Account: Invalid customer session');
           setIsLoggedIn(false);
           setUser(null);
           return;
         }
 
-        console.log('✅ Account: Customer authenticated for this store:', userData.email);
         setIsLoggedIn(true);
         setUser(userData);
       } catch (error) {
-        console.error('🔒 Account: Authentication check failed:', error);
+        // If backend returns 403, customer is accessing wrong store
+        console.error('Authentication check failed:', error);
         setIsLoggedIn(false);
         setUser(null);
       }
