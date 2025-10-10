@@ -377,13 +377,11 @@ export default function Cart() {
                                 return results;
                             }
                         } catch (strategyError) {
-                            console.log(`❌ Batch strategy ${index + 1} failed:`, strategyError.message);
                             continue;
                         }
                     }
 
                     // Fallback: Optimized parallel individual fetches
-                    console.log('🔄 Falling back to parallel individual fetches');
                     const productPromises = productIds.map(async (id, index) => {
                         try {
                             // Add small staggered delay to prevent overwhelming the server
@@ -599,9 +597,13 @@ export default function Cart() {
         try {
             // Check if coupon applies to products in cart
             if (coupon.applicable_products && coupon.applicable_products.length > 0) {
-                const hasApplicableProduct = cartItems.some(item => 
-                    coupon.applicable_products.includes(item.product_id)
-                );
+                const hasApplicableProduct = cartItems.some(item => {
+                    // Normalize product_id to handle cases where it might be an object
+                    const productId = typeof item.product_id === 'object' ?
+                        (item.product_id?.id || item.product_id?.toString() || null) :
+                        item.product_id;
+                    return productId && coupon.applicable_products.includes(productId);
+                });
                 if (!hasApplicableProduct) {
                     couponService.removeAppliedCoupon();
                     setFlashMessage({ type: 'warning', message: `Coupon "${coupon.name}" was removed because it doesn't apply to current cart items.` });
@@ -699,13 +701,17 @@ export default function Cart() {
                 
                 // Check if coupon applies to products in cart
                 if (coupon.applicable_products && coupon.applicable_products.length > 0) {
-                    const hasApplicableProduct = cartItems.some(item => 
-                        coupon.applicable_products.includes(item.product_id)
-                    );
+                    const hasApplicableProduct = cartItems.some(item => {
+                        // Normalize product_id to handle cases where it might be an object
+                        const productId = typeof item.product_id === 'object' ?
+                            (item.product_id?.id || item.product_id?.toString() || null) :
+                            item.product_id;
+                        return productId && coupon.applicable_products.includes(productId);
+                    });
                     if (!hasApplicableProduct) {
-                        setFlashMessage({ 
-                            type: 'error', 
-                            message: "This coupon doesn't apply to any products in your cart." 
+                        setFlashMessage({
+                            type: 'error',
+                            message: "This coupon doesn't apply to any products in your cart."
                         });
                         return;
                     }
@@ -998,8 +1004,6 @@ export default function Cart() {
                     return shouldRender;
                 })() ? (
                     <div className="grid grid-cols-12 gap-2 auto-rows-min">
-                        {console.log('🎨 CART: Rendering with slots:', Object.keys(cartLayoutConfig.slots))}
-                        {console.log('🎨 CART: header_title slot:', cartLayoutConfig.slots.header_title)}
                         <UnifiedSlotRenderer
                             slots={cartLayoutConfig.slots}
                             parentId={null}
