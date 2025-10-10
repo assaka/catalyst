@@ -48,10 +48,13 @@ import { formatPrice as formatPriceUtil } from '@/utils/priceUtils';
 export default function Checkout() {
   const { store, settings, loading: storeLoading, selectedCountry, setSelectedCountry } = useStore();
   const { showError, AlertComponent } = useAlertTypes();
-  
+
   // Get currency symbol from settings
   // Currency symbol comes from StoreProvider which derives it from store.currency → getCurrencySymbol()
   const currencySymbol = settings?.currency_symbol;
+
+  // Check if phone field should be shown at checkout
+  const showPhoneField = settings?.collect_phone_number_at_checkout;
   
   // Debug allowed countries
   const navigate = useNavigate();
@@ -1162,7 +1165,7 @@ export default function Checkout() {
           newShippingErrors.full_name = true;
           hasErrors = true;
         }
-        if (!shippingAddress.phone) {
+        if (showPhoneField && !shippingAddress.phone) {
           newShippingErrors.phone = true;
           hasErrors = true;
         }
@@ -1204,7 +1207,7 @@ export default function Checkout() {
             newBillingErrors.full_name = true;
             hasErrors = true;
           }
-          if (!billingAddress.phone) {
+          if (showPhoneField && !billingAddress.phone) {
             newBillingErrors.phone = true;
             hasErrors = true;
           }
@@ -1369,17 +1372,19 @@ export default function Checkout() {
                       setShippingErrors(prev => ({ ...prev, full_name: false }));
                     }}
                   />
-                  <Input
-                    placeholder="Phone Number *"
-                    type="tel"
-                    className={`md:col-span-2 ${shippingErrors.phone ? 'border-red-500' : ''}`}
-                    required
-                    value={shippingAddress.phone}
-                    onChange={(e) => {
-                      setShippingAddress(prev => ({ ...prev, phone: e.target.value }));
-                      setShippingErrors(prev => ({ ...prev, phone: false }));
-                    }}
-                  />
+                  {showPhoneField && (
+                    <Input
+                      placeholder="Phone Number *"
+                      type="tel"
+                      className={`md:col-span-2 ${shippingErrors.phone ? 'border-red-500' : ''}`}
+                      required
+                      value={shippingAddress.phone}
+                      onChange={(e) => {
+                        setShippingAddress(prev => ({ ...prev, phone: e.target.value }));
+                        setShippingErrors(prev => ({ ...prev, phone: false }));
+                      }}
+                    />
+                  )}
                   <Input
                     placeholder="Street Address *"
                     className={`md:col-span-2 ${shippingErrors.street ? 'border-red-500' : ''}`}
@@ -1588,17 +1593,19 @@ export default function Checkout() {
                             setBillingErrors(prev => ({ ...prev, full_name: false }));
                           }}
                         />
-                        <Input
-                          placeholder="Phone Number *"
-                          type="tel"
-                          className={`md:col-span-2 ${billingErrors.phone ? 'border-red-500' : ''}`}
-                          required
-                          value={billingAddress.phone}
-                          onChange={(e) => {
-                            setBillingAddress(prev => ({ ...prev, phone: e.target.value }));
-                            setBillingErrors(prev => ({ ...prev, phone: false }));
-                          }}
-                        />
+                        {showPhoneField && (
+                          <Input
+                            placeholder="Phone Number *"
+                            type="tel"
+                            className={`md:col-span-2 ${billingErrors.phone ? 'border-red-500' : ''}`}
+                            required
+                            value={billingAddress.phone}
+                            onChange={(e) => {
+                              setBillingAddress(prev => ({ ...prev, phone: e.target.value }));
+                              setBillingErrors(prev => ({ ...prev, phone: false }));
+                            }}
+                          />
+                        )}
                         <Input
                           placeholder="Street Address *"
                           className={`md:col-span-2 ${billingErrors.street ? 'border-red-500' : ''}`}
