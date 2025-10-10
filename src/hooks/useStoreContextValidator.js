@@ -4,7 +4,8 @@ import { clearCustomerSessionIfInvalid } from '@/utils/auth';
 
 /**
  * Hook to validate customer store context
- * Automatically clears customer session if accessing a different store
+ * Checks if customer session belongs to current store
+ * NOTE: Does NOT clear the session - just validates it for the current store
  */
 export const useStoreContextValidator = () => {
   const { storeCode } = useParams();
@@ -25,12 +26,13 @@ export const useStoreContextValidator = () => {
     console.log('🔒 Validating store context for:', storeCode);
 
     // Check if customer session matches current store
-    const sessionCleared = clearCustomerSessionIfInvalid(storeCode);
+    const sessionNotValidForThisStore = clearCustomerSessionIfInvalid(storeCode);
 
-    if (sessionCleared) {
-      console.log('🔄 Customer session cleared due to store mismatch, reloading page');
-      // Reload the page to reflect logged-out state
-      window.location.reload();
+    if (sessionNotValidForThisStore) {
+      // Session exists but for a different store
+      // Don't reload - just let the app show logged-out state for this store
+      // The session will still be valid when they return to their original store
+      console.log('ℹ️ Customer session not valid for this store (preserved for original store)');
     }
   }, [storeCode, navigate]);
 

@@ -391,14 +391,24 @@ export const validateCustomerStoreContext = (currentStoreSlug) => {
 };
 
 /**
- * Clear customer session if store context is invalid
+ * Check if customer session is valid for current store
+ * Returns true if session was deactivated (but NOT cleared)
+ * IMPORTANT: We don't clear the session - just deactivate it for this store
+ * This allows customers to maintain sessions across multiple stores
  */
 export const clearCustomerSessionIfInvalid = (currentStoreSlug) => {
   if (!validateCustomerStoreContext(currentStoreSlug)) {
-    console.log('🔒 Clearing customer session due to store mismatch');
-    clearRoleBasedAuthData('customer');
-    return true; // Session was cleared
+    console.log('⚠️ Customer logged into different store - session not active for this store');
+    console.log('   Session store:', localStorage.getItem('customer_store_slug'));
+    console.log('   Current store:', currentStoreSlug);
+    console.log('   Note: Session preserved for original store');
+
+    // DON'T clear the session - just indicate it's not valid for THIS store
+    // The session will remain valid for the original store
+    // clearRoleBasedAuthData('customer'); // REMOVED - don't delete the session
+
+    return true; // Session exists but not valid for this store
   }
-  return false; // Session is valid
+  return false; // Session is valid for current store
 };
 
