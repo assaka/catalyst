@@ -13,6 +13,7 @@ import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
 import { processVariables } from '@/utils/variableProcessor';
 import { formatPrice as formatPriceUtil, getPriceDisplay } from '@/utils/priceUtils';
+import { getStockLabel as getStockLabelUtil, getStockLabelStyle } from '@/utils/stockLabelUtils';
 import {
   ShoppingCart,
   Heart,
@@ -1693,7 +1694,7 @@ const StockStatus = createSlotComponent({
       );
     }
 
-    // Storefront version - full stock status logic
+    // Storefront version - use centralized stock label utility
     const { product, settings } = productContext || {};
 
     if (!product) {
@@ -1706,156 +1707,21 @@ const StockStatus = createSlotComponent({
       );
     }
 
-    // Helper function to get stock label based on settings and quantity
-    const getStockLabel = (product, settings) => {
-      // Check if stock labels should be shown at all
-      const showStockLabel = settings?.stock_settings?.show_stock_label !== false;
-      if (!showStockLabel) return null;
+    // Use centralized utility
+    const stockLabelInfo = getStockLabelUtil(product, settings);
+    const stockLabelStyle = getStockLabelStyle(product, settings);
 
-      // Default behavior if no stock settings are found
-      if (!settings?.stock_settings) {
-        if (product.stock_quantity <= 0 && !product.infinite_stock) {
-          return "Out of Stock";
-        }
-        return "In Stock";
-      }
-
-      const stockSettings = settings.stock_settings;
-
-      // Handle infinite stock
-      if (product.infinite_stock) {
-        const label = stockSettings.in_stock_label || "In Stock";
-        return label.replace(/\{\(\{quantity\}\)\}|\s*\{quantity\}|\s*\(\{quantity\}\)|\s*\(quantity\)|\s*\(\d+\)/g, '').trim();
-      }
-
-      // Handle out of stock
-      if (product.stock_quantity <= 0) {
-        return stockSettings.out_of_stock_label || "Out of Stock";
-      }
-
-      // Check if stock quantity should be hidden
-      const hideStockQuantity = settings?.hide_stock_quantity === true;
-
-      // Handle low stock
-      const lowStockThreshold = product.low_stock_threshold || settings?.display_low_stock_threshold || 0;
-      if (lowStockThreshold > 0 && product.stock_quantity <= lowStockThreshold) {
-        const label = stockSettings.low_stock_label || "Low stock, {just {quantity} left}";
-
-        if (hideStockQuantity) {
-          // Remove any {...} blocks that contain {quantity}
-          return label.replace(/\{[^}]*\{quantity\}[^}]*\}/gi, '')
-            // Clean up spacing and punctuation
-            .replace(/\s+/g, ' ')
-            .replace(/,\s*$/, '')
-            .trim();
-        }
-
-        // Process any {...} blocks and replace placeholders inside them
-        // Handle nested braces by processing outer {...} blocks first
-        let processedLabel = label;
-        let depth = 0;
-        let start = -1;
-
-        for (let i = 0; i < processedLabel.length; i++) {
-          if (processedLabel[i] === '{') {
-            if (depth === 0) start = i;
-            depth++;
-          } else if (processedLabel[i] === '}') {
-            depth--;
-            if (depth === 0 && start !== -1) {
-              const content = processedLabel.substring(start + 1, i);
-              const processed = content
-                .replace(/\{quantity\}/gi, product.stock_quantity)
-                .replace(/\{item\}/gi, product.stock_quantity === 1 ? 'item' : 'items')
-                .replace(/\{unit\}/gi, product.stock_quantity === 1 ? 'unit' : 'units')
-                .replace(/\{piece\}/gi, product.stock_quantity === 1 ? 'piece' : 'pieces');
-
-              processedLabel = processedLabel.substring(0, start) + processed + processedLabel.substring(i + 1);
-              i = start + processed.length - 1; // Adjust index after replacement
-              start = -1;
-            }
-          }
-        }
-
-        return processedLabel;
-      }
-
-      // Handle regular in stock
-      const label = stockSettings.in_stock_label || "In Stock";
-      if (hideStockQuantity) {
-        // Remove any {...} blocks that contain {quantity}
-        return label.replace(/\{[^}]*\{quantity\}[^}]*\}/gi, '')
-          // Clean up spacing and punctuation
-          .replace(/\s+/g, ' ')
-          .replace(/,\s*$/, '')
-          .trim();
-      }
-
-      // Process any {...} blocks and replace placeholders inside them
-      // Handle nested braces by processing outer {...} blocks first
-      let processedLabel = label;
-      let depth = 0;
-      let start = -1;
-
-      for (let i = 0; i < processedLabel.length; i++) {
-        if (processedLabel[i] === '{') {
-          if (depth === 0) start = i;
-          depth++;
-        } else if (processedLabel[i] === '}') {
-          depth--;
-          if (depth === 0 && start !== -1) {
-            const content = processedLabel.substring(start + 1, i);
-            const processed = content
-              .replace(/\{quantity\}/gi, product.stock_quantity)
-              .replace(/\{item\}/gi, product.stock_quantity === 1 ? 'item' : 'items')
-              .replace(/\{unit\}/gi, product.stock_quantity === 1 ? 'unit' : 'units')
-              .replace(/\{piece\}/gi, product.stock_quantity === 1 ? 'piece' : 'pieces');
-
-            processedLabel = processedLabel.substring(0, start) + processed + processedLabel.substring(i + 1);
-            i = start + processed.length - 1; // Adjust index after replacement
-            start = -1;
-          }
-        }
-      }
-
-      return processedLabel;
-    };
-
-    // Helper function to get stock variant (for styling)
-    const getStockVariant = (product, settings) => {
-      if (product.infinite_stock) return "outline";
-      if (product.stock_quantity <= 0) return "destructive";
-
-      const lowStockThreshold = product.low_stock_threshold || settings?.display_low_stock_threshold || 0;
-      if (lowStockThreshold > 0 && product.stock_quantity <= lowStockThreshold) {
-        return "secondary";
-      }
-
-      return "outline";
-    };
-
-    const stockLabel = getStockLabel(product, settings);
-    const stockVariant = getStockVariant(product, settings);
-
-    if (!stockLabel) {
+    if (!stockLabelInfo) {
       return null;
-    }
-
-    // Style classes based on variant
-    let badgeClasses = "w-fit inline-flex items-center px-2 py-1 rounded-full text-xs";
-
-    if (stockVariant === 'destructive') {
-      badgeClasses += " bg-red-100 text-red-800";
-    } else if (stockVariant === 'secondary') {
-      badgeClasses += " bg-yellow-100 text-yellow-800";
-    } else {
-      badgeClasses += " bg-green-100 text-green-800";
     }
 
     return (
       <div className={className} style={styles}>
-        <span className={badgeClasses}>
-          {stockLabel}
+        <span
+          className="w-fit inline-flex items-center px-2 py-1 rounded-full text-xs"
+          style={stockLabelStyle}
+        >
+          {stockLabelInfo.text}
         </span>
       </div>
     );

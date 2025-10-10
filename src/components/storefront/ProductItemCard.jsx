@@ -8,6 +8,7 @@ import { formatPriceWithTax, safeNumber, getPriceDisplay } from '@/utils/priceUt
 import cartService from '@/services/cartService';
 import { ShoppingCart } from 'lucide-react';
 import { getPrimaryImageUrl } from '@/utils/imageUtils';
+import { getStockLabel, getStockLabelStyle } from '@/utils/stockLabelUtils';
 
 /**
  * ProductItemCard - Reusable product card component
@@ -281,24 +282,24 @@ const ProductItemCard = ({
           )}
 
           <div className="space-y-3 mt-4">
-            {/* Stock label */}
-            {settings?.show_stock_label && (
-              <div className="mb-2">
-                {(() => {
-                  // Calculate stock status based on actual stock fields
-                  const isInStock = product.infinite_stock || product.stock_quantity > 0;
-                  return (
-                    <span className={`text-xs px-2 py-1 rounded ${
-                      isInStock
-                        ? 'bg-green-100 text-green-800'
-                        : 'bg-red-100 text-red-800'
-                    }`}>
-                      {isInStock ? 'In Stock' : 'Out of Stock'}
-                    </span>
-                  );
-                })()}
-              </div>
-            )}
+            {/* Stock label - uses centralized utility */}
+            {(() => {
+              const stockLabelInfo = getStockLabel(product, settings);
+              const stockLabelStyle = getStockLabelStyle(product, settings);
+
+              if (!stockLabelInfo) return null;
+
+              return (
+                <div className="mb-2">
+                  <span
+                    className="text-xs px-2 py-1 rounded"
+                    style={stockLabelStyle}
+                  >
+                    {stockLabelInfo.text}
+                  </span>
+                </div>
+              );
+            })()}
 
             {/* Price display */}
             <div
@@ -363,23 +364,23 @@ const ProductItemCard = ({
             </Button>
 
             {/* Stock status for list view */}
-            {viewMode === 'list' && (
-              <div className="mt-2">
-                {(() => {
-                  // Calculate stock status based on actual stock fields
-                  const isInStock = product.infinite_stock || product.stock_quantity > 0;
-                  return (
-                    <span className={`text-xs px-2 py-1 rounded ${
-                      isInStock
-                        ? 'bg-green-100 text-green-800'
-                        : 'bg-red-100 text-red-800'
-                    }`}>
-                      {isInStock ? 'In Stock' : 'Out of Stock'}
-                    </span>
-                  );
-                })()}
-              </div>
-            )}
+            {viewMode === 'list' && (() => {
+              const stockLabelInfo = getStockLabel(product, settings);
+              const stockLabelStyle = getStockLabelStyle(product, settings);
+
+              if (!stockLabelInfo) return null;
+
+              return (
+                <div className="mt-2">
+                  <span
+                    className="text-xs px-2 py-1 rounded"
+                    style={stockLabelStyle}
+                  >
+                    {stockLabelInfo.text}
+                  </span>
+                </div>
+              );
+            })()}
           </div>
         </div>
       </CardContent>

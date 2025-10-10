@@ -66,7 +66,7 @@ export default function StockSettings() {
       
       const storeSettings = selectedStore.settings || {};
       
-      
+
       setSettings({
         id: selectedStore.id,
         name: selectedStore.name,
@@ -77,7 +77,14 @@ export default function StockSettings() {
         in_stock_label: storeSettings.stock_settings?.in_stock_label || 'In Stock',
         out_of_stock_label: storeSettings.stock_settings?.out_of_stock_label || 'Out of Stock',
         low_stock_label: storeSettings.stock_settings?.low_stock_label || 'Low stock, {just {quantity} left}',
-        show_stock_label: storeSettings.stock_settings?.show_stock_label !== undefined ? storeSettings.stock_settings.show_stock_label : true
+        show_stock_label: storeSettings.stock_settings?.show_stock_label !== undefined ? storeSettings.stock_settings.show_stock_label : true,
+        // Color settings for each stock type
+        in_stock_text_color: storeSettings.stock_settings?.in_stock_text_color || '#166534',
+        in_stock_bg_color: storeSettings.stock_settings?.in_stock_bg_color || '#dcfce7',
+        out_of_stock_text_color: storeSettings.stock_settings?.out_of_stock_text_color || '#991b1b',
+        out_of_stock_bg_color: storeSettings.stock_settings?.out_of_stock_bg_color || '#fee2e2',
+        low_stock_text_color: storeSettings.stock_settings?.low_stock_text_color || '#92400e',
+        low_stock_bg_color: storeSettings.stock_settings?.low_stock_bg_color || '#fef3c7'
       });
 
     } catch (error) {
@@ -115,7 +122,14 @@ export default function StockSettings() {
             in_stock_label: settings.in_stock_label || 'In Stock',
             out_of_stock_label: settings.out_of_stock_label || 'Out of Stock',
             low_stock_label: settings.low_stock_label || 'Low stock, {just {quantity} left}',
-            show_stock_label: settings.show_stock_label !== undefined ? settings.show_stock_label : true
+            show_stock_label: settings.show_stock_label !== undefined ? settings.show_stock_label : true,
+            // Save color settings
+            in_stock_text_color: settings.in_stock_text_color || '#166534',
+            in_stock_bg_color: settings.in_stock_bg_color || '#dcfce7',
+            out_of_stock_text_color: settings.out_of_stock_text_color || '#991b1b',
+            out_of_stock_bg_color: settings.out_of_stock_bg_color || '#fee2e2',
+            low_stock_text_color: settings.low_stock_text_color || '#92400e',
+            low_stock_bg_color: settings.low_stock_bg_color || '#fef3c7'
           }
         }
       };
@@ -294,6 +308,28 @@ export default function StockSettings() {
                     <p className="text-xs text-gray-400 mt-1">
                       Examples: <code>In Stock {'{({quantity} available)}'}</code> → "In Stock (5 available)" | <code>Available {'{({quantity} {item})}'}</code> → "Available (1 item)"
                     </p>
+                    <div className="grid grid-cols-2 gap-4 mt-3">
+                      <div>
+                        <Label htmlFor="in_stock_text_color" className="text-xs">Text Color</Label>
+                        <Input
+                          id="in_stock_text_color"
+                          type="color"
+                          value={settings.in_stock_text_color}
+                          onChange={(e) => handleSettingsChange('in_stock_text_color', e.target.value)}
+                          className="h-10 cursor-pointer"
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor="in_stock_bg_color" className="text-xs">Background Color</Label>
+                        <Input
+                          id="in_stock_bg_color"
+                          type="color"
+                          value={settings.in_stock_bg_color}
+                          onChange={(e) => handleSettingsChange('in_stock_bg_color', e.target.value)}
+                          className="h-10 cursor-pointer"
+                        />
+                      </div>
+                    </div>
                   </div>
                   <div>
                     <Label htmlFor="out_of_stock_label">"Out of Stock" Label</Label>
@@ -305,6 +341,28 @@ export default function StockSettings() {
                      <p className="text-sm text-gray-500 mt-1">
                       Text to display when a product is out of stock.
                     </p>
+                    <div className="grid grid-cols-2 gap-4 mt-3">
+                      <div>
+                        <Label htmlFor="out_of_stock_text_color" className="text-xs">Text Color</Label>
+                        <Input
+                          id="out_of_stock_text_color"
+                          type="color"
+                          value={settings.out_of_stock_text_color}
+                          onChange={(e) => handleSettingsChange('out_of_stock_text_color', e.target.value)}
+                          className="h-10 cursor-pointer"
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor="out_of_stock_bg_color" className="text-xs">Background Color</Label>
+                        <Input
+                          id="out_of_stock_bg_color"
+                          type="color"
+                          value={settings.out_of_stock_bg_color}
+                          onChange={(e) => handleSettingsChange('out_of_stock_bg_color', e.target.value)}
+                          className="h-10 cursor-pointer"
+                        />
+                      </div>
+                    </div>
                   </div>
                   <div>
                     <Label htmlFor="low_stock_label">"Low Stock" Label</Label>
@@ -319,6 +377,28 @@ export default function StockSettings() {
                     <p className="text-xs text-gray-400 mt-1">
                       Examples: <code>Low stock, {'{just {quantity} left}'}</code> → "Low stock, just 2 left" | <code>Hurry! {'{Only {quantity} {piece} remaining}'}</code> → "Hurry! Only 1 piece remaining"
                     </p>
+                    <div className="grid grid-cols-2 gap-4 mt-3">
+                      <div>
+                        <Label htmlFor="low_stock_text_color" className="text-xs">Text Color</Label>
+                        <Input
+                          id="low_stock_text_color"
+                          type="color"
+                          value={settings.low_stock_text_color}
+                          onChange={(e) => handleSettingsChange('low_stock_text_color', e.target.value)}
+                          className="h-10 cursor-pointer"
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor="low_stock_bg_color" className="text-xs">Background Color</Label>
+                        <Input
+                          id="low_stock_bg_color"
+                          type="color"
+                          value={settings.low_stock_bg_color}
+                          onChange={(e) => handleSettingsChange('low_stock_bg_color', e.target.value)}
+                          className="h-10 cursor-pointer"
+                        />
+                      </div>
+                    </div>
                   </div>
               </div>
 

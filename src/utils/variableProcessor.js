@@ -10,6 +10,7 @@
  */
 
 import { formatPrice } from './priceUtils';
+import { getStockLabel } from './stockLabelUtils';
 
 /**
  * Process variables in content based on context
@@ -479,37 +480,18 @@ function formatValue(value, path, context, pageData) {
 
 /**
  * Format stock status with proper logic respecting admin settings
+ * Now uses centralized stockLabelUtils for consistency
  */
 function formatStockStatus(product, context, pageData) {
   if (!product) return '';
 
   const settings = context.settings || {};
-  const stockSettings = settings.stock_settings || {};
-  const stockQuantity = product.stock_quantity || 0;
 
-  // Check if stock labels should be shown
-  if (!stockSettings.show_stock_label) {
-    return '';
-  }
+  // Use centralized stock label utility
+  const stockLabelInfo = getStockLabel(product, settings);
 
-  // Handle infinite stock or unmanaged stock
-  if (product.infinite_stock || (product.manage_stock === false)) {
-    return stockSettings.in_stock_label?.replace(/\{.*?\}/g, '') || 'In Stock';
-  }
-
-  // Out of stock
-  if (stockQuantity <= 0) {
-    return stockSettings.out_of_stock_label || 'Out of Stock';
-  }
-
-  // Low stock threshold check
-  const lowStockThreshold = product.low_stock_threshold || settings.display_low_stock_threshold || 5;
-  if (stockQuantity <= lowStockThreshold && stockSettings.low_stock_label) {
-    return stockSettings.low_stock_label.replace(/\{.*?quantity.*?\}/g, stockQuantity);
-  }
-
-  // In stock
-  return stockSettings.in_stock_label?.replace(/\{.*?quantity.*?\}/g, stockQuantity) || 'In Stock';
+  // Return just the text (no color styling in template variables)
+  return stockLabelInfo?.text || '';
 }
 
 /**
