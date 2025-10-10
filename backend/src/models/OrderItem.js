@@ -64,7 +64,49 @@ const OrderItem = sequelize.define('OrderItem', {
     }
   }
 }, {
-  tableName: 'order_items'
+  tableName: 'order_items',
+  hooks: {
+    afterCreate: async (orderItem) => {
+      // Reduce product stock when an order item is created
+      try {
+        const Product = require('./Product');
+        const product = await Product.findByPk(orderItem.product_id);
+
+        if (!product) {
+          console.warn(`Product ${orderItem.product_id} not found for stock deduction`);
+          return;
+        }
+
+        // Only reduce stock if stock management is enabled and infinite stock is disabled
+        if (product.manage_stock && !product.infinite_stock) {
+          const newStockQuantity = product.stock_quantity - orderItem.quantity;
+
+          // Prevent negative stock unless backorders are allowed
+          if (newStockQuantity < 0 && !product.allow_backorders) {
+            console.warn(`Insufficient stock for product ${product.sku}: requested ${orderItem.quantity}, available ${product.stock_quantity}`);
+            // Still create the order item but log the warning
+            // In a production system, you might want to handle this differently
+          }
+
+          await product.update({
+            stock_quantity: Math.max(0, newStockQuantity),
+            purchase_count: product.purchase_count + 1
+          });
+
+          console.log(`✅ Stock reduced for product ${product.sku}: ${product.stock_quantity} -> ${newStockQuantity}`);
+        } else if (product.infinite_stock) {
+          // Still update purchase count for infinite stock products
+          await product.update({
+            purchase_count: product.purchase_count + 1
+          });
+          console.log(`✅ Purchase count updated for infinite stock product ${product.sku}`);
+        }
+      } catch (error) {
+        console.error('Error reducing stock for order item:', error);
+        // Don't fail the order item creation if stock reduction fails
+      }
+    }
+  }
 });
 
 module.exports = OrderItem;
