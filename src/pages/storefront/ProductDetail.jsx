@@ -839,7 +839,9 @@ export default function ProductDetail() {
               productLabels: (() => {
                 const labels = product?.applicableLabels || productLabels;
                 return labels;
-              })()
+              })(),
+              customOptions: customOptions || [],
+              customOptionsLabel: customOptionsLabel || 'Custom Options'
             }}
           />
         </div>
