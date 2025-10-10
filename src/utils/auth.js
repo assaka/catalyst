@@ -2,7 +2,6 @@ import { Auth } from '@/api/entities';
 import { createPageUrl } from '@/utils';
 import { createAdminUrl, createPublicUrl, getCurrentUrlType, getStoreSlugFromPublicUrl } from '@/utils/urlUtils';
 import apiClient from '@/api/client';
-import { setStorefrontCustomerToken, getStorefrontCustomerToken } from '@/api/storefront-client';
 
 /**
  * Standardized logout function that handles:

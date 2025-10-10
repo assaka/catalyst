@@ -29,7 +29,6 @@ import HeatmapTrackerComponent from '@/components/admin/heatmap/HeatmapTracker';
 import FlashMessage from '@/components/storefront/FlashMessage';
 import { HeaderSlotRenderer } from './HeaderSlotRenderer';
 import { useHeaderConfig } from '@/hooks/useHeaderConfig';
-import { useStoreContextValidator } from '@/hooks/useStoreContextValidator';
 
 const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 
@@ -75,9 +74,6 @@ export default function StorefrontLayout({ children }) {
 
     // Load header slot configuration
     const { headerSlots, headerConfigLoaded } = useHeaderConfig(store);
-
-    // Validate customer store context (auto-logout if switching stores)
-    useStoreContextValidator();
 
     // Toggle function for mobile category expansion
     const toggleMobileCategory = (categoryId) => {
@@ -180,45 +176,6 @@ export default function StorefrontLayout({ children }) {
         };
         fetchData();
     }, [loading, store]);
-
-    // Listen for customer auth changes (token activation/deactivation across stores)
-    useEffect(() => {
-        const handleCustomerAuthChanged = async (event) => {
-            const { authenticated, storeSlug } = event.detail;
-            console.log('📢 StorefrontLayout: Customer auth changed', { authenticated, storeSlug });
-
-            setUserLoading(true);
-
-            if (authenticated) {
-                // Token was reactivated - reload user data
-                try {
-                    const userData = await retryApiCall(async () => {
-                        return await CustomerAuth.me();
-                    }, 5, 3000, null);
-
-                    if (userData && userData.role === 'customer') {
-                        setUser(userData);
-                        console.log('✅ StorefrontLayout: User data reloaded after token reactivation');
-                    } else {
-                        setUser(null);
-                    }
-                } catch (e) {
-                    console.error('❌ StorefrontLayout: Failed to reload user data:', e);
-                    setUser(null);
-                }
-            } else {
-                // Token was deactivated - clear user
-                setUser(null);
-                console.log('🔓 StorefrontLayout: User cleared after token deactivation');
-            }
-
-            setUserLoading(false);
-        };
-
-        window.addEventListener('customerAuthChanged', handleCustomerAuthChanged);
-        return () => window.removeEventListener('customerAuthChanged', handleCustomerAuthChanged);
-    }, []);
-
 
     // Flash message event listener
     useEffect(() => {

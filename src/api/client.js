@@ -445,7 +445,13 @@ class ApiClient {
         status: error.status
       });
 
-      console.error(`API request failed: ${method} ${url}`, error);
+      // Suppress "No token provided" errors for auth/me endpoint (expected for guest users)
+      const isAuthMeEndpoint = endpoint.includes('auth/me');
+      const isNoTokenError = error.message && error.message.includes('No token provided');
+
+      if (!(isAuthMeEndpoint && isNoTokenError)) {
+        console.error(`API request failed: ${method} ${url}`, error);
+      }
       
       // Handle network errors
       if (error.name === 'TypeError' && error.message.includes('fetch')) {
