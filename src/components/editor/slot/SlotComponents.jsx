@@ -9,7 +9,6 @@ import { Image, Square, Settings, Plus, Loader2, Save, Code, X, Check, Rocket, T
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ResizeWrapper } from '@/components/ui/resize-element-wrapper';
-import EditorInteractionWrapper from '@/components/editor/EditorInteractionWrapper'; // @deprecated - only used by unused EditableElement
 import { SlotManager } from '@/utils/slotUtils';
 import FilePickerModal from '@/components/ui/FilePickerModal';
 import CodeEditor from '@/components/editor/ai-context/CodeEditor';
