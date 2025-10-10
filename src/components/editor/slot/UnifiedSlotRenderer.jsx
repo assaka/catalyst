@@ -1,11 +1,132 @@
 /**
- * UnifiedSlotRenderer - Single renderer for both editor and storefront contexts
+ * UnifiedSlotRenderer.jsx - Universal Slot Rendering Engine
  *
- * Features:
- * - Type-based rendering: text, button, image, component, container, grid, flex
- * - Context-aware: knows whether it's in editor or storefront mode
- * - Component registration system for complex components
- * - Single source of truth for both editor and storefront
+ * =====================================================================
+ * PURPOSE: Single rendering engine for ALL slot-based UI in both
+ * editor and storefront contexts
+ * =====================================================================
+ *
+ * ARCHITECTURE ROLE:
+ *
+ * UnifiedSlotRenderer is the **universal rendering engine** that handles:
+ * 1. Type-based rendering (text, button, image, component, container, grid, flex, html, cms)
+ * 2. Dual-mode support (editor vs storefront)
+ * 3. Variable processing ({{product.name}}, {{settings.currency}})
+ * 4. Component registry integration
+ * 5. Responsive layout (grid/flex/tailwind)
+ * 6. Interactive editing (resize, drag, click)
+ * 7. Script execution (for dynamic behavior)
+ *
+ * DATA FLOW:
+ * ┌─────────────────────────────────────────────────────────────┐
+ * │ Page Component (Product, Category, Cart, Header, etc.)     │
+ * │ - Loads slot configuration from database/template           │
+ * │ - Prepares data context (product, category, cart, etc.)    │
+ * └────────────────────┬────────────────────────────────────────┘
+ *                      │
+ *                      ▼
+ * ┌─────────────────────────────────────────────────────────────┐
+ * │ UnifiedSlotRenderer (THIS FILE)                             │
+ * │ 1. Receives slots tree + data context                       │
+ * │ 2. Filters slots by viewMode (emptyCart, withProducts)     │
+ * │ 3. Processes variables {{}} in content/className/styles     │
+ * │ 4. Renders each slot based on type:                        │
+ * │    - text → TextSlotWithScript                             │
+ * │    - button → Button component with handlers               │
+ * │    - image → img or Link wrapped img                       │
+ * │    - component → ComponentRegistry lookup + render         │
+ * │    - container/grid/flex → recursive render children       │
+ * │ 5. Wraps with editor functionality if context='editor'     │
+ * └─────────────────────────────────────────────────────────────┘
+ *
+ * DUAL-MODE RENDERING:
+ *
+ * **Editor Mode** (context='editor'):
+ * - Wraps elements with ResizeWrapper for visual resizing
+ * - Adds GridColumn wrapper for drag & drop editing
+ * - Shows borders and interactive controls
+ * - Uses demo/placeholder data for preview
+ * - onClick handlers for element selection
+ *
+ * **Storefront Mode** (context='storefront'):
+ * - No wrappers or borders - clean output
+ * - Real data from API/database
+ * - Full interactive functionality (add to cart, links, scripts)
+ * - Executes slot.script for dynamic behavior
+ *
+ * VARIABLE PROCESSING:
+ *
+ * Variables in slot content/className/styles are replaced with real data:
+ * - {{product.name}} → "Samsung RS66A8101B1"
+ * - {{product.price_formatted}} → "¥1049.00"
+ * - {{settings.currency_symbol}} → "¥"
+ *
+ * Variable sources (variableContext):
+ * - product: Single product data
+ * - products: Array of products (for category pages)
+ * - category: Category metadata
+ * - cart: Cart data
+ * - settings: Store settings (currency, theme colors, etc.)
+ * - filters: Active filters (for category filtering UI)
+ *
+ * COMPONENT REGISTRY:
+ *
+ * Complex components (ProductGallerySlot, CategoryFilterSlot, etc.) are:
+ * 1. Registered in SlotComponentRegistry
+ * 2. Looked up by name when slot.type === 'component'
+ * 3. Rendered via component.render() method
+ *
+ * TYPE-BASED RENDERING:
+ *
+ * Each slot type has specific rendering logic:
+ * - **text**: Renders as HTML with variable processing, supports custom HTML tags
+ * - **html**: Same as text but always uses dangerouslySetInnerHTML
+ * - **button**: Interactive button with add-to-cart/wishlist/logout handlers
+ * - **image**: img tag with optional Link wrapper for product cards
+ * - **component**: Looks up in ComponentRegistry and calls render()
+ * - **container/grid/flex**: Recursively renders children with layout classes
+ * - **cms**: Loads CMS block content from database by position
+ * - **style_config**: Hidden (used for storing filter styles, etc.)
+ *
+ * RESPONSIVE LAYOUT:
+ *
+ * Slots use colSpan for grid positioning:
+ * - Number: col-span-6 (static)
+ * - String: "col-span-12 md:col-span-6" (Tailwind responsive)
+ * - Object: { default: 12, withProducts: 6 } (viewMode-based)
+ *
+ * Editor viewport modes (desktop/tablet/mobile) transform responsive classes:
+ * - md:hidden in mobile viewport → remove class (show element)
+ * - md:hidden in desktop viewport → skip rendering (hide element)
+ *
+ * SCRIPT EXECUTION:
+ *
+ * Slots can have a `script` property for dynamic behavior:
+ * - Named handlers: "priceFormatter" → executeHandler()
+ * - Inline code: "element.classList.add('active')" → executeScript()
+ * - Only executes in storefront mode for security
+ * - Cleanup functions supported for proper unmounting
+ *
+ * RELATED FILES:
+ * - SlotComponentRegistry.js: Component registration system
+ * - variableProcessor.js: {{variable}} processing logic
+ * - scriptHandler.js: Script execution utilities
+ * - SlotComponents.jsx: GridColumn wrapper for editor drag/resize
+ * - CategorySlotRenderer.jsx: Pre-processes category data before rendering
+ * - ProductSlotRenderer.jsx: Pre-processes product data before rendering
+ *
+ * CRITICAL PATTERNS:
+ *
+ * 1. **Never re-format data here**: Data should be pre-formatted by parent renderers
+ *    (CategorySlotRenderer, ProductSlotRenderer) using centralized utilities
+ *
+ * 2. **Respect pre-processed data**: Use formattedProducts from variableContext
+ *    instead of re-calculating prices/labels
+ *
+ * 3. **Maintain dual-mode parity**: Same visual output in editor and storefront,
+ *    only difference is interactive controls
+ *
+ * @module UnifiedSlotRenderer
  */
 
 import React, { useEffect, useRef, useState } from 'react';
@@ -34,7 +155,18 @@ import '@/components/editor/slot/UnifiedSlotComponents';
 // Re-export registry functions for backward compatibility
 export { createSlotComponent, ComponentRegistry, registerSlotComponent } from './SlotComponentRegistry';
 
-// CMS Block Slot Component
+/**
+ * CmsBlockSlot - Renders dynamic CMS block content from database
+ *
+ * Loads CMS blocks by placement/position (e.g., 'homepage_top', 'category_sidebar')
+ * and renders the HTML content. Used for marketing banners, info blocks, etc.
+ *
+ * @param {Object} slot - Slot configuration
+ * @param {string} slot.cmsBlockPosition - CMS block placement/position identifier
+ * @param {string} context - 'editor' or 'storefront'
+ * @param {string} className - CSS classes
+ * @param {Object} styles - Inline styles
+ */
 const CmsBlockSlot = ({ slot, context, className, styles }) => {
   const [cmsContent, setCmsContent] = useState('');
   const [loading, setLoading] = useState(true);
@@ -95,7 +227,27 @@ const CmsBlockSlot = ({ slot, context, className, styles }) => {
   );
 };
 
-// Text Slot with Script Support Component
+/**
+ * TextSlotWithScript - Text/HTML slot with script execution support
+ *
+ * Renders text content with optional script execution for dynamic behavior.
+ * Scripts only execute in storefront mode for security. Supports cleanup functions.
+ *
+ * Handles special cases:
+ * - Price slots: Shows example prices in editor (e.g., $99.99)
+ * - Label slots: Shows example labels in editor
+ * - Conditional slots: Hidden when empty (no placeholder)
+ *
+ * @param {Object} slot - Slot configuration
+ * @param {string} slot.id - Slot identifier (used for special handling)
+ * @param {string|function} slot.script - Script to execute (code or handler name)
+ * @param {Object} slot.metadata - Metadata (htmlTag, htmlAttributes, conditionalDisplay)
+ * @param {string} processedContent - Content after variable processing
+ * @param {string} processedClassName - className after variable processing
+ * @param {string} context - 'editor' or 'storefront'
+ * @param {Object} productData - Product context
+ * @param {Object} variableContext - All variable data
+ */
 const TextSlotWithScript = ({ slot, processedContent, processedClassName, context, productData, variableContext }) => {
   const { id, styles } = slot;
   const elementRef = useRef(null);
@@ -188,7 +340,72 @@ const TextSlotWithScript = ({ slot, processedContent, processedClassName, contex
 };
 
 /**
- * UnifiedSlotRenderer - Handles both editor and storefront rendering
+ * UnifiedSlotRenderer - Main rendering function for slot-based UI
+ *
+ * This is the core function that renders the entire slot tree. It handles:
+ * - Filtering slots by viewMode and renderCondition
+ * - Building variableContext from all data sources
+ * - Rendering each slot based on type
+ * - Wrapping with editor controls if in editor mode
+ *
+ * @param {Object} props - Component props
+ * @param {Object} props.slots - Slot tree (hierarchical structure with parentId relationships)
+ * @param {string|null} props.parentId - Parent slot ID (null for root level)
+ * @param {string} props.viewMode - Page state for slot visibility (default, emptyCart, withProducts, etc.)
+ * @param {string} props.viewportMode - Responsive viewport (desktop, tablet, mobile) for colSpan calculation
+ * @param {string} props.context - Rendering context: 'editor' | 'storefront'
+ * @param {Object} props.productData - Product page context { product, settings, productLabels, canAddToCart, handleWishlistToggle }
+ *
+ * @param {string} props.mode - Editor mode: 'edit' | 'preview'
+ * @param {boolean} props.showBorders - Show borders around slots in editor
+ * @param {Object} props.currentDragInfo - Current drag state
+ * @param {Function} props.setCurrentDragInfo - Update drag state
+ * @param {Function} props.onElementClick - Element click handler (for selection)
+ * @param {Function} props.onGridResize - Grid resize handler
+ * @param {Function} props.onSlotHeightResize - Slot height resize handler
+ * @param {Function} props.onSlotDrop - Slot drop handler (drag & drop)
+ * @param {Function} props.onSlotDelete - Slot delete handler
+ * @param {Function} props.onResizeStart - Resize start handler
+ * @param {Function} props.onResizeEnd - Resize end handler
+ * @param {string|null} props.selectedElementId - Currently selected slot ID
+ * @param {Function} props.setPageConfig - Update page configuration
+ * @param {Function} props.saveConfiguration - Save configuration to database
+ *
+ * @param {Object} props.categoryData - Category page context { category, products, filters, filterableAttributes, pagination, settings, store }
+ * @param {Object} props.cartData - Cart page context { items, subtotal, total, etc. }
+ * @param {Object} props.headerContext - Header context { user, isLoggedIn, mobileMenuOpen, mobileSearchOpen, settings }
+ * @param {Object} props.loginData - Login page context { onLogin, onRegister, etc. }
+ * @param {Object} props.accountData - Account page context { user, handleLogout, etc. }
+ * @param {Object} props.slotConfig - Static slot configuration (for renderCondition support)
+ *
+ * @returns {JSX.Element} Rendered slot tree
+ *
+ * @example
+ * // Category page usage
+ * <UnifiedSlotRenderer
+ *   slots={pageConfig.slots}
+ *   parentId={null}
+ *   viewMode="default"
+ *   viewportMode="desktop"
+ *   context="storefront"
+ *   categoryData={{ category, products, filters, settings, store }}
+ * />
+ *
+ * @example
+ * // Product page usage in editor
+ * <UnifiedSlotRenderer
+ *   slots={pageConfig.slots}
+ *   parentId={null}
+ *   viewMode="default"
+ *   viewportMode="desktop"
+ *   context="editor"
+ *   mode="edit"
+ *   showBorders={true}
+ *   productData={{ product: demoProduct, settings }}
+ *   onElementClick={handleElementClick}
+ *   setPageConfig={setPageConfig}
+ *   saveConfiguration={saveConfiguration}
+ * />
  */
 export function UnifiedSlotRenderer({
   slots,
@@ -328,7 +545,16 @@ export function UnifiedSlotRenderer({
   };
 
   /**
-   * Wrap element with ResizeWrapper for editor mode
+   * wrapWithResize - Wraps element with ResizeWrapper for visual resizing in editor
+   *
+   * Only applies in editor mode with mode='edit'. Adds resize handles to allow
+   * visual resizing of slot elements. Updates slot styles and saves to database.
+   *
+   * @param {JSX.Element} element - Element to wrap
+   * @param {Object} slot - Slot configuration
+   * @param {number} minWidth - Minimum width in pixels (default: 20)
+   * @param {number} minHeight - Minimum height in pixels (default: 16)
+   * @returns {JSX.Element} Wrapped element (or unwrapped if not in editor mode)
    */
   const wrapWithResize = (element, slot, minWidth = 20, minHeight = 16) => {
     if (context !== 'editor' || mode !== 'edit') {
@@ -392,7 +618,31 @@ export function UnifiedSlotRenderer({
   };
 
   /**
-   * Render basic slot content based on type
+   * renderBasicSlot - Type-based rendering of slot content
+   *
+   * Routes slot rendering based on slot.type:
+   * - text: TextSlotWithScript (with variable processing)
+   * - html: Raw HTML content with dangerouslySetInnerHTML
+   * - button: Interactive Button component
+   * - image: img tag (optionally wrapped with Link for product cards)
+   * - component: ComponentRegistry lookup + render
+   * - container/grid/flex: Recursive rendering of children
+   * - cms: CmsBlockSlot (loads from database)
+   * - style_config: Returns null (hidden, used for config storage)
+   *
+   * Applies:
+   * - Variable processing to content, className, styles
+   * - Viewport-aware responsive class handling (md:hidden, sm:flex, etc.)
+   * - Special handling for product card links
+   * - ResizeWrapper in editor mode
+   *
+   * @param {Object} slot - Slot configuration
+   * @param {string} slot.type - Slot type (text, button, image, component, container, grid, flex, html, cms)
+   * @param {string} slot.content - Slot content (may contain {{variables}})
+   * @param {string} slot.className - CSS classes (may contain {{variables}})
+   * @param {Object} slot.styles - Inline styles (may contain {{variables}})
+   * @param {Object} slot.metadata - Metadata (htmlTag, htmlAttributes, disableResize, component, etc.)
+   * @returns {JSX.Element|null} Rendered slot content
    */
   const renderBasicSlot = (slot) => {
     const { id, type, content, className, styles, metadata } = slot;
@@ -886,7 +1136,22 @@ export function UnifiedSlotRenderer({
   };
 
   /**
-   * Wrap slot content with editor functionality if needed
+   * wrapSlotForEditor - Wraps slot with grid/layout container and editor controls
+   *
+   * Handles:
+   * - Grid column positioning (col-span-X or responsive classes)
+   * - Editor-specific wrapping (GridColumn for drag & drop)
+   * - Absolute positioning detection (skips wrapper)
+   * - Null content handling (returns null)
+   *
+   * Editor mode: Wraps with GridColumn for drag/resize functionality
+   * Storefront mode: Simple div wrapper for layout only
+   *
+   * @param {Object} slot - Slot configuration
+   * @param {JSX.Element|null} slotContent - Rendered slot content
+   * @param {string} colSpanClass - Tailwind colSpan class (e.g., 'col-span-6', 'col-span-12 md:col-span-6')
+   * @param {string|null} gridColumn - CSS grid-column value (e.g., 'span 6 / span 6')
+   * @returns {JSX.Element|null} Wrapped slot or null
    */
   const wrapSlotForEditor = (slot, slotContent, colSpanClass, gridColumn) => {
     // If slot content is null or undefined (e.g., empty slots, style_config slots), don't render anything
@@ -1055,7 +1320,20 @@ export function UnifiedSlotRenderer({
 }
 
 /**
- * Helper function to get product image URL
+ * getProductImageUrl - Extracts product image URL from various formats
+ *
+ * Handles multiple image object formats:
+ * - String: Direct URL
+ * - Object with url/src/path/image_url/uri/file_url properties
+ *
+ * @param {Object} product - Product object
+ * @param {Array} product.images - Array of image URLs or objects
+ * @param {number} imageIndex - Image index (default: 0 for main image)
+ * @returns {string} Image URL or placeholder
+ *
+ * @example
+ * getProductImageUrl(product, 0) // Main image
+ * getProductImageUrl(product, 1) // Second image (for gallery)
  */
 function getProductImageUrl(product, imageIndex = 0) {
   if (!product || !product.images || !product.images[imageIndex]) {

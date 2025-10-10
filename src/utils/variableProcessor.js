@@ -1,19 +1,188 @@
 /**
- * Variable Processor - Handles template variable replacement for slot system
+ * variableProcessor.js - Handlebars-like Template Engine
  *
- * Features:
- * - Simple variables: {{product.name}}
- * - Conditional variables: {{#if product.on_sale}}SALE{{/if}}
- * - Loop variables: {{#each product.images}}...{{/each}}
- * - Complex formatting: {{product.price_formatted}}
- * - Context-aware: editor (demo data) vs storefront (real data)
+ * =====================================================================
+ * PURPOSE: Process {{variable}} template syntax in slot content,
+ * className, and styles for dynamic content rendering
+ * =====================================================================
+ *
+ * ARCHITECTURE ROLE:
+ *
+ * Variable processor is the **template engine** that powers dynamic content:
+ * 1. Replaces {{variables}} with real data
+ * 2. Evaluates {{#if}} conditionals
+ * 3. Processes {{#each}} loops
+ * 4. Formats prices, dates, stock status automatically
+ * 5. Handles nested structures with proper bracket counting
+ *
+ * DATA FLOW:
+ * ┌─────────────────────────────────────────────────────────────┐
+ * │ UnifiedSlotRenderer                                         │
+ * │ - Receives slot with content: "{{product.name}}"           │
+ * │ - Calls processVariables(content, variableContext)         │
+ * └────────────────────┬────────────────────────────────────────┘
+ *                      │
+ *                      ▼
+ * ┌─────────────────────────────────────────────────────────────┐
+ * │ variableProcessor (THIS FILE)                               │
+ * │ 1. Process loops first: {{#each products}}...{{/each}}     │
+ * │ 2. Process conditionals: {{#if on_sale}}SALE{{/if}}       │
+ * │ 3. Process simple variables: {{product.name}}              │
+ * │ 4. Format values (prices, dates, stock status)            │
+ * └────────────────────┬────────────────────────────────────────┘
+ *                      │
+ *                      ▼
+ * ┌─────────────────────────────────────────────────────────────┐
+ * │ Result: "Samsung RS66A8101B1 Amerikaanse Koelkast"         │
+ * └─────────────────────────────────────────────────────────────┘
+ *
+ * VARIABLE SYNTAX:
+ *
+ * **Simple Variables**:
+ * - {{product.name}} → "Samsung RS66A8101B1"
+ * - {{product.price_formatted}} → "¥1049.00"
+ * - {{settings.currency_symbol}} → "¥"
+ * - {{this.image_url}} → Current item in loop
+ *
+ * **Conditionals**:
+ * - {{#if product.on_sale}}SALE{{/if}}
+ * - {{#if product.on_sale}}SALE{{else}}Regular{{/if}}
+ * - {{#if (eq product.status "active")}}Active{{/if}}
+ * - {{#if (gt product.stock_quantity 0)}}In Stock{{/if}}
+ * - {{#if product.price > 100}}Expensive{{/if}}
+ *
+ * **Loops**:
+ * - {{#each product.images}}<img src="{{this}}"/>{{/each}}
+ * - {{#each products}}<div>{{this.name}} - {{this.price_formatted}}</div>{{/each}}
+ * - Supports nested loops with proper context isolation
+ * - {{@index}} for current loop index
+ *
+ * **Nested Structures**:
+ * - {{#if product.on_sale}}{{#each product.images}}...{{/each}}{{/if}}
+ * - Proper bracket counting for nested conditionals/loops
+ *
+ * PROCESSING ORDER:
+ *
+ * 1. **Loops First** (processLoops):
+ *    - Find {{#each array}}...{{/each}} blocks
+ *    - Count brackets to handle nesting
+ *    - For each item: build item context, process conditionals, process variables
+ *    - Supports up to 10 levels of nesting
+ *
+ * 2. **Conditionals Second** (processConditionals):
+ *    - Find {{#if condition}}...{{/if}} blocks
+ *    - Count brackets to handle nesting
+ *    - Evaluate condition, select true/false content
+ *    - Supports comparison operators (>, <, ==, !=, >=, <=)
+ *    - Supports helpers: (eq variable "value"), (gt variable number)
+ *
+ * 3. **Simple Variables Last** (processSimpleVariables):
+ *    - Find {{variable.path}} patterns
+ *    - Use getNestedValue() to traverse object path
+ *    - Format with formatValue() based on path/type
+ *
+ * VALUE FORMATTING:
+ *
+ * **Automatic Formatting**:
+ * - Paths with 'price' → formatPrice() from priceUtils
+ * - Paths with 'date' → new Date().toLocaleDateString()
+ * - Paths with 'stock_status' → getStockLabel() from stockLabelUtils
+ * - Arrays → join(', ')
+ *
+ * **Price Formatting**:
+ * - price_formatted: Always pre-formatted by CategorySlotRenderer/ProductSlotRenderer
+ * - compare_price_formatted: Only shown if compare_price exists and > 0
+ * - Falls back to formatPrice() if not pre-formatted
+ *
+ * **Stock Status Formatting**:
+ * - Uses centralized stockLabelUtils.getStockLabel()
+ * - Respects admin settings (in_stock_label, out_of_stock_label)
+ * - Returns text only (no HTML/styling)
+ *
+ * SPECIAL HANDLING:
+ *
+ * **Short Description Fallback**:
+ * - {{product.short_description}} → Falls back to description if empty
+ *
+ * **Compare Price Conditional**:
+ * - {{product.compare_price_formatted}} → Empty string if no compare_price
+ * - This allows {{#if product.compare_price_formatted}} to work correctly
+ *
+ * **Filter Price Values**:
+ * - filters.price.min / filters.price.max → NOT formatted (keep as numbers)
+ *
+ * **Loop Context**:
+ * - {{this}} → Current item value
+ * - {{this.property}} → Current item property
+ * - {{@index}} → Current loop index
+ * - Item properties are spread at root: {{name}} works inside {{#each products}}
+ *
+ * DEMO DATA GENERATION:
+ *
+ * generateDemoData() creates realistic sample data for editor preview:
+ * - Product with images, prices, labels, tabs, related products
+ * - Category with product list
+ * - Cart with items and totals
+ * - Product labels with positioning
+ * - Settings with theme colors, currency, stock labels
+ *
+ * RELATED FILES:
+ * - UnifiedSlotRenderer.jsx: Calls processVariables() for content/className/styles
+ * - priceUtils.js: formatPrice() for consistent price formatting
+ * - stockLabelUtils.js: getStockLabel() for stock status display
+ * - CategorySlotRenderer.jsx: Pre-formats product data before passing to variables
+ * - ProductSlotRenderer.jsx: Pre-formats product data before passing to variables
+ *
+ * CRITICAL PATTERNS:
+ *
+ * 1. **Process order matters**: Loops first, then conditionals, then variables
+ *    - This ensures conditionals inside loops get correct item context
+ *
+ * 2. **Pre-formatted data preferred**: Use price_formatted from context
+ *    - Only format raw prices as fallback
+ *
+ * 3. **Bracket counting for nesting**: Proper handling of nested structures
+ *    - Prevents incorrect closing tag matching
+ *
+ * 4. **Context merging**: pageData overrides context
+ *    - Loop item context is passed via pageData
+ *
+ * @module variableProcessor
  */
 
 import { formatPrice } from './priceUtils';
 import { getStockLabel } from './stockLabelUtils';
 
 /**
- * Process variables in content based on context
+ * processVariables - Main entry point for template variable processing
+ *
+ * Processes all variable types in correct order:
+ * 1. Loops ({{#each}}) - creates item context for each iteration
+ * 2. Conditionals ({{#if}}) - evaluates conditions, selects content
+ * 3. Simple variables ({{variable}}) - replaces with values
+ *
+ * @param {string} content - Template content with {{variables}}
+ * @param {Object} context - Main data context (product, settings, etc.)
+ * @param {Object} pageData - Additional/override data (for loop item context)
+ * @returns {string} Processed content with variables replaced
+ *
+ * @example
+ * processVariables(
+ *   "{{product.name}} - {{product.price_formatted}}",
+ *   { product: { name: "Laptop", price_formatted: "$999" } }
+ * ) // "Laptop - $999"
+ *
+ * @example
+ * processVariables(
+ *   "{{#if product.on_sale}}SALE{{/if}}",
+ *   { product: { on_sale: true } }
+ * ) // "SALE"
+ *
+ * @example
+ * processVariables(
+ *   "{{#each products}}<div>{{this.name}}</div>{{/each}}",
+ *   { products: [{ name: "A" }, { name: "B" }] }
+ * ) // "<div>A</div><div>B</div>"
  */
 export function processVariables(content, context, pageData = {}) {
   if (typeof content !== 'string') {
@@ -36,7 +205,30 @@ export function processVariables(content, context, pageData = {}) {
 }
 
 /**
- * Process conditional blocks: {{#if condition}}content{{else}}alt{{/if}}
+ * processConditionals - Process {{#if}} conditional blocks
+ *
+ * Handles nested conditionals by running multiple passes from inside out.
+ * Supports {{else}} for alternative content.
+ *
+ * @param {string} content - Content with {{#if}} blocks
+ * @param {Object} context - Data context
+ * @param {Object} pageData - Additional data
+ * @returns {string} Content with conditionals evaluated
+ *
+ * @example
+ * // Simple conditional
+ * processConditionals("{{#if product.on_sale}}SALE{{/if}}", { product: { on_sale: true } })
+ * // "SALE"
+ *
+ * @example
+ * // With else
+ * processConditionals("{{#if product.on_sale}}SALE{{else}}Regular{{/if}}", { product: { on_sale: false } })
+ * // "Regular"
+ *
+ * @example
+ * // Nested conditionals
+ * processConditionals("{{#if a}}{{#if b}}Both{{/if}}{{/if}}", { a: true, b: true })
+ * // "Both"
  */
 function processConditionals(content, context, pageData) {
   let result = content;
@@ -57,7 +249,16 @@ function processConditionals(content, context, pageData) {
 }
 
 /**
- * Process one step of conditionals, handling proper bracket counting for nested structures
+ * processConditionalsStep - Single pass of conditional processing
+ *
+ * Uses bracket counting to properly match {{#if}} with {{/if}} in nested structures.
+ * Finds the next {{#if}}, counts brackets to find matching {{/if}}, evaluates condition.
+ *
+ * @param {string} content - Content to process
+ * @param {Object} context - Data context
+ * @param {Object} pageData - Additional data
+ * @returns {string} Content with one level of conditionals processed
+ * @private
  */
 function processConditionalsStep(content, context, pageData) {
   let result = content;
@@ -156,8 +357,35 @@ function processConditionalsStep(content, context, pageData) {
 }
 
 /**
- * Process loop blocks: {{#each array}}...{{/each}}
- * Uses bracket counting to properly handle nested loops
+ * processLoops - Process {{#each}} loop blocks
+ *
+ * Iterates over arrays and processes template for each item.
+ * Uses bracket counting to handle nested loops properly.
+ *
+ * Special variables:
+ * - {{this}} → Current item value
+ * - {{this.property}} → Current item property
+ * - {{@index}} → Current loop index
+ *
+ * @param {string} content - Content with {{#each}} blocks
+ * @param {Object} context - Data context
+ * @param {Object} pageData - Additional data
+ * @param {number} depth - Recursion depth (max 10)
+ * @returns {string} Content with loops expanded
+ *
+ * @example
+ * // Simple loop
+ * processLoops(
+ *   "{{#each products}}<div>{{this.name}}</div>{{/each}}",
+ *   { products: [{ name: "A" }, { name: "B" }] }
+ * ) // "<div>A</div><div>B</div>"
+ *
+ * @example
+ * // With index
+ * processLoops(
+ *   "{{#each items}}{{@index}}: {{this}}{{/each}}",
+ *   { items: ["a", "b"] }
+ * ) // "0: a1: b"
  */
 function processLoops(content, context, pageData, depth = 0) {
   // Prevent infinite recursion - max 10 levels of nesting
@@ -264,7 +492,21 @@ function processLoops(content, context, pageData, depth = 0) {
 }
 
 /**
- * Process simple variables: {{variable.path}}
+ * processSimpleVariables - Process {{variable.path}} replacements
+ *
+ * Finds {{variable}} patterns (excluding {{#if}}, {{#each}}, {{/if}}, {{/each}})
+ * and replaces with values from context using getNestedValue().
+ *
+ * Special handling:
+ * - {{product.short_description}} → Falls back to description if empty
+ * - {{product.compare_price_formatted}} → Empty if no compare_price
+ * - {{product.stock_status}} → Returns HTML template with data-bind
+ *
+ * @param {string} content - Content with {{variables}}
+ * @param {Object} context - Data context
+ * @param {Object} pageData - Additional data
+ * @returns {string} Content with variables replaced
+ * @private
  */
 function processSimpleVariables(content, context, pageData) {
   const variableRegex = /\{\{([^#\/][^}]*)\}\}/g;
@@ -312,7 +554,23 @@ function processSimpleVariables(content, context, pageData) {
 }
 
 /**
- * Evaluate conditional expressions
+ * evaluateCondition - Evaluate {{#if}} condition expressions
+ *
+ * Supports:
+ * - Helper functions: (eq var "value"), (gt var number)
+ * - Comparison operators: >, <, >=, <=, ==, !=
+ * - Simple property existence: {{#if product.on_sale}}
+ *
+ * @param {string} condition - Condition expression
+ * @param {Object} context - Data context
+ * @param {Object} pageData - Additional data
+ * @returns {boolean} Evaluation result
+ *
+ * @example
+ * evaluateCondition("product.on_sale", { product: { on_sale: true } }) // true
+ * evaluateCondition("(eq product.status \"active\")", { product: { status: "active" } }) // true
+ * evaluateCondition("product.price > 100", { product: { price: 150 } }) // true
+ * @private
  */
 function evaluateCondition(condition, context, pageData) {
   try {
@@ -368,7 +626,20 @@ function evaluateCondition(condition, context, pageData) {
 }
 
 /**
- * Get nested value from object path (e.g., 'product.name')
+ * getNestedValue - Traverse object path to get value
+ *
+ * Handles dot notation (product.name, product.images.0) and special 'this' keyword.
+ * Merges context and pageData (pageData overrides context for loop item context).
+ *
+ * @param {string} path - Dot-notated path (e.g., 'product.name', 'this.price')
+ * @param {Object} context - Main data context
+ * @param {Object} pageData - Additional data (loop item context)
+ * @returns {*} Value at path or null
+ *
+ * @example
+ * getNestedValue("product.name", { product: { name: "Laptop" } }) // "Laptop"
+ * getNestedValue("this.price", {}, { this: { price: 99 } }) // 99
+ * @private
  */
 function getNestedValue(path, context, pageData) {
   // Merge data: pageData should override context (pageData has loop item context)
@@ -404,7 +675,24 @@ function getNestedValue(path, context, pageData) {
 }
 
 /**
- * Format values based on their type and path
+ * formatValue - Format value based on type and path
+ *
+ * Applies automatic formatting:
+ * - Paths with 'price' → formatPrice() (except filters.price)
+ * - Paths with 'stock_status' → getStockLabel()
+ * - Paths with 'date' → toLocaleDateString()
+ * - Arrays → join(', ')
+ *
+ * Special handling:
+ * - compare_price_formatted: Empty if no compare_price
+ * - price_formatted: Uses pre-formatted value or formats raw price
+ *
+ * @param {*} value - Value to format
+ * @param {string} path - Variable path (used to determine formatting)
+ * @param {Object} context - Data context
+ * @param {Object} pageData - Additional data
+ * @returns {string} Formatted value
+ * @private
  */
 function formatValue(value, path, context, pageData) {
   if (value === null || value === undefined) {
@@ -479,8 +767,16 @@ function formatValue(value, path, context, pageData) {
 }
 
 /**
- * Format stock status with proper logic respecting admin settings
- * Now uses centralized stockLabelUtils for consistency
+ * formatStockStatus - Format stock status using centralized utility
+ *
+ * Uses stockLabelUtils.getStockLabel() for consistency with other stock displays.
+ * Respects admin settings (in_stock_label, out_of_stock_label, low_stock_label).
+ *
+ * @param {Object} product - Product object
+ * @param {Object} context - Data context with settings
+ * @param {Object} pageData - Additional data
+ * @returns {string} Stock status text (no HTML/styling)
+ * @private
  */
 function formatStockStatus(product, context, pageData) {
   if (!product) return '';
@@ -495,7 +791,23 @@ function formatStockStatus(product, context, pageData) {
 }
 
 /**
- * Generate demo data for editor context
+ * generateDemoData - Generate realistic sample data for editor preview
+ *
+ * Creates complete demo context with product, category, cart, labels, and settings.
+ * Used in editor mode to preview slot designs without real data.
+ *
+ * @param {string} pageType - Page type identifier (not currently used, reserved for future)
+ * @param {Object} settings - Settings to override defaults
+ * @returns {Object} Demo data object with:
+ *   - product: Sample product with images, prices, labels, tabs, attributes
+ *   - category: Sample category with product list
+ *   - cart: Sample cart with items and totals
+ *   - productLabels: Sample labels with positioning/colors
+ *   - settings: Store settings (currency, theme, stock labels)
+ *
+ * @example
+ * const demoData = generateDemoData('product', { currency_symbol: '€' });
+ * // { product: {...}, settings: { currency_symbol: '€', ... } }
  */
 export const generateDemoData = (pageType, settings = {}) => {
   const demoData = {
