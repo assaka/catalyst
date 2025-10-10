@@ -74,15 +74,29 @@ export default function CustomOptions({ product, onSelectionChange, selectedOpti
                         }
                         
                         try {
-                            const products = await StorefrontProduct.filter({ 
+                            const products = await StorefrontProduct.filter({
                                 id: productId,
                                 status: 'active'
                             });
                             if (products && products.length > 0) {
                                 const customOptionProduct = products[0];
+
                                 // Only include if it's marked as a custom option
-                                if (customOptionProduct.is_custom_option) {
+                                if (!customOptionProduct.is_custom_option) {
+                                    continue;
+                                }
+
+                                // Check stock availability - only show if in stock
+                                const trackStock = settings?.track_stock !== false; // Default to true
+                                const isInStock = trackStock
+                                    ? (customOptionProduct.infinite_stock || customOptionProduct.stock_quantity > 0)
+                                    : true; // If not tracking stock, always show
+
+                                // Only add to optionProducts if in stock
+                                if (isInStock) {
                                     optionProducts.push(customOptionProduct);
+                                } else {
+                                    console.log(`Custom option "${customOptionProduct.name}" (ID: ${customOptionProduct.id}) excluded - out of stock`);
                                 }
                             }
                         } catch (productError) {
