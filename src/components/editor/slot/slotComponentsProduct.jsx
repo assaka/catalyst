@@ -371,13 +371,13 @@ export function ProductRecommendationsSlot({ productContext, content }) {
                 <CardContent className="p-4">
                   <h3 className="font-medium text-gray-900 mb-2 line-clamp-2">{product.name}</h3>
                   <div className="flex items-center space-x-2 mb-2">
-                    {product.compare_price && safeNumber(product.compare_price) > safeNumber(product.price) ? (
+                    {product.compare_price && safeNumber(product.compare_price) > 0 && safeNumber(product.compare_price) !== safeNumber(product.price) ? (
                       <>
                         <span className="font-bold text-red-600">
-                          {formatPrice(product.price)}
+                          {formatPrice(Math.min(safeNumber(product.price), safeNumber(product.compare_price)))}
                         </span>
                         <span className="text-sm text-gray-500 line-through">
-                          {formatPrice(product.compare_price)}
+                          {formatPrice(Math.max(safeNumber(product.price), safeNumber(product.compare_price)))}
                         </span>
                       </>
                     ) : (

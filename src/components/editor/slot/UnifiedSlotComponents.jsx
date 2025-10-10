@@ -989,13 +989,13 @@ const ProductRecommendations = createSlotComponent({
                 <CardContent className="p-4">
                   <h3 className="font-medium text-gray-900 mb-2 line-clamp-2">{relatedProduct.name}</h3>
                   <div className="flex items-center space-x-2 mb-2">
-                    {relatedProduct.compare_price && safeNumber(relatedProduct.compare_price) > safeNumber(relatedProduct.price) ? (
+                    {relatedProduct.compare_price && safeNumber(relatedProduct.compare_price) > 0 && safeNumber(relatedProduct.compare_price) !== safeNumber(relatedProduct.price) ? (
                       <>
                         <span className="font-bold text-red-600">
-                          {formatPriceUtil(relatedProduct.price)}
+                          {formatPriceUtil(Math.min(safeNumber(relatedProduct.price), safeNumber(relatedProduct.compare_price)))}
                         </span>
                         <span className="text-sm text-gray-500 line-through">
-                          {formatPriceUtil(relatedProduct.compare_price)}
+                          {formatPriceUtil(Math.max(safeNumber(relatedProduct.price), safeNumber(relatedProduct.compare_price)))}
                         </span>
                       </>
                     ) : (
