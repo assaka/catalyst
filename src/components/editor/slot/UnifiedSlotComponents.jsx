@@ -529,8 +529,8 @@ const ProductInfo = createSlotComponent({
 
     if (!product) return null;
 
-    // Import utilities at top of component
-    const { formatPrice, safeNumber } = require('@/utils/priceUtils');
+    // Use imported utilities from top of file
+    const { formatPrice: formatPriceFn, safeNumber } = { formatPrice: formatPriceUtil, safeNumber: (val) => parseFloat(val) || 0 };
 
     const hasComparePrice = product.compare_price && safeNumber(product.compare_price) > 0 &&
                            safeNumber(product.compare_price) !== safeNumber(product.price);
@@ -547,15 +547,15 @@ const ProductInfo = createSlotComponent({
               {hasComparePrice ? (
                 <>
                   <span className="text-3xl font-bold text-red-600">
-                    {formatPrice(Math.min(safeNumber(product.price), safeNumber(product.compare_price)))}
+                    {formatPriceFn(Math.min(safeNumber(product.price), safeNumber(product.compare_price)))}
                   </span>
                   <span className="text-xl text-gray-500 line-through">
-                    {formatPrice(Math.max(safeNumber(product.price), safeNumber(product.compare_price)))}
+                    {formatPriceFn(Math.max(safeNumber(product.price), safeNumber(product.compare_price)))}
                   </span>
                 </>
               ) : (
                 <span className="text-3xl font-bold text-green-600">
-                  {formatPrice(product.price)}
+                  {formatPriceFn(product.price)}
                 </span>
               )}
             </div>
@@ -632,14 +632,11 @@ const ProductOptions = createSlotComponent({
                     required={option.required}
                   >
                     <option value="">Choose {option.name}...</option>
-                    {option.options.map((opt) => {
-                      const { formatPrice } = require('@/utils/priceUtils');
-                      return (
-                        <option key={opt.id} value={opt.value}>
-                          {opt.name} {opt.price > 0 && `(+${formatPrice(opt.price)})`}
-                        </option>
-                      );
-                    })}
+                    {option.options.map((opt) => (
+                      <option key={opt.id} value={opt.value}>
+                        {opt.name} {opt.price > 0 && `(+${formatPriceUtil(opt.price)})`}
+                      </option>
+                    ))}
                   </select>
                 )}
               </div>
@@ -964,7 +961,7 @@ const ProductRecommendations = createSlotComponent({
 
     // Storefront version - full functionality
     const { relatedProducts } = productContext;
-    const { formatPrice, safeNumber } = require('@/utils/priceUtils');
+    const safeNumber = (val) => parseFloat(val) || 0;
 
     if (!relatedProducts || relatedProducts.length === 0) return null;
 
@@ -995,15 +992,15 @@ const ProductRecommendations = createSlotComponent({
                     {relatedProduct.compare_price && safeNumber(relatedProduct.compare_price) > safeNumber(relatedProduct.price) ? (
                       <>
                         <span className="font-bold text-red-600">
-                          {formatPrice(relatedProduct.price)}
+                          {formatPriceUtil(relatedProduct.price)}
                         </span>
                         <span className="text-sm text-gray-500 line-through">
-                          {formatPrice(relatedProduct.compare_price)}
+                          {formatPriceUtil(relatedProduct.compare_price)}
                         </span>
                       </>
                     ) : (
                       <span className="font-bold text-green-600">
-                        {formatPrice(relatedProduct.price)}
+                        {formatPriceUtil(relatedProduct.price)}
                       </span>
                     )}
                   </div>
@@ -1131,13 +1128,13 @@ const CustomOptions = createSlotComponent({
         const { selectedOptions } = productContext;
         const isSelected = selectedOptions?.some(s => s.product_id === option.id);
 
-        const { safeNumber } = require('@/utils/priceUtils');
+        const safeNum = (val) => parseFloat(val) || 0;
         const newSelectedOptions = isSelected
           ? selectedOptions.filter(s => s.product_id !== option.id)
           : [...(selectedOptions || []), {
               product_id: option.id,
               name: option.name,
-              price: safeNumber(option.price)
+              price: safeNum(option.price)
             }];
 
         productContext.handleOptionChange(newSelectedOptions);
@@ -1356,8 +1353,6 @@ const CartItemsSlot = createSlotComponent({
       removeItem = () => {}
     } = cartContext;
 
-    const { formatPrice } = require('@/utils/priceUtils');
-
     if (cartItems.length === 0) {
       return (
         <div className={`${className} text-center py-12`} style={styles}>
@@ -1394,14 +1389,14 @@ const CartItemsSlot = createSlotComponent({
           // Update item price display
           const priceDisplay = cartItemEl.querySelector('.text-sm.text-gray-600');
           if (priceDisplay && priceDisplay.textContent.includes('×')) {
-            priceDisplay.textContent = `${formatPrice(item.price)} × ${item.quantity}`;
+            priceDisplay.textContent = `${formatPriceUtil(item.price)} × ${item.quantity}`;
           }
 
           // Update item total
           const itemTotalEl = cartItemEl.querySelector('[data-item-total]');
           if (itemTotalEl) {
             const total = calculateItemTotal(item, item.product);
-            itemTotalEl.textContent = formatPrice(total);
+            itemTotalEl.textContent = formatPriceUtil(total);
           }
         }
       });
@@ -1417,7 +1412,7 @@ const CartItemsSlot = createSlotComponent({
             container.innerHTML = item.selected_options.map(opt =>
               `<div class="text-sm text-gray-600">
                 <div>+ ${opt.name}</div>
-                <div class="ml-2 text-xs">${formatPrice(opt.price)} × ${item.quantity}</div>
+                <div class="ml-2 text-xs">${formatPriceUtil(opt.price)} × ${item.quantity}</div>
               </div>`
             ).join('');
           }
@@ -1573,8 +1568,6 @@ const CartOrderSummarySlot = createSlotComponent({
       appliedCoupon = null
     } = cartContext || {};
 
-    const { formatPrice } = require('@/utils/priceUtils');
-
     const processedContent = processVariables(content, variableContext);
 
     React.useEffect(() => {
@@ -1591,14 +1584,14 @@ const CartOrderSummarySlot = createSlotComponent({
       const totalEl = containerRef.current.querySelector('[data-total]');
       const checkoutBtn = containerRef.current.querySelector('[data-action="checkout"]');
 
-      if (subtotalEl) subtotalEl.textContent = formatPrice(subtotal);
-      if (taxEl) taxEl.textContent = formatPrice(tax);
-      if (totalEl) totalEl.textContent = formatPrice(total);
+      if (subtotalEl) subtotalEl.textContent = formatPriceUtil(subtotal);
+      if (taxEl) taxEl.textContent = formatPriceUtil(tax);
+      if (totalEl) totalEl.textContent = formatPriceUtil(total);
 
       // Show/hide custom options
       if (customOptionsTotal > 0) {
         if (customOptionsRow) customOptionsRow.style.display = 'flex';
-        if (customOptionsEl) customOptionsEl.textContent = `+${formatPrice(customOptionsTotal)}`;
+        if (customOptionsEl) customOptionsEl.textContent = `+${formatPriceUtil(customOptionsTotal)}`;
       } else {
         if (customOptionsRow) customOptionsRow.style.display = 'none';
       }
@@ -1607,7 +1600,7 @@ const CartOrderSummarySlot = createSlotComponent({
       if (appliedCoupon && discount > 0) {
         if (discountRow) discountRow.style.display = 'flex';
         if (discountLabelEl) discountLabelEl.textContent = `Discount (${appliedCoupon.name})`;
-        if (discountEl) discountEl.textContent = `-${formatPrice(discount)}`;
+        if (discountEl) discountEl.textContent = `-${formatPriceUtil(discount)}`;
       } else {
         if (discountRow) discountRow.style.display = 'none';
       }
