@@ -73,19 +73,34 @@ const authMiddleware = async (req, res, next) => {
       });
     }
 
-    // CRITICAL: Validate store_id for customer tokens
-    // The token contains the store_id that was used during login
-    // This ensures customers can only access their own store's data
-    if (decoded.role === 'customer' && decoded.store_id) {
-      // Verify that the customer's actual store_id matches the token's store_id
-      // This prevents token reuse if a customer changes stores in the database
-      if (user.store_id && user.store_id !== decoded.store_id) {
-        console.log('❌ Customer store_id mismatch between token and database');
-        console.log('   Token store_id:', decoded.store_id);
-        console.log('   Database store_id:', user.store_id);
+    // CRITICAL: Validate customer exists with the email+store_id combination from token
+    // This ensures customers can only use tokens that match their actual account
+    if (decoded.role === 'customer') {
+      // Check if a customer exists with this email + store_id combination
+      try {
+        const { data: customerCheck, error: checkError } = await supabase
+          .from('customers')
+          .select('id')
+          .eq('email', decoded.email)
+          .eq('store_id', decoded.store_id)
+          .single();
+
+        if (checkError || !customerCheck) {
+          console.log('❌ No customer found with email + store_id from token');
+          console.log('   Token email:', decoded.email);
+          console.log('   Token store_id:', decoded.store_id);
+          return res.status(403).json({
+            error: 'Access denied',
+            message: 'Invalid customer session for this store'
+          });
+        }
+
+        console.log('✅ Customer validated: email + store_id match');
+      } catch (validationError) {
+        console.error('❌ Customer validation error:', validationError);
         return res.status(403).json({
           error: 'Access denied',
-          message: 'This account session is no longer valid for this store'
+          message: 'Session validation failed'
         });
       }
     }
