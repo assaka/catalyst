@@ -397,18 +397,28 @@ export const validateCustomerStoreContext = (currentStoreSlug) => {
  * This allows customers to maintain sessions across multiple stores
  */
 export const clearCustomerSessionIfInvalid = (currentStoreSlug) => {
-  if (!validateCustomerStoreContext(currentStoreSlug)) {
+  const isValid = validateCustomerStoreContext(currentStoreSlug);
+
+  if (!isValid) {
     console.log('⚠️ Customer logged into different store - session not active for this store');
     console.log('   Session store:', localStorage.getItem('customer_store_slug'));
     console.log('   Current store:', currentStoreSlug);
     console.log('   Note: Session preserved for original store');
 
-    // DON'T clear the session - just indicate it's not valid for THIS store
-    // The session will remain valid for the original store
-    // clearRoleBasedAuthData('customer'); // REMOVED - don't delete the session
+    // DON'T clear the session from localStorage - just deactivate it
+    // Remove token from apiClient so API calls don't use this customer's token
+    apiClient.setToken(null);
+    console.log('🔓 Cleared customer token from apiClient for this store');
 
     return true; // Session exists but not valid for this store
+  } else {
+    // Session is valid for this store - ensure token is active
+    const customerToken = localStorage.getItem('customer_auth_token');
+    if (customerToken && apiClient.getToken() !== customerToken) {
+      console.log('✅ Reactivating customer token for matching store:', currentStoreSlug);
+      apiClient.setToken(customerToken);
+    }
+    return false; // Session is valid for current store
   }
-  return false; // Session is valid for current store
 };
 
