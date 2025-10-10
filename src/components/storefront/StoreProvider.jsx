@@ -108,7 +108,7 @@ const getCurrencySymbol = (currencyCode) => {
     'DKK': 'kr',
     'TRY': '₺'
   };
-  return currencyMap[currencyCode] || '🔴1';
+  return currencyMap[currencyCode] || 'Currency not found';
 };
 
 const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms));
@@ -376,9 +376,9 @@ export const StoreProvider = ({ children }) => {
           : true,
         
         // Currency settings - ensure we use the store's currency setting
-        currency_code: selectedStore.currency || selectedStore.settings?.currency_code || 'USD',
+        currency_code: selectedStore.currency || selectedStore.settings?.currency_code || 'No Currency',
         currency_symbol: (() => {
-          const currencyCode = selectedStore.currency || selectedStore.settings?.currency_code || 'USD';
+          const currencyCode = selectedStore.currency || selectedStore.settings?.currency_code || 'No Currency';
           const symbol = getCurrencySymbol(currencyCode);
           console.log('💰 StoreProvider currency:', {
             storeCurrency: selectedStore.currency,

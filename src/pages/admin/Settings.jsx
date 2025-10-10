@@ -126,7 +126,7 @@ export default function Settings() {
         custom_domain: storeData.custom_domain || storeData.domain || '', // Map existing domain to custom_domain
         domain_status: storeData.domain_status || '',
         ssl_enabled: storeData.ssl_enabled || false,
-        currency: storeData.currency || 'USD',
+        currency: storeData.currency || 'No Currency',
         timezone: storeData.timezone || 'UTC',
         slug: storeData.slug || '',
         status: storeData.status || 'active', // Default status

@@ -912,7 +912,7 @@ Sitemap: ${window.location.origin}/sitemap.xml`;
                                 '{{site_name}}': selectedStore?.name || 'Your Store',
                                 '{{store_description}}': selectedStore?.description || 'Store description',
                                 '{{year}}': new Date().getFullYear().toString(),
-                                '{{currency}}': selectedStore?.currency || 'USD'
+                                '{{currency}}': selectedStore?.currency || 'No Currency'
                               };
                               
                               Object.entries(replacements).forEach(([placeholder, value]) => {
@@ -956,7 +956,7 @@ Sitemap: ${window.location.origin}/sitemap.xml`;
                                   '{{site_name}}': selectedStore?.name || 'Your Store',
                                   '{{store_description}}': selectedStore?.description || 'Store description',
                                   '{{year}}': new Date().getFullYear().toString(),
-                                  '{{currency}}': selectedStore?.currency || 'USD'
+                                  '{{currency}}': selectedStore?.currency || 'No Currency'
                                 };
                                 
                                 Object.entries(replacements).forEach(([placeholder, value]) => {

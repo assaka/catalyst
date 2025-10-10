@@ -363,7 +363,7 @@ export default function ProductDetail() {
                 price: parseFloat(foundProduct.price || 0).toFixed(2),
                 item_brand: foundProduct.brand, // Assuming product has a brand field
                 item_category: categories.find(cat => cat.id === foundProduct.category_ids?.[0])?.name || '', // Find category name
-                currency: settings?.currency_code || 'USD'
+                currency: settings?.currency_code || 'No Currency'
               }]
             }
           });
@@ -599,7 +599,7 @@ export default function ProductDetail() {
                 quantity: quantity,
                 item_brand: product.brand,
                 item_category: categories.find(cat => cat.id === product.category_ids?.[0])?.name || '',
-                currency: settings?.currency_code || 'USD'
+                currency: settings?.currency_code || 'No Currency'
               }]
             }
           });

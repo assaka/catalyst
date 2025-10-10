@@ -148,7 +148,7 @@ export const trackProductView = (product) => {
     item_name: product.name,
     item_category: product.category_name,
     price: product.price,
-    currency: 'USD'
+    currency: 'No Currency'
   });
   
   trackActivity('product_view', {
@@ -160,7 +160,7 @@ export const trackProductView = (product) => {
 
 export const trackAddToCart = (product, quantity = 1) => {
   trackEvent('add_to_cart', {
-    currency: 'USD',
+    currency: 'No Currency',
     value: product.price * quantity,
     items: [{
       item_id: product.id,
@@ -204,7 +204,7 @@ export const trackPurchase = (order) => {
   // Support multiple order formats from different contexts
   const orderId = order.id || order.order_id;
   const orderTotal = order.total_amount || order.total;
-  const orderCurrency = order.currency || 'USD';
+  const orderCurrency = order.currency || 'No Currency';
   const orderItems = order.OrderItems || order.items || order.orderItems || [];
 
   trackEvent('purchase', {
@@ -273,7 +273,7 @@ export default function DataLayerManager() {
         page_url: window.location.href,
         store_name: store.name,
         store_id: store.id,
-        currency: store.currency || 'USD'
+        currency: store.currency || 'No Currency'
       });
       
       // Track page view activity

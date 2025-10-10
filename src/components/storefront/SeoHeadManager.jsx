@@ -52,7 +52,7 @@ export default function SeoHeadManager({ pageType, pageData, pageTitle, pageDesc
                 '{{language_code}}': data?.language_code || '',
                 '{{site_name}}': store?.name || '',
                 '{{year}}': new Date().getFullYear().toString(),
-                '{{currency}}': store?.currency || 'USD'
+                '{{currency}}': store?.currency || 'No Currency'
             };
             
             
@@ -415,7 +415,7 @@ export default function SeoHeadManager({ pageType, pageData, pageTitle, pageDesc
                     "offers": {
                         "@type": "Offer",
                         "url": window.location.href,
-                        "priceCurrency": store?.currency || "USD",
+                        "priceCurrency": store?.currency || "No Currency",
                         "price": pageData.price,
                         "availability": (pageData.stock_quantity > 0 || pageData.infinite_stock) ? 
                             "https://schema.org/InStock" : "https://schema.org/OutOfStock"

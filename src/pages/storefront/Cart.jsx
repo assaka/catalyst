@@ -176,7 +176,8 @@ export default function Cart() {
     const [taxRules, setTaxRules] = useState([]);
     
     // Get currency symbol from settings with hook support
-    const currencySymbol = hookSystem.apply('cart.getCurrencySymbol', settings?.currency_symbol || '🔴9', {
+    // Currency symbol comes from StoreProvider which derives it from store.currency → getCurrencySymbol()
+    const currencySymbol = hookSystem.apply('cart.getCurrencySymbol', settings?.currency_symbol, {
         store,
         settings
     });
