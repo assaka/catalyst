@@ -479,9 +479,24 @@ export default function ProductDetail() {
               });
               if (products && products.length > 0) {
                 const customOptionProduct = products[0];
+
                 // Only include if it's marked as a custom option
-                if (customOptionProduct.is_custom_option) {
+                if (!customOptionProduct.is_custom_option) {
+                  continue;
+                }
+
+                // IMPORTANT: Check stock availability - only show if in stock
+                // Only check products.stock_quantity and products.infinite_stock
+                const trackStock = settings?.track_stock !== false; // Default to true
+                const isInStock = trackStock
+                  ? (customOptionProduct.infinite_stock === true || customOptionProduct.stock_quantity > 0)
+                  : true; // If not tracking stock, always show
+
+                // Only add to optionProducts if in stock
+                if (isInStock) {
                   optionProducts.push(customOptionProduct);
+                } else {
+                  console.log(`❌ ProductDetail: Excluding custom option "${customOptionProduct.name}" (out of stock - stock_quantity: ${customOptionProduct.stock_quantity}, infinite_stock: ${customOptionProduct.infinite_stock})`);
                 }
               }
             } catch (err) {
