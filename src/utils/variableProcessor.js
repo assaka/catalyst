@@ -9,6 +9,8 @@
  * - Context-aware: editor (demo data) vs storefront (real data)
  */
 
+import { formatPrice } from './priceUtils';
+
 /**
  * Process variables in content based on context
  */
@@ -424,11 +426,10 @@ function formatValue(value, path, context, pageData) {
       return product.compare_price_formatted;
     }
 
-    // Otherwise format the raw compare_price with currency
-    const currency = context.settings?.currency_symbol || '€';
+    // Otherwise format the raw compare_price with centralized utility
     const price = typeof product.compare_price === 'number' ? product.compare_price : parseFloat(product.compare_price);
     if (!isNaN(price) && price > 0) {
-      return `${currency}${price.toFixed(2)}`;
+      return formatPrice(price);
     }
 
     return '';
@@ -447,11 +448,10 @@ function formatValue(value, path, context, pageData) {
       return product.price_formatted;
     }
 
-    // Otherwise format the raw price with currency
-    const currency = context.settings?.currency_symbol || '€';
+    // Otherwise format the raw price with centralized utility
     const price = typeof product.price === 'number' ? product.price : parseFloat(product.price);
     if (!isNaN(price) && price > 0) {
-      return `${currency}${price.toFixed(2)}`;
+      return formatPrice(price);
     }
 
     return '';
@@ -459,11 +459,7 @@ function formatValue(value, path, context, pageData) {
 
   // Handle raw price numbers (but NOT filter min/max prices - keep those as clean numbers)
   if (path.includes('price') && typeof value === 'number' && !path.includes('filters.price')) {
-    const currency = context.settings?.currency_symbol;
-    if (currency) {
-      return `${currency}${value.toFixed(2)}`;
-    }
-    return value.toFixed(2);
+    return formatPrice(value);
   }
 
   if (path.includes('stock_status')) {
