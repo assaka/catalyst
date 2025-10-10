@@ -1078,12 +1078,6 @@ export function UnifiedSlotRenderer({
           throw new Error(`Component ${componentName} must implement a unified 'render' method. Separate renderEditor/renderStorefront methods are no longer supported.`);
         }
 
-        // Debug logging for login components
-        if (componentName === 'LoginFormSlot') {
-          console.log('🔍 UnifiedSlotRenderer: Rendering LoginFormSlot');
-          console.log('🔍 UnifiedSlotRenderer: variableContext.loginData:', variableContext.loginData);
-        }
-
         return renderMethod({
           slot,
           productContext: productData,

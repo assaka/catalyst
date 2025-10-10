@@ -734,7 +734,8 @@ export default function Checkout() {
         loginFormData.email,
         loginFormData.password,
         loginFormData.rememberMe,
-        'customer'
+        'customer',
+        store?.id
       );
       
       // Handle both array and object responses

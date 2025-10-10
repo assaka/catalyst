@@ -114,7 +114,8 @@ export default function Login() {
         formData.email,
         formData.password,
         formData.rememberMe,
-        'customer'
+        'customer',
+        store?.id
       );
 
       let actualResponse = response;

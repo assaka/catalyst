@@ -9,6 +9,7 @@ import { Auth as AuthService } from '@/api/entities';
 import apiClient from '@/api/client';
 import { useNavigate, useParams } from 'react-router-dom';
 import { createPublicUrl } from '@/utils/urlUtils';
+import { useStore } from '@/components/storefront/StoreProvider';
 
 /**
  * UserProfileSlot - User profile display with avatar and info
@@ -192,6 +193,7 @@ const ProfileFormSlot = createSlotComponent({
 const LoginFormSlotComponent = ({ slot, context, variableContext }) => {
   const navigate = useNavigate();
   const { storeCode } = useParams();
+  const { store } = useStore();
 
   // Local state - will be used since loginData from variableContext is empty
   const [formData, setFormData] = React.useState({
@@ -235,7 +237,8 @@ const LoginFormSlotComponent = ({ slot, context, variableContext }) => {
         formData.email,
         formData.password,
         formData.rememberMe,
-        'customer'
+        'customer',
+        store?.id
       );
 
       let actualResponse = response;

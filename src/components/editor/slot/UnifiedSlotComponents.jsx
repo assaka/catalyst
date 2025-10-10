@@ -1074,9 +1074,39 @@ const CustomOptions = createSlotComponent({
           is_active: true
         });
 
+        // Find applicable rules for this product
         const applicableRule = rules.find(rule => {
-          // Simplified rule check - you may need to import the full logic
-          return true; // Placeholder
+          let conditions;
+          try {
+            conditions = typeof rule.conditions === 'string' ? JSON.parse(rule.conditions) : rule.conditions;
+          } catch (e) {
+            console.error('Failed to parse conditions:', e);
+            return false;
+          }
+
+          // Check SKU conditions
+          if (conditions?.skus?.includes(product.sku)) {
+            return true;
+          }
+
+          // Check category conditions
+          if (conditions?.categories?.length > 0 && product.category_ids?.length > 0) {
+            const hasMatch = conditions.categories.some(catId => product.category_ids.includes(catId));
+            if (hasMatch) {
+              return true;
+            }
+          }
+
+          // Check attribute conditions
+          if (conditions?.attribute_conditions?.length > 0) {
+            for (const condition of conditions.attribute_conditions) {
+              if (product[condition.attribute_code] === condition.attribute_value) {
+                return true;
+              }
+            }
+          }
+
+          return false;
         });
 
         if (!applicableRule || !applicableRule.optional_product_ids?.length) {
@@ -1097,6 +1127,19 @@ const CustomOptions = createSlotComponent({
             });
             if (products?.[0]?.is_custom_option) {
               const option = products[0];
+
+              // IMPORTANT: Check stock availability - only show if in stock
+              const trackStock = settings?.track_stock !== false; // Default to true
+              const isInStock = trackStock
+                ? (option.infinite_stock === true || option.stock_quantity > 0)
+                : true; // If not tracking stock, always show
+
+              // Only add to optionProducts if in stock
+              if (!isInStock) {
+                console.log(`⏭️ UnifiedSlotComponents: Skipping custom option "${option.name}" (out of stock - stock_quantity: ${option.stock_quantity}, infinite_stock: ${option.infinite_stock})`);
+                continue;
+              }
+
               const isSelected = selectedOptions?.some(s => s.product_id === option.id);
 
               // Use centralized getPriceDisplay utility
