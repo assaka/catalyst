@@ -10,17 +10,6 @@ import { Grid, List } from "lucide-react";
 import UnifiedSlotsEditor from "@/components/editor/UnifiedSlotsEditor";
 import { generateMockCategoryContext } from '@/utils/mockCategoryData';
 import { useStore } from '@/components/storefront/StoreProvider';
-import {
-  CategoryHeaderSlot,
-  CategoryActiveFiltersSlot,
-  CategoryFiltersSlot,
-  CategoryProductsSlot,
-  CategorySortingSlot,
-  CategoryPaginationSlot,
-  CategoryLayeredNavigationSlot,
-  CategoryProductItemCardSlot,
-  CategoryProductItemsSlot
-} from '@/components/editor/slot/slotComponentsCategory';
 import ProductItemCard from '@/components/storefront/ProductItemCard';
 import CmsBlockRenderer from '@/components/storefront/CmsBlockRenderer';
 // Import component registry to render components consistently with storefront
@@ -460,17 +449,7 @@ const createCategoryEditorConfig = (filterableAttributes, storeSettings) => ({
       icon: List
     }
   ],
-  slotComponents: {
-    CategoryHeaderSlot,
-    CategoryActiveFiltersSlot,
-    CategoryFiltersSlot,
-    CategoryProductsSlot,
-    CategorySortingSlot,
-    CategoryPaginationSlot,
-    CategoryLayeredNavigationSlot,
-    CategoryProductItemCardSlot,
-    CategoryProductItemsSlot
-  },
+  // Slot components are now registered in CategorySlotComponents.jsx via ComponentRegistry
   generateContext: (viewMode, selectedStore) => {
     // Use selectedStore from StoreSelectionContext (admin's selected store)
     // This ensures we use the correct store's settings, not a fallback
