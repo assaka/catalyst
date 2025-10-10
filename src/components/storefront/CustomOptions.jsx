@@ -19,7 +19,17 @@ export default function CustomOptions({ product, onSelectionChange, selectedOpti
     }, [product?.id, store?.id]);
 
     const loadCustomOptions = async () => {
+        console.log('🔵 CustomOptions: loadCustomOptions() called', {
+            hasProduct: !!product,
+            productId: product?.id,
+            productName: product?.name,
+            hasStore: !!store?.id,
+            storeId: store?.id,
+            isLoading
+        });
+
         if (!product || !store?.id || isLoading) {
+            console.log('⚠️ CustomOptions: Exiting early', { hasProduct: !!product, hasStore: !!store?.id, isLoading });
             setLoading(false);
             return;
         }
@@ -27,16 +37,20 @@ export default function CustomOptions({ product, onSelectionChange, selectedOpti
         try {
             setLoading(true);
             setIsLoading(true);
-            
+
+            console.log('🔍 CustomOptions: Fetching custom option rules for store:', store.id);
+
             // Fetch all active custom option rules for the store
-            
+
             let rules = [];
             try {
-                rules = await CustomOptionRule.filter({ 
+                rules = await CustomOptionRule.filter({
                     store_id: store.id,
-                    is_active: true 
+                    is_active: true
                 });
+                console.log('📋 CustomOptions: Found rules:', rules.length);
             } catch (apiError) {
+                console.error('❌ CustomOptions: Error fetching rules:', apiError);
                 setCustomOptions([]);
                 setLoading(false);
                 return;
@@ -51,8 +65,10 @@ export default function CustomOptions({ product, onSelectionChange, selectedOpti
             }
 
             const applicableRules = rules.filter(rule => isRuleApplicable(rule, product));
+            console.log('✅ CustomOptions: Applicable rules found:', applicableRules.length);
 
             if (applicableRules.length === 0) {
+                console.log('⚠️ CustomOptions: No applicable rules for this product');
                 setCustomOptions([]);
                 setLoading(false);
                 return;
@@ -60,6 +76,7 @@ export default function CustomOptions({ product, onSelectionChange, selectedOpti
 
             // Use the first applicable rule (you could enhance this to merge multiple rules)
             const rule = applicableRules[0];
+            console.log('📌 CustomOptions: Using rule:', rule.display_label, 'with', rule.optional_product_ids?.length || 0, 'products');
             setDisplayLabel(rule.display_label || 'Custom Options');
 
             // Load the custom option products
@@ -67,6 +84,7 @@ export default function CustomOptions({ product, onSelectionChange, selectedOpti
                 try {
                     // Load products individually if $in syntax doesn't work
                     const optionProducts = [];
+                    console.log('🔄 CustomOptions: Loading', rule.optional_product_ids.length, 'custom option products...');
                     for (const productId of rule.optional_product_ids) {
                         // Skip if this is the current product being viewed
                         if (productId === product.id) {
@@ -113,6 +131,11 @@ export default function CustomOptions({ product, onSelectionChange, selectedOpti
                             console.error(`Failed to load custom option product ${productId}:`, productError);
                         }
                     }
+
+                    console.log('✅ CustomOptions: Final list of custom options to display:', optionProducts.length);
+                    optionProducts.forEach(opt => {
+                        console.log(`   - ${opt.name} (stock: ${opt.stock_quantity}, infinite: ${opt.infinite_stock})`);
+                    });
 
                     setCustomOptions(optionProducts);
                 } catch (error) {
