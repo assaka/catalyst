@@ -86,17 +86,27 @@ export default function CustomOptions({ product, onSelectionChange, selectedOpti
                                     continue;
                                 }
 
-                                // Check stock availability - only show if in stock
+                                // Check stock availability - only check products.stock_quantity and products.infinite_stock
                                 const trackStock = settings?.track_stock !== false; // Default to true
+
+                                // Debug logging
+                                console.log(`📦 Checking stock for custom option: ${customOptionProduct.name}`, {
+                                    id: customOptionProduct.id,
+                                    stock_quantity: customOptionProduct.stock_quantity,
+                                    infinite_stock: customOptionProduct.infinite_stock,
+                                    trackStock: trackStock
+                                });
+
                                 const isInStock = trackStock
-                                    ? (customOptionProduct.infinite_stock || customOptionProduct.stock_quantity > 0)
+                                    ? (customOptionProduct.infinite_stock === true || customOptionProduct.stock_quantity > 0)
                                     : true; // If not tracking stock, always show
 
                                 // Only add to optionProducts if in stock
                                 if (isInStock) {
+                                    console.log(`✅ Including custom option: ${customOptionProduct.name} (in stock)`);
                                     optionProducts.push(customOptionProduct);
                                 } else {
-                                    console.log(`Custom option "${customOptionProduct.name}" (ID: ${customOptionProduct.id}) excluded - out of stock`);
+                                    console.log(`❌ Excluding custom option: ${customOptionProduct.name} (out of stock - stock_quantity: ${customOptionProduct.stock_quantity}, infinite_stock: ${customOptionProduct.infinite_stock})`);
                                 }
                             }
                         } catch (productError) {
