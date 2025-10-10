@@ -24,6 +24,7 @@ import {
 } from 'lucide-react';
 import CmsBlockRenderer from '@/components/storefront/CmsBlockRenderer';
 import { formatPrice, safeNumber } from '@/utils/priceUtils';
+import cartService from '@/services/cartService';
 
 export default function OrderSuccess() {
   const [searchParams] = useSearchParams();
@@ -119,6 +120,26 @@ export default function OrderSuccess() {
           // Get store code from the order's Store object
           if (orderData.Store?.code) {
             setStoreCode(orderData.Store.code);
+          }
+
+          // Clear the cart after successful order
+          if (orderData.store_id) {
+            try {
+              await cartService.clearCart(orderData.store_id);
+              console.log('✅ Cart cleared after successful order');
+
+              // Dispatch cart update event to refresh cart UI
+              window.dispatchEvent(new CustomEvent('cartUpdated', {
+                detail: {
+                  action: 'cleared_after_order',
+                  timestamp: Date.now(),
+                  source: 'OrderSuccess'
+                }
+              }));
+            } catch (error) {
+              console.error('Failed to clear cart after order:', error);
+              // Don't show error to user as order was successful
+            }
           }
 
           // Check if customer already has a registered account (has password)
