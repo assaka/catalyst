@@ -923,22 +923,9 @@ const ProductItemsGrid = createSlotComponent({
     // Use grid-cols-1 for list view, dynamic grid for grid view
     const gridClasses = viewMode === 'list' ? 'grid-cols-1' : getGridClasses(storeSettings);
 
-    // Get products from categoryContext
-    const rawProducts = categoryContext?.products || variableContext?.products || [];
-
-    // Format prices if not already formatted
-    const products = rawProducts.map(p => {
-      const isInStock = p.infinite_stock || (p.stock_quantity !== undefined && p.stock_quantity > 0);
-      return {
-        ...p,
-        price_formatted: p.price_formatted || formatPrice(p.price || 0),
-        compare_price_formatted: p.compare_price ? formatPrice(p.compare_price) : null,
-        image_url: p.image_url || p.images?.[0]?.url || p.images?.[0] || '/placeholder-product.jpg',
-        in_stock: p.in_stock !== undefined ? p.in_stock : (p.stock_status === 'in_stock'),
-        stock_label: isInStock ? 'In Stock' : 'Out of Stock',
-        stock_label_class: isInStock ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
-      };
-    });
+    // Get products from variableContext - they are already formatted by CategorySlotRenderer
+    // DO NOT re-format prices here as CategorySlotRenderer already uses getPriceDisplay
+    const products = variableContext?.products || categoryContext?.products || [];
 
     // Find product card template and descendants
     const productCardTemplate = allSlots?.product_card_template;
