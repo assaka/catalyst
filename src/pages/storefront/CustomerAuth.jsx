@@ -18,7 +18,11 @@ export default function CustomerAuth() {
   const [success, setSuccess] = useState("");
   const { storeCode } = useParams();
   const navigate = useNavigate();
-  const { store } = useStore();
+  const { store, loading: storeLoading } = useStore();
+
+  console.log('🔍 CustomerAuth: useParams storeCode:', storeCode);
+  console.log('🔍 CustomerAuth: store from context:', store);
+  console.log('🔍 CustomerAuth: storeLoading:', storeLoading);
 
   // Slot configuration state
   const [loginLayoutConfig, setLoginLayoutConfig] = useState(null);
