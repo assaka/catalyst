@@ -643,9 +643,9 @@ export default function Cart() {
             const subtotal = calculateSubtotal();
             if (coupon.min_purchase_amount && subtotal < coupon.min_purchase_amount) {
                 couponService.removeAppliedCoupon();
-                setFlashMessage({ 
-                    type: 'warning', 
-                    message: `Coupon "${coupon.name}" was removed because the minimum order amount of ${currencySymbol}${safeToFixed(coupon.min_purchase_amount)} is no longer met.` 
+                setFlashMessage({
+                    type: 'warning',
+                    message: `Coupon "${coupon.name}" was removed because the minimum order amount of ${safeToFixed(coupon.min_purchase_amount)} is no longer met.`
                 });
                 return;
             }
@@ -706,9 +706,9 @@ export default function Cart() {
                 
                 // Check minimum purchase amount
                 if (coupon.min_purchase_amount && subtotal < coupon.min_purchase_amount) {
-                    setFlashMessage({ 
-                        type: 'error', 
-                        message: `Minimum order amount of ${currencySymbol}${safeToFixed(coupon.min_purchase_amount)} required for this coupon.` 
+                    setFlashMessage({
+                        type: 'error',
+                        message: `Minimum order amount of ${safeToFixed(coupon.min_purchase_amount)} required for this coupon.`
                     });
                     return;
                 }

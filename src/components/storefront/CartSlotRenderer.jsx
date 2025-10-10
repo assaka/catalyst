@@ -468,7 +468,7 @@ export function CartSlotRenderer({
                   <p className="text-sm font-medium text-green-800">Applied: {appliedCoupon.name}</p>
                   <p className="text-xs text-green-600">
                     {appliedCoupon.discount_type === 'fixed'
-                      ? `${currencySymbol}${safeToFixed(appliedCoupon.discount_value)} off`
+                      ? `${safeToFixed(appliedCoupon.discount_value)} off`
                       : `${safeToFixed(appliedCoupon.discount_value)}% off`
                     }
                   </p>
@@ -559,11 +559,11 @@ export function CartSlotRenderer({
             <div className="space-y-2">
               <div className="flex justify-between">
                 <span>Subtotal</span>
-                <span>{currencySymbol}{safeToFixed(subtotal)}</span>
+                <span>{safeToFixed(subtotal)}</span>
               </div>
               <div className="flex justify-between">
                 <span>Tax</span>
-                <span>{currencySymbol}{safeToFixed(tax)}</span>
+                <span>{safeToFixed(tax)}</span>
               </div>
               <div className="flex justify-between">
                 <span>Shipping</span>
@@ -572,12 +572,12 @@ export function CartSlotRenderer({
               {discount > 0 && (
                 <div className="flex justify-between">
                   <span>Discount</span>
-                  <span className="text-green-600">-{currencySymbol}{safeToFixed(discount)}</span>
+                  <span className="text-green-600">-{safeToFixed(discount)}</span>
                 </div>
               )}
               <div className="flex justify-between text-lg font-semibold border-t pt-4">
                 <span>Total</span>
-                <span>{currencySymbol}{safeToFixed(total)}</span>
+                <span>{safeToFixed(total)}</span>
               </div>
             </div>
             <div className="mt-6">
@@ -603,7 +603,7 @@ export function CartSlotRenderer({
     if (id === 'order_summary_subtotal') {
       // Parse content for custom labels, fallback to default structure
       let leftLabel = 'Subtotal';
-      let rightValue = `${currencySymbol}${safeToFixed(subtotal)}`;
+      let rightValue = safeToFixed(subtotal);
 
       if (content && content.includes('<span>')) {
         // Handle HTML content format: '<span>Subtotal</span><span>$79.97</span>'
@@ -627,7 +627,7 @@ export function CartSlotRenderer({
     if (id === 'order_summary_tax') {
       // Parse content for custom labels, fallback to default structure
       let leftLabel = 'Tax';
-      let rightValue = `${currencySymbol}${safeToFixed(tax)}`;
+      let rightValue = safeToFixed(tax);
 
       if (content && content.includes('<span>')) {
         // Handle HTML content format: '<span>Tax</span><span>$6.40</span>'
@@ -651,7 +651,7 @@ export function CartSlotRenderer({
     if (id === 'order_summary_total') {
       // Parse content for custom labels, fallback to default structure
       let leftLabel = 'Total';
-      let rightValue = `${currencySymbol}${safeToFixed(total)}`;
+      let rightValue = safeToFixed(total);
 
       if (content && content.includes('<span>')) {
         // Handle HTML content format: '<span>Total</span><span>$81.37</span>'
