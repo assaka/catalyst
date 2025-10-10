@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Mail, DollarSign } from 'lucide-react';
+import { formatPrice } from '@/utils/priceUtils';
 
 export default function PriceAlertForm({ productId, storeId, currentPrice }) {
     const [email, setEmail] = useState('');
@@ -46,7 +47,7 @@ export default function PriceAlertForm({ productId, storeId, currentPrice }) {
                 <CardContent className="p-6 text-center">
                     <CardTitle className="text-green-800">Price alert set!</CardTitle>
                     <CardDescription className="text-green-700 mt-2">
-                        We'll email you at {email} if the price drops below ${parseFloat(targetPrice).toFixed(2)}.
+                        We'll email you at {email} if the price drops below {formatPrice(parseFloat(targetPrice))}.
                     </CardDescription>
                 </CardContent>
             </Card>

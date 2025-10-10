@@ -9,6 +9,7 @@ import { ShoppingCart, Package } from "lucide-react";
 import UnifiedSlotsEditor from "@/components/editor/UnifiedSlotsEditor";
 import { cartConfig } from '@/components/editor/slot/configs/cart-config';
 import { getSlotComponent } from '@/components/editor/slot/SlotComponentRegistry';
+import { formatPrice } from '@/utils/priceUtils';
 
 // Generate cart context based on view mode
 const generateCartContext = (viewMode) => ({
@@ -44,7 +45,7 @@ const generateCartContext = (viewMode) => ({
   removeItem: () => {},
   handleCheckout: () => {},
   calculateItemTotal: (item) => item.price * item.quantity,
-  safeToFixed: (value) => value.toFixed(2)
+  formatPrice: formatPrice
 });
 
 // Cart Editor Configuration
