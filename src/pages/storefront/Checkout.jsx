@@ -930,10 +930,32 @@ export default function Checkout() {
         };
       });
 
+      // Determine which shipping address to use
+      let finalShippingAddress;
+      if (user && selectedShippingAddress && selectedShippingAddress !== 'new') {
+        // User selected an existing saved address
+        finalShippingAddress = userAddresses.find(a => a.id === selectedShippingAddress);
+      } else {
+        // Guest user or user entering new address
+        finalShippingAddress = shippingAddress;
+      }
+
+      // Determine which billing address to use
+      let finalBillingAddress;
+      if (useShippingForBilling) {
+        finalBillingAddress = finalShippingAddress;
+      } else if (user && selectedBillingAddress && selectedBillingAddress !== 'new') {
+        // User selected an existing saved billing address
+        finalBillingAddress = userAddresses.find(a => a.id === selectedBillingAddress);
+      } else {
+        // Guest user or user entering new billing address
+        finalBillingAddress = billingAddress;
+      }
+
       const checkoutData = {
         cartItems: enrichedCartItems,
-        shippingAddress: getShippingCountry() === shippingAddress.country ? shippingAddress : userAddresses.find(a => a.id === selectedShippingAddress),
-        billingAddress: useShippingForBilling ? (getShippingCountry() === shippingAddress.country ? shippingAddress : userAddresses.find(a => a.id === selectedShippingAddress)) : (getBillingCountry() === billingAddress.country ? billingAddress : userAddresses.find(a => a.id === selectedBillingAddress)),
+        shippingAddress: finalShippingAddress,
+        billingAddress: finalBillingAddress,
         store,
         taxAmount: calculateTax(),
         shippingCost,
@@ -948,7 +970,7 @@ export default function Checkout() {
         deliveryTimeSlot,
         deliveryComments,
         // Use shipping address email first (what user just entered), fallback to user email for logged-in users
-        email: shippingAddress.email || user?.email,
+        email: finalShippingAddress.email || user?.email,
         userId: user?.id,
         sessionId: localStorage.getItem('guest_session_id')
       };
@@ -1115,7 +1137,13 @@ export default function Checkout() {
 
     // Step 0 validation for both 2-step and 3-step
     if (currentStep === 0) {
-      // Validate shipping address
+      // Validate shipping address selection for logged-in users with saved addresses
+      if (user && userAddresses.length > 0 && !selectedShippingAddress) {
+        showError('Please select a shipping address or add a new one');
+        hasErrors = true;
+      }
+
+      // Validate shipping address form fields (for new address or guest checkout)
       if (!user || selectedShippingAddress === 'new' || userAddresses.length === 0) {
         // Email validation
         if (!shippingAddress.email) {
