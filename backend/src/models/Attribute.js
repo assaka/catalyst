@@ -37,6 +37,11 @@ const Attribute = sequelize.define('Attribute', {
     type: DataTypes.BOOLEAN,
     defaultValue: false
   },
+  is_configurable: {
+    type: DataTypes.BOOLEAN,
+    defaultValue: false,
+    comment: 'Whether this attribute can be used for product configuration (e.g., size, color)'
+  },
   filter_type: {
     type: DataTypes.ENUM('multiselect', 'slider', 'select'),
     allowNull: true

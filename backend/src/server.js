@@ -31,6 +31,7 @@ const authRoutes = require('./routes/auth');
 const userRoutes = require('./routes/users');
 const storeRoutes = require('./routes/stores');
 const productRoutes = require('./routes/products');
+const configurableProductRoutes = require('./routes/configurable-products');
 const categoryRoutes = require('./routes/categories');
 const publicProductRoutes = require('./routes/publicProducts');
 const publicCategoryRoutes = require('./routes/publicCategories');
@@ -1427,6 +1428,7 @@ Disallow: /admin/`);
 app.use('/api/users', authMiddleware, userRoutes);
 app.use('/api/stores', authMiddleware, storeRoutes);
 app.use('/api/products', productRoutes);
+app.use('/api/configurable-products', configurableProductRoutes);
 app.use('/api/categories', categoryRoutes);
 app.use('/api', slotConfigurationRoutes); // Slot configurations for cart layout
 

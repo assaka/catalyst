@@ -1,6 +1,7 @@
 const User = require('./User');
 const Store = require('./Store');
 const Product = require('./Product');
+const ProductVariant = require('./ProductVariant');
 const Category = require('./Category');
 const Attribute = require('./Attribute');
 const AttributeSet = require('./AttributeSet');
@@ -78,6 +79,27 @@ const defineAssociations = () => {
   Product.belongsTo(Store, { foreignKey: 'store_id' });
   Product.belongsTo(AttributeSet, { foreignKey: 'attribute_set_id' });
   Product.hasMany(OrderItem, { foreignKey: 'product_id' });
+
+  // Configurable product associations
+  Product.belongsTo(Product, { as: 'parentProduct', foreignKey: 'parent_id' });
+  Product.hasMany(Product, { as: 'variants', foreignKey: 'parent_id' });
+
+  // ProductVariant associations (many-to-many through junction table)
+  Product.belongsToMany(Product, {
+    as: 'variantProducts',
+    through: ProductVariant,
+    foreignKey: 'parent_product_id',
+    otherKey: 'variant_product_id'
+  });
+  Product.belongsToMany(Product, {
+    as: 'parentProducts',
+    through: ProductVariant,
+    foreignKey: 'variant_product_id',
+    otherKey: 'parent_product_id'
+  });
+
+  ProductVariant.belongsTo(Product, { as: 'parent', foreignKey: 'parent_product_id' });
+  ProductVariant.belongsTo(Product, { as: 'variant', foreignKey: 'variant_product_id' });
 
   // Category associations
   Category.belongsTo(Store, { foreignKey: 'store_id' });
@@ -280,6 +302,7 @@ module.exports = {
   User,
   Store,
   Product,
+  ProductVariant,
   Category,
   Attribute,
   AttributeSet,

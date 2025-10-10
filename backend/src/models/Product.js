@@ -58,6 +58,11 @@ const Product = sequelize.define('Product', {
     type: DataTypes.JSON,
     defaultValue: []
   },
+  type: {
+    type: DataTypes.ENUM('simple', 'configurable', 'bundle', 'grouped', 'virtual', 'downloadable'),
+    defaultValue: 'simple',
+    allowNull: false
+  },
   status: {
     type: DataTypes.ENUM('draft', 'active', 'inactive'),
     defaultValue: 'draft'
@@ -126,6 +131,20 @@ const Product = sequelize.define('Product', {
       model: 'attribute_sets',
       key: 'id'
     }
+  },
+  // Configurable product fields
+  parent_id: {
+    type: DataTypes.UUID,
+    allowNull: true,
+    references: {
+      model: 'products',
+      key: 'id'
+    }
+  },
+  configurable_attributes: {
+    type: DataTypes.JSON,
+    defaultValue: [],
+    comment: 'Array of attribute IDs used for configuration (only for configurable products)'
   },
   // Relationships stored as JSON arrays
   category_ids: {
