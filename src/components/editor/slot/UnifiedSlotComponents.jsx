@@ -1056,6 +1056,11 @@ const CustomOptions = createSlotComponent({
     const customOptionsData = variableContext?.customOptions || null;
     const displayLabel = variableContext?.customOptionsLabel || 'Custom Options';
 
+    // Don't render anything if there are no custom options
+    if (context === 'storefront' && (!customOptionsData || customOptionsData.length === 0)) {
+      return null;
+    }
+
     // Attach click handlers for storefront
     React.useEffect(() => {
       if (!containerRef.current || context === 'editor') return;
