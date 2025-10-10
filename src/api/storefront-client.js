@@ -2,14 +2,22 @@
 class StorefrontApiClient {
   constructor() {
     this.baseURL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000';
-    this.customerToken = localStorage.getItem('customer_auth_token');
-    
+    this.currentStoreSlug = null;
+    this.customerToken = null;
+
     // Storefront client is public by default
     this.isPublic = true;
-    
+
     // Initialize or get guest session ID
     this.sessionId = this.getOrCreateSessionId();
-    
+
+  }
+
+  // Set the current store context
+  setStoreContext(storeSlug) {
+    this.currentStoreSlug = storeSlug;
+    // Load the token for this store
+    this.customerToken = this.getCustomerToken();
   }
 
   // Get or create a guest session ID
@@ -30,19 +38,38 @@ class StorefrontApiClient {
     return sessionId;
   }
 
-  // Set customer auth token
-  setCustomerToken(token) {
+  // Set customer auth token (store-specific)
+  setCustomerToken(token, storeSlug = null) {
+    const slug = storeSlug || this.currentStoreSlug;
+    if (!slug) {
+      console.error('Cannot set customer token without store context');
+      return;
+    }
+
     this.customerToken = token;
+    const tokenKey = `customer_auth_token_${slug}`;
+
     if (token) {
-      localStorage.setItem('customer_auth_token', token);
+      localStorage.setItem(tokenKey, token);
+      // Also store which store this token belongs to
+      localStorage.setItem('customer_current_store', slug);
     } else {
-      localStorage.removeItem('customer_auth_token');
+      localStorage.removeItem(tokenKey);
+      if (localStorage.getItem('customer_current_store') === slug) {
+        localStorage.removeItem('customer_current_store');
+      }
     }
   }
 
-  // Get customer auth token
+  // Get customer auth token (store-specific)
   getCustomerToken() {
-    return this.customerToken || localStorage.getItem('customer_auth_token');
+    const slug = this.currentStoreSlug;
+    if (!slug) {
+      return null;
+    }
+
+    const tokenKey = `customer_auth_token_${slug}`;
+    return localStorage.getItem(tokenKey);
   }
 
   // Build public URL

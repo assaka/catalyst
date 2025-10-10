@@ -1,7 +1,7 @@
 
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { useLocation, useParams } from 'react-router-dom';
-import { 
+import {
   StorefrontStore,
   StorefrontTax,
   StorefrontCategory,
@@ -9,7 +9,8 @@ import {
   StorefrontAttribute,
   StorefrontAttributeSet,
   StorefrontSeoTemplate,
-  StorefrontCookieConsentSettings
+  StorefrontCookieConsentSettings,
+  storefrontApiClient
 } from '@/api/storefront-entities';
 // Removed SeoSetting import as it's now dynamically imported within fetchStoreData
 
@@ -508,6 +509,9 @@ export const StoreProvider = ({ children }) => {
       };
       
       setStore({ ...selectedStore, settings: mergedSettings });
+
+      // Set the store context in the storefront API client
+      storefrontApiClient.setStoreContext(selectedStore.slug);
 
       // Only set country if user hasn't selected one, or if current selection is not in allowed countries
       const currentSelectedCountry = localStorage.getItem('selectedCountry') || 'US';
