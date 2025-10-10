@@ -12,6 +12,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
 import { processVariables } from '@/utils/variableProcessor';
+import { formatPrice as formatPriceUtil } from '@/utils/priceUtils';
 import {
   ShoppingCart,
   Heart,
@@ -1315,13 +1316,13 @@ const CartItemsSlot = createSlotComponent({
           // Update item price display
           const priceDisplay = cartItemEl.querySelector('.text-sm.text-gray-600');
           if (priceDisplay && priceDisplay.textContent.includes('×')) {
-            priceDisplay.textContent = `$${price.toFixed(2)} × ${quantity}`;
+            priceDisplay.textContent = `${formatPriceUtil(price)} × ${quantity}`;
           }
 
           // Update item total
           const itemTotalEl = cartItemEl.querySelector('[data-item-total]');
           if (itemTotalEl) {
-            itemTotalEl.textContent = `$${(price * quantity).toFixed(2)}`;
+            itemTotalEl.textContent = formatPriceUtil(price * quantity);
           }
         });
 
@@ -1331,7 +1332,7 @@ const CartItemsSlot = createSlotComponent({
           const sampleOptions = sampleCartItems[0].selected_options;
           if (sampleOptions && sampleOptions.length > 0) {
             container.innerHTML = sampleOptions.map(opt =>
-              `<div class="text-sm text-gray-600">+ ${opt.name} (+$${opt.price.toFixed(2)})</div>`
+              `<div class="text-sm text-gray-600">+ ${opt.name} (+${formatPriceUtil(opt.price)})</div>`
             ).join('');
           }
         });
