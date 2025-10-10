@@ -528,6 +528,9 @@ export function UnifiedSlotRenderer({
     cart: cartData,
     settings: productData.settings || categoryData?.settings || {},
     productLabels: productData.productLabels || categoryData?.productLabels,
+    // Product-specific data
+    customOptions: productData.customOptions || [],
+    customOptionsLabel: productData.customOptionsLabel || 'Custom Options',
     // Category-specific data
     filters: categoryData?.filters || {},
     filterOptionStyles: filterOptionStyles,
