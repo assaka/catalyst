@@ -57,6 +57,7 @@ import { useStore } from '@/components/storefront/StoreProvider';
 import { UnifiedSlotRenderer } from './UnifiedSlotRenderer';
 import { processVariables } from '@/utils/variableProcessor';
 import { formatPrice } from '@/utils/priceUtils';
+import { getStockLabel, getStockLabelStyle } from '@/utils/stockLabelUtils';
 
 // Active Filters Component with processVariables
 const ActiveFilters = createSlotComponent({
@@ -935,19 +936,19 @@ const ProductItemsGrid = createSlotComponent({
                   ?.replace(/\{\{product\.stock_label\}\}/g, product.stock_label);
               }
 
-              // Add stock label class dynamically for stock label slot
-              const dynamicClassName = slotConfig.id === 'product_card_stock_label'
-                ? `${finalClassName} ${product.stock_label_class}`.trim()
-                : finalClassName;
+              // Add stock label inline styles dynamically for stock label slot
+              const dynamicStyles = slotConfig.id === 'product_card_stock_label' && product.stock_label_style
+                ? { ...finalStyles, ...product.stock_label_style }
+                : finalStyles;
 
               productSlots[templateSlotId] = {
                 ...slotConfig,
                 id: templateSlotId,
                 parentId: slotConfig.parentId === 'product_card_template' ? productCardId : `${slotConfig.parentId}_${index}`, // Update parent ID to unique product card
                 content: processedContent,
-                className: dynamicClassName, // Use merged className with dynamic stock class
+                className: finalClassName, // Use merged className
                 parentClassName: finalParentClassName, // Use merged parentClassName
-                styles: finalStyles, // Use merged styles
+                styles: dynamicStyles, // Use merged styles with inline stock label colors
                 // CRITICAL: Use saved position and colSpan if available
                 position: savedSlotConfig?.position ?? slotConfig.position,
                 colSpan: savedSlotConfig?.colSpan ?? slotConfig.colSpan,
@@ -1083,16 +1084,16 @@ const ProductItemsGrid = createSlotComponent({
                 ?.replace(/\{\{product\.stock_label\}\}/g, product.stock_label);
             }
 
-            // Add stock label class dynamically for stock label slot
-            const dynamicClassName = slotConfig.id === 'product_card_stock_label'
-              ? `${finalClassName} ${product.stock_label_class}`.trim()
-              : finalClassName;
+            // Add stock label inline styles dynamically for stock label slot
+            const dynamicStyles = slotConfig.id === 'product_card_stock_label' && product.stock_label_style
+              ? { ...finalStyles, ...product.stock_label_style }
+              : finalStyles;
 
             productSlots[slotId] = {
               ...slotConfig,
               content: processedContent,
-              className: dynamicClassName,
-              styles: finalStyles,
+              className: finalClassName,
+              styles: dynamicStyles,
               metadata: { ...(slotConfig.metadata || {}), ...(savedSlotConfig?.metadata || {}) }
             };
           });
