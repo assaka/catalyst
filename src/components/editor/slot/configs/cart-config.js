@@ -277,7 +277,7 @@ export const cartConfig = {
               class="w-1/2 border rounded px-3 py-2"
               data-coupon-input
             />
-            <button class="w-1/2 bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded whitespace-nowrap" data-action="apply-coupon">
+            <button class="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded whitespace-nowrap" data-action="apply-coupon">
               Apply
             </button>
           </div>
