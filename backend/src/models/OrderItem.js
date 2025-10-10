@@ -70,36 +70,53 @@ const OrderItem = sequelize.define('OrderItem', {
       // Reduce product stock when an order item is created
       try {
         const Product = require('./Product');
-        const product = await Product.findByPk(orderItem.product_id);
 
-        if (!product) {
-          console.warn(`Product ${orderItem.product_id} not found for stock deduction`);
-          return;
-        }
+        // Helper function to reduce stock for a single product
+        const reduceProductStock = async (productId, quantity, productLabel = 'product') => {
+          const product = await Product.findByPk(productId);
 
-        // Only reduce stock if stock management is enabled and infinite stock is disabled
-        if (product.manage_stock && !product.infinite_stock) {
-          const newStockQuantity = product.stock_quantity - orderItem.quantity;
-
-          // Prevent negative stock unless backorders are allowed
-          if (newStockQuantity < 0 && !product.allow_backorders) {
-            console.warn(`Insufficient stock for product ${product.sku}: requested ${orderItem.quantity}, available ${product.stock_quantity}`);
-            // Still create the order item but log the warning
-            // In a production system, you might want to handle this differently
+          if (!product) {
+            console.warn(`${productLabel} ${productId} not found for stock deduction`);
+            return;
           }
 
-          await product.update({
-            stock_quantity: Math.max(0, newStockQuantity),
-            purchase_count: product.purchase_count + 1
-          });
+          // Only reduce stock if stock management is enabled and infinite stock is disabled
+          if (product.manage_stock && !product.infinite_stock) {
+            const newStockQuantity = product.stock_quantity - quantity;
 
-          console.log(`✅ Stock reduced for product ${product.sku}: ${product.stock_quantity} -> ${newStockQuantity}`);
-        } else if (product.infinite_stock) {
-          // Still update purchase count for infinite stock products
-          await product.update({
-            purchase_count: product.purchase_count + 1
-          });
-          console.log(`✅ Purchase count updated for infinite stock product ${product.sku}`);
+            // Prevent negative stock unless backorders are allowed
+            if (newStockQuantity < 0 && !product.allow_backorders) {
+              console.warn(`Insufficient stock for ${productLabel} ${product.sku}: requested ${quantity}, available ${product.stock_quantity}`);
+              // Still create the order item but log the warning
+              // In a production system, you might want to handle this differently
+            }
+
+            await product.update({
+              stock_quantity: Math.max(0, newStockQuantity),
+              purchase_count: product.purchase_count + 1
+            });
+
+            console.log(`✅ Stock reduced for ${productLabel} ${product.sku}: ${product.stock_quantity} -> ${newStockQuantity}`);
+          } else if (product.infinite_stock) {
+            // Still update purchase count for infinite stock products
+            await product.update({
+              purchase_count: product.purchase_count + 1
+            });
+            console.log(`✅ Purchase count updated for infinite stock ${productLabel} ${product.sku}`);
+          }
+        };
+
+        // Reduce stock for the main product
+        await reduceProductStock(orderItem.product_id, orderItem.quantity, 'main product');
+
+        // Reduce stock for custom option products (if any)
+        if (orderItem.selected_options && Array.isArray(orderItem.selected_options)) {
+          for (const option of orderItem.selected_options) {
+            if (option.product_id) {
+              // Custom options use the same quantity as the parent product
+              await reduceProductStock(option.product_id, orderItem.quantity, 'custom option');
+            }
+          }
         }
       } catch (error) {
         console.error('Error reducing stock for order item:', error);
