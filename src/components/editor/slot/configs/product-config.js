@@ -577,10 +577,10 @@ export const productConfig = {
       type: 'component',
       component: 'CustomOptions',
       content: `
+        {{#if customOptions}}
         <div class="space-y-4">
           <h3 class="text-lg font-semibold text-gray-900">{{displayLabel}}</h3>
           <div class="space-y-3">
-            {{#if customOptions}}
               {{#each customOptions}}
                 <div
                   class="border rounded-lg p-4 cursor-pointer transition-all duration-200 {{#if this.isSelected}}border-purple-500 bg-purple-50 shadow-sm{{else}}border-purple-200 hover:border-purple-300 hover:shadow-sm{{/if}}"
@@ -633,27 +633,9 @@ export const productConfig = {
                   </div>
                 </div>
               {{/each}}
-            {{else}}
-              <!-- Editor preview -->
-              <div class="border rounded-lg p-4 cursor-pointer">
-                <div class="flex items-start space-x-3">
-                  <div class="w-5 h-5 rounded border-2 border-gray-300 flex items-center justify-center flex-shrink-0 mt-0.5"></div>
-                  <div class="flex-1">
-                    <div class="flex items-start justify-between">
-                      <div class="flex-1">
-                        <h4 class="font-medium text-gray-900">Sample Custom Option</h4>
-                        <p class="text-sm text-gray-600 mt-1">Optional product description</p>
-                      </div>
-                      <div class="ml-4 flex-shrink-0">
-                        <span class="inline-flex items-center rounded-md border px-2.5 py-0.5 text-xs font-semibold bg-blue-100 text-blue-800 border-blue-300">+$10.00</span>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            {{/if}}
           </div>
         </div>
+        {{/if}}
       `,
       className: 'custom-options',
       parentClassName: '',
