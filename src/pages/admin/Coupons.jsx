@@ -5,10 +5,10 @@ import { Product } from "@/api/entities";
 import { Category } from "@/api/entities";
 import { useStoreSelection } from "@/contexts/StoreSelectionContext.jsx";
 import NoStoreSelected from "@/components/admin/NoStoreSelected";
-import { 
-  Percent, 
-  Plus, 
-  Search, 
+import {
+  Percent,
+  Plus,
+  Search,
   Edit,
   Trash2,
   Copy,
@@ -19,12 +19,13 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { 
-  Dialog, 
-  DialogContent, 
-  DialogHeader, 
-  DialogTitle 
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle
 } from "@/components/ui/dialog";
+import { formatPrice } from "@/utils/priceUtils";
 
 import CouponForm from "@/components/admin/coupons/CouponForm";
 import FlashMessage from "@/components/storefront/FlashMessage";
@@ -152,7 +153,7 @@ export default function CouponsPage() {
       case "percentage":
         return `${coupon.discount_value}%`;
       case "fixed":
-        return `$${coupon.discount_value}`;
+        return formatPrice(coupon.discount_value);
       case "buy_x_get_y":
         return `Buy ${coupon.buy_quantity} Get ${coupon.get_quantity}`;
       case "free_shipping":
@@ -285,7 +286,7 @@ export default function CouponsPage() {
                   <div className="space-y-2">
                     {coupon.min_purchase_amount && (
                       <p className="text-sm text-gray-600">
-                        Min purchase: ${coupon.min_purchase_amount}
+                        Min purchase: {formatPrice(coupon.min_purchase_amount)}
                       </p>
                     )}
                     
