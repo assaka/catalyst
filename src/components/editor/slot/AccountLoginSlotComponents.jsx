@@ -5,8 +5,7 @@
 
 import React from 'react';
 import { createSlotComponent, registerSlotComponent } from './SlotComponentRegistry';
-import { Auth as AuthService } from '@/api/entities';
-import apiClient from '@/api/client';
+import { CustomerAuth } from '@/api/storefront-entities';
 import { useNavigate, useParams } from 'react-router-dom';
 import { createPublicUrl } from '@/utils/urlUtils';
 import { useStore } from '@/components/storefront/StoreProvider';
@@ -233,12 +232,11 @@ const LoginFormSlotComponent = ({ slot, context, variableContext }) => {
     setSuccess('');
 
     try {
-      const response = await AuthService.login(
+      // Use CustomerAuth from storefront-entities for store-specific token storage
+      const response = await CustomerAuth.login(
         formData.email,
         formData.password,
-        formData.rememberMe,
-        'customer',
-        store?.id
+        formData.rememberMe
       );
 
       let actualResponse = response;
@@ -252,19 +250,13 @@ const LoginFormSlotComponent = ({ slot, context, variableContext }) => {
                        (actualResponse && Object.keys(actualResponse).length > 0);
 
       if (isSuccess) {
-        const token = actualResponse.data?.token || actualResponse.token;
+        // Token is already saved by CustomerAuth.login() with store-specific key
+        // Just remove the logged out flag
+        localStorage.removeItem('user_logged_out');
 
-        if (token) {
-          localStorage.removeItem('user_logged_out');
-          localStorage.setItem('customer_auth_token', token);
-          apiClient.setToken(token);
-
-          const accountUrl = await getCustomerAccountUrl();
-          navigate(accountUrl);
-          return;
-        } else {
-          setError('Login failed: No authentication token received');
-        }
+        const accountUrl = await getCustomerAccountUrl();
+        navigate(accountUrl);
+        return;
       } else {
         setError('Login failed: Invalid response from server');
       }
