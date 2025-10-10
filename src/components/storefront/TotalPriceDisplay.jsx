@@ -1,4 +1,5 @@
 import React from 'react';
+import { formatPrice, safeNumber } from '@/utils/priceUtils';
 
 /**
  * Total Price Display Component
@@ -12,7 +13,6 @@ const TotalPriceDisplay = ({
   selectedOptions = [],
   quantity = 1,
   totalPrice = null,
-  currencySymbol = '🔴14',
   showTitle = true,
   compact = false
 }) => {
@@ -20,17 +20,16 @@ const TotalPriceDisplay = ({
   const actualProduct = product || productContext?.product;
   const actualOptions = selectedOptions.length > 0 ? selectedOptions : (productContext?.selectedOptions || []);
   const actualQuantity = quantity !== 1 ? quantity : (productContext?.quantity || 1);
-  const actualCurrency = currencySymbol !== '🔴14' ? currencySymbol : (productContext?.currencySymbol || '🔴15');
-  const actualTotalPrice = totalPrice !== null ? totalPrice : (productContext?.totalPrice || 0);
+  const actualTotalPrice = safeNumber(totalPrice !== null ? totalPrice : (productContext?.totalPrice || 0));
 
   if (!actualProduct) {
     return null;
   }
 
   // Calculate base price (use sale price if available)
-  let basePrice = parseFloat(actualProduct.price || 0);
-  if (actualProduct.compare_price && parseFloat(actualProduct.compare_price) > 0 && parseFloat(actualProduct.compare_price) !== parseFloat(actualProduct.price)) {
-    basePrice = Math.min(parseFloat(actualProduct.price), parseFloat(actualProduct.compare_price));
+  let basePrice = safeNumber(actualProduct.price);
+  if (actualProduct.compare_price && safeNumber(actualProduct.compare_price) > 0 && safeNumber(actualProduct.compare_price) !== safeNumber(actualProduct.price)) {
+    basePrice = Math.min(safeNumber(actualProduct.price), safeNumber(actualProduct.compare_price));
   }
 
   // Calculate if we should show the total price breakdown
@@ -61,7 +60,7 @@ const TotalPriceDisplay = ({
             {actualProduct.name} × {actualQuantity}
           </span>
           <span className="font-medium">
-            {actualCurrency}{basePriceTotal.toFixed(2)}
+            {formatPrice(basePriceTotal)}
           </span>
         </div>
 
@@ -73,7 +72,7 @@ const TotalPriceDisplay = ({
                 <div className="text-sm font-medium text-gray-700 mb-1">Selected Options:</div>
               )}
               {actualOptions.map((option, index) => {
-                const optionPrice = parseFloat(option.price || 0);
+                const optionPrice = safeNumber(option.price);
                 const optionTotal = optionPrice * actualQuantity;
 
                 return (
@@ -82,7 +81,7 @@ const TotalPriceDisplay = ({
                       {option.name || option.label || `Option ${index + 1}`} × {actualQuantity}
                     </span>
                     <span className="font-medium">
-                      +{actualCurrency}{optionTotal.toFixed(2)}
+                      +{formatPrice(optionTotal)}
                     </span>
                   </div>
                 );
@@ -99,7 +98,7 @@ const TotalPriceDisplay = ({
                 Total Price:
               </span>
               <span className={compact ? "font-bold text-green-600" : "text-lg font-bold text-green-600"}>
-                {actualCurrency}{actualTotalPrice.toFixed(2)}
+                {formatPrice(actualTotalPrice)}
               </span>
             </div>
           </div>

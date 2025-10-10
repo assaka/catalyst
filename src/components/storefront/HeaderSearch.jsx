@@ -7,7 +7,7 @@ import { Search, X } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import { formatDisplayPrice } from '@/utils/priceUtils';
+import { formatCurrency } from '@/utils/priceUtils';
 
 export default function HeaderSearch({ styles = {} }) {
   const navigate = useNavigate();
@@ -165,26 +165,20 @@ export default function HeaderSearch({ styles = {} }) {
                         {product.compare_price && parseFloat(product.compare_price) > 0 && parseFloat(product.compare_price) !== parseFloat(product.price) ? (
                           <>
                             <span className="text-red-600">
-                              {formatDisplayPrice(
+                              {formatCurrency(
                                 Math.min(parseFloat(product.price || 0), parseFloat(product.compare_price || 0)),
-                                currencySymbol,
-                                store,
-                                taxes,
-                                selectedCountry
+                                currencySymbol
                               )}
                             </span>
                             <span className="text-gray-500 line-through ml-1 text-xs">
-                              {formatDisplayPrice(
+                              {formatCurrency(
                                 Math.max(parseFloat(product.price || 0), parseFloat(product.compare_price || 0)),
-                                currencySymbol,
-                                store,
-                                taxes,
-                                selectedCountry
+                                currencySymbol
                               )}
                             </span>
                           </>
                         ) : (
-                          <span>{formatDisplayPrice(product.price, currencySymbol, store, taxes, selectedCountry)}</span>
+                          <span>{formatCurrency(product.price, currencySymbol)}</span>
                         )}
                       </p>
                     </div>

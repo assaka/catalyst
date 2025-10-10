@@ -14,7 +14,7 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from '@/components/ui/popover';
-import { formatPrice, safeToFixed, calculateDisplayPrice, formatDisplayPrice } from '@/utils/priceUtils';
+import { formatPrice, safeToFixed, calculateDisplayPrice, formatCurrency } from '@/utils/priceUtils';
 import { getPrimaryImageUrl } from '@/utils/imageUtils';
 
 export default function MiniCart({ iconVariant = 'outline' }) {
@@ -405,7 +405,7 @@ export default function MiniCart({ iconVariant = 'outline' }) {
                           <p className="text-xs text-gray-500">Product details unavailable</p>
                         </div>
                         <div className="text-sm font-medium text-gray-900">
-                          {currencySymbol}{(item.price || 0).toFixed(2)}
+                          {formatCurrency(item.price || 0, currencySymbol)}
                         </div>
                         <Button
                           variant="ghost"
@@ -440,12 +440,12 @@ export default function MiniCart({ iconVariant = 'outline' }) {
                       />
                       <div className="flex-1 min-w-0">
                         <p className="text-sm font-medium truncate">{product.name}</p>
-                        <p className="text-sm text-gray-500">{formatDisplayPrice(basePrice, currencySymbol, store, taxes, selectedCountry)} each</p>
-                        
+                        <p className="text-sm text-gray-500">{formatCurrency(calculateDisplayPrice(basePrice, store, taxes, selectedCountry), currencySymbol)} each</p>
+
                         {item.selected_options && item.selected_options.length > 0 && (
                           <div className="text-xs text-gray-500 mt-1">
                             {item.selected_options.map((option, idx) => (
-                              <div key={idx}>+ {option.name} (+{formatDisplayPrice(parseFloat(option.price || 0), currencySymbol, store, taxes, selectedCountry)})</div>
+                              <div key={idx}>+ {option.name} (+{formatCurrency(calculateDisplayPrice(parseFloat(option.price || 0), store, taxes, selectedCountry), currencySymbol)})</div>
                             ))}
                           </div>
                         )}
@@ -485,7 +485,7 @@ export default function MiniCart({ iconVariant = 'outline' }) {
               
               <div className="border-t pt-3">
                 <div className="flex justify-between items-center mb-3">
-                  <span className="font-semibold">Total: {currencySymbol}{safeToFixed(getTotalPrice())}</span>
+                  <span className="font-semibold">Total: {formatCurrency(getTotalPrice(), currencySymbol)}</span>
                 </div>
                 
                 <div className="space-y-2">
