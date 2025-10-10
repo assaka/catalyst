@@ -1090,20 +1090,16 @@ const CustomOptions = createSlotComponent({
             if (products?.[0]?.is_custom_option) {
               const option = products[0];
               const isSelected = selectedOptions?.some(s => s.product_id === option.id);
-              const hasSpecialPrice = option.compare_price && safeNumber(option.compare_price) > 0;
-              const displayPrice = hasSpecialPrice
-                ? Math.min(safeNumber(option.price), safeNumber(option.compare_price))
-                : safeNumber(option.price);
-              const originalPrice = hasSpecialPrice
-                ? Math.max(safeNumber(option.price), safeNumber(option.compare_price))
-                : null;
+
+              // Use centralized getPriceDisplay utility
+              const priceInfo = getPriceDisplay(option);
 
               optionProducts.push({
                 ...option,
                 isSelected,
-                hasSpecialPrice,
-                displayPrice: formatPrice(displayPrice),
-                originalPrice: originalPrice ? formatPrice(originalPrice) : null
+                hasSpecialPrice: priceInfo.hasComparePrice,
+                displayPrice: formatPrice(priceInfo.displayPrice),
+                originalPrice: priceInfo.hasComparePrice ? formatPrice(priceInfo.originalPrice) : null
               });
             }
           } catch (err) {
@@ -1136,12 +1132,16 @@ const CustomOptions = createSlotComponent({
         const isSelected = selectedOptions?.some(s => s.product_id === option.id);
 
         const safeNum = (val) => parseFloat(val) || 0;
+
+        // Use centralized getPriceDisplay to get correct price
+        const priceInfo = getPriceDisplay(option);
+
         const newSelectedOptions = isSelected
           ? selectedOptions.filter(s => s.product_id !== option.id)
           : [...(selectedOptions || []), {
               product_id: option.id,
               name: option.name,
-              price: safeNum(option.price)
+              price: priceInfo.displayPrice
             }];
 
         productContext.handleOptionChange(newSelectedOptions);
