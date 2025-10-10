@@ -26,6 +26,7 @@ import cartService from '@/services/cartService';
 import { headerConfig } from '@/components/editor/slot/configs/header-config';
 import { CmsBlock } from '@/api/entities';
 import { useStore } from '@/components/storefront/StoreProvider';
+import { formatPrice } from '@/utils/priceUtils';
 
 // Import component registry to ensure all components are registered
 import '@/components/editor/slot/UnifiedSlotComponents';
@@ -290,12 +291,12 @@ export function UnifiedSlotRenderer({
     return {
       ...product,
       // Formatted prices for template
-      price_formatted: hasValidComparePrice ? `${currencySymbol}${comparePrice.toFixed(2)}` : `${currencySymbol}${price.toFixed(2)}`,
-      compare_price_formatted: hasValidComparePrice ? `${currencySymbol}${price.toFixed(2)}` : '',
-      lowest_price_formatted: `${currencySymbol}${lowestPrice.toFixed(2)}`,
-      highest_price_formatted: `${currencySymbol}${highestPrice.toFixed(2)}`,
-      formatted_price: `${currencySymbol}${price.toFixed(2)}`,
-      formatted_compare_price: hasValidComparePrice ? `${currencySymbol}${comparePrice.toFixed(2)}` : null,
+      price_formatted: hasValidComparePrice ? formatPrice(comparePrice) : formatPrice(price),
+      compare_price_formatted: hasValidComparePrice ? formatPrice(price) : '',
+      lowest_price_formatted: formatPrice(lowestPrice),
+      highest_price_formatted: formatPrice(highestPrice),
+      formatted_price: formatPrice(price),
+      formatted_compare_price: hasValidComparePrice ? formatPrice(comparePrice) : null,
       image_url: product.images?.[0] || product.image_url || product.image || '',
       url: product.url || '#',
       in_stock: product.infinite_stock || product.stock_quantity > 0,

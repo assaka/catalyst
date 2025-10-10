@@ -11,6 +11,7 @@ import { ComponentRegistry } from '@/components/editor/slot/SlotComponentRegistr
 import '@/components/editor/slot/CategorySlotComponents';
 import '@/components/editor/slot/BreadcrumbsSlotComponent';
 import { createProductUrl } from '@/utils/urlUtils';
+import { formatPrice } from '@/utils/priceUtils';
 
 /**
  * CategorySlotRenderer - Renders slots with full category functionality
@@ -207,15 +208,15 @@ export function CategorySlotRenderer({
         return {
           ...product,
           // Main price (what user pays): compare_price if exists, otherwise regular price
-          price_formatted: comparePrice ? `${currencySymbol}${comparePriceNum.toFixed(2)}` : formattedPriceStr,
+          price_formatted: comparePrice ? formatPrice(comparePriceNum) : formattedPriceStr,
           // Original/regular price (only populated when compare_price exists)
           compare_price_formatted: comparePrice ? formattedPriceStr : '',
           // Lowest and highest price formatted (for sale display)
-          lowest_price_formatted: `${currencySymbol}${lowestPrice.toFixed(2)}`,
-          highest_price_formatted: `${currencySymbol}${highestPrice.toFixed(2)}`,
+          lowest_price_formatted: formatPrice(lowestPrice),
+          highest_price_formatted: formatPrice(highestPrice),
           // Also keep old names for backwards compatibility
           formatted_price: formattedPriceStr,
-          formatted_compare_price: comparePrice ? `${currencySymbol}${comparePriceNum.toFixed(2)}` : null,
+          formatted_compare_price: comparePrice ? formatPrice(comparePriceNum) : null,
           image_url: getProductImageUrl ? getProductImageUrl(product) : (product.images?.[0]?.url || product.image_url || product.image || ''),
           url: product.url || createProductUrl(store?.public_storecode || store?.slug || store?.code, product.slug || product.id),
           in_stock: product.infinite_stock || product.stock_quantity > 0, // Check infinite_stock or positive stock_quantity
