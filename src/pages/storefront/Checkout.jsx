@@ -125,6 +125,7 @@ export default function Checkout() {
   // Form validation errors
   const [shippingErrors, setShippingErrors] = useState({});
   const [billingErrors, setBillingErrors] = useState({});
+  const [shippingAddressSelectionError, setShippingAddressSelectionError] = useState('');
 
   useEffect(() => {
     loadCheckoutData();
@@ -1139,8 +1140,10 @@ export default function Checkout() {
     if (currentStep === 0) {
       // Validate shipping address selection for logged-in users with saved addresses
       if (user && userAddresses.length > 0 && !selectedShippingAddress) {
-        showError('Please select a shipping address or add a new one');
+        setShippingAddressSelectionError('Please select a shipping address or add a new one');
         hasErrors = true;
+      } else {
+        setShippingAddressSelectionError('');
       }
 
       // Validate shipping address form fields (for new address or guest checkout)
@@ -1279,7 +1282,10 @@ export default function Checkout() {
                             name="shippingAddress"
                             value={address.id}
                             checked={selectedShippingAddress === address.id}
-                            onChange={(e) => setSelectedShippingAddress(e.target.value)}
+                            onChange={(e) => {
+                              setSelectedShippingAddress(e.target.value);
+                              setShippingAddressSelectionError('');
+                            }}
                             className="text-blue-600 mt-1"
                           />
                           <label htmlFor={`shipping-${address.id}`} className="flex-1 cursor-pointer">
@@ -1308,7 +1314,10 @@ export default function Checkout() {
                         name="shippingAddress"
                         value="new"
                         checked={selectedShippingAddress === 'new'}
-                        onChange={(e) => setSelectedShippingAddress(e.target.value)}
+                        onChange={(e) => {
+                          setSelectedShippingAddress(e.target.value);
+                          setShippingAddressSelectionError('');
+                        }}
                         className="text-blue-600"
                       />
                       <label htmlFor="new-shipping-address" className="cursor-pointer text-blue-600 font-medium">
@@ -1323,6 +1332,13 @@ export default function Checkout() {
                 ) : (
                   <p className="text-sm text-gray-600 mb-4">Enter your shipping address</p>
                 )
+              )}
+
+              {/* Display validation error for address selection */}
+              {shippingAddressSelectionError && (
+                <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-md mt-4">
+                  <p className="text-sm font-medium">{shippingAddressSelectionError}</p>
+                </div>
               )}
 
               {(!user || userAddresses.length === 0 || selectedShippingAddress === 'new') && (
