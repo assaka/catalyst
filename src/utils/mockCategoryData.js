@@ -210,7 +210,7 @@ export const generateMockCategoryContext = (realFilterableAttributes = null, sto
     handleSortChange: () => {},
     handlePageChange: () => {},
     clearFilters: () => {},
-    formatDisplayPrice: (price) => `$${price}`,
+    formatDisplayPrice: (price) => `¥${price}`, // Mock data - uses fixed symbol for editor preview
     getProductImageUrl: (product) => product?.images?.[0] || '/placeholder-product.jpg',
     navigate: () => {},
     onProductClick: () => {}

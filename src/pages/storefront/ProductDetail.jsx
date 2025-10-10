@@ -10,7 +10,7 @@ import { User } from "@/api/entities";
 import cartService from "@/services/cartService";
 // ProductLabel entity is no longer imported directly as its data is now provided via useStore.
 import { useStore, cachedApiCall } from "@/components/storefront/StoreProvider";
-import { formatDisplayPrice, calculateDisplayPrice } from "@/utils/priceUtils";
+import { formatPriceWithTax, calculateDisplayPrice, safeNumber } from "@/utils/priceUtils";
 import { getImageUrlByIndex, getPrimaryImageUrl } from "@/utils/imageUtils";
 import {
   ShoppingCart, Star, ChevronLeft, ChevronRight, Minus, Plus, Heart, Download, Eye
@@ -536,17 +536,17 @@ export default function ProductDetail() {
 
 
     // Use the lower price (sale price) if compare_price exists and is different
-    let basePrice = parseFloat(product.price);
-    if (product.compare_price && parseFloat(product.compare_price) > 0 && parseFloat(product.compare_price) !== parseFloat(product.price)) {
-      basePrice = Math.min(parseFloat(product.price), parseFloat(product.compare_price));
+    let basePrice = safeNumber(product.price);
+    if (product.compare_price && safeNumber(product.compare_price) > 0 && safeNumber(product.compare_price) !== safeNumber(product.price)) {
+      basePrice = Math.min(safeNumber(product.price), safeNumber(product.compare_price));
     }
 
     // Add selected options price
-    const optionsPrice = selectedOptions.reduce((sum, option) => sum + (parseFloat(option.price) || 0), 0);
+    const optionsPrice = selectedOptions.reduce((sum, option) => sum + safeNumber(option.price), 0);
 
     // Calculate tax-inclusive price if needed
     const unitPrice = basePrice + optionsPrice;
-    const displayUnitPrice = calculateDisplayPrice(unitPrice, store, taxes, selectedCountry);
+    const displayUnitPrice = calculateDisplayPrice(unitPrice);
 
     return displayUnitPrice * quantity;
   };
@@ -568,9 +568,9 @@ export default function ProductDetail() {
       }
 
       // Calculate correct base price (use sale price if available)
-      let basePrice = parseFloat(product.price);
-      if (product.compare_price && parseFloat(product.compare_price) > 0 && parseFloat(product.compare_price) !== parseFloat(product.price)) {
-        basePrice = Math.min(parseFloat(product.price), parseFloat(product.compare_price));
+      let basePrice = safeNumber(product.price);
+      if (product.compare_price && safeNumber(product.compare_price) > 0 && safeNumber(product.compare_price) !== safeNumber(product.price)) {
+        basePrice = Math.min(safeNumber(product.price), safeNumber(product.compare_price));
       }
 
       const result = await cartService.addItem(
@@ -723,7 +723,7 @@ export default function ProductDetail() {
     stock_quantity: product?.stock_quantity
   });
 
-  const currencySymbol = settings?.currency_symbol || '🔴10';
+  // Currency symbol now comes from priceUtils context - no need to extract it here
 
   // Helper function to get stock label based on settings and quantity
   const getStockLabel = (product) => {
@@ -860,7 +860,7 @@ export default function ProductDetail() {
               activeImageIndex: activeImage,
               activeTab,
               isInWishlist,
-              currencySymbol: store?.currency_symbol || '🔴11',
+              // currencySymbol removed - now handled by priceUtils context
               canAddToCart: canAddToCart,
               setQuantity,
               setSelectedOptions,
