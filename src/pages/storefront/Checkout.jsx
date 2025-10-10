@@ -605,7 +605,7 @@ export default function Checkout() {
         // Check minimum purchase amount
         const subtotal = calculateSubtotal();
         if (coupon.min_purchase_amount && subtotal < coupon.min_purchase_amount) {
-          setCouponError(`Minimum order amount of ${currencySymbol}${formatPrice(coupon.min_purchase_amount)} required for this coupon.`);
+          setCouponError(`Minimum order amount of ${formatPrice(coupon.min_purchase_amount)} required for this coupon.`);
           return;
         }
         
@@ -1432,7 +1432,7 @@ export default function Checkout() {
                       <span className="font-medium">
                         {method.type === 'free_shipping' && calculateSubtotal() >= (method.free_shipping_min_order || 0)
                           ? 'Free'
-                          : `${currencySymbol}${formatPrice(method.flat_rate_cost || 0)}`
+                          : formatPrice(method.flat_rate_cost || 0)
                         }
                       </span>
                     </label>
@@ -1739,7 +1739,7 @@ export default function Checkout() {
                         {method.fee_type !== 'none' && method.fee_amount > 0 && (
                           <p className="text-sm text-gray-600">
                             Fee: {method.fee_type === 'fixed'
-                              ? `${currencySymbol}${formatPrice(method.fee_amount)}`
+                              ? formatPrice(method.fee_amount)
                               : `${formatPrice(method.fee_amount)}%`
                             }
                           </p>
@@ -1788,7 +1788,7 @@ export default function Checkout() {
                     <p className="text-sm font-medium text-green-800">Applied: {appliedCoupon.name}</p>
                     <p className="text-xs text-green-600">
                       {appliedCoupon.discount_type === 'fixed'
-                        ? `${currencySymbol}${formatPrice(appliedCoupon.discount_value)} off`
+                        ? `${formatPrice(appliedCoupon.discount_value)} off`
                         : `${formatPrice(appliedCoupon.discount_value)}% off`
                       }
                     </p>
@@ -1847,12 +1847,12 @@ export default function Checkout() {
                             />
                             <div className="flex-1">
                               <h4 className="font-medium">{product.name}</h4>
-                              <p className="text-sm text-gray-500">{currencySymbol}{formatPrice(basePrice)} each</p>
+                              <p className="text-sm text-gray-500">{formatPrice(basePrice)} each</p>
 
                               {item.selected_options && item.selected_options.length > 0 && (
                                 <div className="text-xs text-gray-500 mt-1">
                                   {item.selected_options.map((option, idx) => (
-                                    <div key={idx}>+ {option.name} (+{currencySymbol}{formatPrice(option.price)})</div>
+                                    <div key={idx}>+ {option.name} (+{formatPrice(option.price)})</div>
                                   ))}
                                 </div>
                               )}
@@ -1860,7 +1860,7 @@ export default function Checkout() {
                               <p className="text-sm text-gray-600 mt-1">Qty: {item.quantity}</p>
                             </div>
                             <div className="text-right">
-                              <p className="font-semibold">{currencySymbol}{formatPrice(itemTotal)}</p>
+                              <p className="font-semibold">{formatPrice(itemTotal)}</p>
                             </div>
                           </div>
                         );
@@ -1873,47 +1873,47 @@ export default function Checkout() {
               <div className="border-t pt-4 space-y-2">
                 <div className="flex justify-between">
                   <span>Subtotal</span>
-                  <span>{currencySymbol}{formatPrice(calculateSubtotal())}</span>
+                  <span>{formatPrice(calculateSubtotal())}</span>
                 </div>
 
                 {calculateOptionsTotal() > 0 && (
                   <div className="flex justify-between">
                     <span>Custom Options</span>
-                    <span>{currencySymbol}{formatPrice(calculateOptionsTotal())}</span>
+                    <span>{formatPrice(calculateOptionsTotal())}</span>
                   </div>
                 )}
 
                 {appliedCoupon && calculateDiscount() > 0 && (
                   <div className="flex justify-between text-green-600">
                     <span>Discount ({appliedCoupon.name})</span>
-                    <span>-{currencySymbol}{formatPrice(calculateDiscount())}</span>
+                    <span>-{formatPrice(calculateDiscount())}</span>
                   </div>
                 )}
 
                 {selectedShippingMethod && (
                   <div className="flex justify-between">
                     <span>Shipping</span>
-                    <span>{shippingCost > 0 ? `${currencySymbol}${formatPrice(shippingCost)}` : 'Free'}</span>
+                    <span>{shippingCost > 0 ? formatPrice(shippingCost) : 'Free'}</span>
                   </div>
                 )}
 
                 {paymentFee > 0 && (
                   <div className="flex justify-between">
                     <span>Payment Fee</span>
-                    <span>{currencySymbol}{formatPrice(paymentFee)}</span>
+                    <span>{formatPrice(paymentFee)}</span>
                   </div>
                 )}
 
                 {calculateTax() > 0 && (
                   <div className="flex justify-between">
                     <span>Tax</span>
-                    <span>{currencySymbol}{formatPrice(calculateTax())}</span>
+                    <span>{formatPrice(calculateTax())}</span>
                   </div>
                 )}
 
                 <div className="flex justify-between text-xl font-bold border-t pt-2">
                   <span>Total</span>
-                  <span>{currencySymbol}{formatPrice(getTotalAmount())}</span>
+                  <span>{formatPrice(getTotalAmount())}</span>
                 </div>
               </div>
 
@@ -1927,7 +1927,7 @@ export default function Checkout() {
                     color: '#FFFFFF',
                   }}
                 >
-                  {isProcessing ? 'Processing...' : `Place Order - ${currencySymbol}${formatPrice(getTotalAmount())}`}
+                  {isProcessing ? 'Processing...' : `Place Order - ${formatPrice(getTotalAmount())}`}
                 </Button>
               )}
             </CardContent>
