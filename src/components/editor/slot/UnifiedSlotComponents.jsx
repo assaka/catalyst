@@ -1095,17 +1095,6 @@ const CustomOptions = createSlotComponent({
       };
     }, [context, customOptionsData, productContext]);
 
-    // Update selected state when productContext changes
-    React.useEffect(() => {
-      if (context !== 'editor' && customOptionsData && productContext?.selectedOptions) {
-        const updatedOptions = customOptionsData.map(option => ({
-          ...option,
-          isSelected: productContext.selectedOptions.some(s => s.product_id === option.id)
-        }));
-        setCustomOptionsData(updatedOptions);
-      }
-    }, [productContext?.selectedOptions, context]);
-
     // Prepare variable context with custom options data
     const enhancedVariableContext = React.useMemo(() => ({
       ...variableContext,
