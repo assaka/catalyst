@@ -10,7 +10,7 @@ import { User } from "@/api/entities";
 import cartService from "@/services/cartService";
 // ProductLabel entity is no longer imported directly as its data is now provided via useStore.
 import { useStore, cachedApiCall } from "@/components/storefront/StoreProvider";
-import { formatPriceWithTax, calculateDisplayPrice, safeNumber } from "@/utils/priceUtils";
+import { formatPriceWithTax, calculateDisplayPrice, safeNumber, formatPrice } from "@/utils/priceUtils";
 import { getImageUrlByIndex, getPrimaryImageUrl } from "@/utils/imageUtils";
 import {
   ShoppingCart, Star, ChevronLeft, ChevronRight, Minus, Plus, Heart, Download, Eye
@@ -360,7 +360,7 @@ export default function ProductDetail() {
               items: [{
                 item_id: foundProduct.id,
                 item_name: foundProduct.name,
-                price: parseFloat(foundProduct.price || 0).toFixed(2),
+                price: safeNumber(foundProduct.price),
                 item_brand: foundProduct.brand, // Assuming product has a brand field
                 item_category: categories.find(cat => cat.id === foundProduct.category_ids?.[0])?.name || '', // Find category name
                 currency: settings?.currency_code || 'No Currency'
@@ -595,7 +595,7 @@ export default function ProductDetail() {
               items: [{
                 item_id: product.id,
                 item_name: product.name,
-                price: parseFloat(basePrice || 0).toFixed(2),
+                price: safeNumber(basePrice),
                 quantity: quantity,
                 item_brand: product.brand,
                 item_category: categories.find(cat => cat.id === product.category_ids?.[0])?.name || '',

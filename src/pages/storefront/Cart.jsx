@@ -12,7 +12,7 @@ import couponService from '@/services/couponService';
 import taxService from '@/services/taxService';
 import FlashMessage from '@/components/storefront/FlashMessage';
 import SeoHeadManager from '@/components/storefront/SeoHeadManager';
-import { formatPriceWithTax, calculateDisplayPrice, safeNumber } from '@/utils/priceUtils';
+import { formatPriceWithTax, calculateDisplayPrice, safeNumber, formatPrice as formatPriceUtil } from '@/utils/priceUtils';
 
 // Import new hook system
 import hookSystem from '@/core/HookSystem.js';
@@ -45,14 +45,14 @@ const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 const formatPrice = (value, context = {}) => {
   const num = parseFloat(value);
   const basePrice = isNaN(num) ? 0 : num;
-  
+
   // Apply pricing hooks
   return hookSystem.apply('pricing.format', basePrice, context);
 };
 
-const safeToFixed = (value, decimals = 2) => {
-    const num = formatPrice(value);
-    return num.toFixed(decimals);
+// safeToFixed is now replaced with formatPriceUtil from priceUtils
+const safeToFixed = (value) => {
+    return formatPriceUtil(value);
 };
 
 // Price formatting function for cart context (wraps new priceUtils API)

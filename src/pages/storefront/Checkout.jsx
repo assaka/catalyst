@@ -43,6 +43,7 @@ import { CustomerAuth } from "@/api/storefront-entities";
 import CmsBlockRenderer from "@/components/storefront/CmsBlockRenderer";
 import apiClient from "@/api/client";
 import StepIndicator from "@/components/storefront/StepIndicator";
+import { formatPrice as formatPriceUtil } from '@/utils/priceUtils';
 
 export default function Checkout() {
   const { store, settings, loading: storeLoading, selectedCountry, setSelectedCountry } = useStore();
@@ -458,10 +459,9 @@ export default function Checkout() {
     return isNaN(total) ? 0 : total;
   };
 
-  // Safe number formatter to prevent toFixed errors
+  // formatPrice now uses centralized utility from priceUtils
   const formatPrice = (value) => {
-    const num = parseFloat(value);
-    return isNaN(num) ? '0.00' : num.toFixed(2);
+    return formatPriceUtil(value);
   };
 
   const calculateShippingCost = (method) => {
