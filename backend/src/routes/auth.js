@@ -929,7 +929,7 @@ router.post('/customer/register', [
 router.post('/customer/login', [
   body('email').isEmail().normalizeEmail().withMessage('Please enter a valid email'),
   body('password').notEmpty().withMessage('Password is required'),
-  body('store_id').optional().isUUID().withMessage('Store ID must be a valid UUID'),
+  body('store_id').notEmpty().withMessage('Store ID is required').isUUID().withMessage('Store ID must be a valid UUID'),
   body('rememberMe').optional().isBoolean().withMessage('Remember me must be a boolean')
 ], async (req, res) => {
   try {
@@ -953,15 +953,25 @@ router.post('/customer/login', [
       });
     }
 
+    // CRITICAL SECURITY: store_id is REQUIRED for customer login to prevent cross-store access
+    if (!store_id) {
+      console.log('❌ Customer login attempt without store_id for:', email);
+      await LoginAttempt.create({
+        email,
+        ip_address: ipAddress,
+        success: false
+      });
+
+      return res.status(400).json({
+        success: false,
+        message: 'Store information is required for customer login'
+      });
+    }
+
     // CRITICAL: Find customer with this email AND store_id to prevent cross-store login
     console.log('🔐 Customer login attempt for:', email, 'at store:', store_id);
 
-    const whereClause = { email };
-    if (store_id) {
-      whereClause.store_id = store_id;
-    }
-
-    const customer = await Customer.findOne({ where: whereClause });
+    const customer = await Customer.findOne({ where: { email, store_id } });
 
     if (!customer) {
       console.log('❌ Customer not found:', email, store_id ? `for store ${store_id}` : '');
@@ -980,21 +990,6 @@ router.post('/customer/login', [
 
     console.log('✅ Customer found:', customer.id, 'Store:', customer.store_id);
     console.log('🔍 Customer has password:', !!customer.password);
-
-    // Additional security check: Ensure customer's store_id matches requested store_id
-    if (store_id && customer.store_id !== store_id) {
-      console.log('❌ Store mismatch: Customer belongs to', customer.store_id, 'but trying to access', store_id);
-      await LoginAttempt.create({
-        email,
-        ip_address: ipAddress,
-        success: false
-      });
-
-      return res.status(403).json({
-        success: false,
-        message: 'This account is not registered for this store'
-      });
-    }
 
     // Check password
     if (!customer.password) {
