@@ -49,7 +49,8 @@ export default function Checkout() {
   const { showError, AlertComponent } = useAlertTypes();
   
   // Get currency symbol from settings
-  const currencySymbol = settings?.currency_symbol || '🔴6';
+  // Currency symbol comes from StoreProvider which derives it from store.currency → getCurrencySymbol()
+  const currencySymbol = settings?.currency_symbol;
   
   // Debug allowed countries
   const navigate = useNavigate();
