@@ -226,6 +226,10 @@ class AuthService {
       payload.store_id = store_id;
     }
 
+    console.log('🔐 AuthService.login: Final payload being sent:', payload);
+    console.log('🔐 AuthService.login: store_id in payload:', payload.store_id);
+    console.log('🔐 AuthService.login: store_id type:', typeof payload.store_id);
+
     const response = await apiClient.post(endpoint, payload);
     console.log('🔐 AuthService.login: Raw response:', response);
 

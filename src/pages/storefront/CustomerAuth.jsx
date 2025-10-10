@@ -127,6 +127,10 @@ export default function CustomerAuth() {
         // Extract store_id from store context for customer login validation
         const storeId = store?.id;
 
+        console.log('🔍 CustomerAuth: Store object:', store);
+        console.log('🔍 CustomerAuth: Extracted store_id:', storeId);
+        console.log('🔍 CustomerAuth: store_id type:', typeof storeId);
+
         if (!storeId) {
           setError("Store information not available. Please refresh the page.");
           setAuthLoading(false);
