@@ -195,9 +195,36 @@ router.post('/',
     });
   } catch (error) {
     console.error('Create product error:', error);
-    res.status(500).json({
+
+    // Handle specific database errors
+    let statusCode = 500;
+    let message = 'Server error';
+
+    if (error.name === 'SequelizeUniqueConstraintError') {
+      statusCode = 409;
+      const field = error.errors[0]?.path;
+      const value = error.errors[0]?.value;
+
+      if (field === 'sku' || error.message.includes('products_sku_store_id_key')) {
+        message = `A product with SKU "${value || req.body.sku}" already exists in this store`;
+      } else if (field === 'slug' || error.message.includes('products_slug_store_id_key')) {
+        message = `A product with slug "${value || req.body.slug}" already exists in this store`;
+      } else {
+        message = 'A product with these values already exists';
+      }
+    } else if (error.name === 'SequelizeValidationError') {
+      statusCode = 400;
+      message = error.errors.map(e => e.message).join(', ');
+    } else if (error.name === 'SequelizeForeignKeyConstraintError') {
+      statusCode = 400;
+      message = 'Invalid reference: Please ensure all product settings are valid';
+    } else if (error.message) {
+      message = error.message;
+    }
+
+    res.status(statusCode).json({
       success: false,
-      message: 'Server error'
+      message
     });
   }
 });
