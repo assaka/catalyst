@@ -201,7 +201,21 @@ export default function ProductDetail() {
             Object.keys(response.data.configuration.slots).length > 0) {
 
           const publishedConfig = response.data;
-          setProductLayoutConfig(publishedConfig.configuration);
+
+          // Merge published config with default config to ensure new slots are available
+          // This ensures that when we add new slots to product-config.js, they appear even if
+          // there's an existing published configuration
+          const mergedSlots = {
+            ...productConfig.slots, // Start with default slots
+            ...publishedConfig.configuration.slots // Override with published customizations
+          };
+
+          const mergedConfig = {
+            ...publishedConfig.configuration,
+            slots: mergedSlots
+          };
+
+          setProductLayoutConfig(mergedConfig);
           setConfigLoaded(true);
 
         } else {
