@@ -2080,9 +2080,16 @@ export default function ProductForm({ product, categories, stores, taxes, attrib
                                     .map(([, val]) => val)
                                     .join('-')}`;
 
+                                  // Generate slug from variant name
+                                  const variantSlug = variantName
+                                    .toLowerCase()
+                                    .replace(/[^a-z0-9]+/g, '-')
+                                    .replace(/^-+|-+$/g, '');
+
                                   // Create simple product
                                   const response = await apiClient.post('/products', {
                                     name: variantName,
+                                    slug: variantSlug,
                                     sku: variantSku,
                                     type: 'simple',
                                     store_id: product.store_id,
