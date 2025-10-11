@@ -2086,7 +2086,15 @@ export default function ProductForm({ product, categories, stores, taxes, attrib
                                     .replace(/[^a-z0-9]+/g, '-')
                                     .replace(/^-+|-+$/g, '');
 
-                                  // Create simple product
+                                  // Build attributes object with the selected values
+                                  const variantAttributes = {};
+                                  Object.entries(combo)
+                                    .filter(([key]) => !key.endsWith('_label'))
+                                    .forEach(([key, value]) => {
+                                      variantAttributes[key] = value;
+                                    });
+
+                                  // Create simple product with attribute values
                                   const response = await apiClient.post('/products', {
                                     name: variantName,
                                     slug: variantSlug,
@@ -2096,7 +2104,8 @@ export default function ProductForm({ product, categories, stores, taxes, attrib
                                     status: 'active',
                                     price: product.price || 0,
                                     attribute_set_id: product.attribute_set_id,
-                                    category_ids: product.category_ids || []
+                                    category_ids: product.category_ids || [],
+                                    attributes: variantAttributes
                                   });
 
                                   if (response.success && response.data) {
