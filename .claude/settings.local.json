@@ -13,7 +13,8 @@
       "Read(/C:\\Users\\info\\PhpstormProjects\\catalyst\\src\\pages\\admin/**)",
       "Bash(sed:*)",
       "Bash(grep:*)",
-      "Bash(git checkout:*)"
+      "Bash(git checkout:*)",
+      "Bash(NODE_ENV=production DATABASE_URL=\"postgresql://postgres.jqqfjfoigtwdpnlicjmh:Lgr5ovbpji64CooD@aws-0-eu-north-1.pooler.supabase.com:6543/postgres\" node:*)"
     ],
     "deny": [],
     "ask": [],

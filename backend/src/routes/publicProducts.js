@@ -40,7 +40,10 @@ router.get('/', async (req, res) => {
         
         if (!displayOutOfStock) {
           // Filter out products that are out of stock
+          // Note: Configurable products are EXCLUDED from stock filtering
+          // because their stock is managed by their child variants
           where[Op.or] = [
+            { type: 'configurable' },  // Always show configurable products (variants control stock)
             { infinite_stock: true },  // Products with infinite stock are always available
             { manage_stock: false },   // Products not managing stock are always available
             {
