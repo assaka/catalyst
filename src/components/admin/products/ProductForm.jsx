@@ -2102,12 +2102,9 @@ export default function ProductForm({ product, categories, stores, taxes, attrib
         <Accordion type="multiple" className="w-full">
           <AccordionItem value="seo">
             <AccordionTrigger>
-              <div className="flex items-center space-x-2">
-                <Search className="w-5 h-5 text-gray-500" />
-                <span>SEO Settings</span>
-              </div>
+              <span className="text-lg font-semibold">SEO</span>
             </AccordionTrigger>
-            <AccordionContent className="p-4 space-y-4 bg-gray-50 rounded-b-lg">
+            <AccordionContent className="pt-4 space-y-4">
               <div className="bg-blue-50 p-4 rounded-lg">
                 <h4 className="font-medium text-blue-900 mb-2">Template Variables</h4>
                 <p className="text-sm text-blue-800 mb-2">
