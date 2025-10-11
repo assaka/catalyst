@@ -1958,10 +1958,36 @@ export default function ProductForm({ product, categories, stores, taxes, attrib
                           <Button variant="ghost" size="sm" onClick={() => {
                             setShowQuickCreate(false);
                             setSelectedAttributeValues({});
+                            setFlashMessage(null); // Clear message when closing
                           }}>
                             <X className="w-4 h-4" />
                           </Button>
                         </div>
+
+                        {/* Flash Message inside Quick Create card */}
+                        {flashMessage && (
+                          <div className={`${flashMessage.type === 'success' ? 'bg-green-100 border-green-500 text-green-800' : 'bg-red-100 border-red-500 text-red-800'} border-l-4 p-3 rounded`}>
+                            <div className="flex items-center justify-between">
+                              <div className="flex items-center">
+                                {flashMessage.type === 'success' ? (
+                                  <CheckCircle className="w-5 h-5 mr-2" />
+                                ) : (
+                                  <AlertCircle className="w-5 h-5 mr-2" />
+                                )}
+                                <p className="text-sm font-medium">{flashMessage.message}</p>
+                              </div>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => setFlashMessage(null)}
+                                className="p-1 h-auto hover:bg-transparent"
+                              >
+                                <X className="w-4 h-4" />
+                              </Button>
+                            </div>
+                          </div>
+                        )}
+
                         <p className="text-sm text-gray-600">
                           Select attribute values to create. Products will be created for all combinations of selected values.
                         </p>
