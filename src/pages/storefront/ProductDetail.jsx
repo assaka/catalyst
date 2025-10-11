@@ -343,14 +343,15 @@ export default function ProductDetail() {
 
       const cacheKey = `product-detail-${slug}-${store.id}`;
 
-      // First try to find by slug (skip cache for debugging stock)
-      console.log('🔎 ProductDetail: Calling API with', { store_id: store.id, slug, status: 'active' });
-      let products = await StorefrontProduct.filter({ store_id: store.id, slug: slug, status: 'active' });
+      // First try to find by slug (don't send status - backend handles it)
+      console.log('🔎 ProductDetail: Calling API with', { store_id: store.id, slug });
+      let products = await StorefrontProduct.filter({ store_id: store.id, slug: slug });
       console.log('📦 ProductDetail: API returned', products?.length || 0, 'products');
-      
+
       // If no product found by slug, try searching by SKU as fallback
       if (!products || products.length === 0) {
-        products = await StorefrontProduct.filter({ store_id: store.id, sku: slug, status: 'active' });
+        console.log('🔎 ProductDetail: Trying SKU fallback with', { store_id: store.id, sku: slug });
+        products = await StorefrontProduct.filter({ store_id: store.id, sku: slug });
       }
 
       if (products && products.length > 0) {
