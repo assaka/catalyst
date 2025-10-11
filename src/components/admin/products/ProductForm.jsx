@@ -1168,7 +1168,7 @@ export default function ProductForm({ product, categories, stores, taxes, attrib
         </div>
 
         {/* Categories Selection - Collapsible */}
-        <Accordion type="single" collapsible className="w-full">
+        <Accordion type="multiple" className="w-full">
           <AccordionItem value="categories">
             <AccordionTrigger>
               <div className="flex items-center space-x-2">
@@ -1344,7 +1344,7 @@ export default function ProductForm({ product, categories, stores, taxes, attrib
         </Accordion>
 
         {/* Product Images - Unified Storage System */}
-        <Accordion type="single" collapsible className="w-full">
+        <Accordion type="multiple" className="w-full">
           <AccordionItem value="product-images">
             <AccordionTrigger>
               <div className="flex items-center space-x-2">
@@ -1428,7 +1428,7 @@ export default function ProductForm({ product, categories, stores, taxes, attrib
           </AccordionItem>
         </Accordion>
 
-        <Accordion type="single" collapsible className="w-full">
+        <Accordion type="multiple" className="w-full">
           <AccordionItem value="attributes">
             <AccordionTrigger>
               <div className="flex items-center space-x-2">
@@ -2038,7 +2038,7 @@ export default function ProductForm({ product, categories, stores, taxes, attrib
           </Card>
         )}
 
-        <Accordion type="single" collapsible className="w-full">
+        <Accordion type="multiple" className="w-full">
           <AccordionItem value="settings">
             <AccordionTrigger>
               <span className="text-lg font-semibold">Settings</span>
@@ -2099,7 +2099,7 @@ export default function ProductForm({ product, categories, stores, taxes, attrib
           </AccordionItem>
         </Accordion>
 
-        <Accordion type="single" collapsible className="w-full">
+        <Accordion type="multiple" className="w-full">
           <AccordionItem value="seo">
             <AccordionTrigger>
               <div className="flex items-center space-x-2">
