@@ -235,10 +235,13 @@ function AttributeManagerModal({ attributes, onClose, onSave }) {
     };
   }, []);
 
-  const filteredAttributes = localAttributes.filter(attr =>
-    attr.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    attr.code.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const filteredAttributes = localAttributes.filter(attr => {
+    // Only show select and multiselect types (suitable for configuration)
+    const isSuitableType = attr.type === 'select' || attr.type === 'multiselect';
+    const matchesSearch = attr.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         attr.code.toLowerCase().includes(searchTerm.toLowerCase());
+    return isSuitableType && matchesSearch;
+  });
 
   const handleToggleConfigurable = async (attributeId) => {
     const updatedAttributes = localAttributes.map(attr => {
@@ -305,6 +308,8 @@ function AttributeManagerModal({ attributes, onClose, onSave }) {
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             className="w-full"
+            autoFocus
+            onClick={(e) => e.stopPropagation()}
           />
         </div>
 
