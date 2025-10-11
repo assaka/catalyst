@@ -2095,6 +2095,7 @@ export default function ProductForm({ product, categories, stores, taxes, attrib
                                 // Create simple products for each combination
                                 const variantIds = [];
                                 const attributeValuesMap = {};
+                                const errors = [];
                                 let incrementCounter = 1;
                                 const totalVariants = combinations.length;
 
@@ -2126,44 +2127,109 @@ export default function ProductForm({ product, categories, stores, taxes, attrib
                                       variantAttributes[key] = value;
                                     });
 
-                                  // Create simple product with attribute values
-                                  const response = await apiClient.post('/products', {
-                                    name: variantName,
-                                    slug: variantSlug,
-                                    sku: variantSku,
-                                    type: 'simple',
-                                    store_id: product.store_id,
-                                    status: 'active',
-                                    price: product.price || 0,
-                                    attribute_set_id: product.attribute_set_id,
-                                    category_ids: product.category_ids || [],
-                                    attributes: variantAttributes
-                                  });
+                                  // Wrap individual product creation in try-catch
+                                  try {
+                                    // Create simple product with attribute values
+                                    const response = await apiClient.post('/products', {
+                                      name: variantName,
+                                      slug: variantSlug,
+                                      sku: variantSku,
+                                      type: 'simple',
+                                      store_id: product.store_id,
+                                      status: 'active',
+                                      price: product.price || 0,
+                                      attribute_set_id: product.attribute_set_id,
+                                      category_ids: product.category_ids || [],
+                                      attributes: variantAttributes
+                                    });
 
-                                  if (response.success && response.data) {
-                                    variantIds.push(response.data.id);
-                                    // Store attribute values (without _label keys)
-                                    attributeValuesMap[response.data.id] = Object.fromEntries(
-                                      Object.entries(combo).filter(([key]) => !key.endsWith('_label'))
-                                    );
+                                    console.log('Product creation response:', response);
+
+                                    if (response.success && response.data) {
+                                      console.log('Adding variant ID:', response.data.id);
+                                      variantIds.push(response.data.id);
+                                      // Store attribute values (without _label keys)
+                                      attributeValuesMap[response.data.id] = Object.fromEntries(
+                                        Object.entries(combo).filter(([key]) => !key.endsWith('_label'))
+                                      );
+                                    } else {
+                                      console.warn('Response not successful or missing data:', response);
+                                    }
+                                  } catch (productError) {
+                                    console.error(`Failed to create variant "${variantName}":`, productError);
+
+                                    // Parse the error message
+                                    let errorMsg = productError.data?.message || productError.message || 'Unknown error';
+
+                                    // Handle specific database constraint errors
+                                    if (errorMsg.includes('duplicate key value violates unique constraint')) {
+                                      if (errorMsg.includes('products_sku_store_id_key')) {
+                                        errorMsg = `SKU "${variantSku}" already exists`;
+                                      } else if (errorMsg.includes('products_slug_store_id_key')) {
+                                        errorMsg = `Slug "${variantSlug}" already exists`;
+                                      } else {
+                                        errorMsg = 'Duplicate product detected';
+                                      }
+                                    }
+
+                                    errors.push({
+                                      variant: variantName,
+                                      error: errorMsg
+                                    });
                                   }
                                 }
 
-                                // Add all variants to configurable product
-                                await handleAddVariants(variantIds, attributeValuesMap);
-
-                                // Show detailed success message
-                                const variantNames = combinations.map(combo =>
-                                  Object.entries(combo)
-                                    .filter(([key]) => key.endsWith('_label'))
-                                    .map(([, val]) => val)
-                                    .join(' / ')
-                                ).join(', ');
-
-                                setFlashMessage({
-                                  type: 'success',
-                                  message: `Successfully created ${variantIds.length} variant${variantIds.length !== 1 ? 's' : ''}: ${variantNames}`
+                                // Log final results
+                                console.log('Quick Create Results:', {
+                                  totalVariants,
+                                  successCount: variantIds.length,
+                                  errorCount: errors.length,
+                                  variantIds,
+                                  errors
                                 });
+
+                                // Add all variants to configurable product if any were created
+                                if (variantIds.length > 0) {
+                                  await handleAddVariants(variantIds, attributeValuesMap);
+                                }
+
+                                // Show appropriate message based on results
+                                if (variantIds.length === 0 && errors.length > 0) {
+                                  // All failed
+                                  const firstError = errors[0];
+                                  setFlashMessage({
+                                    type: 'error',
+                                    message: `Failed to create variants. ${firstError.error}${errors.length > 1 ? ` (and ${errors.length - 1} more error${errors.length > 1 ? 's' : ''})` : ''}`
+                                  });
+                                } else if (variantIds.length > 0 && errors.length > 0) {
+                                  // Partial success
+                                  setFlashMessage({
+                                    type: 'success',
+                                    message: `Created ${variantIds.length} of ${totalVariants} variants. ${errors.length} failed: ${errors[0].error}`
+                                  });
+                                } else if (variantIds.length > 0) {
+                                  // Full success
+                                  const variantNames = variantIds.map((id, idx) => {
+                                    const combo = combinations.find((c, i) => {
+                                      // Find the combination that matches this successful variant
+                                      return Object.keys(attributeValuesMap).includes(id.toString());
+                                    });
+                                    return Object.entries(attributeValuesMap[id])
+                                      .map(([key, val]) => val)
+                                      .join(' / ');
+                                  }).join(', ');
+
+                                  setFlashMessage({
+                                    type: 'success',
+                                    message: `Successfully created ${variantIds.length} variant${variantIds.length !== 1 ? 's' : ''}`
+                                  });
+                                } else {
+                                  // No variants created, no specific errors (shouldn't happen)
+                                  setFlashMessage({
+                                    type: 'error',
+                                    message: 'No variants were created. Please try again.'
+                                  });
+                                }
 
                                 // Don't close the card - keep it open so user can see the message
                                 // Just reset selected values so they can create more if needed
@@ -2172,40 +2238,11 @@ export default function ProductForm({ product, categories, stores, taxes, attrib
                                 // Refresh variants list
                                 await loadProductVariants();
                               } catch (error) {
-                                console.error('Quick create error:', error);
-                                console.error('Error details:', {
-                                  message: error.message,
-                                  data: error.data,
-                                  status: error.status
-                                });
-
-                                // Extract user-friendly error message
-                                let errorMessage = 'Failed to create variants. Please try again.';
-
-                                if (error.data?.message) {
-                                  errorMessage = error.data.message;
-
-                                  // Handle specific database constraint errors
-                                  if (errorMessage.includes('duplicate key value violates unique constraint')) {
-                                    if (errorMessage.includes('products_sku_store_id_key')) {
-                                      errorMessage = 'A product with this SKU already exists in this store. Please use different attribute values or check existing products.';
-                                    } else if (errorMessage.includes('products_slug_store_id_key')) {
-                                      errorMessage = 'A product with this slug already exists in this store. Please use different attribute values.';
-                                    } else {
-                                      errorMessage = 'Duplicate product detected. A variant with these values may already exist.';
-                                    }
-                                  } else if (errorMessage.includes('violates foreign key constraint')) {
-                                    errorMessage = 'Invalid reference detected. Please ensure all product settings are valid.';
-                                  } else if (errorMessage.includes('violates check constraint')) {
-                                    errorMessage = 'Invalid data provided. Please check your input values.';
-                                  }
-                                } else if (error.message) {
-                                  errorMessage = error.message;
-                                }
-
+                                // This catch is for unexpected errors (like network issues, loadProductVariants failure, etc.)
+                                console.error('Unexpected Quick Create error:', error);
                                 setFlashMessage({
                                   type: 'error',
-                                  message: errorMessage
+                                  message: `Unexpected error: ${error.message || 'Failed to complete operation. Please try again.'}`
                                 });
                               } finally{
                                 setQuickCreateLoading(false);
