@@ -2147,11 +2147,17 @@ export default function ProductForm({ product, categories, stores, taxes, attrib
                                 await loadVariants();
                               } catch (error) {
                                 console.error('Quick create error:', error);
+                                console.error('Error details:', {
+                                  message: error.message,
+                                  data: error.data,
+                                  status: error.status
+                                });
+                                const errorMessage = error.data?.message || error.message || 'Failed to create variants. Please try again.';
                                 toast.error(
-                                  error.message || 'Failed to create variants. Please try again.',
-                                  { duration: 5000 }
+                                  errorMessage,
+                                  { duration: 7000 }
                                 );
-                              } finally {
+                              } finally{
                                 setQuickCreateLoading(false);
                               }
                             }}
