@@ -2165,8 +2165,8 @@ export default function ProductForm({ product, categories, stores, taxes, attrib
                                   message: `Successfully created ${variantIds.length} variant${variantIds.length !== 1 ? 's' : ''}: ${variantNames}`
                                 });
 
-                                // Reset form state
-                                setShowQuickCreate(false);
+                                // Don't close the card - keep it open so user can see the message
+                                // Just reset selected values so they can create more if needed
                                 setSelectedAttributeValues({});
 
                                 // Refresh variants list
@@ -2178,7 +2178,31 @@ export default function ProductForm({ product, categories, stores, taxes, attrib
                                   data: error.data,
                                   status: error.status
                                 });
-                                const errorMessage = error.data?.message || error.message || 'Failed to create variants. Please try again.';
+
+                                // Extract user-friendly error message
+                                let errorMessage = 'Failed to create variants. Please try again.';
+
+                                if (error.data?.message) {
+                                  errorMessage = error.data.message;
+
+                                  // Handle specific database constraint errors
+                                  if (errorMessage.includes('duplicate key value violates unique constraint')) {
+                                    if (errorMessage.includes('products_sku_store_id_key')) {
+                                      errorMessage = 'A product with this SKU already exists in this store. Please use different attribute values or check existing products.';
+                                    } else if (errorMessage.includes('products_slug_store_id_key')) {
+                                      errorMessage = 'A product with this slug already exists in this store. Please use different attribute values.';
+                                    } else {
+                                      errorMessage = 'Duplicate product detected. A variant with these values may already exist.';
+                                    }
+                                  } else if (errorMessage.includes('violates foreign key constraint')) {
+                                    errorMessage = 'Invalid reference detected. Please ensure all product settings are valid.';
+                                  } else if (errorMessage.includes('violates check constraint')) {
+                                    errorMessage = 'Invalid data provided. Please check your input values.';
+                                  }
+                                } else if (error.message) {
+                                  errorMessage = error.message;
+                                }
+
                                 setFlashMessage({
                                   type: 'error',
                                   message: errorMessage
