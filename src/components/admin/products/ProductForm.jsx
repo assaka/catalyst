@@ -2068,6 +2068,7 @@ export default function ProductForm({ product, categories, stores, taxes, attrib
                                 // Create simple products for each combination
                                 const variantIds = [];
                                 const attributeValuesMap = {};
+                                let incrementCounter = 1;
 
                                 for (const combo of combinations) {
                                   const variantName = `${product.name} - ${Object.entries(combo)
@@ -2080,11 +2081,13 @@ export default function ProductForm({ product, categories, stores, taxes, attrib
                                     .map(([, val]) => val)
                                     .join('-')}`;
 
-                                  // Generate slug from variant name
-                                  const variantSlug = variantName
+                                  // Generate slug from variant name with increment to prevent duplicates
+                                  const baseSlug = variantName
                                     .toLowerCase()
                                     .replace(/[^a-z0-9]+/g, '-')
                                     .replace(/^-+|-+$/g, '');
+                                  const variantSlug = `${baseSlug}-${incrementCounter}`;
+                                  incrementCounter++;
 
                                   // Build attributes object with the selected values
                                   const variantAttributes = {};
@@ -2093,6 +2096,12 @@ export default function ProductForm({ product, categories, stores, taxes, attrib
                                     .forEach(([key, value]) => {
                                       variantAttributes[key] = value;
                                     });
+
+                                  console.log('🔍 Creating variant with attributes:', {
+                                    name: variantName,
+                                    sku: variantSku,
+                                    attributes: variantAttributes
+                                  });
 
                                   // Create simple product with attribute values
                                   const response = await apiClient.post('/products', {
@@ -2109,6 +2118,11 @@ export default function ProductForm({ product, categories, stores, taxes, attrib
                                   });
 
                                   if (response.success && response.data) {
+                                    console.log('✅ Variant created:', {
+                                      id: response.data.id,
+                                      name: response.data.name,
+                                      attributes: response.data.attributes
+                                    });
                                     variantIds.push(response.data.id);
                                     // Store attribute values (without _label keys)
                                     attributeValuesMap[response.data.id] = Object.fromEntries(
