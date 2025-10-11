@@ -577,6 +577,15 @@ export default function ProductDetail() {
   const handleAddToCart = async () => {
     if (!product) return;
 
+    // For configurable products, ensure a variant is selected
+    if (product.type === 'configurable' && !selectedVariant) {
+      setFlashMessage({
+        type: 'error',
+        message: 'Please select product options before adding to cart.'
+      });
+      return;
+    }
+
     try {
       setLoading(true);
 
@@ -590,12 +599,15 @@ export default function ProductDetail() {
         return;
       }
 
+      // For configurable products, use the selected variant
+      const productToAdd = displayProduct || product;
+
       // Get the correct base price using utility function
-      const priceInfo = getPriceDisplay(product);
+      const priceInfo = getPriceDisplay(productToAdd);
       const basePrice = priceInfo.displayPrice;
 
       const result = await cartService.addItem(
-        product.id,
+        productToAdd.id,
         quantity,
         basePrice,
         selectedOptions,
@@ -729,9 +741,14 @@ export default function ProductDetail() {
   }
 
   // Determine stock status based on product and store settings
+  // For configurable products, use the selected variant's stock
+  const productForStock = displayProduct || product;
   const trackStock = settings?.track_stock !== false; // Default to true if not explicitly false
-  const isInStock = trackStock ? (product?.infinite_stock || product?.stock_quantity > 0) : true;
-  const canAddToCart = !loading && isInStock && quantity > 0 && (!trackStock || product?.infinite_stock || product?.stock_quantity >= quantity);
+  const isInStock = trackStock ? (productForStock?.infinite_stock || productForStock?.stock_quantity > 0) : true;
+  const canAddToCart = !loading && isInStock && quantity > 0 && (!trackStock || productForStock?.infinite_stock || productForStock?.stock_quantity >= quantity);
+
+  // For configurable products without a selected variant, prevent adding to cart
+  const canAddToCartFinal = product?.type === 'configurable' && !selectedVariant ? false : canAddToCart;
 
 
   return (
@@ -783,7 +800,7 @@ export default function ProductDetail() {
               activeTab,
               isInWishlist,
               // currencySymbol removed - now handled by priceUtils context
-              canAddToCart: canAddToCart,
+              canAddToCart: canAddToCartFinal,
               setQuantity,
               setSelectedOptions,
               setActiveImageIndex: setActiveImage,

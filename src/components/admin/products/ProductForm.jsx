@@ -1909,7 +1909,7 @@ export default function ProductForm({ product, categories, stores, taxes, attrib
 
                     {/* Add Variant Buttons - Always shown for configurable products */}
                     <div className="border-2 border-dashed rounded-lg p-6 text-center space-y-4">
-                      {productVariants.length === 0 && (
+                      {variants.length === 0 && (
                         <p className="text-sm text-gray-600">
                           No variants assigned yet. Add simple products as variants to create your configurable product options.
                         </p>
