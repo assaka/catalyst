@@ -1167,13 +1167,20 @@ export default function ProductForm({ product, categories, stores, taxes, attrib
           </Card>
         </div>
 
-        {/* Categories Selection */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Categories</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div>
+        {/* Categories Selection - Collapsible */}
+        <Accordion type="single" collapsible className="w-full">
+          <AccordionItem value="categories">
+            <AccordionTrigger>
+              <div className="flex items-center space-x-2">
+                <span className="text-lg font-semibold">Categories</span>
+                {formData.category_ids.length > 0 && (
+                  <Badge variant="secondary" className="ml-2">
+                    {formData.category_ids.length} selected
+                  </Badge>
+                )}
+              </div>
+            </AccordionTrigger>
+            <AccordionContent className="pt-4 space-y-4">
               <Label htmlFor="categories">Product Categories</Label>
               
               {/* Selected Categories as Labels */}
@@ -1332,16 +1339,24 @@ export default function ProductForm({ product, categories, stores, taxes, attrib
                   </div>
                 )}
               </div>
-            </div>
-          </CardContent>
-        </Card>
+            </AccordionContent>
+          </AccordionItem>
+        </Accordion>
 
         {/* Product Images - Unified Storage System */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Product Images</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-6">
+        <Accordion type="single" collapsible className="w-full">
+          <AccordionItem value="product-images">
+            <AccordionTrigger>
+              <div className="flex items-center space-x-2">
+                <span className="text-lg font-semibold">Product Images</span>
+                {formData.images.length > 0 && (
+                  <Badge variant="secondary" className="ml-2">
+                    {formData.images.length} image{formData.images.length !== 1 ? 's' : ''}
+                  </Badge>
+                )}
+              </div>
+            </AccordionTrigger>
+            <AccordionContent className="pt-4 space-y-6">
             
             {/* Images Grid */}
             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
@@ -1409,12 +1424,23 @@ export default function ProductForm({ product, categories, stores, taxes, attrib
             <p className="text-xs text-gray-500">
               Images will be stored with hierarchical paths (e.g., /h/a/hamid.png) and saved instantly when uploaded.
             </p>
-          </CardContent>
-        </Card>
+            </AccordionContent>
+          </AccordionItem>
+        </Accordion>
 
-        <Card>
-          <CardHeader><CardTitle>Attributes</CardTitle></CardHeader>
-          <CardContent className="space-y-4">
+        <Accordion type="single" collapsible className="w-full">
+          <AccordionItem value="attributes">
+            <AccordionTrigger>
+              <div className="flex items-center space-x-2">
+                <span className="text-lg font-semibold">Attributes</span>
+                {selectedAttributes.length > 0 && (
+                  <Badge variant="secondary" className="ml-2">
+                    {selectedAttributes.length} attribute{selectedAttributes.length !== 1 ? 's' : ''}
+                  </Badge>
+                )}
+              </div>
+            </AccordionTrigger>
+            <AccordionContent className="pt-4 space-y-4">
             <div>
               <Label htmlFor="attribute_set_id">Attribute Set</Label>
               <Select
@@ -1794,8 +1820,9 @@ export default function ProductForm({ product, categories, stores, taxes, attrib
                 })()}
               </div>
             )}
-          </CardContent>
-        </Card>
+            </AccordionContent>
+          </AccordionItem>
+        </Accordion>
 
         {/* Configurable Product Settings - Only show when product type is configurable */}
         {formData.type === 'configurable' && (
@@ -2011,9 +2038,12 @@ export default function ProductForm({ product, categories, stores, taxes, attrib
           </Card>
         )}
 
-        <Card>
-          <CardHeader><CardTitle>Settings</CardTitle></CardHeader>
-          <CardContent className="space-y-4">
+        <Accordion type="single" collapsible className="w-full">
+          <AccordionItem value="settings">
+            <AccordionTrigger>
+              <span className="text-lg font-semibold">Settings</span>
+            </AccordionTrigger>
+            <AccordionContent className="pt-4 space-y-4">
             <div className="flex items-center space-x-2 p-3 border rounded-lg">
               <Switch
                 id="featured"
@@ -2065,8 +2095,9 @@ export default function ProductForm({ product, categories, stores, taxes, attrib
                 <p className="text-sm text-gray-500">Allow this product to be selected in coupon restrictions.</p>
               </div>
             </div>
-          </CardContent>
-        </Card>
+            </AccordionContent>
+          </AccordionItem>
+        </Accordion>
 
         <Accordion type="single" collapsible className="w-full">
           <AccordionItem value="seo">
