@@ -2145,15 +2145,30 @@ export default function ProductForm({ product, categories, stores, taxes, attrib
 
                                     console.log('Product creation response:', response);
 
-                                    if (response.success && response.data) {
-                                      console.log('Adding variant ID:', response.data.id);
-                                      variantIds.push(response.data.id);
+                                    // Handle both transformed (array) and raw (object) responses
+                                    // API client transforms /products endpoint responses into arrays
+                                    let createdProduct = null;
+
+                                    if (Array.isArray(response) && response.length > 0) {
+                                      // Transformed response: [{ id, name, ... }]
+                                      createdProduct = response[0];
+                                    } else if (response?.success && response?.data) {
+                                      // Raw response: { success: true, data: { id, name, ... } }
+                                      createdProduct = response.data;
+                                    } else if (response?.id) {
+                                      // Direct product object: { id, name, ... }
+                                      createdProduct = response;
+                                    }
+
+                                    if (createdProduct && createdProduct.id) {
+                                      console.log('Adding variant ID:', createdProduct.id);
+                                      variantIds.push(createdProduct.id);
                                       // Store attribute values (without _label keys)
-                                      attributeValuesMap[response.data.id] = Object.fromEntries(
+                                      attributeValuesMap[createdProduct.id] = Object.fromEntries(
                                         Object.entries(combo).filter(([key]) => !key.endsWith('_label'))
                                       );
                                     } else {
-                                      console.warn('Response not successful or missing data:', response);
+                                      console.warn('Could not extract product from response:', response);
                                     }
                                   } catch (productError) {
                                     console.error(`Failed to create variant "${variantName}":`, productError);
