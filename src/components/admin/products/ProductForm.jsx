@@ -10,7 +10,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import { Separator } from "@/components/ui/separator";
-import { X, Upload, Search, AlertTriangle, ImageIcon, Plus, Trash2, ChevronRight, ChevronDown, Loader2 } from "lucide-react";
+import { X, Upload, Search, AlertTriangle, ImageIcon, Plus, Trash2, ChevronRight, ChevronDown, Loader2, CheckCircle, AlertCircle } from "lucide-react";
 import FlashMessage from "@/components/storefront/FlashMessage";
 import apiClient from "@/api/client";
 import MediaBrowser from "@/components/admin/cms/MediaBrowser";
