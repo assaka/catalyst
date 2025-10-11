@@ -1,5 +1,6 @@
 
 import React, { useState, useEffect, useRef } from "react";
+import { createPortal } from "react-dom";
 import { useStoreSelection } from "@/contexts/StoreSelectionContext.jsx";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -266,7 +267,7 @@ function AttributeManagerModal({ attributes, onClose, onSave }) {
   };
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+    <div className="fixed inset-0 bg-black bg-opacity-50 z-[9999] flex items-center justify-center p-4">
       <div className="bg-white rounded-lg shadow-xl max-w-3xl w-full max-h-[80vh] flex flex-col">
         {/* Header */}
         <div className="px-6 py-4 border-b flex items-center justify-between">
@@ -420,6 +421,13 @@ export default function ProductForm({ product, categories, stores, taxes, attrib
   const [loadingVariants, setLoadingVariants] = useState(false);
   const [showAttributeManager, setShowAttributeManager] = useState(false);
   const [updatedAttributes, setUpdatedAttributes] = useState(passedAttributes || []);
+
+  // Sync updatedAttributes with passedAttributes when it changes
+  useEffect(() => {
+    if (passedAttributes && passedAttributes.length > 0) {
+      setUpdatedAttributes(passedAttributes);
+    }
+  }, [passedAttributes]);
 
   useEffect(() => {
     if (product) {
@@ -1991,7 +1999,10 @@ export default function ProductForm({ product, categories, stores, taxes, attrib
                     type="button"
                     variant="outline"
                     size="sm"
-                    onClick={() => setShowAttributeManager(true)}
+                    onClick={() => {
+                      console.log('Opening Attribute Manager', { updatedAttributes, passedAttributes });
+                      setShowAttributeManager(true);
+                    }}
                     className="flex items-center gap-2"
                   >
                     <Search className="w-4 h-4" />
@@ -2417,7 +2428,7 @@ export default function ProductForm({ product, categories, stores, taxes, attrib
       />
 
       {/* Variant Selector Modal */}
-      {showVariantSelector && (
+      {showVariantSelector && createPortal(
         <VariantSelectorModal
           availableVariants={availableVariants}
           configurableAttributes={formData.configurable_attributes}
@@ -2425,18 +2436,20 @@ export default function ProductForm({ product, categories, stores, taxes, attrib
           onAdd={handleAddVariants}
           onClose={() => setShowVariantSelector(false)}
           loading={loadingVariants}
-        />
+        />,
+        document.body
       )}
 
       {/* Attribute Manager Modal */}
-      {showAttributeManager && (
+      {showAttributeManager && createPortal(
         <AttributeManagerModal
           attributes={updatedAttributes}
           onClose={() => setShowAttributeManager(false)}
           onSave={(updated) => {
             setUpdatedAttributes(updated);
           }}
-        />
+        />,
+        document.body
       )}
     </div>
   );
