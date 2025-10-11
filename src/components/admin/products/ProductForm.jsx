@@ -220,164 +220,6 @@ function VariantSelectorModal({ availableVariants, configurableAttributes, passe
   );
 }
 
-// Attribute Manager Modal Component
-function AttributeManagerModal({ attributes, onClose, onSave }) {
-  const [searchTerm, setSearchTerm] = useState('');
-  const [localAttributes, setLocalAttributes] = useState(attributes || []);
-  const [saving, setSaving] = useState(false);
-  const [modifiedAttributes, setModifiedAttributes] = useState(new Set());
-
-  // Prevent body scroll when modal is open
-  useEffect(() => {
-    document.body.style.overflow = 'hidden';
-    return () => {
-      document.body.style.overflow = 'unset';
-    };
-  }, []);
-
-  const filteredAttributes = localAttributes.filter(attr => {
-    // Only show select and multiselect types (suitable for configuration)
-    const isSuitableType = attr.type === 'select' || attr.type === 'multiselect';
-    const matchesSearch = attr.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         attr.code.toLowerCase().includes(searchTerm.toLowerCase());
-    return isSuitableType && matchesSearch;
-  });
-
-  const handleToggleConfigurable = async (attributeId) => {
-    const updatedAttributes = localAttributes.map(attr => {
-      if (attr.id === attributeId) {
-        setModifiedAttributes(prev => new Set([...prev, attributeId]));
-        return { ...attr, is_configurable: !attr.is_configurable };
-      }
-      return attr;
-    });
-    setLocalAttributes(updatedAttributes);
-  };
-
-  const handleSave = async () => {
-    setSaving(true);
-    try {
-      // Update only modified attributes
-      for (const attrId of modifiedAttributes) {
-        const attr = localAttributes.find(a => a.id === attrId);
-        if (attr) {
-          await apiClient.put(`/attributes/${attr.id}`, {
-            is_configurable: attr.is_configurable
-          });
-        }
-      }
-      toast.success('Attributes updated successfully');
-      onSave(localAttributes);
-      onClose();
-    } catch (error) {
-      console.error('Error updating attributes:', error);
-      toast.error('Failed to update attributes');
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  return (
-    <div
-      className="fixed inset-0 bg-black bg-opacity-50 z-[9999] flex items-center justify-center p-4"
-      onClick={onClose}
-      onWheel={(e) => e.stopPropagation()}
-    >
-      <div
-        className="bg-white rounded-lg shadow-xl max-w-3xl w-full max-h-[80vh] flex flex-col"
-        onClick={(e) => e.stopPropagation()}
-        onWheel={(e) => e.stopPropagation()}
-      >
-        {/* Header */}
-        <div className="px-6 py-4 border-b flex items-center justify-between">
-          <div>
-            <h3 className="text-lg font-semibold">Manage Configurable Attributes</h3>
-            <p className="text-sm text-gray-500 mt-1">
-              Mark attributes that can be used for product variants (e.g., Size, Color)
-            </p>
-          </div>
-          <Button variant="ghost" size="icon" onClick={onClose}>
-            <X className="w-5 h-5" />
-          </Button>
-        </div>
-
-        {/* Search */}
-        <div className="px-6 py-3 border-b">
-          <Input
-            placeholder="Search attributes by name or code..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full"
-            autoFocus
-            onClick={(e) => e.stopPropagation()}
-          />
-        </div>
-
-        {/* Attribute List */}
-        <div className="flex-1 overflow-y-auto p-6">
-          {filteredAttributes.length > 0 ? (
-            <div className="space-y-2">
-              {filteredAttributes.map(attribute => (
-                <div
-                  key={attribute.id}
-                  className={`flex items-start justify-between p-4 border rounded-lg transition-colors ${
-                    attribute.is_configurable ? 'bg-green-50 border-green-200' : 'bg-white hover:bg-gray-50'
-                  }`}
-                >
-                  <div className="flex-1">
-                    <div className="flex items-center space-x-2">
-                      <span className="font-medium">{attribute.name}</span>
-                      <Badge variant="outline" className="text-xs">{attribute.code}</Badge>
-                      <Badge variant="secondary" className="text-xs">{attribute.type}</Badge>
-                      {attribute.is_configurable && (
-                        <Badge className="text-xs bg-green-600">Configurable</Badge>
-                      )}
-                    </div>
-                    {attribute.options && attribute.options.length > 0 && (
-                      <div className="text-xs text-gray-500 mt-1">
-                        Options: {attribute.options.slice(0, 5).map(o => o.label).join(', ')}
-                        {attribute.options.length > 5 && ` +${attribute.options.length - 5} more`}
-                      </div>
-                    )}
-                  </div>
-                  <Switch
-                    checked={attribute.is_configurable}
-                    onCheckedChange={() => handleToggleConfigurable(attribute.id)}
-                  />
-                </div>
-              ))}
-            </div>
-          ) : (
-            <div className="text-center py-12 text-gray-500">
-              <p>No attributes found</p>
-              {searchTerm && (
-                <p className="text-sm mt-1">Try a different search term</p>
-              )}
-            </div>
-          )}
-        </div>
-
-        {/* Footer */}
-        <div className="px-6 py-4 border-t bg-gray-50 flex items-center justify-between">
-          <div className="text-sm text-gray-600">
-            {modifiedAttributes.size > 0 && (
-              <span>{modifiedAttributes.size} attribute{modifiedAttributes.size !== 1 ? 's' : ''} modified</span>
-            )}
-          </div>
-          <div className="flex space-x-3">
-            <Button variant="outline" onClick={onClose} disabled={saving}>
-              Cancel
-            </Button>
-            <Button onClick={handleSave} disabled={saving || modifiedAttributes.size === 0}>
-              {saving ? 'Saving...' : 'Save Changes'}
-            </Button>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-}
-
 export default function ProductForm({ product, categories, stores, taxes, attributes: passedAttributes, attributeSets: passedAttributeSets, onSubmit, onCancel }) {
   const { selectedStore, getSelectedStoreId } = useStoreSelection();
   const [flashMessage, setFlashMessage] = useState(null);
@@ -441,6 +283,7 @@ export default function ProductForm({ product, categories, stores, taxes, attrib
   const [showVariantSelector, setShowVariantSelector] = useState(false);
   const [loadingVariants, setLoadingVariants] = useState(false);
   const [showAttributeManager, setShowAttributeManager] = useState(false);
+  const [attributeSearch, setAttributeSearch] = useState('');
   const [updatedAttributes, setUpdatedAttributes] = useState(passedAttributes || []);
 
   // Sync updatedAttributes with passedAttributes when it changes
@@ -2020,16 +1863,83 @@ export default function ProductForm({ product, categories, stores, taxes, attrib
                     type="button"
                     variant="outline"
                     size="sm"
-                    onClick={() => {
-                      console.log('Opening Attribute Manager', { updatedAttributes, passedAttributes });
-                      setShowAttributeManager(true);
-                    }}
+                    onClick={() => setShowAttributeManager(!showAttributeManager)}
                     className="flex items-center gap-2"
                   >
-                    <Search className="w-4 h-4" />
-                    Manage Attributes
+                    {showAttributeManager ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
+                    {showAttributeManager ? 'Hide' : 'Manage'} Attributes
                   </Button>
                 </div>
+
+                {/* Inline Attribute Manager */}
+                {showAttributeManager && (
+                  <div className="border rounded-lg p-4 bg-blue-50 space-y-3">
+                    <div className="flex items-center justify-between">
+                      <h4 className="font-medium text-sm">Mark attributes as configurable</h4>
+                      <Badge variant="secondary" className="text-xs">
+                        {updatedAttributes.filter(attr => attr.is_configurable).length} configurable
+                      </Badge>
+                    </div>
+
+                    <Input
+                      placeholder="Search attributes..."
+                      value={attributeSearch}
+                      onChange={(e) => setAttributeSearch(e.target.value)}
+                      className="w-full"
+                    />
+
+                    <div className="max-h-64 overflow-y-auto space-y-2">
+                      {updatedAttributes
+                        .filter(attr => {
+                          const isSuitableType = attr.type === 'select' || attr.type === 'multiselect';
+                          const matchesSearch = attributeSearch === '' ||
+                            attr.name.toLowerCase().includes(attributeSearch.toLowerCase()) ||
+                            attr.code.toLowerCase().includes(attributeSearch.toLowerCase());
+                          return isSuitableType && matchesSearch;
+                        })
+                        .map(attribute => (
+                          <div
+                            key={attribute.id}
+                            className={`flex items-center justify-between p-3 rounded-lg transition-colors ${
+                              attribute.is_configurable ? 'bg-green-100 border border-green-300' : 'bg-white border border-gray-200'
+                            }`}
+                          >
+                            <div className="flex-1">
+                              <div className="flex items-center gap-2">
+                                <span className="font-medium text-sm">{attribute.name}</span>
+                                <Badge variant="outline" className="text-xs">{attribute.code}</Badge>
+                                <Badge variant="secondary" className="text-xs">{attribute.type}</Badge>
+                              </div>
+                              {attribute.options && attribute.options.length > 0 && (
+                                <div className="text-xs text-gray-600 mt-1">
+                                  {attribute.options.slice(0, 3).map(o => o.label).join(', ')}
+                                  {attribute.options.length > 3 && ` +${attribute.options.length - 3} more`}
+                                </div>
+                              )}
+                            </div>
+                            <Switch
+                              checked={attribute.is_configurable}
+                              onCheckedChange={async (checked) => {
+                                try {
+                                  await apiClient.put(`/attributes/${attribute.id}`, {
+                                    is_configurable: checked
+                                  });
+                                  const updated = updatedAttributes.map(attr =>
+                                    attr.id === attribute.id ? { ...attr, is_configurable: checked } : attr
+                                  );
+                                  setUpdatedAttributes(updated);
+                                  toast.success(`${attribute.name} ${checked ? 'marked' : 'unmarked'} as configurable`);
+                                } catch (error) {
+                                  console.error('Error updating attribute:', error);
+                                  toast.error('Failed to update attribute');
+                                }
+                              }}
+                            />
+                          </div>
+                        ))}
+                    </div>
+                  </div>
+                )}
 
                 <div className="border rounded-lg p-4 bg-gray-50">
                   {updatedAttributes && updatedAttributes.filter(attr => attr.is_configurable).length > 0 ? (
@@ -2461,17 +2371,6 @@ export default function ProductForm({ product, categories, stores, taxes, attrib
         document.body
       )}
 
-      {/* Attribute Manager Modal */}
-      {showAttributeManager && createPortal(
-        <AttributeManagerModal
-          attributes={updatedAttributes}
-          onClose={() => setShowAttributeManager(false)}
-          onSave={(updated) => {
-            setUpdatedAttributes(updated);
-          }}
-        />,
-        document.body
-      )}
     </div>
   );
 }
