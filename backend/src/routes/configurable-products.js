@@ -418,22 +418,47 @@ router.get('/:id/public-variants', async (req, res) => {
       });
     }
 
-    // Get variants with their attribute values - only active and visible
+    // Check store's display_out_of_stock setting
+    const store = await Store.findByPk(parentProduct.Store.id, {
+      attributes: ['settings']
+    });
+    const displayOutOfStock = store?.settings?.display_out_of_stock !== false; // Default to true
+
+    // Build variant product WHERE clause
+    const variantWhere = {
+      status: 'active',
+      visibility: 'visible'
+    };
+
+    // If store doesn't display out-of-stock products, filter variants by stock
+    if (!displayOutOfStock) {
+      variantWhere[Op.or] = [
+        { infinite_stock: true },  // Products with infinite stock are always available
+        { manage_stock: false },   // Products not managing stock are always available
+        {
+          [Op.and]: [
+            { manage_stock: true },
+            { stock_quantity: { [Op.gt]: 0 } }  // In stock
+          ]
+        }
+      ];
+    }
+
+    // Get variants with their attribute values - only active and visible (and in-stock if required)
     const variants = await ProductVariant.findAll({
       where: { parent_product_id: req.params.id },
       include: [
         {
           model: Product,
           as: 'variant',
-          where: {
-            status: 'active',
-            visibility: 'visible'
-          },
+          where: variantWhere,
           required: true // Only return ProductVariants with valid products
         }
       ],
       order: [['sort_order', 'ASC']]
     });
+
+    console.log(`📦 Public variants for ${parentProduct.name}: Found ${variants.length} variants (display_out_of_stock=${displayOutOfStock})`);
 
     res.json({
       success: true,
