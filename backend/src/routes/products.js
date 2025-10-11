@@ -186,22 +186,7 @@ router.post('/',
 
     // Store ownership check is now handled by middleware
 
-    // Debug: Log attributes being sent
-    console.log('📦 Creating product with data:', {
-      name: req.body.name,
-      sku: req.body.sku,
-      attributes: req.body.attributes,
-      type: req.body.type
-    });
-
     const product = await Product.create(req.body);
-
-    // Debug: Log attributes after creation
-    console.log('✅ Product created:', {
-      id: product.id,
-      name: product.name,
-      attributes: product.attributes
-    });
 
     res.status(201).json({
       success: true,

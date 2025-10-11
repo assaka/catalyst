@@ -10,7 +10,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import { Separator } from "@/components/ui/separator";
-import { X, Upload, Search, AlertTriangle, ImageIcon, Plus, Trash2, ChevronRight, ChevronDown } from "lucide-react";
+import { X, Upload, Search, AlertTriangle, ImageIcon, Plus, Trash2, ChevronRight, ChevronDown, Loader2 } from "lucide-react";
 import FlashMessage from "@/components/storefront/FlashMessage";
 import apiClient from "@/api/client";
 import MediaBrowser from "@/components/admin/cms/MediaBrowser";
@@ -2069,8 +2069,10 @@ export default function ProductForm({ product, categories, stores, taxes, attrib
                                 const variantIds = [];
                                 const attributeValuesMap = {};
                                 let incrementCounter = 1;
+                                const totalVariants = combinations.length;
 
-                                for (const combo of combinations) {
+                                for (let i = 0; i < combinations.length; i++) {
+                                  const combo = combinations[i];
                                   const variantName = `${product.name} - ${Object.entries(combo)
                                     .filter(([key]) => key.endsWith('_label'))
                                     .map(([, val]) => val)
@@ -2097,12 +2099,6 @@ export default function ProductForm({ product, categories, stores, taxes, attrib
                                       variantAttributes[key] = value;
                                     });
 
-                                  console.log('🔍 Creating variant with attributes:', {
-                                    name: variantName,
-                                    sku: variantSku,
-                                    attributes: variantAttributes
-                                  });
-
                                   // Create simple product with attribute values
                                   const response = await apiClient.post('/products', {
                                     name: variantName,
@@ -2118,11 +2114,6 @@ export default function ProductForm({ product, categories, stores, taxes, attrib
                                   });
 
                                   if (response.success && response.data) {
-                                    console.log('✅ Variant created:', {
-                                      id: response.data.id,
-                                      name: response.data.name,
-                                      attributes: response.data.attributes
-                                    });
                                     variantIds.push(response.data.id);
                                     // Store attribute values (without _label keys)
                                     attributeValuesMap[response.data.id] = Object.fromEntries(
@@ -2133,18 +2124,46 @@ export default function ProductForm({ product, categories, stores, taxes, attrib
 
                                 // Add all variants to configurable product
                                 await handleAddVariants(variantIds, attributeValuesMap);
+
+                                // Show detailed success message
+                                const variantNames = combinations.map(combo =>
+                                  Object.entries(combo)
+                                    .filter(([key]) => key.endsWith('_label'))
+                                    .map(([, val]) => val)
+                                    .join(' / ')
+                                ).join(', ');
+
+                                toast.success(
+                                  `Successfully created ${variantIds.length} variant${variantIds.length !== 1 ? 's' : ''}: ${variantNames}`,
+                                  { duration: 5000 }
+                                );
+
+                                // Reset form state
                                 setShowQuickCreate(false);
-                                toast.success(`Created ${variantIds.length} variant products`);
+                                setSelectedAttributeValues({});
+
+                                // Refresh variants list
+                                await loadVariants();
                               } catch (error) {
                                 console.error('Quick create error:', error);
-                                toast.error('Failed to create variants');
+                                toast.error(
+                                  error.message || 'Failed to create variants. Please try again.',
+                                  { duration: 5000 }
+                                );
                               } finally {
                                 setQuickCreateLoading(false);
                               }
                             }}
                             disabled={quickCreateLoading}
                           >
-                            {quickCreateLoading ? 'Creating...' : 'Create Variants'}
+                            {quickCreateLoading ? (
+                              <>
+                                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                                Creating Variants...
+                              </>
+                            ) : (
+                              'Create Variants'
+                            )}
                           </Button>
                         </div>
                       </div>

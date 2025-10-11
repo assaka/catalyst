@@ -177,14 +177,6 @@ const Product = sequelize.define('Product', {
         product.slug = product.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
       }
 
-      // Debug: Log attributes before saving
-      console.log('🔧 beforeCreate hook - attributes:', {
-        sku: product.sku,
-        attributes: product.attributes,
-        hasAttributes: !!product.attributes,
-        attributesType: typeof product.attributes
-      });
-
       // Apply data validation using utility function
       const sanitizedData = sanitizeNumericFields(product, ['price', 'compare_price', 'cost_price', 'weight']);
       Object.assign(product, sanitizedData);
