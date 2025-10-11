@@ -327,7 +327,15 @@ export default function ProductDetail() {
     try {
       setLoading(true);
 
+      console.log('🔍 ProductDetail: Loading product data', {
+        storeId: store?.id,
+        storeName: store?.name,
+        slug,
+        storeCode
+      });
+
       if (!store?.id || !slug) {
+        console.warn('❌ ProductDetail: Missing store or slug', { store: store?.id, slug });
         setProduct(null);
         setLoading(false);
         return;
@@ -336,7 +344,9 @@ export default function ProductDetail() {
       const cacheKey = `product-detail-${slug}-${store.id}`;
 
       // First try to find by slug (skip cache for debugging stock)
+      console.log('🔎 ProductDetail: Calling API with', { store_id: store.id, slug, status: 'active' });
       let products = await StorefrontProduct.filter({ store_id: store.id, slug: slug, status: 'active' });
+      console.log('📦 ProductDetail: API returned', products?.length || 0, 'products');
       
       // If no product found by slug, try searching by SKU as fallback
       if (!products || products.length === 0) {
@@ -399,11 +409,11 @@ export default function ProductDetail() {
         ]);
       } else {
         // Global redirect handler already checked - just show 404
-        console.warn(`Product with slug '${slug}' not found.`);
+        console.warn(`❌ ProductDetail: Product with slug '${slug}' not found in store ${store.id}`);
         setProduct(null);
       }
     } catch (error) {
-      console.error("Failed to load product:", error);
+      console.error("❌ ProductDetail: Failed to load product:", error);
       setProduct(null);
     } finally {
       setLoading(false);
