@@ -1834,21 +1834,8 @@ export default function ProductForm({ product, categories, stores, taxes, attrib
                       </div>
                     ) : variants.length > 0 ? (
                       <div className="border rounded-lg overflow-hidden">
-                        <div className="bg-gray-50 px-4 py-2 border-b flex items-center justify-between">
+                        <div className="bg-gray-50 px-4 py-2 border-b">
                           <span className="font-medium text-sm">Assigned Variants ({variants.length})</span>
-                          <Button
-                            type="button"
-                            size="sm"
-                            variant="outline"
-                            onClick={() => {
-                              loadAvailableVariants();
-                              setShowVariantSelector(true);
-                            }}
-                            disabled={loadingVariants}
-                          >
-                            <Plus className="w-4 h-4 mr-1" />
-                            Add More Variants
-                          </Button>
                         </div>
                         <div className="divide-y max-h-96 overflow-y-auto">
                           {variants.map((variantRelation) => {
@@ -1918,13 +1905,18 @@ export default function ProductForm({ product, categories, stores, taxes, attrib
                       <div className="flex items-center justify-center gap-3">
                         <Button
                           type="button"
-                          variant="outline"
+                          variant={showVariantSelector ? "default" : "outline"}
                           onClick={() => {
                             console.log('Configurable attributes:', formData.configurable_attributes);
                             if (!showVariantSelector) {
+                              // Opening variant selector - close quick create and load variants
+                              setShowQuickCreate(false);
                               loadAvailableVariants();
+                              setShowVariantSelector(true);
+                            } else {
+                              // Closing variant selector
+                              setShowVariantSelector(false);
                             }
-                            setShowVariantSelector(!showVariantSelector);
                           }}
                           disabled={loadingVariants || !formData.configurable_attributes || formData.configurable_attributes.length === 0}
                         >
@@ -1933,9 +1925,17 @@ export default function ProductForm({ product, categories, stores, taxes, attrib
                         </Button>
                         <Button
                           type="button"
+                          variant={showQuickCreate ? "default" : "outline"}
                           onClick={() => {
                             console.log('Configurable attributes:', formData.configurable_attributes);
-                            setShowQuickCreate(!showQuickCreate);
+                            if (!showQuickCreate) {
+                              // Opening quick create - close variant selector
+                              setShowVariantSelector(false);
+                              setShowQuickCreate(true);
+                            } else {
+                              // Closing quick create
+                              setShowQuickCreate(false);
+                            }
                           }}
                           disabled={!formData.configurable_attributes || formData.configurable_attributes.length === 0}
                         >
