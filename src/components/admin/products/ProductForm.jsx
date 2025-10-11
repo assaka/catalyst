@@ -2144,7 +2144,7 @@ export default function ProductForm({ product, categories, stores, taxes, attrib
                                 setSelectedAttributeValues({});
 
                                 // Refresh variants list
-                                await loadVariants();
+                                await loadProductVariants();
                               } catch (error) {
                                 console.error('Quick create error:', error);
                                 console.error('Error details:', {

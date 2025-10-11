@@ -572,6 +572,27 @@ export const productConfig = {
       metadata: { hierarchical: true }
     },
 
+    configurable_product_selector: {
+      id: 'configurable_product_selector',
+      type: 'component',
+      component: 'ConfigurableProductSelector',
+      content: '',
+      className: 'configurable-product-selector mb-4',
+      parentClassName: '',
+      styles: {},
+      parentId: 'options_container',
+      position: { col: 1, row: 0 },
+      colSpan: {
+        default: 12
+      },
+      viewMode: ['default'],
+      metadata: {
+        hierarchical: true,
+        displayName: 'Configurable Product Selector',
+        component: 'ConfigurableProductSelector'
+      }
+    },
+
     custom_options: {
       id: 'custom_options',
       type: 'component',

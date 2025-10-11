@@ -28,6 +28,7 @@ import ProductTabsComponent from '@/components/storefront/ProductTabs';
 import CustomOptionsComponent from '@/components/storefront/CustomOptions';
 import TotalPriceDisplayComponent from '@/components/storefront/TotalPriceDisplay';
 import CmsBlockRendererComponent from '@/components/storefront/CmsBlockRenderer';
+import ConfigurableProductSelectorComponent from '@/components/storefront/ConfigurableProductSelector';
 
 // Import category and header slot components to register them
 import './CategorySlotComponents.jsx';
@@ -1114,6 +1115,67 @@ const CustomOptions = createSlotComponent({
 });
 
 /**
+ * ConfigurableProductSelector - Variant selector for configurable products
+ */
+const ConfigurableProductSelector = createSlotComponent({
+  name: 'ConfigurableProductSelector',
+
+  render: ({ slot, productContext, className, styles, context }) => {
+    if (context === 'editor') {
+      // Editor version - visual preview only
+      return (
+        <div className={className} style={styles}>
+          <div className="space-y-4">
+            <div className="space-y-3">
+              <label className="block text-sm font-medium text-gray-700">Size</label>
+              <div className="flex flex-wrap gap-2">
+                <button className="px-4 py-2 rounded-md border-2 border-gray-300 bg-white text-gray-700 hover:border-gray-400">
+                  Small
+                </button>
+                <button className="px-4 py-2 rounded-md border-2 border-blue-600 bg-blue-50 text-blue-700">
+                  Medium
+                </button>
+                <button className="px-4 py-2 rounded-md border-2 border-gray-300 bg-white text-gray-700 hover:border-gray-400">
+                  Large
+                </button>
+              </div>
+            </div>
+            <div className="space-y-3">
+              <label className="block text-sm font-medium text-gray-700">Color</label>
+              <div className="flex flex-wrap gap-2">
+                <button className="px-4 py-2 rounded-md border-2 border-gray-300 bg-white text-gray-700 hover:border-gray-400">
+                  Blue
+                </button>
+                <button className="px-4 py-2 rounded-md border-2 border-gray-300 bg-white text-gray-700 hover:border-gray-400">
+                  Red
+                </button>
+                <button className="px-4 py-2 rounded-md border-2 border-blue-600 bg-blue-50 text-blue-700">
+                  Green
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    // Storefront version - full functionality
+    const { product, store, settings, handleVariantChange } = productContext;
+
+    return (
+      <div className={className} style={styles}>
+        <ConfigurableProductSelectorComponent
+          product={product}
+          store={store}
+          settings={settings}
+          onVariantChange={handleVariantChange}
+        />
+      </div>
+    );
+  }
+});
+
+/**
  * Standalone ProductTabs wrapper for slot system
  */
 const ProductTabsStandalone = createSlotComponent({
@@ -1597,6 +1659,7 @@ registerSlotComponent('ProductBreadcrumbsSlot', ProductBreadcrumbs);
 registerSlotComponent('ProductInfoSlot', ProductInfo);
 registerSlotComponent('ProductOptionsSlot', ProductOptions);
 registerSlotComponent('CustomOptions', CustomOptions);
+registerSlotComponent('ConfigurableProductSelector', ConfigurableProductSelector);
 registerSlotComponent('ProductTabsSlot', ProductTabs);
 registerSlotComponent('ProductTabs', ProductTabsStandalone);
 registerSlotComponent('ProductRecommendationsSlot', ProductRecommendations);
@@ -1943,6 +2006,7 @@ export {
   ProductInfo,
   ProductOptions,
   CustomOptions,
+  ConfigurableProductSelector,
   ProductTabs,
   ProductRecommendations,
   TotalPriceDisplay,
