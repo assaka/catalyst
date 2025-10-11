@@ -1941,50 +1941,45 @@ export default function ProductForm({ product, categories, stores, taxes, attrib
                   </div>
                 )}
 
-                <div className="border rounded-lg p-4 bg-gray-50">
-                  {updatedAttributes && updatedAttributes.filter(attr => attr.is_configurable).length > 0 ? (
-                    <div className="space-y-2">
-                      {updatedAttributes.filter(attr => attr.is_configurable).map(attribute => (
-                        <label key={attribute.id} className="flex items-center space-x-3 p-2 hover:bg-white rounded cursor-pointer transition-colors">
-                          <input
-                            type="checkbox"
-                            checked={formData.configurable_attributes.includes(attribute.id)}
-                            onChange={(e) => {
-                              if (e.target.checked) {
-                                handleInputChange("configurable_attributes", [...formData.configurable_attributes, attribute.id]);
-                              } else {
+                {updatedAttributes && updatedAttributes.filter(attr => attr.is_configurable).length > 0 ? (
+                  <div className="border rounded-lg p-4 bg-gray-50 space-y-3">
+                    <p className="text-sm text-gray-600">
+                      Select which attributes will be used for this product's variants:
+                    </p>
+                    <div className="flex flex-wrap gap-2">
+                      {updatedAttributes.filter(attr => attr.is_configurable).map(attribute => {
+                        const isSelected = formData.configurable_attributes.includes(attribute.id);
+                        return (
+                          <Badge
+                            key={attribute.id}
+                            variant={isSelected ? "default" : "outline"}
+                            className="cursor-pointer px-3 py-1.5 text-sm hover:opacity-80 transition-opacity"
+                            onClick={() => {
+                              if (isSelected) {
                                 handleInputChange("configurable_attributes", formData.configurable_attributes.filter(id => id !== attribute.id));
+                              } else {
+                                handleInputChange("configurable_attributes", [...formData.configurable_attributes, attribute.id]);
                               }
                             }}
-                            className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                          />
-                          <div>
-                            <span className="font-medium text-sm">{attribute.name}</span>
-                            <span className="text-xs text-gray-500 ml-2">({attribute.code})</span>
-                            {attribute.options && attribute.options.length > 0 && (
-                              <div className="text-xs text-gray-400 mt-1">
-                                Options: {attribute.options.map(o => o.label).join(', ')}
-                              </div>
-                            )}
-                          </div>
-                        </label>
-                      ))}
+                          >
+                            {attribute.name}
+                            {isSelected && <X className="w-3 h-3 ml-1.5" />}
+                          </Badge>
+                        );
+                      })}
                     </div>
-                  ) : (
-                    <div className="text-center py-6">
-                      <p className="text-sm text-gray-500">No configurable attributes found.</p>
-                      <p className="text-xs text-gray-400 mt-1">
-                        Create attributes and mark them as "configurable" to use them here.
+                    {formData.configurable_attributes.length > 0 && (
+                      <p className="text-xs text-gray-500">
+                        {formData.configurable_attributes.length} attribute{formData.configurable_attributes.length !== 1 ? 's' : ''} selected
                       </p>
-                    </div>
-                  )}
-                </div>
-
-                {formData.configurable_attributes.length > 0 && (
-                  <div className="mt-2">
-                    <Badge variant="secondary" className="text-sm">
-                      {formData.configurable_attributes.length} attribute{formData.configurable_attributes.length !== 1 ? 's' : ''} selected
-                    </Badge>
+                    )}
+                  </div>
+                ) : (
+                  <div className="border rounded-lg p-4 bg-gray-50 text-center py-6">
+                    <p className="text-sm text-gray-500">No configurable attributes available.</p>
+                    <p className="text-xs text-gray-400 mt-1">
+                      Use "Manage Attributes" above to mark attributes as configurable.
+                    </p>
                   </div>
                 )}
               </div>
