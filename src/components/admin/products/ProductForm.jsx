@@ -2095,28 +2095,32 @@ export default function ProductForm({ product, categories, stores, taxes, attrib
                             type="button"
                             variant="outline"
                             onClick={() => {
+                              console.log('Configurable attributes:', formData.configurable_attributes);
                               if (!showVariantSelector) {
                                 loadAvailableVariants();
                               }
                               setShowVariantSelector(!showVariantSelector);
                             }}
-                            disabled={loadingVariants || formData.configurable_attributes.length === 0}
+                            disabled={loadingVariants || !formData.configurable_attributes || formData.configurable_attributes.length === 0}
                           >
                             <Plus className="w-4 h-4 mr-2" />
                             Add Existing Products
                           </Button>
                           <Button
                             type="button"
-                            onClick={() => setShowQuickCreate(!showQuickCreate)}
-                            disabled={formData.configurable_attributes.length === 0}
+                            onClick={() => {
+                              console.log('Configurable attributes:', formData.configurable_attributes);
+                              setShowQuickCreate(!showQuickCreate);
+                            }}
+                            disabled={!formData.configurable_attributes || formData.configurable_attributes.length === 0}
                           >
                             <Plus className="w-4 h-4 mr-2" />
                             Quick Create Variants
                           </Button>
                         </div>
-                        {formData.configurable_attributes.length === 0 && (
+                        {(!formData.configurable_attributes || formData.configurable_attributes.length === 0) && (
                           <p className="text-xs text-amber-600">
-                            Please select configurable attributes first (step 1 above)
+                            Please select configurable attributes first (step 1 above). Click the badge pills to select attributes.
                           </p>
                         )}
                       </div>
