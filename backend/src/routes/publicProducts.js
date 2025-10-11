@@ -19,6 +19,13 @@ router.get('/', async (req, res) => {
       status: 'active',  // Only show active products in public API
       visibility: 'visible'  // Only show visible products
     };
+
+    console.log('🔎 Building WHERE clause with:', {
+      store_id,
+      slug,
+      status: where.status,
+      visibility: where.visibility
+    });
     
     if (store_id) {
       where.store_id = store_id;
@@ -98,11 +105,21 @@ router.get('/', async (req, res) => {
     });
 
     console.log('✅ Public Products query result:', rows.length, 'products found');
-    console.log('📊 WHERE conditions:', where);
+    console.log('📊 Final WHERE conditions:', JSON.stringify(where, null, 2));
     if (rows.length > 0) {
-      console.log('🎯 Sample product:', JSON.stringify(rows[0], null, 2));
+      console.log('🎯 Sample product:', {
+        id: rows[0].id,
+        name: rows[0].name,
+        slug: rows[0].slug,
+        sku: rows[0].sku,
+        status: rows[0].status,
+        visibility: rows[0].visibility,
+        store_id: rows[0].store_id
+      });
+    } else {
+      console.log('❌ No products found with WHERE:', JSON.stringify(where, null, 2));
     }
-    
+
     // Return just the array for public requests (for compatibility)
     res.json(rows);
   } catch (error) {
