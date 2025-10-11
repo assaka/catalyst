@@ -27,6 +27,7 @@ import FlashMessage from "@/components/storefront/FlashMessage";
 import CustomOptions from "@/components/storefront/CustomOptions";
 import CmsBlockRenderer from "@/components/storefront/CmsBlockRenderer";
 import RecommendedProducts from "@/components/storefront/RecommendedProducts";
+import ConfigurableProductSelector from "@/components/storefront/ConfigurableProductSelector";
 
 // Slot system imports
 import slotConfigurationService from '@/services/slotConfigurationService';
@@ -128,6 +129,26 @@ export default function ProductDetail() {
   const [productLayoutConfig, setProductLayoutConfig] = useState(null);
   const [configLoaded, setConfigLoaded] = useState(false);
 
+  // State for configurable products
+  const [selectedVariant, setSelectedVariant] = useState(null);
+  const [displayProduct, setDisplayProduct] = useState(null);
+
+  // Update display product when product or selected variant changes
+  useEffect(() => {
+    if (product) {
+      // For configurable products, show variant if selected, otherwise show parent
+      if (product.type === 'configurable' && selectedVariant) {
+        setDisplayProduct(selectedVariant);
+      } else {
+        setDisplayProduct(product);
+      }
+    }
+  }, [product, selectedVariant]);
+
+  // Handler for variant selection
+  const handleVariantChange = (variant) => {
+    setSelectedVariant(variant);
+  };
 
   // Load user once
   useEffect(() => {
@@ -746,7 +767,8 @@ export default function ProductDetail() {
             viewMode="default"
             context="storefront"
             productData={{
-              product,
+              product: displayProduct || product,
+              baseProduct: product, // Keep reference to parent for configurable products
               productTabs,
               customOptions: customOptions,
               relatedProducts: [], // TODO: Load related products
@@ -770,7 +792,11 @@ export default function ProductDetail() {
               handleAddToCart: handleAddToCart,
               handleWishlistToggle: handleWishlistToggle,
               handleOptionChange: handleOptionChange,
-              customOptionsLabel: customOptionsLabel
+              customOptionsLabel: customOptionsLabel,
+              // Configurable product support
+              selectedVariant,
+              handleVariantChange,
+              ConfigurableProductSelector // Pass the component itself
             }}
             variableContext={{
               product,

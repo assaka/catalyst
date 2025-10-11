@@ -349,6 +349,63 @@ router.put('/:id/configurable-attributes',
   }
 );
 
+// @route   GET /api/configurable-products/:id/public-variants
+// @desc    Get all variants for a configurable product (public access)
+// @access  Public
+router.get('/:id/public-variants', async (req, res) => {
+  try {
+    const parentProduct = await Product.findByPk(req.params.id, {
+      include: [{
+        model: Store,
+        attributes: ['id', 'name']
+      }]
+    });
+
+    if (!parentProduct) {
+      return res.status(404).json({
+        success: false,
+        message: 'Product not found'
+      });
+    }
+
+    // Check if product is configurable
+    if (parentProduct.type !== 'configurable') {
+      return res.status(400).json({
+        success: false,
+        message: 'Product is not configurable'
+      });
+    }
+
+    // Get variants with their attribute values - only active and visible
+    const variants = await ProductVariant.findAll({
+      where: { parent_product_id: req.params.id },
+      include: [
+        {
+          model: Product,
+          as: 'variant',
+          where: {
+            status: 'active',
+            visibility: 'visible'
+          },
+          required: true // Only return ProductVariants with valid products
+        }
+      ],
+      order: [['sort_order', 'ASC']]
+    });
+
+    res.json({
+      success: true,
+      data: variants
+    });
+  } catch (error) {
+    console.error('Get public variants error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Server error'
+    });
+  }
+});
+
 // @route   GET /api/configurable-products/:id/available-variants
 // @desc    Get available simple products that can be added as variants
 // @access  Private
