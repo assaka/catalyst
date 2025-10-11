@@ -287,6 +287,7 @@ export default function ProductForm({ product, categories, stores, taxes, attrib
   const [updatedAttributes, setUpdatedAttributes] = useState(passedAttributes || []);
   const [showQuickCreate, setShowQuickCreate] = useState(false);
   const [quickCreateLoading, setQuickCreateLoading] = useState(false);
+  const [selectedAttributeValues, setSelectedAttributeValues] = useState({});
 
   // Sync updatedAttributes with passedAttributes when it changes
   useEffect(() => {
@@ -2131,39 +2132,71 @@ export default function ProductForm({ product, categories, stores, taxes, attrib
                       <div className="border rounded-lg p-4 bg-green-50 space-y-4">
                         <div className="flex items-center justify-between">
                           <h4 className="font-medium text-sm">Quick Create Variants</h4>
-                          <Button variant="ghost" size="sm" onClick={() => setShowQuickCreate(false)}>
+                          <Button variant="ghost" size="sm" onClick={() => {
+                            setShowQuickCreate(false);
+                            setSelectedAttributeValues({});
+                          }}>
                             <X className="w-4 h-4" />
                           </Button>
                         </div>
                         <p className="text-sm text-gray-600">
-                          This will automatically create simple products for all combinations of selected attribute values.
+                          Select attribute values to create. Products will be created for all combinations of selected values.
                         </p>
 
                         {updatedAttributes.filter(attr => formData.configurable_attributes.includes(attr.id)).map(attr => (
                           <div key={attr.id} className="space-y-2">
                             <Label className="text-sm font-medium">{attr.name}</Label>
                             <div className="flex flex-wrap gap-2">
-                              {attr.options && attr.options.map(opt => (
-                                <Badge
-                                  key={opt.value}
-                                  variant="secondary"
-                                  className="cursor-default px-3 py-1.5"
-                                >
-                                  {opt.label}
-                                </Badge>
-                              ))}
+                              {attr.options && attr.options.map(opt => {
+                                const isSelected = selectedAttributeValues[attr.code]?.includes(opt.value);
+                                return (
+                                  <Badge
+                                    key={opt.value}
+                                    variant={isSelected ? "default" : "outline"}
+                                    className="cursor-pointer px-3 py-1.5 hover:opacity-80 transition-opacity"
+                                    onClick={() => {
+                                      setSelectedAttributeValues(prev => {
+                                        const currentValues = prev[attr.code] || [];
+                                        if (isSelected) {
+                                          // Deselect
+                                          return {
+                                            ...prev,
+                                            [attr.code]: currentValues.filter(v => v !== opt.value)
+                                          };
+                                        } else {
+                                          // Select
+                                          return {
+                                            ...prev,
+                                            [attr.code]: [...currentValues, opt.value]
+                                          };
+                                        }
+                                      });
+                                    }}
+                                  >
+                                    {opt.label}
+                                    {isSelected && <X className="w-3 h-3 ml-1.5" />}
+                                  </Badge>
+                                );
+                              })}
                             </div>
+                            {selectedAttributeValues[attr.code]?.length > 0 && (
+                              <p className="text-xs text-gray-600">
+                                {selectedAttributeValues[attr.code].length} value{selectedAttributeValues[attr.code].length !== 1 ? 's' : ''} selected
+                              </p>
+                            )}
                           </div>
                         ))}
 
-                        <Alert>
-                          <AlertDescription className="text-sm">
-                            <strong>Note:</strong> This will create {updatedAttributes
-                              .filter(attr => formData.configurable_attributes.includes(attr.id))
-                              .reduce((total, attr) => total * (attr.options?.length || 1), 1)} simple products
-                            based on all possible combinations. Each product will be named: "{product?.name || 'Product'} - [Attribute Values]"
-                          </AlertDescription>
-                        </Alert>
+                        {Object.keys(selectedAttributeValues).some(key => selectedAttributeValues[key]?.length > 0) && (
+                          <Alert>
+                            <AlertDescription className="text-sm">
+                              <strong>Note:</strong> This will create {Object.entries(selectedAttributeValues)
+                                .filter(([, values]) => values && values.length > 0)
+                                .reduce((total, [, values]) => total * values.length, 1)} simple products
+                              based on selected combinations. Each product will be named: "{product?.name || 'Product'} - [Attribute Values]"
+                            </AlertDescription>
+                          </Alert>
+                        )}
 
                         <div className="flex items-center justify-end gap-3">
                           <Button
@@ -2178,10 +2211,16 @@ export default function ProductForm({ product, categories, stores, taxes, attrib
                             onClick={async () => {
                               setQuickCreateLoading(true);
                               try {
-                                // Generate all combinations
-                                const selectedAttrs = updatedAttributes.filter(attr =>
-                                  formData.configurable_attributes.includes(attr.id)
-                                );
+                                // Generate combinations from selected values only
+                                const selectedAttrs = updatedAttributes
+                                  .filter(attr => formData.configurable_attributes.includes(attr.id))
+                                  .filter(attr => selectedAttributeValues[attr.code]?.length > 0);
+
+                                if (selectedAttrs.length === 0) {
+                                  toast.error('Please select at least one attribute value');
+                                  setQuickCreateLoading(false);
+                                  return;
+                                }
 
                                 const combinations = [];
                                 const generateCombinations = (index, current) => {
@@ -2190,15 +2229,17 @@ export default function ProductForm({ product, categories, stores, taxes, attrib
                                     return;
                                   }
                                   const attr = selectedAttrs[index];
-                                  if (attr.options && attr.options.length > 0) {
-                                    attr.options.forEach(opt => {
+                                  const selectedValues = selectedAttributeValues[attr.code] || [];
+                                  selectedValues.forEach(value => {
+                                    const option = attr.options.find(o => o.value === value);
+                                    if (option) {
                                       generateCombinations(index + 1, {
                                         ...current,
-                                        [attr.code]: opt.value,
-                                        [`${attr.code}_label`]: opt.label
+                                        [attr.code]: option.value,
+                                        [`${attr.code}_label`]: option.label
                                       });
-                                    });
-                                  }
+                                    }
+                                  });
                                 };
                                 generateCombinations(0, {});
 
@@ -2259,7 +2300,7 @@ export default function ProductForm({ product, categories, stores, taxes, attrib
 
                     {/* Inline Variant Selector */}
                     {showVariantSelector && (
-                      <div className="border rounded-lg p-4 bg-blue-50 space-y-4">
+                      <div className="border rounded-lg p-4 bg-green-50 space-y-4">
                         <div className="flex items-center justify-between">
                           <h4 className="font-medium text-sm">Add Existing Products as Variants</h4>
                           <Button variant="ghost" size="sm" onClick={() => setShowVariantSelector(false)}>
