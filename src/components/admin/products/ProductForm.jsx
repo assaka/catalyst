@@ -2134,10 +2134,10 @@ export default function ProductForm({ product, categories, stores, taxes, attrib
                                     .join(' / ')
                                 ).join(', ');
 
-                                toast.success(
-                                  `Successfully created ${variantIds.length} variant${variantIds.length !== 1 ? 's' : ''}: ${variantNames}`,
-                                  { duration: 5000 }
-                                );
+                                setFlashMessage({
+                                  type: 'success',
+                                  message: `Successfully created ${variantIds.length} variant${variantIds.length !== 1 ? 's' : ''}: ${variantNames}`
+                                });
 
                                 // Reset form state
                                 setShowQuickCreate(false);
@@ -2153,10 +2153,10 @@ export default function ProductForm({ product, categories, stores, taxes, attrib
                                   status: error.status
                                 });
                                 const errorMessage = error.data?.message || error.message || 'Failed to create variants. Please try again.';
-                                toast.error(
-                                  errorMessage,
-                                  { duration: 7000 }
-                                );
+                                setFlashMessage({
+                                  type: 'error',
+                                  message: errorMessage
+                                });
                               } finally{
                                 setQuickCreateLoading(false);
                               }
