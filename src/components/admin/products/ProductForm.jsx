@@ -227,6 +227,14 @@ function AttributeManagerModal({ attributes, onClose, onSave }) {
   const [saving, setSaving] = useState(false);
   const [modifiedAttributes, setModifiedAttributes] = useState(new Set());
 
+  // Prevent body scroll when modal is open
+  useEffect(() => {
+    document.body.style.overflow = 'hidden';
+    return () => {
+      document.body.style.overflow = 'unset';
+    };
+  }, []);
+
   const filteredAttributes = localAttributes.filter(attr =>
     attr.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
     attr.code.toLowerCase().includes(searchTerm.toLowerCase())
@@ -267,8 +275,16 @@ function AttributeManagerModal({ attributes, onClose, onSave }) {
   };
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 z-[9999] flex items-center justify-center p-4">
-      <div className="bg-white rounded-lg shadow-xl max-w-3xl w-full max-h-[80vh] flex flex-col">
+    <div
+      className="fixed inset-0 bg-black bg-opacity-50 z-[9999] flex items-center justify-center p-4"
+      onClick={onClose}
+      onWheel={(e) => e.stopPropagation()}
+    >
+      <div
+        className="bg-white rounded-lg shadow-xl max-w-3xl w-full max-h-[80vh] flex flex-col"
+        onClick={(e) => e.stopPropagation()}
+        onWheel={(e) => e.stopPropagation()}
+      >
         {/* Header */}
         <div className="px-6 py-4 border-b flex items-center justify-between">
           <div>
