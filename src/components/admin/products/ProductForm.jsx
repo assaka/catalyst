@@ -39,6 +39,186 @@ const retryApiCall = async (apiCall, maxRetries = 3, baseDelay = 1000) => {
   }
 };
 
+// Variant Selector Modal Component
+function VariantSelectorModal({ availableVariants, configurableAttributes, passedAttributes, onAdd, onClose, loading }) {
+  const [selectedVariants, setSelectedVariants] = useState([]);
+  const [attributeValueMap, setAttributeValueMap] = useState({});
+  const [searchTerm, setSearchTerm] = useState('');
+
+  // Filter variants by search term
+  const filteredVariants = availableVariants.filter(v =>
+    v.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    v.sku.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
+  const handleVariantToggle = (variantId) => {
+    setSelectedVariants(prev => {
+      if (prev.includes(variantId)) {
+        // Remove variant and its attribute values
+        const newMap = { ...attributeValueMap };
+        delete newMap[variantId];
+        setAttributeValueMap(newMap);
+        return prev.filter(id => id !== variantId);
+      } else {
+        return [...prev, variantId];
+      }
+    });
+  };
+
+  const handleAttributeValueChange = (variantId, attributeCode, value) => {
+    setAttributeValueMap(prev => ({
+      ...prev,
+      [variantId]: {
+        ...(prev[variantId] || {}),
+        [attributeCode]: value
+      }
+    }));
+  };
+
+  const handleSubmit = () => {
+    onAdd(selectedVariants, attributeValueMap);
+  };
+
+  // Get configurable attribute details
+  const configurableAttributeDetails = passedAttributes.filter(attr =>
+    configurableAttributes.includes(attr.id)
+  );
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+      <div className="bg-white rounded-lg shadow-xl max-w-4xl w-full max-h-[90vh] flex flex-col">
+        {/* Header */}
+        <div className="px-6 py-4 border-b flex items-center justify-between">
+          <h2 className="text-lg font-semibold">Add Variant Products</h2>
+          <button onClick={onClose} className="text-gray-500 hover:text-gray-700">
+            <X className="w-5 h-5" />
+          </button>
+        </div>
+
+        {/* Search */}
+        <div className="px-6 py-3 border-b">
+          <Input
+            placeholder="Search by name or SKU..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="w-full"
+          />
+        </div>
+
+        {/* Variant List */}
+        <div className="flex-1 overflow-y-auto p-6 space-y-4">
+          {filteredVariants.length === 0 ? (
+            <div className="text-center py-12 text-gray-500">
+              <p>No available variants found.</p>
+              <p className="text-sm mt-1">All simple products may already be assigned as variants.</p>
+            </div>
+          ) : (
+            filteredVariants.map(variant => {
+              const isSelected = selectedVariants.includes(variant.id);
+
+              return (
+                <div
+                  key={variant.id}
+                  className={`border rounded-lg p-4 transition-all ${
+                    isSelected ? 'border-blue-500 bg-blue-50' : 'border-gray-200'
+                  }`}
+                >
+                  <div className="flex items-start space-x-4">
+                    {/* Checkbox */}
+                    <input
+                      type="checkbox"
+                      checked={isSelected}
+                      onChange={() => handleVariantToggle(variant.id)}
+                      className="mt-1 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                    />
+
+                    {/* Image */}
+                    <img
+                      src={variant.images?.[0]?.url || 'https://placehold.co/60x60?text=No+Image'}
+                      alt={variant.name}
+                      className="w-16 h-16 object-cover rounded border"
+                    />
+
+                    {/* Info */}
+                    <div className="flex-1">
+                      <h4 className="font-medium">{variant.name}</h4>
+                      <p className="text-sm text-gray-500">SKU: {variant.sku}</p>
+                      <div className="flex items-center space-x-3 mt-2">
+                        <Badge variant="secondary" className="text-xs">
+                          ${variant.price}
+                        </Badge>
+                        <Badge variant={variant.stock_quantity > 0 ? "default" : "destructive"} className="text-xs">
+                          Stock: {variant.infinite_stock ? '∞' : variant.stock_quantity}
+                        </Badge>
+                      </div>
+
+                      {/* Attribute Value Inputs */}
+                      {isSelected && configurableAttributeDetails.length > 0 && (
+                        <div className="mt-4 space-y-3 bg-white p-3 rounded border">
+                          <p className="text-xs font-medium text-gray-700">Set attribute values for this variant:</p>
+                          {configurableAttributeDetails.map(attr => (
+                            <div key={attr.id} className="space-y-1">
+                              <Label className="text-xs">{attr.name}</Label>
+                              {attr.options && attr.options.length > 0 ? (
+                                <Select
+                                  value={attributeValueMap[variant.id]?.[attr.code] || ''}
+                                  onValueChange={(val) => handleAttributeValueChange(variant.id, attr.code, val)}
+                                >
+                                  <SelectTrigger className="h-8 text-xs">
+                                    <SelectValue placeholder={`Select ${attr.name}`} />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    {attr.options.map(opt => (
+                                      <SelectItem key={opt.value} value={opt.value} className="text-xs">
+                                        {opt.label}
+                                      </SelectItem>
+                                    ))}
+                                  </SelectContent>
+                                </Select>
+                              ) : (
+                                <Input
+                                  type="text"
+                                  value={attributeValueMap[variant.id]?.[attr.code] || ''}
+                                  onChange={(e) => handleAttributeValueChange(variant.id, attr.code, e.target.value)}
+                                  placeholder={`Enter ${attr.name}`}
+                                  className="h-8 text-xs"
+                                />
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              );
+            })
+          )}
+        </div>
+
+        {/* Footer */}
+        <div className="px-6 py-4 border-t flex items-center justify-between bg-gray-50">
+          <span className="text-sm text-gray-600">
+            {selectedVariants.length} variant(s) selected
+          </span>
+          <div className="flex space-x-3">
+            <Button type="button" variant="outline" onClick={onClose}>
+              Cancel
+            </Button>
+            <Button
+              type="button"
+              onClick={handleSubmit}
+              disabled={loading || selectedVariants.length === 0}
+            >
+              {loading ? 'Adding...' : `Add ${selectedVariants.length} Variant(s)`}
+            </Button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function ProductForm({ product, categories, stores, taxes, attributes: passedAttributes, attributeSets: passedAttributeSets, onSubmit, onCancel }) {
   const { selectedStore, getSelectedStoreId } = useStoreSelection();
   const [flashMessage, setFlashMessage] = useState(null);
@@ -92,9 +272,15 @@ export default function ProductForm({ product, categories, stores, taxes, attrib
   const [uploadingImage, setUploadingImage] = useState(false);
   const [showMediaBrowser, setShowMediaBrowser] = useState(false);
   const [currentAttributeCode, setCurrentAttributeCode] = useState(null);
-  
+
   // Simplified product image system state
   const imageInputRef = useRef(null);
+
+  // Configurable product variant management state
+  const [variants, setVariants] = useState([]);
+  const [availableVariants, setAvailableVariants] = useState([]);
+  const [showVariantSelector, setShowVariantSelector] = useState(false);
+  const [loadingVariants, setLoadingVariants] = useState(false);
 
   useEffect(() => {
     if (product) {
@@ -437,39 +623,130 @@ export default function ProductForm({ product, categories, stores, taxes, attrib
 
   const saveProductImages = async (imagesArray) => {
     if (!product || !product.id) return;
-    
+
     try {
       const storeId = getSelectedStoreId();
       // Only send the images field for instant save
       const updateData = {
         images: imagesArray
       };
-      
+
       console.log('🔄 Auto-saving product images:', {
         productId: product.id,
         storeId,
         imagesCount: imagesArray.length,
         images: imagesArray
       });
-      
+
       const response = await apiClient.put(`/products/${product.id}`, updateData);
-      
+
       console.log('✅ Auto-save response:', response);
-      
+
       if (!response.success) {
         throw new Error('Failed to save product images');
       }
-      
+
       // Update local state with saved data to ensure consistency
       if (response.data && response.data.images) {
-        setFormData(prev => ({ 
-          ...prev, 
+        setFormData(prev => ({
+          ...prev,
           images: response.data.images
         }));
       }
     } catch (error) {
       console.error('❌ Error saving product image:', error);
       throw error;
+    }
+  };
+
+  // Load existing variants for configurable products
+  useEffect(() => {
+    if (product && product.id && formData.type === 'configurable') {
+      loadProductVariants();
+    }
+  }, [product?.id, formData.type]);
+
+  const loadProductVariants = async () => {
+    if (!product || !product.id) return;
+
+    setLoadingVariants(true);
+    try {
+      const response = await apiClient.get(`/configurable-products/${product.id}/variants`);
+
+      if (response.success && response.data) {
+        setVariants(response.data);
+      }
+    } catch (error) {
+      console.error('Error loading variants:', error);
+      toast.error('Failed to load product variants');
+    } finally {
+      setLoadingVariants(false);
+    }
+  };
+
+  const loadAvailableVariants = async () => {
+    if (!product || !product.id) return;
+
+    setLoadingVariants(true);
+    try {
+      const response = await apiClient.get(`/configurable-products/${product.id}/available-variants`);
+
+      if (response.success && response.data) {
+        setAvailableVariants(response.data);
+      }
+    } catch (error) {
+      console.error('Error loading available variants:', error);
+      toast.error('Failed to load available variants');
+    } finally {
+      setLoadingVariants(false);
+    }
+  };
+
+  const handleAddVariants = async (selectedVariantIds, attributeValuesMap) => {
+    if (!product || !product.id || selectedVariantIds.length === 0) return;
+
+    setLoadingVariants(true);
+    try {
+      const response = await apiClient.post(`/configurable-products/${product.id}/variants`, {
+        variant_ids: selectedVariantIds,
+        attribute_values_map: attributeValuesMap
+      });
+
+      if (response.success) {
+        toast.success(`${selectedVariantIds.length} variant(s) added successfully`);
+        await loadProductVariants();
+        setShowVariantSelector(false);
+      } else {
+        toast.error(response.message || 'Failed to add variants');
+      }
+    } catch (error) {
+      console.error('Error adding variants:', error);
+      toast.error('Failed to add variants');
+    } finally {
+      setLoadingVariants(false);
+    }
+  };
+
+  const handleRemoveVariant = async (variantId) => {
+    if (!product || !product.id) return;
+
+    if (!confirm('Are you sure you want to remove this variant?')) return;
+
+    setLoadingVariants(true);
+    try {
+      const response = await apiClient.delete(`/configurable-products/${product.id}/variants/${variantId}`);
+
+      if (response.success) {
+        toast.success('Variant removed successfully');
+        await loadProductVariants();
+      } else {
+        toast.error(response.message || 'Failed to remove variant');
+      }
+    } catch (error) {
+      console.error('Error removing variant:', error);
+      toast.error('Failed to remove variant');
+    } finally {
+      setLoadingVariants(false);
     }
   };
 
@@ -685,35 +962,44 @@ export default function ProductForm({ product, categories, stores, taxes, attrib
           <Card>
             <CardHeader><CardTitle>Pricing & Details</CardTitle></CardHeader>
             <CardContent className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <Label htmlFor="price">Price *</Label>
-                  <Input
-                    id="price"
-                    type="number"
-                    step="0.01"
-                    value={formData.price}
-                    onChange={(e) => handleInputChange("price", e.target.value)}
-                    required
-                  />
+              {formData.type === 'configurable' ? (
+                <Alert>
+                  <AlertDescription className="text-sm">
+                    <strong>Configurable Product Pricing:</strong> Price and stock are determined by the selected variant.
+                    Assign variants in the "Configurable Product Settings" section below.
+                  </AlertDescription>
+                </Alert>
+              ) : (
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <Label htmlFor="price">Price *</Label>
+                    <Input
+                      id="price"
+                      type="number"
+                      step="0.01"
+                      value={formData.price}
+                      onChange={(e) => handleInputChange("price", e.target.value)}
+                      required
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="compare_price">Sale Price</Label>
+                    <Input
+                      id="compare_price"
+                      type="number"
+                      step="0.01"
+                      value={formData.compare_price}
+                      onChange={(e) => handleInputChange("compare_price", e.target.value)}
+                      className={formData.compare_price && parseFloat(formData.compare_price) >= parseFloat(formData.price) ? "border-red-500" : ""}
+                    />
+                    {formData.compare_price && parseFloat(formData.compare_price) >= parseFloat(formData.price) ? (
+                      <p className="text-xs text-red-600 mt-1">⚠️ Sale price should be lower than regular price (${formData.price})</p>
+                    ) : (
+                      <p className="text-xs text-gray-500 mt-1">Leave empty if no sale price</p>
+                    )}
+                  </div>
                 </div>
-                <div>
-                  <Label htmlFor="compare_price">Sale Price</Label>
-                  <Input
-                    id="compare_price"
-                    type="number"
-                    step="0.01"
-                    value={formData.compare_price}
-                    onChange={(e) => handleInputChange("compare_price", e.target.value)}
-                    className={formData.compare_price && parseFloat(formData.compare_price) >= parseFloat(formData.price) ? "border-red-500" : ""}
-                  />
-                  {formData.compare_price && parseFloat(formData.compare_price) >= parseFloat(formData.price) ? (
-                    <p className="text-xs text-red-600 mt-1">⚠️ Sale price should be lower than regular price (${formData.price})</p>
-                  ) : (
-                    <p className="text-xs text-gray-500 mt-1">Leave empty if no sale price</p>
-                  )}
-                </div>
-              </div>
+              )}
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <Label htmlFor="cost_price">Cost Price</Label>
@@ -804,75 +1090,79 @@ export default function ProductForm({ product, categories, stores, taxes, attrib
                 </p>
               </div>
 
-              <Separator className="my-4" />
-              
-              {/* Compact Inventory & Stock Section */}
-              <div className="space-y-4">
-                <h4 className="font-medium">Inventory & Stock</h4>
-                
-                <div className="grid grid-cols-2 gap-3">
-                  <div className="flex items-center space-x-2">
-                    <Switch
-                      id="manage_stock"
-                      checked={formData.manage_stock}
-                      onCheckedChange={(checked) => handleInputChange("manage_stock", checked)}
-                    />
-                    <Label htmlFor="manage_stock" className="text-sm cursor-pointer">Manage Stock</Label>
-                  </div>
-                  
-                  <div className="flex items-center space-x-2">
-                    <Switch
-                      id="infinite_stock"
-                      checked={formData.infinite_stock}
-                      onCheckedChange={(checked) => handleInputChange("infinite_stock", checked)}
-                      disabled={!formData.manage_stock}
-                    />
-                    <Label htmlFor="infinite_stock" className={`text-sm cursor-pointer ${!formData.manage_stock ? 'text-gray-400' : ''}`}>
-                      Infinite Stock
-                    </Label>
-                  </div>
-                </div>
+              {formData.type !== 'configurable' && (
+                <>
+                  <Separator className="my-4" />
 
-                {formData.manage_stock && !formData.infinite_stock && (
-                  <>
+                  {/* Compact Inventory & Stock Section */}
+                  <div className="space-y-4">
+                    <h4 className="font-medium">Inventory & Stock</h4>
+
                     <div className="grid grid-cols-2 gap-3">
-                      <div>
-                        <Label htmlFor="stock_quantity" className="text-sm">Stock Quantity</Label>
-                        <Input
-                          id="stock_quantity"
-                          type="number"
-                          value={formData.stock_quantity}
-                          onChange={(e) => handleInputChange("stock_quantity", e.target.value)}
-                          min="0"
-                          className="h-9"
+                      <div className="flex items-center space-x-2">
+                        <Switch
+                          id="manage_stock"
+                          checked={formData.manage_stock}
+                          onCheckedChange={(checked) => handleInputChange("manage_stock", checked)}
                         />
+                        <Label htmlFor="manage_stock" className="text-sm cursor-pointer">Manage Stock</Label>
                       </div>
-                      <div>
-                        <Label htmlFor="low_stock_threshold" className="text-sm">Low Stock Alert</Label>
-                        <Input
-                          id="low_stock_threshold"
-                          type="number"
-                          value={formData.low_stock_threshold}
-                          onChange={(e) => handleInputChange("low_stock_threshold", e.target.value)}
-                          min="0"
-                          className="h-9"
+
+                      <div className="flex items-center space-x-2">
+                        <Switch
+                          id="infinite_stock"
+                          checked={formData.infinite_stock}
+                          onCheckedChange={(checked) => handleInputChange("infinite_stock", checked)}
+                          disabled={!formData.manage_stock}
                         />
+                        <Label htmlFor="infinite_stock" className={`text-sm cursor-pointer ${!formData.manage_stock ? 'text-gray-400' : ''}`}>
+                          Infinite Stock
+                        </Label>
                       </div>
                     </div>
-                    
-                    <div className="flex items-center space-x-2">
-                      <Switch
-                        id="allow_backorders"
-                        checked={formData.allow_backorders}
-                        onCheckedChange={(checked) => handleInputChange("allow_backorders", checked)}
-                      />
-                      <Label htmlFor="allow_backorders" className="text-sm cursor-pointer">
-                        Allow Backorders
-                      </Label>
-                    </div>
-                  </>
-                )}
-              </div>
+
+                    {formData.manage_stock && !formData.infinite_stock && (
+                      <>
+                        <div className="grid grid-cols-2 gap-3">
+                          <div>
+                            <Label htmlFor="stock_quantity" className="text-sm">Stock Quantity</Label>
+                            <Input
+                              id="stock_quantity"
+                              type="number"
+                              value={formData.stock_quantity}
+                              onChange={(e) => handleInputChange("stock_quantity", e.target.value)}
+                              min="0"
+                              className="h-9"
+                            />
+                          </div>
+                          <div>
+                            <Label htmlFor="low_stock_threshold" className="text-sm">Low Stock Alert</Label>
+                            <Input
+                              id="low_stock_threshold"
+                              type="number"
+                              value={formData.low_stock_threshold}
+                              onChange={(e) => handleInputChange("low_stock_threshold", e.target.value)}
+                              min="0"
+                              className="h-9"
+                            />
+                          </div>
+                        </div>
+
+                        <div className="flex items-center space-x-2">
+                          <Switch
+                            id="allow_backorders"
+                            checked={formData.allow_backorders}
+                            onCheckedChange={(checked) => handleInputChange("allow_backorders", checked)}
+                          />
+                          <Label htmlFor="allow_backorders" className="text-sm cursor-pointer">
+                            Allow Backorders
+                          </Label>
+                        </div>
+                      </>
+                    )}
+                  </div>
+                </>
+              )}
             </CardContent>
           </Card>
         </div>
@@ -1597,20 +1887,123 @@ export default function ProductForm({ product, categories, stores, taxes, attrib
                     </AlertDescription>
                   </Alert>
                 ) : (
-                  <div className="border rounded-lg p-4">
-                    <p className="text-sm text-gray-600 mb-3">
-                      Variant management interface will appear here after the product is saved.
-                      You'll be able to browse available simple products and assign them as variants.
-                    </p>
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      className="text-sm"
-                      disabled
-                    >
-                      Manage Variants (Coming Soon)
-                    </Button>
+                  <div className="space-y-4">
+                    {/* Current Variants List */}
+                    {loadingVariants ? (
+                      <div className="text-center py-8">
+                        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
+                        <p className="text-sm text-gray-500 mt-2">Loading variants...</p>
+                      </div>
+                    ) : variants.length > 0 ? (
+                      <div className="border rounded-lg overflow-hidden">
+                        <div className="bg-gray-50 px-4 py-2 border-b flex items-center justify-between">
+                          <span className="font-medium text-sm">Assigned Variants ({variants.length})</span>
+                          <Button
+                            type="button"
+                            size="sm"
+                            variant="outline"
+                            onClick={() => {
+                              loadAvailableVariants();
+                              setShowVariantSelector(true);
+                            }}
+                            disabled={loadingVariants}
+                          >
+                            <Plus className="w-4 h-4 mr-1" />
+                            Add More Variants
+                          </Button>
+                        </div>
+                        <div className="divide-y max-h-96 overflow-y-auto">
+                          {variants.map((variantRelation) => {
+                            const variant = variantRelation.variant;
+                            if (!variant) return null;
+
+                            return (
+                              <div key={variantRelation.id} className="p-4 flex items-start space-x-4 hover:bg-gray-50">
+                                {/* Variant Image */}
+                                <div className="flex-shrink-0">
+                                  <img
+                                    src={variant.images?.[0]?.url || 'https://placehold.co/80x80?text=No+Image'}
+                                    alt={variant.name}
+                                    className="w-20 h-20 object-cover rounded border"
+                                  />
+                                </div>
+
+                                {/* Variant Info */}
+                                <div className="flex-1 min-w-0">
+                                  <h4 className="font-medium text-sm truncate">{variant.name}</h4>
+                                  <p className="text-xs text-gray-500 mt-1">SKU: {variant.sku}</p>
+                                  <div className="flex items-center space-x-4 mt-2">
+                                    <Badge variant="secondary" className="text-xs">
+                                      Price: ${variant.price}
+                                    </Badge>
+                                    <Badge variant={variant.stock_quantity > 0 ? "default" : "destructive"} className="text-xs">
+                                      Stock: {variant.infinite_stock ? '∞' : variant.stock_quantity}
+                                    </Badge>
+                                  </div>
+
+                                  {/* Attribute Values */}
+                                  {variantRelation.attribute_values && Object.keys(variantRelation.attribute_values).length > 0 && (
+                                    <div className="mt-2 flex flex-wrap gap-1">
+                                      {Object.entries(variantRelation.attribute_values).map(([key, value]) => (
+                                        <Badge key={key} variant="outline" className="text-xs">
+                                          {key}: {value}
+                                        </Badge>
+                                      ))}
+                                    </div>
+                                  )}
+                                </div>
+
+                                {/* Remove Button */}
+                                <Button
+                                  type="button"
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => handleRemoveVariant(variant.id)}
+                                  className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                                >
+                                  <Trash2 className="w-4 h-4" />
+                                </Button>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="border-2 border-dashed rounded-lg p-8 text-center">
+                        <p className="text-sm text-gray-600 mb-4">
+                          No variants assigned yet. Add simple products as variants to create your configurable product options.
+                        </p>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          onClick={() => {
+                            loadAvailableVariants();
+                            setShowVariantSelector(true);
+                          }}
+                          disabled={loadingVariants || formData.configurable_attributes.length === 0}
+                        >
+                          <Plus className="w-4 h-4 mr-2" />
+                          Add Variants
+                        </Button>
+                        {formData.configurable_attributes.length === 0 && (
+                          <p className="text-xs text-amber-600 mt-2">
+                            Please select configurable attributes first (step 1 above)
+                          </p>
+                        )}
+                      </div>
+                    )}
+
+                    {/* Variant Selector Modal Placeholder */}
+                    {showVariantSelector && (
+                      <VariantSelectorModal
+                        availableVariants={availableVariants}
+                        configurableAttributes={formData.configurable_attributes}
+                        passedAttributes={passedAttributes}
+                        onAdd={handleAddVariants}
+                        onClose={() => setShowVariantSelector(false)}
+                        loading={loadingVariants}
+                      />
+                    )}
                   </div>
                 )}
               </div>
