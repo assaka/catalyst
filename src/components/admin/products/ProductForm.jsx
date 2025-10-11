@@ -546,15 +546,16 @@ export default function ProductForm({ product, categories, stores, taxes, attrib
       });
 
       if (response.success) {
-        toast.success(`${selectedVariantIds.length} variant(s) added successfully`);
         await loadProductVariants();
         setShowVariantSelector(false);
+        // Don't show toast here - let the calling function handle it
       } else {
-        toast.error(response.message || 'Failed to add variants');
+        throw new Error(response.message || 'Failed to add variants');
       }
     } catch (error) {
       console.error('Error adding variants:', error);
-      toast.error('Failed to add variants');
+      // Re-throw with the error message from API
+      throw error;
     } finally {
       setLoadingVariants(false);
     }

@@ -68,6 +68,48 @@ router.post('/:id/variants',
         });
       }
 
+      // Get all existing variants for this configurable product
+      const existingVariants = await ProductVariant.findAll({
+        where: { parent_product_id: parentProduct.id }
+      });
+
+      // Check for duplicate attribute combinations
+      const duplicates = [];
+      for (const variantId of variant_ids) {
+        const newAttributeValues = attribute_values_map?.[variantId] || {};
+
+        // Check if this exact attribute combination already exists
+        const isDuplicate = existingVariants.some(existingVariant => {
+          const existingAttrs = existingVariant.attribute_values || {};
+
+          // Compare attribute values
+          const existingKeys = Object.keys(existingAttrs).sort();
+          const newKeys = Object.keys(newAttributeValues).sort();
+
+          // Must have same keys
+          if (existingKeys.length !== newKeys.length) return false;
+          if (!existingKeys.every((key, idx) => key === newKeys[idx])) return false;
+
+          // Must have same values for all keys
+          return existingKeys.every(key => existingAttrs[key] === newAttributeValues[key]);
+        });
+
+        if (isDuplicate) {
+          // Get human-readable attribute values
+          const attrDisplay = Object.entries(newAttributeValues)
+            .map(([key, val]) => `${key}=${val}`)
+            .join(', ');
+          duplicates.push(attrDisplay || 'empty attributes');
+        }
+      }
+
+      if (duplicates.length > 0) {
+        return res.status(400).json({
+          success: false,
+          message: `Cannot add variants: A variant with these attribute combinations already exists: ${duplicates.join('; ')}`
+        });
+      }
+
       // Create variant relationships
       const variantRelationships = [];
       for (const variantId of variant_ids) {
