@@ -82,6 +82,37 @@ export default function ConfigurableProductSelector({ product, store, onVariantC
     }
   };
 
+  // Check if a specific attribute value combination leads to an out-of-stock variant
+  const isOptionOutOfStock = (attrCode, value) => {
+    // Check if selecting this value would lead to a variant that's out of stock
+    const testSelection = {
+      ...selectedAttributes,
+      [attrCode]: value
+    };
+
+    const matchingVariant = variants.find(variantRelation => {
+      const attrValues = variantRelation.attribute_values || {};
+      return Object.keys(testSelection).every(key => attrValues[key] === testSelection[key]);
+    });
+
+    if (!matchingVariant || !matchingVariant.variant) {
+      return false; // No variant found yet, don't mark as out of stock
+    }
+
+    const variant = matchingVariant.variant;
+
+    // Check stock status
+    if (variant.infinite_stock) {
+      return false; // Always in stock
+    }
+
+    if (!variant.manage_stock) {
+      return false; // Not tracking stock, assume in stock
+    }
+
+    return variant.stock_quantity <= 0; // Out of stock if quantity is 0 or less
+  };
+
   if (!product || product.type !== 'configurable') {
     return null;
   }
@@ -123,24 +154,32 @@ export default function ConfigurableProductSelector({ product, store, onVariantC
             <div className="flex flex-wrap gap-2">
               {values.map((value) => {
                 const selected = isSelected(value);
+                const outOfStock = isOptionOutOfStock(attrCode, value);
 
                 return (
                   <button
                     key={value}
-                    onClick={() => handleAttributeSelect(attrCode, value)}
+                    onClick={() => !outOfStock && handleAttributeSelect(attrCode, value)}
+                    disabled={outOfStock}
                     className={`
                       relative px-4 py-2 rounded-md border-2 transition-all
-                      ${selected
-                        ? 'border-blue-600 bg-blue-50 text-blue-700'
-                        : 'border-gray-300 bg-white text-gray-700 hover:border-gray-400'
+                      ${outOfStock
+                        ? 'border-gray-200 bg-gray-50 text-gray-400 cursor-not-allowed line-through'
+                        : selected
+                          ? 'border-blue-600 bg-blue-50 text-blue-700'
+                          : 'border-gray-300 bg-white text-gray-700 hover:border-gray-400'
                       }
                       focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2
                     `}
+                    title={outOfStock ? 'Out of stock' : ''}
                   >
                     <span className="flex items-center gap-2">
                       {value}
-                      {selected && (
+                      {selected && !outOfStock && (
                         <Check className="w-4 h-4" />
+                      )}
+                      {outOfStock && (
+                        <span className="text-xs">(Out of stock)</span>
                       )}
                     </span>
                   </button>
