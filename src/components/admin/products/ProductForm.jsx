@@ -1905,46 +1905,49 @@ export default function ProductForm({ product, categories, stores, taxes, attrib
                           })}
                         </div>
                       </div>
-                    ) : (
-                      <div className="border-2 border-dashed rounded-lg p-8 text-center space-y-4">
+                    ) : null}
+
+                    {/* Add Variant Buttons - Always shown for configurable products */}
+                    <div className="border-2 border-dashed rounded-lg p-6 text-center space-y-4">
+                      {productVariants.length === 0 && (
                         <p className="text-sm text-gray-600">
                           No variants assigned yet. Add simple products as variants to create your configurable product options.
                         </p>
-                        <div className="flex items-center justify-center gap-3">
-                          <Button
-                            type="button"
-                            variant="outline"
-                            onClick={() => {
-                              console.log('Configurable attributes:', formData.configurable_attributes);
-                              if (!showVariantSelector) {
-                                loadAvailableVariants();
-                              }
-                              setShowVariantSelector(!showVariantSelector);
-                            }}
-                            disabled={loadingVariants || !formData.configurable_attributes || formData.configurable_attributes.length === 0}
-                          >
-                            <Plus className="w-4 h-4 mr-2" />
-                            Add Existing Products
-                          </Button>
-                          <Button
-                            type="button"
-                            onClick={() => {
-                              console.log('Configurable attributes:', formData.configurable_attributes);
-                              setShowQuickCreate(!showQuickCreate);
-                            }}
-                            disabled={!formData.configurable_attributes || formData.configurable_attributes.length === 0}
-                          >
-                            <Plus className="w-4 h-4 mr-2" />
-                            Quick Create Variants
-                          </Button>
-                        </div>
-                        {(!formData.configurable_attributes || formData.configurable_attributes.length === 0) && (
-                          <p className="text-xs text-amber-600">
-                            Please select configurable attributes first (step 1 above). Click the badge pills to select attributes.
-                          </p>
-                        )}
+                      )}
+                      <div className="flex items-center justify-center gap-3">
+                        <Button
+                          type="button"
+                          variant="outline"
+                          onClick={() => {
+                            console.log('Configurable attributes:', formData.configurable_attributes);
+                            if (!showVariantSelector) {
+                              loadAvailableVariants();
+                            }
+                            setShowVariantSelector(!showVariantSelector);
+                          }}
+                          disabled={loadingVariants || !formData.configurable_attributes || formData.configurable_attributes.length === 0}
+                        >
+                          <Plus className="w-4 h-4 mr-2" />
+                          {showVariantSelector ? 'Hide' : 'Add Existing Products'}
+                        </Button>
+                        <Button
+                          type="button"
+                          onClick={() => {
+                            console.log('Configurable attributes:', formData.configurable_attributes);
+                            setShowQuickCreate(!showQuickCreate);
+                          }}
+                          disabled={!formData.configurable_attributes || formData.configurable_attributes.length === 0}
+                        >
+                          <Plus className="w-4 h-4 mr-2" />
+                          {showQuickCreate ? 'Hide' : 'Quick Create Variants'}
+                        </Button>
                       </div>
-                    )}
+                      {(!formData.configurable_attributes || formData.configurable_attributes.length === 0) && (
+                        <p className="text-xs text-amber-600">
+                          Please select configurable attributes first (step 1 above). Click the badge pills to select attributes.
+                        </p>
+                      )}
+                    </div>
 
                     {/* Inline Quick Create Variants */}
                     {showQuickCreate && formData.configurable_attributes.length > 0 && (
