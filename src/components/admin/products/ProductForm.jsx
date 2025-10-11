@@ -285,6 +285,8 @@ export default function ProductForm({ product, categories, stores, taxes, attrib
   const [showAttributeManager, setShowAttributeManager] = useState(false);
   const [attributeSearch, setAttributeSearch] = useState('');
   const [updatedAttributes, setUpdatedAttributes] = useState(passedAttributes || []);
+  const [showQuickCreate, setShowQuickCreate] = useState(false);
+  const [quickCreateLoading, setQuickCreateLoading] = useState(false);
 
   // Sync updatedAttributes with passedAttributes when it changes
   useEffect(() => {
@@ -2084,40 +2086,234 @@ export default function ProductForm({ product, categories, stores, taxes, attrib
                         </div>
                       </div>
                     ) : (
-                      <div className="border-2 border-dashed rounded-lg p-8 text-center">
-                        <p className="text-sm text-gray-600 mb-4">
+                      <div className="border-2 border-dashed rounded-lg p-8 text-center space-y-4">
+                        <p className="text-sm text-gray-600">
                           No variants assigned yet. Add simple products as variants to create your configurable product options.
                         </p>
-                        <Button
-                          type="button"
-                          variant="outline"
-                          onClick={() => {
-                            loadAvailableVariants();
-                            setShowVariantSelector(true);
-                          }}
-                          disabled={loadingVariants || formData.configurable_attributes.length === 0}
-                        >
-                          <Plus className="w-4 h-4 mr-2" />
-                          Add Variants
-                        </Button>
+                        <div className="flex items-center justify-center gap-3">
+                          <Button
+                            type="button"
+                            variant="outline"
+                            onClick={() => {
+                              if (!showVariantSelector) {
+                                loadAvailableVariants();
+                              }
+                              setShowVariantSelector(!showVariantSelector);
+                            }}
+                            disabled={loadingVariants || formData.configurable_attributes.length === 0}
+                          >
+                            <Plus className="w-4 h-4 mr-2" />
+                            Add Existing Products
+                          </Button>
+                          <Button
+                            type="button"
+                            onClick={() => setShowQuickCreate(!showQuickCreate)}
+                            disabled={formData.configurable_attributes.length === 0}
+                          >
+                            <Plus className="w-4 h-4 mr-2" />
+                            Quick Create Variants
+                          </Button>
+                        </div>
                         {formData.configurable_attributes.length === 0 && (
-                          <p className="text-xs text-amber-600 mt-2">
+                          <p className="text-xs text-amber-600">
                             Please select configurable attributes first (step 1 above)
                           </p>
                         )}
                       </div>
                     )}
 
-                    {/* Variant Selector Modal Placeholder */}
+                    {/* Inline Quick Create Variants */}
+                    {showQuickCreate && formData.configurable_attributes.length > 0 && (
+                      <div className="border rounded-lg p-4 bg-green-50 space-y-4">
+                        <div className="flex items-center justify-between">
+                          <h4 className="font-medium text-sm">Quick Create Variants</h4>
+                          <Button variant="ghost" size="sm" onClick={() => setShowQuickCreate(false)}>
+                            <X className="w-4 h-4" />
+                          </Button>
+                        </div>
+                        <p className="text-sm text-gray-600">
+                          This will automatically create simple products for all combinations of selected attribute values.
+                        </p>
+
+                        {updatedAttributes.filter(attr => formData.configurable_attributes.includes(attr.id)).map(attr => (
+                          <div key={attr.id} className="space-y-2">
+                            <Label className="text-sm font-medium">{attr.name}</Label>
+                            <div className="flex flex-wrap gap-2">
+                              {attr.options && attr.options.map(opt => (
+                                <Badge
+                                  key={opt.value}
+                                  variant="secondary"
+                                  className="cursor-default px-3 py-1.5"
+                                >
+                                  {opt.label}
+                                </Badge>
+                              ))}
+                            </div>
+                          </div>
+                        ))}
+
+                        <Alert>
+                          <AlertDescription className="text-sm">
+                            <strong>Note:</strong> This will create {updatedAttributes
+                              .filter(attr => formData.configurable_attributes.includes(attr.id))
+                              .reduce((total, attr) => total * (attr.options?.length || 1), 1)} simple products
+                            based on all possible combinations. Each product will be named: "{product?.name || 'Product'} - [Attribute Values]"
+                          </AlertDescription>
+                        </Alert>
+
+                        <div className="flex items-center justify-end gap-3">
+                          <Button
+                            type="button"
+                            variant="outline"
+                            onClick={() => setShowQuickCreate(false)}
+                          >
+                            Cancel
+                          </Button>
+                          <Button
+                            type="button"
+                            onClick={async () => {
+                              setQuickCreateLoading(true);
+                              try {
+                                // Generate all combinations
+                                const selectedAttrs = updatedAttributes.filter(attr =>
+                                  formData.configurable_attributes.includes(attr.id)
+                                );
+
+                                const combinations = [];
+                                const generateCombinations = (index, current) => {
+                                  if (index === selectedAttrs.length) {
+                                    combinations.push({...current});
+                                    return;
+                                  }
+                                  const attr = selectedAttrs[index];
+                                  if (attr.options && attr.options.length > 0) {
+                                    attr.options.forEach(opt => {
+                                      generateCombinations(index + 1, {
+                                        ...current,
+                                        [attr.code]: opt.value,
+                                        [`${attr.code}_label`]: opt.label
+                                      });
+                                    });
+                                  }
+                                };
+                                generateCombinations(0, {});
+
+                                // Create simple products for each combination
+                                const variantIds = [];
+                                const attributeValuesMap = {};
+
+                                for (const combo of combinations) {
+                                  const variantName = `${product.name} - ${Object.entries(combo)
+                                    .filter(([key]) => key.endsWith('_label'))
+                                    .map(([, val]) => val)
+                                    .join(' / ')}`;
+
+                                  const variantSku = `${product.sku}-${Object.entries(combo)
+                                    .filter(([key]) => !key.endsWith('_label'))
+                                    .map(([, val]) => val)
+                                    .join('-')}`;
+
+                                  // Create simple product
+                                  const response = await apiClient.post('/products', {
+                                    name: variantName,
+                                    sku: variantSku,
+                                    type: 'simple',
+                                    store_id: product.store_id,
+                                    status: 'active',
+                                    price: product.price || 0,
+                                    attribute_set_id: product.attribute_set_id,
+                                    category_ids: product.category_ids || []
+                                  });
+
+                                  if (response.success && response.data) {
+                                    variantIds.push(response.data.id);
+                                    // Store attribute values (without _label keys)
+                                    attributeValuesMap[response.data.id] = Object.fromEntries(
+                                      Object.entries(combo).filter(([key]) => !key.endsWith('_label'))
+                                    );
+                                  }
+                                }
+
+                                // Add all variants to configurable product
+                                await handleAddVariants(variantIds, attributeValuesMap);
+                                setShowQuickCreate(false);
+                                toast.success(`Created ${variantIds.length} variant products`);
+                              } catch (error) {
+                                console.error('Quick create error:', error);
+                                toast.error('Failed to create variants');
+                              } finally {
+                                setQuickCreateLoading(false);
+                              }
+                            }}
+                            disabled={quickCreateLoading}
+                          >
+                            {quickCreateLoading ? 'Creating...' : 'Create Variants'}
+                          </Button>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Inline Variant Selector */}
                     {showVariantSelector && (
-                      <VariantSelectorModal
-                        availableVariants={availableVariants}
-                        configurableAttributes={formData.configurable_attributes}
-                        passedAttributes={passedAttributes}
-                        onAdd={handleAddVariants}
-                        onClose={() => setShowVariantSelector(false)}
-                        loading={loadingVariants}
-                      />
+                      <div className="border rounded-lg p-4 bg-blue-50 space-y-4">
+                        <div className="flex items-center justify-between">
+                          <h4 className="font-medium text-sm">Add Existing Products as Variants</h4>
+                          <Button variant="ghost" size="sm" onClick={() => setShowVariantSelector(false)}>
+                            <X className="w-4 h-4" />
+                          </Button>
+                        </div>
+
+                        <Input
+                          placeholder="Search by name or SKU..."
+                          onChange={(e) => {
+                            const term = e.target.value.toLowerCase();
+                            if (term) {
+                              const filtered = availableVariants.filter(v =>
+                                v.name.toLowerCase().includes(term) || v.sku.toLowerCase().includes(term)
+                              );
+                              // Handle filtered list
+                            }
+                          }}
+                        />
+
+                        <div className="max-h-96 overflow-y-auto space-y-2">
+                          {availableVariants.length === 0 ? (
+                            <p className="text-center text-gray-500 py-8">
+                              No available products. All simple products may already be assigned.
+                            </p>
+                          ) : (
+                            availableVariants.slice(0, 10).map(variant => (
+                              <div key={variant.id} className="flex items-center gap-3 p-3 bg-white rounded-lg border">
+                                <img
+                                  src={variant.images?.[0]?.url || 'https://placehold.co/50x50?text=No+Image'}
+                                  alt={variant.name}
+                                  className="w-12 h-12 object-cover rounded"
+                                />
+                                <div className="flex-1 min-w-0">
+                                  <p className="font-medium text-sm truncate">{variant.name}</p>
+                                  <p className="text-xs text-gray-500">SKU: {variant.sku}</p>
+                                </div>
+                                <Button
+                                  type="button"
+                                  size="sm"
+                                  onClick={async () => {
+                                    await handleAddVariants([variant.id], {});
+                                    toast.success('Variant added');
+                                  }}
+                                >
+                                  Add
+                                </Button>
+                              </div>
+                            ))
+                          )}
+                        </div>
+
+                        {availableVariants.length > 10 && (
+                          <p className="text-xs text-gray-500 text-center">
+                            Showing first 10 of {availableVariants.length} products. Use search to find more.
+                          </p>
+                        )}
+                      </div>
                     )}
                   </div>
                 )}
