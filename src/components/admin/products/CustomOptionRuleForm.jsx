@@ -540,6 +540,9 @@ export default function CustomOptionRuleForm({ rule, onSubmit, onCancel }) {
                   onChange={(e) => handleSkuInputChange(e.target.value)}
                   placeholder="Enter SKUs separated by commas"
                 />
+                <p className="text-xs text-gray-500 mt-1">
+                  Enter multiple SKUs separated by commas (e.g., "SKU-001, SKU-002, SKU-003"). Custom options will appear on products matching any of these SKUs.
+                </p>
               </div>
             </div>
 
