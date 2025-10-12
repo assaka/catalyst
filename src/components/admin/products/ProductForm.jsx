@@ -2108,7 +2108,7 @@ export default function ProductForm({ product, categories, stores, taxes, attrib
 
                                   const variantSku = `${product.sku}-${Object.entries(combo)
                                     .filter(([key]) => !key.endsWith('_label'))
-                                    .map(([, val]) => val)
+                                    .map(([, val]) => val.toLowerCase().replace(/\s+/g, '-'))
                                     .join('-')}`;
 
                                   // Generate slug from variant name with increment to prevent duplicates
