@@ -220,7 +220,16 @@ export default function ConfigurableProductSelector({ product, store, settings, 
                     `}
                     title={outOfStock ? 'Out of stock' : ''}
                   >
-                    <span className="flex items-center gap-2">
+                    {/* Diagonal line for out-of-stock variants */}
+                    {outOfStock && (
+                      <span
+                        className="absolute inset-0 flex items-center justify-center pointer-events-none"
+                        style={{
+                          background: 'linear-gradient(to top right, transparent calc(50% - 1px), #ef4444 calc(50% - 1px), #ef4444 calc(50% + 1px), transparent calc(50% + 1px))'
+                        }}
+                      />
+                    )}
+                    <span className="flex items-center gap-2 relative z-10">
                       {value}
                       {selected && !outOfStock && (
                         <Check className="w-4 h-4" />
