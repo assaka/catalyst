@@ -2402,7 +2402,6 @@ export default function ProductForm({ product, categories, stores, taxes, attrib
                               </div>
                               );
                             })
-                          )
                           )}
                         </div>
 
