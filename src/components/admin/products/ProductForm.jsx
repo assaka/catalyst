@@ -1876,8 +1876,9 @@ export default function ProductForm({ product, categories, stores, taxes, attrib
                                     <div className="mt-2 flex flex-wrap gap-1">
                                       {Object.entries(variantRelation.attribute_values).map(([key, value]) => {
                                         // Safely convert value to string to prevent React error #31
-                                        const displayValue = typeof value === 'object'
-                                          ? JSON.stringify(value)
+                                        // If value is an object with 'value' or 'label' property, use that
+                                        const displayValue = typeof value === 'object' && value !== null
+                                          ? (value.value || value.label || JSON.stringify(value))
                                           : String(value);
                                         return (
                                           <Badge key={key} variant="outline" className="text-xs">
@@ -2335,8 +2336,8 @@ export default function ProductForm({ product, categories, stores, taxes, attrib
                                 if (attr && variant.attributes?.[attr.code]) {
                                   const attrValue = variant.attributes[attr.code];
                                   // Handle cases where attribute value might be an object or non-string
-                                  const displayValue = typeof attrValue === 'object'
-                                    ? JSON.stringify(attrValue)
+                                  const displayValue = typeof attrValue === 'object' && attrValue !== null
+                                    ? (attrValue.value || attrValue.label || JSON.stringify(attrValue))
                                     : String(attrValue);
                                   return `${attr.name}: ${displayValue}`;
                                 }
@@ -2384,10 +2385,14 @@ export default function ProductForm({ product, categories, stores, taxes, attrib
                                       for (const attrCode of configurableAttrCodes) {
                                         const attrValue = variantAttributes[attrCode];
                                         if (attrValue !== undefined && attrValue !== null && attrValue !== '') {
-                                          // Ensure the value is a string or primitive
-                                          attributeValuesMap[attrCode] = typeof attrValue === 'object'
-                                            ? JSON.stringify(attrValue)
-                                            : String(attrValue);
+                                          // Extract the actual value from object format {label, value} or use as-is
+                                          let finalValue;
+                                          if (typeof attrValue === 'object' && attrValue !== null) {
+                                            finalValue = attrValue.value || attrValue.label || JSON.stringify(attrValue);
+                                          } else {
+                                            finalValue = String(attrValue);
+                                          }
+                                          attributeValuesMap[attrCode] = finalValue;
                                         } else {
                                           throw new Error(`Product "${variant.name}" is missing required attribute: ${attrCode}`);
                                         }
