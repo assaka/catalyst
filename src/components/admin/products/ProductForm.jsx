@@ -2353,15 +2353,20 @@ export default function ProductForm({ product, categories, stores, taxes, attrib
                                     try {
                                       // Get configurable attributes (e.g., ['color'])
                                       const configurableAttrIds = formData.configurable_attributes || [];
+                                      console.log('🔧 Configurable attribute IDs:', configurableAttrIds);
+                                      console.log('🔧 Updated attributes:', updatedAttributes);
 
                                       // Map attribute IDs to attribute codes
                                       const configurableAttrCodes = configurableAttrIds.map(attrId => {
                                         const attr = updatedAttributes.find(a => a.id === attrId);
+                                        console.log(`🔧 Looking for attribute ${attrId}, found:`, attr);
                                         return attr?.code;
                                       }).filter(Boolean);
+                                      console.log('🔧 Configurable attribute codes:', configurableAttrCodes);
 
                                       // Extract attribute values from the variant product
                                       const variantAttributes = variant.attributes || {};
+                                      console.log('🔧 Variant attributes for', variant.name, ':', variantAttributes);
                                       const attributeValuesMap = {};
 
                                       // Build attribute values map
@@ -2372,6 +2377,7 @@ export default function ProductForm({ product, categories, stores, taxes, attrib
                                           throw new Error(`Product "${variant.name}" is missing required attribute: ${attrCode}`);
                                         }
                                       }
+                                      console.log('🔧 Attribute values map:', attributeValuesMap);
 
                                       // Check if this attribute combination already exists
                                       const isDuplicate = variants.some(existingVariant => {
@@ -2389,10 +2395,16 @@ export default function ProductForm({ product, categories, stores, taxes, attrib
                                       }
 
                                       // Add variant with attribute values
-                                      await handleAddVariants([variant.id], { [variant.id]: attributeValuesMap });
+                                      const payload = { [variant.id]: attributeValuesMap };
+                                      console.log('🔧 Sending to handleAddVariants:', {
+                                        variantIds: [variant.id],
+                                        attributeValuesMap: payload
+                                      });
+                                      await handleAddVariants([variant.id], payload);
                                       await loadAvailableVariants(); // Refresh the list
                                       toast.success('Variant added successfully');
                                     } catch (error) {
+                                      console.error('❌ Error adding variant:', error);
                                       toast.error(error.message || 'Failed to add variant');
                                     }
                                   }}
