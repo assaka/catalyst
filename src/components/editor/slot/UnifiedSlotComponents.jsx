@@ -1160,12 +1160,16 @@ const ConfigurableProductSelector = createSlotComponent({
     }
 
     // Storefront version - full functionality
-    const { product, store, settings, handleVariantChange } = productContext;
+    // IMPORTANT: Always use baseProduct for ConfigurableProductSelector
+    // because product might be the selected variant (type: 'simple'),
+    // but the selector needs the parent configurable product
+    const { product, baseProduct, store, settings, handleVariantChange } = productContext;
+    const productForSelector = baseProduct || product;
 
     return (
       <div className={className} style={styles}>
         <ConfigurableProductSelectorComponent
-          product={product}
+          product={productForSelector}
           store={store}
           settings={settings}
           onVariantChange={handleVariantChange}
