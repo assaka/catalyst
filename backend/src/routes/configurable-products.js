@@ -529,6 +529,8 @@ router.get('/:id/available-variants', authMiddleware, authorize(['admin', 'store
     const assignedIds = assignedVariants.map(v => v.variant_product_id);
 
     // Get simple products that are not already assigned
+    // Note: We include all simple products regardless of status/visibility
+    // so admins can add inactive or hidden products as variants
     const availableProducts = await Product.findAll({
       where: {
         store_id: parentProduct.store_id,
@@ -538,6 +540,12 @@ router.get('/:id/available-variants', authMiddleware, authorize(['admin', 'store
       },
       order: [['name', 'ASC']],
       limit: 100
+    });
+
+    console.log(`📦 Available variants for ${parentProduct.name}:`, {
+      total: availableProducts.length,
+      alreadyAssigned: assignedIds.length,
+      products: availableProducts.map(p => ({ id: p.id, name: p.name, sku: p.sku, status: p.status, visibility: p.visibility, parent_id: p.parent_id }))
     });
 
     res.json({

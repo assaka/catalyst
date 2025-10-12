@@ -99,6 +99,8 @@ export default function ProductForm({ product, categories, stores, taxes, attrib
   // Configurable product variant management state
   const [variants, setVariants] = useState([]);
   const [availableVariants, setAvailableVariants] = useState([]);
+  const [filteredVariants, setFilteredVariants] = useState([]);
+  const [variantSearchTerm, setVariantSearchTerm] = useState('');
   const [showVariantSelector, setShowVariantSelector] = useState(false);
   const [loadingVariants, setLoadingVariants] = useState(false);
   const [showAttributeManager, setShowAttributeManager] = useState(false);
@@ -525,7 +527,10 @@ export default function ProductForm({ product, categories, stores, taxes, attrib
       const response = await apiClient.get(`/configurable-products/${product.id}/available-variants`);
 
       if (response.success && response.data) {
+        console.log('📦 Loaded available variants:', response.data.length, 'products');
         setAvailableVariants(response.data);
+        setFilteredVariants(response.data); // Initialize filtered list
+        setVariantSearchTerm(''); // Reset search
       }
     } catch (error) {
       console.error('Error loading available variants:', error);
@@ -2290,24 +2295,33 @@ export default function ProductForm({ product, categories, stores, taxes, attrib
 
                         <Input
                           placeholder="Search by name or SKU..."
+                          value={variantSearchTerm}
                           onChange={(e) => {
-                            const term = e.target.value.toLowerCase();
+                            const term = e.target.value;
+                            setVariantSearchTerm(term);
+
                             if (term) {
                               const filtered = availableVariants.filter(v =>
-                                v.name.toLowerCase().includes(term) || v.sku.toLowerCase().includes(term)
+                                v.name.toLowerCase().includes(term.toLowerCase()) ||
+                                v.sku.toLowerCase().includes(term.toLowerCase())
                               );
-                              // Handle filtered list
+                              setFilteredVariants(filtered);
+                            } else {
+                              setFilteredVariants(availableVariants);
                             }
                           }}
                         />
 
                         <div className="max-h-96 overflow-y-auto space-y-2">
-                          {availableVariants.length === 0 ? (
+                          {filteredVariants.length === 0 ? (
                             <p className="text-center text-gray-500 py-8">
-                              No available products. All simple products may already be assigned.
+                              {variantSearchTerm
+                                ? `No products found matching "${variantSearchTerm}"`
+                                : 'No available products. All simple products may already be assigned.'
+                              }
                             </p>
                           ) : (
-                            availableVariants.slice(0, 10).map(variant => (
+                            filteredVariants.slice(0, 50).map(variant => (
                               <div key={variant.id} className="flex items-center gap-3 p-3 bg-white rounded-lg border">
                                 <img
                                   src={variant.images?.[0]?.url || 'https://placehold.co/50x50?text=No+Image'}
@@ -2333,9 +2347,9 @@ export default function ProductForm({ product, categories, stores, taxes, attrib
                           )}
                         </div>
 
-                        {availableVariants.length > 10 && (
+                        {filteredVariants.length > 50 && (
                           <p className="text-xs text-gray-500 text-center">
-                            Showing first 10 of {availableVariants.length} products. Use search to find more.
+                            Showing first 50 of {filteredVariants.length} products. Use search to narrow results.
                           </p>
                         )}
                       </div>
