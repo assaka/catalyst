@@ -585,8 +585,12 @@ export default function ProductDetail() {
   const getTotalPrice = () => {
     if (!product) return 0;
 
+    // For configurable products, use the selected variant's price
+    // For simple products or when no variant is selected, use the base product price
+    const productForPrice = displayProduct || product;
+
     // Get the correct base price using utility function
-    const priceInfo = getPriceDisplay(product);
+    const priceInfo = getPriceDisplay(productForPrice);
     const basePrice = priceInfo.displayPrice;
 
     // Add selected options price
