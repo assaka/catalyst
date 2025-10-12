@@ -58,16 +58,20 @@ export default function ConfigurableProductSelector({ product, store, settings, 
 
       if (response.success && response.data) {
         console.log('✅ Setting', response.data.length, 'variants');
+        console.log('📋 Variant data structure:', JSON.stringify(response.data[0], null, 2));
         setVariants(response.data);
 
         // Build available options from variants
         const options = {};
         const configurableAttrIds = product.configurable_attributes || [];
 
-        response.data.forEach(variantRelation => {
+        response.data.forEach((variantRelation, index) => {
+          console.log(`🔍 Processing variant ${index}:`, variantRelation);
           const attrValues = variantRelation.attribute_values || {};
+          console.log(`  📊 Attribute values for variant ${index}:`, attrValues);
 
           Object.entries(attrValues).forEach(([attrCode, value]) => {
+            console.log(`    ➕ Adding option: ${attrCode} = ${value}`);
             if (!options[attrCode]) {
               options[attrCode] = new Set();
             }
@@ -81,6 +85,7 @@ export default function ConfigurableProductSelector({ product, store, settings, 
         });
 
         console.log('✅ Available options built:', options);
+        console.log('📊 Total option keys:', Object.keys(options).length);
         setAvailableOptions(options);
       } else {
         console.warn('⚠️ Response not in expected format:', response);
