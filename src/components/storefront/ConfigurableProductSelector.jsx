@@ -24,20 +24,40 @@ export default function ConfigurableProductSelector({ product, store, settings, 
   const [selectedAttributes, setSelectedAttributes] = useState({});
   const [availableOptions, setAvailableOptions] = useState({});
 
+  // Debug logging
+  console.log('🔧 ConfigurableProductSelector mounted:', {
+    hasProduct: !!product,
+    productId: product?.id,
+    productType: product?.type,
+    productName: product?.name,
+    willLoadVariants: product?.id && product?.type === 'configurable'
+  });
+
   useEffect(() => {
+    console.log('🔧 ConfigurableProductSelector useEffect triggered:', {
+      productId: product?.id,
+      productType: product?.type,
+      shouldLoad: product?.id && product?.type === 'configurable'
+    });
+
     if (product?.id && product?.type === 'configurable') {
       loadVariants();
     } else {
+      console.log('❌ Not loading variants - conditions not met');
       setLoading(false);
     }
   }, [product?.id]);
 
   const loadVariants = async () => {
     try {
+      console.log('📦 Loading variants for product:', product.id);
       setLoading(true);
       const response = await apiClient.get(`/configurable-products/${product.id}/public-variants`);
 
+      console.log('📦 Variants response:', response);
+
       if (response.success && response.data) {
+        console.log('✅ Setting', response.data.length, 'variants');
         setVariants(response.data);
 
         // Build available options from variants
@@ -60,10 +80,13 @@ export default function ConfigurableProductSelector({ product, store, settings, 
           options[key] = Array.from(options[key]);
         });
 
+        console.log('✅ Available options built:', options);
         setAvailableOptions(options);
+      } else {
+        console.warn('⚠️ Response not in expected format:', response);
       }
     } catch (error) {
-      console.error('Failed to load variants:', error);
+      console.error('❌ Failed to load variants:', error);
     } finally {
       setLoading(false);
     }
