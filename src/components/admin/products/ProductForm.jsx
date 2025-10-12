@@ -2321,29 +2321,88 @@ export default function ProductForm({ product, categories, stores, taxes, attrib
                               }
                             </p>
                           ) : (
-                            filteredVariants.slice(0, 50).map(variant => (
-                              <div key={variant.id} className="flex items-center gap-3 p-3 bg-white rounded-lg border">
-                                <img
-                                  src={variant.images?.[0]?.url || 'https://placehold.co/50x50?text=No+Image'}
-                                  alt={variant.name}
-                                  className="w-12 h-12 object-cover rounded"
-                                />
-                                <div className="flex-1 min-w-0">
-                                  <p className="font-medium text-sm truncate">{variant.name}</p>
-                                  <p className="text-xs text-gray-500">SKU: {variant.sku}</p>
-                                </div>
+                            filteredVariants.slice(0, 50).map(variant => {
+                              // Get configurable attribute values to display
+                              const configurableAttrIds = formData.configurable_attributes || [];
+                              const attributeValues = configurableAttrIds.map(attrId => {
+                                const attr = updatedAttributes.find(a => a.id === attrId);
+                                if (attr && variant.attributes?.[attr.code]) {
+                                  return `${attr.name}: ${variant.attributes[attr.code]}`;
+                                }
+                                return null;
+                              }).filter(Boolean);
+
+                              return (
+                                <div key={variant.id} className="flex items-center gap-3 p-3 bg-white rounded-lg border">
+                                  <img
+                                    src={variant.images?.[0]?.url || 'https://placehold.co/50x50?text=No+Image'}
+                                    alt={variant.name}
+                                    className="w-12 h-12 object-cover rounded"
+                                  />
+                                  <div className="flex-1 min-w-0">
+                                    <p className="font-medium text-sm truncate">{variant.name}</p>
+                                    <p className="text-xs text-gray-500">SKU: {variant.sku}</p>
+                                    {attributeValues.length > 0 && (
+                                      <p className="text-xs text-blue-600 mt-1">{attributeValues.join(', ')}</p>
+                                    )}
+                                  </div>
                                 <Button
                                   type="button"
                                   size="sm"
                                   onClick={async () => {
-                                    await handleAddVariants([variant.id], {});
-                                    toast.success('Variant added');
+                                    try {
+                                      // Get configurable attributes (e.g., ['color'])
+                                      const configurableAttrIds = formData.configurable_attributes || [];
+
+                                      // Map attribute IDs to attribute codes
+                                      const configurableAttrCodes = configurableAttrIds.map(attrId => {
+                                        const attr = updatedAttributes.find(a => a.id === attrId);
+                                        return attr?.code;
+                                      }).filter(Boolean);
+
+                                      // Extract attribute values from the variant product
+                                      const variantAttributes = variant.attributes || {};
+                                      const attributeValuesMap = {};
+
+                                      // Build attribute values map
+                                      for (const attrCode of configurableAttrCodes) {
+                                        if (variantAttributes[attrCode]) {
+                                          attributeValuesMap[attrCode] = variantAttributes[attrCode];
+                                        } else {
+                                          throw new Error(`Product "${variant.name}" is missing required attribute: ${attrCode}`);
+                                        }
+                                      }
+
+                                      // Check if this attribute combination already exists
+                                      const isDuplicate = variants.some(existingVariant => {
+                                        const existingAttrs = existingVariant.attribute_values || {};
+                                        return configurableAttrCodes.every(code =>
+                                          existingAttrs[code] === attributeValuesMap[code]
+                                        );
+                                      });
+
+                                      if (isDuplicate) {
+                                        const attrDisplay = Object.entries(attributeValuesMap)
+                                          .map(([key, val]) => `${key}: ${val}`)
+                                          .join(', ');
+                                        throw new Error(`A variant with ${attrDisplay} already exists`);
+                                      }
+
+                                      // Add variant with attribute values
+                                      await handleAddVariants([variant.id], { [variant.id]: attributeValuesMap });
+                                      await loadAvailableVariants(); // Refresh the list
+                                      toast.success('Variant added successfully');
+                                    } catch (error) {
+                                      toast.error(error.message || 'Failed to add variant');
+                                    }
                                   }}
                                 >
                                   Add
                                 </Button>
                               </div>
-                            ))
+                              );
+                            })
+                          )
                           )}
                         </div>
 
