@@ -444,6 +444,9 @@ router.get('/:id/public-variants', async (req, res) => {
       ];
     }
 
+    console.log('🔍 public-variants WHERE clause:', JSON.stringify(variantWhere, null, 2));
+    console.log('🔍 display_out_of_stock setting:', displayOutOfStock);
+
     // Get variants with their attribute values - only active and visible (and in-stock if required)
     const variants = await ProductVariant.findAll({
       where: { parent_product_id: req.params.id },
@@ -459,6 +462,18 @@ router.get('/:id/public-variants', async (req, res) => {
     });
 
     console.log(`📦 Public variants for ${parentProduct.name}: Found ${variants.length} variants (display_out_of_stock=${displayOutOfStock})`);
+
+    // Log each variant's details
+    variants.forEach((v, i) => {
+      console.log(`  Variant ${i + 1}:`, {
+        id: v.variant_product_id,
+        name: v.variant?.name,
+        attribute_values: v.attribute_values,
+        status: v.variant?.status,
+        visibility: v.variant?.visibility,
+        stock: v.variant?.stock_quantity
+      });
+    });
 
     res.json({
       success: true,
