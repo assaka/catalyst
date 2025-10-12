@@ -90,19 +90,17 @@ const TotalPriceDisplay = ({
           </>
         )}
 
-        {/* Total - Only show if different from base price or has options */}
-        {(actualTotalPrice !== basePriceTotal || actualOptions.length > 0) && (
-          <div className={compact ? "pt-1 border-t" : "border-t pt-2 mt-2"}>
-            <div className="flex justify-between items-center">
-              <span className={compact ? "font-bold text-gray-900" : "text-lg font-bold text-gray-900"}>
-                Total Price:
-              </span>
-              <span className={compact ? "font-bold text-green-600" : "text-lg font-bold text-green-600"}>
-                {formatPrice(actualTotalPrice)}
-              </span>
-            </div>
+        {/* Total - Always show for transparency */}
+        <div className={compact ? "pt-1 border-t" : "border-t pt-2 mt-2"}>
+          <div className="flex justify-between items-center">
+            <span className={compact ? "font-bold text-gray-900" : "text-lg font-bold text-gray-900"}>
+              Total Price:
+            </span>
+            <span className={compact ? "font-bold text-green-600" : "text-lg font-bold text-green-600"}>
+              {formatPrice(actualTotalPrice)}
+            </span>
           </div>
-        )}
+        </div>
       </div>
     </div>
   );
