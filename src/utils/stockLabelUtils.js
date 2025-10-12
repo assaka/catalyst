@@ -187,6 +187,12 @@ export function getStockLabel(product, settings = {}) {
 
   if (!product) return null;
 
+  // For configurable products, don't show stock label until a variant is selected
+  // The parent configurable product typically has stock_quantity: 0 since it's not sold directly
+  if (product.type === 'configurable') {
+    return null;
+  }
+
   // Stock settings are required - no fallbacks needed as StockSettings.jsx handles defaults
   const stockSettings = settings?.stock_settings || {};
 
