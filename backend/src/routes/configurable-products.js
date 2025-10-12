@@ -418,11 +418,11 @@ router.get('/:id/public-variants', async (req, res) => {
       });
     }
 
-    // Check store's display_out_of_stock setting
+    // Check store's display_out_of_stock_variants setting
     const store = await Store.findByPk(parentProduct.Store.id, {
       attributes: ['settings']
     });
-    const displayOutOfStock = store?.settings?.display_out_of_stock !== false; // Default to true
+    const displayOutOfStockVariants = store?.settings?.display_out_of_stock_variants !== false; // Default to true
 
     // Build variant product WHERE clause
     const variantWhere = {
@@ -430,8 +430,8 @@ router.get('/:id/public-variants', async (req, res) => {
       visibility: 'visible'
     };
 
-    // If store doesn't display out-of-stock products, filter variants by stock
-    if (!displayOutOfStock) {
+    // If store doesn't display out-of-stock variants, filter them by stock
+    if (!displayOutOfStockVariants) {
       variantWhere[Op.or] = [
         { infinite_stock: true },  // Products with infinite stock are always available
         { manage_stock: false },   // Products not managing stock are always available
@@ -445,9 +445,9 @@ router.get('/:id/public-variants', async (req, res) => {
     }
 
     console.log('🔍 public-variants WHERE clause:', JSON.stringify(variantWhere, null, 2));
-    console.log('🔍 display_out_of_stock setting:', displayOutOfStock);
+    console.log('🔍 display_out_of_stock_variants setting:', displayOutOfStockVariants);
 
-    // Get variants with their attribute values - only active and visible (and in-stock if required)
+    // Get variants with their attribute values - only active and visible
     const variants = await ProductVariant.findAll({
       where: { parent_product_id: req.params.id },
       include: [
@@ -461,7 +461,7 @@ router.get('/:id/public-variants', async (req, res) => {
       order: [['sort_order', 'ASC']]
     });
 
-    console.log(`📦 Public variants for ${parentProduct.name}: Found ${variants.length} variants (display_out_of_stock=${displayOutOfStock})`);
+    console.log(`📦 Public variants for ${parentProduct.name}: Found ${variants.length} variants (display_out_of_stock_variants=${displayOutOfStockVariants})`);
 
     // Log each variant's details
     variants.forEach((v, i) => {

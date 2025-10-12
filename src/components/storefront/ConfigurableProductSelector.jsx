@@ -9,13 +9,13 @@ import apiClient from '@/api/client';
  * Displays variant selectors for configurable products (similar to Magento).
  * Allows customers to select product variants based on configurable attributes (e.g., size, color).
  *
- * Note: Out-of-stock variant handling depends on store settings:
- * - If display_out_of_stock = true: All variants are shown, out-of-stock ones are visually disabled
- * - If display_out_of_stock = false: Only in-stock variants are returned from API, no disabled options shown
+ * Out-of-stock variant handling depends on store settings (Admin → Catalog → Stock Settings):
+ * - If display_out_of_stock_variants = true: All variants shown, out-of-stock ones visually disabled with strikethrough and diagonal line
+ * - If display_out_of_stock_variants = false: Only in-stock variants returned from API, no disabled options shown
  *
  * @param {Object} product - The configurable product
  * @param {Object} store - The store context
- * @param {Object} settings - The store settings (to check display_out_of_stock)
+ * @param {Object} settings - The store settings (to check display_out_of_stock_variants)
  * @param {Function} onVariantChange - Callback when a variant is selected
  */
 export default function ConfigurableProductSelector({ product, store, settings, onVariantChange }) {
@@ -198,10 +198,10 @@ export default function ConfigurableProductSelector({ product, store, settings, 
             <div className="flex flex-wrap gap-2">
               {values.map((value) => {
                 const selected = isSelected(value);
-                // Only check for out-of-stock if store displays out-of-stock products
-                // If display_out_of_stock = false, backend already filtered them out
-                const displayOutOfStock = settings?.display_out_of_stock !== false; // Default to true
-                const outOfStock = displayOutOfStock ? isOptionOutOfStock(attrCode, value) : false;
+                // Check for out-of-stock status if store setting allows displaying them
+                // If display_out_of_stock_variants = false, backend already filtered them out
+                const displayOutOfStockVariants = settings?.display_out_of_stock_variants !== false; // Default to true
+                const outOfStock = displayOutOfStockVariants ? isOptionOutOfStock(attrCode, value) : false;
 
                 return (
                   <button

@@ -72,6 +72,7 @@ export default function StockSettings() {
         name: selectedStore.name,
         enable_inventory: storeSettings.hasOwnProperty('enable_inventory') ? storeSettings.enable_inventory : true,
         display_out_of_stock: storeSettings.hasOwnProperty('display_out_of_stock') ? storeSettings.display_out_of_stock : true,
+        display_out_of_stock_variants: storeSettings.hasOwnProperty('display_out_of_stock_variants') ? storeSettings.display_out_of_stock_variants : true,
         hide_stock_quantity: storeSettings.hasOwnProperty('hide_stock_quantity') ? storeSettings.hide_stock_quantity : false,
         display_low_stock_threshold: storeSettings.hasOwnProperty('display_low_stock_threshold') ? storeSettings.display_low_stock_threshold : 0,
         in_stock_label: storeSettings.stock_settings?.in_stock_label || 'In Stock',
@@ -116,6 +117,7 @@ export default function StockSettings() {
         settings: {
           enable_inventory: settings.enable_inventory,
           display_out_of_stock: settings.display_out_of_stock,
+          display_out_of_stock_variants: settings.display_out_of_stock_variants,
           hide_stock_quantity: settings.hide_stock_quantity,
           display_low_stock_threshold: settings.display_low_stock_threshold,
           stock_settings: {
@@ -252,10 +254,21 @@ export default function StockSettings() {
                     <Label htmlFor="display_out_of_stock" className="font-medium">Display Out of Stock Products</Label>
                     <p className="text-sm text-gray-500 mt-1">Show products that are out of stock on category and search pages.</p>
                   </div>
-                  <Switch 
-                    id="display_out_of_stock" 
+                  <Switch
+                    id="display_out_of_stock"
                     checked={settings.display_out_of_stock}
-                    onCheckedChange={(checked) => handleSettingsChange('display_out_of_stock', checked)} 
+                    onCheckedChange={(checked) => handleSettingsChange('display_out_of_stock', checked)}
+                  />
+                </div>
+                <div className="flex items-start justify-between p-3 border rounded-lg h-full">
+                  <div>
+                    <Label htmlFor="display_out_of_stock_variants" className="font-medium">Display Out-of-Stock Variants</Label>
+                    <p className="text-sm text-gray-500 mt-1">Show out-of-stock variant options on configurable products (displayed with strikethrough and diagonal line).</p>
+                  </div>
+                  <Switch
+                    id="display_out_of_stock_variants"
+                    checked={settings.display_out_of_stock_variants}
+                    onCheckedChange={(checked) => handleSettingsChange('display_out_of_stock_variants', checked)}
                   />
                 </div>
                 <div className="flex items-start justify-between p-3 border rounded-lg h-full">
@@ -263,10 +276,10 @@ export default function StockSettings() {
                     <Label htmlFor="hide_stock_quantity" className="font-medium">Hide Stock Quantity</Label>
                     <p className="text-sm text-gray-500 mt-1">Hide the exact stock number from customers.</p>
                   </div>
-                  <Switch 
-                    id="hide_stock_quantity" 
+                  <Switch
+                    id="hide_stock_quantity"
                     checked={settings.hide_stock_quantity}
-                    onCheckedChange={(checked) => handleSettingsChange('hide_stock_quantity', checked)} 
+                    onCheckedChange={(checked) => handleSettingsChange('hide_stock_quantity', checked)}
                   />
                 </div>
                  <div className="flex items-start justify-between p-3 border rounded-lg h-full">
