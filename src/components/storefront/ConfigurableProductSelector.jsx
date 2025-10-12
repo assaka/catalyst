@@ -57,15 +57,26 @@ export default function ConfigurableProductSelector({ product, store, settings, 
       console.log('📦 Variants response:', response);
 
       if (response.success && response.data) {
-        console.log('✅ Setting', response.data.length, 'variants');
+        console.log('✅ Received', response.data.length, 'variants (total)');
         console.log('📋 Variant data structure:', JSON.stringify(response.data[0], null, 2));
-        setVariants(response.data);
 
-        // Build available options from variants
+        // Filter out variants with empty attribute_values (legacy variants without proper configuration)
+        const validVariants = response.data.filter(v => {
+          const hasAttributeValues = v.attribute_values && Object.keys(v.attribute_values).length > 0;
+          if (!hasAttributeValues) {
+            console.warn(`⚠️ Skipping variant ${v.variant_product_id} - empty attribute_values`);
+          }
+          return hasAttributeValues;
+        });
+
+        console.log('✅ Setting', validVariants.length, 'valid variants (with attribute_values)');
+        setVariants(validVariants);
+
+        // Build available options from valid variants only
         const options = {};
         const configurableAttrIds = product.configurable_attributes || [];
 
-        response.data.forEach((variantRelation, index) => {
+        validVariants.forEach((variantRelation, index) => {
           console.log(`🔍 Processing variant ${index}:`, variantRelation);
           const attrValues = variantRelation.attribute_values || {};
           console.log(`  📊 Attribute values for variant ${index}:`, attrValues);
