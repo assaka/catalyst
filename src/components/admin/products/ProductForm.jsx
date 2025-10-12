@@ -2327,7 +2327,12 @@ export default function ProductForm({ product, categories, stores, taxes, attrib
                               const attributeValues = configurableAttrIds.map(attrId => {
                                 const attr = updatedAttributes.find(a => a.id === attrId);
                                 if (attr && variant.attributes?.[attr.code]) {
-                                  return `${attr.name}: ${variant.attributes[attr.code]}`;
+                                  const attrValue = variant.attributes[attr.code];
+                                  // Handle cases where attribute value might be an object or non-string
+                                  const displayValue = typeof attrValue === 'object'
+                                    ? JSON.stringify(attrValue)
+                                    : String(attrValue);
+                                  return `${attr.name}: ${displayValue}`;
                                 }
                                 return null;
                               }).filter(Boolean);
@@ -2371,8 +2376,12 @@ export default function ProductForm({ product, categories, stores, taxes, attrib
 
                                       // Build attribute values map
                                       for (const attrCode of configurableAttrCodes) {
-                                        if (variantAttributes[attrCode]) {
-                                          attributeValuesMap[attrCode] = variantAttributes[attrCode];
+                                        const attrValue = variantAttributes[attrCode];
+                                        if (attrValue !== undefined && attrValue !== null && attrValue !== '') {
+                                          // Ensure the value is a string or primitive
+                                          attributeValuesMap[attrCode] = typeof attrValue === 'object'
+                                            ? JSON.stringify(attrValue)
+                                            : String(attrValue);
                                         } else {
                                           throw new Error(`Product "${variant.name}" is missing required attribute: ${attrCode}`);
                                         }
