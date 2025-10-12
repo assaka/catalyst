@@ -531,7 +531,16 @@ export default function ProductDetail() {
 
                 // Only add to optionProducts if in stock
                 if (isInStock) {
-                  optionProducts.push(customOptionProduct);
+                  // Enrich with price display properties for the template
+                  const priceInfo = getPriceDisplay(customOptionProduct);
+                  const enrichedProduct = {
+                    ...customOptionProduct,
+                    displayPrice: formatPrice(priceInfo.displayPrice),
+                    hasSpecialPrice: priceInfo.hasComparePrice,
+                    originalPrice: priceInfo.hasComparePrice ? formatPrice(priceInfo.originalPrice) : null,
+                    isSelected: false // Default to not selected
+                  };
+                  optionProducts.push(enrichedProduct);
                 }
               }
             } catch (err) {
