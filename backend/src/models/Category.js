@@ -7,18 +7,10 @@ const Category = sequelize.define('Category', {
     defaultValue: DataTypes.UUIDV4,
     primaryKey: true
   },
-  name: {
-    type: DataTypes.STRING,
-    allowNull: false
-  },
   slug: {
     type: DataTypes.STRING,
     allowNull: false,
     unique: true
-  },
-  description: {
-    type: DataTypes.TEXT,
-    allowNull: true
   },
   image_url: {
     type: DataTypes.STRING,
@@ -83,18 +75,26 @@ const Category = sequelize.define('Category', {
   product_count: {
     type: DataTypes.INTEGER,
     defaultValue: 0
+  },
+  // Multilingual translations
+  translations: {
+    type: DataTypes.JSON,
+    defaultValue: {},
+    comment: 'Multilingual translations: {"en": {"name": "...", "description": "..."}, "es": {...}}'
   }
 }, {
   tableName: 'categories',
   hooks: {
     beforeCreate: (category) => {
-      if (!category.slug && category.name) {
-        category.slug = category.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+      if (!category.slug && category.translations && category.translations.en && category.translations.en.name) {
+        category.slug = category.translations.en.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
       }
     },
     beforeUpdate: (category) => {
-      if (category.changed('name') && !category.changed('slug')) {
-        category.slug = category.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+      if (category.changed('translations') && !category.changed('slug')) {
+        if (category.translations && category.translations.en && category.translations.en.name) {
+          category.slug = category.translations.en.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+        }
       }
     }
   }

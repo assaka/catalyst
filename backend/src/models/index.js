@@ -18,6 +18,7 @@ const Customer = require('./Customer');
 const Cart = require('./Cart');
 const Wishlist = require('./Wishlist');
 const Language = require('./Language');
+const Translation = require('./Translation');
 const CustomerActivity = require('./CustomerActivity');
 const StorePlugin = require('./StorePlugin');
 const SeoSettings = require('./SeoSettings');
@@ -319,6 +320,7 @@ module.exports = {
   Cart,
   Wishlist,
   Language,
+  Translation,
   CustomerActivity,
   StorePlugin,
   SeoSettings,

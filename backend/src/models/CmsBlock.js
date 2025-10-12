@@ -7,17 +7,9 @@ const CmsBlock = sequelize.define('CmsBlock', {
     defaultValue: DataTypes.UUIDV4,
     primaryKey: true
   },
-  title: {
-    type: DataTypes.STRING,
-    allowNull: false
-  },
   identifier: {
     type: DataTypes.STRING,
     allowNull: false
-  },
-  content: {
-    type: DataTypes.TEXT,
-    allowNull: true
   },
   is_active: {
     type: DataTypes.BOOLEAN,
@@ -53,6 +45,12 @@ const CmsBlock = sequelize.define('CmsBlock', {
       model: 'stores',
       key: 'id'
     }
+  },
+  // Multilingual translations
+  translations: {
+    type: DataTypes.JSON,
+    defaultValue: {},
+    comment: 'Multilingual translations: {"en": {"title": "...", "content": "..."}, "es": {...}}'
   }
 }, {
   tableName: 'cms_blocks',
@@ -64,13 +62,15 @@ const CmsBlock = sequelize.define('CmsBlock', {
   ],
   hooks: {
     beforeCreate: (block) => {
-      if (!block.identifier && block.title) {
-        block.identifier = block.title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+      if (!block.identifier && block.translations && block.translations.en && block.translations.en.title) {
+        block.identifier = block.translations.en.title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
       }
     },
     beforeUpdate: (block) => {
-      if (block.changed('title') && !block.changed('identifier')) {
-        block.identifier = block.title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+      if (block.changed('translations') && !block.changed('identifier')) {
+        if (block.translations && block.translations.en && block.translations.en.title) {
+          block.identifier = block.translations.en.title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+        }
       }
     }
   }

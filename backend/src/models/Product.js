@@ -8,10 +8,6 @@ const Product = sequelize.define('Product', {
     defaultValue: DataTypes.UUIDV4,
     primaryKey: true
   },
-  name: {
-    type: DataTypes.STRING,
-    allowNull: false
-  },
   slug: {
     type: DataTypes.STRING,
     allowNull: false,
@@ -24,14 +20,6 @@ const Product = sequelize.define('Product', {
   },
   barcode: {
     type: DataTypes.STRING,
-    allowNull: true
-  },
-  description: {
-    type: DataTypes.TEXT,
-    allowNull: true
-  },
-  short_description: {
-    type: DataTypes.TEXT,
     allowNull: true
   },
   price: {
@@ -168,13 +156,20 @@ const Product = sequelize.define('Product', {
   purchase_count: {
     type: DataTypes.INTEGER,
     defaultValue: 0
+  },
+  // Multilingual translations
+  translations: {
+    type: DataTypes.JSON,
+    defaultValue: {},
+    comment: 'Multilingual translations: {"en": {"name": "...", "description": "...", "short_description": "..."}, "es": {...}}'
   }
 }, {
   tableName: 'products',
   hooks: {
     beforeCreate: (product) => {
-      if (!product.slug && product.name) {
-        product.slug = product.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+      // Generate slug from English name in translations if slug not provided
+      if (!product.slug && product.translations && product.translations.en && product.translations.en.name) {
+        product.slug = product.translations.en.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
       }
 
       // Apply data validation using utility function
@@ -182,10 +177,13 @@ const Product = sequelize.define('Product', {
       Object.assign(product, sanitizedData);
     },
     beforeUpdate: (product) => {
-      if (product.changed('name') && !product.changed('slug')) {
-        product.slug = product.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+      // Update slug if English name changed and slug not manually changed
+      if (product.changed('translations') && !product.changed('slug')) {
+        if (product.translations && product.translations.en && product.translations.en.name) {
+          product.slug = product.translations.en.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+        }
       }
-      
+
       // Apply data validation using utility function
       const sanitizedData = sanitizeNumericFields(product, ['price', 'compare_price', 'cost_price', 'weight']);
       Object.assign(product, sanitizedData);

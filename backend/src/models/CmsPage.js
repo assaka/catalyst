@@ -7,18 +7,10 @@ const CmsPage = sequelize.define('CmsPage', {
     defaultValue: DataTypes.UUIDV4,
     primaryKey: true
   },
-  title: {
-    type: DataTypes.STRING,
-    allowNull: false
-  },
   slug: {
     type: DataTypes.STRING,
     allowNull: false,
     unique: true
-  },
-  content: {
-    type: DataTypes.TEXT,
-    allowNull: true
   },
   is_active: {
     type: DataTypes.BOOLEAN,
@@ -63,18 +55,26 @@ const CmsPage = sequelize.define('CmsPage', {
   sort_order: {
     type: DataTypes.INTEGER,
     defaultValue: 0
+  },
+  // Multilingual translations
+  translations: {
+    type: DataTypes.JSON,
+    defaultValue: {},
+    comment: 'Multilingual translations: {"en": {"title": "...", "content": "..."}, "es": {...}}'
   }
 }, {
   tableName: 'cms_pages',
   hooks: {
     beforeCreate: (page) => {
-      if (!page.slug && page.title) {
-        page.slug = page.title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+      if (!page.slug && page.translations && page.translations.en && page.translations.en.title) {
+        page.slug = page.translations.en.title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
       }
     },
     beforeUpdate: (page) => {
-      if (page.changed('title') && !page.changed('slug')) {
-        page.slug = page.title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+      if (page.changed('translations') && !page.changed('slug')) {
+        if (page.translations && page.translations.en && page.translations.en.title) {
+          page.slug = page.translations.en.title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+        }
       }
     }
   }
