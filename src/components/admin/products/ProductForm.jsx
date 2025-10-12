@@ -1874,11 +1874,17 @@ export default function ProductForm({ product, categories, stores, taxes, attrib
                                   {/* Attribute Values */}
                                   {variantRelation.attribute_values && Object.keys(variantRelation.attribute_values).length > 0 && (
                                     <div className="mt-2 flex flex-wrap gap-1">
-                                      {Object.entries(variantRelation.attribute_values).map(([key, value]) => (
-                                        <Badge key={key} variant="outline" className="text-xs">
-                                          {key}: {value}
-                                        </Badge>
-                                      ))}
+                                      {Object.entries(variantRelation.attribute_values).map(([key, value]) => {
+                                        // Safely convert value to string to prevent React error #31
+                                        const displayValue = typeof value === 'object'
+                                          ? JSON.stringify(value)
+                                          : String(value);
+                                        return (
+                                          <Badge key={key} variant="outline" className="text-xs">
+                                            {key}: {displayValue}
+                                          </Badge>
+                                        );
+                                      })}
                                     </div>
                                   )}
                                 </div>
