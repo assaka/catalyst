@@ -274,14 +274,21 @@ export default function ProductForm({ product, categories, stores, taxes, attrib
         current = current[parts[i]];
       }
       current[parts[parts.length - 1]] = value;
-      
-      // Auto-generate URL key from name if not manually edited
-      if (path === 'name' && !hasManuallyEditedUrlKey) {
-        const autoUrlKey = slugify(value);
-        if (!newFormData.seo) newFormData.seo = {};
-        newFormData.seo.url_key = autoUrlKey;
+
+      // Sync main fields back to English translation
+      if (path === 'name' || path === 'short_description' || path === 'description') {
+        if (!newFormData.translations) newFormData.translations = {};
+        if (!newFormData.translations.en) newFormData.translations.en = {};
+        newFormData.translations.en[path] = value;
+
+        // Auto-generate URL key from name if not manually edited
+        if (path === 'name' && !hasManuallyEditedUrlKey) {
+          const autoUrlKey = slugify(value);
+          if (!newFormData.seo) newFormData.seo = {};
+          newFormData.seo.url_key = autoUrlKey;
+        }
       }
-      
+
       return newFormData;
     });
   };
@@ -836,7 +843,14 @@ export default function ProductForm({ product, categories, stores, taxes, attrib
                 <TranslationFields
                   translations={formData.translations}
                   onChange={(newTranslations) => {
-                    setFormData(prev => ({ ...prev, translations: newTranslations }));
+                    setFormData(prev => ({
+                      ...prev,
+                      translations: newTranslations,
+                      // Sync main fields with English translation
+                      name: newTranslations.en?.name || prev.name,
+                      short_description: newTranslations.en?.short_description || prev.short_description,
+                      description: newTranslations.en?.description || prev.description
+                    }));
                     // Auto-update URL key from English name if not manually edited
                     if (!isEditingUrlKey && newTranslations.en && newTranslations.en.name) {
                       const generatedUrlKey = newTranslations.en.name.toLowerCase()

@@ -99,19 +99,41 @@ export default function CategoryForm({ category, onSubmit, onCancel, parentCateg
         [name]: value
       };
 
-      // Auto-generate slug from name if 'name' field is being updated and slug editing is disabled
-      if (name === "name" && !isEditingSlug) {
-        const generatedSlug = value.toLowerCase()
-          .replace(/[^a-z0-9]+/g, '-')
-          .replace(/(^-|-$)/g, '');
-        newState.slug = generatedSlug;
-        
-        // Check if this is an edit and slug will change
-        if (category && originalSlug && generatedSlug !== originalSlug) {
-          setShowSlugChangeWarning(true);
+      // Sync main name field changes back to English translation
+      if (name === "name") {
+        newState.translations = {
+          ...prev.translations,
+          en: {
+            ...prev.translations.en,
+            name: value
+          }
+        };
+
+        // Auto-generate slug from name if slug editing is disabled
+        if (!isEditingSlug) {
+          const generatedSlug = value.toLowerCase()
+            .replace(/[^a-z0-9]+/g, '-')
+            .replace(/(^-|-$)/g, '');
+          newState.slug = generatedSlug;
+
+          // Check if this is an edit and slug will change
+          if (category && originalSlug && generatedSlug !== originalSlug) {
+            setShowSlugChangeWarning(true);
+          }
         }
       }
-      
+
+      // Sync description field changes back to English translation
+      if (name === "description") {
+        newState.translations = {
+          ...prev.translations,
+          en: {
+            ...prev.translations.en,
+            description: value
+          }
+        };
+      }
+
       // Direct slug edit - only when editing is enabled
       if (name === "slug") {
         setHasManuallyEditedSlug(true);
@@ -121,7 +143,7 @@ export default function CategoryForm({ category, onSubmit, onCancel, parentCateg
           setShowSlugChangeWarning(false);
         }
       }
-      
+
       return newState;
     });
   };
@@ -330,7 +352,13 @@ export default function CategoryForm({ category, onSubmit, onCancel, parentCateg
             <TranslationFields
               translations={formData.translations}
               onChange={(newTranslations) => {
-                setFormData(prev => ({ ...prev, translations: newTranslations }));
+                setFormData(prev => ({
+                  ...prev,
+                  translations: newTranslations,
+                  // Sync main name field with English translation
+                  name: newTranslations.en?.name || prev.name,
+                  description: newTranslations.en?.description || prev.description
+                }));
                 // Auto-update slug from English name if not manually edited
                 if (!isEditingSlug && newTranslations.en && newTranslations.en.name) {
                   const generatedSlug = newTranslations.en.name.toLowerCase()
