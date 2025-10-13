@@ -5,12 +5,14 @@ import { Badge } from '@/components/ui/badge';
 import { Check } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { formatPrice, safeNumber, formatPriceWithTax, getPriceDisplay } from '@/utils/priceUtils';
+import { getCurrentLanguage } from '@/utils/translationUtils';
 
 export default function CustomOptions({ product, onSelectionChange, selectedOptions = [], store, settings }) {
     const [customOptions, setCustomOptions] = useState([]);
     const [loading, setLoading] = useState(true);
     const [displayLabel, setDisplayLabel] = useState('Custom Options');
     const [isLoading, setIsLoading] = useState(false); // Prevent duplicate loading
+    const currentLang = getCurrentLanguage();
 
     useEffect(() => {
         if (product && store?.id && !isLoading) {
@@ -60,7 +62,9 @@ export default function CustomOptions({ product, onSelectionChange, selectedOpti
 
             // Use the first applicable rule (you could enhance this to merge multiple rules)
             const rule = applicableRules[0];
-            setDisplayLabel(rule.display_label || 'Custom Options');
+            // Get translated display label from translations JSON (no fallback)
+            const translatedLabel = rule.translations?.[currentLang]?.display_label || rule.translations?.en?.display_label || 'Custom Options';
+            setDisplayLabel(translatedLabel);
 
             // Load the custom option products
             if (rule.optional_product_ids && rule.optional_product_ids.length > 0) {

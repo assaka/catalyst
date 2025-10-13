@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { processVariables } from '@/utils/variableProcessor';
+import { getCurrentLanguage } from '@/utils/translationUtils';
 
 /**
  * ProductTabs Component
@@ -8,43 +9,54 @@ import { processVariables } from '@/utils/variableProcessor';
 export default function ProductTabs({ productTabs = [], product = null, className = '', slotConfig = null }) {
   const containerRef = useRef(null);
   const [activeTabIndex, setActiveTabIndex] = useState(0);
+  const currentLang = getCurrentLanguage();
 
   // Prepare tabs data with active state
   const tabsData = useMemo(() => {
     if (!productTabs || productTabs.length === 0) return [];
 
     const validTabs = productTabs.filter(tab =>
-      tab && tab.is_active !== false && (tab.title || tab.name)
+      tab && tab.is_active !== false
     );
 
     // Add default description tab if needed
-    const hasDescriptionTab = validTabs.some(tab =>
-      tab.title?.toLowerCase().includes('description') ||
-      tab.name?.toLowerCase().includes('description')
-    );
+    const hasDescriptionTab = validTabs.some(tab => {
+      // Get translated title/name from translations JSON
+      const translatedTitle = tab.translations?.[currentLang]?.name || tab.translations?.en?.name;
+      return translatedTitle?.toLowerCase().includes('description');
+    });
 
     const tabsToRender = [...validTabs];
     if (product?.description && !hasDescriptionTab) {
       tabsToRender.unshift({
         id: 'description',
-        title: 'Description',
+        translations: {
+          en: { name: 'Description' },
+          [currentLang]: { name: 'Description' }
+        },
         content: product.description,
         is_active: true,
         tab_type: 'description'
       });
     }
 
-    const mappedTabs = tabsToRender.map((tab, index) => ({
-      ...tab,
-      id: tab.id?.toString() || tab.title || `tab-${index}`,
-      title: tab.title || tab.name || `Tab ${index + 1}`,
-      isActive: index === activeTabIndex,
-      content: tab.content || '',
-      tab_type: tab.tab_type || 'text'
-    }));
+    const mappedTabs = tabsToRender.map((tab, index) => {
+      // Get translated title and content from translations JSON (no fallback)
+      const translatedTitle = tab.translations?.[currentLang]?.name || tab.translations?.en?.name || `Tab ${index + 1}`;
+      const translatedContent = tab.translations?.[currentLang]?.content || tab.translations?.en?.content || '';
+
+      return {
+        ...tab,
+        id: tab.id?.toString() || `tab-${index}`,
+        title: translatedTitle,
+        isActive: index === activeTabIndex,
+        content: translatedContent,
+        tab_type: tab.tab_type || 'text'
+      };
+    });
 
     return mappedTabs;
-  }, [productTabs, product, activeTabIndex]);
+  }, [productTabs, product, activeTabIndex, currentLang]);
 
   // Render attributes dynamically (processVariables doesn't support {{@key}})
   useEffect(() => {

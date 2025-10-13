@@ -7,6 +7,7 @@ import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { X, Settings, Shield } from 'lucide-react';
 import { useStore } from './StoreProvider';
+import { getCurrentLanguage } from '@/utils/translationUtils';
 
 const getUserCountry = async () => {
   try {
@@ -174,15 +175,29 @@ export default function CookieConsentBanner() {
   }
 
   const cookieSettings = settings.cookie_consent;
+  const currentLang = getCurrentLanguage();
+
+  // Helper function to get translated text from translations JSON (no fallback)
+  const getTranslatedText = (field, defaultValue = '') => {
+    const translations = cookieSettings?.translations;
+    if (translations && translations[currentLang] && translations[currentLang][field]) {
+      return translations[currentLang][field];
+    }
+    // Fallback to English if current language not available
+    if (translations && translations.en && translations.en[field]) {
+      return translations.en[field];
+    }
+    return defaultValue;
+  };
 
   return (
     <>
       {cookieSettings.custom_css && (
         <style dangerouslySetInnerHTML={{ __html: cookieSettings.custom_css }} />
       )}
-      
+
       <div className={`cookie-banner fixed inset-x-0 z-50 ${
-        cookieSettings.banner_position === 'top' ? 'top-0' : 
+        cookieSettings.banner_position === 'top' ? 'top-0' :
         cookieSettings.banner_position === 'center' ? 'top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2' :
         'bottom-0'
       }`}>
@@ -203,9 +218,9 @@ export default function CookieConsentBanner() {
                 </Button>
               )}
             </div>
-            
+
             <p className="text-sm text-gray-600 mb-4">
-              {cookieSettings.banner_message || 'We use cookies to enhance your browsing experience.'}
+              {getTranslatedText('banner_text', 'We use cookies to enhance your browsing experience.')}
             </p>
 
             {showPreferences && cookieSettings.categories && (
@@ -236,23 +251,23 @@ export default function CookieConsentBanner() {
                 onClick={handleAcceptAll}
                 className="bg-blue-600 hover:bg-blue-700"
               >
-                {cookieSettings.accept_all_text || 'Accept All'}
+                {getTranslatedText('accept_button_text', 'Accept All')}
               </Button>
-              
+
               <Button
                 onClick={handleRejectAll}
                 variant="outline"
               >
-                {cookieSettings.reject_all_text || 'Reject All'}
+                {getTranslatedText('reject_button_text', 'Reject All')}
               </Button>
-              
+
               {!showPreferences ? (
                 <Button
                   onClick={() => setShowPreferences(true)}
                   variant="outline"
                 >
                   <Settings className="w-4 h-4 mr-2" />
-                  {cookieSettings.manage_preferences_text || 'Manage Preferences'}
+                  {getTranslatedText('settings_button_text', 'Manage Preferences')}
                 </Button>
               ) : (
                 <Button
@@ -267,7 +282,7 @@ export default function CookieConsentBanner() {
                 href={cookieSettings.privacy_policy_url || '/privacy-policy'}
                 className="text-sm text-blue-600 hover:text-blue-800 underline self-center"
               >
-                {cookieSettings.privacy_policy_text || 'Privacy Policy'}
+                {getTranslatedText('privacy_policy_text', 'Privacy Policy')}
               </a>
             </div>
           </CardContent>

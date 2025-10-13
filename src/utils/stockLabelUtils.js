@@ -163,6 +163,7 @@
  * @param {string} settings.stock_settings.low_stock_bg_color - Low stock background color
  * @param {boolean} [settings.hide_stock_quantity] - Hide quantity numbers in labels
  * @param {number} [settings.display_low_stock_threshold] - Default low stock threshold
+ * @param {string} [lang] - Language code (default: current browser language)
  * @returns {Object|null} { text: string, textColor: string, bgColor: string } or null if disabled
  *
  * @example
@@ -180,7 +181,7 @@
  * getStockLabel({ stock_quantity: 0 }, settings)
  * // { text: "Out of Stock", textColor: "#ef4444", bgColor: "#fee2e2" }
  */
-export function getStockLabel(product, settings = {}) {
+export function getStockLabel(product, settings = {}, lang = null) {
   // Check if stock labels should be shown at all
   const showStockLabel = settings?.stock_settings?.show_stock_label !== false;
   if (!showStockLabel) return null;
@@ -193,12 +194,33 @@ export function getStockLabel(product, settings = {}) {
     return null;
   }
 
+  // Get current language if not provided
+  if (!lang) {
+    lang = typeof localStorage !== 'undefined'
+      ? localStorage.getItem('catalyst_language') || 'en'
+      : 'en';
+  }
+
   // Stock settings are required - no fallbacks needed as StockSettings.jsx handles defaults
   const stockSettings = settings?.stock_settings || {};
 
+  // Helper function to get translated label from translations JSON (no fallback)
+  const getTranslatedLabel = (labelField) => {
+    const translations = stockSettings.translations;
+    if (translations && translations[lang] && translations[lang][labelField]) {
+      return translations[lang][labelField];
+    }
+    // Fallback to English if current language not available
+    if (translations && translations.en && translations.en[labelField]) {
+      return translations.en[labelField];
+    }
+    // Empty string if no translations found
+    return '';
+  };
+
   // Handle infinite stock
   if (product.infinite_stock) {
-    const label = stockSettings.in_stock_label;
+    const label = getTranslatedLabel('in_stock_label');
     const text = processLabel(label, null, settings); // Remove quantity blocks
     const textColor = stockSettings.in_stock_text_color;
     const bgColor = stockSettings.in_stock_bg_color;
@@ -208,7 +230,7 @@ export function getStockLabel(product, settings = {}) {
 
   // Handle out of stock
   if (product.stock_quantity <= 0) {
-    const text = stockSettings.out_of_stock_label;
+    const text = getTranslatedLabel('out_of_stock_label');
     const textColor = stockSettings.out_of_stock_text_color;
     const bgColor = stockSettings.out_of_stock_bg_color;
 
@@ -221,7 +243,7 @@ export function getStockLabel(product, settings = {}) {
   // Handle low stock
   const lowStockThreshold = product.low_stock_threshold || settings?.display_low_stock_threshold || 0;
   if (lowStockThreshold > 0 && product.stock_quantity <= lowStockThreshold) {
-    const label = stockSettings.low_stock_label;
+    const label = getTranslatedLabel('low_stock_label');
     const text = processLabel(label, hideStockQuantity ? null : product.stock_quantity, settings);
     const textColor = stockSettings.low_stock_text_color;
     const bgColor = stockSettings.low_stock_bg_color;
@@ -230,7 +252,7 @@ export function getStockLabel(product, settings = {}) {
   }
 
   // Handle regular in stock
-  const label = stockSettings.in_stock_label;
+  const label = getTranslatedLabel('in_stock_label');
   const text = processLabel(label, hideStockQuantity ? null : product.stock_quantity, settings);
   const textColor = stockSettings.in_stock_text_color;
   const bgColor = stockSettings.in_stock_bg_color;
