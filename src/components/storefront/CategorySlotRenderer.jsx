@@ -435,8 +435,7 @@ export function CategorySlotRenderer({
         return pages;
       };
 
-      // Get translated category name
-      const currentLanguage = getCurrentLanguage();
+      // Get translated category name (reuse currentLanguage from above)
       const translatedCategoryName = category ? (getCategoryName(category, currentLanguage) || category.name) : '';
 
       const variableContext = {
