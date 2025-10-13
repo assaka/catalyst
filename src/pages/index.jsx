@@ -60,6 +60,7 @@ export { default as Onboarding } from './admin/Onboarding';
 export { default as ThemeLayout } from './admin/ThemeLayout';
 export { default as Translations } from './admin/Translations';
 export { default as AIStudio } from './admin/AIStudio';
+export { default as CookieConsent } from './admin/CookieConsent';
 
 // Editor Pages
 export { default as AIContextWindow } from './editor/AIContextWindow';
@@ -81,6 +82,5 @@ export { default as CustomerDashboard } from './storefront/CustomerDashboard';
 export { default as ClientDashboard } from './storefront/ClientDashboard';
 export { default as Storefront } from './storefront/Storefront';
 export { default as CmsPageViewer } from './storefront/CmsPageViewer';
-export { default as CookieConsent } from './storefront/CookieConsent';
 export { default as RobotsPublic } from './storefront/RobotsPublic';
 export { default as Landing } from './storefront/Landing';

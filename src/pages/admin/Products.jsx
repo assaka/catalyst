@@ -271,8 +271,15 @@ export default function Products() {
       throw new Error("No store selected");
     }
 
+    // Debug: Log what we're receiving from ProductForm
+    console.log('🔍 Products.jsx handleCreateProduct: Received productData:', {
+      name: productData.name,
+      translations: productData.translations
+    });
+
     try {
-      await Product.create({ ...productData, store_id: storeId });
+      const result = await Product.create({ ...productData, store_id: storeId });
+      console.log('✅ Product.create result:', result);
       await loadData();
       setShowProductForm(false);
     } catch (error) {
@@ -285,7 +292,15 @@ export default function Products() {
     try {
       const { id, ...updateData } = productData;
 
-      await Product.update(id, updateData);
+      // Debug: Log what we're updating
+      console.log('🔍 Products.jsx handleUpdateProduct: Updating product:', {
+        id,
+        name: updateData.name,
+        translations: updateData.translations
+      });
+
+      const result = await Product.update(id, updateData);
+      console.log('✅ Product.update result:', result);
       await loadData();
       setShowProductForm(false);
       setSelectedProduct(null);
