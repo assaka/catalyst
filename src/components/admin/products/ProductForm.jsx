@@ -142,11 +142,11 @@ export default function ProductForm({ product, categories, stores, taxes, attrib
       }
 
       setFormData({
-        name: product.name || "",
+        name: translations.en?.name || "",
         sku: product.sku || "",
         barcode: product.barcode || "",
-        description: product.description || "",
-        short_description: product.short_description || "",
+        description: translations.en?.description || "",
+        short_description: translations.en?.short_description || "",
         price: product.price || "",
         compare_price: product.compare_price || "",
         cost_price: product.cost_price || "",

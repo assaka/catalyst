@@ -69,10 +69,11 @@ export default function CategoryForm({ category, onSubmit, onCancel, parentCateg
         };
       }
 
+      // Always use translations.en for main fields (no fallback to category.name)
       const categoryData = {
-        name: category.name || "",
+        name: translations.en?.name || "",
         slug: category.slug || "",
-        description: category.description || "",
+        description: translations.en?.description || "",
         image_url: category.image_url || "",
         parent_id: category.parent_id || "",
         sort_order: category.sort_order || 0,

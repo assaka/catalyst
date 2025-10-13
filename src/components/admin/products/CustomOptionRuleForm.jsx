@@ -131,7 +131,7 @@ export default function CustomOptionRuleForm({ rule, onSubmit, onCancel }) {
 
       setFormData({
         name: rule.name || '',
-        display_label: rule.display_label || 'Custom Options',
+        display_label: translations.en?.display_label || 'Custom Options',
         is_active: rule.is_active !== false,
         conditions: rule.conditions || { categories: [], attribute_sets: [], skus: [], attribute_conditions: [] },
         optional_product_ids: Array.isArray(rule.optional_product_ids) ? rule.optional_product_ids : [],
@@ -142,10 +142,25 @@ export default function CustomOptionRuleForm({ rule, onSubmit, onCancel }) {
   }, [rule]);
 
   const handleInputChange = (field, value) => {
-    setFormData(prev => ({
-      ...prev,
-      [field]: value
-    }));
+    setFormData(prev => {
+      const newState = {
+        ...prev,
+        [field]: value
+      };
+
+      // Sync main field with English translation (bidirectional)
+      if (field === "display_label") {
+        newState.translations = {
+          ...prev.translations,
+          en: {
+            ...prev.translations.en,
+            display_label: value
+          }
+        };
+      }
+
+      return newState;
+    });
   };
 
   const handleConditionChange = (conditionType, value) => {
@@ -316,7 +331,12 @@ export default function CustomOptionRuleForm({ rule, onSubmit, onCancel }) {
                   <TranslationFields
                     translations={formData.translations}
                     onChange={(newTranslations) => {
-                      setFormData(prev => ({ ...prev, translations: newTranslations }));
+                      setFormData(prev => ({
+                        ...prev,
+                        translations: newTranslations,
+                        // Sync main field with English translation
+                        display_label: newTranslations.en?.display_label || prev.display_label
+                      }));
                     }}
                     fields={[
                       { name: 'display_label', label: 'Display Label', type: 'text', required: true }

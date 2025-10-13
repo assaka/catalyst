@@ -50,9 +50,9 @@ export default function ProductTabForm({ tab, attributes = [], attributeSets = [
       }
 
       setFormData({
-        name: tab.name || "",
+        name: translations.en?.name || "",
         tab_type: tab.tab_type || "text",
-        content: tab.content || "",
+        content: translations.en?.content || "",
         attribute_ids: tab.attribute_ids || [],
         attribute_set_ids: tab.attribute_set_ids || [],
         sort_order: tab.sort_order || 0,
@@ -63,10 +63,33 @@ export default function ProductTabForm({ tab, attributes = [], attributeSets = [
   }, [tab]);
 
   const handleInputChange = (field, value) => {
-    setFormData(prev => ({
-      ...prev,
-      [field]: value
-    }));
+    setFormData(prev => {
+      const newState = {
+        ...prev,
+        [field]: value
+      };
+
+      // Sync main fields with English translation (bidirectional)
+      if (field === "name") {
+        newState.translations = {
+          ...prev.translations,
+          en: {
+            ...prev.translations.en,
+            name: value
+          }
+        };
+      } else if (field === "content") {
+        newState.translations = {
+          ...prev.translations,
+          en: {
+            ...prev.translations.en,
+            content: value
+          }
+        };
+      }
+
+      return newState;
+    });
   };
 
   const handleArrayChange = (field, itemId, isChecked) => {
@@ -142,7 +165,13 @@ export default function ProductTabForm({ tab, attributes = [], attributeSets = [
                 <TranslationFields
                   translations={formData.translations}
                   onChange={(newTranslations) => {
-                    setFormData(prev => ({ ...prev, translations: newTranslations }));
+                    setFormData(prev => ({
+                      ...prev,
+                      translations: newTranslations,
+                      // Sync main fields with English translation
+                      name: newTranslations.en?.name || prev.name,
+                      content: newTranslations.en?.content || prev.content
+                    }));
                   }}
                   fields={[
                     { name: 'name', label: 'Tab Name', type: 'text', required: true },

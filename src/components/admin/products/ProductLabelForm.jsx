@@ -49,7 +49,7 @@ export default function ProductLabelForm({ label, attributes, onSubmit, onCancel
 
       setFormData({
         name: label.name || '',
-        text: label.text || '',
+        text: translations.en?.text || '',
         background_color: label.background_color || '#FF0000',
         text_color: label.color || label.text_color || '#FFFFFF', // Handle both field names
         position: label.position || 'top-right',
@@ -66,7 +66,22 @@ export default function ProductLabelForm({ label, attributes, onSubmit, onCancel
   }, [label]);
 
   const handleInputChange = (field, value) => {
-    setFormData(prev => ({ ...prev, [field]: value }));
+    setFormData(prev => {
+      const newState = { ...prev, [field]: value };
+
+      // Sync main field with English translation (bidirectional)
+      if (field === "text") {
+        newState.translations = {
+          ...prev.translations,
+          en: {
+            ...prev.translations.en,
+            text: value
+          }
+        };
+      }
+
+      return newState;
+    });
   };
 
   const handleConditionChange = (type, field, value) => {
@@ -219,7 +234,12 @@ export default function ProductLabelForm({ label, attributes, onSubmit, onCancel
                 <TranslationFields
                   translations={formData.translations}
                   onChange={(newTranslations) => {
-                    setFormData(prev => ({ ...prev, translations: newTranslations }));
+                    setFormData(prev => ({
+                      ...prev,
+                      translations: newTranslations,
+                      // Sync main field with English translation
+                      text: newTranslations.en?.text || prev.text
+                    }));
                   }}
                   fields={[
                     { name: 'text', label: 'Display Text', type: 'text', required: true }
