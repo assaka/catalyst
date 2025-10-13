@@ -55,6 +55,14 @@ const mapBackendToFrontend = (backendSettings) => {
   // Handle translations with backward compatibility
   let translations = backendSettings.translations || {};
 
+  // Get categories for translation initialization
+  const categories = backendSettings.categories || [
+    { id: "necessary", name: "Necessary Cookies", description: "These cookies are necessary for the website to function and cannot be switched off." },
+    { id: "analytics", name: "Analytics Cookies", description: "These cookies help us understand how visitors interact with our website." },
+    { id: "marketing", name: "Marketing Cookies", description: "These cookies are used to deliver personalized advertisements." },
+    { id: "functional", name: "Functional Cookies", description: "These cookies enable enhanced functionality and personalization." }
+  ];
+
   // Ensure English translation exists (backward compatibility)
   if (!translations.en || (!translations.en.banner_text && backendSettings.banner_text)) {
     translations.en = {
@@ -64,6 +72,18 @@ const mapBackendToFrontend = (backendSettings) => {
       settings_button_text: backendSettings.settings_button_text || "Cookie Settings",
       privacy_policy_text: backendSettings.privacy_policy_text || "Privacy Policy"
     };
+  }
+
+  // Ensure category translations exist in English (backward compatibility)
+  if (translations.en) {
+    categories.forEach(category => {
+      if (!translations.en[`${category.id}_name`]) {
+        translations.en[`${category.id}_name`] = category.name;
+      }
+      if (!translations.en[`${category.id}_description`]) {
+        translations.en[`${category.id}_description`] = category.description;
+      }
+    });
   }
 
   return {
