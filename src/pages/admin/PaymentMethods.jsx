@@ -12,9 +12,10 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
-import { Plus, Edit, Trash2, CreditCard, Banknote, CheckCircle, AlertCircle } from "lucide-react";
+import { Plus, Edit, Trash2, CreditCard, Banknote, CheckCircle, AlertCircle, Languages } from "lucide-react";
 import FlashMessage from "@/components/storefront/FlashMessage";
 import { CountrySelect } from "@/components/ui/country-select";
+import TranslationFields from "@/components/admin/TranslationFields";
 
 export default function PaymentMethods() {
   const { selectedStore, getSelectedStoreId } = useStoreSelection();
@@ -25,7 +26,8 @@ export default function PaymentMethods() {
   const [flashMessage, setFlashMessage] = useState(null);
   const [showForm, setShowForm] = useState(false);
   const [editingMethod, setEditingMethod] = useState(null);
-  
+  const [showTranslations, setShowTranslations] = useState(false);
+
   const [formData, setFormData] = useState({
     name: '',
     code: '',
@@ -39,7 +41,8 @@ export default function PaymentMethods() {
     fee_type: 'none',
     fee_amount: 0,
     availability: 'all',
-    countries: []
+    countries: [],
+    translations: {}
   });
 
   const quickAddMethods = [
@@ -130,6 +133,14 @@ export default function PaymentMethods() {
   };
 
   const handleEdit = (method) => {
+    let translations = method.translations || {};
+    if (!translations.en) {
+      translations.en = {
+        name: method.name,
+        description: method.description || ''
+      };
+    }
+
     setFormData({
       name: method.name,
       code: method.code,
@@ -143,7 +154,8 @@ export default function PaymentMethods() {
       fee_type: method.fee_type || 'none',
       fee_amount: method.fee_amount || 0,
       availability: method.availability || 'all',
-      countries: method.countries || []
+      countries: method.countries || [],
+      translations: translations
     });
     setEditingMethod(method);
     setShowForm(true);
@@ -371,9 +383,27 @@ export default function PaymentMethods() {
                     <Input
                       id="name"
                       value={formData.name}
-                      onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                      onChange={(e) => {
+                        const newName = e.target.value;
+                        setFormData({
+                          ...formData,
+                          name: newName,
+                          translations: {
+                            ...formData.translations,
+                            en: { ...formData.translations.en, name: newName }
+                          }
+                        });
+                      }}
                       required
                     />
+                    <button
+                      type="button"
+                      onClick={() => setShowTranslations(!showTranslations)}
+                      className="text-sm text-blue-600 hover:text-blue-800 mt-1 inline-flex items-center gap-1"
+                    >
+                      <Languages className="w-4 h-4" />
+                      {showTranslations ? 'Hide translations' : 'Manage translations'}
+                    </button>
                   </div>
                   <div>
                     <Label htmlFor="code">Code *</Label>
@@ -385,6 +415,30 @@ export default function PaymentMethods() {
                     />
                   </div>
                 </div>
+
+                {showTranslations && (
+                  <div className="border-2 border-blue-200 bg-blue-50 rounded-lg p-4">
+                    <div className="flex items-center gap-2 mb-4">
+                      <Languages className="w-5 h-5 text-blue-600" />
+                      <h3 className="text-base font-semibold text-blue-900">Payment Method Translations</h3>
+                    </div>
+                    <TranslationFields
+                      translations={formData.translations}
+                      onChange={(newTranslations) => {
+                        setFormData({
+                          ...formData,
+                          translations: newTranslations,
+                          name: newTranslations.en?.name || formData.name,
+                          description: newTranslations.en?.description || formData.description
+                        });
+                      }}
+                      fields={[
+                        { name: 'name', label: 'Payment Method Name', type: 'text', required: true },
+                        { name: 'description', label: 'Description', type: 'textarea', rows: 3, required: false }
+                      ]}
+                    />
+                  </div>
+                )}
 
                 <div>
                   <Label htmlFor="type">Payment Type</Label>
@@ -404,15 +458,27 @@ export default function PaymentMethods() {
                   </Select>
                 </div>
 
-                <div>
-                  <Label htmlFor="description">Description</Label>
-                  <Textarea
-                    id="description"
-                    value={formData.description}
-                    onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                    rows={3}
-                  />
-                </div>
+                {!showTranslations && (
+                  <div>
+                    <Label htmlFor="description">Description</Label>
+                    <Textarea
+                      id="description"
+                      value={formData.description}
+                      onChange={(e) => {
+                        const newDescription = e.target.value;
+                        setFormData({
+                          ...formData,
+                          description: newDescription,
+                          translations: {
+                            ...formData.translations,
+                            en: { ...formData.translations.en, description: newDescription }
+                          }
+                        });
+                      }}
+                      rows={3}
+                    />
+                  </div>
+                )}
 
                 <div>
                   <Label htmlFor="icon_url">Icon URL</Label>

@@ -740,7 +740,7 @@ export default function Category() {
                 <h3 className="text-xl font-semibold text-gray-800">No Products Found</h3>
                 <p className="text-gray-500 mt-2 text-center">
                   {currentCategory ?
-                    `No products found in the "${getCategoryName(currentCategory, getCurrentLanguage())}" category.` :
+                    `No products found in the "${getCategoryName(currentCategory, getCurrentLanguage()) || currentCategory.name}" category.` :
                     "No products match your current filters."
                   }
                 </p>

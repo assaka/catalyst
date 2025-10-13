@@ -4,25 +4,38 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Plus, Trash2 } from 'lucide-react';
+import { Plus, Trash2, Languages } from 'lucide-react';
+import TranslationFields from '@/components/admin/TranslationFields';
 
 export default function TaxForm({ tax, onSubmit, onCancel }) {
+  const [showTranslations, setShowTranslations] = useState(false);
   const [formData, setFormData] = useState({
     name: '',
     description: '',
     is_default: false,
-    country_rates: [{ country: 'US', rate: 0 }]
+    country_rates: [{ country: 'US', rate: 0 }],
+    translations: {}
   });
 
   useEffect(() => {
     if (tax) {
+      // Initialize translations with English defaults
+      let translations = tax.translations || {};
+      if (!translations.en) {
+        translations.en = {
+          name: tax.name || '',
+          description: tax.description || ''
+        };
+      }
+
       setFormData({
         name: tax.name || '',
         description: tax.description || '',
         is_default: tax.is_default || false,
-        country_rates: tax.country_rates && tax.country_rates.length > 0 
-          ? tax.country_rates 
-          : [{ country: 'US', rate: 0 }]
+        country_rates: tax.country_rates && tax.country_rates.length > 0
+          ? tax.country_rates
+          : [{ country: 'US', rate: 0 }],
+        translations: translations
       });
     }
   }, [tax]);
@@ -66,22 +79,85 @@ export default function TaxForm({ tax, onSubmit, onCancel }) {
         <Input
           id="name"
           value={formData.name}
-          onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
+          onChange={(e) => {
+            const newName = e.target.value;
+            setFormData(prev => ({
+              ...prev,
+              name: newName,
+              translations: {
+                ...prev.translations,
+                en: {
+                  ...prev.translations.en,
+                  name: newName
+                }
+              }
+            }));
+          }}
           placeholder="e.g., Standard VAT, Sales Tax"
           required
         />
+        <button
+          type="button"
+          onClick={() => setShowTranslations(!showTranslations)}
+          className="text-sm text-blue-600 hover:text-blue-800 mt-1 inline-flex items-center gap-1"
+        >
+          <Languages className="w-4 h-4" />
+          {showTranslations ? 'Hide translations' : 'Manage translations'}
+        </button>
       </div>
 
-      <div>
-        <Label htmlFor="description">Description</Label>
-        <Textarea
-          id="description"
-          value={formData.description}
-          onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
-          placeholder="Brief description of this tax rule"
-          rows={3}
-        />
-      </div>
+      {showTranslations && (
+        <div className="border-2 border-blue-200 bg-blue-50 rounded-lg p-4">
+          <div className="flex items-center gap-2 mb-4">
+            <Languages className="w-5 h-5 text-blue-600" />
+            <h3 className="text-base font-semibold text-blue-900">Tax Rule Translations</h3>
+          </div>
+          <TranslationFields
+            translations={formData.translations}
+            onChange={(newTranslations) => {
+              setFormData(prev => ({
+                ...prev,
+                translations: newTranslations,
+                name: newTranslations.en?.name || prev.name,
+                description: newTranslations.en?.description || prev.description
+              }));
+            }}
+            fields={[
+              { name: 'name', label: 'Tax Rule Name', type: 'text', required: true },
+              { name: 'description', label: 'Description', type: 'textarea', rows: 3, required: false }
+            ]}
+          />
+          <p className="text-sm text-gray-600 mt-3">
+            Translate tax rule name and description for different languages
+          </p>
+        </div>
+      )}
+
+      {!showTranslations && (
+        <div>
+          <Label htmlFor="description">Description</Label>
+          <Textarea
+            id="description"
+            value={formData.description}
+            onChange={(e) => {
+              const newDescription = e.target.value;
+              setFormData(prev => ({
+                ...prev,
+                description: newDescription,
+                translations: {
+                  ...prev.translations,
+                  en: {
+                    ...prev.translations.en,
+                    description: newDescription
+                  }
+                }
+              }));
+            }}
+            placeholder="Brief description of this tax rule"
+            rows={3}
+          />
+        </div>
+      )}
 
       <div className="flex items-center space-x-2">
         <Checkbox

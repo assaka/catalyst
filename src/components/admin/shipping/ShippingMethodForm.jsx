@@ -7,10 +7,13 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { CountrySelect } from '@/components/ui/country-select';
 import { Textarea } from '@/components/ui/textarea';
+import { Languages } from 'lucide-react';
+import TranslationFields from '@/components/admin/TranslationFields';
 
 import { useAlertTypes } from '@/hooks/useAlert';
 export default function ShippingMethodForm({ method, storeId, onSubmit, onCancel }) {
   const { showError, showWarning, showInfo, showSuccess, AlertComponent } = useAlertTypes();
+  const [showTranslations, setShowTranslations] = useState(false);
   const [formData, setFormData] = useState({
     name: '',
     description: '',
@@ -24,13 +27,22 @@ export default function ShippingMethodForm({ method, storeId, onSubmit, onCancel
     countries: [],
     min_delivery_days: 1,
     max_delivery_days: 7,
-    sort_order: 0
+    sort_order: 0,
+    translations: {}
   });
 
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     if (method) {
+      let translations = method.translations || {};
+      if (!translations.en) {
+        translations.en = {
+          name: method.name || '',
+          description: method.description || ''
+        };
+      }
+
       setFormData({
         name: method.name || '',
         description: method.description || '',
@@ -44,7 +56,8 @@ export default function ShippingMethodForm({ method, storeId, onSubmit, onCancel
         countries: Array.isArray(method.countries) ? method.countries : [],
         min_delivery_days: method.min_delivery_days || 1,
         max_delivery_days: method.max_delivery_days || 7,
-        sort_order: method.sort_order || 0
+        sort_order: method.sort_order || 0,
+        translations: translations
       });
     }
   }, [method]);
@@ -281,22 +294,76 @@ export default function ShippingMethodForm({ method, storeId, onSubmit, onCancel
             <Input
               id="name"
               value={formData.name}
-              onChange={(e) => handleInputChange('name', e.target.value)}
+              onChange={(e) => {
+                const newName = e.target.value;
+                setFormData(prev => ({
+                  ...prev,
+                  name: newName,
+                  translations: {
+                    ...prev.translations,
+                    en: { ...prev.translations.en, name: newName }
+                  }
+                }));
+              }}
               placeholder="e.g., Standard Shipping, Express Delivery"
               required
             />
+            <button
+              type="button"
+              onClick={() => setShowTranslations(!showTranslations)}
+              className="text-sm text-blue-600 hover:text-blue-800 mt-1 inline-flex items-center gap-1"
+            >
+              <Languages className="w-4 h-4" />
+              {showTranslations ? 'Hide translations' : 'Manage translations'}
+            </button>
           </div>
 
-          <div>
-            <Label htmlFor="description">Description</Label>
-            <Textarea
-              id="description"
-              value={formData.description}
-              onChange={(e) => handleInputChange('description', e.target.value)}
-              placeholder="Brief description of this shipping method"
-              rows={3}
-            />
-          </div>
+          {showTranslations && (
+            <div className="border-2 border-blue-200 bg-blue-50 rounded-lg p-4">
+              <div className="flex items-center gap-2 mb-4">
+                <Languages className="w-5 h-5 text-blue-600" />
+                <h3 className="text-base font-semibold text-blue-900">Shipping Method Translations</h3>
+              </div>
+              <TranslationFields
+                translations={formData.translations}
+                onChange={(newTranslations) => {
+                  setFormData(prev => ({
+                    ...prev,
+                    translations: newTranslations,
+                    name: newTranslations.en?.name || prev.name,
+                    description: newTranslations.en?.description || prev.description
+                  }));
+                }}
+                fields={[
+                  { name: 'name', label: 'Method Name', type: 'text', required: true },
+                  { name: 'description', label: 'Description', type: 'textarea', rows: 3, required: false }
+                ]}
+              />
+            </div>
+          )}
+
+          {!showTranslations && (
+            <div>
+              <Label htmlFor="description">Description</Label>
+              <Textarea
+                id="description"
+                value={formData.description}
+                onChange={(e) => {
+                  const newDescription = e.target.value;
+                  setFormData(prev => ({
+                    ...prev,
+                    description: newDescription,
+                    translations: {
+                      ...prev.translations,
+                      en: { ...prev.translations.en, description: newDescription }
+                    }
+                  }));
+                }}
+                placeholder="Brief description of this shipping method"
+                rows={3}
+              />
+            </div>
+          )}
 
           <div className="flex items-center space-x-2">
             <Switch

@@ -9,6 +9,7 @@ import cartService from '@/services/cartService';
 import { ShoppingCart } from 'lucide-react';
 import { getPrimaryImageUrl } from '@/utils/imageUtils';
 import { getStockLabel, getStockLabelStyle } from '@/utils/stockLabelUtils';
+import { getProductName, getCurrentLanguage } from '@/utils/translationUtils';
 
 /**
  * ProductItemCard - Reusable product card component
@@ -40,7 +41,7 @@ const ProductItemCard = ({
   const {
     productTemplate = {},
     productImage = {},
-    productName = {},
+    productName: productNameSlot = {},
     productPrice = {},
     productComparePrice = {},
     productAddToCart = {},
@@ -53,10 +54,13 @@ const ProductItemCard = ({
     product_card_add_to_cart = {}
   } = slotConfig;
 
+  // Get translated product name
+  const translatedProductName = getProductName(product, getCurrentLanguage()) || product.name;
+
   // Merge configurations (card-specific takes precedence)
   const templateConfig = { ...productTemplate, ...product_card_template };
   const imageConfig = { ...productImage, ...product_card_image };
-  const nameConfig = { ...productName, ...product_card_name };
+  const nameConfig = { ...productNameSlot, ...product_card_name };
   const priceConfig = { ...productPrice, ...product_card_price };
   const comparePriceConfig = { ...productComparePrice, ...product_card_compare_price };
   const addToCartConfig = { ...productAddToCart, ...product_card_add_to_cart };
@@ -199,7 +203,7 @@ const ProductItemCard = ({
         window.dispatchEvent(new CustomEvent('showFlashMessage', {
           detail: {
             type: 'success',
-            message: `${product.name} added to cart successfully!`
+            message: `${translatedProductName} added to cart successfully!`
           }
         }));
       } else {
@@ -209,7 +213,7 @@ const ProductItemCard = ({
         window.dispatchEvent(new CustomEvent('showFlashMessage', {
           detail: {
             type: 'error',
-            message: `Failed to add ${product.name} to cart. Please try again.`
+            message: `Failed to add ${translatedProductName} to cart. Please try again.`
           }
         }));
       }
@@ -220,7 +224,7 @@ const ProductItemCard = ({
       window.dispatchEvent(new CustomEvent('showFlashMessage', {
         detail: {
           type: 'error',
-          message: `Error adding ${product.name} to cart. Please try again.`
+          message: `Error adding ${translatedProductName} to cart. Please try again.`
         }
       }));
     } finally {
@@ -257,7 +261,7 @@ const ProductItemCard = ({
           >
             <img
               src={getPrimaryImageUrl(product.images) || '/placeholder-product.jpg'}
-              alt={product.name}
+              alt={translatedProductName}
               className={imageConfig.className || `w-full ${viewMode === 'list' ? 'h-32' : 'h-48'} object-cover transition-transform duration-300 group-hover:scale-105`}
               style={imageConfig.styles || {}}
             />
@@ -272,7 +276,7 @@ const ProductItemCard = ({
             data-slot-id={isEditorMode ? 'product_card_name' : undefined}
             onClick={isEditorMode ? (e) => handleSlotClick(e, 'product_card_name') : undefined}
           >
-            <Link to={createProductUrl(store.slug, product.slug)} onClick={isEditorMode ? (e) => e.preventDefault() : undefined}>{product.name}</Link>
+            <Link to={createProductUrl(store.slug, product.slug)} onClick={isEditorMode ? (e) => e.preventDefault() : undefined}>{translatedProductName}</Link>
           </h3>
 
           {viewMode === 'list' && product.description && (

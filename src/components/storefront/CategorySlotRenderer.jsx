@@ -13,6 +13,7 @@ import '@/components/editor/slot/BreadcrumbsSlotComponent';
 import { createProductUrl } from '@/utils/urlUtils';
 import { formatPrice, getPriceDisplay } from '@/utils/priceUtils';
 import { getStockLabel, getStockLabelStyle } from '@/utils/stockLabelUtils';
+import { getCategoryName, getProductName, getCurrentLanguage } from '@/utils/translationUtils';
 
 /**
  * CategorySlotRenderer - Data Processor & Slot Tree Renderer for Category Pages
@@ -223,9 +224,13 @@ export function CategorySlotRenderer({
       const registeredComponent = ComponentRegistry.get(finalComponentName);
 
       // Format products with all necessary fields for templates
+      const currentLanguage = getCurrentLanguage();
       const formattedProducts = products.map(product => {
         // Use the centralized getPriceDisplay utility
         const priceInfo = getPriceDisplay(product);
+
+        // Get translated product name
+        const translatedName = getProductName(product, currentLanguage) || product.name;
 
         // Calculate stock status
         const isInStock = product.infinite_stock || (product.stock_quantity !== undefined && product.stock_quantity > 0);
@@ -236,6 +241,8 @@ export function CategorySlotRenderer({
 
         return {
           ...product,
+          // Add translated name
+          name: translatedName,
           // Use getPriceDisplay results for consistent pricing
           price_formatted: formatPrice(priceInfo.displayPrice), // Lowest price
           compare_price_formatted: priceInfo.hasComparePrice ? formatPrice(priceInfo.originalPrice) : '', // Highest price (only if sale)
@@ -428,8 +435,15 @@ export function CategorySlotRenderer({
         return pages;
       };
 
+      // Get translated category name
+      const currentLanguage = getCurrentLanguage();
+      const translatedCategoryName = category ? (getCategoryName(category, currentLanguage) || category.name) : '';
+
       const variableContext = {
-        category,
+        category: category ? {
+          ...category,
+          name: translatedCategoryName
+        } : null,
         products: formattedProducts,
         filters: formattedFilters,
         activeFilters: categoryContext.activeFilters || [],
@@ -518,8 +532,10 @@ export function CategorySlotRenderer({
 
     // Handle category header content - with dynamic content from categoryContext
     if (id === 'category_header' || id === 'header' || id === 'category_title') {
-      // Use content from slot if provided, otherwise use category name
-      const headerContent = category?.name || content || 'Products';
+      // Use content from slot if provided, otherwise use translated category name
+      const currentLanguage = getCurrentLanguage();
+      const translatedCategoryName = category ? (getCategoryName(category, currentLanguage) || category.name) : '';
+      const headerContent = content || translatedCategoryName || 'Products';
 
       return wrapWithParentClass(
         <h1 className={className} style={styles}>

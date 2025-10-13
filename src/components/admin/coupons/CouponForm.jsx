@@ -7,12 +7,15 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Checkbox } from '@/components/ui/checkbox';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { MultiSelect } from '@/components/ui/multi-select';
+import { Languages } from 'lucide-react';
+import TranslationFields from '@/components/admin/TranslationFields';
 import { Category } from '@/api/entities';
 import { Product } from '@/api/entities';
 import { AttributeSet } from '@/api/entities';
 import { Attribute } from '@/api/entities';
 
 export default function CouponForm({ coupon, onSubmit, onCancel, storeId }) {
+  const [showTranslations, setShowTranslations] = useState(false);
   const [formData, setFormData] = useState({
     name: '',
     code: '',
@@ -32,7 +35,8 @@ export default function CouponForm({ coupon, onSubmit, onCancel, storeId }) {
     applicable_attribute_sets: [], // New field
     applicable_attributes: [], // New field
     buy_quantity: 1, // New field
-    get_quantity: 1  // New field
+    get_quantity: 1,  // New field
+    translations: {}
   });
 
   const [categories, setCategories] = useState([]);
@@ -47,6 +51,14 @@ export default function CouponForm({ coupon, onSubmit, onCancel, storeId }) {
 
   useEffect(() => {
     if (coupon) {
+      let translations = coupon.translations || {};
+      if (!translations.en) {
+        translations.en = {
+          name: coupon.name || '',
+          description: coupon.description || ''
+        };
+      }
+
       setFormData({
         name: coupon.name || '',
         code: coupon.code || '',
@@ -66,7 +78,8 @@ export default function CouponForm({ coupon, onSubmit, onCancel, storeId }) {
         applicable_attribute_sets: coupon.applicable_attribute_sets || [],
         applicable_attributes: coupon.applicable_attributes || [],
         buy_quantity: coupon.buy_quantity || 1,
-        get_quantity: coupon.get_quantity || 1
+        get_quantity: coupon.get_quantity || 1,
+        translations: translations
       });
     }
   }, [coupon]);
