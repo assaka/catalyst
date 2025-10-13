@@ -88,6 +88,7 @@ import { StoreProvider } from "@/components/storefront/StoreProvider";
 import { PriceUtilsProvider } from "@/utils/PriceUtilsProvider";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useStoreSelection } from "@/contexts/StoreSelectionContext";
+import CatalystAIStudio from "@/components/admin/CatalystAIStudio";
 
 
 const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms));
@@ -450,6 +451,7 @@ export default function Layout({ children, currentPageName }) {
       items: [
         { name: "Settings", path: "SETTINGS", icon: SettingsIcon },
         { name: "Theme & Layout", path: "THEME_LAYOUT", icon: Palette },
+        { name: "Translations", path: "Translations", icon: Globe },
         { name: "Media Storage", path: "media-storage", icon: Image },
         { name: "Database", path: "database-integrations", icon: Database },
         { name: "Render Integration", path: "render-integration", icon: Cloud },
@@ -810,6 +812,10 @@ export default function Layout({ children, currentPageName }) {
           {children}
         </div>
       </div>
+
+      {/* Catalyst AI Studio - Global AI Assistant */}
+      {(isAdminPage || isEditorPage) && <CatalystAIStudio initialContext="general" />}
+
       </div>
       </PriceUtilsProvider>
     </StoreProvider>

@@ -1,6 +1,8 @@
 import './App.css'
 import { Toaster } from "@/components/ui/toaster"
 import { StoreSelectionProvider } from "@/contexts/StoreSelectionContext"
+import { TranslationProvider } from "@/contexts/TranslationContext"
+import { AIProvider } from "@/contexts/AIContext"
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom'
 import Layout from '@/pages/Layout'
 import Auth from '@/pages/Auth'
@@ -205,9 +207,11 @@ function App() {
   }, [])
 
   return (
-    <StoreSelectionProvider>
-      <Router>
-        <Routes>
+    <TranslationProvider>
+      <AIProvider>
+        <StoreSelectionProvider>
+          <Router>
+            <Routes>
           {/* Admin routes */}
           <Route path="/admin" element={<PageWrapper Component={Pages.Dashboard} pageName="Dashboard" />} />
           <Route path="/admin/dashboard" element={<PageWrapper Component={Pages.Dashboard} pageName="Dashboard" />} />
@@ -266,6 +270,7 @@ function App() {
           <Route path="/admin/team" element={<PageWrapper Component={Pages.TeamPage} pageName="TeamPage" />} />
           <Route path="/admin/onboarding" element={<PageWrapper Component={Pages.Onboarding} pageName="Onboarding" />} />
           <Route path="/admin/ai-context-window" element={<PageWrapper Component={Pages.AIContextWindow} pageName="AIContextWindow" />} />
+          <Route path="/admin/translations" element={<PageWrapper Component={Pages.Translations} pageName="Translations" />} />
           <Route path="/admin/auth" element={<PageWrapper Component={Auth} pageName="Auth" />} />
           
           {/* Unified Plugins Section - Independent from Admin */}
@@ -305,10 +310,12 @@ function App() {
           
           {/* Catch all - redirect to homepage */}
           <Route path="*" element={<Navigate to="/" replace />} />
-        </Routes>
-      </Router>
-      <Toaster />
-    </StoreSelectionProvider>
+            </Routes>
+          </Router>
+          <Toaster />
+        </StoreSelectionProvider>
+      </AIProvider>
+    </TranslationProvider>
   )
 }
 

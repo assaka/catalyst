@@ -29,6 +29,7 @@ import HeatmapTrackerComponent from '@/components/admin/heatmap/HeatmapTracker';
 import FlashMessage from '@/components/storefront/FlashMessage';
 import { HeaderSlotRenderer } from './HeaderSlotRenderer';
 import { useHeaderConfig } from '@/hooks/useHeaderConfig';
+import LanguageSelector from '@/components/common/LanguageSelector';
 
 const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 
@@ -439,24 +440,9 @@ export default function StorefrontLayout({ children }) {
                                      </div>
 
                                      <div className="hidden md:flex items-center space-x-3">
-                                        {Array.isArray(languages) && languages.length > 1 && (
-                                            <Select value={currentLanguage} onValueChange={setCurrentLanguage}>
-                                                <SelectTrigger className="w-auto border-none bg-transparent space-x-2">
-                                                    <Globe className="w-4 h-4" />
-                                                    <SelectValue />
-                                                </SelectTrigger>
-                                                <SelectContent>
-                                                    {languages.map(language => (
-                                                        <SelectItem key={language.id} value={language.code}>
-                                                            <div className="flex items-center space-x-2">
-                                                                <span>{language.flag_icon}</span>
-                                                                <span>{language.name}</span>
-                                                            </div>
-                                                        </SelectItem>
-                                                    ))}
-                                                </SelectContent>
-                                            </Select>
-                                        )}
+                                        {/* New Translation System Language Selector */}
+                                        <LanguageSelector variant="storefront" />
+
                                         {settings.allowed_countries && Array.isArray(settings.allowed_countries) && settings.allowed_countries.length > 1 && (
                                             <CountrySelect
                                                 value={selectedCountry}

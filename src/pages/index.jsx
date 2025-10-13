@@ -58,6 +58,7 @@ export { default as Billing } from './admin/Billing';
 export { default as TeamPage } from './admin/TeamPage';
 export { default as Onboarding } from './admin/Onboarding';
 export { default as ThemeLayout } from './admin/ThemeLayout';
+export { default as Translations } from './admin/Translations';
 
 // Editor Pages
 export { default as AIContextWindow } from './editor/AIContextWindow';
