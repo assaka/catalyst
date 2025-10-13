@@ -539,6 +539,14 @@ export default function CookieConsent() {
                         value={settings.accept_all_text}
                         onChange={(e) => setSettings({ ...settings, accept_all_text: e.target.value })}
                       />
+                      <button
+                        type="button"
+                        onClick={() => setShowTranslations(!showTranslations)}
+                        className="text-sm text-blue-600 hover:text-blue-800 mt-1 flex items-center gap-1"
+                      >
+                        <Languages className="w-4 h-4" />
+                        {showTranslations ? 'Hide translations' : 'Manage translations'}
+                      </button>
                     </div>
                     <div>
                       <Label htmlFor="reject_all_text">Reject Button Text</Label>
@@ -547,6 +555,14 @@ export default function CookieConsent() {
                         value={settings.reject_all_text}
                         onChange={(e) => setSettings({ ...settings, reject_all_text: e.target.value })}
                       />
+                      <button
+                        type="button"
+                        onClick={() => setShowTranslations(!showTranslations)}
+                        className="text-sm text-blue-600 hover:text-blue-800 mt-1 flex items-center gap-1"
+                      >
+                        <Languages className="w-4 h-4" />
+                        {showTranslations ? 'Hide translations' : 'Manage translations'}
+                      </button>
                     </div>
                   </div>
 
@@ -558,6 +574,14 @@ export default function CookieConsent() {
                         value={settings.manage_preferences_text}
                         onChange={(e) => setSettings({ ...settings, manage_preferences_text: e.target.value })}
                       />
+                      <button
+                        type="button"
+                        onClick={() => setShowTranslations(!showTranslations)}
+                        className="text-sm text-blue-600 hover:text-blue-800 mt-1 flex items-center gap-1"
+                      >
+                        <Languages className="w-4 h-4" />
+                        {showTranslations ? 'Hide translations' : 'Manage translations'}
+                      </button>
                     </div>
                     <div>
                       <Label htmlFor="privacy_policy_text">Privacy Policy Link Text</Label>
@@ -566,6 +590,14 @@ export default function CookieConsent() {
                         value={settings.privacy_policy_text}
                         onChange={(e) => setSettings({ ...settings, privacy_policy_text: e.target.value })}
                       />
+                      <button
+                        type="button"
+                        onClick={() => setShowTranslations(!showTranslations)}
+                        className="text-sm text-blue-600 hover:text-blue-800 mt-1 flex items-center gap-1"
+                      >
+                        <Languages className="w-4 h-4" />
+                        {showTranslations ? 'Hide translations' : 'Manage translations'}
+                      </button>
                     </div>
                   </div>
 

@@ -408,7 +408,15 @@ export default function StockSettings() {
                       value={settings.out_of_stock_label}
                       onChange={(e) => handleSettingsChange('out_of_stock_label', e.target.value)}
                     />
-                     <p className="text-sm text-gray-500 mt-1">
+                    <button
+                      type="button"
+                      onClick={() => setShowTranslations(!showTranslations)}
+                      className="text-sm text-blue-600 hover:text-blue-800 mt-1 flex items-center gap-1"
+                    >
+                      <Languages className="w-4 h-4" />
+                      {showTranslations ? 'Hide translations' : 'Manage translations'}
+                    </button>
+                    <p className="text-sm text-gray-500 mt-1">
                       Text to display when a product is out of stock.
                     </p>
                     <div className="grid grid-cols-2 gap-4 mt-3">
@@ -441,6 +449,14 @@ export default function StockSettings() {
                       value={settings.low_stock_label}
                       onChange={(e) => handleSettingsChange('low_stock_label', e.target.value)}
                     />
+                    <button
+                      type="button"
+                      onClick={() => setShowTranslations(!showTranslations)}
+                      className="text-sm text-blue-600 hover:text-blue-800 mt-1 flex items-center gap-1"
+                    >
+                      <Languages className="w-4 h-4" />
+                      {showTranslations ? 'Hide translations' : 'Manage translations'}
+                    </button>
                     <p className="text-sm text-gray-500 mt-1">
                       Text for low stock warning. Use <code>{'{quantity}'}</code> blocks for flexible formatting.
                     </p>
