@@ -24,6 +24,7 @@ import {
 } from 'lucide-react';
 import CmsBlockRenderer from '@/components/storefront/CmsBlockRenderer';
 import { formatPrice, safeNumber } from '@/utils/priceUtils';
+import { getProductName, getCurrentLanguage } from '@/utils/translationUtils';
 import cartService from '@/services/cartService';
 
 export default function OrderSuccess() {

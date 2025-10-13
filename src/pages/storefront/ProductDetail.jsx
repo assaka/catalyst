@@ -3,7 +3,7 @@ import React, { useState, useEffect, useCallback, Fragment } from "react";
 import { useParams, useSearchParams, Link, useNavigate } from "react-router-dom";
 import { createPageUrl } from "@/utils";
 import { buildProductBreadcrumbs } from "@/utils/breadcrumbUtils";
-import { getCategoryName as getTranslatedCategoryName } from "@/utils/translationUtils";
+import { getCategoryName as getTranslatedCategoryName, getProductName, getCurrentLanguage } from "@/utils/translationUtils";
 // Redirect handling moved to global RedirectHandler component
 import { useNotFound } from "@/utils/notFoundUtils";
 import { StorefrontProduct } from "@/api/storefront-entities";
@@ -407,7 +407,7 @@ export default function ProductDetail() {
             ecommerce: {
               items: [{
                 item_id: foundProduct.id,
-                item_name: foundProduct.name,
+                item_name: getProductName(foundProduct, getCurrentLanguage()) || foundProduct.name,
                 price: safeNumber(foundProduct.price),
                 item_brand: foundProduct.brand, // Assuming product has a brand field
                 item_category: (() => {
@@ -669,7 +669,7 @@ export default function ProductDetail() {
             ecommerce: {
               items: [{
                 item_id: product.id,
-                item_name: product.name,
+                item_name: getProductName(product, getCurrentLanguage()) || product.name,
                 price: safeNumber(basePrice),
                 quantity: quantity,
                 item_brand: product.brand,
@@ -683,9 +683,10 @@ export default function ProductDetail() {
           });
         }
 
+        const translatedProductName = getProductName(product, getCurrentLanguage()) || product.name;
         setFlashMessage({
           type: 'success',
-          message: `${product.name} added to cart successfully!`
+          message: `${translatedProductName} added to cart successfully!`
         });
       } else {
         setFlashMessage({
@@ -861,7 +862,10 @@ export default function ProductDetail() {
               ConfigurableProductSelector // Pass the component itself
             }}
             variableContext={{
-              product,
+              product: product ? {
+                ...product,
+                name: getProductName(product, getCurrentLanguage()) || product.name
+              } : null,
               store,
               settings, // 🔧 CRITICAL FIX: Pass fresh settings to variableContext for HTML template processing
               productLabels: (() => {

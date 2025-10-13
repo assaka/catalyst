@@ -44,6 +44,7 @@ import CmsBlockRenderer from "@/components/storefront/CmsBlockRenderer";
 import apiClient from "@/api/client";
 import StepIndicator from "@/components/storefront/StepIndicator";
 import { formatPrice as formatPriceUtil } from '@/utils/priceUtils';
+import { getProductName, getCurrentLanguage } from '@/utils/translationUtils';
 
 export default function Checkout() {
   const { store, settings, loading: storeLoading, selectedCountry, setSelectedCountry } = useStore();
@@ -926,10 +927,11 @@ export default function Checkout() {
       // Enrich cart items with product details for order creation
       const enrichedCartItems = cartItems.map(item => {
         const product = cartProducts[item.product_id];
+        const translatedName = product ? (getProductName(product, getCurrentLanguage()) || product.name) : (item.product_name || item.name || 'Product');
         return {
           ...item,
-          product_name: product?.title || item.product_name || item.name || 'Product',
-          name: product?.title || item.product_name || item.name || 'Product',
+          product_name: translatedName,
+          name: translatedName,
           sku: product?.sku || item.sku || '',
           price: item.price || product?.price || 0
         };
@@ -1877,6 +1879,9 @@ export default function Checkout() {
                         const product = cartProducts[item.product_id];
                         if (!product) return null;
 
+                        // Get translated product name
+                        const translatedProductName = getProductName(product, getCurrentLanguage()) || product.name;
+
                         let basePrice = parseFloat(item.price || 0);
                         if (!item.price || isNaN(basePrice)) {
                           basePrice = parseFloat(product.price || 0);
@@ -1894,11 +1899,11 @@ export default function Checkout() {
                           <div key={item.id} className="flex items-center space-x-3 py-3 border-b border-gray-100">
                             <img
                               src={product.images?.[0] || 'https://placehold.co/60x60?text=No+Image'}
-                              alt={product.name}
+                              alt={translatedProductName}
                               className="w-16 h-16 object-cover rounded-lg"
                             />
                             <div className="flex-1">
-                              <h4 className="font-medium">{product.name}</h4>
+                              <h4 className="font-medium">{translatedProductName}</h4>
                               <p className="text-sm text-gray-500">{formatPrice(basePrice)} each</p>
 
                               {item.selected_options && item.selected_options.length > 0 && (

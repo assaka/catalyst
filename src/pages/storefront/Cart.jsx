@@ -13,6 +13,7 @@ import taxService from '@/services/taxService';
 import FlashMessage from '@/components/storefront/FlashMessage';
 import SeoHeadManager from '@/components/storefront/SeoHeadManager';
 import { formatPriceWithTax, calculateDisplayPrice, safeNumber, formatPrice as formatPriceUtil } from '@/utils/priceUtils';
+import { getProductName, getCurrentLanguage } from '@/utils/translationUtils';
 
 // Import new hook system
 import hookSystem from '@/core/HookSystem.js';
@@ -1010,7 +1011,13 @@ export default function Cart() {
                             viewMode={cartItems.length === 0 ? 'emptyCart' : 'withProducts'}
                             context="storefront"
                             cartData={{
-                                cartItems,
+                                cartItems: cartItems.map(item => ({
+                                    ...item,
+                                    product: item.product ? {
+                                        ...item.product,
+                                        name: getProductName(item.product, getCurrentLanguage()) || item.product.name
+                                    } : item.product
+                                })),
                                 appliedCoupon,
                                 couponCode,
                                 subtotal,

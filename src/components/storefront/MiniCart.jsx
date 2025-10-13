@@ -16,6 +16,7 @@ import {
 } from '@/components/ui/popover';
 import { formatPrice, safeNumber, calculateDisplayPrice } from '@/utils/priceUtils';
 import { getPrimaryImageUrl } from '@/utils/imageUtils';
+import { getProductName, getCurrentLanguage } from '@/utils/translationUtils';
 
 export default function MiniCart({ iconVariant = 'outline' }) {
   const { store, settings, taxes, selectedCountry } = useStore();
@@ -415,6 +416,9 @@ export default function MiniCart({ iconVariant = 'outline' }) {
                     );
                   }
 
+                  // Get translated product name
+                  const translatedProductName = getProductName(product, getCurrentLanguage()) || product.name;
+
                   // Use the stored price from cart (which should be the sale price)
                   let basePrice = safeNumber(item.price);
 
@@ -431,11 +435,11 @@ export default function MiniCart({ iconVariant = 'outline' }) {
                     <div key={item.id} className="flex items-center space-x-3 py-2 border-b border-gray-200">
                       <img
                         src={getPrimaryImageUrl(product.images) || 'https://placehold.co/50x50?text=No+Image'}
-                        alt={product.name}
+                        alt={translatedProductName}
                         className="w-12 h-12 object-cover rounded"
                       />
                       <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium truncate">{product.name}</p>
+                        <p className="text-sm font-medium truncate">{translatedProductName}</p>
                         <p className="text-sm text-gray-500">{formatPrice(calculateDisplayPrice(basePrice, store, taxes, selectedCountry))} each</p>
 
                         {item.selected_options && item.selected_options.length > 0 && (
