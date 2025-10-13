@@ -81,15 +81,12 @@ router.get('/', authMiddleware, authorize(['admin', 'store_owner']), async (req,
 
     console.log('🔎 Final WHERE clause for products query:', JSON.stringify(where, null, 2));
 
+    // Temporarily remove Store include to avoid association errors
     const { count, rows } = await Product.findAndCountAll({
       where,
       limit: parseInt(limit),
       offset: parseInt(offset),
-      order: [['created_at', 'DESC']],
-      include: [{
-        model: Store,
-        attributes: ['id', 'name']
-      }]
+      order: [['created_at', 'DESC']]
     });
 
 
@@ -119,12 +116,7 @@ router.get('/', authMiddleware, authorize(['admin', 'store_owner']), async (req,
 // @access  Private
 router.get('/:id', authMiddleware, authorize(['admin', 'store_owner']), async (req, res) => {
   try {
-    const product = await Product.findByPk(req.params.id, {
-      include: [{
-        model: Store,
-        attributes: ['id', 'name', 'user_id']
-      }]
-    });
+    const product = await Product.findByPk(req.params.id);
     
     if (!product) {
       return res.status(404).json({
@@ -136,8 +128,8 @@ router.get('/:id', authMiddleware, authorize(['admin', 'store_owner']), async (r
     // Check store access
     if (req.user.role !== 'admin') {
       const { checkUserStoreAccess } = require('../utils/storeAccess');
-      const access = await checkUserStoreAccess(req.user.id, product.Store.id);
-      
+      const access = await checkUserStoreAccess(req.user.id, product.store_id);
+
       if (!access) {
         return res.status(403).json({
           success: false,
@@ -251,12 +243,7 @@ router.put('/:id',
       });
     }
 
-    const product = await Product.findByPk(req.params.id, {
-      include: [{
-        model: Store,
-        attributes: ['id', 'name', 'user_id']
-      }]
-    });
+    const product = await Product.findByPk(req.params.id);
     
     if (!product) {
       return res.status(404).json({
@@ -268,8 +255,8 @@ router.put('/:id',
     // Check store access
     if (req.user.role !== 'admin') {
       const { checkUserStoreAccess } = require('../utils/storeAccess');
-      const access = await checkUserStoreAccess(req.user.id, product.Store.id);
-      
+      const access = await checkUserStoreAccess(req.user.id, product.store_id);
+
       if (!access) {
         return res.status(403).json({
           success: false,
@@ -299,12 +286,7 @@ router.put('/:id',
 // @access  Private
 router.delete('/:id', authMiddleware, authorize(['admin', 'store_owner']), async (req, res) => {
   try {
-    const product = await Product.findByPk(req.params.id, {
-      include: [{
-        model: Store,
-        attributes: ['id', 'name', 'user_id']
-      }]
-    });
+    const product = await Product.findByPk(req.params.id);
     
     if (!product) {
       return res.status(404).json({
@@ -316,8 +298,8 @@ router.delete('/:id', authMiddleware, authorize(['admin', 'store_owner']), async
     // Check store access
     if (req.user.role !== 'admin') {
       const { checkUserStoreAccess } = require('../utils/storeAccess');
-      const access = await checkUserStoreAccess(req.user.id, product.Store.id);
-      
+      const access = await checkUserStoreAccess(req.user.id, product.store_id);
+
       if (!access) {
         return res.status(403).json({
           success: false,
