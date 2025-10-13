@@ -51,6 +51,7 @@ export default function CustomOptionRuleForm({ rule, onSubmit, onCancel }) {
   const [showAttributeSetSelect, setShowAttributeSetSelect] = useState(false);
   const [showAttributeConditionForm, setShowAttributeConditionForm] = useState(false);
   const [newAttributeCondition, setNewAttributeCondition] = useState({ attribute_code: '', attribute_value: '' });
+  const [showTranslations, setShowTranslations] = useState(false);
 
   // Load static data using selected store
   useEffect(() => {
@@ -261,31 +262,6 @@ export default function CustomOptionRuleForm({ rule, onSubmit, onCancel }) {
 
   return (
     <div className="space-y-6">
-      <Accordion type="single" collapsible className="w-full" defaultValue="translations">
-        <AccordionItem value="translations">
-          <AccordionTrigger>
-            <div className="flex items-center space-x-2">
-              <Languages className="w-5 h-5 text-gray-500" />
-              <span>Display Label Translation</span>
-            </div>
-          </AccordionTrigger>
-          <AccordionContent className="p-4 space-y-4 bg-gray-50 rounded-b-lg">
-            <TranslationFields
-              translations={formData.translations}
-              onChange={(newTranslations) => {
-                setFormData(prev => ({ ...prev, translations: newTranslations }));
-              }}
-              fields={[
-                { name: 'display_label', label: 'Display Label', type: 'text', required: true }
-              ]}
-            />
-            <p className="text-sm text-gray-500">
-              Translate the label shown to customers when these custom options appear (e.g., "Custom Options", "Add-ons", "Extras")
-            </p>
-          </AccordionContent>
-        </AccordionItem>
-      </Accordion>
-
       <Card>
         <CardHeader>
           <CardTitle>{rule ? "Edit Custom Option Rule" : "Create Custom Option Rule"}</CardTitle>
@@ -317,8 +293,41 @@ export default function CustomOptionRuleForm({ rule, onSubmit, onCancel }) {
                   placeholder="Label shown to customers"
                   required
                 />
+                <button
+                  type="button"
+                  onClick={() => setShowTranslations(!showTranslations)}
+                  className="text-sm text-blue-600 hover:text-blue-800 mt-1 flex items-center gap-1"
+                >
+                  <Languages className="w-4 h-4" />
+                  {showTranslations ? 'Hide translations' : 'Manage translations'}
+                </button>
               </div>
             </div>
+
+            {showTranslations && (
+              <Card className="border-blue-200 bg-blue-50">
+                <CardHeader>
+                  <CardTitle className="text-base flex items-center gap-2">
+                    <Languages className="w-5 h-5" />
+                    Display Label Translations
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <TranslationFields
+                    translations={formData.translations}
+                    onChange={(newTranslations) => {
+                      setFormData(prev => ({ ...prev, translations: newTranslations }));
+                    }}
+                    fields={[
+                      { name: 'display_label', label: 'Display Label', type: 'text', required: true }
+                    ]}
+                  />
+                  <p className="text-sm text-gray-600 mt-3">
+                    Translate the label shown to customers when these custom options appear (e.g., "Custom Options", "Add-ons", "Extras")
+                  </p>
+                </CardContent>
+              </Card>
+            )}
 
             <div className="flex items-center space-x-2">
               <Switch
