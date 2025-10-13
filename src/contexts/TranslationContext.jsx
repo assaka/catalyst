@@ -23,15 +23,32 @@ export function TranslationProvider({ children }) {
     try {
       const response = await api.get('/languages');
 
-      if (response.data.success) {
-        const languages = response.data.data.filter(lang => lang.is_active);
-        setAvailableLanguages(languages);
+      if (response && response.data && response.data.success) {
+        // Handle nested data structure: response.data.data.languages or response.data.data
+        const languagesData = response.data.data.languages || response.data.data || [];
+        const languages = Array.isArray(languagesData)
+          ? languagesData.filter(lang => lang.is_active)
+          : [];
 
-        // Set RTL status based on current language
-        const current = languages.find(lang => lang.code === currentLanguage);
-        if (current) {
-          setIsRTL(current.is_rtl || false);
+        if (languages.length > 0) {
+          setAvailableLanguages(languages);
+
+          // Set RTL status based on current language
+          const current = languages.find(lang => lang.code === currentLanguage);
+          if (current) {
+            setIsRTL(current.is_rtl || false);
+          }
+        } else {
+          // No active languages found, use English fallback
+          setAvailableLanguages([
+            { code: 'en', name: 'English', native_name: 'English', is_active: true, is_rtl: false }
+          ]);
         }
+      } else {
+        // Invalid response, use English fallback
+        setAvailableLanguages([
+          { code: 'en', name: 'English', native_name: 'English', is_active: true, is_rtl: false }
+        ]);
       }
     } catch (error) {
       console.error('Failed to load languages:', error);
