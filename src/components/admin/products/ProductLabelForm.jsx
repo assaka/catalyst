@@ -8,7 +8,14 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Checkbox } from '@/components/ui/checkbox';
-import { X, Plus } from 'lucide-react';
+import { X, Plus, Languages } from 'lucide-react';
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion";
+import TranslationFields from "@/components/admin/TranslationFields";
 
 export default function ProductLabelForm({ label, attributes, onSubmit, onCancel }) {
   const [formData, setFormData] = useState({
@@ -24,10 +31,21 @@ export default function ProductLabelForm({ label, attributes, onSubmit, onCancel
     is_active: true,
     priority: 0,
     sort_order: 0,
+    translations: {},
   });
 
   useEffect(() => {
     if (label) {
+      // Handle translations with backward compatibility
+      let translations = label.translations || {};
+
+      // Ensure English translation exists (backward compatibility)
+      if (!translations.en || (!translations.en.text && label.text)) {
+        translations.en = {
+          text: label.text || ""
+        };
+      }
+
       setFormData({
         name: label.name || '',
         text: label.text || '',
@@ -41,6 +59,7 @@ export default function ProductLabelForm({ label, attributes, onSubmit, onCancel
         is_active: label.is_active !== false,
         priority: label.priority || 0,
         sort_order: label.sort_order || 0,
+        translations: translations,
       });
     }
   }, [label]);
@@ -149,6 +168,31 @@ export default function ProductLabelForm({ label, attributes, onSubmit, onCancel
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
+      <Accordion type="single" collapsible className="w-full" defaultValue="translations">
+        <AccordionItem value="translations">
+          <AccordionTrigger>
+            <div className="flex items-center space-x-2">
+              <Languages className="w-5 h-5 text-gray-500" />
+              <span>Label Translations (Display Text)</span>
+            </div>
+          </AccordionTrigger>
+          <AccordionContent className="p-4 space-y-4 bg-gray-50 rounded-b-lg">
+            <TranslationFields
+              translations={formData.translations}
+              onChange={(newTranslations) => {
+                setFormData(prev => ({ ...prev, translations: newTranslations }));
+              }}
+              fields={[
+                { name: 'text', label: 'Display Text', type: 'text', required: true }
+              ]}
+            />
+            <p className="text-sm text-gray-500">
+              Translate the label text that will be displayed on product images
+            </p>
+          </AccordionContent>
+        </AccordionItem>
+      </Accordion>
+
       <Tabs defaultValue="basic" className="w-full">
         <TabsList className="grid w-full grid-cols-3">
           <TabsTrigger value="basic">Basic Info</TabsTrigger>

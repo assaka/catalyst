@@ -13,6 +13,14 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion";
+import { Languages } from "lucide-react";
+import TranslationFields from "@/components/admin/TranslationFields";
 
 export default function ProductTabForm({ tab, attributes = [], attributeSets = [], onSubmit, onCancel }) {
   const [formData, setFormData] = useState({
@@ -23,11 +31,23 @@ export default function ProductTabForm({ tab, attributes = [], attributeSets = [
     attribute_set_ids: [],
     sort_order: 0,
     is_active: true,
+    translations: {},
   });
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     if (tab) {
+      // Handle translations with backward compatibility
+      let translations = tab.translations || {};
+
+      // Ensure English translation exists (backward compatibility)
+      if (!translations.en || (!translations.en.name && tab.name)) {
+        translations.en = {
+          name: tab.name || "",
+          content: tab.content || ""
+        };
+      }
+
       setFormData({
         name: tab.name || "",
         tab_type: tab.tab_type || "text",
@@ -36,6 +56,7 @@ export default function ProductTabForm({ tab, attributes = [], attributeSets = [
         attribute_set_ids: tab.attribute_set_ids || [],
         sort_order: tab.sort_order || 0,
         is_active: tab.is_active ?? true,
+        translations: translations,
       });
     }
   }, [tab]);
@@ -81,6 +102,32 @@ export default function ProductTabForm({ tab, attributes = [], attributeSets = [
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
+      <Accordion type="single" collapsible className="w-full" defaultValue="translations">
+        <AccordionItem value="translations">
+          <AccordionTrigger>
+            <div className="flex items-center space-x-2">
+              <Languages className="w-5 h-5 text-gray-500" />
+              <span>Tab Translations (Name & Content)</span>
+            </div>
+          </AccordionTrigger>
+          <AccordionContent className="p-4 space-y-4 bg-gray-50 rounded-b-lg">
+            <TranslationFields
+              translations={formData.translations}
+              onChange={(newTranslations) => {
+                setFormData(prev => ({ ...prev, translations: newTranslations }));
+              }}
+              fields={[
+                { name: 'name', label: 'Tab Name', type: 'text', required: true },
+                { name: 'content', label: 'Tab Content', type: 'textarea', rows: 6, condition: formData.tab_type === 'text' }
+              ]}
+            />
+            <p className="text-sm text-gray-500">
+              Note: Content translation only applies when Tab Type is "Text Content"
+            </p>
+          </AccordionContent>
+        </AccordionItem>
+      </Accordion>
+
       <Card className="material-elevation-1 border-0">
         <CardHeader>
           <CardTitle>{tab ? 'Edit Product Tab' : 'Add Product Tab'}</CardTitle>
