@@ -7,11 +7,18 @@ import { Category } from '@/api/entities';
 import { AttributeSet } from '@/api/entities';
 import { Attribute } from '@/api/entities';
 import { useStoreSelection } from '@/contexts/StoreSelectionContext.jsx';
-import { X, ChevronsUpDown, Check } from 'lucide-react';
+import { X, ChevronsUpDown, Check, Languages } from 'lucide-react';
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Badge } from '@/components/ui/badge';
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion";
+import TranslationFields from "@/components/admin/TranslationFields";
 
 import { useAlertTypes } from '@/hooks/useAlert';
 export default function CustomOptionRuleForm({ rule, onSubmit, onCancel }) {
@@ -29,7 +36,8 @@ export default function CustomOptionRuleForm({ rule, onSubmit, onCancel }) {
       attribute_conditions: []
     },
     optional_product_ids: [],
-    store_id: ''
+    store_id: '',
+    translations: {}
   });
 
   const [customOptionProducts, setCustomOptionProducts] = useState([]);
@@ -110,13 +118,24 @@ export default function CustomOptionRuleForm({ rule, onSubmit, onCancel }) {
   // Populate form data when a rule is passed (for editing)
   useEffect(() => {
     if (rule) {
+      // Handle translations with backward compatibility
+      let translations = rule.translations || {};
+
+      // Ensure English translation exists (backward compatibility)
+      if (!translations.en || (!translations.en.display_label && rule.display_label)) {
+        translations.en = {
+          display_label: rule.display_label || 'Custom Options'
+        };
+      }
+
       setFormData({
         name: rule.name || '',
         display_label: rule.display_label || 'Custom Options',
         is_active: rule.is_active !== false,
         conditions: rule.conditions || { categories: [], attribute_sets: [], skus: [], attribute_conditions: [] },
         optional_product_ids: Array.isArray(rule.optional_product_ids) ? rule.optional_product_ids : [],
-        store_id: rule.store_id || ''
+        store_id: rule.store_id || '',
+        translations: translations
       });
     }
   }, [rule]);
@@ -242,6 +261,31 @@ export default function CustomOptionRuleForm({ rule, onSubmit, onCancel }) {
 
   return (
     <div className="space-y-6">
+      <Accordion type="single" collapsible className="w-full" defaultValue="translations">
+        <AccordionItem value="translations">
+          <AccordionTrigger>
+            <div className="flex items-center space-x-2">
+              <Languages className="w-5 h-5 text-gray-500" />
+              <span>Display Label Translation</span>
+            </div>
+          </AccordionTrigger>
+          <AccordionContent className="p-4 space-y-4 bg-gray-50 rounded-b-lg">
+            <TranslationFields
+              translations={formData.translations}
+              onChange={(newTranslations) => {
+                setFormData(prev => ({ ...prev, translations: newTranslations }));
+              }}
+              fields={[
+                { name: 'display_label', label: 'Display Label', type: 'text', required: true }
+              ]}
+            />
+            <p className="text-sm text-gray-500">
+              Translate the label shown to customers when these custom options appear (e.g., "Custom Options", "Add-ons", "Extras")
+            </p>
+          </AccordionContent>
+        </AccordionItem>
+      </Accordion>
+
       <Card>
         <CardHeader>
           <CardTitle>{rule ? "Edit Custom Option Rule" : "Create Custom Option Rule"}</CardTitle>
