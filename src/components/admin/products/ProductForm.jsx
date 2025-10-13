@@ -10,10 +10,11 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import { Separator } from "@/components/ui/separator";
-import { X, Upload, Search, AlertTriangle, ImageIcon, Plus, Trash2, ChevronRight, ChevronDown, Loader2, CheckCircle, AlertCircle } from "lucide-react";
+import { X, Upload, Search, AlertTriangle, ImageIcon, Plus, Trash2, ChevronRight, ChevronDown, Loader2, CheckCircle, AlertCircle, Languages } from "lucide-react";
 import FlashMessage from "@/components/storefront/FlashMessage";
 import apiClient from "@/api/client";
 import MediaBrowser from "@/components/admin/cms/MediaBrowser";
+import TranslationFields from "@/components/admin/TranslationFields";
 import {
   Accordion,
   AccordionContent,
@@ -77,6 +78,7 @@ export default function ProductForm({ product, categories, stores, taxes, attrib
     attribute_set_id: "", // Default to empty string for 'None'
     configurable_attributes: [], // Array of attribute IDs for configurable products
     attributes: {},
+    translations: {}, // Multilingual translations for name, description, short_description
     seo: {
       meta_title: "",
       meta_description: "",
@@ -126,6 +128,18 @@ export default function ProductForm({ product, categories, stores, taxes, attrib
         ? product.attribute_set_id
         : "";
 
+      // Handle translations with backward compatibility
+      let translations = product.translations || {};
+
+      // Ensure English translation exists (backward compatibility)
+      if (!translations.en || (!translations.en.name && product.name)) {
+        translations.en = {
+          name: product.name || "",
+          description: product.description || "",
+          short_description: product.short_description || ""
+        };
+      }
+
       setFormData({
         name: product.name || "",
         sku: product.sku || "",
@@ -152,6 +166,7 @@ export default function ProductForm({ product, categories, stores, taxes, attrib
         attribute_set_id: finalAttrSetId, // Use the validated ID
         configurable_attributes: Array.isArray(product.configurable_attributes) ? product.configurable_attributes : [], // Configurable attributes
         attributes: product.attributes || product.attribute_values || {},
+        translations: translations, // Multilingual translations
         seo: product.seo ? { // Ensure product.seo is handled, providing defaults for new fields
           meta_title: product.seo.meta_title || "",
           meta_description: product.seo.meta_description || "",
@@ -200,6 +215,7 @@ export default function ProductForm({ product, categories, stores, taxes, attrib
             attribute_set_id: "",
             configurable_attributes: [], // Default empty for new products
             attributes: {},
+            translations: {}, // Default empty translations
             seo: { meta_title: "", meta_description: "", meta_keywords: "", url_key: "", meta_robots_tag: "null" }, // Default for new product
             related_product_ids: [],
             tags: [],
@@ -747,6 +763,48 @@ export default function ProductForm({ product, categories, stores, taxes, attrib
     <div>
       <FlashMessage message={flashMessage} onClose={() => setFlashMessage(null)} />
       <form onSubmit={handleSubmit} className="space-y-6">
+        <Accordion type="single" collapsible className="w-full" defaultValue="translations">
+          <AccordionItem value="translations">
+            <AccordionTrigger>
+              <div className="flex items-center space-x-2">
+                <Languages className="w-5 h-5 text-gray-500" />
+                <span>Product Translations (Name & Descriptions)</span>
+              </div>
+            </AccordionTrigger>
+            <AccordionContent className="p-4 space-y-4 bg-gray-50 rounded-b-lg">
+              <TranslationFields
+                translations={formData.translations}
+                onChange={(newTranslations) => {
+                  setFormData(prev => ({ ...prev, translations: newTranslations }));
+                  // Auto-update URL key from English name if not manually edited
+                  if (!isEditingUrlKey && newTranslations.en && newTranslations.en.name) {
+                    const generatedUrlKey = newTranslations.en.name.toLowerCase()
+                      .replace(/[^a-z0-9]+/g, '-')
+                      .replace(/(^-|-$)/g, '');
+                    setFormData(prev => ({
+                      ...prev,
+                      seo: {
+                        ...prev.seo,
+                        url_key: generatedUrlKey
+                      }
+                    }));
+
+                    // Check if this is an edit and URL key will change
+                    if (product && originalUrlKey && generatedUrlKey !== originalUrlKey) {
+                      setShowSlugChangeWarning(true);
+                    }
+                  }
+                }}
+                fields={[
+                  { name: 'name', label: 'Product Name', type: 'text', required: true },
+                  { name: 'short_description', label: 'Short Description', type: 'textarea', rows: 2 },
+                  { name: 'description', label: 'Full Description', type: 'textarea', rows: 6 }
+                ]}
+              />
+            </AccordionContent>
+          </AccordionItem>
+        </Accordion>
+
         <div className="grid md:grid-cols-2 gap-6">
           <Card className="flex flex-col">
             <CardHeader><CardTitle>Basic Information</CardTitle></CardHeader>
