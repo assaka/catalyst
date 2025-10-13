@@ -188,10 +188,28 @@ export default function CouponForm({ coupon, onSubmit, onCancel, storeId }) {
               <Input
                 id="name"
                 value={formData.name}
-                onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
+                onChange={(e) => {
+                  const newName = e.target.value;
+                  setFormData(prev => ({
+                    ...prev,
+                    name: newName,
+                    translations: {
+                      ...prev.translations,
+                      en: { ...prev.translations.en, name: newName }
+                    }
+                  }));
+                }}
                 className={errors.name ? 'border-red-500' : ''}
               />
               {errors.name && <p className="text-sm text-red-500 mt-1">{errors.name}</p>}
+              <button
+                type="button"
+                onClick={() => setShowTranslations(!showTranslations)}
+                className="text-sm text-blue-600 hover:text-blue-800 mt-1 inline-flex items-center gap-1"
+              >
+                <Languages className="w-4 h-4" />
+                {showTranslations ? 'Hide translations' : 'Manage translations'}
+              </button>
             </div>
             <div>
               <Label htmlFor="code">Coupon Code *</Label>
@@ -205,15 +223,51 @@ export default function CouponForm({ coupon, onSubmit, onCancel, storeId }) {
             </div>
           </div>
 
-          <div>
-            <Label htmlFor="description">Description</Label>
-            <Textarea
-              id="description"
-              value={formData.description}
-              onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
-              rows={3}
-            />
-          </div>
+          {showTranslations && (
+            <div className="border-2 border-blue-200 bg-blue-50 rounded-lg p-4">
+              <div className="flex items-center gap-2 mb-4">
+                <Languages className="w-5 h-5 text-blue-600" />
+                <h3 className="text-base font-semibold text-blue-900">Coupon Translations</h3>
+              </div>
+              <TranslationFields
+                translations={formData.translations}
+                onChange={(newTranslations) => {
+                  setFormData(prev => ({
+                    ...prev,
+                    translations: newTranslations,
+                    name: newTranslations.en?.name || prev.name,
+                    description: newTranslations.en?.description || prev.description
+                  }));
+                }}
+                fields={[
+                  { name: 'name', label: 'Coupon Name', type: 'text', required: true },
+                  { name: 'description', label: 'Description', type: 'textarea', rows: 3, required: false }
+                ]}
+              />
+            </div>
+          )}
+
+          {!showTranslations && (
+            <div>
+              <Label htmlFor="description">Description</Label>
+              <Textarea
+                id="description"
+                value={formData.description}
+                onChange={(e) => {
+                  const newDescription = e.target.value;
+                  setFormData(prev => ({
+                    ...prev,
+                    description: newDescription,
+                    translations: {
+                      ...prev.translations,
+                      en: { ...prev.translations.en, description: newDescription }
+                    }
+                  }));
+                }}
+                rows={3}
+              />
+            </div>
+          )}
 
           <div className="flex items-center space-x-2">
             <Checkbox
