@@ -46,15 +46,29 @@ export default function CmsPageForm({ page, stores, products, onSubmit, onCancel
     meta_title: "",       // Added meta_title
     meta_description: "", // Added meta_description
     meta_keywords: "",
-    meta_robots_tag: "index, follow" // Default to a common, SEO-friendly value
+    meta_robots_tag: "index, follow", // Default to a common, SEO-friendly value
+    translations: {
+      en: {
+        title: "",
+        content: ""
+      }
+    }
   });
 
   useEffect(() => {
     if (page) {
+      // Initialize translations with existing data or empty structure
+      const translations = page.translations || {
+        en: {
+          title: page.title || '',
+          content: page.content || ''
+        }
+      };
+
       setFormData({
-        title: page.title || "",
+        title: translations.en?.title || page.title || "",
         slug: page.slug || "",
-        content: page.content || "",
+        content: translations.en?.content || page.content || "",
         is_active: page.is_active ?? true,
         store_id: page.store_id || getSelectedStoreId() || "",
         related_product_ids: page.related_product_ids || [],
@@ -62,9 +76,10 @@ export default function CmsPageForm({ page, stores, products, onSubmit, onCancel
         meta_title: page.meta_title || "",         // Populate meta_title
         meta_description: page.meta_description || "", // Populate meta_description
         meta_keywords: page.meta_keywords || "",
-        meta_robots_tag: page.meta_robots_tag || "index, follow"
+        meta_robots_tag: page.meta_robots_tag || "index, follow",
+        translations: translations
       });
-      
+
       // Set original slug for slug change detection
       setOriginalSlug(page.slug || "");
       // If page has a slug, consider it manually set
@@ -93,23 +108,37 @@ export default function CmsPageForm({ page, stores, products, onSubmit, onCancel
             ...prev,
             title: val,
             slug: newSlug,
+            translations: {
+              ...prev.translations,
+              en: {
+                ...prev.translations?.en,
+                title: val
+              }
+            }
           }));
         } else {
           setFormData(prev => ({
             ...prev,
             title: val,
+            translations: {
+              ...prev.translations,
+              en: {
+                ...prev.translations?.en,
+                title: val
+              }
+            }
           }));
         }
       } else if (field === 'slug') {
         // Direct slug edit
         setHasManuallyEditedSlug(true);
-        
+
         if (page && originalSlug && val !== originalSlug) {
           setShowSlugChangeWarning(true);
         } else if (val === originalSlug) {
           setShowSlugChangeWarning(false);
         }
-        
+
         setFormData(prev => ({
           ...prev,
           [field]: val,
@@ -122,19 +151,34 @@ export default function CmsPageForm({ page, stores, products, onSubmit, onCancel
       }
     } else { // New signature: handleInputChange(e) for named inputs
       const { name, value } = eOrField.target;
-      
+
       // Check for slug changes in event handler
       if (name === 'slug') {
         setHasManuallyEditedSlug(true);
-        
+
         if (page && originalSlug && value !== originalSlug) {
           setShowSlugChangeWarning(true);
         } else if (value === originalSlug) {
           setShowSlugChangeWarning(false);
         }
       }
-      
-      setFormData(prev => ({ ...prev, [name]: value }));
+
+      // Bidirectional syncing for title and content
+      if (name === 'title' || name === 'content') {
+        setFormData(prev => ({
+          ...prev,
+          [name]: value,
+          translations: {
+            ...prev.translations,
+            en: {
+              ...prev.translations?.en,
+              [name]: value
+            }
+          }
+        }));
+      } else {
+        setFormData(prev => ({ ...prev, [name]: value }));
+      }
     }
   };
 
@@ -240,13 +284,30 @@ export default function CmsPageForm({ page, stores, products, onSubmit, onCancel
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
+
     // Always create redirect if slug changed (essential for SEO)
     if (page && originalSlug && formData.slug !== originalSlug) {
       await createRedirectForSlugChange();
     }
-    
-    onSubmit(formData);
+
+    // Prepare payload with translations
+    const payload = {
+      ...formData,
+      translations: formData.translations || {
+        en: {
+          title: formData.title,
+          content: formData.content
+        }
+      }
+    };
+
+    console.log('🔍 CmsPageForm: Submitting payload:', {
+      title: payload.title,
+      content: payload.content?.substring(0, 50),
+      translations: payload.translations
+    });
+
+    onSubmit(payload);
   };
 
   return (

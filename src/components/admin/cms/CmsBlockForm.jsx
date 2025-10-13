@@ -21,6 +21,12 @@ export default function CmsBlockForm({ block, onSubmit, onCancel }) {
     content: '',
     is_active: true,
     placement: ['content'], // Array of placement locations
+    translations: {
+      en: {
+        title: '',
+        content: ''
+      }
+    }
   });
 
   const [openSections, setOpenSections] = useState({
@@ -35,19 +41,43 @@ export default function CmsBlockForm({ block, onSubmit, onCancel }) {
 
   useEffect(() => {
     if (block) {
+      // Initialize translations with existing data or empty structure
+      const translations = block.translations || {
+        en: {
+          title: block.title || '',
+          content: block.content || ''
+        }
+      };
+
       setFormData({
-        title: block.title || '',
+        title: translations.en?.title || block.title || '',
         identifier: block.identifier || '',
-        content: block.content || '',
+        content: translations.en?.content || block.content || '',
         is_active: block.is_active !== false,
-        placement: Array.isArray(block.placement) ? block.placement : 
+        placement: Array.isArray(block.placement) ? block.placement :
                   typeof block.placement === 'string' ? [block.placement] : ['content'],
+        translations: translations
       });
     }
   }, [block]);
 
   const handleInputChange = (field, value) => {
-    setFormData(prev => ({ ...prev, [field]: value }));
+    setFormData(prev => {
+      const updated = { ...prev, [field]: value };
+
+      // Bidirectional syncing: title/content ↔ translations.en
+      if (field === 'title' || field === 'content') {
+        updated.translations = {
+          ...prev.translations,
+          en: {
+            ...prev.translations?.en,
+            [field]: value
+          }
+        };
+      }
+
+      return updated;
+    });
   };
 
   const handlePlacementChange = (placement, checked) => {
@@ -180,16 +210,35 @@ export default function CmsBlockForm({ block, onSubmit, onCancel }) {
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    
+
     // Validate that at least one placement is selected
     if (formData.placement.length === 0) {
       showWarning('Please select at least one placement location for this block.');
       return;
     }
-    
-    console.log('CmsBlockForm: Submitting form data:', formData);
-    console.log('CmsBlockForm: Placement array:', formData.placement);
-    onSubmit(formData);
+
+    // Prepare payload with translations
+    const payload = {
+      title: formData.title,
+      identifier: formData.identifier,
+      content: formData.content,
+      is_active: formData.is_active,
+      placement: formData.placement,
+      translations: formData.translations || {
+        en: {
+          title: formData.title,
+          content: formData.content
+        }
+      }
+    };
+
+    console.log('🔍 CmsBlockForm: Submitting payload:', {
+      title: payload.title,
+      content: payload.content?.substring(0, 50),
+      translations: payload.translations
+    });
+
+    onSubmit(payload);
   };
 
   return (
