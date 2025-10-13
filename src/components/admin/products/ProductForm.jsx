@@ -51,6 +51,7 @@ export default function ProductForm({ product, categories, stores, taxes, attrib
   const [hasManuallyEditedUrlKey, setHasManuallyEditedUrlKey] = useState(false);
   const [expandedCategories, setExpandedCategories] = useState(new Set());
   const [initialExpansionDone, setInitialExpansionDone] = useState(false);
+  const [showTranslations, setShowTranslations] = useState(false);
 
   const [formData, setFormData] = useState({
     name: "",
@@ -763,48 +764,6 @@ export default function ProductForm({ product, categories, stores, taxes, attrib
     <div>
       <FlashMessage message={flashMessage} onClose={() => setFlashMessage(null)} />
       <form onSubmit={handleSubmit} className="space-y-6">
-        <Accordion type="single" collapsible className="w-full" defaultValue="translations">
-          <AccordionItem value="translations">
-            <AccordionTrigger>
-              <div className="flex items-center space-x-2">
-                <Languages className="w-5 h-5 text-gray-500" />
-                <span>Product Translations (Name & Descriptions)</span>
-              </div>
-            </AccordionTrigger>
-            <AccordionContent className="p-4 space-y-4 bg-gray-50 rounded-b-lg">
-              <TranslationFields
-                translations={formData.translations}
-                onChange={(newTranslations) => {
-                  setFormData(prev => ({ ...prev, translations: newTranslations }));
-                  // Auto-update URL key from English name if not manually edited
-                  if (!isEditingUrlKey && newTranslations.en && newTranslations.en.name) {
-                    const generatedUrlKey = newTranslations.en.name.toLowerCase()
-                      .replace(/[^a-z0-9]+/g, '-')
-                      .replace(/(^-|-$)/g, '');
-                    setFormData(prev => ({
-                      ...prev,
-                      seo: {
-                        ...prev.seo,
-                        url_key: generatedUrlKey
-                      }
-                    }));
-
-                    // Check if this is an edit and URL key will change
-                    if (product && originalUrlKey && generatedUrlKey !== originalUrlKey) {
-                      setShowSlugChangeWarning(true);
-                    }
-                  }
-                }}
-                fields={[
-                  { name: 'name', label: 'Product Name', type: 'text', required: true },
-                  { name: 'short_description', label: 'Short Description', type: 'textarea', rows: 2 },
-                  { name: 'description', label: 'Full Description', type: 'textarea', rows: 6 }
-                ]}
-              />
-            </AccordionContent>
-          </AccordionItem>
-        </Accordion>
-
         <div className="grid md:grid-cols-2 gap-6">
           <Card className="flex flex-col">
             <CardHeader><CardTitle>Basic Information</CardTitle></CardHeader>
@@ -817,6 +776,14 @@ export default function ProductForm({ product, categories, stores, taxes, attrib
                   onChange={(e) => handleInputChange("name", e.target.value)}
                   required
                 />
+                <button
+                  type="button"
+                  onClick={() => setShowTranslations(!showTranslations)}
+                  className="text-sm text-blue-600 hover:text-blue-800 mt-1 flex items-center gap-1"
+                >
+                  <Languages className="w-4 h-4" />
+                  {showTranslations ? 'Hide translations' : 'Manage translations'}
+                </button>
               </div>
               <div>
                 <Label htmlFor="sku">SKU *</Label>
@@ -856,6 +823,51 @@ export default function ProductForm({ product, categories, stores, taxes, attrib
               </div>
             </CardContent>
           </Card>
+
+          {showTranslations && (
+            <Card className="border-blue-200 bg-blue-50 md:col-span-2">
+              <CardHeader>
+                <CardTitle className="text-base flex items-center gap-2">
+                  <Languages className="w-5 h-5" />
+                  Product Translations
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <TranslationFields
+                  translations={formData.translations}
+                  onChange={(newTranslations) => {
+                    setFormData(prev => ({ ...prev, translations: newTranslations }));
+                    // Auto-update URL key from English name if not manually edited
+                    if (!isEditingUrlKey && newTranslations.en && newTranslations.en.name) {
+                      const generatedUrlKey = newTranslations.en.name.toLowerCase()
+                        .replace(/[^a-z0-9]+/g, '-')
+                        .replace(/(^-|-$)/g, '');
+                      setFormData(prev => ({
+                        ...prev,
+                        seo: {
+                          ...prev.seo,
+                          url_key: generatedUrlKey
+                        }
+                      }));
+
+                      // Check if this is an edit and URL key will change
+                      if (product && originalUrlKey && generatedUrlKey !== originalUrlKey) {
+                        setShowSlugChangeWarning(true);
+                      }
+                    }
+                  }}
+                  fields={[
+                    { name: 'name', label: 'Product Name', type: 'text', required: true },
+                    { name: 'short_description', label: 'Short Description', type: 'textarea', rows: 2 },
+                    { name: 'description', label: 'Full Description', type: 'textarea', rows: 6 }
+                  ]}
+                />
+                <p className="text-sm text-gray-600 mt-3">
+                  Translate product information to provide a localized experience for your customers
+                </p>
+              </CardContent>
+            </Card>
+          )}
 
           <Card>
             <CardHeader><CardTitle>Pricing & Details</CardTitle></CardHeader>
