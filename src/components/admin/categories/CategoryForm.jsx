@@ -13,7 +13,7 @@ import {
 } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Search, AlertTriangle, Image as ImageIcon, X } from "lucide-react";
+import { Search, AlertTriangle, Image as ImageIcon, X, Languages } from "lucide-react";
 import MediaBrowser from '@/components/admin/cms/MediaBrowser';
 import {
   Accordion,
@@ -25,6 +25,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useStoreSelection } from '@/contexts/StoreSelectionContext.jsx';
 import { toast } from 'sonner';
 import apiClient from '@/api/client';
+import TranslationFields from '@/components/admin/TranslationFields';
 
 export default function CategoryForm({ category, onSubmit, onCancel, parentCategories }) {
   const { getSelectedStoreId } = useStoreSelection();
@@ -37,6 +38,7 @@ export default function CategoryForm({ category, onSubmit, onCancel, parentCateg
     sort_order: 0,
     is_active: true,
     hide_in_menu: false,
+    translations: {},
     // New SEO fields
     meta_title: "",
     meta_description: "",
@@ -63,6 +65,7 @@ export default function CategoryForm({ category, onSubmit, onCancel, parentCateg
         sort_order: category.sort_order || 0,
         is_active: category.is_active !== undefined ? category.is_active : true,
         hide_in_menu: category.hide_in_menu || false,
+        translations: category.translations || {},
         // New SEO fields
         meta_title: category.meta_title || "",
         meta_description: category.meta_description || "",
@@ -282,67 +285,89 @@ export default function CategoryForm({ category, onSubmit, onCancel, parentCateg
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
-      <div className="grid md:grid-cols-2 gap-4">
-        <div>
-          <Label htmlFor="name">Category Name *</Label>
-          <Input
-            id="name"
-            name="name"
-            value={formData.name || ''}
-            onChange={handleInputChange}
-            placeholder="Enter category name"
-            required
-          />
-        </div>
-
-        <div>
-          <div className="flex items-center justify-between mb-2">
-            <Label htmlFor="slug">URL Slug *</Label>
+      <Accordion type="single" collapsible className="w-full" defaultValue="translations">
+        <AccordionItem value="translations">
+          <AccordionTrigger>
             <div className="flex items-center space-x-2">
-              <Checkbox
-                id="edit-slug"
-                checked={isEditingSlug}
-                onCheckedChange={(checked) => {
-                  setIsEditingSlug(checked);
-                  if (!checked) {
-                    // Revert to original slug or auto-generate from name
-                    if (category && originalSlug) {
-                      // Editing existing category - revert to original
-                      setFormData(prev => ({ ...prev, slug: originalSlug }));
-                    } else {
-                      // New category - regenerate from name
-                      const generatedSlug = formData.name.toLowerCase()
-                        .replace(/[^a-z0-9]+/g, '-')
-                        .replace(/(^-|-$)/g, '');
-                      setFormData(prev => ({ ...prev, slug: generatedSlug }));
-                    }
-                    setHasManuallyEditedSlug(false);
-                    setShowSlugChangeWarning(false);
-                  }
-                }}
-              />
-              <Label htmlFor="edit-slug" className="text-sm">
-                Enable editing
-              </Label>
+              <Languages className="w-5 h-5 text-gray-500" />
+              <span>Category Translations (Name & Description)</span>
             </div>
+          </AccordionTrigger>
+          <AccordionContent className="p-4 space-y-4 bg-gray-50 rounded-b-lg">
+            <TranslationFields
+              translations={formData.translations}
+              onChange={(newTranslations) => {
+                setFormData(prev => ({ ...prev, translations: newTranslations }));
+                // Auto-update slug from English name if not manually edited
+                if (!isEditingSlug && newTranslations.en && newTranslations.en.name) {
+                  const generatedSlug = newTranslations.en.name.toLowerCase()
+                    .replace(/[^a-z0-9]+/g, '-')
+                    .replace(/(^-|-$)/g, '');
+                  setFormData(prev => ({ ...prev, slug: generatedSlug }));
+
+                  // Check if this is an edit and slug will change
+                  if (category && originalSlug && generatedSlug !== originalSlug) {
+                    setShowSlugChangeWarning(true);
+                  }
+                }
+              }}
+              fields={[
+                { name: 'name', label: 'Category Name', type: 'text', required: true },
+                { name: 'description', label: 'Description', type: 'textarea', rows: 4 }
+              ]}
+            />
+          </AccordionContent>
+        </AccordionItem>
+      </Accordion>
+
+      <div>
+        <div className="flex items-center justify-between mb-2">
+          <Label htmlFor="slug">URL Slug *</Label>
+          <div className="flex items-center space-x-2">
+            <Checkbox
+              id="edit-slug"
+              checked={isEditingSlug}
+              onCheckedChange={(checked) => {
+                setIsEditingSlug(checked);
+                if (!checked) {
+                  // Revert to original slug or auto-generate from name
+                  if (category && originalSlug) {
+                    // Editing existing category - revert to original
+                    setFormData(prev => ({ ...prev, slug: originalSlug }));
+                  } else {
+                    // New category - regenerate from translations.en.name
+                    const categoryName = formData.translations?.en?.name || '';
+                    const generatedSlug = categoryName.toLowerCase()
+                      .replace(/[^a-z0-9]+/g, '-')
+                      .replace(/(^-|-$)/g, '');
+                    setFormData(prev => ({ ...prev, slug: generatedSlug }));
+                  }
+                  setHasManuallyEditedSlug(false);
+                  setShowSlugChangeWarning(false);
+                }
+              }}
+            />
+            <Label htmlFor="edit-slug" className="text-sm">
+              Enable editing
+            </Label>
           </div>
-          <Input
-            id="slug"
-            name="slug"
-            value={formData.slug || ''}
-            onChange={handleInputChange}
-            placeholder="Auto-generated from category name"
-            disabled={!isEditingSlug}
-            className={!isEditingSlug ? "bg-gray-50 text-gray-600" : ""}
-            required
-          />
-          <p className="text-xs text-gray-500 mt-1">
-            {!isEditingSlug 
-              ? "Auto-generated from category name. Enable editing to customize."
-              : "Custom URL slug for this category. Changes will affect the category's URL."
-            }
-          </p>
         </div>
+        <Input
+          id="slug"
+          name="slug"
+          value={formData.slug || ''}
+          onChange={handleInputChange}
+          placeholder="Auto-generated from category name"
+          disabled={!isEditingSlug}
+          className={!isEditingSlug ? "bg-gray-50 text-gray-600" : ""}
+          required
+        />
+        <p className="text-xs text-gray-500 mt-1">
+          {!isEditingSlug
+            ? "Auto-generated from category name. Enable editing to customize."
+            : "Custom URL slug for this category. Changes will affect the category's URL."
+          }
+        </p>
       </div>
 
       {showSlugChangeWarning && hasManuallyEditedSlug && isEditingSlug && (
@@ -353,7 +378,7 @@ export default function CategoryForm({ category, onSubmit, onCancel, parentCateg
               <div>
                 <strong>URL Slug Change Detected</strong>
                 <p className="text-sm mt-1">
-                  Changing the URL slug from "<code className="bg-amber-100 px-1 rounded">{originalSlug}</code>" to 
+                  Changing the URL slug from "<code className="bg-amber-100 px-1 rounded">{originalSlug}</code>" to
                   "<code className="bg-amber-100 px-1 rounded">{formData.slug}</code>" will change the category's URL.
                 </p>
               </div>
@@ -368,7 +393,7 @@ export default function CategoryForm({ category, onSubmit, onCancel, parentCateg
                 </Label>
               </div>
               <p className="text-xs text-amber-700">
-                {createRedirect 
+                {createRedirect
                   ? "✅ A redirect will be created to prevent broken links and maintain SEO."
                   : "⚠️ No redirect will be created. Visitors to the old URL will see a 404 error."
                 }
@@ -377,18 +402,6 @@ export default function CategoryForm({ category, onSubmit, onCancel, parentCateg
           </AlertDescription>
         </Alert>
       )}
-
-      <div>
-        <Label htmlFor="description">Description</Label>
-        <Textarea
-          id="description"
-          name="description"
-          value={formData.description || ''}
-          onChange={handleInputChange}
-          placeholder="Category description"
-          rows={3}
-        />
-      </div>
 
       <div>
         <Label htmlFor="image_url">Category Image</Label>

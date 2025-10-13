@@ -4,9 +4,9 @@ import { Category } from "@/api/entities";
 import { useStoreSelection } from "@/contexts/StoreSelectionContext.jsx";
 import NoStoreSelected from "@/components/admin/NoStoreSelected";
 import { clearCategoriesCache } from "@/utils/cacheUtils";
-import { 
-  Tag, 
-  Plus, 
+import {
+  Tag,
+  Plus,
   Search,
   Edit,
   Trash2,
@@ -20,7 +20,8 @@ import {
   LayoutGrid,
   Settings,
   TreePine,
-  Filter
+  Filter,
+  Languages
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -49,6 +50,7 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 
 import CategoryForm from "@/components/admin/categories/CategoryForm";
+import { TranslationIndicator } from "@/components/admin/TranslationFields";
 
 export default function Categories() {
   const { selectedStore, getSelectedStoreId, availableStores } = useStoreSelection();
@@ -540,8 +542,8 @@ export default function Categories() {
               <div className="flex items-center space-x-2">
                 {/* Compact badges */}
                 <div className="flex items-center space-x-1">
-                  <Badge 
-                    variant={category.is_active ? "default" : "secondary"} 
+                  <Badge
+                    variant={category.is_active ? "default" : "secondary"}
                     className="text-xs px-1.5 py-0.5 h-5"
                   >
                     {category.is_active ? "Active" : "Inactive"}
@@ -554,6 +556,10 @@ export default function Categories() {
                       {category.children.length}
                     </Badge>
                   )}
+                  <TranslationIndicator
+                    translations={category.translations || {}}
+                    requiredLanguages={['en', 'nl']}
+                  />
                 </div>
                 
                 <DropdownMenu>
@@ -604,6 +610,15 @@ export default function Categories() {
                     >
                       <Edit className="w-4 h-4 mr-2" />
                       Edit
+                    </DropdownMenuItem>
+                    <DropdownMenuItem
+                      onClick={() => {
+                        setSelectedCategory(category);
+                        setShowCategoryForm(true);
+                      }}
+                    >
+                      <Languages className="w-4 h-4 mr-2" />
+                      Manage Translations
                     </DropdownMenuItem>
                     {category.is_active ? (
                       <DropdownMenuItem
@@ -1093,6 +1108,15 @@ export default function Categories() {
                             <Edit className="w-4 h-4 mr-2" />
                             Edit
                           </DropdownMenuItem>
+                          <DropdownMenuItem
+                            onClick={() => {
+                              setSelectedCategory(category);
+                              setShowCategoryForm(true);
+                            }}
+                          >
+                            <Languages className="w-4 h-4 mr-2" />
+                            Manage Translations
+                          </DropdownMenuItem>
                           {category.is_active ? (
                             <DropdownMenuItem
                               onClick={() => handleToggleStatus(category)}
@@ -1148,6 +1172,10 @@ export default function Categories() {
                       <Badge variant="outline">
                         Order: {category.sort_order || 0}
                       </Badge>
+                      <TranslationIndicator
+                        translations={category.translations || {}}
+                        requiredLanguages={['en', 'nl']}
+                      />
                     </div>
                   </CardContent>
                 </Card>
