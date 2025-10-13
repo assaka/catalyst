@@ -481,7 +481,17 @@ export default function CookieConsent() {
               <Card className="material-elevation-1 border-0">
                 <CardHeader>
                   <CardTitle>Banner Content</CardTitle>
-                  <CardDescription>Customize the text and buttons on your consent banner</CardDescription>
+                  <CardDescription>
+                    Customize the text and buttons on your consent banner
+                    <button
+                      type="button"
+                      onClick={() => setShowTranslations(!showTranslations)}
+                      className="text-sm text-blue-600 hover:text-blue-800 ml-4 inline-flex items-center gap-1"
+                    >
+                      <Languages className="w-4 h-4" />
+                      {showTranslations ? 'Hide translations' : 'Manage translations'}
+                    </button>
+                  </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
                   {/* Banner Message - Hidden when translations shown */}
@@ -539,18 +549,6 @@ export default function CookieConsent() {
                       </div>
                     </>
                   )}
-
-                  {/* Single Manage Translations Button */}
-                  <div>
-                    <button
-                      type="button"
-                      onClick={() => setShowTranslations(!showTranslations)}
-                      className="text-sm text-blue-600 hover:text-blue-800 flex items-center gap-1"
-                    >
-                      <Languages className="w-4 h-4" />
-                      {showTranslations ? 'Hide translations' : 'Manage translations'}
-                    </button>
-                  </div>
 
                   {/* Translation Fields */}
                   {showTranslations && (
