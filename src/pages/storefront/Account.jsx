@@ -7,10 +7,12 @@ import slotConfigurationService from '@/services/slotConfigurationService';
 import { UnifiedSlotRenderer } from '@/components/editor/slot/UnifiedSlotRenderer';
 import '@/components/editor/slot/AccountLoginSlotComponents'; // Register account/login components
 import { accountConfig } from '@/components/editor/slot/configs/account-config';
+import { useTranslation } from '@/contexts/TranslationContext';
 
 export default function Account() {
   const navigate = useNavigate();
   const { store } = useStore();
+  const { t } = useTranslation();
 
   // Slot configuration state
   const [accountLayoutConfig, setAccountLayoutConfig] = useState(null);
@@ -156,7 +158,7 @@ export default function Account() {
   if (!configLoaded) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-gray-600">Loading...</div>
+        <div className="text-gray-600">{t('common.loading', 'Loading...')}</div>
       </div>
     );
   }
@@ -195,9 +197,9 @@ export default function Account() {
         ) : (
           <div className="max-w-md w-full mx-auto">
             <div className="bg-white rounded-lg shadow p-6">
-              <h2 className="text-2xl font-bold text-center mb-4">My Account</h2>
+              <h2 className="text-2xl font-bold text-center mb-4">{t('navigation.account', 'My Account')}</h2>
               <p className="text-gray-600 text-center">
-                Account configuration not available. Please contact support.
+                {t('message.error', 'Account configuration not available. Please contact support.')}
               </p>
             </div>
           </div>
