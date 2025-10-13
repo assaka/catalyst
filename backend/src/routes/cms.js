@@ -24,7 +24,6 @@ router.get('/', async (req, res) => {
       limit: parseInt(limit),
       offset: parseInt(offset),
       order: [['sort_order', 'ASC'], ['title', 'ASC']],
-      include: [{ model: Store, attributes: ['id', 'name'] }]
     });
 
     res.json({ success: true, data: { pages: rows, pagination: { current_page: parseInt(page), per_page: parseInt(limit), total: count, total_pages: Math.ceil(count / limit) } } });
@@ -35,15 +34,13 @@ router.get('/', async (req, res) => {
 
 router.get('/:id', async (req, res) => {
   try {
-    const page = await CmsPage.findByPk(req.params.id, {
-      include: [{ model: Store, attributes: ['id', 'name', 'user_id'] }]
-    });
+    const page = await CmsPage.findByPk(req.params.id);
     
     if (!page) return res.status(404).json({ success: false, message: 'Page not found' });
     
     if (req.user.role !== 'admin') {
       const { checkUserStoreAccess } = require('../utils/storeAccess');
-      const access = await checkUserStoreAccess(req.user.id, page.Store.id);
+      const access = await checkUserStoreAccess(req.user.id, page.store_id);
       
       if (!access) {
         return res.status(403).json({ success: false, message: 'Access denied' });
@@ -81,15 +78,13 @@ router.post('/', async (req, res) => {
 
 router.put('/:id', async (req, res) => {
   try {
-    const page = await CmsPage.findByPk(req.params.id, {
-      include: [{ model: Store, attributes: ['id', 'name', 'user_id'] }]
-    });
+    const page = await CmsPage.findByPk(req.params.id);
     
     if (!page) return res.status(404).json({ success: false, message: 'Page not found' });
     
     if (req.user.role !== 'admin') {
       const { checkUserStoreAccess } = require('../utils/storeAccess');
-      const access = await checkUserStoreAccess(req.user.id, page.Store.id);
+      const access = await checkUserStoreAccess(req.user.id, page.store_id);
       
       if (!access) {
         return res.status(403).json({ success: false, message: 'Access denied' });
@@ -105,15 +100,13 @@ router.put('/:id', async (req, res) => {
 
 router.delete('/:id', async (req, res) => {
   try {
-    const page = await CmsPage.findByPk(req.params.id, {
-      include: [{ model: Store, attributes: ['id', 'name', 'user_id'] }]
-    });
+    const page = await CmsPage.findByPk(req.params.id);
     
     if (!page) return res.status(404).json({ success: false, message: 'Page not found' });
     
     if (req.user.role !== 'admin') {
       const { checkUserStoreAccess } = require('../utils/storeAccess');
-      const access = await checkUserStoreAccess(req.user.id, page.Store.id);
+      const access = await checkUserStoreAccess(req.user.id, page.store_id);
       
       if (!access) {
         return res.status(403).json({ success: false, message: 'Access denied' });
