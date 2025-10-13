@@ -26,6 +26,22 @@ async function runTranslationsMigration() {
     `);
     console.log('✅ Added translations to product_labels');
 
+    // Add translations column to custom_option_rules
+    console.log('📝 Adding translations column to custom_option_rules...');
+    await sequelize.query(`
+      ALTER TABLE custom_option_rules
+      ADD COLUMN IF NOT EXISTS translations JSONB DEFAULT '{}'::jsonb;
+    `);
+    console.log('✅ Added translations to custom_option_rules');
+
+    // Add translations column to cookie_consent_settings
+    console.log('📝 Adding translations column to cookie_consent_settings...');
+    await sequelize.query(`
+      ALTER TABLE cookie_consent_settings
+      ADD COLUMN IF NOT EXISTS translations JSONB DEFAULT '{}'::jsonb;
+    `);
+    console.log('✅ Added translations to cookie_consent_settings');
+
     console.log('✅ Translations migration completed successfully!');
     process.exit(0);
   } catch (error) {

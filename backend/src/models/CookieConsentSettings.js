@@ -124,6 +124,12 @@ const CookieConsentSettings = sequelize.define('CookieConsentSettings', {
       model: 'stores',
       key: 'id'
     }
+  },
+  // Multilingual translations
+  translations: {
+    type: DataTypes.JSON,
+    defaultValue: {},
+    comment: 'Multilingual translations: {"en": {"banner_text": "...", "accept_button_text": "...", "reject_button_text": "...", "settings_button_text": "..."}, "nl": {...}}'
   }
 }, {
   tableName: 'cookie_consent_settings'
