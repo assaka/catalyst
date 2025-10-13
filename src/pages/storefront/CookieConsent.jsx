@@ -484,122 +484,99 @@ export default function CookieConsent() {
                   <CardDescription>Customize the text and buttons on your consent banner</CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
+                  {/* Banner Message - Hidden when translations shown */}
+                  {!showTranslations && (
+                    <div>
+                      <Label htmlFor="banner_message">Banner Message</Label>
+                      <Textarea
+                        id="banner_message"
+                        value={settings.banner_message}
+                        onChange={(e) => setSettings({ ...settings, banner_message: e.target.value })}
+                        rows={3}
+                      />
+                    </div>
+                  )}
+
+                  {/* Button Text Fields - Hidden when translations shown */}
+                  {!showTranslations && (
+                    <>
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <Label htmlFor="accept_all_text">Accept Button Text</Label>
+                          <Input
+                            id="accept_all_text"
+                            value={settings.accept_all_text}
+                            onChange={(e) => setSettings({ ...settings, accept_all_text: e.target.value })}
+                          />
+                        </div>
+                        <div>
+                          <Label htmlFor="reject_all_text">Reject Button Text</Label>
+                          <Input
+                            id="reject_all_text"
+                            value={settings.reject_all_text}
+                            onChange={(e) => setSettings({ ...settings, reject_all_text: e.target.value })}
+                          />
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <Label htmlFor="manage_preferences_text">Manage Preferences Text</Label>
+                          <Input
+                            id="manage_preferences_text"
+                            value={settings.manage_preferences_text}
+                            onChange={(e) => setSettings({ ...settings, manage_preferences_text: e.target.value })}
+                          />
+                        </div>
+                        <div>
+                          <Label htmlFor="privacy_policy_text">Privacy Policy Link Text</Label>
+                          <Input
+                            id="privacy_policy_text"
+                            value={settings.privacy_policy_text}
+                            onChange={(e) => setSettings({ ...settings, privacy_policy_text: e.target.value })}
+                          />
+                        </div>
+                      </div>
+                    </>
+                  )}
+
+                  {/* Single Manage Translations Button */}
                   <div>
-                    <Label htmlFor="banner_message">Banner Message</Label>
-                    <Textarea
-                      id="banner_message"
-                      value={settings.banner_message}
-                      onChange={(e) => setSettings({ ...settings, banner_message: e.target.value })}
-                      rows={3}
-                    />
                     <button
                       type="button"
                       onClick={() => setShowTranslations(!showTranslations)}
-                      className="text-sm text-blue-600 hover:text-blue-800 mt-1 flex items-center gap-1"
+                      className="text-sm text-blue-600 hover:text-blue-800 flex items-center gap-1"
                     >
                       <Languages className="w-4 h-4" />
                       {showTranslations ? 'Hide translations' : 'Manage translations'}
                     </button>
                   </div>
 
+                  {/* Translation Fields */}
                   {showTranslations && (
-                    <Card className="border-blue-200 bg-blue-50">
-                      <CardHeader>
-                        <CardTitle className="text-base flex items-center gap-2">
-                          <Languages className="w-5 h-5" />
-                          Banner Text Translations
-                        </CardTitle>
-                      </CardHeader>
-                      <CardContent>
-                        <TranslationFields
-                          translations={settings.translations}
-                          onChange={(newTranslations) => {
-                            setSettings(prev => ({ ...prev, translations: newTranslations }));
-                          }}
-                          fields={[
-                            { name: 'banner_text', label: 'Banner Message', type: 'textarea', rows: 3, required: true },
-                            { name: 'accept_button_text', label: 'Accept Button Text', type: 'text', required: true },
-                            { name: 'reject_button_text', label: 'Reject Button Text', type: 'text', required: true },
-                            { name: 'settings_button_text', label: 'Cookie Settings Button Text', type: 'text', required: true },
-                            { name: 'privacy_policy_text', label: 'Privacy Policy Link Text', type: 'text', required: true }
-                          ]}
-                        />
-                        <p className="text-sm text-gray-600 mt-3">
-                          Translate all cookie banner text to provide a localized experience for your visitors
-                        </p>
-                      </CardContent>
-                    </Card>
+                    <div className="mt-4 border-2 border-blue-200 bg-blue-50 rounded-lg p-4">
+                      <div className="flex items-center gap-2 mb-4">
+                        <Languages className="w-5 h-5 text-blue-600" />
+                        <h3 className="text-base font-semibold text-blue-900">Banner Text Translations</h3>
+                      </div>
+                      <TranslationFields
+                        translations={settings.translations}
+                        onChange={(newTranslations) => {
+                          setSettings(prev => ({ ...prev, translations: newTranslations }));
+                        }}
+                        fields={[
+                          { name: 'banner_text', label: 'Banner Message', type: 'textarea', rows: 3, required: true },
+                          { name: 'accept_button_text', label: 'Accept Button Text', type: 'text', required: true },
+                          { name: 'reject_button_text', label: 'Reject Button Text', type: 'text', required: true },
+                          { name: 'settings_button_text', label: 'Cookie Settings Button Text', type: 'text', required: true },
+                          { name: 'privacy_policy_text', label: 'Privacy Policy Link Text', type: 'text', required: true }
+                        ]}
+                      />
+                      <p className="text-sm text-gray-600 mt-3">
+                        Translate all cookie banner text to provide a localized experience for your visitors
+                      </p>
+                    </div>
                   )}
-
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <Label htmlFor="accept_all_text">Accept Button Text</Label>
-                      <Input
-                        id="accept_all_text"
-                        value={settings.accept_all_text}
-                        onChange={(e) => setSettings({ ...settings, accept_all_text: e.target.value })}
-                      />
-                      <button
-                        type="button"
-                        onClick={() => setShowTranslations(!showTranslations)}
-                        className="text-sm text-blue-600 hover:text-blue-800 mt-1 flex items-center gap-1"
-                      >
-                        <Languages className="w-4 h-4" />
-                        {showTranslations ? 'Hide translations' : 'Manage translations'}
-                      </button>
-                    </div>
-                    <div>
-                      <Label htmlFor="reject_all_text">Reject Button Text</Label>
-                      <Input
-                        id="reject_all_text"
-                        value={settings.reject_all_text}
-                        onChange={(e) => setSettings({ ...settings, reject_all_text: e.target.value })}
-                      />
-                      <button
-                        type="button"
-                        onClick={() => setShowTranslations(!showTranslations)}
-                        className="text-sm text-blue-600 hover:text-blue-800 mt-1 flex items-center gap-1"
-                      >
-                        <Languages className="w-4 h-4" />
-                        {showTranslations ? 'Hide translations' : 'Manage translations'}
-                      </button>
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <Label htmlFor="manage_preferences_text">Manage Preferences Text</Label>
-                      <Input
-                        id="manage_preferences_text"
-                        value={settings.manage_preferences_text}
-                        onChange={(e) => setSettings({ ...settings, manage_preferences_text: e.target.value })}
-                      />
-                      <button
-                        type="button"
-                        onClick={() => setShowTranslations(!showTranslations)}
-                        className="text-sm text-blue-600 hover:text-blue-800 mt-1 flex items-center gap-1"
-                      >
-                        <Languages className="w-4 h-4" />
-                        {showTranslations ? 'Hide translations' : 'Manage translations'}
-                      </button>
-                    </div>
-                    <div>
-                      <Label htmlFor="privacy_policy_text">Privacy Policy Link Text</Label>
-                      <Input
-                        id="privacy_policy_text"
-                        value={settings.privacy_policy_text}
-                        onChange={(e) => setSettings({ ...settings, privacy_policy_text: e.target.value })}
-                      />
-                      <button
-                        type="button"
-                        onClick={() => setShowTranslations(!showTranslations)}
-                        className="text-sm text-blue-600 hover:text-blue-800 mt-1 flex items-center gap-1"
-                      >
-                        <Languages className="w-4 h-4" />
-                        {showTranslations ? 'Hide translations' : 'Manage translations'}
-                      </button>
-                    </div>
-                  </div>
 
                   <div>
                     <Label htmlFor="privacy_policy_url">Privacy Policy URL</Label>
