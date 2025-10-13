@@ -22,6 +22,7 @@ import {
   AccordionTrigger,
 } from "@/components/ui/accordion";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useStoreSelection } from '@/contexts/StoreSelectionContext.jsx';
 import { toast } from 'sonner';
 import apiClient from '@/api/client';
@@ -53,6 +54,7 @@ export default function CategoryForm({ category, onSubmit, onCancel, parentCateg
   const [hasManuallyEditedSlug, setHasManuallyEditedSlug] = useState(false);
   const [showMediaBrowser, setShowMediaBrowser] = useState(false);
   const [savingImage, setSavingImage] = useState(false);
+  const [showTranslations, setShowTranslations] = useState(false);
 
   useEffect(() => {
     if (category) {
@@ -296,15 +298,35 @@ export default function CategoryForm({ category, onSubmit, onCancel, parentCateg
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
-      <Accordion type="single" collapsible className="w-full" defaultValue="translations">
-        <AccordionItem value="translations">
-          <AccordionTrigger>
-            <div className="flex items-center space-x-2">
-              <Languages className="w-5 h-5 text-gray-500" />
-              <span>Category Translations (Name & Description)</span>
-            </div>
-          </AccordionTrigger>
-          <AccordionContent className="p-4 space-y-4 bg-gray-50 rounded-b-lg">
+      <div>
+        <Label htmlFor="name">Category Name *</Label>
+        <Input
+          id="name"
+          name="name"
+          value={formData.name}
+          onChange={handleInputChange}
+          placeholder="Enter category name"
+          required
+        />
+        <button
+          type="button"
+          onClick={() => setShowTranslations(!showTranslations)}
+          className="text-sm text-blue-600 hover:text-blue-800 mt-1 flex items-center gap-1"
+        >
+          <Languages className="w-4 h-4" />
+          {showTranslations ? 'Hide translations' : 'Manage translations'}
+        </button>
+      </div>
+
+      {showTranslations && (
+        <Card className="border-blue-200 bg-blue-50">
+          <CardHeader>
+            <CardTitle className="text-base flex items-center gap-2">
+              <Languages className="w-5 h-5" />
+              Category Translations
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
             <TranslationFields
               translations={formData.translations}
               onChange={(newTranslations) => {
@@ -327,9 +349,12 @@ export default function CategoryForm({ category, onSubmit, onCancel, parentCateg
                 { name: 'description', label: 'Description', type: 'textarea', rows: 4 }
               ]}
             />
-          </AccordionContent>
-        </AccordionItem>
-      </Accordion>
+            <p className="text-sm text-gray-600 mt-3">
+              Translate the category name and description for your multilingual customers
+            </p>
+          </CardContent>
+        </Card>
+      )}
 
       <div>
         <div className="flex items-center justify-between mb-2">
