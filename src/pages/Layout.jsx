@@ -263,20 +263,22 @@ export default function Layout({ children, currentPageName }) {
   const storefrontPages = ['Storefront', 'Category', 'ProductDetail', 'Cart', 'Checkout', 'CustomerAuth', 'CustomerDashboard', 'CmsPageViewer', 'OrderSuccess', 'HtmlSitemap'];
   const editorPages = ['AIContextWindow']; // Pages that use the editor mode
   const pluginPages = ['Plugins']; // Pages that use the plugins mode
+  const aiStudioPages = ['AIStudio']; // Pages that use the AI Studio mode
   const isPublicPage = publicPages.includes(currentPageName);
   const isStorefrontPage = storefrontPages.includes(currentPageName);
   const isCustomerDashboard = currentPageName === 'CustomerDashboard';
   const isEditorPage = editorPages.includes(currentPageName) || location.pathname.startsWith('/editor/');
   const isPluginPage = pluginPages.includes(currentPageName) || location.pathname.startsWith('/plugins');
-  const isAdminPage = !isPublicPage && !isStorefrontPage && !isCustomerDashboard && !isEditorPage && !isPluginPage;
-  
-  // Determine current mode for ModeHeader
-  const currentMode = isEditorPage ? 'editor' : isPluginPage ? 'plugins' : 'admin';
-  
-  // Apply role-based access control for admin, editor, and plugin pages
-  useRoleProtection(isAdminPage || isEditorPage || isPluginPage);
+  const isAIStudioPage = aiStudioPages.includes(currentPageName) || location.pathname.startsWith('/admin/ai-studio');
+  const isAdminPage = !isPublicPage && !isStorefrontPage && !isCustomerDashboard && !isEditorPage && !isPluginPage && !isAIStudioPage;
 
-  if (isLoading && (isAdminPage || isEditorPage || isPluginPage)) {
+  // Determine current mode for ModeHeader
+  const currentMode = isEditorPage ? 'editor' : isPluginPage ? 'plugins' : isAIStudioPage ? 'aistudio' : 'admin';
+  
+  // Apply role-based access control for admin, editor, plugin, and AI Studio pages
+  useRoleProtection(isAdminPage || isEditorPage || isPluginPage || isAIStudioPage);
+
+  if (isLoading && (isAdminPage || isEditorPage || isPluginPage || isAIStudioPage)) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
@@ -296,8 +298,8 @@ export default function Layout({ children, currentPageName }) {
   
   // Role-based access control is now handled by RoleProtectedRoute at the route level
 
-  // Handle admin, editor, and plugin pages
-  if (isAdminPage || isEditorPage || isPluginPage) {
+  // Handle admin, editor, plugin, and AI Studio pages
+  if (isAdminPage || isEditorPage || isPluginPage || isAIStudioPage) {
       
       // Use token-only validation for admin/editor access like RoleProtectedRoute
       const hasStoreOwnerToken = !!localStorage.getItem('store_owner_auth_token');
@@ -452,7 +454,6 @@ export default function Layout({ children, currentPageName }) {
         { name: "Settings", path: "SETTINGS", icon: SettingsIcon },
         { name: "Theme & Layout", path: "THEME_LAYOUT", icon: Palette },
         { name: "Translations", path: "Translations", icon: Globe },
-        { name: "AI Studio", path: "AIStudio", icon: Bot },
         { name: "Media Storage", path: "media-storage", icon: Image },
         { name: "Database", path: "database-integrations", icon: Database },
         { name: "Render Integration", path: "render-integration", icon: Cloud },
@@ -474,8 +475,8 @@ export default function Layout({ children, currentPageName }) {
     setOpenGroups(prev => ({ ...prev, [groupName]: !prev[groupName] }));
   };
 
-  // Don't show sidebar for editor and plugin modes
-  const showSidebar = !isEditorPage && !isPluginPage;
+  // Don't show sidebar for editor, plugin, and AI Studio modes
+  const showSidebar = !isEditorPage && !isPluginPage && !isAIStudioPage;
 
   return (
     <StoreProvider>

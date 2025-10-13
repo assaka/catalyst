@@ -40,6 +40,12 @@ const ModeHeader = ({ user, currentMode, showExtraButtons = false, extraButtons 
     }
   };
 
+  const switchToAIStudio = () => {
+    if (currentMode !== 'aistudio') {
+      navigate('/admin/ai-studio');
+    }
+  };
+
   return (
     <>
       {/* Mobile Header */}
@@ -75,12 +81,24 @@ const ModeHeader = ({ user, currentMode, showExtraButtons = false, extraButtons 
               size="sm"
               onClick={switchToPlugins}
               className={`px-3 py-1 text-xs font-medium rounded transition-colors ${
-                currentMode === 'plugins' 
-                  ? 'bg-white shadow-sm text-gray-900' 
+                currentMode === 'plugins'
+                  ? 'bg-white shadow-sm text-gray-900'
                   : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
               }`}
             >
               Plugins
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={switchToAIStudio}
+              className={`px-3 py-1 text-xs font-medium rounded transition-colors ${
+                currentMode === 'aistudio'
+                  ? 'bg-white shadow-sm text-gray-900'
+                  : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+              }`}
+            >
+              AI Studio
             </Button>
           </div>
         </div>
@@ -125,12 +143,24 @@ const ModeHeader = ({ user, currentMode, showExtraButtons = false, extraButtons 
               size="sm"
               onClick={switchToPlugins}
               className={`px-4 py-2 text-sm font-medium rounded-md transition-colors ${
-                currentMode === 'plugins' 
-                  ? 'bg-white shadow-sm text-gray-900' 
+                currentMode === 'plugins'
+                  ? 'bg-white shadow-sm text-gray-900'
                   : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
               }`}
             >
               Plugins
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={switchToAIStudio}
+              className={`px-4 py-2 text-sm font-medium rounded-md transition-colors ${
+                currentMode === 'aistudio'
+                  ? 'bg-white shadow-sm text-gray-900'
+                  : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+              }`}
+            >
+              AI Studio
             </Button>
           </div>
         </div>
