@@ -824,27 +824,31 @@ export default function ProductForm({ product, categories, stores, taxes, attrib
                 </div>
               </div>
 
-              {/* Short Description and Description below */}
-              <div>
-                <Label htmlFor="short_description">Short Description</Label>
-                <Textarea
-                  id="short_description"
-                  value={formData.short_description}
-                  onChange={(e) => handleInputChange("short_description", e.target.value)}
-                  rows={2}
-                  className="resize-none"
-                />
-              </div>
-              <div>
-                <Label htmlFor="description">Full Description</Label>
-                <Textarea
-                  id="description"
-                  value={formData.description}
-                  onChange={(e) => handleInputChange("description", e.target.value)}
-                  rows={8}
-                  className="resize-none"
-                />
-              </div>
+              {/* Short Description and Description below - Hidden when translations shown */}
+              {!showTranslations && (
+                <>
+                  <div>
+                    <Label htmlFor="short_description">Short Description</Label>
+                    <Textarea
+                      id="short_description"
+                      value={formData.short_description}
+                      onChange={(e) => handleInputChange("short_description", e.target.value)}
+                      rows={2}
+                      className="resize-none"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="description">Full Description</Label>
+                    <Textarea
+                      id="description"
+                      value={formData.description}
+                      onChange={(e) => handleInputChange("description", e.target.value)}
+                      rows={8}
+                      className="resize-none"
+                    />
+                  </div>
+                </>
+              )}
 
               {/* Translation Fields */}
               {showTranslations && (
