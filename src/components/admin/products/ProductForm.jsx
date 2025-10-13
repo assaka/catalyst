@@ -747,6 +747,13 @@ export default function ProductForm({ product, categories, stores, taxes, attrib
         payload.id = product.id;
       }
 
+      // Debug: Log what we're sending
+      console.log('🔍 ProductForm: Submitting payload:', {
+        name: payload.name,
+        translations: payload.translations,
+        formData_translations: formData.translations
+      });
+
       // Always create redirect if URL key changed (essential for SEO)
       if (product && originalUrlKey && formData.seo.url_key !== originalUrlKey) {
         await createRedirectForSlugChange();
@@ -772,44 +779,52 @@ export default function ProductForm({ product, categories, stores, taxes, attrib
     <div>
       <FlashMessage message={flashMessage} onClose={() => setFlashMessage(null)} />
       <form onSubmit={handleSubmit} className="space-y-6">
-        <div className="grid md:grid-cols-2 gap-6">
-          <Card className="flex flex-col">
-            <CardHeader><CardTitle>Basic Information</CardTitle></CardHeader>
-            <CardContent className="flex-1 flex flex-col space-y-4">
-              <div>
-                <Label htmlFor="name">Product Name *</Label>
-                <Input
-                  id="name"
-                  value={formData.name}
-                  onChange={(e) => handleInputChange("name", e.target.value)}
-                  required
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowTranslations(!showTranslations)}
-                  className="text-sm text-blue-600 hover:text-blue-800 mt-1 flex items-center gap-1"
-                >
-                  <Languages className="w-4 h-4" />
-                  {showTranslations ? 'Hide translations' : 'Manage translations'}
-                </button>
+        {/* Basic Information - Accordion */}
+        <Accordion type="multiple" className="w-full" defaultValue={["basic-info"]}>
+          <AccordionItem value="basic-info">
+            <AccordionTrigger>
+              <span className="text-lg font-semibold">Basic Information</span>
+            </AccordionTrigger>
+            <AccordionContent className="space-y-4 pt-4">
+              {/* Product Name, SKU, and Barcode on one line */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div>
+                  <Label htmlFor="name">Product Name *</Label>
+                  <Input
+                    id="name"
+                    value={formData.name}
+                    onChange={(e) => handleInputChange("name", e.target.value)}
+                    required
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowTranslations(!showTranslations)}
+                    className="text-sm text-blue-600 hover:text-blue-800 mt-1 flex items-center gap-1"
+                  >
+                    <Languages className="w-4 h-4" />
+                    {showTranslations ? 'Hide translations' : 'Manage translations'}
+                  </button>
+                </div>
+                <div>
+                  <Label htmlFor="sku">SKU *</Label>
+                  <Input
+                    id="sku"
+                    value={formData.sku}
+                    onChange={(e) => handleInputChange("sku", e.target.value)}
+                    required
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="barcode">Barcode (ISBN, UPC, GTIN, etc.)</Label>
+                  <Input
+                    id="barcode"
+                    value={formData.barcode}
+                    onChange={(e) => handleInputChange("barcode", e.target.value)}
+                  />
+                </div>
               </div>
-              <div>
-                <Label htmlFor="sku">SKU *</Label>
-                <Input
-                  id="sku"
-                  value={formData.sku}
-                  onChange={(e) => handleInputChange("sku", e.target.value)}
-                  required
-                />
-              </div>
-              <div>
-                <Label htmlFor="barcode">Barcode (ISBN, UPC, GTIN, etc.)</Label>
-                <Input
-                  id="barcode"
-                  value={formData.barcode}
-                  onChange={(e) => handleInputChange("barcode", e.target.value)}
-                />
-              </div>
+
+              {/* Short Description and Description below */}
               <div>
                 <Label htmlFor="short_description">Short Description</Label>
                 <Textarea
@@ -820,73 +835,76 @@ export default function ProductForm({ product, categories, stores, taxes, attrib
                   className="resize-none"
                 />
               </div>
-              <div className="flex-1 flex flex-col">
+              <div>
                 <Label htmlFor="description">Full Description</Label>
                 <Textarea
                   id="description"
                   value={formData.description}
                   onChange={(e) => handleInputChange("description", e.target.value)}
-                  className="flex-1 min-h-[200px] resize-none"
+                  rows={8}
+                  className="resize-none"
                 />
               </div>
-            </CardContent>
-          </Card>
 
-          {showTranslations && (
-            <Card className="border-blue-200 bg-blue-50 md:col-span-2">
-              <CardHeader>
-                <CardTitle className="text-base flex items-center gap-2">
-                  <Languages className="w-5 h-5" />
-                  Product Translations
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <TranslationFields
-                  translations={formData.translations}
-                  onChange={(newTranslations) => {
-                    setFormData(prev => ({
-                      ...prev,
-                      translations: newTranslations,
-                      // Sync main fields with English translation
-                      name: newTranslations.en?.name || prev.name,
-                      short_description: newTranslations.en?.short_description || prev.short_description,
-                      description: newTranslations.en?.description || prev.description
-                    }));
-                    // Auto-update URL key from English name if not manually edited
-                    if (!isEditingUrlKey && newTranslations.en && newTranslations.en.name) {
-                      const generatedUrlKey = newTranslations.en.name.toLowerCase()
-                        .replace(/[^a-z0-9]+/g, '-')
-                        .replace(/(^-|-$)/g, '');
+              {/* Translation Fields */}
+              {showTranslations && (
+                <div className="mt-4 border-2 border-blue-200 bg-blue-50 rounded-lg p-4">
+                  <div className="flex items-center gap-2 mb-4">
+                    <Languages className="w-5 h-5 text-blue-600" />
+                    <h3 className="text-base font-semibold text-blue-900">Product Translations</h3>
+                  </div>
+                  <TranslationFields
+                    translations={formData.translations}
+                    onChange={(newTranslations) => {
                       setFormData(prev => ({
                         ...prev,
-                        seo: {
-                          ...prev.seo,
-                          url_key: generatedUrlKey
-                        }
+                        translations: newTranslations,
+                        // Sync main fields with English translation
+                        name: newTranslations.en?.name || prev.name,
+                        short_description: newTranslations.en?.short_description || prev.short_description,
+                        description: newTranslations.en?.description || prev.description
                       }));
+                      // Auto-update URL key from English name if not manually edited
+                      if (!isEditingUrlKey && newTranslations.en && newTranslations.en.name) {
+                        const generatedUrlKey = newTranslations.en.name.toLowerCase()
+                          .replace(/[^a-z0-9]+/g, '-')
+                          .replace(/(^-|-$)/g, '');
+                        setFormData(prev => ({
+                          ...prev,
+                          seo: {
+                            ...prev.seo,
+                            url_key: generatedUrlKey
+                          }
+                        }));
 
-                      // Check if this is an edit and URL key will change
-                      if (product && originalUrlKey && generatedUrlKey !== originalUrlKey) {
-                        setShowSlugChangeWarning(true);
+                        // Check if this is an edit and URL key will change
+                        if (product && originalUrlKey && generatedUrlKey !== originalUrlKey) {
+                          setShowSlugChangeWarning(true);
+                        }
                       }
-                    }
-                  }}
-                  fields={[
-                    { name: 'name', label: 'Product Name', type: 'text', required: true },
-                    { name: 'short_description', label: 'Short Description', type: 'textarea', rows: 2 },
-                    { name: 'description', label: 'Full Description', type: 'textarea', rows: 6 }
-                  ]}
-                />
-                <p className="text-sm text-gray-600 mt-3">
-                  Translate product information to provide a localized experience for your customers
-                </p>
-              </CardContent>
-            </Card>
-          )}
+                    }}
+                    fields={[
+                      { name: 'name', label: 'Product Name', type: 'text', required: true },
+                      { name: 'short_description', label: 'Short Description', type: 'textarea', rows: 2 },
+                      { name: 'description', label: 'Full Description', type: 'textarea', rows: 6 }
+                    ]}
+                  />
+                  <p className="text-sm text-gray-600 mt-3">
+                    Translate product information to provide a localized experience for your customers
+                  </p>
+                </div>
+              )}
+            </AccordionContent>
+          </AccordionItem>
+        </Accordion>
 
-          <Card>
-            <CardHeader><CardTitle>Pricing & Details</CardTitle></CardHeader>
-            <CardContent className="space-y-4">
+        {/* Pricing & Details - Accordion */}
+        <Accordion type="multiple" className="w-full" defaultValue={["pricing-details"]}>
+          <AccordionItem value="pricing-details">
+            <AccordionTrigger>
+              <span className="text-lg font-semibold">Pricing & Details</span>
+            </AccordionTrigger>
+            <AccordionContent className="space-y-4 pt-4">
               {formData.type === 'configurable' ? (
                 <Alert>
                   <AlertDescription className="text-sm">
@@ -1088,9 +1106,9 @@ export default function ProductForm({ product, categories, stores, taxes, attrib
                   </div>
                 </>
               )}
-            </CardContent>
-          </Card>
-        </div>
+            </AccordionContent>
+          </AccordionItem>
+        </Accordion>
 
         {/* Categories Selection - Collapsible */}
         <Accordion type="multiple" className="w-full">
