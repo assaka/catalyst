@@ -45,6 +45,7 @@ export default function StockSettings() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [flashMessage, setFlashMessage] = useState(null);
+  const [showTranslations, setShowTranslations] = useState(false);
 
   useEffect(() => {
     if (selectedStore) {
@@ -327,33 +328,6 @@ export default function StockSettings() {
                 </div>
               </div>
 
-              <Accordion type="single" collapsible className="w-full mt-6" defaultValue="translations">
-                <AccordionItem value="translations">
-                  <AccordionTrigger>
-                    <div className="flex items-center space-x-2">
-                      <Languages className="w-5 h-5 text-gray-500" />
-                      <span>Stock Label Translations</span>
-                    </div>
-                  </AccordionTrigger>
-                  <AccordionContent className="p-4 space-y-4 bg-gray-50 rounded-b-lg">
-                    <TranslationFields
-                      translations={settings.translations}
-                      onChange={(newTranslations) => {
-                        setSettings(prev => ({ ...prev, translations: newTranslations }));
-                      }}
-                      fields={[
-                        { name: 'in_stock_label', label: 'In Stock Label', type: 'text', required: true },
-                        { name: 'out_of_stock_label', label: 'Out of Stock Label', type: 'text', required: true },
-                        { name: 'low_stock_label', label: 'Low Stock Label', type: 'text', required: true }
-                      ]}
-                    />
-                    <p className="text-sm text-gray-500">
-                      Translate stock status labels to provide localized messages to your customers. Placeholders like {'{quantity}'} work in all languages.
-                    </p>
-                  </AccordionContent>
-                </AccordionItem>
-              </Accordion>
-
               <div className="space-y-4 pt-4 border-t">
                   <div>
                     <Label htmlFor="in_stock_label">"In Stock" Label</Label>
@@ -362,6 +336,14 @@ export default function StockSettings() {
                       value={settings.in_stock_label}
                       onChange={(e) => handleSettingsChange('in_stock_label', e.target.value)}
                     />
+                    <button
+                      type="button"
+                      onClick={() => setShowTranslations(!showTranslations)}
+                      className="text-sm text-blue-600 hover:text-blue-800 mt-1 flex items-center gap-1"
+                    >
+                      <Languages className="w-4 h-4" />
+                      {showTranslations ? 'Hide translations' : 'Manage translations'}
+                    </button>
                     <p className="text-sm text-gray-500 mt-1">
                       Text to display when a product is in stock. Use <code>{'{quantity}'}</code> blocks for flexible formatting.
                     </p>
@@ -391,6 +373,34 @@ export default function StockSettings() {
                       </div>
                     </div>
                   </div>
+
+                  {showTranslations && (
+                    <Card className="border-blue-200 bg-blue-50">
+                      <CardHeader>
+                        <CardTitle className="text-base flex items-center gap-2">
+                          <Languages className="w-5 h-5" />
+                          Stock Label Translations
+                        </CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        <TranslationFields
+                          translations={settings.translations}
+                          onChange={(newTranslations) => {
+                            setSettings(prev => ({ ...prev, translations: newTranslations }));
+                          }}
+                          fields={[
+                            { name: 'in_stock_label', label: 'In Stock Label', type: 'text', required: true },
+                            { name: 'out_of_stock_label', label: 'Out of Stock Label', type: 'text', required: true },
+                            { name: 'low_stock_label', label: 'Low Stock Label', type: 'text', required: true }
+                          ]}
+                        />
+                        <p className="text-sm text-gray-600 mt-3">
+                          Translate stock status labels to provide localized messages to your customers. Placeholders like {'{quantity}'} work in all languages.
+                        </p>
+                      </CardContent>
+                    </Card>
+                  )}
+
                   <div>
                     <Label htmlFor="out_of_stock_label">"Out of Stock" Label</Label>
                     <Input
