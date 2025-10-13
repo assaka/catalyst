@@ -14,6 +14,7 @@ import { createProductUrl } from '@/utils/urlUtils';
 import { formatPrice, getPriceDisplay } from '@/utils/priceUtils';
 import { getStockLabel, getStockLabelStyle } from '@/utils/stockLabelUtils';
 import { getCategoryName, getProductName, getCurrentLanguage } from '@/utils/translationUtils';
+import { processVariables } from '@/utils/variableProcessor';
 
 /**
  * CategorySlotRenderer - Data Processor & Slot Tree Renderer for Category Pages
@@ -805,11 +806,24 @@ export function CategorySlotRenderer({
     // Handle basic element types
     switch (type) {
       case 'text':
+        // Process template variables in text content using variableContext
+        const currentLanguage = getCurrentLanguage();
+        const translatedCategoryName = category ? (getCategoryName(category, currentLanguage) || category.name) : '';
+        const textVariableContext = {
+          category: category ? {
+            ...category,
+            name: translatedCategoryName
+          } : null,
+          settings,
+          store
+        };
+        const processedContent = processVariables(content || '', textVariableContext);
+
         return (
           <div
             className={className}
             style={styles}
-            dangerouslySetInnerHTML={{ __html: content || '' }}
+            dangerouslySetInnerHTML={{ __html: processedContent }}
           />
         );
 
