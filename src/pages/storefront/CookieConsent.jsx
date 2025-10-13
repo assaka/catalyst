@@ -15,8 +15,15 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Save, Shield, Eye, Settings, BarChart3, Plus, Trash2, Download } from 'lucide-react';
+import { Save, Shield, Eye, Settings, BarChart3, Plus, Trash2, Download, Languages } from 'lucide-react';
 import { Separator } from '@/components/ui/separator';
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion";
+import TranslationFields from "@/components/admin/TranslationFields";
 
 const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 
@@ -44,7 +51,21 @@ const retryApiCall = async (apiCall, maxRetries = 5, baseDelay = 3000) => {
 // Field mapping functions for frontend <-> backend compatibility
 const mapBackendToFrontend = (backendSettings) => {
   if (!backendSettings) return null;
-  
+
+  // Handle translations with backward compatibility
+  let translations = backendSettings.translations || {};
+
+  // Ensure English translation exists (backward compatibility)
+  if (!translations.en || (!translations.en.banner_text && backendSettings.banner_text)) {
+    translations.en = {
+      banner_text: backendSettings.banner_text || "We use cookies to enhance your browsing experience, serve personalized content, and analyze our traffic. By clicking 'Accept All', you consent to our use of cookies.",
+      accept_button_text: backendSettings.accept_button_text || "Accept All",
+      reject_button_text: backendSettings.reject_button_text || "Reject All",
+      settings_button_text: backendSettings.settings_button_text || "Cookie Settings",
+      privacy_policy_text: backendSettings.privacy_policy_text || "Privacy Policy"
+    };
+  }
+
   return {
     id: backendSettings.id,
     store_id: backendSettings.store_id,
@@ -61,6 +82,7 @@ const mapBackendToFrontend = (backendSettings) => {
     banner_position: backendSettings.banner_position || "bottom",
     show_close_button: backendSettings.show_close_button ?? true,
     consent_expiry_days: backendSettings.consent_expiry_days || 365,
+    translations: translations,
     categories: backendSettings.categories || [
       {
         id: "necessary",
@@ -103,13 +125,13 @@ const mapBackendToFrontend = (backendSettings) => {
 
 const mapFrontendToBackend = (frontendSettings) => {
   if (!frontendSettings) return null;
-  
+
   // Extract category settings
   const categories = frontendSettings.categories || [];
   const analyticsCategory = categories.find(c => c.id === "analytics");
-  const marketingCategory = categories.find(c => c.id === "marketing"); 
+  const marketingCategory = categories.find(c => c.id === "marketing");
   const functionalCategory = categories.find(c => c.id === "functional");
-  
+
   return {
     id: frontendSettings.id,
     store_id: frontendSettings.store_id,
@@ -123,6 +145,7 @@ const mapFrontendToBackend = (frontendSettings) => {
     banner_position: frontendSettings.banner_position,
     consent_expiry_days: frontendSettings.consent_expiry_days,
     show_close_button: frontendSettings.show_close_button,
+    translations: frontendSettings.translations || {},
     // GDPR and compliance settings
     gdpr_mode: frontendSettings.gdpr_mode,
     auto_detect_country: frontendSettings.auto_detect_country,
@@ -460,6 +483,35 @@ export default function CookieConsent() {
                   <CardDescription>Customize the text and buttons on your consent banner</CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
+                  <Accordion type="single" collapsible className="w-full" defaultValue="translations">
+                    <AccordionItem value="translations">
+                      <AccordionTrigger>
+                        <div className="flex items-center space-x-2">
+                          <Languages className="w-5 h-5 text-gray-500" />
+                          <span>Banner Text Translations</span>
+                        </div>
+                      </AccordionTrigger>
+                      <AccordionContent className="p-4 space-y-4 bg-gray-50 rounded-b-lg">
+                        <TranslationFields
+                          translations={settings.translations}
+                          onChange={(newTranslations) => {
+                            setSettings(prev => ({ ...prev, translations: newTranslations }));
+                          }}
+                          fields={[
+                            { name: 'banner_text', label: 'Banner Message', type: 'textarea', rows: 3, required: true },
+                            { name: 'accept_button_text', label: 'Accept Button Text', type: 'text', required: true },
+                            { name: 'reject_button_text', label: 'Reject Button Text', type: 'text', required: true },
+                            { name: 'settings_button_text', label: 'Cookie Settings Button Text', type: 'text', required: true },
+                            { name: 'privacy_policy_text', label: 'Privacy Policy Link Text', type: 'text', required: true }
+                          ]}
+                        />
+                        <p className="text-sm text-gray-500">
+                          Translate all cookie banner text to provide a localized experience for your visitors
+                        </p>
+                      </AccordionContent>
+                    </AccordionItem>
+                  </Accordion>
+
                   <div>
                     <Label htmlFor="banner_message">Banner Message</Label>
                     <Textarea
