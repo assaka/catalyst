@@ -12,7 +12,7 @@ import {
   SelectTrigger,
   SelectValue
 } from "@/components/ui/select";
-import { X, Plus, Search, AlertTriangle, ImagePlus } from "lucide-react"; // Added ImagePlus icon
+import { X, Plus, Search, AlertTriangle, ImagePlus, Languages } from "lucide-react"; // Added Languages icon
 import { Badge } from "@/components/ui/badge";
 import {
   Accordion, // Added Accordion components
@@ -21,8 +21,10 @@ import {
   AccordionContent,
 } from "@/components/ui/accordion";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useStoreSelection } from '@/contexts/StoreSelectionContext.jsx';
 import MediaBrowser from './MediaBrowser';
+import TranslationFields from '@/components/admin/TranslationFields';
 
 // Ensure 'products' is part of the props as it's used in the component
 export default function CmsPageForm({ page, stores, products, onSubmit, onCancel }) {
@@ -34,7 +36,8 @@ export default function CmsPageForm({ page, stores, products, onSubmit, onCancel
   const [isEditingSlug, setIsEditingSlug] = useState(false);
   const [hasManuallyEditedSlug, setHasManuallyEditedSlug] = useState(false);
   const [showMediaBrowser, setShowMediaBrowser] = useState(false);
-  
+  const [showTranslations, setShowTranslations] = useState(false);
+
   const [formData, setFormData] = useState({
     title: "",
     slug: "",
@@ -322,6 +325,14 @@ export default function CmsPageForm({ page, stores, products, onSubmit, onCancel
             onChange={(e) => handleInputChange("title", e.target.value)} // Keep specific handler for slug generation
             required
           />
+          <button
+            type="button"
+            onClick={() => setShowTranslations(!showTranslations)}
+            className="text-sm text-blue-600 hover:text-blue-800 mt-1 flex items-center gap-1"
+          >
+            <Languages className="w-4 h-4" />
+            {showTranslations ? 'Hide translations' : 'Manage translations'}
+          </button>
         </div>
         <div>
           <div className="flex items-center justify-between mb-2">
@@ -429,6 +440,38 @@ export default function CmsPageForm({ page, stores, products, onSubmit, onCancel
           rows={10}
         />
       </div>
+
+      {showTranslations && (
+        <Card className="border-blue-200 bg-blue-50">
+          <CardHeader>
+            <CardTitle className="text-base flex items-center gap-2">
+              <Languages className="w-5 h-5" />
+              Page Translations
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <TranslationFields
+              translations={formData.translations}
+              onChange={(newTranslations) => {
+                setFormData(prev => ({
+                  ...prev,
+                  translations: newTranslations,
+                  // Sync main fields with English translation
+                  title: newTranslations.en?.title || prev.title,
+                  content: newTranslations.en?.content || prev.content
+                }));
+              }}
+              fields={[
+                { name: 'title', label: 'Page Title', type: 'text', required: true },
+                { name: 'content', label: 'Page Content', type: 'textarea', rows: 10 }
+              ]}
+            />
+            <p className="text-sm text-gray-600 mt-3">
+              Translate page content to provide a localized experience for your customers
+            </p>
+          </CardContent>
+        </Card>
+      )}
 
       <div>
         <Label>Related Products</Label>

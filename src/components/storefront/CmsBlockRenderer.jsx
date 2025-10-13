@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { CmsBlock } from '@/api/entities';
 import { useStoreSelection } from '@/contexts/StoreSelectionContext';
 import { useStore } from '@/components/storefront/StoreProvider';
+import { getBlockContent } from '@/utils/translationUtils';
 
 // Global cache and request queue to prevent duplicate requests
 const cmsBlockCache = new Map();
@@ -180,13 +181,18 @@ export default function CmsBlockRenderer({ position, page, storeId }) {
 
   return (
     <div className="cms-blocks">
-      {blocks.map((block) => (
-        <div
-          key={block.id}
-          className="cms-block"
-          dangerouslySetInnerHTML={{ __html: block.content }}
-        />
-      ))}
+      {blocks.map((block) => {
+        const content = getBlockContent(block);
+        if (!content) return null;
+
+        return (
+          <div
+            key={block.id}
+            className="cms-block"
+            dangerouslySetInnerHTML={{ __html: content }}
+          />
+        );
+      })}
     </div>
   );
 }

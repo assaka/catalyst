@@ -6,6 +6,7 @@ import RecommendedProducts from '@/components/storefront/RecommendedProducts';
 import SeoHeadManager from '@/components/storefront/SeoHeadManager';
 // Redirect handling moved to global RedirectHandler component
 import { useNotFound } from '@/utils/notFoundUtils';
+import { getPageTitle, getPageContent } from '@/utils/translationUtils';
 
 export default function CmsPageViewer() {
     const { slug } = useParams();
@@ -53,12 +54,15 @@ export default function CmsPageViewer() {
         return null;
     }
 
+    const pageTitle = getPageTitle(page);
+    const pageContent = getPageContent(page);
+
     return (
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
             <SeoHeadManager pageType="cms_page" pageData={page} />
             <article className="prose lg:prose-xl mx-auto bg-white p-8 rounded-lg shadow">
-                <h1>{page.title}</h1>
-                <div dangerouslySetInnerHTML={{ __html: page.content }} />
+                <h1>{pageTitle}</h1>
+                <div dangerouslySetInnerHTML={{ __html: pageContent }} />
             </article>
 
             {relatedProducts.length > 0 && (
