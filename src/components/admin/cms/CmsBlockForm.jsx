@@ -297,6 +297,33 @@ export default function CmsBlockForm({ block, onSubmit, onCancel }) {
             )}
           </div>
 
+          {/* Content field - Hidden when translations shown */}
+          {!showTranslations && (
+            <div>
+              <div className="flex items-center justify-between mb-2">
+                <Label htmlFor="content">Content</Label>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setShowMediaBrowser(true)}
+                  className="flex items-center gap-2"
+                >
+                  <ImagePlus className="w-4 h-4" />
+                  Insert Media
+                </Button>
+              </div>
+              <Textarea
+                ref={contentTextareaRef}
+                id="content"
+                value={formData.content}
+                onChange={(e) => handleInputChange('content', e.target.value)}
+                placeholder="Enter block content (HTML allowed)"
+                rows={8}
+              />
+            </div>
+          )}
+
           <div>
             <Label htmlFor="identifier">Identifier</Label>
             <Input
@@ -308,30 +335,6 @@ export default function CmsBlockForm({ block, onSubmit, onCancel }) {
             <p className="text-sm text-gray-500 mt-1">
               Unique identifier for this block (auto-generated from title if empty)
             </p>
-          </div>
-
-          <div>
-            <div className="flex items-center justify-between mb-2">
-              <Label htmlFor="content">Content</Label>
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                onClick={() => setShowMediaBrowser(true)}
-                className="flex items-center gap-2"
-              >
-                <ImagePlus className="w-4 h-4" />
-                Insert Media
-              </Button>
-            </div>
-            <Textarea
-              ref={contentTextareaRef}
-              id="content"
-              value={formData.content}
-              onChange={(e) => handleInputChange('content', e.target.value)}
-              placeholder="Enter block content (HTML allowed)"
-              rows={8}
-            />
           </div>
 
           <div>
