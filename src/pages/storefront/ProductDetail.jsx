@@ -3,6 +3,7 @@ import React, { useState, useEffect, useCallback, Fragment } from "react";
 import { useParams, useSearchParams, Link, useNavigate } from "react-router-dom";
 import { createPageUrl } from "@/utils";
 import { buildProductBreadcrumbs } from "@/utils/breadcrumbUtils";
+import { getCategoryName as getTranslatedCategoryName } from "@/utils/translationUtils";
 // Redirect handling moved to global RedirectHandler component
 import { useNotFound } from "@/utils/notFoundUtils";
 import { StorefrontProduct } from "@/api/storefront-entities";
@@ -409,7 +410,10 @@ export default function ProductDetail() {
                 item_name: foundProduct.name,
                 price: safeNumber(foundProduct.price),
                 item_brand: foundProduct.brand, // Assuming product has a brand field
-                item_category: categories.find(cat => cat.id === foundProduct.category_ids?.[0])?.name || '', // Find category name
+                item_category: (() => {
+                  const category = categories.find(cat => cat.id === foundProduct.category_ids?.[0]);
+                  return category ? getTranslatedCategoryName(category) : '';
+                })(),
                 currency: settings?.currency_code || 'No Currency'
               }]
             }
@@ -669,7 +673,10 @@ export default function ProductDetail() {
                 price: safeNumber(basePrice),
                 quantity: quantity,
                 item_brand: product.brand,
-                item_category: categories.find(cat => cat.id === product.category_ids?.[0])?.name || '',
+                item_category: (() => {
+                  const category = categories.find(cat => cat.id === product.category_ids?.[0]);
+                  return category ? getTranslatedCategoryName(category) : '';
+                })(),
                 currency: settings?.currency_code || 'No Currency'
               }]
             }

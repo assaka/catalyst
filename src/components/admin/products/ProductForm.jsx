@@ -22,6 +22,7 @@ import {
 } from "@/components/ui/accordion";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { toast } from 'sonner';
+import { getCategoryName } from "@/utils/translationUtils";
 
 const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 
@@ -1028,18 +1029,19 @@ export default function ProductForm({ product, categories, stores, taxes, attrib
                   {formData.category_ids.map(categoryId => {
                     const category = categories.find(c => c.id === categoryId);
                     if (!category) return null;
+                    const categoryName = getCategoryName(category);
                     return (
-                      <Badge 
-                        key={categoryId} 
-                        variant="secondary" 
+                      <Badge
+                        key={categoryId}
+                        variant="secondary"
                         className="px-2 py-1 flex items-center gap-1 hover:bg-gray-200 transition-colors"
                       >
-                        <span>{category.name}</span>
+                        <span>{categoryName}</span>
                         <button
                           type="button"
                           onClick={() => handleInputChange("category_ids", formData.category_ids.filter(id => id !== categoryId))}
                           className="ml-1 hover:text-red-600 transition-colors"
-                          aria-label={`Remove ${category.name}`}
+                          aria-label={`Remove ${categoryName}`}
                         >
                           <X className="h-3 w-3" />
                         </button>
@@ -1150,11 +1152,11 @@ export default function ProductForm({ product, categories, stores, taxes, attrib
                                   }}
                                   className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
                                 />
-                                <Label 
-                                  htmlFor={`category-${category.id}`} 
+                                <Label
+                                  htmlFor={`category-${category.id}`}
                                   className="flex-1 cursor-pointer text-sm font-normal flex items-center"
                                 >
-                                  {category.name}
+                                  {getCategoryName(category)}
                                   {category.is_active === false && (
                                     <Badge variant="secondary" className="ml-2 text-xs">Inactive</Badge>
                                   )}

@@ -53,6 +53,7 @@ import {
 
 import ProductForm from "@/components/admin/products/ProductForm";
 import ProductFilters from "@/components/admin/products/ProductFilters";
+import { getCategoryName as getTranslatedCategoryName } from "@/utils/translationUtils";
 
 const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 
@@ -652,9 +653,9 @@ export default function Products() {
     if (!categoryIds || !Array.isArray(categoryIds) || categoryIds.length === 0) {
       return "Uncategorized";
     }
-    
+
     const category = categories.find(cat => cat && categoryIds.includes(cat.id));
-    return category ? category.name : "Uncategorized";
+    return category ? getTranslatedCategoryName(category) : "Uncategorized";
   };
 
   const statusColors = {
@@ -786,12 +787,12 @@ export default function Products() {
                               Remove from categories
                             </DropdownMenuItem>
                             {categories.map((category) => (
-                              <DropdownMenuItem 
-                                key={category.id} 
+                              <DropdownMenuItem
+                                key={category.id}
                                 onClick={() => handleBulkCategoryChange(category.id)}
                               >
                                 <Tag className="w-4 h-4 mr-2" />
-                                {category.name}
+                                {getTranslatedCategoryName(category)}
                               </DropdownMenuItem>
                             ))}
                           </DropdownMenuContent>

@@ -1,13 +1,14 @@
 import React from "react";
 import { Filter } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { 
-  Select, 
-  SelectContent, 
-  SelectItem, 
-  SelectTrigger, 
-  SelectValue 
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue
 } from "@/components/ui/select";
+import { getCategoryName as getTranslatedCategoryName } from "@/utils/translationUtils";
 
 export default function ProductFilters({ filters, setFilters, categories }) {
   
@@ -45,7 +46,7 @@ export default function ProductFilters({ filters, setFilters, categories }) {
           <SelectItem value="all">All Categories</SelectItem>
           {categories.map((category) => (
             <SelectItem key={category.id} value={category.id}>
-              {category.name}
+              {getTranslatedCategoryName(category)}
             </SelectItem>
           ))}
         </SelectContent>
