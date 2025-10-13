@@ -317,7 +317,26 @@ export default function CookieConsent() {
   const handleCategoryChange = (index, field, value) => {
     const updatedCategories = [...settings.categories];
     updatedCategories[index] = { ...updatedCategories[index], [field]: value };
-    setSettings({ ...settings, categories: updatedCategories });
+
+    // Bi-directional sync: Update English translation when category name/description changes
+    const category = updatedCategories[index];
+    const updatedTranslations = { ...settings.translations };
+
+    if (!updatedTranslations.en) {
+      updatedTranslations.en = {};
+    }
+
+    if (field === 'name') {
+      updatedTranslations.en[`${category.id}_name`] = value;
+    } else if (field === 'description') {
+      updatedTranslations.en[`${category.id}_description`] = value;
+    }
+
+    setSettings({
+      ...settings,
+      categories: updatedCategories,
+      translations: updatedTranslations
+    });
   };
 
   const addCategory = () => {
@@ -702,7 +721,24 @@ export default function CookieConsent() {
                             <TranslationFields
                               translations={settings.translations}
                               onChange={(newTranslations) => {
-                                setSettings(prev => ({ ...prev, translations: newTranslations }));
+                                // Bi-directional sync: Update category when English translation changes
+                                const updatedCategories = [...settings.categories];
+                                const categoryIndex = updatedCategories.findIndex(c => c.id === category.id);
+
+                                if (categoryIndex !== -1 && newTranslations.en) {
+                                  if (newTranslations.en[`${category.id}_name`]) {
+                                    updatedCategories[categoryIndex].name = newTranslations.en[`${category.id}_name`];
+                                  }
+                                  if (newTranslations.en[`${category.id}_description`]) {
+                                    updatedCategories[categoryIndex].description = newTranslations.en[`${category.id}_description`];
+                                  }
+                                }
+
+                                setSettings(prev => ({
+                                  ...prev,
+                                  translations: newTranslations,
+                                  categories: updatedCategories
+                                }));
                               }}
                               fields={[
                                 { name: `${category.id}_name`, label: 'Category Name', type: 'text', required: true },
