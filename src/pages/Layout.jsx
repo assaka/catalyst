@@ -452,6 +452,7 @@ export default function Layout({ children, currentPageName }) {
         { name: "Settings", path: "SETTINGS", icon: SettingsIcon },
         { name: "Theme & Layout", path: "THEME_LAYOUT", icon: Palette },
         { name: "Translations", path: "Translations", icon: Globe },
+        { name: "AI Studio", path: "AIStudio", icon: Bot },
         { name: "Media Storage", path: "media-storage", icon: Image },
         { name: "Database", path: "database-integrations", icon: Database },
         { name: "Render Integration", path: "render-integration", icon: Cloud },
