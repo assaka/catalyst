@@ -495,7 +495,7 @@ const ProductGallery = createSlotComponent({
 const ProductInfo = createSlotComponent({
   name: 'ProductInfoSlot',
 
-  render: ({ slot, productContext, className, styles, context }) => {
+  render: ({ slot, productContext, className, styles, context, variableContext }) => {
     if (context === 'editor') {
       // Editor version - visual preview only
       return (
@@ -526,11 +526,14 @@ const ProductInfo = createSlotComponent({
 
     const priceInfo = getPriceDisplay(product);
 
+    // Use translated product name from variableContext (already translated in ProductDetail.jsx)
+    const translatedProductName = variableContext?.product?.name || product.name;
+
     return (
       <div className={className} style={styles}>
         <div className="space-y-6">
           {/* Product Title */}
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">{product.name}</h1>
+          <h1 className="text-3xl font-bold text-gray-900 mb-2">{translatedProductName}</h1>
 
           {/* Price Section */}
           <div className="flex items-center space-x-4 mb-4">
@@ -967,24 +970,28 @@ const ProductRecommendations = createSlotComponent({
         <div className="mt-16">
           <h2 className="text-2xl font-bold text-gray-900 mb-6">Recommended Products</h2>
           <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-6">
-            {relatedProducts.slice(0, 4).map((relatedProduct) => (
-              <Card key={relatedProduct.id} className="group hover:shadow-lg transition-shadow duration-200">
-                <div className="relative aspect-square overflow-hidden rounded-t-lg">
-                  <img
-                    src={relatedProduct.images?.[0] || 'https://placehold.co/300x300?text=No+Image'}
-                    alt={relatedProduct.name}
-                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-200"
-                  />
-                  {relatedProduct.compare_price && parseFloat(relatedProduct.compare_price) > parseFloat(relatedProduct.price) && (
-                    <div className="absolute top-2 right-2">
-                      <Badge variant="destructive" className="bg-red-600 text-white text-xs">
-                        SALE
-                      </Badge>
-                    </div>
-                  )}
-                </div>
-                <CardContent className="p-4">
-                  <h3 className="font-medium text-gray-900 mb-2 line-clamp-2">{relatedProduct.name}</h3>
+            {relatedProducts.slice(0, 4).map((relatedProduct) => {
+              // Use translated product name
+              const translatedProductName = relatedProduct.name;
+
+              return (
+                <Card key={relatedProduct.id} className="group hover:shadow-lg transition-shadow duration-200">
+                  <div className="relative aspect-square overflow-hidden rounded-t-lg">
+                    <img
+                      src={relatedProduct.images?.[0] || 'https://placehold.co/300x300?text=No+Image'}
+                      alt={translatedProductName}
+                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-200"
+                    />
+                    {relatedProduct.compare_price && parseFloat(relatedProduct.compare_price) > parseFloat(relatedProduct.price) && (
+                      <div className="absolute top-2 right-2">
+                        <Badge variant="destructive" className="bg-red-600 text-white text-xs">
+                          SALE
+                        </Badge>
+                      </div>
+                    )}
+                  </div>
+                  <CardContent className="p-4">
+                    <h3 className="font-medium text-gray-900 mb-2 line-clamp-2">{translatedProductName}</h3>
                   <div className="flex items-center space-x-2 mb-2">
                     {(() => {
                       const priceInfo = getPriceDisplay(relatedProduct);
@@ -1779,7 +1786,7 @@ const BreadcrumbRenderer = createSlotComponent({
 const ProductImage = createSlotComponent({
   name: 'ProductImage',
 
-  render: ({ slot, productContext, className, styles, context }) => {
+  render: ({ slot, productContext, className, styles, context, variableContext }) => {
     if (context === 'editor') {
       // Editor version - visual preview only
       return (
@@ -1825,11 +1832,14 @@ const ProductImage = createSlotComponent({
     const imageUrl = getImageUrl();
     const currentImageData = product.images[activeImageIndex || 0];
 
+    // Use translated product name from variableContext (already translated in ProductDetail.jsx)
+    const translatedProductName = variableContext?.product?.name || product.name || 'Product image';
+
     return (
       <div className="relative w-full h-full group">
         <img
           src={imageUrl}
-          alt={product.name || 'Product image'}
+          alt={translatedProductName}
           className={`${className} transition-transform duration-300 group-hover:scale-105`}
           style={styles}
           onError={(e) => {
@@ -1918,7 +1928,7 @@ const ProductThumbnails = createSlotComponent({
           >
             <img
               src={getImageUrl(image, index)}
-              alt={context === 'editor' ? `Demo Thumbnail ${index + 1}` : `${product?.name || 'Product'} ${index + 1}`}
+              alt={context === 'editor' ? `Demo Thumbnail ${index + 1}` : `${variableContext?.product?.name || product?.name || 'Product'} ${index + 1}`}
               className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-200"
               onError={(e) => {
                 e.target.src = 'https://placehold.co/100x100?text=Error';
