@@ -55,6 +55,11 @@ const ProductTab = sequelize.define('ProductTab', {
   is_active: {
     type: DataTypes.BOOLEAN,
     defaultValue: true
+  },
+  translations: {
+    type: DataTypes.JSON,
+    defaultValue: {},
+    comment: 'Multilingual translations: {"en": {"name": "...", "content": "..."}, "nl": {...}}'
   }
 }, {
   tableName: 'product_tabs',

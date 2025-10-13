@@ -54,6 +54,11 @@ const ProductLabel = sequelize.define('ProductLabel', {
   sort_order: {
     type: DataTypes.INTEGER,
     defaultValue: 0
+  },
+  translations: {
+    type: DataTypes.JSON,
+    defaultValue: {},
+    comment: 'Multilingual translations: {"en": {"text": "..."}, "nl": {...}}'
   }
 }, {
   tableName: 'product_labels',
