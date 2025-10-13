@@ -267,6 +267,34 @@ export default function CmsBlockForm({ block, onSubmit, onCancel }) {
               <Languages className="w-4 h-4" />
               {showTranslations ? 'Hide translations' : 'Manage translations'}
             </button>
+
+            {showTranslations && (
+              <div className="mt-4 border-2 border-blue-200 bg-blue-50 rounded-lg p-4">
+                <div className="flex items-center gap-2 mb-4">
+                  <Languages className="w-5 h-5 text-blue-600" />
+                  <h3 className="text-base font-semibold text-blue-900">Block Translations</h3>
+                </div>
+                <TranslationFields
+                  translations={formData.translations}
+                  onChange={(newTranslations) => {
+                    setFormData(prev => ({
+                      ...prev,
+                      translations: newTranslations,
+                      // Sync main fields with English translation
+                      title: newTranslations.en?.title || prev.title,
+                      content: newTranslations.en?.content || prev.content
+                    }));
+                  }}
+                  fields={[
+                    { name: 'title', label: 'Block Title', type: 'text', required: true },
+                    { name: 'content', label: 'Block Content', type: 'textarea', rows: 8 }
+                  ]}
+                />
+                <p className="text-sm text-gray-600 mt-3">
+                  Translate block content to provide a localized experience for your customers
+                </p>
+              </div>
+            )}
           </div>
 
           <div>
@@ -407,38 +435,6 @@ export default function CmsBlockForm({ block, onSubmit, onCancel }) {
           </div>
         </CardContent>
       </Card>
-
-      {showTranslations && (
-        <Card className="border-blue-200 bg-blue-50">
-          <CardHeader>
-            <CardTitle className="text-base flex items-center gap-2">
-              <Languages className="w-5 h-5" />
-              Block Translations
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <TranslationFields
-              translations={formData.translations}
-              onChange={(newTranslations) => {
-                setFormData(prev => ({
-                  ...prev,
-                  translations: newTranslations,
-                  // Sync main fields with English translation
-                  title: newTranslations.en?.title || prev.title,
-                  content: newTranslations.en?.content || prev.content
-                }));
-              }}
-              fields={[
-                { name: 'title', label: 'Block Title', type: 'text', required: true },
-                { name: 'content', label: 'Block Content', type: 'textarea', rows: 8 }
-              ]}
-            />
-            <p className="text-sm text-gray-600 mt-3">
-              Translate block content to provide a localized experience for your customers
-            </p>
-          </CardContent>
-        </Card>
-      )}
 
       <div className="flex justify-end space-x-2">
         <Button type="button" variant="outline" onClick={onCancel}>
