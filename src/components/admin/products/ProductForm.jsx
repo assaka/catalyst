@@ -730,6 +730,7 @@ export default function ProductForm({ product, categories, stores, taxes, attrib
         attribute_set_id: formData.attribute_set_id || null, // Ensure null if empty string for API
         configurable_attributes: Array.isArray(formData.configurable_attributes) ? formData.configurable_attributes : [], // Configurable attributes
         attributes: formData.attributes || {},
+        translations: formData.translations || {},
         seo: {
           meta_title: formData.seo.meta_title || "",
           meta_description: formData.seo.meta_description || "",
