@@ -1,4 +1,5 @@
 import { createCategoryUrl, createProductUrl, createCmsPageUrl } from './urlUtils';
+import { getCategoryName, getProductName, getPageTitle, getCurrentLanguage } from './translationUtils';
 
 /**
  * Builds breadcrumb items based on page type and data
@@ -43,13 +44,14 @@ export function buildCategoryBreadcrumbs(currentCategory, storeCode, categories 
 
   const filteredChain = categoryChain.filter(cat => cat.parent_id !== null);
 
+  const currentLang = getCurrentLanguage();
   return filteredChain.map((cat, index) => {
     const categoryPath = [];
     const categoryChainUpToCurrent = filteredChain.slice(0, index + 1);
     categoryChainUpToCurrent.forEach(c => categoryPath.push(c.slug));
 
     return {
-      name: cat.name,
+      name: getCategoryName(cat, currentLang),
       url: cat.id === currentCategory.id ? null : createCategoryUrl(storeCode, categoryPath.join('/')),
       isCurrent: cat.id === currentCategory.id
     };
@@ -105,6 +107,7 @@ export function buildProductBreadcrumbs(product, storeCode, categories = [], set
       }
 
 
+      const currentLang = getCurrentLanguage();
       const filteredChain = categoryChain.filter(cat => cat.parent_id !== null);
       filteredChain.forEach((cat, index) => {
         const categoryPath = [];
@@ -112,7 +115,7 @@ export function buildProductBreadcrumbs(product, storeCode, categories = [], set
         categoryChainUpToCurrent.forEach(c => categoryPath.push(c.slug));
 
         breadcrumbs.push({
-          name: cat.name,
+          name: getCategoryName(cat, currentLang),
           url: createCategoryUrl(storeCode, categoryPath.join('/')),
           isCurrent: false
         });
@@ -121,7 +124,7 @@ export function buildProductBreadcrumbs(product, storeCode, categories = [], set
   }
 
   breadcrumbs.push({
-    name: product.name,
+    name: getProductName(product, getCurrentLanguage()),
     url: null,
     isCurrent: true
   });
@@ -138,16 +141,18 @@ export function buildCmsBreadcrumbs(cmsPage, storeCode, settings = {}) {
 
   const breadcrumbs = [];
 
+  const currentLang = getCurrentLanguage();
+
   if (cmsPage.parent_page) {
     breadcrumbs.push({
-      name: cmsPage.parent_page.title,
+      name: getPageTitle(cmsPage.parent_page, currentLang),
       url: createCmsPageUrl(storeCode, cmsPage.parent_page.slug),
       isCurrent: false
     });
   }
 
   breadcrumbs.push({
-    name: cmsPage.title || cmsPage.name,
+    name: getPageTitle(cmsPage, currentLang) || cmsPage.name,
     url: null,
     isCurrent: true
   });

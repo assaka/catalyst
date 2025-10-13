@@ -13,6 +13,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import slotConfigurationService from '@/services/slotConfigurationService';
 import { categoryConfig } from '@/components/editor/slot/configs/category-config';
 import { formatPrice } from '@/utils/priceUtils';
+import { getCategoryName, getCurrentLanguage } from "@/utils/translationUtils";
 
 const ensureArray = (data) => {
   if (Array.isArray(data)) return data;
@@ -251,7 +252,7 @@ export default function Category() {
         if (category) {
           window.catalyst.trackEvent('page_view', {
             page_type: 'category',
-            category_name: category.name,
+            category_name: getCategoryName(category, getCurrentLanguage()),
             category_id: category.id,
             store_name: store.name,
             store_id: store.id
@@ -690,7 +691,7 @@ export default function Category() {
     );
   }
 
-  const pageTitle = currentCategory?.name || (categorySlug ? "Category Not Found" : "All Products");
+  const pageTitle = currentCategory ? getCategoryName(currentCategory, getCurrentLanguage()) : (categorySlug ? "Category Not Found" : "All Products");
 
   return (
     <div className="px-4 sm:px-6 lg:px-8 py-8">
@@ -739,7 +740,7 @@ export default function Category() {
                 <h3 className="text-xl font-semibold text-gray-800">No Products Found</h3>
                 <p className="text-gray-500 mt-2 text-center">
                   {currentCategory ?
-                    `No products found in the "${currentCategory.name}" category.` :
+                    `No products found in the "${getCategoryName(currentCategory, getCurrentLanguage())}" category.` :
                     "No products match your current filters."
                   }
                 </p>

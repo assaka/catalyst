@@ -51,6 +51,7 @@ import { Switch } from "@/components/ui/switch";
 
 import CategoryForm from "@/components/admin/categories/CategoryForm";
 import { TranslationIndicator } from "@/components/admin/TranslationFields";
+import { getCategoryName, getCategoryDescription } from "@/utils/translationUtils";
 
 export default function Categories() {
   const { selectedStore, getSelectedStoreId, availableStores } = useStoreSelection();
@@ -297,10 +298,11 @@ export default function Categories() {
       // Apply name filter if present
       if (nameFilter.trim()) {
         const searchTerm = nameFilter.trim().toLowerCase();
-        filteredCategories = filteredCategories.filter(cat => 
-          cat.name.toLowerCase().includes(searchTerm) ||
-          cat.description?.toLowerCase().includes(searchTerm)
-        );
+        filteredCategories = filteredCategories.filter(cat => {
+          const name = getCategoryName(cat).toLowerCase();
+          const description = getCategoryDescription(cat).toLowerCase();
+          return name.includes(searchTerm) || description.includes(searchTerm);
+        });
       }
 
       if (viewMode === 'hierarchical') {
@@ -408,17 +410,18 @@ export default function Categories() {
   // Apply client-side filtering for name filter (no page reload)
   const getDisplayCategories = () => {
     let displayCategories = categories;
-    
+
     // Apply name filter client-side (instant filtering, no reload)
     if (nameFilter.trim()) {
       const searchTerm = nameFilter.trim().toLowerCase();
-      displayCategories = displayCategories.filter(cat => 
-        cat.name.toLowerCase().includes(searchTerm) ||
-        cat.description?.toLowerCase().includes(searchTerm) ||
-        cat.slug?.toLowerCase().includes(searchTerm)
-      );
+      displayCategories = displayCategories.filter(cat => {
+        const name = getCategoryName(cat).toLowerCase();
+        const description = getCategoryDescription(cat).toLowerCase();
+        const slug = cat.slug?.toLowerCase() || '';
+        return name.includes(searchTerm) || description.includes(searchTerm) || slug.includes(searchTerm);
+      });
     }
-    
+
     return displayCategories;
   };
 
@@ -528,12 +531,12 @@ export default function Categories() {
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center space-x-2">
-                    <h3 className="text-sm font-medium text-gray-900 truncate">{category.name}</h3>
+                    <h3 className="text-sm font-medium text-gray-900 truncate">{getCategoryName(category)}</h3>
                     <span className="text-xs text-gray-500 font-mono">/{category.slug}</span>
                   </div>
-                  {category.description && (
+                  {getCategoryDescription(category) && (
                     <p className="text-xs text-gray-600 truncate mt-0.5">
-                      {category.description}
+                      {getCategoryDescription(category)}
                     </p>
                   )}
                 </div>
@@ -857,7 +860,7 @@ export default function Categories() {
                       <SelectItem value="none">No Root Category</SelectItem>
                       {rootCategories.map((category) => (
                         <SelectItem key={category.id} value={category.id}>
-                          {category.name}
+                          {getCategoryName(category)}
                         </SelectItem>
                       ))}
                     </SelectContent>
@@ -923,7 +926,7 @@ export default function Categories() {
                         <SelectItem value="all">All Categories</SelectItem>
                         {rootCategories.map((category) => (
                           <SelectItem key={category.id} value={category.id}>
-                            {category.name}
+                            {getCategoryName(category)}
                           </SelectItem>
                         ))}
                       </SelectContent>
@@ -1055,7 +1058,7 @@ export default function Categories() {
                           )}
                         </div>
                         <div>
-                          <CardTitle className="text-lg">{category.name}</CardTitle>
+                          <CardTitle className="text-lg">{getCategoryName(category)}</CardTitle>
                           <p className="text-sm text-gray-500">/{category.slug}</p>
                         </div>
                       </div>
@@ -1160,7 +1163,7 @@ export default function Categories() {
                   </CardHeader>
                   <CardContent>
                     <p className="text-gray-600 text-sm mb-4">
-                      {category.description || "No description"}
+                      {getCategoryDescription(category) || "No description"}
                     </p>
                     <div className="flex flex-wrap gap-2">
                       <Badge variant={category.is_active ? "default" : "secondary"}>
