@@ -11,6 +11,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Button } from '@/components/ui/button';
+import { getCategoryName, getCurrentLanguage } from '@/utils/translationUtils';
 
 export default function CategoryNav({ categories, styles = {}, metadata = {}, store: storeProp = null, isEditor = false, isMobile: isMobileProp = null, onLinkClick = null }) {
     const storeContext = useStore();
@@ -204,7 +205,7 @@ export default function CategoryNav({ categories, styles = {}, metadata = {}, st
                             e.currentTarget.style.backgroundColor = 'transparent';
                         }}
                     >
-                        {depth > 0 && '→ '}{category.name}
+                        {depth > 0 && '→ '}{getCategoryName(category, getCurrentLanguage())}
                     </Link>
                 </DropdownMenuItem>
             );
@@ -228,7 +229,7 @@ export default function CategoryNav({ categories, styles = {}, metadata = {}, st
                         e.currentTarget.style.backgroundColor = 'transparent';
                     }}
                 >
-                    {depth > 0 && '→ '}{category.name}
+                    {depth > 0 && '→ '}{getCategoryName(category, getCurrentLanguage())}
                 </Link>
             );
         }
@@ -268,7 +269,7 @@ export default function CategoryNav({ categories, styles = {}, metadata = {}, st
                         }}
                         onClick={() => onLinkClick?.()}
                     >
-                        {category.name}
+                        {getCategoryName(category, getCurrentLanguage())}
                     </Link>
                     {hasChildren && (
                         <Button
@@ -287,7 +288,7 @@ export default function CategoryNav({ categories, styles = {}, metadata = {}, st
                             onMouseLeave={(e) => {
                                 e.currentTarget.style.backgroundColor = 'transparent';
                             }}
-                            aria-label={isExpanded ? `Collapse ${category.name}` : `Expand ${category.name}`}
+                            aria-label={isExpanded ? `Collapse ${getCategoryName(category, getCurrentLanguage())}` : `Expand ${getCategoryName(category, getCurrentLanguage())}`}
                         >
                             {isExpanded ? (
                                 <ChevronDown className="w-3 h-3" />
@@ -316,7 +317,7 @@ export default function CategoryNav({ categories, styles = {}, metadata = {}, st
                             variant="ghost" 
                             className="text-sm font-medium text-gray-700 hover:text-blue-600 transition-colors px-3 py-2 rounded-md h-auto flex items-center whitespace-nowrap"
                         >
-                            <span>{category.name}</span>
+                            <span>{getCategoryName(category, getCurrentLanguage())}</span>
                             <ChevronDown className="w-3 h-3" />
                         </Button>
                     </DropdownMenuTrigger>
@@ -335,7 +336,7 @@ export default function CategoryNav({ categories, styles = {}, metadata = {}, st
                                     e.currentTarget.style.backgroundColor = 'transparent';
                                 }}
                             >
-                                View All {category.name}
+                                View All {getCategoryName(category, getCurrentLanguage())}
                             </Link>
                         </DropdownMenuItem>
                         {category.children.map(child => renderCategoryDescendants(child, 0))}
@@ -350,7 +351,7 @@ export default function CategoryNav({ categories, styles = {}, metadata = {}, st
                     to={createCategoryUrl(store.slug, buildCategoryPath(category, categories).join('/'))} 
                     className="text-sm font-medium text-gray-700 hover:text-blue-600 transition-colors px-3 py-2 rounded-md whitespace-nowrap"
                 >
-                    {category.name}
+                    {getCategoryName(category, getCurrentLanguage())}
                 </Link>
             );
         }
@@ -368,7 +369,7 @@ export default function CategoryNav({ categories, styles = {}, metadata = {}, st
                         onMouseEnter={(e) => e.currentTarget.style.color = hoverColor}
                         onMouseLeave={(e) => e.currentTarget.style.color = linkStyles.color}
                     >
-                        {category.name}
+                        {getCategoryName(category, getCurrentLanguage())}
                         <ChevronDown className="w-3 h-3" />
                     </Link>
 
@@ -391,7 +392,7 @@ export default function CategoryNav({ categories, styles = {}, metadata = {}, st
                                     e.currentTarget.style.backgroundColor = 'transparent';
                                 }}
                             >
-                                View All {category.name}
+                                View All {getCategoryName(category, getCurrentLanguage())}
                             </Link>
                             {category.children.map(child => renderDesktopSubmenuItem(child, 0))}
                         </div>
@@ -409,7 +410,7 @@ export default function CategoryNav({ categories, styles = {}, metadata = {}, st
                     onMouseEnter={(e) => e.currentTarget.style.color = hoverColor}
                     onMouseLeave={(e) => e.currentTarget.style.color = linkStyles.color}
                 >
-                    {category.name}
+                    {getCategoryName(category, getCurrentLanguage())}
                 </Link>
             );
         }
@@ -439,7 +440,7 @@ export default function CategoryNav({ categories, styles = {}, metadata = {}, st
                     e.currentTarget.style.backgroundColor = 'transparent';
                 }}
             >
-                {depth > 0 && '→ '}{category.name}
+                {depth > 0 && '→ '}{getCategoryName(category, getCurrentLanguage())}
             </Link>
         );
         
@@ -467,7 +468,7 @@ export default function CategoryNav({ categories, styles = {}, metadata = {}, st
                         className="flex items-center justify-between px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
                         style={{ paddingLeft: `${16 + depth * 12}px` }}
                     >
-                        <span>{depth > 0 && '→ '}{category.name}</span>
+                        <span>{depth > 0 && '→ '}{getCategoryName(category, getCurrentLanguage())}</span>
                         <ChevronRight className="w-3 h-3" />
                     </Link>
                     
@@ -478,7 +479,7 @@ export default function CategoryNav({ categories, styles = {}, metadata = {}, st
                                 to={createCategoryUrl(store.slug, buildCategoryPath(category, categories).join('/'))}
                                 className="block px-4 py-2 text-sm font-medium text-gray-900 hover:bg-gray-100 border-b border-gray-200"
                             >
-                                View All {category.name}
+                                View All {getCategoryName(category, getCurrentLanguage())}
                             </Link>
                             {/* Show children - expandAllMenuItems controls second-level visibility */}
                             {(isSecondLevel && expandAllMenuItems) || !isSecondLevel ? (
@@ -501,7 +502,7 @@ export default function CategoryNav({ categories, styles = {}, metadata = {}, st
                     className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
                     style={{ paddingLeft: `${16 + depth * 12}px` }}
                 >
-                    {depth > 0 && '→ '}{category.name}
+                    {depth > 0 && '→ '}{getCategoryName(category, getCurrentLanguage())}
                 </Link>
             );
         }
@@ -520,7 +521,7 @@ export default function CategoryNav({ categories, styles = {}, metadata = {}, st
                         className="flex items-center justify-between px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
                         style={{ paddingLeft: `${16 + depth * 12}px` }}
                     >
-                        <span>{depth > 0 && '→ '}{category.name}</span>
+                        <span>{depth > 0 && '→ '}{getCategoryName(category, getCurrentLanguage())}</span>
                         <ChevronRight className="w-3 h-3" />
                     </Link>
                     
@@ -531,7 +532,7 @@ export default function CategoryNav({ categories, styles = {}, metadata = {}, st
                                 to={createCategoryUrl(store.slug, buildCategoryPath(category, categories).join('/'))}
                                 className="block px-4 py-2 text-sm font-medium text-gray-900 hover:bg-gray-100 border-b border-gray-200"
                             >
-                                View All {category.name}
+                                View All {getCategoryName(category, getCurrentLanguage())}
                             </Link>
                             {/* Show children using the recursive version that can expand further */}
                             {category.children.map(child => renderDirectChildSimple(child, 0))}
@@ -548,7 +549,7 @@ export default function CategoryNav({ categories, styles = {}, metadata = {}, st
                     className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
                     style={{ paddingLeft: `${16 + depth * 12}px` }}
                 >
-                    {depth > 0 && '→ '}{category.name}
+                    {depth > 0 && '→ '}{getCategoryName(category, getCurrentLanguage())}
                 </Link>
             );
         }
@@ -567,7 +568,7 @@ export default function CategoryNav({ categories, styles = {}, metadata = {}, st
                         className="flex items-center justify-between px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
                         style={{ paddingLeft: `${16 + depth * 12}px` }}
                     >
-                        <span>{depth > 0 && '→ '}{category.name}</span>
+                        <span>{depth > 0 && '→ '}{getCategoryName(category, getCurrentLanguage())}</span>
                         <ChevronRight className="w-3 h-3" />
                     </Link>
                     
@@ -578,7 +579,7 @@ export default function CategoryNav({ categories, styles = {}, metadata = {}, st
                                 to={createCategoryUrl(store.slug, buildCategoryPath(category, categories).join('/'))}
                                 className="block px-4 py-2 text-sm font-medium text-gray-900 hover:bg-gray-100 border-b border-gray-200"
                             >
-                                View All {category.name}
+                                View All {getCategoryName(category, getCurrentLanguage())}
                             </Link>
                             {/* Recursively render children - they can also have their own hover submenus */}
                             {category.children.map(child => renderDirectChildSimple(child, 0))}
@@ -595,7 +596,7 @@ export default function CategoryNav({ categories, styles = {}, metadata = {}, st
                     className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
                     style={{ paddingLeft: `${16 + depth * 12}px` }}
                 >
-                    {depth > 0 && '→ '}{category.name}
+                    {depth > 0 && '→ '}{getCategoryName(category, getCurrentLanguage())}
                 </Link>
             );
         }
@@ -614,7 +615,7 @@ export default function CategoryNav({ categories, styles = {}, metadata = {}, st
                         className="flex items-center justify-between px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
                         style={{ paddingLeft: `${16 + depth * 12}px` }}
                     >
-                        <span>{depth > 0 && '→ '}{category.name}</span>
+                        <span>{depth > 0 && '→ '}{getCategoryName(category, getCurrentLanguage())}</span>
                         <ChevronRight className="w-3 h-3" />
                     </Link>
                     
@@ -625,7 +626,7 @@ export default function CategoryNav({ categories, styles = {}, metadata = {}, st
                                 to={createCategoryUrl(store.slug, buildCategoryPath(category, categories).join('/'))}
                                 className="block px-4 py-2 text-sm font-medium text-gray-900 hover:bg-gray-100 border-b border-gray-200"
                             >
-                                View All {category.name}
+                                View All {getCategoryName(category, getCurrentLanguage())}
                             </Link>
                             {/* Show only direct children of this category */}
                             {category.children.map(child => renderDirectChildOnly(child, 0))}
@@ -642,7 +643,7 @@ export default function CategoryNav({ categories, styles = {}, metadata = {}, st
                     className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
                     style={{ paddingLeft: `${16 + depth * 12}px` }}
                 >
-                    {depth > 0 && '→ '}{category.name}
+                    {depth > 0 && '→ '}{getCategoryName(category, getCurrentLanguage())}
                 </Link>
             );
         }
@@ -661,7 +662,7 @@ export default function CategoryNav({ categories, styles = {}, metadata = {}, st
                     className="flex items-center justify-between px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
                     style={{ paddingLeft: `${16 + depth * 12}px` }}
                 >
-                    <span>{depth > 0 && '→ '}{category.name}</span>
+                    <span>{depth > 0 && '→ '}{getCategoryName(category, getCurrentLanguage())}</span>
                     <ChevronRight className="w-3 h-3" />
                 </Link>
             );
@@ -674,7 +675,7 @@ export default function CategoryNav({ categories, styles = {}, metadata = {}, st
                     className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
                     style={{ paddingLeft: `${16 + depth * 12}px` }}
                 >
-                    {depth > 0 && '→ '}{category.name}
+                    {depth > 0 && '→ '}{getCategoryName(category, getCurrentLanguage())}
                 </Link>
             );
         }
@@ -716,7 +717,7 @@ export default function CategoryNav({ categories, styles = {}, metadata = {}, st
                             e.currentTarget.style.backgroundColor = 'transparent';
                         }}
                     >
-                        <span>{depth > 0 && '→ '}{category.name}</span>
+                        <span>{depth > 0 && '→ '}{getCategoryName(category, getCurrentLanguage())}</span>
                         <ChevronRight className="w-3 h-3" />
                     </Link>
 
@@ -739,7 +740,7 @@ export default function CategoryNav({ categories, styles = {}, metadata = {}, st
                                         e.currentTarget.style.backgroundColor = 'transparent';
                                     }}
                                 >
-                                    View All {category.name}
+                                    View All {getCategoryName(category, getCurrentLanguage())}
                                 </Link>
                                 {/* Show direct children as simple links WITHOUT further hover capabilities */}
                                 {category.children.map(child => (
@@ -757,7 +758,7 @@ export default function CategoryNav({ categories, styles = {}, metadata = {}, st
                                             e.currentTarget.style.backgroundColor = 'transparent';
                                         }}
                                     >
-                                        {child.name}
+                                        {getCategoryName(child, getCurrentLanguage())}
                                     </Link>
                                 ))}
                             </div>
@@ -786,7 +787,7 @@ export default function CategoryNav({ categories, styles = {}, metadata = {}, st
                         e.currentTarget.style.backgroundColor = 'transparent';
                     }}
                 >
-                    {depth > 0 && '→ '}{category.name}
+                    {depth > 0 && '→ '}{getCategoryName(category, getCurrentLanguage())}
                 </Link>
             );
         }
@@ -805,7 +806,7 @@ export default function CategoryNav({ categories, styles = {}, metadata = {}, st
                         className="flex items-center justify-between px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
                         style={{ paddingLeft: `${16 + depth * 12}px` }}
                     >
-                        <span>{depth > 0 && '→ '}{category.name}</span>
+                        <span>{depth > 0 && '→ '}{getCategoryName(category, getCurrentLanguage())}</span>
                         <ChevronRight className="w-3 h-3" />
                     </Link>
                     
@@ -816,7 +817,7 @@ export default function CategoryNav({ categories, styles = {}, metadata = {}, st
                                 to={createCategoryUrl(store.slug, buildCategoryPath(category, categories).join('/'))}
                                 className="block px-4 py-2 text-sm font-medium text-gray-900 hover:bg-gray-100 border-b border-gray-200"
                             >
-                                View All {category.name}
+                                View All {getCategoryName(category, getCurrentLanguage())}
                             </Link>
                             {/* Always show children for items that have them */}
                             {category.children.map(child => renderDesktopSubmenuItemSimple(child, depth + 1))}
@@ -833,7 +834,7 @@ export default function CategoryNav({ categories, styles = {}, metadata = {}, st
                     className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
                     style={{ paddingLeft: `${16 + depth * 12}px` }}
                 >
-                    {depth > 0 && '→ '}{category.name}
+                    {depth > 0 && '→ '}{getCategoryName(category, getCurrentLanguage())}
                 </Link>
             );
         }
@@ -869,7 +870,7 @@ export default function CategoryNav({ categories, styles = {}, metadata = {}, st
                                         to={createCategoryUrl(store.slug, buildCategoryPath(category, categories).join('/'))}
                                         className="text-sm font-medium text-gray-700 hover:text-blue-600 transition-colors px-3 py-2 rounded-md inline-flex items-center whitespace-nowrap"
                                     >
-                                        {category.name}
+                                        {getCategoryName(category, getCurrentLanguage())}
                                         <ChevronDown className="w-3 h-3" />
                                     </Link>
                                     {/* Submenu visible on hover */}
@@ -890,7 +891,7 @@ export default function CategoryNav({ categories, styles = {}, metadata = {}, st
                                                     e.currentTarget.style.backgroundColor = 'transparent';
                                                 }}
                                             >
-                                                View All {category.name}
+                                                View All {getCategoryName(category, getCurrentLanguage())}
                                             </Link>
                                             {(() => {
                                 return expandAllMenuItems ?
@@ -912,7 +913,7 @@ export default function CategoryNav({ categories, styles = {}, metadata = {}, st
                                     to={createCategoryUrl(store.slug, buildCategoryPath(category, categories).join('/'))} 
                                     className="text-sm font-medium text-gray-700 hover:text-blue-600 transition-colors px-3 py-2 rounded-md whitespace-nowrap"
                                 >
-                                    {category.name}
+                                    {getCategoryName(category, getCurrentLanguage())}
                                 </Link>
                             );
                         }
