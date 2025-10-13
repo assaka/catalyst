@@ -6,6 +6,7 @@ import NoStoreSelected from "@/components/admin/NoStoreSelected";
 import CmsBlockForm from "@/components/admin/cms/CmsBlockForm";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { getBlockTitle, getBlockContent } from "@/utils/translationUtils";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import { Plus, Edit, Trash2, FileText } from "lucide-react"; // Removed Eye, Code as they are not used
@@ -157,7 +158,7 @@ export default function CmsBlocks() {
                         <span className="text-xl">{getBlockTypeIcon(block.identifier)}</span>
                       </div>
                       <div>
-                        <CardTitle className="text-lg">{block.title}</CardTitle>
+                        <CardTitle className="text-lg">{getBlockTitle(block)}</CardTitle>
                         <p className="text-sm text-gray-500">/{block.identifier}</p>
                       </div>
                     </div>
@@ -171,10 +172,10 @@ export default function CmsBlocks() {
                       onCheckedChange={() => handleToggleActive(block)}
                     />
                   </div>
-                  
+
                   <div className="text-sm text-gray-600">
                     <div className="bg-gray-50 p-2 rounded text-xs font-mono max-h-20 overflow-hidden">
-                      {block.content?.substring(0, 100)}...
+                      {getBlockContent(block)?.substring(0, 100)}...
                     </div>
                   </div>
                   

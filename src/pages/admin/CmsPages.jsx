@@ -27,6 +27,7 @@ import { createPageUrl } from "@/utils";
 import { createCmsPageUrl } from "@/utils/urlUtils";
 import FlashMessage from "@/components/storefront/FlashMessage";
 import CmsPageForm from "@/components/admin/cms/CmsPageForm";
+import { getPageTitle } from "@/utils/translationUtils";
 
 export default function CmsPages() {
   const { selectedStore, getSelectedStoreId } = useStoreSelection();
@@ -148,9 +149,10 @@ export default function CmsPages() {
     }
   };
 
-  const filteredPages = pages.filter(page => // Filter 'pages' state
-    page.title.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  const filteredPages = pages.filter(page => {
+    const pageTitle = getPageTitle(page);
+    return pageTitle.toLowerCase().includes(searchQuery.toLowerCase());
+  });
 
   if (loading) {
     return (
@@ -204,7 +206,7 @@ export default function CmsPages() {
             <Card key={page.id} className="material-elevation-1 border-0 hover:material-elevation-2 transition-all duration-300">
               <CardHeader>
                 <CardTitle className="flex justify-between items-start">
-                  <span>{page.title}</span>
+                  <span>{getPageTitle(page)}</span>
                   <Badge variant={page.is_active ? "default" : "secondary"}>
                     {page.is_active ? "Active" : "Inactive"}
                   </Badge>

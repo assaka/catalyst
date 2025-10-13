@@ -53,7 +53,7 @@ import {
 
 import ProductForm from "@/components/admin/products/ProductForm";
 import ProductFilters from "@/components/admin/products/ProductFilters";
-import { getCategoryName as getTranslatedCategoryName } from "@/utils/translationUtils";
+import { getCategoryName as getTranslatedCategoryName, getProductName, getProductShortDescription } from "@/utils/translationUtils";
 
 const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 
@@ -463,11 +463,13 @@ export default function Products() {
 
   // Client-side filtering for search and filters (all data is loaded)
   const filteredProducts = products.filter(product => {
-    // Search filter
-    const matchesSearch = !searchQuery.trim() || 
-      product.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    // Search filter - use translation utilities
+    const productName = getProductName(product);
+    const productShortDesc = getProductShortDescription(product);
+    const matchesSearch = !searchQuery.trim() ||
+      productName?.toLowerCase().includes(searchQuery.toLowerCase()) ||
       product.sku?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      product.short_description?.toLowerCase().includes(searchQuery.toLowerCase());
+      productShortDesc?.toLowerCase().includes(searchQuery.toLowerCase());
     
     // Status filter
     const matchesStatus = filters.status === "all" || product.status === filters.status;
@@ -902,9 +904,9 @@ export default function Products() {
                                 )}
                               </div>
                               <div>
-                                <p className="font-medium text-gray-900">{product.name}</p>
+                                <p className="font-medium text-gray-900">{getProductName(product)}</p>
                                 <p className="text-sm text-gray-500 truncate max-w-xs">
-                                  {product.short_description}
+                                  {getProductShortDescription(product)}
                                 </p>
                               </div>
                             </div>

@@ -26,11 +26,7 @@ export function getTranslatedField(entity, field, lang = 'en', fallbackLang = 'e
     return entity.translations[fallbackLang][field];
   }
 
-  // Fallback to direct property (backward compatibility)
-  if (entity[field]) {
-    return entity[field];
-  }
-
+  // NO fallback to direct property - translations JSON only
   return '';
 }
 
