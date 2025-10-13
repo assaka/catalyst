@@ -341,48 +341,61 @@ export default function CategoryForm({ category, onSubmit, onCancel, parentCateg
         </button>
       </div>
 
-      {showTranslations && (
-        <Card className="border-blue-200 bg-blue-50">
-          <CardHeader>
-            <CardTitle className="text-base flex items-center gap-2">
-              <Languages className="w-5 h-5" />
-              Category Translations
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <TranslationFields
-              translations={formData.translations}
-              onChange={(newTranslations) => {
-                setFormData(prev => ({
-                  ...prev,
-                  translations: newTranslations,
-                  // Sync main name field with English translation
-                  name: newTranslations.en?.name || prev.name,
-                  description: newTranslations.en?.description || prev.description
-                }));
-                // Auto-update slug from English name if not manually edited
-                if (!isEditingSlug && newTranslations.en && newTranslations.en.name) {
-                  const generatedSlug = newTranslations.en.name.toLowerCase()
-                    .replace(/[^a-z0-9]+/g, '-')
-                    .replace(/(^-|-$)/g, '');
-                  setFormData(prev => ({ ...prev, slug: generatedSlug }));
+      {/* Description field - Hidden when translations shown */}
+      {!showTranslations && (
+        <div>
+          <Label htmlFor="description">Description</Label>
+          <Textarea
+            id="description"
+            name="description"
+            value={formData.description}
+            onChange={handleInputChange}
+            rows={4}
+            className="resize-none"
+            placeholder="Enter category description"
+          />
+        </div>
+      )}
 
-                  // Check if this is an edit and slug will change
-                  if (category && originalSlug && generatedSlug !== originalSlug) {
-                    setShowSlugChangeWarning(true);
-                  }
+      {/* Translation Fields */}
+      {showTranslations && (
+        <div className="mt-4 border-2 border-blue-200 bg-blue-50 rounded-lg p-4">
+          <div className="flex items-center gap-2 mb-4">
+            <Languages className="w-5 h-5 text-blue-600" />
+            <h3 className="text-base font-semibold text-blue-900">Category Translations</h3>
+          </div>
+          <TranslationFields
+            translations={formData.translations}
+            onChange={(newTranslations) => {
+              setFormData(prev => ({
+                ...prev,
+                translations: newTranslations,
+                // Sync main name field with English translation
+                name: newTranslations.en?.name || prev.name,
+                description: newTranslations.en?.description || prev.description
+              }));
+              // Auto-update slug from English name if not manually edited
+              if (!isEditingSlug && newTranslations.en && newTranslations.en.name) {
+                const generatedSlug = newTranslations.en.name.toLowerCase()
+                  .replace(/[^a-z0-9]+/g, '-')
+                  .replace(/(^-|-$)/g, '');
+                setFormData(prev => ({ ...prev, slug: generatedSlug }));
+
+                // Check if this is an edit and slug will change
+                if (category && originalSlug && generatedSlug !== originalSlug) {
+                  setShowSlugChangeWarning(true);
                 }
-              }}
-              fields={[
-                { name: 'name', label: 'Category Name', type: 'text', required: true },
-                { name: 'description', label: 'Description', type: 'textarea', rows: 4 }
-              ]}
-            />
-            <p className="text-sm text-gray-600 mt-3">
-              Translate the category name and description for your multilingual customers
-            </p>
-          </CardContent>
-        </Card>
+              }
+            }}
+            fields={[
+              { name: 'name', label: 'Category Name', type: 'text', required: true },
+              { name: 'description', label: 'Description', type: 'textarea', rows: 4 }
+            ]}
+          />
+          <p className="text-sm text-gray-600 mt-3">
+            Translate the category name and description for your multilingual customers
+          </p>
+        </div>
       )}
 
       <div>
