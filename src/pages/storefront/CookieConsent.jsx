@@ -175,6 +175,7 @@ export default function CookieConsent() {
   const [flashMessage, setFlashMessage] = useState(null);
   const [store, setStore] = useState(null);
   const [user, setUser] = useState(null); // Added user state
+  const [showTranslations, setShowTranslations] = useState(false);
 
   useEffect(() => {
     if (selectedStore) {
@@ -483,15 +484,33 @@ export default function CookieConsent() {
                   <CardDescription>Customize the text and buttons on your consent banner</CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                  <Accordion type="single" collapsible className="w-full" defaultValue="translations">
-                    <AccordionItem value="translations">
-                      <AccordionTrigger>
-                        <div className="flex items-center space-x-2">
-                          <Languages className="w-5 h-5 text-gray-500" />
-                          <span>Banner Text Translations</span>
-                        </div>
-                      </AccordionTrigger>
-                      <AccordionContent className="p-4 space-y-4 bg-gray-50 rounded-b-lg">
+                  <div>
+                    <Label htmlFor="banner_message">Banner Message</Label>
+                    <Textarea
+                      id="banner_message"
+                      value={settings.banner_message}
+                      onChange={(e) => setSettings({ ...settings, banner_message: e.target.value })}
+                      rows={3}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowTranslations(!showTranslations)}
+                      className="text-sm text-blue-600 hover:text-blue-800 mt-1 flex items-center gap-1"
+                    >
+                      <Languages className="w-4 h-4" />
+                      {showTranslations ? 'Hide translations' : 'Manage translations'}
+                    </button>
+                  </div>
+
+                  {showTranslations && (
+                    <Card className="border-blue-200 bg-blue-50">
+                      <CardHeader>
+                        <CardTitle className="text-base flex items-center gap-2">
+                          <Languages className="w-5 h-5" />
+                          Banner Text Translations
+                        </CardTitle>
+                      </CardHeader>
+                      <CardContent>
                         <TranslationFields
                           translations={settings.translations}
                           onChange={(newTranslations) => {
@@ -505,22 +524,12 @@ export default function CookieConsent() {
                             { name: 'privacy_policy_text', label: 'Privacy Policy Link Text', type: 'text', required: true }
                           ]}
                         />
-                        <p className="text-sm text-gray-500">
+                        <p className="text-sm text-gray-600 mt-3">
                           Translate all cookie banner text to provide a localized experience for your visitors
                         </p>
-                      </AccordionContent>
-                    </AccordionItem>
-                  </Accordion>
-
-                  <div>
-                    <Label htmlFor="banner_message">Banner Message</Label>
-                    <Textarea
-                      id="banner_message"
-                      value={settings.banner_message}
-                      onChange={(e) => setSettings({ ...settings, banner_message: e.target.value })}
-                      rows={3}
-                    />
-                  </div>
+                      </CardContent>
+                    </Card>
+                  )}
 
                   <div className="grid grid-cols-2 gap-4">
                     <div>
