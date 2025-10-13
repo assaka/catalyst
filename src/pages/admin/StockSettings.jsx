@@ -7,7 +7,14 @@ import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
-import { Save } from 'lucide-react';
+import { Save, Languages } from 'lucide-react';
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion";
+import TranslationFields from "@/components/admin/TranslationFields";
 
 const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 
@@ -65,7 +72,18 @@ export default function StockSettings() {
       }
       
       const storeSettings = selectedStore.settings || {};
-      
+
+      // Handle translations with backward compatibility
+      let translations = storeSettings.stock_settings?.translations || {};
+
+      // Ensure English translation exists (backward compatibility)
+      if (!translations.en || (!translations.en.in_stock_label && storeSettings.stock_settings?.in_stock_label)) {
+        translations.en = {
+          in_stock_label: storeSettings.stock_settings?.in_stock_label || 'In Stock',
+          out_of_stock_label: storeSettings.stock_settings?.out_of_stock_label || 'Out of Stock',
+          low_stock_label: storeSettings.stock_settings?.low_stock_label || 'Low stock, {just {quantity} left}'
+        };
+      }
 
       setSettings({
         id: selectedStore.id,
@@ -79,6 +97,7 @@ export default function StockSettings() {
         out_of_stock_label: storeSettings.stock_settings?.out_of_stock_label || 'Out of Stock',
         low_stock_label: storeSettings.stock_settings?.low_stock_label || 'Low stock, {just {quantity} left}',
         show_stock_label: storeSettings.stock_settings?.show_stock_label !== undefined ? storeSettings.stock_settings.show_stock_label : true,
+        translations: translations,
         // Color settings for each stock type
         in_stock_text_color: storeSettings.stock_settings?.in_stock_text_color || '#166534',
         in_stock_bg_color: storeSettings.stock_settings?.in_stock_bg_color || '#dcfce7',
@@ -125,6 +144,7 @@ export default function StockSettings() {
             out_of_stock_label: settings.out_of_stock_label || 'Out of Stock',
             low_stock_label: settings.low_stock_label || 'Low stock, {just {quantity} left}',
             show_stock_label: settings.show_stock_label !== undefined ? settings.show_stock_label : true,
+            translations: settings.translations || {},
             // Save color settings
             in_stock_text_color: settings.in_stock_text_color || '#166534',
             in_stock_bg_color: settings.in_stock_bg_color || '#dcfce7',
@@ -306,7 +326,34 @@ export default function StockSettings() {
                   <p className="text-sm text-gray-500 mt-1">Show low stock warning when quantity falls below this number (0 to disable).</p>
                 </div>
               </div>
-              
+
+              <Accordion type="single" collapsible className="w-full mt-6" defaultValue="translations">
+                <AccordionItem value="translations">
+                  <AccordionTrigger>
+                    <div className="flex items-center space-x-2">
+                      <Languages className="w-5 h-5 text-gray-500" />
+                      <span>Stock Label Translations</span>
+                    </div>
+                  </AccordionTrigger>
+                  <AccordionContent className="p-4 space-y-4 bg-gray-50 rounded-b-lg">
+                    <TranslationFields
+                      translations={settings.translations}
+                      onChange={(newTranslations) => {
+                        setSettings(prev => ({ ...prev, translations: newTranslations }));
+                      }}
+                      fields={[
+                        { name: 'in_stock_label', label: 'In Stock Label', type: 'text', required: true },
+                        { name: 'out_of_stock_label', label: 'Out of Stock Label', type: 'text', required: true },
+                        { name: 'low_stock_label', label: 'Low Stock Label', type: 'text', required: true }
+                      ]}
+                    />
+                    <p className="text-sm text-gray-500">
+                      Translate stock status labels to provide localized messages to your customers. Placeholders like {'{quantity}'} work in all languages.
+                    </p>
+                  </AccordionContent>
+                </AccordionItem>
+              </Accordion>
+
               <div className="space-y-4 pt-4 border-t">
                   <div>
                     <Label htmlFor="in_stock_label">"In Stock" Label</Label>
