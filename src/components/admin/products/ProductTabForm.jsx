@@ -34,6 +34,7 @@ export default function ProductTabForm({ tab, attributes = [], attributeSets = [
     translations: {},
   });
   const [loading, setLoading] = useState(false);
+  const [showTranslations, setShowTranslations] = useState(false);
 
   useEffect(() => {
     if (tab) {
@@ -102,32 +103,6 @@ export default function ProductTabForm({ tab, attributes = [], attributeSets = [
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
-      <Accordion type="single" collapsible className="w-full" defaultValue="translations">
-        <AccordionItem value="translations">
-          <AccordionTrigger>
-            <div className="flex items-center space-x-2">
-              <Languages className="w-5 h-5 text-gray-500" />
-              <span>Tab Translations (Name & Content)</span>
-            </div>
-          </AccordionTrigger>
-          <AccordionContent className="p-4 space-y-4 bg-gray-50 rounded-b-lg">
-            <TranslationFields
-              translations={formData.translations}
-              onChange={(newTranslations) => {
-                setFormData(prev => ({ ...prev, translations: newTranslations }));
-              }}
-              fields={[
-                { name: 'name', label: 'Tab Name', type: 'text', required: true },
-                { name: 'content', label: 'Tab Content', type: 'textarea', rows: 6, condition: formData.tab_type === 'text' }
-              ]}
-            />
-            <p className="text-sm text-gray-500">
-              Note: Content translation only applies when Tab Type is "Text Content"
-            </p>
-          </AccordionContent>
-        </AccordionItem>
-      </Accordion>
-
       <Card className="material-elevation-1 border-0">
         <CardHeader>
           <CardTitle>{tab ? 'Edit Product Tab' : 'Add Product Tab'}</CardTitle>
@@ -142,10 +117,44 @@ export default function ProductTabForm({ tab, attributes = [], attributeSets = [
               placeholder="Enter tab name (e.g., Features, Specifications)"
               required
             />
+            <button
+              type="button"
+              onClick={() => setShowTranslations(!showTranslations)}
+              className="text-sm text-blue-600 hover:text-blue-800 mt-1 flex items-center gap-1"
+            >
+              <Languages className="w-4 h-4" />
+              {showTranslations ? 'Hide translations' : 'Manage translations'}
+            </button>
             <p className="text-sm text-gray-500 mt-1">
               This will be displayed as the tab title on product pages
             </p>
           </div>
+
+          {showTranslations && (
+            <Card className="border-blue-200 bg-blue-50">
+              <CardHeader>
+                <CardTitle className="text-base flex items-center gap-2">
+                  <Languages className="w-5 h-5" />
+                  Tab Translations
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <TranslationFields
+                  translations={formData.translations}
+                  onChange={(newTranslations) => {
+                    setFormData(prev => ({ ...prev, translations: newTranslations }));
+                  }}
+                  fields={[
+                    { name: 'name', label: 'Tab Name', type: 'text', required: true },
+                    { name: 'content', label: 'Tab Content', type: 'textarea', rows: 6, condition: formData.tab_type === 'text' }
+                  ]}
+                />
+                <p className="text-sm text-gray-600 mt-3">
+                  Note: Content translation only applies when Tab Type is "Text Content"
+                </p>
+              </CardContent>
+            </Card>
+          )}
 
           <div>
             <Label htmlFor="tab_type">Tab Type *</Label>
