@@ -58,13 +58,7 @@ router.get('/', async (req, res) => {
 // @access  Public
 router.get('/:id', async (req, res) => {
   try {
-    const category = await Category.findByPk(req.params.id, {
-      include: [{
-        model: Store,
-        as: 'store',
-        attributes: ['id', 'name', 'slug']
-      }]
-    });
+    const category = await Category.findByPk(req.params.id);
     
     if (!category || !category.is_active) {
       return res.status(404).json({

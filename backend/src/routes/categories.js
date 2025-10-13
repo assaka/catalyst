@@ -42,15 +42,12 @@ router.get('/', authMiddleware, authorize(['admin', 'store_owner']), async (req,
       ];
     }
 
+    // Temporarily remove Store include to avoid association errors
     const { count, rows } = await Category.findAndCountAll({
       where,
       limit: parseInt(limit),
       offset: parseInt(offset),
-      order: [['sort_order', 'ASC'], ['name', 'ASC']],
-      include: [{
-        model: Store,
-        attributes: ['id', 'name']
-      }]
+      order: [['sort_order', 'ASC'], ['name', 'ASC']]
     });
 
     res.json({
@@ -79,12 +76,7 @@ router.get('/', authMiddleware, authorize(['admin', 'store_owner']), async (req,
 // @access  Private
 router.get('/:id', authMiddleware, authorize(['admin', 'store_owner']), async (req, res) => {
   try {
-    const category = await Category.findByPk(req.params.id, {
-      include: [{
-        model: Store,
-        attributes: ['id', 'name', 'user_id']
-      }]
-    });
+    const category = await Category.findByPk(req.params.id);
     
     if (!category) {
       return res.status(404).json({
@@ -96,8 +88,8 @@ router.get('/:id', authMiddleware, authorize(['admin', 'store_owner']), async (r
     // Check store access
     if (req.user.role !== 'admin') {
       const { checkUserStoreAccess } = require('../utils/storeAccess');
-      const access = await checkUserStoreAccess(req.user.id, category.Store.id);
-      
+      const access = await checkUserStoreAccess(req.user.id, category.store_id);
+
       if (!access) {
         return res.status(403).json({
           success: false,
@@ -177,12 +169,7 @@ router.put('/:id', authMiddleware, authorize(['admin', 'store_owner']), [
       });
     }
 
-    const category = await Category.findByPk(req.params.id, {
-      include: [{
-        model: Store,
-        attributes: ['id', 'name', 'user_id']
-      }]
-    });
+    const category = await Category.findByPk(req.params.id);
     
     if (!category) {
       return res.status(404).json({
@@ -194,8 +181,8 @@ router.put('/:id', authMiddleware, authorize(['admin', 'store_owner']), [
     // Check store access
     if (req.user.role !== 'admin') {
       const { checkUserStoreAccess } = require('../utils/storeAccess');
-      const access = await checkUserStoreAccess(req.user.id, category.Store.id);
-      
+      const access = await checkUserStoreAccess(req.user.id, category.store_id);
+
       if (!access) {
         return res.status(403).json({
           success: false,
@@ -225,12 +212,7 @@ router.put('/:id', authMiddleware, authorize(['admin', 'store_owner']), [
 // @access  Private
 router.delete('/:id', authMiddleware, authorize(['admin', 'store_owner']), async (req, res) => {
   try {
-    const category = await Category.findByPk(req.params.id, {
-      include: [{
-        model: Store,
-        attributes: ['id', 'name', 'user_id']
-      }]
-    });
+    const category = await Category.findByPk(req.params.id);
     
     if (!category) {
       return res.status(404).json({
@@ -242,8 +224,8 @@ router.delete('/:id', authMiddleware, authorize(['admin', 'store_owner']), async
     // Check store access
     if (req.user.role !== 'admin') {
       const { checkUserStoreAccess } = require('../utils/storeAccess');
-      const access = await checkUserStoreAccess(req.user.id, category.Store.id);
-      
+      const access = await checkUserStoreAccess(req.user.id, category.store_id);
+
       if (!access) {
         return res.status(403).json({
           success: false,
