@@ -176,6 +176,7 @@ export default function CookieConsent() {
   const [store, setStore] = useState(null);
   const [user, setUser] = useState(null); // Added user state
   const [showTranslations, setShowTranslations] = useState(false);
+  const [showCategoryTranslations, setShowCategoryTranslations] = useState(false);
 
   useEffect(() => {
     if (selectedStore) {
@@ -623,9 +624,48 @@ export default function CookieConsent() {
                     Add Category
                   </Button>
                 </CardTitle>
-                <CardDescription>Define cookie categories and their purposes</CardDescription>
+                <CardDescription>
+                  Define cookie categories and their purposes
+                  <button
+                    type="button"
+                    onClick={() => setShowCategoryTranslations(!showCategoryTranslations)}
+                    className="text-sm text-blue-600 hover:text-blue-800 ml-4 inline-flex items-center gap-1"
+                  >
+                    <Languages className="w-4 h-4" />
+                    {showCategoryTranslations ? 'Hide translations' : 'Manage translations'}
+                  </button>
+                </CardDescription>
               </CardHeader>
               <CardContent>
+                {/* Translation Fields for Categories */}
+                {showCategoryTranslations && (
+                  <div className="mb-6 border-2 border-blue-200 bg-blue-50 rounded-lg p-4">
+                    <div className="flex items-center gap-2 mb-4">
+                      <Languages className="w-5 h-5 text-blue-600" />
+                      <h3 className="text-base font-semibold text-blue-900">Category Translations</h3>
+                    </div>
+                    <TranslationFields
+                      translations={settings.translations}
+                      onChange={(newTranslations) => {
+                        setSettings(prev => ({ ...prev, translations: newTranslations }));
+                      }}
+                      fields={[
+                        { name: 'necessary_name', label: 'Necessary Cookies Name', type: 'text', required: true },
+                        { name: 'necessary_description', label: 'Necessary Cookies Description', type: 'textarea', rows: 2, required: true },
+                        { name: 'analytics_name', label: 'Analytics Cookies Name', type: 'text', required: true },
+                        { name: 'analytics_description', label: 'Analytics Cookies Description', type: 'textarea', rows: 2, required: true },
+                        { name: 'marketing_name', label: 'Marketing Cookies Name', type: 'text', required: true },
+                        { name: 'marketing_description', label: 'Marketing Cookies Description', type: 'textarea', rows: 2, required: true },
+                        { name: 'functional_name', label: 'Functional Cookies Name', type: 'text', required: true },
+                        { name: 'functional_description', label: 'Functional Cookies Description', type: 'textarea', rows: 2, required: true }
+                      ]}
+                    />
+                    <p className="text-sm text-gray-600 mt-3">
+                      Translate cookie category names and descriptions for a localized experience
+                    </p>
+                  </div>
+                )}
+
                 <div className="space-y-4">
                   {(settings.categories || []).map((category, index) => (
                     <Card key={category.id} className="p-4">
