@@ -33,6 +33,7 @@ export default function ProductLabelForm({ label, attributes, onSubmit, onCancel
     sort_order: 0,
     translations: {},
   });
+  const [showTranslations, setShowTranslations] = useState(false);
 
   useEffect(() => {
     if (label) {
@@ -168,31 +169,6 @@ export default function ProductLabelForm({ label, attributes, onSubmit, onCancel
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
-      <Accordion type="single" collapsible className="w-full" defaultValue="translations">
-        <AccordionItem value="translations">
-          <AccordionTrigger>
-            <div className="flex items-center space-x-2">
-              <Languages className="w-5 h-5 text-gray-500" />
-              <span>Label Translations (Display Text)</span>
-            </div>
-          </AccordionTrigger>
-          <AccordionContent className="p-4 space-y-4 bg-gray-50 rounded-b-lg">
-            <TranslationFields
-              translations={formData.translations}
-              onChange={(newTranslations) => {
-                setFormData(prev => ({ ...prev, translations: newTranslations }));
-              }}
-              fields={[
-                { name: 'text', label: 'Display Text', type: 'text', required: true }
-              ]}
-            />
-            <p className="text-sm text-gray-500">
-              Translate the label text that will be displayed on product images
-            </p>
-          </AccordionContent>
-        </AccordionItem>
-      </Accordion>
-
       <Tabs defaultValue="basic" className="w-full">
         <TabsList className="grid w-full grid-cols-3">
           <TabsTrigger value="basic">Basic Info</TabsTrigger>
@@ -221,8 +197,40 @@ export default function ProductLabelForm({ label, attributes, onSubmit, onCancel
               placeholder="e.g., SALE, NEW, 50% OFF"
               required
             />
+            <button
+              type="button"
+              onClick={() => setShowTranslations(!showTranslations)}
+              className="text-sm text-blue-600 hover:text-blue-800 mt-1 flex items-center gap-1"
+            >
+              <Languages className="w-4 h-4" />
+              {showTranslations ? 'Hide translations' : 'Manage translations'}
+            </button>
           </div>
 
+          {showTranslations && (
+            <Card className="border-blue-200 bg-blue-50">
+              <CardHeader>
+                <CardTitle className="text-base flex items-center gap-2">
+                  <Languages className="w-5 h-5" />
+                  Label Text Translations
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <TranslationFields
+                  translations={formData.translations}
+                  onChange={(newTranslations) => {
+                    setFormData(prev => ({ ...prev, translations: newTranslations }));
+                  }}
+                  fields={[
+                    { name: 'text', label: 'Display Text', type: 'text', required: true }
+                  ]}
+                />
+                <p className="text-sm text-gray-600 mt-3">
+                  Translate the label text that will be displayed on product images
+                </p>
+              </CardContent>
+            </Card>
+          )}
 
           <div className="flex items-center space-x-2">
             <Switch
