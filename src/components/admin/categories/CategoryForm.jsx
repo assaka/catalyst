@@ -56,6 +56,17 @@ export default function CategoryForm({ category, onSubmit, onCancel, parentCateg
 
   useEffect(() => {
     if (category) {
+      // If translations exist, use them; otherwise create from old columns
+      let translations = category.translations || {};
+
+      // Ensure English translation exists (backward compatibility)
+      if (!translations.en || (!translations.en.name && category.name)) {
+        translations.en = {
+          name: category.name || "",
+          description: category.description || ""
+        };
+      }
+
       const categoryData = {
         name: category.name || "",
         slug: category.slug || "",
@@ -65,7 +76,7 @@ export default function CategoryForm({ category, onSubmit, onCancel, parentCateg
         sort_order: category.sort_order || 0,
         is_active: category.is_active !== undefined ? category.is_active : true,
         hide_in_menu: category.hide_in_menu || false,
-        translations: category.translations || {},
+        translations: translations,
         // New SEO fields
         meta_title: category.meta_title || "",
         meta_description: category.meta_description || "",
