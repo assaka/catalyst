@@ -21,7 +21,7 @@ export function TranslationProvider({ children }) {
    */
   const loadAvailableLanguages = useCallback(async () => {
     try {
-      const response = await api.get('/api/languages');
+      const response = await api.get('/languages');
 
       if (response.data.success) {
         const languages = response.data.data.filter(lang => lang.is_active);
@@ -48,7 +48,7 @@ export function TranslationProvider({ children }) {
   const loadTranslations = useCallback(async (lang) => {
     try {
       setLoading(true);
-      const response = await api.get(`/api/translations/ui-labels?lang=${lang}`);
+      const response = await api.get(`/translations/ui-labels?lang=${lang}`);
 
       if (response.data.success) {
         setTranslations(response.data.data.labels);

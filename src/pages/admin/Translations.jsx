@@ -29,7 +29,7 @@ export default function Translations() {
   const loadLabels = async (lang) => {
     try {
       setLoading(true);
-      const response = await api.get(`/api/translations/ui-labels?lang=${lang}`);
+      const response = await api.get(`/translations/ui-labels?lang=${lang}`);
 
       if (response.data.success) {
         // Convert flat object to array of label objects
@@ -78,7 +78,7 @@ export default function Translations() {
   const saveLabel = async (key, value, category = 'common') => {
     try {
       setSaving(true);
-      const response = await api.post('/api/translations/ui-labels', {
+      const response = await api.post('/translations/ui-labels', {
         key,
         language_code: selectedLanguage,
         value,
@@ -107,7 +107,7 @@ export default function Translations() {
     }
 
     try {
-      await api.delete(`/api/translations/ui-labels/${encodeURIComponent(key)}/${selectedLanguage}`);
+      await api.delete(`/translations/ui-labels/${encodeURIComponent(key)}/${selectedLanguage}`);
       showMessage('Translation deleted successfully', 'success');
       await loadLabels(selectedLanguage);
     } catch (error) {
@@ -128,7 +128,7 @@ export default function Translations() {
       setAiTranslating(true);
 
       // Get English labels as source
-      const enResponse = await api.get('/api/translations/ui-labels?lang=en');
+      const enResponse = await api.get('/translations/ui-labels?lang=en');
       const enLabels = enResponse.data.data.labels;
 
       // Find missing translations
@@ -149,7 +149,7 @@ export default function Translations() {
         const batch = missingKeys.slice(i, i + batchSize);
         const translationPromises = batch.map(async (key) => {
           try {
-            const response = await api.post('/api/translations/ai-translate', {
+            const response = await api.post('/translations/ai-translate', {
               text: enLabels[key],
               fromLang: 'en',
               toLang: selectedLanguage
@@ -174,7 +174,7 @@ export default function Translations() {
 
         // Save batch
         if (validResults.length > 0) {
-          await api.post('/api/translations/ui-labels/bulk', { labels: validResults });
+          await api.post('/translations/ui-labels/bulk', { labels: validResults });
           translated += validResults.length;
         }
       }
