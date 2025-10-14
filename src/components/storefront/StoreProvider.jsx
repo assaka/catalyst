@@ -672,13 +672,18 @@ export const StoreProvider = ({ children }) => {
         }
 
         const translationsData = await cachedApiCall(translationsCacheKey, async () => {
-          const response = await fetch(`${import.meta.env.VITE_API_BASE_URL || 'https://catalyst-backend-fzhu.onrender.com'}/api/translations/ui-labels?lang=${currentLang}`, {
+          // Add cache-busting timestamp to force fresh data
+          const cacheBuster = Date.now();
+          const response = await fetch(`${import.meta.env.VITE_API_BASE_URL || 'https://catalyst-backend-fzhu.onrender.com'}/api/translations/ui-labels?lang=${currentLang}&_=${cacheBuster}`, {
             method: 'GET',
-            headers: { 'Content-Type': 'application/json' }
+            headers: {
+              'Content-Type': 'application/json',
+              'Cache-Control': 'no-cache'
+            }
           });
           if (!response.ok) throw new Error('Failed to fetch translations');
           const result = await response.json();
-          console.log('📥 Fresh translations loaded from API');
+          console.log('📥 Fresh translations loaded from API:', Object.keys(result.data?.labels || {}).length, 'keys');
           return result.data?.labels || {};
         }, CACHE_DURATION_MEDIUM);
 
