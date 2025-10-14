@@ -29,9 +29,13 @@ export default function Translations() {
   const loadLabels = async (lang) => {
     try {
       setLoading(true);
-      const response = await api.get(`/translations/ui-labels?lang=${lang}`);
+      console.log('🔍 Loading translations for language:', lang);
+      console.log('🔍 API base URL:', api.baseURL);
 
-      if (response.data.success) {
+      const response = await api.get(`/translations/ui-labels?lang=${lang}`);
+      console.log('🔍 API Response:', response);
+
+      if (response.data && response.data.success) {
         // Convert flat object to array of label objects
         const labelsArray = Object.entries(response.data.data.labels).map(([key, value]) => {
           // Determine category from key prefix
@@ -39,12 +43,16 @@ export default function Translations() {
           return { key, value, category };
         });
 
+        console.log('✅ Loaded translations:', labelsArray.length);
         setLabels(labelsArray);
         setFilteredLabels(labelsArray);
+      } else {
+        console.error('❌ Unexpected response format:', response);
+        showMessage('Unexpected response format', 'error');
       }
     } catch (error) {
-      console.error('Failed to load labels:', error);
-      showMessage('Failed to load translations', 'error');
+      console.error('❌ Failed to load labels:', error);
+      showMessage(`Failed to load translations: ${error.message}`, 'error');
     } finally {
       setLoading(false);
     }
