@@ -45,6 +45,7 @@ import apiClient from "@/api/client";
 import StepIndicator from "@/components/storefront/StepIndicator";
 import { formatPrice as formatPriceUtil } from '@/utils/priceUtils';
 import { getProductName, getCurrentLanguage } from '@/utils/translationUtils';
+import { t } from '@/utils/translationHelper';
 
 export default function Checkout() {
   const { store, settings, loading: storeLoading, selectedCountry, setSelectedCountry } = useStore();

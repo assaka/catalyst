@@ -70,7 +70,24 @@ const commonUITranslations = {
   // Search
   'search_products': { en: 'Search products...', nl: 'Zoek producten...' },
   'view_all_results_for': { en: 'View all results for', nl: 'Bekijk alle resultaten voor' },
-  'no_products_found_for': { en: 'No products found for', nl: 'Geen producten gevonden voor' }
+  'no_products_found_for': { en: 'No products found for', nl: 'Geen producten gevonden voor' },
+
+  // Product Card
+  'adding': { en: 'Adding...', nl: 'Toevoegen...' },
+  'added_to_cart': { en: 'added to cart successfully!', nl: 'succesvol toegevoegd aan winkelwagen!' },
+  'failed_to_add': { en: 'Failed to add', nl: 'Toevoegen mislukt' },
+  'error_adding': { en: 'Error adding', nl: 'Fout bij toevoegen' },
+  'to_cart': { en: 'to cart', nl: 'aan winkelwagen' },
+  'please_try_again': { en: 'Please try again', nl: 'Probeer het opnieuw' },
+
+  // Form Fields
+  'email': { en: 'Email *', nl: 'E-mail *' },
+  'full_name': { en: 'Full Name *', nl: 'Volledige naam *' },
+  'phone_number': { en: 'Phone Number *', nl: 'Telefoonnummer *' },
+  'street_address': { en: 'Street Address *', nl: 'Straat *' },
+  'city': { en: 'City *', nl: 'Stad *' },
+  'state_province': { en: 'State/Province *', nl: 'Provincie *' },
+  'postal_code': { en: 'Postal Code *', nl: 'Postcode *' }
 };
 
 async function addTranslations() {

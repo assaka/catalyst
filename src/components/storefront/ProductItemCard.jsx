@@ -10,6 +10,7 @@ import { ShoppingCart } from 'lucide-react';
 import { getPrimaryImageUrl } from '@/utils/imageUtils';
 import { getStockLabel, getStockLabelStyle } from '@/utils/stockLabelUtils';
 import { getProductName, getCurrentLanguage } from '@/utils/translationUtils';
+import { t } from '@/utils/translationHelper';
 
 /**
  * ProductItemCard - Reusable product card component
@@ -203,7 +204,7 @@ const ProductItemCard = ({
         window.dispatchEvent(new CustomEvent('showFlashMessage', {
           detail: {
             type: 'success',
-            message: `${translatedProductName} added to cart successfully!`
+            message: `${translatedProductName} ${t('added_to_cart', settings)}`
           }
         }));
       } else {
@@ -213,7 +214,7 @@ const ProductItemCard = ({
         window.dispatchEvent(new CustomEvent('showFlashMessage', {
           detail: {
             type: 'error',
-            message: `Failed to add ${translatedProductName} to cart. Please try again.`
+            message: `${t('failed_to_add', settings)} ${translatedProductName} ${t('to_cart', settings)}. ${t('please_try_again', settings)}.`
           }
         }));
       }
@@ -224,7 +225,7 @@ const ProductItemCard = ({
       window.dispatchEvent(new CustomEvent('showFlashMessage', {
         detail: {
           type: 'error',
-          message: `Error adding ${translatedProductName} to cart. Please try again.`
+          message: `${t('error_adding', settings)} ${translatedProductName} ${t('to_cart', settings)}. ${t('please_try_again', settings)}.`
         }
       }));
     } finally {
@@ -364,7 +365,7 @@ const ProductItemCard = ({
               data-slot-id={isEditorMode ? 'product_card_add_to_cart' : undefined}
             >
               <ShoppingCart className="w-4 h-4 mr-2" />
-              {addingToCart ? 'Adding...' : (addToCartConfig.content || 'Add to Cart')}
+              {addingToCart ? t('adding', settings) : (addToCartConfig.content || t('add_to_cart', settings))}
             </Button>
 
             {/* Stock status for list view */}
