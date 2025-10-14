@@ -30,7 +30,7 @@ export const accountConfig = {
     header_title: {
       id: 'header_title',
       type: 'text',
-      content: 'My Account',
+      content: '{{t "my_account"}}',
       className: 'text-3xl font-bold text-gray-900',
       styles: {},
       viewMode: ['overview', 'profile', 'intro']
@@ -39,7 +39,7 @@ export const accountConfig = {
     header_subtitle: {
       id: 'header_subtitle',
       type: 'text',
-      content: 'Manage your account, orders, and preferences',
+      content: '{{t "manage_account_description"}}',
       className: 'text-gray-600 mt-1',
       styles: {},
       viewMode: ['overview', 'profile']
@@ -106,7 +106,7 @@ export const accountConfig = {
     logout_button: {
       id: 'logout_button',
       type: 'button',
-      content: 'Sign Out',
+      content: '{{t "sign_out"}}',
       className: 'w-full text-left px-3 py-2 text-red-600 hover:bg-red-50 rounded-lg mt-6 pt-6 border-t',
       styles: {},
       viewMode: ['overview', 'profile']
@@ -237,7 +237,7 @@ export const accountConfig = {
     account_footer: {
       id: 'account_footer',
       type: 'text',
-      content: 'Need help? Contact our <a href="#" class="text-blue-600 hover:underline">customer support</a>',
+      content: '{{t "need_help_contact_support"}}',
       className: 'text-center text-sm text-gray-600 py-8',
       styles: {},
       viewMode: ['overview', 'profile', 'intro']

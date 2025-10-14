@@ -21,7 +21,7 @@ export const checkoutConfig = {
     checkout_header: {
       id: 'checkout_header',
       type: 'text',
-      content: 'Checkout',
+      content: '{{t "checkout"}}',
       className: 'text-3xl font-bold text-gray-900 mb-8',
       styles: {},
       viewMode: ['default', 'processing']
@@ -198,7 +198,7 @@ export const checkoutConfig = {
     processing_message: {
       id: 'processing_message',
       type: 'text',
-      content: 'Processing your order...',
+      content: '{{t "processing_order"}}',
       className: 'text-center text-xl text-gray-600',
       styles: {},
       viewMode: ['processing']

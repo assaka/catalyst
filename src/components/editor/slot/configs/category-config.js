@@ -69,7 +69,7 @@ export const categoryConfig = {
     category_description: {
       id: 'category_description',
       type: 'text',
-      content: 'Discover our amazing collection of products in this category. Browse through our curated selection and find exactly what you need.',
+      content: '{{t "category_description"}}',
       className: 'text-gray-600 mb-6',
       parentClassName: '',
       styles: {},

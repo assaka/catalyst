@@ -33,7 +33,7 @@ export const loginConfig = {
     page_header: {
       id: 'page_header',
       type: 'text',
-      content: 'Welcome Back',
+      content: '{{t "welcome_back"}}',
       className: 'text-3xl font-bold text-center text-gray-900',
       styles: { paddingTop: '2rem', paddingBottom: '2rem', gridColumn: '1 / -1' },
       parentId: 'main_layout',
@@ -58,7 +58,7 @@ export const loginConfig = {
     login_title: {
       id: 'login_title',
       type: 'text',
-      content: 'Already Registered? Login!',
+      content: '{{t "already_registered_login"}}',
       className: 'text-2xl font-bold text-gray-900',
       styles: { marginBottom: '10px' },
       parentId: 'login_column',
@@ -114,7 +114,7 @@ export const loginConfig = {
     register_title: {
       id: 'register_title',
       type: 'text',
-      content: 'Create Account',
+      content: '{{t "create_account"}}',
       className: 'text-2xl font-bold text-gray-900',
       styles: { marginBottom: '20px' },
       parentId: 'register_column',
@@ -168,7 +168,7 @@ export const loginConfig = {
     login_footer: {
       id: 'login_footer',
       type: 'text',
-      content: 'By signing in, you agree to our Terms of Service and Privacy Policy',
+      content: '{{t "terms_agreement"}}',
       className: 'text-center text-sm text-gray-600',
       parentClassName: 'text-center',
       styles: { paddingTop: '20px', paddingBottom: '20px', gridColumn: '1 / -1' },
