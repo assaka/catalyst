@@ -95,9 +95,9 @@ export default function Translations() {
 
       if (response && response.success) {
         showMessage('Translation saved successfully', 'success');
-        await loadLabels(selectedLanguage);
         setEditingKey(null);
         setEditValue('');
+        await loadLabels(selectedLanguage);
       }
     } catch (error) {
       console.error('Failed to save label:', error);
