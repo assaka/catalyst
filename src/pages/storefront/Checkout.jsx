@@ -1353,7 +1353,7 @@ export default function Checkout() {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
                   <div className="md:col-span-2">
                     <Input
-                      placeholder="Email *"
+                      placeholder={t('email_placeholder', settings)}
                       type="email"
                       required
                       value={shippingAddress.email}
@@ -1368,7 +1368,7 @@ export default function Checkout() {
                     )}
                   </div>
                   <Input
-                    placeholder="Full Name *"
+                    placeholder={t('full_name_placeholder', settings)}
                     className={`md:col-span-2 ${shippingErrors.full_name ? 'border-red-500' : ''}`}
                     required
                     value={shippingAddress.full_name}
@@ -1379,7 +1379,7 @@ export default function Checkout() {
                   />
                   {showPhoneField && (
                     <Input
-                      placeholder="Phone Number *"
+                      placeholder={t('phone_number_placeholder', settings)}
                       type="tel"
                       className={`md:col-span-2 ${shippingErrors.phone ? 'border-red-500' : ''}`}
                       required
@@ -1391,7 +1391,7 @@ export default function Checkout() {
                     />
                   )}
                   <Input
-                    placeholder="Street Address *"
+                    placeholder={t('street_address_placeholder', settings)}
                     className={`md:col-span-2 ${shippingErrors.street ? 'border-red-500' : ''}`}
                     required
                     value={shippingAddress.street}
@@ -1401,7 +1401,7 @@ export default function Checkout() {
                     }}
                   />
                   <Input
-                    placeholder="City *"
+                    placeholder={t('city_placeholder', settings)}
                     className={shippingErrors.city ? 'border-red-500' : ''}
                     required
                     value={shippingAddress.city}
@@ -1411,7 +1411,7 @@ export default function Checkout() {
                     }}
                   />
                   <Input
-                    placeholder="State/Province *"
+                    placeholder={t('state_province_placeholder', settings)}
                     className={shippingErrors.state ? 'border-red-500' : ''}
                     required
                     value={shippingAddress.state}
@@ -1421,7 +1421,7 @@ export default function Checkout() {
                     }}
                   />
                   <Input
-                    placeholder="Postal Code *"
+                    placeholder={t('postal_code_placeholder', settings)}
                     className={shippingErrors.postal_code ? 'border-red-500' : ''}
                     required
                     value={shippingAddress.postal_code}
@@ -1436,7 +1436,7 @@ export default function Checkout() {
                       setShippingAddress(prev => ({ ...prev, country }));
                       setShippingErrors(prev => ({ ...prev, country: false }));
                     }}
-                    placeholder="Select country... *"
+                    placeholder={t('select_country_placeholder', settings)}
                     allowedCountries={settings?.allowed_countries}
                     required
                     className={shippingErrors.country ? 'border-red-500' : ''}
@@ -1540,10 +1540,10 @@ export default function Checkout() {
                                   <p className="text-gray-600">{address.street}</p>
                                   <p className="text-gray-600">{address.city}, {address.state} {address.postal_code}</p>
                                   <p className="text-gray-600">{address.country}</p>
-                                  {address.phone && <p className="text-gray-500 text-xs mt-1">Phone: {address.phone}</p>}
+                                  {address.phone && <p className="text-gray-500 text-xs mt-1">{t('phone_label', settings)} {address.phone}</p>}
                                   {address.is_default && (
                                     <span className="inline-block bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded mt-1">
-                                      Default
+                                      {t('default', settings)}
                                     </span>
                                   )}
                                 </div>
@@ -1563,7 +1563,7 @@ export default function Checkout() {
                               className="text-blue-600"
                             />
                             <label htmlFor="new-billing-address" className="cursor-pointer text-blue-600 font-medium">
-                              + Add a new billing address
+                              {t('add_new_billing_address', settings)}
                             </label>
                           </div>
                         </div>
@@ -1574,7 +1574,7 @@ export default function Checkout() {
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div className="md:col-span-2">
                           <Input
-                            placeholder="Email *"
+                            placeholder={t('email_placeholder', settings)}
                             type="email"
                             required
                             value={billingAddress.email}
@@ -1585,11 +1585,11 @@ export default function Checkout() {
                             className={billingErrors.email ? 'border-red-500' : ''}
                           />
                           {billingAddress.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(billingAddress.email) && (
-                            <p className="text-xs text-red-600 mt-1">Please enter a valid email address</p>
+                            <p className="text-xs text-red-600 mt-1">{t('valid_email_required', settings)}</p>
                           )}
                         </div>
                         <Input
-                          placeholder="Full Name *"
+                          placeholder={t('full_name_placeholder', settings)}
                           className={`md:col-span-2 ${billingErrors.full_name ? 'border-red-500' : ''}`}
                           required
                           value={billingAddress.full_name}
@@ -1600,7 +1600,7 @@ export default function Checkout() {
                         />
                         {showPhoneField && (
                           <Input
-                            placeholder="Phone Number *"
+                            placeholder={t('phone_number_placeholder', settings)}
                             type="tel"
                             className={`md:col-span-2 ${billingErrors.phone ? 'border-red-500' : ''}`}
                             required
@@ -1612,7 +1612,7 @@ export default function Checkout() {
                           />
                         )}
                         <Input
-                          placeholder="Street Address *"
+                          placeholder={t('street_address_placeholder', settings)}
                           className={`md:col-span-2 ${billingErrors.street ? 'border-red-500' : ''}`}
                           required
                           value={billingAddress.street}
@@ -1622,7 +1622,7 @@ export default function Checkout() {
                           }}
                         />
                         <Input
-                          placeholder="City *"
+                          placeholder={t('city_placeholder', settings)}
                           className={billingErrors.city ? 'border-red-500' : ''}
                           required
                           value={billingAddress.city}
@@ -1632,7 +1632,7 @@ export default function Checkout() {
                           }}
                         />
                         <Input
-                          placeholder="State/Province *"
+                          placeholder={t('state_province_placeholder', settings)}
                           className={billingErrors.state ? 'border-red-500' : ''}
                           required
                           value={billingAddress.state}
@@ -1642,7 +1642,7 @@ export default function Checkout() {
                           }}
                         />
                         <Input
-                          placeholder="Postal Code *"
+                          placeholder={t('postal_code_placeholder', settings)}
                           className={billingErrors.postal_code ? 'border-red-500' : ''}
                           required
                           value={billingAddress.postal_code}
@@ -1657,7 +1657,7 @@ export default function Checkout() {
                             setBillingAddress(prev => ({ ...prev, country }));
                             setBillingErrors(prev => ({ ...prev, country: false }));
                           }}
-                          placeholder="Select country... *"
+                          placeholder={t('select_country_placeholder', settings)}
                           allowedCountries={settings?.allowed_countries}
                           required
                           className={billingErrors.country ? 'border-red-500' : ''}
@@ -1673,7 +1673,7 @@ export default function Checkout() {
                               className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
                             />
                             <Label htmlFor="save-billing-address" className="text-sm text-gray-700">
-                              Save this billing address to my account for future orders
+                              {t('save_billing_future', settings)}
                             </Label>
                           </div>
                         )}
@@ -1690,12 +1690,12 @@ export default function Checkout() {
         return isSectionVisible('delivery') && deliverySettings && deliverySettings.enable_delivery_date && (
           <Card key="delivery-settings" style={{ backgroundColor: checkoutSectionBgColor, borderColor: checkoutSectionBorderColor }}>
             <CardHeader>
-              <CardTitle style={{ color: checkoutSectionTitleColor, fontSize: checkoutSectionTitleSize }}>Delivery Settings</CardTitle>
+              <CardTitle style={{ color: checkoutSectionTitleColor, fontSize: checkoutSectionTitleSize }}>{t('delivery_settings', settings)}</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
                 <div>
-                  <Label>Preferred Delivery Date</Label>
+                  <Label>{t('preferred_delivery_date', settings)}</Label>
                   <Popover>
                     <PopoverTrigger asChild>
                       <Button
@@ -1708,7 +1708,7 @@ export default function Checkout() {
                           year: 'numeric',
                           month: 'long',
                           day: 'numeric'
-                        }) : "Select a delivery date"}
+                        }) : t('select_delivery_date', settings)}
                       </Button>
                     </PopoverTrigger>
                     <PopoverContent className="w-auto p-0" align="start">
@@ -1725,14 +1725,14 @@ export default function Checkout() {
 
                 {getAvailableTimeSlots().length > 0 && (
                   <div>
-                    <Label htmlFor="delivery-time">Preferred Time Slot</Label>
+                    <Label htmlFor="delivery-time">{t('preferred_time_slot', settings)}</Label>
                     <select
                       id="delivery-time"
                       value={deliveryTimeSlot}
                       onChange={(e) => setDeliveryTimeSlot(e.target.value)}
                       className="w-full mt-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                     >
-                      <option value="">Select a time slot</option>
+                      <option value="">{t('select_time_slot', settings)}</option>
                       {getAvailableTimeSlots().map((slot, index) => (
                         <option key={index} value={`${slot.start_time}-${slot.end_time}`}>
                           {slot.start_time} - {slot.end_time}
@@ -1744,12 +1744,12 @@ export default function Checkout() {
 
                 {deliverySettings.enable_comments && (
                   <div>
-                    <Label htmlFor="delivery-comments">Special delivery instructions (optional)</Label>
+                    <Label htmlFor="delivery-comments">{t('special_delivery_instructions', settings)}</Label>
                     <textarea
                       id="delivery-comments"
                       value={deliveryComments}
                       onChange={(e) => setDeliveryComments(e.target.value)}
-                      placeholder="Any special instructions for delivery..."
+                      placeholder={t('special_instructions_placeholder', settings)}
                       rows={3}
                       className="w-full mt-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
                     />
@@ -1764,7 +1764,7 @@ export default function Checkout() {
         return isSectionVisible('payment') && eligiblePaymentMethods.length > 0 && (
           <Card key="payment-method" style={{ backgroundColor: checkoutSectionBgColor, borderColor: checkoutSectionBorderColor }}>
             <CardHeader>
-              <CardTitle style={{ color: checkoutSectionTitleColor, fontSize: checkoutSectionTitleSize }}>Payment Method</CardTitle>
+              <CardTitle style={{ color: checkoutSectionTitleColor, fontSize: checkoutSectionTitleSize }}>{t('payment_method', settings)}</CardTitle>
             </CardHeader>
             <CardContent>
               <CmsBlockRenderer position="checkout_above_payment" />
@@ -1794,7 +1794,7 @@ export default function Checkout() {
                         )}
                         {method.fee_type !== 'none' && method.fee_amount > 0 && (
                           <p className="text-sm text-gray-600">
-                            Fee: {method.fee_type === 'fixed'
+                            {t('fee', settings)} {method.fee_type === 'fixed'
                               ? formatPrice(method.fee_amount)
                               : `${formatPrice(method.fee_amount)}%`
                             }
@@ -1814,14 +1814,14 @@ export default function Checkout() {
         return (
           <Card key="coupon" style={{ backgroundColor: checkoutSectionBgColor, borderColor: checkoutSectionBorderColor }}>
             <CardHeader>
-              <CardTitle style={{ color: checkoutSectionTitleColor, fontSize: checkoutSectionTitleSize }}>Apply Coupon</CardTitle>
+              <CardTitle style={{ color: checkoutSectionTitleColor, fontSize: checkoutSectionTitleSize }}>{t('apply_coupon', settings)}</CardTitle>
             </CardHeader>
             <CardContent>
               {!appliedCoupon ? (
                 <div className="space-y-3">
                   <div className="flex space-x-2">
                     <Input
-                      placeholder="Enter coupon code"
+                      placeholder={t('enter_coupon_code', settings)}
                       value={couponCode}
                       onChange={(e) => setCouponCode(e.target.value.toUpperCase())}
                       onKeyPress={handleCouponKeyPress}
@@ -1831,7 +1831,7 @@ export default function Checkout() {
                       disabled={!couponCode.trim()}
                     >
                       <Tag className="w-4 h-4 mr-2" />
-                      Apply
+                      {t('apply', settings)}
                     </Button>
                   </div>
                   {couponError && (
@@ -1841,11 +1841,11 @@ export default function Checkout() {
               ) : (
                 <div className="flex items-center justify-between bg-green-50 p-3 rounded-lg">
                   <div>
-                    <p className="text-sm font-medium text-green-800">Applied: {appliedCoupon.name}</p>
+                    <p className="text-sm font-medium text-green-800">{t('applied', settings)} {appliedCoupon.name}</p>
                     <p className="text-xs text-green-600">
                       {appliedCoupon.discount_type === 'fixed'
-                        ? `${formatPrice(appliedCoupon.discount_value)} off`
-                        : `${formatPrice(appliedCoupon.discount_value)}% off`
+                        ? `${formatPrice(appliedCoupon.discount_value)} ${t('off', settings)}`
+                        : `${formatPrice(appliedCoupon.discount_value)}% ${t('off', settings)}`
                       }
                     </p>
                   </div>
@@ -1855,7 +1855,7 @@ export default function Checkout() {
                     onClick={handleRemoveCoupon}
                     className="text-red-600 hover:text-red-800"
                   >
-                    Remove
+                    {t('remove', settings)}
                   </Button>
                 </div>
               )}
@@ -1867,14 +1867,14 @@ export default function Checkout() {
         return (
           <Card key="order-summary" style={{ backgroundColor: checkoutSectionBgColor, borderColor: checkoutSectionBorderColor }}>
             <CardHeader>
-              <CardTitle style={{ color: checkoutSectionTitleColor, fontSize: checkoutSectionTitleSize }}>Order Summary</CardTitle>
+              <CardTitle style={{ color: checkoutSectionTitleColor, fontSize: checkoutSectionTitleSize }}>{t('order_summary', settings)}</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="space-y-4">
                 <Accordion type="single" collapsible>
                   <AccordionItem value="item-1">
                     <AccordionTrigger>
-                      <h3 className="font-medium text-gray-900">Items in Cart ({cartItems.length})</h3>
+                      <h3 className="font-medium text-gray-900">{t('items_in_cart', settings)} ({cartItems.length})</h3>
                     </AccordionTrigger>
                     <AccordionContent>
                       {cartItems.map((item) => {
@@ -1906,7 +1906,7 @@ export default function Checkout() {
                             />
                             <div className="flex-1">
                               <h4 className="font-medium">{translatedProductName}</h4>
-                              <p className="text-sm text-gray-500">{formatPrice(basePrice)} each</p>
+                              <p className="text-sm text-gray-500">{formatPrice(basePrice)} {t('each', settings)}</p>
 
                               {item.selected_options && item.selected_options.length > 0 && (
                                 <div className="text-xs text-gray-500 mt-1">
@@ -1916,7 +1916,7 @@ export default function Checkout() {
                                 </div>
                               )}
 
-                              <p className="text-sm text-gray-600 mt-1">Qty: {item.quantity}</p>
+                              <p className="text-sm text-gray-600 mt-1">{t('qty', settings)} {item.quantity}</p>
                             </div>
                             <div className="text-right">
                               <p className="font-semibold">{formatPrice(itemTotal)}</p>
@@ -1931,47 +1931,47 @@ export default function Checkout() {
 
               <div className="border-t pt-4 space-y-2">
                 <div className="flex justify-between">
-                  <span>Subtotal</span>
+                  <span>{t('subtotal', settings)}</span>
                   <span>{formatPrice(calculateSubtotal())}</span>
                 </div>
 
                 {calculateOptionsTotal() > 0 && (
                   <div className="flex justify-between">
-                    <span>Custom Options</span>
+                    <span>{t('custom_options', settings)}</span>
                     <span>{formatPrice(calculateOptionsTotal())}</span>
                   </div>
                 )}
 
                 {appliedCoupon && calculateDiscount() > 0 && (
                   <div className="flex justify-between text-green-600">
-                    <span>Discount ({appliedCoupon.name})</span>
+                    <span>{t('discount', settings)} ({appliedCoupon.name})</span>
                     <span>-{formatPrice(calculateDiscount())}</span>
                   </div>
                 )}
 
                 {selectedShippingMethod && (
                   <div className="flex justify-between">
-                    <span>Shipping</span>
-                    <span>{shippingCost > 0 ? formatPrice(shippingCost) : 'Free'}</span>
+                    <span>{t('shipping', settings)}</span>
+                    <span>{shippingCost > 0 ? formatPrice(shippingCost) : t('free', settings)}</span>
                   </div>
                 )}
 
                 {paymentFee > 0 && (
                   <div className="flex justify-between">
-                    <span>Payment Fee</span>
+                    <span>{t('payment_fee', settings)}</span>
                     <span>{formatPrice(paymentFee)}</span>
                   </div>
                 )}
 
                 {calculateTax() > 0 && (
                   <div className="flex justify-between">
-                    <span>Tax</span>
+                    <span>{t('tax', settings)}</span>
                     <span>{formatPrice(calculateTax())}</span>
                   </div>
                 )}
 
                 <div className="flex justify-between text-xl font-bold border-t pt-2">
-                  <span>Total</span>
+                  <span>{t('total', settings)}</span>
                   <span>{formatPrice(getTotalAmount())}</span>
                 </div>
               </div>
@@ -1986,7 +1986,7 @@ export default function Checkout() {
                     color: '#FFFFFF',
                   }}
                 >
-                  {isProcessing ? 'Processing...' : `Place Order - ${formatPrice(getTotalAmount())}`}
+                  {isProcessing ? t('processing', settings) : `${t('place_order', settings)} - ${formatPrice(getTotalAmount())}`}
                 </Button>
               )}
             </CardContent>
@@ -2092,7 +2092,7 @@ export default function Checkout() {
 
   return (
     <div className="max-w-6xl mx-auto px-4 py-6 lg:py-8">
-      <h1 className="text-2xl lg:text-3xl font-bold mb-6 lg:mb-8">Checkout</h1>
+      <h1 className="text-2xl lg:text-3xl font-bold mb-6 lg:mb-8">{t('checkout', settings)}</h1>
       <CmsBlockRenderer position="checkout_above_form" />
 
       {/* Step Indicator */}
@@ -2131,7 +2131,7 @@ export default function Checkout() {
                 size="sm"
                 className="ml-auto h-10 px-4 text-blue-600 hover:text-blue-800 hover:bg-blue-50 border-blue-300"
               >
-                Edit Info
+                {t('edit_info', settings)}
               </Button>
             </div>
           </CardContent>
@@ -2157,7 +2157,7 @@ export default function Checkout() {
                       variant="outline"
                       className="flex-1"
                     >
-                      ← Previous
+                      ← {t('previous', settings)}
                     </Button>
                   )}
                   {canGoNext() && (
@@ -2166,7 +2166,7 @@ export default function Checkout() {
                       className="flex-1"
                       style={{ backgroundColor: stepActiveColor, color: '#FFFFFF' }}
                     >
-                      Continue →
+                      {t('continue', settings)} →
                     </Button>
                   )}
                 </div>
