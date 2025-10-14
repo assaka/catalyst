@@ -58,10 +58,10 @@ export default function EntityTranslationTabs({
         }
       );
 
-      if (response.data.success) {
+      if (response.success) {
         showMessage('Translations saved successfully', 'success');
         if (onSave) {
-          onSave(response.data.data);
+          onSave(response.data);
         }
       }
     } catch (error) {
@@ -91,10 +91,10 @@ export default function EntityTranslationTabs({
         toLang: activeLanguage
       });
 
-      if (response.data.success) {
+      if (response.success) {
         setTranslations(prev => ({
           ...prev,
-          [activeLanguage]: response.data.data.translations[activeLanguage]
+          [activeLanguage]: response.data.translations[activeLanguage]
         }));
         showMessage(`AI translated to ${activeLanguage}`, 'success');
       }
