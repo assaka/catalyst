@@ -571,6 +571,10 @@ export default function ProductDetail() {
         `product-tabs-${store.id}`,
         () => StorefrontProductTab.filter({ store_id: store.id, is_active: true })
       );
+      console.log('✅ ProductDetail: Loaded product tabs:', {
+        count: tabs?.length,
+        tabs: tabs?.map(t => ({ id: t.id, name: t.name, translations: t.translations }))
+      });
       setProductTabs(tabs || []);
     } catch (error) {
       console.error('❌ ProductDetail: Error loading product tabs:', error);

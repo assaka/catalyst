@@ -651,6 +651,14 @@ const ProductTabs = createSlotComponent({
     // Storefront version - full functionality with data loading
     const { productTabs, product, activeTab, setActiveTab } = productContext;
 
+    console.log('🔥 ProductTabsSlot (UnifiedSlotComponents): Received data:', {
+      hasProductContext: !!productContext,
+      productTabsType: productTabs ? typeof productTabs : 'undefined',
+      productTabsLength: productTabs?.length,
+      productTabsArray: productTabs,
+      hasProduct: !!product
+    });
+
     // Prepare tabs data with active state
     const tabsData = React.useMemo(() => {
       if (!productTabs || productTabs.length === 0) return [];
