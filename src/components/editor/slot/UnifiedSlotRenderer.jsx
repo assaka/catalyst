@@ -522,6 +522,13 @@ export function UnifiedSlotRenderer({
   });
 
   // Debug login settings before building variableContext
+  console.log('🔍 UNIFIED: ALWAYS LOGS - loginData check:', {
+    hasLoginData: !!loginData,
+    loginDataType: typeof loginData,
+    hasSettings: !!loginData?.settings,
+    hasUiTranslations: !!loginData?.settings?.ui_translations
+  });
+
   if (loginData) {
     console.log('🔍 UNIFIED: loginData debug:', {
       hasLoginData: !!loginData,
@@ -559,15 +566,14 @@ export function UnifiedSlotRenderer({
   };
 
   // Debug variableContext.settings after it's built
-  if (loginData) {
-    console.log('🔍 UNIFIED: variableContext.settings:', {
-      hasSettings: !!variableContext.settings,
-      hasUiTranslations: !!variableContext.settings?.ui_translations,
-      uiTranslationsKeys: Object.keys(variableContext.settings?.ui_translations || {}),
-      source: productData.settings ? 'productData' : categoryData?.settings ? 'categoryData' : cartData?.settings ? 'cartData' : loginData?.settings ? 'loginData' : accountData?.settings ? 'accountData' : 'empty object',
-      allSettingsKeys: Object.keys(variableContext.settings || {}).slice(0, 20)
-    });
-  }
+  console.log('🔍 UNIFIED: ALWAYS LOGS - variableContext.settings:', {
+    hasLoginData: !!loginData,
+    hasSettings: !!variableContext.settings,
+    hasUiTranslations: !!variableContext.settings?.ui_translations,
+    uiTranslationsKeys: Object.keys(variableContext.settings?.ui_translations || {}),
+    source: productData.settings ? 'productData' : categoryData?.settings ? 'categoryData' : cartData?.settings ? 'cartData' : loginData?.settings ? 'loginData' : accountData?.settings ? 'accountData' : 'empty object',
+    allSettingsKeys: Object.keys(variableContext.settings || {}).slice(0, 20)
+  });
 
   /**
    * wrapWithResize - Wraps element with ResizeWrapper for visual resizing in editor
