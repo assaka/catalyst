@@ -61,6 +61,12 @@
  * - {{#if product.on_sale}}{{#each product.images}}...{{/each}}{{/if}}
  * - Proper bracket counting for nested conditionals/loops
  *
+ * **Translation Helpers**:
+ * - {{t 'key'}} → Translated text based on current language
+ * - {{t "add_to_cart"}} → "Add to Cart" (en) or "Toevoegen aan winkelwagen" (nl)
+ * - Fallback chain: currentLang → en → key (formatted)
+ * - Uses settings.ui_translations structure
+ *
  * PROCESSING ORDER:
  *
  * 1. **Loops First** (processLoops):
@@ -76,7 +82,13 @@
  *    - Supports comparison operators (>, <, ==, !=, >=, <=)
  *    - Supports helpers: (eq variable "value"), (gt variable number)
  *
- * 3. **Simple Variables Last** (processSimpleVariables):
+ * 3. **Translations Third** (processTranslations):
+ *    - Find {{t 'key'}} translation helpers
+ *    - Get current language from localStorage
+ *    - Lookup translation in settings.ui_translations
+ *    - Fallback: currentLang → en → formatted key
+ *
+ * 4. **Simple Variables Last** (processSimpleVariables):
  *    - Find {{variable.path}} patterns
  *    - Use getNestedValue() to traverse object path
  *    - Format with formatValue() based on path/type
@@ -198,10 +210,76 @@ export function processVariables(content, context, pageData = {}) {
   // Then process any remaining conditionals (those outside loops)
   processedContent = processConditionals(processedContent, context, pageData);
 
+  // Process translation helpers {{t 'key'}} before simple variables
+  processedContent = processTranslations(processedContent, context, pageData);
+
   // Finally process simple variables
   processedContent = processSimpleVariables(processedContent, context, pageData);
 
   return processedContent;
+}
+
+/**
+ * processTranslations - Process {{t 'key'}} translation helpers
+ *
+ * Replaces translation keys with translated text based on current language.
+ * Falls back to English if translation not found for current language.
+ * Falls back to the key itself if no translation exists at all.
+ *
+ * Translation data structure in settings.ui_translations:
+ * {
+ *   en: { add_to_cart: "Add to Cart", price: "Price" },
+ *   nl: { add_to_cart: "Toevoegen aan winkelwagen", price: "Prijs" },
+ *   fr: { add_to_cart: "Ajouter au panier", price: "Prix" }
+ * }
+ *
+ * @param {string} content - Content with {{t 'key'}} helpers
+ * @param {Object} context - Data context with settings
+ * @param {Object} pageData - Additional data
+ * @returns {string} Content with translations replaced
+ *
+ * @example
+ * // With current language = 'nl'
+ * processTranslations("{{t 'add_to_cart'}}", { settings: { ui_translations: { nl: { add_to_cart: "Toevoegen" } } } })
+ * // "Toevoegen"
+ *
+ * @example
+ * // Fallback to English when translation missing
+ * processTranslations("{{t 'new_key'}}", { settings: { ui_translations: { en: { new_key: "New" } } } })
+ * // "New"
+ *
+ * @example
+ * // Fallback to key when no translation exists
+ * processTranslations("{{t 'unknown_key'}}", { settings: { ui_translations: {} } })
+ * // "unknown_key"
+ */
+function processTranslations(content, context, pageData) {
+  // Match {{t 'key'}} or {{t "key"}}
+  const translationRegex = /\{\{t\s+['"]([^'"]+)['"]\}\}/g;
+
+  return content.replace(translationRegex, (match, key) => {
+    // Get current language from localStorage
+    const currentLang = typeof localStorage !== 'undefined'
+      ? localStorage.getItem('catalyst_language') || 'en'
+      : 'en';
+
+    // Get UI translations from settings
+    const uiTranslations = context?.settings?.ui_translations || pageData?.settings?.ui_translations || {};
+
+    // Try current language first
+    if (uiTranslations[currentLang] && uiTranslations[currentLang][key]) {
+      return uiTranslations[currentLang][key];
+    }
+
+    // Fallback to English
+    if (uiTranslations.en && uiTranslations.en[key]) {
+      return uiTranslations.en[key];
+    }
+
+    // Fallback to key itself (better than empty for debugging)
+    console.warn(`Translation missing for key: "${key}" in language: "${currentLang}"`);
+    return key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase()); // Convert snake_case to Title Case
+  });
 }
 
 /**
