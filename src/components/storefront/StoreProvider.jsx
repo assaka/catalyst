@@ -510,6 +510,24 @@ export const StoreProvider = ({ children }) => {
       
       setStore({ ...selectedStore, settings: mergedSettings });
 
+      // Initialize language based on store settings
+      const savedLang = localStorage.getItem('catalyst_language');
+      if (!savedLang) {
+        // No language saved, set to store's default language
+        const defaultLang = mergedSettings.default_language || 'en';
+        localStorage.setItem('catalyst_language', defaultLang);
+        console.log('🌐 Initialized language to store default:', defaultLang);
+      } else {
+        // Check if saved language is in active languages
+        const activeLanguages = mergedSettings.active_languages || ['en'];
+        if (!activeLanguages.includes(savedLang)) {
+          // Saved language is not active, reset to default
+          const defaultLang = mergedSettings.default_language || 'en';
+          localStorage.setItem('catalyst_language', defaultLang);
+          console.log('🌐 Reset language to store default (saved language not active):', defaultLang);
+        }
+      }
+
       // Set the store context in the storefront API client
       storefrontApiClient.setStoreContext(selectedStore.slug);
 
