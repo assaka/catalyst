@@ -65,7 +65,12 @@ const commonUITranslations = {
 
   // Wishlist
   'wishlist': { en: 'Wishlist', nl: 'Verlanglijst' },
-  'add_to_wishlist': { en: 'Add to Wishlist', nl: 'Toevoegen aan verlanglijst' }
+  'add_to_wishlist': { en: 'Add to Wishlist', nl: 'Toevoegen aan verlanglijst' },
+
+  // Search
+  'search_products': { en: 'Search products...', nl: 'Zoek producten...' },
+  'view_all_results_for': { en: 'View all results for', nl: 'Bekijk alle resultaten voor' },
+  'no_products_found_for': { en: 'No products found for', nl: 'Geen producten gevonden voor' }
 };
 
 async function addTranslations() {
