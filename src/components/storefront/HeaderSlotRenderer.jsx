@@ -14,6 +14,7 @@ import CategoryNav from './CategoryNav';
 import { CountrySelect } from '@/components/ui/country-select';
 import CmsBlockRenderer from './CmsBlockRenderer';
 import { headerConfig } from '@/components/editor/slot/configs/header-config';
+import { t } from '@/utils/translationHelper';
 
 /**
  * HeaderSlotRenderer - Renders header slots with full customization
@@ -384,7 +385,7 @@ export function HeaderSlotRenderer({
                 onMouseLeave={(e) => e.currentTarget.style.backgroundColor = buttonStyles.backgroundColor}
               >
                 {getUserIcon('w-5 h-5 mr-2')}
-                <span>Sign In</span>
+                <span>{t('sign_in', settings)}</span>
               </Button>
             )}
           </div>
