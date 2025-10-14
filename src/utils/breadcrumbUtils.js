@@ -55,15 +55,6 @@ export function buildCategoryBreadcrumbs(currentCategory, storeCode, categories 
     const directName = cat?.name;
     const finalName = translatedName || attributeName || directName;
 
-    console.log('🔍 Breadcrumb Category Debug:', {
-      categoryId: cat.id,
-      translatedName,
-      attributeName,
-      directName,
-      finalName,
-      currentLang
-    });
-
     return {
       name: finalName,
       url: cat.id === currentCategory.id ? null : createCategoryUrl(storeCode, categoryPath.join('/')),
@@ -133,18 +124,9 @@ export function buildProductBreadcrumbs(product, storeCode, categories = [], set
         const directName = cat?.name;
         const finalName = translatedName || attributeName || directName;
 
-        console.log('🔍 Product Breadcrumb Category Debug:', {
-          categoryId: cat.id,
-          translatedName,
-          attributeName,
-          directName,
-          finalName,
-          currentLang
-        });
-
         breadcrumbs.push({
           name: finalName,
-          url: createCategoryUrl(storeCode, categoryPath.join('/'),),
+          url: createCategoryUrl(storeCode, categoryPath.join('/')),
           isCurrent: false
         });
       });

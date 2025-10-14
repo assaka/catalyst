@@ -827,15 +827,6 @@ export function CategorySlotRenderer({
         const directCategoryName = category?.name;
         const finalCategoryName = translatedCategoryName || attributeCategoryName || directCategoryName || '';
 
-        console.log('🔍 CategorySlotRenderer text type Debug:', {
-          slotId: id,
-          content,
-          translatedCategoryName,
-          attributeCategoryName,
-          directCategoryName,
-          finalCategoryName
-        });
-
         const textVariableContext = {
           category: category ? {
             ...category,
