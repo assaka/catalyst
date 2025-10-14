@@ -862,10 +862,26 @@ export default function ProductDetail() {
               ConfigurableProductSelector // Pass the component itself
             }}
             variableContext={{
-              product: product ? {
-                ...product,
-                name: getProductName(product, getCurrentLanguage()) || product.attributes?.name || product.name
-              } : null,
+              product: product ? (() => {
+                const translatedName = getProductName(product, getCurrentLanguage());
+                const attributeName = product.attributes?.name;
+                const directName = product.name;
+                const finalName = translatedName || attributeName || directName;
+
+                console.log('🔍 ProductDetail variableContext Debug:', {
+                  translatedName,
+                  attributeName,
+                  directName,
+                  finalName,
+                  hasAttributes: !!product.attributes,
+                  attributesKeys: product.attributes ? Object.keys(product.attributes) : []
+                });
+
+                return {
+                  ...product,
+                  name: finalName
+                };
+              })() : null,
               store,
               settings, // 🔧 CRITICAL FIX: Pass fresh settings to variableContext for HTML template processing
               productLabels: (() => {
