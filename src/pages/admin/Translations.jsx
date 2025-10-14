@@ -163,11 +163,11 @@ export default function Translations() {
               toLang: selectedLanguage
             });
 
-            if (response.data.success) {
+            if (response && response.success && response.data) {
               return {
                 key,
                 language_code: selectedLanguage,
-                value: response.data.data.translated,
+                value: response.data.translated,
                 category: key.split('.')[0] || 'common'
               };
             }
