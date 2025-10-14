@@ -50,8 +50,22 @@ export function buildCategoryBreadcrumbs(currentCategory, storeCode, categories 
     const categoryChainUpToCurrent = filteredChain.slice(0, index + 1);
     categoryChainUpToCurrent.forEach(c => categoryPath.push(c.slug));
 
+    const translatedName = getCategoryName(cat, currentLang);
+    const attributeName = cat?.attributes?.name;
+    const directName = cat?.name;
+    const finalName = translatedName || attributeName || directName;
+
+    console.log('🔍 Breadcrumb Category Debug:', {
+      categoryId: cat.id,
+      translatedName,
+      attributeName,
+      directName,
+      finalName,
+      currentLang
+    });
+
     return {
-      name: getCategoryName(cat, currentLang),
+      name: finalName,
       url: cat.id === currentCategory.id ? null : createCategoryUrl(storeCode, categoryPath.join('/')),
       isCurrent: cat.id === currentCategory.id
     };
@@ -114,9 +128,23 @@ export function buildProductBreadcrumbs(product, storeCode, categories = [], set
         const categoryChainUpToCurrent = filteredChain.slice(0, index + 1);
         categoryChainUpToCurrent.forEach(c => categoryPath.push(c.slug));
 
+        const translatedName = getCategoryName(cat, currentLang);
+        const attributeName = cat?.attributes?.name;
+        const directName = cat?.name;
+        const finalName = translatedName || attributeName || directName;
+
+        console.log('🔍 Product Breadcrumb Category Debug:', {
+          categoryId: cat.id,
+          translatedName,
+          attributeName,
+          directName,
+          finalName,
+          currentLang
+        });
+
         breadcrumbs.push({
-          name: getCategoryName(cat, currentLang),
-          url: createCategoryUrl(storeCode, categoryPath.join('/')),
+          name: finalName,
+          url: createCategoryUrl(storeCode, categoryPath.join('/'),),
           isCurrent: false
         });
       });
