@@ -9,6 +9,7 @@ import { createPageUrl } from '@/utils';
 import { getExternalStoreUrl, getStoreBaseUrl } from '@/utils/urlUtils';
 import { useStore } from '@/components/storefront/StoreProvider'; // FIXED: Corrected import path
 import { formatPrice } from '@/utils/priceUtils';
+import { t } from '@/utils/translationHelper';
 
 // --- Start of helper functions ---
 const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms));
@@ -160,7 +161,7 @@ export default function WishlistDropdown({ iconVariant = 'outline' }) {
       </PopoverTrigger>
       <PopoverContent className="w-80">
         <div className="p-4">
-          <h4 className="font-medium leading-none mb-4">Wishlist</h4>
+          <h4 className="font-medium leading-none mb-4">{t('wishlist', settings)}</h4>
           {loading ? (
             <div className="flex justify-center items-center h-24">
               <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-gray-900"></div>
@@ -189,7 +190,7 @@ export default function WishlistDropdown({ iconVariant = 'outline' }) {
               ))}
             </div>
           ) : (
-            <p className="text-sm text-muted-foreground">Your wishlist is empty.</p>
+            <p className="text-sm text-muted-foreground">{t('your_wishlist_is_empty', settings)}</p>
           )}
         </div>
       </PopoverContent>

@@ -564,11 +564,9 @@ const ProductTabs = createSlotComponent({
   name: 'ProductTabsSlot',
 
   render: ({ slot, productContext, className, styles, context, variableContext }) => {
-    const containerRef = React.useRef(null);
-    const [activeTabIndex, setActiveTabIndex] = React.useState(0);
-    const content = slot?.content || '';
-
     if (context === 'editor') {
+      const containerRef = React.useRef(null);
+      const content = slot?.content || '';
       // Editor version - static preview with config HTML
       const sampleTabs = [
         { id: 'description', title: 'Description', isActive: true, tab_type: 'text', content: '<p>This is a sample product description.</p>' },
@@ -648,8 +646,8 @@ const ProductTabs = createSlotComponent({
       );
     }
 
-    // Storefront version - full functionality with data loading
-    const { productTabs, product, activeTab, setActiveTab } = productContext;
+    // Storefront version - Use the standalone ProductTabs component
+    const { productTabs, product } = productContext;
 
     console.log('🔥 ProductTabsSlot (UnifiedSlotComponents): Received data:', {
       hasProductContext: !!productContext,
@@ -659,171 +657,16 @@ const ProductTabs = createSlotComponent({
       hasProduct: !!product
     });
 
-    // Prepare tabs data with active state
-    const tabsData = React.useMemo(() => {
-      if (!productTabs || productTabs.length === 0) return [];
-
-      const validTabs = productTabs.filter(tab =>
-        tab && tab.is_active !== false && (tab.title || tab.name)
-      );
-
-      // Don't auto-generate description tab - use only database tabs
-      const tabsToRender = [...validTabs];
-
-      const currentActiveIndex = (activeTab !== undefined && activeTab !== null) ? activeTab : activeTabIndex;
-
-      const mappedTabs = tabsToRender.map((tab, index) => ({
-        ...tab,
-        id: tab.id?.toString() || tab.title || `tab-${index}`,
-        title: tab.title || tab.name || `Tab ${index + 1}`,
-        isActive: index === currentActiveIndex,
-        content: tab.content || '',
-        tab_type: tab.tab_type || 'text'
-      }));
-
-      return mappedTabs;
-    }, [productTabs, product, activeTab, activeTabIndex]);
-
-    // Render tab content based on data attributes
-    React.useEffect(() => {
-      if (!containerRef.current || context === 'editor') return;
-
-      const tabPanels = containerRef.current.querySelectorAll('[data-tab-type]');
-
-      tabPanels.forEach((panel) => {
-        const tabType = panel.getAttribute('data-tab-type');
-        const textContent = panel.getAttribute('data-tab-text-content');
-        const contentContainer = panel.querySelector('.prose');
-
-        if (!contentContainer) return;
-
-        let html = '';
-
-        switch (tabType) {
-          case 'text':
-            html = `<div>${textContent || ''}</div>`;
-            break;
-          case 'description':
-            html = `<div>${product?.description || ''}</div>`;
-            break;
-          case 'attributes':
-            if (product?.attributes && Object.keys(product.attributes).length > 0) {
-              const template = contentContainer.getAttribute('data-attributes-template') || `
-                <div class="flex justify-between py-2 border-b border-gray-100">
-                  <span class="font-bold capitalize">__KEY__</span>
-                  <span>__VALUE__</span>
-                </div>
-              `;
-
-              const itemsHtml = Object.entries(product.attributes).map(([key, value]) =>
-                template
-                  .replace('__KEY__', key.replace(/_/g, ' '))
-                  .replace('__VALUE__', String(value ?? ''))
-              ).join('');
-
-              html = `<div class="grid grid-cols-1 md:grid-cols-2 gap-4">${itemsHtml}</div>`;
-            } else {
-              html = '<p class="text-gray-500">No specifications available for this product.</p>';
-            }
-            break;
-          case 'attribute_sets':
-            html = '<p class="text-gray-500">Attribute sets not yet implemented.</p>';
-            break;
-          default:
-            html = '<p class="text-gray-500">Unknown tab type.</p>';
-        }
-
-        contentContainer.innerHTML = html;
-      });
-    }, [tabsData, product, context]);
-
-    // Attach tab click handlers (desktop) and accordion toggle (mobile)
-    React.useEffect(() => {
-      if (!containerRef.current || context === 'editor') return;
-
-      const handleClick = (e) => {
-        // Handle desktop tab switching
-        const tabButton = e.target.closest('[data-action="switch-tab"]');
-        if (tabButton) {
-          const tabId = tabButton.getAttribute('data-tab-id');
-          const tabIndex = tabsData.findIndex(tab => tab.id === tabId);
-
-          if (tabIndex !== -1) {
-            if (setActiveTab) {
-              setActiveTab(tabIndex);
-            } else {
-              setActiveTabIndex(tabIndex);
-            }
-
-            // Update UI immediately
-            const allTabs = containerRef.current.querySelectorAll('[data-action="switch-tab"]');
-            const allContents = containerRef.current.querySelectorAll('[data-tab-content]');
-
-            allTabs.forEach((btn, idx) => {
-              if (idx === tabIndex) {
-                btn.classList.add('border-red-600');
-                btn.classList.remove('border-transparent');
-              } else {
-                btn.classList.remove('border-red-600');
-                btn.classList.add('border-transparent');
-              }
-            });
-
-            allContents.forEach((content, idx) => {
-              if (idx === tabIndex) {
-                content.classList.remove('hidden');
-              } else {
-                content.classList.add('hidden');
-              }
-            });
-          }
-          return;
-        }
-
-        // Handle mobile accordion toggle
-        const accordionButton = e.target.closest('[data-action="toggle-accordion"]');
-        if (accordionButton) {
-          const accordionIndex = accordionButton.getAttribute('data-accordion-index');
-          const accordionContent = containerRef.current.querySelector(`[data-accordion-content="${accordionIndex}"]`);
-          const chevron = accordionButton.querySelector('.accordion-chevron');
-
-          if (accordionContent) {
-            const isHidden = accordionContent.classList.contains('hidden');
-
-            if (isHidden) {
-              accordionContent.classList.remove('hidden');
-              if (chevron) chevron.classList.add('rotate-180');
-            } else {
-              accordionContent.classList.add('hidden');
-              if (chevron) chevron.classList.remove('rotate-180');
-            }
-          }
-        }
-      };
-
-      containerRef.current.addEventListener('click', handleClick);
-      return () => {
-        if (containerRef.current) {
-          containerRef.current.removeEventListener('click', handleClick);
-        }
-      };
-    }, [context, tabsData, setActiveTab]);
-
-    if (!tabsData || tabsData.length === 0) {
-      return null;
-    }
-
-    const enhancedVariableContext = {
-      ...variableContext,
-      tabs: tabsData,
-      product
-    };
-
-    const processedContent = processVariables(content, enhancedVariableContext);
-
+    // Use the ProductTabsComponent which has proper translation support
     return (
-      <div ref={containerRef} className={className} style={styles}
-           dangerouslySetInnerHTML={{ __html: processedContent }} />
+      <div className={className} style={styles}>
+        <ProductTabsComponent
+          productTabs={productTabs || []}
+          product={product}
+          className=""
+          slotConfig={slot}
+        />
+      </div>
     );
   }
 });
