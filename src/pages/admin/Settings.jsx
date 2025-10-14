@@ -208,6 +208,11 @@ export default function Settings() {
           rootCategoryId: settings.rootCategoryId || storeData.root_category_id || null,
           excludeRootFromMenu: settings.excludeRootFromMenu === true,
           expandAllMenuItems: settings.expandAllMenuItems === true,
+
+          // Language settings
+          active_languages: settings.active_languages || ['en'],
+          default_language: settings.default_language || 'en',
+          use_geoip_language: settings.hasOwnProperty('use_geoip_language') ? settings.use_geoip_language : false,
         }
       });
 
@@ -317,7 +322,12 @@ export default function Settings() {
         rootCategoryId: store.settings.rootCategoryId || store.root_category_id,
         excludeRootFromMenu: store.settings.excludeRootFromMenu === true,
         expandAllMenuItems: store.settings.expandAllMenuItems === true,
-        
+
+        // Language settings
+        active_languages: store.settings.active_languages || ['en'],
+        default_language: store.settings.default_language || 'en',
+        use_geoip_language: store.settings.use_geoip_language === true,
+
         seo_settings: {
           meta_title_suffix: store.settings.seo_settings?.meta_title_suffix || '',
           meta_description: store.settings.seo_settings?.meta_description || '',
@@ -544,8 +554,9 @@ export default function Settings() {
           params.set('tab', value);
           setSearchParams(params);
         }} className="w-full">
-          <TabsList className="grid w-full grid-cols-5">
+          <TabsList className="grid w-full grid-cols-6">
             <TabsTrigger value="general">General</TabsTrigger>
+            <TabsTrigger value="language">Language</TabsTrigger>
             <TabsTrigger value="domain">Domain</TabsTrigger>
             <TabsTrigger value="publish">Publish</TabsTrigger>
             <TabsTrigger value="brevo">Brevo</TabsTrigger>
@@ -671,6 +682,87 @@ export default function Settings() {
                   <p className="text-sm text-gray-500">
                     These countries will be available for shipping and billing addresses
                   </p>
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="language" className="mt-6">
+            <Card className="material-elevation-1 border-0">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Globe className="w-5 h-5" />
+                  Language Settings
+                </CardTitle>
+                <CardDescription>Configure supported languages and localization options for your store</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                <div>
+                  <Label htmlFor="active_languages">Active Languages</Label>
+                  <Select
+                    value={JSON.stringify(store?.settings?.active_languages || ['en'])}
+                    onValueChange={(value) => handleSettingsChange('active_languages', JSON.parse(value))}
+                  >
+                    <SelectTrigger id="active_languages">
+                      <SelectValue placeholder="Select active languages" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value={JSON.stringify(['en'])}>English only</SelectItem>
+                      <SelectItem value={JSON.stringify(['en', 'nl'])}>English + Dutch</SelectItem>
+                      <SelectItem value={JSON.stringify(['en', 'nl', 'fr'])}>English + Dutch + French</SelectItem>
+                      <SelectItem value={JSON.stringify(['en', 'nl', 'fr', 'de'])}>English + Dutch + French + German</SelectItem>
+                      <SelectItem value={JSON.stringify(['en', 'nl', 'fr', 'de', 'es'])}>English + Dutch + French + German + Spanish</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <p className="text-sm text-gray-500 mt-1">
+                    Select which languages are available in your store. Customers can switch between these languages.
+                  </p>
+                </div>
+
+                <div>
+                  <Label htmlFor="default_language">Default Language</Label>
+                  <Select
+                    value={store?.settings?.default_language || 'en'}
+                    onValueChange={(value) => handleSettingsChange('default_language', value)}
+                  >
+                    <SelectTrigger id="default_language">
+                      <SelectValue placeholder="Select default language" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="en">English</SelectItem>
+                      <SelectItem value="nl">Dutch (Nederlands)</SelectItem>
+                      <SelectItem value="fr">French (Français)</SelectItem>
+                      <SelectItem value="de">German (Deutsch)</SelectItem>
+                      <SelectItem value="es">Spanish (Español)</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <p className="text-sm text-gray-500 mt-1">
+                    This language will be used when a customer first visits your store or when their browser language is not supported.
+                  </p>
+                </div>
+
+                <div className="flex items-center justify-between p-4 border rounded-lg">
+                  <div className="space-y-0.5">
+                    <Label htmlFor="use_geoip_language" className="text-base">Use GeoIP Location</Label>
+                    <p className="text-sm text-gray-500">
+                      Automatically detect and set language based on customer's location
+                    </p>
+                  </div>
+                  <Switch
+                    id="use_geoip_language"
+                    checked={store?.settings?.use_geoip_language || false}
+                    onCheckedChange={(checked) => handleSettingsChange('use_geoip_language', checked)}
+                  />
+                </div>
+
+                <div className="bg-blue-50 p-4 rounded-lg">
+                  <h4 className="font-medium text-blue-900 mb-2">Language Configuration</h4>
+                  <div className="text-sm text-blue-800 space-y-2">
+                    <p>• Configure translations for products, categories, and CMS content in their respective management pages</p>
+                    <p>• The language switcher will automatically appear in your storefront when multiple languages are active</p>
+                    <p>• With GeoIP enabled, customers from different countries will see content in their local language automatically</p>
+                    <p>• Customers can always override the automatic language selection</p>
+                  </div>
                 </div>
               </CardContent>
             </Card>
