@@ -198,8 +198,8 @@ export const StoreProvider = ({ children }) => {
   // Listen for cache clear broadcasts from admin
   useEffect(() => {
     try {
-      const channel = new BroadcastChannel('store_settings_update');
-      channel.onmessage = (event) => {
+      const storeChannel = new BroadcastChannel('store_settings_update');
+      storeChannel.onmessage = (event) => {
         if (event.data.type === 'clear_cache') {
           // Clear all caches
           apiCache.clear();
@@ -212,7 +212,29 @@ export const StoreProvider = ({ children }) => {
           }, 1000);
         }
       };
-      return () => channel.close();
+
+      // Listen for translation updates
+      const translationsChannel = new BroadcastChannel('translations_update');
+      translationsChannel.onmessage = (event) => {
+        if (event.data.type === 'clear_translations_cache') {
+          const language = event.data.language;
+          // Clear only the translations cache for the updated language
+          const translationsCacheKey = `ui-translations-${language}`;
+          if (apiCache.has(translationsCacheKey)) {
+            apiCache.delete(translationsCacheKey);
+            console.log(`Cleared translations cache for language: ${language}`);
+          }
+          // Reload the page to fetch fresh translations
+          setTimeout(() => {
+            window.location.reload();
+          }, 500);
+        }
+      };
+
+      return () => {
+        storeChannel.close();
+        translationsChannel.close();
+      };
     } catch (e) {
       console.warn('BroadcastChannel not supported:', e);
     }

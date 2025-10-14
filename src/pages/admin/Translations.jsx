@@ -96,6 +96,15 @@ export default function Translations() {
         );
         setLabels(updatedLabels);
 
+        // Clear translation cache in storefront
+        try {
+          const channel = new BroadcastChannel('translations_update');
+          channel.postMessage({ type: 'clear_translations_cache', language: selectedLanguage });
+          channel.close();
+        } catch (e) {
+          console.warn('BroadcastChannel not supported:', e);
+        }
+
         // Close edit mode
         setEditingKey(null);
         setEditValue('');
