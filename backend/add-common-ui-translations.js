@@ -87,7 +87,14 @@ const commonUITranslations = {
   'street_address': { en: 'Street Address *', nl: 'Straat *' },
   'city': { en: 'City *', nl: 'Stad *' },
   'state_province': { en: 'State/Province *', nl: 'Provincie *' },
-  'postal_code': { en: 'Postal Code *', nl: 'Postcode *' }
+  'postal_code': { en: 'Postal Code *', nl: 'Postcode *' },
+
+  // Cart Page Specific
+  'cart_empty_message': { en: 'Add some items to get started!', nl: 'Voeg artikelen toe om te beginnen!' },
+  'coupon_applied_successfully': { en: 'Coupon applied successfully', nl: 'Kortingscode succesvol toegepast' },
+  'enter_coupon_code': { en: 'Enter coupon code', nl: 'Voer kortingscode in' },
+  'proceed_now': { en: 'Proceed to Checkout', nl: 'Doorgaan naar afrekenen' },
+  'additional_products': { en: 'Additional Products', nl: 'Extra producten' }
 };
 
 async function addTranslations() {
