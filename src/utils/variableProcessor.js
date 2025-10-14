@@ -258,6 +258,15 @@ function processTranslations(content, context, pageData) {
   const translationRegex = /\{\{t\s+['"]([^'"]+)['"]\}\}/g;
 
   return content.replace(translationRegex, (match, key) => {
+    console.log('🔧 processTranslations called:', {
+      key,
+      match,
+      hasContextSettings: !!context?.settings,
+      hasPageDataSettings: !!pageData?.settings,
+      hasUITranslations: !!(context?.settings?.ui_translations || pageData?.settings?.ui_translations),
+      uiTranslationsKeys: Object.keys(context?.settings?.ui_translations || pageData?.settings?.ui_translations || {})
+    });
+
     // Get current language from localStorage
     const currentLang = typeof localStorage !== 'undefined'
       ? localStorage.getItem('catalyst_language') || 'en'
@@ -265,6 +274,14 @@ function processTranslations(content, context, pageData) {
 
     // Get UI translations from settings
     const uiTranslations = context?.settings?.ui_translations || pageData?.settings?.ui_translations || {};
+
+    console.log('🔧 Translation lookup:', {
+      key,
+      currentLang,
+      hasTranslationsForLang: !!uiTranslations[currentLang],
+      hasKeyInLang: !!(uiTranslations[currentLang] && uiTranslations[currentLang][key]),
+      value: uiTranslations[currentLang]?.[key]
+    });
 
     // Try current language first
     if (uiTranslations[currentLang] && uiTranslations[currentLang][key]) {
