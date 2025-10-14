@@ -190,7 +190,11 @@ export default function ProductTabs({ productTabs = [], product = null, classNam
               {{/if}}
 
               {{#if (eq this.tab_type "description")}}
-                <div>{{{../product.description}}}</div>
+                {{#if this.content}}
+                  <div>{{{this.content}}}</div>
+                {{else}}
+                  <div>{{{../product.description}}}</div>
+                {{/if}}
               {{/if}}
 
               {{#if (eq this.tab_type "attributes")}}
