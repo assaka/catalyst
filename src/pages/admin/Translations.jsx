@@ -137,7 +137,7 @@ export default function Translations() {
 
       // Get English labels as source
       const enResponse = await api.get('/translations/ui-labels?lang=en');
-      const enLabels = enResponse.data.data.labels;
+      const enLabels = enResponse.data.labels;
 
       // Find missing translations
       const currentLabelKeys = new Set(labels.map(l => l.key));
