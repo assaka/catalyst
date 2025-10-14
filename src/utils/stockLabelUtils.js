@@ -220,7 +220,7 @@ export function getStockLabel(product, settings = {}, lang = null) {
 
     // Final fallback: use the direct label field from stockSettings (non-translated)
     // This ensures labels still work even when translations haven't been set up
-    return stockSettings[labelField] || '';
+    return stockSettings[labelField] || 'No Stock Label';
   };
 
   // Handle infinite stock
