@@ -231,16 +231,19 @@ export default function ProductTabs({ productTabs = [], product = null, classNam
         padding: '20px',
         margin: '10px 0',
         border: '5px solid yellow',
-        fontSize: '20px',
+        fontSize: '14px',
         fontWeight: 'bold'
       }}>
         🔍 DEBUG INFO - Current Language: {currentLang} |
         localStorage: {localStorage.getItem('catalyst_language') || 'not set'} |
-        Tabs loaded: {tabsData.length} |
-        {tabsData.map(tab => (
-          <div key={tab.id}>
-            Tab: {tab.title} | Has NL: {tab.translations?.nl ? 'YES' : 'NO'} |
-            NL name: {tab.translations?.nl?.name || 'missing'}
+        Tabs loaded: {tabsData.length}
+        {tabsData.map((tab, idx) => (
+          <div key={tab.id} style={{ marginTop: '10px', borderTop: '2px solid yellow', paddingTop: '10px' }}>
+            <div>Tab {idx + 1}: {tab.title}</div>
+            <div>ID: {tab.id} | Type: {tab.tab_type} | Active: {tab.isActive ? 'YES' : 'NO'}</div>
+            <div>Has Content: {tab.content ? 'YES' : 'NO'} | Content Length: {tab.content?.length || 0}</div>
+            <div>Content Preview: {tab.content ? tab.content.substring(0, 100) : 'EMPTY'}</div>
+            <div>Has NL Translation: {tab.translations?.nl ? 'YES' : 'NO'}</div>
           </div>
         ))}
       </div>
