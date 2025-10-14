@@ -23,9 +23,9 @@ export function TranslationProvider({ children }) {
     try {
       const response = await api.get('/languages');
 
-      if (response && response.data && response.data.success) {
-        // Handle nested data structure: response.data.data.languages or response.data.data
-        const languagesData = response.data.data.languages || response.data.data || [];
+      if (response && response.success && response.data) {
+        // Handle data structure: response.data.languages or response.data
+        const languagesData = response.data.languages || response.data || [];
         const languages = Array.isArray(languagesData)
           ? languagesData.filter(lang => lang.is_active)
           : [];
