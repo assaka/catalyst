@@ -164,6 +164,26 @@ export default function Login() {
   const hasConfig = loginLayoutConfig && loginLayoutConfig.slots;
   const hasSlots = hasConfig && Object.keys(loginLayoutConfig.slots).length > 0;
 
+  // Force re-render when translations load
+  const [translationsLoaded, setTranslationsLoaded] = useState(false);
+
+  useEffect(() => {
+    // Check if ui_translations is populated
+    if (settings?.ui_translations && Object.keys(settings.ui_translations).length > 0) {
+      const currentLang = localStorage.getItem('catalyst_language') || 'en';
+      const hasTranslationsForCurrentLang = settings.ui_translations[currentLang];
+
+      if (hasTranslationsForCurrentLang && Object.keys(hasTranslationsForCurrentLang).length > 20) {
+        console.log('✅ LOGIN: Translations loaded!', {
+          languages: Object.keys(settings.ui_translations),
+          currentLang,
+          keysInCurrentLang: Object.keys(hasTranslationsForCurrentLang).length
+        });
+        setTranslationsLoaded(true);
+      }
+    }
+  }, [settings]);
+
   const loginDataObj = {
     formData,
     loading,
@@ -185,7 +205,10 @@ export default function Login() {
     hasSettings: !!settings,
     hasUiTranslations: !!settings?.ui_translations,
     uiTranslationsKeys: Object.keys(settings?.ui_translations || {}),
-    settingsKeys: Object.keys(settings || {}).slice(0, 20)
+    currentLang: localStorage.getItem('catalyst_language') || 'en',
+    translationsForCurrentLang: settings?.ui_translations?.[localStorage.getItem('catalyst_language') || 'en'] ? Object.keys(settings.ui_translations[localStorage.getItem('catalyst_language') || 'en']).length : 0,
+    settingsKeys: Object.keys(settings || {}).slice(0, 20),
+    translationsLoaded
   });
 
   return (
