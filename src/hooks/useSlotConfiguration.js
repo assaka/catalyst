@@ -662,7 +662,6 @@ export const sortSlotsByGridCoordinates = (filteredSlots) => {
 
 // Helper function to dynamically load page-specific config
 async function loadPageConfig(pageType) {
-  console.log('🔍 loadPageConfig called with pageType:', pageType);
   let config;
   switch (pageType) {
     case 'header': {
@@ -711,7 +710,6 @@ async function loadPageConfig(pageType) {
       config = fallbackConfig;
     }
   }
-  console.log('✅ loadPageConfig returning config for:', pageType, config?.page_name);
   return config;
 }
 
