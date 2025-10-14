@@ -9,6 +9,7 @@ import { CustomerAuth } from '@/api/storefront-entities';
 import { useNavigate, useParams } from 'react-router-dom';
 import { createPublicUrl } from '@/utils/urlUtils';
 import { useStore } from '@/components/storefront/StoreProvider';
+import { t } from '@/utils/translationHelper';
 
 /**
  * UserProfileSlot - User profile display with avatar and info
@@ -192,7 +193,7 @@ const ProfileFormSlot = createSlotComponent({
 const LoginFormSlotComponent = ({ slot, context, variableContext }) => {
   const navigate = useNavigate();
   const { storeCode } = useParams();
-  const { store } = useStore();
+  const { store, settings } = useStore();
 
   // Local state - will be used since loginData from variableContext is empty
   const [formData, setFormData] = React.useState({
@@ -234,7 +235,7 @@ const LoginFormSlotComponent = ({ slot, context, variableContext }) => {
     try {
       // Ensure store is loaded before attempting login
       if (!store?.id) {
-        setError('Store information not available. Please refresh the page.');
+        setError(t('store_info_not_available_refresh', settings));
         return;
       }
 
@@ -265,10 +266,10 @@ const LoginFormSlotComponent = ({ slot, context, variableContext }) => {
         navigate(accountUrl);
         return;
       } else {
-        setError('Login failed: Invalid response from server');
+        setError(t('login_failed_invalid_response', settings));
       }
     } catch (error) {
-      setError(error.message || 'Login failed');
+      setError(error.message || t('login_failed', settings));
     } finally {
       setLoading(false);
     }
@@ -288,7 +289,7 @@ const LoginFormSlotComponent = ({ slot, context, variableContext }) => {
             </div>
           )}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Email Address</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">{t('email_address', settings)}</label>
             <input
               type="email"
               name="email"
@@ -296,12 +297,12 @@ const LoginFormSlotComponent = ({ slot, context, variableContext }) => {
               onChange={handleInputChange}
               required
               className="w-full border border-gray-300 rounded-md px-3 py-2"
-              placeholder="Enter your email"
+              placeholder={t('enter_your_email', settings)}
               disabled={loading}
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Password</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">{t('password', settings)}</label>
             <div className="relative">
               <input
                 type={showPassword ? "text" : "password"}
@@ -310,7 +311,7 @@ const LoginFormSlotComponent = ({ slot, context, variableContext }) => {
                 onChange={handleInputChange}
                 required
                 className="w-full border border-gray-300 rounded-md px-3 py-2 pr-10"
-                placeholder="Enter your password"
+                placeholder={t('enter_your_password', settings)}
                 disabled={loading}
               />
               <button
@@ -332,14 +333,14 @@ const LoginFormSlotComponent = ({ slot, context, variableContext }) => {
               className="rounded"
               disabled={loading}
             />
-            <label className="ml-2 text-sm">Remember me</label>
+            <label className="ml-2 text-sm">{t('remember_me', settings)}</label>
           </div>
           <button
             type="submit"
             disabled={loading}
             className="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-2.5 rounded-md disabled:bg-gray-400 disabled:cursor-not-allowed"
           >
-            {loading ? 'Signing in...' : 'Sign In'}
+            {loading ? t('signing_in', settings) : t('sign_in_button', settings)}
           </button>
         </form>
       </div>
@@ -355,41 +356,46 @@ const LoginFormSlot = createSlotComponent({
 /**
  * RegisterFormSlot - Registration form
  */
+const RegisterFormSlotComponent = ({ slot, context, variableContext }) => {
+  const { settings } = useStore();
+
+  return (
+    <div className={slot.className} style={slot.styles}>
+      <form className="space-y-4">
+        <div className="grid grid-cols-2 gap-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">{t('first_name', settings)}</label>
+            <input type="text" required className="w-full border border-gray-300 rounded-md px-3 py-2" placeholder={t('first_name_placeholder', settings)} />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">{t('last_name', settings)}</label>
+            <input type="text" required className="w-full border border-gray-300 rounded-md px-3 py-2" placeholder={t('last_name_placeholder', settings)} />
+          </div>
+        </div>
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">{t('email_address', settings)}</label>
+          <input type="email" required className="w-full border border-gray-300 rounded-md px-3 py-2" placeholder={t('enter_your_email', settings)} />
+        </div>
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">{t('password', settings)}</label>
+          <input type="password" required className="w-full border border-gray-300 rounded-md px-3 py-2" placeholder={t('enter_your_password', settings)} />
+        </div>
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">{t('confirm_password', settings)}</label>
+          <input type="password" required className="w-full border border-gray-300 rounded-md px-3 py-2" placeholder={t('confirm_password_placeholder', settings)} />
+        </div>
+        <button type="submit" className="w-full bg-green-600 hover:bg-green-700 text-white font-medium py-2.5 rounded-md">
+          {t('create_my_account', settings)}
+        </button>
+      </form>
+    </div>
+  );
+};
+
+// Wrap with createSlotComponent
 const RegisterFormSlot = createSlotComponent({
   name: 'RegisterFormSlot',
-  render: ({ slot, context }) => {
-    return (
-      <div className={slot.className} style={slot.styles}>
-        <form className="space-y-4">
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">First Name</label>
-              <input type="text" required className="w-full border border-gray-300 rounded-md px-3 py-2" placeholder="First name" />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Last Name</label>
-              <input type="text" required className="w-full border border-gray-300 rounded-md px-3 py-2" placeholder="Last name" />
-            </div>
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Email Address</label>
-            <input type="email" required className="w-full border border-gray-300 rounded-md px-3 py-2" placeholder="Enter your email" />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Password</label>
-            <input type="password" required className="w-full border border-gray-300 rounded-md px-3 py-2" placeholder="Enter your password" />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Confirm Password</label>
-            <input type="password" required className="w-full border border-gray-300 rounded-md px-3 py-2" placeholder="Confirm password" />
-          </div>
-          <button type="submit" className="w-full bg-green-600 hover:bg-green-700 text-white font-medium py-2.5 rounded-md">
-            Create My Account
-          </button>
-        </form>
-      </div>
-    );
-  }
+  render: (props) => <RegisterFormSlotComponent {...props} />
 });
 
 /**

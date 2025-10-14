@@ -8,6 +8,7 @@ import { UnifiedSlotRenderer } from '@/components/editor/slot/UnifiedSlotRendere
 import '@/components/editor/slot/AccountLoginSlotComponents'; // Register account/login components
 import { loginConfig } from '@/components/editor/slot/configs/login-config';
 import { LoginProvider } from '@/contexts/LoginContext';
+import { t } from '@/utils/translationHelper';
 
 export default function Login() {
   const [showPassword, setShowPassword] = useState(false);
@@ -111,7 +112,7 @@ export default function Login() {
     try {
       // Ensure store is loaded before attempting login
       if (!store?.id) {
-        setError('Store information not available. Please refresh the page.');
+        setError(t('store_info_not_available_refresh', settings));
         return;
       }
 
@@ -142,10 +143,10 @@ export default function Login() {
         navigate(accountUrl);
         return;
       } else {
-        setError('Login failed: Invalid response from server');
+        setError(t('login_failed_invalid_response', settings));
       }
     } catch (error) {
-      setError(error.message || 'Login failed');
+      setError(error.message || t('login_failed', settings));
     } finally {
       setLoading(false);
     }
@@ -155,7 +156,7 @@ export default function Login() {
   if (!configLoaded) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-gray-600">Loading...</div>
+        <div className="text-gray-600">{t('loading', settings)}</div>
       </div>
     );
   }
@@ -193,9 +194,9 @@ export default function Login() {
         ) : (
         <div className="max-w-md w-full mx-auto">
           <div className="bg-white rounded-lg shadow p-6">
-            <h2 className="text-2xl font-bold text-center mb-4">Sign In</h2>
+            <h2 className="text-2xl font-bold text-center mb-4">{t('sign_in', settings)}</h2>
             <p className="text-gray-600 text-center">
-              Login configuration not available. Please contact support.
+              {t('login_config_not_available', settings)}
             </p>
           </div>
         </div>
