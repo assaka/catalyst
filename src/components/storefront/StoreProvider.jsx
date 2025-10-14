@@ -218,16 +218,27 @@ export const StoreProvider = ({ children }) => {
       translationsChannel.onmessage = (event) => {
         if (event.data.type === 'clear_translations_cache') {
           const language = event.data.language;
-          // Clear only the translations cache for the updated language
+
+          // Clear the translations cache for the updated language from memory
           const translationsCacheKey = `ui-translations-${language}`;
-          if (apiCache.has(translationsCacheKey)) {
-            apiCache.delete(translationsCacheKey);
-            console.log(`Cleared translations cache for language: ${language}`);
+          apiCache.delete(translationsCacheKey);
+
+          // Clear from localStorage cache as well
+          try {
+            const stored = localStorage.getItem('storeProviderCache');
+            if (stored) {
+              const parsed = JSON.parse(stored);
+              delete parsed[translationsCacheKey];
+              localStorage.setItem('storeProviderCache', JSON.stringify(parsed));
+            }
+          } catch (e) {
+            console.warn('Failed to clear localStorage cache:', e);
           }
-          // Reload the page to fetch fresh translations
-          setTimeout(() => {
-            window.location.reload();
-          }, 500);
+
+          console.log(`✅ Cleared translations cache for language: ${language}`);
+
+          // Force hard reload to bypass any browser cache
+          window.location.reload(true);
         }
       };
 
@@ -639,13 +650,35 @@ export const StoreProvider = ({ children }) => {
       // Load UI translations for the storefront
       try {
         const currentLang = localStorage.getItem('catalyst_language') || mergedSettings.default_language || 'en';
-        const translationsData = await cachedApiCall(`ui-translations-${currentLang}`, async () => {
-          const response = await fetch(`${import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000'}/api/translations/ui-labels?lang=${currentLang}`, {
+        const translationsCacheKey = `ui-translations-${currentLang}`;
+
+        // Check if we should bypass cache (after translation update)
+        const translationsCacheCleared = sessionStorage.getItem('translations_cache_cleared');
+        if (translationsCacheCleared) {
+          // Remove from both memory and localStorage cache
+          apiCache.delete(translationsCacheKey);
+          try {
+            const stored = localStorage.getItem('storeProviderCache');
+            if (stored) {
+              const parsed = JSON.parse(stored);
+              delete parsed[translationsCacheKey];
+              localStorage.setItem('storeProviderCache', JSON.stringify(parsed));
+            }
+          } catch (e) {
+            console.warn('Failed to clear localStorage cache:', e);
+          }
+          sessionStorage.removeItem('translations_cache_cleared');
+          console.log('🔄 Bypassing translations cache after update');
+        }
+
+        const translationsData = await cachedApiCall(translationsCacheKey, async () => {
+          const response = await fetch(`${import.meta.env.VITE_API_BASE_URL || 'https://catalyst-backend-fzhu.onrender.com'}/api/translations/ui-labels?lang=${currentLang}`, {
             method: 'GET',
             headers: { 'Content-Type': 'application/json' }
           });
           if (!response.ok) throw new Error('Failed to fetch translations');
           const result = await response.json();
+          console.log('📥 Fresh translations loaded from API');
           return result.data?.labels || {};
         }, CACHE_DURATION_MEDIUM);
 
