@@ -109,7 +109,7 @@ export const categoryConfig = {
           <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z"></path>
           </svg>
-          <span class="filter-toggle-text font-medium">Filters</span>
+          <span class="filter-toggle-text font-medium">{{t "filters"}}</span>
         </button>
 
         <!-- Active Filters on Mobile - Below Filter Button -->
@@ -139,7 +139,7 @@ export const categoryConfig = {
           <div class="absolute inset-y-0 left-0 w-full max-w-sm bg-white shadow-xl transform -translate-x-full transition-transform duration-300 ease-in-out" data-filter-drawer>
             <!-- Overlay Header -->
             <div class="flex items-center justify-between p-4 border-b border-gray-200">
-              <h3 class="text-lg font-semibold">Filters</h3>
+              <h3 class="text-lg font-semibold">{{t "filters"}}</h3>
               <button data-action="close-mobile-filters" class="p-2 hover:bg-gray-100 rounded-md">
                 <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
@@ -155,7 +155,7 @@ export const categoryConfig = {
                   <button class="w-full flex items-center justify-between mb-3"
                           data-action="toggle-filter-section"
                           data-section="price">
-                    <span style="color: {{attributeLabelStyles.color}}; font-size: {{attributeLabelStyles.fontSize}}; font-weight: {{attributeLabelStyles.fontWeight}};">Price</span>
+                    <span style="color: {{attributeLabelStyles.color}}; font-size: {{attributeLabelStyles.fontSize}}; font-weight: {{attributeLabelStyles.fontWeight}};">{{t "price"}}</span>
                     <svg class="w-5 h-5 transform transition-transform filter-chevron {{#unless settings.collapse_filters}}rotate-180{{/unless}}"
                          fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
@@ -231,7 +231,7 @@ export const categoryConfig = {
                     <button class="text-sm text-blue-600 hover:text-blue-800 mt-2 show-more-btn hidden"
                             data-action="toggle-show-more"
                             data-attribute-code="{{this.code}}">
-                      Show More
+                      {{t "show_more"}}
                     </button>
                   </div>
                 </div>
@@ -241,7 +241,7 @@ export const categoryConfig = {
             <!-- Overlay Footer with Apply Button -->
             <div class="absolute bottom-0 left-0 right-0 p-4 border-t border-gray-200 bg-white">
               <button data-action="close-mobile-filters" class="w-full px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 font-medium">
-                Apply Filters
+                {{t "apply_filters"}}
               </button>
             </div>
           </div>
@@ -306,7 +306,7 @@ export const categoryConfig = {
       component: 'ProductCountInfo',
       content: `
         <div class="text-sm text-blue-600 font-bold">
-          {{pagination.start}}-{{pagination.end}} of {{pagination.total}} products
+          {{pagination.start}}-{{pagination.end}} {{t "of"}} {{pagination.total}} {{t "products"}}
         </div>
       `,
       className: '',
@@ -327,7 +327,7 @@ export const categoryConfig = {
     product_count_text: {
       id: 'product_count_text',
       type: 'text',
-      content: 'Hamid {{pagination.start}}-{{pagination.end}} of {{pagination.total}} products',
+      content: '{{pagination.start}}-{{pagination.end}} {{t "of"}} {{pagination.total}} {{t "products"}}',
       className: 'text-sm text-blue-600 font-bold',
       parentClassName: '',
       styles: {
@@ -354,15 +354,15 @@ export const categoryConfig = {
       component: 'SortSelector',
       content: `
         <div class="flex items-center gap-2">
-          <label class="hidden sm:block text-sm text-gray-700 font-medium">Sort by:</label>
+          <label class="hidden sm:block text-sm text-gray-700 font-medium">{{t "sort_by"}}:</label>
           <select class="border border-gray-300 rounded px-3 py-1.5 text-sm"
                   data-action="change-sort">
-            <option value="position" {{#if (eq sorting.current "position")}}selected{{/if}}>Position</option>
-            <option value="name_asc" {{#if (eq sorting.current "name_asc")}}selected{{/if}}>Name (A-Z)</option>
-            <option value="name_desc" {{#if (eq sorting.current "name_desc")}}selected{{/if}}>Name (Z-A)</option>
-            <option value="price_asc" {{#if (eq sorting.current "price_asc")}}selected{{/if}}>Price (&ShortDownArrow;)</option>
-            <option value="price_desc" {{#if (eq sorting.current "price_desc")}}selected{{/if}}>Price (&ShortUpArrow;)</option>
-            <option value="created_desc" {{#if (eq sorting.current "created_desc")}}selected{{/if}}>Newest First</option>
+            <option value="position" {{#if (eq sorting.current "position")}}selected{{/if}}>{{t "sort_position"}}</option>
+            <option value="name_asc" {{#if (eq sorting.current "name_asc")}}selected{{/if}}>{{t "sort_name_asc"}}</option>
+            <option value="name_desc" {{#if (eq sorting.current "name_desc")}}selected{{/if}}>{{t "sort_name_desc"}}</option>
+            <option value="price_asc" {{#if (eq sorting.current "price_asc")}}selected{{/if}}>{{t "sort_price_low"}}</option>
+            <option value="price_desc" {{#if (eq sorting.current "price_desc")}}selected{{/if}}>{{t "sort_price_high"}}</option>
+            <option value="created_desc" {{#if (eq sorting.current "created_desc")}}selected{{/if}}>{{t "sort_newest"}}</option>
           </select>
         </div>
       `,
@@ -407,7 +407,7 @@ export const categoryConfig = {
       content: `
         {{#if activeFilters.length}}
           <div class="mb-4">
-            <h4 style="color: {{activeFilterStyles.titleColor}}; font-size: {{activeFilterStyles.titleFontSize}}; font-weight: {{activeFilterStyles.titleFontWeight}};" class="mb-2">{{activeFilterStyles.titleText}}</h4>
+            <h4 style="color: {{activeFilterStyles.titleColor}}; font-size: {{activeFilterStyles.titleFontSize}}; font-weight: {{activeFilterStyles.titleFontWeight}};" class="mb-2">{{t "active_filters"}}</h4>
             <div class="flex flex-wrap gap-2">
               {{#each activeFilters}}
                 <div class="flex items-center gap-1 rounded-full text-sm px-3 py-1"
@@ -430,7 +430,7 @@ export const categoryConfig = {
               <button class="text-sm underline"
                       style="color: {{activeFilterStyles.clearAllColor}};"
                       data-action="clear-all-filters">
-                Clear All
+                {{t "clear_all"}}
               </button>
             </div>
           </div>
@@ -682,7 +682,7 @@ export const categoryConfig = {
           <svg class="w-4 h-4 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"></path>
           </svg>
-          Add to Cart
+          {{t "add_to_cart"}}
         </button>
       `,
       script: `
@@ -746,10 +746,13 @@ export const categoryConfig = {
                 }
 
                 // Show success message
+                const successMessage = variableContext?.settings?.ui_translations?.[localStorage.getItem('catalyst_language') || 'en']?.['added_to_cart_success']
+                  || variableContext?.settings?.ui_translations?.en?.['added_to_cart_success']
+                  || ' added to cart successfully!';
                 window.dispatchEvent(new CustomEvent('showFlashMessage', {
                   detail: {
                     type: 'success',
-                    message: product.name + ' added to cart successfully!'
+                    message: product.name + successMessage
                   }
                 }));
               } else {
@@ -757,10 +760,13 @@ export const categoryConfig = {
               }
             } catch (error) {
               console.error('Failed to add to cart:', error);
+              const errorMessage = variableContext?.settings?.ui_translations?.[localStorage.getItem('catalyst_language') || 'en']?.['added_to_cart_error']
+                || variableContext?.settings?.ui_translations?.en?.['added_to_cart_error']
+                || 'Failed to add to cart. Please try again.';
               window.dispatchEvent(new CustomEvent('showFlashMessage', {
                 detail: {
                   type: 'error',
-                  message: 'Failed to add to cart. Please try again.'
+                  message: errorMessage
                 }
               }));
             }
@@ -870,11 +876,11 @@ export const categoryConfig = {
                   <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"></path>
                   </svg>
-                  Add to Cart
+                  {{t "add_to_cart"}}
                 </button>
               {{else}}
                 <button class="w-full bg-gray-400 text-white cursor-not-allowed px-4 py-2 rounded-md text-sm font-medium" disabled>
-                  Out of Stock
+                  {{t "out_of_stock"}}
                 </button>
               {{/if}}
             </div>
@@ -931,7 +937,7 @@ export const categoryConfig = {
                       data-action="go-to-page"
                       data-page="{{pagination.prevPage}}"
                       {{#unless pagination.hasPrev}}disabled{{/unless}}>
-                Previous
+                {{t "previous"}}
               </button>
 
               <!-- Page Numbers -->
@@ -953,7 +959,7 @@ export const categoryConfig = {
                       data-action="go-to-page"
                       data-page="{{pagination.nextPage}}"
                       {{#unless pagination.hasNext}}disabled{{/unless}}>
-                Next
+                {{t "next"}}
               </button>
             </nav>
           </div>
@@ -1019,7 +1025,7 @@ export const categoryConfig = {
     filter_heading: {
       id: 'filter_heading',
       type: 'text',
-      content: 'Filter By',
+      content: '{{t "filter_by"}}',
       className: 'text-lg font-semibold text-gray-900 mb-4',
       parentClassName: '',
       styles: {},
@@ -1049,7 +1055,7 @@ export const categoryConfig = {
               <button class="w-full flex items-center justify-between mb-3"
                       data-action="toggle-filter-section"
                       data-section="price">
-                <span style="color: {{attributeLabelStyles.color}}; font-size: {{attributeLabelStyles.fontSize}}; font-weight: {{attributeLabelStyles.fontWeight}};">Price</span>
+                <span style="color: {{attributeLabelStyles.color}}; font-size: {{attributeLabelStyles.fontSize}}; font-weight: {{attributeLabelStyles.fontWeight}};">{{t "price"}}</span>
                 <svg class="w-5 h-5 transform transition-transform filter-chevron {{#unless settings.collapse_filters}}rotate-180{{/unless}}"
                      fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
@@ -1146,7 +1152,7 @@ export const categoryConfig = {
                 <button class="text-sm text-blue-600 hover:text-blue-800 mt-2 show-more-btn hidden"
                         data-action="toggle-show-more"
                         data-attribute-code="{{this.code}}">
-                  Show More
+                  {{t "show_more"}}
                 </button>
               </div>
             </div>
@@ -1171,7 +1177,7 @@ export const categoryConfig = {
     price_filter_label: {
       id: 'price_filter_label',
       type: 'text',
-      content: 'Price',
+      content: '{{t "price"}}',
       className: 'font-semibold text-base text-gray-900',
       parentClassName: '',
       styles: {

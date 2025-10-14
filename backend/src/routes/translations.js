@@ -215,6 +215,79 @@ router.post('/ai-translate-entity', authMiddleware, async (req, res) => {
   }
 });
 
+// @route   POST /api/translations/auto-translate-ui-label
+// @desc    Automatically translate a UI label to all active languages
+// @access  Private
+router.post('/auto-translate-ui-label', authMiddleware, async (req, res) => {
+  try {
+    const { key, value, category = 'common', fromLang = 'en' } = req.body;
+
+    if (!key || !value) {
+      return res.status(400).json({
+        success: false,
+        message: 'Key and value are required'
+      });
+    }
+
+    // Get all active languages
+    const languages = await Language.findAll({
+      where: { is_active: true },
+      attributes: ['code', 'name']
+    });
+
+    const results = [];
+    const errors = [];
+
+    // Save the source language first
+    await translationService.saveUILabel(key, fromLang, value, category);
+    results.push({ language_code: fromLang, value, status: 'saved' });
+
+    // Translate to all other active languages
+    for (const lang of languages) {
+      if (lang.code === fromLang) continue;
+
+      try {
+        // Translate using AI
+        const translatedValue = await translationService.aiTranslate(value, fromLang, lang.code);
+
+        // Save the translation
+        await translationService.saveUILabel(key, lang.code, translatedValue, category);
+
+        results.push({
+          language_code: lang.code,
+          language_name: lang.name,
+          value: translatedValue,
+          status: 'translated'
+        });
+      } catch (error) {
+        console.error(`Translation error for ${lang.code}:`, error);
+        errors.push({
+          language_code: lang.code,
+          language_name: lang.name,
+          error: error.message
+        });
+      }
+    }
+
+    res.json({
+      success: true,
+      data: {
+        key,
+        category,
+        translations: results,
+        errors: errors.length > 0 ? errors : undefined
+      },
+      message: `UI label translated to ${results.length - 1} languages${errors.length > 0 ? ` (${errors.length} failed)` : ''}`
+    });
+  } catch (error) {
+    console.error('Auto-translate UI label error:', error);
+    res.status(500).json({
+      success: false,
+      message: error.message || 'Auto-translation failed'
+    });
+  }
+});
+
 // ============================================
 // ENTITY TRANSLATION ROUTES
 // ============================================
