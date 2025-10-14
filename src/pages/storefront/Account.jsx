@@ -11,7 +11,7 @@ import { useTranslation } from '@/contexts/TranslationContext';
 
 export default function Account() {
   const navigate = useNavigate();
-  const { store } = useStore();
+  const { store, settings } = useStore();
   const { t } = useTranslation();
 
   // Slot configuration state
@@ -191,7 +191,8 @@ export default function Account() {
               goToWishlist,
               navigate,
               store,
-              createPublicUrl
+              createPublicUrl,
+              settings
             }}
           />
         ) : (

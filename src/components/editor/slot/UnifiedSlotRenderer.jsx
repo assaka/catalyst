@@ -526,7 +526,7 @@ export function UnifiedSlotRenderer({
     products: formattedProducts, // Use formatted products for category templates
     category: categoryData?.category || categoryData,
     cart: cartData,
-    settings: productData.settings || categoryData?.settings || cartData?.settings || {},
+    settings: productData.settings || categoryData?.settings || cartData?.settings || loginData?.settings || accountData?.settings || {},
     productLabels: productData.productLabels || categoryData?.productLabels,
     // Product-specific data
     customOptions: productData.customOptions || [],

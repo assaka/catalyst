@@ -16,7 +16,7 @@ export default function Login() {
   const [success, setSuccess] = useState("");
   const { storeCode } = useParams();
   const navigate = useNavigate();
-  const { store } = useStore();
+  const { store, settings } = useStore();
 
   const [formData, setFormData] = useState({
     email: "",
@@ -174,7 +174,9 @@ export default function Login() {
     setShowPassword,
     navigate,
     storeCode,
-    createPublicUrl
+    createPublicUrl,
+    settings,
+    store
   };
 
   return (
