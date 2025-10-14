@@ -226,6 +226,9 @@ export default function ProductTabs({ productTabs = [], product = null, classNam
 
   const html = processVariables(template, variableContext);
 
+  console.log('🔧 ProductTabs: Processed HTML length:', html?.length);
+  console.log('🔧 ProductTabs: First 500 chars of HTML:', html?.substring(0, 500));
+
   return (
     <>
       {/* DEBUG: Visual indicator for language and translation status */}
