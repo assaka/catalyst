@@ -180,6 +180,14 @@ export default function Login() {
     store
   };
 
+  // Debug: Log settings to see what's being passed
+  console.log('🔍 LOGIN: settings being passed to UnifiedSlotRenderer:', {
+    hasSettings: !!settings,
+    hasUiTranslations: !!settings?.ui_translations,
+    uiTranslationsKeys: Object.keys(settings?.ui_translations || {}),
+    settingsKeys: Object.keys(settings || {}).slice(0, 20)
+  });
+
   return (
     <LoginProvider loginData={loginDataObj}>
       <div className="min-h-screen bg-gray-50 py-12 px-4">
