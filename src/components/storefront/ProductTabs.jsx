@@ -7,9 +7,13 @@ import { getCurrentLanguage } from '@/utils/translationUtils';
  * Renders product tabs with content from config template
  */
 export default function ProductTabs({ productTabs = [], product = null, className = '', slotConfig = null }) {
+  console.log('🚀 ProductTabs component loaded!', { productTabsCount: productTabs?.length, hasProduct: !!product });
+
   const containerRef = useRef(null);
   const [activeTabIndex, setActiveTabIndex] = useState(0);
   const currentLang = getCurrentLanguage();
+
+  console.log('🌐 ProductTabs current language:', currentLang);
 
   // Prepare tabs data with active state
   const tabsData = useMemo(() => {
