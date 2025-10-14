@@ -361,13 +361,13 @@ export function HeaderSlotRenderer({
                     navigate?.(createPublicUrl(store?.slug, 'CUSTOMER_DASHBOARD'));
                   }}>
                     <Settings className="mr-2 h-4 w-4" />
-                    <span>My Account</span>
+                    <span>{t('my_account', settings)}</span>
                   </DropdownMenuItem>
                   <DropdownMenuItem onClick={() => {
                     handleCustomerLogout?.();
                   }}>
                     <LogOut className="mr-2 h-4 w-4" />
-                    <span>Logout</span>
+                    <span>{t('logout', settings)}</span>
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
