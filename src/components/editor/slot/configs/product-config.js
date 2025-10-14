@@ -852,7 +852,21 @@ export const productConfig = {
                     </div>
                   </div>
                 '>
-                  <!-- Content will be rendered by JavaScript based on data-tab-type -->
+                  {{#if (eq this.tab_type "text")}}
+                    <div>{{{this.content}}}</div>
+                  {{/if}}
+
+                  {{#if (eq this.tab_type "description")}}
+                    {{#if this.content}}
+                      <div>{{{this.content}}}</div>
+                    {{else}}
+                      <div>{{{../product.description}}}</div>
+                    {{/if}}
+                  {{/if}}
+
+                  {{#if (eq this.tab_type "attributes")}}
+                    <div id="attributes-placeholder" data-attributes-container></div>
+                  {{/if}}
                 </div>
               </div>
             {{/each}}
@@ -893,7 +907,21 @@ export const productConfig = {
                       </div>
                     </div>
                   '>
-                    <!-- Content will be rendered by JavaScript based on data-tab-type -->
+                    {{#if (eq this.tab_type "text")}}
+                      <div>{{{this.content}}}</div>
+                    {{/if}}
+
+                    {{#if (eq this.tab_type "description")}}
+                      {{#if this.content}}
+                        <div>{{{this.content}}}</div>
+                      {{else}}
+                        <div>{{{../product.description}}}</div>
+                      {{/if}}
+                    {{/if}}
+
+                    {{#if (eq this.tab_type "attributes")}}
+                      <div id="attributes-placeholder-mobile" data-attributes-container></div>
+                    {{/if}}
                   </div>
                 </div>
               </div>
