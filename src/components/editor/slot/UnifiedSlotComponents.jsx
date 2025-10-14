@@ -529,6 +529,14 @@ const ProductInfo = createSlotComponent({
     // Use translated product name from variableContext (already translated in ProductDetail.jsx)
     const translatedProductName = variableContext?.product?.name || product.name;
 
+    // Debug logging
+    console.log('🔍 ProductInfo - Name Debug:', {
+      variableContextProductName: variableContext?.product?.name,
+      productName: product.name,
+      finalTranslatedName: translatedProductName,
+      product: product
+    });
+
     return (
       <div className={className} style={styles}>
         <div className="space-y-6">
@@ -992,46 +1000,46 @@ const ProductRecommendations = createSlotComponent({
                   </div>
                   <CardContent className="p-4">
                     <h3 className="font-medium text-gray-900 mb-2 line-clamp-2">{translatedProductName}</h3>
-                  <div className="flex items-center space-x-2 mb-2">
-                    {(() => {
-                      const priceInfo = getPriceDisplay(relatedProduct);
+                    <div className="flex items-center space-x-2 mb-2">
+                      {(() => {
+                        const priceInfo = getPriceDisplay(relatedProduct);
 
-                      if (priceInfo.hasComparePrice) {
+                        if (priceInfo.hasComparePrice) {
+                          return (
+                            <>
+                              <span className="font-bold text-red-600">
+                                {formatPriceUtil(priceInfo.displayPrice)}
+                              </span>
+                              <span className="text-sm text-gray-500 line-through">
+                                {formatPriceUtil(priceInfo.originalPrice)}
+                              </span>
+                            </>
+                          );
+                        }
+
                         return (
-                          <>
-                            <span className="font-bold text-red-600">
-                              {formatPriceUtil(priceInfo.displayPrice)}
-                            </span>
-                            <span className="text-sm text-gray-500 line-through">
-                              {formatPriceUtil(priceInfo.originalPrice)}
-                            </span>
-                          </>
+                          <span className="font-bold text-green-600">
+                            {formatPriceUtil(priceInfo.displayPrice)}
+                          </span>
                         );
-                      }
-
-                      return (
-                        <span className="font-bold text-green-600">
-                          {formatPriceUtil(priceInfo.displayPrice)}
-                        </span>
-                      );
-                    })()}
-                  </div>
-                  {relatedProduct.rating && (
-                    <div className="flex items-center space-x-1 text-sm text-gray-600">
-                      <div className="flex items-center">
-                        {[...Array(5)].map((_, i) => (
-                          <Star
-                            key={i}
-                            className={`w-3 h-3 ${i < Math.floor(relatedProduct.rating) ? 'fill-yellow-400 text-yellow-400' : 'text-gray-300'}`}
-                          />
-                        ))}
-                      </div>
-                      <span>({relatedProduct.reviews_count || 0})</span>
+                      })()}
                     </div>
-                  )}
+                    {relatedProduct.rating && (
+                      <div className="flex items-center space-x-1 text-sm text-gray-600">
+                        <div className="flex items-center">
+                          {[...Array(5)].map((_, i) => (
+                            <Star
+                              key={i}
+                              className={`w-3 h-3 ${i < Math.floor(relatedProduct.rating) ? 'fill-yellow-400 text-yellow-400' : 'text-gray-300'}`}
+                            />
+                          ))}
+                        </div>
+                        <span>({relatedProduct.reviews_count || 0})</span>
+                      </div>
+                    )}
                 </CardContent>
               </Card>
-            ))}
+            )})}
           </div>
         </div>
       </div>
