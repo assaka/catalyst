@@ -29,6 +29,9 @@ export default function Login() {
   const [loginLayoutConfig, setLoginLayoutConfig] = useState(null);
   const [configLoaded, setConfigLoaded] = useState(false);
 
+  // Force re-render when translations load
+  const [translationsLoaded, setTranslationsLoaded] = useState(false);
+
   // Load login layout configuration
   useEffect(() => {
     const loadLoginLayoutConfig = async () => {
@@ -152,21 +155,7 @@ export default function Login() {
     }
   };
 
-  // Show loading state until config is loaded
-  if (!configLoaded) {
-    return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-gray-600">{t('loading', settings)}</div>
-      </div>
-    );
-  }
-
-  const hasConfig = loginLayoutConfig && loginLayoutConfig.slots;
-  const hasSlots = hasConfig && Object.keys(loginLayoutConfig.slots).length > 0;
-
-  // Force re-render when translations load
-  const [translationsLoaded, setTranslationsLoaded] = useState(false);
-
+  // Track when translations load
   useEffect(() => {
     // Check if ui_translations is populated
     if (settings?.ui_translations && Object.keys(settings.ui_translations).length > 0) {
@@ -183,6 +172,18 @@ export default function Login() {
       }
     }
   }, [settings]);
+
+  // Show loading state until config is loaded
+  if (!configLoaded) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-gray-600">{t('loading', settings)}</div>
+      </div>
+    );
+  }
+
+  const hasConfig = loginLayoutConfig && loginLayoutConfig.slots;
+  const hasSlots = hasConfig && Object.keys(loginLayoutConfig.slots).length > 0;
 
   const loginDataObj = {
     formData,
