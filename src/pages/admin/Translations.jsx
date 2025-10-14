@@ -93,7 +93,7 @@ export default function Translations() {
         category
       });
 
-      if (response.data.success) {
+      if (response && response.success) {
         showMessage('Translation saved successfully', 'success');
         await loadLabels(selectedLanguage);
         setEditingKey(null);
