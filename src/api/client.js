@@ -393,6 +393,22 @@ class ApiClient {
         });
         return result;
       }
+
+      // Special handling for languages endpoint - don't transform, return full response
+      if (endpoint === 'languages' || endpoint === '/languages') {
+        const duration = performance.now() - startTime;
+        apiDebugger.debugAPICall('response', {
+          debugId,
+          endpoint,
+          method,
+          duration: Math.round(duration),
+          rawResponse: result,
+          response: result,
+          status: response.status,
+          transformed: false
+        });
+        return result;
+      }
       
       let transformedResult = result;
       if (isListEndpoint && result && typeof result === 'object' && result.success && result.data) {
