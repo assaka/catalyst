@@ -15,6 +15,20 @@ export default function ProductTabs({ productTabs = [], product = null, classNam
   const tabsData = useMemo(() => {
     if (!productTabs || productTabs.length === 0) return [];
 
+    console.log('🏪 ProductTabs: Processing tabs for rendering:', {
+      currentLang,
+      tabCount: productTabs.length,
+      tabs: productTabs.map(tab => ({
+        id: tab.id,
+        name: tab.name,
+        hasTranslations: !!tab.translations,
+        translationKeys: Object.keys(tab.translations || {}),
+        enTranslation: tab.translations?.en,
+        nlTranslation: tab.translations?.nl,
+        currentLangTranslation: tab.translations?.[currentLang]
+      }))
+    });
+
     const validTabs = productTabs.filter(tab =>
       tab && tab.is_active !== false
     );
@@ -44,6 +58,14 @@ export default function ProductTabs({ productTabs = [], product = null, classNam
       // Get translated title and content from translations JSON (no fallback)
       const translatedTitle = tab.translations?.[currentLang]?.name || tab.translations?.en?.name || `Tab ${index + 1}`;
       const translatedContent = tab.translations?.[currentLang]?.content || tab.translations?.en?.content || '';
+
+      console.log(`📑 ProductTabs: Tab "${tab.name}" translation:`, {
+        currentLang,
+        originalName: tab.name,
+        translatedTitle,
+        translatedContent: translatedContent?.substring(0, 50) + '...',
+        usedLang: tab.translations?.[currentLang] ? currentLang : 'en (fallback)'
+      });
 
       return {
         ...tab,

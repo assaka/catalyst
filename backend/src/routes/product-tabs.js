@@ -19,16 +19,28 @@ router.get('/', async (req, res) => {
     }
 
     const productTabs = await ProductTab.findAll({
-      where: { 
+      where: {
         store_id,
         is_active: true
       },
       order: [['sort_order', 'ASC'], ['name', 'ASC']]
     });
 
+    console.log('📋 Backend: Loaded product tabs:', {
+      store_id,
+      count: productTabs.length,
+      tabs: productTabs.map(tab => ({
+        id: tab.id,
+        name: tab.name,
+        hasTranslations: !!tab.translations,
+        translationKeys: Object.keys(tab.translations || {}),
+        nlTranslation: tab.translations?.nl
+      }))
+    });
+
     // Check if this is a public request - return just the array for consistency with other public APIs
     const isPublicRequest = req.originalUrl.includes('/api/public/product-tabs');
-    
+
     if (isPublicRequest) {
       // Return just the array for public requests (for compatibility with StorefrontBaseEntity)
       res.json(productTabs);
@@ -185,7 +197,7 @@ router.put('/:id', authMiddleware, [
     const productTab = await ProductTab.findByPk(req.params.id, {
       include: [{ model: Store, attributes: ['user_id'] }]
     });
-    
+
     if (!productTab) {
       return res.status(404).json({
         success: false,
@@ -197,7 +209,7 @@ router.put('/:id', authMiddleware, [
     if (req.user.role !== 'admin') {
       const { checkUserStoreAccess } = require('../utils/storeAccess');
       const access = await checkUserStoreAccess(req.user.id, productTab.store_id);
-      
+
       if (!access) {
         return res.status(403).json({
           success: false,
@@ -206,7 +218,23 @@ router.put('/:id', authMiddleware, [
       }
     }
 
+    console.log('📝 Backend: Updating product tab:', {
+      id: req.params.id,
+      name: req.body.name,
+      translations: req.body.translations,
+      translationKeys: Object.keys(req.body.translations || {}),
+      nlTranslation: req.body.translations?.nl
+    });
+
     await productTab.update(req.body);
+
+    console.log('✅ Backend: Product tab updated:', {
+      id: productTab.id,
+      name: productTab.name,
+      translations: productTab.translations,
+      translationKeys: Object.keys(productTab.translations || {}),
+      nlTranslation: productTab.translations?.nl
+    });
 
     res.json({
       success: true,

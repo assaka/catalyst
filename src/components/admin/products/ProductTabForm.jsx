@@ -116,6 +116,15 @@ export default function ProductTabForm({ tab, attributes = [], attributeSets = [
         submitData.id = tab.id;
       }
 
+      console.log('📝 ProductTabForm: Submitting tab data:', {
+        id: submitData.id,
+        name: submitData.name,
+        tab_type: submitData.tab_type,
+        translations: submitData.translations,
+        translationKeys: Object.keys(submitData.translations || {}),
+        nlTranslation: submitData.translations?.nl
+      });
+
       await onSubmit(submitData);
     } catch (error) {
       console.error("Error submitting product tab:", error);
