@@ -808,11 +808,24 @@ export function CategorySlotRenderer({
       case 'text':
         // Process template variables in text content using variableContext
         const currentLanguage = getCurrentLanguage();
-        const translatedCategoryName = category ? (getCategoryName(category, currentLanguage) || category.name) : '';
+        const translatedCategoryName = getCategoryName(category, currentLanguage);
+        const attributeCategoryName = category?.attributes?.name;
+        const directCategoryName = category?.name;
+        const finalCategoryName = translatedCategoryName || attributeCategoryName || directCategoryName || '';
+
+        console.log('🔍 CategorySlotRenderer text type Debug:', {
+          slotId: id,
+          content,
+          translatedCategoryName,
+          attributeCategoryName,
+          directCategoryName,
+          finalCategoryName
+        });
+
         const textVariableContext = {
           category: category ? {
             ...category,
-            name: translatedCategoryName
+            name: finalCategoryName
           } : null,
           settings,
           store
