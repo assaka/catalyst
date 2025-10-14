@@ -66,6 +66,7 @@ const commonUITranslations = {
   // Wishlist
   'wishlist': { en: 'Wishlist', nl: 'Verlanglijst' },
   'add_to_wishlist': { en: 'Add to Wishlist', nl: 'Toevoegen aan verlanglijst' },
+  'your_wishlist_is_empty': { en: 'Your wishlist is empty.', nl: 'Je verlanglijst is leeg.' },
 
   // Search
   'search_products': { en: 'Search products...', nl: 'Zoek producten...' },
