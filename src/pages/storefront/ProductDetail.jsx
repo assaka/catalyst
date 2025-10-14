@@ -877,10 +877,16 @@ export default function ProductDetail() {
                   attributesKeys: product.attributes ? Object.keys(product.attributes) : []
                 });
 
-                return {
-                  ...product,
+                // Create a copy without the name property first, then add it
+                const { name: _removedName, ...productWithoutName } = product;
+                const result = {
+                  ...productWithoutName,
                   name: finalName
                 };
+
+                console.log('🔍 ProductDetail result.name:', result.name);
+
+                return result;
               })() : null,
               store,
               settings, // 🔧 CRITICAL FIX: Pass fresh settings to variableContext for HTML template processing
