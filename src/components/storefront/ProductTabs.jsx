@@ -223,8 +223,30 @@ export default function ProductTabs({ productTabs = [], product = null, classNam
   const html = processVariables(template, variableContext);
 
   return (
-    <div ref={containerRef} className={`product-tabs ${className}`}
-         dangerouslySetInnerHTML={{ __html: html }} />
+    <>
+      {/* DEBUG: Visual indicator for language and translation status */}
+      <div style={{
+        background: 'red',
+        color: 'white',
+        padding: '20px',
+        margin: '10px 0',
+        border: '5px solid yellow',
+        fontSize: '20px',
+        fontWeight: 'bold'
+      }}>
+        🔍 DEBUG INFO - Current Language: {currentLang} |
+        localStorage: {localStorage.getItem('catalyst_language') || 'not set'} |
+        Tabs loaded: {tabsData.length} |
+        {tabsData.map(tab => (
+          <div key={tab.id}>
+            Tab: {tab.title} | Has NL: {tab.translations?.nl ? 'YES' : 'NO'} |
+            NL name: {tab.translations?.nl?.name || 'missing'}
+          </div>
+        ))}
+      </div>
+      <div ref={containerRef} className={`product-tabs ${className}`}
+           dangerouslySetInnerHTML={{ __html: html }} />
+    </>
   );
 }
 
