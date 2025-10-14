@@ -17,6 +17,7 @@ import {
 import { formatPrice, safeNumber, calculateDisplayPrice } from '@/utils/priceUtils';
 import { getPrimaryImageUrl } from '@/utils/imageUtils';
 import { getProductName, getCurrentLanguage } from '@/utils/translationUtils';
+import { t } from '@/utils/translationHelper';
 
 export default function MiniCart({ iconVariant = 'outline' }) {
   const { store, settings, taxes, selectedCountry } = useStore();
@@ -373,13 +374,13 @@ export default function MiniCart({ iconVariant = 'outline' }) {
       
       <PopoverContent className="w-80" align="end">
         <div className="space-y-4">
-          <h3 className="font-semibold text-lg">Shopping Cart</h3>
-          
+          <h3 className="font-semibold text-lg">{t('my_cart', settings)}</h3>
+
           {loading ? (
-            <div className="text-center py-4">Loading...</div>
+            <div className="text-center py-4">{t('loading', settings)}</div>
           ) : cartItems.length === 0 ? (
             <div className="text-center py-4 text-gray-500">
-              Your cart is empty
+              {t('your_cart_is_empty', settings)}
             </div>
           ) : (
             <>
@@ -485,9 +486,9 @@ export default function MiniCart({ iconVariant = 'outline' }) {
               
               <div className="border-t pt-3">
                 <div className="flex justify-between items-center mb-3">
-                  <span className="font-semibold">Total: {formatPrice(getTotalPrice())}</span>
+                  <span className="font-semibold">{t('total', settings)}: {formatPrice(getTotalPrice())}</span>
                 </div>
-                
+
                 <div className="space-y-2">
                   <Button
                     asChild
@@ -496,7 +497,7 @@ export default function MiniCart({ iconVariant = 'outline' }) {
                     onClick={() => setIsOpen(false)}
                   >
                     <Link to={createPublicUrl(store.slug, 'CART')}>
-                      View Cart
+                      {t('my_cart', settings)}
                     </Link>
                   </Button>
                   {!settings?.hide_header_checkout && (
@@ -507,7 +508,7 @@ export default function MiniCart({ iconVariant = 'outline' }) {
                       onClick={() => setIsOpen(false)}
                     >
                       <Link to={createPublicUrl(store.slug, 'CHECKOUT')}>
-                        Checkout
+                        {t('checkout', settings)}
                       </Link>
                     </Button>
                   )}

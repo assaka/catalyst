@@ -155,7 +155,7 @@ export function CartSlotRenderer({
     if (id === 'empty_cart_title') {
       return wrapWithParentClass(
         <h2 className={className || "text-xl font-semibold text-gray-900 mb-2"} style={styles}>
-          {content || 'Your cart is empty'}
+          {content || t('your_cart_is_empty', settings)}
         </h2>
       );
     }
@@ -175,7 +175,7 @@ export function CartSlotRenderer({
           className={className || "bg-blue-600 hover:bg-blue-700"}
           style={styles}
         >
-          {content || 'Continue Shopping'}
+          {content || t('continue_shopping', settings)}
         </Button>
       );
     }
@@ -446,7 +446,7 @@ export function CartSlotRenderer({
       return (
         <Card className={className} style={styles}>
           <CardContent className="p-4">
-            <h3 className="text-lg font-semibold mb-4">{content || 'Apply Coupon'}</h3>
+            <h3 className="text-lg font-semibold mb-4">{content || t('apply_coupon', settings)}</h3>
             {!appliedCoupon ? (
               <div className="flex gap-2">
                 <Input
@@ -460,7 +460,7 @@ export function CartSlotRenderer({
                   onClick={handleApplyCoupon}
                   disabled={!couponCode.trim()}
                 >
-                  <Tag className="w-4 h-4 mr-2" /> Apply
+                  <Tag className="w-4 h-4 mr-2" /> {t('apply', settings)}
                 </Button>
               </div>
             ) : (
@@ -480,7 +480,7 @@ export function CartSlotRenderer({
                   onClick={handleRemoveCoupon}
                   className="text-red-600 hover:text-red-800"
                 >
-                  Remove
+                  {t('remove', settings)}
                 </Button>
               </div>
             )}
@@ -512,7 +512,7 @@ export function CartSlotRenderer({
           className={className}
           style={styles}
         >
-          <Tag className="w-4 h-4 mr-2" /> {content || 'Apply'}
+          <Tag className="w-4 h-4 mr-2" /> {content || t('apply', settings)}
         </Button>
       );
     }
@@ -556,28 +556,28 @@ export function CartSlotRenderer({
       return (
         <Card className={className} style={styles}>
           <CardContent className="p-4">
-            <h3 className="text-lg font-semibold mb-4">Order Summary</h3>
+            <h3 className="text-lg font-semibold mb-4">{t('order_summary', settings)}</h3>
             <div className="space-y-2">
               <div className="flex justify-between">
-                <span>Subtotal</span>
+                <span>{t('subtotal', settings)}</span>
                 <span>{formatPrice(subtotal)}</span>
               </div>
               <div className="flex justify-between">
-                <span>Tax</span>
+                <span>{t('tax', settings)}</span>
                 <span>{formatPrice(tax)}</span>
               </div>
               <div className="flex justify-between">
-                <span>Shipping</span>
-                <span>Free</span>
+                <span>{t('shipping', settings)}</span>
+                <span>{t('free', settings)}</span>
               </div>
               {discount > 0 && (
                 <div className="flex justify-between">
-                  <span>Discount</span>
+                  <span>{t('discount', settings)}</span>
                   <span className="text-green-600">-{formatPrice(discount)}</span>
                 </div>
               )}
               <div className="flex justify-between text-lg font-semibold border-t pt-4">
-                <span>Total</span>
+                <span>{t('total', settings)}</span>
                 <span>{formatPrice(total)}</span>
               </div>
             </div>
@@ -592,7 +592,7 @@ export function CartSlotRenderer({
                   ...styles  // Custom styles override defaults
                 }}
               >
-                Proceed to Checkout
+                {t('proceed_to_checkout', settings)}
               </Button>
             </div>
           </CardContent>
@@ -686,7 +686,7 @@ export function CartSlotRenderer({
             ...styles  // Custom styles override defaults
           }}
         >
-          {content || 'Proceed to Checkout'}
+          {content || t('proceed_to_checkout', settings)}
         </Button>
       );
     }
