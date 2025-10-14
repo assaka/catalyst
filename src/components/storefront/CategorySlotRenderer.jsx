@@ -535,7 +535,21 @@ export function CategorySlotRenderer({
       // Use content from slot if provided, otherwise use translated category name
       const currentLanguage = getCurrentLanguage();
       const translatedCategoryName = category ? (getCategoryName(category, currentLanguage) || category.name) : '';
-      const headerContent = content || translatedCategoryName || 'Products';
+
+      // Process template variables if content contains them
+      const headerVariableContext = {
+        category: category ? {
+          ...category,
+          name: translatedCategoryName
+        } : null,
+        settings,
+        store
+      };
+
+      // If content exists, process variables; otherwise use translated name directly
+      const headerContent = content
+        ? processVariables(content, headerVariableContext)
+        : translatedCategoryName || 'Products';
 
       return wrapWithParentClass(
         <h1 className={className} style={styles}>
