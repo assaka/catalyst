@@ -95,9 +95,16 @@ export default function Translations() {
 
       if (response && response.success) {
         showMessage('Translation saved successfully', 'success');
+
+        // Update local state directly instead of reloading
+        const updatedLabels = labels.map(label =>
+          label.key === key ? { ...label, value, category } : label
+        );
+        setLabels(updatedLabels);
+
+        // Close edit mode
         setEditingKey(null);
         setEditValue('');
-        await loadLabels(selectedLanguage);
       }
     } catch (error) {
       console.error('Failed to save label:', error);
