@@ -11,6 +11,8 @@ import { LoginProvider } from '@/contexts/LoginContext';
 import { t } from '@/utils/translationHelper';
 
 export default function Login() {
+  console.log('🚀 LOGIN COMPONENT RENDERING - START');
+
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -18,6 +20,8 @@ export default function Login() {
   const { storeCode } = useParams();
   const navigate = useNavigate();
   const { store, settings } = useStore();
+
+  console.log('🚀 LOGIN: After useStore() - store:', !!store, 'settings:', !!settings);
 
   const [formData, setFormData] = useState({
     email: "",
