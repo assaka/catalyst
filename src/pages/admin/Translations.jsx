@@ -35,9 +35,9 @@ export default function Translations() {
       const response = await api.get(`/translations/ui-labels?lang=${lang}`);
       console.log('🔍 API Response:', response);
 
-      if (response.data && response.data.success) {
+      if (response && response.success && response.data && response.data.labels) {
         // Convert flat object to array of label objects
-        const labelsArray = Object.entries(response.data.data.labels).map(([key, value]) => {
+        const labelsArray = Object.entries(response.data.labels).map(([key, value]) => {
           // Determine category from key prefix
           const category = key.split('.')[0] || 'common';
           return { key, value, category };
