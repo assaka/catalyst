@@ -12,10 +12,12 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Button } from '@/components/ui/button';
 import { getCategoryName, getCurrentLanguage } from '@/utils/translationUtils';
+import { useTranslation } from '@/contexts/TranslationContext';
 
 export default function CategoryNav({ categories, styles = {}, metadata = {}, store: storeProp = null, isEditor = false, isMobile: isMobileProp = null, onLinkClick = null }) {
     const storeContext = useStore();
     const store = storeProp || storeContext?.store;
+    const { t } = useTranslation();
 
     const [expandedCategories, setExpandedCategories] = useState(new Set());
     const [isMobile, setIsMobile] = useState(isMobileProp !== null ? isMobileProp : false);
@@ -336,7 +338,7 @@ export default function CategoryNav({ categories, styles = {}, metadata = {}, st
                                     e.currentTarget.style.backgroundColor = 'transparent';
                                 }}
                             >
-                                View All {getCategoryName(category, getCurrentLanguage())}
+                                {t('common.view_all', 'View All')} {getCategoryName(category, getCurrentLanguage())}
                             </Link>
                         </DropdownMenuItem>
                         {category.children.map(child => renderCategoryDescendants(child, 0))}
@@ -392,7 +394,7 @@ export default function CategoryNav({ categories, styles = {}, metadata = {}, st
                                     e.currentTarget.style.backgroundColor = 'transparent';
                                 }}
                             >
-                                View All {getCategoryName(category, getCurrentLanguage())}
+                                {t('common.view_all', 'View All')} {getCategoryName(category, getCurrentLanguage())}
                             </Link>
                             {category.children.map(child => renderDesktopSubmenuItem(child, 0))}
                         </div>
@@ -479,7 +481,7 @@ export default function CategoryNav({ categories, styles = {}, metadata = {}, st
                                 to={createCategoryUrl(store.slug, buildCategoryPath(category, categories).join('/'))}
                                 className="block px-4 py-2 text-sm font-medium text-gray-900 hover:bg-gray-100 border-b border-gray-200"
                             >
-                                View All {getCategoryName(category, getCurrentLanguage())}
+                                {t('common.view_all', 'View All')} {getCategoryName(category, getCurrentLanguage())}
                             </Link>
                             {/* Show children - expandAllMenuItems controls second-level visibility */}
                             {(isSecondLevel && expandAllMenuItems) || !isSecondLevel ? (
@@ -532,7 +534,7 @@ export default function CategoryNav({ categories, styles = {}, metadata = {}, st
                                 to={createCategoryUrl(store.slug, buildCategoryPath(category, categories).join('/'))}
                                 className="block px-4 py-2 text-sm font-medium text-gray-900 hover:bg-gray-100 border-b border-gray-200"
                             >
-                                View All {getCategoryName(category, getCurrentLanguage())}
+                                {t('common.view_all', 'View All')} {getCategoryName(category, getCurrentLanguage())}
                             </Link>
                             {/* Show children using the recursive version that can expand further */}
                             {category.children.map(child => renderDirectChildSimple(child, 0))}
@@ -579,7 +581,7 @@ export default function CategoryNav({ categories, styles = {}, metadata = {}, st
                                 to={createCategoryUrl(store.slug, buildCategoryPath(category, categories).join('/'))}
                                 className="block px-4 py-2 text-sm font-medium text-gray-900 hover:bg-gray-100 border-b border-gray-200"
                             >
-                                View All {getCategoryName(category, getCurrentLanguage())}
+                                {t('common.view_all', 'View All')} {getCategoryName(category, getCurrentLanguage())}
                             </Link>
                             {/* Recursively render children - they can also have their own hover submenus */}
                             {category.children.map(child => renderDirectChildSimple(child, 0))}
@@ -626,7 +628,7 @@ export default function CategoryNav({ categories, styles = {}, metadata = {}, st
                                 to={createCategoryUrl(store.slug, buildCategoryPath(category, categories).join('/'))}
                                 className="block px-4 py-2 text-sm font-medium text-gray-900 hover:bg-gray-100 border-b border-gray-200"
                             >
-                                View All {getCategoryName(category, getCurrentLanguage())}
+                                {t('common.view_all', 'View All')} {getCategoryName(category, getCurrentLanguage())}
                             </Link>
                             {/* Show only direct children of this category */}
                             {category.children.map(child => renderDirectChildOnly(child, 0))}
@@ -740,7 +742,7 @@ export default function CategoryNav({ categories, styles = {}, metadata = {}, st
                                         e.currentTarget.style.backgroundColor = 'transparent';
                                     }}
                                 >
-                                    View All {getCategoryName(category, getCurrentLanguage())}
+                                    {t('common.view_all', 'View All')} {getCategoryName(category, getCurrentLanguage())}
                                 </Link>
                                 {/* Show direct children as simple links WITHOUT further hover capabilities */}
                                 {category.children.map(child => (
@@ -817,7 +819,7 @@ export default function CategoryNav({ categories, styles = {}, metadata = {}, st
                                 to={createCategoryUrl(store.slug, buildCategoryPath(category, categories).join('/'))}
                                 className="block px-4 py-2 text-sm font-medium text-gray-900 hover:bg-gray-100 border-b border-gray-200"
                             >
-                                View All {getCategoryName(category, getCurrentLanguage())}
+                                {t('common.view_all', 'View All')} {getCategoryName(category, getCurrentLanguage())}
                             </Link>
                             {/* Always show children for items that have them */}
                             {category.children.map(child => renderDesktopSubmenuItemSimple(child, depth + 1))}
@@ -846,10 +848,10 @@ export default function CategoryNav({ categories, styles = {}, metadata = {}, st
             <nav className="block md:hidden space-y-1 p-4">
                 <Link
 
-                    to={createPublicUrl(store.slug, 'STOREFRONT')} 
+                    to={createPublicUrl(store.slug, 'STOREFRONT')}
                     className="text-sm font-medium text-gray-700 hover:text-blue-600 transition-colors px-2 py-2 rounded-md block mb-2 touch-manipulation whitespace-nowrap"
                 >
-                    Home
+                    {t('common.home', 'Home')}
                 </Link>
                 <div className="space-y-1">
                     {rootCategories.map(category => renderExpandedCategory(category))}
@@ -860,7 +862,7 @@ export default function CategoryNav({ categories, styles = {}, metadata = {}, st
             <nav className="hidden md:block">
                 <div className="flex items-center space-x-2">
                     <Link to={createPublicUrl(store.slug, 'STOREFRONT')} className="text-sm font-medium text-gray-700 hover:text-blue-600 transition-colors px-3 py-2 rounded-md whitespace-nowrap">
-                        Home
+                        {t('common.home', 'Home')}
                     </Link>
                     {rootCategories.map(category => {
                         if (category.children && category.children.length > 0) {
@@ -891,7 +893,7 @@ export default function CategoryNav({ categories, styles = {}, metadata = {}, st
                                                     e.currentTarget.style.backgroundColor = 'transparent';
                                                 }}
                                             >
-                                                View All {getCategoryName(category, getCurrentLanguage())}
+                                                {t('common.view_all', 'View All')} {getCategoryName(category, getCurrentLanguage())}
                                             </Link>
                                             {(() => {
                                 return expandAllMenuItems ?

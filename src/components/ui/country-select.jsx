@@ -15,6 +15,7 @@ import {
   CommandList,
 } from "@/components/ui/command";
 import { countries } from "./country-list-data";
+import { useTranslation } from "@/contexts/TranslationContext";
 
 // Transform the country data to match expected format
 const countryData = countries.map(country => ({
@@ -25,7 +26,8 @@ const countryData = countries.map(country => ({
 
 export function CountrySelect({ value, onValueChange, onChange, placeholder = "Select country...", multiple = false, allowedCountries = [] }) {
   const [open, setOpen] = useState(false);
-  
+  const { t } = useTranslation();
+
   // Use onValueChange if provided, otherwise use onChange for backward compatibility
   const handleChange = onValueChange || onChange;
 
@@ -73,9 +75,9 @@ export function CountrySelect({ value, onValueChange, onChange, placeholder = "S
       </PopoverTrigger>
       <PopoverContent className="w-[--radix-popover-trigger-width] max-h-[--radix-popover-content-available-height] p-0">
         <Command>
-          <CommandInput placeholder="Search country..." />
+          <CommandInput placeholder={t('common.search_country', 'Search country...')} />
           <CommandList>
-            <CommandEmpty>No country found.</CommandEmpty>
+            <CommandEmpty>{t('common.no_country_found', 'No country found.')}</CommandEmpty>
             <CommandGroup>
               {filteredCountries.map((country) => {
                 if (!country || !country.value) return null;
