@@ -1,5 +1,6 @@
 import React from 'react';
 import { formatPrice, safeNumber } from '@/utils/priceUtils';
+import { t } from '@/utils/translationHelper';
 
 /**
  * Total Price Display Component
@@ -14,13 +15,15 @@ const TotalPriceDisplay = ({
   quantity = 1,
   totalPrice = null,
   showTitle = true,
-  compact = false
+  compact = false,
+  settings = null
 }) => {
   // Use productContext if provided, otherwise use individual props
   const actualProduct = product || productContext?.product;
   const actualOptions = selectedOptions.length > 0 ? selectedOptions : (productContext?.selectedOptions || []);
   const actualQuantity = quantity !== 1 ? quantity : (productContext?.quantity || 1);
   const actualTotalPrice = safeNumber(totalPrice !== null ? totalPrice : (productContext?.totalPrice || 0));
+  const actualSettings = settings || productContext?.settings || {};
 
   if (!actualProduct) {
     return null;
@@ -50,7 +53,7 @@ const TotalPriceDisplay = ({
       <div className={innerClass}>
         {showTitle && !compact && (
           <h3 className="text-sm font-semibold text-gray-700 uppercase tracking-wide mb-3">
-            {actualOptions.length > 0 ? 'Price Breakdown' : 'Total Price'}
+            {actualOptions.length > 0 ? t('price_breakdown', actualSettings) : t('total_price', actualSettings)}
           </h3>
         )}
 
@@ -69,7 +72,7 @@ const TotalPriceDisplay = ({
           <>
             <div className={compact ? "pt-1" : "border-t pt-2 mt-2"}>
               {!compact && (
-                <div className="text-sm font-medium text-gray-700 mb-1">Selected Options:</div>
+                <div className="text-sm font-medium text-gray-700 mb-1">{t('selected_options', actualSettings)}:</div>
               )}
               {actualOptions.map((option, index) => {
                 const optionPrice = safeNumber(option.price);
@@ -94,7 +97,7 @@ const TotalPriceDisplay = ({
         <div className={compact ? "pt-1 border-t" : "border-t pt-2 mt-2"}>
           <div className="flex justify-between items-center">
             <span className={compact ? "font-bold text-gray-900" : "text-lg font-bold text-gray-900"}>
-              Total Price:
+              {t('total_price', actualSettings)}:
             </span>
             <span className={compact ? "font-bold text-green-600" : "text-lg font-bold text-green-600"}>
               {formatPrice(actualTotalPrice)}
