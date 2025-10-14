@@ -18,6 +18,18 @@ export function t(key, settings) {
   // Get UI translations from settings
   const uiTranslations = settings?.ui_translations || {};
 
+  // Debug logging (only in development)
+  if (process.env.NODE_ENV === 'development') {
+    console.log('Translation lookup:', {
+      key,
+      currentLang,
+      hasUiTranslations: !!settings?.ui_translations,
+      hasCurrentLang: !!(uiTranslations[currentLang]),
+      hasKey: !!(uiTranslations[currentLang]?.[key]),
+      value: uiTranslations[currentLang]?.[key]
+    });
+  }
+
   // Try current language first
   if (uiTranslations[currentLang] && uiTranslations[currentLang][key]) {
     return uiTranslations[currentLang][key];
