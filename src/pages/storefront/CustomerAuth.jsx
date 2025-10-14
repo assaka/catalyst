@@ -121,6 +121,9 @@ export default function CustomerAuth() {
     return createPublicUrl('default', 'CUSTOMER_DASHBOARD');
   };
 
+  // Extract settings from store for loginData
+  const { settings } = useStore();
+
   const handleAuth = async (formData, isLogin) => {
     setAuthLoading(true);
     setError("");
@@ -259,14 +262,16 @@ export default function CustomerAuth() {
           parentId={null}
           viewMode="register"
           context="storefront"
-          authData={{
+          loginData={{
             loading: authLoading,
             error,
             success,
             handleAuth,
             navigate,
             storeCode,
-            createPublicUrl
+            createPublicUrl,
+            settings,  // Add settings for translations
+            store      // Add store data
           }}
         />
       ) : (
