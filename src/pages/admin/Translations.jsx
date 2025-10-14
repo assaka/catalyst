@@ -29,11 +29,7 @@ export default function Translations() {
   const loadLabels = async (lang) => {
     try {
       setLoading(true);
-      console.log('🔍 Loading translations for language:', lang);
-      console.log('🔍 API base URL:', api.baseURL);
-
       const response = await api.get(`/translations/ui-labels?lang=${lang}`);
-      console.log('🔍 API Response:', response);
 
       if (response && response.success && response.data && response.data.labels) {
         // Convert flat object to array of label objects
@@ -43,15 +39,13 @@ export default function Translations() {
           return { key, value, category };
         });
 
-        console.log('✅ Loaded translations:', labelsArray.length);
         setLabels(labelsArray);
         setFilteredLabels(labelsArray);
       } else {
-        console.error('❌ Unexpected response format:', response);
         showMessage('Unexpected response format', 'error');
       }
     } catch (error) {
-      console.error('❌ Failed to load labels:', error);
+      console.error('Failed to load labels:', error);
       showMessage(`Failed to load translations: ${error.message}`, 'error');
     } finally {
       setLoading(false);
@@ -86,7 +80,6 @@ export default function Translations() {
   const saveLabel = async (key, value, category = 'common') => {
     try {
       setSaving(true);
-      console.log('💾 Saving label:', { key, value, category });
       const response = await api.post('/translations/ui-labels', {
         key,
         language_code: selectedLanguage,
@@ -94,10 +87,7 @@ export default function Translations() {
         category
       });
 
-      console.log('💾 Save response:', response);
-
       if (response && response.success) {
-        console.log('✅ Save successful, closing edit mode');
         showMessage('Translation saved successfully', 'success');
 
         // Update local state directly instead of reloading
@@ -107,15 +97,11 @@ export default function Translations() {
         setLabels(updatedLabels);
 
         // Close edit mode
-        console.log('🔒 Setting editingKey to null');
         setEditingKey(null);
         setEditValue('');
-        console.log('🔒 Edit state cleared');
-      } else {
-        console.error('❌ Save failed - invalid response:', response);
       }
     } catch (error) {
-      console.error('❌ Failed to save label:', error);
+      console.error('Failed to save label:', error);
       showMessage('Failed to save translation', 'error');
     } finally {
       setSaving(false);
