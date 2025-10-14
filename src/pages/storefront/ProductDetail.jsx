@@ -830,7 +830,26 @@ export default function ProductDetail() {
             viewMode="default"
             context="storefront"
             productData={{
-              product: displayProduct || product,
+              product: product ? (() => {
+                // Calculate the final name to use
+                const translatedName = getProductName(product, getCurrentLanguage());
+                const attributeName = product.attributes?.name;
+                const directName = product.name;
+                const finalName = translatedName || attributeName || directName;
+
+                console.log('🔍 ProductDetail product name Debug:', {
+                  translatedName,
+                  attributeName,
+                  directName,
+                  finalName
+                });
+
+                // Create a modified product with the correct name
+                return {
+                  ...product,
+                  name: finalName
+                };
+              })() : (displayProduct || product),
               baseProduct: product, // Keep reference to parent for configurable products
               productTabs,
               customOptions: customOptions,
@@ -860,42 +879,6 @@ export default function ProductDetail() {
               selectedVariant,
               handleVariantChange,
               ConfigurableProductSelector // Pass the component itself
-            }}
-            variableContext={{
-              product: product ? (() => {
-                const translatedName = getProductName(product, getCurrentLanguage());
-                const attributeName = product.attributes?.name;
-                const directName = product.name;
-                const finalName = translatedName || attributeName || directName;
-
-                console.log('🔍 ProductDetail variableContext Debug:', {
-                  translatedName,
-                  attributeName,
-                  directName,
-                  finalName,
-                  hasAttributes: !!product.attributes,
-                  attributesKeys: product.attributes ? Object.keys(product.attributes) : []
-                });
-
-                // Create a copy without the name property first, then add it
-                const { name: _removedName, ...productWithoutName } = product;
-                const result = {
-                  ...productWithoutName,
-                  name: finalName
-                };
-
-                console.log('🔍 ProductDetail result.name:', result.name);
-
-                return result;
-              })() : null,
-              store,
-              settings, // 🔧 CRITICAL FIX: Pass fresh settings to variableContext for HTML template processing
-              productLabels: (() => {
-                const labels = product?.applicableLabels || productLabels;
-                return labels;
-              })(),
-              customOptions: customOptions || [],
-              customOptionsLabel: customOptionsLabel || 'Custom Options'
             }}
           />
         </div>
