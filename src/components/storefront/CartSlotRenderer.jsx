@@ -5,6 +5,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Trash2, Plus, Minus, Tag, ShoppingCart } from 'lucide-react';
 import { SlotManager } from '@/utils/slotUtils';
 import { filterSlotsByViewMode, sortSlotsByGridCoordinates } from '@/hooks/useSlotConfiguration';
+import { t } from '@/utils/translationHelper';
 
 /**
  * CartSlotRenderer - Renders slots with full cart functionality
@@ -146,7 +147,7 @@ export function CartSlotRenderer({
     if (id === 'header_title') {
       return wrapWithParentClass(
         <h1 className={className || "text-3xl font-bold text-gray-900 mb-4"} style={styles}>
-          {content || 'My Cart'}
+          {content || t('my_cart', settings)}
         </h1>
       );
     }

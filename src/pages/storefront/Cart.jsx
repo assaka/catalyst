@@ -14,6 +14,7 @@ import FlashMessage from '@/components/storefront/FlashMessage';
 import SeoHeadManager from '@/components/storefront/SeoHeadManager';
 import { formatPriceWithTax, calculateDisplayPrice, safeNumber, formatPrice as formatPriceUtil } from '@/utils/priceUtils';
 import { getProductName, getCurrentLanguage } from '@/utils/translationUtils';
+import { t } from '@/utils/translationHelper';
 
 // Import new hook system
 import hookSystem from '@/core/HookSystem.js';
@@ -1048,7 +1049,7 @@ export default function Cart() {
                 ) : (
                     // Fallback when no slot configuration is available
                     <div className="text-center py-12">
-                        <h1 className="text-3xl font-bold text-gray-900 mb-4">My Cart</h1>
+                        <h1 className="text-3xl font-bold text-gray-900 mb-4">{t('my_cart', settings)}</h1>
                         {!cartLayoutConfig ? (
                             <p className="text-gray-600">Loading cart configuration...</p>
                         ) : (

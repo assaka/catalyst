@@ -30,6 +30,7 @@ import FlashMessage from '@/components/storefront/FlashMessage';
 import { HeaderSlotRenderer } from './HeaderSlotRenderer';
 import { useHeaderConfig } from '@/hooks/useHeaderConfig';
 import LanguageSelector from '@/components/common/LanguageSelector';
+import { t } from '@/utils/translationHelper';
 
 const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 
@@ -567,7 +568,7 @@ export default function StorefrontLayout({ children }) {
                                                 className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg flex items-center space-x-2"
                                             >
                                                 <UserIcon className="w-5 h-5 mr-2" />
-                                                <span>Sign In</span>
+                                                <span>{t('sign_in', settings)}</span>
                                             </Button>
                                         )}
                                         <WishlistDropdown />
