@@ -177,11 +177,13 @@ export default function Login() {
     }
   }, [settings]);
 
-  // Show loading state until config is loaded
-  if (!configLoaded) {
+  // Show loading state until config AND translations are loaded
+  if (!configLoaded || !translationsLoaded) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-gray-600">{t('loading', settings)}</div>
+        <div className="text-gray-600">
+          {!translationsLoaded ? 'Loading translations...' : t('loading', settings)}
+        </div>
       </div>
     );
   }
