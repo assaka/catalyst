@@ -824,7 +824,7 @@ export const productConfig = {
               {{#each tabs}}
                 <button
                   class="py-2 px-1 border-b-2 font-medium transition-colors duration-200 {{#if this.isActive}}{{else}}border-transparent hover:underline{{/if}}"
-                  style="font-size: {{settings.theme.product_tabs_title_size}}; color: {{settings.theme.product_tabs_title_color}}; {{#if this.isActive}}border-color: {{settings.theme.product_tabs_title_color}};{{/if}}"
+                  style="font-size: {{settings.theme.product_tabs_title_size}}; {{#if this.isActive}}color: #2563eb; border-color: #2563eb;{{else}}color: #6b7280;{{/if}}"
                   data-action="switch-tab"
                   data-tab-id="{{this.id}}">
                   {{this.title}}
@@ -867,10 +867,10 @@ export const productConfig = {
                   class="w-full flex items-center justify-between p-4 text-left hover:bg-gray-50 transition-colors duration-200"
                   data-action="toggle-accordion"
                   data-accordion-index="{{@index}}">
-                  <span class="font-medium" style="font-size: {{settings.theme.product_tabs_title_size}}; color: {{settings.theme.product_tabs_title_color}};">{{this.title}}</span>
+                  <span class="font-medium" style="font-size: {{settings.theme.product_tabs_title_size}}; color: #2563eb;">{{this.title}}</span>
                   <svg
                     class="w-5 h-5 transition-transform duration-200 accordion-chevron"
-                    style="color: {{settings.theme.product_tabs_title_color}};"
+                    style="color: #2563eb;"
                     fill="none"
                     stroke="currentColor"
                     viewBox="0 0 24 24">
