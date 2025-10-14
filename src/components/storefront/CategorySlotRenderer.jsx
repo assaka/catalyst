@@ -564,10 +564,16 @@ export function CategorySlotRenderer({
 
       if (!descContent) return null;
 
+      // Process template variables including translations
+      const descVariableContext = {
+        category,
+        settings,
+        store
+      };
+      const processedDescContent = processVariables(descContent, descVariableContext);
+
       return wrapWithParentClass(
-        <p className={className} style={styles}>
-          {descContent}
-        </p>
+        <p className={className} style={styles} dangerouslySetInnerHTML={{ __html: processedDescContent }} />
       );
     }
 
