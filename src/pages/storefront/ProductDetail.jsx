@@ -864,7 +864,7 @@ export default function ProductDetail() {
             variableContext={{
               product: product ? {
                 ...product,
-                name: getProductName(product, getCurrentLanguage()) || product.name
+                name: getProductName(product, getCurrentLanguage()) || product.attributes?.name || product.name
               } : null,
               store,
               settings, // 🔧 CRITICAL FIX: Pass fresh settings to variableContext for HTML template processing
