@@ -560,12 +560,12 @@ export default function Checkout() {
   // Coupon handling functions
   const handleApplyCoupon = async () => {
     if (!couponCode) {
-      setCouponError("Please enter a coupon code.");
+      setCouponError(t('please_enter_coupon_code', settings));
       return;
     }
-    
+
     if (!store?.id) {
-      setCouponError("Store information not available.");
+      setCouponError(t('store_info_not_available', settings));
       return;
     }
     
@@ -587,55 +587,56 @@ export default function Checkout() {
           const expiryDate = new Date(coupon.end_date);
           const now = new Date();
           if (expiryDate < now) {
-            setCouponError("This coupon has expired.");
+            setCouponError(t('coupon_expired', settings));
             return;
           }
         }
-        
+
         // Check if coupon has started
         if (coupon.start_date) {
           const startDate = new Date(coupon.start_date);
           const now = new Date();
           if (startDate > now) {
-            setCouponError("This coupon is not yet active.");
+            setCouponError(t('coupon_not_active', settings));
             return;
           }
         }
-        
+
         // Check usage limit
         if (coupon.usage_limit && coupon.usage_count >= coupon.usage_limit) {
-          setCouponError("This coupon has reached its usage limit.");
+          setCouponError(t('coupon_usage_limit', settings));
           return;
         }
         
         // Check minimum purchase amount
         const subtotal = calculateSubtotal();
         if (coupon.min_purchase_amount && subtotal < coupon.min_purchase_amount) {
-          setCouponError(`Minimum order amount of ${formatPrice(coupon.min_purchase_amount)} required for this coupon.`);
+          const message = t('minimum_order_amount_required', settings).replace('{amount}', formatPrice(coupon.min_purchase_amount));
+          setCouponError(message);
           return;
         }
-        
+
         // Check if coupon applies to products in cart
         if (coupon.applicable_products && coupon.applicable_products.length > 0) {
-          const hasApplicableProduct = cartItems.some(item => 
+          const hasApplicableProduct = cartItems.some(item =>
             coupon.applicable_products.includes(item.product_id)
           );
           if (!hasApplicableProduct) {
-            setCouponError("This coupon doesn't apply to any products in your cart.");
+            setCouponError(t('coupon_not_apply_products', settings));
             return;
           }
         }
-        
+
         // Check if coupon applies to categories in cart
         if (coupon.applicable_categories && coupon.applicable_categories.length > 0) {
           const hasApplicableCategory = cartItems.some(item => {
             const product = cartProducts[item.product_id];
-            return product?.category_ids?.some(catId => 
+            return product?.category_ids?.some(catId =>
               coupon.applicable_categories.includes(catId)
             );
           });
           if (!hasApplicableCategory) {
-            setCouponError("This coupon doesn't apply to any products in your cart.");
+            setCouponError(t('coupon_not_apply_products', settings));
             return;
           }
         }
@@ -646,15 +647,15 @@ export default function Checkout() {
           setAppliedCoupon(coupon);
           setCouponCode(''); // Clear the input after successful application
         } else {
-          setCouponError('Failed to apply coupon. Please try again.');
+          setCouponError(t('failed_apply_coupon', settings));
         }
       } else {
         setAppliedCoupon(null);
-        setCouponError("Invalid or expired coupon code.");
+        setCouponError(t('invalid_expired_coupon', settings));
       }
     } catch (error) {
       console.error("Error applying coupon:", error);
-      setCouponError("Could not apply coupon. Please try again.");
+      setCouponError(t('could_not_apply_coupon', settings));
     }
   };
 
@@ -1031,10 +1032,10 @@ export default function Checkout() {
   if (cartItems.length === 0) {
     return (
       <div className="max-w-4xl mx-auto px-4 py-8 text-center">
-        <h1 className="text-2xl font-bold text-gray-900 mb-4">Your cart is empty</h1>
-        <p className="text-gray-600 mb-6">Add some products to your cart before checking out.</p>
+        <h1 className="text-2xl font-bold text-gray-900 mb-4">{t('your_cart_empty', settings)}</h1>
+        <p className="text-gray-600 mb-6">{t('add_products_before_checkout', settings)}</p>
         <Button onClick={() => navigate(createPageUrl('Storefront'))}>
-          Continue Shopping
+          {t('continue_shopping', settings)}
         </Button>
       </div>
     );
@@ -1274,7 +1275,7 @@ export default function Checkout() {
         return isSectionVisible('shipping') && (
           <Card key="shipping-address" style={{ backgroundColor: checkoutSectionBgColor, borderColor: checkoutSectionBorderColor }}>
             <CardHeader>
-              <CardTitle style={{ color: checkoutSectionTitleColor, fontSize: checkoutSectionTitleSize }}>Shipping Address</CardTitle>
+              <CardTitle style={{ color: checkoutSectionTitleColor, fontSize: checkoutSectionTitleSize }}>{t('shipping_address', settings)}</CardTitle>
             </CardHeader>
             <CardContent>
               {user && userAddresses.length > 0 ? (
@@ -1301,10 +1302,10 @@ export default function Checkout() {
                               <p className="text-gray-600">{address.street}</p>
                               <p className="text-gray-600">{address.city}, {address.state} {address.postal_code}</p>
                               <p className="text-gray-600">{address.country}</p>
-                              {address.phone && <p className="text-gray-500 text-xs mt-1">Phone: {address.phone}</p>}
+                              {address.phone && <p className="text-gray-500 text-xs mt-1">{t('phone_label', settings)} {address.phone}</p>}
                               {address.is_default && (
                                 <span className="inline-block bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded mt-1">
-                                  Default
+                                  {t('default', settings)}
                                 </span>
                               )}
                             </div>
@@ -1328,16 +1329,16 @@ export default function Checkout() {
                         className="text-blue-600"
                       />
                       <label htmlFor="new-shipping-address" className="cursor-pointer text-blue-600 font-medium">
-                        + Add a new shipping address
+                        {t('add_new_shipping_address', settings)}
                       </label>
                     </div>
                   </div>
                 </div>
               ) : (
                 user ? (
-                  <p className="text-sm text-gray-600 mb-4">You don't have any saved addresses. Add one below.</p>
+                  <p className="text-sm text-gray-600 mb-4">{t('no_saved_addresses', settings)}</p>
                 ) : (
-                  <p className="text-sm text-gray-600 mb-4">Enter your shipping address</p>
+                  <p className="text-sm text-gray-600 mb-4">{t('enter_shipping_address', settings)}</p>
                 )
               )}
 
@@ -1363,7 +1364,7 @@ export default function Checkout() {
                       className={shippingErrors.email ? 'border-red-500' : ''}
                     />
                     {shippingAddress.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(shippingAddress.email) && (
-                      <p className="text-xs text-red-600 mt-1">Please enter a valid email address</p>
+                      <p className="text-xs text-red-600 mt-1">{t('valid_email_required', settings)}</p>
                     )}
                   </div>
                   <Input
@@ -1451,7 +1452,7 @@ export default function Checkout() {
                         className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
                       />
                       <Label htmlFor="save-shipping-address" className="text-sm text-gray-700">
-                        Save this address to my account for future orders
+                        {t('save_address_future', settings)}
                       </Label>
                     </div>
                   )}
@@ -1465,7 +1466,7 @@ export default function Checkout() {
         return isSectionVisible('shipping') && eligibleShippingMethods.length > 0 && (
           <Card key="shipping-method" style={{ backgroundColor: checkoutSectionBgColor, borderColor: checkoutSectionBorderColor }}>
             <CardHeader>
-              <CardTitle style={{ color: checkoutSectionTitleColor, fontSize: checkoutSectionTitleSize }}>Shipping Method</CardTitle>
+              <CardTitle style={{ color: checkoutSectionTitleColor, fontSize: checkoutSectionTitleSize }}>{t('shipping_method', settings)}</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="space-y-3">
@@ -1484,7 +1485,7 @@ export default function Checkout() {
                       <span>{method.name}</span>
                       <span className="font-medium">
                         {method.type === 'free_shipping' && calculateSubtotal() >= (method.free_shipping_min_order || 0)
-                          ? 'Free'
+                          ? t('free', settings)
                           : formatPrice(method.flat_rate_cost || 0)
                         }
                       </span>
@@ -1500,7 +1501,7 @@ export default function Checkout() {
         return isSectionVisible('billing') && (
           <Card key="billing-address" style={{ backgroundColor: checkoutSectionBgColor, borderColor: checkoutSectionBorderColor }}>
             <CardHeader>
-              <CardTitle style={{ color: checkoutSectionTitleColor, fontSize: checkoutSectionTitleSize }}>Billing Address</CardTitle>
+              <CardTitle style={{ color: checkoutSectionTitleColor, fontSize: checkoutSectionTitleSize }}>{t('billing_address', settings)}</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
@@ -1513,7 +1514,7 @@ export default function Checkout() {
                     className="text-blue-600"
                   />
                   <label htmlFor="use-shipping-for-billing" className="cursor-pointer">
-                    Same as shipping address
+                    {t('same_as_shipping', settings)}
                   </label>
                 </div>
 
