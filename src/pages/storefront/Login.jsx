@@ -218,6 +218,15 @@ export default function Login() {
     translationsLoaded
   });
 
+  // CRITICAL DEBUG - Log right before rendering
+  console.log('⚠️ ABOUT TO RENDER UnifiedSlotRenderer with loginData:', {
+    hasLoginDataObj: !!loginDataObj,
+    hasSettingsInLoginDataObj: !!loginDataObj.settings,
+    hasUiTranslations: !!loginDataObj.settings?.ui_translations,
+    uiTranslationsKeys: Object.keys(loginDataObj.settings?.ui_translations || {}),
+    loginDataObjKeys: Object.keys(loginDataObj)
+  });
+
   return (
     <LoginProvider loginData={loginDataObj}>
       <div className="min-h-screen bg-gray-50 py-12 px-4">
