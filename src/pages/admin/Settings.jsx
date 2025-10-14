@@ -14,6 +14,7 @@ import { Separator } from '@/components/ui/separator';
 import { Save, Building2, Bell, Settings as SettingsIcon, Globe, RefreshCw, KeyRound, Rocket } from 'lucide-react'; // Removed ReceiptText, BookOpen, Palette, Brush, ShoppingCart, Search icons
 import { CountrySelect } from "@/components/ui/country-select";
 import { TimezoneSelect } from "@/components/ui/timezone-select";
+import { MultiSelect } from "@/components/ui/multi-select";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@/components/ui/select';
@@ -554,9 +555,8 @@ export default function Settings() {
           params.set('tab', value);
           setSearchParams(params);
         }} className="w-full">
-          <TabsList className="grid w-full grid-cols-6">
+          <TabsList className="grid w-full grid-cols-5">
             <TabsTrigger value="general">General</TabsTrigger>
-            <TabsTrigger value="language">Language</TabsTrigger>
             <TabsTrigger value="domain">Domain</TabsTrigger>
             <TabsTrigger value="publish">Publish</TabsTrigger>
             <TabsTrigger value="brevo">Brevo</TabsTrigger>
@@ -685,10 +685,8 @@ export default function Settings() {
                 </div>
               </CardContent>
             </Card>
-          </TabsContent>
 
-          <TabsContent value="language" className="mt-6">
-            <Card className="material-elevation-1 border-0">
+            <Card className="material-elevation-1 border-0 mt-6">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <Globe className="w-5 h-5" />
@@ -699,21 +697,25 @@ export default function Settings() {
               <CardContent className="space-y-6">
                 <div>
                   <Label htmlFor="active_languages">Active Languages</Label>
-                  <Select
-                    value={JSON.stringify(store?.settings?.active_languages || ['en'])}
-                    onValueChange={(value) => handleSettingsChange('active_languages', JSON.parse(value))}
-                  >
-                    <SelectTrigger id="active_languages">
-                      <SelectValue placeholder="Select active languages" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value={JSON.stringify(['en'])}>English only</SelectItem>
-                      <SelectItem value={JSON.stringify(['en', 'nl'])}>English + Dutch</SelectItem>
-                      <SelectItem value={JSON.stringify(['en', 'nl', 'fr'])}>English + Dutch + French</SelectItem>
-                      <SelectItem value={JSON.stringify(['en', 'nl', 'fr', 'de'])}>English + Dutch + French + German</SelectItem>
-                      <SelectItem value={JSON.stringify(['en', 'nl', 'fr', 'de', 'es'])}>English + Dutch + French + German + Spanish</SelectItem>
-                    </SelectContent>
-                  </Select>
+                  <MultiSelect
+                    options={[
+                      { value: 'en', label: 'English' },
+                      { value: 'nl', label: 'Dutch (Nederlands)' },
+                      { value: 'fr', label: 'French (Français)' },
+                      { value: 'de', label: 'German (Deutsch)' },
+                      { value: 'es', label: 'Spanish (Español)' },
+                      { value: 'it', label: 'Italian (Italiano)' },
+                      { value: 'pt', label: 'Portuguese (Português)' },
+                      { value: 'pl', label: 'Polish (Polski)' },
+                      { value: 'ru', label: 'Russian (Русский)' },
+                      { value: 'zh', label: 'Chinese (中文)' },
+                      { value: 'ja', label: 'Japanese (日本語)' },
+                      { value: 'ko', label: 'Korean (한국어)' }
+                    ]}
+                    value={store?.settings?.active_languages || ['en']}
+                    onChange={(languages) => handleSettingsChange('active_languages', languages)}
+                    placeholder="Select active languages..."
+                  />
                   <p className="text-sm text-gray-500 mt-1">
                     Select which languages are available in your store. Customers can switch between these languages.
                   </p>
@@ -729,11 +731,27 @@ export default function Settings() {
                       <SelectValue placeholder="Select default language" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="en">English</SelectItem>
-                      <SelectItem value="nl">Dutch (Nederlands)</SelectItem>
-                      <SelectItem value="fr">French (Français)</SelectItem>
-                      <SelectItem value="de">German (Deutsch)</SelectItem>
-                      <SelectItem value="es">Spanish (Español)</SelectItem>
+                      {(store?.settings?.active_languages || ['en']).map((lang) => {
+                        const labels = {
+                          en: 'English',
+                          nl: 'Dutch (Nederlands)',
+                          fr: 'French (Français)',
+                          de: 'German (Deutsch)',
+                          es: 'Spanish (Español)',
+                          it: 'Italian (Italiano)',
+                          pt: 'Portuguese (Português)',
+                          pl: 'Polish (Polski)',
+                          ru: 'Russian (Русский)',
+                          zh: 'Chinese (中文)',
+                          ja: 'Japanese (日本語)',
+                          ko: 'Korean (한국어)'
+                        };
+                        return (
+                          <SelectItem key={lang} value={lang}>
+                            {labels[lang] || lang}
+                          </SelectItem>
+                        );
+                      })}
                     </SelectContent>
                   </Select>
                   <p className="text-sm text-gray-500 mt-1">
@@ -753,16 +771,6 @@ export default function Settings() {
                     checked={store?.settings?.use_geoip_language || false}
                     onCheckedChange={(checked) => handleSettingsChange('use_geoip_language', checked)}
                   />
-                </div>
-
-                <div className="bg-blue-50 p-4 rounded-lg">
-                  <h4 className="font-medium text-blue-900 mb-2">Language Configuration</h4>
-                  <div className="text-sm text-blue-800 space-y-2">
-                    <p>• Configure translations for products, categories, and CMS content in their respective management pages</p>
-                    <p>• The language switcher will automatically appear in your storefront when multiple languages are active</p>
-                    <p>• With GeoIP enabled, customers from different countries will see content in their local language automatically</p>
-                    <p>• Customers can always override the automatic language selection</p>
-                  </div>
                 </div>
               </CardContent>
             </Card>
