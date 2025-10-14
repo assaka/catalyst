@@ -614,6 +614,31 @@ export const StoreProvider = ({ children }) => {
         console.error('[StoreProvider] Error loading cookie consent settings:', error);
       }
 
+      // Load UI translations for the storefront
+      try {
+        const currentLang = localStorage.getItem('catalyst_language') || mergedSettings.default_language || 'en';
+        const translationsData = await cachedApiCall(`ui-translations-${currentLang}`, async () => {
+          const response = await fetch(`${import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000'}/api/translations/ui-labels?lang=${currentLang}`, {
+            method: 'GET',
+            headers: { 'Content-Type': 'application/json' }
+          });
+          if (!response.ok) throw new Error('Failed to fetch translations');
+          const result = await response.json();
+          return result.data?.labels || {};
+        }, CACHE_DURATION_MEDIUM);
+
+        // Merge translations into settings
+        if (!mergedSettings.ui_translations) {
+          mergedSettings.ui_translations = {};
+        }
+        mergedSettings.ui_translations[currentLang] = translationsData;
+
+        // Update the store with translations
+        setStore({ ...selectedStore, settings: mergedSettings });
+      } catch (error) {
+        console.error('[StoreProvider] Error loading UI translations:', error);
+      }
+
       // Load other data with balanced caching - all in parallel with appropriate cache durations
       const dataPromises = [
         // SHORT cache (1 minute) - frequently updated by admin
