@@ -14,6 +14,8 @@ export default function ProductTabs({ productTabs = [], product = null, classNam
   const currentLang = getCurrentLanguage();
 
   console.log('🌐 ProductTabs current language:', currentLang);
+  console.log('🔍 DEBUGGING - localStorage language:', localStorage.getItem('catalyst_language'));
+  console.log('🔍 DEBUGGING - Browser language:', navigator.language);
 
   // Prepare tabs data with active state
   const tabsData = useMemo(() => {
