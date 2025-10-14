@@ -273,12 +273,18 @@ export function HeaderSlotRenderer({
         // Only show if explicitly enabled
         if (settings?.show_language_selector !== true) return null;
         if (!languages || languages.length <= 1) return null;
+
         return (
           <div key={id} className={className} data-slot-id={id}>
             <select
-              className="border-none bg-transparent text-sm"
+              className="border-none bg-transparent text-sm cursor-pointer hover:bg-gray-100 rounded px-2 py-1"
               value={currentLanguage}
-              onChange={(e) => setCurrentLanguage?.(e.target.value)}
+              onChange={(e) => {
+                const newLang = e.target.value;
+                localStorage.setItem('catalyst_language', newLang);
+                // Reload page to fetch new translations
+                window.location.reload();
+              }}
             >
               {languages.map(lang => (
                 <option key={lang.id} value={lang.code}>

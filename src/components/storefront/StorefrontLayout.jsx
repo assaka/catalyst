@@ -132,8 +132,37 @@ export default function StorefrontLayout({ children }) {
             if (loading || !store) return;
 
             try {
-                // Languages feature temporarily disabled for storefront
-                setLanguages([]);
+                // Load languages from store settings
+                const activeLanguages = settings?.active_languages || ['en'];
+                const defaultLanguage = settings?.default_language || 'en';
+
+                // Build languages array with proper format for selector
+                const languagesData = activeLanguages.map(code => {
+                    const languageNames = {
+                        'en': { name: 'English', flag_icon: '🇬🇧' },
+                        'nl': { name: 'Nederlands', flag_icon: '🇳🇱' },
+                        'de': { name: 'Deutsch', flag_icon: '🇩🇪' },
+                        'fr': { name: 'Français', flag_icon: '🇫🇷' },
+                        'es': { name: 'Español', flag_icon: '🇪🇸' }
+                    };
+                    return {
+                        id: code,
+                        code: code,
+                        name: languageNames[code]?.name || code.toUpperCase(),
+                        flag_icon: languageNames[code]?.flag_icon || '🌐'
+                    };
+                });
+
+                setLanguages(languagesData);
+
+                // Initialize current language from localStorage or default
+                const savedLang = localStorage.getItem('catalyst_language');
+                if (savedLang && activeLanguages.includes(savedLang)) {
+                    setCurrentLanguage(savedLang);
+                } else {
+                    setCurrentLanguage(defaultLanguage);
+                    localStorage.setItem('catalyst_language', defaultLanguage);
+                }
 
                 // Google Tag Manager plugin temporarily disabled
                 try {
@@ -176,7 +205,31 @@ export default function StorefrontLayout({ children }) {
             }
         };
         fetchData();
-    }, [loading, store]);
+    }, [loading, store, settings]);
+
+    // Handle language changes and reload page to fetch new translations
+    useEffect(() => {
+        const handleLanguageChange = (newLanguage) => {
+            localStorage.setItem('catalyst_language', newLanguage);
+            setCurrentLanguage(newLanguage);
+            // Reload page to fetch new translations
+            window.location.reload();
+        };
+
+        // Wrap the handler for HeaderSlotRenderer
+        const wrappedSetCurrentLanguage = (newLang) => {
+            if (newLang !== currentLanguage) {
+                handleLanguageChange(newLang);
+            }
+        };
+
+        // Replace setCurrentLanguage with the wrapped version
+        window._setCurrentLanguage = wrappedSetCurrentLanguage;
+
+        return () => {
+            delete window._setCurrentLanguage;
+        };
+    }, [currentLanguage]);
 
     // Flash message event listener
     useEffect(() => {
