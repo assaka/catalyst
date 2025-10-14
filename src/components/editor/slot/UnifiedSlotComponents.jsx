@@ -489,108 +489,8 @@ const ProductGallery = createSlotComponent({
   }
 });
 
-/**
- * ProductInfo - Unified product information component
- */
-const ProductInfo = createSlotComponent({
-  name: 'ProductInfoSlot',
-
-  render: ({ slot, productContext, className, styles, context, variableContext }) => {
-    if (context === 'editor') {
-      // Editor version - visual preview only
-      return (
-        <div className={className} style={styles}>
-          <div className="space-y-6">
-            <h1 className="text-3xl font-bold text-gray-900 mb-2">Sample Product Name</h1>
-            <div className="flex items-center space-x-4 mb-4">
-              <span className="text-3xl font-bold text-green-600">$99.99</span>
-              <span className="text-xl text-gray-500 line-through">$129.99</span>
-            </div>
-            <Badge variant="outline" className="mb-2">In Stock</Badge>
-            <p className="text-sm text-gray-600">SKU: PROD123</p>
-            <p className="text-gray-700 leading-relaxed">
-              This is a sample product description showing how the product information will appear.
-            </p>
-          </div>
-        </div>
-      );
-    }
-
-    // Storefront version - full functionality
-    const { product, settings } = productContext;
-
-    if (!product) return null;
-
-    // Use imported utilities from top of file
-    const { formatPrice: formatPriceFn } = { formatPrice: formatPriceUtil };
-
-    const priceInfo = getPriceDisplay(product);
-
-    // Use translated product name from variableContext (already translated in ProductDetail.jsx)
-    const translatedProductName = variableContext?.product?.name || product.name;
-
-    // Debug logging
-    console.log('🔍 ProductInfo - Name Debug:', {
-      variableContextProductName: variableContext?.product?.name,
-      productName: product.name,
-      finalTranslatedName: translatedProductName,
-      product: product
-    });
-
-    return (
-      <div className={className} style={styles}>
-        <div className="space-y-6">
-          {/* Product Title */}
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">{translatedProductName}</h1>
-
-          {/* Price Section */}
-          <div className="flex items-center space-x-4 mb-4">
-            <div className="flex items-baseline space-x-2">
-              {priceInfo.hasComparePrice ? (
-                <>
-                  <span className="text-3xl font-bold text-red-600">
-                    {formatPriceFn(priceInfo.displayPrice)}
-                  </span>
-                  <span className="text-xl text-gray-500 line-through">
-                    {formatPriceFn(priceInfo.originalPrice)}
-                  </span>
-                </>
-              ) : (
-                <span className="text-3xl font-bold text-green-600">
-                  {formatPriceFn(priceInfo.displayPrice)}
-                </span>
-              )}
-            </div>
-          </div>
-
-          {/* Stock Status - uses centralized utility */}
-          {(() => {
-            const stockLabelInfo = getStockLabelUtil(product, settings);
-            const stockLabelStyle = getStockLabelStyle(product, settings);
-
-            if (!stockLabelInfo) return null;
-
-            return (
-              <Badge className="mb-2" style={stockLabelStyle}>
-                {stockLabelInfo.text}
-              </Badge>
-            );
-          })()}
-
-          {/* SKU */}
-          {product.sku && (
-            <p className="text-sm text-gray-600">SKU: {product.sku}</p>
-          )}
-
-          {/* Short Description */}
-          {product.short_description && (
-            <p className="text-gray-700 leading-relaxed">{product.short_description}</p>
-          )}
-        </div>
-      </div>
-    );
-  }
-});
+// ProductInfo component removed - not used in product-config.js
+// Product name and info are rendered via Handlebars templates in the config
 
 /**
  * ProductOptions - Unified product options component
@@ -1675,7 +1575,7 @@ registerSlotComponent('CartCouponSlot', CartCouponSlot);
 registerSlotComponent('CartOrderSummarySlot', CartOrderSummarySlot);
 registerSlotComponent('ProductBreadcrumbsSlot', ProductBreadcrumbs);
 // ProductGallerySlot removed - pure handlebars approach only
-registerSlotComponent('ProductInfoSlot', ProductInfo);
+// ProductInfoSlot removed - not used in product-config.js
 registerSlotComponent('ProductOptionsSlot', ProductOptions);
 registerSlotComponent('CustomOptions', CustomOptions);
 registerSlotComponent('ConfigurableProductSelector', ConfigurableProductSelector);
@@ -2025,7 +1925,7 @@ export {
   QuantitySelector,
   ProductBreadcrumbs,
   ProductGallery,
-  ProductInfo,
+  // ProductInfo removed - not used in product-config.js
   ProductOptions,
   CustomOptions,
   ConfigurableProductSelector,
