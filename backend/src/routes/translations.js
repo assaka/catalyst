@@ -59,7 +59,7 @@ router.get('/ui-labels/all', authMiddleware, async (req, res) => {
 // @access  Private
 router.post('/ui-labels', authMiddleware, async (req, res) => {
   try {
-    const { key, language_code, value, category } = req.body;
+    const { key, language_code, value, category, type = 'custom' } = req.body;
 
     if (!key || !language_code || !value) {
       return res.status(400).json({
@@ -72,7 +72,8 @@ router.post('/ui-labels', authMiddleware, async (req, res) => {
       key,
       language_code,
       value,
-      category
+      category,
+      type
     );
 
     res.json({

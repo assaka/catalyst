@@ -75,15 +75,16 @@ class TranslationService {
   /**
    * Save or update a UI label translation
    */
-  async saveUILabel(key, languageCode, value, category = 'common') {
+  async saveUILabel(key, languageCode, value, category = 'common', type = 'custom') {
     const [translation, created] = await Translation.findOrCreate({
       where: { key, language_code: languageCode },
-      defaults: { key, language_code: languageCode, value, category }
+      defaults: { key, language_code: languageCode, value, category, type }
     });
 
     if (!created) {
       translation.value = value;
       if (category) translation.category = category;
+      if (type) translation.type = type;
       await translation.save();
     }
 
@@ -94,8 +95,8 @@ class TranslationService {
    * Save multiple UI labels at once
    */
   async saveBulkUILabels(labels) {
-    const promises = labels.map(({ key, language_code, value, category }) =>
-      this.saveUILabel(key, language_code, value, category)
+    const promises = labels.map(({ key, language_code, value, category, type = 'system' }) =>
+      this.saveUILabel(key, language_code, value, category, type)
     );
     return await Promise.all(promises);
   }
