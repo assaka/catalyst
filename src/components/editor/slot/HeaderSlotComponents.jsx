@@ -15,6 +15,7 @@ import MiniCart from '@/components/storefront/MiniCart';
 import WishlistDropdown from '@/components/storefront/WishlistDropdown';
 import CategoryNav from '@/components/storefront/CategoryNav';
 import { CountrySelect } from '@/components/ui/country-select';
+import { useTranslation } from '@/contexts/TranslationContext';
 
 /**
  * StoreLogo Component
@@ -206,6 +207,7 @@ const CategoryNavSlot = createSlotComponent({
   render: ({ slot, context, headerContext, className, styles }) => {
     const { categories = [], store } = headerContext || {};
     const metadata = slot?.metadata || {};
+    const { t } = useTranslation();
 
     // Extract link styles
     const linkColor = styles?.color || '#374151';
@@ -253,7 +255,7 @@ const CategoryNavSlot = createSlotComponent({
                       e.currentTarget.style.color = linkColor;
                     }}
                   >
-                    View All {cat.name}
+                    {t('common.view_all', 'View All')} {cat.name}
                   </a>
                   {cat.children.map(child => (
                     <a
