@@ -36,7 +36,11 @@ export default function Translations() {
         const labelsArray = Object.entries(response.data.labels).map(([key, value]) => {
           // Determine category from key prefix
           const category = key.split('.')[0] || 'common';
-          return { key, value, category };
+
+          // Ensure value is always a string, not an object
+          const stringValue = typeof value === 'object' ? JSON.stringify(value) : String(value || '');
+
+          return { key, value: stringValue, category };
         });
 
         setLabels(labelsArray);
@@ -60,10 +64,12 @@ export default function Translations() {
 
     // Filter by search query
     if (searchQuery) {
-      filtered = filtered.filter(label =>
-        label.key.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        label.value.toLowerCase().includes(searchQuery.toLowerCase())
-      );
+      filtered = filtered.filter(label => {
+        const keyMatch = label.key.toLowerCase().includes(searchQuery.toLowerCase());
+        const valueStr = typeof label.value === 'string' ? label.value : JSON.stringify(label.value);
+        const valueMatch = valueStr.toLowerCase().includes(searchQuery.toLowerCase());
+        return keyMatch || valueMatch;
+      });
     }
 
     // Filter by category
@@ -446,7 +452,9 @@ export default function Translations() {
                             autoFocus
                           />
                         ) : (
-                          <span className="text-gray-900">{label.value}</span>
+                          <span className="text-gray-900">
+                            {typeof label.value === 'object' ? JSON.stringify(label.value) : String(label.value || '')}
+                          </span>
                         )}
                       </td>
                       <td className="px-4 py-3 text-sm text-right">
