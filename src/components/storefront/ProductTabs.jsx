@@ -246,6 +246,16 @@ export default function ProductTabs({ productTabs = [], product = null, settings
   // Use settings from props (passed from productContext)
   // Only include theme settings to avoid passing large translation objects
   const themeSettings = settings?.theme || {};
+
+  // Debug: Log theme settings to verify they're being passed
+  console.log('🎨 ProductTabs theme settings:', {
+    product_tabs_title_color: themeSettings?.product_tabs_title_color,
+    product_tabs_title_size: themeSettings?.product_tabs_title_size,
+    product_tabs_content_bg: themeSettings?.product_tabs_content_bg,
+    product_tabs_attribute_label_color: themeSettings?.product_tabs_attribute_label_color,
+    fullThemeKeys: Object.keys(themeSettings)
+  });
+
   const variableContext = {
     tabs: tabsData,
     product,
@@ -254,6 +264,8 @@ export default function ProductTabs({ productTabs = [], product = null, settings
     }
   };
   const html = processVariables(template, variableContext);
+
+  console.log('🔍 Processed HTML sample:', html.substring(0, 500));
 
   return (
     <div ref={containerRef} className={`product-tabs ${className}`}
