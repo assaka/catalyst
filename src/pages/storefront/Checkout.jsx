@@ -1815,7 +1815,7 @@ export default function Checkout() {
         return (
           <Card key="coupon" style={{ backgroundColor: checkoutSectionBgColor, borderColor: checkoutSectionBorderColor }}>
             <CardHeader>
-              <CardTitle style={{ color: checkoutSectionTitleColor, fontSize: checkoutSectionTitleSize }}>{t('checkout.apply_coupon', 'Apply Coupon')}</CardTitle>
+              <CardTitle style={{ color: checkoutSectionTitleColor, fontSize: checkoutSectionTitleSize }}>{t('common.apply_coupon', 'Apply Coupon')}</CardTitle>
             </CardHeader>
             <CardContent>
               {!appliedCoupon ? (
@@ -1856,7 +1856,7 @@ export default function Checkout() {
                     onClick={handleRemoveCoupon}
                     className="text-red-600 hover:text-red-800"
                   >
-                    {t('checkout.remove', 'Remove')}
+                    {t('common.remove', 'Remove')}
                   </Button>
                 </div>
               )}
@@ -1987,7 +1987,7 @@ export default function Checkout() {
                     color: '#FFFFFF',
                   }}
                 >
-                  {isProcessing ? t('checkout.processing', 'Processing...') : `${t('checkout.place_order', 'Place Order')} - ${formatPrice(getTotalAmount())}`}
+                  {isProcessing ? t('checkout.processing', 'Processing...') : `${t('common.place_order', 'Place Order')} - ${formatPrice(getTotalAmount())}`}
                 </Button>
               )}
             </CardContent>
@@ -2020,13 +2020,13 @@ export default function Checkout() {
         const address = userAddresses.find(a => a.id === selectedShippingAddress);
         if (address) {
           items.push({
-            label: 'Shipping Address',
+            label: t('checkout.shipping_address'),
             value: `${address.full_name}, ${address.street}, ${address.city}, ${address.state} ${address.postal_code}, ${address.country}`
           });
         }
       } else if (shippingAddress.full_name) {
         items.push({
-          label: 'Shipping Address',
+          label: t('checkout.shipping_address'),
           value: `${shippingAddress.full_name}, ${shippingAddress.street}, ${shippingAddress.city}, ${shippingAddress.state} ${shippingAddress.postal_code}, ${shippingAddress.country}`
         });
       }
@@ -2034,7 +2034,7 @@ export default function Checkout() {
       // Billing address (if different from shipping)
       if (!useShippingForBilling && billingAddress.full_name) {
         items.push({
-          label: 'Billing Address',
+          label: t('checkout.billing_address'),
           value: `${billingAddress.full_name}, ${billingAddress.street}, ${billingAddress.city}, ${billingAddress.state} ${billingAddress.postal_code}, ${billingAddress.country}`
         });
       }
@@ -2049,7 +2049,7 @@ export default function Checkout() {
       const items = [];
 
       if (selectedShippingMethod) {
-        items.push({ label: 'Shipping Method', value: selectedShippingMethod });
+        items.push({ label: t('common.shipping_method'), value: selectedShippingMethod });
       }
 
       if (deliveryDate) {
@@ -2073,12 +2073,12 @@ export default function Checkout() {
       const items = [];
 
       if (selectedShippingMethod) {
-        items.push({ label: 'Shipping Method', value: selectedShippingMethod });
+        items.push({ label: t('checkout.shipping_method'), value: selectedShippingMethod });
       }
 
       if (deliveryDate) {
         items.push({
-          label: 'Delivery Date',
+          label: t('checkout.preferred_delivery_date'),
           value: deliveryDate.toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })
         });
       }
@@ -2158,7 +2158,7 @@ export default function Checkout() {
                       variant="outline"
                       className="flex-1"
                     >
-                      ← {t('checkout.previous', 'Previous')}
+                      ← {t('common.previous', 'Previous')}
                     </Button>
                   )}
                   {canGoNext() && (
