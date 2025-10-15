@@ -11,10 +11,21 @@ class TranslationService {
       attributes: ['key', 'value', 'category']
     });
 
-    // Convert to key-value object
+    // Convert to nested object structure
+    // e.g., "common.home" becomes { common: { home: "Home" } }
     const result = {};
     translations.forEach(t => {
-      result[t.key] = t.value;
+      const keys = t.key.split('.');
+      let current = result;
+
+      for (let i = 0; i < keys.length - 1; i++) {
+        if (!current[keys[i]]) {
+          current[keys[i]] = {};
+        }
+        current = current[keys[i]];
+      }
+
+      current[keys[keys.length - 1]] = t.value;
     });
 
     return result;
