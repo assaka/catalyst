@@ -161,8 +161,8 @@ export default function WishlistDropdown({ iconVariant = 'outline' }) {
         </Button>
       </PopoverTrigger>
       <PopoverContent className="w-80">
-        <div className="p-4">
-          <h4 className="font-medium leading-none mb-4">{t('common.wishlist', 'Wishlist')}</h4>
+        <div className="">
+          <h3 className="font-semibold leading-none mb-4">{t('common.wishlist', 'Wishlist')}</h3>
           {loading ? (
             <div className="flex justify-center items-center h-24">
               <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-gray-900"></div>
@@ -185,13 +185,13 @@ export default function WishlistDropdown({ iconVariant = 'outline' }) {
                     </p>
                   </div>
                   <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handleRemoveFromWishlist(item.product_id)}>
-                    <X className="h-4 w-4" />
+                    <X className="h-4 w-4" />s
                   </Button>
                 </div>
               ))}
             </div>
           ) : (
-            <p className="text-sm text-muted-foreground">{t('common.your_wishlist_is_empty', 'Your wishlist is empty')}</p>
+            <p className="text-sm text-center text-muted-foreground">{t('common.your_wishlist_is_empty', 'Your wishlist is empty')}</p>
           )}
         </div>
       </PopoverContent>
