@@ -14,7 +14,7 @@ import CategoryNav from './CategoryNav';
 import { CountrySelect } from '@/components/ui/country-select';
 import CmsBlockRenderer from './CmsBlockRenderer';
 import { headerConfig } from '@/components/editor/slot/configs/header-config';
-import { t } from '@/utils/translationHelper';
+import { useTranslation } from '@/contexts/TranslationContext';
 
 /**
  * HeaderSlotRenderer - Renders header slots with full customization
@@ -26,6 +26,7 @@ export function HeaderSlotRenderer({
   viewMode = 'desktop',
   headerContext = {}
 }) {
+  const { t } = useTranslation();
   const {
     store,
     settings = {},
@@ -361,13 +362,13 @@ export function HeaderSlotRenderer({
                     navigate?.(createPublicUrl(store?.slug, 'CUSTOMER_DASHBOARD'));
                   }}>
                     <Settings className="mr-2 h-4 w-4" />
-                    <span>{t('my_account', settings)}</span>
+                    <span>{t('account.my_account', 'My Account')}</span>
                   </DropdownMenuItem>
                   <DropdownMenuItem onClick={() => {
                     handleCustomerLogout?.();
                   }}>
                     <LogOut className="mr-2 h-4 w-4" />
-                    <span>{t('logout', settings)}</span>
+                    <span>{t('account.logout', 'Logout')}</span>
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
@@ -385,7 +386,7 @@ export function HeaderSlotRenderer({
                 onMouseLeave={(e) => e.currentTarget.style.backgroundColor = buttonStyles.backgroundColor}
               >
                 {getUserIcon('w-5 h-5 mr-2')}
-                <span>{t('sign_in', settings)}</span>
+                <span>{t('account.sign_in', 'Sign In')}</span>
               </Button>
             )}
           </div>
