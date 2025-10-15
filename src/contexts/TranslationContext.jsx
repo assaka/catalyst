@@ -71,11 +71,21 @@ export function TranslationProvider({ children }) {
       setLoading(true);
       const response = await api.get(`/translations/ui-labels?lang=${lang}`);
 
+      console.log('🔍 DEBUG: Loading translations for:', lang);
+      console.log('🔍 DEBUG: API success?', response?.data?.success);
+      console.log('🔍 DEBUG: Has labels?', !!response?.data?.data?.labels);
+      console.log('🔍 DEBUG: Labels structure:', response?.data?.data?.labels);
+
       if (response.data.success) {
-        setTranslations(response.data.data.labels);
+        const labels = response.data.data.labels;
+        console.log('✅ DEBUG: Setting translations. Has common?', !!labels.common);
+        console.log('✅ DEBUG: common.home =', labels.common?.home);
+        console.log('✅ DEBUG: common.view_all =', labels.common?.view_all);
+        console.log('✅ DEBUG: common.search_country =', labels.common?.search_country);
+        setTranslations(labels);
       }
     } catch (error) {
-      console.error('Failed to load translations:', error);
+      console.error('❌ Failed to load translations:', error);
       setTranslations({});
     } finally {
       setLoading(false);
