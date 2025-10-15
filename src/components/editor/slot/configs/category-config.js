@@ -69,7 +69,7 @@ export const categoryConfig = {
     category_description: {
       id: 'category_description',
       type: 'text',
-      content: '{{t "category_description"}}',
+      content: '{{t "common.category_description"}}',
       className: 'text-gray-600 mb-6',
       parentClassName: '',
       styles: {},
