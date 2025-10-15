@@ -148,6 +148,7 @@ import { headerConfig } from '@/components/editor/slot/configs/header-config';
 import { CmsBlock } from '@/api/entities';
 import { useStore } from '@/components/storefront/StoreProvider';
 import { formatPrice } from '@/utils/priceUtils';
+import { useTranslation } from '@/contexts/TranslationContext';
 
 // Import component registry to ensure all components are registered
 import '@/components/editor/slot/UnifiedSlotComponents';
@@ -441,6 +442,42 @@ export function UnifiedSlotRenderer({
   // Config for renderCondition support
   slotConfig = null
 }) {
+  // Get translation function
+  const { t } = useTranslation();
+
+  /**
+   * processTranslation - Detects and translates content if it's a translation key
+   *
+   * Checks if content matches translation key patterns:
+   * - Dotted notation: common.welcome_back, editor.header_title.123456
+   * - If matches, translates using t() function
+   * - Otherwise returns content as-is
+   *
+   * @param {string} content - Content to check and possibly translate
+   * @returns {string} Translated content or original content
+   */
+  const processTranslation = (content) => {
+    if (!content || typeof content !== 'string') return content;
+
+    // Check if content is a translation key (dotted notation like "common.button.add_to_cart" or "editor.header_title.1234")
+    const translationKeyPattern = /^[a-z_]+\.[a-z_0-9]+(\.[a-z_0-9]+)*$/;
+
+    if (translationKeyPattern.test(content.trim())) {
+      // It's a translation key, translate it
+      const translated = t(content.trim());
+
+      // If translation returns the same key (not found), return empty string to avoid showing the key
+      // Only exception: if context is editor, show the key for debugging
+      if (translated === content.trim() && context !== 'editor') {
+        return '';
+      }
+
+      return translated;
+    }
+
+    return content;
+  };
+
   // Get child slots for current parent
   let childSlots = SlotManager.getChildSlots(slots, parentId);
 
@@ -654,7 +691,11 @@ export function UnifiedSlotRenderer({
     const { id, type, content, className, styles, metadata } = slot;
 
     // Process variables in content and className
-    const processedContent = processVariables(content, variableContext);
+    let processedContent = processVariables(content, variableContext);
+
+    // Process translation - if content is a translation key, translate it
+    processedContent = processTranslation(processedContent);
+
     let processedClassName = processVariables(className, variableContext);
 
     // Handle viewport-aware responsive classes in editor mode
