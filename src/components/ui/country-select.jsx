@@ -43,10 +43,12 @@ export function CountrySelect({ value, onValueChange, onChange, placeholder = "S
       setOpen(false);
     }
   };
-  
+
   // Filter countries based on allowed countries from store settings
-  const filteredCountries = Array.isArray(allowedCountries) && allowedCountries.length > 0 
-    ? countryData.filter(country => allowedCountries.includes(country.value)) 
+  // Ensure allowedCountries is always an array to prevent rendering issues
+  const safeAllowedCountries = Array.isArray(allowedCountries) ? allowedCountries : [];
+  const filteredCountries = safeAllowedCountries.length > 0
+    ? countryData.filter(country => safeAllowedCountries.includes(country.value))
     : countryData;
 
   const safeValue = multiple 
@@ -60,6 +62,9 @@ export function CountrySelect({ value, onValueChange, onChange, placeholder = "S
         .join(", ")
     : filteredCountries.find((country) => country && country.value === value)?.label;
 
+  // Ensure selectedLabels is always a string or undefined, never an object
+  const safeSelectedLabels = typeof selectedLabels === 'string' ? selectedLabels : (selectedLabels ? String(selectedLabels) : undefined);
+
   return (
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
@@ -69,7 +74,7 @@ export function CountrySelect({ value, onValueChange, onChange, placeholder = "S
           aria-expanded={open}
           className="w-full justify-between"
         >
-          {(multiple ? (Array.isArray(safeValue) && safeValue.length > 0) : value) ? selectedLabels : placeholder}
+          {(multiple ? (Array.isArray(safeValue) && safeValue.length > 0) : value) ? safeSelectedLabels : placeholder}
           <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
         </Button>
       </PopoverTrigger>
