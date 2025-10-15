@@ -71,11 +71,21 @@ export function TranslationProvider({ children }) {
       setLoading(true);
       const response = await api.get(`/translations/ui-labels?lang=${lang}`);
 
+      console.log('🔍 TranslationContext - Loading translations for:', lang);
+      console.log('📦 TranslationContext - API Response:', response.data);
+
       if (response.data.success) {
-        setTranslations(response.data.data.labels);
+        const labels = response.data.data.labels;
+        console.log('✅ TranslationContext - Translations loaded:', Object.keys(labels));
+        console.log('🔑 TranslationContext - Sample keys:', {
+          'common.home': labels.common?.home,
+          'common.view_all': labels.common?.view_all,
+          'common.search_country': labels.common?.search_country
+        });
+        setTranslations(labels);
       }
     } catch (error) {
-      console.error('Failed to load translations:', error);
+      console.error('❌ TranslationContext - Failed to load translations:', error);
       setTranslations({});
     } finally {
       setLoading(false);
@@ -114,15 +124,25 @@ export function TranslationProvider({ children }) {
     const keys = key.split('.');
     let value = translations;
 
+    console.log('🔎 Translation lookup:', {
+      key,
+      defaultValue,
+      hasTranslations: !!translations && Object.keys(translations).length > 0,
+      topLevelKeys: translations ? Object.keys(translations) : []
+    });
+
     for (const k of keys) {
       if (value && typeof value === 'object' && k in value) {
         value = value[k];
       } else {
+        console.log(`❌ Translation not found for key: ${key}, returning:`, defaultValue || key);
         return defaultValue || key;
       }
     }
 
-    return typeof value === 'string' ? value : defaultValue || key;
+    const result = typeof value === 'string' ? value : defaultValue || key;
+    console.log(`✅ Translation found for ${key}:`, result);
+    return result;
   }, [translations]);
 
   /**

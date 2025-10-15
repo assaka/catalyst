@@ -90,12 +90,15 @@ export default function ProductTabs({ productTabs = [], product = null, classNam
   useEffect(() => {
     if (!containerRef.current || !product?.attributes) return;
 
-    const attributesContainer = containerRef.current.querySelector('[data-attributes-container]');
-    if (!attributesContainer) return;
+    // Find all attribute containers (there might be multiple for desktop/mobile)
+    const attributesContainers = containerRef.current.querySelectorAll('[data-attributes-container]');
+    if (!attributesContainers || attributesContainers.length === 0) return;
 
     const attributes = product.attributes;
     if (!attributes || Object.keys(attributes).length === 0) {
-      attributesContainer.innerHTML = '<p class="text-gray-500">No specifications available for this product.</p>';
+      attributesContainers.forEach(container => {
+        container.innerHTML = '<p class="text-gray-500">No specifications available for this product.</p>';
+      });
       return;
     }
 
@@ -110,8 +113,11 @@ export default function ProductTabs({ productTabs = [], product = null, classNam
       </div>
     `;
 
-    attributesContainer.innerHTML = attributesHTML;
-  }, [product]);
+    // Populate all attribute containers (desktop and mobile)
+    attributesContainers.forEach(container => {
+      container.innerHTML = attributesHTML;
+    });
+  }, [product, tabsData, activeTabIndex]);
 
   // Attach tab click handlers
   useEffect(() => {
