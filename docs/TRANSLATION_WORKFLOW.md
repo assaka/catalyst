@@ -16,7 +16,7 @@ The Catalyst translation system consists of:
 
 ### 1. Seed Default English Labels
 
-Run the seeding script to populate the database with 110 common English UI labels:
+Run the seeding script to populate the database with 114 common English UI labels:
 
 ```bash
 cd backend
@@ -24,12 +24,19 @@ NODE_ENV=production DATABASE_URL="your_database_url" node seed-translations-simp
 ```
 
 This will insert translations for:
-- **common** (23 labels): add, edit, delete, save, cancel, submit, etc.
+- **common** (27 labels): add, edit, delete, save, cancel, submit, home, view_all, search_country, no_country_found, etc.
 - **navigation** (13 labels): home, dashboard, products, orders, etc.
 - **product** (15 labels): price, stock, add_to_cart, buy_now, etc.
 - **checkout** (16 labels): cart, payment, shipping, total, etc.
 - **account** (18 labels): email, password, login, register, etc.
 - **admin** (12 labels): manage, export, import, translations, etc.
+- **messages** (13 labels): success, error, warning, saved, deleted, etc.
+
+**New UI Component Translations Added:**
+- `common.home` - "Home" (used in CategoryNav navigation)
+- `common.view_all` - "View All" (used in category dropdowns)
+- `common.search_country` - "Search country..." (used in CountrySelect component)
+- `common.no_country_found` - "No country found." (used in CountrySelect component)
 
 ### 2. Add Translations to Components
 
@@ -435,6 +442,47 @@ Content-Type: application/json
 1. Verify language has `is_rtl = true` in database
 2. Check HTML attributes: `<html dir="rtl" lang="ar">`
 3. Ensure CSS supports RTL (use logical properties: `margin-inline-start` instead of `margin-left`)
+
+### Missing Translations for New Languages
+
+If you add a new language but translations are not showing:
+
+1. **Check if translations exist for the new language:**
+   ```sql
+   SELECT COUNT(*) FROM translations WHERE language_code = 'nl';
+   ```
+
+2. **Verify all required keys are translated:**
+   ```sql
+   -- Check which keys are missing for a specific language
+   SELECT key FROM translations WHERE language_code = 'en'
+   AND key NOT IN (
+     SELECT key FROM translations WHERE language_code = 'nl'
+   );
+   ```
+
+3. **Add missing translations manually:**
+   ```sql
+   INSERT INTO translations (id, key, language_code, value, category, created_at, updated_at)
+   VALUES
+     (gen_random_uuid(), 'common.home', 'nl', 'Home', 'common', NOW(), NOW()),
+     (gen_random_uuid(), 'common.view_all', 'nl', 'Bekijk alles', 'common', NOW(), NOW());
+   ```
+
+4. **Or use AI Translate All** to automatically translate all missing keys:
+   - Go to `/admin/translations`
+   - Select the target language
+   - Click "AI Translate All"
+
+**Example: Adding Dutch (nl) translations for UI components**
+```javascript
+const dutchTranslations = [
+  { key: 'common.home', value: 'Home', category: 'common' },
+  { key: 'common.view_all', value: 'Bekijk alles', category: 'common' },
+  { key: 'common.search_country', value: 'Zoek land...', category: 'common' },
+  { key: 'common.no_country_found', value: 'Geen land gevonden.', category: 'common' }
+];
+```
 
 ## Future Enhancements
 
