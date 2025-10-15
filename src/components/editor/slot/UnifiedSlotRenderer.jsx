@@ -658,8 +658,10 @@ export function UnifiedSlotRenderer({
     const { id, type, content, className, styles, metadata } = slot;
 
     // Process variables in content and className
-    const processedContent = processVariables(content, variableContext);
-    let processedClassName = processVariables(className, variableContext);
+    // Pass fullSettings via pageData so processTranslations can access ui_translations
+    const pageData = { settings: fullSettings };
+    const processedContent = processVariables(content, variableContext, pageData);
+    let processedClassName = processVariables(className, variableContext, pageData);
 
     // Handle viewport-aware responsive classes in editor mode
     // Convert Tailwind breakpoint classes (sm:, md:, lg:) to viewport-based visibility
@@ -723,7 +725,7 @@ export function UnifiedSlotRenderer({
     if (styles) {
       Object.entries(styles).forEach(([key, value]) => {
         if (typeof value === 'string') {
-          processedStyles[key] = processVariables(value, variableContext);
+          processedStyles[key] = processVariables(value, variableContext, pageData);
         } else {
           processedStyles[key] = value;
         }
@@ -1186,7 +1188,8 @@ export function UnifiedSlotRenderer({
     }
 
     // Use same layout structure for both editor and storefront
-    const processedParentClassName = processVariables(slot.parentClassName || '', variableContext);
+    const pageData = { settings: fullSettings };
+    const processedParentClassName = processVariables(slot.parentClassName || '', variableContext, pageData);
 
     const layoutWrapper = (
       <div
