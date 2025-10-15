@@ -518,7 +518,7 @@ export const productConfig = {
     product_sku: {
       id: 'product_sku',
       type: 'text',
-      content: '{{#if product.sku}}{{t "product.sku"}}: {{product.sku}}{{/if}}',
+      content: '{{#if product.sku}}{{t "sku"}}: {{product.sku}}{{/if}}',
       className: 'w-fit text-base text-gray-900',
       parentClassName: '',
       styles: {},
@@ -770,7 +770,7 @@ export const productConfig = {
             <circle cx="19" cy="21" r="1"></circle>
             <path d="m2.05 2.05h2l2.66 12.42a2 2 0 0 0 2 1.58h9.78a2 2 0 0 0 1.95-1.57l1.65-7.43h-15.44"></path>
           </svg>
-          {{t "product.add_to_cart"}}
+          {{t "common.add_to_cart"}}
         </button>
       `,
       script: `
@@ -963,7 +963,7 @@ export const productConfig = {
     related_products_title: {
       id: 'related_products_title',
       type: 'text',
-      content: '{{t "product.recommended_products"}}',
+      content: '{{t "recommended_products"}}',
       className: 'w-fit text-2xl font-bold text-gray-900 mb-6',
       parentClassName: '',
       styles: {},

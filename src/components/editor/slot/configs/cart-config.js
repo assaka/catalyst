@@ -82,7 +82,7 @@ export const cartConfig = {
     header_title: {
       id: 'header_title',
       type: 'text',
-      content: '{{t "common.my_cart"}}',
+      content: '{{t "my_cart"}}',
       className: 'w-fit text-3xl font-bold text-gray-900 mb-4',
       parentClassName: 'text-center',
       styles: {},
@@ -128,7 +128,7 @@ export const cartConfig = {
     empty_cart_title: {
       id: 'empty_cart_title',
       type: 'text',
-      content: '{{t "common.cart_is_empty"}}',
+      content: '{{t "your_cart_is_empty"}}',
       className: 'w-fit text-xl font-semibold text-gray-900 mb-2 mx-auto',
       parentClassName: 'text-center',
       styles: {},
@@ -144,7 +144,7 @@ export const cartConfig = {
     empty_cart_text: {
       id: 'empty_cart_text',
       type: 'text',
-      content: '{{t "cart.cart_empty_message"}}',
+      content: '{{t "cart_empty_message"}}',
       className: 'w-fit text-gray-600 mb-6 mx-auto',
       parentClassName: 'text-center',
       styles: {},
@@ -160,7 +160,7 @@ export const cartConfig = {
     empty_cart_button: {
       id: 'empty_cart_button',
       type: 'button',
-      content: '{{t "common.continue_shopping"}}',
+      content: '{{t "continue_shopping"}}',
       className: 'w-fit bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded mx-auto',
       parentClassName: 'text-center',
       styles: {},
@@ -230,7 +230,7 @@ export const cartConfig = {
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
                     </svg>
-                    <span>{{t "common.remove"}}</span>
+                    <span>{{t "remove"}}</span>
                   </button>
                 </div>
               </div>
@@ -256,16 +256,16 @@ export const cartConfig = {
       type: 'component',
       component: 'CartCouponSlot',
       content: `
-          <h3 class="text-lg font-semibold mb-4">{{t "common.apply_coupon"}}</h3>
+          <h3 class="text-lg font-semibold mb-4">{{t "apply_coupon"}}</h3>
 
           <!-- Applied Coupon Section (hidden by default) -->
           <div data-applied-coupon-section style="display: none;">
             <div class="bg-green-50 p-3 rounded flex items-center justify-between">
               <div>
                 <span class="font-medium text-green-800" data-coupon-name></span>
-                <p class="text-sm text-green-600">{{t "common.coupon_applied_successfully"}}</p>
+                <p class="text-sm text-green-600">{{t "coupon_applied_successfully"}}</p>
               </div>
-              <button class="text-red-600 hover:text-red-700" data-action="remove-coupon">{{t "common.remove"}}</button>
+              <button class="text-red-600 hover:text-red-700" data-action="remove-coupon">{{t "remove"}}</button>
             </div>
           </div>
 
@@ -273,12 +273,12 @@ export const cartConfig = {
           <div data-coupon-input-section class="flex space-x-2">
             <input
               type="text"
-              placeholder="{{t "common.enter_coupon_code"}}"
+              placeholder="{{t "enter_coupon_code"}}"
               class="w-1/2 border rounded px-3 py-2"
               data-coupon-input
             />
             <button class="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded whitespace-nowrap" data-action="apply-coupon">
-              {{t "common.apply"}}
+              {{t "apply"}}
             </button>
           </div>
       `,
@@ -301,31 +301,31 @@ export const cartConfig = {
       component: 'CartOrderSummarySlot',
       content: `
         <div class="mt-4">
-          <h3 class="text-lg font-semibold mb-4">{{t "common.order_summary"}}</h3>
+          <h3 class="text-lg font-semibold mb-4">{{t "order_summary"}}</h3>
           <div class="space-y-2">
             <div class="flex justify-between">
-              <span>{{t "common.subtotal"}}</span>
+              <span>{{t "subtotal"}}</span>
               <span data-subtotal>$0.00</span>
             </div>
             <div class="flex justify-between" data-custom-options-row style="display: none;">
-              <span>{{t "common.additional_products"}}</span>
+              <span>{{t "additional_products"}}</span>
               <span data-custom-options-total>$0.00</span>
             </div>
             <div class="flex justify-between" data-discount-row style="display: none;">
-              <span data-discount-label>{{t "common.discount"}}</span>
+              <span data-discount-label>{{t "discount"}}</span>
               <span data-discount>$0.00</span>
             </div>
             <div class="flex justify-between">
-              <span>{{t "common.tax"}}</span>
+              <span>{{t "tax"}}</span>
               <span data-tax>$0.00</span>
             </div>
             <div class="border-t pt-2 flex justify-between text-lg font-semibold">
-              <span>{{t "common.total"}}</span>
+              <span>{{t "total"}}</span>
               <span data-total>$0.00</span>
             </div>
           </div>
           <button class="w-full bg-blue-600 hover:bg-blue-700 text-white py-3 rounded mt-4 transition-colors" data-action="checkout">
-            {{t "common.proceed_now"}}
+            {{t "proceed_now"}}
           </button>
         </div>
       `,
