@@ -273,9 +273,21 @@ export default function ProductTabs({ productTabs = [], product = null, settings
       theme: themeSettings
     }
   };
+
+  console.log('🔧 Full variableContext:', {
+    tabs: tabsData.map(t => ({ id: t.id, isActive: t.isActive })),
+    hasProduct: !!product,
+    settingsStructure: {
+      hasSettings: !!variableContext.settings,
+      hasTheme: !!variableContext.settings?.theme,
+      themeKeys: Object.keys(variableContext.settings?.theme || {}),
+      product_tabs_title_color: variableContext.settings?.theme?.product_tabs_title_color
+    }
+  });
+
   const html = processVariables(template, variableContext);
 
-  console.log('🔍 Processed HTML sample:', html.substring(0, 500));
+  console.log('🔍 Processed HTML sample:', html.substring(0, 800));
 
   return (
     <div ref={containerRef} className={`product-tabs ${className}`}
