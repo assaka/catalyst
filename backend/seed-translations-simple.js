@@ -27,6 +27,10 @@ const defaultTranslations = [
   { key: 'common.select', value: 'Select', category: 'common' },
   { key: 'common.all', value: 'All', category: 'common' },
   { key: 'common.none', value: 'None', category: 'common' },
+  { key: 'common.home', value: 'Home', category: 'common' },
+  { key: 'common.view_all', value: 'View All', category: 'common' },
+  { key: 'common.search_country', value: 'Search country...', category: 'common' },
+  { key: 'common.no_country_found', value: 'No country found.', category: 'common' },
 
   // Navigation
   { key: 'navigation.home', value: 'Home', category: 'navigation' },
