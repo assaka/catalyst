@@ -224,6 +224,11 @@ export default function ProductTabs({ productTabs = [], product = null, classNam
 
   const variableContext = { tabs: tabsData, product };
 
+  // Debug: Check if template has content rendering logic
+  const hasContentLogic = template.includes('{{{this.content}}}') || template.includes('{{this.content}}');
+  console.log('🔧 ProductTabs: Template has content logic?', hasContentLogic);
+  console.log('🔧 ProductTabs: Template sample:', template.substring(template.indexOf('tab_type'), template.indexOf('tab_type') + 500));
+
   const html = processVariables(template, variableContext);
 
   console.log('🔧 ProductTabs: Processed HTML length:', html?.length);
