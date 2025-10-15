@@ -303,9 +303,9 @@ export default function Translations() {
                 onChange={(e) => setSelectedLanguage(e.target.value)}
                 className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
               >
-                {availableLanguages.map((lang) => (
+                {(availableLanguages || []).map((lang) => (
                   <option key={lang.code} value={lang.code}>
-                    {lang.native_name} ({lang.code})
+                    {lang.native_name || lang.name || lang.code} ({lang.code})
                   </option>
                 ))}
               </select>
@@ -501,7 +501,7 @@ export default function Translations() {
               Showing {filteredLabels.length} of {labels.length} labels
             </span>
             <span>
-              Language: {availableLanguages.find(l => l.code === selectedLanguage)?.native_name}
+              Language: {(availableLanguages || []).find(l => l.code === selectedLanguage)?.native_name || selectedLanguage}
             </span>
           </div>
         </div>
