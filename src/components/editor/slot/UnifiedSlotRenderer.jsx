@@ -888,20 +888,35 @@ export function UnifiedSlotRenderer({
                   window.catalyst.trackAddToCart(product, 1);
                 }
 
+                // Get translation from ui_translations
+                const currentLang = localStorage.getItem('catalyst_language') || 'en';
+                const translations = variableContext?.settings?.ui_translations || {};
+                const addedToCartMessage = translations[currentLang]?.['common.added_to_cart_success'] ||
+                                          translations['en']?.['common.added_to_cart_success'] ||
+                                          ' added to cart successfully!';
+
                 // Show success message
                 window.dispatchEvent(new CustomEvent('showFlashMessage', {
                   detail: {
                     type: 'success',
-                    message: `${product.name} added to cart successfully!`
+                    message: `${product.name}${addedToCartMessage}`
                   }
                 }));
               }
             } catch (error) {
               console.error('Failed to add to cart:', error);
+
+              // Get translation from ui_translations
+              const currentLang = localStorage.getItem('catalyst_language') || 'en';
+              const translations = variableContext?.settings?.ui_translations || {};
+              const errorMessage = translations[currentLang]?.['common.added_to_cart_error'] ||
+                                  translations['en']?.['common.added_to_cart_error'] ||
+                                  'Failed to add to cart. Please try again.';
+
               window.dispatchEvent(new CustomEvent('showFlashMessage', {
                 detail: {
                   type: 'error',
-                  message: `Failed to add to cart. Please try again.`
+                  message: errorMessage
                 }
               }));
             }
