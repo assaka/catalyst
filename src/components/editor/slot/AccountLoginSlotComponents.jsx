@@ -9,7 +9,7 @@ import { CustomerAuth } from '@/api/storefront-entities';
 import { useNavigate, useParams } from 'react-router-dom';
 import { createPublicUrl } from '@/utils/urlUtils';
 import { useStore } from '@/components/storefront/StoreProvider';
-import { t } from '@/utils/translationHelper';
+import { useTranslation } from '@/contexts/TranslationContext';
 
 /**
  * UserProfileSlot - User profile display with avatar and info
@@ -191,6 +191,7 @@ const ProfileFormSlot = createSlotComponent({
  * Wrapper component to use React hooks
  */
 const LoginFormSlotComponent = ({ slot, context, variableContext }) => {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const { storeCode } = useParams();
   const { store, settings } = useStore();
@@ -235,7 +236,7 @@ const LoginFormSlotComponent = ({ slot, context, variableContext }) => {
     try {
       // Ensure store is loaded before attempting login
       if (!store?.id) {
-        setError(t('store_info_not_available_refresh', settings));
+        setError(t('common.store_info_not_available', 'Store information not available. Please refresh.'));
         return;
       }
 
@@ -266,10 +267,10 @@ const LoginFormSlotComponent = ({ slot, context, variableContext }) => {
         navigate(accountUrl);
         return;
       } else {
-        setError(t('login_failed_invalid_response', settings));
+        setError(t('common.login_failed', 'Login failed. Invalid response.'));
       }
     } catch (error) {
-      setError(error.message || t('login_failed', settings));
+      setError(error.message || t('common.login_failed', 'Login failed. Please try again.'));
     } finally {
       setLoading(false);
     }
@@ -289,7 +290,7 @@ const LoginFormSlotComponent = ({ slot, context, variableContext }) => {
             </div>
           )}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">{t('email_address', settings)}</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">{t('common.email_address', 'Email Address')}</label>
             <input
               type="email"
               name="email"
@@ -297,12 +298,12 @@ const LoginFormSlotComponent = ({ slot, context, variableContext }) => {
               onChange={handleInputChange}
               required
               className="w-full border border-gray-300 rounded-md px-3 py-2"
-              placeholder={t('enter_your_email', settings)}
+              placeholder={t('common.enter_your_email', 'Enter your email')}
               disabled={loading}
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">{t('password', settings)}</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">{t('common.password', 'Password')}</label>
             <div className="relative">
               <input
                 type={showPassword ? "text" : "password"}
@@ -311,7 +312,7 @@ const LoginFormSlotComponent = ({ slot, context, variableContext }) => {
                 onChange={handleInputChange}
                 required
                 className="w-full border border-gray-300 rounded-md px-3 py-2 pr-10"
-                placeholder={t('enter_your_password', settings)}
+                placeholder={t('common.enter_your_password', 'Enter your password')}
                 disabled={loading}
               />
               <button
@@ -333,14 +334,14 @@ const LoginFormSlotComponent = ({ slot, context, variableContext }) => {
               className="rounded"
               disabled={loading}
             />
-            <label className="ml-2 text-sm">{t('remember_me', settings)}</label>
+            <label className="ml-2 text-sm">{t('common.remember_me', 'Remember me')}</label>
           </div>
           <button
             type="submit"
             disabled={loading}
             className="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-2.5 rounded-md disabled:bg-gray-400 disabled:cursor-not-allowed"
           >
-            {loading ? t('signing_in', settings) : t('sign_in_button', settings)}
+            {loading ? t('common.signing_in', 'Signing in...') : t('common.sign_in', 'Sign In')}
           </button>
         </form>
       </div>
@@ -357,6 +358,7 @@ const LoginFormSlot = createSlotComponent({
  * RegisterFormSlot - Registration form
  */
 const RegisterFormSlotComponent = ({ slot, context, variableContext }) => {
+  const { t } = useTranslation();
   const { settings } = useStore();
 
   return (
@@ -364,28 +366,28 @@ const RegisterFormSlotComponent = ({ slot, context, variableContext }) => {
       <form className="space-y-4">
         <div className="grid grid-cols-2 gap-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">{t('first_name', settings)}</label>
-            <input type="text" required className="w-full border border-gray-300 rounded-md px-3 py-2" placeholder={t('first_name_placeholder', settings)} />
+            <label className="block text-sm font-medium text-gray-700 mb-1">{t('common.first_name', 'First Name')}</label>
+            <input type="text" required className="w-full border border-gray-300 rounded-md px-3 py-2" placeholder={t('common.first_name', 'First Name')} />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">{t('last_name', settings)}</label>
-            <input type="text" required className="w-full border border-gray-300 rounded-md px-3 py-2" placeholder={t('last_name_placeholder', settings)} />
+            <label className="block text-sm font-medium text-gray-700 mb-1">{t('common.last_name', 'Last Name')}</label>
+            <input type="text" required className="w-full border border-gray-300 rounded-md px-3 py-2" placeholder={t('common.last_name', 'Last Name')} />
           </div>
         </div>
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">{t('email_address', settings)}</label>
-          <input type="email" required className="w-full border border-gray-300 rounded-md px-3 py-2" placeholder={t('enter_your_email', settings)} />
+          <label className="block text-sm font-medium text-gray-700 mb-1">{t('common.email_address', 'Email Address')}</label>
+          <input type="email" required className="w-full border border-gray-300 rounded-md px-3 py-2" placeholder={t('common.enter_your_email', 'Enter your email')} />
         </div>
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">{t('password', settings)}</label>
-          <input type="password" required className="w-full border border-gray-300 rounded-md px-3 py-2" placeholder={t('enter_your_password', settings)} />
+          <label className="block text-sm font-medium text-gray-700 mb-1">{t('common.password', 'Password')}</label>
+          <input type="password" required className="w-full border border-gray-300 rounded-md px-3 py-2" placeholder={t('common.enter_your_password', 'Enter your password')} />
         </div>
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">{t('confirm_password', settings)}</label>
-          <input type="password" required className="w-full border border-gray-300 rounded-md px-3 py-2" placeholder={t('confirm_password_placeholder', settings)} />
+          <label className="block text-sm font-medium text-gray-700 mb-1">{t('common.confirm_password', 'Confirm Password')}</label>
+          <input type="password" required className="w-full border border-gray-300 rounded-md px-3 py-2" placeholder={t('common.confirm_password', 'Confirm Password')} />
         </div>
         <button type="submit" className="w-full bg-green-600 hover:bg-green-700 text-white font-medium py-2.5 rounded-md">
-          {t('create_my_account', settings)}
+          {t('common.create_account', 'Create My Account')}
         </button>
       </form>
     </div>

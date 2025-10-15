@@ -1,6 +1,6 @@
 import React from 'react';
 import { formatPrice, safeNumber } from '@/utils/priceUtils';
-import { t } from '@/utils/translationHelper';
+import { useTranslation } from '@/contexts/TranslationContext';
 
 /**
  * Total Price Display Component
@@ -18,6 +18,7 @@ const TotalPriceDisplay = ({
   compact = false,
   settings = null
 }) => {
+  const { t } = useTranslation();
   // Use productContext if provided, otherwise use individual props
   const actualProduct = product || productContext?.product;
   const actualOptions = selectedOptions.length > 0 ? selectedOptions : (productContext?.selectedOptions || []);
@@ -53,7 +54,7 @@ const TotalPriceDisplay = ({
       <div className={innerClass}>
         {showTitle && !compact && (
           <h3 className="text-sm font-semibold text-gray-700 uppercase tracking-wide mb-3">
-            {actualOptions.length > 0 ? t('price_breakdown', actualSettings) : t('total_price', actualSettings)}
+            {actualOptions.length > 0 ? t('product.price_breakdown', 'Price Breakdown') : t('product.total_price', 'Total Price')}
           </h3>
         )}
 
@@ -72,7 +73,7 @@ const TotalPriceDisplay = ({
           <>
             <div className={compact ? "pt-1" : "border-t pt-2 mt-2"}>
               {!compact && (
-                <div className="text-sm font-medium text-gray-700 mb-1">{t('selected_options', actualSettings)}:</div>
+                <div className="text-sm font-medium text-gray-700 mb-1">{t('product.selected_options', 'Selected Options')}:</div>
               )}
               {actualOptions.map((option, index) => {
                 const optionPrice = safeNumber(option.price);
@@ -97,7 +98,7 @@ const TotalPriceDisplay = ({
         <div className={compact ? "pt-1 border-t" : "border-t pt-2 mt-2"}>
           <div className="flex justify-between items-center">
             <span className={compact ? "font-bold text-gray-900" : "text-lg font-bold text-gray-900"}>
-              {t('total_price', actualSettings)}:
+              {t('product.total_price', 'Total Price')}:
             </span>
             <span className={compact ? "font-bold text-green-600" : "text-lg font-bold text-green-600"}>
               {formatPrice(actualTotalPrice)}

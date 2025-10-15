@@ -151,13 +151,23 @@ export default function ProductTabs({ productTabs = [], product = null, settings
       <div class="hidden md:block border-b border-gray-200">
         <nav class="-mb-px flex space-x-8">
           {{#each tabs}}
+            {{#if this.isActive}}
             <button
-              class="py-2 px-1 border-b-2 font-medium transition-colors duration-200 {{#if this.isActive}}{{else}}border-transparent hover:underline{{/if}}"
-              style="font-size: {{settings.theme.product_tabs_title_size}}; {{#if this.isActive}}color: {{settings.theme.product_tabs_title_color}}; border-color: {{settings.theme.product_tabs_title_color}};{{else}}color: #6b7280;{{/if}}"
+              class="py-2 px-1 border-b-2 font-medium transition-colors duration-200"
+              style="font-size: {{settings.theme.product_tabs_title_size}}; color: {{settings.theme.product_tabs_title_color}}; border-color: {{settings.theme.product_tabs_title_color}};"
               data-action="switch-tab"
               data-tab-id="{{this.id}}">
               {{this.title}}
             </button>
+            {{else}}
+            <button
+              class="py-2 px-1 border-b-2 border-transparent hover:underline font-medium transition-colors duration-200"
+              style="font-size: {{settings.theme.product_tabs_title_size}}; color: #6b7280;"
+              data-action="switch-tab"
+              data-tab-id="{{this.id}}">
+              {{this.title}}
+            </button>
+            {{/if}}
           {{/each}}
         </nav>
       </div>

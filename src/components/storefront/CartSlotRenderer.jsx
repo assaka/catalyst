@@ -5,7 +5,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Trash2, Plus, Minus, Tag, ShoppingCart } from 'lucide-react';
 import { SlotManager } from '@/utils/slotUtils';
 import { filterSlotsByViewMode, sortSlotsByGridCoordinates } from '@/hooks/useSlotConfiguration';
-import { t } from '@/utils/translationHelper';
+import { useTranslation } from '@/contexts/TranslationContext';
 
 /**
  * CartSlotRenderer - Renders slots with full cart functionality
@@ -17,6 +17,7 @@ export function CartSlotRenderer({
   viewMode = 'emptyCart',
   cartContext = {}
 }) {
+  const { t } = useTranslation();
   const {
     cartItems = [],
     appliedCoupon,
@@ -147,7 +148,7 @@ export function CartSlotRenderer({
     if (id === 'header_title') {
       return wrapWithParentClass(
         <h1 className={className || "text-3xl font-bold text-gray-900 mb-4"} style={styles}>
-          {content || t('my_cart', settings)}
+          {content || t('common.my_cart', 'My Cart')}
         </h1>
       );
     }
@@ -155,7 +156,7 @@ export function CartSlotRenderer({
     if (id === 'empty_cart_title') {
       return wrapWithParentClass(
         <h2 className={className || "text-xl font-semibold text-gray-900 mb-2"} style={styles}>
-          {content || t('your_cart_is_empty', settings)}
+          {content || t('common.cart_is_empty', 'Your cart is empty')}
         </h2>
       );
     }
@@ -163,7 +164,7 @@ export function CartSlotRenderer({
     if (id === 'empty_cart_text') {
       return wrapWithParentClass(
         <p className={className || "text-gray-600 mb-6"} style={styles}>
-          {content || "Looks like you haven't added anything to your cart yet."}
+          {content || t('common.no_items_yet', "Looks like you haven't added anything to your cart yet.")}
         </p>
       );
     }
@@ -175,7 +176,7 @@ export function CartSlotRenderer({
           className={className || "bg-blue-600 hover:bg-blue-700"}
           style={styles}
         >
-          {content || t('continue_shopping', settings)}
+          {content || t('common.continue_shopping', 'Continue Shopping')}
         </Button>
       );
     }

@@ -45,9 +45,10 @@ import apiClient from "@/api/client";
 import StepIndicator from "@/components/storefront/StepIndicator";
 import { formatPrice as formatPriceUtil } from '@/utils/priceUtils';
 import { getProductName, getCurrentLanguage } from '@/utils/translationUtils';
-import { t } from '@/utils/translationHelper';
+import { useTranslation } from '@/contexts/TranslationContext';
 
 export default function Checkout() {
+  const { t } = useTranslation();
   const { store, settings, loading: storeLoading, selectedCountry, setSelectedCountry } = useStore();
   const { showError, AlertComponent } = useAlertTypes();
 
@@ -560,12 +561,12 @@ export default function Checkout() {
   // Coupon handling functions
   const handleApplyCoupon = async () => {
     if (!couponCode) {
-      setCouponError(t('please_enter_coupon_code', settings));
+      setCouponError(t('common.enter_coupon_code', 'Please enter a coupon code'));
       return;
     }
 
     if (!store?.id) {
-      setCouponError(t('store_info_not_available', settings));
+      setCouponError(t('common.store_info_not_available', 'Store information not available'));
       return;
     }
     
@@ -587,7 +588,7 @@ export default function Checkout() {
           const expiryDate = new Date(coupon.end_date);
           const now = new Date();
           if (expiryDate < now) {
-            setCouponError(t('coupon_expired', settings));
+            setCouponError(t('common.coupon_expired', 'This coupon has expired'));
             return;
           }
         }
@@ -597,21 +598,21 @@ export default function Checkout() {
           const startDate = new Date(coupon.start_date);
           const now = new Date();
           if (startDate > now) {
-            setCouponError(t('coupon_not_active', settings));
+            setCouponError(t('common.coupon_not_active', 'This coupon is not yet active'));
             return;
           }
         }
 
         // Check usage limit
         if (coupon.usage_limit && coupon.usage_count >= coupon.usage_limit) {
-          setCouponError(t('coupon_usage_limit', settings));
+          setCouponError(t('common.coupon_usage_limit', 'This coupon has reached its usage limit'));
           return;
         }
         
         // Check minimum purchase amount
         const subtotal = calculateSubtotal();
         if (coupon.min_purchase_amount && subtotal < coupon.min_purchase_amount) {
-          const message = t('minimum_order_amount_required', settings).replace('{amount}', formatPrice(coupon.min_purchase_amount));
+          const message = t('common.minimum_order_required', 'Minimum order amount of {amount} required').replace('{amount}', formatPrice(coupon.min_purchase_amount));
           setCouponError(message);
           return;
         }
@@ -622,7 +623,7 @@ export default function Checkout() {
             coupon.applicable_products.includes(item.product_id)
           );
           if (!hasApplicableProduct) {
-            setCouponError(t('coupon_not_apply_products', settings));
+            setCouponError(t('common.coupon_not_apply', 'This coupon doesn\'t apply to products in your cart'));
             return;
           }
         }
@@ -636,26 +637,26 @@ export default function Checkout() {
             );
           });
           if (!hasApplicableCategory) {
-            setCouponError(t('coupon_not_apply_products', settings));
+            setCouponError(t('common.coupon_not_apply', 'This coupon doesn\'t apply to products in your cart'));
             return;
           }
         }
-        
+
         // Use coupon service to persist and sync coupon
         const result = couponService.setAppliedCoupon(coupon);
         if (result.success) {
           setAppliedCoupon(coupon);
           setCouponCode(''); // Clear the input after successful application
         } else {
-          setCouponError(t('failed_apply_coupon', settings));
+          setCouponError(t('common.failed_apply_coupon', 'Failed to apply coupon'));
         }
       } else {
         setAppliedCoupon(null);
-        setCouponError(t('invalid_expired_coupon', settings));
+        setCouponError(t('common.invalid_coupon', 'Invalid or expired coupon code'));
       }
     } catch (error) {
       console.error("Error applying coupon:", error);
-      setCouponError(t('could_not_apply_coupon', settings));
+      setCouponError(t('common.could_not_apply_coupon', 'Could not apply coupon'));
     }
   };
 
@@ -1032,10 +1033,10 @@ export default function Checkout() {
   if (cartItems.length === 0) {
     return (
       <div className="max-w-4xl mx-auto px-4 py-8 text-center">
-        <h1 className="text-2xl font-bold text-gray-900 mb-4">{t('your_cart_empty', settings)}</h1>
-        <p className="text-gray-600 mb-6">{t('add_products_before_checkout', settings)}</p>
+        <h1 className="text-2xl font-bold text-gray-900 mb-4">{t('common.cart_empty', 'Your cart is empty')}</h1>
+        <p className="text-gray-600 mb-6">{t('common.add_products_checkout', 'Add products before checkout')}</p>
         <Button onClick={() => navigate(createPageUrl('Storefront'))}>
-          {t('continue_shopping', settings)}
+          {t('common.continue_shopping', 'Continue Shopping')}
         </Button>
       </div>
     );

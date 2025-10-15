@@ -8,11 +8,12 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { formatPrice, safeNumber } from '@/utils/priceUtils';
-import { t } from '@/utils/translationHelper';
+import { useTranslation } from '@/contexts/TranslationContext';
 
 export default function HeaderSearch({ styles = {} }) {
   const navigate = useNavigate();
   const { store, settings, taxes, selectedCountry } = useStore();
+  const { t } = useTranslation();
 
   // Extract input styles from slot configuration
   const inputStyles = {
@@ -111,7 +112,7 @@ export default function HeaderSearch({ styles = {} }) {
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
           <Input
             type="text"
-            placeholder={t('search_products', settings)}
+            placeholder={t('common.search_products', 'Search products...')}
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="pl-10 pr-12 py-2 w-full"
@@ -189,14 +190,14 @@ export default function HeaderSearch({ styles = {} }) {
                       size="sm"
                       className="w-full text-blue-600 hover:text-blue-800"
                     >
-                      {t('view_all_results_for', settings)} "{searchQuery}"
+                      {t('common.view_all_results_for', 'View all results for')} "{searchQuery}"
                     </Button>
                   </div>
                 )}
               </div>
             ) : (
               <div className="p-4 text-center text-gray-500">
-                {t('no_products_found_for', settings)} "{searchQuery}"
+                {t('common.no_products_found_for', 'No products found for')} "{searchQuery}"
               </div>
             )}
           </CardContent>

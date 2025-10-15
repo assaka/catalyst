@@ -9,7 +9,7 @@ import { createPageUrl } from '@/utils';
 import { getExternalStoreUrl, getStoreBaseUrl } from '@/utils/urlUtils';
 import { useStore } from '@/components/storefront/StoreProvider'; // FIXED: Corrected import path
 import { formatPrice } from '@/utils/priceUtils';
-import { t } from '@/utils/translationHelper';
+import { useTranslation } from '@/contexts/TranslationContext';
 
 // --- Start of helper functions ---
 const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms));
@@ -38,6 +38,7 @@ const retryApiCall = async (apiCall, maxRetries = 5, baseDelay = 3000) => {
 // Session handling removed - now using proper customer authentication
 
 export default function WishlistDropdown({ iconVariant = 'outline' }) {
+  const { t } = useTranslation();
   const { store, settings, taxes, selectedCountry } = useStore(); // Added store context
   const [wishlistItems, setWishlistItems] = useState([]);
   const [user, setUser] = useState(null); // Preserve user state
@@ -161,7 +162,7 @@ export default function WishlistDropdown({ iconVariant = 'outline' }) {
       </PopoverTrigger>
       <PopoverContent className="w-80">
         <div className="p-4">
-          <h4 className="font-medium leading-none mb-4">{t('wishlist', settings)}</h4>
+          <h4 className="font-medium leading-none mb-4">{t('common.wishlist', 'Wishlist')}</h4>
           {loading ? (
             <div className="flex justify-center items-center h-24">
               <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-gray-900"></div>
@@ -190,7 +191,7 @@ export default function WishlistDropdown({ iconVariant = 'outline' }) {
               ))}
             </div>
           ) : (
-            <p className="text-sm text-muted-foreground">{t('your_wishlist_is_empty', settings)}</p>
+            <p className="text-sm text-muted-foreground">{t('common.your_wishlist_is_empty', 'Your wishlist is empty')}</p>
           )}
         </div>
       </PopoverContent>
