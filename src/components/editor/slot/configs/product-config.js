@@ -696,7 +696,7 @@ export const productConfig = {
       component: 'QuantitySelector',
       content: `
         <div class="flex items-center space-x-2">
-          <label for="quantity-input" class="font-bold text-sm text-gray-900">{{t "qty"}}</label>
+          <label for="quantity-input" class="font-bold text-sm text-gray-900">{{t "checkout.qty"}}</label>
           <div class="flex items-center border rounded-lg overflow-hidden">
             <button class="p-2 hover:bg-gray-100 transition-colors" data-action="decrease">
               <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-4 h-4">
@@ -770,7 +770,7 @@ export const productConfig = {
             <circle cx="19" cy="21" r="1"></circle>
             <path d="m2.05 2.05h2l2.66 12.42a2 2 0 0 0 2 1.58h9.78a2 2 0 0 0 1.95-1.57l1.65-7.43h-15.44"></path>
           </svg>
-          {{t "add_to_cart"}}
+          {{t "common.add_to_cart"}}
         </button>
       `,
       script: `
