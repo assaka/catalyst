@@ -521,12 +521,16 @@ export function UnifiedSlotRenderer({
     };
   });
 
+  // Extract full settings object but filter out ui_translations to prevent React rendering errors
+  const fullSettings = productData.settings || categoryData?.settings || cartData?.settings || loginData?.settings || accountData?.settings || {};
+  const { ui_translations, ...settingsWithoutTranslations } = fullSettings;
+
   const variableContext = {
     product: productData.product || (context === 'editor' ? generateDemoData('product', {}).product : null),
     products: formattedProducts, // Use formatted products for category templates
     category: categoryData?.category || categoryData,
     cart: cartData,
-    settings: productData.settings || categoryData?.settings || cartData?.settings || loginData?.settings || accountData?.settings || {},
+    settings: settingsWithoutTranslations,
     productLabels: productData.productLabels || categoryData?.productLabels,
     // Product-specific data
     customOptions: productData.customOptions || [],
