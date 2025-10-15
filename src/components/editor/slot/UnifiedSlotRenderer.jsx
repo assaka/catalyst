@@ -524,12 +524,16 @@ export function UnifiedSlotRenderer({
   // Extract full settings object - keep ui_translations for template processing
   const fullSettings = productData.settings || categoryData?.settings || cartData?.settings || loginData?.settings || accountData?.settings || {};
 
+  // Create a safe version of settings without ui_translations for React rendering
+  // ui_translations will still be available in pageData for processTranslations
+  const { ui_translations, ...settingsForComponents } = fullSettings;
+
   const variableContext = {
     product: productData.product || (context === 'editor' ? generateDemoData('product', {}).product : null),
     products: formattedProducts, // Use formatted products for category templates
     category: categoryData?.category || categoryData,
     cart: cartData,
-    settings: fullSettings, // Keep ui_translations for {{t "key"}} processing
+    settings: settingsForComponents, // Safe settings without ui_translations object
     productLabels: productData.productLabels || categoryData?.productLabels,
     // Product-specific data
     customOptions: productData.customOptions || [],
