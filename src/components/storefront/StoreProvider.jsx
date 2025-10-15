@@ -438,6 +438,11 @@ export const StoreProvider = ({ children }) => {
           product_tabs_title_size: '1.875rem',
           product_tabs_content_bg: '#EFF6FF',
           product_tabs_attribute_label_color: '#16A34A',
+          product_tabs_active_bg: 'transparent',
+          product_tabs_inactive_color: '#6B7280',
+          product_tabs_inactive_bg: 'transparent',
+          product_tabs_hover_color: '#111827',
+          product_tabs_hover_bg: '#F3F4F6',
           // Breadcrumb defaults
           breadcrumb_show_home_icon: true,
           breadcrumb_item_text_color: '#6B7280',

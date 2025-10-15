@@ -145,7 +145,8 @@ export default function ProductTabs({ productTabs = [], product = null, settings
   }
 
   // Get template from slotConfig or use default with theme styling
-  const template = slotConfig?.content || `
+  // IMPORTANT: Always use the code template, ignore slotConfig to ensure latest styling
+  const template = `
     <div class="w-full">
       <!-- Desktop: Tab Navigation - Hidden on mobile -->
       <div class="hidden md:block border-b border-gray-200">
@@ -154,15 +155,17 @@ export default function ProductTabs({ productTabs = [], product = null, settings
             {{#if this.isActive}}
             <button
               class="py-2 px-1 border-b-2 font-medium transition-colors duration-200"
-              style="font-size: {{settings.theme.product_tabs_title_size}}; color: {{settings.theme.product_tabs_title_color}}; border-color: {{settings.theme.product_tabs_title_color}};"
+              style="font-size: {{settings.theme.product_tabs_title_size}}; color: {{settings.theme.product_tabs_title_color}}; border-color: {{settings.theme.product_tabs_title_color}}; background-color: {{settings.theme.product_tabs_active_bg}};"
               data-action="switch-tab"
               data-tab-id="{{this.id}}">
               {{this.title}}
             </button>
             {{else}}
             <button
-              class="py-2 px-1 border-b-2 border-transparent hover:underline font-medium transition-colors duration-200"
-              style="font-size: {{settings.theme.product_tabs_title_size}}; color: #6b7280;"
+              class="py-2 px-1 border-b-2 border-transparent font-medium transition-colors duration-200"
+              style="font-size: {{settings.theme.product_tabs_title_size}}; color: {{settings.theme.product_tabs_inactive_color}}; background-color: {{settings.theme.product_tabs_inactive_bg}};"
+              onmouseover="this.style.color='{{settings.theme.product_tabs_hover_color}}'; this.style.backgroundColor='{{settings.theme.product_tabs_hover_bg}}';"
+              onmouseout="this.style.color='{{settings.theme.product_tabs_inactive_color}}'; this.style.backgroundColor='{{settings.theme.product_tabs_inactive_bg}}';"
               data-action="switch-tab"
               data-tab-id="{{this.id}}">
               {{this.title}}
@@ -206,13 +209,16 @@ export default function ProductTabs({ productTabs = [], product = null, settings
       <!-- Mobile: Accordion - Hidden on desktop -->
       <div class="md:hidden space-y-2">
         {{#each tabs}}
-          <div class="border border-gray-200 rounded-lg" data-accordion-item="{{@index}}">
+          <div class="border border-gray-200 rounded-lg" data-accordion-item="{{@index}}" style="background-color: {{settings.theme.product_tabs_inactive_bg}};">
             <!-- Accordion Header -->
             <button
-              class="w-full flex items-center justify-between p-4 text-left hover:bg-gray-50 transition-colors duration-200"
+              class="w-full flex items-center justify-between p-4 text-left transition-colors duration-200"
+              style="color: {{settings.theme.product_tabs_title_color}}; background-color: {{settings.theme.product_tabs_active_bg}};"
+              onmouseover="this.style.backgroundColor='{{settings.theme.product_tabs_hover_bg}}';"
+              onmouseout="this.style.backgroundColor='{{settings.theme.product_tabs_active_bg}}';"
               data-action="toggle-accordion"
               data-accordion-index="{{@index}}">
-              <span class="font-medium" style="font-size: {{settings.theme.product_tabs_title_size}}; color: {{settings.theme.product_tabs_title_color}};">{{this.title}}</span>
+              <span class="font-medium" style="font-size: {{settings.theme.product_tabs_title_size}};">{{this.title}}</span>
               <svg
                 class="w-5 h-5 transition-transform duration-200 accordion-chevron"
                 style="color: {{settings.theme.product_tabs_title_color}};"
