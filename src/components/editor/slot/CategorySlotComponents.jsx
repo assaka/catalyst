@@ -334,19 +334,35 @@ const LayeredNavigation = createSlotComponent({
       const initMaxVisibleAttributes = () => {
         const filterContents = containerRef.current?.querySelectorAll('[data-max-visible]');
 
+        console.log('[CategorySlotComponents] initMaxVisibleAttributes - Found filter contents:', filterContents?.length);
+
         filterContents?.forEach(filterContent => {
           const maxVisibleAttr = filterContent.getAttribute('data-max-visible');
           const maxVisible = parseInt(maxVisibleAttr);
           const attributeCode = filterContent.getAttribute('data-attribute-code');
 
+          console.log('[CategorySlotComponents] Processing attribute:', {
+            attributeCode,
+            maxVisibleAttr,
+            maxVisible,
+            isValid: maxVisibleAttr && maxVisibleAttr !== '' && maxVisibleAttr !== 'null' && !isNaN(maxVisible) && maxVisible > 0
+          });
+
           // Only apply if maxVisible is a valid number and > 0
           // If not set or invalid, don't limit (show all)
           if (!maxVisibleAttr || maxVisibleAttr === '' || maxVisibleAttr === 'null' || maxVisibleAttr === 'undefined' || isNaN(maxVisible) || maxVisible <= 0) {
+            console.log('[CategorySlotComponents] Skipping attribute due to invalid maxVisible');
             return;
           }
 
           const allOptions = filterContent.querySelectorAll('.filter-option');
           const showMoreBtn = filterContent.querySelector('.show-more-btn');
+
+          console.log('[CategorySlotComponents] Options and button:', {
+            allOptionsCount: allOptions.length,
+            showMoreBtnExists: !!showMoreBtn,
+            shouldShowButton: allOptions.length > maxVisible
+          });
 
           // Hide options beyond max visible
           let hiddenCount = 0;
@@ -359,7 +375,10 @@ const LayeredNavigation = createSlotComponent({
 
           // Show "Show More" button if there are hidden options
           if (allOptions.length > maxVisible && showMoreBtn) {
+            console.log('[CategorySlotComponents] Showing "Show More" button');
             showMoreBtn.classList.remove('hidden');
+          } else {
+            console.log('[CategorySlotComponents] NOT showing "Show More" button - condition not met');
           }
         });
       };
