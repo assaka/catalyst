@@ -184,8 +184,8 @@ export default function ProductTabs({ productTabs = [], product = null, settings
             data-tab-index="{{@index}}"
             data-tab-type="{{this.tab_type}}"
             data-tab-text-content="{{this.content}}">
-            <div class="prose max-w-none text-gray-800 leading-relaxed tab-content-container p-6 rounded-lg"
-                 style="background-color: {{settings.theme.product_tabs_content_bg}};">
+            <div class="prose max-w-none text-gray-800 leading-relaxed tab-content-container p-6 border"
+                 style="background-color: {{settings.theme.product_tabs_content_bg}}; border-radius: {{settings.theme.product_tabs_border_radius}}; border-color: {{settings.theme.product_tabs_border_color}};">
               {{#if (eq this.tab_type "text")}}
                 <div>{{{this.content}}}</div>
               {{/if}}
@@ -209,11 +209,11 @@ export default function ProductTabs({ productTabs = [], product = null, settings
       <!-- Mobile: Accordion - Hidden on desktop -->
       <div class="md:hidden space-y-2">
         {{#each tabs}}
-          <div class="border border-gray-200 rounded-lg" data-accordion-item="{{@index}}" style="background-color: {{settings.theme.product_tabs_inactive_bg}};">
+          <div class="border" data-accordion-item="{{@index}}" style="background-color: {{settings.theme.product_tabs_inactive_bg}}; border-radius: {{settings.theme.product_tabs_border_radius}}; border-color: {{settings.theme.product_tabs_border_color}};">
             <!-- Accordion Header -->
             <button
               class="w-full flex items-center justify-between p-4 text-left transition-colors duration-200"
-              style="color: {{settings.theme.product_tabs_title_color}}; background-color: {{settings.theme.product_tabs_active_bg}};"
+              style="color: {{settings.theme.product_tabs_title_color}}; background-color: {{settings.theme.product_tabs_active_bg}}; border-top-left-radius: {{settings.theme.product_tabs_border_radius}}; border-top-right-radius: {{settings.theme.product_tabs_border_radius}};"
               onmouseover="this.style.backgroundColor='{{settings.theme.product_tabs_hover_bg}}';"
               onmouseout="this.style.backgroundColor='{{settings.theme.product_tabs_active_bg}}';"
               data-action="toggle-accordion"
@@ -230,11 +230,12 @@ export default function ProductTabs({ productTabs = [], product = null, settings
             </button>
 
             <!-- Accordion Content -->
-            <div class="accordion-content {{#if @first}}{{else}}hidden{{/if}} p-4 pt-0 border-t border-gray-200"
+            <div class="accordion-content {{#if @first}}{{else}}hidden{{/if}} p-4 pt-0 border-t"
                  data-accordion-content="{{@index}}"
                  data-tab-type="{{this.tab_type}}"
-                 data-tab-text-content="{{this.content}}">
-              <div class="prose max-w-none text-gray-800 leading-relaxed tab-content-container p-6 rounded-lg"
+                 data-tab-text-content="{{this.content}}"
+                 style="border-color: {{settings.theme.product_tabs_border_color}};">
+              <div class="prose max-w-none text-gray-800 leading-relaxed tab-content-container p-6"
                    style="background-color: {{settings.theme.product_tabs_content_bg}};">
                 {{#if (eq this.tab_type "text")}}
                   <div>{{{this.content}}}</div>

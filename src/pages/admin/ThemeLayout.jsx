@@ -1514,6 +1514,38 @@ export default function ThemeLayout() {
                                                 </SelectContent>
                                             </Select>
                                         </div>
+
+                                        <div>
+                                            <Label htmlFor="product_tabs_border_radius">Tab Border Radius</Label>
+                                            <Select
+                                                value={store.settings.theme.product_tabs_border_radius || '0.5rem'}
+                                                onValueChange={(value) => handleThemeChange('product_tabs_border_radius', value)}
+                                            >
+                                                <SelectTrigger>
+                                                    <SelectValue />
+                                                </SelectTrigger>
+                                                <SelectContent>
+                                                    <SelectItem value="0">None (0)</SelectItem>
+                                                    <SelectItem value="0.125rem">Small (2px)</SelectItem>
+                                                    <SelectItem value="0.25rem">Medium (4px)</SelectItem>
+                                                    <SelectItem value="0.375rem">Default (6px)</SelectItem>
+                                                    <SelectItem value="0.5rem">Large (8px)</SelectItem>
+                                                    <SelectItem value="0.75rem">Extra Large (12px)</SelectItem>
+                                                    <SelectItem value="1rem">Round (16px)</SelectItem>
+                                                    <SelectItem value="9999px">Full Round</SelectItem>
+                                                </SelectContent>
+                                            </Select>
+                                        </div>
+
+                                        <div>
+                                            <Label htmlFor="product_tabs_border_color">Tab Border Color</Label>
+                                            <Input
+                                                id="product_tabs_border_color"
+                                                type="color"
+                                                value={store.settings.theme.product_tabs_border_color || '#E5E7EB'}
+                                                onChange={(e) => handleThemeChange('product_tabs_border_color', e.target.value)}
+                                            />
+                                        </div>
                                     </div>
                                 </div>
                             </div>

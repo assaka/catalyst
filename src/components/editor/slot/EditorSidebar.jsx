@@ -725,6 +725,27 @@ const EditorSidebar = ({
   // Cache for reverse translation lookup (value -> key)
   const [translationCache, setTranslationCache] = useState(null);
 
+  // Helper to recursively search for a value in nested translation object
+  const findKeyByValue = useCallback((obj, value, prefix = '') => {
+    for (const [key, val] of Object.entries(obj)) {
+      const fullKey = prefix ? `${prefix}.${key}` : key;
+
+      if (typeof val === 'string') {
+        // Direct string match
+        if (val === value) {
+          return fullKey;
+        }
+      } else if (typeof val === 'object' && val !== null) {
+        // Recursively search nested objects
+        const found = findKeyByValue(val, value, fullKey);
+        if (found) {
+          return found;
+        }
+      }
+    }
+    return null;
+  }, []);
+
   // Helper to detect if text content is a translation key or matches a translation value
   const detectTranslationKey = useCallback(async (content) => {
     if (!content) return null;
@@ -768,27 +789,6 @@ const EditorSidebar = ({
 
     return null;
   }, [currentLanguage, translationCache, findKeyByValue]);
-
-  // Helper to recursively search for a value in nested translation object
-  const findKeyByValue = useCallback((obj, value, prefix = '') => {
-    for (const [key, val] of Object.entries(obj)) {
-      const fullKey = prefix ? `${prefix}.${key}` : key;
-
-      if (typeof val === 'string') {
-        // Direct string match
-        if (val === value) {
-          return fullKey;
-        }
-      } else if (typeof val === 'object' && val !== null) {
-        // Recursively search nested objects
-        const found = findKeyByValue(val, value, fullKey);
-        if (found) {
-          return found;
-        }
-      }
-    }
-    return null;
-  }, []);
 
   // Helper to get translated value for a key
   const getTranslatedValue = useCallback(async (key) => {
