@@ -27,6 +27,12 @@ const Translation = sequelize.define('Translation', {
     allowNull: true,
     defaultValue: 'common',
     comment: 'Category: common, storefront, admin, errors'
+  },
+  type: {
+    type: DataTypes.STRING(20),
+    allowNull: false,
+    defaultValue: 'system',
+    comment: 'Type: system (built-in) or custom (user-created)'
   }
 }, {
   tableName: 'translations',
