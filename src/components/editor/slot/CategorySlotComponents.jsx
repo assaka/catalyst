@@ -183,6 +183,14 @@ const LayeredNavigation = createSlotComponent({
       </div>
     `;
 
+    // Debug: Check if ui_translations is in variableContext before processing
+    console.log('[CategorySlotComponents] Before processVariables:', {
+      hasVariableContext: !!variableContext,
+      hasSettings: !!variableContext?.settings,
+      hasUiTranslations: !!variableContext?.settings?.ui_translations,
+      uiTranslationsKeys: variableContext?.settings?.ui_translations ? Object.keys(variableContext.settings.ui_translations) : []
+    });
+
     const html = processVariables(template, variableContext);
 
     // Attach event listeners in storefront
