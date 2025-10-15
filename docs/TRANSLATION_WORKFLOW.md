@@ -408,12 +408,12 @@ Content-Type: application/json
 
 ### Translation Not Showing
 
-1. Check if translation exists in database:
+1. **Check if translation exists in database:**
    ```sql
    SELECT * FROM translations WHERE key = 'common.save' AND language_code = 'en';
    ```
 
-2. Verify TranslationProvider wraps your app:
+2. **Verify TranslationProvider wraps your app:**
    ```jsx
    // In App.jsx or main entry point
    <TranslationProvider>
@@ -421,7 +421,18 @@ Content-Type: application/json
    </TranslationProvider>
    ```
 
-3. Check browser console for errors
+3. **Check browser console for errors**
+
+4. **Verify API response structure:**
+   - Open Developer Tools (F12) → Network tab
+   - Look for request to `/api/translations/ui-labels?lang=nl`
+   - Response should have structure: `{ success: true, data: { language: 'nl', labels: {...} } }`
+   - Labels should be nested: `{ common: { home: "Home", view_all: "View All" } }`
+
+5. **Common issues:**
+   - **Backend not restarted:** Translation service changes require backend restart
+   - **Wrong response path:** API client has special handling for translation endpoints - ensure you access `response.data.labels` not `response.data.data.labels`
+   - **Flat keys instead of nested:** Database keys must follow dot notation (e.g., `common.home`) and API must convert to nested structure
 
 ### Language Not Changing
 
@@ -483,6 +494,55 @@ const dutchTranslations = [
   { key: 'common.no_country_found', value: 'Geen land gevonden.', category: 'common' }
 ];
 ```
+
+## Implementation Notes
+
+### API Response Structure
+
+The API client (`src/api/client.js`) has **special handling for translation endpoints** (lines 381-395) that returns the full backend response without transformation:
+
+```javascript
+// Backend response structure
+{
+  "success": true,
+  "data": {
+    "language": "nl",
+    "labels": {
+      "common": {
+        "home": "Home",
+        "view_all": "Bekijk alles",
+        "search_country": "Zoek land..."
+      },
+      "navigation": { ... },
+      "product": { ... }
+    }
+  }
+}
+```
+
+When consuming this in your components, access translations as:
+```javascript
+const response = await api.get(`/translations/ui-labels?lang=${lang}`);
+const labels = response.data.labels; // NOT response.data.data.labels
+```
+
+### Database Key Format
+
+All translation keys **must** follow dot notation:
+- ✅ `common.home`, `common.view_all`, `checkout.payment`
+- ❌ `home`, `view_all`, `payment`
+
+The translation service converts these flat keys to nested objects for the API response.
+
+### Migration from Flat Keys
+
+If you have existing flat keys in the database, run the migration script:
+```bash
+cd backend
+NODE_ENV=production DATABASE_URL="your_db_url" node fix-translation-keys.js
+```
+
+This will rename all single-level keys to follow the dot notation pattern.
 
 ## Future Enhancements
 
