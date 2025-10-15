@@ -10,7 +10,7 @@ import { ShoppingCart } from 'lucide-react';
 import { getPrimaryImageUrl } from '@/utils/imageUtils';
 import { getStockLabel, getStockLabelStyle } from '@/utils/stockLabelUtils';
 import { getProductName, getCurrentLanguage } from '@/utils/translationUtils';
-import { t } from '@/utils/translationHelper';
+import { useTranslation } from '@/contexts/TranslationContext';
 
 /**
  * ProductItemCard - Reusable product card component
@@ -29,6 +29,8 @@ const ProductItemCard = ({
   isEditorMode = false,
   onElementClick = null
 }) => {
+  const { t } = useTranslation();
+
   // Local state for add to cart if not managed externally
   const [localIsAddingToCart, setLocalIsAddingToCart] = useState(false);
 
@@ -204,7 +206,7 @@ const ProductItemCard = ({
         window.dispatchEvent(new CustomEvent('showFlashMessage', {
           detail: {
             type: 'success',
-            message: `${translatedProductName} ${t('added_to_cart', settings)}`
+            message: `${translatedProductName} ${t('common.added_to_cart', 'added to cart successfully!')}`
           }
         }));
       } else {
@@ -214,7 +216,7 @@ const ProductItemCard = ({
         window.dispatchEvent(new CustomEvent('showFlashMessage', {
           detail: {
             type: 'error',
-            message: `${t('failed_to_add', settings)} ${translatedProductName} ${t('to_cart', settings)}. ${t('please_try_again', settings)}.`
+            message: `${t('common.failed_to_add', 'Failed to add')} ${translatedProductName} ${t('common.to_cart', 'to cart')}. ${t('common.please_try_again', 'Please try again')}.`
           }
         }));
       }
@@ -225,7 +227,7 @@ const ProductItemCard = ({
       window.dispatchEvent(new CustomEvent('showFlashMessage', {
         detail: {
           type: 'error',
-          message: `${t('error_adding', settings)} ${translatedProductName} ${t('to_cart', settings)}. ${t('please_try_again', settings)}.`
+          message: `${t('common.error_adding', 'Error adding')} ${translatedProductName} ${t('common.to_cart', 'to cart')}. ${t('common.please_try_again', 'Please try again')}.`
         }
       }));
     } finally {
@@ -365,7 +367,7 @@ const ProductItemCard = ({
               data-slot-id={isEditorMode ? 'product_card_add_to_cart' : undefined}
             >
               <ShoppingCart className="w-4 h-4 mr-2" />
-              {addingToCart ? t('adding', settings) : (addToCartConfig.content || t('add_to_cart', settings))}
+              {addingToCart ? t('common.adding', 'Adding...') : (addToCartConfig.content || t('product.add_to_cart', 'Add to Cart'))}
             </Button>
 
             {/* Stock status for list view */}
