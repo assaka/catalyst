@@ -576,7 +576,7 @@ export default function Cart() {
                 });
 
                 // CartService will dispatch event with fresh data, which our listener will handle
-                setFlashMessage({ type: 'success', message: "Item removed from cart." });
+                setFlashMessage({ type: 'success', message: t('cart.item_removed', 'Item removed from cart.') });
             } else {
                 console.error('Failed to remove item:', result.error);
                 setFlashMessage({ type: 'error', message: "Failed to remove item." });
@@ -646,7 +646,7 @@ export default function Cart() {
 
     const handleApplyCoupon = async () => {
         if (!couponCode) {
-            setFlashMessage({ type: 'error', message: "Please enter a coupon code." });
+            setFlashMessage({ type: 'error', message: t('cart.please_enter_coupon_code', 'Please enter a coupon code.') });
             return;
         }
         
