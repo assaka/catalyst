@@ -264,6 +264,18 @@ function processTranslations(content, context, pageData) {
 
     const uiTranslations = context?.settings?.ui_translations || pageData?.settings?.ui_translations || {};
 
+    // DEBUG: Log translation lookup attempts
+    if (key.includes('welcome_back') || key.includes('create_account')) {
+      console.log('🔍 Translation lookup debug:', {
+        key,
+        currentLang,
+        hasUiTranslations: !!uiTranslations,
+        hasCurrentLang: !!uiTranslations[currentLang],
+        uiTranslationsKeys: Object.keys(uiTranslations),
+        currentLangKeys: uiTranslations[currentLang] ? Object.keys(uiTranslations[currentLang]).slice(0, 5) : 'none'
+      });
+    }
+
     // Helper function to get nested value from dotted key
     const getNestedTranslation = (translations, dottedKey) => {
       if (!translations) return null;
@@ -289,6 +301,11 @@ function processTranslations(content, context, pageData) {
     const enValue = getNestedTranslation(uiTranslations.en, key);
     if (enValue) {
       return enValue;
+    }
+
+    // DEBUG: Log fallback
+    if (key.includes('welcome_back') || key.includes('create_account')) {
+      console.log('⚠️  Translation not found, using fallback for:', key);
     }
 
     // Fallback to key itself - format nicely
