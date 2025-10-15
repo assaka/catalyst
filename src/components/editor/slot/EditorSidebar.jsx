@@ -371,12 +371,15 @@ const EditorSidebar = ({
 
       // Check if content is a translation key
       const detectedKey = detectTranslationKey(textContent);
+      console.log('🔍 Translation detection:', { textContent, detectedKey, slotId });
+
       if (detectedKey) {
         setIsTranslatable(true);
         setTranslationKey(detectedKey);
 
         // Fetch and display translated value
         getTranslatedValue(detectedKey).then(value => {
+          console.log('📝 Fetched translation value:', { detectedKey, value });
           if (value) {
             setTranslatedValue(value);
           }
@@ -713,8 +716,11 @@ const EditorSidebar = ({
     }));
   }, []);
 
-  // Helper to detect if text content is a translation key
-  const detectTranslationKey = useCallback((content) => {
+  // Cache for reverse translation lookup (value -> key)
+  const [translationCache, setTranslationCache] = useState(null);
+
+  // Helper to detect if text content is a translation key or matches a translation value
+  const detectTranslationKey = useCallback(async (content) => {
     if (!content) return null;
 
     // Check for translation key patterns: {t("key")} or t("key") or just the key
@@ -730,6 +736,49 @@ const EditorSidebar = ({
       return content;
     }
 
+    // Check if content matches a translation value (reverse lookup)
+    // This allows detecting translation keys from rendered text
+    try {
+      // Fetch translation cache if not already loaded
+      if (!translationCache) {
+        const response = await api.get(`/translations/ui-labels?lang=${currentLanguage}`);
+        if (response && response.success && response.data && response.data.labels) {
+          setTranslationCache(response.data.labels);
+        }
+      }
+
+      // Search for matching value in translation cache
+      if (translationCache) {
+        const foundKey = findKeyByValue(translationCache, content);
+        if (foundKey) {
+          return foundKey;
+        }
+      }
+    } catch (error) {
+      console.error('Error during reverse translation lookup:', error);
+    }
+
+    return null;
+  }, [currentLanguage, translationCache]);
+
+  // Helper to recursively search for a value in nested translation object
+  const findKeyByValue = useCallback((obj, value, prefix = '') => {
+    for (const [key, val] of Object.entries(obj)) {
+      const fullKey = prefix ? `${prefix}.${key}` : key;
+
+      if (typeof val === 'string') {
+        // Direct string match
+        if (val === value) {
+          return fullKey;
+        }
+      } else if (typeof val === 'object' && val !== null) {
+        // Recursively search nested objects
+        const found = findKeyByValue(val, value, fullKey);
+        if (found) {
+          return found;
+        }
+      }
+    }
     return null;
   }, []);
 

@@ -443,6 +443,7 @@ export const StoreProvider = ({ children }) => {
           product_tabs_inactive_bg: 'transparent',
           product_tabs_hover_color: '#111827',
           product_tabs_hover_bg: '#F3F4F6',
+          product_tabs_font_weight: '500',
           // Breadcrumb defaults
           breadcrumb_show_home_icon: true,
           breadcrumb_item_text_color: '#6B7280',

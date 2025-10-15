@@ -154,16 +154,16 @@ export default function ProductTabs({ productTabs = [], product = null, settings
           {{#each tabs}}
             {{#if this.isActive}}
             <button
-              class="py-2 px-1 border-b-2 font-medium transition-colors duration-200"
-              style="font-size: {{settings.theme.product_tabs_title_size}}; color: {{settings.theme.product_tabs_title_color}}; border-color: {{settings.theme.product_tabs_title_color}}; background-color: {{settings.theme.product_tabs_active_bg}};"
+              class="py-2 px-1 border-b-2 transition-colors duration-200"
+              style="font-size: {{settings.theme.product_tabs_title_size}}; font-weight: {{settings.theme.product_tabs_font_weight}}; color: {{settings.theme.product_tabs_title_color}}; border-color: {{settings.theme.product_tabs_title_color}}; background-color: {{settings.theme.product_tabs_active_bg}};"
               data-action="switch-tab"
               data-tab-id="{{this.id}}">
               {{this.title}}
             </button>
             {{else}}
             <button
-              class="py-2 px-1 border-b-2 border-transparent font-medium transition-colors duration-200"
-              style="font-size: {{settings.theme.product_tabs_title_size}}; color: {{settings.theme.product_tabs_inactive_color}}; background-color: {{settings.theme.product_tabs_inactive_bg}};"
+              class="py-2 px-1 border-b-2 border-transparent transition-colors duration-200"
+              style="font-size: {{settings.theme.product_tabs_title_size}}; font-weight: {{settings.theme.product_tabs_font_weight}}; color: {{settings.theme.product_tabs_inactive_color}}; background-color: {{settings.theme.product_tabs_inactive_bg}};"
               onmouseover="this.style.color='{{settings.theme.product_tabs_hover_color}}'; this.style.backgroundColor='{{settings.theme.product_tabs_hover_bg}}';"
               onmouseout="this.style.color='{{settings.theme.product_tabs_inactive_color}}'; this.style.backgroundColor='{{settings.theme.product_tabs_inactive_bg}}';"
               data-action="switch-tab"
@@ -218,7 +218,7 @@ export default function ProductTabs({ productTabs = [], product = null, settings
               onmouseout="this.style.backgroundColor='{{settings.theme.product_tabs_active_bg}}';"
               data-action="toggle-accordion"
               data-accordion-index="{{@index}}">
-              <span class="font-medium" style="font-size: {{settings.theme.product_tabs_title_size}};">{{this.title}}</span>
+              <span style="font-size: {{settings.theme.product_tabs_title_size}}; font-weight: {{settings.theme.product_tabs_font_weight}};">{{this.title}}</span>
               <svg
                 class="w-5 h-5 transition-transform duration-200 accordion-chevron"
                 style="color: {{settings.theme.product_tabs_title_color}};"

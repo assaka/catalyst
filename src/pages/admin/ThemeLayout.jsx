@@ -1444,6 +1444,76 @@ export default function ThemeLayout() {
                                                 onChange={(e) => handleThemeChange('product_tabs_attribute_label_color', e.target.value)}
                                             />
                                         </div>
+
+                                        <div>
+                                            <Label htmlFor="product_tabs_active_bg">Active Tab Background</Label>
+                                            <Input
+                                                id="product_tabs_active_bg"
+                                                type="color"
+                                                value={store.settings.theme.product_tabs_active_bg || '#ffffff'}
+                                                onChange={(e) => handleThemeChange('product_tabs_active_bg', e.target.value)}
+                                            />
+                                        </div>
+
+                                        <div>
+                                            <Label htmlFor="product_tabs_inactive_color">Inactive Tab Text Color</Label>
+                                            <Input
+                                                id="product_tabs_inactive_color"
+                                                type="color"
+                                                value={store.settings.theme.product_tabs_inactive_color || '#6B7280'}
+                                                onChange={(e) => handleThemeChange('product_tabs_inactive_color', e.target.value)}
+                                            />
+                                        </div>
+
+                                        <div>
+                                            <Label htmlFor="product_tabs_inactive_bg">Inactive Tab Background</Label>
+                                            <Input
+                                                id="product_tabs_inactive_bg"
+                                                type="color"
+                                                value={store.settings.theme.product_tabs_inactive_bg || '#ffffff'}
+                                                onChange={(e) => handleThemeChange('product_tabs_inactive_bg', e.target.value)}
+                                            />
+                                        </div>
+
+                                        <div>
+                                            <Label htmlFor="product_tabs_hover_color">Hover Text Color</Label>
+                                            <Input
+                                                id="product_tabs_hover_color"
+                                                type="color"
+                                                value={store.settings.theme.product_tabs_hover_color || '#111827'}
+                                                onChange={(e) => handleThemeChange('product_tabs_hover_color', e.target.value)}
+                                            />
+                                        </div>
+
+                                        <div>
+                                            <Label htmlFor="product_tabs_hover_bg">Hover Background Color</Label>
+                                            <Input
+                                                id="product_tabs_hover_bg"
+                                                type="color"
+                                                value={store.settings.theme.product_tabs_hover_bg || '#F3F4F6'}
+                                                onChange={(e) => handleThemeChange('product_tabs_hover_bg', e.target.value)}
+                                            />
+                                        </div>
+
+                                        <div>
+                                            <Label htmlFor="product_tabs_font_weight">Tab Font Weight</Label>
+                                            <Select
+                                                value={store.settings.theme.product_tabs_font_weight || '500'}
+                                                onValueChange={(value) => handleThemeChange('product_tabs_font_weight', value)}
+                                            >
+                                                <SelectTrigger>
+                                                    <SelectValue />
+                                                </SelectTrigger>
+                                                <SelectContent>
+                                                    <SelectItem value="300">Light (300)</SelectItem>
+                                                    <SelectItem value="400">Normal (400)</SelectItem>
+                                                    <SelectItem value="500">Medium (500)</SelectItem>
+                                                    <SelectItem value="600">Semibold (600)</SelectItem>
+                                                    <SelectItem value="700">Bold (700)</SelectItem>
+                                                    <SelectItem value="800">Extra Bold (800)</SelectItem>
+                                                </SelectContent>
+                                            </Select>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
