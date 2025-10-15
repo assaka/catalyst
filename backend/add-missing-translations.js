@@ -10,6 +10,8 @@ const newTranslations = {
   // English translations
   en: {
     show_more: 'Show More',
+    show_less: 'Show Less',
+    more: 'more',
     add_to_cart: 'Add to Cart',
     of: 'of',
     products: 'products',
@@ -36,6 +38,8 @@ const newTranslations = {
   // Dutch translations
   nl: {
     show_more: 'Toon meer',
+    show_less: 'Toon minder',
+    more: 'meer',
     add_to_cart: 'Toevoegen aan winkelwagen',
     of: 'van',
     products: 'producten',

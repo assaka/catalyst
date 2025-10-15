@@ -10,6 +10,7 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion";
+import { useTranslation } from '@/contexts/TranslationContext';
 
 // Helper component to render editable slot elements in edit mode
 const EditableSlotElement = ({ slotKey, slot, onElementClick, children, className = "", style = {} }) => {
@@ -57,6 +58,7 @@ export default function LayeredNavigation({
     childSlots = {},
     onElementClick = () => {}
 }) {
+    const { t } = useTranslation();
     const [selectedFilters, setSelectedFilters] = useState({});
     const [priceRange, setPriceRange] = useState([0, 1000]);
     const [expandedAttributes, setExpandedAttributes] = useState({});
@@ -733,7 +735,10 @@ export default function LayeredNavigation({
                                                             color: checkboxColor
                                                         }}
                                                     >
-                                                        {isExpanded ? 'Show Less' : `Show More (${values.length - maxVisibleAttributes} more)`}
+                                                        {isExpanded
+                                                            ? t('common.show_less', 'Show Less')
+                                                            : `${t('common.show_more', 'Show More')} (${values.length - maxVisibleAttributes} ${t('common.more', 'more')})`
+                                                        }
                                                     </button>
                                                 )}
                                             </>
