@@ -740,10 +740,10 @@ export default function Cart() {
                 const result = couponService.setAppliedCoupon(coupon);
                 if (result.success) {
                     setAppliedCoupon(coupon);
-                    setFlashMessage({ type: 'success', message: `Coupon "${coupon.name}" applied!` });
+                    setFlashMessage({ type: 'success', message: t('cart.coupon_applied', { couponName: coupon.name }) });
                     setCouponCode(''); // Clear the input after successful application
                 } else {
-                    setFlashMessage({ type: 'error', message: 'Failed to apply coupon. Please try again.' });
+                    setFlashMessage({ type: 'error', message: t('cart.coupon_apply_failed') });
                 }
             } else {
                 setAppliedCoupon(null);
@@ -760,7 +760,7 @@ export default function Cart() {
         if (result.success) {
             setAppliedCoupon(null);
             setCouponCode('');
-            setFlashMessage({ type: 'success', message: "Coupon removed." });
+            setFlashMessage({ type: 'success', message: t('cart.coupon_removed') });
         }
     };
 
