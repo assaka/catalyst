@@ -201,6 +201,14 @@ export function processVariables(content, context, pageData = {}) {
     return content;
   }
 
+  // DEBUG: Check if content has translation helpers
+  if (content.includes('{{t')) {
+    console.log('🔍 [processVariables] Content has {{t helpers:', {
+      contentPreview: content.substring(0, 200),
+      hasUiTranslations: !!(context?.settings?.ui_translations || pageData?.settings?.ui_translations)
+    });
+  }
+
   let processedContent = content;
 
   // IMPORTANT: Process loops FIRST, so conditionals inside loops get the correct item context
@@ -256,6 +264,14 @@ export function processVariables(content, context, pageData = {}) {
 function processTranslations(content, context, pageData) {
   // Match {{t 'key'}} or {{t "key"}}
   const translationRegex = /\{\{t\s+['"]([^'"]+)['"]\}\}/g;
+
+  // DEBUG: Check if translation helpers exist in content
+  const hasTranslationHelpers = translationRegex.test(content);
+  if (hasTranslationHelpers) {
+    console.log('🔍 [processTranslations] Found translation helpers in content');
+    // Reset regex after test
+    translationRegex.lastIndex = 0;
+  }
 
   return content.replace(translationRegex, (match, key) => {
     const currentLang = typeof localStorage !== 'undefined'
