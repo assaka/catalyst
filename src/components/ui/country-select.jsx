@@ -97,7 +97,7 @@ export function CountrySelect({ value, onValueChange, onChange, placeholder = "S
                     value={country.label}
                     onSelect={() => handleSelect(country.value)}
                     className={` ${
-                        isSelected ? "bg-gray-300" : ""
+                        isSelected ? "bg-gray-200" : ""
                     }`}
                   >
                     <span className="mr-2">{country.flag}</span>
