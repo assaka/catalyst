@@ -285,6 +285,11 @@ export default function ProductTabs({ productTabs = [], product = null, settings
     }
   });
 
+  console.log('📝 Template BEFORE processing:', {
+    hasColorVariable: template.includes('settings.theme.product_tabs_title_color'),
+    templateSnippet: template.substring(template.indexOf('{{#each tabs}}'), template.indexOf('{{#each tabs}}') + 400)
+  });
+
   const html = processVariables(template, variableContext);
 
   console.log('🔍 Processed HTML sample:', html.substring(0, 800));
