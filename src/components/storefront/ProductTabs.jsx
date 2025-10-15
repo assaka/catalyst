@@ -229,6 +229,16 @@ export default function ProductTabs({ productTabs = [], product = null, classNam
   console.log('🔧 ProductTabs: Processed HTML length:', html?.length);
   console.log('🔧 ProductTabs: First 500 chars of HTML:', html?.substring(0, 500));
 
+  // Check if tab content is in the HTML
+  const hasTabContent = html?.includes('dit is nederlandse text') || html?.includes('hello this is a text');
+  console.log('🔧 ProductTabs: Contains tab content?', hasTabContent);
+
+  // Log a section around where content should be
+  const contentIndex = html?.indexOf('tab-panel');
+  if (contentIndex > -1) {
+    console.log('🔧 ProductTabs: Tab panel HTML (800 chars):', html?.substring(contentIndex, contentIndex + 800));
+  }
+
   return (
     <>
       {/* DEBUG: Visual indicator for language and translation status */}
