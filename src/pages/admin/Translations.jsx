@@ -18,6 +18,9 @@ export default function Translations() {
   const [editValue, setEditValue] = useState('');
   const [newLabel, setNewLabel] = useState({ key: '', value: '', category: 'common' });
   const [showAddForm, setShowAddForm] = useState(false);
+  const [showBulkAddForm, setShowBulkAddForm] = useState(false);
+  const [bulkTranslations, setBulkTranslations] = useState({});
+  const [autoTranslate, setAutoTranslate] = useState(false);
   const [aiTranslating, setAiTranslating] = useState(false);
   const [message, setMessage] = useState(null);
 
@@ -245,13 +248,159 @@ export default function Translations() {
       return;
     }
 
-    // New labels are always marked as 'custom'
-    await saveLabel(newLabel.key, newLabel.value, newLabel.category, 'custom');
-    setNewLabel({ key: '', value: '', category: 'common' });
-    setShowAddForm(false);
+    try {
+      setSaving(true);
+      const fullKey = newLabel.category ? `${newLabel.category}.${newLabel.key}` : newLabel.key;
 
-    // Reload labels to get the newly added label
-    await loadLabels(selectedLanguage);
+      if (autoTranslate) {
+        // Auto-translate to all languages
+        const languages = availableLanguages || [];
+        const translationPromises = languages.map(async (lang) => {
+          let translatedValue = newLabel.value;
+
+          // Translate to other languages
+          if (lang.code !== selectedLanguage) {
+            try {
+              const response = await api.post('/translations/ai-translate', {
+                text: newLabel.value,
+                fromLang: selectedLanguage,
+                toLang: lang.code
+              });
+              if (response && response.success && response.data) {
+                translatedValue = response.data.translated;
+              }
+            } catch (error) {
+              console.error(`Failed to translate to ${lang.code}:`, error);
+            }
+          }
+
+          // Save translation
+          return api.post('/translations/ui-labels', {
+            key: fullKey,
+            language_code: lang.code,
+            value: translatedValue,
+            category: newLabel.category,
+            type: 'custom'
+          });
+        });
+
+        await Promise.all(translationPromises);
+        showMessage(`Translation added and auto-translated to ${languages.length} languages`, 'success');
+      } else {
+        // Save only for selected language
+        const response = await api.post('/translations/ui-labels', {
+          key: fullKey,
+          language_code: selectedLanguage,
+          value: newLabel.value,
+          category: newLabel.category,
+          type: 'custom'
+        });
+
+        if (response && response.success) {
+          showMessage('Translation added successfully', 'success');
+        }
+      }
+
+      // Add to local state without reload
+      const newLabelEntry = {
+        key: fullKey,
+        value: newLabel.value,
+        category: newLabel.category,
+        type: 'custom'
+      };
+      setLabels([...labels, newLabelEntry]);
+
+      // Clear form
+      setNewLabel({ key: '', value: '', category: 'common' });
+      setShowAddForm(false);
+
+      // Clear translation cache
+      try {
+        const channel = new BroadcastChannel('translations_update');
+        channel.postMessage({ type: 'clear_translations_cache', language: selectedLanguage });
+        channel.close();
+      } catch (e) {
+        console.warn('BroadcastChannel not supported:', e);
+      }
+    } catch (error) {
+      console.error('Failed to add label:', error);
+      showMessage('Failed to add translation', 'error');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  /**
+   * Add bulk translations
+   */
+  const addBulkTranslations = async () => {
+    const baseKey = bulkTranslations.baseKey;
+    if (!baseKey) {
+      showMessage('Base key is required', 'error');
+      return;
+    }
+
+    try {
+      setSaving(true);
+      const category = bulkTranslations.category || 'common';
+      const fullKey = category ? `${category}.${baseKey}` : baseKey;
+
+      const languages = availableLanguages || [];
+      const translationsToSave = [];
+
+      for (const lang of languages) {
+        const value = bulkTranslations[lang.code];
+        if (value && value.trim()) {
+          translationsToSave.push({
+            key: fullKey,
+            language_code: lang.code,
+            value: value.trim(),
+            category,
+            type: 'custom'
+          });
+        }
+      }
+
+      if (translationsToSave.length === 0) {
+        showMessage('Please add at least one translation', 'error');
+        setSaving(false);
+        return;
+      }
+
+      // Save in bulk
+      await api.post('/translations/ui-labels/bulk', { labels: translationsToSave });
+      showMessage(`Successfully added translations in ${translationsToSave.length} languages`, 'success');
+
+      // Add to local state for current language
+      const currentLangTranslation = translationsToSave.find(t => t.language_code === selectedLanguage);
+      if (currentLangTranslation) {
+        const newLabelEntry = {
+          key: fullKey,
+          value: currentLangTranslation.value,
+          category,
+          type: 'custom'
+        };
+        setLabels([...labels, newLabelEntry]);
+      }
+
+      // Clear form
+      setBulkTranslations({});
+      setShowBulkAddForm(false);
+
+      // Clear translation cache
+      try {
+        const channel = new BroadcastChannel('translations_update');
+        channel.postMessage({ type: 'clear_translations_cache' });
+        channel.close();
+      } catch (e) {
+        console.warn('BroadcastChannel not supported:', e);
+      }
+    } catch (error) {
+      console.error('Failed to add bulk translations:', error);
+      showMessage('Failed to add translations', 'error');
+    } finally {
+      setSaving(false);
+    }
   };
 
   /**
@@ -379,7 +528,21 @@ export default function Translations() {
               </button>
 
               <button
-                onClick={() => setShowAddForm(true)}
+                onClick={() => {
+                  setShowBulkAddForm(true);
+                  setShowAddForm(false);
+                }}
+                className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 flex items-center gap-2"
+              >
+                <Globe className="w-4 h-4" />
+                Bulk Add
+              </button>
+
+              <button
+                onClick={() => {
+                  setShowAddForm(true);
+                  setShowBulkAddForm(false);
+                }}
                 className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center gap-2"
               >
                 <Plus className="w-4 h-4" />
@@ -390,7 +553,7 @@ export default function Translations() {
 
           {/* Add form */}
           {showAddForm && (
-            <div className="bg-white border border-gray-200 rounded-lg p-4 space-y-4">
+            <div className="bg-white border border-gray-200 rounded-lg p-6 space-y-4">
               <div className="flex items-center justify-between">
                 <h3 className="text-lg font-semibold">Add New Label</h3>
                 <button
@@ -402,40 +565,159 @@ export default function Translations() {
               </div>
 
               <div className="grid grid-cols-2 gap-4">
-                <input
-                  type="text"
-                  placeholder="Key (e.g., common.button.submit)"
-                  value={newLabel.key}
-                  onChange={(e) => setNewLabel({ ...newLabel, key: e.target.value })}
-                  className="px-3 py-2 border border-gray-300 rounded-lg"
-                />
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Category</label>
+                  <select
+                    value={newLabel.category}
+                    onChange={(e) => setNewLabel({ ...newLabel, category: e.target.value })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                  >
+                    {categories.map((cat) => (
+                      <option key={cat} value={cat}>{cat}</option>
+                    ))}
+                  </select>
+                </div>
 
-                <select
-                  value={newLabel.category}
-                  onChange={(e) => setNewLabel({ ...newLabel, category: e.target.value })}
-                  className="px-3 py-2 border border-gray-300 rounded-lg"
-                >
-                  {categories.map((cat) => (
-                    <option key={cat} value={cat}>{cat}</option>
-                  ))}
-                </select>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Key</label>
+                  <div className="flex items-center border border-gray-300 rounded-lg overflow-hidden focus-within:ring-2 focus-within:ring-blue-500">
+                    <span className="px-3 py-2 bg-gray-100 text-gray-600 text-sm font-mono border-r border-gray-300">
+                      {newLabel.category}.
+                    </span>
+                    <input
+                      type="text"
+                      placeholder="button_submit"
+                      value={newLabel.key}
+                      onChange={(e) => setNewLabel({ ...newLabel, key: e.target.value })}
+                      className="flex-1 px-3 py-2 border-0 focus:outline-none focus:ring-0"
+                    />
+                  </div>
+                </div>
               </div>
 
-              <textarea
-                placeholder="Translation value"
-                value={newLabel.value}
-                onChange={(e) => setNewLabel({ ...newLabel, value: e.target.value })}
-                rows={3}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg"
-              />
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Translation Value ({selectedLanguage})
+                </label>
+                <textarea
+                  placeholder="Enter translation value..."
+                  value={newLabel.value}
+                  onChange={(e) => setNewLabel({ ...newLabel, value: e.target.value })}
+                  rows={3}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
 
-              <button
-                onClick={addLabel}
-                disabled={saving}
-                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50"
-              >
-                {saving ? 'Saving...' : 'Add Label'}
-              </button>
+              <div className="flex items-center gap-2">
+                <input
+                  type="checkbox"
+                  id="autoTranslate"
+                  checked={autoTranslate}
+                  onChange={(e) => setAutoTranslate(e.target.checked)}
+                  className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                />
+                <label htmlFor="autoTranslate" className="text-sm text-gray-700 cursor-pointer">
+                  Auto-translate to all active languages using AI
+                </label>
+              </div>
+
+              <div className="flex gap-3">
+                <button
+                  onClick={addLabel}
+                  disabled={saving}
+                  className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 flex items-center gap-2"
+                >
+                  {saving ? 'Saving...' : 'Add Label'}
+                </button>
+                <button
+                  onClick={() => setShowAddForm(false)}
+                  className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200"
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* Bulk Add form */}
+          {showBulkAddForm && (
+            <div className="bg-white border border-gray-200 rounded-lg p-6 space-y-4">
+              <div className="flex items-center justify-between">
+                <h3 className="text-lg font-semibold">Add Translation in Multiple Languages</h3>
+                <button
+                  onClick={() => setShowBulkAddForm(false)}
+                  className="p-1 hover:bg-gray-100 rounded"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Category</label>
+                  <select
+                    value={bulkTranslations.category || 'common'}
+                    onChange={(e) => setBulkTranslations({ ...bulkTranslations, category: e.target.value })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                  >
+                    {categories.map((cat) => (
+                      <option key={cat} value={cat}>{cat}</option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Key</label>
+                  <div className="flex items-center border border-gray-300 rounded-lg overflow-hidden focus-within:ring-2 focus-within:ring-blue-500">
+                    <span className="px-3 py-2 bg-gray-100 text-gray-600 text-sm font-mono border-r border-gray-300">
+                      {bulkTranslations.category || 'common'}.
+                    </span>
+                    <input
+                      type="text"
+                      placeholder="button_submit"
+                      value={bulkTranslations.baseKey || ''}
+                      onChange={(e) => setBulkTranslations({ ...bulkTranslations, baseKey: e.target.value })}
+                      className="flex-1 px-3 py-2 border-0 focus:outline-none focus:ring-0"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <div className="space-y-3">
+                <label className="block text-sm font-medium text-gray-700">Translations by Language</label>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {(availableLanguages || []).map((lang) => (
+                    <div key={lang.code} className="space-y-1">
+                      <label className="block text-xs font-medium text-gray-600">
+                        {lang.native_name || lang.name} ({lang.code})
+                      </label>
+                      <textarea
+                        placeholder={`Enter ${lang.code} translation...`}
+                        value={bulkTranslations[lang.code] || ''}
+                        onChange={(e) => setBulkTranslations({ ...bulkTranslations, [lang.code]: e.target.value })}
+                        rows={2}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500"
+                      />
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <div className="flex gap-3 pt-2">
+                <button
+                  onClick={addBulkTranslations}
+                  disabled={saving}
+                  className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50 flex items-center gap-2"
+                >
+                  {saving ? 'Saving...' : 'Add Translations'}
+                </button>
+                <button
+                  onClick={() => setShowBulkAddForm(false)}
+                  className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200"
+                >
+                  Cancel
+                </button>
+              </div>
             </div>
           )}
 
