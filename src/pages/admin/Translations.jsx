@@ -577,7 +577,6 @@ export default function Translations() {
                         onChange={(e) => setBulkTranslations({ ...bulkTranslations, [lang.code]: e.target.value })}
                         rows={2}
                         className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500"
-                        disabled={autoTranslate && bulkTranslations[lang.code] === undefined}
                       />
                     </div>
                   ))}
