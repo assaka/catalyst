@@ -14,6 +14,7 @@ import slotConfigurationService from '@/services/slotConfigurationService';
 import { categoryConfig } from '@/components/editor/slot/configs/category-config';
 import { formatPrice } from '@/utils/priceUtils';
 import { getCategoryName, getCurrentLanguage } from "@/utils/translationUtils";
+import { useTranslation } from '@/contexts/TranslationContext';
 
 const ensureArray = (data) => {
   if (Array.isArray(data)) return data;
@@ -24,6 +25,7 @@ const ensureArray = (data) => {
 export default function Category() {
   const { store, settings, loading: storeLoading, categories, filterableAttributes } = useStore();
   const { showNotFound } = useNotFound();
+  const { t } = useTranslation();
   
   const [products, setProducts] = useState([]);
   const [currentCategory, setCurrentCategory] = useState(null);
@@ -737,11 +739,13 @@ export default function Category() {
             ) : (
               <div className="flex flex-col justify-center items-center bg-white rounded-lg shadow-sm p-16">
                 <Package className="w-16 h-16 text-gray-400 mb-4" />
-                <h3 className="text-xl font-semibold text-gray-800">No Products Found</h3>
+                <h3 className="text-xl font-semibold text-gray-800">
+                  {t('category.no_products_found', 'No Products Found')}
+                </h3>
                 <p className="text-gray-500 mt-2 text-center">
                   {currentCategory ?
-                    `No products found in the "${getCategoryName(currentCategory, getCurrentLanguage()) || currentCategory.name}" category.` :
-                    "No products match your current filters."
+                    t('category.no_products_in_category', `No products found in the "{category}" category.`).replace('{category}', getCategoryName(currentCategory, getCurrentLanguage()) || currentCategory.name) :
+                    t('category.no_products_match_filters', 'No products match your current filters.')
                   }
                 </p>
               </div>
