@@ -626,7 +626,7 @@ function processLoops(content, context, pageData, depth = 0) {
         const finalContent = processSimpleVariables(itemContent, itemContext, {});
 
         // DEBUG: Check final result
-        if (finalContent.includes('product_tabs_title_color') || item?.id?.includes('7aef')) {
+        if (finalContent.includes('product_tabs_title_color') || (typeof item?.id === 'string' && item.id.includes('7aef'))) {
           console.log('🎯 [Final result] for tab:', {
             itemId: item?.id,
             hasVariable: finalContent.includes('{{settings'),
