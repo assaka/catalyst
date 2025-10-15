@@ -39,8 +39,10 @@ class CartService {
 
   // Get cart - simplified to always use session_id approach with aggressive cache busting
   async getCart(bustCache = false) {
+    const sessionId = this.getSessionId();
+    let fullUrl = '';
+
     try {
-      const sessionId = this.getSessionId();
       const user = await this.getCurrentUser();
 
       const params = new URLSearchParams();
@@ -56,7 +58,7 @@ class CartService {
         params.append('_t', Date.now().toString());
       }
 
-      const fullUrl = `${this.endpoint}?${params.toString()}`;
+      fullUrl = `${this.endpoint}?${params.toString()}`;
 
       let response;
       try {
