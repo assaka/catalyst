@@ -362,13 +362,13 @@ export function HeaderSlotRenderer({
                     navigate?.(createPublicUrl(store?.slug, 'CUSTOMER_DASHBOARD'));
                   }}>
                     <Settings className="mr-2 h-4 w-4" />
-                    <span>{t('account.my_account', 'My Account')}</span>
+                    <span>{t('common.my_account', 'My Account')}</span>
                   </DropdownMenuItem>
                   <DropdownMenuItem onClick={() => {
                     handleCustomerLogout?.();
                   }}>
                     <LogOut className="mr-2 h-4 w-4" />
-                    <span>{t('account.logout', 'Logout')}</span>
+                    <span>{t('common.logout', 'Logout')}</span>
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
@@ -386,7 +386,7 @@ export function HeaderSlotRenderer({
                 onMouseLeave={(e) => e.currentTarget.style.backgroundColor = buttonStyles.backgroundColor}
               >
                 {getUserIcon('w-5 h-5 mr-2')}
-                <span>{t('account.sign_in', 'Sign In')}</span>
+                <span>{t('common.sign_in', 'Sign In')}</span>
               </Button>
             )}
           </div>

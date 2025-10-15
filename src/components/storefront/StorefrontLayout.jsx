@@ -569,7 +569,7 @@ export default function StorefrontLayout({ children }) {
                                                 className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg flex items-center space-x-2"
                                             >
                                                 <UserIcon className="w-5 h-5 mr-2" />
-                                                <span>{t('account.sign_in', 'Sign In')}</span>
+                                                <span>{t('common.sign_in', 'Sign In')}</span>
                                             </Button>
                                         )}
                                         <WishlistDropdown />
