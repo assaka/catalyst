@@ -580,7 +580,7 @@ export default function Translations() {
                       autoFocus
                     />
                     <p className="text-xs text-gray-500 mt-1">
-                      This will be automatically translated to all {(availableLanguages || []).length - 1} other active languages
+                      This will be automatically translated to {(availableLanguages || []).length - 1} other active {(availableLanguages || []).length - 1 === 1 ? 'language' : 'languages'}
                     </p>
                   </div>
                 ) : (
