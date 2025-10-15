@@ -241,7 +241,15 @@ export default function ProductTabs({ productTabs = [], product = null, settings
   `;
 
   // Use settings from props (passed from productContext)
-  const variableContext = { tabs: tabsData, product, settings };
+  // Only include theme settings to avoid passing large translation objects
+  const themeSettings = settings?.theme || {};
+  const variableContext = {
+    tabs: tabsData,
+    product,
+    settings: {
+      theme: themeSettings
+    }
+  };
   const html = processVariables(template, variableContext);
 
   return (
