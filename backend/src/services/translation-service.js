@@ -19,13 +19,31 @@ class TranslationService {
       let current = result;
 
       for (let i = 0; i < keys.length - 1; i++) {
-        if (!current[keys[i]]) {
-          current[keys[i]] = {};
+        const key = keys[i];
+
+        // If current[key] is a string, it means we have a conflict
+        // (e.g., both "checkout" and "checkout.cart" exist)
+        // In this case, skip nested keys and only keep the top-level string
+        if (typeof current[key] === 'string') {
+          console.warn(`Translation key conflict: "${t.key}" conflicts with existing key "${keys.slice(0, i + 1).join('.')}"`);
+          return; // Skip this nested key
         }
-        current = current[keys[i]];
+
+        if (!current[key] || typeof current[key] !== 'object') {
+          current[key] = {};
+        }
+        current = current[key];
       }
 
-      current[keys[keys.length - 1]] = t.value;
+      const lastKey = keys[keys.length - 1];
+
+      // Only set if it won't overwrite an existing object with nested keys
+      if (typeof current[lastKey] === 'object' && Object.keys(current[lastKey]).length > 0) {
+        console.warn(`Translation key conflict: Cannot set "${t.key}" because it would overwrite nested keys`);
+        return;
+      }
+
+      current[lastKey] = t.value;
     });
 
     return result;
