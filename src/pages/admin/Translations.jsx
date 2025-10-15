@@ -563,24 +563,45 @@ export default function Translations() {
 
               <div className="space-y-3">
                 <label className="block text-sm font-medium text-gray-700">
-                  Translations by Language {autoTranslate && <span className="text-blue-600 text-xs">(optional - will be auto-translated)</span>}
+                  {autoTranslate ? `Source Translation (${selectedLanguage})` : 'Translations by Language'}
                 </label>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {(availableLanguages || []).map((lang) => (
-                    <div key={lang.code} className="space-y-1">
-                      <label className="block text-xs font-medium text-gray-600">
-                        {lang.native_name || lang.name} ({lang.code})
-                      </label>
-                      <textarea
-                        placeholder={autoTranslate ? `Will be auto-translated...` : `Enter ${lang.code} translation...`}
-                        value={bulkTranslations[lang.code] || ''}
-                        onChange={(e) => setBulkTranslations({ ...bulkTranslations, [lang.code]: e.target.value })}
-                        rows={2}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500"
-                      />
-                    </div>
-                  ))}
-                </div>
+                {autoTranslate ? (
+                  // Auto-translate mode: only show selected language input
+                  <div className="space-y-1">
+                    <label className="block text-xs font-medium text-gray-600">
+                      {(availableLanguages || []).find(l => l.code === selectedLanguage)?.native_name || selectedLanguage} ({selectedLanguage})
+                    </label>
+                    <textarea
+                      placeholder={`Enter ${selectedLanguage} translation to auto-translate...`}
+                      value={bulkTranslations[selectedLanguage] || ''}
+                      onChange={(e) => setBulkTranslations({ ...bulkTranslations, [selectedLanguage]: e.target.value })}
+                      rows={3}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                      autoFocus
+                    />
+                    <p className="text-xs text-gray-500 mt-1">
+                      This will be automatically translated to all {(availableLanguages || []).length - 1} other active languages
+                    </p>
+                  </div>
+                ) : (
+                  // Manual mode: show all language inputs
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {(availableLanguages || []).map((lang) => (
+                      <div key={lang.code} className="space-y-1">
+                        <label className="block text-xs font-medium text-gray-600">
+                          {lang.native_name || lang.name} ({lang.code})
+                        </label>
+                        <textarea
+                          placeholder={`Enter ${lang.code} translation...`}
+                          value={bulkTranslations[lang.code] || ''}
+                          onChange={(e) => setBulkTranslations({ ...bulkTranslations, [lang.code]: e.target.value })}
+                          rows={2}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500"
+                        />
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
 
               <div className="flex gap-3 pt-2">
