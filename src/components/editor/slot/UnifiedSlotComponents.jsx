@@ -647,14 +647,15 @@ const ProductTabs = createSlotComponent({
     }
 
     // Storefront version - Use the standalone ProductTabs component
-    const { productTabs, product } = productContext;
+    const { productTabs, product, settings } = productContext;
 
     console.log('🔥 ProductTabsSlot (UnifiedSlotComponents): Received data:', {
       hasProductContext: !!productContext,
       productTabsType: productTabs ? typeof productTabs : 'undefined',
       productTabsLength: productTabs?.length,
       productTabsArray: productTabs,
-      hasProduct: !!product
+      hasProduct: !!product,
+      hasSettings: !!settings
     });
 
     // Use the ProductTabsComponent which has proper translation support
@@ -663,6 +664,7 @@ const ProductTabs = createSlotComponent({
         <ProductTabsComponent
           productTabs={productTabs || []}
           product={product}
+          settings={settings}
           className=""
           slotConfig={slot}
         />

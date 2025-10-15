@@ -6,34 +6,14 @@ import { getCurrentLanguage } from '@/utils/translationUtils';
  * ProductTabs Component
  * Renders product tabs with content from config template
  */
-export default function ProductTabs({ productTabs = [], product = null, className = '', slotConfig = null }) {
-  console.log('🚀 ProductTabs component loaded!', { productTabsCount: productTabs?.length, hasProduct: !!product });
-
+export default function ProductTabs({ productTabs = [], product = null, settings = {}, className = '', slotConfig = null }) {
   const containerRef = useRef(null);
   const [activeTabIndex, setActiveTabIndex] = useState(0);
   const currentLang = getCurrentLanguage();
 
-  console.log('🌐 ProductTabs current language:', currentLang);
-  console.log('🔍 DEBUGGING - localStorage language:', localStorage.getItem('catalyst_language'));
-  console.log('🔍 DEBUGGING - Browser language:', navigator.language);
-
   // Prepare tabs data with active state
   const tabsData = useMemo(() => {
     if (!productTabs || productTabs.length === 0) return [];
-
-    console.log('🏪 ProductTabs: Processing tabs for rendering:', {
-      currentLang,
-      tabCount: productTabs.length,
-      tabs: productTabs.map(tab => ({
-        id: tab.id,
-        name: tab.name,
-        hasTranslations: !!tab.translations,
-        translationKeys: Object.keys(tab.translations || {}),
-        enTranslation: tab.translations?.en,
-        nlTranslation: tab.translations?.nl,
-        currentLangTranslation: tab.translations?.[currentLang]
-      }))
-    });
 
     const validTabs = productTabs.filter(tab =>
       tab && tab.is_active !== false
@@ -64,14 +44,6 @@ export default function ProductTabs({ productTabs = [], product = null, classNam
       // Get translated title and content from translations JSON, fallback to original name field
       const translatedTitle = tab.translations?.[currentLang]?.name || tab.translations?.en?.name || tab.name || 'No Tab Name';
       const translatedContent = tab.translations?.[currentLang]?.content || tab.translations?.en?.content || tab.content || '';
-
-      console.log(`📑 ProductTabs: Tab "${tab.name}" translation:`, {
-        currentLang,
-        originalName: tab.name,
-        translatedTitle,
-        translatedContent: translatedContent?.substring(0, 50) + '...',
-        usedLang: tab.translations?.[currentLang] ? currentLang : 'en (fallback)'
-      });
 
       return {
         ...tab,
@@ -169,14 +141,16 @@ export default function ProductTabs({ productTabs = [], product = null, classNam
     return null;
   }
 
-  // Get template from slotConfig or use default
+  // Get template from slotConfig or use default with theme styling
   const template = slotConfig?.content || `
     <div class="w-full">
-      <div class="border-b border-gray-200">
+      <!-- Desktop: Tab Navigation - Hidden on mobile -->
+      <div class="hidden md:block border-b border-gray-200">
         <nav class="-mb-px flex space-x-8">
           {{#each tabs}}
             <button
-              class="py-2 px-1 border-b-2 font-medium text-3xl text-red-600 transition-colors duration-200 {{#if this.isActive}}border-red-600{{else}}border-transparent hover:underline{{/if}}"
+              class="py-2 px-1 border-b-2 font-medium transition-colors duration-200 {{#if this.isActive}}{{else}}border-transparent hover:underline{{/if}}"
+              style="font-size: {{settings.theme.product_tabs_title_size}}; {{#if this.isActive}}color: #2563eb; border-color: #2563eb;{{else}}color: #6b7280;{{/if}}"
               data-action="switch-tab"
               data-tab-id="{{this.id}}">
               {{this.title}}
@@ -185,12 +159,17 @@ export default function ProductTabs({ productTabs = [], product = null, classNam
         </nav>
       </div>
 
-      <div class="mt-6">
+      <!-- Desktop: Tab Content - Hidden on mobile -->
+      <div class="hidden md:block mt-6">
         {{#each tabs}}
           <div
-            class="tab-panel {{#unless this.isActive}}hidden{{/unless}}"
-            data-tab-content="{{this.id}}">
-            <div class="prose max-w-none">
+            class="tab-panel {{#if this.isActive}}{{else}}hidden{{/if}}"
+            data-tab-content="{{this.id}}"
+            data-tab-index="{{@index}}"
+            data-tab-type="{{this.tab_type}}"
+            data-tab-text-content="{{this.content}}">
+            <div class="prose max-w-none text-gray-800 leading-relaxed tab-content-container p-6 rounded-lg"
+                 style="background-color: {{settings.theme.product_tabs_content_bg}};">
               {{#if (eq this.tab_type "text")}}
                 <div>{{{this.content}}}</div>
               {{/if}}
@@ -206,21 +185,54 @@ export default function ProductTabs({ productTabs = [], product = null, classNam
               {{#if (eq this.tab_type "attributes")}}
                 <div id="attributes-placeholder" data-attributes-container></div>
               {{/if}}
+            </div>
+          </div>
+        {{/each}}
+      </div>
 
-              {{#if (eq this.tab_type "attribute_sets")}}
-                <div class="space-y-6">
-                  {{#if this.attribute_set_ids}}
-                    {{#each this.attribute_set_ids}}
-                      <div class="border-b border-gray-100 pb-4">
-                        <h4 class="font-medium text-gray-900 mb-2">Attribute Set {{@index}}</h4>
-                        <p class="text-gray-500">Attribute set content would be displayed here.</p>
-                      </div>
-                    {{/each}}
+      <!-- Mobile: Accordion - Hidden on desktop -->
+      <div class="md:hidden space-y-2">
+        {{#each tabs}}
+          <div class="border border-gray-200 rounded-lg" data-accordion-item="{{@index}}">
+            <!-- Accordion Header -->
+            <button
+              class="w-full flex items-center justify-between p-4 text-left hover:bg-gray-50 transition-colors duration-200"
+              data-action="toggle-accordion"
+              data-accordion-index="{{@index}}">
+              <span class="font-medium" style="font-size: {{settings.theme.product_tabs_title_size}}; color: #2563eb;">{{this.title}}</span>
+              <svg
+                class="w-5 h-5 transition-transform duration-200 accordion-chevron"
+                style="color: #2563eb;"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+              </svg>
+            </button>
+
+            <!-- Accordion Content -->
+            <div class="accordion-content {{#if @first}}{{else}}hidden{{/if}} p-4 pt-0 border-t border-gray-200"
+                 data-accordion-content="{{@index}}"
+                 data-tab-type="{{this.tab_type}}"
+                 data-tab-text-content="{{this.content}}">
+              <div class="prose max-w-none text-gray-800 leading-relaxed tab-content-container p-6 rounded-lg"
+                   style="background-color: {{settings.theme.product_tabs_content_bg}};">
+                {{#if (eq this.tab_type "text")}}
+                  <div>{{{this.content}}}</div>
+                {{/if}}
+
+                {{#if (eq this.tab_type "description")}}
+                  {{#if this.content}}
+                    <div>{{{this.content}}}</div>
                   {{else}}
-                    <p class="text-gray-500">No attribute sets configured for this tab.</p>
+                    <div>{{{../product.description}}}</div>
                   {{/if}}
-                </div>
-              {{/if}}
+                {{/if}}
+
+                {{#if (eq this.tab_type "attributes")}}
+                  <div id="attributes-placeholder-mobile" data-attributes-container></div>
+                {{/if}}
+              </div>
             </div>
           </div>
         {{/each}}
@@ -228,64 +240,13 @@ export default function ProductTabs({ productTabs = [], product = null, classNam
     </div>
   `;
 
-  // Debug: Log what's actually in tabsData.content
-  console.log('🔍 ProductTabs: tabsData content values:', tabsData.map(tab => ({
-    title: tab.title,
-    content: tab.content,
-    contentType: typeof tab.content,
-    contentLength: tab.content?.length
-  })));
-
-  const variableContext = { tabs: tabsData, product };
-
-  // Debug: Check if template has content rendering logic
-  const hasContentLogic = template.includes('{{{this.content}}}') || template.includes('{{this.content}}');
-  console.log('🔧 ProductTabs: Template has content logic?', hasContentLogic);
-  console.log('🔧 ProductTabs: Template sample:', template.substring(template.indexOf('tab_type'), template.indexOf('tab_type') + 500));
-
+  // Use settings from props (passed from productContext)
+  const variableContext = { tabs: tabsData, product, settings };
   const html = processVariables(template, variableContext);
 
-  console.log('🔧 ProductTabs: Processed HTML length:', html?.length);
-  console.log('🔧 ProductTabs: First 500 chars of HTML:', html?.substring(0, 500));
-
-  // Check if tab content is in the HTML
-  const hasTabContent = html?.includes('dit is nederlandse text') || html?.includes('hello this is a text');
-  console.log('🔧 ProductTabs: Contains tab content?', hasTabContent);
-
-  // Log a section around where content should be
-  const contentIndex = html?.indexOf('tab-panel');
-  if (contentIndex > -1) {
-    console.log('🔧 ProductTabs: Tab panel HTML (800 chars):', html?.substring(contentIndex, contentIndex + 800));
-  }
-
   return (
-    <>
-      {/* DEBUG: Visual indicator for language and translation status */}
-      <div style={{
-        background: 'red',
-        color: 'white',
-        padding: '20px',
-        margin: '10px 0',
-        border: '5px solid yellow',
-        fontSize: '14px',
-        fontWeight: 'bold'
-      }}>
-        🔍 DEBUG INFO - Current Language: {currentLang} |
-        localStorage: {localStorage.getItem('catalyst_language') || 'not set'} |
-        Tabs loaded: {tabsData.length}
-        {tabsData.map((tab, idx) => (
-          <div key={tab.id} style={{ marginTop: '10px', borderTop: '2px solid yellow', paddingTop: '10px' }}>
-            <div>Tab {idx + 1}: {tab.title}</div>
-            <div>ID: {tab.id} | Type: {tab.tab_type} | Active: {tab.isActive ? 'YES' : 'NO'}</div>
-            <div>Has Content: {tab.content ? 'YES' : 'NO'} | Content Length: {tab.content?.length || 0}</div>
-            <div>Content Preview: {tab.content ? tab.content.substring(0, 100) : 'EMPTY'}</div>
-            <div>Has NL Translation: {tab.translations?.nl ? 'YES' : 'NO'}</div>
-          </div>
-        ))}
-      </div>
-      <div ref={containerRef} className={`product-tabs ${className}`}
-           dangerouslySetInnerHTML={{ __html: html }} />
-    </>
+    <div ref={containerRef} className={`product-tabs ${className}`}
+         dangerouslySetInnerHTML={{ __html: html }} />
   );
 }
 
