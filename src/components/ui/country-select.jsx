@@ -96,12 +96,10 @@ export function CountrySelect({ value, onValueChange, onChange, placeholder = "S
                     key={country.value}
                     value={country.label}
                     onSelect={() => handleSelect(country.value)}
+                    className={` ${
+                        isSelected ? "bg-gray-300" : ""
+                    }`}
                   >
-                    <Check
-                      className={`mr-2 h-4 w-4 ${
-                        isSelected ? "opacity-100" : "opacity-0"
-                      }`}
-                    />
                     <span className="mr-2">{country.flag}</span>
                     {country.label}
                   </CommandItem>
