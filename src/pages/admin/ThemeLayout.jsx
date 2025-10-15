@@ -1394,16 +1394,7 @@ export default function ThemeLayout() {
                                     </div>
 
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                        <div>
-                                            <Label htmlFor="product_tabs_title_color">Tab Title Color</Label>
-                                            <Input
-                                                id="product_tabs_title_color"
-                                                type="color"
-                                                value={store.settings.theme.product_tabs_title_color}
-                                                onChange={(e) => handleThemeChange('product_tabs_title_color', e.target.value)}
-                                            />
-                                        </div>
-
+                                        {/* Font Styling Settings */}
                                         <div>
                                             <Label htmlFor="product_tabs_title_size">Tab Title Size</Label>
                                             <Select
@@ -1426,22 +1417,73 @@ export default function ThemeLayout() {
                                         </div>
 
                                         <div>
-                                            <Label htmlFor="product_tabs_content_bg">Tab Content Background</Label>
-                                            <Input
-                                                id="product_tabs_content_bg"
-                                                type="color"
-                                                value={store.settings.theme.product_tabs_content_bg}
-                                                onChange={(e) => handleThemeChange('product_tabs_content_bg', e.target.value)}
-                                            />
+                                            <Label htmlFor="product_tabs_font_weight">Tab Font Weight</Label>
+                                            <Select
+                                                value={store.settings.theme.product_tabs_font_weight || '500'}
+                                                onValueChange={(value) => handleThemeChange('product_tabs_font_weight', value)}
+                                            >
+                                                <SelectTrigger>
+                                                    <SelectValue />
+                                                </SelectTrigger>
+                                                <SelectContent>
+                                                    <SelectItem value="300">Light (300)</SelectItem>
+                                                    <SelectItem value="400">Normal (400)</SelectItem>
+                                                    <SelectItem value="500">Medium (500)</SelectItem>
+                                                    <SelectItem value="600">Semibold (600)</SelectItem>
+                                                    <SelectItem value="700">Bold (700)</SelectItem>
+                                                    <SelectItem value="800">Extra Bold (800)</SelectItem>
+                                                </SelectContent>
+                                            </Select>
                                         </div>
 
                                         <div>
-                                            <Label htmlFor="product_tabs_attribute_label_color">Attribute Label Color</Label>
+                                            <Label htmlFor="product_tabs_border_radius">Tab Border Radius</Label>
+                                            <Select
+                                                value={store.settings.theme.product_tabs_border_radius || '0.5rem'}
+                                                onValueChange={(value) => handleThemeChange('product_tabs_border_radius', value)}
+                                            >
+                                                <SelectTrigger>
+                                                    <SelectValue />
+                                                </SelectTrigger>
+                                                <SelectContent>
+                                                    <SelectItem value="0">None (0)</SelectItem>
+                                                    <SelectItem value="0.125rem">Small (2px)</SelectItem>
+                                                    <SelectItem value="0.25rem">Medium (4px)</SelectItem>
+                                                    <SelectItem value="0.375rem">Default (6px)</SelectItem>
+                                                    <SelectItem value="0.5rem">Large (8px)</SelectItem>
+                                                    <SelectItem value="0.75rem">Extra Large (12px)</SelectItem>
+                                                    <SelectItem value="1rem">Round (16px)</SelectItem>
+                                                    <SelectItem value="9999px">Full Round</SelectItem>
+                                                </SelectContent>
+                                            </Select>
+                                        </div>
+
+                                        <div>
+                                            <Label htmlFor="product_tabs_text_decoration">Tab Text Decoration</Label>
+                                            <Select
+                                                value={store.settings.theme.product_tabs_text_decoration || 'none'}
+                                                onValueChange={(value) => handleThemeChange('product_tabs_text_decoration', value)}
+                                            >
+                                                <SelectTrigger>
+                                                    <SelectValue />
+                                                </SelectTrigger>
+                                                <SelectContent>
+                                                    <SelectItem value="none">None</SelectItem>
+                                                    <SelectItem value="underline">Underline</SelectItem>
+                                                    <SelectItem value="overline">Overline</SelectItem>
+                                                    <SelectItem value="line-through">Line Through</SelectItem>
+                                                </SelectContent>
+                                            </Select>
+                                        </div>
+
+                                        {/* Color Settings */}
+                                        <div>
+                                            <Label htmlFor="product_tabs_title_color">Tab Title Color</Label>
                                             <Input
-                                                id="product_tabs_attribute_label_color"
+                                                id="product_tabs_title_color"
                                                 type="color"
-                                                value={store.settings.theme.product_tabs_attribute_label_color}
-                                                onChange={(e) => handleThemeChange('product_tabs_attribute_label_color', e.target.value)}
+                                                value={store.settings.theme.product_tabs_title_color}
+                                                onChange={(e) => handleThemeChange('product_tabs_title_color', e.target.value)}
                                             />
                                         </div>
 
@@ -1496,54 +1538,32 @@ export default function ThemeLayout() {
                                         </div>
 
                                         <div>
-                                            <Label htmlFor="product_tabs_font_weight">Tab Font Weight</Label>
-                                            <Select
-                                                value={store.settings.theme.product_tabs_font_weight || '500'}
-                                                onValueChange={(value) => handleThemeChange('product_tabs_font_weight', value)}
-                                            >
-                                                <SelectTrigger>
-                                                    <SelectValue />
-                                                </SelectTrigger>
-                                                <SelectContent>
-                                                    <SelectItem value="300">Light (300)</SelectItem>
-                                                    <SelectItem value="400">Normal (400)</SelectItem>
-                                                    <SelectItem value="500">Medium (500)</SelectItem>
-                                                    <SelectItem value="600">Semibold (600)</SelectItem>
-                                                    <SelectItem value="700">Bold (700)</SelectItem>
-                                                    <SelectItem value="800">Extra Bold (800)</SelectItem>
-                                                </SelectContent>
-                                            </Select>
-                                        </div>
-
-                                        <div>
-                                            <Label htmlFor="product_tabs_border_radius">Tab Border Radius</Label>
-                                            <Select
-                                                value={store.settings.theme.product_tabs_border_radius || '0.5rem'}
-                                                onValueChange={(value) => handleThemeChange('product_tabs_border_radius', value)}
-                                            >
-                                                <SelectTrigger>
-                                                    <SelectValue />
-                                                </SelectTrigger>
-                                                <SelectContent>
-                                                    <SelectItem value="0">None (0)</SelectItem>
-                                                    <SelectItem value="0.125rem">Small (2px)</SelectItem>
-                                                    <SelectItem value="0.25rem">Medium (4px)</SelectItem>
-                                                    <SelectItem value="0.375rem">Default (6px)</SelectItem>
-                                                    <SelectItem value="0.5rem">Large (8px)</SelectItem>
-                                                    <SelectItem value="0.75rem">Extra Large (12px)</SelectItem>
-                                                    <SelectItem value="1rem">Round (16px)</SelectItem>
-                                                    <SelectItem value="9999px">Full Round</SelectItem>
-                                                </SelectContent>
-                                            </Select>
-                                        </div>
-
-                                        <div>
                                             <Label htmlFor="product_tabs_border_color">Tab Border Color</Label>
                                             <Input
                                                 id="product_tabs_border_color"
                                                 type="color"
                                                 value={store.settings.theme.product_tabs_border_color || '#E5E7EB'}
                                                 onChange={(e) => handleThemeChange('product_tabs_border_color', e.target.value)}
+                                            />
+                                        </div>
+
+                                        <div>
+                                            <Label htmlFor="product_tabs_content_bg">Tab Content Background</Label>
+                                            <Input
+                                                id="product_tabs_content_bg"
+                                                type="color"
+                                                value={store.settings.theme.product_tabs_content_bg}
+                                                onChange={(e) => handleThemeChange('product_tabs_content_bg', e.target.value)}
+                                            />
+                                        </div>
+
+                                        <div>
+                                            <Label htmlFor="product_tabs_attribute_label_color">Attribute Label Color</Label>
+                                            <Input
+                                                id="product_tabs_attribute_label_color"
+                                                type="color"
+                                                value={store.settings.theme.product_tabs_attribute_label_color}
+                                                onChange={(e) => handleThemeChange('product_tabs_attribute_label_color', e.target.value)}
                                             />
                                         </div>
                                     </div>

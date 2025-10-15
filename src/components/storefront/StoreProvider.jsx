@@ -446,6 +446,7 @@ export const StoreProvider = ({ children }) => {
           product_tabs_font_weight: '500',
           product_tabs_border_radius: '0.5rem',
           product_tabs_border_color: '#E5E7EB',
+          product_tabs_text_decoration: 'none',
           // Breadcrumb defaults
           breadcrumb_show_home_icon: true,
           breadcrumb_item_text_color: '#6B7280',
