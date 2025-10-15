@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Badge } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
 import { Check } from 'lucide-react';
 import apiClient from '@/api/client';
 
