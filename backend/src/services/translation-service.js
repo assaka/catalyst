@@ -102,7 +102,7 @@ class TranslationService {
    * Save multiple UI labels at once
    */
   async saveBulkUILabels(labels) {
-    const promises = labels.map(({ key, language_code, value, category, type = 'system' }) =>
+    const promises = labels.map(({ key, language_code, value, category, type = 'custom' }) =>
       this.saveUILabel(key, language_code, value, category, type)
     );
     return await Promise.all(promises);
