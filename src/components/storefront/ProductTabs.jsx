@@ -74,11 +74,14 @@ export default function ProductTabs({ productTabs = [], product = null, settings
       return;
     }
 
+    // Get attribute label color from theme settings
+    const attributeLabelColor = settings?.theme?.product_tabs_attribute_label_color || '#16A34A';
+
     const attributesHTML = `
       <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
         ${Object.entries(attributes).map(([key, value]) => `
           <div class="flex justify-between py-2 border-b border-gray-100">
-            <span class="font-medium capitalize">${key.replace(/_/g, ' ')}</span>
+            <span class="font-bold capitalize" style="color: ${attributeLabelColor};">${key.replace(/_/g, ' ')}</span>
             <span>${String(value ?? '')}</span>
           </div>
         `).join('')}
@@ -89,7 +92,7 @@ export default function ProductTabs({ productTabs = [], product = null, settings
     attributesContainers.forEach(container => {
       container.innerHTML = attributesHTML;
     });
-  }, [product, tabsData, activeTabIndex]);
+  }, [product, tabsData, activeTabIndex, settings]);
 
   // Attach tab click handlers
   useEffect(() => {
@@ -150,7 +153,7 @@ export default function ProductTabs({ productTabs = [], product = null, settings
           {{#each tabs}}
             <button
               class="py-2 px-1 border-b-2 font-medium transition-colors duration-200 {{#if this.isActive}}{{else}}border-transparent hover:underline{{/if}}"
-              style="font-size: {{settings.theme.product_tabs_title_size}}; {{#if this.isActive}}color: #2563eb; border-color: #2563eb;{{else}}color: #6b7280;{{/if}}"
+              style="font-size: {{settings.theme.product_tabs_title_size}}; {{#if this.isActive}}color: {{settings.theme.product_tabs_title_color}}; border-color: {{settings.theme.product_tabs_title_color}};{{else}}color: #6b7280;{{/if}}"
               data-action="switch-tab"
               data-tab-id="{{this.id}}">
               {{this.title}}
@@ -199,10 +202,10 @@ export default function ProductTabs({ productTabs = [], product = null, settings
               class="w-full flex items-center justify-between p-4 text-left hover:bg-gray-50 transition-colors duration-200"
               data-action="toggle-accordion"
               data-accordion-index="{{@index}}">
-              <span class="font-medium" style="font-size: {{settings.theme.product_tabs_title_size}}; color: #2563eb;">{{this.title}}</span>
+              <span class="font-medium" style="font-size: {{settings.theme.product_tabs_title_size}}; color: {{settings.theme.product_tabs_title_color}};">{{this.title}}</span>
               <svg
                 class="w-5 h-5 transition-transform duration-200 accordion-chevron"
-                style="color: #2563eb;"
+                style="color: {{settings.theme.product_tabs_title_color}};"
                 fill="none"
                 stroke="currentColor"
                 viewBox="0 0 24 24">
