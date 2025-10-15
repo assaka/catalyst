@@ -369,26 +369,32 @@ const EditorSidebar = ({
       const textContent = slotConfig.content || '';
       setLocalTextContent(textContent);
 
-      // Check if content is a translation key
-      const detectedKey = detectTranslationKey(textContent);
-      console.log('🔍 Translation detection:', { textContent, detectedKey, slotId });
+      // Check if content is a translation key (async detection for reverse lookup)
+      detectTranslationKey(textContent).then(detectedKey => {
+        console.log('🔍 Translation detection:', { textContent, detectedKey, slotId });
 
-      if (detectedKey) {
-        setIsTranslatable(true);
-        setTranslationKey(detectedKey);
+        if (detectedKey) {
+          setIsTranslatable(true);
+          setTranslationKey(detectedKey);
 
-        // Fetch and display translated value
-        getTranslatedValue(detectedKey).then(value => {
-          console.log('📝 Fetched translation value:', { detectedKey, value });
-          if (value) {
-            setTranslatedValue(value);
-          }
-        });
-      } else {
+          // Fetch and display translated value
+          getTranslatedValue(detectedKey).then(value => {
+            console.log('📝 Fetched translation value:', { detectedKey, value });
+            if (value) {
+              setTranslatedValue(value);
+            }
+          });
+        } else {
+          setIsTranslatable(false);
+          setTranslationKey('');
+          setTranslatedValue('');
+        }
+      }).catch(error => {
+        console.error('Error detecting translation key:', error);
         setIsTranslatable(false);
         setTranslationKey('');
         setTranslatedValue('');
-      }
+      });
 
       // Update textarea ref value
       if (textContentRef.current) {
@@ -740,16 +746,18 @@ const EditorSidebar = ({
     // This allows detecting translation keys from rendered text
     try {
       // Fetch translation cache if not already loaded
-      if (!translationCache) {
+      let cache = translationCache;
+      if (!cache) {
         const response = await api.get(`/translations/ui-labels?lang=${currentLanguage}`);
         if (response && response.success && response.data && response.data.labels) {
-          setTranslationCache(response.data.labels);
+          cache = response.data.labels;
+          setTranslationCache(cache);
         }
       }
 
       // Search for matching value in translation cache
-      if (translationCache) {
-        const foundKey = findKeyByValue(translationCache, content);
+      if (cache) {
+        const foundKey = findKeyByValue(cache, content);
         if (foundKey) {
           return foundKey;
         }
@@ -759,7 +767,7 @@ const EditorSidebar = ({
     }
 
     return null;
-  }, [currentLanguage, translationCache]);
+  }, [currentLanguage, translationCache, findKeyByValue]);
 
   // Helper to recursively search for a value in nested translation object
   const findKeyByValue = useCallback((obj, value, prefix = '') => {
@@ -1696,6 +1704,54 @@ const EditorSidebar = ({
                   }`}
                   placeholder="Enter text content..."
                 />
+
+                {/* Make Translatable Button - show when content is not translatable */}
+                {!isTranslatable && localTextContent && (
+                  <div className="mt-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={async () => {
+                        const text = textContentRef.current?.value || localTextContent;
+                        if (!text || !text.trim()) return;
+
+                        // Generate a translation key from the text
+                        const key = `editor.${slotId}.${Date.now()}`;
+
+                        // Save this text as a new translation and auto-translate
+                        setIsAutoTranslating(true);
+                        try {
+                          await api.post('/translations/auto-translate-ui-label', {
+                            key: key,
+                            value: text,
+                            category: 'editor',
+                            fromLang: currentLanguage
+                          });
+
+                          // Update state to show as translatable
+                          setIsTranslatable(true);
+                          setTranslationKey(key);
+                          setTranslatedValue(text);
+
+                          // Save the key instead of plain text
+                          if (onTextChange) {
+                            onTextChange(slotId, key);
+                          }
+                        } catch (error) {
+                          console.error('Failed to make text translatable:', error);
+                        } finally {
+                          setIsAutoTranslating(false);
+                        }
+                      }}
+                      className="h-7 px-2 text-xs w-full"
+                    >
+                      <Globe className="w-3 h-3 mr-1" />
+                      Make Translatable
+                    </Button>
+                  </div>
+                )}
+
+                {/* Translation Info Panel */}
                 {isTranslatable && translationKey && (
                   <div className="mt-2 p-2 bg-green-50 border border-green-200 rounded text-xs">
                     <p className="font-medium text-green-900">Translation Key: {translationKey}</p>
