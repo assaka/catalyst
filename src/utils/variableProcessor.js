@@ -264,18 +264,6 @@ function processTranslations(content, context, pageData) {
 
     const uiTranslations = context?.settings?.ui_translations || pageData?.settings?.ui_translations || {};
 
-    // DEBUG: Log translation lookup attempts
-    if (key.includes('welcome_back') || key.includes('create_account')) {
-      console.log('🔍 Translation lookup debug:', {
-        key,
-        currentLang,
-        hasUiTranslations: !!uiTranslations,
-        hasCurrentLang: !!uiTranslations[currentLang],
-        uiTranslationsKeys: Object.keys(uiTranslations),
-        currentLangKeys: uiTranslations[currentLang] ? Object.keys(uiTranslations[currentLang]).slice(0, 5) : 'none'
-      });
-    }
-
     // Helper function to get nested value from dotted key
     const getNestedTranslation = (translations, dottedKey) => {
       if (!translations) return null;
@@ -290,6 +278,19 @@ function processTranslations(content, context, pageData) {
       }
       return current;
     };
+
+    // DEBUG: Log translation lookup attempts
+    if (key.includes('welcome_back') || key.includes('create_account') || key.includes('show_more') || key.includes('show_less')) {
+      console.log('🔍 Translation lookup debug:', {
+        key,
+        currentLang,
+        hasUiTranslations: !!uiTranslations,
+        hasCurrentLang: !!uiTranslations[currentLang],
+        uiTranslationsKeys: Object.keys(uiTranslations),
+        currentLangKeys: uiTranslations[currentLang] ? Object.keys(uiTranslations[currentLang]).slice(0, 10) : 'none',
+        translationValue: getNestedTranslation(uiTranslations[currentLang], key)
+      });
+    }
 
     // Try current language first
     const currentLangValue = getNestedTranslation(uiTranslations[currentLang], key);
