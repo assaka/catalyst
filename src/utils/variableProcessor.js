@@ -539,6 +539,7 @@ function processLoops(content, context, pageData, depth = 0) {
         itemContent = itemContent.replace(/\{\{@index\}\}/g, index);
 
         // Build item context - preserve parent context for nested loops
+        // IMPORTANT: Spread item properties AFTER context to avoid overwriting parent data like settings
         const itemContext = typeof item === 'object' && item !== null
           ? { ...context, ...pageData, this: item, ...item }
           : { ...context, ...pageData, this: item };
@@ -549,8 +550,9 @@ function processLoops(content, context, pageData, depth = 0) {
         // Process nested loops recursively
         itemContent = processLoops(itemContent, context, itemContext, depth + 1);
 
-        // Process simple variables
-        return processSimpleVariables(itemContent, context, itemContext);
+        // Process simple variables - pass full merged context
+        // CRITICAL: Pass itemContext as BOTH context and pageData to ensure settings are accessible
+        return processSimpleVariables(itemContent, itemContext, {});
       }).join('');
     } else if (arrayPath === 'product.labels') {
       replacement = ''; // Don't show anything if no labels
