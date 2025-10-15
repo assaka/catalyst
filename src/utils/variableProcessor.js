@@ -264,17 +264,34 @@ function processTranslations(content, context, pageData) {
 
     const uiTranslations = context?.settings?.ui_translations || pageData?.settings?.ui_translations || {};
 
+    // Helper function to get nested value from dotted key
+    const getNestedTranslation = (translations, dottedKey) => {
+      if (!translations) return null;
+      const keys = dottedKey.split('.');
+      let current = translations;
+      for (const k of keys) {
+        if (current && typeof current === 'object' && k in current) {
+          current = current[k];
+        } else {
+          return null;
+        }
+      }
+      return current;
+    };
+
     // Try current language first
-    if (uiTranslations[currentLang] && uiTranslations[currentLang][key]) {
-      return uiTranslations[currentLang][key];
+    const currentLangValue = getNestedTranslation(uiTranslations[currentLang], key);
+    if (currentLangValue) {
+      return currentLangValue;
     }
 
     // Fallback to English
-    if (uiTranslations.en && uiTranslations.en[key]) {
-      return uiTranslations.en[key];
+    const enValue = getNestedTranslation(uiTranslations.en, key);
+    if (enValue) {
+      return enValue;
     }
 
-    // Fallback to key itself
+    // Fallback to key itself - format nicely
     return key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
   });
 }
