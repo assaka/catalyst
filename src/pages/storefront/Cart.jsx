@@ -740,7 +740,7 @@ export default function Cart() {
                 const result = couponService.setAppliedCoupon(coupon);
                 if (result.success) {
                     setAppliedCoupon(coupon);
-                    setFlashMessage({ type: 'success', message: t('cart.coupon_applied', `Coupon "${coupon.name}" applied!`) });
+                    setFlashMessage({ type: 'success', message: t('cart.coupon_applied', `Coupon "${coupon.name}" applied!`).replace('{coupon}', coupon.name) });
                     setCouponCode(''); // Clear the input after successful application
                 } else {
                     setFlashMessage({ type: 'error', message: t('cart.coupon_apply_failed', 'Failed to apply coupon. Please try again.') });
