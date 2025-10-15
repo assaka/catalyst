@@ -2073,7 +2073,7 @@ export default function Checkout() {
       const items = [];
 
       if (selectedShippingMethod) {
-        items.push({ label: t('checkout.shipping_method'), value: selectedShippingMethod });
+        items.push({ label: t('common.shipping_method'), value: selectedShippingMethod });
       }
 
       if (deliveryDate) {
