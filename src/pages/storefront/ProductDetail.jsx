@@ -4,6 +4,7 @@ import { useParams, useSearchParams, Link, useNavigate } from "react-router-dom"
 import { createPageUrl } from "@/utils";
 import { buildProductBreadcrumbs } from "@/utils/breadcrumbUtils";
 import { getCategoryName as getTranslatedCategoryName, getProductName, getCurrentLanguage } from "@/utils/translationUtils";
+import { useTranslation } from '@/contexts/TranslationContext';
 // Redirect handling moved to global RedirectHandler component
 import { useNotFound } from "@/utils/notFoundUtils";
 import { StorefrontProduct } from "@/api/storefront-entities";
@@ -103,12 +104,13 @@ export default function ProductDetail() {
   const { slug: paramSlug, productSlug: routeProductSlug, storeCode } = useParams();
   const [searchParams] = useSearchParams();
   const slug = searchParams.get('slug') || routeProductSlug || paramSlug;
-  
+
 
   // Updated useStore destructuring: productLabels is now sourced directly from the store context.
   const { store, settings, loading: storeLoading, categories, productLabels, taxes, selectedCountry } = useStore();
   const navigate = useNavigate();
   const { showNotFound } = useNotFound();
+  const { t } = useTranslation();
   const [product, setProduct] = useState(null);
   const [loading, setLoading] = useState(true);
   const [quantity, setQuantity] = useState(1);
