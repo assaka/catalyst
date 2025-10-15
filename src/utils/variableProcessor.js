@@ -584,9 +584,22 @@ function processLoops(content, context, pageData, depth = 0) {
  * @private
  */
 function processSimpleVariables(content, context, pageData) {
-  const variableRegex = /\{\{([^#\/][^}]*)\}\}/g;
+  // Match both {{variable}} and {{{variable}}} for escaped and unescaped HTML
+  // First process triple braces (unescaped HTML), then double braces (escaped)
+  const tripleBraceRegex = /\{\{\{([^#\/][^}]*)\}\}\}/g;
+  const doubleBraceRegex = /\{\{([^#\/][^}]*)\}\}/g;
 
-  return content.replace(variableRegex, (match, variablePath) => {
+  // Process triple braces first (unescaped HTML) - don't escape the result
+  let result = content.replace(tripleBraceRegex, (match, variablePath) => {
+    const trimmedPath = variablePath.trim();
+    const value = getNestedValue(trimmedPath, context, pageData);
+    const formattedValue = formatValue(value, trimmedPath, context, pageData);
+    // Return raw HTML without escaping
+    return formattedValue;
+  });
+
+  // Then process double braces (escaped) - this will escape any HTML
+  return result.replace(doubleBraceRegex, (match, variablePath) => {
     const trimmedPath = variablePath.trim();
 
     // Handle formatted price paths directly when they don't exist in data

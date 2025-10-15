@@ -222,6 +222,14 @@ export default function ProductTabs({ productTabs = [], product = null, classNam
     </div>
   `;
 
+  // Debug: Log what's actually in tabsData.content
+  console.log('🔍 ProductTabs: tabsData content values:', tabsData.map(tab => ({
+    title: tab.title,
+    content: tab.content,
+    contentType: typeof tab.content,
+    contentLength: tab.content?.length
+  })));
+
   const variableContext = { tabs: tabsData, product };
 
   // Debug: Check if template has content rendering logic
