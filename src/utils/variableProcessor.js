@@ -601,6 +601,10 @@ function processLoops(content, context, pageData, depth = 0) {
         // Process nested loops recursively
         itemContent = processLoops(itemContent, context, itemContext, depth + 1);
 
+        // CRITICAL: Process translations BEFORE simple variables
+        // Translation helpers like {{t "common.show_more"}} must be processed in loop items
+        itemContent = processTranslations(itemContent, context, itemContext);
+
         // Process simple variables - pass full merged context
         // CRITICAL: Pass itemContext as BOTH context and pageData to ensure settings are accessible
         return processSimpleVariables(itemContent, itemContext, {});
