@@ -1467,7 +1467,7 @@ export default function Checkout() {
         return isSectionVisible('shipping') && eligibleShippingMethods.length > 0 && (
           <Card key="shipping-method" style={{ backgroundColor: checkoutSectionBgColor, borderColor: checkoutSectionBorderColor }}>
             <CardHeader>
-              <CardTitle style={{ color: checkoutSectionTitleColor, fontSize: checkoutSectionTitleSize }}>{t('checkout.shipping_method', 'Shipping Method')}</CardTitle>
+              <CardTitle style={{ color: checkoutSectionTitleColor, fontSize: checkoutSectionTitleSize }}>{t('common.shipping_method', 'Shipping Method')}</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="space-y-3">
