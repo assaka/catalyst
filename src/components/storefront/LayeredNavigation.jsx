@@ -89,6 +89,14 @@ export default function LayeredNavigation({
     const collapseFilters = settings.collapse_filters !== false
     const maxVisibleAttributes = settings.max_visible_attributes || 5;
 
+    // Debug logging for settings
+    console.log('[LayeredNavigation] Settings:', {
+        max_visible_attributes: settings.max_visible_attributes,
+        maxVisibleAttributes,
+        enableProductFilters,
+        collapseFilters
+    });
+
 
 
 
@@ -625,6 +633,15 @@ export default function LayeredNavigation({
                                         const isExpanded = expandedAttributes[code];
                                         const visibleValues = isExpanded ? values : values.slice(0, maxVisibleAttributes);
                                         const hasMoreValues = values.length > maxVisibleAttributes;
+
+                                        // Debug logging
+                                        console.log(`[LayeredNavigation] Attribute: ${code}`, {
+                                            totalValues: values.length,
+                                            maxVisibleAttributes,
+                                            hasMoreValues,
+                                            isExpanded,
+                                            visibleValues: visibleValues.length
+                                        });
 
                                         return (
                                             <>
