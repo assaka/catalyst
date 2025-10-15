@@ -595,8 +595,24 @@ function processLoops(content, context, pageData, depth = 0) {
           ? { ...context, ...pageData, this: item, ...item }
           : { ...context, ...pageData, this: item };
 
+        // DEBUG: Log context availability before processing
+        if (itemContent.includes('settings.theme.product_tabs_title_color')) {
+          console.log('🔧 [processLoops] Processing tab item:', {
+            itemId: item?.id,
+            hasSettings: !!itemContext.settings,
+            hasTheme: !!itemContext.settings?.theme,
+            titleColor: itemContext.settings?.theme?.product_tabs_title_color,
+            contextKeys: Object.keys(itemContext).slice(0, 10)
+          });
+        }
+
         // Process conditionals with item context
         itemContent = processConditionals(itemContent, context, itemContext);
+
+        // DEBUG: Check if variables survived conditional processing
+        if (itemContent.includes('settings.theme.product_tabs_title_color')) {
+          console.log('⚠️  [After conditionals] Variable still present:', itemContent.substring(0, 300));
+        }
 
         // Process nested loops recursively
         itemContent = processLoops(itemContent, context, itemContext, depth + 1);
@@ -607,7 +623,19 @@ function processLoops(content, context, pageData, depth = 0) {
 
         // Process simple variables - pass full merged context
         // CRITICAL: Pass itemContext as BOTH context and pageData to ensure settings are accessible
-        return processSimpleVariables(itemContent, itemContext, {});
+        const finalContent = processSimpleVariables(itemContent, itemContext, {});
+
+        // DEBUG: Check final result
+        if (finalContent.includes('product_tabs_title_color') || item?.id?.includes('7aef')) {
+          console.log('🎯 [Final result] for tab:', {
+            itemId: item?.id,
+            hasVariable: finalContent.includes('{{settings'),
+            colorApplied: finalContent.includes('#DC2626'),
+            preview: finalContent.substring(0, 200)
+          });
+        }
+
+        return finalContent;
       }).join('');
     } else if (arrayPath === 'product.labels') {
       replacement = ''; // Don't show anything if no labels
