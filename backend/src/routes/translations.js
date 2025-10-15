@@ -16,13 +16,14 @@ router.get('/ui-labels', async (req, res) => {
   try {
     const { lang = 'en' } = req.query;
 
-    const labels = await translationService.getUILabels(lang);
+    const result = await translationService.getUILabels(lang);
 
     res.json({
       success: true,
       data: {
         language: lang,
-        labels
+        labels: result.labels,
+        customKeys: result.customKeys
       }
     });
   } catch (error) {

@@ -8,15 +8,22 @@ class TranslationService {
   async getUILabels(languageCode) {
     const translations = await Translation.findAll({
       where: { language_code: languageCode },
-      attributes: ['key', 'value', 'category']
+      attributes: ['key', 'value', 'category', 'type']
     });
 
     // Convert to nested object structure
     // e.g., "common.home" becomes { common: { home: "Home" } }
-    const result = {};
+    const labels = {};
+    const customKeys = [];
+
     translations.forEach(t => {
+      // Track custom keys
+      if (t.type === 'custom') {
+        customKeys.push(t.key);
+      }
+
       const keys = t.key.split('.');
-      let current = result;
+      let current = labels;
 
       for (let i = 0; i < keys.length - 1; i++) {
         const key = keys[i];
@@ -46,7 +53,7 @@ class TranslationService {
       current[lastKey] = t.value;
     });
 
-    return result;
+    return { labels, customKeys };
   }
 
   /**
