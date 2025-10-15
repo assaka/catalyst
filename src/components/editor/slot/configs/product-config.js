@@ -770,7 +770,7 @@ export const productConfig = {
             <circle cx="19" cy="21" r="1"></circle>
             <path d="m2.05 2.05h2l2.66 12.42a2 2 0 0 0 2 1.58h9.78a2 2 0 0 0 1.95-1.57l1.65-7.43h-15.44"></path>
           </svg>
-          {{t "common.add_to_cart"}}
+          {{t "product.add_to_cart"}}
         </button>
       `,
       script: `
