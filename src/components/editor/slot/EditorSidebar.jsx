@@ -10,7 +10,8 @@ import {
   ChevronDown,
   ChevronRight,
   Shield,
-  AlertTriangle
+  AlertTriangle,
+  Globe
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -20,6 +21,8 @@ import { saveManager, CHANGE_TYPES } from './SaveManager';
 import { parseEditorHtml, validateEditorHtml, SECURITY_LEVELS } from '@/utils/secureHtmlParser';
 import GridLayoutControl from './GridLayoutControl';
 import categoryConfig from './configs/category-config';
+import api from '@/utils/api';
+import { useTranslation } from '@/contexts/TranslationContext';
 
 // Dynamic sidebar imports map
 // To add a new specialized sidebar:
@@ -105,11 +108,11 @@ const EditorSidebar = ({
   // Refs for uncontrolled textareas to avoid React re-render lag
   const textContentRef = useRef(null);
   const htmlContentRef = useRef(null);
-  
+
   // Keep local state only for initialization and blur handling
   const [localTextContent, setLocalTextContent] = useState('');
   const [localHtmlContent, setLocalHtmlContent] = useState('');
-  
+
   // HTML validation and security state
   const [htmlValidation, setHtmlValidation] = useState({
     error: null,
@@ -118,9 +121,16 @@ const EditorSidebar = ({
     wasModified: false,
     warnings: []
   });
-  
+
   // Flag to prevent change recording during initialization
   const [isInitializing, setIsInitializing] = useState(false);
+
+  // Translation state
+  const { t, currentLanguage, availableLanguages } = useTranslation();
+  const [translationKey, setTranslationKey] = useState('');
+  const [translatedValue, setTranslatedValue] = useState('');
+  const [isTranslatable, setIsTranslatable] = useState(false);
+  const [isAutoTranslating, setIsAutoTranslating] = useState(false);
   
   // State to trigger alignment updates
   const [alignmentUpdate, setAlignmentUpdate] = useState(0);
@@ -358,6 +368,24 @@ const EditorSidebar = ({
       // Content should always be set in slotConfig for buttons and editable elements
       const textContent = slotConfig.content || '';
       setLocalTextContent(textContent);
+
+      // Check if content is a translation key
+      const detectedKey = detectTranslationKey(textContent);
+      if (detectedKey) {
+        setIsTranslatable(true);
+        setTranslationKey(detectedKey);
+
+        // Fetch and display translated value
+        getTranslatedValue(detectedKey).then(value => {
+          if (value) {
+            setTranslatedValue(value);
+          }
+        });
+      } else {
+        setIsTranslatable(false);
+        setTranslationKey('');
+        setTranslatedValue('');
+      }
 
       // Update textarea ref value
       if (textContentRef.current) {
@@ -685,6 +713,49 @@ const EditorSidebar = ({
     }));
   }, []);
 
+  // Helper to detect if text content is a translation key
+  const detectTranslationKey = useCallback((content) => {
+    if (!content) return null;
+
+    // Check for translation key patterns: {t("key")} or t("key") or just the key
+    const tPattern = /\{?t\(["']([^"']+)["']\)\}?/;
+    const match = content.match(tPattern);
+
+    if (match) {
+      return match[1]; // Return the key
+    }
+
+    // Check if it's just a translation key (common.button.add_to_cart)
+    if (content.match(/^[a-z_]+\.[a-z_]+(\.[a-z_]+)*$/)) {
+      return content;
+    }
+
+    return null;
+  }, []);
+
+  // Helper to get translated value for a key
+  const getTranslatedValue = useCallback(async (key) => {
+    try {
+      const response = await api.get(`/translations/ui-labels?lang=${currentLanguage}`);
+      if (response && response.success && response.data && response.data.labels) {
+        // Navigate through nested object using key path
+        const keys = key.split('.');
+        let value = response.data.labels;
+        for (const k of keys) {
+          if (value && typeof value === 'object') {
+            value = value[k];
+          } else {
+            return null;
+          }
+        }
+        return typeof value === 'string' ? value : null;
+      }
+    } catch (error) {
+      console.error('Error fetching translation:', error);
+    }
+    return null;
+  }, [currentLanguage]);
+
   // Ultra-fast text change handler - no React state updates during typing
   const handleTextContentChange = useCallback((e) => {
     // Do absolutely nothing - let the textarea be uncontrolled during typing
@@ -698,14 +769,42 @@ const EditorSidebar = ({
   }, []);
 
 
+  // Helper to auto-translate text to all active languages
+  const autoTranslateText = useCallback(async (text, sourceLanguage = 'en') => {
+    if (!text || !text.trim()) return;
+
+    setIsAutoTranslating(true);
+    try {
+      const response = await api.post('/translations/auto-translate-ui-label', {
+        key: translationKey || `editor.${slotId}.${Date.now()}`,
+        value: text,
+        category: 'editor',
+        fromLang: sourceLanguage
+      });
+
+      if (response && response.success) {
+        console.log('Auto-translation completed:', response.data);
+      }
+    } catch (error) {
+      console.error('Auto-translation failed:', error);
+    } finally {
+      setIsAutoTranslating(false);
+    }
+  }, [slotId, translationKey]);
+
   // Save text content when user stops typing (onBlur)
   const handleTextContentSave = useCallback(() => {
     if (slotId && onTextChange && !isInitializing && textContentRef.current) {
       const currentValue = textContentRef.current.value;
       onTextChange(slotId, currentValue);
       setLocalTextContent(currentValue); // Update state for consistency
+
+      // If text changed and is translatable, auto-translate
+      if (isTranslatable && currentValue !== localTextContent) {
+        autoTranslateText(currentValue, currentLanguage);
+      }
     }
-  }, [slotId, onTextChange, isInitializing]);
+  }, [slotId, onTextChange, isInitializing, isTranslatable, localTextContent, currentLanguage, autoTranslateText]);
 
   // Save HTML content when user stops typing (onBlur) with XSS prevention
   const handleHtmlContentSave = useCallback(() => {
@@ -1528,16 +1627,42 @@ const EditorSidebar = ({
           <SectionHeader title="Content" section="content">
             <div className="space-y-3">
               <div>
-                <Label htmlFor="textContent" className="text-xs font-medium">Text Content</Label>
+                <div className="flex items-center justify-between mb-1">
+                  <Label htmlFor="textContent" className="text-xs font-medium">Text Content</Label>
+                  {isTranslatable && (
+                    <div className="flex items-center gap-1 text-green-600">
+                      <Globe className="w-3 h-3" />
+                      <span className="text-xs">Translatable</span>
+                    </div>
+                  )}
+                </div>
                 <textarea
                   ref={textContentRef}
                   id="textContent"
                   defaultValue={localTextContent}
                   onChange={handleTextContentChange}
                   onBlur={handleTextContentSave}
-                  className="w-full mt-1 text-xs border border-gray-300 rounded-md p-2 h-20 resize-none"
+                  className={`w-full mt-1 text-xs border rounded-md p-2 h-20 resize-none ${
+                    isTranslatable ? 'border-green-300 bg-green-50' : 'border-gray-300'
+                  }`}
                   placeholder="Enter text content..."
                 />
+                {isTranslatable && translationKey && (
+                  <div className="mt-2 p-2 bg-green-50 border border-green-200 rounded text-xs">
+                    <p className="font-medium text-green-900">Translation Key: {translationKey}</p>
+                    {translatedValue && (
+                      <p className="text-green-700 mt-1">
+                        {currentLanguage} value: {translatedValue}
+                      </p>
+                    )}
+                    {isAutoTranslating && (
+                      <p className="text-green-600 mt-1 flex items-center gap-1">
+                        <Globe className="w-3 h-3 animate-spin" />
+                        Auto-translating to all active languages...
+                      </p>
+                    )}
+                  </div>
+                )}
               </div>
             
             {/* HTML Content Editor - only show for HTML elements */}
