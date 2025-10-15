@@ -524,16 +524,12 @@ export function UnifiedSlotRenderer({
   // Extract full settings object - keep ui_translations for template processing
   const fullSettings = productData.settings || categoryData?.settings || cartData?.settings || loginData?.settings || accountData?.settings || {};
 
-  // Create a safe version of settings without ui_translations for React rendering
-  // ui_translations will still be available in pageData for processTranslations
-  const { ui_translations, ...settingsForComponents } = fullSettings;
-
   const variableContext = {
     product: productData.product || (context === 'editor' ? generateDemoData('product', {}).product : null),
     products: formattedProducts, // Use formatted products for category templates
     category: categoryData?.category || categoryData,
     cart: cartData,
-    settings: settingsForComponents, // Safe settings without ui_translations object
+    settings: fullSettings, // Keep ui_translations for {{t "key"}} processing
     productLabels: productData.productLabels || categoryData?.productLabels,
     // Product-specific data
     customOptions: productData.customOptions || [],
@@ -658,10 +654,8 @@ export function UnifiedSlotRenderer({
     const { id, type, content, className, styles, metadata } = slot;
 
     // Process variables in content and className
-    // Pass fullSettings via pageData so processTranslations can access ui_translations
-    const pageData = { settings: fullSettings };
-    const processedContent = processVariables(content, variableContext, pageData);
-    let processedClassName = processVariables(className, variableContext, pageData);
+    const processedContent = processVariables(content, variableContext);
+    let processedClassName = processVariables(className, variableContext);
 
     // Handle viewport-aware responsive classes in editor mode
     // Convert Tailwind breakpoint classes (sm:, md:, lg:) to viewport-based visibility
@@ -725,7 +719,7 @@ export function UnifiedSlotRenderer({
     if (styles) {
       Object.entries(styles).forEach(([key, value]) => {
         if (typeof value === 'string') {
-          processedStyles[key] = processVariables(value, variableContext, pageData);
+          processedStyles[key] = processVariables(value, variableContext);
         } else {
           processedStyles[key] = value;
         }
@@ -1188,8 +1182,7 @@ export function UnifiedSlotRenderer({
     }
 
     // Use same layout structure for both editor and storefront
-    const pageData = { settings: fullSettings };
-    const processedParentClassName = processVariables(slot.parentClassName || '', variableContext, pageData);
+    const processedParentClassName = processVariables(slot.parentClassName || '', variableContext);
 
     const layoutWrapper = (
       <div
