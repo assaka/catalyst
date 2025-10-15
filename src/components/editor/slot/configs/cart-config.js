@@ -82,7 +82,7 @@ export const cartConfig = {
     header_title: {
       id: 'header_title',
       type: 'text',
-      content: '{{t "my_cart"}}',
+      content: '{{t "common.my_cart"}}',
       className: 'w-fit text-3xl font-bold text-gray-900 mb-4',
       parentClassName: 'text-center',
       styles: {},
