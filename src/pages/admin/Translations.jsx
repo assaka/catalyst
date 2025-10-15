@@ -32,16 +32,37 @@ export default function Translations() {
       const response = await api.get(`/translations/ui-labels?lang=${lang}`);
 
       if (response && response.success && response.data && response.data.labels) {
-        // Convert flat object to array of label objects
-        const labelsArray = Object.entries(response.data.labels).map(([key, value]) => {
-          // Determine category from key prefix
-          const category = key.split('.')[0] || 'common';
+        // Flatten nested objects into separate label entries
+        const labelsArray = [];
 
-          // Ensure value is always a string, not an object
-          const stringValue = typeof value === 'object' ? JSON.stringify(value) : String(value || '');
+        const flattenObject = (obj, prefix = '') => {
+          Object.entries(obj).forEach(([key, value]) => {
+            const fullKey = prefix ? `${prefix}.${key}` : key;
 
-          return { key, value: stringValue, category };
-        });
+            if (typeof value === 'object' && value !== null && !Array.isArray(value)) {
+              // Recursively flatten nested objects
+              flattenObject(value, fullKey);
+            } else {
+              // This is a leaf node - create a label entry
+              const category = fullKey.split('.')[0] || 'common';
+              const stringValue = String(value || '');
+
+              // Determine if this is a system or custom translation
+              // System translations typically come from the API with predefined keys
+              // Custom translations are user-added (we'll check if it exists in response metadata)
+              const type = response.data.customKeys?.includes(fullKey) ? 'custom' : 'system';
+
+              labelsArray.push({
+                key: fullKey,
+                value: stringValue,
+                category,
+                type
+              });
+            }
+          });
+        };
+
+        flattenObject(response.data.labels);
 
         setLabels(labelsArray);
         setFilteredLabels(labelsArray);
@@ -83,14 +104,15 @@ export default function Translations() {
   /**
    * Save label translation
    */
-  const saveLabel = async (key, value, category = 'common') => {
+  const saveLabel = async (key, value, category = 'common', type = 'system') => {
     try {
       setSaving(true);
       const response = await api.post('/translations/ui-labels', {
         key,
         language_code: selectedLanguage,
         value,
-        category
+        category,
+        type
       });
 
       if (response && response.success) {
@@ -98,7 +120,7 @@ export default function Translations() {
 
         // Update local state directly instead of reloading
         const updatedLabels = labels.map(label =>
-          label.key === key ? { ...label, value, category } : label
+          label.key === key ? { ...label, value, category, type } : label
         );
         setLabels(updatedLabels);
 
@@ -223,9 +245,13 @@ export default function Translations() {
       return;
     }
 
-    await saveLabel(newLabel.key, newLabel.value, newLabel.category);
+    // New labels are always marked as 'custom'
+    await saveLabel(newLabel.key, newLabel.value, newLabel.category, 'custom');
     setNewLabel({ key: '', value: '', category: 'common' });
     setShowAddForm(false);
+
+    // Reload labels to get the newly added label
+    await loadLabels(selectedLanguage);
   };
 
   /**
@@ -427,6 +453,7 @@ export default function Translations() {
                   <tr>
                     <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">Key</th>
                     <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">Category</th>
+                    <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">Type</th>
                     <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">Value</th>
                     <th className="px-4 py-3 text-right text-sm font-semibold text-gray-700">Actions</th>
                   </tr>
@@ -440,6 +467,15 @@ export default function Translations() {
                       <td className="px-4 py-3 text-sm">
                         <span className="px-2 py-1 bg-gray-100 text-gray-700 rounded text-xs">
                           {label.category}
+                        </span>
+                      </td>
+                      <td className="px-4 py-3 text-sm">
+                        <span className={`px-2 py-1 rounded text-xs font-medium ${
+                          label.type === 'custom'
+                            ? 'bg-purple-100 text-purple-700'
+                            : 'bg-blue-100 text-blue-700'
+                        }`}>
+                          {label.type || 'system'}
                         </span>
                       </td>
                       <td className="px-4 py-3 text-sm">
@@ -462,7 +498,7 @@ export default function Translations() {
                           <div className="flex gap-2 justify-end">
                             <button
                               onClick={() => {
-                                saveLabel(label.key, editValue, label.category);
+                                saveLabel(label.key, editValue, label.category, label.type);
                               }}
                               disabled={saving}
                               className="p-2 text-green-600 hover:bg-green-50 rounded"
@@ -484,15 +520,19 @@ export default function Translations() {
                                 setEditValue(label.value);
                               }}
                               className="p-2 text-blue-600 hover:bg-blue-50 rounded"
+                              title="Edit translation"
                             >
                               <Edit2 className="w-4 h-4" />
                             </button>
-                            <button
-                              onClick={() => deleteLabel(label.key)}
-                              className="p-2 text-red-600 hover:bg-red-50 rounded"
-                            >
-                              <Trash2 className="w-4 h-4" />
-                            </button>
+                            {label.type === 'custom' && (
+                              <button
+                                onClick={() => deleteLabel(label.key)}
+                                className="p-2 text-red-600 hover:bg-red-50 rounded"
+                                title="Delete custom translation"
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </button>
+                            )}
                           </div>
                         )}
                       </td>
