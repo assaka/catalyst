@@ -614,15 +614,6 @@ export default function Categories() {
                       <Edit className="w-4 h-4 mr-2" />
                       Edit
                     </DropdownMenuItem>
-                    <DropdownMenuItem
-                      onClick={() => {
-                        setSelectedCategory(category);
-                        setShowCategoryForm(true);
-                      }}
-                    >
-                      <Languages className="w-4 h-4 mr-2" />
-                      Manage Translations
-                    </DropdownMenuItem>
                     {category.is_active ? (
                       <DropdownMenuItem
                         onClick={() => handleToggleStatus(category)}
