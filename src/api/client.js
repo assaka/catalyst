@@ -227,7 +227,10 @@ class ApiClient {
     const isPublicEndpoint = endpoint.startsWith('public/') ||
                             endpoint.includes('/published/') || // Published slot configurations
                             endpoint.includes('/health') ||
-                            endpoint.includes('/version');
+                            endpoint.includes('/version') ||
+                            endpoint.includes('/translations/') || // Translation endpoints (UI labels, etc.)
+                            endpoint === 'languages' || // Language list endpoint
+                            endpoint === '/languages';
 
     // Prevent authenticated requests if user has been logged out, except for auth routes and public endpoints
     if (!isAuthRoute && !isPublicEndpoint && (this.isLoggedOut || localStorage.getItem('user_logged_out') === 'true')) {
