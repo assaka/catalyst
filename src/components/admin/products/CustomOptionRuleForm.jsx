@@ -52,6 +52,7 @@ export default function CustomOptionRuleForm({ rule, onSubmit, onCancel }) {
   const [showAttributeConditionForm, setShowAttributeConditionForm] = useState(false);
   const [newAttributeCondition, setNewAttributeCondition] = useState({ attribute_code: '', attribute_value: '' });
   const [showTranslations, setShowTranslations] = useState(false);
+  const [skuInput, setSkuInput] = useState('');
 
   // Load static data using selected store
   useEffect(() => {
@@ -191,9 +192,25 @@ export default function CustomOptionRuleForm({ rule, onSubmit, onCancel }) {
     handleInputChange('optional_product_ids', newIds);
   };
 
-  const handleSkuInputChange = (skuString) => {
-    const skus = skuString.split(',').map(sku => sku.trim()).filter(sku => sku);
-    handleConditionChange('skus', skus);
+  const handleSkuAdd = () => {
+    const trimmedSku = skuInput.trim();
+    if (trimmedSku && !formData.conditions.skus?.includes(trimmedSku)) {
+      const currentSkus = formData.conditions.skus || [];
+      handleConditionChange('skus', [...currentSkus, trimmedSku]);
+      setSkuInput('');
+    }
+  };
+
+  const handleSkuRemove = (skuToRemove) => {
+    const currentSkus = formData.conditions.skus || [];
+    handleConditionChange('skus', currentSkus.filter(sku => sku !== skuToRemove));
+  };
+
+  const handleSkuKeyPress = (e) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      handleSkuAdd();
+    }
   };
 
   const handleAttributeConditionAdd = () => {
@@ -606,15 +623,44 @@ export default function CustomOptionRuleForm({ rule, onSubmit, onCancel }) {
 
               {/* SKUs */}
               <div>
-                <Label htmlFor="skus">SKUs</Label>
-                <Input
-                  id="skus"
-                  value={formData.conditions.skus?.join(', ') || ''}
-                  onChange={(e) => handleSkuInputChange(e.target.value)}
-                  placeholder="Enter SKUs separated by commas"
-                />
+                <Label>SKUs</Label>
+                <div className="space-y-2">
+                  {formData.conditions.skus?.map((sku, index) => (
+                    <div key={index} className="flex items-center justify-between gap-2 p-2 bg-gray-50 rounded">
+                      <span className="text-sm font-mono">{sku}</span>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleSkuRemove(sku)}
+                      >
+                        <X className="w-4 h-4" />
+                      </Button>
+                    </div>
+                  ))}
+
+                  <div className="flex gap-2">
+                    <Input
+                      id="skus"
+                      value={skuInput}
+                      onChange={(e) => setSkuInput(e.target.value)}
+                      onKeyPress={handleSkuKeyPress}
+                      placeholder="Enter SKU and press Enter or click Add"
+                      className="flex-1"
+                    />
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={handleSkuAdd}
+                      disabled={!skuInput.trim()}
+                    >
+                      Add
+                    </Button>
+                  </div>
+                </div>
                 <p className="text-xs text-gray-500 mt-1">
-                  Enter multiple SKUs separated by commas (e.g., "SKU-001, SKU-002, SKU-003"). Custom options will appear on products matching any of these SKUs.
+                  Add individual SKUs. SKUs can contain any characters including commas. Custom options will appear on products matching any of these SKUs.
                 </p>
               </div>
             </div>
