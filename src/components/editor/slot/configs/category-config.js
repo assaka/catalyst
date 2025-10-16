@@ -706,18 +706,53 @@ export const categoryConfig = {
             }
 
             try {
-              // Import cartService dynamically to use centralized cart logic
-              const { default: cartService } = await import('/src/services/cartService.js');
+              // Use fetch API to call cart endpoint with centralized session ID logic
+              const baseURL = window.location.origin.includes('localhost')
+                ? 'http://localhost:10000'
+                : 'https://catalyst-backend-fzhu.onrender.com';
 
-              const result = await cartService.addItem(
-                product.id,
-                1,
-                parseFloat(product.price || 0),
-                [],
-                store.id
-              );
+              // Use the same session ID logic as cartService
+              let sessionId = localStorage.getItem('guest_session_id');
+              if (!sessionId) {
+                sessionId = 'guest_' + Math.random().toString(36).substring(2) + Date.now().toString(36);
+                localStorage.setItem('guest_session_id', sessionId);
+              }
+
+              const response = await fetch(baseURL + '/api/cart', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                  store_id: store.id,
+                  product_id: product.id,
+                  quantity: 1,
+                  price: parseFloat(product.price || 0),
+                  selected_options: [],
+                  session_id: sessionId
+                })
+              });
+
+              const result = await response.json();
 
               if (result.success) {
+                // Extract fresh cart data from the response
+                const freshCartData = result.data;
+                const cartItems = Array.isArray(freshCartData?.items) ? freshCartData.items :
+                                 Array.isArray(freshCartData?.dataValues?.items) ? freshCartData.dataValues.items : [];
+
+                // Dispatch cart update event with fresh cart data (matches cartService pattern)
+                window.dispatchEvent(new CustomEvent('cartUpdated', {
+                  detail: {
+                    action: 'add_from_category',
+                    timestamp: Date.now(),
+                    source: 'category.addToCart',
+                    freshCartData: {
+                      success: true,
+                      items: cartItems,
+                      cart: freshCartData
+                    }
+                  }
+                }));
+
                 // Track add to cart event
                 if (window.catalyst?.trackAddToCart) {
                   window.catalyst.trackAddToCart(product, 1);
@@ -889,18 +924,53 @@ export const categoryConfig = {
             }
 
             try {
-              // Import cartService dynamically to use centralized cart logic
-              const { default: cartService } = await import('/src/services/cartService.js');
+              // Use fetch API to call cart endpoint with centralized session ID logic
+              const baseURL = window.location.origin.includes('localhost')
+                ? 'http://localhost:10000'
+                : 'https://catalyst-backend-fzhu.onrender.com';
 
-              const result = await cartService.addItem(
-                productId,
-                1,
-                productPrice,
-                [],
-                store.id
-              );
+              // Use the same session ID logic as cartService
+              let sessionId = localStorage.getItem('guest_session_id');
+              if (!sessionId) {
+                sessionId = 'guest_' + Math.random().toString(36).substring(2) + Date.now().toString(36);
+                localStorage.setItem('guest_session_id', sessionId);
+              }
+
+              const response = await fetch(baseURL + '/api/cart', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                  store_id: store.id,
+                  product_id: productId,
+                  quantity: 1,
+                  price: productPrice,
+                  selected_options: [],
+                  session_id: sessionId
+                })
+              });
+
+              const result = await response.json();
 
               if (result.success) {
+                // Extract fresh cart data from the response
+                const freshCartData = result.data;
+                const cartItems = Array.isArray(freshCartData?.items) ? freshCartData.items :
+                                 Array.isArray(freshCartData?.dataValues?.items) ? freshCartData.dataValues.items : [];
+
+                // Dispatch cart update event with fresh cart data (matches cartService pattern)
+                window.dispatchEvent(new CustomEvent('cartUpdated', {
+                  detail: {
+                    action: 'add_from_category',
+                    timestamp: Date.now(),
+                    source: 'category.addToCart',
+                    freshCartData: {
+                      success: true,
+                      items: cartItems,
+                      cart: freshCartData
+                    }
+                  }
+                }));
+
                 // Track add to cart event
                 if (window.catalyst?.trackAddToCart) {
                   window.catalyst.trackAddToCart({ id: productId, name: productName, price: productPrice }, 1);
