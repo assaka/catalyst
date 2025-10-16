@@ -99,12 +99,29 @@ router.get('/', async (req, res) => {
       ];
     }
 
-    // Temporarily remove include to avoid association errors
+    // Include attributeValues with associations
     const { count, rows } = await Product.findAndCountAll({
       where,
       limit: parseInt(limit),
       offset: parseInt(offset),
-      order: [['created_at', 'DESC']]
+      order: [['created_at', 'DESC']],
+      include: [
+        {
+          model: ProductAttributeValue,
+          as: 'attributeValues',
+          include: [
+            {
+              model: Attribute,
+              attributes: ['id', 'code', 'type', 'translations', 'is_filterable']
+            },
+            {
+              model: AttributeValue,
+              as: 'value',
+              attributes: ['id', 'code', 'translations', 'metadata']
+            }
+          ]
+        }
+      ]
     });
 
     console.log('✅ Public Products query result:', rows.length, 'products found');
@@ -117,14 +134,66 @@ router.get('/', async (req, res) => {
         sku: rows[0].sku,
         status: rows[0].status,
         visibility: rows[0].visibility,
-        store_id: rows[0].store_id
+        store_id: rows[0].store_id,
+        attributeValuesCount: rows[0].attributeValues?.length || 0
       });
     } else {
       console.log('❌ No products found with WHERE:', JSON.stringify(where, null, 2));
     }
 
+    // Get language from query or default to 'en'
+    const lang = req.query.lang || 'en';
+
+    // Transform products to include formatted attributes
+    const productsWithAttributes = rows.map(product => {
+      const productData = product.toJSON();
+
+      // Format attributes for frontend
+      if (productData.attributeValues && Array.isArray(productData.attributeValues)) {
+        productData.attributes = productData.attributeValues.map(pav => {
+          const attr = pav.Attribute;
+          if (!attr) return null;
+
+          const attrLabel = attr.translations?.[lang]?.label ||
+                           attr.translations?.en?.label ||
+                           attr.code;
+
+          let value, valueLabel, metadata = null;
+
+          if (pav.value_id && pav.value) {
+            // Select/multiselect attribute
+            value = pav.value.code;
+            valueLabel = pav.value.translations?.[lang]?.label ||
+                        pav.value.translations?.en?.label ||
+                        pav.value.code;
+            metadata = pav.value.metadata || null;
+          } else {
+            // Text/number/date/boolean attribute
+            value = pav.text_value || pav.number_value || pav.date_value || pav.boolean_value;
+            valueLabel = String(value);
+          }
+
+          return {
+            code: attr.code,
+            label: attrLabel,
+            value: valueLabel,
+            rawValue: value,
+            type: attr.type,
+            metadata
+          };
+        }).filter(Boolean); // Remove null values
+      } else {
+        productData.attributes = [];
+      }
+
+      // Remove the raw attributeValues array
+      delete productData.attributeValues;
+
+      return productData;
+    });
+
     // Return just the array for public requests (for compatibility)
-    res.json(rows);
+    res.json(productsWithAttributes);
   } catch (error) {
     console.error('Get public products error:', error);
     res.status(500).json({
