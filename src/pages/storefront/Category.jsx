@@ -288,22 +288,24 @@ export default function Category() {
       
       setCurrentCategory(category);
       
-      const cacheKey = `products-category-${category.id}-v5`;
+      const currentLang = getCurrentLanguage();
+      const cacheKey = `products-category-${category.id}-${currentLang}-v6`;
       let productsData = await cachedApiCall(cacheKey, async () => {
         try {
-          const exact = await StorefrontProduct.getByCategory(category.id, { 
-            store_id: store.id
+          const exact = await StorefrontProduct.getByCategory(category.id, {
+            store_id: store.id,
+            lang: currentLang
           });
-          
+
           if (exact && exact.length > 0) {
             return exact;
           }
         } catch {
           console.warn("Failed to get products by category, falling back to filtered approach");
         }
-        
-        const allProducts = await cachedApiCall(`all-active-products-${store.id}`, () => 
-          StorefrontProduct.filter({ store_id: store.id })
+
+        const allProducts = await cachedApiCall(`all-active-products-${store.id}-${currentLang}`, () =>
+          StorefrontProduct.filter({ store_id: store.id, lang: currentLang })
         );
         
         const filtered = (allProducts || []).filter(product => {
@@ -466,6 +468,7 @@ export default function Category() {
   // Only show options that have products (count > 0)
   const buildFilters = () => {
     const filters = {};
+    const currentLang = getCurrentLanguage();
 
     // Define min and max price from entire product collection first
     const allPrices = products.map(p => {
@@ -502,11 +505,14 @@ export default function Category() {
           const matchingAttr = productAttributes.find(pAttr => pAttr.code === attrCode);
           if (!matchingAttr || !matchingAttr.value) return;
 
+          // Use the translated label from the product attribute (already translated by API)
           const attributeValue = matchingAttr.value;
+          const attributeLabel = matchingAttr.label || matchingAttr.value;
 
           if (attributeValue !== undefined && attributeValue !== null && attributeValue !== '') {
             const valueStr = String(attributeValue);
-            valueCountMap.set(valueStr, (valueCountMap.get(valueStr) || 0) + 1);
+            const labelStr = String(attributeLabel);
+            valueCountMap.set(valueStr, { label: labelStr, count: (valueCountMap.get(valueStr)?.count || 0) + 1 });
           }
         });
       }
@@ -526,10 +532,10 @@ export default function Category() {
         // Create the final filter array with counts, sorted alphabetically
         filters[attrCode] = Array.from(valueCountMap.entries())
           .sort(([a], [b]) => a.localeCompare(b))
-          .map(([value, count]) => ({
+          .map(([value, data]) => ({
             value,
-            label: value, // Use value as label (can be enhanced with DB labels later)
-            count
+            label: data.label, // Use translated label from product attributes
+            count: data.count
           }));
       }
     });
@@ -539,15 +545,19 @@ export default function Category() {
   // Build active filters array for display
   const buildActiveFiltersArray = () => {
     const activeFiltersArray = [];
+    const currentLang = getCurrentLanguage();
 
     Object.entries(activeFilters).forEach(([attributeCode, values]) => {
       if (attributeCode === 'priceRange') {
         return;
       }
 
-      // Find the attribute name from filterableAttributes
+      // Find the attribute from filterableAttributes and use translated label
       const attr = filterableAttributes?.find(a => a.code === attributeCode);
-      const attributeLabel = attr?.name || attributeCode;
+      const attributeLabel = attr?.translations?.[currentLang]?.label ||
+                            attr?.translations?.en?.label ||
+                            attr?.name ||
+                            attributeCode;
 
       // Add each selected value as a separate active filter
       if (Array.isArray(values)) {

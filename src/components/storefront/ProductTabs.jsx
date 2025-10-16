@@ -68,10 +68,10 @@ export default function ProductTabs({ productTabs = [], product = null, settings
 
     const attributes = product?.attributes;
 
-    // Handle both old object format and new array format
+    // Attributes should be an array of {code, label, value, ...}
     let attributesArray = [];
     if (Array.isArray(attributes)) {
-      // New normalized format from API
+      // New normalized format from API (already translated)
       attributesArray = attributes;
     } else if (attributes && typeof attributes === 'object') {
       // Old format - convert to array
@@ -115,7 +115,7 @@ export default function ProductTabs({ productTabs = [], product = null, settings
     attributesContainers.forEach(container => {
       container.innerHTML = attributesHTML;
     });
-  }, [product, tabsData, activeTabIndex, settings]);
+  }, [product, tabsData, activeTabIndex, settings, currentLang]);
 
   // Attach tab click handlers
   useEffect(() => {
