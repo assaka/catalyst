@@ -220,12 +220,12 @@ export default function OrderSuccess() {
 
     // Validate form
     if (accountFormData.password.length < 6) {
-      setAccountCreationError('Password must be at least 6 characters long.');
+      setAccountCreationError(t('validation.password_min_length', settings));
       return;
     }
 
     if (accountFormData.password !== accountFormData.confirmPassword) {
-      setAccountCreationError('Passwords do not match.');
+      setAccountCreationError(t('validation.passwords_no_match', settings));
       return;
     }
 
