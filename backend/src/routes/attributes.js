@@ -90,12 +90,26 @@ router.get('/', async (req, res) => {
       include: [{ model: Store, attributes: ['id', 'name'] }]
     });
 
+    // Fetch attribute values for select/multiselect attributes
+    const attributesWithValues = await Promise.all(rows.map(async (attr) => {
+      const attrData = attr.toJSON();
+      if (attr.type === 'select' || attr.type === 'multiselect') {
+        const values = await AttributeValue.findAll({
+          where: { attribute_id: attr.id },
+          order: [['sort_order', 'ASC'], ['code', 'ASC']],
+          limit: 10 // Limit to first 10 for performance
+        });
+        attrData.values = values;
+      }
+      return attrData;
+    }));
+
     if (isPublicRequest) {
       // Return just the array for public requests (for compatibility)
-      res.json(rows);
+      res.json(attributesWithValues);
     } else {
       // Return wrapped response for authenticated requests
-      res.json({ success: true, data: { attributes: rows, pagination: { current_page: parseInt(page), per_page: parseInt(limit), total: count, total_pages: Math.ceil(count / limit) } } });
+      res.json({ success: true, data: { attributes: attributesWithValues, pagination: { current_page: parseInt(page), per_page: parseInt(limit), total: count, total_pages: Math.ceil(count / limit) } } });
     }
   } catch (error) {
     console.error('❌ Attributes API error:', error);
@@ -108,20 +122,34 @@ router.get('/:id', async (req, res) => {
     const attribute = await Attribute.findByPk(req.params.id, {
       include: [{ model: Store, attributes: ['id', 'name', 'user_id'] }]
     });
-    
+
     if (!attribute) return res.status(404).json({ success: false, message: 'Attribute not found' });
-    
+
     if (req.user.role !== 'admin') {
       const { checkUserStoreAccess } = require('../utils/storeAccess');
       const access = await checkUserStoreAccess(req.user.id, attribute.Store.id);
-      
+
       if (!access) {
         return res.status(403).json({ success: false, message: 'Access denied' });
       }
     }
 
-    res.json({ success: true, data: attribute });
+    // Fetch attribute values if this is a select/multiselect attribute
+    let attributeValues = [];
+    if (attribute.type === 'select' || attribute.type === 'multiselect') {
+      attributeValues = await AttributeValue.findAll({
+        where: { attribute_id: attribute.id },
+        order: [['sort_order', 'ASC'], ['code', 'ASC']]
+      });
+    }
+
+    // Add values to the response
+    const attributeData = attribute.toJSON();
+    attributeData.values = attributeValues;
+
+    res.json({ success: true, data: attributeData });
   } catch (error) {
+    console.error('❌ Get attribute error:', error);
     res.status(500).json({ success: false, message: 'Server error' });
   }
 });

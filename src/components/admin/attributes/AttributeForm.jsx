@@ -11,7 +11,9 @@ import {
 } from "@/components/ui/select";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Switch } from "@/components/ui/switch";
-import { X, Plus } from "lucide-react";
+import { X, Plus, Wand2, Trash2 } from "lucide-react";
+import AttributeValueTranslations from "./AttributeValueTranslations";
+import api from "@/utils/api";
 
 export default function AttributeForm({ attribute, onSubmit, onCancel }) {
   const [formData, setFormData] = useState({
@@ -23,26 +25,46 @@ export default function AttributeForm({ attribute, onSubmit, onCancel }) {
     is_searchable: false,
     is_usable_in_conditions: false,
     filter_type: "multiselect",
-    options: [],
     file_settings: {
       allowed_extensions: ["pdf", "doc", "docx", "txt", "png", "jpg"],
       max_file_size: 5,
     },
     store_id: "", // This will be set on the server-side or from a context
   });
+  const [attributeValues, setAttributeValues] = useState([]);
   const [loading, setLoading] = useState(false);
-  const [newOption, setNewOption] = useState({ label: "", value: "" });
+  const [newValueCode, setNewValueCode] = useState("");
+  const [newValueLabel, setNewValueLabel] = useState("");
+  const [aiTranslating, setAiTranslating] = useState(false);
+  const [nextTempId, setNextTempId] = useState(1);
 
   useEffect(() => {
     if (attribute) {
       setFormData({
         ...attribute,
-        options: attribute.options || [],
         file_settings: attribute.file_settings || {
           allowed_extensions: ["pdf", "doc", "docx", "txt", "png", "jpg"],
           max_file_size: 5,
         },
       });
+
+      // Load attribute values (from backend or convert old options format)
+      if (attribute.values && Array.isArray(attribute.values)) {
+        setAttributeValues(attribute.values);
+      } else if (attribute.options && Array.isArray(attribute.options)) {
+        // Convert old options format to new attribute values format
+        const convertedValues = attribute.options.map((opt, index) => ({
+          tempId: `temp-${index}`,
+          code: opt.value,
+          sort_order: index,
+          translations: {
+            en: {
+              label: opt.label
+            }
+          }
+        }));
+        setAttributeValues(convertedValues);
+      }
     }
   }, [attribute]);
 
@@ -69,22 +91,83 @@ export default function AttributeForm({ attribute, onSubmit, onCancel }) {
     });
   };
 
-  const handleOptionChange = (index, field, value) => {
-    const updatedOptions = [...formData.options];
-    updatedOptions[index][field] = value;
-    handleInputChange("options", updatedOptions);
-  };
-
-  const addOption = () => {
-    if (newOption.label && newOption.value) {
-      handleInputChange("options", [...formData.options, newOption]);
-      setNewOption({ label: "", value: "" });
+  // Add new attribute value
+  const addAttributeValue = () => {
+    if (newValueCode && newValueLabel) {
+      const newValue = {
+        tempId: `temp-${nextTempId}`,
+        code: newValueCode,
+        sort_order: attributeValues.length,
+        translations: {
+          en: {
+            label: newValueLabel
+          }
+        },
+        metadata: {}
+      };
+      setAttributeValues([...attributeValues, newValue]);
+      setNewValueCode("");
+      setNewValueLabel("");
+      setNextTempId(nextTempId + 1);
     }
   };
 
-  const removeOption = (index) => {
-    const updatedOptions = formData.options.filter((_, i) => i !== index);
-    handleInputChange("options", updatedOptions);
+  // Remove attribute value
+  const removeAttributeValue = (valueId) => {
+    setAttributeValues(attributeValues.filter(v =>
+      (v.id || v.tempId) !== valueId
+    ));
+  };
+
+  // Update attribute value translations
+  const handleValueTranslationChange = (valueId, translations) => {
+    setAttributeValues(attributeValues.map(v => {
+      if ((v.id || v.tempId) === valueId) {
+        return { ...v, translations };
+      }
+      return v;
+    }));
+  };
+
+  // AI translate a single value
+  const handleAiTranslateValue = async (valueId, toLang) => {
+    const value = attributeValues.find(v => (v.id || v.tempId) === valueId);
+    if (!value) return;
+
+    const enLabel = value.translations?.en?.label || '';
+    if (!enLabel) {
+      console.warn('No English label to translate');
+      return;
+    }
+
+    try {
+      setAiTranslating(true);
+      const response = await api.post('/api/translations/ai-translate', {
+        text: enLabel,
+        fromLang: 'en',
+        toLang: toLang
+      });
+
+      if (response.success) {
+        const updatedTranslations = {
+          ...value.translations,
+          [toLang]: {
+            label: response.data.translatedText
+          }
+        };
+        handleValueTranslationChange(valueId, updatedTranslations);
+      }
+    } catch (error) {
+      console.error('AI translation failed:', error);
+    } finally {
+      setAiTranslating(false);
+    }
+  };
+
+  // Bulk AI translate all values for all missing languages
+  const handleBulkAiTranslate = async () => {
+    // Implementation for bulk translation
+    console.log('Bulk AI translate triggered');
   };
 
   const handleFileSettingsChange = (field, value) => {
@@ -104,7 +187,46 @@ export default function AttributeForm({ attribute, onSubmit, onCancel }) {
     e.preventDefault();
     setLoading(true);
     try {
-      await onSubmit(formData);
+      // Submit the attribute first
+      const savedAttribute = await onSubmit(formData);
+
+      // If this is a select/multiselect attribute, save the attribute values
+      if ((formData.type === 'select' || formData.type === 'multiselect') && attributeValues.length > 0) {
+        const attributeId = savedAttribute?.id || attribute?.id;
+
+        if (attributeId) {
+          // Save each attribute value
+          for (const value of attributeValues) {
+            const valueData = {
+              code: value.code,
+              translations: value.translations,
+              metadata: value.metadata || {},
+              sort_order: value.sort_order
+            };
+
+            if (value.id) {
+              // Update existing value
+              await api.put(`/api/attributes/${attributeId}/values/${value.id}`, valueData);
+            } else {
+              // Create new value
+              await api.post(`/api/attributes/${attributeId}/values`, valueData);
+            }
+          }
+
+          // Delete removed values (if editing existing attribute)
+          if (attribute?.values) {
+            const removedValues = attribute.values.filter(oldVal =>
+              !attributeValues.some(newVal => newVal.id === oldVal.id)
+            );
+
+            for (const removedValue of removedValues) {
+              if (removedValue.id) {
+                await api.delete(`/api/attributes/${attributeId}/values/${removedValue.id}`);
+              }
+            }
+          }
+        }
+      }
     } catch (error) {
       console.error("Error submitting attribute:", error);
     } finally {
@@ -235,53 +357,105 @@ export default function AttributeForm({ attribute, onSubmit, onCancel }) {
 
       {(formData.type === "select" || formData.type === "multiselect") && (
         <Card>
-          <CardHeader>
-            <CardTitle>Attribute Options</CardTitle>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
+            <div>
+              <CardTitle>Attribute Options & Translations</CardTitle>
+              <p className="text-sm text-gray-500 mt-1">
+                Manage options with multi-language support
+              </p>
+            </div>
+            {attributeValues.length > 0 && (
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={handleBulkAiTranslate}
+                disabled={aiTranslating}
+              >
+                <Wand2 className="w-4 h-4 mr-2" />
+                AI Translate All
+              </Button>
+            )}
           </CardHeader>
-          <CardContent className="space-y-4">
-            {formData.options.map((option, index) => (
-              <div key={index} className="flex gap-4 items-center">
-                <Input
-                  placeholder="Label (e.g., Red)"
-                  value={option.label}
-                  onChange={(e) =>
-                    handleOptionChange(index, "label", e.target.value)
-                  }
-                />
-                <Input
-                  placeholder="Value (e.g., red)"
-                  value={option.value}
-                  onChange={(e) =>
-                    handleOptionChange(index, "value", e.target.value)
-                  }
-                />
-                <Button
-                  type="button"
-                  variant="destructive"
-                  onClick={() => removeOption(index)}
-                >
-                  <X className="w-4 h-4" />
-                </Button>
+          <CardContent className="space-y-3">
+            {/* Existing attribute values with translations */}
+            {attributeValues.map((value) => (
+              <div key={value.id || value.tempId} className="space-y-2">
+                <div className="flex items-center gap-2">
+                  <div className="flex-1">
+                    <AttributeValueTranslations
+                      attributeValue={{
+                        ...value,
+                        label: value.translations?.en?.label || value.code
+                      }}
+                      onTranslationChange={handleValueTranslationChange}
+                      onAiTranslate={handleAiTranslateValue}
+                    />
+                  </div>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => removeAttributeValue(value.id || value.tempId)}
+                    className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </Button>
+                </div>
               </div>
             ))}
-            <div className="flex gap-4 items-center pt-4 border-t">
-              <Input
-                placeholder="New Label"
-                value={newOption.label}
-                onChange={(e) =>
-                  setNewOption({ ...newOption, label: e.target.value })
-                }
-              />
-              <Input
-                placeholder="New Value"
-                value={newOption.value}
-                onChange={(e) =>
-                  setNewOption({ ...newOption, value: e.target.value })
-                }
-              />
-              <Button type="button" onClick={addOption}>
-                <Plus className="w-4 h-4 mr-2" /> Add Option
-              </Button>
+
+            {/* Add new option */}
+            <div className="pt-4 border-t">
+              <Label className="text-sm font-medium mb-3 block">Add New Option</Label>
+              <div className="flex gap-3 items-end">
+                <div className="flex-1">
+                  <Label htmlFor="newValueLabel" className="text-xs text-gray-600">
+                    Label (English)
+                  </Label>
+                  <Input
+                    id="newValueLabel"
+                    placeholder="e.g., Red"
+                    value={newValueLabel}
+                    onChange={(e) => setNewValueLabel(e.target.value)}
+                    onKeyPress={(e) => {
+                      if (e.key === 'Enter') {
+                        e.preventDefault();
+                        addAttributeValue();
+                      }
+                    }}
+                  />
+                </div>
+                <div className="flex-1">
+                  <Label htmlFor="newValueCode" className="text-xs text-gray-600">
+                    Code (URL-friendly)
+                  </Label>
+                  <Input
+                    id="newValueCode"
+                    placeholder="e.g., red"
+                    value={newValueCode}
+                    onChange={(e) => setNewValueCode(e.target.value.toLowerCase().replace(/\s+/g, '-'))}
+                    onKeyPress={(e) => {
+                      if (e.key === 'Enter') {
+                        e.preventDefault();
+                        addAttributeValue();
+                      }
+                    }}
+                  />
+                </div>
+                <Button
+                  type="button"
+                  onClick={addAttributeValue}
+                  disabled={!newValueCode || !newValueLabel}
+                  className="bg-blue-600 hover:bg-blue-700"
+                >
+                  <Plus className="w-4 h-4 mr-2" />
+                  Add Option
+                </Button>
+              </div>
+              <p className="text-xs text-gray-500 mt-2">
+                After adding, expand the option to manage translations for all languages
+              </p>
             </div>
           </CardContent>
         </Card>

@@ -131,13 +131,15 @@ export default function Attributes() {
     }
 
     try {
-      await Attribute.create({ ...attributeData, store_id: storeId });
+      const result = await Attribute.create({ ...attributeData, store_id: storeId });
       await loadData();
       setShowForm(false);
       // Clear storefront cache for instant updates
       clearAttributesCache(storeId);
+      return result; // Return the created attribute
     } catch (error) {
       console.error("Error creating attribute:", error);
+      throw error;
     }
   };
 
@@ -149,14 +151,16 @@ export default function Attributes() {
 
     try {
       const { id, ...updateData } = attributeData;
-      await Attribute.update(id, { ...updateData, store_id: storeId });
+      const result = await Attribute.update(id, { ...updateData, store_id: storeId });
       await loadData();
       setShowForm(false);
       setEditingAttribute(null);
       // Clear storefront cache for instant updates
       clearAttributesCache(storeId);
+      return result; // Return the updated attribute
     } catch (error) {
       console.error("Error updating attribute:", error);
+      throw error;
     }
   };
 
@@ -546,19 +550,45 @@ export default function Attributes() {
                         )}
                       </div>
 
-                      {attribute.options && attribute.options.length > 0 && (
+                      {(attribute.type === 'select' || attribute.type === 'multiselect') && (
                         <div>
                           <p className="text-sm font-medium text-gray-700 mb-1">Options:</p>
                           <div className="flex flex-wrap gap-1">
-                            {attribute.options.slice(0, 3).map((option, index) => (
-                              <Badge key={index} variant="outline" className="text-xs">
-                                {option.label}
-                              </Badge>
-                            ))}
-                            {attribute.options.length > 3 && (
-                              <Badge variant="outline" className="text-xs">
-                                +{attribute.options.length - 3} more
-                              </Badge>
+                            {/* Show message to add options if none exist */}
+                            {(!attribute.values || attribute.values.length === 0) && (!attribute.options || attribute.options.length === 0) && (
+                              <span className="text-xs text-gray-400 italic">No options yet</span>
+                            )}
+
+                            {/* Display attribute values (new format) */}
+                            {attribute.values && attribute.values.length > 0 && (
+                              <>
+                                {attribute.values.slice(0, 3).map((value) => (
+                                  <Badge key={value.id} variant="outline" className="text-xs">
+                                    {value.translations?.en?.label || value.code}
+                                  </Badge>
+                                ))}
+                                {attribute.values.length > 3 && (
+                                  <Badge variant="outline" className="text-xs">
+                                    +{attribute.values.length - 3} more
+                                  </Badge>
+                                )}
+                              </>
+                            )}
+
+                            {/* Display old options format (backward compatibility) */}
+                            {(!attribute.values || attribute.values.length === 0) && attribute.options && attribute.options.length > 0 && (
+                              <>
+                                {attribute.options.slice(0, 3).map((option, index) => (
+                                  <Badge key={index} variant="outline" className="text-xs">
+                                    {option.label}
+                                  </Badge>
+                                ))}
+                                {attribute.options.length > 3 && (
+                                  <Badge variant="outline" className="text-xs">
+                                    +{attribute.options.length - 3} more
+                                  </Badge>
+                                )}
+                              </>
                             )}
                           </div>
                         </div>
