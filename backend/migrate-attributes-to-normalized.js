@@ -52,15 +52,35 @@ async function migrateAttributes() {
           continue;
         }
 
-        console.log(`  ✓ Processing ${attrKey} = ${attrValue} (type: ${attribute.type})`);
+        console.log(`  ✓ Processing ${attrKey} = ${JSON.stringify(attrValue)} (type: ${attribute.type})`);
 
         try {
           if (attribute.type === 'select' || attribute.type === 'multiselect') {
-            // Find or create attribute value
-            const code = String(attrValue)
+            // Handle both old format { label, value } and simple strings
+            let labelValue, actualValue;
+
+            if (typeof attrValue === 'object' && attrValue !== null) {
+              // Old format: { "label": "Overig", "value": "Overig" }
+              labelValue = attrValue.label || attrValue.value || JSON.stringify(attrValue);
+              actualValue = attrValue.value || attrValue.label || JSON.stringify(attrValue);
+            } else {
+              // Simple string value
+              labelValue = String(attrValue);
+              actualValue = String(attrValue);
+            }
+
+            // Create a clean code from the actual value
+            const code = String(actualValue)
               .toLowerCase()
               .replace(/\s+/g, '-')
-              .replace(/[^a-z0-9-]/g, '');
+              .replace(/[^a-z0-9-]/g, '')
+              .substring(0, 100); // Limit length
+
+            if (!code) {
+              console.warn(`    ⚠️  Could not generate valid code from value, skipping`);
+              errorCount++;
+              continue;
+            }
 
             let [attributeValue, created] = await AttributeValue.findOrCreate({
               where: {
@@ -69,7 +89,7 @@ async function migrateAttributes() {
               },
               defaults: {
                 translations: {
-                  en: { label: String(attrValue) }
+                  en: { label: labelValue }
                 },
                 sort_order: 0,
                 metadata: {}
@@ -77,7 +97,7 @@ async function migrateAttributes() {
             });
 
             if (created) {
-              console.log(`    ➕ Created new attribute value: ${code}`);
+              console.log(`    ➕ Created new attribute value: ${code} (label: ${labelValue})`);
             }
 
             // Create product attribute value
@@ -95,18 +115,24 @@ async function migrateAttributes() {
               attribute_id: attribute.id
             };
 
+            // Extract actual value from objects if needed
+            let rawValue = attrValue;
+            if (typeof attrValue === 'object' && attrValue !== null) {
+              rawValue = attrValue.value || attrValue.label || JSON.stringify(attrValue);
+            }
+
             switch (attribute.type) {
               case 'number':
-                valueData.number_value = parseFloat(attrValue);
+                valueData.number_value = parseFloat(rawValue);
                 break;
               case 'boolean':
-                valueData.boolean_value = Boolean(attrValue);
+                valueData.boolean_value = Boolean(rawValue);
                 break;
               case 'date':
-                valueData.date_value = new Date(attrValue);
+                valueData.date_value = new Date(rawValue);
                 break;
               default:
-                valueData.text_value = String(attrValue);
+                valueData.text_value = String(rawValue);
             }
 
             await ProductAttributeValue.create(valueData);
