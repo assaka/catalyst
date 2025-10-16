@@ -5,7 +5,7 @@ import { Badge } from '@/components/ui/badge';
 import { Check } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { formatPrice, safeNumber, formatPriceWithTax, getPriceDisplay } from '@/utils/priceUtils';
-import { getCurrentLanguage } from '@/utils/translationUtils';
+import { getCurrentLanguage, getProductName, getProductShortDescription } from '@/utils/translationUtils';
 
 export default function CustomOptions({ product, onSelectionChange, selectedOptions = [], store, settings }) {
     const [customOptions, setCustomOptions] = useState([]);
@@ -215,7 +215,7 @@ export default function CustomOptions({ product, onSelectionChange, selectedOpti
             const priceInfo = getPriceDisplay(option);
             newSelectedOptions = [...selectedOptions, {
                 product_id: option.id,
-                name: option.name,
+                name: getProductName(option, currentLang) || option.name,
                 price: priceInfo.displayPrice
             }];
         }
@@ -285,7 +285,7 @@ export default function CustomOptions({ product, onSelectionChange, selectedOpti
                                                         ? option.images[0]
                                                         : option.images[0]?.url || option.images[0]?.src || 'https://placehold.co/64x64?text=No+Image'
                                                 }
-                                                alt={option.name}
+                                                alt={getProductName(option, currentLang) || option.name}
                                                 className="w-16 h-16 object-cover rounded-md"
                                                 onError={(e) => {
                                                     e.target.src = 'https://placehold.co/64x64?text=No+Image';
@@ -298,9 +298,13 @@ export default function CustomOptions({ product, onSelectionChange, selectedOpti
                                     <div className="flex-1">
                                         <div className="flex items-start justify-between">
                                             <div className="flex-1">
-                                                <h4 className="font-medium text-gray-900">{option.name}</h4>
-                                                {option.short_description && (
-                                                    <p className="text-sm text-gray-600 mt-1">{option.short_description}</p>
+                                                <h4 className="font-medium text-gray-900">
+                                                    {getProductName(option, currentLang) || option.name}
+                                                </h4>
+                                                {(getProductShortDescription(option, currentLang) || option.short_description) && (
+                                                    <p className="text-sm text-gray-600 mt-1">
+                                                        {getProductShortDescription(option, currentLang) || option.short_description}
+                                                    </p>
                                                 )}
                                             </div>
                                             <div className="ml-4 flex-shrink-0">
