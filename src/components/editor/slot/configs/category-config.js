@@ -731,12 +731,22 @@ export const categoryConfig = {
               const result = await response.json();
 
               if (result.success) {
-                // Dispatch cart update event
+                // Extract fresh cart data from the response
+                const freshCartData = result.data;
+                const cartItems = Array.isArray(freshCartData?.items) ? freshCartData.items :
+                                 Array.isArray(freshCartData?.dataValues?.items) ? freshCartData.dataValues.items : [];
+
+                // Dispatch cart update event with fresh cart data (matches cartService pattern)
                 window.dispatchEvent(new CustomEvent('cartUpdated', {
                   detail: {
                     action: 'add_from_category',
                     timestamp: Date.now(),
-                    source: 'category.addToCart'
+                    source: 'category.addToCart',
+                    freshCartData: {
+                      success: true,
+                      items: cartItems,
+                      cart: freshCartData
+                    }
                   }
                 }));
 
@@ -746,8 +756,8 @@ export const categoryConfig = {
                 }
 
                 // Show success message
-                const successMessage = variableContext?.settings?.ui_translations?.[localStorage.getItem('catalyst_language') || 'en']?.['added_to_cart_success']
-                  || variableContext?.settings?.ui_translations?.en?.['added_to_cart_success']
+                const successMessage = variableContext?.settings?.ui_translations?.[localStorage.getItem('catalyst_language') || 'en']?.['common.added_to_cart_success']
+                  || variableContext?.settings?.ui_translations?.en?.['common.added_to_cart_success']
                   || ' added to cart successfully!';
                 window.dispatchEvent(new CustomEvent('showFlashMessage', {
                   detail: {
@@ -760,8 +770,8 @@ export const categoryConfig = {
               }
             } catch (error) {
               console.error('Failed to add to cart:', error);
-              const errorMessage = variableContext?.settings?.ui_translations?.[localStorage.getItem('catalyst_language') || 'en']?.['added_to_cart_error']
-                || variableContext?.settings?.ui_translations?.en?.['added_to_cart_error']
+              const errorMessage = variableContext?.settings?.ui_translations?.[localStorage.getItem('catalyst_language') || 'en']?.['common.added_to_cart_error']
+                || variableContext?.settings?.ui_translations?.en?.['common.added_to_cart_error']
                 || 'Failed to add to cart. Please try again.';
               window.dispatchEvent(new CustomEvent('showFlashMessage', {
                 detail: {
