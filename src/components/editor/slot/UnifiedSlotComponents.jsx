@@ -807,77 +807,54 @@ const CustomOptions = createSlotComponent({
   name: 'CustomOptions',
 
   render: ({ slot, productContext, className, styles, context, variableContext }) => {
-    const content = slot?.content || '';
-    const containerRef = React.useRef(null);
+    if (context === 'editor') {
+      // Editor version - use template preview
+      const content = slot?.content || '';
+      const customOptionsData = variableContext?.customOptions || null;
+      const displayLabel = variableContext?.customOptionsLabel || 'Custom Options';
 
-    // Use pre-loaded custom options from variableContext instead of loading separately
-    const customOptionsData = variableContext?.customOptions || null;
-    const displayLabel = variableContext?.customOptionsLabel || 'Custom Options';
+      if (!customOptionsData || customOptionsData.length === 0) {
+        return null;
+      }
 
-    // Don't render anything if there are no custom options
-    if (context === 'storefront' && (!customOptionsData || customOptionsData.length === 0)) {
-      return null;
+      const containerRef = React.useRef(null);
+
+      // Prepare variable context with custom options data
+      const enhancedVariableContext = React.useMemo(() => ({
+        ...variableContext,
+        customOptions: customOptionsData,
+        displayLabel
+      }), [variableContext, customOptionsData, displayLabel]);
+
+      const processedContent = React.useMemo(() => {
+        const result = processVariables(content, enhancedVariableContext);
+        return result;
+      }, [content, enhancedVariableContext]);
+
+      return (
+        <div
+          ref={containerRef}
+          className={className}
+          style={styles}
+          dangerouslySetInnerHTML={{ __html: processedContent }}
+          key={processedContent}
+        />
+      );
     }
 
-    // Attach click handlers for storefront
-    React.useEffect(() => {
-      if (!containerRef.current || context === 'editor') return;
-
-      const handleClick = (e) => {
-        const optionEl = e.target.closest('[data-action="toggle-option"]');
-        if (!optionEl) return;
-
-        const optionId = optionEl.getAttribute('data-option-id');
-        if (!optionId || !productContext?.handleOptionChange || !customOptionsData) return;
-
-        const option = customOptionsData.find(o => o.id === optionId);
-        if (!option) return;
-
-        const { selectedOptions } = productContext;
-        const isSelected = selectedOptions?.some(s => s.product_id === option.id);
-
-        const safeNum = (val) => parseFloat(val) || 0;
-
-        // Use centralized getPriceDisplay to get correct price
-        const priceInfo = getPriceDisplay(option);
-
-        const newSelectedOptions = isSelected
-          ? selectedOptions.filter(s => s.product_id !== option.id)
-          : [...(selectedOptions || []), {
-              product_id: option.id,
-              name: option.name,
-              price: priceInfo.displayPrice
-            }];
-
-        productContext.handleOptionChange(newSelectedOptions);
-      };
-
-      containerRef.current.addEventListener('click', handleClick);
-      return () => {
-        containerRef.current?.removeEventListener('click', handleClick);
-      };
-    }, [context, customOptionsData, productContext]);
-
-    // Prepare variable context with custom options data
-    const enhancedVariableContext = React.useMemo(() => ({
-      ...variableContext,
-      customOptions: customOptionsData,
-      displayLabel
-    }), [variableContext, customOptionsData, displayLabel]);
-
-    const processedContent = React.useMemo(() => {
-      const result = processVariables(content, enhancedVariableContext);
-      return result;
-    }, [content, enhancedVariableContext]);
+    // Storefront version - use the actual CustomOptionsComponent
+    const { product, store, settings, selectedOptions, handleOptionChange } = productContext;
 
     return (
-      <div
-        ref={containerRef}
-        className={className}
-        style={styles}
-        dangerouslySetInnerHTML={{ __html: processedContent }}
-        key={processedContent} // Force re-render when HTML changes
-      />
+      <div className={className} style={styles}>
+        <CustomOptionsComponent
+          product={product}
+          store={store}
+          settings={settings}
+          selectedOptions={selectedOptions || []}
+          onSelectionChange={handleOptionChange}
+        />
+      </div>
     );
   }
 });

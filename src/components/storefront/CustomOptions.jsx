@@ -8,6 +8,13 @@ import { formatPrice, safeNumber, formatPriceWithTax, getPriceDisplay } from '@/
 import { getCurrentLanguage, getProductName, getProductShortDescription, getTranslatedField } from '@/utils/translationUtils';
 
 export default function CustomOptions({ product, onSelectionChange, selectedOptions = [], store, settings }) {
+    console.log('🎨 CustomOptions component rendered', {
+        productId: product?.id,
+        storeId: store?.id,
+        hasOnSelectionChange: !!onSelectionChange,
+        selectedOptionsCount: selectedOptions?.length
+    });
+
     const [customOptions, setCustomOptions] = useState([]);
     const [loading, setLoading] = useState(true);
     const [displayLabel, setDisplayLabel] = useState('Custom Options');
@@ -15,8 +22,21 @@ export default function CustomOptions({ product, onSelectionChange, selectedOpti
     const currentLang = getCurrentLanguage();
 
     useEffect(() => {
+        console.log('🔄 CustomOptions useEffect triggered', {
+            hasProduct: !!product,
+            productId: product?.id,
+            storeId: store?.id,
+            isLoading
+        });
+
         if (product && store?.id && !isLoading) {
             loadCustomOptions();
+        } else {
+            console.log('⚠️ Conditions not met for loadCustomOptions', {
+                hasProduct: !!product,
+                hasStoreId: !!store?.id,
+                isLoading
+            });
         }
     }, [product?.id, store?.id]);
 

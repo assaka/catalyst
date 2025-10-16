@@ -497,7 +497,7 @@ export default function Attributes() {
               </Button>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 min-h-[400px]">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {paginatedAttributes.map((attribute) => (
                 <Card key={attribute.id} className="material-elevation-1 border-0 hover:material-elevation-2 transition-all duration-300">
                   <CardHeader className="pb-3">
