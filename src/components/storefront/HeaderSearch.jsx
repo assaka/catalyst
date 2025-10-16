@@ -13,9 +13,12 @@ import { getProductName, getProductShortDescription, getCurrentLanguage } from '
 
 export default function HeaderSearch({ styles = {} }) {
   const navigate = useNavigate();
-  const { storeCode } = useParams();
+  const params = useParams();
   const { store, settings, taxes, selectedCountry } = useStore();
   const { t } = useTranslation();
+
+  // Get store code from params or store object
+  const storeCode = params.storeCode || params.slug || store?.slug || store?.code;
 
   // Extract input styles from slot configuration
   const inputStyles = {
@@ -98,15 +101,20 @@ export default function HeaderSearch({ styles = {} }) {
 
   const handleSearch = (e) => {
     e.preventDefault();
-    if (searchQuery.trim() && storeCode) {
+    if (searchQuery.trim()) {
       // Track search event
       if (typeof window !== 'undefined' && window.catalyst?.trackSearch) {
         window.catalyst.trackSearch(searchQuery.trim(), searchResults.length);
       }
 
       // Navigate to Storefront page with search parameter
-      const searchUrl = createPublicUrl(storeCode, 'STOREFRONT', { search: searchQuery.trim() });
-      navigate(searchUrl);
+      if (storeCode) {
+        const searchUrl = createPublicUrl(storeCode, 'STOREFRONT', { search: searchQuery.trim() });
+        console.log('🔍 Search URL:', searchUrl, 'storeCode:', storeCode, 'query:', searchQuery.trim());
+        navigate(searchUrl);
+      } else {
+        console.error('❌ No store code available for search navigation');
+      }
       setShowResults(false);
       setSearchQuery('');
     }
