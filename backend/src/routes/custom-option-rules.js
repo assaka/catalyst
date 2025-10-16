@@ -98,15 +98,16 @@ router.post('/', async (req, res) => {
       is_active = true,
       conditions = {},
       optional_product_ids = [],
-      store_id
+      store_id,
+      translations = {}
     } = req.body;
-    
+
     if (!name || !store_id) {
-      return res.status(400).json({ 
-        error: 'Missing required fields: name and store_id are required' 
+      return res.status(400).json({
+        error: 'Missing required fields: name and store_id are required'
       });
     }
-    
+
     const ruleData = {
       name,
       display_label,
@@ -114,6 +115,7 @@ router.post('/', async (req, res) => {
       conditions,
       optional_product_ids,
       store_id,
+      translations,
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString()
     };
@@ -146,13 +148,14 @@ router.put('/:id', async (req, res) => {
       is_active,
       conditions,
       optional_product_ids,
-      store_id
+      store_id,
+      translations
     } = req.body;
-    
+
     const updateData = {
       updated_at: new Date().toISOString()
     };
-    
+
     // Only update fields that are provided
     if (name !== undefined) updateData.name = name;
     if (display_label !== undefined) updateData.display_label = display_label;
@@ -160,6 +163,7 @@ router.put('/:id', async (req, res) => {
     if (conditions !== undefined) updateData.conditions = conditions;
     if (optional_product_ids !== undefined) updateData.optional_product_ids = optional_product_ids;
     if (store_id !== undefined) updateData.store_id = store_id;
+    if (translations !== undefined) updateData.translations = translations;
     
     const { data, error } = await supabase
       .from('custom_option_rules')
