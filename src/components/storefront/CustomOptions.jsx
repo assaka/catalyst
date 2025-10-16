@@ -7,13 +7,33 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { formatPrice, safeNumber, formatPriceWithTax, getPriceDisplay } from '@/utils/priceUtils';
 import { getCurrentLanguage, getProductName, getProductShortDescription, getTranslatedField } from '@/utils/translationUtils';
 
-export default function CustomOptions({ product, onSelectionChange, selectedOptions = [], store, settings }) {
+export default function CustomOptions({
+    product,
+    onSelectionChange,
+    selectedOptions = [],
+    store,
+    settings,
+    colorTheme = {} // Allow customizable color theme
+}) {
     console.log('🎨 CustomOptions component rendered', {
         productId: product?.id,
         storeId: store?.id,
         hasOnSelectionChange: !!onSelectionChange,
         selectedOptionsCount: selectedOptions?.length
     });
+
+    // Default color theme with ability to override
+    const theme = {
+        selectedBorder: colorTheme.selectedBorder || 'border-blue-500',
+        selectedBg: colorTheme.selectedBg || 'bg-blue-50',
+        selectedCheckbox: colorTheme.selectedCheckbox || 'border-blue-500 bg-blue-500',
+        unselectedCheckbox: colorTheme.unselectedCheckbox || 'border-gray-300',
+        hoverBorder: colorTheme.hoverBorder || 'hover:border-gray-300',
+        defaultBorder: colorTheme.defaultBorder || 'border-gray-200',
+        saleBadgeBg: colorTheme.saleBadgeBg || 'bg-red-100',
+        saleBadgeText: colorTheme.saleBadgeText || 'text-red-800',
+        saleBadgeBorder: colorTheme.saleBadgeBorder || 'border-red-300'
+    };
 
     const [customOptions, setCustomOptions] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -306,18 +326,18 @@ export default function CustomOptions({ product, onSelectionChange, selectedOpti
                     const originalPrice = priceInfo.hasComparePrice ? priceInfo.originalPrice : null;
                     
                     return (
-                        <div 
-                            key={option.id} 
+                        <div
+                            key={option.id}
                             className={`border rounded-lg p-4 cursor-pointer transition-all duration-200 ${
-                                isSelected 
-                                    ? 'border-blue-500 bg-blue-50 shadow-sm' 
-                                    : 'border-gray-200 hover:border-gray-300 hover:shadow-sm'
+                                isSelected
+                                    ? `${theme.selectedBorder} ${theme.selectedBg} shadow-sm`
+                                    : `${theme.defaultBorder} ${theme.hoverBorder} hover:shadow-sm`
                             }`}
                             onClick={() => handleOptionToggle(option)}
                         >
                             <div className="flex items-start space-x-3">
                                 <div className={`w-5 h-5 rounded border-2 flex items-center justify-center flex-shrink-0 mt-0.5 ${
-                                    isSelected ? 'border-blue-500 bg-blue-500' : 'border-gray-300'
+                                    isSelected ? theme.selectedCheckbox : theme.unselectedCheckbox
                                 }`}>
                                     {isSelected && (
                                         <Check className="w-3 h-3 text-white" strokeWidth={3} />
@@ -361,7 +381,7 @@ export default function CustomOptions({ product, onSelectionChange, selectedOpti
                                                 {priceInfo.hasComparePrice ? (
                                                     <div className="text-right">
                                                         <div className="flex items-center space-x-2">
-                                                            <Badge variant={isSelected ? "default" : "outline"} className="font-semibold bg-red-100 text-red-800 border-red-300">
+                                                            <Badge variant={isSelected ? "default" : "outline"} className={`font-semibold ${theme.saleBadgeBg} ${theme.saleBadgeText} ${theme.saleBadgeBorder}`}>
                                                                 +{formatPriceWithTax(displayPrice)}
                                                             </Badge>
                                                         </div>

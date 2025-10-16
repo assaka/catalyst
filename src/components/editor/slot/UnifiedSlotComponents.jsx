@@ -845,6 +845,9 @@ const CustomOptions = createSlotComponent({
     // Storefront version - use the actual CustomOptionsComponent
     const { product, store, settings, selectedOptions, handleOptionChange } = productContext;
 
+    // Get color theme from slot metadata or use defaults
+    const colorTheme = slot?.metadata?.colorTheme || settings?.customOptionsColorTheme || {};
+
     return (
       <div className={className} style={styles}>
         <CustomOptionsComponent
@@ -853,6 +856,7 @@ const CustomOptions = createSlotComponent({
           settings={settings}
           selectedOptions={selectedOptions || []}
           onSelectionChange={handleOptionChange}
+          colorTheme={colorTheme}
         />
       </div>
     );

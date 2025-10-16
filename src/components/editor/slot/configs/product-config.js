@@ -669,7 +669,20 @@ export const productConfig = {
       viewMode: ['default'],
       metadata: {
         hierarchical: true,
-        component: 'CustomOptions'
+        component: 'CustomOptions',
+        // Customize colors for Custom Options component
+        // These colors override the default blue theme
+        colorTheme: {
+          selectedBorder: 'border-purple-500',      // Border color when option is selected
+          selectedBg: 'bg-purple-50',               // Background when option is selected
+          selectedCheckbox: 'border-purple-500 bg-purple-500',  // Checkbox when selected
+          unselectedCheckbox: 'border-purple-300',  // Checkbox when not selected
+          hoverBorder: 'hover:border-purple-300',   // Border on hover
+          defaultBorder: 'border-purple-200',       // Default border color
+          saleBadgeBg: 'bg-red-100',                // Sale badge background
+          saleBadgeText: 'text-red-800',            // Sale badge text color
+          saleBadgeBorder: 'border-red-300'         // Sale badge border
+        }
       }
     },
 

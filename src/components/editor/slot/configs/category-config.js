@@ -936,12 +936,22 @@ export const categoryConfig = {
               const result = await response.json();
 
               if (result.success) {
-                // Dispatch cart update event
+                // Extract fresh cart data from the response
+                const freshCartData = result.data;
+                const cartItems = Array.isArray(freshCartData?.items) ? freshCartData.items :
+                                 Array.isArray(freshCartData?.dataValues?.items) ? freshCartData.dataValues.items : [];
+
+                // Dispatch cart update event with fresh cart data (matches cartService pattern)
                 window.dispatchEvent(new CustomEvent('cartUpdated', {
                   detail: {
                     action: 'add_from_category',
                     timestamp: Date.now(),
-                    source: 'category.addToCart'
+                    source: 'category.addToCart',
+                    freshCartData: {
+                      success: true,
+                      items: cartItems,
+                      cart: freshCartData
+                    }
                   }
                 }));
 
