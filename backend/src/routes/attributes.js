@@ -91,13 +91,15 @@ router.get('/', async (req, res) => {
     });
 
     // Fetch attribute values for select/multiselect attributes
+    // For filterable attributes, always include all values (no limit)
     const attributesWithValues = await Promise.all(rows.map(async (attr) => {
       const attrData = attr.toJSON();
       if (attr.type === 'select' || attr.type === 'multiselect') {
         const values = await AttributeValue.findAll({
           where: { attribute_id: attr.id },
           order: [['sort_order', 'ASC'], ['code', 'ASC']],
-          limit: 10 // Limit to first 10 for performance
+          // No limit for filterable attributes - need all values for filters
+          limit: (isPublicRequest && attr.is_filterable) ? undefined : 10
         });
         attrData.values = values;
       }
