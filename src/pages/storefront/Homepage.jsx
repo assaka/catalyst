@@ -1,14 +1,15 @@
 import React, { useState, useEffect } from "react";
-import { Link } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 import { createCategoryUrl } from "@/utils/urlUtils";
 import { StorefrontProduct } from "@/api/storefront-entities";
 import { useStore, cachedApiCall } from "@/components/storefront/StoreProvider";
 import ProductItemCard from "@/components/storefront/ProductItemCard";
 import SeoHeadManager from "@/components/storefront/SeoHeadManager";
 import CmsBlockRenderer from "@/components/storefront/CmsBlockRenderer";
-import { Package } from "lucide-react";
+import { Package, Search as SearchIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { getProductName, getProductShortDescription, getCurrentLanguage } from "@/utils/translationUtils";
 
 const ensureArray = (data) => {
   if (Array.isArray(data)) return data;
@@ -17,24 +18,32 @@ const ensureArray = (data) => {
 };
 
 export default function Homepage() {
-  const { store, settings, loading: storeLoading, categories } = useStore();
+  const [searchParams] = useSearchParams();
+  const searchQuery = searchParams.get('search');
+  const { store, settings, loading: storeLoading, categories, productLabels, taxes, selectedCountry } = useStore();
   const [featuredProducts, setFeaturedProducts] = useState([]);
+  const [searchResults, setSearchResults] = useState([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     if (!storeLoading && store?.id) {
-      loadFeaturedProducts();
-      
+      if (searchQuery) {
+        loadSearchResults(searchQuery);
+      } else {
+        loadFeaturedProducts();
+      }
+
       // Track homepage view
       if (typeof window !== 'undefined' && window.catalyst?.trackEvent) {
         window.catalyst.trackEvent('page_view', {
-          page_type: 'homepage',
+          page_type: searchQuery ? 'search_results' : 'homepage',
           store_name: store.name,
-          store_id: store.id
+          store_id: store.id,
+          search_query: searchQuery || undefined
         });
       }
     }
-  }, [store?.id, storeLoading]);
+  }, [store?.id, storeLoading, searchQuery]);
 
   const loadFeaturedProducts = async () => {
     try {
@@ -45,7 +54,7 @@ export default function Homepage() {
       let featuredData = [];
       try {
         featuredData = await cachedApiCall(
-          featuredCacheKey, 
+          featuredCacheKey,
           () => StorefrontProduct.getFeatured({ store_id: store.id, limit: 12 })
         );
       } catch (featuredError) {
@@ -61,9 +70,47 @@ export default function Homepage() {
     }
   };
 
+  const loadSearchResults = async (query) => {
+    try {
+      setLoading(true);
+      if (!store) return;
+
+      // Get products from backend
+      const products = await StorefrontProduct.list('-created_date', 50);
+
+      // Filter by search query including translations
+      const searchLower = query.toLowerCase();
+      const currentLang = getCurrentLanguage();
+
+      const filteredProducts = products.filter(product => {
+        // Search in direct fields
+        const matchesDirectFields =
+          product.name?.toLowerCase().includes(searchLower) ||
+          product.sku?.toLowerCase().includes(searchLower) ||
+          product.short_description?.toLowerCase().includes(searchLower);
+
+        // Search in translated fields
+        const translatedName = getProductName(product, currentLang);
+        const translatedDescription = getProductShortDescription(product, currentLang);
+        const matchesTranslations =
+          translatedName?.toLowerCase().includes(searchLower) ||
+          translatedDescription?.toLowerCase().includes(searchLower);
+
+        return matchesDirectFields || matchesTranslations;
+      });
+
+      setSearchResults(filteredProducts);
+    } catch (error) {
+      console.error("Homepage: Error searching products:", error);
+      setSearchResults([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   // Filter products based on stock settings
   const getFilteredProducts = () => {
-    let products = featuredProducts;
+    let products = searchQuery ? searchResults : featuredProducts;
     
     // Apply stock filtering based on display_out_of_stock setting
     if (settings?.enable_inventory && !settings?.display_out_of_stock) {
@@ -91,19 +138,23 @@ export default function Homepage() {
 
   return (
     <div className="px-4 sm:px-6 lg:px-8 py-8">
-      <SeoHeadManager 
-        pageType="homepage"
+      <SeoHeadManager
+        pageType={searchQuery ? "search" : "homepage"}
         pageData={store}
-        pageTitle="Welcome to our Store"
+        pageTitle={searchQuery ? `Search results for "${searchQuery}"` : "Welcome to our Store"}
       />
       
       <div className="max-w-7xl mx-auto">
-        <CmsBlockRenderer position="homepage_above_hero" />
-        
-        {/* Hero section via CMS Block */}
-        <CmsBlockRenderer position="homepage_hero" />
-        
-        <CmsBlockRenderer position="homepage_below_hero" />
+        {!searchQuery && (
+          <>
+            <CmsBlockRenderer position="homepage_above_hero" />
+
+            {/* Hero section via CMS Block */}
+            <CmsBlockRenderer position="homepage_hero" />
+
+            <CmsBlockRenderer position="homepage_below_hero" />
+          </>
+        )}
 
         {loading ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
@@ -120,20 +171,29 @@ export default function Homepage() {
           </div>
         ) : (
           <>
-            <CmsBlockRenderer position="homepage_above_featured" />
-            
+            {!searchQuery && <CmsBlockRenderer position="homepage_above_featured" />}
+
             <div className="flex justify-between items-center my-8">
-              <h2 className="text-3xl font-bold">Featured Products</h2>
-              {categories && categories.length > 0 && (
+              <h2 className="text-3xl font-bold">
+                {searchQuery ? (
+                  <>
+                    <SearchIcon className="inline-block w-8 h-8 mr-2 mb-1" />
+                    Search Results for "{searchQuery}"
+                  </>
+                ) : (
+                  'Featured Products'
+                )}
+              </h2>
+              {!searchQuery && categories && categories.length > 0 && (
                 <Link to={createCategoryUrl(storeCode, categories[0]?.slug)}>
                   <Button variant="outline">View All Products</Button>
                 </Link>
               )}
             </div>
-            
-            {featuredProducts.length > 0 ? (
+
+            {filteredProducts.length > 0 ? (
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-                {filteredProducts.slice(0, 8).map((product) => (
+                {filteredProducts.slice(0, searchQuery ? filteredProducts.length : 8).map((product) => (
                   <ProductItemCard
                     key={product.id}
                     product={product}
@@ -150,19 +210,34 @@ export default function Homepage() {
               </div>
             ) : (
               <div className="text-center py-16">
-                <Package className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-                <h3 className="text-xl font-medium text-gray-900 mb-2">No Featured Products</h3>
-                <p className="text-gray-600">Mark some products as featured to display them here.</p>
+                {searchQuery ? (
+                  <>
+                    <SearchIcon className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+                    <h3 className="text-xl font-medium text-gray-900 mb-2">No products found</h3>
+                    <p className="text-gray-600">No products match your search for "{searchQuery}".</p>
+                    <p className="text-gray-600 mt-2">Try different keywords or browse all products.</p>
+                  </>
+                ) : (
+                  <>
+                    <Package className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+                    <h3 className="text-xl font-medium text-gray-900 mb-2">No Featured Products</h3>
+                    <p className="text-gray-600">Mark some products as featured to display them here.</p>
+                  </>
+                )}
               </div>
             )}
-            
-            <CmsBlockRenderer position="homepage_below_featured" />
-            
-            <CmsBlockRenderer position="homepage_above_content" />
-            
-            {/* Additional homepage content can go here */}
-            
-            <CmsBlockRenderer position="homepage_below_content" />
+
+            {!searchQuery && (
+              <>
+                <CmsBlockRenderer position="homepage_below_featured" />
+
+                <CmsBlockRenderer position="homepage_above_content" />
+
+                {/* Additional homepage content can go here */}
+
+                <CmsBlockRenderer position="homepage_below_content" />
+              </>
+            )}
           </>
         )}
       </div>
