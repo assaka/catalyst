@@ -1354,7 +1354,7 @@ export default function Checkout() {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
                   <div className="md:col-span-2">
                     <Input
-                      placeholder={t('account.email', 'Email')}
+                      placeholder={t('common.email', 'Email')}
                       type="email"
                       required
                       value={shippingAddress.email}
@@ -1369,7 +1369,7 @@ export default function Checkout() {
                     )}
                   </div>
                   <Input
-                    placeholder={t('account.full_name', 'Full Name')}
+                    placeholder={t('common.full_name', 'Full Name')}
                     className={`md:col-span-2 ${shippingErrors.full_name ? 'border-red-500' : ''}`}
                     required
                     value={shippingAddress.full_name}
@@ -1380,7 +1380,7 @@ export default function Checkout() {
                   />
                   {showPhoneField && (
                     <Input
-                      placeholder={t('account.phone_number', 'Phone Number')}
+                      placeholder={t('common.phone_number', 'Phone Number')}
                       type="tel"
                       className={`md:col-span-2 ${shippingErrors.phone ? 'border-red-500' : ''}`}
                       required
@@ -1392,7 +1392,7 @@ export default function Checkout() {
                     />
                   )}
                   <Input
-                    placeholder={t('account.street', 'Street Address')}
+                    placeholder={t('common.street_address', 'Street Address')}
                     className={`md:col-span-2 ${shippingErrors.street ? 'border-red-500' : ''}`}
                     required
                     value={shippingAddress.street}
@@ -1412,7 +1412,7 @@ export default function Checkout() {
                     }}
                   />
                   <Input
-                    placeholder={t('account.state_province', 'State / Province')}
+                    placeholder={t('common.state_province', 'State / Province')}
                     className={shippingErrors.state ? 'border-red-500' : ''}
                     required
                     value={shippingAddress.state}
@@ -1422,7 +1422,7 @@ export default function Checkout() {
                     }}
                   />
                   <Input
-                    placeholder={t('account.postal_code', 'Postal Code')}
+                    placeholder={t('common.postal_code', 'Postal Code')}
                     className={shippingErrors.postal_code ? 'border-red-500' : ''}
                     required
                     value={shippingAddress.postal_code}
@@ -1437,7 +1437,7 @@ export default function Checkout() {
                       setShippingAddress(prev => ({ ...prev, country }));
                       setShippingErrors(prev => ({ ...prev, country: false }));
                     }}
-                    placeholder={t('account.country', 'Select Country')}
+                    placeholder={t('common.country', 'Select Country')}
                     allowedCountries={settings?.allowed_countries}
                     required
                     className={shippingErrors.country ? 'border-red-500' : ''}
@@ -1541,7 +1541,7 @@ export default function Checkout() {
                                   <p className="text-gray-600">{address.street}</p>
                                   <p className="text-gray-600">{address.city}, {address.state} {address.postal_code}</p>
                                   <p className="text-gray-600">{address.country}</p>
-                                  {address.phone && <p className="text-gray-500 text-xs mt-1">{t('checkout.phone', 'Phone')} {address.phone}</p>}
+                                  {address.phone && <p className="text-gray-500 text-xs mt-1">{t('common.phone', 'Phone')} {address.phone}</p>}
                                   {address.is_default && (
                                     <span className="inline-block bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded mt-1">
                                       {t('checkout.default', 'Default')}
@@ -1575,7 +1575,7 @@ export default function Checkout() {
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div className="md:col-span-2">
                           <Input
-                            placeholder={t('account.email', 'Email')}
+                            placeholder={t('common.email', 'Email')}
                             type="email"
                             required
                             value={billingAddress.email}
@@ -1590,7 +1590,7 @@ export default function Checkout() {
                           )}
                         </div>
                         <Input
-                          placeholder={t('account.full_name', 'Full Name')}
+                          placeholder={t('common.full_name', 'Full Name')}
                           className={`md:col-span-2 ${billingErrors.full_name ? 'border-red-500' : ''}`}
                           required
                           value={billingAddress.full_name}
@@ -1601,7 +1601,7 @@ export default function Checkout() {
                         />
                         {showPhoneField && (
                           <Input
-                            placeholder={t('account.phone_number', 'Phone Number')}
+                            placeholder={t('common.phone_number', 'Phone Number')}
                             type="tel"
                             className={`md:col-span-2 ${billingErrors.phone ? 'border-red-500' : ''}`}
                             required
@@ -1613,7 +1613,7 @@ export default function Checkout() {
                           />
                         )}
                         <Input
-                          placeholder={t('account.street', 'Street Address')}
+                          placeholder={t('common.street', 'Street Address')}
                           className={`md:col-span-2 ${billingErrors.street ? 'border-red-500' : ''}`}
                           required
                           value={billingAddress.street}
@@ -1623,7 +1623,7 @@ export default function Checkout() {
                           }}
                         />
                         <Input
-                          placeholder={t('account.city', 'City')}
+                          placeholder={t('common.city', 'City')}
                           className={billingErrors.city ? 'border-red-500' : ''}
                           required
                           value={billingAddress.city}
@@ -1633,7 +1633,7 @@ export default function Checkout() {
                           }}
                         />
                         <Input
-                          placeholder={t('account.state_province', 'State / Province')}
+                          placeholder={t('common.state_province', 'State / Province')}
                           className={billingErrors.state ? 'border-red-500' : ''}
                           required
                           value={billingAddress.state}
@@ -1643,7 +1643,7 @@ export default function Checkout() {
                           }}
                         />
                         <Input
-                          placeholder={t('account.postal_code', 'Postal Code')}
+                          placeholder={t('common.postal_code', 'Postal Code')}
                           className={billingErrors.postal_code ? 'border-red-500' : ''}
                           required
                           value={billingAddress.postal_code}
@@ -1658,7 +1658,7 @@ export default function Checkout() {
                             setBillingAddress(prev => ({ ...prev, country }));
                             setBillingErrors(prev => ({ ...prev, country: false }));
                           }}
-                          placeholder={t('account.country', 'Select Country')}
+                          placeholder={t('common.country', 'Select Country')}
                           allowedCountries={settings?.allowed_countries}
                           required
                           className={billingErrors.country ? 'border-red-500' : ''}

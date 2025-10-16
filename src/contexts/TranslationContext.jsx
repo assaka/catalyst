@@ -23,16 +23,12 @@ export function TranslationProvider({ children }) {
     try {
       const response = await api.get('/languages');
 
-      console.log('🌐 TranslationContext - Raw API response:', JSON.stringify(response, null, 2));
-
       if (response && response.success && response.data) {
         // Handle data structure: response.data.languages or response.data
         const languagesData = response.data.languages || response.data || [];
         const languages = Array.isArray(languagesData)
           ? languagesData.filter(lang => lang.is_active)
           : [];
-
-        console.log('🌍 TranslationContext - Loaded languages:', languages.map(l => `${l.code} (${l.native_name})`));
 
         if (languages.length > 0) {
           setAvailableLanguages(languages);
