@@ -43,16 +43,27 @@ export default function AttributeForm({ attribute, onSubmit, onCancel }) {
 
   useEffect(() => {
     if (attribute) {
-      // Prepare translations object, ensuring English translation is populated
-      const translations = attribute.translations || {};
+      // Create a deep copy of translations to avoid mutating the original
+      const translations = attribute.translations
+        ? JSON.parse(JSON.stringify(attribute.translations))
+        : {};
 
       // If English translation exists, use it for the main name field
       // Otherwise, initialize English translation from the main name field
       const attributeName = translations.en?.name || attribute.name;
 
+      // Ensure English translation is populated
       if (!translations.en) {
         translations.en = { name: attribute.name };
+      } else if (!translations.en.name) {
+        translations.en.name = attribute.name;
       }
+
+      console.log('Loading attribute with translations:', {
+        attributeName,
+        translations,
+        originalTranslations: attribute.translations
+      });
 
       setFormData({
         ...attribute,
