@@ -494,7 +494,7 @@ export default function Category() {
 
       // Skip attributes that shouldn't be displayed as filters
       // (even if marked as filterable, they're used for other purposes)
-      const excludedAttributes = ['name', 'price', 'sku', 'description', 'image'];
+      const excludedAttributes = ['name', 'sku', 'description', 'image'];
       if (excludedAttributes.includes(attrCode)) return;
 
       // Extract values from products only (dynamic from DB)

@@ -9,7 +9,6 @@ async function fixFilterableAttributes() {
     // Attributes that should NOT be filterable
     const nonFilterableAttributes = [
       'name',
-      'price',
       'sku',
       'description',
       'image',
