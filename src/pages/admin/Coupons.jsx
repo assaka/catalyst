@@ -366,7 +366,7 @@ export default function CouponsPage() {
             </DialogHeader>
             <CouponForm
               coupon={editingCoupon}
-              stores={selectedStore ? [selectedStore] : []}
+              storeId={getSelectedStoreId()}
               products={products}
               categories={categories}
               onSubmit={handleSubmit} // Use the combined handleSubmit function

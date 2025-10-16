@@ -136,12 +136,18 @@ export default function CouponForm({ coupon, onSubmit, onCancel, storeId }) {
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    
+
     if (!validateForm()) {
       return;
     }
 
     const submitData = { ...formData };
+
+    console.log('🐛 CouponForm handleSubmit - data being submitted:', {
+      code: submitData.code,
+      name: submitData.name,
+      fullData: submitData
+    });
     
     // Convert empty strings to null for optional numeric fields
     if (submitData.min_purchase_amount === '') submitData.min_purchase_amount = null;
@@ -216,7 +222,14 @@ export default function CouponForm({ coupon, onSubmit, onCancel, storeId }) {
               <Input
                 id="code"
                 value={formData.code}
-                onChange={(e) => setFormData(prev => ({ ...prev, code: e.target.value.toUpperCase() }))}
+                onChange={(e) => {
+                  console.log('🐛 Coupon code input changed:', {
+                    inputValue: e.target.value,
+                    upperCaseValue: e.target.value.toUpperCase(),
+                    previousCode: formData.code
+                  });
+                  setFormData(prev => ({ ...prev, code: e.target.value.toUpperCase() }));
+                }}
                 className={errors.code ? 'border-red-500' : ''}
               />
               {errors.code && <p className="text-sm text-red-500 mt-1">{errors.code}</p>}
