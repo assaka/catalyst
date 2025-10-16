@@ -55,16 +55,9 @@ export default function HeaderSearch({ styles = {} }) {
 
       setLoading(true);
       try {
-        const products = await StorefrontProduct.list('-created_date', 10);
-        const searchLower = searchQuery.toLowerCase();
-        
-        const filteredProducts = products.filter(product =>
-          product.name?.toLowerCase().includes(searchLower) ||
-          product.sku?.toLowerCase().includes(searchLower) ||
-          product.short_description?.toLowerCase().includes(searchLower)
-        );
+        const products = await StorefrontProduct.search(searchQuery, { limit: 5 });
 
-        setSearchResults(filteredProducts.slice(0, 5));
+        setSearchResults(products);
         setShowResults(true);
       } catch (error) {
         console.error("Error searching products:", error);
