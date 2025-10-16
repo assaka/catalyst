@@ -58,9 +58,9 @@ export default function HeaderSearch({ styles = {} }) {
         const products = await StorefrontProduct.list('-created_date', 10);
         const searchLower = searchQuery.toLowerCase();
         
-        const filteredProducts = products.filter(product => 
-          product.name.toLowerCase().includes(searchLower) ||
-          product.sku.toLowerCase().includes(searchLower) ||
+        const filteredProducts = products.filter(product =>
+          product.name?.toLowerCase().includes(searchLower) ||
+          product.sku?.toLowerCase().includes(searchLower) ||
           product.short_description?.toLowerCase().includes(searchLower)
         );
 
