@@ -438,13 +438,13 @@ export default function Cart() {
                 try {
                     // Try multiple batch API patterns for maximum compatibility
                     const batchStrategies = [
-                        // Strategy 1: Standard batch filter with "in" operator
+                        // Strategy 1: Backend expects JSON string format like {"$in":["id1","id2"]}
+                        () => StorefrontProduct.filter({ id: JSON.stringify({ $in: productIds }) }),
+
+                        // Strategy 2: Standard batch filter with "in" operator (fallback)
                         () => StorefrontProduct.filter({ id: { in: productIds } }),
 
-                        // Strategy 2: Batch filter with ids array
-                        () => StorefrontProduct.filter({ ids: productIds }),
-
-                        // Strategy 3: Query string approach
+                        // Strategy 3: Comma-separated IDs (fallback)
                         () => StorefrontProduct.filter({ id: productIds.join(',') })
                     ];
 
