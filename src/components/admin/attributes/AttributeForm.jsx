@@ -17,7 +17,9 @@ import api from "@/utils/api";
 import { useTranslation } from "@/contexts/TranslationContext";
 
 export default function AttributeForm({ attribute, onSubmit, onCancel }) {
-  const { availableLanguages } = useTranslation();
+  const { availableLanguages, currentLanguage } = useTranslation();
+  const defaultLanguage = currentLanguage || 'nl'; // Use current language or fallback to 'nl'
+
   const [formData, setFormData] = useState({
     name: "",
     code: "",
@@ -48,19 +50,32 @@ export default function AttributeForm({ attribute, onSubmit, onCancel }) {
         ? JSON.parse(JSON.stringify(attribute.translations))
         : {};
 
-      // If English translation exists, use it for the main name field
-      // Otherwise, initialize English translation from the main name field
-      const attributeName = translations.en?.name || attribute.name;
+      // Clean up translations: remove 'label' field, only keep 'name'
+      Object.keys(translations).forEach(lang => {
+        if (translations[lang].label) {
+          delete translations[lang].label;
+        }
+        if (translations[lang].description === "") {
+          delete translations[lang].description;
+        }
+      });
 
-      // Ensure English translation is populated
-      if (!translations.en) {
-        translations.en = { name: attribute.name };
-      } else if (!translations.en.name) {
-        translations.en.name = attribute.name;
+      // Use the default language (NL) for the main name field
+      // Fallback order: defaultLanguage -> en -> attribute.name
+      const attributeName = translations[defaultLanguage]?.name
+        || translations.en?.name
+        || attribute.name;
+
+      // Ensure default language translation is populated
+      if (!translations[defaultLanguage]) {
+        translations[defaultLanguage] = { name: attribute.name };
+      } else if (!translations[defaultLanguage].name) {
+        translations[defaultLanguage].name = attribute.name;
       }
 
       console.log('Loading attribute with translations:', {
         attributeName,
+        defaultLanguage,
         translations,
         originalTranslations: attribute.translations
       });
@@ -80,18 +95,18 @@ export default function AttributeForm({ attribute, onSubmit, onCancel }) {
         setAttributeValues(attribute.values);
       }
     }
-  }, [attribute]);
+  }, [attribute, defaultLanguage]);
 
   const handleInputChange = (field, value) => {
     setFormData((prev) => {
       const newData = { ...prev, [field]: value };
 
-      // Bi-directional syncing: When changing attribute name, also update English translation
+      // Bi-directional syncing: When changing attribute name, also update default language translation
       if (field === 'name') {
         newData.translations = {
           ...prev.translations,
-          en: {
-            ...(prev.translations.en || {}),
+          [defaultLanguage]: {
+            ...(prev.translations[defaultLanguage] || {}),
             name: value
           }
         };
@@ -168,8 +183,8 @@ export default function AttributeForm({ attribute, onSubmit, onCancel }) {
         }
       };
 
-      // Bi-directional syncing: If editing English translation, also update main name field
-      if (langCode === 'en') {
+      // Bi-directional syncing: If editing default language translation, also update main name field
+      if (langCode === defaultLanguage) {
         newData.name = value;
       }
 
@@ -290,7 +305,7 @@ export default function AttributeForm({ attribute, onSubmit, onCancel }) {
                           type="text"
                           value={value}
                           onChange={(e) => {
-                            if (lang.code === 'en') {
+                            if (lang.code === defaultLanguage) {
                               handleInputChange('name', e.target.value);
                             } else {
                               handleAttributeTranslationChange(lang.code, e.target.value);
@@ -298,7 +313,7 @@ export default function AttributeForm({ attribute, onSubmit, onCancel }) {
                           }}
                           dir={isRTL ? 'rtl' : 'ltr'}
                           className={`flex-1 h-9 text-sm ${isRTL ? 'text-right' : 'text-left'}`}
-                          placeholder={lang.code === 'en' ? 'Attribute name' : (formData.translations.en?.name || formData.name || `${lang.native_name} translation`)}
+                          placeholder={lang.code === defaultLanguage ? 'Attribute name' : (formData.translations[defaultLanguage]?.name || formData.name || `${lang.native_name} translation`)}
                         />
                       </div>
                     );
