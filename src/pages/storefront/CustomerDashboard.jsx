@@ -208,7 +208,7 @@ const OrdersTab = ({ orders, getCountryName, onStatusUpdate, settings }) => {
                       </div>
                       <div className="flex flex-col items-end gap-2">
                         <Badge className={getStatusBadgeColor(order.status)}>
-                          {t(`order.status.${order.status || 'pending'}`, settings)}
+                          {t(`common.${order.status || 'pending'}`, settings)}
                         </Badge>
                         <Button
                           variant="outline"

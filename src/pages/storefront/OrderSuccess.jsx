@@ -415,13 +415,13 @@ export default function OrderSuccess() {
                   <div className="flex justify-between">
                     <span className="text-gray-600">{t('common.status', settings)}:</span>
                     <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200">
-                      {t(`order.status.${order.status || 'pending'}`, settings)}
+                      {t(`common.${order.status || 'pending'}`, settings)}
                     </Badge>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-gray-600">{t('order.payment_status', settings)}:</span>
+                    <span className="text-gray-600">{t('common.payment_status', settings)}:</span>
                     <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
-                      {t(`order.payment_status.${order.payment_status || 'pending'}`, settings)}
+                      {t(`common.${order.payment_status || 'pending'}`, settings)}
                     </Badge>
                   </div>
                   <div className="flex justify-between">
@@ -574,7 +574,7 @@ export default function OrderSuccess() {
               <CardContent>
                 <div className="space-y-2">
                   <div className="flex justify-between">
-                    <span className="text-gray-600">Subtotal</span>
+                    <span className="text-gray-600"> {t('common.subtotal', settings)}</span>
                     <span>{formatCurrency(order.subtotal, order.currency)}</span>
                   </div>
                   <div className="flex justify-between">
@@ -584,18 +584,18 @@ export default function OrderSuccess() {
                     <span>{formatCurrency(order.shipping_amount || order.shipping_cost, order.currency)}</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-gray-600">Tax</span>
+                    <span className="text-gray-600"> {t('common.tax', settings)}</span>
                     <span>{formatCurrency(order.tax_amount, order.currency)}</span>
                   </div>
                   {safeNumber(order.discount_amount) > 0 && (
                     <div className="flex justify-between text-green-600">
-                      <span>Discount</span>
+                      <span> {t('common.discount', settings)}</span>
                       <span>-{formatCurrency(order.discount_amount, order.currency)}</span>
                     </div>
                   )}
                   <Separator />
                   <div className="flex justify-between text-lg font-bold">
-                    <span>Total</span>
+                    <span> {t('common.total', settings)}</span>
                     <span className="text-green-600">{formatCurrency(order.total_amount, order.currency)}</span>
                   </div>
                 </div>
@@ -612,7 +612,7 @@ export default function OrderSuccess() {
                 <CardHeader>
                   <CardTitle className="flex items-center">
                     <MapPin className="w-5 h-5 mr-2 text-green-600" />
-                    Shipping Address
+                    {t('common.shipping_address', settings)}
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
@@ -656,7 +656,7 @@ export default function OrderSuccess() {
                 <CardHeader>
                   <CardTitle className="flex items-center">
                     <CreditCard className="w-5 h-5 mr-2 text-blue-600" />
-                    Billing Address
+                    {t('common.billing_address', settings)}
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
@@ -767,7 +767,7 @@ export default function OrderSuccess() {
                         <div className="space-y-4">
                           <div>
                             <Label htmlFor="password" className="text-sm font-medium text-gray-700">
-                              Password
+                              {t('common.password', settings)}
                             </Label>
                             <Input
                               id="password"
@@ -781,7 +781,7 @@ export default function OrderSuccess() {
 
                           <div>
                             <Label htmlFor="confirmPassword" className="text-sm font-medium text-gray-700">
-                              Confirm Password
+                              {t('common.confirm_password', settings)}
                             </Label>
                             <Input
                               id="confirmPassword"
