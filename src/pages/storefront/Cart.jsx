@@ -645,27 +645,37 @@ export default function Cart() {
     };
 
     const handleApplyCoupon = async () => {
+        console.log('🐛 handleApplyCoupon called with code:', couponCode);
+
         if (!couponCode) {
             setFlashMessage({ type: 'error', message: t('cart.please_enter_coupon_code', 'Please enter a coupon code.') });
             return;
         }
-        
+
         if (!store?.id) {
+            console.log('❌ Store information not available. Store:', store);
             setFlashMessage({ type: 'error', message: "Store information not available." });
             return;
         }
-        
+
+        console.log('🔍 Searching for coupon with params:', {
+            code: couponCode,
+            is_active: true,
+            store_id: store.id
+        });
+
         try {
-            
             const coupons = await simpleRetry(() => Coupon.filter({
                 code: couponCode,
                 is_active: true,
                 store_id: store.id
             }));
-            
-            
+
+            console.log('📦 Coupon API response:', coupons);
+
             if (coupons && coupons.length > 0) {
                 const coupon = coupons[0];
+                console.log('✅ Coupon found:', coupon);
                 
                 // Check if coupon is still valid (not expired)
                 if (coupon.end_date) {
@@ -746,11 +756,17 @@ export default function Cart() {
                     setFlashMessage({ type: 'error', message: t('cart.coupon_apply_failed', 'Failed to apply coupon. Please try again.') });
                 }
             } else {
+                console.log('❌ No coupons found matching the criteria');
                 setAppliedCoupon(null);
                 setFlashMessage({ type: 'error', message: "Invalid or expired coupon code." });
             }
         } catch (error) {
-            console.error("Error applying coupon:", error);
+            console.error("❌ Error applying coupon:", error);
+            console.error("Error details:", {
+                message: error.message,
+                response: error.response,
+                stack: error.stack
+            });
             setFlashMessage({ type: 'error', message: "Could not apply coupon. Please try again." });
         }
     };
