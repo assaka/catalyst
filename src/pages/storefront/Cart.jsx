@@ -235,18 +235,39 @@ export default function Cart() {
                 // Use fresh data directly instead of API call
                 const freshItems = event.detail.freshCartData.items;
 
-                // Find products for the fresh items (simplified)
-                const populatedCart = freshItems.map(item => {
-                    const existingItem = cartItems.find(existing => existing.id === item.id);
-                    return {
-                        ...item,
-                        product: existingItem?.product, // Keep existing product data
-                        selected_options: item.selected_options || []
-                    };
-                }).filter(item => item.product); // Only keep items with product data
+                // Check if we need to load product details
+                const hasProductDetails = freshItems.length > 0 && cartItems.length > 0 &&
+                    freshItems.some(item => {
+                        const existingItem = cartItems.find(existing => existing.id === item.id);
+                        return existingItem?.product;
+                    });
 
-                setCartItems(populatedCart);
-                return; // Fresh data received - no need for additional API calls
+                if (hasProductDetails) {
+                    // We have existing product data, use it
+                    const populatedCart = freshItems.map(item => {
+                        const existingItem = cartItems.find(existing => existing.id === item.id);
+                        return {
+                            ...item,
+                            product: existingItem?.product,
+                            selected_options: item.selected_options || []
+                        };
+                    }).filter(item => item.product);
+
+                    setCartItems(populatedCart);
+                    return;
+                } else {
+                    // No existing product data, trigger full reload to fetch product details
+                    if (!loading && hasLoadedInitialData) {
+                        clearTimeout(debounceTimer);
+                        debounceTimer = setTimeout(() => {
+                            setExternalCartUpdateTrigger(prev => prev + 1);
+                        }, 300);
+                    } else if (!hasLoadedInitialData) {
+                        // If we haven't loaded initial data yet, load it now
+                        loadCartData(false);
+                    }
+                    return;
+                }
             }
 
             // Only reload if we don't have fresh data and we're not currently loading

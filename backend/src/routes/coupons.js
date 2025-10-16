@@ -21,7 +21,10 @@ router.get('/', async (req, res) => {
 
     // Add filters based on query parameters
     if (store_id) where.store_id = store_id;
-    if (code) where.code = code;
+    if (code) {
+      // Case-insensitive search for coupon code
+      where.code = { [Op.iLike]: code };
+    }
     if (is_active !== undefined) {
       // Convert string 'true'/'false' to boolean
       where.is_active = is_active === 'true' || is_active === true;
