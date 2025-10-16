@@ -289,11 +289,9 @@ const OrdersTab = ({ orders, getCountryName, onStatusUpdate, settings }) => {
                                   {item.product_sku && (
                                     <p className="text-sm text-gray-500">{t('common.sku', settings)}: {item.product_sku}</p>
                                   )}
-                                  {item.selected_options && Object.keys(item.selected_options || {}).length > 0 && (
+                                  {item.selected_options && Array.isArray(item.selected_options) && item.selected_options.length > 0 && (
                                     <p className="text-sm text-gray-500">
-                                      {t('common.options', settings)}: {typeof item.selected_options === 'object' ?
-                                        Object.entries(item.selected_options).map(([key, value]) => `${key}: ${value}`).join(', ') :
-                                        item.selected_options}
+                                      {t('common.options', settings)}: {item.selected_options.map(opt => `${opt.name}: ${opt.value}`).join(', ')}
                                     </p>
                                   )}
                                 </div>
