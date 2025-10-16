@@ -1,14 +1,10 @@
 
 import React, { useState, useEffect } from "react";
 import { useSearchParams, useNavigate, Link } from "react-router-dom";
-import { createPageUrl } from "@/utils";
 import { createPublicUrl } from "@/utils/urlUtils";
 import { useStore } from "@/components/storefront/StoreProvider";
-import { User } from "@/api/entities";
-import { OrderItem } from "@/api/entities";
 import { CustomerWishlist, CustomerAddress, CustomerOrder, CustomerAuth } from "@/api/storefront-entities";
 import { Product } from "@/api/entities";
-import { Cart as CartEntity } from "@/api/entities";
 import { useAlertTypes } from "@/hooks/useAlert";
 import { t } from '@/utils/translationHelper';
 
@@ -482,10 +478,10 @@ const AddressForm = ({ addressForm, handleInputChange, handleAddressSubmit, edit
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <Label htmlFor="full_name">{t('common.full_name', settings)}</Label>
               <Input
                 id="full_name"
                 name="full_name"
+                placeholder={t('common.full_name', 'Full Name')}
                 value={addressForm.full_name || ''}
                 onChange={(e) => {
                   handleInputChange('full_name', e.target.value);
@@ -494,10 +490,10 @@ const AddressForm = ({ addressForm, handleInputChange, handleAddressSubmit, edit
               />
             </div>
             <div>
-              <Label htmlFor="phone">{t('common.phone', settings)}</Label>
               <Input
                 id="phone"
                 name="phone"
+                placeholder={t('common.phone', 'Phone')}
                 value={addressForm.phone || ''}
                 onChange={(e) => handleInputChange('phone', e.target.value)}
               />
@@ -505,7 +501,6 @@ const AddressForm = ({ addressForm, handleInputChange, handleAddressSubmit, edit
           </div>
 
           <div>
-            <Label htmlFor="street">{t('common.street_address', settings)}</Label>
             <Input
               id="street"
               name="street"
@@ -517,51 +512,51 @@ const AddressForm = ({ addressForm, handleInputChange, handleAddressSubmit, edit
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div>
-              <Label htmlFor="city">{t('common.city', settings)}</Label>
               <Input
                 id="city"
                 name="city"
+                placeholder={t('common.city', 'City')}
                 value={addressForm.city || ''}
                 onChange={(e) => handleInputChange('city', e.target.value)}
                 required
               />
             </div>
             <div>
-              <Label htmlFor="state">{t('common.state_province', settings)}</Label>
               <Input
                 id="state"
                 name="state"
+                placeholder={t('common.state_province', 'State / Province')}
                 value={addressForm.state || ''}
                 onChange={(e) => handleInputChange('state', e.target.value)}
               />
             </div>
             <div>
-              <Label htmlFor="postal_code">{t('common.postal_code', settings)}</Label>
               <Input
                 id="postal_code"
                 name="postal_code"
                 value={addressForm.postal_code || ''}
                 onChange={(e) => handleInputChange('postal_code', e.target.value)}
+                placeholder={t('common.postal_code', 'Postal code')}
                 required
               />
             </div>
           </div>
 
           <div>
-            <Label htmlFor="country">{t('common.country', settings)}</Label>
             <CountrySelect
               value={addressForm.country || ''}
               onValueChange={(value) => handleInputChange('country', value)}
               allowedCountries={settings?.allowed_countries}
+              placeholder={t('common.country', 'Country')}
             />
           </div>
 
           <div>
-            <Label htmlFor="email">{t('common.email', settings)}</Label>
             <Input
               id="email"
               name="email"
               type="email"
+              placeholder={t('common.email', 'Emailaddress')}
               value={addressForm.email || ''}
               onChange={(e) => handleInputChange('email', e.target.value)}
             />
