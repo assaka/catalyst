@@ -522,10 +522,17 @@ export default function Category() {
         });
       }
 
+      // Get translated attribute label for filter header
+      const attributeLabel = attr.translations?.[currentLang]?.label ||
+                            attr.translations?.en?.label ||
+                            attr.name ||
+                            attrCode;
+
       // Handle price attribute with slider filter type
       if (attrCode === 'price' && (attr.filter_type === 'slider' || attr.filter_input_type === 'slider')) {
         if (minPrice > 0 && maxPrice > 0) {
           filters[attrCode] = {
+            label: attributeLabel,
             min: minPrice,
             max: maxPrice,
             type: 'slider'
@@ -534,14 +541,17 @@ export default function Category() {
       }
       // Only include attributes that have values with count > 0
       else if (valueCountMap.size > 0) {
-        // Create the final filter array with counts, sorted alphabetically
-        filters[attrCode] = Array.from(valueCountMap.entries())
-          .sort(([a], [b]) => a.localeCompare(b))
-          .map(([valueLabel, count]) => ({
-            value: valueLabel,
-            label: valueLabel,
-            count
-          }));
+        // Create the final filter with translated label and options
+        filters[attrCode] = {
+          label: attributeLabel,
+          options: Array.from(valueCountMap.entries())
+            .sort(([a], [b]) => a.localeCompare(b))
+            .map(([valueLabel, count]) => ({
+              value: valueLabel,
+              label: valueLabel,
+              count
+            }))
+        };
       }
     });
     return filters;

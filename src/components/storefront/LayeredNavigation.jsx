@@ -11,6 +11,7 @@ import {
   AccordionTrigger,
 } from "@/components/ui/accordion";
 import { useTranslation } from '@/contexts/TranslationContext';
+import { getCurrentLanguage } from '@/utils/translationUtils';
 
 // Helper component to render editable slot elements in edit mode
 const EditableSlotElement = ({ slotKey, slot, onElementClick, children, className = "", style = {} }) => {
@@ -182,6 +183,7 @@ export default function LayeredNavigation({
             return {};
         }
 
+        const currentLang = getCurrentLanguage();
         const options = {};
         attributes.forEach(attr => {
             if (attr.is_filterable) {
@@ -268,8 +270,14 @@ export default function LayeredNavigation({
 
                     // Only include this attribute if it has values with products
                     if (valuesWithProducts.length > 0) {
+                        // Get translated attribute label
+                        const attributeLabel = attr.translations?.[currentLang]?.label ||
+                                             attr.translations?.en?.label ||
+                                             attr.name ||
+                                             attr.code;
+
                         options[attr.code] = {
-                            name: attr.name,
+                            name: attributeLabel,
                             values: valuesWithProducts
                         };
                     }
