@@ -1276,7 +1276,7 @@ export default function Checkout() {
         return isSectionVisible('shipping') && (
           <Card key="shipping-address" style={{ backgroundColor: checkoutSectionBgColor, borderColor: checkoutSectionBorderColor }}>
             <CardHeader>
-              <CardTitle style={{ color: checkoutSectionTitleColor, fontSize: checkoutSectionTitleSize }}>{t('checkout.shipping_address', 'Shipping Address')}</CardTitle>
+              <CardTitle style={{ color: checkoutSectionTitleColor, fontSize: checkoutSectionTitleSize }}>{t('common.shipping_address', 'Shipping Address')}</CardTitle>
             </CardHeader>
             <CardContent>
               {user && userAddresses.length > 0 ? (
@@ -1502,7 +1502,7 @@ export default function Checkout() {
         return isSectionVisible('billing') && (
           <Card key="billing-address" style={{ backgroundColor: checkoutSectionBgColor, borderColor: checkoutSectionBorderColor }}>
             <CardHeader>
-              <CardTitle style={{ color: checkoutSectionTitleColor, fontSize: checkoutSectionTitleSize }}>{t('checkout.billing_address', 'Billing Address')}</CardTitle>
+              <CardTitle style={{ color: checkoutSectionTitleColor, fontSize: checkoutSectionTitleSize }}>{t('common.billing_address', 'Billing Address')}</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
@@ -2020,13 +2020,13 @@ export default function Checkout() {
         const address = userAddresses.find(a => a.id === selectedShippingAddress);
         if (address) {
           items.push({
-            label: t('checkout.shipping_address'),
+            label: t('common.shipping_address'),
             value: `${address.full_name}, ${address.street}, ${address.city}, ${address.state} ${address.postal_code}, ${address.country}`
           });
         }
       } else if (shippingAddress.full_name) {
         items.push({
-          label: t('checkout.shipping_address'),
+          label: t('common.shipping_address'),
           value: `${shippingAddress.full_name}, ${shippingAddress.street}, ${shippingAddress.city}, ${shippingAddress.state} ${shippingAddress.postal_code}, ${shippingAddress.country}`
         });
       }
@@ -2034,7 +2034,7 @@ export default function Checkout() {
       // Billing address (if different from shipping)
       if (!useShippingForBilling && billingAddress.full_name) {
         items.push({
-          label: t('checkout.billing_address'),
+          label: t('common.billing_address'),
           value: `${billingAddress.full_name}, ${billingAddress.street}, ${billingAddress.city}, ${billingAddress.state} ${billingAddress.postal_code}, ${billingAddress.country}`
         });
       }

@@ -3,7 +3,7 @@ import React, { useState, useEffect, useCallback, Fragment } from "react";
 import { useParams, useSearchParams, Link, useNavigate } from "react-router-dom";
 import { createPageUrl } from "@/utils";
 import { buildProductBreadcrumbs } from "@/utils/breadcrumbUtils";
-import { getCategoryName as getTranslatedCategoryName, getProductName, getCurrentLanguage } from "@/utils/translationUtils";
+import { getCategoryName as getTranslatedCategoryName, getProductName, getCurrentLanguage, getTranslatedField } from "@/utils/translationUtils";
 import { useTranslation } from '@/contexts/TranslationContext';
 // Redirect handling moved to global RedirectHandler component
 import { useNotFound } from "@/utils/notFoundUtils";
@@ -500,7 +500,8 @@ export default function ProductDetail() {
 
       if (applicableRules.length > 0) {
         const rule = applicableRules[0];
-        setCustomOptionsLabel(rule.display_label || 'Custom Options');
+        const currentLang = getCurrentLanguage();
+        setCustomOptionsLabel(getTranslatedField(rule, 'display_label', currentLang) || 'Custom Options');
 
         // Parse optional_product_ids
         let productIds = [];

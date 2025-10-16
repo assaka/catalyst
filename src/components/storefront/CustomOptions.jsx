@@ -5,7 +5,7 @@ import { Badge } from '@/components/ui/badge';
 import { Check } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { formatPrice, safeNumber, formatPriceWithTax, getPriceDisplay } from '@/utils/priceUtils';
-import { getCurrentLanguage, getProductName, getProductShortDescription } from '@/utils/translationUtils';
+import { getCurrentLanguage, getProductName, getProductShortDescription, getTranslatedField } from '@/utils/translationUtils';
 
 export default function CustomOptions({ product, onSelectionChange, selectedOptions = [], store, settings }) {
     const [customOptions, setCustomOptions] = useState([]);
@@ -70,8 +70,8 @@ export default function CustomOptions({ product, onSelectionChange, selectedOpti
             const rule = applicableRules[0];
             console.log('🔍 Using rule:', rule.name, 'with product IDs:', rule.optional_product_ids);
 
-            // Get translated display label from translations JSON (no fallback)
-            const translatedLabel = rule.translations?.[currentLang]?.display_label || rule.translations?.en?.display_label || 'Custom Options';
+            // Get translated display label using standardized translation utility
+            const translatedLabel = getTranslatedField(rule, 'display_label', currentLang) || 'Custom Options';
             setDisplayLabel(translatedLabel);
 
             // Load the custom option products
