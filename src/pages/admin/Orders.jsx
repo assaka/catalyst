@@ -449,7 +449,7 @@ export default function Orders() {
                                           <div className="flex justify-between">
                                             <span className="text-gray-600">Payment Status:</span>
                                             <Badge className={order.payment_status === 'paid' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'}>
-                                              {order.payment_status || 'Pending'}
+                                              {order.payment_status ? order.payment_status.charAt(0).toUpperCase() + order.payment_status.slice(1) : 'Pending'}
                                             </Badge>
                                           </div>
                                         </div>

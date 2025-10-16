@@ -46,13 +46,14 @@ const Attribute = sequelize.define('Attribute', {
     type: DataTypes.ENUM('multiselect', 'slider', 'select'),
     allowNull: true
   },
-  options: {
-    type: DataTypes.JSON,
-    defaultValue: []
-  },
   file_settings: {
     type: DataTypes.JSON,
     defaultValue: {}
+  },
+  translations: {
+    type: DataTypes.JSON,
+    defaultValue: {},
+    comment: 'Multilingual attribute labels: {"en": {"label": "Brand", "description": "..."}, "nl": {...}}'
   },
   sort_order: {
     type: DataTypes.INTEGER,

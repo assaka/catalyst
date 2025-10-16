@@ -95,10 +95,6 @@ const Product = sequelize.define('Product', {
     type: DataTypes.JSON,
     defaultValue: []
   },
-  attributes: {
-    type: DataTypes.JSON,
-    defaultValue: {}
-  },
   seo: {
     type: DataTypes.JSON,
     defaultValue: {}

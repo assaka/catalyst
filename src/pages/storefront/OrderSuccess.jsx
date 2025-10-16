@@ -415,13 +415,13 @@ export default function OrderSuccess() {
                   <div className="flex justify-between">
                     <span className="text-gray-600">{t('common.status', settings)}:</span>
                     <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200">
-                      {order.status?.charAt(0).toUpperCase() + order.status?.slice(1)}
+                      {t(`order.status.${order.status || 'pending'}`, settings)}
                     </Badge>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-gray-600">{t('order.payment_status', settings)}:</span>
                     <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
-                      {order.payment_status?.charAt(0).toUpperCase() + order.payment_status?.slice(1)}
+                      {t(`order.payment_status.${order.payment_status || 'pending'}`, settings)}
                     </Badge>
                   </div>
                   <div className="flex justify-between">

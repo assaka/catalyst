@@ -4,6 +4,8 @@ const Product = require('./Product');
 const ProductVariant = require('./ProductVariant');
 const Category = require('./Category');
 const Attribute = require('./Attribute');
+const AttributeValue = require('./AttributeValue');
+const ProductAttributeValue = require('./ProductAttributeValue');
 const AttributeSet = require('./AttributeSet');
 const Order = require('./Order');
 const OrderItem = require('./OrderItem');
@@ -109,6 +111,18 @@ const defineAssociations = () => {
 
   // Attribute associations
   Attribute.belongsTo(Store, { foreignKey: 'store_id' });
+  Attribute.hasMany(AttributeValue, { foreignKey: 'attribute_id', as: 'values' });
+
+  // AttributeValue associations
+  AttributeValue.belongsTo(Attribute, { foreignKey: 'attribute_id' });
+
+  // ProductAttributeValue associations
+  ProductAttributeValue.belongsTo(Product, { foreignKey: 'product_id' });
+  ProductAttributeValue.belongsTo(Attribute, { foreignKey: 'attribute_id' });
+  ProductAttributeValue.belongsTo(AttributeValue, { foreignKey: 'value_id', as: 'value' });
+
+  // Product attribute values
+  Product.hasMany(ProductAttributeValue, { foreignKey: 'product_id', as: 'attributeValues' });
 
   // AttributeSet associations
   AttributeSet.belongsTo(Store, { foreignKey: 'store_id' });
@@ -306,6 +320,8 @@ module.exports = {
   ProductVariant,
   Category,
   Attribute,
+  AttributeValue,
+  ProductAttributeValue,
   AttributeSet,
   Order,
   OrderItem,
