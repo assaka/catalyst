@@ -555,11 +555,11 @@ export default function Attributes() {
                           <p className="text-sm font-medium text-gray-700 mb-1">Options:</p>
                           <div className="flex flex-wrap gap-1">
                             {/* Show message to add options if none exist */}
-                            {(!attribute.values || attribute.values.length === 0) && (!attribute.options || attribute.options.length === 0) && (
+                            {(!attribute.values || attribute.values.length === 0) && (
                               <span className="text-xs text-gray-400 italic">No options yet</span>
                             )}
 
-                            {/* Display attribute values (new format) */}
+                            {/* Display attribute values */}
                             {attribute.values && attribute.values.length > 0 && (
                               <>
                                 {attribute.values.slice(0, 3).map((value) => (
@@ -570,22 +570,6 @@ export default function Attributes() {
                                 {attribute.values.length > 3 && (
                                   <Badge variant="outline" className="text-xs">
                                     +{attribute.values.length - 3} more
-                                  </Badge>
-                                )}
-                              </>
-                            )}
-
-                            {/* Display old options format (backward compatibility) */}
-                            {(!attribute.values || attribute.values.length === 0) && attribute.options && attribute.options.length > 0 && (
-                              <>
-                                {attribute.options.slice(0, 3).map((option, index) => (
-                                  <Badge key={index} variant="outline" className="text-xs">
-                                    {option.label}
-                                  </Badge>
-                                ))}
-                                {attribute.options.length > 3 && (
-                                  <Badge variant="outline" className="text-xs">
-                                    +{attribute.options.length - 3} more
                                   </Badge>
                                 )}
                               </>

@@ -11,11 +11,13 @@ import {
 } from "@/components/ui/select";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Switch } from "@/components/ui/switch";
-import { X, Plus, Wand2, Trash2 } from "lucide-react";
+import { X, Plus, Wand2, Trash2, ChevronDown, ChevronUp, Languages } from "lucide-react";
 import AttributeValueTranslations from "./AttributeValueTranslations";
 import api from "@/utils/api";
+import { useTranslation } from "@/contexts/TranslationContext";
 
 export default function AttributeForm({ attribute, onSubmit, onCancel }) {
+  const { availableLanguages } = useTranslation();
   const [formData, setFormData] = useState({
     name: "",
     code: "",
@@ -29,41 +31,30 @@ export default function AttributeForm({ attribute, onSubmit, onCancel }) {
       allowed_extensions: ["pdf", "doc", "docx", "txt", "png", "jpg"],
       max_file_size: 5,
     },
+    translations: {},
     store_id: "", // This will be set on the server-side or from a context
   });
   const [attributeValues, setAttributeValues] = useState([]);
   const [loading, setLoading] = useState(false);
   const [newValueCode, setNewValueCode] = useState("");
   const [newValueLabel, setNewValueLabel] = useState("");
-  const [aiTranslating, setAiTranslating] = useState(false);
   const [nextTempId, setNextTempId] = useState(1);
+  const [showTranslations, setShowTranslations] = useState(false);
 
   useEffect(() => {
     if (attribute) {
       setFormData({
         ...attribute,
+        translations: attribute.translations || {},
         file_settings: attribute.file_settings || {
           allowed_extensions: ["pdf", "doc", "docx", "txt", "png", "jpg"],
           max_file_size: 5,
         },
       });
 
-      // Load attribute values (from backend or convert old options format)
+      // Load attribute values
       if (attribute.values && Array.isArray(attribute.values)) {
         setAttributeValues(attribute.values);
-      } else if (attribute.options && Array.isArray(attribute.options)) {
-        // Convert old options format to new attribute values format
-        const convertedValues = attribute.options.map((opt, index) => ({
-          tempId: `temp-${index}`,
-          code: opt.value,
-          sort_order: index,
-          translations: {
-            en: {
-              label: opt.label
-            }
-          }
-        }));
-        setAttributeValues(convertedValues);
       }
     }
   }, [attribute]);
@@ -71,7 +62,18 @@ export default function AttributeForm({ attribute, onSubmit, onCancel }) {
   const handleInputChange = (field, value) => {
     setFormData((prev) => {
       const newData = { ...prev, [field]: value };
-      
+
+      // Bi-directional syncing: When changing attribute name, also update English translation
+      if (field === 'name') {
+        newData.translations = {
+          ...prev.translations,
+          en: {
+            ...(prev.translations.en || {}),
+            name: value
+          }
+        };
+      }
+
       // Auto-configure file settings when switching to image type
       if (field === 'type' && value === 'image') {
         newData.file_settings = {
@@ -86,7 +88,7 @@ export default function AttributeForm({ attribute, onSubmit, onCancel }) {
           max_file_size: 5,
         };
       }
-      
+
       return newData;
     });
   };
@@ -129,45 +131,27 @@ export default function AttributeForm({ attribute, onSubmit, onCancel }) {
     }));
   };
 
-  // AI translate a single value
-  const handleAiTranslateValue = async (valueId, toLang) => {
-    const value = attributeValues.find(v => (v.id || v.tempId) === valueId);
-    if (!value) return;
-
-    const enLabel = value.translations?.en?.label || '';
-    if (!enLabel) {
-      console.warn('No English label to translate');
-      return;
-    }
-
-    try {
-      setAiTranslating(true);
-      const response = await api.post('/api/translations/ai-translate', {
-        text: enLabel,
-        fromLang: 'en',
-        toLang: toLang
-      });
-
-      if (response.success) {
-        const updatedTranslations = {
-          ...value.translations,
-          [toLang]: {
-            label: response.data.translatedText
+  // Update attribute name translations
+  const handleAttributeTranslationChange = (langCode, value) => {
+    setFormData(prev => {
+      const newData = {
+        ...prev,
+        translations: {
+          ...prev.translations,
+          [langCode]: {
+            ...(prev.translations[langCode] || {}),
+            name: value
           }
-        };
-        handleValueTranslationChange(valueId, updatedTranslations);
-      }
-    } catch (error) {
-      console.error('AI translation failed:', error);
-    } finally {
-      setAiTranslating(false);
-    }
-  };
+        }
+      };
 
-  // Bulk AI translate all values for all missing languages
-  const handleBulkAiTranslate = async () => {
-    // Implementation for bulk translation
-    console.log('Bulk AI translate triggered');
+      // Bi-directional syncing: If editing English translation, also update main name field
+      if (langCode === 'en') {
+        newData.name = value;
+      }
+
+      return newData;
+    });
   };
 
   const handleFileSettingsChange = (field, value) => {
@@ -251,6 +235,54 @@ export default function AttributeForm({ attribute, onSubmit, onCancel }) {
                 placeholder="e.g., Color, Size"
                 required
               />
+
+              {/* Manage Translation Section */}
+              <button
+                type="button"
+                onClick={() => setShowTranslations(!showTranslations)}
+                className="flex items-center gap-2 text-sm text-blue-600 hover:text-blue-700 mt-2"
+              >
+                <Languages className="w-4 h-4" />
+                Manage Translations
+                {showTranslations ? (
+                  <ChevronUp className="w-4 h-4" />
+                ) : (
+                  <ChevronDown className="w-4 h-4" />
+                )}
+              </button>
+
+              {showTranslations && (
+                <div className="mt-3 space-y-2 p-3 bg-gray-50 border border-gray-200 rounded-lg">
+                  {availableLanguages.map((lang) => {
+                    const isRTL = lang.is_rtl || false;
+                    const value = lang.code === 'en'
+                      ? formData.name
+                      : (formData.translations[lang.code]?.name || '');
+
+                    return (
+                      <div key={lang.code} className="flex items-center gap-3">
+                        <label className="text-sm font-medium text-gray-700 w-16 flex-shrink-0">
+                          {lang.code === 'en' ? 'En' : lang.code === 'nl' ? 'NL' : lang.code.toUpperCase()}
+                        </label>
+                        <Input
+                          type="text"
+                          value={value}
+                          onChange={(e) => {
+                            if (lang.code === 'en') {
+                              handleInputChange('name', e.target.value);
+                            } else {
+                              handleAttributeTranslationChange(lang.code, e.target.value);
+                            }
+                          }}
+                          dir={isRTL ? 'rtl' : 'ltr'}
+                          className={`flex-1 h-9 text-sm ${isRTL ? 'text-right' : 'text-left'}`}
+                          placeholder={lang.code === 'en' ? 'Attribute name' : (formData.name || `${lang.native_name} translation`)}
+                        />
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
             </div>
             <div>
               <Label htmlFor="code">Attribute Code *</Label>
@@ -357,52 +389,24 @@ export default function AttributeForm({ attribute, onSubmit, onCancel }) {
 
       {(formData.type === "select" || formData.type === "multiselect") && (
         <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
-            <div>
-              <CardTitle>Attribute Options & Translations</CardTitle>
-              <p className="text-sm text-gray-500 mt-1">
-                Manage options with multi-language support
-              </p>
-            </div>
-            {attributeValues.length > 0 && (
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                onClick={handleBulkAiTranslate}
-                disabled={aiTranslating}
-              >
-                <Wand2 className="w-4 h-4 mr-2" />
-                AI Translate All
-              </Button>
-            )}
+          <CardHeader>
+            <CardTitle>Attribute Options & Translations</CardTitle>
+            <p className="text-sm text-gray-500 mt-1">
+              Manage options with multi-language support
+            </p>
           </CardHeader>
           <CardContent className="space-y-3">
             {/* Existing attribute values with translations */}
             {attributeValues.map((value) => (
-              <div key={value.id || value.tempId} className="space-y-2">
-                <div className="flex items-center gap-2">
-                  <div className="flex-1">
-                    <AttributeValueTranslations
-                      attributeValue={{
-                        ...value,
-                        label: value.translations?.en?.label || value.code
-                      }}
-                      onTranslationChange={handleValueTranslationChange}
-                      onAiTranslate={handleAiTranslateValue}
-                    />
-                  </div>
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => removeAttributeValue(value.id || value.tempId)}
-                    className="text-red-600 hover:text-red-700 hover:bg-red-50"
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </Button>
-                </div>
-              </div>
+              <AttributeValueTranslations
+                key={value.id || value.tempId}
+                attributeValue={{
+                  ...value,
+                  label: value.translations?.en?.label || value.code
+                }}
+                onTranslationChange={handleValueTranslationChange}
+                onDelete={removeAttributeValue}
+              />
             ))}
 
             {/* Add new option */}
