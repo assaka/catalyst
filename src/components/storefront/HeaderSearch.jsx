@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { formatPrice, safeNumber } from '@/utils/priceUtils';
 import { useTranslation } from '@/contexts/TranslationContext';
+import { getProductName, getProductShortDescription, getCurrentLanguage } from '@/utils/translationUtils';
 
 export default function HeaderSearch({ styles = {} }) {
   const navigate = useNavigate();
@@ -55,9 +56,31 @@ export default function HeaderSearch({ styles = {} }) {
 
       setLoading(true);
       try {
-        const products = await StorefrontProduct.search(searchQuery, { limit: 5 });
+        // Get products from backend search
+        const products = await StorefrontProduct.list('-created_date', 50);
 
-        setSearchResults(products);
+        // Filter by search query including translations
+        const searchLower = searchQuery.toLowerCase();
+        const currentLang = getCurrentLanguage();
+
+        const filteredProducts = products.filter(product => {
+          // Search in direct fields
+          const matchesDirectFields =
+            product.name?.toLowerCase().includes(searchLower) ||
+            product.sku?.toLowerCase().includes(searchLower) ||
+            product.short_description?.toLowerCase().includes(searchLower);
+
+          // Search in translated fields
+          const translatedName = getProductName(product, currentLang);
+          const translatedDescription = getProductShortDescription(product, currentLang);
+          const matchesTranslations =
+            translatedName?.toLowerCase().includes(searchLower) ||
+            translatedDescription?.toLowerCase().includes(searchLower);
+
+          return matchesDirectFields || matchesTranslations;
+        });
+
+        setSearchResults(filteredProducts.slice(0, 5));
         setShowResults(true);
       } catch (error) {
         console.error("Error searching products:", error);
@@ -135,24 +158,28 @@ export default function HeaderSearch({ styles = {} }) {
               </div>
             ) : searchResults.length > 0 ? (
               <div className="max-h-80 overflow-y-auto">
-                {searchResults.map((product) => (
-                  <div
-                    key={product.id}
-                    onClick={() => handleProductClick(product)}
-                    className="flex items-center p-3 hover:bg-gray-50 cursor-pointer border-b last:border-b-0"
-                  >
-                    <img
-                      src={product.images?.[0] || 'https://placehold.co/40x40?text=No+Image'}
-                      alt={product.name}
-                      className="w-10 h-10 object-cover rounded-md mr-3"
-                    />
-                    <div className="flex-1 min-w-0">
-                      <h3 className="text-sm font-medium text-gray-900 truncate">
-                        {product.name}
-                      </h3>
-                      <p className="text-xs text-gray-500 truncate">
-                        SKU: {product.sku}
-                      </p>
+                {searchResults.map((product) => {
+                  const currentLang = getCurrentLanguage();
+                  const displayName = getProductName(product, currentLang) || product.name;
+
+                  return (
+                    <div
+                      key={product.id}
+                      onClick={() => handleProductClick(product)}
+                      className="flex items-center p-3 hover:bg-gray-50 cursor-pointer border-b last:border-b-0"
+                    >
+                      <img
+                        src={product.images?.[0] || 'https://placehold.co/40x40?text=No+Image'}
+                        alt={displayName}
+                        className="w-10 h-10 object-cover rounded-md mr-3"
+                      />
+                      <div className="flex-1 min-w-0">
+                        <h3 className="text-sm font-medium text-gray-900 truncate">
+                          {displayName}
+                        </h3>
+                        <p className="text-xs text-gray-500 truncate">
+                          SKU: {product.sku}
+                        </p>
                       <p className="text-sm font-semibold text-gray-900">
                         {product.compare_price && safeNumber(product.compare_price) > 0 && safeNumber(product.compare_price) !== safeNumber(product.price) ? (
                           <>
@@ -173,8 +200,9 @@ export default function HeaderSearch({ styles = {} }) {
                       </p>
                     </div>
                   </div>
-                ))}
-                
+                  );
+                })}
+
                 {searchResults.length > 0 && (
                   <div className="p-3 bg-gray-50 border-t">
                     <Button
