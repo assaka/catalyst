@@ -11,8 +11,8 @@ class TranslationService {
       attributes: ['key', 'value', 'category', 'type']
     });
 
-    // Convert to nested object structure
-    // e.g., "common.home" becomes { common: { home: "Home" } }
+    // Return FLAT structure with dotted keys
+    // e.g., "common.home": "Home", "order.your_orders": "Your Orders"
     const labels = {};
     const customKeys = [];
 
@@ -22,35 +22,8 @@ class TranslationService {
         customKeys.push(t.key);
       }
 
-      const keys = t.key.split('.');
-      let current = labels;
-
-      for (let i = 0; i < keys.length - 1; i++) {
-        const key = keys[i];
-
-        // If current[key] is a string, it means we have a conflict
-        // (e.g., both "checkout" and "checkout.cart" exist)
-        // In this case, skip nested keys and only keep the top-level string
-        if (typeof current[key] === 'string') {
-          console.warn(`Translation key conflict: "${t.key}" conflicts with existing key "${keys.slice(0, i + 1).join('.')}"`);
-          return; // Skip this nested key
-        }
-
-        if (!current[key] || typeof current[key] !== 'object') {
-          current[key] = {};
-        }
-        current = current[key];
-      }
-
-      const lastKey = keys[keys.length - 1];
-
-      // Only set if it won't overwrite an existing object with nested keys
-      if (typeof current[lastKey] === 'object' && Object.keys(current[lastKey]).length > 0) {
-        console.warn(`Translation key conflict: Cannot set "${t.key}" because it would overwrite nested keys`);
-        return;
-      }
-
-      current[lastKey] = t.value;
+      // Keep the dotted key structure flat
+      labels[t.key] = t.value;
     });
 
     return { labels, customKeys };
