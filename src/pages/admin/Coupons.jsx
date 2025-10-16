@@ -99,24 +99,42 @@ export default function CouponsPage() {
       setFlashMessage({ type: 'error', message: 'Cannot save coupon: No store selected.' });
       return;
     }
-    
+
+    console.log('🐛 Coupons.jsx handleSubmit - Received coupon data:', {
+      code: couponData.code,
+      name: couponData.name,
+      fullData: couponData
+    });
+
     try {
       if (editingCoupon) {
         // Update existing coupon
+        console.log('🐛 Updating coupon ID:', editingCoupon.id, 'with code:', couponData.code);
         await Coupon.update(editingCoupon.id, { ...couponData, store_id: storeId });
         setFlashMessage({ type: 'success', message: 'Coupon updated successfully!' });
       } else {
         // Create new coupon
-        await Coupon.create({ ...couponData, store_id: storeId });
-        setFlashMessage({ type: 'success', message: 'Coupon created successfully!' });
+        console.log('🐛 Creating new coupon with code:', couponData.code);
+        const result = await Coupon.create({ ...couponData, store_id: storeId });
+        console.log('🐛 Coupon created successfully:', result);
+        setFlashMessage({ type: 'success', message: `Coupon "${couponData.code}" created successfully!` });
       }
-      
+
       await loadData();
       setShowForm(false);
       setEditingCoupon(null);
     } catch (error) {
       console.error(`Error ${editingCoupon ? 'updating' : 'creating'} coupon:`, error);
-      setFlashMessage({ type: 'error', message: `Failed to ${editingCoupon ? 'update' : 'create'} coupon` });
+
+      // More detailed error messages
+      let errorMessage = `Failed to ${editingCoupon ? 'update' : 'create'} coupon`;
+      if (error.response?.data?.error) {
+        errorMessage += `: ${error.response.data.error}`;
+      } else if (error.message) {
+        errorMessage += `: ${error.message}`;
+      }
+
+      setFlashMessage({ type: 'error', message: errorMessage });
     }
   };
 

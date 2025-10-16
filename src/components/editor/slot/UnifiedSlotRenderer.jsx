@@ -142,7 +142,7 @@ import { GridColumn } from '@/components/editor/slot/SlotComponents';
 import { processVariables, generateDemoData } from '@/utils/variableProcessor';
 import { executeScript, executeHandler } from '@/utils/scriptHandler';
 import { ComponentRegistry } from './SlotComponentRegistry';
-import { createProductUrl, getStoreBaseUrl } from '@/utils/urlUtils';
+import { createProductUrl, getStoreBaseUrl, createPublicUrl } from '@/utils/urlUtils';
 import cartService from '@/services/cartService';
 import { headerConfig } from '@/components/editor/slot/configs/header-config';
 import { CmsBlock } from '@/api/entities';
