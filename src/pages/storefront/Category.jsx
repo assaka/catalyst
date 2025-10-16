@@ -492,6 +492,11 @@ export default function Category() {
     filterableAttributes.forEach(attr => {
       const attrCode = attr.code || attr.name || attr.attribute_name;
 
+      // Skip attributes that shouldn't be displayed as filters
+      // (even if marked as filterable, they're used for other purposes)
+      const excludedAttributes = ['name', 'price', 'sku', 'description', 'image'];
+      if (excludedAttributes.includes(attrCode)) return;
+
       // Extract values from products only (dynamic from DB)
       const valueCountMap = new Map(); // Map<value, count>
 
@@ -505,14 +510,14 @@ export default function Category() {
           const matchingAttr = productAttributes.find(pAttr => pAttr.code === attrCode);
           if (!matchingAttr || !matchingAttr.value) return;
 
-          // Use the translated label from the product attribute (already translated by API)
-          const attributeValue = matchingAttr.value;
-          const attributeLabel = matchingAttr.label || matchingAttr.value;
+          // IMPORTANT: In the API response:
+          // - matchingAttr.label = ATTRIBUTE label (e.g., "Kleur", "Manufacturer")
+          // - matchingAttr.value = VALUE label (e.g., "Overig", "Samsung")
+          // For filters, we want to display the VALUE label
+          const valueLabel = String(matchingAttr.value);
 
-          if (attributeValue !== undefined && attributeValue !== null && attributeValue !== '') {
-            const valueStr = String(attributeValue);
-            const labelStr = String(attributeLabel);
-            valueCountMap.set(valueStr, { label: labelStr, count: (valueCountMap.get(valueStr)?.count || 0) + 1 });
+          if (valueLabel && valueLabel !== '') {
+            valueCountMap.set(valueLabel, (valueCountMap.get(valueLabel) || 0) + 1);
           }
         });
       }
@@ -532,10 +537,10 @@ export default function Category() {
         // Create the final filter array with counts, sorted alphabetically
         filters[attrCode] = Array.from(valueCountMap.entries())
           .sort(([a], [b]) => a.localeCompare(b))
-          .map(([value, data]) => ({
-            value,
-            label: data.label, // Use translated label from product attributes
-            count: data.count
+          .map(([valueLabel, count]) => ({
+            value: valueLabel,
+            label: valueLabel,
+            count
           }));
       }
     });
