@@ -1354,7 +1354,7 @@ export default function Checkout() {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
                   <div className="md:col-span-2">
                     <Input
-                      placeholder={t('checkout.email_placeholder', 'Email')}
+                      placeholder={t('account.email', 'Email')}
                       type="email"
                       required
                       value={shippingAddress.email}
@@ -1369,7 +1369,7 @@ export default function Checkout() {
                     )}
                   </div>
                   <Input
-                    placeholder={t('checkout.full_name_placeholder', 'Full Name')}
+                    placeholder={t('account.full_name', 'Full Name')}
                     className={`md:col-span-2 ${shippingErrors.full_name ? 'border-red-500' : ''}`}
                     required
                     value={shippingAddress.full_name}
@@ -1380,7 +1380,7 @@ export default function Checkout() {
                   />
                   {showPhoneField && (
                     <Input
-                      placeholder={t('checkout.phone_number_placeholder', 'Phone Number')}
+                      placeholder={t('account.phone_number', 'Phone Number')}
                       type="tel"
                       className={`md:col-span-2 ${shippingErrors.phone ? 'border-red-500' : ''}`}
                       required
@@ -1392,7 +1392,7 @@ export default function Checkout() {
                     />
                   )}
                   <Input
-                    placeholder={t('checkout.street_address_placeholder', 'Street Address')}
+                    placeholder={t('account.street', 'Street Address')}
                     className={`md:col-span-2 ${shippingErrors.street ? 'border-red-500' : ''}`}
                     required
                     value={shippingAddress.street}
@@ -1402,7 +1402,7 @@ export default function Checkout() {
                     }}
                   />
                   <Input
-                    placeholder={t('checkout.city_placeholder', 'City')}
+                    placeholder={t('account.city', 'City')}
                     className={shippingErrors.city ? 'border-red-500' : ''}
                     required
                     value={shippingAddress.city}
@@ -1412,7 +1412,7 @@ export default function Checkout() {
                     }}
                   />
                   <Input
-                    placeholder={t('checkout.state_province_placeholder', 'State / Province')}
+                    placeholder={t('account.state_province', 'State / Province')}
                     className={shippingErrors.state ? 'border-red-500' : ''}
                     required
                     value={shippingAddress.state}
@@ -1422,7 +1422,7 @@ export default function Checkout() {
                     }}
                   />
                   <Input
-                    placeholder={t('checkout.postal_code_placeholder', 'Postal Code')}
+                    placeholder={t('account.postal_code', 'Postal Code')}
                     className={shippingErrors.postal_code ? 'border-red-500' : ''}
                     required
                     value={shippingAddress.postal_code}
@@ -1437,7 +1437,7 @@ export default function Checkout() {
                       setShippingAddress(prev => ({ ...prev, country }));
                       setShippingErrors(prev => ({ ...prev, country: false }));
                     }}
-                    placeholder={t('checkout.select_country_placeholder', 'Select Country')}
+                    placeholder={t('account.country', 'Select Country')}
                     allowedCountries={settings?.allowed_countries}
                     required
                     className={shippingErrors.country ? 'border-red-500' : ''}
@@ -1575,7 +1575,7 @@ export default function Checkout() {
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div className="md:col-span-2">
                           <Input
-                            placeholder={t('checkout.email_placeholder', 'Email')}
+                            placeholder={t('account.email', 'Email')}
                             type="email"
                             required
                             value={billingAddress.email}
@@ -1590,7 +1590,7 @@ export default function Checkout() {
                           )}
                         </div>
                         <Input
-                          placeholder={t('checkout.full_name_placeholder', 'Full Name')}
+                          placeholder={t('account.full_name', 'Full Name')}
                           className={`md:col-span-2 ${billingErrors.full_name ? 'border-red-500' : ''}`}
                           required
                           value={billingAddress.full_name}
@@ -1601,7 +1601,7 @@ export default function Checkout() {
                         />
                         {showPhoneField && (
                           <Input
-                            placeholder={t('checkout.phone_number_placeholder', 'Phone Number')}
+                            placeholder={t('account.phone_number', 'Phone Number')}
                             type="tel"
                             className={`md:col-span-2 ${billingErrors.phone ? 'border-red-500' : ''}`}
                             required
@@ -1613,7 +1613,7 @@ export default function Checkout() {
                           />
                         )}
                         <Input
-                          placeholder={t('checkout.street_address_placeholder', 'Street Address')}
+                          placeholder={t('account.street', 'Street Address')}
                           className={`md:col-span-2 ${billingErrors.street ? 'border-red-500' : ''}`}
                           required
                           value={billingAddress.street}
@@ -1623,7 +1623,7 @@ export default function Checkout() {
                           }}
                         />
                         <Input
-                          placeholder={t('checkout.city_placeholder', 'City')}
+                          placeholder={t('account.city', 'City')}
                           className={billingErrors.city ? 'border-red-500' : ''}
                           required
                           value={billingAddress.city}
@@ -1633,7 +1633,7 @@ export default function Checkout() {
                           }}
                         />
                         <Input
-                          placeholder={t('checkout.state_province_placeholder', 'State / Province')}
+                          placeholder={t('account.state_province', 'State / Province')}
                           className={billingErrors.state ? 'border-red-500' : ''}
                           required
                           value={billingAddress.state}
@@ -1643,7 +1643,7 @@ export default function Checkout() {
                           }}
                         />
                         <Input
-                          placeholder={t('checkout.postal_code_placeholder', 'Postal Code')}
+                          placeholder={t('account.postal_code', 'Postal Code')}
                           className={billingErrors.postal_code ? 'border-red-500' : ''}
                           required
                           value={billingAddress.postal_code}
@@ -1658,7 +1658,7 @@ export default function Checkout() {
                             setBillingAddress(prev => ({ ...prev, country }));
                             setBillingErrors(prev => ({ ...prev, country: false }));
                           }}
-                          placeholder={t('checkout.select_country_placeholder', 'Select Country')}
+                          placeholder={t('account.country', 'Select Country')}
                           allowedCountries={settings?.allowed_countries}
                           required
                           className={billingErrors.country ? 'border-red-500' : ''}

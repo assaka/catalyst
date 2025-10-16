@@ -264,15 +264,6 @@ export default function ProductTabs({ productTabs = [], product = null, settings
   // Only include theme settings to avoid passing large translation objects
   const themeSettings = settings?.theme || {};
 
-  // Debug: Log theme settings to verify they're being passed
-  console.log('🎨 ProductTabs theme settings:', {
-    product_tabs_title_color: themeSettings?.product_tabs_title_color,
-    product_tabs_title_size: themeSettings?.product_tabs_title_size,
-    product_tabs_content_bg: themeSettings?.product_tabs_content_bg,
-    product_tabs_attribute_label_color: themeSettings?.product_tabs_attribute_label_color,
-    fullThemeKeys: Object.keys(themeSettings)
-  });
-
   const variableContext = {
     tabs: tabsData,
     product,
@@ -281,25 +272,7 @@ export default function ProductTabs({ productTabs = [], product = null, settings
     }
   };
 
-  console.log('🔧 Full variableContext:', {
-    tabs: tabsData.map(t => ({ id: t.id, isActive: t.isActive })),
-    hasProduct: !!product,
-    settingsStructure: {
-      hasSettings: !!variableContext.settings,
-      hasTheme: !!variableContext.settings?.theme,
-      themeKeys: Object.keys(variableContext.settings?.theme || {}),
-      product_tabs_title_color: variableContext.settings?.theme?.product_tabs_title_color
-    }
-  });
-
-  console.log('📝 Template BEFORE processing:', {
-    hasColorVariable: template.includes('settings.theme.product_tabs_title_color'),
-    templateSnippet: template.substring(template.indexOf('{{#each tabs}}'), template.indexOf('{{#each tabs}}') + 400)
-  });
-
   const html = processVariables(template, variableContext);
-
-  console.log('🔍 Processed HTML sample:', html.substring(0, 800));
 
   return (
     <div ref={containerRef} className={`product-tabs ${className}`}

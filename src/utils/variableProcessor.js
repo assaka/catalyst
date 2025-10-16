@@ -609,11 +609,6 @@ function processLoops(content, context, pageData, depth = 0) {
         // Process conditionals with item context
         itemContent = processConditionals(itemContent, context, itemContext);
 
-        // DEBUG: Check if variables survived conditional processing
-        if (itemContent.includes('settings.theme.product_tabs_title_color')) {
-          console.log('⚠️  [After conditionals] Variable still present:', itemContent.substring(0, 300));
-        }
-
         // Process nested loops recursively
         itemContent = processLoops(itemContent, context, itemContext, depth + 1);
 
@@ -624,16 +619,6 @@ function processLoops(content, context, pageData, depth = 0) {
         // Process simple variables - pass full merged context
         // CRITICAL: Pass itemContext as BOTH context and pageData to ensure settings are accessible
         const finalContent = processSimpleVariables(itemContent, itemContext, {});
-
-        // DEBUG: Check final result
-        if (finalContent.includes('product_tabs_title_color') || (typeof item?.id === 'string' && item.id.includes('7aef'))) {
-          console.log('🎯 [Final result] for tab:', {
-            itemId: item?.id,
-            hasVariable: finalContent.includes('{{settings'),
-            colorApplied: finalContent.includes('#DC2626'),
-            preview: finalContent.substring(0, 200)
-          });
-        }
 
         return finalContent;
       }).join('');
