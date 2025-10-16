@@ -76,7 +76,7 @@ export default function CustomOptions({ product, onSelectionChange, selectedOpti
                         if (productId === product.id) {
                             continue;
                         }
-                        
+
                         try {
                             const products = await StorefrontProduct.filter({
                                 id: productId,
@@ -84,6 +84,14 @@ export default function CustomOptions({ product, onSelectionChange, selectedOpti
                             });
                             if (products && products.length > 0) {
                                 const customOptionProduct = products[0];
+
+                                console.log('🔍 Custom Option Product Data:', {
+                                    id: customOptionProduct.id,
+                                    name: customOptionProduct.name,
+                                    translations: customOptionProduct.translations,
+                                    attributes: customOptionProduct.attributes,
+                                    short_description: customOptionProduct.short_description
+                                });
 
                                 // Only include if it's marked as a custom option
                                 if (!customOptionProduct.is_custom_option) {
