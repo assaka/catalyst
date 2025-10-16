@@ -86,17 +86,13 @@ const Category = sequelize.define('Category', {
   tableName: 'categories',
   hooks: {
     beforeCreate: (category) => {
+      // Only generate slug on creation if not provided
       if (!category.slug && category.translations && category.translations.en && category.translations.en.name) {
         category.slug = category.translations.en.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
       }
-    },
-    beforeUpdate: (category) => {
-      if (category.changed('translations') && !category.changed('slug')) {
-        if (category.translations && category.translations.en && category.translations.en.name) {
-          category.slug = category.translations.en.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
-        }
-      }
     }
+    // URL key (slug) is preserved when updating translations
+    // It can only be changed by explicitly updating the slug field
   }
 });
 

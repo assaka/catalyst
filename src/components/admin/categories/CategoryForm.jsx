@@ -374,18 +374,8 @@ export default function CategoryForm({ category, onSubmit, onCancel, parentCateg
                 name: newTranslations.en?.name || prev.name,
                 description: newTranslations.en?.description || prev.description
               }));
-              // Auto-update slug from English name if not manually edited
-              if (!isEditingSlug && newTranslations.en && newTranslations.en.name) {
-                const generatedSlug = newTranslations.en.name.toLowerCase()
-                  .replace(/[^a-z0-9]+/g, '-')
-                  .replace(/(^-|-$)/g, '');
-                setFormData(prev => ({ ...prev, slug: generatedSlug }));
-
-                // Check if this is an edit and slug will change
-                if (category && originalSlug && generatedSlug !== originalSlug) {
-                  setShowSlugChangeWarning(true);
-                }
-              }
+              // URL key is preserved when adding translations
+              // It can only be changed manually by enabling slug editing
             }}
             fields={[
               { name: 'name', label: 'Category Name', type: 'text', required: true },
