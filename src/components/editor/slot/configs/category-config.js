@@ -872,7 +872,9 @@ export const categoryConfig = {
                 <button class="w-full text-white border-0 transition-colors duration-200 px-4 py-2 rounded-md text-sm font-medium flex items-center justify-center gap-2"
                         style="background-color: {{settings.theme.add_to_cart_button_color}};"
                         data-action="add-to-cart"
-                        data-product-id="{{this.id}}">
+                        data-product-id="{{this.id}}"
+                        data-product-name="{{this.name}}"
+                        data-product-price="{{this.price}}">
                   <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"></path>
                   </svg>
@@ -885,6 +887,104 @@ export const categoryConfig = {
               {{/if}}
             </div>
           {{/each}}
+      `,
+      script: `
+        // Handle add to cart clicks for all product cards
+        const buttons = element.querySelectorAll('[data-action="add-to-cart"]');
+        const cleanupFunctions = [];
+
+        buttons.forEach(button => {
+          const handleClick = async (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+
+            const productId = parseInt(button.getAttribute('data-product-id'));
+            const productName = button.getAttribute('data-product-name');
+            const productPrice = parseFloat(button.getAttribute('data-product-price') || 0);
+
+            // Get store from categoryData
+            const store = categoryContext?.store;
+
+            if (!productId || !store?.id) {
+              console.error('Missing product or store data');
+              return;
+            }
+
+            try {
+              // Use fetch API to call cart endpoint directly
+              const baseURL = window.location.origin.includes('localhost')
+                ? 'http://localhost:10000'
+                : 'https://catalyst-backend-fzhu.onrender.com';
+
+              const sessionId = localStorage.getItem('guest_session_id') ||
+                'guest_' + Math.random().toString(36).substring(2) + Date.now().toString(36);
+              localStorage.setItem('guest_session_id', sessionId);
+
+              const response = await fetch(baseURL + '/api/cart', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                  store_id: store.id,
+                  product_id: productId,
+                  quantity: 1,
+                  price: productPrice,
+                  selected_options: [],
+                  session_id: sessionId
+                })
+              });
+
+              const result = await response.json();
+
+              if (result.success) {
+                // Dispatch cart update event
+                window.dispatchEvent(new CustomEvent('cartUpdated', {
+                  detail: {
+                    action: 'add_from_category',
+                    timestamp: Date.now(),
+                    source: 'category.addToCart'
+                  }
+                }));
+
+                // Track add to cart event
+                if (window.catalyst?.trackAddToCart) {
+                  window.catalyst.trackAddToCart({ id: productId, name: productName, price: productPrice }, 1);
+                }
+
+                // Show success message
+                const successMessage = variableContext?.settings?.ui_translations?.[localStorage.getItem('catalyst_language') || 'en']?.['common.added_to_cart_success']
+                  || variableContext?.settings?.ui_translations?.en?.['common.added_to_cart_success']
+                  || ' added to cart successfully!';
+                window.dispatchEvent(new CustomEvent('showFlashMessage', {
+                  detail: {
+                    type: 'success',
+                    message: productName + successMessage
+                  }
+                }));
+              } else {
+                throw new Error(result.error || 'Failed to add to cart');
+              }
+            } catch (error) {
+              console.error('Failed to add to cart:', error);
+              const errorMessage = variableContext?.settings?.ui_translations?.[localStorage.getItem('catalyst_language') || 'en']?.['common.added_to_cart_error']
+                || variableContext?.settings?.ui_translations?.en?.['common.added_to_cart_error']
+                || 'Failed to add to cart. Please try again.';
+              window.dispatchEvent(new CustomEvent('showFlashMessage', {
+                detail: {
+                  type: 'error',
+                  message: errorMessage
+                }
+              }));
+            }
+          };
+
+          button.addEventListener('click', handleClick);
+          cleanupFunctions.push(() => button.removeEventListener('click', handleClick));
+        });
+
+        // Return cleanup function
+        return () => {
+          cleanupFunctions.forEach(cleanup => cleanup());
+        };
       `,
       className: '',
       parentClassName: '',
