@@ -308,7 +308,22 @@ export function CategorySlotRenderer({
       // Format attribute filters
       const attributeFilters = filterableAttributes?.map(attr => {
         const attrCode = attr.code || attr.name;
-        const options = filtersData[attrCode] || [];
+        const filterData = filtersData[attrCode];
+
+        // Handle new structure: { label, options: [...] } or old structure: [...]
+        let options = [];
+        let attributeLabel = attr.name || attr.code || attrCode;
+
+        if (filterData) {
+          if (Array.isArray(filterData)) {
+            // Old structure: direct array
+            options = filterData;
+          } else if (typeof filterData === 'object' && filterData.options) {
+            // New structure: { label, options: [...] }
+            options = filterData.options;
+            attributeLabel = filterData.label || attributeLabel;
+          }
+        }
 
         const formattedOptions = Array.isArray(options)
           ? options.map(option => {
@@ -333,7 +348,7 @@ export function CategorySlotRenderer({
 
         const result = {
           code: attrCode,
-          label: attr.name || attr.code || attrCode,
+          label: attributeLabel, // Use translated label from filter data
           options: formattedOptions
         };
 
