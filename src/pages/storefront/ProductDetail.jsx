@@ -359,16 +359,17 @@ export default function ProductDetail() {
       }
 
       const cacheKey = `product-detail-${slug}-${store.id}`;
+      const currentLang = getCurrentLanguage();
 
       // First try to find by slug (don't send status - backend handles it)
-      console.log('🔎 ProductDetail: Calling API with', { store_id: store.id, slug });
-      let products = await StorefrontProduct.filter({ store_id: store.id, slug: slug });
+      console.log('🔎 ProductDetail: Calling API with', { store_id: store.id, slug, lang: currentLang });
+      let products = await StorefrontProduct.filter({ store_id: store.id, slug: slug, lang: currentLang });
       console.log('📦 ProductDetail: API returned', products?.length || 0, 'products');
 
       // If no product found by slug, try searching by SKU as fallback
       if (!products || products.length === 0) {
-        console.log('🔎 ProductDetail: Trying SKU fallback with', { store_id: store.id, sku: slug });
-        products = await StorefrontProduct.filter({ store_id: store.id, sku: slug });
+        console.log('🔎 ProductDetail: Trying SKU fallback with', { store_id: store.id, sku: slug, lang: currentLang });
+        products = await StorefrontProduct.filter({ store_id: store.id, sku: slug, lang: currentLang });
       }
 
       if (products && products.length > 0) {
@@ -513,12 +514,14 @@ export default function ProductDetail() {
         }
 
         if (productIds && productIds.length > 0) {
+          const currentLang = getCurrentLanguage();
           const optionProducts = [];
           for (const productId of productIds) {
             try {
               const products = await StorefrontProduct.filter({
                 id: productId,
-                status: 'active'
+                status: 'active',
+                lang: currentLang
               });
               if (products && products.length > 0) {
                 const customOptionProduct = products[0];
