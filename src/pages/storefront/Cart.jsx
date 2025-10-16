@@ -244,8 +244,16 @@ export default function Cart() {
                 const freshItems = event.detail.freshCartData.items;
 
                 console.log('🛒 Cart.jsx: Fresh cart items received', {
+                    source: event.detail.source,
+                    action: event.detail.action,
                     count: freshItems.length,
-                    items: freshItems.map(item => ({ id: item.id, product_id: item.product_id }))
+                    items: freshItems.map(item => ({
+                        id: item.id,
+                        product_id: item.product_id,
+                        product_id_type: typeof item.product_id,
+                        quantity: item.quantity,
+                        hasProduct: !!item.product
+                    }))
                 });
 
                 // Check if we need to load product details
@@ -406,10 +414,20 @@ export default function Cart() {
                 const productId = typeof item.product_id === 'object' ?
                     (item.product_id?.id || item.product_id?.toString() || null) :
                     item.product_id;
+                console.log('🛒 Cart.jsx: Processing cart item', {
+                    cart_item_id: item.id,
+                    product_id: item.product_id,
+                    product_id_type: typeof item.product_id,
+                    extracted_productId: productId
+                });
                 return productId;
             }).filter(id => id !== null))];
 
-            console.log('🛒 Cart.jsx: Product IDs to fetch', { productIds });
+            console.log('🛒 Cart.jsx: Product IDs to fetch', {
+                productIds,
+                count: productIds.length,
+                cartItemsCount: cartItems.length
+            });
 
             // High-Performance Batch Product Fetching
             const products = await (async () => {
@@ -476,21 +494,46 @@ export default function Cart() {
                 }
             })();
 
-            console.log('🛒 Cart.jsx: Products fetched', { count: products.length });
+            console.log('🛒 Cart.jsx: Products fetched', {
+                count: products.length,
+                productIds: products.map(p => p.id),
+                products: products.map(p => ({ id: p.id, name: p.name }))
+            });
 
             const populatedCart = cartItems.map(item => {
                 const productDetails = (products || []).find(p => p.id === item.product_id);
+                console.log('🛒 Cart.jsx: Mapping cart item to product', {
+                    cart_item_id: item.id,
+                    cart_item_product_id: item.product_id,
+                    found_product: !!productDetails,
+                    found_product_id: productDetails?.id,
+                    found_product_name: productDetails?.name
+                });
                 return {
                     ...item,
                     product: productDetails,
                     selected_options: item.selected_options || [] // Ensure selected_options is always an array
                 };
-            }).filter(item => item.product); // Ensure product exists
+            }).filter(item => {
+                const hasProduct = !!item.product;
+                if (!hasProduct) {
+                    console.warn('🚫 Cart.jsx: Filtering out cart item without product', {
+                        cart_item_id: item.id,
+                        product_id: item.product_id
+                    });
+                }
+                return hasProduct;
+            }); // Ensure product exists
 
             console.log('🛒 Cart.jsx: Populated cart', {
                 originalCount: cartItems.length,
                 populatedCount: populatedCart.length,
-                filtered: cartItems.length - populatedCart.length
+                filtered: cartItems.length - populatedCart.length,
+                finalItems: populatedCart.map(item => ({
+                    id: item.id,
+                    product_id: item.product_id,
+                    product_name: item.product?.name
+                }))
             });
             
             // Apply item processing hooks

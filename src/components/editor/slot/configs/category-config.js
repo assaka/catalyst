@@ -718,6 +718,14 @@ export const categoryConfig = {
                 localStorage.setItem('guest_session_id', sessionId);
               }
 
+              console.log('🛒 Category: Adding to cart', {
+                product_id: product.id,
+                product_name: product.name,
+                store_id: store.id,
+                session_id: sessionId,
+                baseURL
+              });
+
               const response = await fetch(baseURL + '/api/cart', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -731,7 +739,14 @@ export const categoryConfig = {
                 })
               });
 
+              console.log('🛒 Category: Response status', response.status);
+
               const result = await response.json();
+              console.log('🛒 Category: Result', {
+                success: result.success,
+                itemsCount: result.data?.items?.length || result.data?.dataValues?.items?.length || 0,
+                error: result.error
+              });
 
               if (result.success) {
                 // Extract fresh cart data from the response
@@ -936,6 +951,14 @@ export const categoryConfig = {
                 localStorage.setItem('guest_session_id', sessionId);
               }
 
+              console.log('🛒 Category (template): Adding to cart', {
+                product_id: productId,
+                product_name: productName,
+                store_id: store.id,
+                session_id: sessionId,
+                baseURL
+              });
+
               const response = await fetch(baseURL + '/api/cart', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -949,7 +972,14 @@ export const categoryConfig = {
                 })
               });
 
+              console.log('🛒 Category (template): Response status', response.status);
+
               const result = await response.json();
+              console.log('🛒 Category (template): Result', {
+                success: result.success,
+                itemsCount: result.data?.items?.length || result.data?.dataValues?.items?.length || 0,
+                error: result.error
+              });
 
               if (result.success) {
                 // Extract fresh cart data from the response
