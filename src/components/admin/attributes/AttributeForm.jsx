@@ -101,17 +101,6 @@ export default function AttributeForm({ attribute, onSubmit, onCancel }) {
     setFormData((prev) => {
       const newData = { ...prev, [field]: value };
 
-      // Bi-directional syncing: When changing attribute name, also update default language translation
-      if (field === 'name') {
-        newData.translations = {
-          ...prev.translations,
-          [defaultLanguage]: {
-            ...(prev.translations[defaultLanguage] || {}),
-            name: value
-          }
-        };
-      }
-
       // Auto-configure file settings when switching to image type
       if (field === 'type' && value === 'image') {
         newData.file_settings = {
@@ -171,25 +160,16 @@ export default function AttributeForm({ attribute, onSubmit, onCancel }) {
 
   // Update attribute name translations
   const handleAttributeTranslationChange = (langCode, value) => {
-    setFormData(prev => {
-      const newData = {
-        ...prev,
-        translations: {
-          ...prev.translations,
-          [langCode]: {
-            ...(prev.translations[langCode] || {}),
-            name: value
-          }
+    setFormData(prev => ({
+      ...prev,
+      translations: {
+        ...prev.translations,
+        [langCode]: {
+          ...(prev.translations[langCode] || {}),
+          name: value
         }
-      };
-
-      // Bi-directional syncing: If editing default language translation, also update main name field
-      if (langCode === defaultLanguage) {
-        newData.name = value;
       }
-
-      return newData;
-    });
+    }));
   };
 
   const handleFileSettingsChange = (field, value) => {
@@ -304,16 +284,10 @@ export default function AttributeForm({ attribute, onSubmit, onCancel }) {
                         <Input
                           type="text"
                           value={value}
-                          onChange={(e) => {
-                            if (lang.code === defaultLanguage) {
-                              handleInputChange('name', e.target.value);
-                            } else {
-                              handleAttributeTranslationChange(lang.code, e.target.value);
-                            }
-                          }}
+                          onChange={(e) => handleAttributeTranslationChange(lang.code, e.target.value)}
                           dir={isRTL ? 'rtl' : 'ltr'}
                           className={`flex-1 h-9 text-sm ${isRTL ? 'text-right' : 'text-left'}`}
-                          placeholder={lang.code === defaultLanguage ? 'Attribute name' : (formData.translations[defaultLanguage]?.name || formData.name || `${lang.native_name} translation`)}
+                          placeholder={`${lang.native_name} translation`}
                         />
                       </div>
                     );
