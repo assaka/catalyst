@@ -5,7 +5,7 @@
 
 /**
  * Get translated text for a key
- * @param {string} key - Translation key
+ * @param {string} key - Translation key (can be dotted like "common.save" or "order.your_orders")
  * @param {Object} settings - Store settings with ui_translations
  * @returns {string} - Translated text or fallback
  */
@@ -18,26 +18,32 @@ export function t(key, settings) {
   // Get UI translations from settings
   const uiTranslations = settings?.ui_translations || {};
 
-  // Debug logging - always log to help debug translation issues
-  console.log('🌐 Translation lookup:', {
-    key,
-    currentLang,
-    hasUiTranslations: !!settings?.ui_translations,
-    availableLanguages: Object.keys(uiTranslations),
-    hasCurrentLang: !!(uiTranslations[currentLang]),
-    hasKey: !!(uiTranslations[currentLang]?.[key]),
-    value: uiTranslations[currentLang]?.[key],
-    allKeysInCurrentLang: uiTranslations[currentLang] ? Object.keys(uiTranslations[currentLang]).slice(0, 10) : []
-  });
+  // Helper function to navigate nested object with dotted key
+  const getNestedValue = (obj, dottedKey) => {
+    const keys = dottedKey.split('.');
+    let current = obj;
+
+    for (const k of keys) {
+      if (current && typeof current === 'object' && k in current) {
+        current = current[k];
+      } else {
+        return undefined;
+      }
+    }
+
+    return current;
+  };
 
   // Try current language first
-  if (uiTranslations[currentLang] && uiTranslations[currentLang][key]) {
-    return uiTranslations[currentLang][key];
+  const currentLangValue = getNestedValue(uiTranslations[currentLang], key);
+  if (currentLangValue) {
+    return currentLangValue;
   }
 
   // Fallback to English
-  if (uiTranslations.en && uiTranslations.en[key]) {
-    return uiTranslations.en[key];
+  const englishValue = getNestedValue(uiTranslations.en, key);
+  if (englishValue) {
+    return englishValue;
   }
 
   // Fallback to key itself (formatted)
