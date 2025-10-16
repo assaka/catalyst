@@ -10,6 +10,7 @@ import { CustomerWishlist, CustomerAddress, CustomerOrder, CustomerAuth } from "
 import { Product } from "@/api/entities";
 import { Cart as CartEntity } from "@/api/entities";
 import { useAlertTypes } from "@/hooks/useAlert";
+import { t } from '@/utils/translationHelper';
 
 import {
   User as UserIcon,
@@ -94,7 +95,7 @@ const StatsCard = ({ icon: Icon, title, value, subtitle }) => (
 );
 
 
-const OrdersTab = ({ orders, getCountryName, onStatusUpdate }) => {
+const OrdersTab = ({ orders, getCountryName, onStatusUpdate, settings }) => {
   const [expandedOrders, setExpandedOrders] = useState(new Set());
   const [updatingStatus, setUpdatingStatus] = useState(new Set());
 
@@ -158,14 +159,14 @@ const OrdersTab = ({ orders, getCountryName, onStatusUpdate }) => {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Your Orders</CardTitle>
+        <CardTitle>{t('order.your_orders', settings)}</CardTitle>
       </CardHeader>
       <CardContent>
         {orders.length === 0 ? (
           <div className="text-center py-8">
             <ShoppingBag className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-            <p className="text-lg font-medium text-gray-900 mb-2">No orders yet</p>
-            <p className="text-gray-600">Your order history will appear here once you make a purchase.</p>
+            <p className="text-lg font-medium text-gray-900 mb-2">{t('order.no_orders_yet', settings)}</p>
+            <p className="text-gray-600">{t('order.order_history', settings)}</p>
           </div>
         ) : (
           <div className="space-y-6">
@@ -178,10 +179,10 @@ const OrdersTab = ({ orders, getCountryName, onStatusUpdate }) => {
                   <CardHeader>
                     <div className="flex justify-between items-start">
                       <div className="flex-1">
-                        <CardTitle className="text-lg mb-2">Order #{order.order_number}</CardTitle>
+                        <CardTitle className="text-lg mb-2">{t('order.number', settings)} #{order.order_number}</CardTitle>
                         <div className="grid md:grid-cols-2 gap-4 text-sm text-gray-600">
                           <div>
-                            <p><strong>Placed:</strong> {(() => {
+                            <p><strong>{t('order.placed', settings)}:</strong> {(() => {
                               const dateStr = order.created_at || order.created_date || order.createdAt;
                               if (!dateStr) return 'Date not available';
                               try {
@@ -190,17 +191,17 @@ const OrdersTab = ({ orders, getCountryName, onStatusUpdate }) => {
                                 return 'Invalid date';
                               }
                             })()}</p>
-                            <p><strong>Total:</strong> ${(() => {
+                            <p><strong>{t('common.total', settings)}:</strong> ${(() => {
                                 const totalAmount = parseFloat(order.total_amount || 0);
                                 return isNaN(totalAmount) ? '0.00' : totalAmount.toFixed(2);
                             })()}</p>
                           </div>
                           <div>
                             {order.Store && (
-                              <p><strong>Store:</strong> {order.Store.name}</p>
+                              <p><strong>{t('order.store', settings)}:</strong> {order.Store.name}</p>
                             )}
                             {order.payment_method && (
-                              <p><strong>Payment:</strong> {order.payment_method}</p>
+                              <p><strong>{t('order.payment', settings)}:</strong> {order.payment_method}</p>
                             )}
                           </div>
                         </div>
@@ -215,7 +216,7 @@ const OrdersTab = ({ orders, getCountryName, onStatusUpdate }) => {
                           onClick={() => handleToggleExpand(order.id)}
                         >
                           <Eye className="w-4 h-4" />
-                          {isExpanded ? 'Less' : 'Details'}
+                          {isExpanded ? t('common.less', settings) : t('common.details', settings)}
                         </Button>
                       </div>
                     </div>
@@ -226,7 +227,7 @@ const OrdersTab = ({ orders, getCountryName, onStatusUpdate }) => {
                       <div className="grid md:grid-cols-2 gap-6">
                         {/* Shipping Address */}
                         <div>
-                          <h4 className="font-semibold mb-2">Shipping Address</h4>
+                          <h4 className="font-semibold mb-2">{t('common.shipping_address', settings)}</h4>
                           <div className="text-sm text-gray-600 space-y-1">
                             {order.shipping_address ? (
                               <>
@@ -239,19 +240,19 @@ const OrdersTab = ({ orders, getCountryName, onStatusUpdate }) => {
                                 <p>{getCountryName(order.shipping_address.country)}</p>
                               </>
                             ) : (
-                              <p className="text-gray-400">No shipping address</p>
+                              <p className="text-gray-400">{t('address.no_shipping', settings)}</p>
                             )}
                           </div>
                         </div>
 
                         {/* Payment Details */}
                         <div>
-                          <h4 className="font-semibold mb-2">Payment Information</h4>
+                          <h4 className="font-semibold mb-2">{t('order.payment_information', settings)}</h4>
                           <div className="text-sm text-gray-600 space-y-1">
-                            {order.payment_method && <p><strong>Method:</strong> {order.payment_method}</p>}
+                            {order.payment_method && <p><strong>{t('common.method', settings)}:</strong> {order.payment_method}</p>}
                             {order.payment_method_details && (
                               <div>
-                                <p><strong>Details:</strong></p>
+                                <p><strong>{t('common.details', settings)}:</strong></p>
                                 <div className="ml-2 text-xs bg-gray-50 p-2 rounded">
                                   {typeof order.payment_method_details === 'object' ? 
                                     JSON.stringify(order.payment_method_details, null, 2) :
@@ -262,7 +263,7 @@ const OrdersTab = ({ orders, getCountryName, onStatusUpdate }) => {
                             )}
                             {order.total_amount && (
                               <div className="pt-2 border-t">
-                                <p><strong>Total Paid:</strong> ${parseFloat(order.total_amount).toFixed(2)}</p>
+                                <p><strong>{t('order.total_paid', settings)}:</strong> ${parseFloat(order.total_amount).toFixed(2)}</p>
                               </div>
                             )}
                           </div>
@@ -272,7 +273,7 @@ const OrdersTab = ({ orders, getCountryName, onStatusUpdate }) => {
                       {/* Order Items */}
                       {order.OrderItems && order.OrderItems.length > 0 && (
                         <div className="mt-6">
-                          <h4 className="font-semibold mb-3">Order Items</h4>
+                          <h4 className="font-semibold mb-3">{t('order.items', settings)}</h4>
                           <div className="space-y-3">
                             {order.OrderItems.map(item => (
                               <div key={item.id} className="flex items-center gap-4 p-3 bg-gray-50 rounded-lg">
@@ -286,20 +287,20 @@ const OrdersTab = ({ orders, getCountryName, onStatusUpdate }) => {
                                 <div className="flex-1">
                                   <h5 className="font-medium">{item.product_name || item.Product?.name}</h5>
                                   {item.product_sku && (
-                                    <p className="text-sm text-gray-500">SKU: {item.product_sku}</p>
+                                    <p className="text-sm text-gray-500">{t('common.sku', settings)}: {item.product_sku}</p>
                                   )}
                                   {item.selected_options && Object.keys(item.selected_options || {}).length > 0 && (
                                     <p className="text-sm text-gray-500">
-                                      Options: {typeof item.selected_options === 'object' ? 
+                                      {t('common.options', settings)}: {typeof item.selected_options === 'object' ?
                                         Object.entries(item.selected_options).map(([key, value]) => `${key}: ${value}`).join(', ') :
                                         item.selected_options}
                                     </p>
                                   )}
                                 </div>
                                 <div className="text-right">
-                                  <p className="font-medium">Qty: {item.quantity}</p>
+                                  <p className="font-medium">{t('common.qty', settings)}: {item.quantity}</p>
                                   <p className="text-sm text-gray-600">
-                                    ${parseFloat(item.unit_price || 0).toFixed(2)} each
+                                    ${parseFloat(item.unit_price || 0).toFixed(2)} {t('common.each', settings)}
                                   </p>
                                   <p className="font-semibold">
                                     ${parseFloat(item.total_price || item.unit_price * item.quantity || 0).toFixed(2)}
@@ -314,7 +315,7 @@ const OrdersTab = ({ orders, getCountryName, onStatusUpdate }) => {
                       {/* Status Notes */}
                       {order.status_notes && (
                         <div className="mt-4 p-3 bg-blue-50 rounded-lg">
-                          <h5 className="font-medium text-blue-900 mb-1">Status Notes</h5>
+                          <h5 className="font-medium text-blue-900 mb-1">{t('order.status_notes', settings)}</h5>
                           <p className="text-sm text-blue-800">{order.status_notes}</p>
                         </div>
                       )}
@@ -329,7 +330,7 @@ const OrdersTab = ({ orders, getCountryName, onStatusUpdate }) => {
                             disabled={isUpdating}
                             className="text-red-600 hover:text-red-700 hover:bg-red-50"
                           >
-                            {isUpdating ? 'Cancelling...' : 'Cancel Order'}
+                            {isUpdating ? t('order.cancelling', settings) : t('order.cancel', settings)}
                           </Button>
                         )}
                         {canRequestReturn(order) && (
@@ -340,7 +341,7 @@ const OrdersTab = ({ orders, getCountryName, onStatusUpdate }) => {
                             disabled={isUpdating}
                             className="text-orange-600 hover:text-orange-700 hover:bg-orange-50"
                           >
-                            {isUpdating ? 'Requesting...' : 'Request Return'}
+                            {isUpdating ? t('order.requesting', settings) : t('order.request_return', settings)}
                           </Button>
                         )}
                       </div>
@@ -405,11 +406,11 @@ const WishlistTab = ({ wishlistProducts, setWishlistProducts, store, settings })
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Your Wishlist</CardTitle>
+        <CardTitle>{t('wishlist.your', settings)}</CardTitle>
       </CardHeader>
       <CardContent>
         {wishlistProducts.length === 0 ? (
-          <p>Your wishlist is empty.</p>
+          <p>{t('your_wishlist_is_empty', settings)}</p>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {wishlistProducts.map(item => (
@@ -423,7 +424,7 @@ const WishlistTab = ({ wishlistProducts, setWishlistProducts, store, settings })
                       e.target.src = 'https://placehold.co/128x128?text=No+Image';
                     }}
                   />
-                  <p className="font-semibold">{item.product?.name || 'Unknown Product'}</p>
+                  <p className="font-semibold">{item.product?.name || t('common.unknown_product', settings)}</p>
                   <p className="text-sm text-gray-600 mb-3">
                     {formatPriceWithTax(item.product?.price)}
                   </p>
@@ -438,7 +439,7 @@ const WishlistTab = ({ wishlistProducts, setWishlistProducts, store, settings })
                       }}
                     >
                       <ShoppingCart className="w-4 h-4 mr-1" />
-                      Add to Cart
+                      {t('common.add_to_cart', settings)},
                     </Button>
                     <Button 
                       variant="destructive" 
@@ -470,20 +471,20 @@ const AddressForm = ({ addressForm, handleInputChange, handleAddressSubmit, edit
   return (
     <Card className="material-elevation-1 border-0">
       <CardHeader>
-        <CardTitle>{editingAddress ? 'Edit Address' : 'Add New Address'}</CardTitle>
+        <CardTitle>{editingAddress ? t('address.edit', settings) : t('address.add_new', settings)}</CardTitle>
       </CardHeader>
       <CardContent>
         {!editingAddress && (
           <Alert className="mb-4 border-yellow-200 bg-yellow-50">
             <AlertDescription className="text-yellow-800">
-              Note: Address saving for customer accounts is currently limited. If you experience issues, please contact support.
+              {t('address.saving_note', settings)}
             </AlertDescription>
           </Alert>
         )}
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <Label htmlFor="full_name">Full Name *</Label>
+              <Label htmlFor="full_name">{t('common.full_name', settings)} *</Label>
               <Input
                 id="full_name"
                 name="full_name"
@@ -495,7 +496,7 @@ const AddressForm = ({ addressForm, handleInputChange, handleAddressSubmit, edit
               />
             </div>
             <div>
-              <Label htmlFor="phone">Phone</Label>
+              <Label htmlFor="phone">{t('common.phone', settings)}</Label>
               <Input
                 id="phone"
                 name="phone"
@@ -504,9 +505,9 @@ const AddressForm = ({ addressForm, handleInputChange, handleAddressSubmit, edit
               />
             </div>
           </div>
-          
+
           <div>
-            <Label htmlFor="street">Street Address *</Label>
+            <Label htmlFor="street">{t('common.street_address', settings)} *</Label>
             <Input
               id="street"
               name="street"
@@ -515,10 +516,10 @@ const AddressForm = ({ addressForm, handleInputChange, handleAddressSubmit, edit
               required
             />
           </div>
-          
+
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div>
-              <Label htmlFor="city">City *</Label>
+              <Label htmlFor="city">{t('common.city', settings)} *</Label>
               <Input
                 id="city"
                 name="city"
@@ -528,7 +529,7 @@ const AddressForm = ({ addressForm, handleInputChange, handleAddressSubmit, edit
               />
             </div>
             <div>
-              <Label htmlFor="state">State/Province</Label>
+              <Label htmlFor="state">{t('common.state_province', settings)}</Label>
               <Input
                 id="state"
                 name="state"
@@ -537,7 +538,7 @@ const AddressForm = ({ addressForm, handleInputChange, handleAddressSubmit, edit
               />
             </div>
             <div>
-              <Label htmlFor="postal_code">Postal Code *</Label>
+              <Label htmlFor="postal_code">{t('common.postal_code', settings)} *</Label>
               <Input
                 id="postal_code"
                 name="postal_code"
@@ -547,18 +548,18 @@ const AddressForm = ({ addressForm, handleInputChange, handleAddressSubmit, edit
               />
             </div>
           </div>
-          
+
           <div>
-            <Label htmlFor="country">Country *</Label>
+            <Label htmlFor="country">{t('common.country', settings)} *</Label>
             <CountrySelect
               value={addressForm.country || ''}
               onValueChange={(value) => handleInputChange('country', value)}
               allowedCountries={settings?.allowed_countries}
             />
           </div>
-          
+
           <div>
-            <Label htmlFor="email">Email</Label>
+            <Label htmlFor="email">{t('common.email', settings)}</Label>
             <Input
               id="email"
               name="email"
@@ -577,9 +578,9 @@ const AddressForm = ({ addressForm, handleInputChange, handleAddressSubmit, edit
               onChange={(e) => handleInputChange('is_default_shipping', e.target.checked)}
               className="rounded"
             />
-            <Label htmlFor="is_default_shipping">Set as default shipping address</Label>
+            <Label htmlFor="is_default_shipping">{t('address.default_shipping', settings)}</Label>
           </div>
-          
+
           <div className="flex items-center space-x-2">
             <input
               type="checkbox"
@@ -589,23 +590,23 @@ const AddressForm = ({ addressForm, handleInputChange, handleAddressSubmit, edit
               onChange={(e) => handleInputChange('is_default_billing', e.target.checked)}
               className="rounded"
             />
-            <Label htmlFor="is_default_billing">Set as default billing address</Label>
+            <Label htmlFor="is_default_billing">{t('address.default_billing', settings)}</Label>
           </div>
-          
+
           <div className="flex justify-end space-x-2">
             <Button
               type="button"
               variant="outline"
               onClick={onCancel}
             >
-              Cancel
+              {t('common.cancel', settings)}
             </Button>
-            <Button 
-              type="submit" 
-              className="bg-blue-600 hover:bg-blue-700 text-white" 
+            <Button
+              type="submit"
+              className="bg-blue-600 hover:bg-blue-700 text-white"
               disabled={saving}
             >
-              {saving ? 'Saving...' : (editingAddress ? 'Update Address' : 'Add Address')}
+              {saving ? t('common.saving', settings) : (editingAddress ? t('address.update', settings) : t('address.add', settings))}
             </Button>
           </div>
         </form>
@@ -714,28 +715,28 @@ const SprShopContent = () => (
 );
 
 // Guest Welcome Component
-const GuestWelcome = ({ onLogin, store }) => (
+const GuestWelcome = ({ onLogin, store, settings }) => (
   <div className="space-y-6">
     <Card>
       <CardContent className="p-8 text-center">
         <UserIcon className="w-16 h-16 mx-auto mb-4 text-gray-400" />
-        <h2 className="text-2xl font-bold text-gray-900 mb-2">Welcome, Guest!</h2>
+        <h2 className="text-2xl font-bold text-gray-900 mb-2">{t('account.welcome_guest', settings)}</h2>
         <p className="text-gray-600 mb-6">
-          You're browsing as a guest. Sign in to access your orders, addresses, and wishlist.
+          {t('account.browsing_as_guest', settings)}
         </p>
         <div className="flex flex-col sm:flex-row gap-3 justify-center">
           <Button onClick={onLogin} className="bg-blue-600 hover:bg-blue-700">
-            Sign In to Your Account
+            {t('account.sign_in', settings)}
           </Button>
           <Link to={createPublicUrl(store?.slug || 'default', 'CUSTOMER_AUTH')}>
             <Button variant="outline">
-              Create New Account
+              {t('account.create_new', settings)}
             </Button>
           </Link>
         </div>
       </CardContent>
     </Card>
-    
+
     <SprShopContent />
   </div>
 );
@@ -1204,18 +1205,18 @@ export default function CustomerDashboard() {
         
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-gray-900">
-            {isGuest ? 'Welcome to SprShop' : 'My Account'}
+            {isGuest ? t('account.welcome_to_store', settings) : t('account.my_account', settings)}
           </h1>
           <p className="text-gray-600 mt-1">
-            {isGuest 
-              ? 'Discover our premium products and services' 
-              : 'Manage your account, orders, and preferences'
+            {isGuest
+              ? t('account.discover_products', settings)
+              : t('account.manage', settings)
             }
           </p>
         </div>
 
         {isGuest ? (
-          <GuestWelcome onLogin={handleLogin} store={store} />
+          <GuestWelcome onLogin={handleLogin} store={store} settings={settings} />
         ) : (
           <div className="grid lg:grid-cols-4 gap-8">
             {/* Sidebar */}
@@ -1238,7 +1239,7 @@ export default function CustomerDashboard() {
                       }`}
                     >
                       <Package className="w-4 h-4 inline mr-2" />
-                      Overview
+                      {t('account.overview', settings)}
                     </button>
                     <button
                       onClick={() => handleTabChange('orders')}
@@ -1247,7 +1248,7 @@ export default function CustomerDashboard() {
                       }`}
                     >
                       <ShoppingBag className="w-4 h-4 inline mr-2" />
-                      Orders ({orders.length})
+                      {t('account.orders', settings)} ({orders.length})
                     </button>
                     <button
                       onClick={() => handleTabChange('addresses')}
@@ -1256,7 +1257,7 @@ export default function CustomerDashboard() {
                       }`}
                     >
                       <MapPin className="w-4 h-4 inline mr-2" />
-                      Addresses ({addresses.length})
+                      {t('address.list', settings)} ({addresses.length})
                     </button>
                     <button
                       onClick={() => handleTabChange('wishlist')}
@@ -1265,17 +1266,17 @@ export default function CustomerDashboard() {
                       }`}
                     >
                       <Heart className="w-4 h-4 inline mr-2" />
-                      Wishlist ({wishlistProducts.length})
+                      {t('wishlist.items', settings)} ({wishlistProducts.length})
                     </button>
                   </nav>
-                  
+
                   <div className="mt-6 pt-6 border-t">
                     <Button
                       variant="ghost"
                       onClick={handleLogout}
                       className="w-full justify-start text-red-600 hover:text-red-700 hover:bg-red-50"
                     >
-                      Sign Out
+                      {t('account.sign_out', settings)}
                     </Button>
                   </div>
                 </CardContent>
@@ -1289,21 +1290,21 @@ export default function CustomerDashboard() {
                   <div className="grid md:grid-cols-3 gap-6">
                     <StatsCard
                       icon={ShoppingBag}
-                      title="Total Orders"
+                      title={t('order.total_orders', settings)}
                       value={orders.length}
-                      subtitle="All time"
+                      subtitle={t('common.all_time', settings)}
                     />
                     <StatsCard
                       icon={MapPin}
-                      title="Saved Addresses"
+                      title={t('address.saved', settings)}
                       value={addresses.length}
-                      subtitle="Delivery locations"
+                      subtitle={t('address.delivery_locations', settings)}
                     />
                     <StatsCard
                       icon={Heart}
-                      title="Wishlist Items"
+                      title={t('wishlist.items', settings)}
                       value={wishlistProducts.length}
-                      subtitle="Saved for later"
+                      subtitle={t('wishlist.saved_for_later', settings)}
                     />
                   </div>
                   
@@ -1312,17 +1313,18 @@ export default function CustomerDashboard() {
               )}
               
               {activeTab === 'orders' && (
-                <OrdersTab 
-                  orders={orders} 
-                  getCountryName={getCountryName} 
+                <OrdersTab
+                  orders={orders}
+                  getCountryName={getCountryName}
                   onStatusUpdate={handleOrderStatusUpdate}
+                  settings={settings}
                 />
               )}
 
               {activeTab === 'addresses' && (
                 <div className="space-y-6">
                   <div className="flex justify-between items-center">
-                    <h2 className="text-2xl font-bold text-gray-900">My Addresses</h2>
+                    <h2 className="text-2xl font-bold text-gray-900">{t('address.my', settings)}</h2>
                     <Button
                       onClick={() => {
                         resetAddressForm();
@@ -1331,7 +1333,7 @@ export default function CustomerDashboard() {
                       className="bg-blue-600 hover:bg-blue-700 text-white"
                     >
                       <Plus className="w-4 h-4 mr-2" />
-                      Add Address
+                      {t('address.add', settings)}
                     </Button>
                   </div>
 
@@ -1369,10 +1371,10 @@ export default function CustomerDashboard() {
                               
                               <div className="flex gap-2 mt-2">
                                 {address.is_default_shipping && (
-                                  <Badge className="bg-blue-100 text-blue-800">Default Shipping</Badge>
+                                  <Badge className="bg-blue-100 text-blue-800">{t('address.default_shipping_badge', settings)}</Badge>
                                 )}
                                 {address.is_default_billing && (
-                                  <Badge className="bg-green-100 text-green-800">Default Billing</Badge>
+                                  <Badge className="bg-green-100 text-green-800">{t('address.default_billing_badge', settings)}</Badge>
                                 )}
                               </div>
                             </div>
@@ -1402,8 +1404,8 @@ export default function CustomerDashboard() {
                       <Card className="material-elevation-1 border-0">
                         <CardContent className="text-center py-12">
                           <MapPin className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-                          <h3 className="text-lg font-medium text-gray-900 mb-2">No addresses saved</h3>
-                          <p className="text-gray-600 mb-6">Add your first address to make checkout faster.</p>
+                          <h3 className="text-lg font-medium text-gray-900 mb-2">{t('address.none_saved', settings)}</h3>
+                          <p className="text-gray-600 mb-6">{t('address.add_first', settings)}</p>
                           <Button
                             onClick={() => {
                               resetAddressForm();
@@ -1412,7 +1414,7 @@ export default function CustomerDashboard() {
                             className="bg-blue-600 hover:bg-blue-700 text-white"
                           >
                             <Plus className="w-4 h-4 mr-2" />
-                            Add Address
+                            {t('address.add', settings)}
                           </Button>
                         </CardContent>
                       </Card>

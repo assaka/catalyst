@@ -26,10 +26,13 @@ import CmsBlockRenderer from '@/components/storefront/CmsBlockRenderer';
 import { formatPrice, safeNumber } from '@/utils/priceUtils';
 import { getProductName, getCurrentLanguage } from '@/utils/translationUtils';
 import cartService from '@/services/cartService';
+import { t } from '@/utils/translationHelper';
+import { useStore } from '@/components/storefront/StoreProvider';
 
 export default function OrderSuccess() {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
+  const { settings } = useStore();
   const [storeCode, setStoreCode] = useState(null);
 
   // Get session ID from URL
@@ -310,7 +313,7 @@ export default function OrderSuccess() {
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <p className="text-gray-600">Loading your order details...</p>
+          <p className="text-gray-600">{t('order.loading', settings)}</p>
         </div>
       </div>
     );
@@ -323,8 +326,8 @@ export default function OrderSuccess() {
           <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
             <Package className="w-8 h-8 text-red-600" />
           </div>
-          <h1 className="text-2xl font-bold text-gray-900 mb-2">Order Not Found</h1>
-          <p className="text-gray-600">Please check your email for order confirmation or contact support.</p>
+          <h1 className="text-2xl font-bold text-gray-900 mb-2">{t('order.not_found', settings)}</h1>
+          <p className="text-gray-600">{t('order.check_email', settings)}</p>
         </div>
       </div>
     );
@@ -342,10 +345,10 @@ export default function OrderSuccess() {
           <div className="inline-flex items-center justify-center w-16 h-16 bg-green-100 rounded-full mb-4">
             <CheckCircle className="w-8 h-8 text-green-600" />
           </div>
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">Thank You!</h1>
-          <p className="text-lg text-gray-600 mb-4">Your order has been successfully placed</p>
-          <p className="text-sm text-gray-600">A confirmation email has been sent to{' '} <span className="font-medium text-gray-900">{order.customer_email}</span></p>
-          <p className="text-sm text-gray-500 mb-4">Order Number: <span className="font-semibold text-gray-900">#{order.order_number}</span></p>
+          <h1 className="text-3xl font-bold text-gray-900 mb-2">{t('success.thank_you', settings)}</h1>
+          <p className="text-lg text-gray-600 mb-4">{t('success.order_placed', settings)}</p>
+          <p className="text-sm text-gray-600">{t('success.confirmation_sent', settings)}{' '} <span className="font-medium text-gray-900">{order.customer_email}</span></p>
+          <p className="text-sm text-gray-500 mb-4">{t('order.number', settings)}: <span className="font-semibold text-gray-900">#{order.order_number}</span></p>
           
           {/* Download Invoice Button */}
           <Button 
@@ -382,7 +385,7 @@ export default function OrderSuccess() {
               URL.revokeObjectURL(url);
             }}
           >
-            📄 Download Invoice
+            📄 {t('success.download_invoice', settings)}
           </Button>
         </div>
 
@@ -396,50 +399,50 @@ export default function OrderSuccess() {
               <CardHeader>
                 <CardTitle className="flex items-center">
                   <ShoppingBag className="w-5 h-5 mr-2 text-blue-600" />
-                  Order Summary
+                  {t('order_summary', settings)}
                 </CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="space-y-3">
                   <div className="flex justify-between">
-                    <span className="text-gray-600">Order Number:</span>
+                    <span className="text-gray-600">{t('order.number', settings)}:</span>
                     <span className="font-semibold">#{order.order_number}</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-gray-600">Order Date:</span>
+                    <span className="text-gray-600">{t('order.date', settings)}:</span>
                     <span className="font-semibold">{formatDate(order.created_date || order.createdAt)}</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-gray-600">Status:</span>
+                    <span className="text-gray-600">{t('common.status', settings)}:</span>
                     <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200">
                       {order.status?.charAt(0).toUpperCase() + order.status?.slice(1)}
                     </Badge>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-gray-600">Payment Status:</span>
+                    <span className="text-gray-600">{t('order.payment_status', settings)}:</span>
                     <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
                       {order.payment_status?.charAt(0).toUpperCase() + order.payment_status?.slice(1)}
                     </Badge>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-gray-600">Payment Method:</span>
+                    <span className="text-gray-600">{t('payment_method', settings)}:</span>
                     <span className="font-semibold capitalize">{order.payment_method || 'Card'}</span>
                   </div>
                   {order.delivery_date && (
                     <div className="flex justify-between">
-                      <span className="text-gray-600">Delivery Date:</span>
+                      <span className="text-gray-600">{t('order.delivery_date', settings)}:</span>
                       <span className="font-semibold">{formatDate(order.delivery_date)}</span>
                     </div>
                   )}
                   {order.delivery_time_slot && (
                     <div className="flex justify-between">
-                      <span className="text-gray-600">Delivery Time:</span>
+                      <span className="text-gray-600">{t('order.delivery_time', settings)}:</span>
                       <span className="font-semibold">{order.delivery_time_slot}</span>
                     </div>
                   )}
                   {order.shipping_method && (
                     <div className="flex justify-between">
-                      <span className="text-gray-600">Shipping Method:</span>
+                      <span className="text-gray-600">{t('shipping_method', settings)}:</span>
                       <span className="font-semibold">{order.shipping_method}</span>
                     </div>
                   )}
@@ -452,22 +455,22 @@ export default function OrderSuccess() {
               <CardHeader>
                 <CardTitle className="flex items-center">
                   <Package className="w-5 h-5 mr-2 text-green-600" />
-                  Order Items
+                  {t('order.items', settings)}
                 </CardTitle>
               </CardHeader>
               <CardContent>
                 {orderItems.length === 0 ? (
                   <div className="text-center py-4">
                     <div className="mb-4">
-                      <p className="text-gray-500">Order items are being processed...</p>
-                      <p className="text-xs text-gray-400 mt-1">Your order was successful and will be fulfilled.</p>
+                      <p className="text-gray-500">{t('order.items_processing', settings)}</p>
+                      <p className="text-xs text-gray-400 mt-1">{t('order.successful', settings)}</p>
                     </div>
-                    
+
                     {/* Fallback order info */}
                     <div className="bg-blue-50 p-3 rounded-lg text-left">
-                      <h4 className="font-medium text-blue-900 mb-2">Order Details</h4>
+                      <h4 className="font-medium text-blue-900 mb-2">{t('order.details', settings)}</h4>
                       <div className="text-sm text-blue-800 space-y-1">
-                        <p><strong>Total Amount:</strong> {formatCurrency(order.total_amount, order.currency)}</p>
+                        <p><strong>{t('order.total_amount', settings)}:</strong> {formatCurrency(order.total_amount, order.currency)}</p>
                         {order.subtotal && (
                           <p><strong>Subtotal:</strong> {formatCurrency(order.subtotal, order.currency)}</p>
                         )}
@@ -486,10 +489,10 @@ export default function OrderSuccess() {
                     {/* Table Header */}
                     <div className="min-w-full">
                       <div className="grid grid-cols-12 gap-4 py-3 px-4 bg-gray-100 rounded-t-lg text-sm font-medium text-gray-700">
-                        <div className="col-span-5">Product</div>
-                        <div className="col-span-2 text-center">Qty</div>
-                        <div className="col-span-3 text-right">Unit Price</div>
-                        <div className="col-span-2 text-right">Total</div>
+                        <div className="col-span-5">{t('common.product', settings)}</div>
+                        <div className="col-span-2 text-center">{t('common.qty', settings)}</div>
+                        <div className="col-span-3 text-right">{t('order.unit_price', settings)}</div>
+                        <div className="col-span-2 text-right">{t('common.total', settings)}</div>
                       </div>
                       
                       {/* Table Rows */}
@@ -510,9 +513,9 @@ export default function OrderSuccess() {
                             <div className="col-span-5">
                               <h4 className="font-medium text-gray-900 mb-1">{item.product_name}</h4>
                               {item.product_sku && (
-                                <p className="text-xs text-gray-500 mb-2">SKU: {item.product_sku}</p>
+                                <p className="text-xs text-gray-500 mb-2">{t('common.sku', settings)}: {item.product_sku}</p>
                               )}
-                              
+
                               {/* Custom Options */}
                               {selectedOptions && selectedOptions.length > 0 && (
                                 <div className="mt-2 space-y-1">
@@ -539,12 +542,12 @@ export default function OrderSuccess() {
                                 <div className="font-medium">{formatCurrency(baseUnitPrice, order.currency)}</div>
                                 {selectedOptions && selectedOptions.length > 0 && (
                                   <div className="text-xs text-gray-500">
-                                    Options: +{formatCurrency(optionsPrice, order.currency)}
+                                    {t('common.options', settings)}: +{formatCurrency(optionsPrice, order.currency)}
                                   </div>
                                 )}
                                 {selectedOptions && selectedOptions.length > 0 && (
                                   <div className="text-xs font-medium border-t pt-1">
-                                    Total: {formatCurrency(unitPrice, order.currency)}
+                                    {t('common.total', settings)}: {formatCurrency(unitPrice, order.currency)}
                                   </div>
                                 )}
                               </div>
@@ -566,7 +569,7 @@ export default function OrderSuccess() {
             {/* Order Total */}
             <Card>
               <CardHeader>
-                <CardTitle>Order Total</CardTitle>
+                <CardTitle>{t('order.total', settings)}</CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="space-y-2">
@@ -706,17 +709,17 @@ export default function OrderSuccess() {
                         </div>
                         <div className="flex-1">
                           <h3 className="text-lg font-semibold text-green-900 mb-2">
-                            🎉 Your Account is Now Created!
+                            🎉 {t('success.account_created', settings)}
                           </h3>
                           <div className="text-green-800 space-y-2">
                             <p className="font-medium">
-                              Welcome! Your account has been successfully created with email: <strong>{order.customer_email}</strong>
+                              {t('success.welcome_message', settings)} <strong>{order.customer_email}</strong>
                             </p>
                             <div className="text-sm space-y-1 mt-3">
-                              <p>✅ You've been automatically logged in</p>
-                              <p>✅ A welcome email has been sent to your inbox</p>
-                              <p>✅ Your shipping and billing addresses have been saved</p>
-                              <p>✅ You can now track your orders and manage your profile</p>
+                              <p>✅ {t('success.auto_logged_in', settings)}</p>
+                              <p>✅ {t('success.welcome_email_sent', settings)}</p>
+                              <p>✅ {t('success.addresses_saved', settings)}</p>
+                              <p>✅ {t('success.track_profile', settings)}</p>
                             </div>
                             <div className="mt-4 pt-3 border-t border-green-200">
                               <Button
@@ -730,7 +733,7 @@ export default function OrderSuccess() {
                                 className="bg-green-600 hover:bg-green-700 text-white"
                                 size="sm"
                               >
-                                View My Orders
+                                {t('success.view_orders', settings)}
                               </Button>
                             </div>
                           </div>
@@ -744,12 +747,12 @@ export default function OrderSuccess() {
                     <CardHeader>
                       <CardTitle className="flex items-center">
                         <UserPlus className="w-5 h-5 mr-2 text-blue-600" />
-                        Create Account
+                        {t('success.create_account', settings)}
                       </CardTitle>
                     </CardHeader>
                     <CardContent>
                       <p className="text-sm text-gray-600 mb-4">
-                        Create an account using your email <strong>{order.customer_email}</strong> to track your orders and save your details for faster checkout. We'll send you a welcome email to get started.
+                        {t('success.create_description', settings)} <strong>{order.customer_email}</strong> {t('success.track_orders', settings)}
                       </p>
 
                       {!showCreateAccount ? (
@@ -758,7 +761,7 @@ export default function OrderSuccess() {
                           className="w-full bg-blue-600 hover:bg-blue-700"
                         >
                           <UserPlus className="w-4 h-4 mr-2" />
-                          Create Account
+                          {t('success.create_account', settings)}
                         </Button>
                       ) : (
                         <div className="space-y-4">
@@ -772,7 +775,7 @@ export default function OrderSuccess() {
                               value={accountFormData.password}
                               onChange={(e) => setAccountFormData(prev => ({ ...prev, password: e.target.value }))}
                               className="mt-1"
-                              placeholder="Create a password"
+                              placeholder={t('common.password', settings)}
                             />
                           </div>
 
@@ -786,7 +789,7 @@ export default function OrderSuccess() {
                               value={accountFormData.confirmPassword}
                               onChange={(e) => setAccountFormData(prev => ({ ...prev, confirmPassword: e.target.value }))}
                               className="mt-1"
-                              placeholder="Confirm password"
+                              placeholder={t('common.confirm_password', settings)}
                             />
                           </div>
 
@@ -806,18 +809,18 @@ export default function OrderSuccess() {
                             >
                               {creatingAccount ? (
                                 <>
-                                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                                  Creating...
+                                  <div class to Name="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                                  {t('common.creating', settings)}
                                 </>
                               ) : (
-                                'Create Account'
+                                t('success.create_account', settings)
                               )}
                             </Button>
                             <Button
                               onClick={() => setShowCreateAccount(false)}
                               variant="outline"
                             >
-                              Cancel
+                              {t('common.cancel', settings)}
                             </Button>
                           </div>
                         </div>
