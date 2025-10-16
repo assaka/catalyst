@@ -481,7 +481,7 @@ const AddressForm = ({ addressForm, handleInputChange, handleAddressSubmit, edit
               <Input
                 id="full_name"
                 name="full_name"
-                placeholder={t('common.full_name', 'Full Name')}
+                placeholder={t('common.full_name', settings)}
                 value={addressForm.full_name || ''}
                 onChange={(e) => {
                   handleInputChange('full_name', e.target.value);
@@ -493,7 +493,7 @@ const AddressForm = ({ addressForm, handleInputChange, handleAddressSubmit, edit
               <Input
                 id="phone"
                 name="phone"
-                placeholder={t('common.phone', 'Phone')}
+                placeholder={t('common.phone', settings)}
                 value={addressForm.phone || ''}
                 onChange={(e) => handleInputChange('phone', e.target.value)}
               />
@@ -504,6 +504,7 @@ const AddressForm = ({ addressForm, handleInputChange, handleAddressSubmit, edit
             <Input
               id="street"
               name="street"
+              placeholder={t('common.street_address', settings)}
               value={addressForm.street || ''}
               onChange={(e) => handleInputChange('street', e.target.value)}
               required
@@ -515,7 +516,7 @@ const AddressForm = ({ addressForm, handleInputChange, handleAddressSubmit, edit
               <Input
                 id="city"
                 name="city"
-                placeholder={t('common.city', 'City')}
+                placeholder={t('common.city', settings)}
                 value={addressForm.city || ''}
                 onChange={(e) => handleInputChange('city', e.target.value)}
                 required
@@ -525,7 +526,7 @@ const AddressForm = ({ addressForm, handleInputChange, handleAddressSubmit, edit
               <Input
                 id="state"
                 name="state"
-                placeholder={t('common.state_province', 'State / Province')}
+                placeholder={t('common.state_province', settings)}
                 value={addressForm.state || ''}
                 onChange={(e) => handleInputChange('state', e.target.value)}
               />
@@ -534,9 +535,9 @@ const AddressForm = ({ addressForm, handleInputChange, handleAddressSubmit, edit
               <Input
                 id="postal_code"
                 name="postal_code"
+                placeholder={t('common.postal_code', settings)}
                 value={addressForm.postal_code || ''}
                 onChange={(e) => handleInputChange('postal_code', e.target.value)}
-                placeholder={t('common.postal_code', 'Postal code')}
                 required
               />
             </div>
@@ -547,7 +548,7 @@ const AddressForm = ({ addressForm, handleInputChange, handleAddressSubmit, edit
               value={addressForm.country || ''}
               onValueChange={(value) => handleInputChange('country', value)}
               allowedCountries={settings?.allowed_countries}
-              placeholder={t('common.country', 'Country')}
+              placeholder={t('common.country', settings)}
             />
           </div>
 
@@ -556,7 +557,7 @@ const AddressForm = ({ addressForm, handleInputChange, handleAddressSubmit, edit
               id="email"
               name="email"
               type="email"
-              placeholder={t('common.email', 'Emailaddress')}
+              placeholder={t('common.email', settings)}
               value={addressForm.email || ''}
               onChange={(e) => handleInputChange('email', e.target.value)}
             />
