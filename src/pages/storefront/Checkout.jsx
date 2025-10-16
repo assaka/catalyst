@@ -1303,7 +1303,7 @@ export default function Checkout() {
                               <p className="text-gray-600">{address.street}</p>
                               <p className="text-gray-600">{address.city}, {address.state} {address.postal_code}</p>
                               <p className="text-gray-600">{address.country}</p>
-                              {address.phone && <p className="text-gray-500 text-xs mt-1">{t('checkout.phone', 'Phone')} {address.phone}</p>}
+                              {address.phone && <p className="text-gray-500 text-xs mt-1">{t('common.phone', 'Phone')} {address.phone}</p>}
                               {address.is_default && (
                                 <span className="inline-block bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded mt-1">
                                   {t('checkout.default', 'Default')}
@@ -1380,7 +1380,7 @@ export default function Checkout() {
                   />
                   {showPhoneField && (
                     <Input
-                      placeholder={t('common.phone_number', 'Phone Number')}
+                      placeholder={t('common.phone', 'Phone Number')}
                       type="tel"
                       className={`md:col-span-2 ${shippingErrors.phone ? 'border-red-500' : ''}`}
                       required
@@ -1402,7 +1402,7 @@ export default function Checkout() {
                     }}
                   />
                   <Input
-                    placeholder={t('account.city', 'City')}
+                    placeholder={t('common.city', 'City')}
                     className={shippingErrors.city ? 'border-red-500' : ''}
                     required
                     value={shippingAddress.city}
@@ -1601,7 +1601,7 @@ export default function Checkout() {
                         />
                         {showPhoneField && (
                           <Input
-                            placeholder={t('common.phone_number', 'Phone Number')}
+                            placeholder={t('common.phone', 'Phone Number')}
                             type="tel"
                             className={`md:col-span-2 ${billingErrors.phone ? 'border-red-500' : ''}`}
                             required
