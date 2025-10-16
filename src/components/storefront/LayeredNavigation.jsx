@@ -176,78 +176,56 @@ export default function LayeredNavigation({
                            (priceRange[0] !== minPrice || priceRange[1] !== maxPrice);
 
 
-    // FIXED: Extract ALL attribute values from products including all options
+    // Extract attribute values from products with normalized format support
     const filterOptions = useMemo(() => {
         if (!products || !attributes) {
             return {};
         }
-        
+
         const options = {};
         attributes.forEach(attr => {
             if (attr.is_filterable) {
                 const values = new Set();
-                
-                // Add values from products - try multiple possible attribute keys
+
+                // Add values from products
                 products.forEach(p => {
-                    const productAttributes = p.attributes || p.attribute_values || {};
-                    
-                    // Try multiple possible keys for the attribute (expanded list)
-                    const possibleKeys = [
-                        attr.code,
-                        attr.name,
-                        attr.code?.toLowerCase(),
-                        attr.name?.toLowerCase(),
-                        // Add more variations for color specifically
-                        attr.code?.toLowerCase().replace(/[_-\s]/g, ''),
-                        attr.name?.toLowerCase().replace(/[_-\s]/g, ''),
-                        // Common color attribute variations
-                        'color', 'Color', 'COLOR',
-                        'colour', 'Colour', 'COLOUR'
-                    ].filter(Boolean);
-                    
-                    let attributeValue = null;
-                    for (const key of possibleKeys) {
-                        if (key && (productAttributes[key] !== undefined || p[key] !== undefined)) {
-                            attributeValue = productAttributes[key] || p[key];
-                            break;
+                    const productAttributes = p.attributes;
+
+                    // Handle new normalized format (array of objects)
+                    if (Array.isArray(productAttributes)) {
+                        const matchingAttr = productAttributes.find(pAttr =>
+                            pAttr.code === attr.code || pAttr.code === attr.name
+                        );
+
+                        if (matchingAttr && matchingAttr.value) {
+                            values.add(String(matchingAttr.value));
                         }
                     }
+                    // Handle old format (object with key-value pairs) - backward compatibility
+                    else if (productAttributes && typeof productAttributes === 'object') {
+                        const possibleKeys = [
+                            attr.code,
+                            attr.name,
+                            attr.code?.toLowerCase(),
+                            attr.name?.toLowerCase()
+                        ].filter(Boolean);
 
-                    if (attributeValue !== undefined && attributeValue !== null && attributeValue !== '') {
-                        if (Array.isArray(attributeValue)) {
-                            attributeValue.forEach(val => {
+                        for (const key of possibleKeys) {
+                            let attributeValue = productAttributes[key] || p[key];
+                            if (attributeValue !== undefined && attributeValue !== null && attributeValue !== '') {
                                 // Extract value from object if needed
-                                let extractedValue = val;
-                                if (typeof val === 'object' && val !== null) {
-                                    extractedValue = val.value || val.label || val.name;
+                                let extractedValue = attributeValue;
+                                if (typeof attributeValue === 'object' && attributeValue !== null) {
+                                    extractedValue = attributeValue.value || attributeValue.label || attributeValue.name;
                                 }
                                 if (extractedValue && extractedValue !== '[object Object]') {
                                     values.add(String(extractedValue));
                                 }
-                            });
-                        } else {
-                            // Extract value from object if needed
-                            let extractedValue = attributeValue;
-                            if (typeof attributeValue === 'object' && attributeValue !== null) {
-                                extractedValue = attributeValue.value || attributeValue.label || attributeValue.name;
-                            }
-                            if (extractedValue && extractedValue !== '[object Object]') {
-                                values.add(String(extractedValue));
+                                break;
                             }
                         }
                     }
                 });
-                
-                // FIXED: Also add predefined options from attribute definition
-                if (attr.options && Array.isArray(attr.options)) {
-                    attr.options.forEach(option => {
-                        // Handle different option formats
-                        const optionValue = option.value || option.label || option;
-                        if (optionValue && optionValue !== '') {
-                            values.add(String(optionValue));
-                        }
-                    });
-                }
 
                 // Only include attributes that have values with products
                 if (values.size > 0) {
@@ -256,45 +234,33 @@ export default function LayeredNavigation({
                     // Filter out values that have no products
                     const valuesWithProducts = sortedValues.filter(value => {
                         const productCount = products.filter(p => {
-                            const productAttributes = p.attributes || p.attribute_values || {};
+                            const productAttributes = p.attributes;
 
-                            // Try multiple possible keys for the attribute
-                            const possibleKeys = [
-                                attr.code,
-                                attr.name,
-                                attr.code?.toLowerCase(),
-                                attr.name?.toLowerCase(),
-                                attr.code?.toLowerCase().replace(/[_-\s]/g, ''),
-                                attr.name?.toLowerCase().replace(/[_-\s]/g, ''),
-                                'color', 'Color', 'COLOR',
-                                'colour', 'Colour', 'COLOUR'
-                            ].filter(Boolean);
+                            // Handle new normalized format (array)
+                            if (Array.isArray(productAttributes)) {
+                                const matchingAttr = productAttributes.find(pAttr =>
+                                    pAttr.code === attr.code || pAttr.code === attr.name
+                                );
+                                return matchingAttr && String(matchingAttr.value) === String(value);
+                            }
+                            // Handle old format (object) - backward compatibility
+                            else if (productAttributes && typeof productAttributes === 'object') {
+                                const possibleKeys = [attr.code, attr.name, attr.code?.toLowerCase()].filter(Boolean);
 
-                            let attributeValue = null;
-                            for (const key of possibleKeys) {
-                                if (key && (productAttributes[key] !== undefined || p[key] !== undefined)) {
-                                    attributeValue = productAttributes[key] || p[key];
-                                    break;
+                                for (const key of possibleKeys) {
+                                    let attributeValue = productAttributes[key] || p[key];
+                                    if (attributeValue !== undefined && attributeValue !== null) {
+                                        let extractedValue = attributeValue;
+                                        if (typeof attributeValue === 'object' && attributeValue !== null) {
+                                            extractedValue = attributeValue.value || attributeValue.label || attributeValue.name;
+                                        }
+                                        if (extractedValue && String(extractedValue) === String(value)) {
+                                            return true;
+                                        }
+                                    }
                                 }
                             }
-
-                            // Extract value from object if needed
-                            let extractedValue = attributeValue;
-                            if (typeof attributeValue === 'object' && attributeValue !== null) {
-                                if (Array.isArray(attributeValue)) {
-                                    // For arrays, check if any value matches
-                                    return attributeValue.some(val => {
-                                        const valToCheck = typeof val === 'object' && val !== null
-                                            ? (val.value || val.label || val.name)
-                                            : val;
-                                        return valToCheck && String(valToCheck) === String(value);
-                                    });
-                                } else {
-                                    extractedValue = attributeValue.value || attributeValue.label || attributeValue.name;
-                                }
-                            }
-
-                            return extractedValue && String(extractedValue) === String(value);
+                            return false;
                         }).length;
 
                         return productCount > 0;
@@ -649,26 +615,27 @@ export default function LayeredNavigation({
                                                     {visibleValues.map(value => {
                                         // Count products that have this attribute value
                                         const productCount = products.filter(p => {
-                                            const productAttributes = p.attributes || p.attribute_values || {};
-                                            const attributeValue = productAttributes[code] || p[code];
+                                            const productAttributes = p.attributes;
 
-                                            // Extract value from object if needed
-                                            let extractedValue = attributeValue;
-                                            if (typeof attributeValue === 'object' && attributeValue !== null) {
-                                                if (Array.isArray(attributeValue)) {
-                                                    // For arrays, check if any value matches
-                                                    return attributeValue.some(val => {
-                                                        const valToCheck = typeof val === 'object' && val !== null
-                                                            ? (val.value || val.label || val.name)
-                                                            : val;
-                                                        return valToCheck && String(valToCheck) === String(value);
-                                                    });
-                                                } else {
-                                                    extractedValue = attributeValue.value || attributeValue.label || attributeValue.name;
+                                            // Handle new normalized format (array)
+                                            if (Array.isArray(productAttributes)) {
+                                                const matchingAttr = productAttributes.find(pAttr =>
+                                                    pAttr.code === code
+                                                );
+                                                return matchingAttr && String(matchingAttr.value) === String(value);
+                                            }
+                                            // Handle old format (object) - backward compatibility
+                                            else if (productAttributes && typeof productAttributes === 'object') {
+                                                const attributeValue = productAttributes[code] || p[code];
+                                                if (attributeValue !== undefined && attributeValue !== null) {
+                                                    let extractedValue = attributeValue;
+                                                    if (typeof attributeValue === 'object' && attributeValue !== null) {
+                                                        extractedValue = attributeValue.value || attributeValue.label || attributeValue.name;
+                                                    }
+                                                    return extractedValue && String(extractedValue) === String(value);
                                                 }
                                             }
-
-                                            return extractedValue && String(extractedValue) === String(value);
+                                            return false;
                                         }).length;
 
                                         // Only render if there are products with this attribute value

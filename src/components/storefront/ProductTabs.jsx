@@ -60,14 +60,30 @@ export default function ProductTabs({ productTabs = [], product = null, settings
 
   // Render attributes dynamically (processVariables doesn't support {{@key}})
   useEffect(() => {
-    if (!containerRef.current || !product?.attributes) return;
+    if (!containerRef.current) return;
 
     // Find all attribute containers (there might be multiple for desktop/mobile)
     const attributesContainers = containerRef.current.querySelectorAll('[data-attributes-container]');
     if (!attributesContainers || attributesContainers.length === 0) return;
 
-    const attributes = product.attributes;
-    if (!attributes || Object.keys(attributes).length === 0) {
+    const attributes = product?.attributes;
+
+    // Handle both old object format and new array format
+    let attributesArray = [];
+    if (Array.isArray(attributes)) {
+      // New normalized format from API
+      attributesArray = attributes;
+    } else if (attributes && typeof attributes === 'object') {
+      // Old format - convert to array
+      attributesArray = Object.entries(attributes).map(([key, value]) => ({
+        code: key,
+        label: key.replace(/_/g, ' '),
+        value: String(value ?? ''),
+        type: 'text'
+      }));
+    }
+
+    if (!attributesArray || attributesArray.length === 0) {
       attributesContainers.forEach(container => {
         container.innerHTML = '<p class="text-gray-500">No specifications available for this product.</p>';
       });
@@ -79,12 +95,19 @@ export default function ProductTabs({ productTabs = [], product = null, settings
 
     const attributesHTML = `
       <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-        ${Object.entries(attributes).map(([key, value]) => `
-          <div class="flex justify-between py-2 border-b border-gray-100">
-            <span class="font-bold capitalize" style="color: ${attributeLabelColor};">${key.replace(/_/g, ' ')}</span>
-            <span>${String(value ?? '')}</span>
-          </div>
-        `).join('')}
+        ${attributesArray.map(attr => {
+          // For color attributes with hex metadata, show a color swatch
+          const colorSwatch = attr.metadata?.hex
+            ? `<span class="inline-block w-4 h-4 rounded border border-gray-300 ml-2" style="background-color: ${attr.metadata.hex}"></span>`
+            : '';
+
+          return `
+            <div class="flex justify-between py-2 border-b border-gray-100">
+              <span class="font-bold capitalize" style="color: ${attributeLabelColor};">${attr.label}</span>
+              <span>${attr.value}${colorSwatch}</span>
+            </div>
+          `;
+        }).join('')}
       </div>
     `;
 
