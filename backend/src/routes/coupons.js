@@ -6,18 +6,28 @@ const router = express.Router();
 // Basic CRUD operations for coupons
 router.get('/', async (req, res) => {
   try {
-    const { page = 1, limit = 10, store_id } = req.query;
+    const { page = 1, limit = 10, store_id, code, is_active } = req.query;
     const offset = (page - 1) * limit;
 
     const where = {};
-    if (req.user.role !== 'admin') {
+
+    // Filter by user access if not admin
+    if (req.user && req.user.role !== 'admin') {
       const { getUserStoresForDropdown } = require('../utils/storeAccess');
       const accessibleStores = await getUserStoresForDropdown(req.user.id);
       const storeIds = accessibleStores.map(store => store.id);
       where.store_id = { [Op.in]: storeIds };
     }
 
+    // Add filters based on query parameters
     if (store_id) where.store_id = store_id;
+    if (code) where.code = code;
+    if (is_active !== undefined) {
+      // Convert string 'true'/'false' to boolean
+      where.is_active = is_active === 'true' || is_active === true;
+    }
+
+    console.log('🔍 Coupon filter query:', { where, queryParams: req.query });
 
     const { count, rows } = await Coupon.findAndCountAll({
       where,
@@ -26,6 +36,8 @@ router.get('/', async (req, res) => {
       order: [['created_at', 'DESC']],
       include: [{ model: Store, attributes: ['id', 'name'] }]
     });
+
+    console.log('📦 Found coupons:', rows.length, 'coupons matching criteria');
 
     res.json({ success: true, data: { coupons: rows, pagination: { current_page: parseInt(page), per_page: parseInt(limit), total: count, total_pages: Math.ceil(count / limit) } } });
   } catch (error) {
