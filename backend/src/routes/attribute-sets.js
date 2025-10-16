@@ -11,7 +11,7 @@ const conditionalAuth = (req, res, next) => {
   if (isPublicRequest) {
     next();
   } else {
-    auth(req, res, next);
+    authMiddleware(req, res, next);
   }
 };
 
