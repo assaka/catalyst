@@ -363,18 +363,29 @@ export default function Category() {
 
           const productAttributes = product.attributes || product.attribute_values || {};
 
-          // Try multiple possible keys for the attribute
-          const possibleKeys = [
-            key,
-            key.toLowerCase(),
-            key.replace(/[_-]/g, '')
-          ];
-
           let productValue = null;
-          for (const possibleKey of possibleKeys) {
-            if (productAttributes[possibleKey] !== undefined || product[possibleKey] !== undefined) {
-              productValue = productAttributes[possibleKey] || product[possibleKey];
-              break;
+
+          // NEW FORMAT: attributes is an array of {code, label, value, ...}
+          if (Array.isArray(productAttributes)) {
+            const matchingAttr = productAttributes.find(pAttr => pAttr.code === key);
+            if (matchingAttr) {
+              productValue = matchingAttr.value;
+            }
+          }
+          // OLD FORMAT: attributes is an object {color: "red", brand: "Nike", ...}
+          else {
+            // Try multiple possible keys for the attribute
+            const possibleKeys = [
+              key,
+              key.toLowerCase(),
+              key.replace(/[_-]/g, '')
+            ];
+
+            for (const possibleKey of possibleKeys) {
+              if (productAttributes[possibleKey] !== undefined || product[possibleKey] !== undefined) {
+                productValue = productAttributes[possibleKey] || product[possibleKey];
+                break;
+              }
             }
           }
 
@@ -525,32 +536,43 @@ export default function Category() {
         products.forEach(p => {
           const productAttributes = p.attributes || p.attribute_values || {};
 
-          // Try multiple possible keys for the attribute
-          const possibleKeys = [
-            attrCode,
-            attr.code,
-            attr.name,
-            attr.attribute_name,
-            attrCode?.toLowerCase(),
-            attr.code?.toLowerCase(),
-            attr.name?.toLowerCase(),
-            attr.attribute_name?.toLowerCase(),
-            attrCode?.toLowerCase().replace(/[_-\s]/g, ''),
-            attr.code?.toLowerCase().replace(/[_-\s]/g, ''),
-            attr.name?.toLowerCase().replace(/[_-\s]/g, ''),
-            // Common variations
-            'color', 'Color', 'COLOR',
-            'colour', 'Colour', 'COLOUR',
-            'brand', 'Brand', 'BRAND',
-            'size', 'Size', 'SIZE',
-            'material', 'Material', 'MATERIAL'
-          ].filter(Boolean);
-
           let attributeValue = null;
-          for (const key of possibleKeys) {
-            if (key && (productAttributes[key] !== undefined || p[key] !== undefined)) {
-              attributeValue = productAttributes[key] || p[key];
-              break;
+
+          // NEW FORMAT: attributes is an array of {code, label, value, ...}
+          if (Array.isArray(productAttributes)) {
+            const matchingAttr = productAttributes.find(pAttr => pAttr.code === attrCode);
+            if (matchingAttr) {
+              attributeValue = matchingAttr.value;
+            }
+          }
+          // OLD FORMAT: attributes is an object {color: "red", brand: "Nike", ...}
+          else {
+            // Try multiple possible keys for the attribute
+            const possibleKeys = [
+              attrCode,
+              attr.code,
+              attr.name,
+              attr.attribute_name,
+              attrCode?.toLowerCase(),
+              attr.code?.toLowerCase(),
+              attr.name?.toLowerCase(),
+              attr.attribute_name?.toLowerCase(),
+              attrCode?.toLowerCase().replace(/[_-\s]/g, ''),
+              attr.code?.toLowerCase().replace(/[_-\s]/g, ''),
+              attr.name?.toLowerCase().replace(/[_-\s]/g, ''),
+              // Common variations
+              'color', 'Color', 'COLOR',
+              'colour', 'Colour', 'COLOUR',
+              'brand', 'Brand', 'BRAND',
+              'size', 'Size', 'SIZE',
+              'material', 'Material', 'MATERIAL'
+            ].filter(Boolean);
+
+            for (const key of possibleKeys) {
+              if (key && (productAttributes[key] !== undefined || p[key] !== undefined)) {
+                attributeValue = productAttributes[key] || p[key];
+                break;
+              }
             }
           }
 
