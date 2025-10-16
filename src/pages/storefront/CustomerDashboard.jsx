@@ -406,11 +406,11 @@ const WishlistTab = ({ wishlistProducts, setWishlistProducts, store, settings })
   return (
     <Card>
       <CardHeader>
-        <CardTitle>{t('wishlist.your', settings)}</CardTitle>
+        <CardTitle>{t('common.wishlist', settings)}</CardTitle>
       </CardHeader>
       <CardContent>
         {wishlistProducts.length === 0 ? (
-          <p>{t('your_wishlist_is_empty', settings)}</p>
+          <p>{t('common.your_wishlist_is_empty', settings)}</p>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {wishlistProducts.map(item => (
@@ -1266,7 +1266,7 @@ export default function CustomerDashboard() {
                       }`}
                     >
                       <Heart className="w-4 h-4 inline mr-2" />
-                      {t('wishlist.items', settings)} ({wishlistProducts.length})
+                      {t('common.wishlist', settings)} ({wishlistProducts.length})
                     </button>
                   </nav>
 
