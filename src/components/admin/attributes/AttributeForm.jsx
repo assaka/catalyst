@@ -267,9 +267,8 @@ export default function AttributeForm({ attribute, onSubmit, onCancel }) {
                 <div className="mt-3 space-y-2 p-3 bg-gray-50 border border-gray-200 rounded-lg">
                   {availableLanguages.map((lang) => {
                     const isRTL = lang.is_rtl || false;
-                    const value = lang.code === 'en'
-                      ? formData.name
-                      : (formData.translations[lang.code]?.name || '');
+                    // Always get value from translations, including English
+                    const value = formData.translations[lang.code]?.name || '';
 
                     return (
                       <div key={lang.code} className="flex items-center gap-3">
@@ -288,7 +287,7 @@ export default function AttributeForm({ attribute, onSubmit, onCancel }) {
                           }}
                           dir={isRTL ? 'rtl' : 'ltr'}
                           className={`flex-1 h-9 text-sm ${isRTL ? 'text-right' : 'text-left'}`}
-                          placeholder={lang.code === 'en' ? 'Attribute name' : (formData.name || `${lang.native_name} translation`)}
+                          placeholder={lang.code === 'en' ? 'Attribute name' : (formData.translations.en?.name || formData.name || `${lang.native_name} translation`)}
                         />
                       </div>
                     );
