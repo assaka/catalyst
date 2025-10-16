@@ -439,7 +439,7 @@ const WishlistTab = ({ wishlistProducts, setWishlistProducts, store, settings })
                       }}
                     >
                       <ShoppingCart className="w-4 h-4 mr-1" />
-                      {t('common.add_to_cart', settings)},
+                      {t('common.add_to_cart', settings)}
                     </Button>
                     <Button 
                       variant="destructive" 
@@ -1248,7 +1248,7 @@ export default function CustomerDashboard() {
                       }`}
                     >
                       <ShoppingBag className="w-4 h-4 inline mr-2" />
-                      {t('account.orders', settings)} ({orders.length})
+                      {t('order.your_orders', settings)} ({orders.length})
                     </button>
                     <button
                       onClick={() => handleTabChange('addresses')}
