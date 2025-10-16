@@ -972,8 +972,8 @@ export function UnifiedSlotRenderer({
           } else if (id === 'empty_cart_button') {
             // Handle empty cart "Continue Shopping" button
             const store = cartData?.store || categoryData?.store || productData?.store;
-            if (store?.slug) {
-              const storeBaseUrl = getStoreBaseUrl(store.slug);
+            if (store) {
+              const storeBaseUrl = getStoreBaseUrl(store);
               navigate(storeBaseUrl);
             }
           }
