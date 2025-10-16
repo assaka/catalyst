@@ -310,41 +310,52 @@ export function CategorySlotRenderer({
         const attrCode = attr.code || attr.name;
         const filterData = filtersData[attrCode];
 
-        // Handle new structure: { label, options: [...] } or old structure: [...]
-        let options = [];
+        // Structure: { label, options: ["inbouw", "onderbouw"] }
+        let valueCodes = [];
         let attributeLabel = attr.name || attr.code || attrCode;
 
-        if (filterData) {
-          if (Array.isArray(filterData)) {
-            // Old structure: direct array
-            options = filterData;
-          } else if (typeof filterData === 'object' && filterData.options) {
-            // New structure: { label, options: [...] }
-            options = filterData.options;
-            attributeLabel = filterData.label || attributeLabel;
-          }
+        if (filterData && typeof filterData === 'object' && filterData.options) {
+          valueCodes = filterData.options;
+          attributeLabel = filterData.label || attributeLabel;
         }
 
-        const formattedOptions = Array.isArray(options)
-          ? options.map(option => {
-              if (typeof option === 'object' && option !== null) {
-                return {
-                  value: option.value || option.label || String(option),
-                  label: option.label || option.value || String(option),
-                  count: option.count || 0,
-                  active: false,
-                  attributeCode: attrCode // Add attribute code to each option
-                };
-              }
+        // Get attribute values with translations from attr
+        // attr should have a 'values' property with AttributeValue records
+        const attributeValues = attr.values || [];
+
+        // Map value codes to full option objects with translations
+        const formattedOptions = valueCodes
+          .map(valueCode => {
+            // Find the AttributeValue record for this code
+            const attrValue = attributeValues.find(av => av.code === valueCode);
+
+            if (attrValue) {
+              // Get translated label
+              const valueLabel = attrValue.translations?.[currentLang]?.label ||
+                               attrValue.translations?.en?.label ||
+                               valueCode;
+
               return {
-                value: String(option),
-                label: String(option),
+                value: valueCode,
+                label: valueLabel,
                 count: 0,
                 active: false,
-                attributeCode: attrCode // Add attribute code to each option
+                attributeCode: attrCode,
+                sort_order: attrValue.sort_order || 0
               };
-            })
-          : [];
+            }
+
+            // Fallback if no AttributeValue found
+            return {
+              value: valueCode,
+              label: valueCode,
+              count: 0,
+              active: false,
+              attributeCode: attrCode,
+              sort_order: 999
+            };
+          })
+          .sort((a, b) => a.sort_order - b.sort_order); // Sort by sort_order
 
         const result = {
           code: attrCode,

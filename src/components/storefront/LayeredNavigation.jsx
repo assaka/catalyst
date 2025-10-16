@@ -193,7 +193,7 @@ export default function LayeredNavigation({
                 products.forEach(p => {
                     const productAttributes = p.attributes;
 
-                    // Handle new normalized format (array of objects)
+                    // Handle normalized format (array of objects with code/label/value)
                     if (Array.isArray(productAttributes)) {
                         const matchingAttr = productAttributes.find(pAttr =>
                             pAttr.code === attr.code || pAttr.code === attr.name
@@ -201,30 +201,6 @@ export default function LayeredNavigation({
 
                         if (matchingAttr && matchingAttr.value) {
                             values.add(String(matchingAttr.value));
-                        }
-                    }
-                    // Handle old format (object with key-value pairs) - backward compatibility
-                    else if (productAttributes && typeof productAttributes === 'object') {
-                        const possibleKeys = [
-                            attr.code,
-                            attr.name,
-                            attr.code?.toLowerCase(),
-                            attr.name?.toLowerCase()
-                        ].filter(Boolean);
-
-                        for (const key of possibleKeys) {
-                            let attributeValue = productAttributes[key] || p[key];
-                            if (attributeValue !== undefined && attributeValue !== null && attributeValue !== '') {
-                                // Extract value from object if needed
-                                let extractedValue = attributeValue;
-                                if (typeof attributeValue === 'object' && attributeValue !== null) {
-                                    extractedValue = attributeValue.value || attributeValue.label || attributeValue.name;
-                                }
-                                if (extractedValue && extractedValue !== '[object Object]') {
-                                    values.add(String(extractedValue));
-                                }
-                                break;
-                            }
                         }
                     }
                 });
@@ -238,29 +214,12 @@ export default function LayeredNavigation({
                         const productCount = products.filter(p => {
                             const productAttributes = p.attributes;
 
-                            // Handle new normalized format (array)
+                            // Handle normalized format (array of objects)
                             if (Array.isArray(productAttributes)) {
                                 const matchingAttr = productAttributes.find(pAttr =>
                                     pAttr.code === attr.code || pAttr.code === attr.name
                                 );
                                 return matchingAttr && String(matchingAttr.value) === String(value);
-                            }
-                            // Handle old format (object) - backward compatibility
-                            else if (productAttributes && typeof productAttributes === 'object') {
-                                const possibleKeys = [attr.code, attr.name, attr.code?.toLowerCase()].filter(Boolean);
-
-                                for (const key of possibleKeys) {
-                                    let attributeValue = productAttributes[key] || p[key];
-                                    if (attributeValue !== undefined && attributeValue !== null) {
-                                        let extractedValue = attributeValue;
-                                        if (typeof attributeValue === 'object' && attributeValue !== null) {
-                                            extractedValue = attributeValue.value || attributeValue.label || attributeValue.name;
-                                        }
-                                        if (extractedValue && String(extractedValue) === String(value)) {
-                                            return true;
-                                        }
-                                    }
-                                }
                             }
                             return false;
                         }).length;
@@ -625,23 +584,12 @@ export default function LayeredNavigation({
                                         const productCount = products.filter(p => {
                                             const productAttributes = p.attributes;
 
-                                            // Handle new normalized format (array)
+                                            // Handle normalized format (array of objects)
                                             if (Array.isArray(productAttributes)) {
                                                 const matchingAttr = productAttributes.find(pAttr =>
                                                     pAttr.code === code
                                                 );
                                                 return matchingAttr && String(matchingAttr.value) === String(value);
-                                            }
-                                            // Handle old format (object) - backward compatibility
-                                            else if (productAttributes && typeof productAttributes === 'object') {
-                                                const attributeValue = productAttributes[code] || p[code];
-                                                if (attributeValue !== undefined && attributeValue !== null) {
-                                                    let extractedValue = attributeValue;
-                                                    if (typeof attributeValue === 'object' && attributeValue !== null) {
-                                                        extractedValue = attributeValue.value || attributeValue.label || attributeValue.name;
-                                                    }
-                                                    return extractedValue && String(extractedValue) === String(value);
-                                                }
                                             }
                                             return false;
                                         }).length;

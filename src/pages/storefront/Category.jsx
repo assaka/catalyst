@@ -497,8 +497,8 @@ export default function Category() {
       const excludedAttributes = ['name', 'sku', 'description', 'image'];
       if (excludedAttributes.includes(attrCode)) return;
 
-      // Extract values from products only (dynamic from DB)
-      const valueCountMap = new Map(); // Map<value, count>
+      // Extract unique values from products (just the codes)
+      const valueSet = new Set();
 
       if (products && products.length > 0) {
         products.forEach(p => {
@@ -510,14 +510,10 @@ export default function Category() {
           const matchingAttr = productAttributes.find(pAttr => pAttr.code === attrCode);
           if (!matchingAttr || !matchingAttr.value) return;
 
-          // IMPORTANT: In the API response:
-          // - matchingAttr.label = ATTRIBUTE label (e.g., "Kleur", "Manufacturer")
-          // - matchingAttr.value = VALUE label (e.g., "Overig", "Samsung")
-          // For filters, we want to display the VALUE label
-          const valueLabel = String(matchingAttr.value);
-
-          if (valueLabel && valueLabel !== '') {
-            valueCountMap.set(valueLabel, (valueCountMap.get(valueLabel) || 0) + 1);
+          // Store just the value code
+          const valueCode = String(matchingAttr.value);
+          if (valueCode && valueCode !== '') {
+            valueSet.add(valueCode);
           }
         });
       }
@@ -540,17 +536,12 @@ export default function Category() {
         }
       }
       // Only include attributes that have values with count > 0
-      else if (valueCountMap.size > 0) {
-        // Create the final filter with translated label and options
+      else if (valueSet.size > 0) {
+        // Store just the value codes array
+        // Labels will be fetched from attribute_values.translations when displaying
         filters[attrCode] = {
           label: attributeLabel,
-          options: Array.from(valueCountMap.entries())
-            .sort(([a], [b]) => a.localeCompare(b))
-            .map(([valueLabel, count]) => ({
-              value: valueLabel,
-              label: valueLabel,
-              count
-            }))
+          options: Array.from(valueSet) // Just the value codes
         };
       }
     });
