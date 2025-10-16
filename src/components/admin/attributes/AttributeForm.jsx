@@ -43,9 +43,21 @@ export default function AttributeForm({ attribute, onSubmit, onCancel }) {
 
   useEffect(() => {
     if (attribute) {
+      // Prepare translations object, ensuring English translation is populated
+      const translations = attribute.translations || {};
+
+      // If English translation exists, use it for the main name field
+      // Otherwise, initialize English translation from the main name field
+      const attributeName = translations.en?.name || attribute.name;
+
+      if (!translations.en) {
+        translations.en = { name: attribute.name };
+      }
+
       setFormData({
         ...attribute,
-        translations: attribute.translations || {},
+        name: attributeName,
+        translations: translations,
         file_settings: attribute.file_settings || {
           allowed_extensions: ["pdf", "doc", "docx", "txt", "png", "jpg"],
           max_file_size: 5,
