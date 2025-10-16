@@ -122,36 +122,59 @@ export default function ProductTabs({ productTabs = [], product = null, settings
     if (!containerRef.current) return;
 
     const handleClick = (e) => {
+      // Handle desktop tab switching
       const tabButton = e.target.closest('[data-action="switch-tab"]');
-      if (!tabButton) return;
+      if (tabButton) {
+        const tabId = tabButton.getAttribute('data-tab-id');
+        const tabIndex = tabsData.findIndex(tab => tab.id === tabId);
 
-      const tabId = tabButton.getAttribute('data-tab-id');
-      const tabIndex = tabsData.findIndex(tab => tab.id === tabId);
+        if (tabIndex !== -1) {
+          setActiveTabIndex(tabIndex);
 
-      if (tabIndex !== -1) {
-        setActiveTabIndex(tabIndex);
+          // Update UI immediately
+          const allTabs = containerRef.current.querySelectorAll('[data-action="switch-tab"]');
+          const allContents = containerRef.current.querySelectorAll('[data-tab-content]');
 
-        // Update UI immediately
-        const allTabs = containerRef.current.querySelectorAll('[data-action="switch-tab"]');
-        const allContents = containerRef.current.querySelectorAll('[data-tab-content]');
+          allTabs.forEach((btn, idx) => {
+            if (idx === tabIndex) {
+              btn.classList.add('border-blue-500', 'text-blue-600');
+              btn.classList.remove('text-gray-600');
+            } else {
+              btn.classList.remove('border-blue-500', 'text-blue-600');
+              btn.classList.add('text-gray-600');
+            }
+          });
 
-        allTabs.forEach((btn, idx) => {
-          if (idx === tabIndex) {
-            btn.classList.add('border-blue-500', 'text-blue-600');
-            btn.classList.remove('text-gray-600');
+          allContents.forEach((content, idx) => {
+            if (idx === tabIndex) {
+              content.classList.remove('hidden');
+            } else {
+              content.classList.add('hidden');
+            }
+          });
+        }
+        return;
+      }
+
+      // Handle mobile accordion toggle
+      const accordionButton = e.target.closest('[data-action="toggle-accordion"]');
+      if (accordionButton) {
+        const accordionIndex = accordionButton.getAttribute('data-accordion-index');
+        const accordionContent = containerRef.current.querySelector(`[data-accordion-content="${accordionIndex}"]`);
+        const chevron = accordionButton.querySelector('.accordion-chevron');
+
+        if (accordionContent) {
+          // Toggle visibility
+          const isHidden = accordionContent.classList.contains('hidden');
+
+          if (isHidden) {
+            accordionContent.classList.remove('hidden');
+            if (chevron) chevron.style.transform = 'rotate(180deg)';
           } else {
-            btn.classList.remove('border-blue-500', 'text-blue-600');
-            btn.classList.add('text-gray-600');
+            accordionContent.classList.add('hidden');
+            if (chevron) chevron.style.transform = 'rotate(0deg)';
           }
-        });
-
-        allContents.forEach((content, idx) => {
-          if (idx === tabIndex) {
-            content.classList.remove('hidden');
-          } else {
-            content.classList.add('hidden');
-          }
-        });
+        }
       }
     };
 
