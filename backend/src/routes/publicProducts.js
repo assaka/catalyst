@@ -1,5 +1,5 @@
 const express = require('express');
-const { Product, Store } = require('../models');
+const { Product, Store, ProductAttributeValue, Attribute, AttributeValue } = require('../models');
 const { Op } = require('sequelize');
 const router = express.Router();
 
@@ -139,8 +139,28 @@ router.get('/', async (req, res) => {
 // @access  Public
 router.get('/:id', async (req, res) => {
   try {
-    const product = await Product.findByPk(req.params.id);
-    
+    const { lang = 'en' } = req.query;
+
+    const product = await Product.findByPk(req.params.id, {
+      include: [
+        {
+          model: ProductAttributeValue,
+          as: 'attributeValues',
+          include: [
+            {
+              model: Attribute,
+              attributes: ['id', 'code', 'type', 'translations']
+            },
+            {
+              model: AttributeValue,
+              as: 'value',
+              attributes: ['id', 'code', 'translations', 'metadata']
+            }
+          ]
+        }
+      ]
+    });
+
     if (!product) {
       return res.status(404).json({
         success: false,
@@ -148,9 +168,53 @@ router.get('/:id', async (req, res) => {
       });
     }
 
+    // Transform product to include formatted attributes
+    const productData = product.toJSON();
+
+    // Format attributes for frontend
+    if (productData.attributeValues && Array.isArray(productData.attributeValues)) {
+      productData.attributes = productData.attributeValues.map(pav => {
+        const attr = pav.Attribute;
+        if (!attr) return null;
+
+        const attrLabel = attr.translations?.[lang]?.label ||
+                         attr.translations?.en?.label ||
+                         attr.code;
+
+        let value, valueLabel, metadata = null;
+
+        if (pav.value_id && pav.value) {
+          // Select/multiselect attribute
+          value = pav.value.code;
+          valueLabel = pav.value.translations?.[lang]?.label ||
+                      pav.value.translations?.en?.label ||
+                      pav.value.code;
+          metadata = pav.value.metadata || null;
+        } else {
+          // Text/number/date/boolean attribute
+          value = pav.text_value || pav.number_value || pav.date_value || pav.boolean_value;
+          valueLabel = String(value);
+        }
+
+        return {
+          code: attr.code,
+          label: attrLabel,
+          value: valueLabel,
+          rawValue: value,
+          type: attr.type,
+          metadata
+        };
+      }).filter(Boolean); // Remove null values
+    } else {
+      productData.attributes = [];
+    }
+
+    // Remove the raw attributeValues array
+    delete productData.attributeValues;
+
     res.json({
       success: true,
-      data: product
+      data: productData
     });
   } catch (error) {
     console.error('Get public product error:', error);

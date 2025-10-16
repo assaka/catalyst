@@ -1,5 +1,5 @@
 const express = require('express');
-const { Attribute, Store, AttributeSet } = require('../models');
+const { Attribute, AttributeValue, Store, AttributeSet } = require('../models');
 const { Op } = require('sequelize');
 const router = express.Router();
 
@@ -178,13 +178,13 @@ router.delete('/:id', async (req, res) => {
     const attribute = await Attribute.findByPk(req.params.id, {
       include: [{ model: Store, attributes: ['id', 'name', 'user_id'] }]
     });
-    
+
     if (!attribute) return res.status(404).json({ success: false, message: 'Attribute not found' });
-    
+
     if (req.user.role !== 'admin') {
       const { checkUserStoreAccess } = require('../utils/storeAccess');
       const access = await checkUserStoreAccess(req.user.id, attribute.Store.id);
-      
+
       if (!access) {
         return res.status(403).json({ success: false, message: 'Access denied' });
       }
@@ -194,6 +194,140 @@ router.delete('/:id', async (req, res) => {
     res.json({ success: true, message: 'Attribute deleted successfully' });
   } catch (error) {
     res.status(500).json({ success: false, message: 'Server error' });
+  }
+});
+
+// ========== ATTRIBUTE VALUES ROUTES ==========
+
+// Get all values for an attribute
+router.get('/:attributeId/values', async (req, res) => {
+  try {
+    const attribute = await Attribute.findByPk(req.params.attributeId, {
+      include: [{ model: Store, attributes: ['id', 'name', 'user_id'] }]
+    });
+
+    if (!attribute) {
+      return res.status(404).json({ success: false, error: 'Attribute not found' });
+    }
+
+    // Check access if authenticated request
+    if (req.user && req.user.role !== 'admin') {
+      const { checkUserStoreAccess } = require('../utils/storeAccess');
+      const access = await checkUserStoreAccess(req.user.id, attribute.Store.id);
+
+      if (!access) {
+        return res.status(403).json({ success: false, error: 'Access denied' });
+      }
+    }
+
+    const values = await AttributeValue.findAll({
+      where: { attribute_id: req.params.attributeId },
+      order: [['sort_order', 'ASC'], ['code', 'ASC']]
+    });
+
+    res.json({ success: true, data: values });
+  } catch (error) {
+    console.error('❌ Get attribute values error:', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// Create attribute value
+router.post('/:attributeId/values', async (req, res) => {
+  try {
+    const attribute = await Attribute.findByPk(req.params.attributeId, {
+      include: [{ model: Store, attributes: ['id', 'name', 'user_id'] }]
+    });
+
+    if (!attribute) {
+      return res.status(404).json({ success: false, error: 'Attribute not found' });
+    }
+
+    if (req.user.role !== 'admin') {
+      const { checkUserStoreAccess } = require('../utils/storeAccess');
+      const access = await checkUserStoreAccess(req.user.id, attribute.Store.id);
+
+      if (!access) {
+        return res.status(403).json({ success: false, error: 'Access denied' });
+      }
+    }
+
+    const { code, translations, metadata, sort_order } = req.body;
+
+    const value = await AttributeValue.create({
+      attribute_id: req.params.attributeId,
+      code,
+      translations: translations || {},
+      metadata: metadata || {},
+      sort_order: sort_order || 0
+    });
+
+    res.json({ success: true, data: value });
+  } catch (error) {
+    console.error('❌ Create attribute value error:', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// Update attribute value
+router.put('/:attributeId/values/:valueId', async (req, res) => {
+  try {
+    const value = await AttributeValue.findByPk(req.params.valueId, {
+      include: [{
+        model: Attribute,
+        include: [{ model: Store, attributes: ['id', 'name', 'user_id'] }]
+      }]
+    });
+
+    if (!value) {
+      return res.status(404).json({ success: false, error: 'Value not found' });
+    }
+
+    if (req.user.role !== 'admin') {
+      const { checkUserStoreAccess } = require('../utils/storeAccess');
+      const access = await checkUserStoreAccess(req.user.id, value.Attribute.Store.id);
+
+      if (!access) {
+        return res.status(403).json({ success: false, error: 'Access denied' });
+      }
+    }
+
+    await value.update(req.body);
+    res.json({ success: true, data: value });
+  } catch (error) {
+    console.error('❌ Update attribute value error:', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// Delete attribute value
+router.delete('/:attributeId/values/:valueId', async (req, res) => {
+  try {
+    const value = await AttributeValue.findByPk(req.params.valueId, {
+      include: [{
+        model: Attribute,
+        include: [{ model: Store, attributes: ['id', 'name', 'user_id'] }]
+      }]
+    });
+
+    if (!value) {
+      return res.status(404).json({ success: false, error: 'Value not found' });
+    }
+
+    if (req.user.role !== 'admin') {
+      const { checkUserStoreAccess } = require('../utils/storeAccess');
+      const access = await checkUserStoreAccess(req.user.id, value.Attribute.Store.id);
+
+      if (!access) {
+        return res.status(403).json({ success: false, error: 'Access denied' });
+      }
+    }
+
+    await value.destroy();
+    res.json({ success: true, message: 'Value deleted' });
+  } catch (error) {
+    console.error('❌ Delete attribute value error:', error);
+    res.status(500).json({ success: false, error: error.message });
   }
 });
 
