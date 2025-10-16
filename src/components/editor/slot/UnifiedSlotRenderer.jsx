@@ -971,8 +971,8 @@ export function UnifiedSlotRenderer({
             const store = cartData?.store || categoryData?.store || productData?.store;
             const navigate = cartData?.navigate;
             if (store && navigate) {
-              const storeBaseUrl = getStoreBaseUrl(store);
-              navigate(storeBaseUrl);
+              const storeUrl = createPublicUrl(store.slug, 'STOREFRONT');
+              navigate(storeUrl);
             }
           }
         };
