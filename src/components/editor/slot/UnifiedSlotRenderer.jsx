@@ -130,7 +130,7 @@
  */
 
 import React, { useEffect, useRef, useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { ResizeWrapper } from '@/components/ui/resize-element-wrapper';
@@ -444,9 +444,6 @@ export function UnifiedSlotRenderer({
 }) {
   // Get translation function
   const { t } = useTranslation();
-
-  // Get navigation function for button handlers
-  const navigate = useNavigate();
 
   /**
    * processTranslation - Detects and translates content if it's a translation key
@@ -972,7 +969,8 @@ export function UnifiedSlotRenderer({
           } else if (id === 'empty_cart_button') {
             // Handle empty cart "Continue Shopping" button
             const store = cartData?.store || categoryData?.store || productData?.store;
-            if (store) {
+            const navigate = cartData?.navigate;
+            if (store && navigate) {
               const storeBaseUrl = getStoreBaseUrl(store);
               navigate(storeBaseUrl);
             }
