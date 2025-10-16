@@ -482,7 +482,7 @@ const AddressForm = ({ addressForm, handleInputChange, handleAddressSubmit, edit
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <Label htmlFor="full_name">{t('common.full_name', settings)} *</Label>
+              <Label htmlFor="full_name">{t('common.full_name', settings)}</Label>
               <Input
                 id="full_name"
                 name="full_name"
@@ -505,7 +505,7 @@ const AddressForm = ({ addressForm, handleInputChange, handleAddressSubmit, edit
           </div>
 
           <div>
-            <Label htmlFor="street">{t('common.street_address', settings)} *</Label>
+            <Label htmlFor="street">{t('common.street_address', settings)}</Label>
             <Input
               id="street"
               name="street"
@@ -517,7 +517,7 @@ const AddressForm = ({ addressForm, handleInputChange, handleAddressSubmit, edit
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div>
-              <Label htmlFor="city">{t('common.city', settings)} *</Label>
+              <Label htmlFor="city">{t('common.city', settings)}</Label>
               <Input
                 id="city"
                 name="city"
@@ -536,7 +536,7 @@ const AddressForm = ({ addressForm, handleInputChange, handleAddressSubmit, edit
               />
             </div>
             <div>
-              <Label htmlFor="postal_code">{t('common.postal_code', settings)} *</Label>
+              <Label htmlFor="postal_code">{t('common.postal_code', settings)}</Label>
               <Input
                 id="postal_code"
                 name="postal_code"
@@ -548,7 +548,7 @@ const AddressForm = ({ addressForm, handleInputChange, handleAddressSubmit, edit
           </div>
 
           <div>
-            <Label htmlFor="country">{t('common.country', settings)} *</Label>
+            <Label htmlFor="country">{t('common.country', settings)}</Label>
             <CountrySelect
               value={addressForm.country || ''}
               onValueChange={(value) => handleInputChange('country', value)}

@@ -220,12 +220,12 @@ export default function OrderSuccess() {
 
     // Validate form
     if (accountFormData.password.length < 6) {
-      setAccountCreationError(t('validation.password_min_length', settings));
+      setAccountCreationError(t('messages.password_min_length', settings));
       return;
     }
 
     if (accountFormData.password !== accountFormData.confirmPassword) {
-      setAccountCreationError(t('validation.passwords_no_match', settings));
+      setAccountCreationError(t('messages.passwords_no_match', settings));
       return;
     }
 
