@@ -361,59 +361,19 @@ export default function Category() {
           const filterValues = activeFilters[key];
           if (!filterValues || filterValues.length === 0) continue;
 
-          const productAttributes = product.attributes || product.attribute_values || {};
+          const productAttributes = product.attributes || [];
 
-          let productValue = null;
+          // Attributes is an array of {code, label, value, ...}
+          if (!Array.isArray(productAttributes)) return false;
 
-          // NEW FORMAT: attributes is an array of {code, label, value, ...}
-          if (Array.isArray(productAttributes)) {
-            const matchingAttr = productAttributes.find(pAttr => pAttr.code === key);
-            if (matchingAttr) {
-              productValue = matchingAttr.value;
-            }
-          }
-          // OLD FORMAT: attributes is an object {color: "red", brand: "Nike", ...}
-          else {
-            // Try multiple possible keys for the attribute
-            const possibleKeys = [
-              key,
-              key.toLowerCase(),
-              key.replace(/[_-]/g, '')
-            ];
-
-            for (const possibleKey of possibleKeys) {
-              if (productAttributes[possibleKey] !== undefined || product[possibleKey] !== undefined) {
-                productValue = productAttributes[possibleKey] || product[possibleKey];
-                break;
-              }
-            }
-          }
-
-          if (productValue === undefined || productValue === null) {
+          const matchingAttr = productAttributes.find(pAttr => pAttr.code === key);
+          if (!matchingAttr || !matchingAttr.value) {
             return false;
           }
 
-          // Extract value from object if needed (same logic as in CategorySlotRenderer)
-          let extractedValue = productValue;
-          if (typeof productValue === 'object' && productValue !== null) {
-            extractedValue = productValue.value || productValue.label || productValue.name;
-          } else if (Array.isArray(productValue)) {
-            // For arrays, check if any value matches
-            const arrayMatch = productValue.some(val => {
-              const valToCheck = typeof val === 'object' && val !== null
-                ? (val.value || val.label || val.name)
-                : val;
-              return filterValues.some(filterVal => String(filterVal) === String(valToCheck));
-            });
-            if (!arrayMatch) {
-              return false;
-            }
-            continue; // Skip the single value check below
-          }
+          const productValue = String(matchingAttr.value);
+          const hasMatch = filterValues.some(filterVal => String(filterVal) === productValue);
 
-          extractedValue = String(extractedValue);
-
-          const hasMatch = filterValues.some(filterVal => String(filterVal) === extractedValue);
           if (!hasMatch) {
             return false;
           }
@@ -534,75 +494,19 @@ export default function Category() {
 
       if (products && products.length > 0) {
         products.forEach(p => {
-          const productAttributes = p.attributes || p.attribute_values || {};
+          const productAttributes = p.attributes || [];
 
-          let attributeValue = null;
+          // Attributes is an array of {code, label, value, ...}
+          if (!Array.isArray(productAttributes)) return;
 
-          // NEW FORMAT: attributes is an array of {code, label, value, ...}
-          if (Array.isArray(productAttributes)) {
-            const matchingAttr = productAttributes.find(pAttr => pAttr.code === attrCode);
-            if (matchingAttr) {
-              attributeValue = matchingAttr.value;
-            }
-          }
-          // OLD FORMAT: attributes is an object {color: "red", brand: "Nike", ...}
-          else {
-            // Try multiple possible keys for the attribute
-            const possibleKeys = [
-              attrCode,
-              attr.code,
-              attr.name,
-              attr.attribute_name,
-              attrCode?.toLowerCase(),
-              attr.code?.toLowerCase(),
-              attr.name?.toLowerCase(),
-              attr.attribute_name?.toLowerCase(),
-              attrCode?.toLowerCase().replace(/[_-\s]/g, ''),
-              attr.code?.toLowerCase().replace(/[_-\s]/g, ''),
-              attr.name?.toLowerCase().replace(/[_-\s]/g, ''),
-              // Common variations
-              'color', 'Color', 'COLOR',
-              'colour', 'Colour', 'COLOUR',
-              'brand', 'Brand', 'BRAND',
-              'size', 'Size', 'SIZE',
-              'material', 'Material', 'MATERIAL'
-            ].filter(Boolean);
+          const matchingAttr = productAttributes.find(pAttr => pAttr.code === attrCode);
+          if (!matchingAttr || !matchingAttr.value) return;
 
-            for (const key of possibleKeys) {
-              if (key && (productAttributes[key] !== undefined || p[key] !== undefined)) {
-                attributeValue = productAttributes[key] || p[key];
-                break;
-              }
-            }
-          }
+          const attributeValue = matchingAttr.value;
 
           if (attributeValue !== undefined && attributeValue !== null && attributeValue !== '') {
-            if (Array.isArray(attributeValue)) {
-              attributeValue.forEach(val => {
-                if (val) {
-                  let extractedValue;
-                  if (typeof val === 'object' && val !== null) {
-                    extractedValue = val.value || val.label || val.name;
-                  } else {
-                    extractedValue = val;
-                  }
-
-                  if (extractedValue) {
-                    const valueStr = String(extractedValue);
-                    valueCountMap.set(valueStr, (valueCountMap.get(valueStr) || 0) + 1);
-                  }
-                }
-              });
-            } else if (typeof attributeValue === 'object' && attributeValue !== null) {
-              const extractedValue = attributeValue.value || attributeValue.label || attributeValue.name;
-              if (extractedValue) {
-                const valueStr = String(extractedValue);
-                valueCountMap.set(valueStr, (valueCountMap.get(valueStr) || 0) + 1);
-              }
-            } else {
-              const valueStr = String(attributeValue);
-              valueCountMap.set(valueStr, (valueCountMap.get(valueStr) || 0) + 1);
-            }
+            const valueStr = String(attributeValue);
+            valueCountMap.set(valueStr, (valueCountMap.get(valueStr) || 0) + 1);
           }
         });
       }
