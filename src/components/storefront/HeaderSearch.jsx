@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { createPageUrl } from '@/utils';
+import { useNavigate, useParams } from 'react-router-dom';
+import { createPublicUrl } from '@/utils/urlUtils';
 import { StorefrontProduct } from '@/api/storefront-entities';
 import { useStore } from '@/components/storefront/StoreProvider';
 import { Search, X } from 'lucide-react';
@@ -13,6 +13,7 @@ import { getProductName, getProductShortDescription, getCurrentLanguage } from '
 
 export default function HeaderSearch({ styles = {} }) {
   const navigate = useNavigate();
+  const { storeCode } = useParams();
   const { store, settings, taxes, selectedCountry } = useStore();
   const { t } = useTranslation();
 
@@ -97,22 +98,27 @@ export default function HeaderSearch({ styles = {} }) {
 
   const handleSearch = (e) => {
     e.preventDefault();
-    if (searchQuery.trim()) {
+    if (searchQuery.trim() && storeCode) {
       // Track search event
       if (typeof window !== 'undefined' && window.catalyst?.trackSearch) {
         window.catalyst.trackSearch(searchQuery.trim(), searchResults.length);
       }
-      
-      navigate(createPageUrl(`Storefront?search=${encodeURIComponent(searchQuery.trim())}`));
+
+      // Navigate to Storefront page with search parameter
+      const searchUrl = createPublicUrl(storeCode, 'STOREFRONT', { search: searchQuery.trim() });
+      navigate(searchUrl);
       setShowResults(false);
       setSearchQuery('');
     }
   };
 
   const handleProductClick = (product) => {
-    navigate(createPageUrl(`ProductDetail?id=${product.id}`));
-    setShowResults(false);
-    setSearchQuery('');
+    if (storeCode) {
+      const productUrl = createPublicUrl(storeCode, 'PRODUCT_DETAIL', { id: product.id });
+      navigate(productUrl);
+      setShowResults(false);
+      setSearchQuery('');
+    }
   };
 
   const clearSearch = () => {
