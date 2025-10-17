@@ -189,7 +189,7 @@ export default function Translations() {
       });
 
       if (response && response.success) {
-        showMessage('Translation saved successfully', 'success');
+        toast.success('Translation saved successfully');
 
         // Update local state directly instead of reloading
         const updatedLabels = labels.map(label =>
@@ -197,23 +197,14 @@ export default function Translations() {
         );
         setLabels(updatedLabels);
 
-        // Clear translation cache in storefront
-        try {
-          const channel = new BroadcastChannel('translations_update');
-          channel.postMessage({ type: 'clear_translations_cache', language: selectedLanguage });
-          channel.close();
-        } catch (e) {
-          console.warn('BroadcastChannel not supported:', e);
-        }
-
         // Close edit mode
         setEditingKey(null);
         setEditValue('');
       }
+      setSaving(false);
     } catch (error) {
       console.error('Failed to save label:', error);
-      showMessage('Failed to save translation', 'error');
-    } finally {
+      toast.error('Failed to save translation');
       setSaving(false);
     }
   };
@@ -1263,7 +1254,12 @@ export default function Translations() {
                               type="button"
                               variant="ghost"
                               size="sm"
-                              onClick={() => saveLabel(label.key, editValue, label.category, label.type)}
+                              onClick={(e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                saveLabel(label.key, editValue, label.category, label.type);
+                                return false;
+                              }}
                               disabled={saving}
                               className="text-green-600 hover:text-green-700 hover:bg-green-50"
                             >
@@ -1273,7 +1269,12 @@ export default function Translations() {
                               type="button"
                               variant="ghost"
                               size="sm"
-                              onClick={() => setEditingKey(null)}
+                              onClick={(e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                setEditingKey(null);
+                                return false;
+                              }}
                               className="text-gray-600 hover:text-gray-700 hover:bg-gray-100"
                             >
                               <X className="w-4 h-4" />
