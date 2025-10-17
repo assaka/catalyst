@@ -11,24 +11,29 @@ import api from '@/utils/api';
  * Accordion row for managing product translations
  * Follows the pattern from AttributeValueTranslations
  */
-export default function ProductTranslationRow({ product, onUpdate }) {
+export default function ProductTranslationRow({ product, selectedLanguages, onUpdate }) {
   const { availableLanguages } = useTranslation();
   const [isExpanded, setIsExpanded] = useState(false);
   const [translations, setTranslations] = useState(product.translations || {});
   const [saving, setSaving] = useState(false);
   const [translating, setTranslating] = useState({});
 
+  // Filter languages by selected languages
+  const filteredLanguages = availableLanguages.filter(lang =>
+    selectedLanguages?.includes(lang.code)
+  );
+
   // Get translation status
   const getTranslationStatus = () => {
-    const translatedCount = availableLanguages.filter(lang => {
+    const translatedCount = filteredLanguages.filter(lang => {
       const translation = translations[lang.code];
       return translation && translation.name && translation.name.trim().length > 0;
     }).length;
 
     return {
       count: translatedCount,
-      total: availableLanguages.length,
-      isComplete: translatedCount === availableLanguages.length
+      total: filteredLanguages.length,
+      isComplete: translatedCount === filteredLanguages.length
     };
   };
 
@@ -146,7 +151,7 @@ export default function ProductTranslationRow({ product, onUpdate }) {
                 <p className="text-sm font-medium text-gray-700">{field.label}</p>
               </div>
               <div className="p-4 space-y-3">
-                {availableLanguages.map((lang) => {
+                {filteredLanguages.map((lang) => {
                   const isRTL = lang.is_rtl || false;
                   const value = translations[lang.code]?.[field.key] || '';
                   const translatingKey = `${field.key}-${lang.code}`;

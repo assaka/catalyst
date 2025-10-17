@@ -10,7 +10,7 @@ import AttributeValueTranslations from '../attributes/AttributeValueTranslations
 /**
  * Accordion row for managing attribute translations (name + options)
  */
-export default function AttributeTranslationRow({ attribute, onUpdate }) {
+export default function AttributeTranslationRow({ attribute, selectedLanguages, onUpdate }) {
   const { availableLanguages } = useTranslation();
   const [isExpanded, setIsExpanded] = useState(false);
   const [translations, setTranslations] = useState(attribute.translations || {});
@@ -18,17 +18,22 @@ export default function AttributeTranslationRow({ attribute, onUpdate }) {
   const [saving, setSaving] = useState(false);
   const [translating, setTranslating] = useState({});
 
+  // Filter languages by selected languages
+  const filteredLanguages = availableLanguages.filter(lang =>
+    selectedLanguages?.includes(lang.code)
+  );
+
   // Get translation status for attribute name
   const getAttributeTranslationStatus = () => {
-    const translatedCount = availableLanguages.filter(lang => {
+    const translatedCount = filteredLanguages.filter(lang => {
       const translation = translations[lang.code];
       return translation && translation.name && translation.name.trim().length > 0;
     }).length;
 
     return {
       count: translatedCount,
-      total: availableLanguages.length,
-      isComplete: translatedCount === availableLanguages.length
+      total: filteredLanguages.length,
+      isComplete: translatedCount === filteredLanguages.length
     };
   };
 
@@ -36,11 +41,11 @@ export default function AttributeTranslationRow({ attribute, onUpdate }) {
   const getValuesTranslationStatus = () => {
     if (!attributeValues || attributeValues.length === 0) return { count: 0, total: 0, isComplete: true };
 
-    let totalFields = attributeValues.length * availableLanguages.length;
+    let totalFields = attributeValues.length * filteredLanguages.length;
     let translatedFields = 0;
 
     attributeValues.forEach(value => {
-      availableLanguages.forEach(lang => {
+      filteredLanguages.forEach(lang => {
         const translation = value.translations?.[lang.code];
         if (translation && translation.label && translation.label.trim().length > 0) {
           translatedFields++;
@@ -183,7 +188,7 @@ export default function AttributeTranslationRow({ attribute, onUpdate }) {
               <p className="text-sm font-medium text-gray-700">Attribute Name</p>
             </div>
             <div className="p-4 space-y-3">
-              {availableLanguages.map((lang) => {
+              {filteredLanguages.map((lang) => {
                 const isRTL = lang.is_rtl || false;
                 const value = translations[lang.code]?.name || '';
                 const translatingKey = `attribute-name-${lang.code}`;
@@ -238,6 +243,7 @@ export default function AttributeTranslationRow({ attribute, onUpdate }) {
                       ...value,
                       label: value.translations?.en?.label || value.code
                     }}
+                    selectedLanguages={selectedLanguages}
                     onTranslationChange={handleValueTranslationChange}
                     onDelete={() => {}} // No delete in translation view
                   />

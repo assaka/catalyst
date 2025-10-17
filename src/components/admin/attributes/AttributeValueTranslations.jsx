@@ -8,6 +8,7 @@ import { useTranslation } from '@/contexts/TranslationContext';
  */
 export default function AttributeValueTranslations({
   attributeValue,
+  selectedLanguages,
   onTranslationChange,
   onDelete
 }) {
@@ -17,17 +18,22 @@ export default function AttributeValueTranslations({
   const translations = attributeValue.translations || {};
   const code = attributeValue.code;
 
+  // Filter languages by selected languages
+  const filteredLanguages = availableLanguages.filter(lang =>
+    selectedLanguages?.includes(lang.code)
+  );
+
   // Get translation completeness
   const getTranslationStatus = () => {
-    const translatedCount = availableLanguages.filter(lang => {
+    const translatedCount = filteredLanguages.filter(lang => {
       const translation = translations[lang.code];
       return translation && translation.label && translation.label.trim().length > 0;
     }).length;
 
     return {
       count: translatedCount,
-      total: availableLanguages.length,
-      isComplete: translatedCount === availableLanguages.length
+      total: filteredLanguages.length,
+      isComplete: translatedCount === filteredLanguages.length
     };
   };
 
@@ -94,7 +100,7 @@ export default function AttributeValueTranslations({
       {/* Expanded Content */}
       {isExpanded && (
         <div className="border-t border-gray-200 bg-gray-50">
-          {availableLanguages.map((lang) => {
+          {filteredLanguages.map((lang) => {
             const isRTL = lang.is_rtl || false;
             const value = getLabel(lang.code);
 

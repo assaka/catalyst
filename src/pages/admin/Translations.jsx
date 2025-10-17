@@ -85,6 +85,9 @@ export default function Translations() {
   const [loadingCustomOptions, setLoadingCustomOptions] = useState(false);
   const [customOptionSearchQuery, setCustomOptionSearchQuery] = useState('');
 
+  // Language selection for translations
+  const [selectedTranslationLanguages, setSelectedTranslationLanguages] = useState(['en', 'nl']);
+
   const categories = ['common', 'navigation', 'product', 'checkout', 'account', 'admin'];
 
   /**
@@ -261,6 +264,21 @@ export default function Translations() {
       console.error('Bulk translate error:', error);
       return { success: false, message: error.message };
     }
+  };
+
+  /**
+   * Toggle language selection
+   */
+  const handleToggleTranslationLanguage = (langCode) => {
+    setSelectedTranslationLanguages(prev => {
+      if (prev.includes(langCode)) {
+        // Don't allow removing if it's the last language
+        if (prev.length === 1) return prev;
+        return prev.filter(l => l !== langCode);
+      } else {
+        return [...prev, langCode];
+      }
+    });
   };
 
   /**
@@ -1282,6 +1300,27 @@ export default function Translations() {
                   </button>
                 </div>
 
+                {/* Language Selection */}
+                <div className="mb-4">
+                  <div className="flex flex-wrap gap-2">
+                    {availableLanguages.map((lang) => (
+                      <label
+                        key={lang.code}
+                        className="flex items-center gap-1.5 px-2 py-1 rounded bg-gray-100 hover:bg-gray-200 cursor-pointer text-xs"
+                      >
+                        <input
+                          type="checkbox"
+                          checked={selectedTranslationLanguages.includes(lang.code)}
+                          onChange={() => handleToggleTranslationLanguage(lang.code)}
+                          className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                        />
+                        <span className="font-medium">{lang.code.toUpperCase()}</span>
+                        <span className="text-gray-600">({lang.native_name})</span>
+                      </label>
+                    ))}
+                  </div>
+                </div>
+
                 {/* Search Bar */}
                 <div className="relative">
                   <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
@@ -1325,6 +1364,7 @@ export default function Translations() {
                       <ProductTranslationRow
                         key={product.id}
                         product={product}
+                        selectedLanguages={selectedTranslationLanguages}
                         onUpdate={(productId, translations) => {
                           // Update local state
                           setProducts(products.map(p =>
@@ -1390,6 +1430,27 @@ export default function Translations() {
                   </button>
                 </div>
 
+                {/* Language Selection */}
+                <div className="mb-4">
+                  <div className="flex flex-wrap gap-2">
+                    {availableLanguages.map((lang) => (
+                      <label
+                        key={lang.code}
+                        className="flex items-center gap-1.5 px-2 py-1 rounded bg-gray-100 hover:bg-gray-200 cursor-pointer text-xs"
+                      >
+                        <input
+                          type="checkbox"
+                          checked={selectedTranslationLanguages.includes(lang.code)}
+                          onChange={() => handleToggleTranslationLanguage(lang.code)}
+                          className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                        />
+                        <span className="font-medium">{lang.code.toUpperCase()}</span>
+                        <span className="text-gray-600">({lang.native_name})</span>
+                      </label>
+                    ))}
+                  </div>
+                </div>
+
                 {/* Search Bar */}
                 <div className="relative">
                   <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
@@ -1433,6 +1494,7 @@ export default function Translations() {
                       <CategoryTranslationRow
                         key={category.id}
                         category={category}
+                        selectedLanguages={selectedTranslationLanguages}
                         onUpdate={(categoryId, translations) => {
                           // Update local state
                           setProductCategories(productCategories.map(c =>
@@ -1498,6 +1560,27 @@ export default function Translations() {
                   </button>
                 </div>
 
+                {/* Language Selection */}
+                <div className="mb-4">
+                  <div className="flex flex-wrap gap-2">
+                    {availableLanguages.map((lang) => (
+                      <label
+                        key={lang.code}
+                        className="flex items-center gap-1.5 px-2 py-1 rounded bg-gray-100 hover:bg-gray-200 cursor-pointer text-xs"
+                      >
+                        <input
+                          type="checkbox"
+                          checked={selectedTranslationLanguages.includes(lang.code)}
+                          onChange={() => handleToggleTranslationLanguage(lang.code)}
+                          className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                        />
+                        <span className="font-medium">{lang.code.toUpperCase()}</span>
+                        <span className="text-gray-600">({lang.native_name})</span>
+                      </label>
+                    ))}
+                  </div>
+                </div>
+
                 {/* Search Bar */}
                 <div className="relative">
                   <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
@@ -1541,6 +1624,7 @@ export default function Translations() {
                       <AttributeTranslationRow
                         key={attribute.id}
                         attribute={attribute}
+                        selectedLanguages={selectedTranslationLanguages}
                         onUpdate={(attributeId, translations, values) => {
                           // Update local state
                           setProductAttributes(productAttributes.map(a =>
@@ -1592,6 +1676,27 @@ export default function Translations() {
                     <p className="text-sm text-gray-600 mt-1">
                       Manage translations for CMS pages and blocks across languages
                     </p>
+                  </div>
+                </div>
+
+                {/* Language Selection */}
+                <div className="mb-4">
+                  <div className="flex flex-wrap gap-2">
+                    {availableLanguages.map((lang) => (
+                      <label
+                        key={lang.code}
+                        className="flex items-center gap-1.5 px-2 py-1 rounded bg-gray-100 hover:bg-gray-200 cursor-pointer text-xs"
+                      >
+                        <input
+                          type="checkbox"
+                          checked={selectedTranslationLanguages.includes(lang.code)}
+                          onChange={() => handleToggleTranslationLanguage(lang.code)}
+                          className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                        />
+                        <span className="font-medium">{lang.code.toUpperCase()}</span>
+                        <span className="text-gray-600">({lang.native_name})</span>
+                      </label>
+                    ))}
                   </div>
                 </div>
 
@@ -1654,6 +1759,7 @@ export default function Translations() {
                         <CmsPageTranslationRow
                           key={page.id}
                           page={page}
+                          selectedLanguages={selectedTranslationLanguages}
                           onUpdate={(pageId, translations) => {
                             setCmsPages(cmsPages.map(p =>
                               p.id === pageId ? { ...p, translations } : p
@@ -1676,6 +1782,7 @@ export default function Translations() {
                         <CmsBlockTranslationRow
                           key={block.id}
                           block={block}
+                          selectedLanguages={selectedTranslationLanguages}
                           onUpdate={(blockId, translations) => {
                             setCmsBlocks(cmsBlocks.map(b =>
                               b.id === blockId ? { ...b, translations } : b
@@ -1752,25 +1859,31 @@ export default function Translations() {
             <>
               {/* Header */}
               <div className="bg-white border border-gray-200 rounded-lg p-6">
-                <div className="flex items-center justify-between mb-2">
-                  <h2 className="text-xl font-semibold text-gray-900">Various Translations</h2>
-                  <div className="flex items-center gap-2">
-                    <Globe className="w-4 h-4 text-gray-400" />
-                    <div className="flex items-center gap-2">
-                      {availableLanguages.map((lang) => (
-                        <span
-                          key={lang.code}
-                          className="px-2 py-1 bg-blue-50 text-blue-700 rounded text-xs font-medium"
-                        >
-                          {lang.code.toUpperCase()} ({lang.native_name || lang.name})
-                        </span>
-                      ))}
-                    </div>
-                  </div>
+                <div className="mb-4">
+                  <h2 className="text-xl font-semibold text-gray-900 mb-2">Various Translations</h2>
+                  <p className="text-sm text-gray-600">
+                    Manage translations for product tabs, labels, cookie consent, and custom options
+                  </p>
                 </div>
-                <p className="text-sm text-gray-600">
-                  Manage translations for product tabs, labels, cookie consent, and custom options
-                </p>
+
+                {/* Language Selection */}
+                <div className="flex flex-wrap gap-2">
+                  {availableLanguages.map((lang) => (
+                    <label
+                      key={lang.code}
+                      className="flex items-center gap-1.5 px-2 py-1 rounded bg-gray-100 hover:bg-gray-200 cursor-pointer text-xs"
+                    >
+                      <input
+                        type="checkbox"
+                        checked={selectedTranslationLanguages.includes(lang.code)}
+                        onChange={() => handleToggleTranslationLanguage(lang.code)}
+                        className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                      />
+                      <span className="font-medium">{lang.code.toUpperCase()}</span>
+                      <span className="text-gray-600">({lang.native_name})</span>
+                    </label>
+                  ))}
+                </div>
               </div>
 
               {/* Product Tabs Section */}
@@ -1817,6 +1930,7 @@ export default function Translations() {
                         <ProductTabTranslationRow
                           key={tab.id}
                           tab={tab}
+                          selectedLanguages={selectedTranslationLanguages}
                           onUpdate={(tabId, translations) => {
                             setProductTabs(productTabs.map(t =>
                               t.id === tabId ? { ...t, translations } : t
@@ -1872,6 +1986,7 @@ export default function Translations() {
                         <ProductLabelTranslationRow
                           key={label.id}
                           label={label}
+                          selectedLanguages={selectedTranslationLanguages}
                           onUpdate={(labelId, translations) => {
                             setProductLabels(productLabels.map(l =>
                               l.id === labelId ? { ...l, translations } : l
@@ -1907,6 +2022,7 @@ export default function Translations() {
                       <CookieConsentTranslationRow
                         key={settings.id}
                         settings={settings}
+                        selectedLanguages={selectedTranslationLanguages}
                         onUpdate={(settingsId, translations) => {
                           setCookieConsent(cookieConsent.map(s =>
                             s.id === settingsId ? { ...s, translations } : s
@@ -1963,6 +2079,7 @@ export default function Translations() {
                         <CustomOptionTranslationRow
                           key={option.id}
                           rule={option}
+                          selectedLanguages={selectedTranslationLanguages}
                           onUpdate={(ruleId, translations) => {
                             setCustomOptions(customOptions.map(o =>
                               o.id === ruleId ? { ...o, translations } : o
