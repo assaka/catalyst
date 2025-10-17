@@ -2,11 +2,14 @@ import React, { useState, useEffect } from 'react';
 import { Plus, Search, Globe, Edit2, Trash2, Save, X, Wand2, Check, AlertCircle, Languages } from 'lucide-react';
 import api from '../../utils/api';
 import { useTranslation } from '../../contexts/TranslationContext';
+import { useStoreSelection } from '../../contexts/StoreSelectionContext';
 import BulkTranslateDialog from '../../components/admin/BulkTranslateDialog';
+import EntityTranslationCard from '../../components/admin/EntityTranslationCard';
 import { toast } from 'sonner';
 
 export default function Translations() {
   const { availableLanguages, currentLanguage, changeLanguage } = useTranslation();
+  const { selectedStore, getSelectedStoreId } = useStoreSelection();
 
   const [activeTab, setActiveTab] = useState('ui-labels');
   const [selectedLanguage, setSelectedLanguage] = useState(currentLanguage);
@@ -23,6 +26,12 @@ export default function Translations() {
   const [autoTranslate, setAutoTranslate] = useState(false);
   const [message, setMessage] = useState(null);
   const [showBulkTranslateDialog, setShowBulkTranslateDialog] = useState(false);
+
+  // Entity translation states
+  const [entityStats, setEntityStats] = useState([]);
+  const [loadingEntityStats, setLoadingEntityStats] = useState(false);
+  const [selectedEntityType, setSelectedEntityType] = useState(null);
+  const [selectedEntityName, setSelectedEntityName] = useState(null);
 
   const categories = ['common', 'navigation', 'product', 'checkout', 'account', 'admin'];
 
@@ -203,6 +212,91 @@ export default function Translations() {
   };
 
   /**
+   * Load entity translation statistics
+   */
+  const loadEntityStats = async () => {
+    const storeId = getSelectedStoreId();
+    if (!storeId) {
+      setEntityStats([]);
+      return;
+    }
+
+    try {
+      setLoadingEntityStats(true);
+      const response = await api.get(`/translations/entity-stats?store_id=${storeId}`);
+
+      if (response && response.success && response.data) {
+        setEntityStats(response.data.stats || []);
+      }
+    } catch (error) {
+      console.error('Failed to load entity stats:', error);
+      showMessage('Failed to load translation statistics', 'error');
+    } finally {
+      setLoadingEntityStats(false);
+    }
+  };
+
+  /**
+   * Handle entity translation
+   */
+  const handleEntityTranslate = async (fromLang, toLang) => {
+    const storeId = getSelectedStoreId();
+    if (!storeId) {
+      toast.error("No store selected");
+      return { success: false, message: "No store selected" };
+    }
+
+    try {
+      const token = localStorage.getItem("token");
+      const endpoint = selectedEntityType === 'category' ? 'categories' :
+                       selectedEntityType === 'product' ? 'products' :
+                       selectedEntityType === 'attribute' ? 'attributes' :
+                       selectedEntityType === 'cms_page' ? 'cms-pages' :
+                       selectedEntityType === 'cms_block' ? 'cms-blocks' : null;
+
+      if (!endpoint) {
+        throw new Error('Invalid entity type');
+      }
+
+      const response = await fetch(`/api/${endpoint}/bulk-translate`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          store_id: storeId,
+          fromLang,
+          toLang
+        })
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.message || 'Translation failed');
+      }
+
+      // Reload entity stats to update progress
+      await loadEntityStats();
+
+      return data;
+    } catch (error) {
+      console.error('Entity translate error:', error);
+      return { success: false, message: error.message };
+    }
+  };
+
+  /**
+   * Open translation dialog for specific entity
+   */
+  const handleOpenEntityTranslation = (entityType, entityName) => {
+    setSelectedEntityType(entityType);
+    setSelectedEntityName(entityName);
+    setShowBulkTranslateDialog(true);
+  };
+
+  /**
    * Add bulk translations
    */
   const addBulkTranslations = async () => {
@@ -346,6 +440,13 @@ export default function Translations() {
   useEffect(() => {
     loadLabels(selectedLanguage);
   }, [selectedLanguage]);
+
+  // Load entity stats when switching to entities tab or when store changes
+  useEffect(() => {
+    if (activeTab === 'entities' && selectedStore) {
+      loadEntityStats();
+    }
+  }, [activeTab, selectedStore]);
 
   return (
     <div className="max-w-7xl mx-auto px-4 py-8">
@@ -703,24 +804,110 @@ export default function Translations() {
 
       {/* Entities Tab */}
       {activeTab === 'entities' && (
-        <div className="bg-white border border-gray-200 rounded-lg p-8 text-center text-gray-500">
-          <Globe className="w-12 h-12 mx-auto mb-4 text-gray-400" />
-          <h3 className="text-lg font-semibold text-gray-700 mb-2">
-            Entity Translations
-          </h3>
-          <p>
-            Translate products, categories, and CMS content directly from their edit pages.
-          </p>
+        <div className="space-y-6">
+          {!selectedStore ? (
+            <div className="bg-white border border-gray-200 rounded-lg p-8 text-center text-gray-500">
+              <Globe className="w-12 h-12 mx-auto mb-4 text-gray-400" />
+              <h3 className="text-lg font-semibold text-gray-700 mb-2">
+                No Store Selected
+              </h3>
+              <p>
+                Please select a store to view entity translation statistics.
+              </p>
+            </div>
+          ) : loadingEntityStats ? (
+            <div className="bg-white border border-gray-200 rounded-lg p-12 text-center">
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+              <p className="text-gray-600">Loading translation statistics...</p>
+            </div>
+          ) : (
+            <>
+              {/* Header with overall stats */}
+              <div className="bg-gradient-to-r from-blue-50 to-purple-50 border border-blue-200 rounded-lg p-6">
+                <h2 className="text-xl font-semibold text-gray-900 mb-2">Entity Translation Dashboard</h2>
+                <p className="text-gray-600 mb-4">
+                  Manage translations for all your store content from one central location.
+                </p>
+                {entityStats.length > 0 && (
+                  <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                    <div className="bg-white rounded-lg p-4 border border-blue-100">
+                      <p className="text-sm text-gray-600">Total Items</p>
+                      <p className="text-2xl font-bold text-gray-900">
+                        {entityStats.reduce((sum, stat) => sum + stat.totalItems, 0)}
+                      </p>
+                    </div>
+                    <div className="bg-white rounded-lg p-4 border border-blue-100">
+                      <p className="text-sm text-gray-600">Fully Translated</p>
+                      <p className="text-2xl font-bold text-green-600">
+                        {entityStats.reduce((sum, stat) => sum + stat.translatedItems, 0)}
+                      </p>
+                    </div>
+                    <div className="bg-white rounded-lg p-4 border border-blue-100">
+                      <p className="text-sm text-gray-600">Average Completion</p>
+                      <p className="text-2xl font-bold text-blue-600">
+                        {entityStats.length > 0
+                          ? Math.round(entityStats.reduce((sum, stat) => sum + stat.completionPercentage, 0) / entityStats.length)
+                          : 0}%
+                      </p>
+                    </div>
+                    <div className="bg-white rounded-lg p-4 border border-blue-100">
+                      <p className="text-sm text-gray-600">Entity Types</p>
+                      <p className="text-2xl font-bold text-gray-900">
+                        {entityStats.length}
+                      </p>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Entity Cards Grid */}
+              {entityStats.length > 0 ? (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  {entityStats.map((stat) => (
+                    <EntityTranslationCard
+                      key={stat.type}
+                      icon={stat.icon}
+                      name={stat.name}
+                      type={stat.type}
+                      totalItems={stat.totalItems}
+                      translatedItems={stat.translatedItems}
+                      completionPercentage={stat.completionPercentage}
+                      missingLanguages={stat.missingLanguages}
+                      onTranslate={handleOpenEntityTranslation}
+                      loading={false}
+                    />
+                  ))}
+                </div>
+              ) : (
+                <div className="bg-white border border-gray-200 rounded-lg p-8 text-center text-gray-500">
+                  <Globe className="w-12 h-12 mx-auto mb-4 text-gray-400" />
+                  <h3 className="text-lg font-semibold text-gray-700 mb-2">
+                    No Content Found
+                  </h3>
+                  <p>
+                    Start adding products, categories, or CMS content to see translation statistics.
+                  </p>
+                </div>
+              )}
+            </>
+          )}
         </div>
       )}
 
       {/* Bulk Translate Dialog */}
       <BulkTranslateDialog
         open={showBulkTranslateDialog}
-        onOpenChange={setShowBulkTranslateDialog}
-        entityType="UI labels"
-        entityName="UI Labels"
-        onTranslate={handleBulkTranslate}
+        onOpenChange={(open) => {
+          setShowBulkTranslateDialog(open);
+          if (!open) {
+            // Reset selected entity when closing
+            setSelectedEntityType(null);
+            setSelectedEntityName(null);
+          }
+        }}
+        entityType={selectedEntityType || "UI labels"}
+        entityName={selectedEntityName || "UI Labels"}
+        onTranslate={selectedEntityType ? handleEntityTranslate : handleBulkTranslate}
       />
     </div>
   );

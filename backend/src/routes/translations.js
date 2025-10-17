@@ -520,4 +520,120 @@ router.get('/missing-report', authMiddleware, async (req, res) => {
   }
 });
 
+// @route   GET /api/translations/entity-stats
+// @desc    Get translation statistics for all entity types
+// @access  Private
+router.get('/entity-stats', authMiddleware, async (req, res) => {
+  try {
+    const { store_id } = req.query;
+
+    if (!store_id) {
+      return res.status(400).json({
+        success: false,
+        message: 'store_id is required'
+      });
+    }
+
+    // Get all active languages
+    const languages = await Language.findAll({
+      where: { is_active: true },
+      attributes: ['code', 'name', 'native_name']
+    });
+
+    const languageCodes = languages.map(l => l.code);
+
+    // Define entity types to check
+    const entityTypes = [
+      { type: 'category', model: Category, icon: '📁', name: 'Categories' },
+      { type: 'product', model: Product, icon: '📦', name: 'Products' },
+      { type: 'cms_page', model: CmsPage, icon: '📄', name: 'CMS Pages' },
+      { type: 'cms_block', model: CmsBlock, icon: '📝', name: 'CMS Blocks' }
+    ];
+
+    const stats = [];
+
+    for (const entityType of entityTypes) {
+      try {
+        // Get all entities for this store
+        const entities = await entityType.model.findAll({
+          where: { store_id },
+          attributes: ['id', 'translations']
+        });
+
+        const totalItems = entities.length;
+        let translatedCount = 0;
+        const missingLanguages = new Set();
+
+        // Check translation completeness
+        entities.forEach(entity => {
+          const translations = entity.translations || {};
+          let hasAllTranslations = true;
+
+          languageCodes.forEach(langCode => {
+            if (!translations[langCode] || Object.keys(translations[langCode]).length === 0) {
+              missingLanguages.add(langCode);
+              hasAllTranslations = false;
+            }
+          });
+
+          if (hasAllTranslations) {
+            translatedCount++;
+          }
+        });
+
+        const completionPercentage = totalItems > 0
+          ? Math.round((translatedCount / totalItems) * 100)
+          : 100;
+
+        stats.push({
+          type: entityType.type,
+          name: entityType.name,
+          icon: entityType.icon,
+          totalItems,
+          translatedItems: translatedCount,
+          completionPercentage,
+          missingLanguages: Array.from(missingLanguages).map(code => {
+            const lang = languages.find(l => l.code === code);
+            return {
+              code,
+              name: lang?.name || code,
+              native_name: lang?.native_name || code
+            };
+          })
+        });
+      } catch (error) {
+        console.error(`Error getting stats for ${entityType.type}:`, error);
+        stats.push({
+          type: entityType.type,
+          name: entityType.name,
+          icon: entityType.icon,
+          totalItems: 0,
+          translatedItems: 0,
+          completionPercentage: 0,
+          missingLanguages: [],
+          error: error.message
+        });
+      }
+    }
+
+    res.json({
+      success: true,
+      data: {
+        stats,
+        languages: languages.map(l => ({
+          code: l.code,
+          name: l.name,
+          native_name: l.native_name
+        }))
+      }
+    });
+  } catch (error) {
+    console.error('Entity stats error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Server error'
+    });
+  }
+});
+
 module.exports = router;
