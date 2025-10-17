@@ -25,7 +25,9 @@ import {
   Settings,
   Tag,
   FolderOpen,
-  Languages
+  Languages,
+  Globe,
+  Save
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -80,6 +82,7 @@ const retryApiCall = async (apiCall, maxRetries = 5, baseDelay = 3000) => {
 export default function Products() {
   const navigate = useNavigate();
   const { selectedStore, getSelectedStoreId, availableStores } = useStoreSelection();
+  const { availableLanguages } = useTranslation();
   const [products, setProducts] = useState([]);
   const [categories, setCategories] = useState([]);
   const [taxes, setTaxes] = useState([]);
@@ -106,6 +109,11 @@ export default function Products() {
 
   // Translation dialog state
   const [showBulkTranslateDialog, setShowBulkTranslateDialog] = useState(false);
+
+  // Translation Mode states
+  const [translationMode, setTranslationMode] = useState(false);
+  const [selectedTranslationLanguages, setSelectedTranslationLanguages] = useState(['en', 'nl']);
+  const [editingTranslation, setEditingTranslation] = useState({}); // { productId: { lang: 'value' } }
 
   useEffect(() => {
     document.title = "Products - Admin Dashboard";
@@ -511,14 +519,84 @@ export default function Products() {
   const handleStatusChange = async (product, newStatus) => {
     try {
       await Product.update(product.id, { status: newStatus });
-      
+
       // Reset status filter to "all" to show updated product regardless of its new status
       setFilters(prev => ({ ...prev, status: "all" }));
-      
+
       await loadData();
     } catch (error) {
       console.error("Error updating product status:", error);
     }
+  };
+
+  // Translation Mode handlers
+  const handleToggleTranslationLanguage = (langCode) => {
+    setSelectedTranslationLanguages(prev => {
+      if (prev.includes(langCode)) {
+        // Don't allow removing if it's the last language
+        if (prev.length === 1) return prev;
+        return prev.filter(l => l !== langCode);
+      } else {
+        return [...prev, langCode];
+      }
+    });
+  };
+
+  const handleTranslationEdit = (productId, langCode, value) => {
+    setEditingTranslation(prev => ({
+      ...prev,
+      [productId]: {
+        ...(prev[productId] || {}),
+        [langCode]: value
+      }
+    }));
+  };
+
+  const handleSaveTranslation = async (product) => {
+    const productId = product.id;
+    const edits = editingTranslation[productId];
+
+    if (!edits) return;
+
+    try {
+      // Merge edits with existing translations
+      const updatedTranslations = {
+        ...(product.translations || {}),
+        ...Object.keys(edits).reduce((acc, lang) => {
+          acc[lang] = {
+            ...(product.translations?.[lang] || {}),
+            name: edits[lang]
+          };
+          return acc;
+        }, {})
+      };
+
+      await Product.update(productId, { translations: updatedTranslations });
+
+      // Clear editing state for this product
+      setEditingTranslation(prev => {
+        const newState = { ...prev };
+        delete newState[productId];
+        return newState;
+      });
+
+      toast.success('Translations saved successfully');
+      await loadData();
+    } catch (error) {
+      console.error('Error saving translations:', error);
+      toast.error('Failed to save translations');
+    }
+  };
+
+  const getTranslationStats = (product) => {
+    if (!product.translations) return { completed: 0, total: availableLanguages.length };
+
+    const completed = availableLanguages.filter(lang => {
+      const translation = product.translations[lang.code];
+      return translation && translation.name && translation.name.trim().length > 0;
+    }).length;
+
+    return { completed, total: availableLanguages.length };
   };
 
   // Client-side filtering for search and filters (all data is loaded)
@@ -748,6 +826,18 @@ export default function Products() {
           </div>
           <div className="flex items-center gap-2">
             <Button
+              onClick={() => setTranslationMode(!translationMode)}
+              variant={translationMode ? "default" : "outline"}
+              className={translationMode
+                ? "bg-blue-600 text-white hover:bg-blue-700"
+                : "border-blue-600 text-blue-600 hover:bg-blue-50"
+              }
+              disabled={!selectedStore || products.length === 0}
+            >
+              <Languages className="w-4 h-4 mr-2" />
+              Translation Mode
+            </Button>
+            <Button
               onClick={() => setShowBulkTranslateDialog(true)}
               variant="outline"
               className="border-blue-600 text-blue-600 hover:bg-blue-50"
@@ -917,171 +1007,292 @@ export default function Products() {
                   <table className="w-full">
                     <thead>
                       <tr className="border-b border-gray-200">
-                        <th className="text-left py-3 px-4 font-medium text-gray-900 w-12">
-                          <button
-                            onClick={handleSelectAll}
-                            className="flex items-center justify-center w-6 h-6 rounded border border-gray-300 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                          >
-                            {isAllSelected ? (
-                              <CheckSquare className="w-4 h-4 text-blue-600" />
-                            ) : isPartiallySelected ? (
-                              <div className="w-3 h-3 bg-blue-600 rounded-sm" />
-                            ) : (
-                              <Square className="w-4 h-4 text-gray-400" />
-                            )}
-                          </button>
-                        </th>
-                        <th className="text-left py-3 px-4 font-medium text-gray-900">Product</th>
-                        <th className="text-left py-3 px-4 font-medium text-gray-900">SKU</th>
-                        <th className="text-left py-3 px-4 font-medium text-gray-900">Price</th>
-                        <th className="text-left py-3 px-4 font-medium text-gray-900">Stock</th>
-                        <th className="text-left py-3 px-4 font-medium text-gray-900">Status</th>
-                        <th className="text-left py-3 px-4 font-medium text-gray-900">Actions</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {paginatedProducts.map((product) => (
-                        <tr key={product.id} className={`border-b border-gray-100 hover:bg-gray-50 ${selectedProducts.has(product.id) ? 'bg-blue-50' : ''}`}>
-                          <td className="py-4 px-4">
+                        {!translationMode && (
+                          <th className="text-left py-3 px-4 font-medium text-gray-900 w-12">
                             <button
-                              onClick={() => handleSelectProduct(product.id)}
+                              onClick={handleSelectAll}
                               className="flex items-center justify-center w-6 h-6 rounded border border-gray-300 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500"
                             >
-                              {selectedProducts.has(product.id) ? (
+                              {isAllSelected ? (
                                 <CheckSquare className="w-4 h-4 text-blue-600" />
+                              ) : isPartiallySelected ? (
+                                <div className="w-3 h-3 bg-blue-600 rounded-sm" />
                               ) : (
                                 <Square className="w-4 h-4 text-gray-400" />
                               )}
                             </button>
-                          </td>
-                          <td className="py-4 px-4">
-                            <div className="flex items-center space-x-3">
-                              <div className="w-12 h-12 bg-gray-100 rounded-lg flex items-center justify-center">
-                                {product.images && product.images.length > 0 ? (
-                                  <img
-                                    src={getPrimaryImageUrl(product.images)}
-                                    alt={product.name}
-                                    className="w-full h-full object-cover rounded-lg"
-                                    onError={(e) => {
-                                      // Hide broken image and show icon instead
-                                      e.target.style.display = 'none';
-                                      e.target.parentElement.innerHTML = '<div class="w-full h-full flex items-center justify-center"><svg class="w-6 h-6 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"></path></svg></div>';
-                                    }}
-                                  />
-                                ) : (
-                                  <Package className="w-6 h-6 text-gray-400" />
-                                )}
-                              </div>
-                              <div>
-                                <p className="font-medium text-gray-900">{getProductName(product)}</p>
-                                <p className="text-sm text-gray-500 truncate max-w-xs">
-                                  {getProductShortDescription(product)}
-                                </p>
+                          </th>
+                        )}
+                        <th className="text-left py-3 px-4 font-medium text-gray-900">
+                          {translationMode ? (
+                            <div className="space-y-2">
+                              <div className="text-sm font-semibold text-gray-900">Product Translations</div>
+                              <div className="flex flex-wrap gap-2">
+                                {availableLanguages.map((lang) => (
+                                  <label
+                                    key={lang.code}
+                                    className="flex items-center gap-1.5 px-2 py-1 rounded bg-gray-100 hover:bg-gray-200 cursor-pointer text-xs"
+                                  >
+                                    <input
+                                      type="checkbox"
+                                      checked={selectedTranslationLanguages.includes(lang.code)}
+                                      onChange={() => handleToggleTranslationLanguage(lang.code)}
+                                      className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                                    />
+                                    <span className="font-medium">{lang.code.toUpperCase()}</span>
+                                    <span className="text-gray-600">({lang.native_name})</span>
+                                  </label>
+                                ))}
                               </div>
                             </div>
-                          </td>
-                          <td className="py-4 px-4">
-                            <span className="font-mono text-sm text-gray-600">{product.sku}</span>
-                          </td>
-                          <td className="py-4 px-4">
-                            <span className="font-medium text-gray-900">${product.price}</span>
-                            {product.compare_price && (
-                              <span className="block text-sm text-green-600">
-                                Sale: ${product.compare_price}
-                              </span>
-                            )}
-                          </td>
-                          <td className="py-4 px-4">
-                            <span className={`font-medium ${
-                              product.stock_quantity < 10 ? 'text-red-600' : 'text-gray-900'
-                            }`}>
-                              {product.stock_quantity}
-                            </span>
-                          </td>
-                          <td className="py-4 px-4">
-                            <Badge className={statusColors[product.status]}>
-                              {product.status}
-                            </Badge>
-                          </td>
-                          <td className="py-4 px-4">
-                            <div className="flex items-center space-x-2">
-                              <DropdownMenu>
-                                <DropdownMenuTrigger asChild>
-                                  <Button variant="ghost" size="sm">
-                                    <ChevronDown className="w-4 h-4" />
-                                  </Button>
-                                </DropdownMenuTrigger>
-                                <DropdownMenuContent>
-                                  <DropdownMenuItem
-                                    onClick={() => {
-                                      // Get store info - try selectedStore first, then find from availableStores
-                                      let storeInfo = selectedStore;
-                                      
-                                      // If selectedStore doesn't have slug, try to find the full store data
-                                      if (!storeInfo?.slug && product.store_id) {
-                                        storeInfo = availableStores?.find(s => s.id === product.store_id);
-                                      }
-                                      
-                                      // If still no store info, try using the first available store
-                                      if (!storeInfo?.slug && availableStores?.length > 0) {
-                                        storeInfo = availableStores[0];
-                                      }
-                                      
-                                      const storeCode = storeInfo?.slug;
-                                      const productSlug = product.seo?.url_key || product.slug || product.id;
-                                      
-                                      if (storeCode && productSlug) {
-                                        // Open in new tab to view the storefront product page
-                                        const url = `/public/${storeCode}/product/${productSlug}`;
-                                        window.open(url, '_blank');
-                                      } else {
-                                        console.error('Missing store slug or product slug:', { 
-                                          storeSlug: storeCode, 
-                                          productSlug
-                                        });
-                                      }
-                                    }}
-                                  >
-                                    <Eye className="w-4 h-4 mr-2" />
-                                    View
-                                  </DropdownMenuItem>
-                                  <DropdownMenuItem
-                                    onClick={() => {
-                                      setSelectedProduct(product);
-                                      setShowProductForm(true);
-                                    }}
-                                  >
-                                    <Edit className="w-4 h-4 mr-2" />
-                                    Edit
-                                  </DropdownMenuItem>
-                                  {product.status === 'active' ? (
-                                    <DropdownMenuItem
-                                      onClick={() => handleStatusChange(product, 'inactive')}
-                                    >
-                                      <EyeOff className="w-4 h-4 mr-2" />
-                                      Deactivate
-                                    </DropdownMenuItem>
+                          ) : (
+                            'Product'
+                          )}
+                        </th>
+                        {!translationMode && (
+                          <>
+                            <th className="text-left py-3 px-4 font-medium text-gray-900">SKU</th>
+                            <th className="text-left py-3 px-4 font-medium text-gray-900">Price</th>
+                            <th className="text-left py-3 px-4 font-medium text-gray-900">Stock</th>
+                            <th className="text-left py-3 px-4 font-medium text-gray-900">Status</th>
+                            <th className="text-left py-3 px-4 font-medium text-gray-900">Actions</th>
+                          </>
+                        )}
+                        {translationMode && (
+                          <th className="text-left py-3 px-4 font-medium text-gray-900">Actions</th>
+                        )}
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {paginatedProducts.map((product) => {
+                        const stats = translationMode ? getTranslationStats(product) : null;
+                        const hasEdits = editingTranslation[product.id] && Object.keys(editingTranslation[product.id]).length > 0;
+
+                        return (
+                          <tr key={product.id} className={`border-b border-gray-100 hover:bg-gray-50 ${selectedProducts.has(product.id) ? 'bg-blue-50' : ''}`}>
+                            {!translationMode && (
+                              <td className="py-4 px-4">
+                                <button
+                                  onClick={() => handleSelectProduct(product.id)}
+                                  className="flex items-center justify-center w-6 h-6 rounded border border-gray-300 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                >
+                                  {selectedProducts.has(product.id) ? (
+                                    <CheckSquare className="w-4 h-4 text-blue-600" />
                                   ) : (
-                                    <DropdownMenuItem
-                                      onClick={() => handleStatusChange(product, 'active')}
-                                    >
-                                      <Eye className="w-4 h-4 mr-2" />
-                                      Activate
-                                    </DropdownMenuItem>
+                                    <Square className="w-4 h-4 text-gray-400" />
                                   )}
-                                  <DropdownMenuItem
-                                    onClick={() => handleDeleteProduct(product.id)}
-                                    className="text-red-600"
+                                </button>
+                              </td>
+                            )}
+                            <td className="py-4 px-4">
+                              {translationMode ? (
+                                <div className="space-y-3">
+                                  <div className="flex items-center gap-3 pb-2 border-b border-gray-200">
+                                    <div className="w-12 h-12 bg-gray-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                                      {product.images && product.images.length > 0 ? (
+                                        <img
+                                          src={getPrimaryImageUrl(product.images)}
+                                          alt={product.name}
+                                          className="w-full h-full object-cover rounded-lg"
+                                          onError={(e) => {
+                                            e.target.style.display = 'none';
+                                            e.target.parentElement.innerHTML = '<div class="w-full h-full flex items-center justify-center"><svg class="w-6 h-6 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"></path></svg></div>';
+                                          }}
+                                        />
+                                      ) : (
+                                        <Package className="w-6 h-6 text-gray-400" />
+                                      )}
+                                    </div>
+                                    <div className="flex-1 min-w-0">
+                                      <p className="font-medium text-gray-900 truncate">{product.sku}</p>
+                                      <p className="text-sm text-gray-500">
+                                        {stats && (
+                                          <span className={`inline-flex items-center gap-1 ${stats.completed === stats.total ? 'text-green-600' : 'text-gray-500'}`}>
+                                            <Globe className="w-3 h-3" />
+                                            {stats.completed}/{stats.total} languages
+                                          </span>
+                                        )}
+                                      </p>
+                                    </div>
+                                  </div>
+                                  {selectedTranslationLanguages.map((langCode) => {
+                                    const lang = availableLanguages.find(l => l.code === langCode);
+                                    const isRTL = lang?.is_rtl || false;
+                                    const currentValue = editingTranslation[product.id]?.[langCode]
+                                      ?? product.translations?.[langCode]?.name
+                                      ?? '';
+
+                                    return (
+                                      <div key={langCode} className="flex items-center gap-2">
+                                        <label className="text-xs font-medium text-gray-700 w-10 flex-shrink-0">
+                                          {langCode.toUpperCase()}
+                                        </label>
+                                        <Input
+                                          type="text"
+                                          value={currentValue}
+                                          onChange={(e) => handleTranslationEdit(product.id, langCode, e.target.value)}
+                                          dir={isRTL ? 'rtl' : 'ltr'}
+                                          className={`flex-1 text-sm ${isRTL ? 'text-right' : 'text-left'}`}
+                                          placeholder={`${lang?.native_name || langCode} product name`}
+                                        />
+                                      </div>
+                                    );
+                                  })}
+                                </div>
+                              ) : (
+                                <div className="flex items-center space-x-3">
+                                  <div className="w-12 h-12 bg-gray-100 rounded-lg flex items-center justify-center">
+                                    {product.images && product.images.length > 0 ? (
+                                      <img
+                                        src={getPrimaryImageUrl(product.images)}
+                                        alt={product.name}
+                                        className="w-full h-full object-cover rounded-lg"
+                                        onError={(e) => {
+                                          e.target.style.display = 'none';
+                                          e.target.parentElement.innerHTML = '<div class="w-full h-full flex items-center justify-center"><svg class="w-6 h-6 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"></path></svg></div>';
+                                        }}
+                                      />
+                                    ) : (
+                                      <Package className="w-6 h-6 text-gray-400" />
+                                    )}
+                                  </div>
+                                  <div>
+                                    <p className="font-medium text-gray-900">{getProductName(product)}</p>
+                                    <p className="text-sm text-gray-500 truncate max-w-xs">
+                                      {getProductShortDescription(product)}
+                                    </p>
+                                  </div>
+                                </div>
+                              )}
+                            </td>
+                            {!translationMode && (
+                              <>
+                                <td className="py-4 px-4">
+                                  <span className="font-mono text-sm text-gray-600">{product.sku}</span>
+                                </td>
+                                <td className="py-4 px-4">
+                                  <span className="font-medium text-gray-900">${product.price}</span>
+                                  {product.compare_price && (
+                                    <span className="block text-sm text-green-600">
+                                      Sale: ${product.compare_price}
+                                    </span>
+                                  )}
+                                </td>
+                                <td className="py-4 px-4">
+                                  <span className={`font-medium ${
+                                    product.stock_quantity < 10 ? 'text-red-600' : 'text-gray-900'
+                                  }`}>
+                                    {product.stock_quantity}
+                                  </span>
+                                </td>
+                                <td className="py-4 px-4">
+                                  <Badge className={statusColors[product.status]}>
+                                    {product.status}
+                                  </Badge>
+                                </td>
+                              </>
+                            )}
+                            <td className="py-4 px-4">
+                              {translationMode ? (
+                                <div className="flex items-center gap-2">
+                                  <Button
+                                    onClick={() => handleSaveTranslation(product)}
+                                    disabled={!hasEdits}
+                                    size="sm"
+                                    className="bg-blue-600 hover:bg-blue-700 text-white disabled:opacity-50"
                                   >
-                                    <Trash2 className="w-4 h-4 mr-2" />
-                                    Delete
-                                  </DropdownMenuItem>
-                                </DropdownMenuContent>
-                              </DropdownMenu>
-                            </div>
-                          </td>
-                        </tr>
-                      ))}
+                                    <Save className="w-4 h-4 mr-1" />
+                                    Save
+                                  </Button>
+                                  {hasEdits && (
+                                    <Button
+                                      onClick={() => {
+                                        setEditingTranslation(prev => {
+                                          const newState = { ...prev };
+                                          delete newState[product.id];
+                                          return newState;
+                                        });
+                                      }}
+                                      variant="ghost"
+                                      size="sm"
+                                    >
+                                      <X className="w-4 h-4" />
+                                    </Button>
+                                  )}
+                                </div>
+                              ) : (
+                                <div className="flex items-center space-x-2">
+                                  <DropdownMenu>
+                                    <DropdownMenuTrigger asChild>
+                                      <Button variant="ghost" size="sm">
+                                        <ChevronDown className="w-4 h-4" />
+                                      </Button>
+                                    </DropdownMenuTrigger>
+                                    <DropdownMenuContent>
+                                      <DropdownMenuItem
+                                        onClick={() => {
+                                          let storeInfo = selectedStore;
+                                          if (!storeInfo?.slug && product.store_id) {
+                                            storeInfo = availableStores?.find(s => s.id === product.store_id);
+                                          }
+                                          if (!storeInfo?.slug && availableStores?.length > 0) {
+                                            storeInfo = availableStores[0];
+                                          }
+                                          const storeCode = storeInfo?.slug;
+                                          const productSlug = product.seo?.url_key || product.slug || product.id;
+                                          if (storeCode && productSlug) {
+                                            const url = `/public/${storeCode}/product/${productSlug}`;
+                                            window.open(url, '_blank');
+                                          } else {
+                                            console.error('Missing store slug or product slug:', {
+                                              storeSlug: storeCode,
+                                              productSlug
+                                            });
+                                          }
+                                        }}
+                                      >
+                                        <Eye className="w-4 h-4 mr-2" />
+                                        View
+                                      </DropdownMenuItem>
+                                      <DropdownMenuItem
+                                        onClick={() => {
+                                          setSelectedProduct(product);
+                                          setShowProductForm(true);
+                                        }}
+                                      >
+                                        <Edit className="w-4 h-4 mr-2" />
+                                        Edit
+                                      </DropdownMenuItem>
+                                      {product.status === 'active' ? (
+                                        <DropdownMenuItem
+                                          onClick={() => handleStatusChange(product, 'inactive')}
+                                        >
+                                          <EyeOff className="w-4 h-4 mr-2" />
+                                          Deactivate
+                                        </DropdownMenuItem>
+                                      ) : (
+                                        <DropdownMenuItem
+                                          onClick={() => handleStatusChange(product, 'active')}
+                                        >
+                                          <Eye className="w-4 h-4 mr-2" />
+                                          Activate
+                                        </DropdownMenuItem>
+                                      )}
+                                      <DropdownMenuItem
+                                        onClick={() => handleDeleteProduct(product.id)}
+                                        className="text-red-600"
+                                      >
+                                        <Trash2 className="w-4 h-4 mr-2" />
+                                        Delete
+                                      </DropdownMenuItem>
+                                    </DropdownMenuContent>
+                                  </DropdownMenu>
+                                </div>
+                              )}
+                            </td>
+                          </tr>
+                        );
+                      })}
                     </tbody>
                   </table>
                 </div>
