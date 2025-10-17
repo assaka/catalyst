@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { ChevronDown, ChevronRight, Globe, Wand2, Save } from 'lucide-react';
+import { ChevronDown, ChevronRight, Globe, Wand2, Save, Check } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { useTranslation } from '@/contexts/TranslationContext';
@@ -14,6 +14,7 @@ export default function ProductLabelTranslationRow({ label, onUpdate, selectedLa
   const [isExpanded, setIsExpanded] = useState(false);
   const [translations, setTranslations] = useState(label.translations || {});
   const [saving, setSaving] = useState(false);
+  const [saveSuccess, setSaveSuccess] = useState(false);
   const [translating, setTranslating] = useState({});
 
   const filteredLanguages = availableLanguages.filter(lang => selectedLanguages?.includes(lang.code));
@@ -49,15 +50,18 @@ export default function ProductLabelTranslationRow({ label, onUpdate, selectedLa
   const handleSave = async () => {
     try {
       setSaving(true);
+      setSaveSuccess(false);
       await api.put(`/product-labels/${label.id}`, {
         translations
       });
       toast.success('Product label translations updated successfully');
       if (onUpdate) onUpdate(label.id, translations);
+      setSaving(false);
+      setSaveSuccess(true);
+      setTimeout(() => setSaveSuccess(false), 2000);
     } catch (error) {
       console.error('Error saving translations:', error);
       toast.error('Failed to save translations');
-    } finally {
       setSaving(false);
     }
   };
@@ -188,13 +192,18 @@ export default function ProductLabelTranslationRow({ label, onUpdate, selectedLa
           <div className="px-4 py-3 bg-gray-50 flex justify-end">
             <Button
               onClick={handleSave}
-              disabled={saving}
-              className="bg-blue-600 hover:bg-blue-700"
+              disabled={saving || saveSuccess}
+              className={saveSuccess ? "bg-green-600 hover:bg-green-700" : "bg-blue-600 hover:bg-blue-700"}
             >
               {saving ? (
                 <>
                   <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
                   Saving...
+                </>
+              ) : saveSuccess ? (
+                <>
+                  <Check className="w-4 h-4 mr-2" />
+                  Saved!
                 </>
               ) : (
                 <>
