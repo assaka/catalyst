@@ -232,6 +232,11 @@ export default function CookieConsent() {
       if (cookieSettings && cookieSettings.length > 0) {
         // Map backend fields to frontend fields
         const mappedSettings = mapBackendToFrontend(cookieSettings[0]);
+        console.log('Loaded cookie consent settings:', {
+          id: mappedSettings.id,
+          hasTranslations: !!mappedSettings.translations,
+          translationKeys: Object.keys(mappedSettings.translations || {})
+        });
         setSettings(mappedSettings);
       } else {
         // Create default settings with valid store_id - use the same structure as mapBackendToFrontend
@@ -275,9 +280,9 @@ export default function CookieConsent() {
       setFlashMessage({ type: 'error', message: 'Settings not loaded or no store found. Cannot save.' });
       return;
     }
-    
+
     setSaving(true);
-    
+
     try {
       // Map frontend settings to backend format
       const backendSettings = mapFrontendToBackend(settings);
@@ -285,7 +290,14 @@ export default function CookieConsent() {
       console.log('Saving cookie consent settings:', {
         settingsId: settings.id,
         storeId: storeId,
-        operation: settings.id ? 'update' : 'create'
+        hasId: !!settings.id,
+        operation: settings.id ? 'update' : 'create',
+        backendSettings: {
+          id: backendSettings.id,
+          store_id: backendSettings.store_id,
+          hasTranslations: !!backendSettings.translations,
+          translationKeys: Object.keys(backendSettings.translations || {})
+        }
       });
 
       let result;
@@ -559,7 +571,17 @@ export default function CookieConsent() {
                       <Textarea
                         id="banner_message"
                         value={settings.banner_message}
-                        onChange={(e) => setSettings({ ...settings, banner_message: e.target.value })}
+                        onChange={(e) => {
+                          const newValue = e.target.value;
+                          const updatedTranslations = { ...settings.translations };
+                          if (!updatedTranslations.en) updatedTranslations.en = {};
+                          updatedTranslations.en.banner_text = newValue;
+                          setSettings({
+                            ...settings,
+                            banner_message: newValue,
+                            translations: updatedTranslations
+                          });
+                        }}
                         rows={3}
                       />
                     </div>
@@ -574,7 +596,17 @@ export default function CookieConsent() {
                           <Input
                             id="accept_all_text"
                             value={settings.accept_all_text}
-                            onChange={(e) => setSettings({ ...settings, accept_all_text: e.target.value })}
+                            onChange={(e) => {
+                              const newValue = e.target.value;
+                              const updatedTranslations = { ...settings.translations };
+                              if (!updatedTranslations.en) updatedTranslations.en = {};
+                              updatedTranslations.en.accept_button_text = newValue;
+                              setSettings({
+                                ...settings,
+                                accept_all_text: newValue,
+                                translations: updatedTranslations
+                              });
+                            }}
                           />
                         </div>
                         <div>
@@ -582,7 +614,17 @@ export default function CookieConsent() {
                           <Input
                             id="reject_all_text"
                             value={settings.reject_all_text}
-                            onChange={(e) => setSettings({ ...settings, reject_all_text: e.target.value })}
+                            onChange={(e) => {
+                              const newValue = e.target.value;
+                              const updatedTranslations = { ...settings.translations };
+                              if (!updatedTranslations.en) updatedTranslations.en = {};
+                              updatedTranslations.en.reject_button_text = newValue;
+                              setSettings({
+                                ...settings,
+                                reject_all_text: newValue,
+                                translations: updatedTranslations
+                              });
+                            }}
                           />
                         </div>
                       </div>
@@ -593,7 +635,17 @@ export default function CookieConsent() {
                           <Input
                             id="manage_preferences_text"
                             value={settings.manage_preferences_text}
-                            onChange={(e) => setSettings({ ...settings, manage_preferences_text: e.target.value })}
+                            onChange={(e) => {
+                              const newValue = e.target.value;
+                              const updatedTranslations = { ...settings.translations };
+                              if (!updatedTranslations.en) updatedTranslations.en = {};
+                              updatedTranslations.en.settings_button_text = newValue;
+                              setSettings({
+                                ...settings,
+                                manage_preferences_text: newValue,
+                                translations: updatedTranslations
+                              });
+                            }}
                           />
                         </div>
                         <div>
@@ -601,7 +653,17 @@ export default function CookieConsent() {
                           <Input
                             id="privacy_policy_text"
                             value={settings.privacy_policy_text}
-                            onChange={(e) => setSettings({ ...settings, privacy_policy_text: e.target.value })}
+                            onChange={(e) => {
+                              const newValue = e.target.value;
+                              const updatedTranslations = { ...settings.translations };
+                              if (!updatedTranslations.en) updatedTranslations.en = {};
+                              updatedTranslations.en.privacy_policy_text = newValue;
+                              setSettings({
+                                ...settings,
+                                privacy_policy_text: newValue,
+                                translations: updatedTranslations
+                              });
+                            }}
                           />
                         </div>
                       </div>
@@ -618,7 +680,28 @@ export default function CookieConsent() {
                       <TranslationFields
                         translations={settings.translations}
                         onChange={(newTranslations) => {
-                          setSettings(prev => ({ ...prev, translations: newTranslations }));
+                          // Bi-directional sync: Update main fields when English translation changes
+                          const updates = { translations: newTranslations };
+
+                          if (newTranslations.en) {
+                            if (newTranslations.en.banner_text) {
+                              updates.banner_message = newTranslations.en.banner_text;
+                            }
+                            if (newTranslations.en.accept_button_text) {
+                              updates.accept_all_text = newTranslations.en.accept_button_text;
+                            }
+                            if (newTranslations.en.reject_button_text) {
+                              updates.reject_all_text = newTranslations.en.reject_button_text;
+                            }
+                            if (newTranslations.en.settings_button_text) {
+                              updates.manage_preferences_text = newTranslations.en.settings_button_text;
+                            }
+                            if (newTranslations.en.privacy_policy_text) {
+                              updates.privacy_policy_text = newTranslations.en.privacy_policy_text;
+                            }
+                          }
+
+                          setSettings(prev => ({ ...prev, ...updates }));
                         }}
                         fields={[
                           { name: 'banner_text', label: 'Banner Message', type: 'textarea', rows: 3, required: true },
