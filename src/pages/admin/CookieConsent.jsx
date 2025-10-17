@@ -230,9 +230,13 @@ export default function CookieConsent() {
       setStore(selectedStore);
 
       // Load cookie consent settings
+      console.log('About to call CookieConsentSettings.filter with:', { store_id: currentStoreId });
       const cookieSettings = await retryApiCall(() => CookieConsentSettings.filter({ store_id: currentStoreId }));
 
       console.log('API Response - cookie settings:', cookieSettings);
+      console.log('API Response type:', typeof cookieSettings, 'isArray:', Array.isArray(cookieSettings));
+      console.log('API Response length:', cookieSettings?.length);
+      console.log('API Response full:', JSON.stringify(cookieSettings, null, 2));
 
       if (cookieSettings && cookieSettings.length > 0) {
         // Map backend fields to frontend fields
