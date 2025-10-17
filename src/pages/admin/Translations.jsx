@@ -251,8 +251,12 @@ export default function Translations() {
       const endpoint = selectedEntityType === 'category' ? 'categories' :
                        selectedEntityType === 'product' ? 'products' :
                        selectedEntityType === 'attribute' ? 'attributes' :
+                       selectedEntityType === 'attribute_value' ? 'attributes/values' :
                        selectedEntityType === 'cms_page' ? 'cms-pages' :
-                       selectedEntityType === 'cms_block' ? 'cms-blocks' : null;
+                       selectedEntityType === 'cms_block' ? 'cms-blocks' :
+                       selectedEntityType === 'product_tab' ? 'product-tabs' :
+                       selectedEntityType === 'product_label' ? 'product-labels' :
+                       selectedEntityType === 'cookie_consent' ? 'cookie-consent-settings' : null;
 
       if (!endpoint) {
         throw new Error('Invalid entity type');
