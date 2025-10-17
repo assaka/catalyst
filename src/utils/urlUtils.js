@@ -123,7 +123,12 @@ export function createAdminUrl(pageName, params = {}) {
  * Create public storefront URL with store context
  */
 export function createPublicUrl(storeSlug, pageName, params = {}) {
-  const slug = URL_CONFIG.PAGES[pageName.toUpperCase()] || pageName.toLowerCase();
+  const pageKey = pageName.toUpperCase();
+  // Check if the page exists in config (including empty string values)
+  const slug = pageKey in URL_CONFIG.PAGES
+    ? URL_CONFIG.PAGES[pageKey]
+    : pageName.toLowerCase();
+
   // Handle empty slug (for STOREFRONT page) to avoid double slashes
   const baseUrl = slug
     ? `${URL_CONFIG.PUBLIC_PREFIX}/${storeSlug}/${slug}`
