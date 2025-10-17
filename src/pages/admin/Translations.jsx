@@ -8,6 +8,7 @@ import EntityTranslationCard from '../../components/admin/EntityTranslationCard'
 import MultiEntityTranslateDialog from '../../components/admin/MultiEntityTranslateDialog';
 import ProductTranslationRow from '../../components/admin/translations/ProductTranslationRow';
 import CategoryTranslationRow from '../../components/admin/translations/CategoryTranslationRow';
+import AttributeTranslationRow from '../../components/admin/translations/AttributeTranslationRow';
 import { toast } from 'sonner';
 
 export default function Translations() {
@@ -46,6 +47,11 @@ export default function Translations() {
   const [productCategories, setProductCategories] = useState([]);
   const [loadingCategories, setLoadingCategories] = useState(false);
   const [categorySearchQuery, setCategorySearchQuery] = useState('');
+
+  // Attributes tab states
+  const [productAttributes, setProductAttributes] = useState([]);
+  const [loadingAttributes, setLoadingAttributes] = useState(false);
+  const [attributeSearchQuery, setAttributeSearchQuery] = useState('');
 
   const categories = ['common', 'navigation', 'product', 'checkout', 'account', 'admin'];
 
@@ -272,6 +278,31 @@ export default function Translations() {
       showMessage('Failed to load categories', 'error');
     } finally {
       setLoadingCategories(false);
+    }
+  };
+
+  /**
+   * Load attributes for translation management
+   */
+  const loadAttributes = async () => {
+    const storeId = getSelectedStoreId();
+    if (!storeId) {
+      setProductAttributes([]);
+      return;
+    }
+
+    try {
+      setLoadingAttributes(true);
+      const response = await api.get(`/attributes?store_id=${storeId}&limit=1000`);
+
+      if (response && response.success && response.data) {
+        setProductAttributes(response.data.attributes || []);
+      }
+    } catch (error) {
+      console.error('Failed to load attributes:', error);
+      showMessage('Failed to load attributes', 'error');
+    } finally {
+      setLoadingAttributes(false);
     }
   };
 
@@ -569,6 +600,13 @@ export default function Translations() {
   useEffect(() => {
     if (activeTab === 'categories' && selectedStore) {
       loadCategories();
+    }
+  }, [activeTab, selectedStore]);
+
+  // Load attributes when switching to attributes tab
+  useEffect(() => {
+    if (activeTab === 'attributes' && selectedStore) {
+      loadAttributes();
     }
   }, [activeTab, selectedStore]);
 
@@ -1204,12 +1242,96 @@ export default function Translations() {
               </p>
             </div>
           ) : (
-            <div className="bg-white border border-gray-200 rounded-lg p-8">
-              <h2 className="text-xl font-semibold text-gray-900 mb-4">Attribute Translations</h2>
-              <p className="text-gray-600">
-                Attribute translation management with accordion style (coming soon)
-              </p>
-            </div>
+            <>
+              {/* Header and Search */}
+              <div className="bg-white border border-gray-200 rounded-lg p-6">
+                <div className="flex items-center justify-between mb-4">
+                  <div>
+                    <h2 className="text-xl font-semibold text-gray-900">Attribute Translations</h2>
+                    <p className="text-sm text-gray-600 mt-1">
+                      Manage translations for attribute names and options across languages
+                    </p>
+                  </div>
+                  <button
+                    onClick={() => {
+                      setSelectedEntityType('attribute');
+                      setSelectedEntityName('Attributes');
+                      setShowBulkTranslateDialog(true);
+                    }}
+                    className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 flex items-center gap-2"
+                  >
+                    <Languages className="w-4 h-4" />
+                    Bulk AI Translate
+                  </button>
+                </div>
+
+                {/* Search Bar */}
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                  <input
+                    type="text"
+                    placeholder="Search attributes by name or code..."
+                    value={attributeSearchQuery}
+                    onChange={(e) => setAttributeSearchQuery(e.target.value)}
+                    className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  />
+                </div>
+              </div>
+
+              {/* Attributes List */}
+              {loadingAttributes ? (
+                <div className="bg-white border border-gray-200 rounded-lg p-12 text-center">
+                  <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+                  <p className="text-gray-600">Loading attributes...</p>
+                </div>
+              ) : productAttributes.length === 0 ? (
+                <div className="bg-white border border-gray-200 rounded-lg p-8 text-center text-gray-500">
+                  <Globe className="w-12 h-12 mx-auto mb-4 text-gray-400" />
+                  <h3 className="text-lg font-semibold text-gray-700 mb-2">
+                    No Attributes Found
+                  </h3>
+                  <p>
+                    Start by adding attributes to your store.
+                  </p>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {productAttributes
+                    .filter(attribute => {
+                      if (!attributeSearchQuery.trim()) return true;
+                      const query = attributeSearchQuery.toLowerCase();
+                      const name = (attribute.translations?.en?.name || attribute.name || '').toLowerCase();
+                      const code = (attribute.code || '').toLowerCase();
+                      return name.includes(query) || code.includes(query);
+                    })
+                    .map((attribute) => (
+                      <AttributeTranslationRow
+                        key={attribute.id}
+                        attribute={attribute}
+                        onUpdate={(attributeId, translations, values) => {
+                          // Update local state
+                          setProductAttributes(productAttributes.map(a =>
+                            a.id === attributeId ? { ...a, translations, values } : a
+                          ));
+                        }}
+                      />
+                    ))}
+                </div>
+              )}
+
+              {/* Count Info */}
+              {productAttributes.length > 0 && (
+                <div className="text-sm text-gray-600 text-center">
+                  Showing {productAttributes.filter(attribute => {
+                    if (!attributeSearchQuery.trim()) return true;
+                    const query = attributeSearchQuery.toLowerCase();
+                    const name = (attribute.translations?.en?.name || attribute.name || '').toLowerCase();
+                    const code = (attribute.code || '').toLowerCase();
+                    return name.includes(query) || code.includes(query);
+                  }).length} of {productAttributes.length} attributes
+                </div>
+              )}
+            </>
           )}
         </div>
       )}
