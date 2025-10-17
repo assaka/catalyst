@@ -286,22 +286,32 @@ export default function CookieConsent() {
 
   const handleSave = async () => {
     // Check if settings or store are null, or if store doesn't have an ID (which is required for saving)
-    const storeId = getSelectedStoreId();
-
-    if (!settings || !storeId) {
+    if (!settings || !selectedStore?.id) {
       setFlashMessage({ type: 'error', message: 'Settings not loaded or no store found. Cannot save.' });
       return;
     }
 
+    // IMPORTANT: Always use selectedStore.id to ensure we're saving to the correct store
+    // Do NOT use getSelectedStoreId() as it may return a stale/incorrect ID
+    const storeId = selectedStore.id;
+
     setSaving(true);
 
     try {
+      // Ensure the settings have the correct store_id before saving
+      const settingsToSave = {
+        ...settings,
+        store_id: storeId
+      };
+
       // Map frontend settings to backend format
-      const backendSettings = mapFrontendToBackend(settings);
+      const backendSettings = mapFrontendToBackend(settingsToSave);
 
       console.log('Saving cookie consent settings:', {
         settingsId: settings.id,
-        storeId: storeId,
+        selectedStoreId: selectedStore.id,
+        settingsStoreId: settings.store_id,
+        backendStoreId: backendSettings.store_id,
         hasId: !!settings.id,
         operation: settings.id ? 'update' : 'create',
         backendSettings: {
