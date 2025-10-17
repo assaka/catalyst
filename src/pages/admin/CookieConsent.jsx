@@ -216,18 +216,21 @@ export default function CookieConsent() {
   const loadData = async () => {
     try {
       setLoading(true);
-      
+
       if (!selectedStore) {
         setStore(null);
         setSettings(null);
         setLoading(false);
         return;
       }
-      
+
+      const currentStoreId = selectedStore.id;
+      console.log('Loading data for store:', currentStoreId);
+
       setStore(selectedStore);
-      
+
       // Load cookie consent settings
-      const cookieSettings = await retryApiCall(() => CookieConsentSettings.filter({ store_id: selectedStore.id }));
+      const cookieSettings = await retryApiCall(() => CookieConsentSettings.filter({ store_id: currentStoreId }));
 
       console.log('API Response - cookie settings:', cookieSettings);
 
@@ -250,10 +253,10 @@ export default function CookieConsent() {
         });
         setSettings(mappedSettings);
       } else {
-        console.log('No existing settings found, creating defaults');
+        console.log('No existing settings found, creating defaults for store:', currentStoreId);
         // Create default settings with valid store_id - use the same structure as mapBackendToFrontend
         const defaultSettings = mapBackendToFrontend({
-          store_id: selectedStore.id,
+          store_id: currentStoreId,
           is_enabled: false,
           gdpr_mode: true,
           auto_detect_country: true,
@@ -261,6 +264,7 @@ export default function CookieConsent() {
           marketing_cookies: false,
           functional_cookies: false
         });
+        console.log('Created default settings with store_id:', defaultSettings.store_id);
         setSettings(defaultSettings);
       }
       
@@ -286,37 +290,44 @@ export default function CookieConsent() {
 
   const handleSave = async () => {
     // Check if settings or store are null, or if store doesn't have an ID (which is required for saving)
-    if (!settings || !selectedStore?.id) {
+    if (!settings || !selectedStore) {
       setFlashMessage({ type: 'error', message: 'Settings not loaded or no store found. Cannot save.' });
       return;
     }
 
-    // IMPORTANT: Always use selectedStore.id to ensure we're saving to the correct store
-    // Do NOT use getSelectedStoreId() as it may return a stale/incorrect ID
-    const storeId = selectedStore.id;
+    // CRITICAL: Capture the current store ID at save time to prevent stale reference
+    const currentStoreId = selectedStore.id;
+
+    console.log('handleSave - Current store from context:', {
+      storeId: currentStoreId,
+      storeName: selectedStore.name,
+      settingsCurrentStoreId: settings.store_id
+    });
+
+    if (!currentStoreId) {
+      setFlashMessage({ type: 'error', message: 'No store ID available. Cannot save.' });
+      return;
+    }
 
     setSaving(true);
 
     try {
-      // Ensure the settings have the correct store_id before saving
+      // FORCE the correct store_id - completely replace any existing store_id
       const settingsToSave = {
         ...settings,
-        store_id: storeId
+        store_id: currentStoreId  // This MUST match the selected store
       };
 
       // Map frontend settings to backend format
       const backendSettings = mapFrontendToBackend(settingsToSave);
 
       console.log('Saving cookie consent settings:', {
-        selectedStoreId: selectedStore.id,
+        currentStoreId: currentStoreId,
+        selectedStoreName: selectedStore.name,
         settingsStoreId: settings.store_id,
+        forcedStoreId: settingsToSave.store_id,
         backendStoreId: backendSettings.store_id,
-        backendSettings: {
-          id: backendSettings.id,
-          store_id: backendSettings.store_id,
-          hasTranslations: !!backendSettings.translations,
-          translationKeys: Object.keys(backendSettings.translations || {})
-        }
+        allMatch: currentStoreId === settingsToSave.store_id && settingsToSave.store_id === backendSettings.store_id
       });
 
       // Always use create endpoint - backend automatically handles upsert based on store_id
