@@ -18,10 +18,10 @@ export default function AttributeValueTranslations({
   const translations = attributeValue.translations || {};
   const code = attributeValue.code;
 
-  // Filter languages by selected languages
-  const filteredLanguages = availableLanguages.filter(lang =>
-    selectedLanguages?.includes(lang.code)
-  );
+  // Filter languages by selected languages, or use all if none selected
+  const filteredLanguages = selectedLanguages && selectedLanguages.length > 0
+    ? availableLanguages.filter(lang => selectedLanguages.includes(lang.code))
+    : availableLanguages;
 
   // Get translation completeness
   const getTranslationStatus = () => {
