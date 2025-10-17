@@ -390,9 +390,10 @@ export default function Translations() {
       console.log('Product tabs response:', response);
 
       if (response && response.success && response.data) {
-        const tabs = response.data.tabs || response.data || [];
+        // Response.data is directly the array of tabs
+        const tabs = Array.isArray(response.data) ? response.data : [];
         console.log('Setting product tabs:', tabs);
-        setProductTabs(Array.isArray(tabs) ? tabs : []);
+        setProductTabs(tabs);
       } else {
         console.warn('Unexpected product tabs response format:', response);
         setProductTabs([]);
@@ -423,7 +424,8 @@ export default function Translations() {
       console.log('Product labels response:', response);
 
       if (response && response.success && response.data) {
-        const labels = response.data.labels || response.data || [];
+        // Response.data contains { product_labels: [...] }
+        const labels = response.data.product_labels || [];
         console.log('Setting product labels:', labels);
         setProductLabels(Array.isArray(labels) ? labels : []);
       } else {
@@ -489,9 +491,9 @@ export default function Translations() {
 
       console.log('Custom options response:', response);
 
-      if (response && response.data) {
-        // Response.data is directly an array for custom options
-        const options = Array.isArray(response.data) ? response.data : [];
+      // Custom options API returns array directly, not wrapped in success/data
+      if (response) {
+        const options = Array.isArray(response) ? response : [];
         console.log('Setting custom options:', options);
         setCustomOptions(options);
       } else {

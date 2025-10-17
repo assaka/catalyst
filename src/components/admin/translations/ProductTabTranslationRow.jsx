@@ -21,7 +21,7 @@ export default function ProductTabTranslationRow({ tab, onUpdate }) {
   const getTranslationStatus = () => {
     const translatedCount = availableLanguages.filter(lang => {
       const translation = translations[lang.code];
-      return translation && translation.title && translation.title.trim().length > 0;
+      return translation && translation.name && translation.name.trim().length > 0;
     }).length;
 
     return {
@@ -33,11 +33,15 @@ export default function ProductTabTranslationRow({ tab, onUpdate }) {
 
   const status = getTranslationStatus();
 
-  // Fields to translate
+  // Fields to translate - only show content for text type tabs
   const fields = [
-    { key: 'title', label: 'Title', multiline: false },
-    { key: 'content', label: 'Content', multiline: true }
+    { key: 'name', label: 'Name', multiline: false }
   ];
+
+  // Only add content field for text-type tabs
+  if (tab.tab_type === 'text') {
+    fields.push({ key: 'content', label: 'Content', multiline: true });
+  }
 
   // Handle translation change
   const handleTranslationChange = (langCode, field, value) => {
@@ -113,10 +117,10 @@ export default function ProductTabTranslationRow({ tab, onUpdate }) {
 
           <div className="flex-1 min-w-0">
             <p className="text-sm font-medium text-gray-900 truncate">
-              {translations.en?.title || tab.title || 'Unnamed Tab'}
+              {translations.en?.name || tab.name || 'Unnamed Tab'}
             </p>
             <p className="text-xs text-gray-500">
-              Sort Order: {tab.sort_order}
+              Type: {tab.tab_type || 'text'} • Sort Order: {tab.sort_order}
             </p>
           </div>
         </button>
