@@ -651,7 +651,7 @@ export default function Category() {
 
       {/* Dynamic layout using CategorySlotRenderer for everything below header */}
       <div className="max-w-7xl mx-auto">
-        {loading ? (
+        {loading || !categoryConfigLoaded ? (
           <div className={`grid ${getGridClasses()} gap-8 min-h-[400px]`}>
             {[...Array(6)].map((_, i) => (
               <Card key={i} className="animate-pulse">
@@ -667,7 +667,7 @@ export default function Category() {
           </div>
         ) : (
           <>
-            {sortedProducts.length > 0 || loading ? (
+            {sortedProducts.length > 0 ? (
               <>
                 <div className="grid grid-cols-12 gap-2 auto-rows-min">
                   <CategorySlotRenderer
