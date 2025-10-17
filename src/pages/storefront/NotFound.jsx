@@ -17,17 +17,22 @@ export default function NotFound() {
 
   useEffect(() => {
     const fetchNotFoundPage = async () => {
+      if (!store?.id) {
+        setLoading(false);
+        return;
+      }
+
       try {
         setLoading(true);
-        // Try to fetch a CMS page with slug '404' or 'not-found'
-        let pages = await CmsPage.filter({ slug: '404', is_active: true });
+        // Try to fetch a CMS page with slug '404' or 'not-found' for this specific store
+        let pages = await CmsPage.filter({ slug: '404', is_active: true, store_id: store.id });
 
         if (!pages || pages.length === 0) {
-          pages = await CmsPage.filter({ slug: 'not-found', is_active: true });
+          pages = await CmsPage.filter({ slug: 'not-found', is_active: true, store_id: store.id });
         }
 
         if (!pages || pages.length === 0) {
-          pages = await CmsPage.filter({ slug: 'page-not-found', is_active: true });
+          pages = await CmsPage.filter({ slug: 'page-not-found', is_active: true, store_id: store.id });
         }
 
         if (pages && pages.length > 0) {
@@ -41,11 +46,11 @@ export default function NotFound() {
     };
 
     fetchNotFoundPage();
-  }, []);
+  }, [store?.id]);
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
+      <div className="flex items-center justify-center py-16 min-h-[400px]">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
       </div>
     );
