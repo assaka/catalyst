@@ -16,6 +16,11 @@ const CmsPage = sequelize.define('CmsPage', {
     type: DataTypes.BOOLEAN,
     defaultValue: true
   },
+  is_system: {
+    type: DataTypes.BOOLEAN,
+    defaultValue: false,
+    comment: 'System pages cannot be deleted from admin panel. Used for critical pages like 404, maintenance, etc.'
+  },
   // SEO fields
   meta_title: {
     type: DataTypes.STRING,
