@@ -76,16 +76,29 @@ export default function CookieConsentTranslationRow({ settings, onUpdate, select
 
   // Save translations
   const handleSave = async () => {
+    if (!settings || !settings.id) {
+      toast.error('No cookie consent settings found');
+      return;
+    }
+
     try {
       setSaving(true);
-      await api.put(`/cookie-consent-settings/${settings.id}`, {
+      console.log('Saving cookie consent translations:', {
+        settingsId: settings.id,
+        translations: translations
+      });
+
+      const response = await api.put(`/cookie-consent-settings/${settings.id}`, {
         translations
       });
+
+      console.log('Cookie consent save response:', response);
       toast.success('Cookie consent translations updated successfully');
       if (onUpdate) onUpdate(settings.id, translations);
     } catch (error) {
-      console.error('Error saving translations:', error);
-      toast.error('Failed to save translations');
+      console.error('Error saving cookie consent translations:', error);
+      console.error('Error response:', error.response?.data);
+      toast.error(error.response?.data?.message || 'Failed to save translations');
     } finally {
       setSaving(false);
     }

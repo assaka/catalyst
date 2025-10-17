@@ -69,6 +69,7 @@ export default function StockLabelTranslationRow({ storeId, stockSettings, onUpd
       setSaving(true);
 
       // Update store settings with new stock label translations
+      // The backend merges settings, so we only send the stock_settings part we want to update
       await api.put(`/stores/${storeId}`, {
         settings: {
           stock_settings: {
@@ -81,8 +82,9 @@ export default function StockLabelTranslationRow({ storeId, stockSettings, onUpd
       toast.success('Stock label translations updated successfully');
       if (onUpdate) onUpdate(translations);
     } catch (error) {
-      console.error('Error saving translations:', error);
-      toast.error('Failed to save translations');
+      console.error('Error saving stock label translations:', error);
+      console.error('Error response:', error.response?.data);
+      toast.error(error.response?.data?.message || 'Failed to save translations');
     } finally {
       setSaving(false);
     }
