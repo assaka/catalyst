@@ -377,8 +377,8 @@ export default function Translations() {
 
       // Load both pages and blocks in parallel
       const [pagesResponse, blocksResponse] = await Promise.all([
-        api.get(`/cms-pages?store_id=${storeId}&limit=1000`),
-        api.get(`/cms-blocks?store_id=${storeId}&limit=1000`)
+        api.get(`/api/cms-pages?store_id=${storeId}&limit=1000`),
+        api.get(`/api/cms-blocks?store_id=${storeId}&limit=1000`)
       ]);
 
       if (pagesResponse && pagesResponse.success && pagesResponse.data) {
@@ -408,7 +408,7 @@ export default function Translations() {
 
     try {
       setLoadingProductTabs(true);
-      const response = await api.get(`/product-tabs?store_id=${storeId}&limit=1000`);
+      const response = await api.get(`/api/product-tabs?store_id=${storeId}&limit=1000`);
 
       console.log('Product tabs response:', response);
 
@@ -442,7 +442,7 @@ export default function Translations() {
 
     try {
       setLoadingProductLabels(true);
-      const response = await api.get(`/product-labels?store_id=${storeId}&limit=1000`);
+      const response = await api.get(`/api/product-labels?store_id=${storeId}&limit=1000`);
 
       console.log('Product labels response:', response);
 
@@ -1254,6 +1254,7 @@ export default function Translations() {
                         {editingKey === label.key ? (
                           <div className="flex gap-2 justify-end">
                             <button
+                              type="button"
                               onClick={() => {
                                 saveLabel(label.key, editValue, label.category, label.type);
                               }}
@@ -1263,6 +1264,7 @@ export default function Translations() {
                               <Save className="w-4 h-4" />
                             </button>
                             <button
+                              type="button"
                               onClick={() => setEditingKey(null)}
                               className="p-2 text-gray-600 hover:bg-gray-100 rounded"
                             >
@@ -1272,6 +1274,7 @@ export default function Translations() {
                         ) : (
                           <div className="flex gap-2 justify-end">
                             <button
+                              type="button"
                               onClick={() => {
                                 setEditingKey(label.key);
                                 setEditValue(label.value);
@@ -1283,6 +1286,7 @@ export default function Translations() {
                             </button>
                             {label.type === 'custom' && (
                               <button
+                                type="button"
                                 onClick={() => deleteLabel(label.key)}
                                 className="p-2 text-red-600 hover:bg-red-50 rounded"
                                 title="Delete custom translation"
