@@ -1245,6 +1245,13 @@ export default function Translations() {
                           <textarea
                             value={editValue}
                             onChange={(e) => setEditValue(e.target.value)}
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                saveLabel(label.key, editValue, label.category, label.type);
+                              }
+                            }}
                             rows={2}
                             className="w-full px-2 py-1 border border-gray-300 rounded"
                             autoFocus
