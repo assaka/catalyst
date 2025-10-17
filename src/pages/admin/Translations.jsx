@@ -16,6 +16,7 @@ import ProductLabelTranslationRow from '../../components/admin/translations/Prod
 import CookieConsentTranslationRow from '../../components/admin/translations/CookieConsentTranslationRow';
 import CustomOptionTranslationRow from '../../components/admin/translations/CustomOptionTranslationRow';
 import StockLabelTranslationRow from '../../components/admin/translations/StockLabelTranslationRow';
+import { Button } from '../../components/ui/button';
 import { toast } from 'sonner';
 
 export default function Translations() {
@@ -1245,13 +1246,6 @@ export default function Translations() {
                           <textarea
                             value={editValue}
                             onChange={(e) => setEditValue(e.target.value)}
-                            onKeyDown={(e) => {
-                              if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
-                                e.preventDefault();
-                                e.stopPropagation();
-                                saveLabel(label.key, editValue, label.category, label.type);
-                              }
-                            }}
                             rows={2}
                             className="w-full px-2 py-1 border border-gray-300 rounded"
                             autoFocus
@@ -1265,48 +1259,52 @@ export default function Translations() {
                       <td className="px-4 py-3 text-sm text-right">
                         {editingKey === label.key ? (
                           <div className="flex gap-2 justify-end">
-                            <button
+                            <Button
                               type="button"
-                              onClick={(e) => {
-                                e.preventDefault();
-                                e.stopPropagation();
-                                saveLabel(label.key, editValue, label.category, label.type);
-                              }}
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => saveLabel(label.key, editValue, label.category, label.type)}
                               disabled={saving}
-                              className="p-2 text-green-600 hover:bg-green-50 rounded"
+                              className="text-green-600 hover:text-green-700 hover:bg-green-50"
                             >
                               <Save className="w-4 h-4" />
-                            </button>
-                            <button
+                            </Button>
+                            <Button
                               type="button"
+                              variant="ghost"
+                              size="sm"
                               onClick={() => setEditingKey(null)}
-                              className="p-2 text-gray-600 hover:bg-gray-100 rounded"
+                              className="text-gray-600 hover:text-gray-700 hover:bg-gray-100"
                             >
                               <X className="w-4 h-4" />
-                            </button>
+                            </Button>
                           </div>
                         ) : (
                           <div className="flex gap-2 justify-end">
-                            <button
+                            <Button
                               type="button"
+                              variant="ghost"
+                              size="sm"
                               onClick={() => {
                                 setEditingKey(label.key);
                                 setEditValue(label.value);
                               }}
-                              className="p-2 text-blue-600 hover:bg-blue-50 rounded"
+                              className="text-blue-600 hover:text-blue-700 hover:bg-blue-50"
                               title="Edit translation"
                             >
                               <Edit2 className="w-4 h-4" />
-                            </button>
+                            </Button>
                             {label.type === 'custom' && (
-                              <button
+                              <Button
                                 type="button"
+                                variant="ghost"
+                                size="sm"
                                 onClick={() => deleteLabel(label.key)}
-                                className="p-2 text-red-600 hover:bg-red-50 rounded"
+                                className="text-red-600 hover:text-red-700 hover:bg-red-50"
                                 title="Delete custom translation"
                               >
                                 <Trash2 className="w-4 h-4" />
-                              </button>
+                              </Button>
                             )}
                           </div>
                         )}
