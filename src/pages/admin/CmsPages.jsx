@@ -249,17 +249,16 @@ export default function CmsPages() {
                     <Edit className="w-4 h-4 mr-1" />
                     Edit
                   </Button>
-                  <Button
-                    variant="destructive"
-                    size="sm"
-                    onClick={() => handleDeletePage(page.id, page.is_system)}
-                    disabled={page.is_system}
-                    title={page.is_system ? "System pages cannot be deleted" : "Delete this page"}
-                    className={page.is_system ? "opacity-50 cursor-not-allowed" : ""}
-                  >
-                    <Trash2 className="w-4 h-4 mr-1" />
-                    Delete
-                  </Button>
+                  {!page.is_system && (
+                    <Button
+                      variant="destructive"
+                      size="sm"
+                      onClick={() => handleDeletePage(page.id, page.is_system)}
+                    >
+                      <Trash2 className="w-4 h-4 mr-1" />
+                      Delete
+                    </Button>
+                  )}
                 </div>
               </CardContent>
             </Card>

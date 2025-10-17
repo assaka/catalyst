@@ -6,6 +6,7 @@ import { createPublicUrl } from '@/utils/urlUtils';
 import SeoHeadManager from '@/components/storefront/SeoHeadManager';
 import { Button } from '@/components/ui/button';
 import { Home, Search, ArrowLeft } from 'lucide-react';
+import { getPageTitle, getPageContent, getCurrentLanguage } from '@/utils/translationUtils';
 
 const NotFoundPage = () => {
   const { store } = useStore();
@@ -57,18 +58,34 @@ const NotFoundPage = () => {
 
   // If custom 404 CMS page exists, show it
   if (page) {
+    const currentLang = getCurrentLanguage();
+    const pageTitle = getPageTitle(page, currentLang);
+    const pageContent = getPageContent(page, currentLang);
+
     return (
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-        <SeoHeadManager 
-          pageType="cms_page" 
+        <SeoHeadManager
+          pageType="cms_page"
           pageData={{
             ...page,
             meta_title: page.meta_title || '404 - Page Not Found',
             meta_description: page.meta_description || 'The page you are looking for could not be found.'
-          }} 
+          }}
         />
         <article className="prose lg:prose-xl mx-auto bg-white p-8 rounded-lg shadow">
-          <div dangerouslySetInnerHTML={{ __html: page.content }} />
+          <h1>{pageTitle || "404 - Page Not Found"}</h1>
+          <div dangerouslySetInnerHTML={{ __html: pageContent }} />
+
+          <div className="flex gap-4 mt-8 not-prose">
+            {store && (
+              <Link to={createPublicUrl(store.slug, 'STOREFRONT')}>
+                <Button>
+                  <Home className="w-4 h-4 mr-2" />
+                  Go to Homepage
+                </Button>
+              </Link>
+            )}
+          </div>
         </article>
       </div>
     );
