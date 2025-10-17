@@ -308,9 +308,9 @@ function App() {
           
           {/* Homepage */}
           <Route path="/" element={<PageWrapper Component={Pages.Storefront} pageName="Storefront" />} />
-          
-          {/* Catch all - redirect to homepage */}
-          <Route path="*" element={<Navigate to="/" replace />} />
+
+          {/* Catch all - show 404 page */}
+          <Route path="*" element={<PageWrapper Component={Pages.NotFound} pageName="NotFound" />} />
             </Routes>
           </Router>
           <Toaster />

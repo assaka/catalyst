@@ -127,9 +127,8 @@ export function createPublicUrl(storeSlug, pageName, params = {}) {
 
   // Check if the page exists in config (including empty string values)
   if (!(pageKey in URL_CONFIG.PAGES)) {
-    console.warn(`⚠️ Unknown page name: "${pageName}". URL will lead to 404.`);
-    // Return a path that will be caught by the 404 handler
-    return `${URL_CONFIG.PUBLIC_PREFIX}/${storeSlug}/404-page-not-found`;
+    console.error(`❌ Unknown page name: "${pageName}". This page does not exist in URL_CONFIG.PAGES.`);
+    throw new Error(`Unknown page name: "${pageName}". Please use a valid page name from URL_CONFIG.PAGES.`);
   }
 
   const slug = URL_CONFIG.PAGES[pageKey];
