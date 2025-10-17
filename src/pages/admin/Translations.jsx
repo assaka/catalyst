@@ -14,6 +14,7 @@ import CmsBlockTranslationRow from '../../components/admin/translations/CmsBlock
 import ProductTabTranslationRow from '../../components/admin/translations/ProductTabTranslationRow';
 import ProductLabelTranslationRow from '../../components/admin/translations/ProductLabelTranslationRow';
 import CookieConsentTranslationRow from '../../components/admin/translations/CookieConsentTranslationRow';
+import CustomOptionTranslationRow from '../../components/admin/translations/CustomOptionTranslationRow';
 import { toast } from 'sonner';
 
 export default function Translations() {
@@ -78,6 +79,11 @@ export default function Translations() {
   // Cookie Consent tab states
   const [cookieConsent, setCookieConsent] = useState([]);
   const [loadingCookieConsent, setLoadingCookieConsent] = useState(false);
+
+  // Custom Options tab states
+  const [customOptions, setCustomOptions] = useState([]);
+  const [loadingCustomOptions, setLoadingCustomOptions] = useState(false);
+  const [customOptionSearchQuery, setCustomOptionSearchQuery] = useState('');
 
   const categories = ['common', 'navigation', 'product', 'checkout', 'account', 'admin'];
 
@@ -381,12 +387,20 @@ export default function Translations() {
       setLoadingProductTabs(true);
       const response = await api.get(`/product-tabs?store_id=${storeId}&limit=1000`);
 
+      console.log('Product tabs response:', response);
+
       if (response && response.success && response.data) {
-        setProductTabs(response.data.tabs || []);
+        const tabs = response.data.tabs || response.data || [];
+        console.log('Setting product tabs:', tabs);
+        setProductTabs(Array.isArray(tabs) ? tabs : []);
+      } else {
+        console.warn('Unexpected product tabs response format:', response);
+        setProductTabs([]);
       }
     } catch (error) {
       console.error('Failed to load product tabs:', error);
       showMessage('Failed to load product tabs', 'error');
+      setProductTabs([]);
     } finally {
       setLoadingProductTabs(false);
     }
@@ -406,12 +420,20 @@ export default function Translations() {
       setLoadingProductLabels(true);
       const response = await api.get(`/product-labels?store_id=${storeId}&limit=1000`);
 
+      console.log('Product labels response:', response);
+
       if (response && response.success && response.data) {
-        setProductLabels(response.data.labels || []);
+        const labels = response.data.labels || response.data || [];
+        console.log('Setting product labels:', labels);
+        setProductLabels(Array.isArray(labels) ? labels : []);
+      } else {
+        console.warn('Unexpected product labels response format:', response);
+        setProductLabels([]);
       }
     } catch (error) {
       console.error('Failed to load product labels:', error);
       showMessage('Failed to load product labels', 'error');
+      setProductLabels([]);
     } finally {
       setLoadingProductLabels(false);
     }
@@ -431,14 +453,57 @@ export default function Translations() {
       setLoadingCookieConsent(true);
       const response = await api.get(`/cookie-consent-settings?store_id=${storeId}`);
 
+      console.log('Cookie consent response:', response);
+
       if (response && response.success && response.data) {
-        setCookieConsent(response.data || []);
+        // Cookie consent might return a single object or array
+        const settings = Array.isArray(response.data) ? response.data : [response.data];
+        console.log('Setting cookie consent:', settings);
+        setCookieConsent(settings.filter(s => s && s.id));
+      } else {
+        console.warn('Unexpected cookie consent response format:', response);
+        setCookieConsent([]);
       }
     } catch (error) {
       console.error('Failed to load cookie consent:', error);
       showMessage('Failed to load cookie consent', 'error');
+      setCookieConsent([]);
     } finally {
       setLoadingCookieConsent(false);
+    }
+  };
+
+  /**
+   * Load custom option rules for translation management
+   */
+  const loadCustomOptions = async () => {
+    const storeId = getSelectedStoreId();
+    if (!storeId) {
+      setCustomOptions([]);
+      return;
+    }
+
+    try {
+      setLoadingCustomOptions(true);
+      const response = await api.get(`/custom-option-rules?store_id=${storeId}&limit=1000`);
+
+      console.log('Custom options response:', response);
+
+      if (response && response.data) {
+        // Response.data is directly an array for custom options
+        const options = Array.isArray(response.data) ? response.data : [];
+        console.log('Setting custom options:', options);
+        setCustomOptions(options);
+      } else {
+        console.warn('Unexpected custom options response format:', response);
+        setCustomOptions([]);
+      }
+    } catch (error) {
+      console.error('Failed to load custom options:', error);
+      showMessage('Failed to load custom options', 'error');
+      setCustomOptions([]);
+    } finally {
+      setLoadingCustomOptions(false);
     }
   };
 
@@ -753,12 +818,13 @@ export default function Translations() {
     }
   }, [activeTab, selectedStore]);
 
-  // Load store settings (product tabs, labels, cookie consent) when switching to store-settings tab
+  // Load various settings (product tabs, labels, cookie consent, custom options, etc.) when switching to various tab
   useEffect(() => {
-    if (activeTab === 'store-settings' && selectedStore) {
+    if (activeTab === 'various' && selectedStore) {
       loadProductTabs();
       loadProductLabels();
       loadCookieConsent();
+      loadCustomOptions();
     }
   }, [activeTab, selectedStore]);
 
@@ -863,16 +929,16 @@ export default function Translations() {
             CMS Content
           </button>
           <button
-            onClick={() => setActiveTab('store-settings')}
+            onClick={() => setActiveTab('various')}
             className={`
               px-4 py-2 font-medium border-b-2 transition-colors whitespace-nowrap
-              ${activeTab === 'store-settings'
+              ${activeTab === 'various'
                 ? 'border-blue-600 text-blue-600'
                 : 'border-transparent text-gray-600 hover:text-gray-900'
               }
             `}
           >
-            Store Settings
+            Various
           </button>
         </div>
       </div>
@@ -1666,8 +1732,8 @@ export default function Translations() {
         </div>
       )}
 
-      {/* Store Settings Tab (Product Tabs, Labels, Cookie Consent) */}
-      {activeTab === 'store-settings' && (
+      {/* Various Tab (Product Tabs, Labels, Cookie Consent, Custom Options, Stock Settings) */}
+      {activeTab === 'various' && (
         <div className="space-y-6">
           {!selectedStore ? (
             <div className="bg-white border border-gray-200 rounded-lg p-8 text-center text-gray-500">
@@ -1676,16 +1742,16 @@ export default function Translations() {
                 No Store Selected
               </h3>
               <p>
-                Please select a store to manage store settings translations.
+                Please select a store to manage various translations.
               </p>
             </div>
           ) : (
             <>
               {/* Header */}
               <div className="bg-white border border-gray-200 rounded-lg p-6">
-                <h2 className="text-xl font-semibold text-gray-900 mb-2">Store Settings Translations</h2>
+                <h2 className="text-xl font-semibold text-gray-900 mb-2">Various Translations</h2>
                 <p className="text-sm text-gray-600">
-                  Manage translations for product tabs, labels, and cookie consent
+                  Manage translations for product tabs, labels, cookie consent, and custom options
                 </p>
               </div>
 
@@ -1830,6 +1896,62 @@ export default function Translations() {
                         }}
                       />
                     ))}
+                  </div>
+                )}
+              </div>
+
+              {/* Custom Options Section */}
+              <div className="bg-white border border-gray-200 rounded-lg p-6">
+                <div className="flex items-center justify-between mb-4">
+                  <div>
+                    <h3 className="text-lg font-semibold text-gray-900">Custom Options</h3>
+                    <p className="text-sm text-gray-600 mt-1">
+                      Custom product option rules and configurations
+                    </p>
+                  </div>
+                </div>
+
+                <div className="relative mb-4">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                  <input
+                    type="text"
+                    placeholder="Search custom options..."
+                    value={customOptionSearchQuery}
+                    onChange={(e) => setCustomOptionSearchQuery(e.target.value)}
+                    className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  />
+                </div>
+
+                {loadingCustomOptions ? (
+                  <div className="py-8 text-center">
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-2"></div>
+                    <p className="text-sm text-gray-600">Loading custom options...</p>
+                  </div>
+                ) : customOptions.length === 0 ? (
+                  <div className="py-6 text-center text-gray-500">
+                    <p className="text-sm">No custom options found. Start by adding custom option rules to your store.</p>
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    {customOptions
+                      .filter(option => {
+                        if (!customOptionSearchQuery.trim()) return true;
+                        const query = customOptionSearchQuery.toLowerCase();
+                        const name = (option.name || '').toLowerCase();
+                        const displayLabel = (option.translations?.en?.display_label || option.display_label || '').toLowerCase();
+                        return name.includes(query) || displayLabel.includes(query);
+                      })
+                      .map((option) => (
+                        <CustomOptionTranslationRow
+                          key={option.id}
+                          rule={option}
+                          onUpdate={(ruleId, translations) => {
+                            setCustomOptions(customOptions.map(o =>
+                              o.id === ruleId ? { ...o, translations } : o
+                            ));
+                          }}
+                        />
+                      ))}
                   </div>
                 )}
               </div>
