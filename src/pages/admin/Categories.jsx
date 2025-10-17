@@ -2,8 +2,10 @@
 import React, { useState, useEffect } from "react";
 import { Category } from "@/api/entities";
 import { useStoreSelection } from "@/contexts/StoreSelectionContext.jsx";
+import { useTranslation } from "@/contexts/TranslationContext.jsx";
 import NoStoreSelected from "@/components/admin/NoStoreSelected";
 import { clearCategoriesCache } from "@/utils/cacheUtils";
+import { toast } from "sonner";
 import {
   Tag,
   Plus,
@@ -55,6 +57,7 @@ import { getCategoryName, getCategoryDescription } from "@/utils/translationUtil
 
 export default function Categories() {
   const { selectedStore, getSelectedStoreId, availableStores } = useStoreSelection();
+  const { availableLanguages } = useTranslation();
   const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
@@ -71,6 +74,10 @@ export default function Categories() {
   const [excludeRootFromMenu, setExcludeRootFromMenu] = useState(false);
   const [rootCategories, setRootCategories] = useState([]);
   const [storeSettings, setStoreSettings] = useState({});
+  const [showBulkTranslateDialog, setShowBulkTranslateDialog] = useState(false);
+  const [translateFromLang, setTranslateFromLang] = useState('en');
+  const [translateToLang, setTranslateToLang] = useState('');
+  const [isTranslating, setIsTranslating] = useState(false);
 
   useEffect(() => {
     if (selectedStore) {
@@ -394,9 +401,9 @@ export default function Categories() {
 
   const handleToggleMenuVisibility = async (category) => {
     try {
-      await Category.update(category.id, { 
-        ...category, 
-        hide_in_menu: !category.hide_in_menu 
+      await Category.update(category.id, {
+        ...category,
+        hide_in_menu: !category.hide_in_menu
       });
       await loadCategories(); // Updated function name
       // Clear storefront cache for instant updates
@@ -404,6 +411,67 @@ export default function Categories() {
       if (storeId) clearCategoriesCache(storeId);
     } catch (error) {
       console.error("Error updating category visibility:", error);
+    }
+  };
+
+  const handleBulkTranslate = async () => {
+    if (!translateFromLang || !translateToLang) {
+      toast.error("Please select both source and target languages");
+      return;
+    }
+
+    if (translateFromLang === translateToLang) {
+      toast.error("Source and target languages must be different");
+      return;
+    }
+
+    const storeId = getSelectedStoreId();
+    if (!storeId) {
+      toast.error("No store selected");
+      return;
+    }
+
+    setIsTranslating(true);
+    try {
+      const token = localStorage.getItem('store_owner_auth_token') ||
+                   localStorage.getItem('customer_auth_token') ||
+                   localStorage.getItem('auth_token') ||
+                   localStorage.getItem('token') ||
+                   localStorage.getItem('authToken') ||
+                   sessionStorage.getItem('token') ||
+                   sessionStorage.getItem('authToken');
+
+      const response = await fetch('/api/categories/bulk-translate', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          store_id: storeId,
+          fromLang: translateFromLang,
+          toLang: translateToLang
+        })
+      });
+
+      const data = await response.json();
+
+      if (response.ok && data.success) {
+        toast.success(data.message || 'Categories translated successfully');
+        if (data.data.errors && data.data.errors.length > 0) {
+          console.warn('Translation errors:', data.data.errors);
+          toast.warning(`${data.data.translated} categories translated, ${data.data.failed} failed`);
+        }
+        setShowBulkTranslateDialog(false);
+        await loadCategories();
+      } else {
+        toast.error(data.message || 'Failed to translate categories');
+      }
+    } catch (error) {
+      console.error('Bulk translate error:', error);
+      toast.error('Failed to translate categories');
+    } finally {
+      setIsTranslating(false);
     }
   };
 
@@ -808,17 +876,28 @@ export default function Categories() {
               </p>
             )}
           </div>
-          <Button
-            onClick={() => {
-              setSelectedCategory(null);
-              setShowCategoryForm(true);
-            }}
-            className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 material-ripple material-elevation-1"
-            disabled={!selectedStore}
-          >
-            <Plus className="w-4 h-4 mr-2" />
-            Add Category
-          </Button>
+          <div className="flex gap-2">
+            <Button
+              onClick={() => setShowBulkTranslateDialog(true)}
+              variant="outline"
+              className="border-blue-600 text-blue-600 hover:bg-blue-50"
+              disabled={!selectedStore || categories.length === 0}
+            >
+              <Languages className="w-4 h-4 mr-2" />
+              Bulk AI Translate
+            </Button>
+            <Button
+              onClick={() => {
+                setSelectedCategory(null);
+                setShowCategoryForm(true);
+              }}
+              className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 material-ripple material-elevation-1"
+              disabled={!selectedStore}
+            >
+              <Plus className="w-4 h-4 mr-2" />
+              Add Category
+            </Button>
+          </div>
         </div>
 
         {/* Root Category Selector and Settings */}
@@ -1230,6 +1309,84 @@ export default function Categories() {
                   setSelectedCategory(null);
                 }}
               />
+            </div>
+          </DialogContent>
+        </Dialog>
+
+        {/* Bulk Translate Dialog */}
+        <Dialog open={showBulkTranslateDialog} onOpenChange={setShowBulkTranslateDialog}>
+          <DialogContent className="max-w-md">
+            <DialogHeader>
+              <DialogTitle>Bulk AI Translate Categories</DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4 py-4">
+              <div className="space-y-2">
+                <Label htmlFor="from-lang">From Language</Label>
+                <Select value={translateFromLang} onValueChange={setTranslateFromLang}>
+                  <SelectTrigger id="from-lang">
+                    <SelectValue placeholder="Select source language" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {availableLanguages.map((lang) => (
+                      <SelectItem key={lang.code} value={lang.code}>
+                        {lang.name} ({lang.native_name})
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="to-lang">To Language</Label>
+                <Select value={translateToLang} onValueChange={setTranslateToLang}>
+                  <SelectTrigger id="to-lang">
+                    <SelectValue placeholder="Select target language" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {availableLanguages
+                      .filter((lang) => lang.code !== translateFromLang)
+                      .map((lang) => (
+                        <SelectItem key={lang.code} value={lang.code}>
+                          {lang.name} ({lang.native_name})
+                        </SelectItem>
+                      ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+                <p className="text-sm text-blue-800">
+                  This will translate all categories that have {translateFromLang} translations to {translateToLang}.
+                  Categories that already have {translateToLang} translations will be skipped.
+                </p>
+              </div>
+
+              <div className="flex justify-end gap-2 pt-4">
+                <Button
+                  variant="outline"
+                  onClick={() => setShowBulkTranslateDialog(false)}
+                  disabled={isTranslating}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  onClick={handleBulkTranslate}
+                  disabled={isTranslating || !translateFromLang || !translateToLang}
+                  className="bg-blue-600 hover:bg-blue-700"
+                >
+                  {isTranslating ? (
+                    <>
+                      <span className="animate-spin mr-2">⏳</span>
+                      Translating...
+                    </>
+                  ) : (
+                    <>
+                      <Languages className="w-4 h-4 mr-2" />
+                      Translate All
+                    </>
+                  )}
+                </Button>
+              </div>
             </div>
           </DialogContent>
         </Dialog>

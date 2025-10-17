@@ -21,15 +21,23 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle
+} from "@/components/ui/dialog";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useStoreSelection } from '@/contexts/StoreSelectionContext.jsx';
+import { useTranslation } from '@/contexts/TranslationContext.jsx';
 import { toast } from 'sonner';
 import apiClient from '@/api/client';
 import TranslationFields from '@/components/admin/TranslationFields';
 
 export default function CategoryForm({ category, onSubmit, onCancel, parentCategories }) {
   const { getSelectedStoreId } = useStoreSelection();
+  const { availableLanguages } = useTranslation();
   const [formData, setFormData] = useState({
     name: "",
     slug: "",
@@ -55,6 +63,10 @@ export default function CategoryForm({ category, onSubmit, onCancel, parentCateg
   const [showMediaBrowser, setShowMediaBrowser] = useState(false);
   const [savingImage, setSavingImage] = useState(false);
   const [showTranslations, setShowTranslations] = useState(false);
+  const [showAITranslateDialog, setShowAITranslateDialog] = useState(false);
+  const [translateFromLang, setTranslateFromLang] = useState('en');
+  const [translateToLang, setTranslateToLang] = useState('');
+  const [isTranslating, setIsTranslating] = useState(false);
 
   useEffect(() => {
     if (category) {
@@ -303,7 +315,7 @@ export default function CategoryForm({ category, onSubmit, onCancel, parentCateg
         slugChanged: formData.slug !== originalSlug,
         shouldCreateRedirect: category && originalSlug && formData.slug !== originalSlug
       });
-      
+
       if (category && originalSlug && formData.slug !== originalSlug) {
         console.log('🚀 Creating redirect for slug change');
         await createRedirectForSlugChange();
@@ -316,6 +328,67 @@ export default function CategoryForm({ category, onSubmit, onCancel, parentCateg
       console.error("Error submitting category:", error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleAITranslate = async () => {
+    if (!translateFromLang || !translateToLang) {
+      toast.error("Please select both source and target languages");
+      return;
+    }
+
+    if (translateFromLang === translateToLang) {
+      toast.error("Source and target languages must be different");
+      return;
+    }
+
+    if (!category || !category.id) {
+      toast.error("Please save the category first before translating");
+      return;
+    }
+
+    setIsTranslating(true);
+    try {
+      const token = localStorage.getItem('store_owner_auth_token') ||
+                   localStorage.getItem('customer_auth_token') ||
+                   localStorage.getItem('auth_token') ||
+                   localStorage.getItem('token') ||
+                   localStorage.getItem('authToken') ||
+                   sessionStorage.getItem('token') ||
+                   sessionStorage.getItem('authToken');
+
+      const response = await fetch(`/api/categories/${category.id}/translate`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          fromLang: translateFromLang,
+          toLang: translateToLang
+        })
+      });
+
+      const data = await response.json();
+
+      if (response.ok && data.success) {
+        toast.success(data.message || 'Category translated successfully');
+        // Update form data with new translations
+        if (data.data && data.data.translations) {
+          setFormData(prev => ({
+            ...prev,
+            translations: data.data.translations
+          }));
+        }
+        setShowAITranslateDialog(false);
+      } else {
+        toast.error(data.message || 'Failed to translate category');
+      }
+    } catch (error) {
+      console.error('AI translate error:', error);
+      toast.error('Failed to translate category');
+    } finally {
+      setIsTranslating(false);
     }
   };
 
@@ -360,9 +433,23 @@ export default function CategoryForm({ category, onSubmit, onCancel, parentCateg
       {/* Translation Fields */}
       {showTranslations && (
         <div className="mt-4 border-2 border-blue-200 bg-blue-50 rounded-lg p-4">
-          <div className="flex items-center gap-2 mb-4">
-            <Languages className="w-5 h-5 text-blue-600" />
-            <h3 className="text-base font-semibold text-blue-900">Category Translations</h3>
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-2">
+              <Languages className="w-5 h-5 text-blue-600" />
+              <h3 className="text-base font-semibold text-blue-900">Category Translations</h3>
+            </div>
+            {category && category.id && (
+              <Button
+                type="button"
+                size="sm"
+                variant="outline"
+                onClick={() => setShowAITranslateDialog(true)}
+                className="border-blue-600 text-blue-600 hover:bg-blue-100"
+              >
+                <Languages className="w-4 h-4 mr-2" />
+                AI Translate
+              </Button>
+            )}
           </div>
           <TranslationFields
             translations={formData.translations}
@@ -696,6 +783,85 @@ export default function CategoryForm({ category, onSubmit, onCancel, parentCateg
         allowMultiple={false}
         uploadFolder="category"
       />
+
+      {/* AI Translate Dialog */}
+      <Dialog open={showAITranslateDialog} onOpenChange={setShowAITranslateDialog}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>AI Translate Category</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="from-lang">From Language</Label>
+              <Select value={translateFromLang} onValueChange={setTranslateFromLang}>
+                <SelectTrigger id="from-lang">
+                  <SelectValue placeholder="Select source language" />
+                </SelectTrigger>
+                <SelectContent>
+                  {availableLanguages.map((lang) => (
+                    <SelectItem key={lang.code} value={lang.code}>
+                      {lang.name} ({lang.native_name})
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="to-lang">To Language</Label>
+              <Select value={translateToLang} onValueChange={setTranslateToLang}>
+                <SelectTrigger id="to-lang">
+                  <SelectValue placeholder="Select target language" />
+                </SelectTrigger>
+                <SelectContent>
+                  {availableLanguages
+                    .filter((lang) => lang.code !== translateFromLang)
+                    .map((lang) => (
+                      <SelectItem key={lang.code} value={lang.code}>
+                        {lang.name} ({lang.native_name})
+                      </SelectItem>
+                    ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+              <p className="text-sm text-blue-800">
+                This will translate the category name and description from {translateFromLang} to {translateToLang} using AI.
+              </p>
+            </div>
+
+            <div className="flex justify-end gap-2 pt-4">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setShowAITranslateDialog(false)}
+                disabled={isTranslating}
+              >
+                Cancel
+              </Button>
+              <Button
+                type="button"
+                onClick={handleAITranslate}
+                disabled={isTranslating || !translateFromLang || !translateToLang}
+                className="bg-blue-600 hover:bg-blue-700"
+              >
+                {isTranslating ? (
+                  <>
+                    <span className="animate-spin mr-2">⏳</span>
+                    Translating...
+                  </>
+                ) : (
+                  <>
+                    <Languages className="w-4 h-4 mr-2" />
+                    Translate
+                  </>
+                )}
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </form>
   );
 }

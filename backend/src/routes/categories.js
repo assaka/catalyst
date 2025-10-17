@@ -1,7 +1,8 @@
 const express = require('express');
 const { body, validationResult } = require('express-validator');
-const { Category, Store } = require('../models');
+const { Category, Store, Language } = require('../models');
 const { Op } = require('sequelize');
+const translationService = require('../services/translation-service');
 const router = express.Router();
 
 // Helper function to check store access (ownership or team membership)
@@ -245,6 +246,168 @@ router.delete('/:id', authMiddleware, authorize(['admin', 'store_owner']), async
     res.status(500).json({
       success: false,
       message: 'Server error'
+    });
+  }
+});
+
+// @route   POST /api/categories/:id/translate
+// @desc    AI translate a single category to target language
+// @access  Private
+router.post('/:id/translate', authMiddleware, authorize(['admin', 'store_owner']), [
+  body('fromLang').notEmpty().withMessage('Source language is required'),
+  body('toLang').notEmpty().withMessage('Target language is required')
+], async (req, res) => {
+  try {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({
+        success: false,
+        errors: errors.array()
+      });
+    }
+
+    const { fromLang, toLang } = req.body;
+    const category = await Category.findByPk(req.params.id);
+
+    if (!category) {
+      return res.status(404).json({
+        success: false,
+        message: 'Category not found'
+      });
+    }
+
+    // Check store access
+    if (req.user.role !== 'admin') {
+      const { checkUserStoreAccess } = require('../utils/storeAccess');
+      const access = await checkUserStoreAccess(req.user.id, category.store_id);
+
+      if (!access) {
+        return res.status(403).json({
+          success: false,
+          message: 'Access denied'
+        });
+      }
+    }
+
+    // Check if source translation exists
+    if (!category.translations || !category.translations[fromLang]) {
+      return res.status(400).json({
+        success: false,
+        message: `No ${fromLang} translation found for this category`
+      });
+    }
+
+    // Translate the category
+    const updatedCategory = await translationService.aiTranslateEntity('category', req.params.id, fromLang, toLang);
+
+    res.json({
+      success: true,
+      message: `Category translated to ${toLang} successfully`,
+      data: updatedCategory
+    });
+  } catch (error) {
+    console.error('Translate category error:', error);
+    res.status(500).json({
+      success: false,
+      message: error.message || 'Server error'
+    });
+  }
+});
+
+// @route   POST /api/categories/bulk-translate
+// @desc    AI translate all categories in a store to target language
+// @access  Private
+router.post('/bulk-translate', authMiddleware, authorize(['admin', 'store_owner']), [
+  body('store_id').isUUID().withMessage('Store ID must be a valid UUID'),
+  body('fromLang').notEmpty().withMessage('Source language is required'),
+  body('toLang').notEmpty().withMessage('Target language is required')
+], async (req, res) => {
+  try {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({
+        success: false,
+        errors: errors.array()
+      });
+    }
+
+    const { store_id, fromLang, toLang } = req.body;
+
+    // Check store access
+    const hasAccess = await checkStoreAccess(store_id, req.user.id, req.user.role);
+    if (!hasAccess) {
+      return res.status(403).json({
+        success: false,
+        message: 'Access denied'
+      });
+    }
+
+    // Get all categories for this store
+    const categories = await Category.findAll({
+      where: { store_id },
+      order: [['sort_order', 'ASC'], ['name', 'ASC']]
+    });
+
+    if (categories.length === 0) {
+      return res.json({
+        success: true,
+        message: 'No categories found to translate',
+        data: {
+          total: 0,
+          translated: 0,
+          skipped: 0,
+          failed: 0
+        }
+      });
+    }
+
+    // Translate each category
+    const results = {
+      total: categories.length,
+      translated: 0,
+      skipped: 0,
+      failed: 0,
+      errors: []
+    };
+
+    for (const category of categories) {
+      try {
+        // Check if source translation exists
+        if (!category.translations || !category.translations[fromLang]) {
+          results.skipped++;
+          continue;
+        }
+
+        // Check if target translation already exists
+        if (category.translations[toLang]) {
+          results.skipped++;
+          continue;
+        }
+
+        // Translate the category
+        await translationService.aiTranslateEntity('category', category.id, fromLang, toLang);
+        results.translated++;
+      } catch (error) {
+        console.error(`Error translating category ${category.id}:`, error);
+        results.failed++;
+        results.errors.push({
+          categoryId: category.id,
+          categoryName: category.translations?.[fromLang]?.name || category.name,
+          error: error.message
+        });
+      }
+    }
+
+    res.json({
+      success: true,
+      message: `Bulk translation completed. Translated: ${results.translated}, Skipped: ${results.skipped}, Failed: ${results.failed}`,
+      data: results
+    });
+  } catch (error) {
+    console.error('Bulk translate categories error:', error);
+    res.status(500).json({
+      success: false,
+      message: error.message || 'Server error'
     });
   }
 });
