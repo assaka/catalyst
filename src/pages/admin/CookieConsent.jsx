@@ -282,6 +282,12 @@ export default function CookieConsent() {
       // Map frontend settings to backend format
       const backendSettings = mapFrontendToBackend(settings);
 
+      console.log('Saving cookie consent settings:', {
+        settingsId: settings.id,
+        storeId: storeId,
+        operation: settings.id ? 'update' : 'create'
+      });
+
       let result;
       if (settings.id) {
         result = await retryApiCall(() => CookieConsentSettings.update(settings.id, backendSettings));
@@ -290,8 +296,15 @@ export default function CookieConsent() {
         result = await retryApiCall(() => CookieConsentSettings.create(backendSettings));
       }
 
+      console.log('Cookie consent save response:', result);
+
       // Handle array response from API client
-      const normalizedResult = Array.isArray(result) ? result[0] : result;
+      let normalizedResult = Array.isArray(result) ? result[0] : result;
+
+      // If the result has a success and data property (wrapped API response), extract the data
+      if (normalizedResult && normalizedResult.success && normalizedResult.data) {
+        normalizedResult = normalizedResult.data;
+      }
 
       // The API client returns [settingsObject] for single objects
       // So normalizedResult should be the actual settings object from the database
@@ -308,7 +321,12 @@ export default function CookieConsent() {
       setFlashMessage({ type: 'success', message: 'Cookie consent settings saved successfully!' });
       
     } catch (error) {
-      setFlashMessage({ type: 'error', message: `Failed to save settings: ${error.message}` });
+      console.error('Error saving cookie consent settings:', error);
+      console.error('Error response:', error.response?.data);
+      setFlashMessage({
+        type: 'error',
+        message: error.response?.data?.message || `Failed to save settings: ${error.message}`
+      });
     } finally {
       setSaving(false);
     }
