@@ -120,6 +120,73 @@ router.get('/:id', async (req, res) => {
   }
 });
 
+// @route   POST /api/cookie-consent-settings/upsert
+// @desc    Create or update cookie consent settings for a store (prevents duplicates)
+// @access  Private
+router.post('/upsert', [
+  body('store_id').isUUID().withMessage('Store ID must be a valid UUID')
+], async (req, res) => {
+  try {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({
+        success: false,
+        errors: errors.array()
+      });
+    }
+
+    const { store_id } = req.body;
+
+    // Check store access
+    const hasAccess = await checkStoreAccess(store_id, req.user.id, req.user.role);
+    if (!hasAccess) {
+      return res.status(403).json({
+        success: false,
+        message: 'Access denied'
+      });
+    }
+
+    // Check if settings already exist for this store
+    const existingSettings = await CookieConsentSettings.findOne({
+      where: { store_id }
+    });
+
+    let settings;
+    let isNew = false;
+
+    if (existingSettings) {
+      // Update existing settings
+      await existingSettings.update(req.body);
+      settings = existingSettings;
+      console.log(`Updated existing cookie consent settings for store ${store_id}, ID: ${settings.id}`);
+    } else {
+      // Create new settings
+      settings = await CookieConsentSettings.create(req.body);
+      isNew = true;
+      console.log(`Created new cookie consent settings for store ${store_id}, ID: ${settings.id}`);
+    }
+
+    res.status(isNew ? 201 : 200).json({
+      success: true,
+      message: isNew ? 'Cookie consent settings created successfully' : 'Cookie consent settings updated successfully',
+      data: settings,
+      isNew
+    });
+  } catch (error) {
+    console.error('Upsert cookie consent settings error:', error);
+    console.error('Error details:', error.message);
+    console.error('Error stack:', error.stack);
+    console.error('Request body:', JSON.stringify(req.body, null, 2));
+
+    res.status(500).json({
+      success: false,
+      message: 'Server error',
+      error: error.message,
+      details: error.errors?.map(e => ({field: e.path, message: e.message})) || null
+    });
+  }
+});
+
 // @route   POST /api/cookie-consent-settings
 // @desc    Create new cookie consent settings
 // @access  Private
@@ -158,7 +225,7 @@ router.post('/', [
     console.error('Error details:', error.message);
     console.error('Error stack:', error.stack);
     console.error('Request body:', JSON.stringify(req.body, null, 2));
-    
+
     res.status(500).json({
       success: false,
       message: 'Server error',

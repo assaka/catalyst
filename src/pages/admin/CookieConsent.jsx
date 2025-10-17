@@ -3,6 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { createPageUrl } from '@/utils';
 import { CookieConsentSettings, ConsentLog } from '@/api/entities';
+import apiClient from '@/api/client';
 import { User } from '@/api/entities';
 import { Store } from '@/api/entities';
 import { useStoreSelection } from '@/contexts/StoreSelectionContext.jsx';
@@ -307,13 +308,11 @@ export default function CookieConsent() {
       // Map frontend settings to backend format
       const backendSettings = mapFrontendToBackend(settingsToSave);
 
-      console.log('Saving cookie consent settings:', {
+      console.log('Saving cookie consent settings (using upsert):', {
         settingsId: settings.id,
         selectedStoreId: selectedStore.id,
         settingsStoreId: settings.store_id,
         backendStoreId: backendSettings.store_id,
-        hasId: !!settings.id,
-        operation: settings.id ? 'update' : 'create',
         backendSettings: {
           id: backendSettings.id,
           store_id: backendSettings.store_id,
@@ -322,53 +321,35 @@ export default function CookieConsent() {
         }
       });
 
-      let result;
-      if (settings.id) {
-        result = await retryApiCall(() => CookieConsentSettings.update(settings.id, backendSettings));
-      } else {
-        // If settings.id is null, it's a new setting. The store_id should already be populated from loadData's defaultSettings.
-        result = await retryApiCall(() => CookieConsentSettings.create(backendSettings));
-      }
+      // Always use upsert endpoint - it handles both create and update based on store_id
+      // This prevents duplicate rows even if ID is somehow lost
+      const result = await retryApiCall(() =>
+        apiClient.post('cookie-consent-settings/upsert', backendSettings)
+      );
 
-      console.log('Cookie consent save response (raw):', JSON.stringify(result, null, 2));
-
-      // Handle array response from API client
-      let normalizedResult = Array.isArray(result) ? result[0] : result;
-      console.log('After array normalization:', {
-        wasArray: Array.isArray(result),
-        normalizedResult: normalizedResult,
-        hasId: !!normalizedResult?.id,
-        hasSuccessData: !!(normalizedResult?.success && normalizedResult?.data)
+      console.log('Cookie consent upsert response:', {
+        hasSuccess: !!result.success,
+        hasData: !!result.data,
+        isNew: result.isNew,
+        dataId: result.data?.id,
+        dataStoreId: result.data?.store_id
       });
 
-      // If the result has a success and data property (wrapped API response), extract the data
-      if (normalizedResult && normalizedResult.success && normalizedResult.data) {
-        console.log('Unwrapping success/data structure');
-        normalizedResult = normalizedResult.data;
-      }
-
-      console.log('Final normalized result:', {
-        id: normalizedResult?.id,
-        store_id: normalizedResult?.store_id,
-        hasAllFields: !!normalizedResult
-      });
-
-      // The API client returns [settingsObject] for single objects
-      // So normalizedResult should be the actual settings object from the database
-      if (normalizedResult && normalizedResult.id) {
-        console.log('✅ ID found, mapping to frontend format');
-        // This is the settings object from database - map it to frontend format
-        const updatedSettings = mapBackendToFrontend(normalizedResult);
+      // Upsert endpoint returns { success, data, isNew }
+      if (result.success && result.data && result.data.id) {
+        console.log(`✅ Upsert successful (${result.isNew ? 'created' : 'updated'}), mapping to frontend format`);
+        const updatedSettings = mapBackendToFrontend(result.data);
         console.log('Updated settings after mapping:', {
           id: updatedSettings.id,
           store_id: updatedSettings.store_id
         });
         setSettings(updatedSettings);
       } else {
-        console.error('❌ No ID in normalized result, falling back to reload');
-        // Refresh the store context to get updated settings
+        console.error('❌ Unexpected upsert response structure, falling back to reload');
+        console.error('Response:', result);
+        // Fallback to reload if response structure is unexpected
         await refreshStores();
-        await loadData(); // Fallback to reload if response structure is unexpected
+        await loadData();
       }
       
       setFlashMessage({ type: 'success', message: 'Cookie consent settings saved successfully!' });
