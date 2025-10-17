@@ -290,6 +290,128 @@ router.post('/auto-translate-ui-label', authMiddleware, async (req, res) => {
   }
 });
 
+// @route   POST /api/translations/ui-labels/bulk-translate
+// @desc    AI translate all UI labels from one language to another
+// @access  Private
+router.post('/ui-labels/bulk-translate', authMiddleware, async (req, res) => {
+  try {
+    const { fromLang, toLang } = req.body;
+
+    if (!fromLang || !toLang) {
+      return res.status(400).json({
+        success: false,
+        message: 'fromLang and toLang are required'
+      });
+    }
+
+    if (fromLang === toLang) {
+      return res.status(400).json({
+        success: false,
+        message: 'Source and target languages cannot be the same'
+      });
+    }
+
+    // Get all labels in the source language
+    const sourceLabels = await translationService.getUILabels(fromLang);
+
+    if (!sourceLabels || !sourceLabels.labels) {
+      return res.json({
+        success: true,
+        message: 'No labels found to translate',
+        data: {
+          total: 0,
+          translated: 0,
+          skipped: 0,
+          failed: 0
+        }
+      });
+    }
+
+    // Get existing labels in target language to avoid re-translating
+    const targetLabels = await translationService.getUILabels(toLang);
+    const existingKeys = new Set(Object.keys(targetLabels.labels || {}));
+
+    // Flatten the source labels
+    const flattenLabels = (obj, prefix = '') => {
+      const result = {};
+      Object.entries(obj).forEach(([key, value]) => {
+        const fullKey = prefix ? `${prefix}.${key}` : key;
+        if (typeof value === 'object' && value !== null && !Array.isArray(value)) {
+          Object.assign(result, flattenLabels(value, fullKey));
+        } else {
+          result[fullKey] = value;
+        }
+      });
+      return result;
+    };
+
+    const flatSourceLabels = flattenLabels(sourceLabels.labels);
+    const keysToTranslate = Object.keys(flatSourceLabels).filter(key => !existingKeys.has(key));
+
+    if (keysToTranslate.length === 0) {
+      return res.json({
+        success: true,
+        message: 'No missing translations found',
+        data: {
+          total: Object.keys(flatSourceLabels).length,
+          translated: 0,
+          skipped: Object.keys(flatSourceLabels).length,
+          failed: 0
+        }
+      });
+    }
+
+    const results = {
+      total: Object.keys(flatSourceLabels).length,
+      translated: 0,
+      skipped: Object.keys(flatSourceLabels).length - keysToTranslate.length,
+      failed: 0,
+      errors: []
+    };
+
+    // Translate each label
+    for (const key of keysToTranslate) {
+      try {
+        const sourceValue = flatSourceLabels[key];
+        if (!sourceValue || typeof sourceValue !== 'string') {
+          results.skipped++;
+          continue;
+        }
+
+        // Translate using AI
+        const translatedValue = await translationService.aiTranslate(sourceValue, fromLang, toLang);
+
+        // Determine category from key
+        const category = key.split('.')[0] || 'common';
+
+        // Save the translation
+        await translationService.saveUILabel(key, toLang, translatedValue, category, 'system');
+
+        results.translated++;
+      } catch (error) {
+        console.error(`Error translating UI label ${key}:`, error);
+        results.failed++;
+        results.errors.push({
+          key,
+          error: error.message
+        });
+      }
+    }
+
+    res.json({
+      success: true,
+      message: `Bulk translation completed. Translated: ${results.translated}, Skipped: ${results.skipped}, Failed: ${results.failed}`,
+      data: results
+    });
+  } catch (error) {
+    console.error('Bulk translate UI labels error:', error);
+    res.status(500).json({
+      success: false,
+      message: error.message || 'Server error'
+    });
+  }
+});
+
 // ============================================
 // ENTITY TRANSLATION ROUTES
 // ============================================

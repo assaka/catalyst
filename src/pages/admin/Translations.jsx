@@ -1,7 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, Search, Globe, Edit2, Trash2, Save, X, Wand2, Check, AlertCircle } from 'lucide-react';
+import { Plus, Search, Globe, Edit2, Trash2, Save, X, Wand2, Check, AlertCircle, Languages } from 'lucide-react';
 import api from '../../utils/api';
 import { useTranslation } from '../../contexts/TranslationContext';
+import BulkTranslateDialog from '../../components/admin/BulkTranslateDialog';
+import { toast } from 'sonner';
 
 export default function Translations() {
   const { availableLanguages, currentLanguage, changeLanguage } = useTranslation();
@@ -19,8 +21,8 @@ export default function Translations() {
   const [showBulkAddForm, setShowBulkAddForm] = useState(false);
   const [bulkTranslations, setBulkTranslations] = useState({});
   const [autoTranslate, setAutoTranslate] = useState(false);
-  const [aiTranslating, setAiTranslating] = useState(false);
   const [message, setMessage] = useState(null);
+  const [showBulkTranslateDialog, setShowBulkTranslateDialog] = useState(false);
 
   const categories = ['common', 'navigation', 'product', 'checkout', 'account', 'admin'];
 
@@ -165,78 +167,40 @@ export default function Translations() {
   };
 
   /**
-   * AI translate all missing labels
+   * Handle bulk translate using the new BulkTranslateDialog
    */
-  const aiTranslateAll = async () => {
-    if (!confirm(`AI translate all missing labels to ${selectedLanguage}? This may take a few minutes.`)) {
-      return;
-    }
-
+  const handleBulkTranslate = async (fromLang, toLang) => {
     try {
-      setAiTranslating(true);
+      const token = localStorage.getItem("token");
+      const response = await fetch('/api/translations/ui-labels/bulk-translate', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          fromLang,
+          toLang
+        })
+      });
 
-      // Get English labels as source
-      const enResponse = await api.get('/translations/ui-labels?lang=en');
-      const enLabels = enResponse.data.labels;
+      const data = await response.json();
 
-      // Find missing translations
-      const currentLabelKeys = new Set(labels.map(l => l.key));
-      const missingKeys = Object.keys(enLabels).filter(key => !currentLabelKeys.has(key));
-
-      if (missingKeys.length === 0) {
-        showMessage('No missing translations found', 'info');
-        setAiTranslating(false);
-        return;
+      if (!response.ok) {
+        throw new Error(data.message || 'Translation failed');
       }
 
-      // Translate in batches
-      const batchSize = 10;
-      let translated = 0;
-
-      for (let i = 0; i < missingKeys.length; i += batchSize) {
-        const batch = missingKeys.slice(i, i + batchSize);
-        const translationPromises = batch.map(async (key) => {
-          try {
-            const response = await api.post('/translations/ai-translate', {
-              text: enLabels[key],
-              fromLang: 'en',
-              toLang: selectedLanguage
-            });
-
-            if (response && response.success && response.data) {
-              return {
-                key,
-                language_code: selectedLanguage,
-                value: response.data.translated,
-                category: key.split('.')[0] || 'common'
-              };
-            }
-          } catch (error) {
-            console.error(`Failed to translate ${key}:`, error);
-            return null;
-          }
-        });
-
-        const batchResults = await Promise.all(translationPromises);
-        const validResults = batchResults.filter(r => r !== null);
-
-        // Save batch
-        if (validResults.length > 0) {
-          await api.post('/translations/ui-labels/bulk', { labels: validResults });
-          translated += validResults.length;
-        }
+      // Reload labels if target language is the currently selected one
+      if (toLang === selectedLanguage) {
+        await loadLabels(selectedLanguage);
       }
 
-      showMessage(`Successfully translated ${translated} labels`, 'success');
-      await loadLabels(selectedLanguage);
+      return data;
     } catch (error) {
-      console.error('AI translation failed:', error);
-      showMessage('AI translation failed', 'error');
-    } finally {
-      setAiTranslating(false);
+      console.error('Bulk translate error:', error);
+      return { success: false, message: error.message };
     }
   };
-
 
   /**
    * Add bulk translations
@@ -486,12 +450,11 @@ export default function Translations() {
             {/* Actions */}
             <div className="flex gap-2 ml-auto">
               <button
-                onClick={aiTranslateAll}
-                disabled={aiTranslating || selectedLanguage === 'en'}
-                className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:opacity-50 flex items-center gap-2"
+                onClick={() => setShowBulkTranslateDialog(true)}
+                className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 flex items-center gap-2"
               >
-                <Wand2 className="w-4 h-4" />
-                {aiTranslating ? 'Translating...' : 'AI Translate All'}
+                <Languages className="w-4 h-4" />
+                Bulk AI Translate
               </button>
 
               <button
@@ -750,6 +713,15 @@ export default function Translations() {
           </p>
         </div>
       )}
+
+      {/* Bulk Translate Dialog */}
+      <BulkTranslateDialog
+        open={showBulkTranslateDialog}
+        onOpenChange={setShowBulkTranslateDialog}
+        entityType="UI labels"
+        entityName="UI Labels"
+        onTranslate={handleBulkTranslate}
+      />
     </div>
   );
 }
