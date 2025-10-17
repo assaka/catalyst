@@ -122,6 +122,10 @@ export default function HeaderSearch({ styles = {} }) {
 
   const handleSearch = (e) => {
     e.preventDefault();
+    console.log('🔍 handleSearch called');
+    console.log('  searchQuery:', searchQuery);
+    console.log('  storeCode:', storeCode);
+
     if (searchQuery.trim()) {
       // Track search event
       if (typeof window !== 'undefined' && window.catalyst?.trackSearch) {
@@ -131,13 +135,24 @@ export default function HeaderSearch({ styles = {} }) {
       // Navigate to Storefront page with search parameter
       if (storeCode) {
         const searchUrl = createPublicUrl(storeCode, 'STOREFRONT', { search: searchQuery.trim() });
-        console.log('🔍 Search URL:', searchUrl, 'storeCode:', storeCode, 'query:', searchQuery.trim());
+        console.log('✅ Generated search URL:', searchUrl);
+        console.log('  Full details:', {
+          storeCode,
+          pageName: 'STOREFRONT',
+          params: { search: searchQuery.trim() },
+          currentUrl: window.location.href
+        });
         navigate(searchUrl);
+        console.log('✅ navigate() called with:', searchUrl);
       } else {
         console.error('❌ No store code available for search navigation');
+        console.log('  params:', params);
+        console.log('  store:', { slug: store?.slug, code: store?.code });
       }
       setShowResults(false);
       setSearchQuery('');
+    } else {
+      console.log('⚠️ Search query is empty, not navigating');
     }
   };
 
