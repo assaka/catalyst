@@ -42,10 +42,16 @@ router.get('/', async (req, res) => {
         const { getUserStoresForDropdown } = require('../utils/storeAccess');
         const accessibleStores = await getUserStoresForDropdown(req.user.id);
         const storeIds = accessibleStores.map(store => store.id);
+        console.log(`GET cookie-consent-settings: User ${req.user.id} has access to stores:`, storeIds);
+        console.log(`Requested store_id: ${store_id}`);
+        console.log(`Store ${store_id} is accessible:`, storeIds.includes(store_id));
         where.store_id = { [Op.in]: storeIds };
       }
 
-      if (store_id) where.store_id = store_id;
+      if (store_id) {
+        console.log(`Overriding where clause with specific store_id: ${store_id}`);
+        where.store_id = store_id;
+      }
     }
 
     const settings = await CookieConsentSettings.findAll({
