@@ -155,13 +155,8 @@ app.use(cors({
     // Allow requests with no origin (like mobile apps or curl requests)
     if (!origin) return callback(null, true);
     
-    // Log the origin for debugging
-    console.log('🔍 CORS origin check:', origin);
-    console.log('🔍 Allowed origins:', allowedOrigins);
-    
     // Check for exact match first
     if (allowedOrigins.indexOf(origin) !== -1) {
-      console.log('✅ CORS allowed for origin (exact match):', origin);
       callback(null, true);
       return;
     }
@@ -169,7 +164,6 @@ app.use(cors({
     // Check for origin without trailing slash
     const originWithoutSlash = origin.replace(/\/$/, '');
     if (allowedOrigins.indexOf(originWithoutSlash) !== -1) {
-      console.log('✅ CORS allowed for origin (without trailing slash):', origin);
       callback(null, true);
       return;
     }
@@ -195,20 +189,8 @@ app.use(cors({
     const isAnyVercelApp = /^https:\/\/[a-z0-9-]+(\.vercel\.app)$/.test(origin);
     
     if (isAllowed || isVercelPreview || isVercelDomain || isLocalhost || isAnyVercelApp) {
-      if (isVercelPreview) {
-        console.log('✅ CORS allowed for Vercel preview URL:', origin);
-      } else if (isVercelDomain) {
-        console.log('✅ CORS allowed for Vercel domain:', origin);
-      } else if (isLocalhost) {
-        console.log('✅ CORS allowed for localhost:', origin);
-      } else if (isAnyVercelApp) {
-        console.log('✅ CORS allowed for Vercel app:', origin);
-      } else {
-        console.log('✅ CORS allowed for origin (pattern match):', origin);
-      }
       callback(null, true);
     } else {
-      console.log('❌ CORS blocked for origin:', origin);
       callback(new Error('Not allowed by CORS'));
     }
   },

@@ -61,23 +61,9 @@ async function getUserStoresForDropdown(userId) {
       type: QueryTypes.SELECT
     });
 
-    console.log(`✅ Returning ${stores.length} accessible stores for user ${userId}`);
-    
-    // Log each store for debugging
-    stores.forEach(store => {
-      console.log(`   - ${store.name} (${store.access_role}, owner: ${store.is_direct_owner})`);
-    });
-
     return stores;
 
   } catch (error) {
-    console.error('❌ Error fetching stores for dropdown:', error);
-    console.error('❌ MAIN QUERY FAILED - this should not happen!');
-    console.error('❌ Error details:', error.message);
-    console.error('❌ Error stack:', error.stack);
-    
-    // DO NOT use fallback - return empty to identify the issue
-    console.log('🚨 RETURNING EMPTY ARRAY TO IDENTIFY MAIN QUERY ISSUE');
     return [];
   }
 }
@@ -90,8 +76,6 @@ async function getUserStoresForDropdown(userId) {
  */
 async function checkUserStoreAccess(userId, storeId) {
   try {
-    console.log(`🔍 Checking access: user ${userId} to store ${storeId}`);
-    
     const query = `
       SELECT 
         s.id,
@@ -124,11 +108,6 @@ async function checkUserStoreAccess(userId, storeId) {
     });
 
     const hasAccess = result.length > 0;
-    console.log(`✅ Access check result: ${hasAccess ? 'GRANTED' : 'DENIED'}`);
-    
-    if (hasAccess && result[0]) {
-      console.log(`   Role: ${result[0].access_role}, Owner: ${result[0].is_direct_owner}`);
-    }
     
     return hasAccess ? result[0] : null;
   } catch (error) {
