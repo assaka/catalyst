@@ -9,6 +9,8 @@ import MultiEntityTranslateDialog from '../../components/admin/MultiEntityTransl
 import ProductTranslationRow from '../../components/admin/translations/ProductTranslationRow';
 import CategoryTranslationRow from '../../components/admin/translations/CategoryTranslationRow';
 import AttributeTranslationRow from '../../components/admin/translations/AttributeTranslationRow';
+import CmsPageTranslationRow from '../../components/admin/translations/CmsPageTranslationRow';
+import CmsBlockTranslationRow from '../../components/admin/translations/CmsBlockTranslationRow';
 import { toast } from 'sonner';
 
 export default function Translations() {
@@ -52,6 +54,13 @@ export default function Translations() {
   const [productAttributes, setProductAttributes] = useState([]);
   const [loadingAttributes, setLoadingAttributes] = useState(false);
   const [attributeSearchQuery, setAttributeSearchQuery] = useState('');
+
+  // CMS Content tab states
+  const [cmsPages, setCmsPages] = useState([]);
+  const [cmsBlocks, setCmsBlocks] = useState([]);
+  const [loadingCms, setLoadingCms] = useState(false);
+  const [cmsSearchQuery, setCmsSearchQuery] = useState('');
+  const [cmsContentType, setCmsContentType] = useState('all'); // 'all', 'pages', 'blocks'
 
   const categories = ['common', 'navigation', 'product', 'checkout', 'account', 'admin'];
 
@@ -303,6 +312,41 @@ export default function Translations() {
       showMessage('Failed to load attributes', 'error');
     } finally {
       setLoadingAttributes(false);
+    }
+  };
+
+  /**
+   * Load CMS content (pages and blocks) for translation management
+   */
+  const loadCmsContent = async () => {
+    const storeId = getSelectedStoreId();
+    if (!storeId) {
+      setCmsPages([]);
+      setCmsBlocks([]);
+      return;
+    }
+
+    try {
+      setLoadingCms(true);
+
+      // Load both pages and blocks in parallel
+      const [pagesResponse, blocksResponse] = await Promise.all([
+        api.get(`/cms-pages?store_id=${storeId}&limit=1000`),
+        api.get(`/cms-blocks?store_id=${storeId}&limit=1000`)
+      ]);
+
+      if (pagesResponse && pagesResponse.success && pagesResponse.data) {
+        setCmsPages(pagesResponse.data.pages || []);
+      }
+
+      if (blocksResponse && blocksResponse.success && blocksResponse.data) {
+        setCmsBlocks(blocksResponse.data.blocks || []);
+      }
+    } catch (error) {
+      console.error('Failed to load CMS content:', error);
+      showMessage('Failed to load CMS content', 'error');
+    } finally {
+      setLoadingCms(false);
     }
   };
 
@@ -607,6 +651,13 @@ export default function Translations() {
   useEffect(() => {
     if (activeTab === 'attributes' && selectedStore) {
       loadAttributes();
+    }
+  }, [activeTab, selectedStore]);
+
+  // Load CMS content when switching to CMS tab
+  useEffect(() => {
+    if (activeTab === 'cms' && selectedStore) {
+      loadCmsContent();
     }
   }, [activeTab, selectedStore]);
 
@@ -1350,12 +1401,154 @@ export default function Translations() {
               </p>
             </div>
           ) : (
-            <div className="bg-white border border-gray-200 rounded-lg p-8">
-              <h2 className="text-xl font-semibold text-gray-900 mb-4">CMS Content Translations</h2>
-              <p className="text-gray-600">
-                CMS pages and blocks translation management with accordion style (coming soon)
-              </p>
-            </div>
+            <>
+              {/* Header and Search */}
+              <div className="bg-white border border-gray-200 rounded-lg p-6">
+                <div className="flex items-center justify-between mb-4">
+                  <div>
+                    <h2 className="text-xl font-semibold text-gray-900">CMS Content Translations</h2>
+                    <p className="text-sm text-gray-600 mt-1">
+                      Manage translations for CMS pages and blocks across languages
+                    </p>
+                  </div>
+                </div>
+
+                {/* Filter and Search */}
+                <div className="flex gap-3">
+                  {/* Content Type Filter */}
+                  <select
+                    value={cmsContentType}
+                    onChange={(e) => setCmsContentType(e.target.value)}
+                    className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  >
+                    <option value="all">All Content</option>
+                    <option value="pages">Pages Only ({cmsPages.length})</option>
+                    <option value="blocks">Blocks Only ({cmsBlocks.length})</option>
+                  </select>
+
+                  {/* Search Bar */}
+                  <div className="relative flex-1">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                    <input
+                      type="text"
+                      placeholder="Search by title, slug, or identifier..."
+                      value={cmsSearchQuery}
+                      onChange={(e) => setCmsSearchQuery(e.target.value)}
+                      className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* CMS Content List */}
+              {loadingCms ? (
+                <div className="bg-white border border-gray-200 rounded-lg p-12 text-center">
+                  <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+                  <p className="text-gray-600">Loading CMS content...</p>
+                </div>
+              ) : (cmsPages.length === 0 && cmsBlocks.length === 0) ? (
+                <div className="bg-white border border-gray-200 rounded-lg p-8 text-center text-gray-500">
+                  <Globe className="w-12 h-12 mx-auto mb-4 text-gray-400" />
+                  <h3 className="text-lg font-semibold text-gray-700 mb-2">
+                    No CMS Content Found
+                  </h3>
+                  <p>
+                    Start by adding CMS pages or blocks to your store.
+                  </p>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {/* CMS Pages */}
+                  {(cmsContentType === 'all' || cmsContentType === 'pages') &&
+                    cmsPages
+                      .filter(page => {
+                        if (!cmsSearchQuery.trim()) return true;
+                        const query = cmsSearchQuery.toLowerCase();
+                        const title = (page.translations?.en?.title || page.title || '').toLowerCase();
+                        const slug = (page.slug || '').toLowerCase();
+                        return title.includes(query) || slug.includes(query);
+                      })
+                      .map((page) => (
+                        <CmsPageTranslationRow
+                          key={page.id}
+                          page={page}
+                          onUpdate={(pageId, translations) => {
+                            setCmsPages(cmsPages.map(p =>
+                              p.id === pageId ? { ...p, translations } : p
+                            ));
+                          }}
+                        />
+                      ))}
+
+                  {/* CMS Blocks */}
+                  {(cmsContentType === 'all' || cmsContentType === 'blocks') &&
+                    cmsBlocks
+                      .filter(block => {
+                        if (!cmsSearchQuery.trim()) return true;
+                        const query = cmsSearchQuery.toLowerCase();
+                        const title = (block.translations?.en?.title || block.title || '').toLowerCase();
+                        const identifier = (block.identifier || '').toLowerCase();
+                        return title.includes(query) || identifier.includes(query);
+                      })
+                      .map((block) => (
+                        <CmsBlockTranslationRow
+                          key={block.id}
+                          block={block}
+                          onUpdate={(blockId, translations) => {
+                            setCmsBlocks(cmsBlocks.map(b =>
+                              b.id === blockId ? { ...b, translations } : b
+                            ));
+                          }}
+                        />
+                      ))}
+                </div>
+              )}
+
+              {/* Count Info */}
+              {(cmsPages.length > 0 || cmsBlocks.length > 0) && (
+                <div className="text-sm text-gray-600 text-center">
+                  {cmsContentType === 'all' && (
+                    <span>
+                      Showing {cmsPages.filter(page => {
+                        if (!cmsSearchQuery.trim()) return true;
+                        const query = cmsSearchQuery.toLowerCase();
+                        const title = (page.translations?.en?.title || page.title || '').toLowerCase();
+                        const slug = (page.slug || '').toLowerCase();
+                        return title.includes(query) || slug.includes(query);
+                      }).length} pages and {cmsBlocks.filter(block => {
+                        if (!cmsSearchQuery.trim()) return true;
+                        const query = cmsSearchQuery.toLowerCase();
+                        const title = (block.translations?.en?.title || block.title || '').toLowerCase();
+                        const identifier = (block.identifier || '').toLowerCase();
+                        return title.includes(query) || identifier.includes(query);
+                      }).length} blocks
+                    </span>
+                  )}
+                  {cmsContentType === 'pages' && (
+                    <span>
+                      Showing {cmsPages.filter(page => {
+                        if (!cmsSearchQuery.trim()) return true;
+                        const query = cmsSearchQuery.toLowerCase();
+                        const title = (page.translations?.en?.title || page.title || '').toLowerCase();
+                        const slug = (page.slug || '').toLowerCase();
+                        return title.includes(query) || slug.includes(query);
+                      }).length} of {cmsPages.length} pages
+                    </span>
+                  )}
+                  {cmsContentType === 'blocks' && (
+                    <span>
+                      Showing {cmsBlocks.filter(block => {
+                        if (!cmsSearchQuery.trim()) return true;
+                        const query = cmsSearchQuery.toLowerCase();
+                        const title = (block.translations?.en?.title || block.title || '').toLowerCase();
+                        const identifier = (block.identifier || '').toLowerCase();
+                        return title.includes(query) || identifier.includes(query);
+                      }).length} of {cmsBlocks.length} blocks
+                    </span>
+                  )}
+                </div>
+              )}
+            </>
           )}
         </div>
       )}
