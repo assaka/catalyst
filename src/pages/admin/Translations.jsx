@@ -11,6 +11,9 @@ import CategoryTranslationRow from '../../components/admin/translations/Category
 import AttributeTranslationRow from '../../components/admin/translations/AttributeTranslationRow';
 import CmsPageTranslationRow from '../../components/admin/translations/CmsPageTranslationRow';
 import CmsBlockTranslationRow from '../../components/admin/translations/CmsBlockTranslationRow';
+import ProductTabTranslationRow from '../../components/admin/translations/ProductTabTranslationRow';
+import ProductLabelTranslationRow from '../../components/admin/translations/ProductLabelTranslationRow';
+import CookieConsentTranslationRow from '../../components/admin/translations/CookieConsentTranslationRow';
 import { toast } from 'sonner';
 
 export default function Translations() {
@@ -61,6 +64,20 @@ export default function Translations() {
   const [loadingCms, setLoadingCms] = useState(false);
   const [cmsSearchQuery, setCmsSearchQuery] = useState('');
   const [cmsContentType, setCmsContentType] = useState('all'); // 'all', 'pages', 'blocks'
+
+  // Product Tabs tab states
+  const [productTabs, setProductTabs] = useState([]);
+  const [loadingProductTabs, setLoadingProductTabs] = useState(false);
+  const [productTabSearchQuery, setProductTabSearchQuery] = useState('');
+
+  // Product Labels tab states
+  const [productLabels, setProductLabels] = useState([]);
+  const [loadingProductLabels, setLoadingProductLabels] = useState(false);
+  const [productLabelSearchQuery, setProductLabelSearchQuery] = useState('');
+
+  // Cookie Consent tab states
+  const [cookieConsent, setCookieConsent] = useState([]);
+  const [loadingCookieConsent, setLoadingCookieConsent] = useState(false);
 
   const categories = ['common', 'navigation', 'product', 'checkout', 'account', 'admin'];
 
@@ -347,6 +364,81 @@ export default function Translations() {
       showMessage('Failed to load CMS content', 'error');
     } finally {
       setLoadingCms(false);
+    }
+  };
+
+  /**
+   * Load product tabs for translation management
+   */
+  const loadProductTabs = async () => {
+    const storeId = getSelectedStoreId();
+    if (!storeId) {
+      setProductTabs([]);
+      return;
+    }
+
+    try {
+      setLoadingProductTabs(true);
+      const response = await api.get(`/product-tabs?store_id=${storeId}&limit=1000`);
+
+      if (response && response.success && response.data) {
+        setProductTabs(response.data.tabs || []);
+      }
+    } catch (error) {
+      console.error('Failed to load product tabs:', error);
+      showMessage('Failed to load product tabs', 'error');
+    } finally {
+      setLoadingProductTabs(false);
+    }
+  };
+
+  /**
+   * Load product labels for translation management
+   */
+  const loadProductLabels = async () => {
+    const storeId = getSelectedStoreId();
+    if (!storeId) {
+      setProductLabels([]);
+      return;
+    }
+
+    try {
+      setLoadingProductLabels(true);
+      const response = await api.get(`/product-labels?store_id=${storeId}&limit=1000`);
+
+      if (response && response.success && response.data) {
+        setProductLabels(response.data.labels || []);
+      }
+    } catch (error) {
+      console.error('Failed to load product labels:', error);
+      showMessage('Failed to load product labels', 'error');
+    } finally {
+      setLoadingProductLabels(false);
+    }
+  };
+
+  /**
+   * Load cookie consent settings for translation management
+   */
+  const loadCookieConsent = async () => {
+    const storeId = getSelectedStoreId();
+    if (!storeId) {
+      setCookieConsent([]);
+      return;
+    }
+
+    try {
+      setLoadingCookieConsent(true);
+      const response = await api.get(`/cookie-consent-settings?store_id=${storeId}`);
+
+      if (response && response.success && response.data) {
+        setCookieConsent(response.data || []);
+      }
+    } catch (error) {
+      console.error('Failed to load cookie consent:', error);
+      showMessage('Failed to load cookie consent', 'error');
+    } finally {
+      setLoadingCookieConsent(false);
     }
   };
 
@@ -661,6 +753,27 @@ export default function Translations() {
     }
   }, [activeTab, selectedStore]);
 
+  // Load product tabs when switching to product-tabs tab
+  useEffect(() => {
+    if (activeTab === 'product-tabs' && selectedStore) {
+      loadProductTabs();
+    }
+  }, [activeTab, selectedStore]);
+
+  // Load product labels when switching to product-labels tab
+  useEffect(() => {
+    if (activeTab === 'product-labels' && selectedStore) {
+      loadProductLabels();
+    }
+  }, [activeTab, selectedStore]);
+
+  // Load cookie consent when switching to cookie-consent tab
+  useEffect(() => {
+    if (activeTab === 'cookie-consent' && selectedStore) {
+      loadCookieConsent();
+    }
+  }, [activeTab, selectedStore]);
+
   return (
     <div className="max-w-7xl mx-auto px-4 py-8">
       {/* Header */}
@@ -760,6 +873,42 @@ export default function Translations() {
             `}
           >
             CMS Content
+          </button>
+          <button
+            onClick={() => setActiveTab('product-tabs')}
+            className={`
+              px-4 py-2 font-medium border-b-2 transition-colors whitespace-nowrap
+              ${activeTab === 'product-tabs'
+                ? 'border-blue-600 text-blue-600'
+                : 'border-transparent text-gray-600 hover:text-gray-900'
+              }
+            `}
+          >
+            Product Tabs
+          </button>
+          <button
+            onClick={() => setActiveTab('product-labels')}
+            className={`
+              px-4 py-2 font-medium border-b-2 transition-colors whitespace-nowrap
+              ${activeTab === 'product-labels'
+                ? 'border-blue-600 text-blue-600'
+                : 'border-transparent text-gray-600 hover:text-gray-900'
+              }
+            `}
+          >
+            Product Labels
+          </button>
+          <button
+            onClick={() => setActiveTab('cookie-consent')}
+            className={`
+              px-4 py-2 font-medium border-b-2 transition-colors whitespace-nowrap
+              ${activeTab === 'cookie-consent'
+                ? 'border-blue-600 text-blue-600'
+                : 'border-transparent text-gray-600 hover:text-gray-900'
+              }
+            `}
+          >
+            Cookie Consent
           </button>
         </div>
       </div>
@@ -1546,6 +1695,221 @@ export default function Translations() {
                       }).length} of {cmsBlocks.length} blocks
                     </span>
                   )}
+                </div>
+              )}
+            </>
+          )}
+        </div>
+      )}
+
+      {/* Product Tabs Tab */}
+      {activeTab === 'product-tabs' && (
+        <div className="space-y-6">
+          {!selectedStore ? (
+            <div className="bg-white border border-gray-200 rounded-lg p-8 text-center text-gray-500">
+              <Globe className="w-12 h-12 mx-auto mb-4 text-gray-400" />
+              <h3 className="text-lg font-semibold text-gray-700 mb-2">
+                No Store Selected
+              </h3>
+              <p>
+                Please select a store to manage product tab translations.
+              </p>
+            </div>
+          ) : (
+            <>
+              <div className="bg-white border border-gray-200 rounded-lg p-6">
+                <div className="flex items-center justify-between mb-4">
+                  <div>
+                    <h2 className="text-xl font-semibold text-gray-900">Product Tab Translations</h2>
+                    <p className="text-sm text-gray-600 mt-1">
+                      Manage translations for product tabs across languages
+                    </p>
+                  </div>
+                </div>
+
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                  <input
+                    type="text"
+                    placeholder="Search product tabs..."
+                    value={productTabSearchQuery}
+                    onChange={(e) => setProductTabSearchQuery(e.target.value)}
+                    className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  />
+                </div>
+              </div>
+
+              {loadingProductTabs ? (
+                <div className="bg-white border border-gray-200 rounded-lg p-12 text-center">
+                  <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+                  <p className="text-gray-600">Loading product tabs...</p>
+                </div>
+              ) : productTabs.length === 0 ? (
+                <div className="bg-white border border-gray-200 rounded-lg p-8 text-center text-gray-500">
+                  <Globe className="w-12 h-12 mx-auto mb-4 text-gray-400" />
+                  <h3 className="text-lg font-semibold text-gray-700 mb-2">
+                    No Product Tabs Found
+                  </h3>
+                  <p>
+                    Start by adding product tabs to your store.
+                  </p>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {productTabs
+                    .filter(tab => {
+                      if (!productTabSearchQuery.trim()) return true;
+                      const query = productTabSearchQuery.toLowerCase();
+                      const title = (tab.translations?.en?.title || tab.title || '').toLowerCase();
+                      return title.includes(query);
+                    })
+                    .map((tab) => (
+                      <ProductTabTranslationRow
+                        key={tab.id}
+                        tab={tab}
+                        onUpdate={(tabId, translations) => {
+                          setProductTabs(productTabs.map(t =>
+                            t.id === tabId ? { ...t, translations } : t
+                          ));
+                        }}
+                      />
+                    ))}
+                </div>
+              )}
+            </>
+          )}
+        </div>
+      )}
+
+      {/* Product Labels Tab */}
+      {activeTab === 'product-labels' && (
+        <div className="space-y-6">
+          {!selectedStore ? (
+            <div className="bg-white border border-gray-200 rounded-lg p-8 text-center text-gray-500">
+              <Globe className="w-12 h-12 mx-auto mb-4 text-gray-400" />
+              <h3 className="text-lg font-semibold text-gray-700 mb-2">
+                No Store Selected
+              </h3>
+              <p>
+                Please select a store to manage product label translations.
+              </p>
+            </div>
+          ) : (
+            <>
+              <div className="bg-white border border-gray-200 rounded-lg p-6">
+                <div className="flex items-center justify-between mb-4">
+                  <div>
+                    <h2 className="text-xl font-semibold text-gray-900">Product Label Translations</h2>
+                    <p className="text-sm text-gray-600 mt-1">
+                      Manage translations for product labels across languages
+                    </p>
+                  </div>
+                </div>
+
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                  <input
+                    type="text"
+                    placeholder="Search product labels..."
+                    value={productLabelSearchQuery}
+                    onChange={(e) => setProductLabelSearchQuery(e.target.value)}
+                    className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  />
+                </div>
+              </div>
+
+              {loadingProductLabels ? (
+                <div className="bg-white border border-gray-200 rounded-lg p-12 text-center">
+                  <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+                  <p className="text-gray-600">Loading product labels...</p>
+                </div>
+              ) : productLabels.length === 0 ? (
+                <div className="bg-white border border-gray-200 rounded-lg p-8 text-center text-gray-500">
+                  <Globe className="w-12 h-12 mx-auto mb-4 text-gray-400" />
+                  <h3 className="text-lg font-semibold text-gray-700 mb-2">
+                    No Product Labels Found
+                  </h3>
+                  <p>
+                    Start by adding product labels to your store.
+                  </p>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {productLabels
+                    .filter(label => {
+                      if (!productLabelSearchQuery.trim()) return true;
+                      const query = productLabelSearchQuery.toLowerCase();
+                      const text = (label.translations?.en?.text || label.text || '').toLowerCase();
+                      return text.includes(query);
+                    })
+                    .map((label) => (
+                      <ProductLabelTranslationRow
+                        key={label.id}
+                        label={label}
+                        onUpdate={(labelId, translations) => {
+                          setProductLabels(productLabels.map(l =>
+                            l.id === labelId ? { ...l, translations } : l
+                          ));
+                        }}
+                      />
+                    ))}
+                </div>
+              )}
+            </>
+          )}
+        </div>
+      )}
+
+      {/* Cookie Consent Tab */}
+      {activeTab === 'cookie-consent' && (
+        <div className="space-y-6">
+          {!selectedStore ? (
+            <div className="bg-white border border-gray-200 rounded-lg p-8 text-center text-gray-500">
+              <Globe className="w-12 h-12 mx-auto mb-4 text-gray-400" />
+              <h3 className="text-lg font-semibold text-gray-700 mb-2">
+                No Store Selected
+              </h3>
+              <p>
+                Please select a store to manage cookie consent translations.
+              </p>
+            </div>
+          ) : (
+            <>
+              <div className="bg-white border border-gray-200 rounded-lg p-6">
+                <h2 className="text-xl font-semibold text-gray-900 mb-2">Cookie Consent Translations</h2>
+                <p className="text-sm text-gray-600">
+                  Manage translations for cookie consent banners across languages
+                </p>
+              </div>
+
+              {loadingCookieConsent ? (
+                <div className="bg-white border border-gray-200 rounded-lg p-12 text-center">
+                  <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+                  <p className="text-gray-600">Loading cookie consent...</p>
+                </div>
+              ) : cookieConsent.length === 0 ? (
+                <div className="bg-white border border-gray-200 rounded-lg p-8 text-center text-gray-500">
+                  <Globe className="w-12 h-12 mx-auto mb-4 text-gray-400" />
+                  <h3 className="text-lg font-semibold text-gray-700 mb-2">
+                    No Cookie Consent Settings Found
+                  </h3>
+                  <p>
+                    Start by configuring cookie consent settings for your store.
+                  </p>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {cookieConsent.map((settings) => (
+                    <CookieConsentTranslationRow
+                      key={settings.id}
+                      settings={settings}
+                      onUpdate={(settingsId, translations) => {
+                        setCookieConsent(cookieConsent.map(s =>
+                          s.id === settingsId ? { ...s, translations } : s
+                        ));
+                      }}
+                    />
+                  ))}
                 </div>
               )}
             </>
