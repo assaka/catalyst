@@ -718,25 +718,42 @@ export const categoryConfig = {
                 localStorage.setItem('guest_session_id', sessionId);
               }
 
+              // Get user info if authenticated (same as cartService)
+              let user = null;
+              try {
+                const { CustomerAuth } = await import('@/api/storefront-entities');
+                if (CustomerAuth.isAuthenticated()) {
+                  user = await CustomerAuth.me();
+                }
+              } catch (e) {}
+
+              const cartData = {
+                store_id: store.id,
+                product_id: product.id,
+                quantity: 1,
+                price: parseFloat(product.price || 0),
+                selected_options: [],
+                session_id: sessionId
+              };
+
+              // Add user_id if authenticated (but not for customers to avoid FK issues)
+              if (user?.id && user?.role !== 'customer') {
+                cartData.user_id = user.id;
+              }
+
               console.log('🛒 Category: Adding to cart', {
                 product_id: product.id,
                 product_name: product.name,
                 store_id: store.id,
                 session_id: sessionId,
+                user_id: cartData.user_id || null,
                 baseURL
               });
 
               const response = await fetch(baseURL + '/api/cart', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                  store_id: store.id,
-                  product_id: product.id,
-                  quantity: 1,
-                  price: parseFloat(product.price || 0),
-                  selected_options: [],
-                  session_id: sessionId
-                })
+                body: JSON.stringify(cartData)
               });
 
               console.log('🛒 Category: Response status', response.status);
@@ -951,25 +968,42 @@ export const categoryConfig = {
                 localStorage.setItem('guest_session_id', sessionId);
               }
 
+              // Get user info if authenticated (same as cartService)
+              let user = null;
+              try {
+                const { CustomerAuth } = await import('@/api/storefront-entities');
+                if (CustomerAuth.isAuthenticated()) {
+                  user = await CustomerAuth.me();
+                }
+              } catch (e) {}
+
+              const cartData = {
+                store_id: store.id,
+                product_id: productId,
+                quantity: 1,
+                price: productPrice,
+                selected_options: [],
+                session_id: sessionId
+              };
+
+              // Add user_id if authenticated (but not for customers to avoid FK issues)
+              if (user?.id && user?.role !== 'customer') {
+                cartData.user_id = user.id;
+              }
+
               console.log('🛒 Category (template): Adding to cart', {
                 product_id: productId,
                 product_name: productName,
                 store_id: store.id,
                 session_id: sessionId,
+                user_id: cartData.user_id || null,
                 baseURL
               });
 
               const response = await fetch(baseURL + '/api/cart', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                  store_id: store.id,
-                  product_id: productId,
-                  quantity: 1,
-                  price: productPrice,
-                  selected_options: [],
-                  session_id: sessionId
-                })
+                body: JSON.stringify(cartData)
               });
 
               console.log('🛒 Category (template): Response status', response.status);
