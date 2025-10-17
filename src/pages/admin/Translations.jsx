@@ -1061,6 +1061,7 @@ export default function Translations() {
             {/* Actions */}
             <div className="flex gap-2 ml-auto">
               <button
+                type="button"
                 onClick={() => setShowBulkTranslateDialog(true)}
                 className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 flex items-center gap-2"
               >
@@ -1069,6 +1070,7 @@ export default function Translations() {
               </button>
 
               <button
+                type="button"
                 onClick={() => setShowBulkAddForm(true)}
                 className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center gap-2"
               >
@@ -1084,6 +1086,7 @@ export default function Translations() {
               <div className="flex items-center justify-between">
                 <h3 className="text-lg font-semibold">Add Translation in Multiple Languages</h3>
                 <button
+                  type="button"
                   onClick={() => setShowBulkAddForm(false)}
                   className="p-1 hover:bg-gray-100 rounded"
                 >
@@ -1180,6 +1183,7 @@ export default function Translations() {
 
               <div className="flex gap-3 pt-2">
                 <button
+                  type="button"
                   onClick={addBulkTranslations}
                   disabled={saving}
                   className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 flex items-center gap-2"
@@ -1187,6 +1191,7 @@ export default function Translations() {
                   {saving ? 'Saving...' : (autoTranslate ? 'Add & Auto-translate' : 'Add Translations')}
                 </button>
                 <button
+                  type="button"
                   onClick={() => setShowBulkAddForm(false)}
                   className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200"
                 >
