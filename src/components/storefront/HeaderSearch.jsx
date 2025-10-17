@@ -17,8 +17,29 @@ export default function HeaderSearch({ styles = {} }) {
   const { store, settings, taxes, selectedCountry } = useStore();
   const { t } = useTranslation();
 
-  // Get store code from params or store object
-  const storeCode = params.storeCode || params.slug || store?.slug || store?.code;
+  // Get store code from params or store object or URL
+  const getStoreCode = () => {
+    // Try params first
+    if (params.storeCode) return params.storeCode;
+    if (params.slug) return params.slug;
+
+    // Try extracting from current URL path
+    const match = window.location.pathname.match(/^\/public\/([^\/]+)/);
+    if (match && match[1]) return match[1];
+
+    // Fallback to store object
+    if (store?.slug) return store.slug;
+    if (store?.code) return store.code;
+
+    return null;
+  };
+
+  const storeCode = getStoreCode();
+
+  // Log for debugging
+  useEffect(() => {
+    console.log('📍 HeaderSearch storeCode:', storeCode, 'params:', params, 'store:', { slug: store?.slug, code: store?.code });
+  }, [storeCode, params, store]);
 
   // Extract input styles from slot configuration
   const inputStyles = {

@@ -124,8 +124,11 @@ export function createAdminUrl(pageName, params = {}) {
  */
 export function createPublicUrl(storeSlug, pageName, params = {}) {
   const slug = URL_CONFIG.PAGES[pageName.toUpperCase()] || pageName.toLowerCase();
-  const baseUrl = `${URL_CONFIG.PUBLIC_PREFIX}/${storeSlug}/${slug}`;
-  
+  // Handle empty slug (for STOREFRONT page) to avoid double slashes
+  const baseUrl = slug
+    ? `${URL_CONFIG.PUBLIC_PREFIX}/${storeSlug}/${slug}`
+    : `${URL_CONFIG.PUBLIC_PREFIX}/${storeSlug}`;
+
   return addUrlParams(baseUrl, params);
 }
 
