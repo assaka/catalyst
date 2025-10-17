@@ -1,5 +1,5 @@
 const express = require('express');
-const { Translation, Language, Product, Category, CmsPage, CmsBlock } = require('../models');
+const { Translation, Language, Product, Category, CmsPage, CmsBlock, ProductTab, ProductLabel, CookieConsentSettings, Attribute, AttributeValue } = require('../models');
 const { authMiddleware } = require('../middleware/auth');
 const translationService = require('../services/translation-service');
 
@@ -546,8 +546,12 @@ router.get('/entity-stats', authMiddleware, async (req, res) => {
     const entityTypes = [
       { type: 'category', model: Category, icon: '📁', name: 'Categories' },
       { type: 'product', model: Product, icon: '📦', name: 'Products' },
+      { type: 'attribute', model: Attribute, icon: '🏷', name: 'Attributes' },
       { type: 'cms_page', model: CmsPage, icon: '📄', name: 'CMS Pages' },
-      { type: 'cms_block', model: CmsBlock, icon: '📝', name: 'CMS Blocks' }
+      { type: 'cms_block', model: CmsBlock, icon: '📝', name: 'CMS Blocks' },
+      { type: 'product_tab', model: ProductTab, icon: '📑', name: 'Product Tabs' },
+      { type: 'product_label', model: ProductLabel, icon: '🏷️', name: 'Product Labels' },
+      { type: 'cookie_consent', model: CookieConsentSettings, icon: '🍪', name: 'Cookie Consent' }
     ];
 
     const stats = [];
@@ -614,6 +618,79 @@ router.get('/entity-stats', authMiddleware, async (req, res) => {
           error: error.message
         });
       }
+    }
+
+    // Handle AttributeValue separately (doesn't have direct store_id)
+    try {
+      const { Op } = require('sequelize');
+
+      // Get all attributes for this store
+      const attributes = await Attribute.findAll({
+        where: { store_id },
+        attributes: ['id']
+      });
+
+      const attributeIds = attributes.map(attr => attr.id);
+
+      // Get all attribute values for these attributes
+      const values = await AttributeValue.findAll({
+        where: { attribute_id: { [Op.in]: attributeIds } },
+        attributes: ['id', 'translations']
+      });
+
+      const totalItems = values.length;
+      let translatedCount = 0;
+      const missingLanguages = new Set();
+
+      // Check translation completeness
+      values.forEach(value => {
+        const translations = value.translations || {};
+        let hasAllTranslations = true;
+
+        languageCodes.forEach(langCode => {
+          if (!translations[langCode] || Object.keys(translations[langCode]).length === 0) {
+            missingLanguages.add(langCode);
+            hasAllTranslations = false;
+          }
+        });
+
+        if (hasAllTranslations) {
+          translatedCount++;
+        }
+      });
+
+      const completionPercentage = totalItems > 0
+        ? Math.round((translatedCount / totalItems) * 100)
+        : 100;
+
+      stats.push({
+        type: 'attribute_value',
+        name: 'Attribute Values',
+        icon: '🔖',
+        totalItems,
+        translatedItems: translatedCount,
+        completionPercentage,
+        missingLanguages: Array.from(missingLanguages).map(code => {
+          const lang = languages.find(l => l.code === code);
+          return {
+            code,
+            name: lang?.name || code,
+            native_name: lang?.native_name || code
+          };
+        })
+      });
+    } catch (error) {
+      console.error('Error getting stats for attribute_value:', error);
+      stats.push({
+        type: 'attribute_value',
+        name: 'Attribute Values',
+        icon: '🔖',
+        totalItems: 0,
+        translatedItems: 0,
+        completionPercentage: 0,
+        missingLanguages: [],
+        error: error.message
+      });
     }
 
     res.json({

@@ -534,4 +534,196 @@ router.post('/bulk-translate', authMiddleware, authorize(['admin', 'store_owner'
   }
 });
 
+// ========== ATTRIBUTE VALUE TRANSLATION ROUTES ==========
+
+// @route   POST /api/attributes/values/:valueId/translate
+// @desc    AI translate a single attribute value to target language
+// @access  Private
+router.post('/values/:valueId/translate', authMiddleware, authorize(['admin', 'store_owner']), [
+  body('fromLang').notEmpty().withMessage('Source language is required'),
+  body('toLang').notEmpty().withMessage('Target language is required')
+], async (req, res) => {
+  try {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({
+        success: false,
+        errors: errors.array()
+      });
+    }
+
+    const { fromLang, toLang } = req.body;
+    const value = await AttributeValue.findByPk(req.params.valueId, {
+      include: [{
+        model: Attribute,
+        include: [{ model: Store, attributes: ['id', 'name', 'user_id'] }]
+      }]
+    });
+
+    if (!value) {
+      return res.status(404).json({
+        success: false,
+        message: 'Attribute value not found'
+      });
+    }
+
+    // Check store access
+    if (req.user.role !== 'admin') {
+      const { checkUserStoreAccess } = require('../utils/storeAccess');
+      const access = await checkUserStoreAccess(req.user.id, value.Attribute.Store.id);
+
+      if (!access) {
+        return res.status(403).json({
+          success: false,
+          message: 'Access denied'
+        });
+      }
+    }
+
+    // Check if source translation exists
+    if (!value.translations || !value.translations[fromLang]) {
+      return res.status(400).json({
+        success: false,
+        message: `No ${fromLang} translation found for this attribute value`
+      });
+    }
+
+    // Translate the attribute value
+    const updatedValue = await translationService.aiTranslateEntity('attribute_value', req.params.valueId, fromLang, toLang);
+
+    res.json({
+      success: true,
+      message: `Attribute value translated to ${toLang} successfully`,
+      data: updatedValue
+    });
+  } catch (error) {
+    console.error('Translate attribute value error:', error);
+    res.status(500).json({
+      success: false,
+      message: error.message || 'Server error'
+    });
+  }
+});
+
+// @route   POST /api/attributes/values/bulk-translate
+// @desc    AI translate all attribute values in a store to target language
+// @access  Private
+router.post('/values/bulk-translate', authMiddleware, authorize(['admin', 'store_owner']), [
+  body('store_id').isUUID().withMessage('Store ID must be a valid UUID'),
+  body('fromLang').notEmpty().withMessage('Source language is required'),
+  body('toLang').notEmpty().withMessage('Target language is required')
+], async (req, res) => {
+  try {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({
+        success: false,
+        errors: errors.array()
+      });
+    }
+
+    const { store_id, fromLang, toLang } = req.body;
+
+    // Check store access
+    if (req.user.role !== 'admin') {
+      const { checkUserStoreAccess } = require('../utils/storeAccess');
+      const access = await checkUserStoreAccess(req.user.id, store_id);
+
+      if (!access) {
+        return res.status(403).json({
+          success: false,
+          message: 'Access denied'
+        });
+      }
+    }
+
+    // Get all attribute values for attributes belonging to this store
+    const attributes = await Attribute.findAll({
+      where: { store_id },
+      attributes: ['id']
+    });
+
+    if (attributes.length === 0) {
+      return res.json({
+        success: true,
+        message: 'No attributes found for this store',
+        data: {
+          total: 0,
+          translated: 0,
+          skipped: 0,
+          failed: 0
+        }
+      });
+    }
+
+    const attributeIds = attributes.map(attr => attr.id);
+    const values = await AttributeValue.findAll({
+      where: { attribute_id: { [Op.in]: attributeIds } },
+      order: [['sort_order', 'ASC'], ['code', 'ASC']]
+    });
+
+    if (values.length === 0) {
+      return res.json({
+        success: true,
+        message: 'No attribute values found to translate',
+        data: {
+          total: 0,
+          translated: 0,
+          skipped: 0,
+          failed: 0
+        }
+      });
+    }
+
+    // Translate each value
+    const results = {
+      total: values.length,
+      translated: 0,
+      skipped: 0,
+      failed: 0,
+      errors: []
+    };
+
+    for (const value of values) {
+      try {
+        // Check if source translation exists
+        if (!value.translations || !value.translations[fromLang]) {
+          results.skipped++;
+          continue;
+        }
+
+        // Check if target translation already exists
+        if (value.translations[toLang]) {
+          results.skipped++;
+          continue;
+        }
+
+        // Translate the value
+        await translationService.aiTranslateEntity('attribute_value', value.id, fromLang, toLang);
+        results.translated++;
+      } catch (error) {
+        console.error(`Error translating attribute value ${value.id}:`, error);
+        results.failed++;
+        results.errors.push({
+          valueId: value.id,
+          valueCode: value.code,
+          error: error.message
+        });
+      }
+    }
+
+    res.json({
+      success: true,
+      message: `Bulk translation completed. Translated: ${results.translated}, Skipped: ${results.skipped}, Failed: ${results.failed}`,
+      data: results
+    });
+  } catch (error) {
+    console.error('Bulk translate attribute values error:', error);
+    res.status(500).json({
+      success: false,
+      message: error.message || 'Server error'
+    });
+  }
+});
+
 module.exports = router;

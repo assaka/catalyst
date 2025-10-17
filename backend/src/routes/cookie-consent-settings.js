@@ -2,6 +2,7 @@ const express = require('express');
 const { body, validationResult } = require('express-validator');
 const { CookieConsentSettings, Store } = require('../models');
 const { Op } = require('sequelize');
+const translationService = require('../services/translation-service');
 const router = express.Router();
 
 // Helper function to check store access (ownership or team membership)
@@ -258,6 +259,175 @@ router.delete('/:id', async (req, res) => {
     res.status(500).json({
       success: false,
       message: 'Server error'
+    });
+  }
+});
+
+// @route   POST /api/cookie-consent-settings/:id/translate
+// @desc    AI translate cookie consent settings to target language
+// @access  Private
+router.post('/:id/translate', [
+  body('fromLang').notEmpty().withMessage('Source language is required'),
+  body('toLang').notEmpty().withMessage('Target language is required')
+], async (req, res) => {
+  try {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({
+        success: false,
+        errors: errors.array()
+      });
+    }
+
+    const { fromLang, toLang } = req.body;
+    const settings = await CookieConsentSettings.findByPk(req.params.id, {
+      include: [{
+        model: Store,
+        attributes: ['id', 'name', 'user_id']
+      }]
+    });
+
+    if (!settings) {
+      return res.status(404).json({
+        success: false,
+        message: 'Cookie consent settings not found'
+      });
+    }
+
+    // Check store access
+    if (req.user.role !== 'admin') {
+      const { checkUserStoreAccess } = require('../utils/storeAccess');
+      const access = await checkUserStoreAccess(req.user.id, settings.Store.id);
+
+      if (!access) {
+        return res.status(403).json({
+          success: false,
+          message: 'Access denied'
+        });
+      }
+    }
+
+    // Check if source translation exists
+    if (!settings.translations || !settings.translations[fromLang]) {
+      return res.status(400).json({
+        success: false,
+        message: `No ${fromLang} translation found for cookie consent settings`
+      });
+    }
+
+    // Translate the settings
+    const updatedSettings = await translationService.aiTranslateEntity('cookie_consent', req.params.id, fromLang, toLang);
+
+    res.json({
+      success: true,
+      message: `Cookie consent settings translated to ${toLang} successfully`,
+      data: updatedSettings
+    });
+  } catch (error) {
+    console.error('Translate cookie consent settings error:', error);
+    res.status(500).json({
+      success: false,
+      message: error.message || 'Server error'
+    });
+  }
+});
+
+// @route   POST /api/cookie-consent-settings/bulk-translate
+// @desc    AI translate all cookie consent settings in a store to target language
+// @access  Private
+router.post('/bulk-translate', [
+  body('store_id').isUUID().withMessage('Store ID must be a valid UUID'),
+  body('fromLang').notEmpty().withMessage('Source language is required'),
+  body('toLang').notEmpty().withMessage('Target language is required')
+], async (req, res) => {
+  try {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({
+        success: false,
+        errors: errors.array()
+      });
+    }
+
+    const { store_id, fromLang, toLang } = req.body;
+
+    // Check store access
+    if (req.user.role !== 'admin') {
+      const { checkUserStoreAccess } = require('../utils/storeAccess');
+      const access = await checkUserStoreAccess(req.user.id, store_id);
+
+      if (!access) {
+        return res.status(403).json({
+          success: false,
+          message: 'Access denied'
+        });
+      }
+    }
+
+    // Get cookie consent settings for this store
+    const settingsRecords = await CookieConsentSettings.findAll({
+      where: { store_id }
+    });
+
+    if (settingsRecords.length === 0) {
+      return res.json({
+        success: true,
+        message: 'No cookie consent settings found to translate',
+        data: {
+          total: 0,
+          translated: 0,
+          skipped: 0,
+          failed: 0
+        }
+      });
+    }
+
+    // Translate each settings record
+    const results = {
+      total: settingsRecords.length,
+      translated: 0,
+      skipped: 0,
+      failed: 0,
+      errors: []
+    };
+
+    for (const settings of settingsRecords) {
+      try {
+        // Check if source translation exists
+        if (!settings.translations || !settings.translations[fromLang]) {
+          results.skipped++;
+          continue;
+        }
+
+        // Check if target translation already exists
+        if (settings.translations[toLang]) {
+          results.skipped++;
+          continue;
+        }
+
+        // Translate the settings
+        await translationService.aiTranslateEntity('cookie_consent', settings.id, fromLang, toLang);
+        results.translated++;
+      } catch (error) {
+        console.error(`Error translating cookie consent settings ${settings.id}:`, error);
+        results.failed++;
+        results.errors.push({
+          settingsId: settings.id,
+          error: error.message
+        });
+      }
+    }
+
+    res.json({
+      success: true,
+      message: `Bulk translation completed. Translated: ${results.translated}, Skipped: ${results.skipped}, Failed: ${results.failed}`,
+      data: results
+    });
+  } catch (error) {
+    console.error('Bulk translate cookie consent settings error:', error);
+    res.status(500).json({
+      success: false,
+      message: error.message || 'Server error'
     });
   }
 });
