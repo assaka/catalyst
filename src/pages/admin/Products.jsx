@@ -114,6 +114,7 @@ export default function Products() {
   const [translationMode, setTranslationMode] = useState(false);
   const [selectedTranslationLanguages, setSelectedTranslationLanguages] = useState(['en', 'nl']);
   const [editingTranslation, setEditingTranslation] = useState({}); // { productId: { lang: 'value' } }
+  const [failedImages, setFailedImages] = useState(new Set()); // Track failed image loads
 
   useEffect(() => {
     document.title = "Products - Admin Dashboard";
@@ -597,6 +598,10 @@ export default function Products() {
     }).length;
 
     return { completed, total: availableLanguages.length };
+  };
+
+  const handleImageError = (productId) => {
+    setFailedImages(prev => new Set([...prev, productId]));
   };
 
   // Client-side filtering for search and filters (all data is loaded)
@@ -1089,15 +1094,12 @@ export default function Products() {
                                 <div className="space-y-3">
                                   <div className="flex items-center gap-3 pb-2 border-b border-gray-200">
                                     <div className="w-12 h-12 bg-gray-100 rounded-lg flex items-center justify-center flex-shrink-0">
-                                      {product.images && product.images.length > 0 ? (
+                                      {product.images && product.images.length > 0 && !failedImages.has(product.id) ? (
                                         <img
                                           src={getPrimaryImageUrl(product.images)}
                                           alt={product.name}
                                           className="w-full h-full object-cover rounded-lg"
-                                          onError={(e) => {
-                                            e.target.style.display = 'none';
-                                            e.target.parentElement.innerHTML = '<div class="w-full h-full flex items-center justify-center"><svg class="w-6 h-6 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"></path></svg></div>';
-                                          }}
+                                          onError={() => handleImageError(product.id)}
                                         />
                                       ) : (
                                         <Package className="w-6 h-6 text-gray-400" />
@@ -1142,15 +1144,12 @@ export default function Products() {
                               ) : (
                                 <div className="flex items-center space-x-3">
                                   <div className="w-12 h-12 bg-gray-100 rounded-lg flex items-center justify-center">
-                                    {product.images && product.images.length > 0 ? (
+                                    {product.images && product.images.length > 0 && !failedImages.has(product.id) ? (
                                       <img
                                         src={getPrimaryImageUrl(product.images)}
                                         alt={product.name}
                                         className="w-full h-full object-cover rounded-lg"
-                                        onError={(e) => {
-                                          e.target.style.display = 'none';
-                                          e.target.parentElement.innerHTML = '<div class="w-full h-full flex items-center justify-center"><svg class="w-6 h-6 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"></path></svg></div>';
-                                        }}
+                                        onError={() => handleImageError(product.id)}
                                       />
                                     ) : (
                                       <Package className="w-6 h-6 text-gray-400" />
