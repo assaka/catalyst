@@ -165,6 +165,7 @@ export default function BulkTranslateDialog({
 
           <div className="flex justify-end gap-2 pt-4">
             <Button
+              type="button"
               variant="outline"
               onClick={() => {
                 onOpenChange(false);
@@ -175,6 +176,7 @@ export default function BulkTranslateDialog({
               Cancel
             </Button>
             <Button
+              type="button"
               onClick={handleTranslate}
               disabled={isTranslating || !translateFromLang || translateToLangs.length === 0}
               className="bg-blue-600 hover:bg-blue-700"

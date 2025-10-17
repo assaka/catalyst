@@ -63,12 +63,12 @@ export default function CmsBlockTranslationRow({ block, onUpdate, selectedLangua
       });
       toast.success('CMS block translations updated successfully');
       if (onUpdate) onUpdate(block.id, translations);
+      setSaving(false);
       setSaveSuccess(true);
       setTimeout(() => setSaveSuccess(false), 2000);
     } catch (error) {
       console.error('Error saving translations:', error);
       toast.error('Failed to save translations');
-    } finally {
       setSaving(false);
     }
   };

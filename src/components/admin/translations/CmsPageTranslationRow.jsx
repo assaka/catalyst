@@ -66,12 +66,12 @@ export default function CmsPageTranslationRow({ page, onUpdate, selectedLanguage
       });
       toast.success('CMS page translations updated successfully');
       if (onUpdate) onUpdate(page.id, translations);
+      setSaving(false);
       setSaveSuccess(true);
       setTimeout(() => setSaveSuccess(false), 2000);
     } catch (error) {
       console.error('Error saving translations:', error);
       toast.error('Failed to save translations');
-    } finally {
       setSaving(false);
     }
   };
