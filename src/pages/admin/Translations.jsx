@@ -189,19 +189,19 @@ export default function Translations() {
       });
 
       if (response && response.success) {
+        // Show success message
         toast.success('Translation saved successfully');
-
-        // Update local state directly instead of reloading
-        const updatedLabels = labels.map(label =>
-          label.key === key ? { ...label, value, category, type } : label
-        );
-        setLabels(updatedLabels);
 
         // Close edit mode
         setEditingKey(null);
         setEditValue('');
+        setSaving(false);
+
+        // DON'T update labels state - let it reload on next tab switch/language change
+        // This prevents triggering any side effects that might cause page reload
+      } else {
+        setSaving(false);
       }
-      setSaving(false);
     } catch (error) {
       console.error('Failed to save label:', error);
       toast.error('Failed to save translation');
