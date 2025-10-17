@@ -58,9 +58,12 @@ router.get('/', async (req, res) => {
       where,
       include: [{
         model: Store,
-        attributes: ['id', 'name']
+        attributes: ['id', 'name'],
+        required: false  // Make this a LEFT JOIN - don't filter out results if Store is missing
       }]
     });
+
+    console.log(`Found ${settings.length} cookie consent settings for query:`, where);
 
     if (isPublicRequest) {
       // Return just the array for public requests (for compatibility)
