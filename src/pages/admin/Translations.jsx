@@ -458,9 +458,10 @@ export default function Translations() {
       console.log('Cookie consent response:', response);
 
       if (response && response.success && response.data) {
-        // Cookie consent might return a single object or array
-        const settings = Array.isArray(response.data) ? response.data : [response.data];
+        // Response.data is an array of settings (might be multiple per store or one)
+        const settings = Array.isArray(response.data) ? response.data : [];
         console.log('Setting cookie consent:', settings);
+        // Filter out any null/undefined and only keep valid settings
         setCookieConsent(settings.filter(s => s && s.id));
       } else {
         console.warn('Unexpected cookie consent response format:', response);
@@ -1751,7 +1752,22 @@ export default function Translations() {
             <>
               {/* Header */}
               <div className="bg-white border border-gray-200 rounded-lg p-6">
-                <h2 className="text-xl font-semibold text-gray-900 mb-2">Various Translations</h2>
+                <div className="flex items-center justify-between mb-2">
+                  <h2 className="text-xl font-semibold text-gray-900">Various Translations</h2>
+                  <div className="flex items-center gap-2">
+                    <Globe className="w-4 h-4 text-gray-400" />
+                    <div className="flex items-center gap-2">
+                      {availableLanguages.map((lang) => (
+                        <span
+                          key={lang.code}
+                          className="px-2 py-1 bg-blue-50 text-blue-700 rounded text-xs font-medium"
+                        >
+                          {lang.code.toUpperCase()} ({lang.native_name || lang.name})
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                </div>
                 <p className="text-sm text-gray-600">
                   Manage translations for product tabs, labels, cookie consent, and custom options
                 </p>
