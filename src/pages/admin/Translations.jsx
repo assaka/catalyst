@@ -6,13 +6,15 @@ import { useStoreSelection } from '../../contexts/StoreSelectionContext';
 import BulkTranslateDialog from '../../components/admin/BulkTranslateDialog';
 import EntityTranslationCard from '../../components/admin/EntityTranslationCard';
 import MultiEntityTranslateDialog from '../../components/admin/MultiEntityTranslateDialog';
+import ProductTranslationRow from '../../components/admin/translations/ProductTranslationRow';
+import CategoryTranslationRow from '../../components/admin/translations/CategoryTranslationRow';
 import { toast } from 'sonner';
 
 export default function Translations() {
   const { availableLanguages, currentLanguage, changeLanguage } = useTranslation();
   const { selectedStore, getSelectedStoreId } = useStoreSelection();
 
-  const [activeTab, setActiveTab] = useState('ui-labels');
+  const [activeTab, setActiveTab] = useState('dashboard');
   const [selectedLanguage, setSelectedLanguage] = useState(currentLanguage);
   const [labels, setLabels] = useState([]);
   const [filteredLabels, setFilteredLabels] = useState([]);
@@ -34,6 +36,16 @@ export default function Translations() {
   const [loadingEntityStats, setLoadingEntityStats] = useState(false);
   const [selectedEntityType, setSelectedEntityType] = useState(null);
   const [selectedEntityName, setSelectedEntityName] = useState(null);
+
+  // Products tab states
+  const [products, setProducts] = useState([]);
+  const [loadingProducts, setLoadingProducts] = useState(false);
+  const [productSearchQuery, setProductSearchQuery] = useState('');
+
+  // Categories tab states
+  const [productCategories, setProductCategories] = useState([]);
+  const [loadingCategories, setLoadingCategories] = useState(false);
+  const [categorySearchQuery, setCategorySearchQuery] = useState('');
 
   const categories = ['common', 'navigation', 'product', 'checkout', 'account', 'admin'];
 
@@ -210,6 +222,56 @@ export default function Translations() {
     } catch (error) {
       console.error('Bulk translate error:', error);
       return { success: false, message: error.message };
+    }
+  };
+
+  /**
+   * Load products for translation management
+   */
+  const loadProducts = async () => {
+    const storeId = getSelectedStoreId();
+    if (!storeId) {
+      setProducts([]);
+      return;
+    }
+
+    try {
+      setLoadingProducts(true);
+      const response = await api.get(`/products?store_id=${storeId}&limit=1000`);
+
+      if (response && response.success && response.data) {
+        setProducts(response.data.products || []);
+      }
+    } catch (error) {
+      console.error('Failed to load products:', error);
+      showMessage('Failed to load products', 'error');
+    } finally {
+      setLoadingProducts(false);
+    }
+  };
+
+  /**
+   * Load categories for translation management
+   */
+  const loadCategories = async () => {
+    const storeId = getSelectedStoreId();
+    if (!storeId) {
+      setProductCategories([]);
+      return;
+    }
+
+    try {
+      setLoadingCategories(true);
+      const response = await api.get(`/categories?store_id=${storeId}&limit=1000`);
+
+      if (response && response.success && response.data) {
+        setProductCategories(response.data.categories || []);
+      }
+    } catch (error) {
+      console.error('Failed to load categories:', error);
+      showMessage('Failed to load categories', 'error');
+    } finally {
+      setLoadingCategories(false);
     }
   };
 
@@ -489,10 +551,24 @@ export default function Translations() {
     loadLabels(selectedLanguage);
   }, [selectedLanguage]);
 
-  // Load entity stats when switching to entities tab or when store changes
+  // Load entity stats when switching to dashboard or entity tabs or when store changes
   useEffect(() => {
-    if (activeTab === 'entities' && selectedStore) {
+    if (activeTab === 'dashboard' && selectedStore) {
       loadEntityStats();
+    }
+  }, [activeTab, selectedStore]);
+
+  // Load products when switching to products tab
+  useEffect(() => {
+    if (activeTab === 'products' && selectedStore) {
+      loadProducts();
+    }
+  }, [activeTab, selectedStore]);
+
+  // Load categories when switching to categories tab
+  useEffect(() => {
+    if (activeTab === 'categories' && selectedStore) {
+      loadCategories();
     }
   }, [activeTab, selectedStore]);
 
@@ -523,11 +599,23 @@ export default function Translations() {
 
       {/* Tabs */}
       <div className="mb-6 border-b border-gray-200">
-        <div className="flex gap-4">
+        <div className="flex gap-4 overflow-x-auto">
+          <button
+            onClick={() => setActiveTab('dashboard')}
+            className={`
+              px-4 py-2 font-medium border-b-2 transition-colors whitespace-nowrap
+              ${activeTab === 'dashboard'
+                ? 'border-blue-600 text-blue-600'
+                : 'border-transparent text-gray-600 hover:text-gray-900'
+              }
+            `}
+          >
+            Dashboard
+          </button>
           <button
             onClick={() => setActiveTab('ui-labels')}
             className={`
-              px-4 py-2 font-medium border-b-2 transition-colors
+              px-4 py-2 font-medium border-b-2 transition-colors whitespace-nowrap
               ${activeTab === 'ui-labels'
                 ? 'border-blue-600 text-blue-600'
                 : 'border-transparent text-gray-600 hover:text-gray-900'
@@ -537,16 +625,52 @@ export default function Translations() {
             UI Labels
           </button>
           <button
-            onClick={() => setActiveTab('entities')}
+            onClick={() => setActiveTab('products')}
             className={`
-              px-4 py-2 font-medium border-b-2 transition-colors
-              ${activeTab === 'entities'
+              px-4 py-2 font-medium border-b-2 transition-colors whitespace-nowrap
+              ${activeTab === 'products'
                 ? 'border-blue-600 text-blue-600'
                 : 'border-transparent text-gray-600 hover:text-gray-900'
               }
             `}
           >
-            Products & Content
+            Products
+          </button>
+          <button
+            onClick={() => setActiveTab('categories')}
+            className={`
+              px-4 py-2 font-medium border-b-2 transition-colors whitespace-nowrap
+              ${activeTab === 'categories'
+                ? 'border-blue-600 text-blue-600'
+                : 'border-transparent text-gray-600 hover:text-gray-900'
+              }
+            `}
+          >
+            Categories
+          </button>
+          <button
+            onClick={() => setActiveTab('attributes')}
+            className={`
+              px-4 py-2 font-medium border-b-2 transition-colors whitespace-nowrap
+              ${activeTab === 'attributes'
+                ? 'border-blue-600 text-blue-600'
+                : 'border-transparent text-gray-600 hover:text-gray-900'
+              }
+            `}
+          >
+            Attributes
+          </button>
+          <button
+            onClick={() => setActiveTab('cms')}
+            className={`
+              px-4 py-2 font-medium border-b-2 transition-colors whitespace-nowrap
+              ${activeTab === 'cms'
+                ? 'border-blue-600 text-blue-600'
+                : 'border-transparent text-gray-600 hover:text-gray-900'
+              }
+            `}
+          >
+            CMS Content
           </button>
         </div>
       </div>
@@ -850,8 +974,272 @@ export default function Translations() {
         </div>
       )}
 
-      {/* Entities Tab */}
-      {activeTab === 'entities' && (
+      {/* Products Tab */}
+      {activeTab === 'products' && (
+        <div className="space-y-6">
+          {!selectedStore ? (
+            <div className="bg-white border border-gray-200 rounded-lg p-8 text-center text-gray-500">
+              <Globe className="w-12 h-12 mx-auto mb-4 text-gray-400" />
+              <h3 className="text-lg font-semibold text-gray-700 mb-2">
+                No Store Selected
+              </h3>
+              <p>
+                Please select a store to manage product translations.
+              </p>
+            </div>
+          ) : (
+            <>
+              {/* Header and Search */}
+              <div className="bg-white border border-gray-200 rounded-lg p-6">
+                <div className="flex items-center justify-between mb-4">
+                  <div>
+                    <h2 className="text-xl font-semibold text-gray-900">Product Translations</h2>
+                    <p className="text-sm text-gray-600 mt-1">
+                      Manage translations for all product fields across languages
+                    </p>
+                  </div>
+                  <button
+                    onClick={() => {
+                      setSelectedEntityType('product');
+                      setSelectedEntityName('Products');
+                      setShowBulkTranslateDialog(true);
+                    }}
+                    className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 flex items-center gap-2"
+                  >
+                    <Languages className="w-4 h-4" />
+                    Bulk AI Translate
+                  </button>
+                </div>
+
+                {/* Search Bar */}
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                  <input
+                    type="text"
+                    placeholder="Search products by name or SKU..."
+                    value={productSearchQuery}
+                    onChange={(e) => setProductSearchQuery(e.target.value)}
+                    className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  />
+                </div>
+              </div>
+
+              {/* Products List */}
+              {loadingProducts ? (
+                <div className="bg-white border border-gray-200 rounded-lg p-12 text-center">
+                  <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+                  <p className="text-gray-600">Loading products...</p>
+                </div>
+              ) : products.length === 0 ? (
+                <div className="bg-white border border-gray-200 rounded-lg p-8 text-center text-gray-500">
+                  <Globe className="w-12 h-12 mx-auto mb-4 text-gray-400" />
+                  <h3 className="text-lg font-semibold text-gray-700 mb-2">
+                    No Products Found
+                  </h3>
+                  <p>
+                    Start by adding products to your store.
+                  </p>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {products
+                    .filter(product => {
+                      if (!productSearchQuery.trim()) return true;
+                      const query = productSearchQuery.toLowerCase();
+                      const name = (product.translations?.en?.name || product.name || '').toLowerCase();
+                      const sku = (product.sku || '').toLowerCase();
+                      return name.includes(query) || sku.includes(query);
+                    })
+                    .map((product) => (
+                      <ProductTranslationRow
+                        key={product.id}
+                        product={product}
+                        onUpdate={(productId, translations) => {
+                          // Update local state
+                          setProducts(products.map(p =>
+                            p.id === productId ? { ...p, translations } : p
+                          ));
+                        }}
+                      />
+                    ))}
+                </div>
+              )}
+
+              {/* Count Info */}
+              {products.length > 0 && (
+                <div className="text-sm text-gray-600 text-center">
+                  Showing {products.filter(product => {
+                    if (!productSearchQuery.trim()) return true;
+                    const query = productSearchQuery.toLowerCase();
+                    const name = (product.translations?.en?.name || product.name || '').toLowerCase();
+                    const sku = (product.sku || '').toLowerCase();
+                    return name.includes(query) || sku.includes(query);
+                  }).length} of {products.length} products
+                </div>
+              )}
+            </>
+          )}
+        </div>
+      )}
+
+      {/* Categories Tab */}
+      {activeTab === 'categories' && (
+        <div className="space-y-6">
+          {!selectedStore ? (
+            <div className="bg-white border border-gray-200 rounded-lg p-8 text-center text-gray-500">
+              <Globe className="w-12 h-12 mx-auto mb-4 text-gray-400" />
+              <h3 className="text-lg font-semibold text-gray-700 mb-2">
+                No Store Selected
+              </h3>
+              <p>
+                Please select a store to manage category translations.
+              </p>
+            </div>
+          ) : (
+            <>
+              {/* Header and Search */}
+              <div className="bg-white border border-gray-200 rounded-lg p-6">
+                <div className="flex items-center justify-between mb-4">
+                  <div>
+                    <h2 className="text-xl font-semibold text-gray-900">Category Translations</h2>
+                    <p className="text-sm text-gray-600 mt-1">
+                      Manage translations for all category fields across languages
+                    </p>
+                  </div>
+                  <button
+                    onClick={() => {
+                      setSelectedEntityType('category');
+                      setSelectedEntityName('Categories');
+                      setShowBulkTranslateDialog(true);
+                    }}
+                    className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 flex items-center gap-2"
+                  >
+                    <Languages className="w-4 h-4" />
+                    Bulk AI Translate
+                  </button>
+                </div>
+
+                {/* Search Bar */}
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                  <input
+                    type="text"
+                    placeholder="Search categories by name or slug..."
+                    value={categorySearchQuery}
+                    onChange={(e) => setCategorySearchQuery(e.target.value)}
+                    className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  />
+                </div>
+              </div>
+
+              {/* Categories List */}
+              {loadingCategories ? (
+                <div className="bg-white border border-gray-200 rounded-lg p-12 text-center">
+                  <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+                  <p className="text-gray-600">Loading categories...</p>
+                </div>
+              ) : productCategories.length === 0 ? (
+                <div className="bg-white border border-gray-200 rounded-lg p-8 text-center text-gray-500">
+                  <Globe className="w-12 h-12 mx-auto mb-4 text-gray-400" />
+                  <h3 className="text-lg font-semibold text-gray-700 mb-2">
+                    No Categories Found
+                  </h3>
+                  <p>
+                    Start by adding categories to your store.
+                  </p>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {productCategories
+                    .filter(category => {
+                      if (!categorySearchQuery.trim()) return true;
+                      const query = categorySearchQuery.toLowerCase();
+                      const name = (category.translations?.en?.name || category.name || '').toLowerCase();
+                      const slug = (category.slug || '').toLowerCase();
+                      return name.includes(query) || slug.includes(query);
+                    })
+                    .map((category) => (
+                      <CategoryTranslationRow
+                        key={category.id}
+                        category={category}
+                        onUpdate={(categoryId, translations) => {
+                          // Update local state
+                          setProductCategories(productCategories.map(c =>
+                            c.id === categoryId ? { ...c, translations } : c
+                          ));
+                        }}
+                      />
+                    ))}
+                </div>
+              )}
+
+              {/* Count Info */}
+              {productCategories.length > 0 && (
+                <div className="text-sm text-gray-600 text-center">
+                  Showing {productCategories.filter(category => {
+                    if (!categorySearchQuery.trim()) return true;
+                    const query = categorySearchQuery.toLowerCase();
+                    const name = (category.translations?.en?.name || category.name || '').toLowerCase();
+                    const slug = (category.slug || '').toLowerCase();
+                    return name.includes(query) || slug.includes(query);
+                  }).length} of {productCategories.length} categories
+                </div>
+              )}
+            </>
+          )}
+        </div>
+      )}
+
+      {/* Attributes Tab */}
+      {activeTab === 'attributes' && (
+        <div className="space-y-6">
+          {!selectedStore ? (
+            <div className="bg-white border border-gray-200 rounded-lg p-8 text-center text-gray-500">
+              <Globe className="w-12 h-12 mx-auto mb-4 text-gray-400" />
+              <h3 className="text-lg font-semibold text-gray-700 mb-2">
+                No Store Selected
+              </h3>
+              <p>
+                Please select a store to manage attribute translations.
+              </p>
+            </div>
+          ) : (
+            <div className="bg-white border border-gray-200 rounded-lg p-8">
+              <h2 className="text-xl font-semibold text-gray-900 mb-4">Attribute Translations</h2>
+              <p className="text-gray-600">
+                Attribute translation management with accordion style (coming soon)
+              </p>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* CMS Content Tab */}
+      {activeTab === 'cms' && (
+        <div className="space-y-6">
+          {!selectedStore ? (
+            <div className="bg-white border border-gray-200 rounded-lg p-8 text-center text-gray-500">
+              <Globe className="w-12 h-12 mx-auto mb-4 text-gray-400" />
+              <h3 className="text-lg font-semibold text-gray-700 mb-2">
+                No Store Selected
+              </h3>
+              <p>
+                Please select a store to manage CMS content translations.
+              </p>
+            </div>
+          ) : (
+            <div className="bg-white border border-gray-200 rounded-lg p-8">
+              <h2 className="text-xl font-semibold text-gray-900 mb-4">CMS Content Translations</h2>
+              <p className="text-gray-600">
+                CMS pages and blocks translation management with accordion style (coming soon)
+              </p>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Dashboard Tab */}
+      {activeTab === 'dashboard' && (
         <div className="space-y-6">
           {!selectedStore ? (
             <div className="bg-white border border-gray-200 rounded-lg p-8 text-center text-gray-500">
