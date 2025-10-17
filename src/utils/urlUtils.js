@@ -124,10 +124,15 @@ export function createAdminUrl(pageName, params = {}) {
  */
 export function createPublicUrl(storeSlug, pageName, params = {}) {
   const pageKey = pageName.toUpperCase();
+
   // Check if the page exists in config (including empty string values)
-  const slug = pageKey in URL_CONFIG.PAGES
-    ? URL_CONFIG.PAGES[pageKey]
-    : pageName.toLowerCase();
+  if (!(pageKey in URL_CONFIG.PAGES)) {
+    console.warn(`⚠️ Unknown page name: "${pageName}". URL will lead to 404.`);
+    // Return a path that will be caught by the 404 handler
+    return `${URL_CONFIG.PUBLIC_PREFIX}/${storeSlug}/404-page-not-found`;
+  }
+
+  const slug = URL_CONFIG.PAGES[pageKey];
 
   // Handle empty slug (for STOREFRONT page) to avoid double slashes
   const baseUrl = slug
