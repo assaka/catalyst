@@ -377,8 +377,8 @@ export default function Translations() {
 
       // Load both pages and blocks in parallel
       const [pagesResponse, blocksResponse] = await Promise.all([
-        api.get(`/api/cms-pages?store_id=${storeId}&limit=1000`),
-        api.get(`/api/cms-blocks?store_id=${storeId}&limit=1000`)
+        api.get(`/cms?store_id=${storeId}&limit=1000`),
+        api.get(`/cms-blocks?store_id=${storeId}&limit=1000`)
       ]);
 
       if (pagesResponse && pagesResponse.success && pagesResponse.data) {
@@ -408,7 +408,7 @@ export default function Translations() {
 
     try {
       setLoadingProductTabs(true);
-      const response = await api.get(`/api/product-tabs?store_id=${storeId}&limit=1000`);
+      const response = await api.get(`/product-tabs?store_id=${storeId}&limit=1000`);
 
       console.log('Product tabs response:', response);
 
@@ -442,7 +442,7 @@ export default function Translations() {
 
     try {
       setLoadingProductLabels(true);
-      const response = await api.get(`/api/product-labels?store_id=${storeId}&limit=1000`);
+      const response = await api.get(`/product-labels?store_id=${storeId}&limit=1000`);
 
       console.log('Product labels response:', response);
 
@@ -617,7 +617,7 @@ export default function Translations() {
                        selectedEntityType === 'product' ? 'products' :
                        selectedEntityType === 'attribute' ? 'attributes' :
                        selectedEntityType === 'attribute_value' ? 'attributes/values' :
-                       selectedEntityType === 'cms_page' ? 'cms-pages' :
+                       selectedEntityType === 'cms_page' ? 'cms' :
                        selectedEntityType === 'cms_block' ? 'cms-blocks' :
                        selectedEntityType === 'product_tab' ? 'product-tabs' :
                        selectedEntityType === 'product_label' ? 'product-labels' :

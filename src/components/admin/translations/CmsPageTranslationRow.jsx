@@ -59,7 +59,7 @@ export default function CmsPageTranslationRow({ page, onUpdate, selectedLanguage
   const handleSave = async () => {
     try {
       setSaving(true);
-      await api.put(`/cms-pages/${page.id}`, {
+      await api.put(`/cms/${page.id}`, {
         translations
       });
       toast.success('CMS page translations updated successfully');
