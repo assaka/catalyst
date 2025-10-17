@@ -76,16 +76,16 @@ const NotFoundPage = () => {
 
   // Fallback default 404 page if no custom CMS page exists
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4 sm:px-6 lg:px-8">
-      <SeoHeadManager 
-        pageType="error" 
+    <div className="flex items-center justify-center bg-gray-50 px-4 sm:px-6 lg:px-8 py-16">
+      <SeoHeadManager
+        pageType="error"
         pageData={{
           meta_title: '404 - Page Not Found',
           meta_description: 'The page you are looking for could not be found.',
           meta_robots_tag: 'noindex, nofollow'
-        }} 
+        }}
       />
-      
+
       <div className="max-w-md w-full text-center">
         <div className="mb-8">
           <div className="mx-auto h-24 w-24 text-gray-400 mb-6">
