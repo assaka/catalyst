@@ -1260,7 +1260,9 @@ export default function Translations() {
                           <div className="flex gap-2 justify-end">
                             <button
                               type="button"
-                              onClick={() => {
+                              onClick={(e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
                                 saveLabel(label.key, editValue, label.category, label.type);
                               }}
                               disabled={saving}
