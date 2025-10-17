@@ -120,10 +120,10 @@ router.get('/:id', async (req, res) => {
   }
 });
 
-// @route   POST /api/cookie-consent-settings/upsert
-// @desc    Create or update cookie consent settings for a store (prevents duplicates)
+// @route   POST /api/cookie-consent-settings
+// @desc    Create or update cookie consent settings (upsert based on store_id)
 // @access  Private
-router.post('/upsert', [
+router.post('/', [
   body('store_id').isUUID().withMessage('Store ID must be a valid UUID')
 ], async (req, res) => {
   try {
@@ -146,7 +146,7 @@ router.post('/upsert', [
       });
     }
 
-    // Check if settings already exist for this store
+    // UPSERT: Check if settings already exist for this store
     const existingSettings = await CookieConsentSettings.findOne({
       where: { store_id }
     });
@@ -173,55 +173,7 @@ router.post('/upsert', [
       isNew
     });
   } catch (error) {
-    console.error('Upsert cookie consent settings error:', error);
-    console.error('Error details:', error.message);
-    console.error('Error stack:', error.stack);
-    console.error('Request body:', JSON.stringify(req.body, null, 2));
-
-    res.status(500).json({
-      success: false,
-      message: 'Server error',
-      error: error.message,
-      details: error.errors?.map(e => ({field: e.path, message: e.message})) || null
-    });
-  }
-});
-
-// @route   POST /api/cookie-consent-settings
-// @desc    Create new cookie consent settings
-// @access  Private
-router.post('/', [
-  body('store_id').isUUID().withMessage('Store ID must be a valid UUID')
-], async (req, res) => {
-  try {
-    const errors = validationResult(req);
-    if (!errors.isEmpty()) {
-      return res.status(400).json({
-        success: false,
-        errors: errors.array()
-      });
-    }
-
-    const { store_id } = req.body;
-
-    // Check store access
-    const hasAccess = await checkStoreAccess(store_id, req.user.id, req.user.role);
-    if (!hasAccess) {
-      return res.status(403).json({
-        success: false,
-        message: 'Access denied'
-      });
-    }
-
-    const settings = await CookieConsentSettings.create(req.body);
-
-    res.status(201).json({
-      success: true,
-      message: 'Cookie consent settings created successfully',
-      data: settings
-    });
-  } catch (error) {
-    console.error('Create cookie consent settings error:', error);
+    console.error('Create/update cookie consent settings error:', error);
     console.error('Error details:', error.message);
     console.error('Error stack:', error.stack);
     console.error('Request body:', JSON.stringify(req.body, null, 2));

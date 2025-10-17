@@ -3,7 +3,6 @@ import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { createPageUrl } from '@/utils';
 import { CookieConsentSettings, ConsentLog } from '@/api/entities';
-import apiClient from '@/api/client';
 import { User } from '@/api/entities';
 import { Store } from '@/api/entities';
 import { useStoreSelection } from '@/contexts/StoreSelectionContext.jsx';
@@ -308,8 +307,7 @@ export default function CookieConsent() {
       // Map frontend settings to backend format
       const backendSettings = mapFrontendToBackend(settingsToSave);
 
-      console.log('Saving cookie consent settings (using upsert):', {
-        settingsId: settings.id,
+      console.log('Saving cookie consent settings:', {
         selectedStoreId: selectedStore.id,
         settingsStoreId: settings.store_id,
         backendStoreId: backendSettings.store_id,
@@ -321,31 +319,40 @@ export default function CookieConsent() {
         }
       });
 
-      // Always use upsert endpoint - it handles both create and update based on store_id
-      // This prevents duplicate rows even if ID is somehow lost
+      // Always use create endpoint - backend automatically handles upsert based on store_id
+      // This prevents duplicate rows without needing separate create/update logic
       const result = await retryApiCall(() =>
-        apiClient.post('cookie-consent-settings/upsert', backendSettings)
+        CookieConsentSettings.create(backendSettings)
       );
 
-      console.log('Cookie consent upsert response:', {
-        hasSuccess: !!result.success,
-        hasData: !!result.data,
-        isNew: result.isNew,
-        dataId: result.data?.id,
-        dataStoreId: result.data?.store_id
+      console.log('Cookie consent save response:', {
+        isArray: Array.isArray(result),
+        hasSuccess: !!result?.success,
+        hasData: !!result?.data,
+        isNew: result?.isNew,
+        firstItemId: Array.isArray(result) ? result[0]?.id : result?.data?.id
       });
 
-      // Upsert endpoint returns { success, data, isNew }
-      if (result.success && result.data && result.data.id) {
-        console.log(`✅ Upsert successful (${result.isNew ? 'created' : 'updated'}), mapping to frontend format`);
-        const updatedSettings = mapBackendToFrontend(result.data);
+      // Handle response (could be array or wrapped object)
+      let settingsData;
+      if (Array.isArray(result) && result[0]) {
+        settingsData = result[0];
+      } else if (result?.success && result?.data) {
+        settingsData = result.data;
+      } else if (result?.id) {
+        settingsData = result;
+      }
+
+      if (settingsData && settingsData.id) {
+        console.log(`✅ Save successful (${result.isNew ? 'created' : 'updated'}), mapping to frontend format`);
+        const updatedSettings = mapBackendToFrontend(settingsData);
         console.log('Updated settings after mapping:', {
           id: updatedSettings.id,
           store_id: updatedSettings.store_id
         });
         setSettings(updatedSettings);
       } else {
-        console.error('❌ Unexpected upsert response structure, falling back to reload');
+        console.error('❌ Unexpected save response structure, falling back to reload');
         console.error('Response:', result);
         // Fallback to reload if response structure is unexpected
         await refreshStores();
