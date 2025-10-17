@@ -31,6 +31,10 @@ const defaultTranslations = [
   { key: 'common.view_all', value: 'View All', category: 'common' },
   { key: 'common.search_country', value: 'Search country...', category: 'common' },
   { key: 'common.no_country_found', value: 'No country found.', category: 'common' },
+  { key: 'common.search_products', value: 'Search products...', category: 'common' },
+  { key: 'common.view_all_results_for', value: 'View all results for', category: 'common' },
+  { key: 'common.search_results_for', value: 'Search Results for', category: 'common' },
+  { key: 'common.no_products_found_for', value: 'No products found for', category: 'common' },
 
   // Navigation
   { key: 'navigation.home', value: 'Home', category: 'navigation' },

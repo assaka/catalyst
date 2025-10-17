@@ -10,6 +10,7 @@ import { Package, Search as SearchIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { getProductName, getProductShortDescription, getCurrentLanguage } from "@/utils/translationUtils";
+import { useTranslation } from "@/contexts/TranslationContext";
 
 const ensureArray = (data) => {
   if (Array.isArray(data)) return data;
@@ -21,6 +22,7 @@ export default function Homepage() {
   const [searchParams] = useSearchParams();
   const searchQuery = searchParams.get('search');
   const { store, settings, loading: storeLoading, categories, productLabels, taxes, selectedCountry } = useStore();
+  const { t } = useTranslation();
   const [featuredProducts, setFeaturedProducts] = useState([]);
   const [searchResults, setSearchResults] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -178,7 +180,7 @@ export default function Homepage() {
                 {searchQuery ? (
                   <>
                     <SearchIcon className="inline-block w-8 h-8 mr-2 mb-1" />
-                    Search Results for "{searchQuery}"
+                    {t('common.search_results_for', 'Search Results for')} "{searchQuery}"
                   </>
                 ) : (
                   'Featured Products'
