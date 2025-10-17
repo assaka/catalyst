@@ -230,31 +230,10 @@ export default function Cart() {
         let debounceTimer;
 
         const handleCartUpdate = (event) => {
-            console.log('🛒 Cart.jsx: Received cartUpdated event', {
-                hasFreshData: !!event.detail?.freshCartData,
-                freshItemsCount: event.detail?.freshCartData?.items?.length || 0,
-                currentCartItemsCount: cartItems.length,
-                loading,
-                hasLoadedInitialData
-            });
-
             // Check if we have fresh cart data from the service
             if (event.detail?.freshCartData && event.detail.freshCartData.items) {
                 // Use fresh data directly instead of API call
                 const freshItems = event.detail.freshCartData.items;
-
-                console.log('🛒 Cart.jsx: Fresh cart items received', {
-                    source: event.detail.source,
-                    action: event.detail.action,
-                    count: freshItems.length,
-                    items: freshItems.map(item => ({
-                        id: item.id,
-                        product_id: item.product_id,
-                        product_id_type: typeof item.product_id,
-                        quantity: item.quantity,
-                        hasProduct: !!item.product
-                    }))
-                });
 
                 // Check if we need to load product details
                 const hasProductDetails = freshItems.length > 0 && cartItems.length > 0 &&
@@ -262,12 +241,6 @@ export default function Cart() {
                         const existingItem = cartItems.find(existing => existing.id === item.id);
                         return existingItem?.product;
                     });
-
-                console.log('🛒 Cart.jsx: Product details check', {
-                    hasProductDetails,
-                    cartItemsLength: cartItems.length,
-                    freshItemsLength: freshItems.length
-                });
 
                 if (hasProductDetails) {
                     // We have existing product data, use it
@@ -280,24 +253,18 @@ export default function Cart() {
                         };
                     }).filter(item => item.product);
 
-                    console.log('🛒 Cart.jsx: Using existing product data', { count: populatedCart.length });
                     setCartItems(populatedCart);
                     return;
                 } else {
                     // No existing product data, trigger full reload to fetch product details
-                    console.log('🛒 Cart.jsx: No product details, triggering reload');
                     if (!loading && hasLoadedInitialData) {
-                        console.log('🛒 Cart.jsx: Triggering external update (debounced)');
                         clearTimeout(debounceTimer);
                         debounceTimer = setTimeout(() => {
                             setExternalCartUpdateTrigger(prev => prev + 1);
                         }, 300);
                     } else if (!hasLoadedInitialData) {
                         // If we haven't loaded initial data yet, load it now
-                        console.log('🛒 Cart.jsx: Loading cart data (initial load not complete)');
                         loadCartData(false);
-                    } else {
-                        console.log('🛒 Cart.jsx: Skipping reload (loading in progress)');
                     }
                     return;
                 }
@@ -308,7 +275,6 @@ export default function Cart() {
                 // Clear existing timer
                 clearTimeout(debounceTimer);
 
-                console.log('🛒 Cart.jsx: No fresh data, triggering debounced reload');
                 // Debounce rapid cart updates
                 debounceTimer = setTimeout(() => {
                     // Trigger reload using state instead of direct function call
@@ -327,7 +293,6 @@ export default function Cart() {
 
 
     const loadCartData = useCallback(async (showLoader = true) => {
-        console.log('🛒 Cart.jsx: loadCartData called', { showLoader });
         if (showLoader) setLoading(true);
 
         try {
@@ -356,14 +321,7 @@ export default function Cart() {
             const [cartResult, taxRulesData] = await Promise.allSettled([
                 // Load cart data
                 (async () => {
-                    const startTime = performance.now();
                     const result = await cartService.getCart();
-                    const loadTime = performance.now() - startTime;
-                    console.log('🛒 Cart.jsx: cartService.getCart completed', {
-                        success: result.success,
-                        itemsCount: result.items?.length || 0,
-                        loadTime: `${loadTime.toFixed(2)}ms`
-                    });
                     return result;
                 })(),
 
@@ -385,10 +343,6 @@ export default function Cart() {
             let cartItems = [];
             if (cartResult.status === 'fulfilled' && cartResult.value.success && cartResult.value.items) {
                 cartItems = cartResult.value.items;
-                console.log('🛒 Cart.jsx: Cart items extracted', {
-                    count: cartItems.length,
-                    items: cartItems.map(item => ({ id: item.id, product_id: item.product_id }))
-                });
             } else if (cartResult.status === 'rejected') {
                 console.error('Cart loading failed:', cartResult.reason);
             }
@@ -399,7 +353,6 @@ export default function Cart() {
             }
 
             if (!cartItems || cartItems.length === 0) {
-                console.log('🛒 Cart.jsx: No cart items, setting empty cart');
                 setCartItems([]);
                 // Clear applied coupon when cart is empty
                 if (appliedCoupon) {
@@ -414,20 +367,8 @@ export default function Cart() {
                 const productId = typeof item.product_id === 'object' ?
                     (item.product_id?.id || item.product_id?.toString() || null) :
                     item.product_id;
-                console.log('🛒 Cart.jsx: Processing cart item', {
-                    cart_item_id: item.id,
-                    product_id: item.product_id,
-                    product_id_type: typeof item.product_id,
-                    extracted_productId: productId
-                });
                 return productId;
             }).filter(id => id !== null))];
-
-            console.log('🛒 Cart.jsx: Product IDs to fetch', {
-                productIds,
-                count: productIds.length,
-                cartItemsCount: cartItems.length
-            });
 
             // High-Performance Batch Product Fetching
             const products = await (async () => {
@@ -451,24 +392,15 @@ export default function Cart() {
                     // Try each strategy until one works
                     for (const [index, strategy] of batchStrategies.entries()) {
                         try {
-                            console.log(`🛒 Cart.jsx: Trying product fetch strategy ${index + 1}`);
                             const results = await strategy();
 
                             if (results && Array.isArray(results) && results.length > 0) {
-                                const fetchTime = performance.now() - startTime;
-                                console.log(`🛒 Cart.jsx: Strategy ${index + 1} succeeded`, {
-                                    productsCount: results.length,
-                                    fetchTime: `${fetchTime.toFixed(2)}ms`
-                                });
                                 return results;
                             }
                         } catch (strategyError) {
-                            console.log(`🛒 Cart.jsx: Strategy ${index + 1} failed:`, strategyError.message);
                             continue;
                         }
                     }
-
-                    console.log('🛒 Cart.jsx: All batch strategies failed, trying individual fetches');
 
                     // Fallback: Optimized parallel individual fetches
                     const productPromises = productIds.map(async (id, index) => {
@@ -486,7 +418,6 @@ export default function Cart() {
 
                     const productResults = await Promise.all(productPromises);
                     const validProducts = productResults.filter(product => product !== null);
-                    console.log('🛒 Cart.jsx: Individual fetches completed', { count: validProducts.length });
                     return validProducts;
                 } catch (error) {
                     console.error('❌ All product fetching strategies failed:', error);
@@ -494,47 +425,14 @@ export default function Cart() {
                 }
             })();
 
-            console.log('🛒 Cart.jsx: Products fetched', {
-                count: products.length,
-                productIds: products.map(p => p.id),
-                products: products.map(p => ({ id: p.id, name: p.name }))
-            });
-
             const populatedCart = cartItems.map(item => {
                 const productDetails = (products || []).find(p => p.id === item.product_id);
-                console.log('🛒 Cart.jsx: Mapping cart item to product', {
-                    cart_item_id: item.id,
-                    cart_item_product_id: item.product_id,
-                    found_product: !!productDetails,
-                    found_product_id: productDetails?.id,
-                    found_product_name: productDetails?.name
-                });
                 return {
                     ...item,
                     product: productDetails,
                     selected_options: item.selected_options || [] // Ensure selected_options is always an array
                 };
-            }).filter(item => {
-                const hasProduct = !!item.product;
-                if (!hasProduct) {
-                    console.warn('🚫 Cart.jsx: Filtering out cart item without product', {
-                        cart_item_id: item.id,
-                        product_id: item.product_id
-                    });
-                }
-                return hasProduct;
-            }); // Ensure product exists
-
-            console.log('🛒 Cart.jsx: Populated cart', {
-                originalCount: cartItems.length,
-                populatedCount: populatedCart.length,
-                filtered: cartItems.length - populatedCart.length,
-                finalItems: populatedCart.map(item => ({
-                    id: item.id,
-                    product_id: item.product_id,
-                    product_name: item.product?.name
-                }))
-            });
+            }).filter(item => item.product); // Ensure product exists
             
             // Apply item processing hooks
             const processedItems = hookSystem.apply('cart.processLoadedItems', populatedCart, localCartContext);

@@ -11,9 +11,6 @@ class CartService {
     if (!sessionId) {
       sessionId = 'guest_' + Math.random().toString(36).substring(2) + Date.now().toString(36);
       localStorage.setItem('guest_session_id', sessionId);
-      console.log('🆔 CartService: Created NEW session ID:', sessionId);
-    } else {
-      console.log('🆔 CartService: Using EXISTING session ID:', sessionId);
     }
 
     return sessionId;
@@ -45,8 +42,6 @@ class CartService {
     const sessionId = this.getSessionId();
     let fullUrl = '';
 
-    console.log('🛒 CartService.getCart: Starting', { sessionId, bustCache });
-
     try {
       const user = await this.getCurrentUser();
 
@@ -64,7 +59,6 @@ class CartService {
       }
 
       fullUrl = `${this.endpoint}?${params.toString()}`;
-      console.log('🛒 CartService.getCart: Fetching', { fullUrl });
 
       let response;
       try {
@@ -108,18 +102,12 @@ class CartService {
         const cartData = result.data.dataValues || result.data;
         const items = Array.isArray(cartData.items) ? cartData.items : [];
 
-        console.log('🛒 CartService.getCart: Success', {
-          itemsCount: items.length,
-          items: items.map(item => ({ id: item.id, product_id: item.product_id, quantity: item.quantity }))
-        });
-
         return {
           success: true,
           cart: cartData,
           items: items
         };
       }
-      console.log('🛒 CartService.getCart: Failed or no data', result);
       return { success: false, cart: null, items: [] };
     } catch (error) {
       console.error('🛒 CartService.getCart error:', {
