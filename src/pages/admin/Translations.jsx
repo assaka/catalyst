@@ -15,6 +15,7 @@ import ProductTabTranslationRow from '../../components/admin/translations/Produc
 import ProductLabelTranslationRow from '../../components/admin/translations/ProductLabelTranslationRow';
 import CookieConsentTranslationRow from '../../components/admin/translations/CookieConsentTranslationRow';
 import CustomOptionTranslationRow from '../../components/admin/translations/CustomOptionTranslationRow';
+import StockLabelTranslationRow from '../../components/admin/translations/StockLabelTranslationRow';
 import { toast } from 'sonner';
 
 export default function Translations() {
@@ -84,6 +85,10 @@ export default function Translations() {
   const [customOptions, setCustomOptions] = useState([]);
   const [loadingCustomOptions, setLoadingCustomOptions] = useState(false);
   const [customOptionSearchQuery, setCustomOptionSearchQuery] = useState('');
+
+  // Stock Labels state
+  const [stockSettings, setStockSettings] = useState(null);
+  const [loadingStockSettings, setLoadingStockSettings] = useState(false);
 
   // Language selection for translations
   const [selectedTranslationLanguages, setSelectedTranslationLanguages] = useState(['en', 'nl']);
@@ -479,6 +484,13 @@ export default function Translations() {
         // Response.data is an array of settings (might be multiple per store or one)
         const settings = Array.isArray(response.data) ? response.data : [];
         console.log('Setting cookie consent:', settings);
+
+        // Log categories for each setting
+        settings.forEach(s => {
+          console.log('Cookie consent setting:', s.id, 'has categories:', s.categories);
+          console.log('Cookie consent translations:', s.translations);
+        });
+
         // Filter out any null/undefined and only keep valid settings
         setCookieConsent(settings.filter(s => s && s.id));
       } else {
@@ -491,6 +503,42 @@ export default function Translations() {
       setCookieConsent([]);
     } finally {
       setLoadingCookieConsent(false);
+    }
+  };
+
+  /**
+   * Load stock settings for translation management
+   */
+  const loadStockSettings = async () => {
+    if (!selectedStore) {
+      setStockSettings(null);
+      return;
+    }
+
+    try {
+      setLoadingStockSettings(true);
+      const storeSettings = selectedStore.settings || {};
+      const stockSettingsData = storeSettings.stock_settings || {};
+
+      // Ensure translations exist with defaults
+      const translations = stockSettingsData.translations || {};
+      if (!translations.en) {
+        translations.en = {
+          in_stock_label: stockSettingsData.in_stock_label || 'In Stock',
+          out_of_stock_label: stockSettingsData.out_of_stock_label || 'Out of Stock',
+          low_stock_label: stockSettingsData.low_stock_label || 'Low stock, {just {quantity} left}'
+        };
+      }
+
+      setStockSettings({
+        ...stockSettingsData,
+        translations
+      });
+    } catch (error) {
+      console.error('Failed to load stock settings:', error);
+      showMessage('Failed to load stock settings', 'error');
+    } finally {
+      setLoadingStockSettings(false);
     }
   };
 
@@ -846,6 +894,7 @@ export default function Translations() {
       loadProductLabels();
       loadCookieConsent();
       loadCustomOptions();
+      loadStockSettings();
     }
   }, [activeTab, selectedStore]);
 
@@ -2091,30 +2140,36 @@ export default function Translations() {
                 )}
               </div>
 
-              {/* Stock Settings Section */}
+              {/* Stock Labels Section */}
               <div className="bg-white border border-gray-200 rounded-lg p-6">
                 <div className="mb-4">
-                  <h3 className="text-lg font-semibold text-gray-900">Stock Settings</h3>
+                  <h3 className="text-lg font-semibold text-gray-900">Stock Labels</h3>
                   <p className="text-sm text-gray-600 mt-1">
-                    Product inventory and stock management
+                    Translatable text labels shown on products based on stock status
                   </p>
                 </div>
 
-                <div className="p-6 bg-blue-50 border border-blue-200 rounded-lg">
-                  <div className="flex items-start gap-3">
-                    <AlertCircle className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" />
-                    <div>
-                      <h4 className="text-sm font-semibold text-blue-900 mb-1">Stock is Managed at Product Level</h4>
-                      <p className="text-sm text-blue-800 mb-3">
-                        Stock settings (quantity, availability, tracking) are configured individually for each product.
-                        These settings are not translatable as they represent inventory data rather than content.
-                      </p>
-                      <p className="text-sm text-blue-800">
-                        To manage stock settings, navigate to the <strong>Products</strong> tab above and edit individual products.
-                      </p>
-                    </div>
+                {loadingStockSettings ? (
+                  <div className="py-8 text-center">
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-2"></div>
+                    <p className="text-sm text-gray-600">Loading stock labels...</p>
                   </div>
-                </div>
+                ) : !stockSettings ? (
+                  <div className="py-6 text-center text-gray-500">
+                    <p className="text-sm">No stock label settings found.</p>
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    <StockLabelTranslationRow
+                      storeId={getSelectedStoreId()}
+                      stockSettings={stockSettings}
+                      selectedLanguages={selectedTranslationLanguages}
+                      onUpdate={(translations) => {
+                        setStockSettings({ ...stockSettings, translations });
+                      }}
+                    />
+                  </div>
+                )}
               </div>
             </>
           )}
