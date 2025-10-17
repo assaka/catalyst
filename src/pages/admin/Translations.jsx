@@ -189,16 +189,18 @@ export default function Translations() {
       });
 
       if (response && response.success) {
-        // Show success message
-        toast.success('Translation saved successfully');
+        // Update labels state using functional form to avoid stale closures
+        setLabels(prev => prev.map(label =>
+          label.key === key ? { ...label, value, category, type } : label
+        ));
 
         // Close edit mode
         setEditingKey(null);
         setEditValue('');
         setSaving(false);
 
-        // DON'T update labels state - let it reload on next tab switch/language change
-        // This prevents triggering any side effects that might cause page reload
+        // Show success message
+        toast.success('Translation saved successfully');
       } else {
         setSaving(false);
       }
