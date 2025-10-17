@@ -5,6 +5,7 @@ import { useTranslation } from '../../contexts/TranslationContext';
 import { useStoreSelection } from '../../contexts/StoreSelectionContext';
 import BulkTranslateDialog from '../../components/admin/BulkTranslateDialog';
 import EntityTranslationCard from '../../components/admin/EntityTranslationCard';
+import MultiEntityTranslateDialog from '../../components/admin/MultiEntityTranslateDialog';
 import { toast } from 'sonner';
 
 export default function Translations() {
@@ -26,6 +27,7 @@ export default function Translations() {
   const [autoTranslate, setAutoTranslate] = useState(false);
   const [message, setMessage] = useState(null);
   const [showBulkTranslateDialog, setShowBulkTranslateDialog] = useState(false);
+  const [showMultiEntityTranslateDialog, setShowMultiEntityTranslateDialog] = useState(false);
 
   // Entity translation states
   const [entityStats, setEntityStats] = useState([]);
@@ -298,6 +300,48 @@ export default function Translations() {
     setSelectedEntityType(entityType);
     setSelectedEntityName(entityName);
     setShowBulkTranslateDialog(true);
+  };
+
+  /**
+   * Handle multi-entity translation
+   */
+  const handleMultiEntityTranslate = async (entityTypes, fromLang, toLang) => {
+    const storeId = getSelectedStoreId();
+    if (!storeId) {
+      toast.error("No store selected");
+      return { success: false, message: "No store selected" };
+    }
+
+    try {
+      const token = localStorage.getItem("token");
+      const response = await fetch('/api/translations/bulk-translate-entities', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          store_id: storeId,
+          entity_types: entityTypes,
+          fromLang,
+          toLang
+        })
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.message || 'Translation failed');
+      }
+
+      // Reload entity stats to update progress
+      await loadEntityStats();
+
+      return data;
+    } catch (error) {
+      console.error('Multi-entity translate error:', error);
+      return { success: false, message: error.message };
+    }
   };
 
   /**
@@ -828,7 +872,16 @@ export default function Translations() {
             <>
               {/* Header with overall stats */}
               <div className="bg-gradient-to-r from-blue-50 to-purple-50 border border-blue-200 rounded-lg p-6">
-                <h2 className="text-xl font-semibold text-gray-900 mb-2">Entity Translation Dashboard</h2>
+                <div className="flex items-center justify-between mb-2">
+                  <h2 className="text-xl font-semibold text-gray-900">Entity Translation Dashboard</h2>
+                  <button
+                    onClick={() => setShowMultiEntityTranslateDialog(true)}
+                    className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 flex items-center gap-2 transition-colors"
+                  >
+                    <Languages className="w-4 h-4" />
+                    Translate Multiple Entities
+                  </button>
+                </div>
                 <p className="text-gray-600 mb-4">
                   Manage translations for all your store content from one central location.
                 </p>
@@ -912,6 +965,15 @@ export default function Translations() {
         entityType={selectedEntityType || "UI labels"}
         entityName={selectedEntityName || "UI Labels"}
         onTranslate={selectedEntityType ? handleEntityTranslate : handleBulkTranslate}
+      />
+
+      {/* Multi-Entity Translate Dialog */}
+      <MultiEntityTranslateDialog
+        open={showMultiEntityTranslateDialog}
+        onOpenChange={setShowMultiEntityTranslateDialog}
+        entityStats={entityStats}
+        onTranslate={handleMultiEntityTranslate}
+        availableLanguages={availableLanguages || []}
       />
     </div>
   );

@@ -713,4 +713,163 @@ router.get('/entity-stats', authMiddleware, async (req, res) => {
   }
 });
 
+// @route   POST /api/translations/bulk-translate-entities
+// @desc    AI translate multiple entity types at once
+// @access  Private
+router.post('/bulk-translate-entities', authMiddleware, async (req, res) => {
+  try {
+    const { store_id, entity_types, fromLang, toLang } = req.body;
+
+    if (!store_id || !entity_types || !Array.isArray(entity_types) || entity_types.length === 0) {
+      return res.status(400).json({
+        success: false,
+        message: 'store_id and entity_types array are required'
+      });
+    }
+
+    if (!fromLang || !toLang) {
+      return res.status(400).json({
+        success: false,
+        message: 'fromLang and toLang are required'
+      });
+    }
+
+    if (fromLang === toLang) {
+      return res.status(400).json({
+        success: false,
+        message: 'Source and target languages cannot be the same'
+      });
+    }
+
+    // Check store access
+    if (req.user.role !== 'admin') {
+      const { checkUserStoreAccess } = require('../utils/storeAccess');
+      const access = await checkUserStoreAccess(req.user.id, store_id);
+
+      if (!access) {
+        return res.status(403).json({
+          success: false,
+          message: 'Access denied'
+        });
+      }
+    }
+
+    const { Op } = require('sequelize');
+    const entityTypeMap = {
+      category: { model: Category, name: 'Categories' },
+      product: { model: Product, name: 'Products' },
+      attribute: { model: Attribute, name: 'Attributes' },
+      cms_page: { model: CmsPage, name: 'CMS Pages' },
+      cms_block: { model: CmsBlock, name: 'CMS Blocks' },
+      product_tab: { model: ProductTab, name: 'Product Tabs' },
+      product_label: { model: ProductLabel, name: 'Product Labels' },
+      cookie_consent: { model: CookieConsentSettings, name: 'Cookie Consent' },
+      attribute_value: { model: AttributeValue, name: 'Attribute Values', special: true }
+    };
+
+    const allResults = {
+      total: 0,
+      translated: 0,
+      skipped: 0,
+      failed: 0,
+      byEntity: {}
+    };
+
+    // Translate each entity type
+    for (const entityType of entity_types) {
+      try {
+        const entityConfig = entityTypeMap[entityType];
+        if (!entityConfig) {
+          allResults.byEntity[entityType] = {
+            success: false,
+            message: `Unknown entity type: ${entityType}`
+          };
+          continue;
+        }
+
+        let entities;
+
+        // Handle AttributeValue specially (no direct store_id)
+        if (entityConfig.special && entityType === 'attribute_value') {
+          const attributes = await Attribute.findAll({
+            where: { store_id },
+            attributes: ['id']
+          });
+          const attributeIds = attributes.map(attr => attr.id);
+          entities = await AttributeValue.findAll({
+            where: { attribute_id: { [Op.in]: attributeIds } }
+          });
+        } else {
+          entities = await entityConfig.model.findAll({
+            where: { store_id }
+          });
+        }
+
+        const results = {
+          total: entities.length,
+          translated: 0,
+          skipped: 0,
+          failed: 0,
+          errors: []
+        };
+
+        // Translate each entity
+        for (const entity of entities) {
+          try {
+            // Check if source translation exists
+            if (!entity.translations || !entity.translations[fromLang]) {
+              results.skipped++;
+              continue;
+            }
+
+            // Check if target translation already exists
+            if (entity.translations[toLang]) {
+              results.skipped++;
+              continue;
+            }
+
+            // Translate the entity
+            await translationService.aiTranslateEntity(entityType, entity.id, fromLang, toLang);
+            results.translated++;
+          } catch (error) {
+            console.error(`Error translating ${entityType} ${entity.id}:`, error);
+            results.failed++;
+            results.errors.push({
+              id: entity.id,
+              error: error.message
+            });
+          }
+        }
+
+        allResults.total += results.total;
+        allResults.translated += results.translated;
+        allResults.skipped += results.skipped;
+        allResults.failed += results.failed;
+        allResults.byEntity[entityType] = {
+          name: entityConfig.name,
+          ...results
+        };
+      } catch (error) {
+        console.error(`Error processing entity type ${entityType}:`, error);
+        allResults.byEntity[entityType] = {
+          success: false,
+          message: error.message
+        };
+      }
+    }
+
+    res.json({
+      success: true,
+      message: `Multi-entity bulk translation completed. Total: ${allResults.total}, Translated: ${allResults.translated}, Skipped: ${allResults.skipped}, Failed: ${allResults.failed}`,
+      data: allResults
+    });
+  } catch (error) {
+    console.error('Bulk translate entities error:', error);
+    res.status(500).json({
+      success: false,
+      message: error.message || 'Server error'
+    });
+  }
+});
+
 module.exports = router;
