@@ -136,7 +136,16 @@ export default function CmsPages() {
     }
   };
 
-  const handleDeletePage = async (pageId) => {
+  const handleDeletePage = async (pageId, isSystem) => {
+    // Prevent deletion of system pages
+    if (isSystem) {
+      setFlashMessage({
+        type: 'error',
+        message: 'Cannot delete system pages. System pages like 404 are critical for site functionality.'
+      });
+      return;
+    }
+
     if (window.confirm("Are you sure you want to delete this CMS page?")) {
       try {
         await CmsPage.delete(pageId);
@@ -207,9 +216,16 @@ export default function CmsPages() {
               <CardHeader>
                 <CardTitle className="flex justify-between items-start">
                   <span>{getPageTitle(page)}</span>
-                  <Badge variant={page.is_active ? "default" : "secondary"}>
-                    {page.is_active ? "Active" : "Inactive"}
-                  </Badge>
+                  <div className="flex gap-2">
+                    {page.is_system && (
+                      <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200">
+                        System
+                      </Badge>
+                    )}
+                    <Badge variant={page.is_active ? "default" : "secondary"}>
+                      {page.is_active ? "Active" : "Inactive"}
+                    </Badge>
+                  </div>
                 </CardTitle>
                 <p className="text-sm text-gray-500">/{page.slug}</p>
               </CardHeader>
@@ -236,7 +252,10 @@ export default function CmsPages() {
                   <Button
                     variant="destructive"
                     size="sm"
-                    onClick={() => handleDeletePage(page.id)}
+                    onClick={() => handleDeletePage(page.id, page.is_system)}
+                    disabled={page.is_system}
+                    title={page.is_system ? "System pages cannot be deleted" : "Delete this page"}
+                    className={page.is_system ? "opacity-50 cursor-not-allowed" : ""}
                   >
                     <Trash2 className="w-4 h-4 mr-1" />
                     Delete

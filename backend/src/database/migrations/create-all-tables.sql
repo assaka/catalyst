@@ -270,6 +270,7 @@ CREATE TABLE IF NOT EXISTS cms_pages (
     slug VARCHAR(255) UNIQUE NOT NULL,
     content TEXT,
     is_active BOOLEAN DEFAULT true,
+    is_system BOOLEAN DEFAULT false,
     meta_title VARCHAR(255),
     meta_description TEXT,
     meta_keywords VARCHAR(255),

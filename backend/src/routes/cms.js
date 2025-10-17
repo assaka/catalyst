@@ -101,13 +101,21 @@ router.put('/:id', async (req, res) => {
 router.delete('/:id', async (req, res) => {
   try {
     const page = await CmsPage.findByPk(req.params.id);
-    
+
     if (!page) return res.status(404).json({ success: false, message: 'Page not found' });
-    
+
+    // Prevent deletion of system pages
+    if (page.is_system) {
+      return res.status(403).json({
+        success: false,
+        message: 'Cannot delete system pages. System pages like 404 are critical for site functionality.'
+      });
+    }
+
     if (req.user.role !== 'admin') {
       const { checkUserStoreAccess } = require('../utils/storeAccess');
       const access = await checkUserStoreAccess(req.user.id, page.store_id);
-      
+
       if (!access) {
         return res.status(403).json({ success: false, message: 'Access denied' });
       }

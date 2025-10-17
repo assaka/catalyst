@@ -315,6 +315,20 @@ export default function CmsPageForm({ page, stores, products, onSubmit, onCancel
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6 p-4">
+      {page?.is_system && (
+        <Alert className="border-blue-200 bg-blue-50">
+          <AlertDescription className="text-blue-900">
+            <div className="flex items-center gap-2">
+              <Badge variant="outline" className="bg-blue-100 text-blue-700 border-blue-300">
+                System Page
+              </Badge>
+              <span className="text-sm">
+                This is a system page (like 404) that is critical for site functionality. It cannot be deleted but can be edited.
+              </span>
+            </div>
+          </AlertDescription>
+        </Alert>
+      )}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <div>
           <Label htmlFor="title">Title *</Label>
