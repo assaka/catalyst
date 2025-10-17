@@ -1007,7 +1007,11 @@ export default function Translations() {
 
       {/* UI Labels Tab */}
       {activeTab === 'ui-labels' && (
-        <div className="space-y-6">
+        <div className="space-y-6" onKeyDown={(e) => {
+          if (e.key === 'Enter' && e.target.tagName !== 'TEXTAREA') {
+            e.preventDefault();
+          }
+        }}>
           {/* Controls */}
           <div className="flex flex-wrap items-center gap-4">
             {/* Language selector */}
@@ -1237,6 +1241,9 @@ export default function Translations() {
                           <textarea
                             value={editValue}
                             onChange={(e) => setEditValue(e.target.value)}
+                            onKeyDown={(e) => {
+                              e.stopPropagation();
+                            }}
                             rows={2}
                             className="w-full px-2 py-1 border border-gray-300 rounded"
                             autoFocus
