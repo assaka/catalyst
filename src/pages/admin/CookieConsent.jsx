@@ -229,16 +229,28 @@ export default function CookieConsent() {
       // Load cookie consent settings
       const cookieSettings = await retryApiCall(() => CookieConsentSettings.filter({ store_id: selectedStore.id }));
 
+      console.log('API Response - cookie settings:', cookieSettings);
+
       if (cookieSettings && cookieSettings.length > 0) {
         // Map backend fields to frontend fields
-        const mappedSettings = mapBackendToFrontend(cookieSettings[0]);
-        console.log('Loaded cookie consent settings:', {
+        const backendData = cookieSettings[0];
+        console.log('Backend data before mapping:', {
+          id: backendData.id,
+          store_id: backendData.store_id,
+          banner_text: backendData.banner_text?.substring(0, 50)
+        });
+
+        const mappedSettings = mapBackendToFrontend(backendData);
+        console.log('Mapped settings after mapBackendToFrontend:', {
           id: mappedSettings.id,
+          store_id: mappedSettings.store_id,
           hasTranslations: !!mappedSettings.translations,
-          translationKeys: Object.keys(mappedSettings.translations || {})
+          translationKeys: Object.keys(mappedSettings.translations || {}),
+          banner_message: mappedSettings.banner_message?.substring(0, 50)
         });
         setSettings(mappedSettings);
       } else {
+        console.log('No existing settings found, creating defaults');
         // Create default settings with valid store_id - use the same structure as mapBackendToFrontend
         const defaultSettings = mapBackendToFrontend({
           store_id: selectedStore.id,
@@ -308,23 +320,42 @@ export default function CookieConsent() {
         result = await retryApiCall(() => CookieConsentSettings.create(backendSettings));
       }
 
-      console.log('Cookie consent save response:', result);
+      console.log('Cookie consent save response (raw):', JSON.stringify(result, null, 2));
 
       // Handle array response from API client
       let normalizedResult = Array.isArray(result) ? result[0] : result;
+      console.log('After array normalization:', {
+        wasArray: Array.isArray(result),
+        normalizedResult: normalizedResult,
+        hasId: !!normalizedResult?.id,
+        hasSuccessData: !!(normalizedResult?.success && normalizedResult?.data)
+      });
 
       // If the result has a success and data property (wrapped API response), extract the data
       if (normalizedResult && normalizedResult.success && normalizedResult.data) {
+        console.log('Unwrapping success/data structure');
         normalizedResult = normalizedResult.data;
       }
+
+      console.log('Final normalized result:', {
+        id: normalizedResult?.id,
+        store_id: normalizedResult?.store_id,
+        hasAllFields: !!normalizedResult
+      });
 
       // The API client returns [settingsObject] for single objects
       // So normalizedResult should be the actual settings object from the database
       if (normalizedResult && normalizedResult.id) {
+        console.log('✅ ID found, mapping to frontend format');
         // This is the settings object from database - map it to frontend format
         const updatedSettings = mapBackendToFrontend(normalizedResult);
+        console.log('Updated settings after mapping:', {
+          id: updatedSettings.id,
+          store_id: updatedSettings.store_id
+        });
         setSettings(updatedSettings);
       } else {
+        console.error('❌ No ID in normalized result, falling back to reload');
         // Refresh the store context to get updated settings
         await refreshStores();
         await loadData(); // Fallback to reload if response structure is unexpected
