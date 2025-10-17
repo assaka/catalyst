@@ -9,24 +9,26 @@ import api from '@/utils/api';
 /**
  * Accordion row for managing product label translations
  */
-export default function ProductLabelTranslationRow({ label, onUpdate }) {
+export default function ProductLabelTranslationRow({ label, onUpdate, selectedLanguages }) {
   const { availableLanguages } = useTranslation();
   const [isExpanded, setIsExpanded] = useState(false);
   const [translations, setTranslations] = useState(label.translations || {});
   const [saving, setSaving] = useState(false);
   const [translating, setTranslating] = useState({});
 
+  const filteredLanguages = availableLanguages.filter(lang => selectedLanguages?.includes(lang.code));
+
   // Get translation status
   const getTranslationStatus = () => {
-    const translatedCount = availableLanguages.filter(lang => {
+    const translatedCount = filteredLanguages.filter(lang => {
       const translation = translations[lang.code];
       return translation && translation.text && translation.text.trim().length > 0;
     }).length;
 
     return {
       count: translatedCount,
-      total: availableLanguages.length,
-      isComplete: translatedCount === availableLanguages.length
+      total: filteredLanguages.length,
+      isComplete: translatedCount === filteredLanguages.length
     };
   };
 
@@ -141,7 +143,7 @@ export default function ProductLabelTranslationRow({ label, onUpdate }) {
               <p className="text-sm font-medium text-gray-700">Label Text</p>
             </div>
             <div className="p-4 space-y-3">
-              {availableLanguages.map((lang) => {
+              {filteredLanguages.map((lang) => {
                 const isRTL = lang.is_rtl || false;
                 const value = translations[lang.code]?.text || '';
                 const translatingKey = `text-${lang.code}`;

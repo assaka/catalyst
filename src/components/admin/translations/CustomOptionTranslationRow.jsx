@@ -9,24 +9,26 @@ import api from '@/utils/api';
 /**
  * Accordion row for managing custom option rule translations
  */
-export default function CustomOptionTranslationRow({ rule, onUpdate }) {
+export default function CustomOptionTranslationRow({ rule, onUpdate, selectedLanguages }) {
   const { availableLanguages } = useTranslation();
   const [isExpanded, setIsExpanded] = useState(false);
   const [translations, setTranslations] = useState(rule.translations || {});
   const [saving, setSaving] = useState(false);
   const [translating, setTranslating] = useState({});
 
+  const filteredLanguages = availableLanguages.filter(lang => selectedLanguages?.includes(lang.code));
+
   // Get translation status
   const getTranslationStatus = () => {
-    const translatedCount = availableLanguages.filter(lang => {
+    const translatedCount = filteredLanguages.filter(lang => {
       const translation = translations[lang.code];
       return translation && translation.display_label && translation.display_label.trim().length > 0;
     }).length;
 
     return {
       count: translatedCount,
-      total: availableLanguages.length,
-      isComplete: translatedCount === availableLanguages.length
+      total: filteredLanguages.length,
+      isComplete: translatedCount === filteredLanguages.length
     };
   };
 
@@ -133,7 +135,7 @@ export default function CustomOptionTranslationRow({ rule, onUpdate }) {
               <p className="text-sm font-medium text-gray-700">Display Label</p>
             </div>
             <div className="p-4 space-y-3">
-              {availableLanguages.map((lang) => {
+              {filteredLanguages.map((lang) => {
                 const isRTL = lang.is_rtl || false;
                 const value = translations[lang.code]?.display_label || '';
                 const translatingKey = `display_label-${lang.code}`;
