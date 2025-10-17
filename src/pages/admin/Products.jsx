@@ -574,6 +574,11 @@ export default function Products() {
 
       await Product.update(productId, { translations: updatedTranslations });
 
+      // Update local state instead of reloading
+      setProducts(prevProducts => prevProducts.map(p =>
+        p.id === productId ? { ...p, translations: updatedTranslations } : p
+      ));
+
       // Clear editing state for this product
       setEditingTranslation(prev => {
         const newState = { ...prev };
@@ -582,7 +587,6 @@ export default function Products() {
       });
 
       toast.success('Translations saved successfully');
-      await loadData();
     } catch (error) {
       console.error('Error saving translations:', error);
       toast.error('Failed to save translations');

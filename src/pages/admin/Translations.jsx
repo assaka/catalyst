@@ -753,23 +753,11 @@ export default function Translations() {
     }
   }, [activeTab, selectedStore]);
 
-  // Load product tabs when switching to product-tabs tab
+  // Load store settings (product tabs, labels, cookie consent) when switching to store-settings tab
   useEffect(() => {
-    if (activeTab === 'product-tabs' && selectedStore) {
+    if (activeTab === 'store-settings' && selectedStore) {
       loadProductTabs();
-    }
-  }, [activeTab, selectedStore]);
-
-  // Load product labels when switching to product-labels tab
-  useEffect(() => {
-    if (activeTab === 'product-labels' && selectedStore) {
       loadProductLabels();
-    }
-  }, [activeTab, selectedStore]);
-
-  // Load cookie consent when switching to cookie-consent tab
-  useEffect(() => {
-    if (activeTab === 'cookie-consent' && selectedStore) {
       loadCookieConsent();
     }
   }, [activeTab, selectedStore]);
@@ -875,40 +863,16 @@ export default function Translations() {
             CMS Content
           </button>
           <button
-            onClick={() => setActiveTab('product-tabs')}
+            onClick={() => setActiveTab('store-settings')}
             className={`
               px-4 py-2 font-medium border-b-2 transition-colors whitespace-nowrap
-              ${activeTab === 'product-tabs'
+              ${activeTab === 'store-settings'
                 ? 'border-blue-600 text-blue-600'
                 : 'border-transparent text-gray-600 hover:text-gray-900'
               }
             `}
           >
-            Product Tabs
-          </button>
-          <button
-            onClick={() => setActiveTab('product-labels')}
-            className={`
-              px-4 py-2 font-medium border-b-2 transition-colors whitespace-nowrap
-              ${activeTab === 'product-labels'
-                ? 'border-blue-600 text-blue-600'
-                : 'border-transparent text-gray-600 hover:text-gray-900'
-              }
-            `}
-          >
-            Product Labels
-          </button>
-          <button
-            onClick={() => setActiveTab('cookie-consent')}
-            className={`
-              px-4 py-2 font-medium border-b-2 transition-colors whitespace-nowrap
-              ${activeTab === 'cookie-consent'
-                ? 'border-blue-600 text-blue-600'
-                : 'border-transparent text-gray-600 hover:text-gray-900'
-              }
-            `}
-          >
-            Cookie Consent
+            Store Settings
           </button>
         </div>
       </div>
@@ -1702,8 +1666,8 @@ export default function Translations() {
         </div>
       )}
 
-      {/* Product Tabs Tab */}
-      {activeTab === 'product-tabs' && (
+      {/* Store Settings Tab (Product Tabs, Labels, Cookie Consent) */}
+      {activeTab === 'store-settings' && (
         <div className="space-y-6">
           {!selectedStore ? (
             <div className="bg-white border border-gray-200 rounded-lg p-8 text-center text-gray-500">
@@ -1712,22 +1676,31 @@ export default function Translations() {
                 No Store Selected
               </h3>
               <p>
-                Please select a store to manage product tab translations.
+                Please select a store to manage store settings translations.
               </p>
             </div>
           ) : (
             <>
+              {/* Header */}
+              <div className="bg-white border border-gray-200 rounded-lg p-6">
+                <h2 className="text-xl font-semibold text-gray-900 mb-2">Store Settings Translations</h2>
+                <p className="text-sm text-gray-600">
+                  Manage translations for product tabs, labels, and cookie consent
+                </p>
+              </div>
+
+              {/* Product Tabs Section */}
               <div className="bg-white border border-gray-200 rounded-lg p-6">
                 <div className="flex items-center justify-between mb-4">
                   <div>
-                    <h2 className="text-xl font-semibold text-gray-900">Product Tab Translations</h2>
+                    <h3 className="text-lg font-semibold text-gray-900">Product Tabs</h3>
                     <p className="text-sm text-gray-600 mt-1">
-                      Manage translations for product tabs across languages
+                      Custom tabs shown on product detail pages
                     </p>
                   </div>
                 </div>
 
-                <div className="relative">
+                <div className="relative mb-4">
                   <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
                   <input
                     type="text"
@@ -1737,76 +1710,52 @@ export default function Translations() {
                     className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                   />
                 </div>
+
+                {loadingProductTabs ? (
+                  <div className="py-8 text-center">
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-2"></div>
+                    <p className="text-sm text-gray-600">Loading product tabs...</p>
+                  </div>
+                ) : productTabs.length === 0 ? (
+                  <div className="py-6 text-center text-gray-500">
+                    <p className="text-sm">No product tabs found. Start by adding tabs to your store.</p>
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    {productTabs
+                      .filter(tab => {
+                        if (!productTabSearchQuery.trim()) return true;
+                        const query = productTabSearchQuery.toLowerCase();
+                        const title = (tab.translations?.en?.title || tab.title || '').toLowerCase();
+                        return title.includes(query);
+                      })
+                      .map((tab) => (
+                        <ProductTabTranslationRow
+                          key={tab.id}
+                          tab={tab}
+                          onUpdate={(tabId, translations) => {
+                            setProductTabs(productTabs.map(t =>
+                              t.id === tabId ? { ...t, translations } : t
+                            ));
+                          }}
+                        />
+                      ))}
+                  </div>
+                )}
               </div>
 
-              {loadingProductTabs ? (
-                <div className="bg-white border border-gray-200 rounded-lg p-12 text-center">
-                  <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-                  <p className="text-gray-600">Loading product tabs...</p>
-                </div>
-              ) : productTabs.length === 0 ? (
-                <div className="bg-white border border-gray-200 rounded-lg p-8 text-center text-gray-500">
-                  <Globe className="w-12 h-12 mx-auto mb-4 text-gray-400" />
-                  <h3 className="text-lg font-semibold text-gray-700 mb-2">
-                    No Product Tabs Found
-                  </h3>
-                  <p>
-                    Start by adding product tabs to your store.
-                  </p>
-                </div>
-              ) : (
-                <div className="space-y-3">
-                  {productTabs
-                    .filter(tab => {
-                      if (!productTabSearchQuery.trim()) return true;
-                      const query = productTabSearchQuery.toLowerCase();
-                      const title = (tab.translations?.en?.title || tab.title || '').toLowerCase();
-                      return title.includes(query);
-                    })
-                    .map((tab) => (
-                      <ProductTabTranslationRow
-                        key={tab.id}
-                        tab={tab}
-                        onUpdate={(tabId, translations) => {
-                          setProductTabs(productTabs.map(t =>
-                            t.id === tabId ? { ...t, translations } : t
-                          ));
-                        }}
-                      />
-                    ))}
-                </div>
-              )}
-            </>
-          )}
-        </div>
-      )}
-
-      {/* Product Labels Tab */}
-      {activeTab === 'product-labels' && (
-        <div className="space-y-6">
-          {!selectedStore ? (
-            <div className="bg-white border border-gray-200 rounded-lg p-8 text-center text-gray-500">
-              <Globe className="w-12 h-12 mx-auto mb-4 text-gray-400" />
-              <h3 className="text-lg font-semibold text-gray-700 mb-2">
-                No Store Selected
-              </h3>
-              <p>
-                Please select a store to manage product label translations.
-              </p>
-            </div>
-          ) : (
-            <>
+              {/* Product Labels Section */}
               <div className="bg-white border border-gray-200 rounded-lg p-6">
                 <div className="flex items-center justify-between mb-4">
                   <div>
-                    <h2 className="text-xl font-semibold text-gray-900">Product Label Translations</h2>
+                    <h3 className="text-lg font-semibold text-gray-900">Product Labels</h3>
                     <p className="text-sm text-gray-600 mt-1">
-                      Manage translations for product labels across languages
+                      Labels like "New", "Sale", "Featured" shown on products
                     </p>
                   </div>
                 </div>
 
-                <div className="relative">
+                <div className="relative mb-4">
                   <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
                   <input
                     type="text"
@@ -1816,102 +1765,74 @@ export default function Translations() {
                     className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                   />
                 </div>
+
+                {loadingProductLabels ? (
+                  <div className="py-8 text-center">
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-2"></div>
+                    <p className="text-sm text-gray-600">Loading product labels...</p>
+                  </div>
+                ) : productLabels.length === 0 ? (
+                  <div className="py-6 text-center text-gray-500">
+                    <p className="text-sm">No product labels found. Start by adding labels to your store.</p>
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    {productLabels
+                      .filter(label => {
+                        if (!productLabelSearchQuery.trim()) return true;
+                        const query = productLabelSearchQuery.toLowerCase();
+                        const text = (label.translations?.en?.text || label.text || '').toLowerCase();
+                        return text.includes(query);
+                      })
+                      .map((label) => (
+                        <ProductLabelTranslationRow
+                          key={label.id}
+                          label={label}
+                          onUpdate={(labelId, translations) => {
+                            setProductLabels(productLabels.map(l =>
+                              l.id === labelId ? { ...l, translations } : l
+                            ));
+                          }}
+                        />
+                      ))}
+                  </div>
+                )}
               </div>
 
-              {loadingProductLabels ? (
-                <div className="bg-white border border-gray-200 rounded-lg p-12 text-center">
-                  <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-                  <p className="text-gray-600">Loading product labels...</p>
-                </div>
-              ) : productLabels.length === 0 ? (
-                <div className="bg-white border border-gray-200 rounded-lg p-8 text-center text-gray-500">
-                  <Globe className="w-12 h-12 mx-auto mb-4 text-gray-400" />
-                  <h3 className="text-lg font-semibold text-gray-700 mb-2">
-                    No Product Labels Found
-                  </h3>
-                  <p>
-                    Start by adding product labels to your store.
+              {/* Cookie Consent Section */}
+              <div className="bg-white border border-gray-200 rounded-lg p-6">
+                <div className="mb-4">
+                  <h3 className="text-lg font-semibold text-gray-900">Cookie Consent</h3>
+                  <p className="text-sm text-gray-600 mt-1">
+                    Configure text shown in cookie consent banners
                   </p>
                 </div>
-              ) : (
-                <div className="space-y-3">
-                  {productLabels
-                    .filter(label => {
-                      if (!productLabelSearchQuery.trim()) return true;
-                      const query = productLabelSearchQuery.toLowerCase();
-                      const text = (label.translations?.en?.text || label.text || '').toLowerCase();
-                      return text.includes(query);
-                    })
-                    .map((label) => (
-                      <ProductLabelTranslationRow
-                        key={label.id}
-                        label={label}
-                        onUpdate={(labelId, translations) => {
-                          setProductLabels(productLabels.map(l =>
-                            l.id === labelId ? { ...l, translations } : l
+
+                {loadingCookieConsent ? (
+                  <div className="py-8 text-center">
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-2"></div>
+                    <p className="text-sm text-gray-600">Loading cookie consent...</p>
+                  </div>
+                ) : cookieConsent.length === 0 ? (
+                  <div className="py-6 text-center text-gray-500">
+                    <p className="text-sm">No cookie consent settings found. Configure settings for your store.</p>
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    {cookieConsent.map((settings) => (
+                      <CookieConsentTranslationRow
+                        key={settings.id}
+                        settings={settings}
+                        onUpdate={(settingsId, translations) => {
+                          setCookieConsent(cookieConsent.map(s =>
+                            s.id === settingsId ? { ...s, translations } : s
                           ));
                         }}
                       />
                     ))}
-                </div>
-              )}
-            </>
-          )}
-        </div>
-      )}
-
-      {/* Cookie Consent Tab */}
-      {activeTab === 'cookie-consent' && (
-        <div className="space-y-6">
-          {!selectedStore ? (
-            <div className="bg-white border border-gray-200 rounded-lg p-8 text-center text-gray-500">
-              <Globe className="w-12 h-12 mx-auto mb-4 text-gray-400" />
-              <h3 className="text-lg font-semibold text-gray-700 mb-2">
-                No Store Selected
-              </h3>
-              <p>
-                Please select a store to manage cookie consent translations.
-              </p>
-            </div>
-          ) : (
-            <>
-              <div className="bg-white border border-gray-200 rounded-lg p-6">
-                <h2 className="text-xl font-semibold text-gray-900 mb-2">Cookie Consent Translations</h2>
-                <p className="text-sm text-gray-600">
-                  Manage translations for cookie consent banners across languages
-                </p>
+                  </div>
+                )}
               </div>
-
-              {loadingCookieConsent ? (
-                <div className="bg-white border border-gray-200 rounded-lg p-12 text-center">
-                  <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-                  <p className="text-gray-600">Loading cookie consent...</p>
-                </div>
-              ) : cookieConsent.length === 0 ? (
-                <div className="bg-white border border-gray-200 rounded-lg p-8 text-center text-gray-500">
-                  <Globe className="w-12 h-12 mx-auto mb-4 text-gray-400" />
-                  <h3 className="text-lg font-semibold text-gray-700 mb-2">
-                    No Cookie Consent Settings Found
-                  </h3>
-                  <p>
-                    Start by configuring cookie consent settings for your store.
-                  </p>
-                </div>
-              ) : (
-                <div className="space-y-3">
-                  {cookieConsent.map((settings) => (
-                    <CookieConsentTranslationRow
-                      key={settings.id}
-                      settings={settings}
-                      onUpdate={(settingsId, translations) => {
-                        setCookieConsent(cookieConsent.map(s =>
-                          s.id === settingsId ? { ...s, translations } : s
-                        ));
-                      }}
-                    />
-                  ))}
-                </div>
-              )}
             </>
           )}
         </div>
