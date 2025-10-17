@@ -24,7 +24,8 @@ import {
   Square,
   Settings,
   Tag,
-  FolderOpen
+  FolderOpen,
+  Languages
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -53,7 +54,10 @@ import {
 
 import ProductForm from "@/components/admin/products/ProductForm";
 import ProductFilters from "@/components/admin/products/ProductFilters";
+import BulkTranslateDialog from "@/components/admin/BulkTranslateDialog";
 import { getCategoryName as getTranslatedCategoryName, getProductName, getProductShortDescription } from "@/utils/translationUtils";
+import { toast } from "sonner";
+import { useTranslation } from "@/contexts/TranslationContext.jsx";
 
 const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 
@@ -94,11 +98,14 @@ export default function Products() {
     category: "all",
     priceRange: "all"
   });
-  
+
   // Bulk action states
   const [selectedProducts, setSelectedProducts] = useState(new Set());
   const [showBulkActions, setShowBulkActions] = useState(false);
   const [bulkActionInProgress, setBulkActionInProgress] = useState(false);
+
+  // Translation dialog state
+  const [showBulkTranslateDialog, setShowBulkTranslateDialog] = useState(false);
 
   useEffect(() => {
     document.title = "Products - Admin Dashboard";
@@ -448,7 +455,7 @@ export default function Products() {
 
   const handleBulkAttributeSetChange = async (attributeSetId) => {
     if (selectedProducts.size === 0) return;
-    
+
     try {
       const updatePromises = Array.from(selectedProducts).map(id => {
         const product = paginatedProducts.find(p => p.id === id);
@@ -460,6 +467,44 @@ export default function Products() {
       await loadData();
     } catch (error) {
       console.error("Error updating product attribute sets:", error);
+    }
+  };
+
+  const handleBulkTranslate = async (fromLang, toLang) => {
+    const storeId = getSelectedStoreId();
+    if (!storeId) {
+      toast.error("No store selected");
+      return { success: false, message: "No store selected" };
+    }
+
+    try {
+      const token = localStorage.getItem("token");
+      const response = await fetch('/api/products/bulk-translate', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          store_id: storeId,
+          fromLang,
+          toLang
+        })
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.message || 'Translation failed');
+      }
+
+      // Reload products to get updated translations
+      await loadData();
+
+      return data;
+    } catch (error) {
+      console.error('Bulk translate error:', error);
+      return { success: false, message: error.message };
     }
   };
 
@@ -702,6 +747,15 @@ export default function Products() {
             <p className="text-gray-600 mt-1">Manage your product catalog</p>
           </div>
           <div className="flex items-center gap-2">
+            <Button
+              onClick={() => setShowBulkTranslateDialog(true)}
+              variant="outline"
+              className="border-blue-600 text-blue-600 hover:bg-blue-50"
+              disabled={!selectedStore || products.length === 0}
+            >
+              <Languages className="w-4 h-4 mr-2" />
+              Bulk AI Translate
+            </Button>
             <Button
             onClick={() => {
               setSelectedProduct(null);
@@ -1082,6 +1136,14 @@ export default function Products() {
             />
           </DialogContent>
         </Dialog>
+
+        <BulkTranslateDialog
+          open={showBulkTranslateDialog}
+          onOpenChange={setShowBulkTranslateDialog}
+          entityType="products"
+          entityName="Products"
+          onTranslate={handleBulkTranslate}
+        />
       </div>
     </div>
   );

@@ -2,6 +2,7 @@ const express = require('express');
 const { body, validationResult } = require('express-validator');
 const { Product, Store } = require('../models');
 const { Op } = require('sequelize');
+const translationService = require('../services/translation-service');
 const router = express.Router();
 
 // Import the new store auth middleware
@@ -319,6 +320,172 @@ router.delete('/:id', authMiddleware, authorize(['admin', 'store_owner']), async
     res.status(500).json({
       success: false,
       message: 'Server error'
+    });
+  }
+});
+
+// @route   POST /api/products/:id/translate
+// @desc    AI translate a single product to target language
+// @access  Private
+router.post('/:id/translate', authMiddleware, authorize(['admin', 'store_owner']), [
+  body('fromLang').notEmpty().withMessage('Source language is required'),
+  body('toLang').notEmpty().withMessage('Target language is required')
+], async (req, res) => {
+  try {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({
+        success: false,
+        errors: errors.array()
+      });
+    }
+
+    const { fromLang, toLang } = req.body;
+    const product = await Product.findByPk(req.params.id);
+
+    if (!product) {
+      return res.status(404).json({
+        success: false,
+        message: 'Product not found'
+      });
+    }
+
+    // Check store access
+    if (req.user.role !== 'admin') {
+      const { checkUserStoreAccess } = require('../utils/storeAccess');
+      const access = await checkUserStoreAccess(req.user.id, product.store_id);
+
+      if (!access) {
+        return res.status(403).json({
+          success: false,
+          message: 'Access denied'
+        });
+      }
+    }
+
+    // Check if source translation exists
+    if (!product.translations || !product.translations[fromLang]) {
+      return res.status(400).json({
+        success: false,
+        message: `No ${fromLang} translation found for this product`
+      });
+    }
+
+    // Translate the product
+    const updatedProduct = await translationService.aiTranslateEntity('product', req.params.id, fromLang, toLang);
+
+    res.json({
+      success: true,
+      message: `Product translated to ${toLang} successfully`,
+      data: updatedProduct
+    });
+  } catch (error) {
+    console.error('Translate product error:', error);
+    res.status(500).json({
+      success: false,
+      message: error.message || 'Server error'
+    });
+  }
+});
+
+// @route   POST /api/products/bulk-translate
+// @desc    AI translate all products in a store to target language
+// @access  Private
+router.post('/bulk-translate', authMiddleware, authorize(['admin', 'store_owner']), [
+  body('store_id').isUUID().withMessage('Store ID must be a valid UUID'),
+  body('fromLang').notEmpty().withMessage('Source language is required'),
+  body('toLang').notEmpty().withMessage('Target language is required')
+], async (req, res) => {
+  try {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({
+        success: false,
+        errors: errors.array()
+      });
+    }
+
+    const { store_id, fromLang, toLang } = req.body;
+
+    // Check store access
+    if (req.user.role !== 'admin') {
+      const { checkUserStoreAccess } = require('../utils/storeAccess');
+      const access = await checkUserStoreAccess(req.user.id, store_id);
+
+      if (!access) {
+        return res.status(403).json({
+          success: false,
+          message: 'Access denied'
+        });
+      }
+    }
+
+    // Get all products for this store
+    const products = await Product.findAll({
+      where: { store_id },
+      order: [['created_at', 'DESC']]
+    });
+
+    if (products.length === 0) {
+      return res.json({
+        success: true,
+        message: 'No products found to translate',
+        data: {
+          total: 0,
+          translated: 0,
+          skipped: 0,
+          failed: 0
+        }
+      });
+    }
+
+    // Translate each product
+    const results = {
+      total: products.length,
+      translated: 0,
+      skipped: 0,
+      failed: 0,
+      errors: []
+    };
+
+    for (const product of products) {
+      try {
+        // Check if source translation exists
+        if (!product.translations || !product.translations[fromLang]) {
+          results.skipped++;
+          continue;
+        }
+
+        // Check if target translation already exists
+        if (product.translations[toLang]) {
+          results.skipped++;
+          continue;
+        }
+
+        // Translate the product
+        await translationService.aiTranslateEntity('product', product.id, fromLang, toLang);
+        results.translated++;
+      } catch (error) {
+        console.error(`Error translating product ${product.id}:`, error);
+        results.failed++;
+        results.errors.push({
+          productId: product.id,
+          productName: product.translations?.[fromLang]?.name || product.name,
+          error: error.message
+        });
+      }
+    }
+
+    res.json({
+      success: true,
+      message: `Bulk translation completed. Translated: ${results.translated}, Skipped: ${results.skipped}, Failed: ${results.failed}`,
+      data: results
+    });
+  } catch (error) {
+    console.error('Bulk translate products error:', error);
+    res.status(500).json({
+      success: false,
+      message: error.message || 'Server error'
     });
   }
 });

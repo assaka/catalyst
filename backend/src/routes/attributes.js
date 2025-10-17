@@ -1,7 +1,12 @@
 const express = require('express');
+const { body, validationResult } = require('express-validator');
 const { Attribute, AttributeValue, Store, AttributeSet } = require('../models');
 const { Op } = require('sequelize');
+const translationService = require('../services/translation-service');
 const router = express.Router();
+
+// Import auth middleware
+const { authMiddleware, authorize } = require('../middleware/auth');
 
 // Basic CRUD operations for attributes
 router.get('/', async (req, res) => {
@@ -358,6 +363,174 @@ router.delete('/:attributeId/values/:valueId', async (req, res) => {
   } catch (error) {
     console.error('❌ Delete attribute value error:', error);
     res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// @route   POST /api/attributes/:id/translate
+// @desc    AI translate a single attribute to target language
+// @access  Private
+router.post('/:id/translate', authMiddleware, authorize(['admin', 'store_owner']), [
+  body('fromLang').notEmpty().withMessage('Source language is required'),
+  body('toLang').notEmpty().withMessage('Target language is required')
+], async (req, res) => {
+  try {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({
+        success: false,
+        errors: errors.array()
+      });
+    }
+
+    const { fromLang, toLang } = req.body;
+    const attribute = await Attribute.findByPk(req.params.id, {
+      include: [{ model: Store, attributes: ['id', 'name', 'user_id'] }]
+    });
+
+    if (!attribute) {
+      return res.status(404).json({
+        success: false,
+        message: 'Attribute not found'
+      });
+    }
+
+    // Check store access
+    if (req.user.role !== 'admin') {
+      const { checkUserStoreAccess } = require('../utils/storeAccess');
+      const access = await checkUserStoreAccess(req.user.id, attribute.Store.id);
+
+      if (!access) {
+        return res.status(403).json({
+          success: false,
+          message: 'Access denied'
+        });
+      }
+    }
+
+    // Check if source translation exists
+    if (!attribute.translations || !attribute.translations[fromLang]) {
+      return res.status(400).json({
+        success: false,
+        message: `No ${fromLang} translation found for this attribute`
+      });
+    }
+
+    // Translate the attribute
+    const updatedAttribute = await translationService.aiTranslateEntity('attribute', req.params.id, fromLang, toLang);
+
+    res.json({
+      success: true,
+      message: `Attribute translated to ${toLang} successfully`,
+      data: updatedAttribute
+    });
+  } catch (error) {
+    console.error('Translate attribute error:', error);
+    res.status(500).json({
+      success: false,
+      message: error.message || 'Server error'
+    });
+  }
+});
+
+// @route   POST /api/attributes/bulk-translate
+// @desc    AI translate all attributes in a store to target language
+// @access  Private
+router.post('/bulk-translate', authMiddleware, authorize(['admin', 'store_owner']), [
+  body('store_id').isUUID().withMessage('Store ID must be a valid UUID'),
+  body('fromLang').notEmpty().withMessage('Source language is required'),
+  body('toLang').notEmpty().withMessage('Target language is required')
+], async (req, res) => {
+  try {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({
+        success: false,
+        errors: errors.array()
+      });
+    }
+
+    const { store_id, fromLang, toLang } = req.body;
+
+    // Check store access
+    if (req.user.role !== 'admin') {
+      const { checkUserStoreAccess } = require('../utils/storeAccess');
+      const access = await checkUserStoreAccess(req.user.id, store_id);
+
+      if (!access) {
+        return res.status(403).json({
+          success: false,
+          message: 'Access denied'
+        });
+      }
+    }
+
+    // Get all attributes for this store
+    const attributes = await Attribute.findAll({
+      where: { store_id },
+      order: [['sort_order', 'ASC'], ['name', 'ASC']]
+    });
+
+    if (attributes.length === 0) {
+      return res.json({
+        success: true,
+        message: 'No attributes found to translate',
+        data: {
+          total: 0,
+          translated: 0,
+          skipped: 0,
+          failed: 0
+        }
+      });
+    }
+
+    // Translate each attribute
+    const results = {
+      total: attributes.length,
+      translated: 0,
+      skipped: 0,
+      failed: 0,
+      errors: []
+    };
+
+    for (const attribute of attributes) {
+      try {
+        // Check if source translation exists
+        if (!attribute.translations || !attribute.translations[fromLang]) {
+          results.skipped++;
+          continue;
+        }
+
+        // Check if target translation already exists
+        if (attribute.translations[toLang]) {
+          results.skipped++;
+          continue;
+        }
+
+        // Translate the attribute
+        await translationService.aiTranslateEntity('attribute', attribute.id, fromLang, toLang);
+        results.translated++;
+      } catch (error) {
+        console.error(`Error translating attribute ${attribute.id}:`, error);
+        results.failed++;
+        results.errors.push({
+          attributeId: attribute.id,
+          attributeName: attribute.translations?.[fromLang]?.name || attribute.name,
+          error: error.message
+        });
+      }
+    }
+
+    res.json({
+      success: true,
+      message: `Bulk translation completed. Translated: ${results.translated}, Skipped: ${results.skipped}, Failed: ${results.failed}`,
+      data: results
+    });
+  } catch (error) {
+    console.error('Bulk translate attributes error:', error);
+    res.status(500).json({
+      success: false,
+      message: error.message || 'Server error'
+    });
   }
 });
 

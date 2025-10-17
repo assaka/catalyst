@@ -16,7 +16,8 @@ import {
   ChevronDown,
   X,
   List,
-  Tag
+  Tag,
+  Languages
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -45,6 +46,9 @@ import {
 
 import AttributeForm from "@/components/admin/attributes/AttributeForm";
 import AttributeSetForm from "@/components/admin/attributes/AttributeSetForm";
+import BulkTranslateDialog from "@/components/admin/BulkTranslateDialog";
+import { toast } from "sonner";
+import { useTranslation } from "@/contexts/TranslationContext.jsx";
 
 export default function Attributes() {
   const { selectedStore, getSelectedStoreId } = useStoreSelection();
@@ -64,6 +68,9 @@ export default function Attributes() {
   const [attributesTotalPages, setAttributesTotalPages] = useState(0);
   const [setsTotalItems, setSetsTotalItems] = useState(0);
   const [setsTotalPages, setSetsTotalPages] = useState(0);
+
+  // Translation dialog state
+  const [showBulkTranslateDialog, setShowBulkTranslateDialog] = useState(false);
 
   useEffect(() => {
     if (selectedStore) {
@@ -225,6 +232,44 @@ export default function Attributes() {
       } catch (error) {
         console.error("Error deleting attribute set:", error);
       }
+    }
+  };
+
+  const handleBulkTranslate = async (fromLang, toLang) => {
+    const storeId = getSelectedStoreId();
+    if (!storeId) {
+      toast.error("No store selected");
+      return { success: false, message: "No store selected" };
+    }
+
+    try {
+      const token = localStorage.getItem("token");
+      const response = await fetch('/api/attributes/bulk-translate', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          store_id: storeId,
+          fromLang,
+          toLang
+        })
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.message || 'Translation failed');
+      }
+
+      // Reload attributes to get updated translations
+      await loadData();
+
+      return data;
+    } catch (error) {
+      console.error('Bulk translate error:', error);
+      return { success: false, message: error.message };
     }
   };
 
@@ -485,16 +530,27 @@ export default function Attributes() {
                   </p>
                 )}
               </div>
-              <Button
-                onClick={() => {
-                  setEditingAttribute(null); // Reset for new creation
-                  setShowForm(true); // Open attribute form
-                }}
-                className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 material-ripple material-elevation-1"
-              >
-                <Plus className="w-4 h-4 mr-2" />
-                Add Attribute
-              </Button>
+              <div className="flex items-center gap-2">
+                <Button
+                  onClick={() => setShowBulkTranslateDialog(true)}
+                  variant="outline"
+                  className="border-blue-600 text-blue-600 hover:bg-blue-50"
+                  disabled={!selectedStore || attributes.length === 0}
+                >
+                  <Languages className="w-4 h-4 mr-2" />
+                  Bulk AI Translate
+                </Button>
+                <Button
+                  onClick={() => {
+                    setEditingAttribute(null); // Reset for new creation
+                    setShowForm(true); // Open attribute form
+                  }}
+                  className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 material-ripple material-elevation-1"
+                >
+                  <Plus className="w-4 h-4 mr-2" />
+                  Add Attribute
+                </Button>
+              </div>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -774,6 +830,14 @@ export default function Attributes() {
             />
           </DialogContent>
         </Dialog>
+
+        <BulkTranslateDialog
+          open={showBulkTranslateDialog}
+          onOpenChange={setShowBulkTranslateDialog}
+          entityType="attributes"
+          entityName="Attributes"
+          onTranslate={handleBulkTranslate}
+        />
       </div>
     </div>
   );
