@@ -29,14 +29,19 @@ class BaseEntity {
       } else {
         // Use regular authenticated endpoint
         response = await apiClient.get(url);
-        
+
         // Check if response has pagination structure
         if (response && response.success && response.data) {
-          // Handle paginated response structure
-          const entityKey = Object.keys(response.data).find(key => 
+          // If data is directly an array, return it (e.g., { success: true, data: [...] })
+          if (Array.isArray(response.data)) {
+            return response.data;
+          }
+
+          // Handle paginated response structure (e.g., { success: true, data: { products: [...], pagination: {...} } })
+          const entityKey = Object.keys(response.data).find(key =>
             key !== 'pagination' && Array.isArray(response.data[key])
           );
-          
+
           if (entityKey && response.data[entityKey]) {
             // Return the entity array along with pagination info
             const result = response.data[entityKey];
@@ -44,7 +49,7 @@ class BaseEntity {
             return result;
           }
         }
-        
+
         // Fallback to treating response as array
         return Array.isArray(response) ? response : [];
       }
