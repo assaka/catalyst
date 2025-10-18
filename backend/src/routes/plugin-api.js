@@ -220,6 +220,43 @@ router.get('/registry/:pluginId', async (req, res) => {
     // Parse JSON fields
     const manifest = typeof plugin[0].manifest === 'string' ? JSON.parse(plugin[0].manifest) : plugin[0].manifest;
     const config = typeof plugin[0].config === 'string' ? JSON.parse(plugin[0].config) : plugin[0].config;
+    const sourceCode = typeof plugin[0].source_code === 'string' ? JSON.parse(plugin[0].source_code) : plugin[0].source_code;
+
+    // Extract files from manifest or source_code
+    const generatedFiles = manifest?.generatedFiles || sourceCode || [];
+
+    // Organize files by type for DeveloperPluginEditor
+    const controllers = [];
+    const models = [];
+    const components = [];
+
+    generatedFiles.forEach(file => {
+      const fileName = file.name || '';
+      const code = file.code || '';
+
+      // Handle both "models/File.js" and "src/models/File.js" patterns
+      const normalizedPath = fileName.replace(/^src\//, '');
+
+      if (normalizedPath.includes('controllers/') || normalizedPath.endsWith('Controller.js')) {
+        controllers.push({
+          name: normalizedPath.split('/').pop().replace('.js', ''),
+          code,
+          path: fileName
+        });
+      } else if (normalizedPath.includes('models/') || normalizedPath.includes('Model.js')) {
+        models.push({
+          name: normalizedPath.split('/').pop().replace('.js', ''),
+          code,
+          path: fileName
+        });
+      } else if (normalizedPath.includes('components/') || normalizedPath.match(/\.(jsx|tsx)$/)) {
+        components.push({
+          name: normalizedPath.split('/').pop().replace(/\.(jsx?|tsx?)$/, ''),
+          code,
+          path: fileName
+        });
+      }
+    });
 
     res.json({
       success: true,
@@ -227,11 +264,100 @@ router.get('/registry/:pluginId', async (req, res) => {
         ...plugin[0],
         generated_by_ai: manifest?.generated_by_ai || plugin[0].type === 'ai-generated',
         hooks: config?.hooks || [],
-        events: config?.events || []
+        events: config?.events || [],
+        controllers,
+        models,
+        components,
+        manifest,
+        readme: manifest?.readme || '# Plugin Documentation'
       }
     });
   } catch (error) {
     console.error('Failed to get plugin details:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
+/**
+ * PUT /api/plugins/registry/:id/files
+ * Update a specific file in a plugin
+ */
+router.put('/registry/:id/files', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { path, content } = req.body;
+
+    // Get current plugin
+    const plugin = await sequelize.query(`
+      SELECT * FROM plugin_registry WHERE id = $1
+    `, {
+      bind: [id],
+      type: sequelize.QueryTypes.SELECT
+    });
+
+    if (!plugin[0]) {
+      return res.status(404).json({
+        success: false,
+        error: 'Plugin not found'
+      });
+    }
+
+    // Parse source_code
+    const sourceCode = typeof plugin[0].source_code === 'string'
+      ? JSON.parse(plugin[0].source_code)
+      : plugin[0].source_code || [];
+
+    // Normalize paths for comparison
+    const normalizePath = (p) => p.replace(/^\/+/, '').replace(/^src\//, '');
+    const normalizedRequestPath = normalizePath(path);
+
+    // Find and update the file
+    let fileFound = false;
+    const updatedFiles = sourceCode.map(file => {
+      const normalizedFilePath = normalizePath(file.name);
+      if (normalizedFilePath === normalizedRequestPath) {
+        fileFound = true;
+        return { ...file, code: content };
+      }
+      return file;
+    });
+
+    // If file not found, add it
+    if (!fileFound) {
+      updatedFiles.push({
+        name: normalizedRequestPath,
+        code: content
+      });
+    }
+
+    // Also update manifest.generatedFiles if it exists
+    const manifest = typeof plugin[0].manifest === 'string'
+      ? JSON.parse(plugin[0].manifest)
+      : plugin[0].manifest || {};
+
+    if (manifest.generatedFiles) {
+      manifest.generatedFiles = updatedFiles;
+    }
+
+    // Update database
+    await sequelize.query(`
+      UPDATE plugin_registry
+      SET source_code = $1, manifest = $2, updated_at = NOW()
+      WHERE id = $3
+    `, {
+      bind: [JSON.stringify(updatedFiles), JSON.stringify(manifest), id],
+      type: sequelize.QueryTypes.UPDATE
+    });
+
+    res.json({
+      success: true,
+      message: 'File updated successfully'
+    });
+  } catch (error) {
+    console.error('Failed to update file:', error);
     res.status(500).json({
       success: false,
       error: error.message
