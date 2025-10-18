@@ -52,6 +52,7 @@ const wishlistRoutes = require('./routes/wishlist');
 const languageRoutes = require('./routes/languages');
 const translationRoutes = require('./routes/translations');
 const aiStudioRoutes = require('./routes/ai-studio');
+const aiPluginAssistantRoutes = require('./routes/ai-plugin-assistant');
 const customerActivityRoutes = require('./routes/customer-activity');
 const storePluginRoutes = require('./routes/store-plugins');
 const seoSettingsRoutes = require('./routes/seo-settings');
@@ -1528,6 +1529,7 @@ app.use('/api/wishlist', wishlistRoutes);
 app.use('/api/languages', languageRoutes);
 app.use('/api/translations', translationRoutes);
 app.use('/api/ai', aiStudioRoutes);
+app.use('/api/ai', aiPluginAssistantRoutes); // AI Plugin Assistant for no-code and developer modes
 app.use('/api/customer-activity', customerActivityRoutes);
 app.use('/api/stores/:store_id/plugins', storePluginRoutes);
 app.use('/api/seo-settings', seoSettingsRoutes);
