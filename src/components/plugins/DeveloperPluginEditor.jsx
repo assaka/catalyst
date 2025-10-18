@@ -173,9 +173,17 @@ const DeveloperPluginEditor = ({ plugin, onSave, onClose, onSwitchMode, initialC
   };
 
   const handleSave = async () => {
-    if (!selectedFile) return;
+    if (!selectedFile) {
+      addTerminalOutput('✗ No file selected', 'error');
+      setShowTerminal(true);
+      return;
+    }
 
     try {
+      // Show terminal to display progress
+      setShowTerminal(true);
+      addTerminalOutput(`⏳ Saving ${selectedFile.name}...`, 'info');
+
       // Save file changes to backend
       await apiClient.put(`plugins/registry/${plugin.id}/files`, {
         path: selectedFile.path,
@@ -183,10 +191,13 @@ const DeveloperPluginEditor = ({ plugin, onSave, onClose, onSwitchMode, initialC
       });
 
       setOriginalContent(fileContent);
-      addTerminalOutput(`✓ Saved ${selectedFile.name}`, 'success');
+      addTerminalOutput(`✓ Saved ${selectedFile.name} successfully`, 'success');
+
+      // Reload file tree to reflect changes
+      await loadPluginFiles();
     } catch (error) {
       console.error('Error saving file:', error);
-      addTerminalOutput(`✗ Error saving ${selectedFile.name}: ${error.message}`, 'error');
+      addTerminalOutput(`✗ Error saving ${selectedFile.name}: ${error.response?.data?.error || error.message}`, 'error');
     }
   };
 

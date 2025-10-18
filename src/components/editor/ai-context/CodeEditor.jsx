@@ -1086,14 +1086,6 @@ const CodeEditor = ({
                       }}
                       theme="vs-dark"
                     />
-                    {/* Revert Gutter for Split View */}
-                    {!collapseUnchanged && (
-                      <RevertGutter
-                        changedBlocks={getChangedBlocks()}
-                        onRevertLine={handleRevertLine}
-                        onRevertBlock={handleRevertBlock}
-                      />
-                    )}
                   </div>
                 </div>
               </div>
@@ -1224,14 +1216,18 @@ const CodeEditor = ({
                     {fullFileDisplayLines.map((line, index) => (
                       <div key={index} className="group relative">
                         <DiffLine line={line} index={index} />
-                        {/* Revert button for modified lines */}
-                        {line.type === 'addition' && line.originalContent && (
+                        {/* Revert button for changed lines (additions and modifications) */}
+                        {(line.type === 'addition' || (line.type === 'context' && line.originalContent !== line.modifiedContent)) && line.newLineNumber && (
                           <Button
                             variant="ghost"
                             size="sm"
                             className="absolute right-2 top-1 opacity-0 group-hover:opacity-100 transition-opacity"
-                            onClick={() => handleRevertLine(index)}
-                            title="Revert this line"
+                            onClick={() => {
+                              const lineIndexInFile = line.newLineNumber - 1;
+                              const originalLine = line.originalContent || '';
+                              handleLineRevert(lineIndexInFile, originalLine);
+                            }}
+                            title="Revert to original"
                           >
                             <RotateCcw className="w-3 h-3" />
                           </Button>
