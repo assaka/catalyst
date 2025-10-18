@@ -10,11 +10,11 @@ class AdminNavigationService {
   async getNavigationForTenant(tenantId) {
     try {
       // 1. Get tenant's installed & active plugins
-      const [installedPlugins] = await sequelize.query(`
+      const installedPlugins = await sequelize.query(`
         SELECT marketplace_plugin_id
         FROM plugins
         WHERE status = 'active' AND marketplace_plugin_id IS NOT NULL
-      `);
+      `, { type: sequelize.QueryTypes.SELECT });
 
       const pluginIds = installedPlugins.map(p => p.marketplace_plugin_id);
 
@@ -29,7 +29,7 @@ class AdminNavigationService {
            WHERE is_core = true AND is_visible = true
            ORDER BY order_position ASC`;
 
-      const [navItems] = await sequelize.query(
+      const navItems = await sequelize.query(
         navQuery,
         pluginIds.length > 0 ? {
           bind: [pluginIds],
@@ -38,7 +38,7 @@ class AdminNavigationService {
       );
 
       // 3. Get tenant's customizations
-      const [tenantConfig] = await sequelize.query(`
+      const tenantConfig = await sequelize.query(`
         SELECT * FROM admin_navigation_config
       `, { type: sequelize.QueryTypes.SELECT });
 
