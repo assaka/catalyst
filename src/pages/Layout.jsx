@@ -148,18 +148,7 @@ export default function Layout({ children, currentPageName }) {
     "Store": false,
     "Advanced": false, // Added new group for Advanced features
   });
-  const [dynamicNavItems, setDynamicNavItems] = useState({
-    main: [], // Dashboard and other main items
-    catalog: [],
-    sales: [],
-    content: [],
-    marketing: [],
-    seo: [],
-    import_export: [],
-    store: [],
-    advanced: [],
-    uncategorized: []
-  });
+  const [dynamicNavItems, setDynamicNavItems] = useState([]);
 
 
   // Add this block to handle the RobotsTxt page
@@ -260,78 +249,43 @@ export default function Layout({ children, currentPageName }) {
       );
 
       if (response.success && response.navigation && Array.isArray(response.navigation)) {
-        console.log('✅ Loaded plugin navigation items:', response.navigation.length);
+        console.log('✅ Loaded navigation items:', response.navigation.length);
 
-        // Convert API navigation format to Layout navigation format
-        // Organize by category for merging into existing groups
-        const categorizedItems = {
-          main: [], // Dashboard and other main items
-          catalog: [],
-          sales: [],
-          content: [],
-          marketing: [],
-          seo: [],
-          import_export: [],
-          store: [],
-          advanced: [],
-          uncategorized: [] // Items without a matching category go here
-        };
-
-        response.navigation
-          // Load ALL items (core + plugins) from database
-          .forEach(item => {
-            const navItem = {
-              name: item.label,
-              path: item.route?.replace('/admin/', ''), // Remove /admin/ prefix
-              icon: getIconComponent(item.icon),
-              badge: item.badge,
-              isPremium: false,
-              isPlugin: !item.is_core // Core items are not plugins
-            };
-
-            // Map category to navigation group
-            const categoryMap = {
-              'main': 'main',
-              'catalog': 'catalog',
-              'sales': 'sales',
-              'content': 'content',
-              'marketing': 'marketing',
-              'seo': 'seo',
-              'import_export': 'import_export',
-              'store': 'store',
-              'advanced': 'advanced',
-              'plugins': 'uncategorized' // "plugins" category goes to standalone group
-            };
-
-            const targetCategory = categoryMap[item.category?.toLowerCase()] || 'uncategorized';
-            categorizedItems[targetCategory].push(navItem);
-          });
-
-        setDynamicNavItems(categorizedItems);
-      }
-
-      // Also load from plugin system (backward compatibility)
-      const pluginNavItems = window.__PLUGIN_NAV_ITEMS__ || [];
-      if (pluginNavItems.length > 0) {
-        setDynamicNavItems(prev => ({
-          ...prev,
-          uncategorized: [...(prev.uncategorized || []), ...pluginNavItems]
+        // Build hierarchical structure using parent_key
+        const allItems = response.navigation.map(item => ({
+          key: item.key,
+          name: item.label,
+          path: item.route?.replace('/admin/', ''), // Remove /admin/ prefix
+          icon: getIconComponent(item.icon),
+          badge: item.badge,
+          isPremium: false,
+          isPlugin: !item.is_core,
+          parent_key: item.parent_key,
+          order_position: item.order_position || 0
         }));
+
+        // Find all main categories (parent_key is null and no route - these are headers)
+        const mainCategories = allItems
+          .filter(item => !item.parent_key && !item.path)
+          .sort((a, b) => a.order_position - b.order_position);
+
+        // Build navigation groups with children
+        const navigationGroups = mainCategories.map(category => {
+          const children = allItems
+            .filter(item => item.parent_key === category.key)
+            .sort((a, b) => a.order_position - b.order_position);
+
+          return {
+            name: category.name,
+            key: category.key,
+            items: children
+          };
+        }).filter(group => group.items.length > 0);
+
+        setDynamicNavItems(navigationGroups);
       }
     } catch (error) {
       console.error('Error loading dynamic navigation:', error);
-      // Don't fail silently - try to load from localStorage as fallback
-      try {
-        const storeSettings = localStorage.getItem('store_settings');
-        if (storeSettings) {
-          const settings = JSON.parse(storeSettings);
-          if (settings.customNavItems) {
-            setDynamicNavItems({ uncategorized: settings.customNavItems });
-          }
-        }
-      } catch (fallbackError) {
-        console.warn('Fallback navigation loading also failed');
-      }
     }
   };
 
@@ -459,49 +413,8 @@ export default function Layout({ children, currentPageName }) {
     );
   }
 
-  // Build navigation groups from database (Plugin Architecture Phase 1)
-  const navigationGroups = [
-    {
-      name: "Catalog",
-      items: dynamicNavItems?.catalog || []
-    },
-    {
-      name: "Sales",
-      items: dynamicNavItems?.sales || []
-    },
-    {
-      name: "Content",
-      items: dynamicNavItems?.content || []
-    },
-    {
-      name: "Marketing",
-      items: dynamicNavItems?.marketing || []
-    },
-    {
-      name: "SEO",
-      items: dynamicNavItems?.seo || []
-    },
-    {
-      name: "Import & Export",
-      items: dynamicNavItems?.import_export || []
-    },
-    {
-      name: "Store",
-      items: dynamicNavItems?.store || []
-    },
-    {
-      name: "Advanced",
-      items: dynamicNavItems?.advanced || []
-    }
-  ].filter(group => group.items.length > 0); // Only show groups with items
-
-  // Add standalone "Plugins" group for uncategorized plugin items (Phase 1: Plugin Architecture)
-  if (dynamicNavItems?.uncategorized && dynamicNavItems.uncategorized.length > 0) {
-    navigationGroups.push({
-      name: "Plugins",
-      items: dynamicNavItems.uncategorized
-    });
-  }
+  // Navigation groups are now loaded dynamically from database using parent_key hierarchy
+  const navigationGroups = dynamicNavItems || [];
 
   const toggleGroup = (groupName) => {
     setOpenGroups(prev => ({ ...prev, [groupName]: !prev[groupName] }));
