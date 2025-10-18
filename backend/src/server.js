@@ -101,6 +101,7 @@ const slotConfigurationRoutes = require('./routes/slotConfigurations');
 const dynamicPluginRoutes = require('./routes/dynamic-plugins');
 const adminNavigationRoutes = require('./routes/admin-navigation');
 const pluginApiRoutes = require('./routes/plugin-api');
+const pluginAIRoutes = require('./routes/pluginAIRoutes');
 
 const app = express();
 
@@ -1530,6 +1531,7 @@ app.use('/api/languages', languageRoutes);
 app.use('/api/translations', translationRoutes);
 app.use('/api/ai', aiStudioRoutes);
 app.use('/api/ai', aiPluginAssistantRoutes); // AI Plugin Assistant for no-code and developer modes
+app.use('/api/plugins/ai', pluginAIRoutes); // Claude API integration for plugin generation
 app.use('/api/customer-activity', customerActivityRoutes);
 app.use('/api/stores/:store_id/plugins', storePluginRoutes);
 app.use('/api/seo-settings', seoSettingsRoutes);

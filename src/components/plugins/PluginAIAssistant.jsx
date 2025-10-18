@@ -74,30 +74,50 @@ const PluginAIAssistant = ({ mode = 'nocode', onCodeGenerated, onConfigGenerated
     setIsTyping(true);
 
     try {
-      // Send to AI backend
-      const response = await apiClient.post('ai/plugin-assistant', {
+      // Send to Claude API for plugin generation
+      const response = await apiClient.post('plugins/ai/generate', {
         mode,
-        messages: [...messages, userMessage],
+        prompt: input,
         context: currentContext
       });
 
+      // Handle response based on mode
+      let aiMessageContent = '';
+      let generatedCode = null;
+      let generatedFiles = null;
+      let generatedConfig = null;
+
+      if (mode === 'nocode-ai') {
+        aiMessageContent = response.explanation || '✅ Plugin generated successfully!';
+        generatedCode = response.generatedCode || response.code;
+        generatedFiles = response.generatedFiles || response.files;
+      } else if (mode === 'guided') {
+        aiMessageContent = response.suggestions?.join('\n') || 'Configuration updated!';
+        generatedConfig = response.config;
+        generatedFiles = response.generatedFiles;
+      } else if (mode === 'developer') {
+        aiMessageContent = response.explanation || 'Code generated!';
+        generatedCode = response.code;
+        generatedFiles = response.generatedFiles;
+      }
+
       const aiMessage = {
         role: 'assistant',
-        content: response.message,
-        generatedCode: response.code,
-        generatedConfig: response.config,
-        files: response.files,
+        content: aiMessageContent,
+        generatedCode,
+        generatedConfig,
+        files: generatedFiles,
         timestamp: new Date()
       };
 
       setMessages(prev => [...prev, aiMessage]);
 
       // Notify parent components of generated code/config
-      if (response.code && onCodeGenerated) {
-        onCodeGenerated(response.code, response.files);
+      if (generatedCode && onCodeGenerated) {
+        onCodeGenerated(generatedCode, generatedFiles);
       }
-      if (response.config && onConfigGenerated) {
-        onConfigGenerated(response.config);
+      if (generatedConfig && onConfigGenerated) {
+        onConfigGenerated(generatedConfig);
       }
 
     } catch (error) {

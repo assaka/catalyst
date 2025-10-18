@@ -21,6 +21,7 @@
     "db:seed": "node seed-sample-data.js"
   },
   "dependencies": {
+    "@anthropic-ai/sdk": "^0.67.0",
     "@babel/parser": "^7.28.3",
     "@babel/traverse": "^7.28.3",
     "@google-cloud/storage": "^7.5.0",
