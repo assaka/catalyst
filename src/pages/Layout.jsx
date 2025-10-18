@@ -113,11 +113,26 @@ const retryApiCall = async (apiCall, maxRetries = 5, baseDelay = 3000) => {
   }
 };
 
+// Icon mapping for dynamic navigation items (Plugin Architecture Phase 1)
+const iconMap = {
+  Home, LayoutDashboard, ShoppingBag, Tag, ClipboardList, CreditCard, Ticket,
+  FileText, Megaphone, SettingsIcon, Store: StoreIcon, Palette, Globe, DollarSign,
+  KeyRound, FileCode, Box, Users, BarChart2, BookOpen, Book, Mail, Shield,
+  LifeBuoy, Plus, Package, Puzzle, ChevronRight, Building2, Crown, Receipt,
+  Truck, Calendar, Upload, Camera, Search, BarChart3, Bot, Wallet, RefreshCw,
+  Link: LinkIcon, Share2, Activity, FlaskConical, Image, Database, Cloud
+};
+
+function getIconComponent(iconName) {
+  if (!iconName) return Puzzle; // Default to Puzzle icon
+  return iconMap[iconName] || Puzzle;
+}
+
 export default function Layout({ children, currentPageName }) {
   const navigate = useNavigate();
   const location = useLocation();
   const { selectedStore } = useStoreSelection();
-  
+
   const [user, setUser] = useState(null);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
@@ -228,34 +243,47 @@ export default function Layout({ children, currentPageName }) {
 
   const loadDynamicNavigation = async () => {
     try {
-      // Load dynamic navigation items from database
-      // This could come from a settings table, plugin configurations, or custom menu items
-      
-      // Example 1: Load from store settings
-      const storeSettings = localStorage.getItem('store_settings');
-      if (storeSettings) {
-        const settings = JSON.parse(storeSettings);
-        if (settings.customNavItems) {
-          setDynamicNavItems(settings.customNavItems);
-        }
+      // Load dynamic navigation from Plugin Architecture API (Phase 1 integration)
+      const response = await retryApiCall(() =>
+        apiClient.get('/admin/navigation')
+      );
+
+      if (response.success && response.navigation && Array.isArray(response.navigation)) {
+        console.log('✅ Loaded plugin navigation items:', response.navigation.length);
+
+        // Convert API navigation format to Layout navigation format
+        const convertedItems = response.navigation
+          .filter(item => !item.is_core) // Only show plugin-added items (core items are hardcoded for Phase 1)
+          .map(item => ({
+            name: item.label,
+            path: item.route?.replace('/admin/', ''), // Remove /admin/ prefix for createAdminUrl
+            icon: getIconComponent(item.icon), // Convert icon name to component
+            badge: item.badge,
+            isPremium: false
+          }));
+
+        setDynamicNavItems(convertedItems);
       }
 
-      // Example 2: Load from API (uncomment when API endpoint is ready)
-      // const response = await retryApiCall(() => 
-      //   apiClient.get('/api/admin/navigation-items')
-      // );
-      // if (response.data && Array.isArray(response.data)) {
-      //   setDynamicNavItems(response.data);
-      // }
-
-      // Example 3: Load from plugin system
-      // Plugins can register their own navigation items
+      // Also load from plugin system (backward compatibility)
       const pluginNavItems = window.__PLUGIN_NAV_ITEMS__ || [];
       if (pluginNavItems.length > 0) {
         setDynamicNavItems(prev => [...prev, ...pluginNavItems]);
       }
     } catch (error) {
       console.error('Error loading dynamic navigation:', error);
+      // Don't fail silently - try to load from localStorage as fallback
+      try {
+        const storeSettings = localStorage.getItem('store_settings');
+        if (storeSettings) {
+          const settings = JSON.parse(storeSettings);
+          if (settings.customNavItems) {
+            setDynamicNavItems(settings.customNavItems);
+          }
+        }
+      } catch (fallbackError) {
+        console.warn('Fallback navigation loading also failed');
+      }
     }
   };
 
@@ -470,6 +498,14 @@ export default function Layout({ children, currentPageName }) {
       ]
     }
   ];
+
+  // Add dynamic navigation items from plugins (Phase 1: Plugin Architecture)
+  if (dynamicNavItems && dynamicNavItems.length > 0) {
+    navigationGroups.push({
+      name: "Plugins",
+      items: dynamicNavItems
+    });
+  }
 
   const toggleGroup = (groupName) => {
     setOpenGroups(prev => ({ ...prev, [groupName]: !prev[groupName] }));
