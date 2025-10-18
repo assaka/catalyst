@@ -149,6 +149,7 @@ export default function Layout({ children, currentPageName }) {
     "Advanced": false, // Added new group for Advanced features
   });
   const [dynamicNavItems, setDynamicNavItems] = useState({
+    main: [], // Dashboard and other main items
     catalog: [],
     sales: [],
     content: [],
@@ -264,6 +265,7 @@ export default function Layout({ children, currentPageName }) {
         // Convert API navigation format to Layout navigation format
         // Organize by category for merging into existing groups
         const categorizedItems = {
+          main: [], // Dashboard and other main items
           catalog: [],
           sales: [],
           content: [],
@@ -276,7 +278,7 @@ export default function Layout({ children, currentPageName }) {
         };
 
         response.navigation
-          .filter(item => !item.is_core) // Only show plugin-added items
+          // Load ALL items (core + plugins) from database
           .forEach(item => {
             const navItem = {
               name: item.label,
@@ -284,11 +286,12 @@ export default function Layout({ children, currentPageName }) {
               icon: getIconComponent(item.icon),
               badge: item.badge,
               isPremium: false,
-              isPlugin: true // Mark as plugin item
+              isPlugin: !item.is_core // Core items are not plugins
             };
 
             // Map category to navigation group
             const categoryMap = {
+              'main': 'main',
               'catalog': 'catalog',
               'sales': 'sales',
               'content': 'content',
@@ -456,101 +459,41 @@ export default function Layout({ children, currentPageName }) {
     );
   }
 
+  // Build navigation groups from database (Plugin Architecture Phase 1)
   const navigationGroups = [
     {
       name: "Catalog",
-      items: [
-        { name: "Categories", path: "CATEGORIES", icon: Tag },
-        { name: "Products", path: "PRODUCTS", icon: Package },
-        { name: "Attributes", path: "ATTRIBUTES", icon: SettingsIcon },
-        { name: "Custom Options", path: "CUSTOM_OPTION_RULES", icon: Plus },
-        { name: "Product Tabs", path: "PRODUCT_TABS", icon: Package },
-        { name: "Product Labels", path: "PRODUCT_LABELS", icon: Tag },
-        { name: "Stock Settings", path: "STOCK_SETTINGS", icon: BarChart3 },
-        ...(dynamicNavItems?.catalog || []) // Plugin items for Catalog
-      ]
+      items: dynamicNavItems?.catalog || []
     },
     {
       name: "Sales",
-      items: [
-        { name: "Orders", path: "ORDERS", icon: Receipt },
-        { name: "Customers", path: "CUSTOMERS", icon: Users },
-        { name: "Tax", path: "TAX", icon: Receipt },
-        { name: "Shipping Methods", path: "SHIPPING_METHODS", icon: Truck },
-        { name: "Payment Methods", path: "PAYMENT_METHODS", icon: CreditCard },
-        { name: "Coupons", path: "COUPONS", icon: Tag },
-        { name: "Delivery Settings", path: "DELIVERY_SETTINGS", icon: Calendar },
-        ...(dynamicNavItems?.sales || []) // Plugin items for Sales
-      ]
+      items: dynamicNavItems?.sales || []
     },
     {
       name: "Content",
-      items: [
-        { name: "CMS Blocks", path: "CMS_BLOCKS", icon: FileText },
-        { name: "CMS Pages", path: "CMS_PAGES", icon: FileText },
-        { name: "File Library", path: "file-library", icon: Camera },
-        ...(dynamicNavItems?.content || []) // Plugin items for Content
-      ]
+      items: dynamicNavItems?.content || []
     },
     {
       name: "Marketing",
-      items: [
-        { name: "Cookie Consent", path: "COOKIE_CONSENT", icon: Shield },
-        { name: "Analytics", path: "ANALYTICS", icon: BarChart3 },
-        { name: "HeatMaps", path: "HEATMAPS", icon: Activity, isPremium: true },
-        { name: "A/B Testing", path: "ABTESTING", icon: FlaskConical, isPremium: true },
-        { name: "Customer Activity", path: "CUSTOMER_ACTIVITY", icon: BarChart3 },
-        ...(dynamicNavItems?.marketing || []) // Plugin items for Marketing
-      ]
+      items: dynamicNavItems?.marketing || []
     },
     {
       name: "SEO",
-      items: [
-        { name: "Settings", path: "seo-tools/settings", icon: SettingsIcon },
-        { name: "Templates", path: "seo-tools/templates", icon: FileText },
-        { name: "Redirects", path: "seo-tools/redirects", icon: RefreshCw },
-        { name: "Canonical", path: "seo-tools/canonical", icon: LinkIcon },
-        { name: "Hreflang", path: "seo-tools/hreflang", icon: Globe },
-        { name: "Robots", path: "seo-tools/robots", icon: Bot },
-        { name: "Social & Schema", path: "seo-tools/social", icon: Share2 },
-        { name: "Report", path: "seo-tools/report", icon: BarChart3 },
-        ...(dynamicNavItems?.seo || []) // Plugin items for SEO
-      ]
+      items: dynamicNavItems?.seo || []
     },
     {
       name: "Import & Export",
-      items: [
-        { name: "Akeneo Connector", path: "akeneo-integration", icon: RefreshCw, isPremium: true },
-        { name: "Marketplace Export", path: "MARKETPLACE_EXPORT", icon: Upload },
-        { name: "Ecommerce", path: "ecommerce-integrations", icon: ShoppingBag },
-        { name: "CRM", path: "crm-integrations", icon: Users },
-        ...(dynamicNavItems?.import_export || []) // Plugin items for Import & Export
-      ]
+      items: dynamicNavItems?.import_export || []
     },
     {
       name: "Store",
-      items: [
-        { name: "Settings", path: "SETTINGS", icon: SettingsIcon },
-        { name: "Theme & Layout", path: "THEME_LAYOUT", icon: Palette },
-        { name: "Translations", path: "Translations", icon: Globe },
-        { name: "Media Storage", path: "media-storage", icon: Image },
-        { name: "Database", path: "database-integrations", icon: Database },
-        { name: "Render Integration", path: "render-integration", icon: Cloud },
-        ...(user?.account_type === 'agency' || user?.role === 'admin' || user?.role === 'store_owner' ? [
-          { name: "Stores", path: "STORES", icon: Building2 },
-        ] : []),
-        ...(dynamicNavItems?.store || []) // Plugin items for Store
-      ]
+      items: dynamicNavItems?.store || []
     },
     {
       name: "Advanced",
-      items: [
-        { name: "System Monitoring", path: "monitoring-dashboard", icon: Activity },
-        { name: "Scheduled", path: "scheduled-jobs", icon: Calendar },
-        ...(dynamicNavItems?.advanced || []) // Plugin items for Advanced
-      ]
+      items: dynamicNavItems?.advanced || []
     }
-  ];
+  ].filter(group => group.items.length > 0); // Only show groups with items
 
   // Add standalone "Plugins" group for uncategorized plugin items (Phase 1: Plugin Architecture)
   if (dynamicNavItems?.uncategorized && dynamicNavItems.uncategorized.length > 0) {
