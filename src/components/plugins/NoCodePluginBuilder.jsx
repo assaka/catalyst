@@ -32,7 +32,6 @@ import {
   Sparkles,
   Code2
 } from 'lucide-react';
-import { Badge } from "@/components/ui/badge";
 import PluginAIAssistant from './PluginAIAssistant';
 
 const NoCodePluginBuilder = ({ onSave, onCancel, onSwitchMode, initialContext }) => {
