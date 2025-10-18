@@ -12,6 +12,7 @@ import {
   FolderTree,
   FileText,
   Code,
+  Code2,
   Save,
   Play,
   Bug,
@@ -27,13 +28,15 @@ import {
   Download,
   Upload,
   RefreshCw,
-  Zap
+  Zap,
+  Sparkles,
+  Wand2
 } from 'lucide-react';
 import CodeEditor from '@/components/editor/ai-context/CodeEditor';
 import PluginAIAssistant from './PluginAIAssistant';
 import apiClient from '@/api/client';
 
-const DeveloperPluginEditor = ({ plugin, onSave, onClose }) => {
+const DeveloperPluginEditor = ({ plugin, onSave, onClose, onSwitchMode, initialContext }) => {
   const [fileTree, setFileTree] = useState([]);
   const [selectedFile, setSelectedFile] = useState(null);
   const [fileContent, setFileContent] = useState('');
@@ -259,7 +262,46 @@ const DeveloperPluginEditor = ({ plugin, onSave, onClose }) => {
   };
 
   return (
-    <div className="h-full flex gap-4">
+    <div className="h-screen flex flex-col bg-gray-100">
+      {/* Mode Switcher Header */}
+      <div className="bg-white border-b shadow-sm">
+        <div className="max-w-7xl mx-auto px-6 py-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <div className="flex items-center gap-2 mb-1">
+                <Code2 className="w-6 h-6 text-blue-600" />
+                <h1 className="text-2xl font-bold text-gray-900">Developer Mode</h1>
+                <Badge className="bg-blue-100 text-blue-700">Full Control</Badge>
+              </div>
+              <p className="text-sm text-gray-600">Code editor with AI assistance</p>
+            </div>
+
+            <div className="flex items-center gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => onSwitchMode?.('nocode-ai', { plugin })}
+                className="gap-2"
+              >
+                <Sparkles className="w-4 h-4" />
+                Switch to No-Code AI
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => onSwitchMode?.('guided', { plugin })}
+                className="gap-2"
+              >
+                <Wand2 className="w-4 h-4" />
+                Switch to Guided
+              </Button>
+              <Button variant="ghost" onClick={onClose}>Close</Button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div className="flex-1 flex gap-4 p-6 overflow-hidden">
       {/* File Tree Sidebar */}
       <div className="w-64 bg-white rounded-lg shadow-lg overflow-hidden flex flex-col">
         <div className="p-4 border-b bg-gray-50">
@@ -394,6 +436,7 @@ const DeveloperPluginEditor = ({ plugin, onSave, onClose }) => {
             currentCode: fileContent
           }}
         />
+      </div>
       </div>
     </div>
   );

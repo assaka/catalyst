@@ -128,14 +128,53 @@ const NoCodePluginBuilder = ({ onSave, onCancel, onSwitchMode, initialContext })
   ];
 
   return (
-    <div className="h-full flex gap-4">
+    <div className="h-screen flex flex-col bg-gray-100">
+      {/* Mode Switcher Header */}
+      <div className="bg-white border-b shadow-sm">
+        <div className="max-w-7xl mx-auto px-6 py-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <div className="flex items-center gap-2 mb-1">
+                <Wand2 className="w-6 h-6 text-indigo-600" />
+                <h1 className="text-2xl font-bold text-gray-900">Guided Plugin Builder</h1>
+                <Badge className="bg-indigo-100 text-indigo-700">Step-by-Step</Badge>
+              </div>
+              <p className="text-sm text-gray-600">Visual wizard with AI assistance</p>
+            </div>
+
+            <div className="flex items-center gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => onSwitchMode?.('nocode-ai', pluginConfig)}
+                className="gap-2"
+              >
+                <Sparkles className="w-4 h-4" />
+                Switch to No-Code AI
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => onSwitchMode?.('developer', pluginConfig)}
+                className="gap-2"
+              >
+                <Code2 className="w-4 h-4" />
+                Switch to Developer
+              </Button>
+              <Button variant="ghost" onClick={onCancel}>Cancel</Button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div className="flex-1 flex gap-4 p-6 overflow-hidden">
       {/* Main Builder Area */}
       <div className="flex-1 bg-white rounded-lg shadow-lg overflow-hidden">
         {/* Progress Steps */}
-        <div className="bg-gradient-to-r from-blue-600 to-purple-600 p-6">
+        <div className="bg-gradient-to-r from-indigo-600 to-purple-600 p-6">
           <h2 className="text-2xl font-bold text-white mb-4 flex items-center gap-2">
             <Wand2 className="w-6 h-6" />
-            No-Code Plugin Builder
+            Build Your Plugin
           </h2>
           <div className="flex items-center gap-2">
             {steps.map((step, index) => {
@@ -416,11 +455,12 @@ const NoCodePluginBuilder = ({ onSave, onCancel, onSwitchMode, initialContext })
       {/* AI Assistant Sidebar */}
       <div className="w-96 bg-white rounded-lg shadow-lg overflow-hidden">
         <PluginAIAssistant
-          mode="nocode"
+          mode="guided"
           onConfigGenerated={handleAIConfigGenerated}
           onCodeGenerated={handleAICodeGenerated}
           currentContext={pluginConfig}
         />
+      </div>
       </div>
     </div>
   );
