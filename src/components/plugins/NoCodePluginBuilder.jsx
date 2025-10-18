@@ -35,7 +35,7 @@ import {
 import PluginAIAssistant from './PluginAIAssistant';
 
 const NoCodePluginBuilder = ({ onSave, onCancel, onSwitchMode, initialContext }) => {
-  const [pluginConfig, setPluginConfig] = useState(initialContext || {
+  const [pluginConfig, setPluginConfig] = useState({
     name: '',
     description: '',
     category: 'utility',
@@ -48,7 +48,8 @@ const NoCodePluginBuilder = ({ onSave, onCancel, onSwitchMode, initialContext })
       pages: []
     },
     hooks: [],
-    events: []
+    events: [],
+    ...initialContext
   });
 
   const [currentStep, setCurrentStep] = useState('basics');

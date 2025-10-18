@@ -19,12 +19,23 @@ import {
 import PluginAIAssistant from './PluginAIAssistant';
 
 const FullyAIPluginBuilder = ({ onSave, onCancel, onSwitchMode, initialContext }) => {
-  const [pluginConfig, setPluginConfig] = useState(initialContext || {
+  const [pluginConfig, setPluginConfig] = useState({
     name: '',
     description: '',
     category: 'utility',
+    features: [],
+    database: {
+      tables: []
+    },
+    ui: {
+      widgets: [],
+      pages: []
+    },
+    hooks: [],
+    events: [],
     generatedCode: null,
-    generatedFiles: []
+    generatedFiles: [],
+    ...initialContext
   });
 
   const [selectedTemplate, setSelectedTemplate] = useState(null);
