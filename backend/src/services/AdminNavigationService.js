@@ -1,5 +1,5 @@
 // backend/src/services/AdminNavigationService.js
-const db = require('../database/db');
+const { sequelize } = require('../database/connection');
 
 class AdminNavigationService {
 
@@ -10,13 +10,13 @@ class AdminNavigationService {
   async getNavigationForTenant(tenantId) {
     try {
       // 1. Get tenant's installed & active plugins
-      const installedPlugins = await db.query(`
+      const [installedPlugins] = await sequelize.query(`
         SELECT marketplace_plugin_id
         FROM plugins
         WHERE status = 'active' AND marketplace_plugin_id IS NOT NULL
       `);
 
-      const pluginIds = installedPlugins.rows.map(p => p.marketplace_plugin_id);
+      const pluginIds = installedPlugins.map(p => p.marketplace_plugin_id);
 
       // 2. Get navigation items from master registry
       // Include: Core items + items from tenant's installed plugins
@@ -29,20 +29,23 @@ class AdminNavigationService {
            WHERE is_core = true AND is_visible = true
            ORDER BY order_position ASC`;
 
-      const navItems = await db.query(
+      const [navItems] = await sequelize.query(
         navQuery,
-        pluginIds.length > 0 ? [pluginIds] : []
+        pluginIds.length > 0 ? {
+          bind: [pluginIds],
+          type: sequelize.QueryTypes.SELECT
+        } : { type: sequelize.QueryTypes.SELECT }
       );
 
       // 3. Get tenant's customizations
-      const tenantConfig = await db.query(`
+      const [tenantConfig] = await sequelize.query(`
         SELECT * FROM admin_navigation_config
-      `);
+      `, { type: sequelize.QueryTypes.SELECT });
 
       // 4. Merge and apply customizations
       const merged = this.mergeNavigation(
-        navItems.rows,
-        tenantConfig.rows
+        navItems,
+        tenantConfig
       );
 
       // 5. Build hierarchical tree
@@ -138,7 +141,7 @@ class AdminNavigationService {
    */
   async registerPluginNavigation(pluginId, navItems) {
     for (const item of navItems) {
-      await db.query(`
+      await sequelize.query(`
         INSERT INTO admin_navigation_registry
         (key, label, icon, route, parent_key, order_position, is_core, plugin_id, category)
         VALUES ($1, $2, $3, $4, $5, $6, false, $7, $8)
@@ -147,16 +150,18 @@ class AdminNavigationService {
           icon = EXCLUDED.icon,
           route = EXCLUDED.route,
           updated_at = NOW()
-      `, [
-        item.key,
-        item.label,
-        item.icon,
-        item.route,
-        item.parentKey || null,
-        item.order || 100,
-        pluginId,
-        item.category || 'plugins'
-      ]);
+      `, {
+        bind: [
+          item.key,
+          item.label,
+          item.icon,
+          item.route,
+          item.parentKey || null,
+          item.order || 100,
+          pluginId,
+          item.category || 'plugins'
+        ]
+      });
     }
   }
 
@@ -166,11 +171,13 @@ class AdminNavigationService {
    */
   async enablePluginNavigationForTenant(tenantId, navKeys) {
     for (const key of navKeys) {
-      await db.query(`
-        INSERT INTO admin_navigation_config (nav_item_key, is_enabled)
-        VALUES ($1, true)
-        ON CONFLICT (nav_item_key) DO NOTHING
-      `, [key]);
+      await sequelize.query(`
+        INSERT INTO admin_navigation_config (nav_key, is_hidden)
+        VALUES ($1, false)
+        ON CONFLICT (nav_key) DO NOTHING
+      `, {
+        bind: [key]
+      });
     }
   }
 
@@ -190,12 +197,14 @@ class AdminNavigationService {
     ];
 
     for (const item of coreItems) {
-      await db.query(`
+      await sequelize.query(`
         INSERT INTO admin_navigation_registry
         (key, label, icon, route, order_position, is_core, category)
         VALUES ($1, $2, $3, $4, $5, true, $6)
         ON CONFLICT (key) DO NOTHING
-      `, [item.key, item.label, item.icon, item.route, item.order, item.category]);
+      `, {
+        bind: [item.key, item.label, item.icon, item.route, item.order, item.category]
+      });
     }
 
     console.log('✅ Core navigation seeded');

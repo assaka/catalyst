@@ -1,5 +1,5 @@
 // backend/src/services/PluginPurchaseService.js
-const db = require('../database/db');
+const { sequelize } = require('../database/connection');
 const { v4: uuidv4 } = require('uuid');
 // const stripeService = require('./StripeService'); // TODO: Implement Stripe service
 // const pluginManager = require('../core/PluginManager'); // Will be created next
@@ -136,49 +136,47 @@ class PluginPurchaseService {
   async createLicense(marketplacePluginId, tenantId, plugin, pricingDetails, paymentResult, userId) {
     const licenseKey = this.generateLicenseKey();
 
-    const license = await db.query(`
+    const [result] = await sequelize.query(`
       INSERT INTO plugin_licenses (
         id,
-        plugin_id,
+        marketplace_plugin_id,
         tenant_id,
+        user_id,
         license_key,
         license_type,
-        pricing_model,
+        status,
         amount_paid,
         currency,
         billing_interval,
-        subscription_status,
         subscription_id,
-        stripe_customer_id,
-        stripe_payment_intent_id,
-        next_billing_date,
-        is_active
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, true)
+        current_period_start,
+        current_period_end
+      ) VALUES ($1, $2, $3, $4, $5, $6, 'active', $7, $8, $9, $10, NOW(), $11)
       RETURNING *
-    `, [
-      uuidv4(),
-      marketplacePluginId,
-      tenantId,
-      licenseKey,
-      plugin.license_type,
-      plugin.pricing_model,
-      pricingDetails.amount,
-      pricingDetails.currency,
-      pricingDetails.billingInterval,
-      paymentResult?.type === 'subscription' ? 'active' : null,
-      paymentResult?.subscriptionId || null,
-      paymentResult?.customerId || null,
-      paymentResult?.paymentIntentId || null,
-      paymentResult?.nextBillingDate || null
-    ]);
+    `, {
+      bind: [
+        uuidv4(),
+        marketplacePluginId,
+        tenantId,
+        userId,
+        licenseKey,
+        plugin.license_type,
+        pricingDetails.amount,
+        pricingDetails.currency,
+        pricingDetails.billingInterval,
+        paymentResult?.subscriptionId || null,
+        paymentResult?.nextBillingDate || null
+      ],
+      type: sequelize.QueryTypes.INSERT
+    });
 
-    return license.rows[0];
+    return result[0];
   }
 
   /**
    * Record revenue distribution
    */
-  async recordRevenue(creatorId, amount, revenueSharePercentage) {
+  async recordRevenue(creatorId, amount, revenueSharePercentage = 70) {
     const creatorAmount = (amount * revenueSharePercentage / 100).toFixed(2);
     const platformAmount = (amount * (100 - revenueSharePercentage) / 100).toFixed(2);
 
@@ -192,14 +190,16 @@ class PluginPurchaseService {
    * Update marketplace metrics
    */
   async updateMarketplaceMetrics(pluginId, revenue) {
-    await db.query(`
+    await sequelize.query(`
       UPDATE plugin_marketplace
       SET
         active_installations = active_installations + 1,
-        total_revenue = total_revenue + $1,
         updated_at = NOW()
-      WHERE id = $2
-    `, [revenue, pluginId]);
+      WHERE id = $1
+    `, {
+      bind: [pluginId],
+      type: sequelize.QueryTypes.UPDATE
+    });
   }
 
   /**
@@ -225,27 +225,33 @@ class PluginPurchaseService {
    * Get marketplace plugin
    */
   async getMarketplacePlugin(pluginId) {
-    const result = await db.query(`
+    const result = await sequelize.query(`
       SELECT * FROM plugin_marketplace WHERE id = $1 AND status = 'approved'
-    `, [pluginId]);
+    `, {
+      bind: [pluginId],
+      type: sequelize.QueryTypes.SELECT
+    });
 
-    if (!result.rows[0]) {
+    if (!result[0]) {
       throw new Error('Plugin not found in marketplace');
     }
 
-    return result.rows[0];
+    return result[0];
   }
 
   /**
    * Check existing license
    */
   async checkExistingLicense(pluginId, tenantId) {
-    const result = await db.query(`
+    const result = await sequelize.query(`
       SELECT * FROM plugin_licenses
-      WHERE plugin_id = $1 AND tenant_id = $2 AND is_active = true
-    `, [pluginId, tenantId]);
+      WHERE marketplace_plugin_id = $1 AND tenant_id = $2 AND status = 'active'
+    `, {
+      bind: [pluginId, tenantId],
+      type: sequelize.QueryTypes.SELECT
+    });
 
-    return result.rows[0] || null;
+    return result[0] || null;
   }
 }
 

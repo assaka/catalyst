@@ -1,5 +1,5 @@
 // backend/src/services/PluginDataService.js
-const db = require('../database/db');
+const { sequelize } = require('../database/connection');
 
 class PluginDataService {
 
@@ -8,16 +8,19 @@ class PluginDataService {
    */
   async setData(pluginId, key, value, dataType = 'user_data') {
     try {
-      const result = await db.query(`
+      const [result] = await sequelize.query(`
         INSERT INTO plugin_data (plugin_id, data_key, data_value, data_type)
         VALUES ($1, $2, $3, $4)
         ON CONFLICT (plugin_id, data_key) DO UPDATE SET
           data_value = EXCLUDED.data_value,
           updated_at = NOW()
         RETURNING *
-      `, [pluginId, key, JSON.stringify(value), dataType]);
+      `, {
+        bind: [pluginId, key, JSON.stringify(value), dataType],
+        type: sequelize.QueryTypes.INSERT
+      });
 
-      return result.rows[0];
+      return result[0];
     } catch (error) {
       console.error('Failed to set plugin data:', error);
       throw error;
@@ -29,16 +32,19 @@ class PluginDataService {
    */
   async getData(pluginId, key) {
     try {
-      const result = await db.query(`
+      const result = await sequelize.query(`
         SELECT data_value FROM plugin_data
         WHERE plugin_id = $1 AND data_key = $2
-      `, [pluginId, key]);
+      `, {
+        bind: [pluginId, key],
+        type: sequelize.QueryTypes.SELECT
+      });
 
-      if (!result.rows[0]) {
+      if (!result[0]) {
         return null;
       }
 
-      return result.rows[0].data_value;
+      return result[0].data_value;
     } catch (error) {
       console.error('Failed to get plugin data:', error);
       throw error;
@@ -56,10 +62,13 @@ class PluginDataService {
 
       const params = dataType ? [pluginId, dataType] : [pluginId];
 
-      const result = await db.query(query, params);
+      const result = await sequelize.query(query, {
+        bind: params,
+        type: sequelize.QueryTypes.SELECT
+      });
 
       const data = {};
-      result.rows.forEach(row => {
+      result.forEach(row => {
         data[row.data_key] = row.data_value;
       });
 
@@ -75,10 +84,13 @@ class PluginDataService {
    */
   async deleteData(pluginId, key) {
     try {
-      await db.query(`
+      await sequelize.query(`
         DELETE FROM plugin_data
         WHERE plugin_id = $1 AND data_key = $2
-      `, [pluginId, key]);
+      `, {
+        bind: [pluginId, key],
+        type: sequelize.QueryTypes.DELETE
+      });
 
       return true;
     } catch (error) {
@@ -92,9 +104,12 @@ class PluginDataService {
    */
   async deleteAllData(pluginId) {
     try {
-      await db.query(`
+      await sequelize.query(`
         DELETE FROM plugin_data WHERE plugin_id = $1
-      `, [pluginId]);
+      `, {
+        bind: [pluginId],
+        type: sequelize.QueryTypes.DELETE
+      });
 
       return true;
     } catch (error) {
@@ -108,11 +123,14 @@ class PluginDataService {
    */
   async updateConfig(pluginId, config) {
     try {
-      await db.query(`
+      await sequelize.query(`
         UPDATE plugins
-        SET config_data = $1, updated_at = NOW()
+        SET configuration = $1, updated_at = NOW()
         WHERE id = $2
-      `, [JSON.stringify(config), pluginId]);
+      `, {
+        bind: [JSON.stringify(config), pluginId],
+        type: sequelize.QueryTypes.UPDATE
+      });
 
       return config;
     } catch (error) {
@@ -126,15 +144,18 @@ class PluginDataService {
    */
   async getConfig(pluginId) {
     try {
-      const result = await db.query(`
-        SELECT config_data FROM plugins WHERE id = $1
-      `, [pluginId]);
+      const result = await sequelize.query(`
+        SELECT configuration FROM plugins WHERE id = $1
+      `, {
+        bind: [pluginId],
+        type: sequelize.QueryTypes.SELECT
+      });
 
-      if (!result.rows[0]) {
+      if (!result[0]) {
         throw new Error('Plugin not found');
       }
 
-      return result.rows[0].config_data || {};
+      return result[0].configuration || {};
     } catch (error) {
       console.error('Failed to get plugin config:', error);
       throw error;
