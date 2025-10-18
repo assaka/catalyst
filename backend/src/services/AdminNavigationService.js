@@ -1,0 +1,205 @@
+// backend/src/services/AdminNavigationService.js
+const db = require('../database/db');
+
+class AdminNavigationService {
+
+  /**
+   * Get complete navigation for a tenant
+   * Merges: Master registry + Tenant config + Installed plugins
+   */
+  async getNavigationForTenant(tenantId) {
+    try {
+      // 1. Get tenant's installed & active plugins
+      const installedPlugins = await db.query(`
+        SELECT marketplace_plugin_id
+        FROM plugins
+        WHERE status = 'active' AND marketplace_plugin_id IS NOT NULL
+      `);
+
+      const pluginIds = installedPlugins.rows.map(p => p.marketplace_plugin_id);
+
+      // 2. Get navigation items from master registry
+      // Include: Core items + items from tenant's installed plugins
+      const navQuery = pluginIds.length > 0
+        ? `SELECT * FROM admin_navigation_registry
+           WHERE (is_core = true OR plugin_id = ANY($1))
+             AND is_visible = true
+           ORDER BY order_position ASC`
+        : `SELECT * FROM admin_navigation_registry
+           WHERE is_core = true AND is_visible = true
+           ORDER BY order_position ASC`;
+
+      const navItems = await db.query(
+        navQuery,
+        pluginIds.length > 0 ? [pluginIds] : []
+      );
+
+      // 3. Get tenant's customizations
+      const tenantConfig = await db.query(`
+        SELECT * FROM admin_navigation_config
+      `);
+
+      // 4. Merge and apply customizations
+      const merged = this.mergeNavigation(
+        navItems.rows,
+        tenantConfig.rows
+      );
+
+      // 5. Build hierarchical tree
+      const tree = this.buildNavigationTree(merged);
+
+      return tree;
+
+    } catch (error) {
+      console.error('Failed to load navigation:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Apply tenant customizations to navigation items
+   */
+  mergeNavigation(masterItems, tenantConfig) {
+    const configMap = new Map(
+      tenantConfig.map(c => [c.nav_item_key, c])
+    );
+
+    return masterItems.map(item => {
+      const config = configMap.get(item.key);
+
+      if (!config) {
+        // No customization - use master item as-is
+        return item;
+      }
+
+      // Apply tenant overrides
+      return {
+        ...item,
+        label: config.custom_label || item.label,
+        order: config.custom_order ?? item.order_position,
+        icon: config.custom_icon || item.icon,
+        parentKey: config.parent_key || item.parent_key,
+        isEnabled: config.is_enabled ?? true,
+        badge: config.badge_text ? {
+          text: config.badge_text,
+          color: config.badge_color
+        } : null
+      };
+    }).filter(item => item.isEnabled !== false);
+  }
+
+  /**
+   * Build hierarchical navigation tree
+   */
+  buildNavigationTree(items) {
+    const tree = [];
+    const itemMap = new Map();
+
+    // First pass: Create map of all items with empty children
+    items.forEach(item => {
+      itemMap.set(item.key, {
+        ...item,
+        children: []
+      });
+    });
+
+    // Second pass: Build hierarchy
+    items.forEach(item => {
+      const node = itemMap.get(item.key);
+
+      if (item.parentKey && itemMap.has(item.parentKey)) {
+        // Add as child to parent
+        itemMap.get(item.parentKey).children.push(node);
+      } else {
+        // Add as root item
+        tree.push(node);
+      }
+    });
+
+    // Sort children by order
+    tree.forEach(item => this.sortChildren(item));
+
+    return tree;
+  }
+
+  /**
+   * Recursively sort children by order
+   */
+  sortChildren(item) {
+    if (item.children && item.children.length > 0) {
+      item.children.sort((a, b) => (a.order || 0) - (b.order || 0));
+      item.children.forEach(child => this.sortChildren(child));
+    }
+  }
+
+  /**
+   * Register plugin navigation items in master DB
+   * Called during plugin installation
+   */
+  async registerPluginNavigation(pluginId, navItems) {
+    for (const item of navItems) {
+      await db.query(`
+        INSERT INTO admin_navigation_registry
+        (key, label, icon, route, parent_key, order_position, is_core, plugin_id, category)
+        VALUES ($1, $2, $3, $4, $5, $6, false, $7, $8)
+        ON CONFLICT (key) DO UPDATE SET
+          label = EXCLUDED.label,
+          icon = EXCLUDED.icon,
+          route = EXCLUDED.route,
+          updated_at = NOW()
+      `, [
+        item.key,
+        item.label,
+        item.icon,
+        item.route,
+        item.parentKey || null,
+        item.order || 100,
+        pluginId,
+        item.category || 'plugins'
+      ]);
+    }
+  }
+
+  /**
+   * Enable plugin navigation for tenant
+   * Called during plugin installation
+   */
+  async enablePluginNavigationForTenant(tenantId, navKeys) {
+    for (const key of navKeys) {
+      await db.query(`
+        INSERT INTO admin_navigation_config (nav_item_key, is_enabled)
+        VALUES ($1, true)
+        ON CONFLICT (nav_item_key) DO NOTHING
+      `, [key]);
+    }
+  }
+
+  /**
+   * Seed core navigation items
+   * Run once to populate master DB
+   */
+  async seedCoreNavigation() {
+    const coreItems = [
+      { key: 'dashboard', label: 'Dashboard', icon: 'Home', route: '/admin', order: 1, category: 'main' },
+      { key: 'products', label: 'Products', icon: 'Package', route: '/admin/products', order: 2, category: 'main' },
+      { key: 'orders', label: 'Orders', icon: 'ShoppingCart', route: '/admin/orders', order: 3, category: 'main' },
+      { key: 'customers', label: 'Customers', icon: 'Users', route: '/admin/customers', order: 4, category: 'main' },
+      { key: 'analytics', label: 'Analytics', icon: 'BarChart', route: '/admin/analytics', order: 5, category: 'main' },
+      { key: 'plugins', label: 'Plugins', icon: 'Puzzle', route: '/admin/plugins', order: 10, category: 'tools' },
+      { key: 'settings', label: 'Settings', icon: 'Settings', route: '/admin/settings', order: 99, category: 'settings' }
+    ];
+
+    for (const item of coreItems) {
+      await db.query(`
+        INSERT INTO admin_navigation_registry
+        (key, label, icon, route, order_position, is_core, category)
+        VALUES ($1, $2, $3, $4, $5, true, $6)
+        ON CONFLICT (key) DO NOTHING
+      `, [item.key, item.label, item.icon, item.route, item.order, item.category]);
+    }
+
+    console.log('✅ Core navigation seeded');
+  }
+}
+
+module.exports = new AdminNavigationService();
