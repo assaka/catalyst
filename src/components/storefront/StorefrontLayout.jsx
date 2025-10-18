@@ -29,7 +29,7 @@ import HeatmapTrackerComponent from '@/components/admin/heatmap/HeatmapTracker';
 import FlashMessage from '@/components/storefront/FlashMessage';
 import { HeaderSlotRenderer } from './HeaderSlotRenderer';
 import { useHeaderConfig } from '@/hooks/useHeaderConfig';
-import LanguageSelector from '@/components/common/LanguageSelector';
+import LanguageSelector from '@/components/shared/LanguageSelector';
 import { useTranslation } from '@/contexts/TranslationContext';
 
 const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms));
