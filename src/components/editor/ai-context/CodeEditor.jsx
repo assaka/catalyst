@@ -1055,12 +1055,16 @@ const CodeEditor = ({
                         </Badge>
                       )}
                     </div>
-                    {diffData && (
-                      <div className="flex items-center space-x-2 text-xs">
-                        <span className="text-green-600">+{diffData.metadata?.additions || 0}</span>
-                        <span className="text-red-600">-{diffData.metadata?.deletions || 0}</span>
-                      </div>
-                    )}
+                    {(() => {
+                      // Calculate stats from actual code comparison
+                      const stats = getDiffStats(originalCode || '', localCode);
+                      return (
+                        <div className="flex items-center space-x-2 text-xs">
+                          <span className="text-green-600">+{stats.additions}</span>
+                          <span className="text-red-600">-{stats.deletions}</span>
+                        </div>
+                      );
+                    })()}
                   </div>
                   <div className="relative h-[calc(100%-40px)]">
                     <Editor
@@ -1086,6 +1090,44 @@ const CodeEditor = ({
                       }}
                       theme="vs-dark"
                     />
+                    {/* Revert Gutter for Split View */}
+                    {!collapseUnchanged && (() => {
+                      const changedBlocks = getChangedBlocks();
+                      if (changedBlocks.length === 0) return null;
+
+                      return (
+                        <div className="absolute right-0 top-0 w-10 h-full pointer-events-none z-10">
+                          {changedBlocks.map((block, blockIndex) => (
+                            <div
+                              key={blockIndex}
+                              className="absolute pointer-events-auto"
+                              style={{
+                                top: `${block.startLine * 20}px`,
+                                height: `${(block.endLine - block.startLine + 1) * 20}px`
+                              }}
+                            >
+                              <div className="w-full h-full flex items-start justify-end pr-1 pt-1">
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  className="w-7 h-7 p-0 bg-orange-500 hover:bg-orange-600 text-white shadow-md transition-colors duration-150"
+                                  onClick={() => {
+                                    if (block.startLine === block.endLine) {
+                                      handleRevertLine(block.startLine);
+                                    } else {
+                                      handleRevertBlock(block.startLine, block.endLine);
+                                    }
+                                  }}
+                                  title={`Revert ${block.startLine === block.endLine ? 'line' : 'lines'} ${block.startLine + 1}${block.startLine !== block.endLine ? `-${block.endLine + 1}` : ''}`}
+                                >
+                                  <RotateCcw className="w-3 h-3" />
+                                </Button>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      );
+                    })()}
                   </div>
                 </div>
               </div>
