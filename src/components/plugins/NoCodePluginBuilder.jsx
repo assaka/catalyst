@@ -1,6 +1,6 @@
 /**
- * No-Code Plugin Builder
- * Visual interface for building plugins without writing code
+ * Guided Plugin Builder
+ * Visual wizard interface for building plugins with step-by-step guidance
  */
 
 import React, { useState } from 'react';
@@ -29,12 +29,14 @@ import {
   Trash2,
   Eye,
   Save,
-  Sparkles
+  Sparkles,
+  Code2
 } from 'lucide-react';
+import { Badge } from "@/components/ui/badge";
 import PluginAIAssistant from './PluginAIAssistant';
 
-const NoCodePluginBuilder = ({ onSave, onCancel }) => {
-  const [pluginConfig, setPluginConfig] = useState({
+const NoCodePluginBuilder = ({ onSave, onCancel, onSwitchMode, initialContext }) => {
+  const [pluginConfig, setPluginConfig] = useState(initialContext || {
     name: '',
     description: '',
     category: 'utility',

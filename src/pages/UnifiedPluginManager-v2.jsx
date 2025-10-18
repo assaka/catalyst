@@ -27,13 +27,15 @@ import {
   Puzzle
 } from 'lucide-react';
 import apiClient from '@/api/client';
+import FullyAIPluginBuilder from '@/components/plugins/FullyAIPluginBuilder';
 import NoCodePluginBuilder from '@/components/plugins/NoCodePluginBuilder';
 import DeveloperPluginEditor from '@/components/plugins/DeveloperPluginEditor';
 
 const UnifiedPluginManagerV2 = () => {
   const [activeView, setActiveView] = useState('marketplace');
-  const [builderMode, setBuilderMode] = useState(null); // null | 'nocode' | 'developer'
+  const [builderMode, setBuilderMode] = useState(null); // null | 'nocode-ai' | 'guided' | 'developer'
   const [selectedPlugin, setSelectedPlugin] = useState(null);
+  const [pluginContext, setPluginContext] = useState(null); // Shared context for mode switching
   const [plugins, setPlugins] = useState([]);
   const [loading, setLoading] = useState(true);
   const [stats, setStats] = useState({
@@ -129,7 +131,13 @@ const UnifiedPluginManagerV2 = () => {
 
   const handleCreatePlugin = (mode) => {
     setSelectedPlugin(null);
+    setPluginContext(null);
     setBuilderMode(mode);
+  };
+
+  const handleSwitchMode = (newMode, context) => {
+    setPluginContext(context); // Preserve context when switching
+    setBuilderMode(newMode);
   };
 
   const getPluginIcon = (category) => {
@@ -142,32 +150,57 @@ const UnifiedPluginManagerV2 = () => {
   };
 
   // If in builder mode, show full-screen builder
-  if (builderMode === 'nocode') {
+  if (builderMode === 'nocode-ai') {
     return (
       <div className="fixed inset-0 bg-gray-100 z-50">
-        <NoCodePluginBuilder
+        <FullyAIPluginBuilder
+          initialContext={pluginContext}
           onSave={handleSavePlugin}
-          onCancel={() => setBuilderMode(null)}
+          onCancel={() => {
+            setBuilderMode(null);
+            setPluginContext(null);
+          }}
+          onSwitchMode={handleSwitchMode}
         />
       </div>
     );
   }
 
-  if (builderMode === 'developer' && selectedPlugin) {
+  if (builderMode === 'guided') {
+    return (
+      <div className="fixed inset-0 bg-gray-100 z-50">
+        <NoCodePluginBuilder
+          initialContext={pluginContext}
+          onSave={handleSavePlugin}
+          onCancel={() => {
+            setBuilderMode(null);
+            setPluginContext(null);
+          }}
+          onSwitchMode={handleSwitchMode}
+        />
+      </div>
+    );
+  }
+
+  if (builderMode === 'developer') {
     return (
       <div className="fixed inset-0 bg-gray-100 z-50">
         <DeveloperPluginEditor
           plugin={selectedPlugin}
+          initialContext={pluginContext}
           onSave={(code) => {
             console.log('Plugin saved:', code);
             setBuilderMode(null);
             setSelectedPlugin(null);
+            setPluginContext(null);
             loadPlugins();
           }}
           onClose={() => {
             setBuilderMode(null);
             setSelectedPlugin(null);
+            setPluginContext(null);
           }}
+          onSwitchMode={handleSwitchMode}
         />
       </div>
     );
@@ -195,11 +228,18 @@ const UnifiedPluginManagerV2 = () => {
           </div>
           <div className="flex gap-2">
             <Button
-              onClick={() => handleCreatePlugin('nocode')}
+              onClick={() => handleCreatePlugin('nocode-ai')}
               className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700"
             >
+              <Sparkles className="w-4 h-4 mr-2" />
+              No-Code AI
+            </Button>
+            <Button
+              onClick={() => handleCreatePlugin('guided')}
+              className="bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700"
+            >
               <Wand2 className="w-4 h-4 mr-2" />
-              No-Code Builder
+              Guided Builder
             </Button>
             <Button
               onClick={() => handleCreatePlugin('developer')}
@@ -359,9 +399,13 @@ const UnifiedPluginManagerV2 = () => {
                 <h3 className="text-lg font-medium text-gray-900 mb-2">No plugins yet</h3>
                 <p className="text-gray-600 mb-6">Create your first plugin with AI assistance</p>
                 <div className="flex gap-3 justify-center">
-                  <Button onClick={() => handleCreatePlugin('nocode')}>
+                  <Button onClick={() => handleCreatePlugin('nocode-ai')}>
+                    <Sparkles className="w-4 h-4 mr-2" />
+                    No-Code AI
+                  </Button>
+                  <Button variant="outline" onClick={() => handleCreatePlugin('guided')}>
                     <Wand2 className="w-4 h-4 mr-2" />
-                    No-Code Builder
+                    Guided Builder
                   </Button>
                   <Button variant="outline" onClick={() => handleCreatePlugin('developer')}>
                     <Code2 className="w-4 h-4 mr-2" />
