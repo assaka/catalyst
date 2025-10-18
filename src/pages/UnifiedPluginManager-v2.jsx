@@ -24,8 +24,15 @@ import {
   Download,
   Shield,
   Sparkles,
-  Puzzle
+  Puzzle,
+  ChevronDown
 } from 'lucide-react';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import apiClient from '@/api/client';
 import FullyAIPluginBuilder from '@/components/plugins/FullyAIPluginBuilder';
 import NoCodePluginBuilder from '@/components/plugins/NoCodePluginBuilder';
@@ -124,9 +131,20 @@ const UnifiedPluginManagerV2 = () => {
     }
   };
 
-  const handleEditPlugin = (plugin) => {
+  const handleEditPlugin = (plugin, mode = 'developer') => {
     setSelectedPlugin(plugin);
-    setBuilderMode('developer');
+
+    // Load plugin data as context for the editor
+    const pluginContext = {
+      ...plugin,
+      name: plugin.name,
+      description: plugin.description,
+      category: plugin.category,
+      version: plugin.version
+    };
+
+    setPluginContext(pluginContext);
+    setBuilderMode(mode);
   };
 
   const handleCreatePlugin = (mode) => {
@@ -351,14 +369,29 @@ const UnifiedPluginManagerV2 = () => {
 
                       <div className="flex items-center justify-between">
                         <div className="flex gap-2">
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={() => handleEditPlugin(plugin)}
-                          >
-                            <Code2 className="w-3 h-3 mr-1" />
-                            Edit
-                          </Button>
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button size="sm" variant="outline">
+                                <Code2 className="w-3 h-3 mr-1" />
+                                Edit
+                                <ChevronDown className="w-3 h-3 ml-1" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent>
+                              <DropdownMenuItem onClick={() => handleEditPlugin(plugin, 'nocode-ai')}>
+                                <Sparkles className="w-3 h-3 mr-2" />
+                                Edit in No-Code AI
+                              </DropdownMenuItem>
+                              <DropdownMenuItem onClick={() => handleEditPlugin(plugin, 'guided')}>
+                                <Wand2 className="w-3 h-3 mr-2" />
+                                Edit in Guided Builder
+                              </DropdownMenuItem>
+                              <DropdownMenuItem onClick={() => handleEditPlugin(plugin, 'developer')}>
+                                <Code2 className="w-3 h-3 mr-2" />
+                                Edit in Developer Mode
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
                           <Button
                             size="sm"
                             variant="outline"
@@ -442,10 +475,29 @@ const UnifiedPluginManagerV2 = () => {
                         {plugin.description || 'No description available'}
                       </p>
                       <div className="flex gap-2">
-                        <Button size="sm" variant="outline" onClick={() => handleEditPlugin(plugin)}>
-                          <Code2 className="w-3 h-3 mr-1" />
-                          Edit
-                        </Button>
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button size="sm" variant="outline">
+                              <Code2 className="w-3 h-3 mr-1" />
+                              Edit
+                              <ChevronDown className="w-3 h-3 ml-1" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent>
+                            <DropdownMenuItem onClick={() => handleEditPlugin(plugin, 'nocode-ai')}>
+                              <Sparkles className="w-3 h-3 mr-2" />
+                              Edit in No-Code AI
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => handleEditPlugin(plugin, 'guided')}>
+                              <Wand2 className="w-3 h-3 mr-2" />
+                              Edit in Guided Builder
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => handleEditPlugin(plugin, 'developer')}>
+                              <Code2 className="w-3 h-3 mr-2" />
+                              Edit in Developer Mode
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
                         <Button size="sm" variant="outline">
                           <Settings className="w-3 h-3 mr-1" />
                           Configure
