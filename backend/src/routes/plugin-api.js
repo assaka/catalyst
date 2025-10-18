@@ -155,19 +155,35 @@ router.get('/registry', async (req, res) => {
   try {
     const { status } = req.query;
 
-    // Get active plugins
+    // Get plugins from plugin_registry table
     const whereClause = status === 'active' ? `WHERE status = 'active'` : '';
     const plugins = await sequelize.query(`
-      SELECT * FROM plugins
+      SELECT
+        id, name, version, description, author, category, status, type,
+        manifest, config, created_at, updated_at
+      FROM plugin_registry
       ${whereClause}
-      ORDER BY installed_at DESC
+      ORDER BY created_at DESC
     `, {
       type: sequelize.QueryTypes.SELECT
     });
 
+    // Parse JSON fields and add generated_by_ai flag
+    const parsedPlugins = plugins.map(plugin => {
+      const manifest = typeof plugin.manifest === 'string' ? JSON.parse(plugin.manifest) : plugin.manifest;
+      const config = typeof plugin.config === 'string' ? JSON.parse(plugin.config) : plugin.config;
+
+      return {
+        ...plugin,
+        generated_by_ai: manifest?.generated_by_ai || plugin.type === 'ai-generated',
+        hooks: config?.hooks || [],
+        events: config?.events || []
+      };
+    });
+
     res.json({
       success: true,
-      data: plugins
+      data: parsedPlugins
     });
   } catch (error) {
     console.error('Failed to get plugin registry:', error);
@@ -186,9 +202,9 @@ router.get('/registry/:pluginId', async (req, res) => {
   try {
     const { pluginId } = req.params;
 
-    // Get plugin details
+    // Get plugin details from plugin_registry
     const plugin = await sequelize.query(`
-      SELECT * FROM plugins WHERE id = $1
+      SELECT * FROM plugin_registry WHERE id = $1
     `, {
       bind: [pluginId],
       type: sequelize.QueryTypes.SELECT
@@ -201,49 +217,142 @@ router.get('/registry/:pluginId', async (req, res) => {
       });
     }
 
-    // Get plugin hooks
-    const hooks = await sequelize.query(`
-      SELECT
-        id,
-        hook_name,
-        hook_type,
-        handler_function as handler_code,
-        priority,
-        is_enabled as enabled
-      FROM plugin_hooks
-      WHERE plugin_id = $1 AND is_enabled = true
-      ORDER BY priority ASC
-    `, {
-      bind: [pluginId],
-      type: sequelize.QueryTypes.SELECT
-    });
-
-    // Get plugin events
-    const events = await sequelize.query(`
-      SELECT
-        id,
-        event_name,
-        listener_function as listener_code,
-        priority,
-        is_enabled as enabled
-      FROM plugin_events
-      WHERE plugin_id = $1 AND is_enabled = true
-      ORDER BY priority ASC
-    `, {
-      bind: [pluginId],
-      type: sequelize.QueryTypes.SELECT
-    });
+    // Parse JSON fields
+    const manifest = typeof plugin[0].manifest === 'string' ? JSON.parse(plugin[0].manifest) : plugin[0].manifest;
+    const config = typeof plugin[0].config === 'string' ? JSON.parse(plugin[0].config) : plugin[0].config;
 
     res.json({
       success: true,
       data: {
         ...plugin[0],
-        hooks,
-        events
+        generated_by_ai: manifest?.generated_by_ai || plugin[0].type === 'ai-generated',
+        hooks: config?.hooks || [],
+        events: config?.events || []
       }
     });
   } catch (error) {
     console.error('Failed to get plugin details:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
+/**
+ * PATCH /api/plugins/registry/:id/status
+ * Toggle plugin status
+ */
+router.patch('/registry/:id/status', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { status } = req.body;
+
+    await sequelize.query(`
+      UPDATE plugin_registry
+      SET status = $1, updated_at = NOW()
+      WHERE id = $2
+    `, {
+      bind: [status, id],
+      type: sequelize.QueryTypes.UPDATE
+    });
+
+    res.json({
+      success: true,
+      message: `Plugin ${status === 'active' ? 'enabled' : 'disabled'} successfully`
+    });
+  } catch (error) {
+    console.error('Failed to update plugin status:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
+/**
+ * DELETE /api/plugins/registry/:id
+ * Delete a plugin
+ */
+router.delete('/registry/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    await sequelize.query(`
+      DELETE FROM plugin_registry WHERE id = $1
+    `, {
+      bind: [id],
+      type: sequelize.QueryTypes.DELETE
+    });
+
+    res.json({
+      success: true,
+      message: 'Plugin deleted successfully'
+    });
+  } catch (error) {
+    console.error('Failed to delete plugin:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
+/**
+ * POST /api/plugins/registry
+ * Create a new plugin
+ */
+router.post('/registry', async (req, res) => {
+  try {
+    const pluginData = req.body;
+    const id = `${Date.now()}-${pluginData.name.toLowerCase().replace(/\s+/g, '-')}`;
+
+    // Build manifest and config
+    const manifest = {
+      name: pluginData.name,
+      version: pluginData.version || '1.0.0',
+      generated_by_ai: pluginData.generated_by_ai || false,
+      ...pluginData
+    };
+
+    const config = {
+      hooks: pluginData.hooks || [],
+      events: pluginData.events || []
+    };
+
+    await sequelize.query(`
+      INSERT INTO plugin_registry (
+        id, name, version, description, author, category, status, type, framework,
+        manifest, config, source_code, created_at, updated_at
+      )
+      VALUES (
+        $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, NOW(), NOW()
+      )
+    `, {
+      bind: [
+        id,
+        pluginData.name,
+        pluginData.version || '1.0.0',
+        pluginData.description,
+        pluginData.author || 'Unknown',
+        pluginData.category || 'utility',
+        pluginData.status || 'active',
+        pluginData.generated_by_ai ? 'ai-generated' : 'custom',
+        'react',
+        JSON.stringify(manifest),
+        JSON.stringify(config),
+        JSON.stringify(pluginData.generatedFiles || [])
+      ],
+      type: sequelize.QueryTypes.INSERT
+    });
+
+    res.json({
+      success: true,
+      message: 'Plugin created successfully',
+      id
+    });
+  } catch (error) {
+    console.error('Failed to create plugin:', error);
     res.status(500).json({
       success: false,
       error: error.message
