@@ -148,7 +148,17 @@ export default function Layout({ children, currentPageName }) {
     "Store": false,
     "Advanced": false, // Added new group for Advanced features
   });
-  const [dynamicNavItems, setDynamicNavItems] = useState([]);
+  const [dynamicNavItems, setDynamicNavItems] = useState({
+    catalog: [],
+    sales: [],
+    content: [],
+    marketing: [],
+    seo: [],
+    import_export: [],
+    store: [],
+    advanced: [],
+    uncategorized: []
+  });
 
 
   // Add this block to handle the RobotsTxt page
@@ -252,23 +262,58 @@ export default function Layout({ children, currentPageName }) {
         console.log('✅ Loaded plugin navigation items:', response.navigation.length);
 
         // Convert API navigation format to Layout navigation format
-        const convertedItems = response.navigation
-          .filter(item => !item.is_core) // Only show plugin-added items (core items are hardcoded for Phase 1)
-          .map(item => ({
-            name: item.label,
-            path: item.route?.replace('/admin/', ''), // Remove /admin/ prefix for createAdminUrl
-            icon: getIconComponent(item.icon), // Convert icon name to component
-            badge: item.badge,
-            isPremium: false
-          }));
+        // Organize by category for merging into existing groups
+        const categorizedItems = {
+          catalog: [],
+          sales: [],
+          content: [],
+          marketing: [],
+          seo: [],
+          import_export: [],
+          store: [],
+          advanced: [],
+          uncategorized: [] // Items without a matching category go here
+        };
 
-        setDynamicNavItems(convertedItems);
+        response.navigation
+          .filter(item => !item.is_core) // Only show plugin-added items
+          .forEach(item => {
+            const navItem = {
+              name: item.label,
+              path: item.route?.replace('/admin/', ''), // Remove /admin/ prefix
+              icon: getIconComponent(item.icon),
+              badge: item.badge,
+              isPremium: false,
+              isPlugin: true // Mark as plugin item
+            };
+
+            // Map category to navigation group
+            const categoryMap = {
+              'catalog': 'catalog',
+              'sales': 'sales',
+              'content': 'content',
+              'marketing': 'marketing',
+              'seo': 'seo',
+              'import_export': 'import_export',
+              'store': 'store',
+              'advanced': 'advanced',
+              'plugins': 'uncategorized' // "plugins" category goes to standalone group
+            };
+
+            const targetCategory = categoryMap[item.category?.toLowerCase()] || 'uncategorized';
+            categorizedItems[targetCategory].push(navItem);
+          });
+
+        setDynamicNavItems(categorizedItems);
       }
 
       // Also load from plugin system (backward compatibility)
       const pluginNavItems = window.__PLUGIN_NAV_ITEMS__ || [];
       if (pluginNavItems.length > 0) {
-        setDynamicNavItems(prev => [...prev, ...pluginNavItems]);
+        setDynamicNavItems(prev => ({
+          ...prev,
+          uncategorized: [...(prev.uncategorized || []), ...pluginNavItems]
+        }));
       }
     } catch (error) {
       console.error('Error loading dynamic navigation:', error);
@@ -278,7 +323,7 @@ export default function Layout({ children, currentPageName }) {
         if (storeSettings) {
           const settings = JSON.parse(storeSettings);
           if (settings.customNavItems) {
-            setDynamicNavItems(settings.customNavItems);
+            setDynamicNavItems({ uncategorized: settings.customNavItems });
           }
         }
       } catch (fallbackError) {
@@ -422,6 +467,7 @@ export default function Layout({ children, currentPageName }) {
         { name: "Product Tabs", path: "PRODUCT_TABS", icon: Package },
         { name: "Product Labels", path: "PRODUCT_LABELS", icon: Tag },
         { name: "Stock Settings", path: "STOCK_SETTINGS", icon: BarChart3 },
+        ...(dynamicNavItems?.catalog || []) // Plugin items for Catalog
       ]
     },
     {
@@ -434,6 +480,7 @@ export default function Layout({ children, currentPageName }) {
         { name: "Payment Methods", path: "PAYMENT_METHODS", icon: CreditCard },
         { name: "Coupons", path: "COUPONS", icon: Tag },
         { name: "Delivery Settings", path: "DELIVERY_SETTINGS", icon: Calendar },
+        ...(dynamicNavItems?.sales || []) // Plugin items for Sales
       ]
     },
     {
@@ -442,6 +489,7 @@ export default function Layout({ children, currentPageName }) {
         { name: "CMS Blocks", path: "CMS_BLOCKS", icon: FileText },
         { name: "CMS Pages", path: "CMS_PAGES", icon: FileText },
         { name: "File Library", path: "file-library", icon: Camera },
+        ...(dynamicNavItems?.content || []) // Plugin items for Content
       ]
     },
     {
@@ -452,6 +500,7 @@ export default function Layout({ children, currentPageName }) {
         { name: "HeatMaps", path: "HEATMAPS", icon: Activity, isPremium: true },
         { name: "A/B Testing", path: "ABTESTING", icon: FlaskConical, isPremium: true },
         { name: "Customer Activity", path: "CUSTOMER_ACTIVITY", icon: BarChart3 },
+        ...(dynamicNavItems?.marketing || []) // Plugin items for Marketing
       ]
     },
     {
@@ -465,6 +514,7 @@ export default function Layout({ children, currentPageName }) {
         { name: "Robots", path: "seo-tools/robots", icon: Bot },
         { name: "Social & Schema", path: "seo-tools/social", icon: Share2 },
         { name: "Report", path: "seo-tools/report", icon: BarChart3 },
+        ...(dynamicNavItems?.seo || []) // Plugin items for SEO
       ]
     },
     {
@@ -473,7 +523,8 @@ export default function Layout({ children, currentPageName }) {
         { name: "Akeneo Connector", path: "akeneo-integration", icon: RefreshCw, isPremium: true },
         { name: "Marketplace Export", path: "MARKETPLACE_EXPORT", icon: Upload },
         { name: "Ecommerce", path: "ecommerce-integrations", icon: ShoppingBag },
-        { name: "CRM", path: "crm-integrations", icon: Users }
+        { name: "CRM", path: "crm-integrations", icon: Users },
+        ...(dynamicNavItems?.import_export || []) // Plugin items for Import & Export
       ]
     },
     {
@@ -488,6 +539,7 @@ export default function Layout({ children, currentPageName }) {
         ...(user?.account_type === 'agency' || user?.role === 'admin' || user?.role === 'store_owner' ? [
           { name: "Stores", path: "STORES", icon: Building2 },
         ] : []),
+        ...(dynamicNavItems?.store || []) // Plugin items for Store
       ]
     },
     {
@@ -495,15 +547,16 @@ export default function Layout({ children, currentPageName }) {
       items: [
         { name: "System Monitoring", path: "monitoring-dashboard", icon: Activity },
         { name: "Scheduled", path: "scheduled-jobs", icon: Calendar },
+        ...(dynamicNavItems?.advanced || []) // Plugin items for Advanced
       ]
     }
   ];
 
-  // Add dynamic navigation items from plugins (Phase 1: Plugin Architecture)
-  if (dynamicNavItems && dynamicNavItems.length > 0) {
+  // Add standalone "Plugins" group for uncategorized plugin items (Phase 1: Plugin Architecture)
+  if (dynamicNavItems?.uncategorized && dynamicNavItems.uncategorized.length > 0) {
     navigationGroups.push({
       name: "Plugins",
-      items: dynamicNavItems
+      items: dynamicNavItems.uncategorized
     });
   }
 
