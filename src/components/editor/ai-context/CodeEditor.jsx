@@ -618,7 +618,7 @@ const CodeEditor = ({
 
   // Generate diff when content changes
   useEffect(() => {
-    if (enableDiffDetection && initialContent) {
+    if (enableDiffDetection && (initialContent || originalCode)) {
       const contentToCompare = initialContent || originalCode || '';
       if (localCode !== contentToCompare) {
         const diffResult = diffServiceRef.current.createDiff(contentToCompare, localCode);
