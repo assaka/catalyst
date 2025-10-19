@@ -28,28 +28,38 @@ function PageWrapper({ Component, pageName }) {
 // Initialize database-driven plugins
 async function initializeDatabasePlugins() {
   try {
-    
+    console.log('🚀 Initializing database plugins...');
+
     // Fetch active plugins from database
+    console.log('📡 Fetching active plugins from /api/plugins/registry?status=active');
     const response = await fetch('/api/plugins/registry?status=active');
+    console.log('📡 Response status:', response.status);
+
     const result = await response.json();
-    
+    console.log('📡 Response data:', result);
+
     if (!result.success) {
-      console.error('Failed to load plugins from database');
+      console.error('❌ Failed to load plugins from database:', result);
       return;
     }
-    
+
     const activePlugins = result.data || [];
-    
+    console.log(`✅ Found ${activePlugins.length} active plugins:`, activePlugins.map(p => p.name));
+
     // Load hooks and events for each plugin
     for (const plugin of activePlugins) {
+      console.log(`🔄 Processing plugin: ${plugin.name} (${plugin.id})`);
       await loadPluginHooksAndEvents(plugin.id);
     }
-    
+
+    console.log('✅ All plugins initialized successfully');
+
     // Set up pricing notifications globally
     setupGlobalPricingNotifications();
-    
+
   } catch (error) {
     console.error('❌ Error initializing database plugins:', error);
+    console.error('❌ Error stack:', error.stack);
   }
 }
 
@@ -179,8 +189,10 @@ function setupGlobalPricingNotifications() {
 function App() {
   // Initialize the new hook-based architecture
   useEffect(() => {
+    console.log('🎬 App useEffect running - initializing extension system...');
     const initializeExtensionSystem = async () => {
-      
+      console.log('🎬 Inside initializeExtensionSystem function');
+
       try {
         // Load core extensions
         const extensionsToLoad = [
@@ -200,7 +212,9 @@ function App() {
         await extensionSystem.loadFromConfig(extensionsToLoad)
 
         // Initialize database-driven plugins by loading hooks from database
+        console.log('🎯 About to call initializeDatabasePlugins()...');
         await initializeDatabasePlugins();
+        console.log('🎯 initializeDatabasePlugins() completed');
         
         // Emit system ready event
         eventSystem.emit('system.ready', {
