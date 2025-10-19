@@ -20,6 +20,8 @@ import { useTranslation } from '@/contexts/TranslationContext';
 import hookSystem from '@/core/HookSystem.js';
 import eventSystem from '@/core/EventSystem.js';
 
+console.log('🛒 Cart.jsx: Module loaded, eventSystem:', eventSystem);
+
 import slotConfigurationService from '@/services/slotConfigurationService';
 import { UnifiedSlotRenderer } from '@/components/editor/slot/UnifiedSlotRenderer';
 import '@/components/editor/slot/UnifiedSlotComponents'; // Register unified components
@@ -958,6 +960,12 @@ export default function Cart() {
 
     // Emit cart viewed event
     useEffect(() => {
+        console.log('🛒 Cart.jsx: cart.viewed useEffect triggered', {
+            loading,
+            cartItemsLength: cartItems.length,
+            willEmit: !loading && cartItems.length >= 0
+        });
+
         if (!loading && cartItems.length >= 0) {
             console.log('🛒 Cart.jsx: Emitting cart.viewed event', {
                 itemCount: cartItems.length,
