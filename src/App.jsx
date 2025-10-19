@@ -11,7 +11,7 @@ import Auth from '@/pages/Auth'
 import * as Pages from '@/pages'
 
 // Import new hook-based systems
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import extensionSystem from '@/core/ExtensionSystem.js'
 import hookSystem from '@/core/HookSystem.js'
 import eventSystem from '@/core/EventSystem.js'
@@ -188,6 +188,8 @@ function setupGlobalPricingNotifications() {
 function App() {
   console.log('🎯 App component RENDERING');
 
+  const [pluginsReady, setPluginsReady] = useState(false);
+
   // Initialize the new hook-based architecture
   useEffect(() => {
     console.log('🎬 App useEffect running - initializing extension system...');
@@ -216,7 +218,11 @@ function App() {
         console.log('🎯 About to call initializeDatabasePlugins()...');
         await initializeDatabasePlugins();
         console.log('🎯 initializeDatabasePlugins() completed');
-        
+
+        // Mark plugins as ready
+        console.log('✅ Setting pluginsReady to true');
+        setPluginsReady(true);
+
         // Emit system ready event
         eventSystem.emit('system.ready', {
           timestamp: Date.now(),
@@ -238,6 +244,25 @@ function App() {
 
     initializeExtensionSystem()
   }, [])
+
+  // Wait for plugins to load before rendering app
+  if (!pluginsReady) {
+    console.log('⏳ Waiting for plugins to load...');
+    return (
+      <div style={{
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        height: '100vh',
+        fontSize: '18px',
+        color: '#666'
+      }}>
+        Loading plugins...
+      </div>
+    );
+  }
+
+  console.log('✅ Plugins ready, rendering app');
 
   return (
     <TranslationProvider>
