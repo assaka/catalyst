@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import Editor from '@monaco-editor/react';
+import Editor, { DiffEditor } from '@monaco-editor/react';
 import { 
   Save, 
   Undo, 
@@ -681,10 +681,8 @@ const CodeEditor = ({
 
     console.log('🔄 [CodeEditor] New code after revert has', newCode.split('\n').length, 'lines');
 
-    // Update local code first to prevent race conditions
-    setLocalCode(newCode);
-
-    // Then call onChange to notify parent
+    // Only call onChange - let parent update value, which triggers useEffect to update localCode
+    // This ensures single source of truth and prevents race conditions with diff regeneration
     if (onChange) {
       onChange(newCode);
     }
@@ -1079,169 +1077,63 @@ const CodeEditor = ({
       {/* Editor Content */}
       <div className="flex-1">
         {showSplitView && enableDiffDetection ? (
-          /* Split View - Original vs Modified */
-          (() => {
-            const { original: collapsedOriginal, modified: collapsedModified } = getCollapsedCode(originalCode, localCode);
-            return (
-              <div className="h-full flex">
-                {/* Original Code */}
-                <div className="flex-1 border-r">
-                  <div className="bg-muted p-2 text-sm font-medium border-b flex items-center justify-between">
-                    <span>Original ({originalCode?.split('\n').length || 0} lines)</span>
-                    {collapseUnchanged && (
-                      <Badge variant="secondary" className="text-xs">
-                        <ChevronUp className="w-3 h-3 mr-1" />
-                        Collapsed
-                      </Badge>
-                    )}
-                  </div>
-                  <Editor
-                    height="100%"
-                    language={getMonacoLanguage()}
-                    value={collapsedOriginal || originalCode || ''}
+          /* Split View - Use Monaco's built-in DiffEditor */
+          <div className="h-full flex flex-col">
+            <div className="bg-muted p-2 text-sm font-medium border-b flex items-center justify-between">
+              <div className="flex items-center space-x-2">
+                <span>Comparing Changes</span>
+                {(() => {
+                  const stats = getDiffStats(originalCode || '', localCode);
+                  return (
+                    <div className="flex items-center space-x-2 text-xs">
+                      <span className="text-green-600">+{stats.additions}</span>
+                      <span className="text-red-600">-{stats.deletions}</span>
+                      <span className="text-orange-600">{stats.linesChanged} modified</span>
+                    </div>
+                  );
+                })()}
+              </div>
+            </div>
+            <div className="flex-1">
+              <DiffEditor
+                height="100%"
+                language={getMonacoLanguage()}
+                original={originalCode || ''}
+                modified={localCode}
+                onMount={(editor) => {
+                  // Store reference to the modified editor for undo/redo and change tracking
+                  const modifiedEditor = editor.getModifiedEditor();
+                  editorRef.current = modifiedEditor;
+
+                  // Set up change listener on the modified editor
+                  const model = modifiedEditor.getModel();
+                  if (model) {
+                    model.onDidChangeContent(() => {
+                      const newValue = model.getValue();
+                      handleCodeChange(newValue);
+                    });
+                  }
+                }}
                 options={{
-                  readOnly: true,
+                  readOnly: readOnly,
                   minimap: { enabled: false },
                   scrollBeyondLastLine: false,
                   fontSize: 14,
                   lineHeight: 20,
                   fontFamily: 'ui-monospace, SFMono-Regular, "SF Mono", Consolas, "Liberation Mono", Menlo, monospace',
                   tabSize: 2,
-                  wordWrap: 'on',
+                  insertSpaces: true,
+                  wordWrap: 'off',
                   automaticLayout: true,
-                  lineNumbers: 'on',
-                  glyphMargin: true,
-                  folding: true
+                  renderSideBySide: true,
+                  ignoreTrimWhitespace: false,
+                  renderOverviewRuler: true,
+                  diffWordWrap: 'off'
                 }}
                 theme="vs-dark"
               />
             </div>
-            
-                {/* Modified Code with Revert Gutter */}
-                <div className="flex-1 relative">{/* Wrapper for overlay positioning */}
-                  {/* Overlay gutter - positioned on top of Monaco editor */}
-                  {(() => {
-                    const changedBlocks = getChangedBlocks();
-                    if (changedBlocks.length === 0) return null;
-
-                    return (
-                      <div
-                        className="absolute left-0 top-0 w-6 h-full bg-gray-800/90 border-r border-gray-700 pointer-events-none z-10"
-                        style={{ marginTop: '42px' }} // Offset for header
-                      >
-                        {/* Render chevrons using Monaco's line positioning */}
-                        {changedBlocks.map((block, blockIndex) => (
-                          <div
-                            key={blockIndex}
-                            className="absolute left-0 w-full pointer-events-auto group"
-                            ref={(el) => {
-                              if (!el || !editorRef.current) return;
-
-                              // Use Monaco's API to get exact line position
-                              const updatePosition = () => {
-                                if (editorRef.current) {
-                                  try {
-                                    // Get the top position for this line from Monaco
-                                    const lineNumber = block.startLine + 1; // Monaco uses 1-indexed
-                                    const topPosition = editorRef.current.getTopForLineNumber(lineNumber);
-                                    const scrollTop = editorRef.current.getScrollTop();
-
-                                    // Position relative to viewport
-                                    const offsetTop = topPosition - scrollTop;
-                                    el.style.top = `${offsetTop}px`;
-                                    el.style.height = `${(block.endLine - block.startLine + 1) * 19}px`; // Monaco's line height
-                                  } catch (e) {
-                                    // Monaco not ready yet, try again
-                                    requestAnimationFrame(updatePosition);
-                                  }
-                                }
-                              };
-
-                              // Initial position
-                              requestAnimationFrame(updatePosition);
-
-                              // Update position on scroll
-                              if (editorRef.current && !editorRef.current._gutterScrollListener) {
-                                editorRef.current._gutterScrollListener = editorRef.current.onDidScrollChange(updatePosition);
-                              }
-                            }}
-                          >
-                            {/* Highlight bar on hover */}
-                            <div className="absolute inset-0 bg-blue-500/0 group-hover:bg-blue-500/20 border-l-2 border-blue-500/40 transition-colors" />
-
-                            {/* Revert chevron button */}
-                            <button
-                              onClick={() => {
-                                if (block.startLine === block.endLine) {
-                                  handleRevertLine(block.startLine);
-                                } else {
-                                  handleRevertBlock(block.startLine, block.endLine);
-                                }
-                              }}
-                              className="absolute top-0 left-0.5 w-5 h-5 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity bg-gray-600/95 hover:bg-blue-600 text-white rounded-sm shadow-lg"
-                              title={`Revert ${block.startLine === block.endLine ? 'line' : 'lines'} ${block.startLine + 1}${block.startLine !== block.endLine ? `-${block.endLine + 1}` : ''}`}
-                            >
-                              <ChevronLeft className="w-3 h-3" />
-                            </button>
-                          </div>
-                        ))}
-                      </div>
-                    );
-                  })()}
-
-                  {/* Editor Container */}
-                  <div className="flex-1 relative flex flex-col">
-                    <div className="bg-muted p-2 text-sm font-medium border-b flex items-center justify-between">
-                      <div className="flex items-center space-x-2">
-                        <span>Modified ({localCode.split('\n').length} lines)</span>
-                        {collapseUnchanged && (
-                          <Badge variant="secondary" className="text-xs">
-                            <ChevronUp className="w-3 h-3 mr-1" />
-                            Collapsed
-                          </Badge>
-                        )}
-                      </div>
-                      {(() => {
-                        // Calculate stats from actual code comparison
-                        const stats = getDiffStats(originalCode || '', localCode);
-                        return (
-                          <div className="flex items-center space-x-2 text-xs">
-                            <span className="text-green-600">+{stats.additions}</span>
-                            <span className="text-red-600">-{stats.deletions}</span>
-                          </div>
-                        );
-                      })()}
-                    </div>
-                    <div className="flex-1">
-                      <Editor
-                        height="100%"
-                        language={getMonacoLanguage()}
-                        value={collapsedModified || localCode}
-                        onChange={handleCodeChange}
-                        onMount={handleEditorDidMount}
-                        options={{
-                          readOnly: readOnly,
-                          minimap: { enabled: false },
-                          scrollBeyondLastLine: false,
-                          fontSize: 14,
-                          lineHeight: 20,
-                          fontFamily: 'ui-monospace, SFMono-Regular, "SF Mono", Consolas, "Liberation Mono", Menlo, monospace',
-                          tabSize: 2,
-                          insertSpaces: true,
-                          wordWrap: 'on',
-                          automaticLayout: true,
-                          lineNumbers: 'on',
-                          glyphMargin: false,
-                          folding: true
-                        }}
-                        theme="vs-dark"
-                      />
-                    </div>
-                  </div>
-                </div>
-              </div>
-            );
-          })()
+          </div>
         ) : showDiffView && enableDiffDetection && fullFileDisplayLines.length > 0 ? (
           /* Enhanced Diff View with Statistics Panel and Revert Actions */
           <div className="h-full flex flex-col">
