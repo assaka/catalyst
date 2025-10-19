@@ -427,8 +427,20 @@ const UnifiedPluginManager = () => {
             });
           });
         }
+
+        // Add events as separate files
+        if (plugin.events) {
+          plugin.events.forEach((event, index) => {
+            files.push({
+              name: `event_${event.event_name.replace(/[^a-zA-Z0-9]/g, '_')}.js`,
+              path: `/events/${event.event_name.replace(/[^a-zA-Z0-9]/g, '_')}.js`,
+              type: 'javascript',
+              content: event.listener_code
+            });
+          });
+        }
       }
-      
+
       setPluginFiles(files);
       
     } catch (error) {
