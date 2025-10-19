@@ -1106,19 +1106,21 @@ const CodeEditor = ({
 
                     return (
                       <div
-                        className="w-6 flex-shrink-0 bg-gray-800 border-r border-gray-700 overflow-hidden relative"
+                        className="w-6 flex-shrink-0 bg-gray-800 border-r border-gray-700 overflow-y-scroll overflow-x-hidden relative scrollbar-hide"
+                        style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
                         ref={(el) => {
                           if (!el) return;
+
+                          // Prevent user scrolling on gutter
+                          el.addEventListener('scroll', (e) => {
+                            e.preventDefault();
+                          });
 
                           // Sync scroll position with Monaco
                           const syncScroll = () => {
                             if (editorRef.current && el) {
                               const scrollTop = editorRef.current.getScrollTop();
-                              // Update transform instead of scrollTop for better performance
-                              const contentEl = el.querySelector('.gutter-content');
-                              if (contentEl) {
-                                contentEl.style.transform = `translateY(-${scrollTop}px)`;
-                              }
+                              el.scrollTop = scrollTop;
                             }
                           };
 
@@ -1148,8 +1150,7 @@ const CodeEditor = ({
                         <div
                           className="gutter-content relative"
                           style={{
-                            height: `${totalLines * 20}px`,
-                            willChange: 'transform'
+                            height: `${totalLines * 20}px`
                           }}
                         >
                           {/* Render line markers for each line (for debugging and hover) */}
