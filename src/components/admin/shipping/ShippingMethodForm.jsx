@@ -3,6 +3,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
+import SaveButton from '@/components/ui/save-button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { CountrySelect } from '@/components/ui/country-select';
@@ -32,6 +33,7 @@ export default function ShippingMethodForm({ method, storeId, onSubmit, onCancel
   });
 
   const [loading, setLoading] = useState(false);
+  const [saveSuccess, setSaveSuccess] = useState(false);
 
   useEffect(() => {
     if (method) {
@@ -64,15 +66,18 @@ export default function ShippingMethodForm({ method, storeId, onSubmit, onCancel
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
+
     if (!storeId) {
       showWarning('No store selected');
       return;
     }
 
+    setSaveSuccess(false);
     setLoading(true);
     try {
       await onSubmit({ ...formData, store_id: storeId });
+      setSaveSuccess(true);
+      setTimeout(() => setSaveSuccess(false), 2000);
     } catch (error) {
       console.error('Error submitting shipping method:', error);
     } finally {
@@ -461,9 +466,13 @@ export default function ShippingMethodForm({ method, storeId, onSubmit, onCancel
             <Button type="button" variant="outline" onClick={onCancel}>
               Cancel
             </Button>
-            <Button type="submit" disabled={!storeId || loading}>
-              {loading ? 'Saving...' : (method ? 'Update Method' : 'Create Method')}
-            </Button>
+            <SaveButton
+              type="submit"
+              loading={loading}
+              success={saveSuccess}
+              disabled={!storeId}
+              defaultText={method ? "Update Method" : "Create Method"}
+            />
           </div>
         </form>
       </CardContent>

@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Globe, Wand2, Save, X, Check, AlertCircle } from 'lucide-react';
 import api from '../../utils/api';
 import { useTranslation } from '../../contexts/TranslationContext';
+import SaveButton from '@/components/ui/save-button';
 
 /**
  * Entity Translation Tabs Component
@@ -27,6 +28,7 @@ export default function EntityTranslationTabs({
   const [activeLanguage, setActiveLanguage] = useState('en');
   const [translations, setTranslations] = useState(entity?.translations || {});
   const [saving, setSaving] = useState(false);
+  const [saveSuccess, setSaveSuccess] = useState(false);
   const [aiTranslating, setAiTranslating] = useState(false);
   const [message, setMessage] = useState(null);
 
@@ -48,6 +50,7 @@ export default function EntityTranslationTabs({
    */
   const saveTranslations = async () => {
     try {
+      setSaveSuccess(false);
       setSaving(true);
 
       const response = await api.put(
@@ -60,6 +63,8 @@ export default function EntityTranslationTabs({
 
       if (response.success) {
         showMessage('Translations saved successfully', 'success');
+        setSaveSuccess(true);
+        setTimeout(() => setSaveSuccess(false), 2000);
         if (onSave) {
           onSave(response.data);
         }
@@ -216,14 +221,13 @@ export default function EntityTranslationTabs({
               </button>
             )}
 
-            <button
+            <SaveButton
               onClick={saveTranslations}
-              disabled={saving || activeLanguage === 'en'}
-              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 flex items-center gap-2 text-sm"
-            >
-              <Save className="w-4 h-4" />
-              {saving ? 'Saving...' : 'Save'}
-            </button>
+              loading={saving}
+              success={saveSuccess}
+              disabled={activeLanguage === 'en'}
+              defaultText="Save"
+            />
           </div>
         </div>
 

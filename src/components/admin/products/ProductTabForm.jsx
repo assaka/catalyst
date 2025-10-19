@@ -4,6 +4,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Switch } from "@/components/ui/switch";
+import SaveButton from '@/components/ui/save-button';
 import { Textarea } from "@/components/ui/textarea";
 import {
   Select,
@@ -34,6 +35,7 @@ export default function ProductTabForm({ tab, attributes = [], attributeSets = [
     translations: {},
   });
   const [loading, setLoading] = useState(false);
+  const [saveSuccess, setSaveSuccess] = useState(false);
   const [showTranslations, setShowTranslations] = useState(false);
 
   useEffect(() => {
@@ -103,6 +105,7 @@ export default function ProductTabForm({ tab, attributes = [], attributeSets = [
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setSaveSuccess(false);
     setLoading(true);
 
     try {
@@ -126,6 +129,8 @@ export default function ProductTabForm({ tab, attributes = [], attributeSets = [
       });
 
       await onSubmit(submitData);
+      setSaveSuccess(true);
+      setTimeout(() => setSaveSuccess(false), 2000);
     } catch (error) {
       console.error("Error submitting product tab:", error);
     } finally {
@@ -323,12 +328,13 @@ export default function ProductTabForm({ tab, attributes = [], attributeSets = [
             >
               Cancel
             </Button>
-            <Button
+            <SaveButton
               type="submit"
-              disabled={loading || !formData.name.trim()}
-            >
-              {loading ? 'Saving...' : (tab ? 'Update Tab' : 'Create Tab')}
-            </Button>
+              loading={loading}
+              success={saveSuccess}
+              disabled={!formData.name.trim()}
+              defaultText={tab ? "Update Tab" : "Create Tab"}
+            />
           </div>
         </CardContent>
       </Card>

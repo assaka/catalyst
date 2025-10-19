@@ -4,6 +4,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
+import SaveButton from '@/components/ui/save-button';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { 
@@ -26,6 +27,7 @@ export default function TaxTypeForm({ taxType, stores, onSubmit, onCancel }) {
     store_id: stores[0]?.id || ""
   });
   const [loading, setLoading] = useState(false);
+  const [saveSuccess, setSaveSuccess] = useState(false);
   const [newCountry, setNewCountry] = useState("");
   const [newRate, setNewRate] = useState("");
 
@@ -100,6 +102,7 @@ export default function TaxTypeForm({ taxType, stores, onSubmit, onCancel }) {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setSaveSuccess(false);
     setLoading(true);
 
     try {
@@ -109,6 +112,8 @@ export default function TaxTypeForm({ taxType, stores, onSubmit, onCancel }) {
       }
 
       await onSubmit(formData);
+      setSaveSuccess(true);
+      setTimeout(() => setSaveSuccess(false), 2000);
     } catch (error) {
       console.error("Error submitting tax type:", error);
     } finally {
@@ -252,13 +257,13 @@ export default function TaxTypeForm({ taxType, stores, onSubmit, onCancel }) {
         <Button type="button" variant="outline" onClick={onCancel}>
           Cancel
         </Button>
-        <Button
+        <SaveButton
           type="submit"
-          disabled={loading || formData.country_rates.length === 0}
-          className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 material-ripple"
-        >
-          {loading ? "Saving..." : (taxType ? "Update Tax Type" : "Create Tax Type")}
-        </Button>
+          loading={loading}
+          success={saveSuccess}
+          disabled={formData.country_rates.length === 0}
+          defaultText={taxType ? "Update Tax Type" : "Create Tax Type"}
+        />
       </div>
     </form>
   );

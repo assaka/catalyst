@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import SaveButton from '@/components/ui/save-button';
 import {
   Select,
   SelectContent,
@@ -55,6 +56,7 @@ export default function CategoryForm({ category, onSubmit, onCancel, parentCateg
     meta_robots_tag: "index, follow" // Default value
   });
   const [loading, setLoading] = useState(false);
+  const [saveSuccess, setSaveSuccess] = useState(false);
   const [originalSlug, setOriginalSlug] = useState("");
   const [showSlugChangeWarning, setShowSlugChangeWarning] = useState(false);
   const [createRedirect, setCreateRedirect] = useState(true);
@@ -297,6 +299,7 @@ export default function CategoryForm({ category, onSubmit, onCancel, parentCateg
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setSaveSuccess(false);
     setLoading(true);
 
     try {
@@ -324,6 +327,8 @@ export default function CategoryForm({ category, onSubmit, onCancel, parentCateg
       }
 
       await onSubmit(submitData);
+      setSaveSuccess(true);
+      setTimeout(() => setSaveSuccess(false), 2000);
     } catch (error) {
       console.error("Error submitting category:", error);
     } finally {
@@ -766,13 +771,12 @@ export default function CategoryForm({ category, onSubmit, onCancel, parentCateg
         <Button type="button" variant="outline" onClick={onCancel}>
           Cancel
         </Button>
-        <Button
+        <SaveButton
           type="submit"
-          disabled={loading}
-          className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 material-ripple"
-        >
-          {loading ? "Saving..." : (category ? "Update Category" : "Create Category")}
-        </Button>
+          loading={loading}
+          success={saveSuccess}
+          defaultText={category ? "Update Category" : "Create Category"}
+        />
       </div>
 
       {/* Media Browser Dialog */}

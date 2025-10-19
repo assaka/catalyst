@@ -3,6 +3,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
+import SaveButton from '@/components/ui/save-button';
 import { Category } from '@/api/entities';
 import { AttributeSet } from '@/api/entities';
 import { Attribute } from '@/api/entities';
@@ -45,6 +46,7 @@ export default function CustomOptionRuleForm({ rule, onSubmit, onCancel }) {
   const [attributes, setAttributes] = useState([]);
   const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [saveSuccess, setSaveSuccess] = useState(false);
 
   // Multi-select states
   const [showCategorySelect, setShowCategorySelect] = useState(false);
@@ -232,16 +234,19 @@ export default function CustomOptionRuleForm({ rule, onSubmit, onCancel }) {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
+
     if (!isFormValid) {
       showWarning('Please fill in all required fields and add at least one condition (category, attribute set, SKU, or attribute condition).');
       return;
     }
-    
+
+    setSaveSuccess(false);
     setLoading(true);
-    
+
     try {
       await onSubmit(formData);
+      setSaveSuccess(true);
+      setTimeout(() => setSaveSuccess(false), 2000);
     } catch (error) {
       console.error("Error submitting form:", error);
     } finally {
@@ -670,13 +675,13 @@ export default function CustomOptionRuleForm({ rule, onSubmit, onCancel }) {
               <Button type="button" variant="outline" onClick={onCancel}>
                 Cancel
               </Button>
-              <Button
+              <SaveButton
                 type="submit"
-                disabled={loading || !isFormValid}
-                className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700"
-              >
-                {loading ? "Saving..." : (rule ? "Update Rule" : "Create Rule")}
-              </Button>
+                loading={loading}
+                success={saveSuccess}
+                disabled={!isFormValid}
+                defaultText={rule ? "Update Rule" : "Create Rule"}
+              />
             </div>
           </form>
         </CardContent>

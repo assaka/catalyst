@@ -5,6 +5,7 @@ import NoStoreSelected from '@/components/admin/NoStoreSelected';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
+import SaveButton from '@/components/ui/save-button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
@@ -20,6 +21,7 @@ export default function Customers() {
     const [editingCustomer, setEditingCustomer] = useState(null);
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
     const [saving, setSaving] = useState(false);
+    const [saveSuccess, setSaveSuccess] = useState(false);
 
     useEffect(() => {
         if (selectedStore) {
@@ -94,6 +96,7 @@ export default function Customers() {
         e.preventDefault();
         if (!editingCustomer) return;
 
+        setSaveSuccess(false);
         setSaving(true);
         try {
             const formData = new FormData(e.target);
@@ -115,14 +118,16 @@ export default function Customers() {
             };
 
             await Customer.update(editingCustomer.id, updatedData);
-            
+
             // Update the local state
-            setCustomers(customers.map(c => 
-                c.id === editingCustomer.id 
+            setCustomers(customers.map(c =>
+                c.id === editingCustomer.id
                     ? { ...c, ...updatedData }
                     : c
             ));
-            
+
+            setSaveSuccess(true);
+            setTimeout(() => setSaveSuccess(false), 2000);
             setIsEditModalOpen(false);
             setEditingCustomer(null);
         } catch (error) {
@@ -379,9 +384,12 @@ export default function Customers() {
                                 >
                                     Cancel
                                 </Button>
-                                <Button type="submit" disabled={saving}>
-                                    {saving ? 'Saving...' : 'Save Changes'}
-                                </Button>
+                                <SaveButton
+                                    type="submit"
+                                    loading={saving}
+                                    success={saveSuccess}
+                                    defaultText="Save Changes"
+                                />
                             </div>
                         </form>
                     )}

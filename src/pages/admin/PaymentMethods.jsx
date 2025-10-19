@@ -5,6 +5,7 @@ import { User } from "@/api/entities";
 import { useStoreSelection } from "@/contexts/StoreSelectionContext.jsx";
 import { formatPrice } from "@/utils/priceUtils";
 import { Button } from "@/components/ui/button";
+import SaveButton from '@/components/ui/save-button';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -23,6 +24,7 @@ export default function PaymentMethods() {
   const [store, setStore] = useState(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [saveSuccess, setSaveSuccess] = useState(false);
   const [flashMessage, setFlashMessage] = useState(null);
   const [showForm, setShowForm] = useState(false);
   const [editingMethod, setEditingMethod] = useState(null);
@@ -103,6 +105,7 @@ export default function PaymentMethods() {
       return;
     }
 
+    setSaveSuccess(false);
     setSaving(true);
     try {
       const payload = {
@@ -120,7 +123,9 @@ export default function PaymentMethods() {
         await PaymentMethod.create(payload);
         setFlashMessage({ type: 'success', message: 'Payment method created successfully!' });
       }
-      
+
+      setSaveSuccess(true);
+      setTimeout(() => setSaveSuccess(false), 2000);
       setShowForm(false);
       setEditingMethod(null);
       resetForm();
@@ -622,9 +627,12 @@ export default function PaymentMethods() {
                   >
                     Cancel
                   </Button>
-                  <Button type="submit" disabled={saving}>
-                    {saving ? 'Saving...' : (editingMethod ? 'Update' : 'Create')}
-                  </Button>
+                  <SaveButton
+                    type="submit"
+                    loading={saving}
+                    success={saveSuccess}
+                    defaultText={editingMethod ? "Update" : "Create"}
+                  />
                 </div>
               </form>
             </div>

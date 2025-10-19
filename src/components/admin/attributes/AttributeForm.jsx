@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import SaveButton from '@/components/ui/save-button';
 import {
   Select,
   SelectContent,
@@ -38,6 +39,7 @@ export default function AttributeForm({ attribute, onSubmit, onCancel }) {
   });
   const [attributeValues, setAttributeValues] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [saveSuccess, setSaveSuccess] = useState(false);
   const [newValueCode, setNewValueCode] = useState("");
   const [newValueLabel, setNewValueLabel] = useState("");
   const [nextTempId, setNextTempId] = useState(1);
@@ -187,6 +189,7 @@ export default function AttributeForm({ attribute, onSubmit, onCancel }) {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setSaveSuccess(false);
     setLoading(true);
     try {
       // Submit the attribute first
@@ -229,6 +232,8 @@ export default function AttributeForm({ attribute, onSubmit, onCancel }) {
           }
         }
       }
+      setSaveSuccess(true);
+      setTimeout(() => setSaveSuccess(false), 2000);
     } catch (error) {
       console.error("Error submitting attribute:", error);
     } finally {
@@ -516,17 +521,12 @@ export default function AttributeForm({ attribute, onSubmit, onCancel }) {
         <Button type="button" variant="outline" onClick={onCancel}>
           Cancel
         </Button>
-        <Button
+        <SaveButton
           type="submit"
-          disabled={loading}
-          className="bg-gradient-to-r from-blue-600 to-purple-600"
-        >
-          {loading
-            ? "Saving..."
-            : attribute
-            ? "Update Attribute"
-            : "Create Attribute"}
-        </Button>
+          loading={loading}
+          success={saveSuccess}
+          defaultText={attribute ? "Update Attribute" : "Create Attribute"}
+        />
       </div>
     </form>
   );
