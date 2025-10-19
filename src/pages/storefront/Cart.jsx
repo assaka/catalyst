@@ -20,8 +20,6 @@ import { useTranslation } from '@/contexts/TranslationContext';
 import hookSystem from '@/core/HookSystem.js';
 import eventSystem from '@/core/EventSystem.js';
 
-console.log('🛒 Cart.jsx: Module loaded, eventSystem:', eventSystem);
-
 import slotConfigurationService from '@/services/slotConfigurationService';
 import { UnifiedSlotRenderer } from '@/components/editor/slot/UnifiedSlotRenderer';
 import '@/components/editor/slot/UnifiedSlotComponents'; // Register unified components
@@ -963,32 +961,14 @@ export default function Cart() {
 
     useEffect(() => {
         // Listen for system.ready event
-        const handleSystemReady = () => {
-            console.log('🛒 Cart.jsx: Plugins ready!');
-            setPluginsReady(true);
-        };
-
+        const handleSystemReady = () => setPluginsReady(true);
         eventSystem.on('system.ready', handleSystemReady);
-
-        // Cleanup
         return () => eventSystem.off('system.ready', handleSystemReady);
     }, []);
 
     // Emit cart viewed event (only after plugins are ready)
     useEffect(() => {
-        console.log('🛒 Cart.jsx: cart.viewed useEffect triggered', {
-            loading,
-            cartItemsLength: cartItems.length,
-            pluginsReady,
-            willEmit: !loading && cartItems.length >= 0 && pluginsReady
-        });
-
         if (!loading && cartItems.length >= 0 && pluginsReady) {
-            console.log('🛒 Cart.jsx: Emitting cart.viewed event', {
-                itemCount: cartItems.length,
-                total,
-                subtotal
-            });
             eventSystem.emit('cart.viewed', {
                 items: cartItems,
                 subtotal,

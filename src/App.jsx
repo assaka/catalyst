@@ -28,15 +28,9 @@ function PageWrapper({ Component, pageName }) {
 // Initialize database-driven plugins
 async function initializeDatabasePlugins() {
   try {
-    console.log('🚀 Initializing database plugins...');
-
     // Fetch active plugins from database
-    console.log('📡 Fetching active plugins from /api/plugins/registry?status=active');
     const response = await fetch('/api/plugins/registry?status=active');
-    console.log('📡 Response status:', response.status);
-
     const result = await response.json();
-    console.log('📡 Response data:', result);
 
     if (!result.success) {
       console.error('❌ Failed to load plugins from database:', result);
@@ -44,15 +38,11 @@ async function initializeDatabasePlugins() {
     }
 
     const activePlugins = result.data || [];
-    console.log(`✅ Found ${activePlugins.length} active plugins:`, activePlugins.map(p => p.name));
 
-    // Load hooks and events for each plugin
-    for (const plugin of activePlugins) {
-      console.log(`🔄 Processing plugin: ${plugin.name} (${plugin.id})`);
-      await loadPluginHooksAndEvents(plugin.id);
-    }
-
-    console.log('✅ All plugins initialized successfully');
+    // Load hooks and events for each plugin in parallel (faster!)
+    await Promise.all(
+      activePlugins.map(plugin => loadPluginHooksAndEvents(plugin.id))
+    );
 
     // Set up pricing notifications globally
     setupGlobalPricingNotifications();
@@ -66,22 +56,16 @@ async function initializeDatabasePlugins() {
 // Load hooks and events for a specific plugin
 async function loadPluginHooksAndEvents(pluginId) {
   try {
-    console.log(`🔧 Loading plugin: ${pluginId}`);
     const response = await fetch(`/api/plugins/registry/${pluginId}`);
     const result = await response.json();
 
     if (result.success && result.data) {
       const plugin = result.data;
-      console.log(`✅ Plugin loaded:`, plugin.name, {
-        hooks: plugin.hooks?.length || 0,
-        events: plugin.events?.length || 0
-      });
 
       // Register hooks from database
       if (plugin.hooks) {
         for (const hook of plugin.hooks) {
           if (hook.enabled) {
-            console.log(`🪝 Registering hook: ${hook.hook_name}`);
             const handlerFunction = createHandlerFromDatabaseCode(hook.handler_code);
             hookSystem.register(hook.hook_name, handlerFunction, hook.priority);
           }
@@ -90,16 +74,10 @@ async function loadPluginHooksAndEvents(pluginId) {
 
       // Register events from database
       if (plugin.events) {
-        console.log(`📡 Found ${plugin.events.length} events for plugin ${plugin.name}`);
         for (const event of plugin.events) {
-          console.log(`📡 Event config:`, event);
           if (event.enabled) {
-            console.log(`✅ Registering event listener: ${event.event_name}`);
             const listenerFunction = createHandlerFromDatabaseCode(event.listener_code);
             eventSystem.on(event.event_name, listenerFunction);
-            console.log(`✅ Event listener registered for: ${event.event_name}`);
-          } else {
-            console.log(`⏭️ Skipping disabled event: ${event.event_name}`);
           }
         }
       }
@@ -112,18 +90,11 @@ async function loadPluginHooksAndEvents(pluginId) {
 // Create executable function from database-stored code
 function createHandlerFromDatabaseCode(code) {
   try {
-    console.log('🔨 Creating handler from code:', code.substring(0, 100) + '...');
-    // Create function from database code string
-    // Use Function constructor (not AsyncFunction) to evaluate the arrow function string
-    const handler = new Function('return (' + code + ')')();
-    console.log('✅ Handler created successfully, type:', typeof handler);
-    return handler;
+    // Use Function constructor to evaluate the arrow function string
+    return new Function('return (' + code + ')')();
   } catch (error) {
     console.error('❌ Error creating handler from database code:', error);
-    console.error('❌ Failed code:', code);
-    return () => {
-      console.log('⚠️ Fallback handler called (original handler failed to create)');
-    };
+    return () => {}; // Silent fallback
   }
 }
 
@@ -187,14 +158,9 @@ function setupGlobalPricingNotifications() {
 }
 
 function App() {
-  console.log('🎯 App component RENDERING');
-
   // Initialize the new hook-based architecture
   useEffect(() => {
-    console.log('🎬 App useEffect running - initializing extension system...');
     const initializeExtensionSystem = async () => {
-      console.log('🎬 Inside initializeExtensionSystem function');
-
       try {
         // Load core extensions
         const extensionsToLoad = [
@@ -210,20 +176,15 @@ function App() {
           }
         ]
 
-        // Initialize extensions
-        console.log('🔧 Loading core extensions...');
+        // Initialize extensions (non-blocking)
         try {
           await extensionSystem.loadFromConfig(extensionsToLoad);
-          console.log('✅ Core extensions loaded');
         } catch (extError) {
-          console.warn('⚠️ Error loading core extensions (non-critical):', extError);
-          // Continue anyway - extensions are optional
+          // Extensions are optional - continue anyway
         }
 
-        // Initialize database-driven plugins by loading hooks from database
-        console.log('🎯 About to call initializeDatabasePlugins()...');
+        // Initialize database-driven plugins
         await initializeDatabasePlugins();
-        console.log('🎯 initializeDatabasePlugins() completed');
 
         // Emit system ready event
         eventSystem.emit('system.ready', {
