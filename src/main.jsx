@@ -3,6 +3,8 @@ import ReactDOM from 'react-dom/client'
 import App from '@/App.jsx'
 import '@/index.css'
 
+console.log('🚀 main.jsx loading - about to render App');
+
 // Global error handler for unhandled filter errors
 window.addEventListener('error', (event) => {
   if (event.message && event.message.includes('filter is not a function')) {
@@ -28,6 +30,8 @@ window.addEventListener('unhandledrejection', (event) => {
   }
 });
 
+console.log('🚀 main.jsx: Creating React root and rendering App...');
 ReactDOM.createRoot(document.getElementById('root')).render(
     <App />
-) 
+);
+console.log('🚀 main.jsx: App render called'); 

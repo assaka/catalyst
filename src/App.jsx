@@ -187,6 +187,8 @@ function setupGlobalPricingNotifications() {
 }
 
 function App() {
+  console.log('🎯 App component RENDERING');
+
   // Initialize the new hook-based architecture
   useEffect(() => {
     console.log('🎬 App useEffect running - initializing extension system...');
