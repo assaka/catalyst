@@ -11,13 +11,12 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { 
+import {
   Code,
   Upload,
   Brain,
   FileCode,
   Play,
-  Save,
   Plus,
   Trash2,
   AlertCircle,
@@ -51,6 +50,7 @@ import {
   Zap
 } from 'lucide-react';
 import { toast } from 'sonner';
+import SaveButton from '@/components/ui/save-button';
 import apiClient from '@/api/client';
 import Editor from '@monaco-editor/react';
 
@@ -65,6 +65,7 @@ const PluginBuilder = () => {
   const [showPreview, setShowPreview] = useState(false);
   const [configProperties, setConfigProperties] = useState([]);
   const [selectedHooks, setSelectedHooks] = useState([]);
+  const [saveSuccess, setSaveSuccess] = useState(false);
   
   // Plugin data state
   const [pluginData, setPluginData] = useState({
@@ -395,7 +396,8 @@ module.exports = SocialMediaPlugin;`
       toast.error('Please provide a plugin name');
       return;
     }
-    
+
+    setSaveSuccess(false);
     setLoading(true);
     
     try {
@@ -482,13 +484,15 @@ module.exports = SocialMediaPlugin;`
           ...pluginPayload,
           createdAt: new Date().toISOString()
         };
-        
+
         const updatedPlugins = [...createdPlugins, newPlugin];
         setCreatedPlugins(updatedPlugins);
         localStorage.setItem('created_plugins', JSON.stringify(updatedPlugins));
-        
+
         toast.success(`Plugin "${pluginData.name}" created successfully!`);
-        
+        setSaveSuccess(true);
+        setTimeout(() => setSaveSuccess(false), 2000);
+
         // Reset form
         setPluginData({
           name: '',
@@ -876,22 +880,13 @@ module.exports = SocialMediaPlugin;`
                   </div>
                   
                   <div className="flex justify-end">
-                    <Button 
+                    <SaveButton
                       onClick={() => createPlugin('visual')}
-                      disabled={loading || !pluginData.name}
-                    >
-                      {loading ? (
-                        <>
-                          <div className="animate-spin mr-2 h-4 w-4 border-2 border-white border-t-transparent rounded-full"></div>
-                          Creating...
-                        </>
-                      ) : (
-                        <>
-                          <Save className="mr-2 h-4 w-4" />
-                          Create Plugin
-                        </>
-                      )}
-                    </Button>
+                      loading={loading}
+                      success={saveSuccess}
+                      disabled={!pluginData.name}
+                      defaultText="Create Plugin"
+                    />
                   </div>
                 </>
               )}
@@ -942,22 +937,13 @@ module.exports = SocialMediaPlugin;`
               </div>
               
               <div className="flex justify-end">
-                <Button 
+                <SaveButton
                   onClick={() => createPlugin('code')}
-                  disabled={loading || !pluginData.name || !pluginData.code}
-                >
-                  {loading ? (
-                    <>
-                      <div className="animate-spin mr-2 h-4 w-4 border-2 border-white border-t-transparent rounded-full"></div>
-                      Creating...
-                    </>
-                  ) : (
-                    <>
-                      <Save className="mr-2 h-4 w-4" />
-                      Create Plugin
-                    </>
-                  )}
-                </Button>
+                  loading={loading}
+                  success={saveSuccess}
+                  disabled={!pluginData.name || !pluginData.code}
+                  defaultText="Create Plugin"
+                />
               </div>
             </CardContent>
           </Card>
@@ -1178,11 +1164,12 @@ class AdvancedPlugin {
                   <Settings className="w-4 h-4 mr-2" />
                   Configure Permissions
                 </Button>
-                <Button onClick={() => createPlugin('advanced')} disabled={loading}>
-                  {loading && <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2" />}
-                  <Save className="w-4 h-4 mr-2" />
-                  Create Advanced Plugin
-                </Button>
+                <SaveButton
+                  onClick={() => createPlugin('advanced')}
+                  loading={loading}
+                  success={saveSuccess}
+                  defaultText="Create Advanced Plugin"
+                />
               </div>
             </CardContent>
           </Card>

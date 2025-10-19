@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
-import { ChevronDown, ChevronRight, Globe, Wand2, Save, Check } from 'lucide-react';
+import { ChevronDown, ChevronRight, Globe, Wand2 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
+import SaveButton from '@/components/ui/save-button';
 import { useTranslation } from '@/contexts/TranslationContext';
 import { toast } from 'sonner';
 import api from '@/utils/api';
@@ -210,28 +211,12 @@ export default function ProductTranslationRow({ product, selectedLanguages, onUp
 
           {/* Save Button */}
           <div className="px-4 py-3 bg-gray-50 flex justify-end">
-            <Button
+            <SaveButton
               onClick={handleSave}
-              disabled={saving || saveSuccess}
-              className={saveSuccess ? "bg-green-600 hover:bg-green-700" : "bg-blue-600 hover:bg-blue-700"}
-            >
-              {saving ? (
-                <>
-                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                  Saving...
-                </>
-              ) : saveSuccess ? (
-                <>
-                  <Check className="w-4 h-4 mr-2" />
-                  Saved!
-                </>
-              ) : (
-                <>
-                  <Save className="w-4 h-4 mr-2" />
-                  Save Translations
-                </>
-              )}
-            </Button>
+              loading={saving}
+              success={saveSuccess}
+              defaultText="Save Translations"
+            />
           </div>
         </div>
       )}

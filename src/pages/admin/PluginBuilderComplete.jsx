@@ -12,13 +12,12 @@ import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
-import { 
+import {
   Code,
   Upload,
   Brain,
   FileCode,
   Play,
-  Save,
   Plus,
   Trash2,
   AlertCircle,
@@ -38,6 +37,7 @@ import {
   Sparkles
 } from 'lucide-react';
 import { toast } from 'sonner';
+import SaveButton from '@/components/ui/save-button';
 import apiClient from '@/api/client';
 
 const PluginBuilderComplete = () => {
@@ -48,6 +48,7 @@ const PluginBuilderComplete = () => {
   const [fileExplorerOpen, setFileExplorerOpen] = useState(true);
   const [selectedPlugin, setSelectedPlugin] = useState(null);
   const [previewHtml, setPreviewHtml] = useState('');
+  const [saveSuccess, setSaveSuccess] = useState(false);
   
   // Plugin data state
   const [pluginData, setPluginData] = useState({
@@ -404,8 +405,9 @@ module.exports = AnnouncementBarPlugin;`,
   };
 
   const createPlugin = async (method) => {
+    setSaveSuccess(false);
     setLoading(true);
-    
+
     try {
       let endpoint = '';
       let payload = {};
@@ -450,8 +452,10 @@ module.exports = AnnouncementBarPlugin;`,
       
       if (response.data.success) {
         toast.success(`Plugin "${response.data.plugin.name}" created successfully!`);
+        setSaveSuccess(true);
+        setTimeout(() => setSaveSuccess(false), 2000);
         await loadCreatedPlugins();
-        
+
         // Reset form
         setPluginData({
           name: '',
@@ -935,22 +939,13 @@ module.exports = AnnouncementBarPlugin;`,
                       </Button>
                     </div>
                     
-                    <Button 
+                    <SaveButton
                       onClick={() => createPlugin('visual')}
-                      disabled={loading || !pluginData.name || !pluginData.code}
-                    >
-                      {loading ? (
-                        <>
-                          <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
-                          Creating...
-                        </>
-                      ) : (
-                        <>
-                          <Save className="mr-2 h-4 w-4" />
-                          Create Plugin
-                        </>
-                      )}
-                    </Button>
+                      loading={loading}
+                      success={saveSuccess}
+                      disabled={!pluginData.name || !pluginData.code}
+                      defaultText="Create Plugin"
+                    />
                   </div>
                 </CardContent>
               </Card>
@@ -1052,22 +1047,13 @@ module.exports = MyPlugin;`}</pre>
                       )}
                     </Button>
                     
-                    <Button 
+                    <SaveButton
                       onClick={() => createPlugin('code')}
-                      disabled={loading || !pluginData.name || !pluginData.code}
-                    >
-                      {loading ? (
-                        <>
-                          <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
-                          Creating...
-                        </>
-                      ) : (
-                        <>
-                          <Save className="mr-2 h-4 w-4" />
-                          Create Plugin
-                        </>
-                      )}
-                    </Button>
+                      loading={loading}
+                      success={saveSuccess}
+                      disabled={!pluginData.name || !pluginData.code}
+                      defaultText="Create Plugin"
+                    />
                   </div>
                 </CardContent>
               </Card>
@@ -1280,22 +1266,12 @@ module.exports = MyPlugin;`}</pre>
                       </div>
                       
                       <div className="flex justify-end">
-                        <Button 
+                        <SaveButton
                           onClick={() => createPlugin('ai')}
-                          disabled={loading}
-                        >
-                          {loading ? (
-                            <>
-                              <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
-                              Creating...
-                            </>
-                          ) : (
-                            <>
-                              <Save className="mr-2 h-4 w-4" />
-                              Save Plugin
-                            </>
-                          )}
-                        </Button>
+                          loading={loading}
+                          success={saveSuccess}
+                          defaultText="Save Plugin"
+                        />
                       </div>
                     </div>
                   )}

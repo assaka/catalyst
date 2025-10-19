@@ -11,6 +11,7 @@ import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import { Separator } from "@/components/ui/separator";
 import { X, Upload, Search, AlertTriangle, ImageIcon, Plus, Trash2, ChevronRight, ChevronDown, Loader2, CheckCircle, AlertCircle, Languages } from "lucide-react";
+import SaveButton from '@/components/ui/save-button';
 import FlashMessage from "@/components/storefront/FlashMessage";
 import apiClient from "@/api/client";
 import MediaBrowser from "@/components/admin/cms/MediaBrowser";
@@ -93,6 +94,7 @@ export default function ProductForm({ product, categories, stores, taxes, attrib
   });
 
   const [loading, setLoading] = useState(false);
+  const [saveSuccess, setSaveSuccess] = useState(false);
   const [uploadingImage, setUploadingImage] = useState(false);
   const [showMediaBrowser, setShowMediaBrowser] = useState(false);
   const [currentAttributeCode, setCurrentAttributeCode] = useState(null);
@@ -685,6 +687,7 @@ export default function ProductForm({ product, categories, stores, taxes, attrib
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setSaveSuccess(false);
     setLoading(true);
 
     if (!selectedStore && (!stores || stores.length === 0)) {
@@ -761,6 +764,8 @@ export default function ProductForm({ product, categories, stores, taxes, attrib
 
       await onSubmit(payload);
       setFlashMessage({ type: 'success', message: `Product ${product ? 'updated' : 'created'} successfully!` });
+      setSaveSuccess(true);
+      setTimeout(() => setSaveSuccess(false), 2000);
     } catch (error) {
       console.error("Error submitting product:", error);
       setFlashMessage({ type: 'error', message: `Failed to ${product ? 'update' : 'create'} product: ${error.message}` });
@@ -2779,7 +2784,12 @@ export default function ProductForm({ product, categories, stores, taxes, attrib
 
         <div className="flex justify-end space-x-4 mt-6">
           <Button type="button" variant="outline" onClick={onCancel}>Cancel</Button>
-          <Button type="submit" disabled={loading}>{loading ? "Saving..." : (product ? "Update Product" : "Create Product")}</Button>
+          <SaveButton
+            type="submit"
+            loading={loading}
+            success={saveSuccess}
+            defaultText={product ? "Update Product" : "Create Product"}
+          />
         </div>
       </form>
       

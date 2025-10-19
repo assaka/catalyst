@@ -5,13 +5,14 @@
 
 import React, { useState, useCallback, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
-import { Image, Square, Settings, Plus, Loader2, Save, Code, X, Check, Rocket, Trash2, Monitor, Tablet, Smartphone } from 'lucide-react';
+import { Image, Square, Settings, Plus, Loader2, Code, X, Check, Rocket, Trash2, Monitor, Tablet, Smartphone } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ResizeWrapper } from '@/components/ui/resize-element-wrapper';
 import { SlotManager } from '@/utils/slotUtils';
 import FilePickerModal from '@/components/ui/FilePickerModal';
 import CodeEditor from '@/components/editor/ai-context/CodeEditor';
+import SaveButton from '@/components/ui/save-button';
 import { processVariables, generateDemoData } from '@/utils/variableProcessor';
 
 // EditModeControls Component
@@ -30,39 +31,13 @@ export function EditModeControls({ localSaveStatus, publishStatus, saveConfigura
           {publishStatus === 'error' && '✗ Publish Failed'}
         </div>
       )}
-      <Button
+      <SaveButton
         onClick={() => saveConfiguration()}
-        disabled={localSaveStatus === 'saving'}
-        variant="outline"
+        loading={localSaveStatus === 'saving'}
+        success={localSaveStatus === 'saved'}
         size="sm"
-        className={
-          localSaveStatus === 'saved' ? 'text-green-600 border-green-300' :
-          localSaveStatus === 'error' ? 'text-red-600 border-red-300' :
-          ''
-        }
-      >
-        {localSaveStatus === 'saving' ? (
-          <>
-            <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-            Saving
-          </>
-        ) : localSaveStatus === 'saved' ? (
-          <>
-            <Check className="w-4 h-4 mr-2" />
-            Saved
-          </>
-        ) : localSaveStatus === 'error' ? (
-          <>
-            <X className="w-4 h-4 mr-2" />
-            Save Failed
-          </>
-        ) : (
-          <>
-            <Save className="w-4 h-4 mr-2" />
-            Save
-          </>
-        )}
-      </Button>
+        className="border"
+      />
     </>
   );
 }
@@ -2167,6 +2142,7 @@ export function CodeModal({
   const [hasChanges, setHasChanges] = useState(false);
   const [jsonError, setJsonError] = useState(null);
   const [key, setKey] = useState(0); // Force re-render of CodeEditor
+  const [saveSuccess, setSaveSuccess] = useState(false);
 
   // Initialize editor value when modal opens
   useEffect(() => {
@@ -2196,12 +2172,15 @@ export function CodeModal({
   };
 
   const handleSave = () => {
+    setSaveSuccess(false);
     try {
       const parsedConfig = JSON.parse(editorValue);
       if (onSave) {
         onSave(parsedConfig);
         setOriginalValue(editorValue);
         setHasChanges(false);
+        setSaveSuccess(true);
+        setTimeout(() => setSaveSuccess(false), 2000);
       }
     } catch (err) {
       console.error('Invalid JSON:', err);
@@ -2242,27 +2221,13 @@ export function CodeModal({
             )}
           </div>
           <div className="flex items-center gap-2">
-            <button
+            <SaveButton
               onClick={handleSave}
-              disabled={!!jsonError || localSaveStatus === 'saving'}
-              className={`flex items-center px-3 py-1.5 rounded text-sm font-medium transition-all duration-200 ${
-                hasChanges
-                  ? 'bg-blue-600 hover:bg-blue-700 text-white border border-blue-600 shadow-lg font-semibold'
-                  : 'bg-gray-400 hover:bg-gray-500 text-white border border-gray-400 opacity-70'
-              }`}
-            >
-              {localSaveStatus === 'saving' ? (
-                <>
-                  <Loader2 className="w-3 h-3 mr-1 animate-spin" />
-                  Saving...
-                </>
-              ) : (
-                <>
-                  <Save className="w-3 h-3 mr-1" />
-                  Save
-                </>
-              )}
-            </button>
+              loading={localSaveStatus === 'saving'}
+              success={saveSuccess}
+              disabled={!!jsonError}
+              size="sm"
+            />
             <Button
               onClick={onClose}
               variant="ghost"

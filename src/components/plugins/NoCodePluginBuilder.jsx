@@ -28,10 +28,10 @@ import {
   Plus,
   Trash2,
   Eye,
-  Save,
   Sparkles,
   Code2
 } from 'lucide-react';
+import SaveButton from '@/components/ui/save-button';
 import PluginAIAssistant from './PluginAIAssistant';
 
 const NoCodePluginBuilder = ({ onSave, onCancel, onSwitchMode, initialContext }) => {
@@ -54,6 +54,8 @@ const NoCodePluginBuilder = ({ onSave, onCancel, onSwitchMode, initialContext })
 
   const [currentStep, setCurrentStep] = useState('basics');
   const [showPreview, setShowPreview] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [saveSuccess, setSaveSuccess] = useState(false);
 
   const handleAIConfigGenerated = (config) => {
     // Merge AI-generated config with current config
@@ -114,8 +116,16 @@ const NoCodePluginBuilder = ({ onSave, onCancel, onSwitchMode, initialContext })
   };
 
   const handleSave = async () => {
-    if (onSave) {
-      await onSave(pluginConfig);
+    setSaveSuccess(false);
+    setLoading(true);
+    try {
+      if (onSave) {
+        await onSave(pluginConfig);
+      }
+      setSaveSuccess(true);
+      setTimeout(() => setSaveSuccess(false), 2000);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -444,10 +454,12 @@ const NoCodePluginBuilder = ({ onSave, onCancel, onSwitchMode, initialContext })
               <Eye className="w-4 h-4 mr-2" />
               {showPreview ? 'Hide' : 'Show'} Preview
             </Button>
-            <Button onClick={handleSave} className="bg-blue-600 hover:bg-blue-700">
-              <Save className="w-4 h-4 mr-2" />
-              Generate Plugin
-            </Button>
+            <SaveButton
+              onClick={handleSave}
+              loading={loading}
+              success={saveSuccess}
+              defaultText="Generate Plugin"
+            />
           </div>
         </div>
       </div>
