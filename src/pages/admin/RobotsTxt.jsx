@@ -11,7 +11,8 @@ import { clearCache } from "@/components/storefront/StoreProvider";
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { Save, Bot, RefreshCw } from 'lucide-react';
+import { Bot, RefreshCw } from 'lucide-react';
+import SaveButton from '@/components/ui/save-button';
 
 export default function RobotsTxt() {
     const { selectedStore, getSelectedStoreId } = useStoreSelection();
@@ -20,6 +21,7 @@ export default function RobotsTxt() {
     const [store, setStore] = useState(null);
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
+    const [saveSuccess, setSaveSuccess] = useState(false);
     const [generating, setGenerating] = useState(false);
 
     const loadData = useCallback(async () => {
@@ -96,6 +98,7 @@ export default function RobotsTxt() {
 
     const handleSave = async () => {
         setSaving(true);
+        setSaveSuccess(false);
         try {
             const storeId = getSelectedStoreId();
             if (seoSetting) {
@@ -109,8 +112,10 @@ export default function RobotsTxt() {
               window.clearCache();
             }
             localStorage.setItem('forceRefreshStore', 'true');
-            
-            // Optionally, show a success message
+
+            // Success state for button feedback
+            setSaveSuccess(true);
+            setTimeout(() => setSaveSuccess(false), 2000);
         } catch (error) {
             console.error("Error saving robots.txt:", error);
             // Optionally, show an error message
@@ -215,18 +220,13 @@ Sitemap: /sitemap.xml     # Location of sitemap`}
                                     )}
                                     <span className="text-sm sm:text-base">Update with Product Rules</span>
                                 </Button>
-                                <Button 
-                                    onClick={handleSave} 
-                                    disabled={saving}
+                                <SaveButton
+                                    onClick={handleSave}
+                                    loading={saving}
+                                    success={saveSuccess}
+                                    defaultText="Save Changes"
                                     className="w-full sm:w-auto"
-                                >
-                                    {saving ? (
-                                        <Save className="w-4 h-4 mr-2 animate-spin" />
-                                    ) : (
-                                        <Save className="w-4 h-4 mr-2" />
-                                    )}
-                                    <span className="text-sm sm:text-base">Save Changes</span>
-                                </Button>
+                                />
                             </div>
                         </div>
                         

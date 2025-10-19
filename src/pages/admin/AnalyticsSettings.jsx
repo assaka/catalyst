@@ -13,14 +13,13 @@ import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
-import { 
-  BarChart3, 
-  Bot, 
-  Shield, 
+import {
+  BarChart3,
+  Bot,
+  Shield,
   Upload,
-  Save,
-  Download, 
-  Settings, 
+  Download,
+  Settings,
   Eye,
   TrendingUp,
   Code,
@@ -30,6 +29,7 @@ import {
   Activity,
   RotateCcw
 } from 'lucide-react';
+import SaveButton from '@/components/ui/save-button';
 import CmsBlockRenderer from '@/components/storefront/CmsBlockRenderer';
 
 
@@ -38,6 +38,7 @@ export default function AnalyticsSettings() {
     const [store, setStore] = useState(null);
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
+    const [saveSuccess, setSaveSuccess] = useState(false);
     const [flashMessage, setFlashMessage] = useState(null);
     
     // New state for advanced analytics features
@@ -150,6 +151,7 @@ export default function AnalyticsSettings() {
         const storeId = getSelectedStoreId();
         if (!storeId || !store) return;
         setSaving(true);
+        setSaveSuccess(false);
         try {
             // Merge both old and new analytics settings
             const updatedSettings = {
@@ -184,6 +186,8 @@ export default function AnalyticsSettings() {
                 console.warn('Failed to clear cache:', e);
             }
             setFlashMessage({ type: 'success', message: 'Analytics settings saved successfully!' });
+            setSaveSuccess(true);
+            setTimeout(() => setSaveSuccess(false), 2000);
         } catch (error) {
             console.error("Failed to save settings:", error);
             setFlashMessage({ type: 'error', message: 'Failed to save settings.' });
@@ -851,10 +855,12 @@ export default function AnalyticsSettings() {
             </Tabs>
 
             <div className="flex justify-end mt-8">
-                <Button onClick={handleSave} disabled={saving}>
-                    <Save className="w-4 h-4 mr-2" />
-                    {saving ? 'Saving...' : 'Save All Settings'}
-                </Button>
+                <SaveButton
+                    onClick={handleSave}
+                    loading={saving}
+                    success={saveSuccess}
+                    defaultText="Save All Settings"
+                />
             </div>
         </div>
     );

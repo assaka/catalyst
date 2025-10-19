@@ -15,7 +15,8 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Save, Shield, Eye, Settings, BarChart3, Plus, Trash2, Download, Languages } from 'lucide-react';
+import { Shield, Eye, Settings, BarChart3, Plus, Trash2, Download, Languages } from 'lucide-react';
+import SaveButton from '@/components/ui/save-button';
 import { Separator } from '@/components/ui/separator';
 import {
   Accordion,
@@ -192,6 +193,7 @@ export default function CookieConsent() {
   const [consentLogs, setConsentLogs] = useState([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [saveSuccess, setSaveSuccess] = useState(false);
   const [flashMessage, setFlashMessage] = useState(null);
   const [store, setStore] = useState(null);
   const [user, setUser] = useState(null); // Added user state
@@ -310,6 +312,7 @@ export default function CookieConsent() {
     }
 
     setSaving(true);
+    setSaveSuccess(false);
 
     try {
       // FORCE the correct store_id - completely replace any existing store_id
@@ -369,9 +372,11 @@ export default function CookieConsent() {
         await refreshStores();
         await loadData();
       }
-      
+
       setFlashMessage({ type: 'success', message: 'Cookie consent settings saved successfully!' });
-      
+      setSaveSuccess(true);
+      setTimeout(() => setSaveSuccess(false), 2000);
+
     } catch (error) {
       console.error('Error saving cookie consent settings:', error);
       console.error('Error response:', error.response?.data);
@@ -997,10 +1002,12 @@ export default function CookieConsent() {
         </Tabs>
 
         <div className="flex justify-end mt-8">
-          <Button onClick={handleSave} disabled={saving} className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700">
-            <Save className="w-4 h-4 mr-2" />
-            {saving ? 'Saving...' : 'Save Settings'}
-          </Button>
+          <SaveButton
+            onClick={handleSave}
+            loading={saving}
+            success={saveSuccess}
+            defaultText="Save Settings"
+          />
         </div>
       </div>
     </div>

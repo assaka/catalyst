@@ -7,7 +7,8 @@ import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
-import { Save, Languages } from 'lucide-react';
+import { Languages } from 'lucide-react';
+import SaveButton from '@/components/ui/save-button';
 import {
   Accordion,
   AccordionContent,
@@ -44,6 +45,7 @@ export default function StockSettings() {
   const [settings, setSettings] = useState(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [saveSuccess, setSaveSuccess] = useState(false);
   const [flashMessage, setFlashMessage] = useState(null);
   const [showTranslations, setShowTranslations] = useState(false);
 
@@ -129,8 +131,9 @@ export default function StockSettings() {
       setFlashMessage({ type: 'error', message: 'Store data not loaded. Cannot save.' });
       return;
     }
-    
+
     setSaving(true);
+    setSaveSuccess(false);
     
     try {
       const payload = {
@@ -185,8 +188,10 @@ export default function StockSettings() {
       } catch (e) {
         console.warn('Failed to clear cache:', e);
       }
-      
+
       setFlashMessage({ type: 'success', message: 'Stock settings saved successfully! Reloading page...' });
+      setSaveSuccess(true);
+      setTimeout(() => setSaveSuccess(false), 2000);
 
       // Broadcast to all storefront tabs to clear their cache
       try {
@@ -505,10 +510,13 @@ export default function StockSettings() {
         </div>
 
         <div className="flex justify-end mt-8">
-          <Button onClick={handleSave} disabled={saving || !getSelectedStoreId()} className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 material-ripple">
-            <Save className="w-4 h-4 mr-2" />
-            {saving ? 'Saving...' : 'Save Stock Settings'}
-          </Button>
+          <SaveButton
+            onClick={handleSave}
+            loading={saving}
+            success={saveSuccess}
+            disabled={!getSelectedStoreId()}
+            defaultText="Save Stock Settings"
+          />
         </div>
       </div>
     </div>

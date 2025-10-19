@@ -61,6 +61,7 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useStoreSlug } from '@/hooks/useStoreSlug';
+import SaveButton from '@/components/ui/save-button';
 import { useStoreSelection } from '@/contexts/StoreSelectionContext';
 import apiClient from '@/api/client';
 import { MultiSelect } from '@/components/ui/multi-select';
@@ -199,6 +200,7 @@ const AkeneoIntegration = () => {
   const [loading, setLoading] = useState(false);
   const [testing, setTesting] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [saveSuccess, setSaveSuccess] = useState(false);
   const [importing, setImporting] = useState(false);
   const [connectionStatus, setConnectionStatus] = useState(null);
   const [configSaved, setConfigSaved] = useState(false);
@@ -1418,18 +1420,21 @@ const AkeneoIntegration = () => {
     }
 
     setSaving(true);
+    setSaveSuccess(false);
 
     try {
       const response = await apiClient.post('/integrations/akeneo/save-config', config);
-      
+
       // Handle different response structures
       const responseData = response.data || response;
       const success = responseData.success;
       const message = responseData.message || 'Configuration operation completed';
-      
+
       if (success) {
         toast.success('Configuration saved successfully!');
         setConfigSaved(true);
+        setSaveSuccess(true);
+        setTimeout(() => setSaveSuccess(false), 2000);
         loadConfigStatus(); // Reload config status
       } else {
         toast.error(`Failed to save configuration: ${message}`);
@@ -2448,19 +2453,14 @@ const AkeneoIntegration = () => {
                     {loading ? 'Loading...' : 'Reload Settings'}
                   </Button>
 
-                  <Button 
-                    onClick={saveConfiguration} 
-                    disabled={saving}
-                    variant="outline"
+                  <SaveButton
+                    onClick={saveConfiguration}
+                    loading={saving}
+                    success={saveSuccess}
+                    disabled={false}
+                    defaultText="Save Configuration"
                     className="flex items-center gap-2"
-                  >
-                    {saving ? (
-                      <RefreshCw className="h-4 w-4 animate-spin" />
-                    ) : (
-                      <Settings className="h-4 w-4" />
-                    )}
-                    {saving ? 'Saving...' : 'Save Configuration'}
-                  </Button>
+                  />
 
                   <Button 
                     onClick={testConnection} 

@@ -4,12 +4,14 @@ import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
-import { Save, Info } from 'lucide-react';
+import { Info } from 'lucide-react';
 import FlashMessage from '@/components/storefront/FlashMessage';
+import SaveButton from '@/components/ui/save-button';
 
 export default function GoogleTagManager() {
   const [gtmScript, setGtmScript] = useState('');
   const [saving, setSaving] = useState(false);
+  const [saveSuccess, setSaveSuccess] = useState(false);
   const [loading, setLoading] = useState(true);
   const [flashMessage, setFlashMessage] = useState(null);
   const [plugin, setPlugin] = useState(null);
@@ -45,6 +47,7 @@ export default function GoogleTagManager() {
   const handleSave = async (e) => {
     e.preventDefault();
     setSaving(true);
+    setSaveSuccess(false);
     try {
       const config = { gtm_script: gtmScript };
       
@@ -59,8 +62,10 @@ export default function GoogleTagManager() {
           configuration: config
         });
       }
-      
+
       setFlashMessage({ type: 'success', message: 'Google Tag Manager script saved successfully!' });
+      setSaveSuccess(true);
+      setTimeout(() => setSaveSuccess(false), 2000);
     } catch (error) {
       console.error('Failed to save GTM script:', error);
       setFlashMessage({ type: 'error', message: 'Failed to save GTM script. Please try again.' });
@@ -86,10 +91,12 @@ export default function GoogleTagManager() {
             <h1 className="text-3xl font-bold text-gray-900">Google Tag Manager</h1>
             <p className="text-gray-600 mt-1">Integrate GTM to track analytics and marketing tags.</p>
           </div>
-          <Button type="submit" form="gtm-form" disabled={saving}>
-            <Save className="w-4 h-4 mr-2" />
-            {saving ? 'Saving...' : 'Save Script'}
-          </Button>
+          <SaveButton
+            onClick={handleSave}
+            loading={saving}
+            success={saveSuccess}
+            defaultText="Save Script"
+          />
         </div>
 
         <form id="gtm-form" onSubmit={handleSave}>

@@ -10,7 +10,8 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
 import { Separator } from '@/components/ui/separator';
-import { Save, Palette, Eye, Navigation, ShoppingBag, Filter, Home, CreditCard, GripVertical } from 'lucide-react';
+import { Palette, Eye, Navigation, ShoppingBag, Filter, Home, CreditCard, GripVertical } from 'lucide-react';
+import SaveButton from '@/components/ui/save-button';
 import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors, useDroppable } from '@dnd-kit/core';
 import { arrayMove, SortableContext, sortableKeyboardCoordinates, useSortable, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
@@ -111,6 +112,7 @@ export default function ThemeLayout() {
     const [store, setStore] = useState(null);
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
+    const [saveSuccess, setSaveSuccess] = useState(false);
     const [flashMessage, setFlashMessage] = useState(null);
     const [deliverySettings, setDeliverySettings] = useState(null);
 
@@ -600,6 +602,7 @@ export default function ThemeLayout() {
     const handleSave = async () => {
         if (!store) return;
         setSaving(true);
+        setSaveSuccess(false);
 
         try {
             // Use the same approach as Tax.jsx and ShippingMethods.jsx
@@ -659,7 +662,9 @@ export default function ThemeLayout() {
             }
             
             setFlashMessage({ type: 'success', message: 'Settings saved successfully! Visit a category page to see changes.' });
-            
+            setSaveSuccess(true);
+            setTimeout(() => setSaveSuccess(false), 2000);
+
         } catch (error) {
             setFlashMessage({ type: 'error', message: `Failed to save settings: ${error.response?.data?.message || error.message}` });
         } finally {
@@ -2219,10 +2224,12 @@ export default function ThemeLayout() {
                 </div>
 
                 <div className="flex justify-end mt-8">
-                    <Button onClick={handleSave} disabled={saving}>
-                        <Save className="w-4 h-4 mr-2" />
-                        {saving ? 'Saving...' : 'Save All Settings'}
-                    </Button>
+                    <SaveButton
+                        onClick={handleSave}
+                        loading={saving}
+                        success={saveSuccess}
+                        defaultText="Save All Settings"
+                    />
                 </div>
             </div>
         </div>

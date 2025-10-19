@@ -11,7 +11,8 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { Separator } from '@/components/ui/separator';
-import { Save, Building2, Bell, Settings as SettingsIcon, Globe, RefreshCw, KeyRound, Rocket } from 'lucide-react'; // Removed ReceiptText, BookOpen, Palette, Brush, ShoppingCart, Search icons
+import { Building2, Bell, Settings as SettingsIcon, Globe, KeyRound, Rocket } from 'lucide-react'; // Removed ReceiptText, BookOpen, Palette, Brush, ShoppingCart, Search icons
+import SaveButton from '@/components/ui/save-button';
 import { CountrySelect } from "@/components/ui/country-select";
 import { TimezoneSelect } from "@/components/ui/timezone-select";
 import { MultiSelect } from "@/components/ui/multi-select";
@@ -54,6 +55,7 @@ export default function Settings() {
   const [store, setStore] = useState(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [saveSuccess, setSaveSuccess] = useState(false);
   const [flashMessage, setFlashMessage] = useState(null); // New state for flash messages
   const [connectingDomain, setConnectingDomain] = useState(false);
   const [savingStripe, setSavingStripe] = useState(false); // This state was in original, kept it.
@@ -287,7 +289,8 @@ export default function Settings() {
       return;
     }
     setSaving(true);
-    
+    setSaveSuccess(false);
+
     try {
       
       // Create a more explicit payload to ensure all boolean fields are included
@@ -401,17 +404,18 @@ export default function Settings() {
       // Update our local store state with the response data
       if (result && result.settings) {
         setFlashMessage({ type: 'success', message: 'Settings saved successfully!' });
-        
+        setSaveSuccess(true);
+
         // Clear ALL StoreProvider cache to force reload of settings
         try {
           localStorage.removeItem('storeProviderCache');
           sessionStorage.removeItem('storeProviderCache');
-          
+
           // Force reload of the page after a short delay to ensure settings are applied
           setTimeout(() => {
             window.location.reload();
           }, 1500);
-          
+
         } catch (e) {
           console.warn('Failed to clear cache from storage:', e);
         }
@@ -1114,10 +1118,13 @@ export default function Settings() {
         </Tabs>
 
         <div className="flex justify-end mt-8">
-          <Button onClick={handleSave} disabled={saving || !store?.id} className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 material-ripple">
-            <Save className="w-4 h-4 mr-2" />
-            {saving ? 'Saving...' : 'Save All Settings'}
-          </Button>
+          <SaveButton
+            onClick={handleSave}
+            loading={saving}
+            success={saveSuccess}
+            disabled={!store?.id}
+            defaultText="Save All Settings"
+          />
         </div>
       </div>
     </div>

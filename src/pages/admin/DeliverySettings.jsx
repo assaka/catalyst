@@ -12,6 +12,7 @@ import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import { Calendar, Clock, Settings, Plus, Trash2 } from "lucide-react";
 import FlashMessage from "@/components/storefront/FlashMessage";
+import SaveButton from '@/components/ui/save-button';
 
 export default function DeliverySettings() { // Renamed the function component from DeliverySettingsPage
   const { selectedStore, getSelectedStoreId } = useStoreSelection();
@@ -19,6 +20,7 @@ export default function DeliverySettings() { // Renamed the function component f
   const [store, setStore] = useState(null); // Tracks the current user's store, initialized to null
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [saveSuccess, setSaveSuccess] = useState(false);
   const [flashMessage, setFlashMessage] = useState(null);
   const [newBlockedDate, setNewBlockedDate] = useState('');
 
@@ -80,8 +82,9 @@ export default function DeliverySettings() { // Renamed the function component f
       setFlashMessage({ type: 'error', message: 'Cannot save: No store or settings data available.' });
       return;
     }
-    
+
     setSaving(true);
+    setSaveSuccess(false);
     try {
       // Ensure store_id is correctly set on the settings object before saving
       // Clean up empty date strings
@@ -113,7 +116,9 @@ export default function DeliverySettings() { // Renamed the function component f
       if (result && result.id) {
         setDeliverySettings(result); // Update state with the saved/created settings (especially if new ID generated)
         setFlashMessage({ type: 'success', message: 'Delivery settings saved successfully!' });
-        
+        setSaveSuccess(true);
+        setTimeout(() => setSaveSuccess(false), 2000);
+
         // Reload to confirm persistence
         setTimeout(() => {
           loadDeliverySettings();
@@ -435,13 +440,12 @@ export default function DeliverySettings() { // Renamed the function component f
           </Card>
 
           <div className="flex justify-end">
-            <Button
-              type="submit"
-              disabled={saving}
-              className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700"
-            >
-              {saving ? "Saving..." : "Save Settings"}
-            </Button>
+            <SaveButton
+              onClick={handleSave}
+              loading={saving}
+              success={saveSuccess}
+              defaultText="Save Settings"
+            />
           </div>
         </form>
       </div>
