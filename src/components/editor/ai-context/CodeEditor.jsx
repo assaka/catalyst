@@ -1115,14 +1115,12 @@ const CodeEditor = ({
                     if (changedBlocks.length === 0) return null;
 
                     const totalLines = localCode.split('\n').length;
-                    const editorContainerRef = useRef(null);
 
                     return (
                       <div
                         className="w-6 flex-shrink-0 bg-gray-800 border-r border-gray-700 overflow-hidden relative"
                         ref={(el) => {
                           if (!el) return;
-                          editorContainerRef.current = el;
 
                           // Sync scroll position with Monaco
                           const syncScroll = () => {
