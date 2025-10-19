@@ -60,10 +60,13 @@ async function initializeDatabasePlugins() {
     const activePlugins = result.data || [];
     console.log(`🔌 Loading ${activePlugins.length} plugins:`, activePlugins.map(p => p.name));
 
-    // Load hooks and events for each plugin in parallel (faster!)
+    // Load hooks, events AND frontend scripts for each plugin in parallel (faster!)
     // Add timeout to prevent hanging
     const loadPromise = Promise.all(
-      activePlugins.map(plugin => loadPluginHooksAndEvents(plugin.id))
+      activePlugins.map(async (plugin) => {
+        await loadPluginHooksAndEvents(plugin.id);
+        await loadPluginFrontendScripts(plugin.id);
+      })
     );
 
     const timeoutPromise = new Promise((_, reject) =>
@@ -138,6 +141,51 @@ async function loadPluginHooksAndEvents(pluginId) {
   } catch (error) {
     console.error(`❌ Error loading plugin ${pluginId}:`, error);
     console.error('Error stack:', error.stack);
+    // Don't throw - continue with other plugins
+  }
+}
+
+// Load frontend scripts for a specific plugin
+async function loadPluginFrontendScripts(pluginId) {
+  try {
+    console.log(`📜 Loading frontend scripts for plugin: ${pluginId}`);
+
+    // Fetch scripts from normalized plugin_scripts table
+    const response = await fetch(`/api/plugins/${pluginId}/scripts?scope=frontend&_t=${Date.now()}`);
+
+    if (!response.ok) {
+      console.log(`  ⚠️ No frontend scripts endpoint or error for ${pluginId}`);
+      return;
+    }
+
+    const result = await response.json();
+
+    if (result.success && result.data && result.data.length > 0) {
+      console.log(`  📄 Found ${result.data.length} frontend scripts`);
+
+      for (const script of result.data) {
+        console.log(`  🔨 Executing script: ${script.name}`);
+
+        try {
+          // Create a script tag and inject the code
+          const scriptElement = document.createElement('script');
+          scriptElement.type = 'module'; // Use module to support ES6 import/export
+          scriptElement.textContent = script.content;
+          scriptElement.setAttribute('data-plugin-id', pluginId);
+          scriptElement.setAttribute('data-script-name', script.name);
+
+          document.head.appendChild(scriptElement);
+
+          console.log(`  ✅ Script loaded: ${script.name}`);
+        } catch (error) {
+          console.error(`  ❌ Error executing script ${script.name}:`, error);
+        }
+      }
+    } else {
+      console.log(`  ⚠️ No frontend scripts found for ${pluginId}`);
+    }
+  } catch (error) {
+    console.error(`❌ Error loading frontend scripts for ${pluginId}:`, error);
     // Don't throw - continue with other plugins
   }
 }

@@ -175,15 +175,40 @@ router.get('/active', async (req, res) => {
 
     console.log(`📦 Found ${plugins.length} active plugins`);
 
-    // Load events for each plugin from plugin_events table
-    const pluginsWithEvents = await Promise.all(plugins.map(async (plugin) => {
-      // Try to load events from normalized plugin_events table
+    // Load hooks and events for each plugin from normalized tables
+    const pluginsWithData = await Promise.all(plugins.map(async (plugin) => {
+      // Load hooks from plugin_hooks table (normalized structure)
+      let hooks = [];
+      try {
+        const hooksResult = await sequelize.query(`
+          SELECT hook_name, handler_function, priority, is_enabled
+          FROM plugin_hooks
+          WHERE plugin_id = $1 AND is_enabled = true
+          ORDER BY priority ASC
+        `, {
+          bind: [plugin.id],
+          type: sequelize.QueryTypes.SELECT
+        });
+
+        hooks = hooksResult.map(h => ({
+          hook_name: h.hook_name,
+          handler_code: h.handler_function,
+          priority: h.priority || 10,
+          enabled: h.is_enabled !== false
+        }));
+
+        console.log(`  ✅ ${plugin.name}: loaded ${hooks.length} hooks from plugin_hooks table`);
+      } catch (hookError) {
+        console.log(`  ⚠️ ${plugin.name}: plugin_hooks table error`);
+      }
+
+      // Load events from normalized plugin_events table
       let events = [];
       try {
         const eventsResult = await sequelize.query(`
-          SELECT event_name, listener_code, priority, enabled
+          SELECT event_name, listener_function, priority, is_enabled
           FROM plugin_events
-          WHERE plugin_id = $1 AND enabled = true
+          WHERE plugin_id = $1 AND is_enabled = true
           ORDER BY priority ASC
         `, {
           bind: [plugin.id],
@@ -192,23 +217,18 @@ router.get('/active', async (req, res) => {
 
         events = eventsResult.map(e => ({
           event_name: e.event_name,
-          listener_code: e.listener_code,
+          listener_code: e.listener_function,
           priority: e.priority || 10,
-          enabled: e.enabled !== false
+          enabled: e.is_enabled !== false
         }));
 
         console.log(`  ✅ ${plugin.name}: loaded ${events.length} events from plugin_events table`);
       } catch (eventError) {
-        console.log(`  ⚠️ ${plugin.name}: plugin_events table not found or error, trying config field...`);
-
-        // Fallback to config field if plugin_events table doesn't exist yet
-        const config = typeof plugin.config === 'string' ? JSON.parse(plugin.config) : plugin.config;
-        events = config?.events || [];
+        console.log(`  ⚠️ ${plugin.name}: plugin_events table error`);
       }
 
       // Parse manifest
       const manifest = typeof plugin.manifest === 'string' ? JSON.parse(plugin.manifest) : plugin.manifest;
-      const config = typeof plugin.config === 'string' ? JSON.parse(plugin.config) : plugin.config;
 
       return {
         id: plugin.id,
@@ -220,16 +240,16 @@ router.get('/active', async (req, res) => {
         status: plugin.status,
         type: plugin.type,
         generated_by_ai: manifest?.generated_by_ai || plugin.type === 'ai-generated',
-        hooks: config?.hooks || [],
+        hooks: hooks,
         events: events
       };
     }));
 
-    console.log('✅ All plugins loaded with events');
+    console.log('✅ All plugins loaded with hooks and events');
 
     res.json({
       success: true,
-      data: pluginsWithEvents
+      data: pluginsWithData
     });
   } catch (error) {
     console.error('❌ Failed to get active plugins:', error);
@@ -323,13 +343,38 @@ router.get('/active/:pluginId', async (req, res) => {
       });
     }
 
-    // Load events from plugin_events table
+    // Load hooks from plugin_hooks table (normalized structure)
+    let hooks = [];
+    try {
+      const hooksResult = await sequelize.query(`
+        SELECT hook_name, handler_function, priority, is_enabled
+        FROM plugin_hooks
+        WHERE plugin_id = $1 AND is_enabled = true
+        ORDER BY priority ASC
+      `, {
+        bind: [pluginId],
+        type: sequelize.QueryTypes.SELECT
+      });
+
+      hooks = hooksResult.map(h => ({
+        hook_name: h.hook_name,
+        handler_code: h.handler_function,
+        priority: h.priority || 10,
+        enabled: h.is_enabled !== false
+      }));
+
+      console.log(`  ✅ Loaded ${hooks.length} hooks from plugin_hooks table`);
+    } catch (hookError) {
+      console.log(`  ⚠️ plugin_hooks table error:`, hookError.message);
+    }
+
+    // Load events from plugin_events table (normalized structure)
     let events = [];
     try {
       const eventsResult = await sequelize.query(`
-        SELECT event_name, listener_code, priority, enabled
+        SELECT event_name, listener_function, priority, is_enabled
         FROM plugin_events
-        WHERE plugin_id = $1 AND enabled = true
+        WHERE plugin_id = $1 AND is_enabled = true
         ORDER BY priority ASC
       `, {
         bind: [pluginId],
@@ -338,23 +383,18 @@ router.get('/active/:pluginId', async (req, res) => {
 
       events = eventsResult.map(e => ({
         event_name: e.event_name,
-        listener_code: e.listener_code,
+        listener_code: e.listener_function,
         priority: e.priority || 10,
-        enabled: e.enabled !== false
+        enabled: e.is_enabled !== false
       }));
 
       console.log(`  ✅ Loaded ${events.length} events from plugin_events table`);
     } catch (eventError) {
-      console.log(`  ⚠️ plugin_events table not found, trying config field...`);
-
-      // Fallback to config field if plugin_events table doesn't exist
-      const config = typeof plugin[0].config === 'string' ? JSON.parse(plugin[0].config) : plugin[0].config;
-      events = config?.events || [];
+      console.log(`  ⚠️ plugin_events table error:`, eventError.message);
     }
 
     // Parse JSON fields
     const manifest = typeof plugin[0].manifest === 'string' ? JSON.parse(plugin[0].manifest) : plugin[0].manifest;
-    const config = typeof plugin[0].config === 'string' ? JSON.parse(plugin[0].config) : plugin[0].config;
 
     res.json({
       success: true,
@@ -368,7 +408,7 @@ router.get('/active/:pluginId', async (req, res) => {
         status: plugin[0].status,
         type: plugin[0].type,
         generated_by_ai: manifest?.generated_by_ai || plugin[0].type === 'ai-generated',
-        hooks: config?.hooks || [],
+        hooks: hooks,
         events: events,
         manifest: manifest
       }
@@ -717,6 +757,64 @@ router.post('/registry', async (req, res) => {
     });
   } catch (error) {
     console.error('Failed to create plugin:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
+/**
+ * GET /api/plugins/:pluginId/scripts
+ * Get all scripts for a plugin from plugin_scripts table
+ */
+router.get('/:pluginId/scripts', async (req, res) => {
+  try {
+    const { pluginId } = req.params;
+    const { scope } = req.query; // 'frontend', 'backend', 'admin'
+
+    // Prevent caching
+    res.set('Cache-Control', 'no-store, no-cache, must-revalidate, private');
+    res.set('Pragma', 'no-cache');
+    res.set('Expires', '0');
+
+    console.log(`📄 Loading scripts for plugin ${pluginId}${scope ? ` (scope: ${scope})` : ''}...`);
+
+    // Build query
+    let query = `
+      SELECT file_name, file_content, script_type, scope, load_priority
+      FROM plugin_scripts
+      WHERE plugin_id = $1 AND is_enabled = true
+    `;
+
+    const params = [pluginId];
+
+    if (scope) {
+      query += ` AND scope = $2`;
+      params.push(scope);
+    }
+
+    query += ` ORDER BY load_priority ASC`;
+
+    const scripts = await sequelize.query(query, {
+      bind: params,
+      type: sequelize.QueryTypes.SELECT
+    });
+
+    console.log(`  ✅ Found ${scripts.length} scripts`);
+
+    res.json({
+      success: true,
+      data: scripts.map(s => ({
+        name: s.file_name,
+        content: s.file_content,
+        type: s.script_type,
+        scope: s.scope,
+        priority: s.load_priority
+      }))
+    });
+  } catch (error) {
+    console.error('❌ Failed to get plugin scripts:', error);
     res.status(500).json({
       success: false,
       error: error.message
