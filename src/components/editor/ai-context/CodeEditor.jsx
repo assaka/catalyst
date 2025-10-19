@@ -664,21 +664,14 @@ const CodeEditor = ({
     setLocalCode(newCode);
     setIsModified(true);
 
-    // Call onChange if provided
+    // Call onChange to trigger diff regeneration via useEffect
     if (onChange) {
       onChange(newCode);
     }
 
-    // Regenerate diff data
-    if (enableDiffDetection && originalCode) {
-      const diffResult = diffServiceRef.current.createDiff(originalCode, newCode);
-      if (diffResult) {
-        setDiffData(diffResult);
-        const displayLines = generateFullFileDisplayLines(diffResult.parsedDiff, originalCode, newCode);
-        setFullFileDisplayLines(displayLines);
-      }
-    }
-  }, [localCode, originalCode, onChange, enableDiffDetection, generateFullFileDisplayLines]);
+    // Note: Don't manually regenerate diff here - let the useEffect handle it
+    // to avoid race conditions and ensure proper diff generation
+  }, [localCode, originalCode, onChange]);
 
   // Generate diff when content changes
   useEffect(() => {
@@ -1134,18 +1127,27 @@ const CodeEditor = ({
                             }
                           };
 
-                          // Initial sync
-                          requestAnimationFrame(syncScroll);
+                          // Wait for Monaco editor to mount, then set up scroll sync
+                          const setupScrollSync = () => {
+                            if (editorRef.current) {
+                              // Initial sync
+                              syncScroll();
 
-                          // Listen to Monaco scroll events
-                          if (editorRef.current) {
-                            const disposable = editorRef.current.onDidScrollChange(syncScroll);
-                            // Store disposable for cleanup
-                            if (!editorRef.current._gutterDisposables) {
-                              editorRef.current._gutterDisposables = [];
+                              // Listen to Monaco scroll events
+                              const disposable = editorRef.current.onDidScrollChange(syncScroll);
+                              // Store disposable for cleanup
+                              if (!editorRef.current._gutterDisposables) {
+                                editorRef.current._gutterDisposables = [];
+                              }
+                              editorRef.current._gutterDisposables.push(disposable);
+                            } else {
+                              // Editor not ready, try again in a bit
+                              requestAnimationFrame(setupScrollSync);
                             }
-                            editorRef.current._gutterDisposables.push(disposable);
-                          }
+                          };
+
+                          // Start setup
+                          requestAnimationFrame(setupScrollSync);
                         }}
                       >
                         <div
