@@ -122,9 +122,25 @@ const PluginAIAssistant = ({ mode = 'nocode', onCodeGenerated, onConfigGenerated
 
     } catch (error) {
       console.error('AI Assistant error:', error);
+
+      // Extract detailed error message
+      let errorMessage = '❌ Sorry, I encountered an error.';
+      if (error.response?.data?.error) {
+        errorMessage = `❌ Error: ${error.response.data.error}`;
+      } else if (error.message) {
+        errorMessage = `❌ Error: ${error.message}`;
+      }
+
+      // Add helpful hints based on error
+      if (error.message?.includes('ANTHROPIC_API_KEY')) {
+        errorMessage += '\n\n💡 The Claude API key is not configured. Please add ANTHROPIC_API_KEY to your environment variables.';
+      } else if (error.response?.status === 500) {
+        errorMessage += '\n\n💡 Server error. Please check the backend logs for details.';
+      }
+
       setMessages(prev => [...prev, {
         role: 'assistant',
-        content: '❌ Sorry, I encountered an error. Please try again.',
+        content: errorMessage,
         error: true,
         timestamp: new Date()
       }]);
