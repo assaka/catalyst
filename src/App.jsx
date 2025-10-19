@@ -41,9 +41,16 @@ async function initializeDatabasePlugins() {
     console.log(`🔌 Loading ${activePlugins.length} plugins:`, activePlugins.map(p => p.name));
 
     // Load hooks and events for each plugin in parallel (faster!)
-    await Promise.all(
+    // Add timeout to prevent hanging
+    const loadPromise = Promise.all(
       activePlugins.map(plugin => loadPluginHooksAndEvents(plugin.id))
     );
+
+    const timeoutPromise = new Promise((_, reject) =>
+      setTimeout(() => reject(new Error('Plugin loading timeout (10s)')), 10000)
+    );
+
+    await Promise.race([loadPromise, timeoutPromise]);
 
     console.log('✅ All plugins loaded');
 
@@ -53,17 +60,20 @@ async function initializeDatabasePlugins() {
   } catch (error) {
     console.error('❌ Error initializing database plugins:', error);
     console.error('❌ Error stack:', error.stack);
+    // Continue anyway - don't block the app
   }
 }
 
 // Load hooks and events for a specific plugin
 async function loadPluginHooksAndEvents(pluginId) {
   try {
+    console.log(`🔄 Loading plugin: ${pluginId}`);
     const response = await fetch(`/api/plugins/registry/${pluginId}`);
     const result = await response.json();
 
     if (result.success && result.data) {
       const plugin = result.data;
+      console.log(`✅ Plugin data received: ${plugin.name}`);
 
       // Register hooks from database
       if (plugin.hooks) {
@@ -77,17 +87,23 @@ async function loadPluginHooksAndEvents(pluginId) {
 
       // Register events from database
       if (plugin.events) {
+        console.log(`📡 Found ${plugin.events.length} events in ${plugin.name}`);
         for (const event of plugin.events) {
           if (event.enabled) {
+            console.log(`🔨 Creating handler for ${event.event_name}...`);
             const listenerFunction = createHandlerFromDatabaseCode(event.listener_code);
             eventSystem.on(event.event_name, listenerFunction);
             console.log(`📡 Registered event: ${event.event_name} for plugin: ${plugin.name}`);
           }
         }
       }
+    } else {
+      console.error(`❌ Failed to load plugin ${pluginId}:`, result);
     }
   } catch (error) {
     console.error(`❌ Error loading plugin ${pluginId}:`, error);
+    console.error('Error stack:', error.stack);
+    // Don't throw - continue with other plugins
   }
 }
 
