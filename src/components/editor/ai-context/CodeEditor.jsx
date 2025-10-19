@@ -786,22 +786,16 @@ const CodeEditor = ({
   const handleEditorDidMount = (editor, monaco) => {
     editorRef.current = editor;
 
-    // Define custom theme with green/red diff colors
-    monaco.editor.defineTheme('custom-diff-theme', {
-      base: 'vs-dark',
+    // Define custom light theme
+    monaco.editor.defineTheme('custom-light-theme', {
+      base: 'vs', // Light theme base
       inherit: true,
       rules: [],
-      colors: {
-        'diffEditor.insertedTextBackground': '#1a5c1a40', // Green background for additions
-        'diffEditor.removedTextBackground': '#7a1a1a40', // Red background for deletions
-        'diffEditor.insertedLineBackground': '#1a5c1a20', // Light green for added lines
-        'diffEditor.removedLineBackground': '#7a1a1a20', // Light red for removed lines
-        'diffEditor.diagonalFill': '#33333350' // Diagonal fill for unchanged areas
-      }
+      colors: {}
     });
 
     // Apply the custom theme
-    monaco.editor.setTheme('custom-diff-theme');
+    monaco.editor.setTheme('custom-light-theme');
 
     // Store disposables for cleanup
     const disposables = [];
@@ -1130,22 +1124,23 @@ const CodeEditor = ({
                     original={collapsedOriginal || originalCode || ''}
                     modified={collapsedModified || localCode}
                     onMount={(editor, monaco) => {
-                      // Define custom theme with green/red diff colors
-                      monaco.editor.defineTheme('custom-diff-theme', {
-                        base: 'vs-dark',
+                      // Define custom theme with green/red diff colors on white background
+                      monaco.editor.defineTheme('custom-diff-light-theme', {
+                        base: 'vs', // Light theme base
                         inherit: true,
                         rules: [],
                         colors: {
-                          'diffEditor.insertedTextBackground': '#1a5c1a60', // Green background for additions
-                          'diffEditor.removedTextBackground': '#7a1a1a60', // Red background for deletions
-                          'diffEditor.insertedLineBackground': '#1a5c1a30', // Light green for added lines
-                          'diffEditor.removedLineBackground': '#7a1a1a30', // Light red for removed lines
-                          'diffEditor.diagonalFill': '#33333350' // Diagonal fill for unchanged areas
+                          'diffEditor.insertedTextBackground': '#c8e6c980', // Light green background for additions
+                          'diffEditor.removedTextBackground': '#ffcccc80', // Light red background for deletions
+                          'diffEditor.insertedLineBackground': '#e6ffed60', // Very light green for added lines
+                          'diffEditor.removedLineBackground': '#ffeef060', // Very light red for removed lines
+                          'diffEditor.border': '#e1e4e8', // Border color
+                          'diffEditor.diagonalFill': '#f6f8fa80' // Diagonal fill for unchanged areas
                         }
                       });
 
                       // Apply the custom theme
-                      monaco.editor.setTheme('custom-diff-theme');
+                      monaco.editor.setTheme('custom-diff-light-theme');
 
                       // Store reference to the modified editor for undo/redo and change tracking
                       const modifiedEditor = editor.getModifiedEditor();
@@ -1218,22 +1213,23 @@ const CodeEditor = ({
                     original={collapsedOriginal || originalCode || ''}
                     modified={collapsedModified || localCode}
                     onMount={(editor, monaco) => {
-                      // Define custom theme with green/red diff colors
-                      monaco.editor.defineTheme('custom-diff-theme', {
-                        base: 'vs-dark',
+                      // Define custom theme with green/red diff colors on white background
+                      monaco.editor.defineTheme('custom-diff-light-theme', {
+                        base: 'vs', // Light theme base
                         inherit: true,
                         rules: [],
                         colors: {
-                          'diffEditor.insertedTextBackground': '#1a5c1a60', // Green background for additions
-                          'diffEditor.removedTextBackground': '#7a1a1a60', // Red background for deletions
-                          'diffEditor.insertedLineBackground': '#1a5c1a30', // Light green for added lines
-                          'diffEditor.removedLineBackground': '#7a1a1a30', // Light red for removed lines
-                          'diffEditor.diagonalFill': '#33333350' // Diagonal fill for unchanged areas
+                          'diffEditor.insertedTextBackground': '#c8e6c980', // Light green background for additions
+                          'diffEditor.removedTextBackground': '#ffcccc80', // Light red background for deletions
+                          'diffEditor.insertedLineBackground': '#e6ffed60', // Very light green for added lines
+                          'diffEditor.removedLineBackground': '#ffeef060', // Very light red for removed lines
+                          'diffEditor.border': '#e1e4e8', // Border color
+                          'diffEditor.diagonalFill': '#f6f8fa80' // Diagonal fill for unchanged areas
                         }
                       });
 
                       // Apply the custom theme
-                      monaco.editor.setTheme('custom-diff-theme');
+                      monaco.editor.setTheme('custom-diff-light-theme');
 
                       // Store reference to the modified editor for undo/redo and change tracking
                       const modifiedEditor = editor.getModifiedEditor();
@@ -1304,7 +1300,7 @@ const CodeEditor = ({
                 strings: false
               }
             }}
-            theme="custom-diff-theme"
+            theme="custom-light-theme"
             loading={
               <div className="flex items-center justify-center h-full">
                 <div className="text-center text-muted-foreground">
