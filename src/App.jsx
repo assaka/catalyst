@@ -33,7 +33,15 @@ async function initializeDatabasePlugins() {
   try {
     // Fetch active plugins from database (uses normalized tables structure)
     // Add timestamp to bust cache
-    const response = await fetch(`/api/plugins/active?_t=${Date.now()}`);
+    // Try new endpoint first, fallback to legacy if not deployed yet
+    let response = await fetch(`/api/plugins/active?_t=${Date.now()}`);
+
+    // If new endpoint not deployed yet (404), use legacy endpoint
+    if (!response.ok && response.status === 404) {
+      console.log('⚠️ /api/plugins/active not available, using legacy /registry endpoint');
+      response = await fetch(`/api/plugins/registry?status=active&_t=${Date.now()}`);
+    }
+
     const result = await response.json();
 
     if (!result.success) {
@@ -78,7 +86,14 @@ async function loadPluginHooksAndEvents(pluginId) {
   try {
     console.log(`🔄 Loading plugin: ${pluginId}`);
     // Add timestamp to bust cache
-    const response = await fetch(`/api/plugins/active/${pluginId}?_t=${Date.now()}`);
+    // Try new endpoint first, fallback to legacy if not deployed yet
+    let response = await fetch(`/api/plugins/active/${pluginId}?_t=${Date.now()}`);
+
+    // If new endpoint not deployed yet (404), use legacy endpoint
+    if (!response.ok && response.status === 404) {
+      response = await fetch(`/api/plugins/registry/${pluginId}?_t=${Date.now()}`);
+    }
+
     const result = await response.json();
 
     if (result.success && result.data) {
