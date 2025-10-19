@@ -169,20 +169,30 @@ const CodeEditor = ({
       return { additions: 0, deletions: 0, changes: 0, linesChanged: 0, unchanged: 0 };
     }
 
-    const oldLines = oldCode.split('\n');
-    const newLines = newCode.split('\n');
-    
+    // Normalize: trim trailing empty lines to avoid false positives
+    const normalizeCode = (code) => {
+      const lines = code.split('\n');
+      // Remove trailing empty lines
+      while (lines.length > 0 && lines[lines.length - 1].trim() === '') {
+        lines.pop();
+      }
+      return lines;
+    };
+
+    const oldLines = normalizeCode(oldCode);
+    const newLines = normalizeCode(newCode);
+
     let additions = 0;
     let deletions = 0;
     let linesChanged = 0;
     let unchanged = 0;
-    
+
     const maxLines = Math.max(oldLines.length, newLines.length);
-    
+
     for (let i = 0; i < maxLines; i++) {
       const oldLine = oldLines[i];
       const newLine = newLines[i];
-      
+
       if (oldLine === undefined && newLine !== undefined) {
         additions++; // Line added
       } else if (oldLine !== undefined && newLine === undefined) {
@@ -193,11 +203,11 @@ const CodeEditor = ({
         unchanged++; // Line unchanged
       }
     }
-    
-    return { 
-      additions, 
-      deletions, 
-      linesChanged, 
+
+    return {
+      additions,
+      deletions,
+      linesChanged,
       unchanged,
       changes: additions + deletions + linesChanged,
       totalLines: maxLines
@@ -348,18 +358,26 @@ const CodeEditor = ({
   // Get changed line blocks for revert functionality
   const getChangedBlocks = useCallback(() => {
     if (!originalCode || !localCode) return [];
-    
+
     const originalLines = originalCode.split('\n');
     const modifiedLines = localCode.split('\n');
     const blocks = [];
-    
+
+    // Find the actual content length (excluding trailing empty lines)
+    let maxContentLine = Math.max(originalLines.length, modifiedLines.length);
+    while (maxContentLine > 0) {
+      const origLine = originalLines[maxContentLine - 1] || '';
+      const modLine = modifiedLines[maxContentLine - 1] || '';
+      if (origLine.trim() !== '' || modLine.trim() !== '') break;
+      maxContentLine--;
+    }
+
     let currentBlock = null;
-    const maxLines = Math.max(originalLines.length, modifiedLines.length);
-    
-    for (let i = 0; i < maxLines; i++) {
+
+    for (let i = 0; i < maxContentLine; i++) {
       const original = originalLines[i] || '';
       const modified = modifiedLines[i] || '';
-      
+
       if (original !== modified) {
         if (currentBlock && currentBlock.endLine === i - 1) {
           // Extend current block
@@ -388,7 +406,7 @@ const CodeEditor = ({
         currentBlock = null;
       }
     }
-    
+
     return blocks;
   }, [originalCode, localCode]);
 
@@ -586,32 +604,42 @@ const CodeEditor = ({
   // Handle line revert functionality
   const handleLineRevert = useCallback(async (lineIndex, originalLine) => {
     console.log('🔄 [CodeEditor] Reverting line', lineIndex, 'to original:', originalLine);
-    
+
     const currentLines = localCode.split('\n');
-    
-    // Revert the specific line to its original content
-    if (lineIndex < currentLines.length) {
+    const originalLines = (originalCode || '').split('\n');
+
+    let newCode;
+
+    // Check if this is an addition (line doesn't exist in original)
+    if (lineIndex >= originalLines.length || originalLine === undefined || originalLine === null) {
+      // This is an added line - remove it completely
+      console.log('🔄 [CodeEditor] Removing added line', lineIndex);
+      currentLines.splice(lineIndex, 1);
+      newCode = currentLines.join('\n');
+    } else {
+      // This is a modified line - revert to original
+      console.log('🔄 [CodeEditor] Reverting modified line', lineIndex, 'to:', originalLine);
       currentLines[lineIndex] = originalLine;
-      const newCode = currentLines.join('\n');
-      
-      console.log('🔄 [CodeEditor] New code after revert has', newCode.split('\n').length, 'lines');
-      
-      setLocalCode(newCode);
-      setIsModified(true);
-      
-      // Call onChange if provided
-      if (onChange) {
-        onChange(newCode);
-      }
-      
-      // Regenerate diff data
-      if (enableDiffDetection && originalCode) {
-        const diffResult = diffServiceRef.current.createDiff(originalCode, newCode);
-        if (diffResult) {
-          setDiffData(diffResult);
-          const displayLines = generateFullFileDisplayLines(diffResult.parsedDiff, originalCode, newCode);
-          setFullFileDisplayLines(displayLines);
-        }
+      newCode = currentLines.join('\n');
+    }
+
+    console.log('🔄 [CodeEditor] New code after revert has', newCode.split('\n').length, 'lines');
+
+    setLocalCode(newCode);
+    setIsModified(true);
+
+    // Call onChange if provided
+    if (onChange) {
+      onChange(newCode);
+    }
+
+    // Regenerate diff data
+    if (enableDiffDetection && originalCode) {
+      const diffResult = diffServiceRef.current.createDiff(originalCode, newCode);
+      if (diffResult) {
+        setDiffData(diffResult);
+        const displayLines = generateFullFileDisplayLines(diffResult.parsedDiff, originalCode, newCode);
+        setFullFileDisplayLines(displayLines);
       }
     }
   }, [localCode, originalCode, onChange, enableDiffDetection, generateFullFileDisplayLines]);
@@ -1090,39 +1118,41 @@ const CodeEditor = ({
                       }}
                       theme="vs-dark"
                     />
-                    {/* Revert Gutter for Split View */}
+                    {/* PhpStorm-style Revert Gutter */}
                     {!collapseUnchanged && (() => {
                       const changedBlocks = getChangedBlocks();
                       if (changedBlocks.length === 0) return null;
 
                       return (
-                        <div className="absolute right-0 top-0 w-10 h-full pointer-events-none z-10">
+                        <div className="absolute left-0 top-0 w-full h-full pointer-events-none z-10">
                           {changedBlocks.map((block, blockIndex) => (
                             <div
                               key={blockIndex}
-                              className="absolute pointer-events-auto"
+                              className="absolute pointer-events-auto group"
                               style={{
                                 top: `${block.startLine * 20}px`,
+                                left: '0px',
+                                width: '100%',
                                 height: `${(block.endLine - block.startLine + 1) * 20}px`
                               }}
                             >
-                              <div className="w-full h-full flex items-start justify-end pr-1 pt-1">
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  className="w-7 h-7 p-0 bg-orange-500 hover:bg-orange-600 text-white shadow-md transition-colors duration-150"
-                                  onClick={() => {
-                                    if (block.startLine === block.endLine) {
-                                      handleRevertLine(block.startLine);
-                                    } else {
-                                      handleRevertBlock(block.startLine, block.endLine);
-                                    }
-                                  }}
-                                  title={`Revert ${block.startLine === block.endLine ? 'line' : 'lines'} ${block.startLine + 1}${block.startLine !== block.endLine ? `-${block.endLine + 1}` : ''}`}
-                                >
-                                  <RotateCcw className="w-3 h-3" />
-                                </Button>
-                              </div>
+                              {/* Blue highlight bar on hover */}
+                              <div className="absolute left-0 top-0 w-1 h-full bg-blue-500/0 group-hover:bg-blue-500/40 transition-all" />
+
+                              {/* Revert chevron button */}
+                              <button
+                                onClick={() => {
+                                  if (block.startLine === block.endLine) {
+                                    handleRevertLine(block.startLine);
+                                  } else {
+                                    handleRevertBlock(block.startLine, block.endLine);
+                                  }
+                                }}
+                                className="absolute left-1 top-0 w-5 h-5 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity bg-gray-700/90 hover:bg-blue-600 text-white rounded-sm"
+                                title={`Revert ${block.startLine === block.endLine ? 'line' : 'lines'} ${block.startLine + 1}${block.startLine !== block.endLine ? `-${block.endLine + 1}` : ''}`}
+                              >
+                                <ChevronLeft className="w-3 h-3" />
+                              </button>
                             </div>
                           ))}
                         </div>
@@ -1258,21 +1288,22 @@ const CodeEditor = ({
                     {fullFileDisplayLines.map((line, index) => (
                       <div key={index} className="group relative">
                         <DiffLine line={line} index={index} />
-                        {/* Revert button for changed lines (additions and modifications) */}
-                        {(line.type === 'addition' || (line.type === 'context' && line.originalContent !== line.modifiedContent)) && line.newLineNumber && (
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            className="absolute right-2 top-1 opacity-0 group-hover:opacity-100 transition-opacity"
+                        {/* PhpStorm-style revert button for changed lines */}
+                        {line.type === 'addition' && line.newLineNumber && (
+                          <button
                             onClick={() => {
                               const lineIndexInFile = line.newLineNumber - 1;
-                              const originalLine = line.originalContent || '';
+                              // For pure additions (no original), pass undefined to trigger deletion
+                              const originalLine = line.originalContent !== null && line.originalContent !== undefined
+                                ? line.originalContent
+                                : undefined;
                               handleLineRevert(lineIndexInFile, originalLine);
                             }}
-                            title="Revert to original"
+                            className="absolute left-2 top-1 w-5 h-5 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity bg-gray-700/90 hover:bg-blue-600 text-white rounded-sm"
+                            title={line.originalContent ? "Revert to original" : "Remove added line"}
                           >
-                            <RotateCcw className="w-3 h-3" />
-                          </Button>
+                            <ChevronLeft className="w-3 h-3" />
+                          </button>
                         )}
                       </div>
                     ))}
