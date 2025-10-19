@@ -641,28 +641,50 @@ const CodeEditor = ({
   const handleLineRevert = useCallback(async (lineIndex, originalLine) => {
     console.log('🔄 [CodeEditor] Reverting line', lineIndex, 'to original:', originalLine);
 
+    if (!originalCode) {
+      console.warn('No original code available for revert');
+      return;
+    }
+
     const currentLines = localCode.split('\n');
-    const originalLines = (originalCode || '').split('\n');
+    const originalLines = originalCode.split('\n');
 
     let newCode;
 
     // Check if this is an addition (line doesn't exist in original)
-    if (lineIndex >= originalLines.length || originalLine === undefined || originalLine === null) {
+    if (originalLine === undefined || originalLine === null) {
       // This is an added line - remove it completely
-      console.log('🔄 [CodeEditor] Removing added line', lineIndex);
-      currentLines.splice(lineIndex, 1);
-      newCode = currentLines.join('\n');
+      console.log('🔄 [CodeEditor] Removing added line at index', lineIndex);
+      if (lineIndex >= 0 && lineIndex < currentLines.length) {
+        currentLines.splice(lineIndex, 1);
+        newCode = currentLines.join('\n');
+      } else {
+        console.error('Invalid line index for removal:', lineIndex);
+        return;
+      }
     } else {
-      // This is a modified line - revert to original
-      console.log('🔄 [CodeEditor] Reverting modified line', lineIndex, 'to:', originalLine);
-      currentLines[lineIndex] = originalLine;
-      newCode = currentLines.join('\n');
+      // This is a modified or deleted line - revert to original
+      console.log('🔄 [CodeEditor] Reverting line', lineIndex, 'to original:', originalLine);
+
+      // Find the corresponding original line index
+      // For modified lines, the line index should map correctly
+      const originalIndex = lineIndex;
+
+      if (originalIndex >= 0 && originalIndex < originalLines.length) {
+        currentLines[lineIndex] = originalLines[originalIndex];
+        newCode = currentLines.join('\n');
+      } else {
+        console.error('Invalid original line index:', originalIndex);
+        return;
+      }
     }
 
     console.log('🔄 [CodeEditor] New code after revert has', newCode.split('\n').length, 'lines');
 
-    // Only call onChange - let parent update value, which triggers useEffect to update localCode
-    // This ensures single source of truth and prevents race conditions
+    // Update local code first to prevent race conditions
+    setLocalCode(newCode);
+
+    // Then call onChange to notify parent
     if (onChange) {
       onChange(newCode);
     }
@@ -1098,7 +1120,7 @@ const CodeEditor = ({
                 {/* Modified Code with Revert Gutter */}
                 <div className="flex-1 relative">{/* Wrapper for overlay positioning */}
                   {/* Overlay gutter - positioned on top of Monaco editor */}
-                  {!collapseUnchanged && (() => {
+                  {(() => {
                     const changedBlocks = getChangedBlocks();
                     if (changedBlocks.length === 0) return null;
 
@@ -1194,7 +1216,7 @@ const CodeEditor = ({
                       <Editor
                         height="100%"
                         language={getMonacoLanguage()}
-                        value={collapseUnchanged ? collapsedModified : localCode}
+                        value={collapsedModified || localCode}
                         onChange={handleCodeChange}
                         onMount={handleEditorDidMount}
                         options={{
