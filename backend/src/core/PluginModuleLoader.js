@@ -169,7 +169,7 @@ class PluginModuleLoader {
       console.log(`  📚 Loading dependency: ${packageName}@${dep.version}`);
 
       // Execute bundled dependency code
-      const func = new Function('module', 'exports', 'require', 'console', dep.code);
+      const func = new Function('module', 'exports', 'require', 'console', dep.bundled_code);
       const module = { exports: {} };
       func(module, module.exports, context.require, console);
 
