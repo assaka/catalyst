@@ -160,6 +160,7 @@ const CodeEditor = ({
   const [showRestoreModal, setShowRestoreModal] = useState(false);
 
   const editorRef = useRef(null);
+  const monacoRef = useRef(null);
   const diffServiceRef = useRef(new UnifiedDiffFrontendService());
   
   // Helper function to get diff stats
@@ -719,6 +720,22 @@ const CodeEditor = ({
     }
   }, [localCode, initialContent, originalCode, enableDiffDetection, generateFullFileDisplayLines]);
 
+  // Switch theme when view changes
+  useEffect(() => {
+    if (monacoRef.current) {
+      if (showSplitView) {
+        // Apply dark theme for split view
+        monacoRef.current.editor.setTheme('custom-diff-dark-theme');
+      } else if (showDiffView) {
+        // Apply light theme for inline diff view
+        monacoRef.current.editor.setTheme('custom-diff-light-theme');
+      } else {
+        // Apply dark theme for regular editor
+        monacoRef.current.editor.setTheme('custom-dark-theme');
+      }
+    }
+  }, [showSplitView, showDiffView]);
+
   // Cleanup effect for Monaco Editor
   useEffect(() => {
     return () => {
@@ -785,6 +802,9 @@ const CodeEditor = ({
 
   const handleEditorDidMount = (editor, monaco) => {
     editorRef.current = editor;
+
+    // Store monaco instance for theme switching
+    monacoRef.current = monaco;
 
     // Define custom dark theme for regular editor
     monaco.editor.defineTheme('custom-dark-theme', {
@@ -1118,6 +1138,9 @@ const CodeEditor = ({
                 original={originalCode || ''}
                 modified={localCode}
                     onMount={(editor, monaco) => {
+                      // Store monaco instance for theme switching
+                      monacoRef.current = monaco;
+
                       // Define custom dark theme with green/red diff colors for split view
                       monaco.editor.defineTheme('custom-diff-dark-theme', {
                         base: 'vs-dark', // Dark theme base
@@ -1205,6 +1228,9 @@ const CodeEditor = ({
                 original={originalCode || ''}
                 modified={localCode}
                     onMount={(editor, monaco) => {
+                      // Store monaco instance for theme switching
+                      monacoRef.current = monaco;
+
                       // Define custom theme with green/red diff colors on white background
                       monaco.editor.defineTheme('custom-diff-light-theme', {
                         base: 'vs', // Light theme base
