@@ -38,11 +38,14 @@ async function initializeDatabasePlugins() {
     }
 
     const activePlugins = result.data || [];
+    console.log(`🔌 Loading ${activePlugins.length} plugins:`, activePlugins.map(p => p.name));
 
     // Load hooks and events for each plugin in parallel (faster!)
     await Promise.all(
       activePlugins.map(plugin => loadPluginHooksAndEvents(plugin.id))
     );
+
+    console.log('✅ All plugins loaded');
 
     // Set up pricing notifications globally
     setupGlobalPricingNotifications();
@@ -78,6 +81,7 @@ async function loadPluginHooksAndEvents(pluginId) {
           if (event.enabled) {
             const listenerFunction = createHandlerFromDatabaseCode(event.listener_code);
             eventSystem.on(event.event_name, listenerFunction);
+            console.log(`📡 Registered event: ${event.event_name} for plugin: ${plugin.name}`);
           }
         }
       }
@@ -91,10 +95,15 @@ async function loadPluginHooksAndEvents(pluginId) {
 function createHandlerFromDatabaseCode(code) {
   try {
     // Use Function constructor to evaluate the arrow function string
-    return new Function('return (' + code + ')')();
+    const handler = new Function('return (' + code + ')')();
+    console.log('✅ Handler created for code:', code.substring(0, 50) + '...');
+    return handler;
   } catch (error) {
     console.error('❌ Error creating handler from database code:', error);
-    return () => {}; // Silent fallback
+    console.error('Failed code:', code);
+    return () => {
+      console.warn('⚠️ Fallback handler called');
+    };
   }
 }
 

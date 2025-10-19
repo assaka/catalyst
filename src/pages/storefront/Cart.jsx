@@ -969,6 +969,7 @@ export default function Cart() {
     // Emit cart viewed event (only after plugins are ready)
     useEffect(() => {
         if (!loading && cartItems.length >= 0 && pluginsReady) {
+            console.log('🛒 Emitting cart.viewed event with', cartItems.length, 'items');
             eventSystem.emit('cart.viewed', {
                 items: cartItems,
                 subtotal,
@@ -977,6 +978,8 @@ export default function Cart() {
                 total,
                 ...cartContext
             });
+        } else {
+            console.log('🛒 NOT emitting cart.viewed:', { loading, cartItemsLength: cartItems.length, pluginsReady });
         }
     }, [loading, cartItems, subtotal, discount, tax, total, cartContext, pluginsReady]);
 
