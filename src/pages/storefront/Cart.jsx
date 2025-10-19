@@ -958,15 +958,32 @@ export default function Cart() {
         navigate(checkoutUrl);
     }, [cartItems, subtotal, discount, tax, total, cartContext, store?.slug, navigate]);
 
-    // Emit cart viewed event
+    // Wait for plugins to be ready before emitting events
+    const [pluginsReady, setPluginsReady] = useState(false);
+
+    useEffect(() => {
+        // Listen for system.ready event
+        const handleSystemReady = () => {
+            console.log('🛒 Cart.jsx: Plugins ready!');
+            setPluginsReady(true);
+        };
+
+        eventSystem.on('system.ready', handleSystemReady);
+
+        // Cleanup
+        return () => eventSystem.off('system.ready', handleSystemReady);
+    }, []);
+
+    // Emit cart viewed event (only after plugins are ready)
     useEffect(() => {
         console.log('🛒 Cart.jsx: cart.viewed useEffect triggered', {
             loading,
             cartItemsLength: cartItems.length,
-            willEmit: !loading && cartItems.length >= 0
+            pluginsReady,
+            willEmit: !loading && cartItems.length >= 0 && pluginsReady
         });
 
-        if (!loading && cartItems.length >= 0) {
+        if (!loading && cartItems.length >= 0 && pluginsReady) {
             console.log('🛒 Cart.jsx: Emitting cart.viewed event', {
                 itemCount: cartItems.length,
                 total,
@@ -981,7 +998,7 @@ export default function Cart() {
                 ...cartContext
             });
         }
-    }, [loading, cartItems, subtotal, discount, tax, total, cartContext]);
+    }, [loading, cartItems, subtotal, discount, tax, total, cartContext, pluginsReady]);
 
     
     // Wait for both store data and cart data to load

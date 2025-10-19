@@ -189,8 +189,6 @@ function setupGlobalPricingNotifications() {
 function App() {
   console.log('🎯 App component RENDERING');
 
-  const [pluginsReady, setPluginsReady] = useState(false);
-
   // Initialize the new hook-based architecture
   useEffect(() => {
     console.log('🎬 App useEffect running - initializing extension system...');
@@ -227,10 +225,6 @@ function App() {
         await initializeDatabasePlugins();
         console.log('🎯 initializeDatabasePlugins() completed');
 
-        // Mark plugins as ready
-        console.log('✅ Setting pluginsReady to true');
-        setPluginsReady(true);
-
         // Emit system ready event
         eventSystem.emit('system.ready', {
           timestamp: Date.now(),
@@ -243,10 +237,6 @@ function App() {
         console.error('❌ Failed to initialize Extension System:', error);
         console.error('❌ Error stack:', error.stack);
 
-        // Still mark plugins as ready to unblock the app
-        console.log('⚠️ Setting pluginsReady to true despite error');
-        setPluginsReady(true);
-
         // Emit system error event
         eventSystem.emit('system.error', {
           error: error.message,
@@ -257,25 +247,6 @@ function App() {
 
     initializeExtensionSystem()
   }, [])
-
-  // Wait for plugins to load before rendering app
-  if (!pluginsReady) {
-    console.log('⏳ Waiting for plugins to load...');
-    return (
-      <div style={{
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        height: '100vh',
-        fontSize: '18px',
-        color: '#666'
-      }}>
-        Loading plugins...
-      </div>
-    );
-  }
-
-  console.log('✅ Plugins ready, rendering app');
 
   return (
     <TranslationProvider>
