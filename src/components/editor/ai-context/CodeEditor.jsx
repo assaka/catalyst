@@ -219,63 +219,86 @@ const CodeEditor = ({
     if (!collapseUnchanged || !originalCode || !modifiedCode) {
       return { original: originalCode, modified: modifiedCode };
     }
-    
+
     const originalLines = originalCode.split('\n');
     const modifiedLines = modifiedCode.split('\n');
     const maxLines = Math.max(originalLines.length, modifiedLines.length);
-    
+
     const collapsedOriginal = [];
     const collapsedModified = [];
     let unchangedCount = 0;
-    let lastShownLine = -1;
-    
+    const CONTEXT_LINES = 2; // Show 2 lines before and after changes
+    const MIN_COLLAPSE = 5; // Only collapse if more than 5 unchanged lines
+
     for (let i = 0; i < maxLines; i++) {
       const origLine = originalLines[i] || '';
       const modLine = modifiedLines[i] || '';
       const isChanged = origLine !== modLine;
-      
+
       if (isChanged) {
-        // If we have accumulated unchanged lines, add a collapse indicator
-        if (unchangedCount > 3) {
-          collapsedOriginal.push(`\n... ${unchangedCount - 2} unchanged lines ...\n`);
-          collapsedModified.push(`\n... ${unchangedCount - 2} unchanged lines ...\n`);
-        } else if (unchangedCount > 0) {
-          // Add the unchanged lines if there are only a few
-          for (let j = lastShownLine + 1; j < i; j++) {
-            collapsedOriginal.push(originalLines[j] || '');
-            collapsedModified.push(modifiedLines[j] || '');
+        // Add context lines before the change
+        const contextStart = Math.max(0, i - CONTEXT_LINES);
+        const contextEnd = i;
+
+        // If we have accumulated many unchanged lines, show collapse indicator
+        if (unchangedCount > MIN_COLLAPSE) {
+          // Show first CONTEXT_LINES after last change
+          const linesToShow = CONTEXT_LINES;
+          const collapsedCount = unchangedCount - linesToShow - CONTEXT_LINES;
+
+          if (collapsedCount > 0) {
+            collapsedOriginal.push(`... ${collapsedCount} unchanged lines ...`);
+            collapsedModified.push(`... ${collapsedCount} unchanged lines ...`);
+          }
+
+          // Show context before this change
+          for (let j = contextStart; j < contextEnd; j++) {
+            if (j < originalLines.length || j < modifiedLines.length) {
+              collapsedOriginal.push(originalLines[j] || '');
+              collapsedModified.push(modifiedLines[j] || '');
+            }
+          }
+        } else {
+          // Show all unchanged lines if few
+          for (let j = i - unchangedCount; j < i; j++) {
+            if (j >= 0) {
+              collapsedOriginal.push(originalLines[j] || '');
+              collapsedModified.push(modifiedLines[j] || '');
+            }
           }
         }
-        
+
         // Add the changed line
         collapsedOriginal.push(origLine);
         collapsedModified.push(modLine);
-        
-        // Add context lines (1 line before and after if available)
-        if (i + 1 < maxLines && originalLines[i + 1] === modifiedLines[i + 1]) {
-          collapsedOriginal.push(originalLines[i + 1] || '');
-          collapsedModified.push(modifiedLines[i + 1] || '');
-          i++; // Skip this line in the next iteration
-        }
-        
+
         unchangedCount = 0;
-        lastShownLine = i;
       } else {
         unchangedCount++;
       }
     }
-    
+
     // Handle remaining unchanged lines at the end
-    if (unchangedCount > 3) {
-      collapsedOriginal.push(`\n... ${unchangedCount - 1} unchanged lines ...\n`);
-      collapsedModified.push(`\n... ${unchangedCount - 1} unchanged lines ...\n`);
-    } else if (unchangedCount > 0) {
-      for (let j = lastShownLine + 1; j < maxLines; j++) {
+    if (unchangedCount > MIN_COLLAPSE) {
+      // Show only first CONTEXT_LINES
+      for (let j = 0; j < CONTEXT_LINES && j < unchangedCount; j++) {
+        const lineIndex = maxLines - unchangedCount + j;
+        collapsedOriginal.push(originalLines[lineIndex] || '');
+        collapsedModified.push(modifiedLines[lineIndex] || '');
+      }
+      const remaining = unchangedCount - CONTEXT_LINES;
+      if (remaining > 0) {
+        collapsedOriginal.push(`... ${remaining} unchanged lines ...`);
+        collapsedModified.push(`... ${remaining} unchanged lines ...`);
+      }
+    } else {
+      // Show all remaining lines
+      for (let j = maxLines - unchangedCount; j < maxLines; j++) {
         collapsedOriginal.push(originalLines[j] || '');
         collapsedModified.push(modifiedLines[j] || '');
       }
     }
-    
+
     return {
       original: collapsedOriginal.join('\n'),
       modified: collapsedModified.join('\n')
@@ -1071,93 +1094,109 @@ const CodeEditor = ({
               />
             </div>
             
-                {/* Modified Code */}
-                <div className="flex-1 relative">
-                  <div className="bg-muted p-2 text-sm font-medium border-b flex items-center justify-between">
-                    <div className="flex items-center space-x-2">
-                      <span>Modified ({localCode.split('\n').length} lines)</span>
-                      {collapseUnchanged && (
-                        <Badge variant="secondary" className="text-xs">
-                          <ChevronUp className="w-3 h-3 mr-1" />
-                          Collapsed
-                        </Badge>
-                      )}
-                    </div>
-                    {(() => {
-                      // Calculate stats from actual code comparison
-                      const stats = getDiffStats(originalCode || '', localCode);
-                      return (
-                        <div className="flex items-center space-x-2 text-xs">
-                          <span className="text-green-600">+{stats.additions}</span>
-                          <span className="text-red-600">-{stats.deletions}</span>
-                        </div>
-                      );
-                    })()}
-                  </div>
-                  <div className="relative h-[calc(100%-40px)]">
-                    <Editor
-                      height="100%"
-                      language={getMonacoLanguage()}
-                      value={collapseUnchanged ? collapsedModified : localCode}
-                      onChange={handleCodeChange}
-                      onMount={handleEditorDidMount}
-                      options={{
-                        readOnly: readOnly,
-                        minimap: { enabled: false },
-                        scrollBeyondLastLine: false,
-                        fontSize: 14,
-                        lineHeight: 20,
-                        fontFamily: 'ui-monospace, SFMono-Regular, "SF Mono", Consolas, "Liberation Mono", Menlo, monospace',
-                        tabSize: 2,
-                        insertSpaces: true,
-                        wordWrap: 'on',
-                        automaticLayout: true,
-                        lineNumbers: 'on',
-                        glyphMargin: true,
-                        folding: true
-                      }}
-                      theme="vs-dark"
-                    />
-                    {/* PhpStorm-style Revert Gutter */}
-                    {!collapseUnchanged && (() => {
-                      const changedBlocks = getChangedBlocks();
-                      if (changedBlocks.length === 0) return null;
+                {/* Modified Code with Revert Gutter */}
+                <div className="flex-1 flex">
+                  {/* Revert Gutter Column */}
+                  {!collapseUnchanged && (() => {
+                    const changedBlocks = getChangedBlocks();
+                    if (changedBlocks.length === 0) return null;
 
-                      return (
-                        <div className="absolute left-0 top-0 w-full h-full pointer-events-none z-10">
-                          {changedBlocks.map((block, blockIndex) => (
+                    const totalLines = localCode.split('\n').length;
+                    const changedLineNumbers = new Set();
+                    changedBlocks.forEach(block => {
+                      for (let i = block.startLine; i <= block.endLine; i++) {
+                        changedLineNumbers.add(i);
+                      }
+                    });
+
+                    return (
+                      <div className="w-8 flex-shrink-0 bg-gray-800 border-r border-gray-700 font-mono text-xs overflow-hidden">
+                        {Array.from({ length: totalLines }, (_, lineIndex) => {
+                          const isChanged = changedLineNumbers.has(lineIndex);
+                          const block = changedBlocks.find(b => lineIndex >= b.startLine && lineIndex <= b.endLine);
+                          const isFirstLineOfBlock = block && lineIndex === block.startLine;
+
+                          return (
                             <div
-                              key={blockIndex}
-                              className="absolute pointer-events-auto group"
-                              style={{
-                                top: `${block.startLine * 20}px`,
-                                left: '0px',
-                                width: '100%',
-                                height: `${(block.endLine - block.startLine + 1) * 20}px`
-                              }}
+                              key={lineIndex}
+                              className="h-5 flex items-center justify-center group relative"
+                              style={{ lineHeight: '20px' }}
                             >
-                              {/* Blue highlight bar on hover */}
-                              <div className="absolute left-0 top-0 w-1 h-full bg-blue-500/0 group-hover:bg-blue-500/40 transition-all" />
-
-                              {/* Revert chevron button */}
-                              <button
-                                onClick={() => {
-                                  if (block.startLine === block.endLine) {
-                                    handleRevertLine(block.startLine);
-                                  } else {
-                                    handleRevertBlock(block.startLine, block.endLine);
-                                  }
-                                }}
-                                className="absolute left-1 top-0 w-5 h-5 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity bg-gray-700/90 hover:bg-blue-600 text-white rounded-sm"
-                                title={`Revert ${block.startLine === block.endLine ? 'line' : 'lines'} ${block.startLine + 1}${block.startLine !== block.endLine ? `-${block.endLine + 1}` : ''}`}
-                              >
-                                <ChevronLeft className="w-3 h-3" />
-                              </button>
+                              {isChanged && (
+                                <>
+                                  <div className="absolute inset-0 bg-blue-500/0 group-hover:bg-blue-500/20 transition-colors" />
+                                  {isFirstLineOfBlock && (
+                                    <button
+                                      onClick={() => {
+                                        if (block.startLine === block.endLine) {
+                                          handleRevertLine(block.startLine);
+                                        } else {
+                                          handleRevertBlock(block.startLine, block.endLine);
+                                        }
+                                      }}
+                                      className="relative z-10 w-5 h-5 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity bg-gray-700/90 hover:bg-blue-600 text-white rounded-sm"
+                                      title={`Revert ${block.startLine === block.endLine ? 'line' : 'lines'} ${block.startLine + 1}${block.startLine !== block.endLine ? `-${block.endLine + 1}` : ''}`}
+                                    >
+                                      <ChevronLeft className="w-3 h-3" />
+                                    </button>
+                                  )}
+                                </>
+                              )}
                             </div>
-                          ))}
-                        </div>
-                      );
-                    })()}
+                          );
+                        })}
+                      </div>
+                    );
+                  })()}
+
+                  {/* Editor Container */}
+                  <div className="flex-1 relative flex flex-col">
+                    <div className="bg-muted p-2 text-sm font-medium border-b flex items-center justify-between">
+                      <div className="flex items-center space-x-2">
+                        <span>Modified ({localCode.split('\n').length} lines)</span>
+                        {collapseUnchanged && (
+                          <Badge variant="secondary" className="text-xs">
+                            <ChevronUp className="w-3 h-3 mr-1" />
+                            Collapsed
+                          </Badge>
+                        )}
+                      </div>
+                      {(() => {
+                        // Calculate stats from actual code comparison
+                        const stats = getDiffStats(originalCode || '', localCode);
+                        return (
+                          <div className="flex items-center space-x-2 text-xs">
+                            <span className="text-green-600">+{stats.additions}</span>
+                            <span className="text-red-600">-{stats.deletions}</span>
+                          </div>
+                        );
+                      })()}
+                    </div>
+                    <div className="flex-1">
+                      <Editor
+                        height="100%"
+                        language={getMonacoLanguage()}
+                        value={collapseUnchanged ? collapsedModified : localCode}
+                        onChange={handleCodeChange}
+                        onMount={handleEditorDidMount}
+                        options={{
+                          readOnly: readOnly,
+                          minimap: { enabled: false },
+                          scrollBeyondLastLine: false,
+                          fontSize: 14,
+                          lineHeight: 20,
+                          fontFamily: 'ui-monospace, SFMono-Regular, "SF Mono", Consolas, "Liberation Mono", Menlo, monospace',
+                          tabSize: 2,
+                          insertSpaces: true,
+                          wordWrap: 'on',
+                          automaticLayout: true,
+                          lineNumbers: 'on',
+                          glyphMargin: false,
+                          folding: true
+                        }}
+                        theme="vs-dark"
+                      />
+                    </div>
                   </div>
                 </div>
               </div>
