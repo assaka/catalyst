@@ -3,11 +3,14 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
+import SaveButton from '@/components/ui/save-button';
 import { Bot, AlertCircle } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Switch } from "@/components/ui/switch";
 
 export default function SeoRobots() {
+  const [saveSuccess, setSaveSuccess] = useState(false);
+  const [saving, setSaving] = useState(false);
   const [robotsTxt, setRobotsTxt] = useState(`User-agent: *
 Allow: /
 Disallow: /admin/
@@ -15,6 +18,18 @@ Disallow: /api/
 Disallow: /cart
 Disallow: /checkout
 Sitemap: https://example.com/sitemap.xml`);
+
+  const handleSave = async () => {
+    setSaving(true);
+    setSaveSuccess(false);
+
+    // Simulate save operation
+    await new Promise(resolve => setTimeout(resolve, 500));
+
+    setSaveSuccess(true);
+    setSaving(false);
+    setTimeout(() => setSaveSuccess(false), 2000);
+  };
 
   return (
     <div className="container mx-auto p-6 space-y-6">
@@ -47,7 +62,12 @@ Sitemap: https://example.com/sitemap.xml`);
           </div>
           
           <div className="flex gap-2">
-            <Button>Save Changes</Button>
+            <SaveButton
+              onClick={handleSave}
+              loading={saving}
+              success={saveSuccess}
+              defaultText="Save Changes"
+            />
             <Button variant="outline">Preview</Button>
             <Button variant="outline">Validate</Button>
           </div>

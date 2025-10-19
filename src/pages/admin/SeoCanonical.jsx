@@ -1,13 +1,28 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
 import { Button } from "@/components/ui/button";
+import SaveButton from '@/components/ui/save-button';
 import { Link2 } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 
 export default function SeoCanonical() {
+  const [saveSuccess, setSaveSuccess] = useState(false);
+  const [saving, setSaving] = useState(false);
+
+  const handleSave = async () => {
+    setSaving(true);
+    setSaveSuccess(false);
+
+    // Simulate save operation
+    await new Promise(resolve => setTimeout(resolve, 500));
+
+    setSaveSuccess(true);
+    setSaving(false);
+    setTimeout(() => setSaveSuccess(false), 2000);
+  };
   return (
     <div className="container mx-auto p-6 space-y-6">
       <div className="flex items-center gap-2 mb-6">
@@ -54,7 +69,12 @@ export default function SeoCanonical() {
             </p>
           </div>
           
-          <Button>Save Settings</Button>
+          <SaveButton
+            onClick={handleSave}
+            loading={saving}
+            success={saveSuccess}
+            defaultText="Save Settings"
+          />
         </CardContent>
       </Card>
 
@@ -73,7 +93,12 @@ export default function SeoCanonical() {
             <Input id="canonical-url" placeholder="https://example.com/products/main-product" />
           </div>
           
-          <Button>Add Custom Canonical</Button>
+          <SaveButton
+            onClick={handleSave}
+            loading={saving}
+            success={saveSuccess}
+            defaultText="Add Custom Canonical"
+          />
         </CardContent>
       </Card>
     </div>

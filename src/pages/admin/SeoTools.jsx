@@ -12,6 +12,7 @@ import { AttributeSet } from "@/api/entities";
 import { User } from "@/api/entities";
 import { clearSeoTemplatesCache } from "@/utils/cacheUtils";
 import { Button } from "@/components/ui/button";
+import SaveButton from '@/components/ui/save-button';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -57,6 +58,7 @@ export default function SeoTools() {
   const [store, setStore] = useState(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [saveSuccess, setSaveSuccess] = useState(false);
   const [flashMessage, setFlashMessage] = useState(null);
   const [aiCredits, setAiCredits] = useState(25);
   const [updatingRobots, setUpdatingRobots] = useState(false);
@@ -274,13 +276,14 @@ export default function SeoTools() {
 
   const handleSaveSettings = async () => {
     const storeId = getSelectedStoreId();
-    
+
     if (!storeId) {
       setFlashMessage({ type: 'error', message: 'No store found. Please refresh the page.' });
       return;
     }
 
     setSaving(true);
+    setSaveSuccess(false);
     try {
       let existingSettings = [];
       try {
@@ -331,6 +334,8 @@ export default function SeoTools() {
       clearSeoCache(storeId);
       
       setFlashMessage({ type: 'success', message: 'Settings saved successfully! Changes will be visible on storefront refresh.' });
+      setSaveSuccess(true);
+      setTimeout(() => setSaveSuccess(false), 2000);
       setSaving(false);
 
     } catch (error) {
@@ -356,19 +361,20 @@ export default function SeoTools() {
 
   const handleSaveTemplate = async () => {
     console.log('🔍 handleSaveTemplate called');
-    
+
     // Check authentication status
     const adminToken = localStorage.getItem('store_owner_auth_token');
     console.log('🔍 Admin token exists:', !!adminToken);
-    
+
     if (!adminToken) {
       setFlashMessage({ type: 'error', message: 'Authentication required. Please refresh the page and try again.' });
       setSaving(false);
       return;
     }
-    
+
     try {
       setSaving(true);
+      setSaveSuccess(false);
 
       const storeId = getSelectedStoreId();
       if (!storeId) {
@@ -422,6 +428,8 @@ export default function SeoTools() {
       setEditingTemplate(null);
       resetTemplateForm();
       setFlashMessage({ type: 'success', message: 'Template saved successfully!' });
+      setSaveSuccess(true);
+      setTimeout(() => setSaveSuccess(false), 2000);
       // Clear storefront cache for instant updates
       if (storeId) clearSeoTemplatesCache(storeId);
     } catch (error) {
@@ -483,6 +491,7 @@ export default function SeoTools() {
   const handleSaveRedirect = async () => {
     try {
       setSaving(true);
+      setSaveSuccess(false);
 
       const storeId = getSelectedStoreId();
       if (!storeId) {
@@ -509,6 +518,8 @@ export default function SeoTools() {
       setEditingRedirect(null);
       resetRedirectForm();
       setFlashMessage({ type: 'success', message: 'Redirect saved successfully!' });
+      setSaveSuccess(true);
+      setTimeout(() => setSaveSuccess(false), 2000);
     } catch (error) {
       setFlashMessage({ type: 'error', message: 'Failed to save redirect: ' + error.message });
     } finally {
@@ -1012,19 +1023,12 @@ Sitemap: ${window.location.origin}/sitemap.xml`;
               )}
 
               <div className="flex justify-end pt-4">
-                <Button onClick={handleSaveSettings} disabled={saving}>
-                  {saving ? (
-                    <>
-                      <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
-                      Saving...
-                    </>
-                  ) : (
-                    <>
-                      <Settings className="w-4 h-4 mr-2" />
-                      Save Settings
-                    </>
-                  )}
-                </Button>
+                <SaveButton
+                  onClick={handleSaveSettings}
+                  loading={saving}
+                  success={saveSuccess}
+                  defaultText="Save Settings"
+                />
               </div>
             </CardContent>
           </Card>
@@ -1206,9 +1210,12 @@ Sitemap: ${window.location.origin}/sitemap.xml`;
                 </p>
 
                 <div className="flex justify-end">
-                  <Button onClick={handleSaveSettings} disabled={saving}>
-                    {saving ? 'Saving...' : 'Save Canonical Settings'}
-                  </Button>
+                  <SaveButton
+                    onClick={handleSaveSettings}
+                    loading={saving}
+                    success={saveSuccess}
+                    defaultText="Save Canonical Settings"
+                  />
                 </div>
               </div>
             </CardContent>
@@ -1309,9 +1316,12 @@ Sitemap: ${window.location.origin}/sitemap.xml`;
               )}
 
               <div className="flex justify-end mt-4">
-                <Button onClick={handleSaveSettings} disabled={saving}>
-                  {saving ? 'Saving...' : 'Save Hreflang Settings'}
-                </Button>
+                <SaveButton
+                  onClick={handleSaveSettings}
+                  loading={saving}
+                  success={saveSuccess}
+                  defaultText="Save Hreflang Settings"
+                />
               </div>
             </CardContent>
           </Card>
@@ -1400,19 +1410,12 @@ Sitemap: /sitemap.xml     # Location of sitemap
                   </Button>
                 </div>
                 <div className="flex justify-end mt-4">
-                  <Button onClick={handleSaveSettings} disabled={saving}>
-                    {saving ? (
-                      <>
-                        <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
-                        Saving...
-                      </>
-                    ) : (
-                      <>
-                        <Settings className="w-4 h-4 mr-2" />
-                        Save Robots.txt
-                      </>
-                    )}
-                  </Button>
+                  <SaveButton
+                    onClick={handleSaveSettings}
+                    loading={saving}
+                    success={saveSuccess}
+                    defaultText="Save Robots.txt"
+                  />
                 </div>
 
                 <Card>
@@ -1612,9 +1615,12 @@ Sitemap: /sitemap.xml     # Location of sitemap
               </div>
               
               <div className="flex justify-end pt-4">
-                <Button onClick={handleSaveSettings} disabled={saving}>
-                  {saving ? 'Saving...' : 'Save Social & Schema Settings'}
-                </Button>
+                <SaveButton
+                  onClick={handleSaveSettings}
+                  loading={saving}
+                  success={saveSuccess}
+                  defaultText="Save Social & Schema Settings"
+                />
               </div>
             </CardContent>
           </Card>
@@ -2532,9 +2538,12 @@ Sitemap: /sitemap.xml     # Location of sitemap
                   }}>
                     Cancel
                   </Button>
-                  <Button onClick={handleSaveTemplate} disabled={saving}>
-                    {saving ? 'Saving...' : 'Save Template'}
-                  </Button>
+                  <SaveButton
+                    onClick={handleSaveTemplate}
+                    loading={saving}
+                    success={saveSuccess}
+                    defaultText="Save Template"
+                  />
                 </div>
               </div>
             </DialogContent>
@@ -2591,9 +2600,12 @@ Sitemap: /sitemap.xml     # Location of sitemap
                   }}>
                     Cancel
                   </Button>
-                  <Button onClick={handleSaveRedirect} disabled={saving}>
-                    {saving ? 'Saving...' : 'Save Redirect'}
-                  </Button>
+                  <SaveButton
+                    onClick={handleSaveRedirect}
+                    loading={saving}
+                    success={saveSuccess}
+                    defaultText="Save Redirect"
+                  />
                 </div>
               </div>
             </DialogContent>

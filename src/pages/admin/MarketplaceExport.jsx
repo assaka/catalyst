@@ -4,6 +4,7 @@ import { Store } from '@/api/entities';
 import { Product } from '@/api/entities';
 import { InvokeLLM } from '@/api/integrations';
 import { Button } from '@/components/ui/button';
+import SaveButton from '@/components/ui/save-button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
@@ -12,13 +13,13 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
-import { 
-  Upload, 
-  Download, 
-  Settings, 
-  Package, 
-  AlertCircle, 
-  CheckCircle, 
+import {
+  Upload,
+  Download,
+  Settings,
+  Package,
+  AlertCircle,
+  CheckCircle,
   ExternalLink,
   ShoppingCart,
   Loader2
@@ -59,6 +60,8 @@ export default function MarketplaceExport() {
     marketplace_id: 'ATVPDKIKX0DER', // US marketplace
     region: 'us-east-1'
   });
+  const [saveSuccess, setSaveSuccess] = useState(false);
+  const [saving, setSaving] = useState(false);
 
   useEffect(() => {
     const loadData = async () => {
@@ -92,13 +95,16 @@ export default function MarketplaceExport() {
 
   const handleConfigSave = async () => {
     if (!store) return;
-    
+
+    setSaving(true);
+    setSaveSuccess(false);
+
     try {
       const updatedSettings = {
         ...store.settings,
         amazon_config: amazonConfig
       };
-      
+
       await Store.update(store.id, { settings: updatedSettings });
 
       // Clear any potential cache
@@ -110,9 +116,13 @@ export default function MarketplaceExport() {
       }
 
       showSuccess('Amazon configuration saved successfully!');
+      setSaveSuccess(true);
+      setTimeout(() => setSaveSuccess(false), 2000);
     } catch (error) {
       console.error('Error saving config:', error);
       showError('Failed to save configuration');
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -337,9 +347,13 @@ export default function MarketplaceExport() {
               </Alert>
 
               <div className="flex justify-end">
-                <Button onClick={handleConfigSave} disabled>
-                  Save Configuration
-                </Button>
+                <SaveButton
+                  onClick={handleConfigSave}
+                  loading={saving}
+                  success={saveSuccess}
+                  disabled
+                  defaultText="Save Configuration"
+                />
               </div>
             </CardContent>
           </Card>

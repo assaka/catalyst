@@ -2,19 +2,20 @@ import React, { useState, useEffect } from 'react';
 import { useStoreSelection } from '@/contexts/StoreSelectionContext';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import SaveButton from '@/components/ui/save-button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Progress } from '@/components/ui/progress';
-import { 
-  ShoppingBag, 
-  Link, 
-  Unlink, 
-  CheckCircle, 
-  XCircle, 
-  RefreshCw, 
+import {
+  ShoppingBag,
+  Link,
+  Unlink,
+  CheckCircle,
+  XCircle,
+  RefreshCw,
   Download,
   Store,
   Package,
@@ -44,6 +45,7 @@ const ShopifyIntegration = () => {
     client_secret: '',
     redirect_uri: ''
   });
+  const [saveSuccess, setSaveSuccess] = useState(false);
 
   useEffect(() => {
     if (storeId) {
@@ -93,6 +95,7 @@ const ShopifyIntegration = () => {
 
     setLoading(true);
     setMessage(null);
+    setSaveSuccess(false);
 
     try {
       const response = await fetch('/api/shopify/configure-app', {
@@ -111,9 +114,11 @@ const ShopifyIntegration = () => {
           type: 'success',
           text: 'Shopify app credentials saved successfully!'
         });
+        setSaveSuccess(true);
+        setTimeout(() => setSaveSuccess(false), 2000);
         setAppConfigured(true);
         setShowAppConfig(false);
-        
+
         // Clear sensitive data from state
         setAppCredentials(prev => ({
           ...prev,
@@ -496,17 +501,13 @@ const ShopifyIntegration = () => {
                       >
                         Cancel
                       </Button>
-                      <Button
+                      <SaveButton
                         onClick={saveAppCredentials}
-                        disabled={loading || !appCredentials.client_id || !appCredentials.client_secret}
-                      >
-                        {loading ? (
-                          <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                        ) : (
-                          <CheckCircle className="w-4 h-4 mr-2" />
-                        )}
-                        Save Credentials
-                      </Button>
+                        loading={loading}
+                        success={saveSuccess}
+                        disabled={!appCredentials.client_id || !appCredentials.client_secret}
+                        defaultText="Save Credentials"
+                      />
                     </div>
                   </CardContent>
                 </Card>

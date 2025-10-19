@@ -1,14 +1,29 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
+import SaveButton from '@/components/ui/save-button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Share2, Facebook, Twitter } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 export default function SeoSocial() {
+  const [saveSuccess, setSaveSuccess] = useState(false);
+  const [saving, setSaving] = useState(false);
+
+  const handleSave = async () => {
+    setSaving(true);
+    setSaveSuccess(false);
+
+    // Simulate save operation
+    await new Promise(resolve => setTimeout(resolve, 500));
+
+    setSaveSuccess(true);
+    setSaving(false);
+    setTimeout(() => setSaveSuccess(false), 2000);
+  };
   return (
     <div className="container mx-auto p-6 space-y-6">
       <div className="flex items-center gap-2 mb-6">
@@ -61,7 +76,12 @@ export default function SeoSocial() {
                 </Select>
               </div>
               
-              <Button>Save Open Graph Settings</Button>
+              <SaveButton
+                onClick={handleSave}
+                loading={saving}
+                success={saveSuccess}
+                defaultText="Save Open Graph Settings"
+              />
             </CardContent>
           </Card>
         </TabsContent>
@@ -97,7 +117,12 @@ export default function SeoSocial() {
                 <Input id="twitter-creator" placeholder="@creator" />
               </div>
               
-              <Button>Save Twitter Settings</Button>
+              <SaveButton
+                onClick={handleSave}
+                loading={saving}
+                success={saveSuccess}
+                defaultText="Save Twitter Settings"
+              />
             </CardContent>
           </Card>
         </TabsContent>
@@ -146,7 +171,12 @@ export default function SeoSocial() {
                 />
               </div>
               
-              <Button>Save Schema Settings</Button>
+              <SaveButton
+                onClick={handleSave}
+                loading={saving}
+                success={saveSuccess}
+                defaultText="Save Schema Settings"
+              />
             </CardContent>
           </Card>
         </TabsContent>

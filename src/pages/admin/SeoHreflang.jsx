@@ -3,15 +3,30 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import SaveButton from '@/components/ui/save-button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Globe, Plus, Trash2 } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 
 export default function SeoHreflang() {
+  const [saveSuccess, setSaveSuccess] = useState(false);
+  const [saving, setSaving] = useState(false);
   const [languages, setLanguages] = useState([
     { id: 1, code: 'en-US', url: 'https://example.com' },
     { id: 2, code: 'es-ES', url: 'https://example.es' }
   ]);
+
+  const handleSave = async () => {
+    setSaving(true);
+    setSaveSuccess(false);
+
+    // Simulate save operation
+    await new Promise(resolve => setTimeout(resolve, 500));
+
+    setSaveSuccess(true);
+    setSaving(false);
+    setTimeout(() => setSaveSuccess(false), 2000);
+  };
 
   return (
     <div className="container mx-auto p-6 space-y-6">
@@ -107,7 +122,12 @@ export default function SeoHreflang() {
           </div>
 
           <div className="mt-4">
-            <Button>Save Configuration</Button>
+            <SaveButton
+              onClick={handleSave}
+              loading={saving}
+              success={saveSuccess}
+              defaultText="Save Configuration"
+            />
           </div>
         </CardContent>
       </Card>
