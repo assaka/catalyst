@@ -2,11 +2,11 @@ import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import Editor, { DiffEditor } from '@monaco-editor/react';
-import { 
-  Save, 
-  Undo, 
-  Redo, 
-  Search, 
+import {
+  Save,
+  Undo,
+  Redo,
+  Search,
   Code,
   Diff,
   Eye,
@@ -25,7 +25,9 @@ import {
   CheckCircle,
   Info,
   RefreshCw,
-  Minimize2
+  Minimize2,
+  Sun,
+  Moon
 } from 'lucide-react';
 
 // Import new systems
@@ -158,6 +160,7 @@ const CodeEditor = ({
   const [canUndo, setCanUndo] = useState(false);
   const [canRedo, setCanRedo] = useState(false);
   const [showRestoreModal, setShowRestoreModal] = useState(false);
+  const [isDarkMode, setIsDarkMode] = useState(true); // Theme mode state
 
   const editorRef = useRef(null);
   const monacoRef = useRef(null);
@@ -720,21 +723,26 @@ const CodeEditor = ({
     }
   }, [localCode, initialContent, originalCode, enableDiffDetection, generateFullFileDisplayLines]);
 
-  // Switch theme when view changes
+  // Switch theme when view or theme mode changes
   useEffect(() => {
     if (monacoRef.current) {
-      if (showSplitView) {
-        // Apply dark theme for split view
-        monacoRef.current.editor.setTheme('custom-diff-dark-theme');
-      } else if (showDiffView) {
-        // Apply light theme for inline diff view
-        monacoRef.current.editor.setTheme('custom-diff-light-theme');
+      if (showSplitView || showDiffView) {
+        // Apply theme based on mode for diff views
+        if (isDarkMode) {
+          monacoRef.current.editor.setTheme('custom-diff-dark-theme');
+        } else {
+          monacoRef.current.editor.setTheme('custom-diff-light-theme');
+        }
       } else {
-        // Apply dark theme for regular editor
-        monacoRef.current.editor.setTheme('custom-dark-theme');
+        // Apply theme based on mode for regular editor
+        if (isDarkMode) {
+          monacoRef.current.editor.setTheme('custom-dark-theme');
+        } else {
+          monacoRef.current.editor.setTheme('custom-light-theme');
+        }
       }
     }
-  }, [showSplitView, showDiffView]);
+  }, [showSplitView, showDiffView, isDarkMode]);
 
   // Cleanup effect for Monaco Editor
   useEffect(() => {
@@ -814,8 +822,16 @@ const CodeEditor = ({
       colors: {}
     });
 
-    // Apply the dark theme
-    monaco.editor.setTheme('custom-dark-theme');
+    // Define custom light theme for regular editor
+    monaco.editor.defineTheme('custom-light-theme', {
+      base: 'vs', // Light theme base
+      inherit: true,
+      rules: [],
+      colors: {}
+    });
+
+    // Apply the theme based on current mode
+    monaco.editor.setTheme(isDarkMode ? 'custom-dark-theme' : 'custom-light-theme');
 
     // Store disposables for cleanup
     const disposables = [];
@@ -1048,6 +1064,15 @@ const CodeEditor = ({
             >
               <RefreshCw className="w-4 h-4" />
             </Button>
+
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setIsDarkMode(!isDarkMode)}
+              title={isDarkMode ? "Switch to Light Mode" : "Switch to Dark Mode"}
+            >
+              {isDarkMode ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
+            </Button>
             
             {enableDiffDetection && diffData && (
               <>
@@ -1141,7 +1166,7 @@ const CodeEditor = ({
                       // Store monaco instance for theme switching
                       monacoRef.current = monaco;
 
-                      // Define custom dark theme with green/red diff colors for split view
+                      // Define custom dark theme with green/red diff colors
                       monaco.editor.defineTheme('custom-diff-dark-theme', {
                         base: 'vs-dark', // Dark theme base
                         inherit: true,
@@ -1156,8 +1181,23 @@ const CodeEditor = ({
                         }
                       });
 
-                      // Apply the dark theme
-                      monaco.editor.setTheme('custom-diff-dark-theme');
+                      // Define custom light theme with green/red diff colors
+                      monaco.editor.defineTheme('custom-diff-light-theme', {
+                        base: 'vs', // Light theme base
+                        inherit: true,
+                        rules: [],
+                        colors: {
+                          'diffEditor.insertedTextBackground': '#c8e6c980', // Light green background for additions
+                          'diffEditor.removedTextBackground': '#ffcccc80', // Light red background for deletions
+                          'diffEditor.insertedLineBackground': '#e6ffed60', // Very light green for added lines
+                          'diffEditor.removedLineBackground': '#ffeef060', // Very light red for removed lines
+                          'diffEditor.border': '#e1e4e8', // Border color
+                          'diffEditor.diagonalFill': '#f6f8fa80' // Diagonal fill for unchanged areas
+                        }
+                      });
+
+                      // Apply the theme based on current mode
+                      monaco.editor.setTheme(isDarkMode ? 'custom-diff-dark-theme' : 'custom-diff-light-theme');
 
                       // Store reference to the modified editor for undo/redo and change tracking
                       const modifiedEditor = editor.getModifiedEditor();
@@ -1231,7 +1271,22 @@ const CodeEditor = ({
                       // Store monaco instance for theme switching
                       monacoRef.current = monaco;
 
-                      // Define custom theme with green/red diff colors on white background
+                      // Define custom dark theme with green/red diff colors
+                      monaco.editor.defineTheme('custom-diff-dark-theme', {
+                        base: 'vs-dark', // Dark theme base
+                        inherit: true,
+                        rules: [],
+                        colors: {
+                          'diffEditor.insertedTextBackground': '#1a5c1a60', // Green background for additions
+                          'diffEditor.removedTextBackground': '#7a1a1a60', // Red background for deletions
+                          'diffEditor.insertedLineBackground': '#1a5c1a30', // Dark green for added lines
+                          'diffEditor.removedLineBackground': '#7a1a1a30', // Dark red for removed lines
+                          'diffEditor.border': '#454545', // Border color
+                          'diffEditor.diagonalFill': '#33333350' // Diagonal fill for unchanged areas
+                        }
+                      });
+
+                      // Define custom light theme with green/red diff colors
                       monaco.editor.defineTheme('custom-diff-light-theme', {
                         base: 'vs', // Light theme base
                         inherit: true,
@@ -1246,8 +1301,8 @@ const CodeEditor = ({
                         }
                       });
 
-                      // Apply the custom theme
-                      monaco.editor.setTheme('custom-diff-light-theme');
+                      // Apply the theme based on current mode
+                      monaco.editor.setTheme(isDarkMode ? 'custom-diff-dark-theme' : 'custom-diff-light-theme');
 
                       // Store reference to the modified editor for undo/redo and change tracking
                       const modifiedEditor = editor.getModifiedEditor();
@@ -1322,7 +1377,7 @@ const CodeEditor = ({
                 strings: false
               }
             }}
-            theme="custom-dark-theme"
+            theme={isDarkMode ? "custom-dark-theme" : "custom-light-theme"}
             loading={
               <div className="flex items-center justify-center h-full">
                 <div className="text-center text-muted-foreground">
