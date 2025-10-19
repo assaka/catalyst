@@ -305,14 +305,40 @@ router.put('/registry/:id/files', async (req, res) => {
       });
     }
 
-    // Parse source_code
-    const sourceCode = typeof plugin[0].source_code === 'string'
-      ? JSON.parse(plugin[0].source_code)
-      : plugin[0].source_code || [];
-
     // Normalize paths for comparison
     const normalizePath = (p) => p.replace(/^\/+/, '').replace(/^src\//, '');
     const normalizedRequestPath = normalizePath(path);
+
+    // Special handling for manifest.json - update the manifest field directly
+    if (normalizedRequestPath === 'manifest.json') {
+      try {
+        const updatedManifest = JSON.parse(content);
+
+        await sequelize.query(`
+          UPDATE plugin_registry
+          SET manifest = $1, updated_at = NOW()
+          WHERE id = $2
+        `, {
+          bind: [JSON.stringify(updatedManifest), id],
+          type: sequelize.QueryTypes.UPDATE
+        });
+
+        return res.json({
+          success: true,
+          message: 'Manifest updated successfully'
+        });
+      } catch (error) {
+        return res.status(400).json({
+          success: false,
+          error: 'Invalid JSON in manifest.json: ' + error.message
+        });
+      }
+    }
+
+    // Parse source_code for regular files
+    const sourceCode = typeof plugin[0].source_code === 'string'
+      ? JSON.parse(plugin[0].source_code)
+      : plugin[0].source_code || [];
 
     // Find and update the file
     let fileFound = false;
