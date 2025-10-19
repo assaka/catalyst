@@ -200,7 +200,7 @@ function App() {
         // Load core extensions
         const extensionsToLoad = [
           {
-            module: '/src/extensions/analytics-tracker.js', 
+            module: '/src/extensions/analytics-tracker.js',
             enabled: true,
             config: {
               customEventsEnabled: true,
@@ -212,7 +212,14 @@ function App() {
         ]
 
         // Initialize extensions
-        await extensionSystem.loadFromConfig(extensionsToLoad)
+        console.log('🔧 Loading core extensions...');
+        try {
+          await extensionSystem.loadFromConfig(extensionsToLoad);
+          console.log('✅ Core extensions loaded');
+        } catch (extError) {
+          console.warn('⚠️ Error loading core extensions (non-critical):', extError);
+          // Continue anyway - extensions are optional
+        }
 
         // Initialize database-driven plugins by loading hooks from database
         console.log('🎯 About to call initializeDatabasePlugins()...');
@@ -232,8 +239,13 @@ function App() {
         })
 
       } catch (error) {
-        console.error('❌ Failed to initialize Extension System:', error)
-        
+        console.error('❌ Failed to initialize Extension System:', error);
+        console.error('❌ Error stack:', error.stack);
+
+        // Still mark plugins as ready to unblock the app
+        console.log('⚠️ Setting pluginsReady to true despite error');
+        setPluginsReady(true);
+
         // Emit system error event
         eventSystem.emit('system.error', {
           error: error.message,
