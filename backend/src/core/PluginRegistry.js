@@ -114,6 +114,43 @@ class PluginRegistry {
         activated_at: 'TIMESTAMP DEFAULT CURRENT_TIMESTAMP',
         created_at: 'TIMESTAMP DEFAULT CURRENT_TIMESTAMP',
         constraint: 'UNIQUE(plugin_id, store_id)'
+      },
+
+      plugin_scripts: {
+        id: 'SERIAL PRIMARY KEY',
+        plugin_id: 'VARCHAR(255) REFERENCES plugin_registry(id) ON DELETE CASCADE',
+        name: 'VARCHAR(500) NOT NULL',
+        type: "VARCHAR(50) DEFAULT 'module'",
+        code: 'TEXT NOT NULL',
+        exports: "JSONB DEFAULT '[]'",
+        imports: "JSONB DEFAULT '[]'",
+        language: "VARCHAR(50) DEFAULT 'javascript'",
+        order_index: 'INTEGER DEFAULT 0',
+        created_at: 'TIMESTAMP DEFAULT CURRENT_TIMESTAMP',
+        updated_at: 'TIMESTAMP DEFAULT CURRENT_TIMESTAMP',
+        constraint: 'UNIQUE(plugin_id, name)'
+      },
+
+      plugin_dependencies: {
+        id: 'SERIAL PRIMARY KEY',
+        plugin_id: 'VARCHAR(255) REFERENCES plugin_registry(id) ON DELETE CASCADE',
+        package_name: 'VARCHAR(255) NOT NULL',
+        version: 'VARCHAR(50) NOT NULL',
+        code: 'TEXT NOT NULL',
+        exports: "JSONB DEFAULT '[]'",
+        created_at: 'TIMESTAMP DEFAULT CURRENT_TIMESTAMP',
+        constraint: 'UNIQUE(plugin_id, package_name)'
+      },
+
+      plugin_data: {
+        id: 'SERIAL PRIMARY KEY',
+        plugin_id: 'VARCHAR(255) REFERENCES plugin_registry(id) ON DELETE CASCADE',
+        key: 'VARCHAR(255) NOT NULL',
+        value: 'JSONB NOT NULL',
+        expires_at: 'TIMESTAMP',
+        created_at: 'TIMESTAMP DEFAULT CURRENT_TIMESTAMP',
+        updated_at: 'TIMESTAMP DEFAULT CURRENT_TIMESTAMP',
+        constraint: 'UNIQUE(plugin_id, key)'
       }
     };
 
@@ -159,7 +196,12 @@ class PluginRegistry {
       'CREATE INDEX IF NOT EXISTS idx_plugin_events_plugin_name ON plugin_events(plugin_id, event_name)',
       'CREATE INDEX IF NOT EXISTS idx_plugin_endpoints_plugin_path ON plugin_endpoints(plugin_id, method, path)',
       'CREATE INDEX IF NOT EXISTS idx_plugin_store_config_store ON plugin_store_config(store_id, enabled)',
-      'CREATE INDEX IF NOT EXISTS idx_plugin_execution_logs_plugin_time ON plugin_execution_logs(plugin_id, created_at)'
+      'CREATE INDEX IF NOT EXISTS idx_plugin_execution_logs_plugin_time ON plugin_execution_logs(plugin_id, created_at)',
+      'CREATE INDEX IF NOT EXISTS idx_plugin_scripts_plugin_id ON plugin_scripts(plugin_id)',
+      'CREATE INDEX IF NOT EXISTS idx_plugin_scripts_name ON plugin_scripts(plugin_id, name)',
+      'CREATE INDEX IF NOT EXISTS idx_plugin_scripts_order ON plugin_scripts(plugin_id, order_index)',
+      'CREATE INDEX IF NOT EXISTS idx_plugin_dependencies_plugin_id ON plugin_dependencies(plugin_id)',
+      'CREATE INDEX IF NOT EXISTS idx_plugin_data_plugin_key ON plugin_data(plugin_id, key)'
     ];
 
     for (const indexSql of indexes) {
@@ -380,9 +422,9 @@ class PluginRegistry {
   // Ensure custom-pricing plugin exists
   async ensureCustomPricingPlugin() {
     const pluginId = 'custom-pricing-v2';
-    
+
     const existing = await this.db.query(
-      'SELECT id FROM plugin_registry WHERE id = $1', 
+      'SELECT id FROM plugin_registry WHERE id = $1',
       [pluginId]
     );
 
@@ -422,7 +464,7 @@ class PluginRegistry {
             handler_code: `
               async function(req, res) {
                 const query = \`
-                  SELECT r.*, 
+                  SELECT r.*,
                          JSON_AGG(d.*) FILTER (WHERE d.id IS NOT NULL) as discounts
                   FROM custom_pricing_rules r
                   LEFT JOIN custom_pricing_discounts d ON r.id = d.rule_id
@@ -442,17 +484,17 @@ class PluginRegistry {
               async function(req, res) {
                 const { basePrice, context } = req.body;
                 let finalPrice = parseFloat(basePrice);
-                
+
                 // Apply volume discount
                 if (context.quantity >= 5) {
                   finalPrice *= 0.9; // 10% off
                 }
-                
+
                 // Apply loyalty discount
                 if (context.user?.isLoyaltyMember) {
                   finalPrice *= 0.95; // 5% off
                 }
-                
+
                 res.json({
                   success: true,
                   data: {
@@ -467,6 +509,136 @@ class PluginRegistry {
           }
         ]
       });
+    }
+  }
+
+  // Register plugin script/module
+  async registerPluginScript(pluginId, scriptData) {
+    const {
+      name,
+      code,
+      type = 'module',
+      exports = [],
+      imports = [],
+      language = 'javascript',
+      order_index = 0
+    } = scriptData;
+
+    try {
+      await this.db.query(`
+        INSERT INTO plugin_scripts (plugin_id, name, code, type, exports, imports, language, order_index)
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+        ON CONFLICT ON CONSTRAINT plugin_scripts_plugin_id_name_key
+        DO UPDATE SET
+          code = EXCLUDED.code,
+          exports = EXCLUDED.exports,
+          imports = EXCLUDED.imports,
+          updated_at = CURRENT_TIMESTAMP
+      `, [
+        pluginId,
+        name,
+        code,
+        type,
+        JSON.stringify(exports),
+        JSON.stringify(imports),
+        language,
+        order_index
+      ]);
+
+      console.log(`✅ Registered script: ${name} for plugin ${pluginId}`);
+    } catch (error) {
+      console.error(`Error registering script ${name}:`, error);
+    }
+  }
+
+  // Get plugin scripts
+  async getPluginScripts(pluginId) {
+    try {
+      const result = await this.db.query(
+        'SELECT * FROM plugin_scripts WHERE plugin_id = $1 ORDER BY order_index ASC',
+        [pluginId]
+      );
+      return result.rows;
+    } catch (error) {
+      console.error('Error getting plugin scripts:', error);
+      return [];
+    }
+  }
+
+  // Register plugin dependency
+  async registerPluginDependency(pluginId, depData) {
+    const { package_name, version, code, exports = [] } = depData;
+
+    try {
+      await this.db.query(`
+        INSERT INTO plugin_dependencies (plugin_id, package_name, version, code, exports)
+        VALUES ($1, $2, $3, $4, $5)
+        ON CONFLICT ON CONSTRAINT plugin_dependencies_plugin_id_package_name_key
+        DO UPDATE SET code = EXCLUDED.code, version = EXCLUDED.version
+      `, [pluginId, package_name, version, code, JSON.stringify(exports)]);
+
+      console.log(`✅ Registered dependency: ${package_name}@${version} for plugin ${pluginId}`);
+    } catch (error) {
+      console.error(`Error registering dependency ${package_name}:`, error);
+    }
+  }
+
+  // Get plugin dependencies
+  async getPluginDependencies(pluginId) {
+    try {
+      const result = await this.db.query(
+        'SELECT * FROM plugin_dependencies WHERE plugin_id = $1',
+        [pluginId]
+      );
+      return result.rows;
+    } catch (error) {
+      console.error('Error getting plugin dependencies:', error);
+      return [];
+    }
+  }
+
+  // Set plugin data (key-value storage)
+  async setPluginData(pluginId, key, value, expiresAt = null) {
+    try {
+      await this.db.query(`
+        INSERT INTO plugin_data (plugin_id, data_key, data_value)
+        VALUES ($1, $2, $3)
+        ON CONFLICT ON CONSTRAINT plugin_data_pkey
+        DO UPDATE SET data_value = EXCLUDED.data_value, updated_at = CURRENT_TIMESTAMP
+      `, [pluginId, key, JSON.stringify(value)]);
+    } catch (error) {
+      console.error('Error setting plugin data:', error);
+    }
+  }
+
+  // Get plugin data
+  async getPluginData(pluginId, key) {
+    try {
+      const result = await this.db.query(
+        `SELECT data_value FROM plugin_data
+         WHERE plugin_id = $1 AND data_key = $2`,
+        [pluginId, key]
+      );
+
+      if (result.rows.length > 0) {
+        return result.rows[0].data_value;
+      }
+      return null;
+    } catch (error) {
+      console.error('Error getting plugin data:', error);
+      return null;
+    }
+  }
+
+  // Delete plugin data
+  async deletePluginData(pluginId, key) {
+    try {
+      await this.db.query(
+        'DELETE FROM plugin_data WHERE plugin_id = $1 AND data_key = $2',
+        [pluginId, key]
+      );
+    } catch (error) {
+      console.error('Error deleting plugin data:', error);
     }
   }
 }
