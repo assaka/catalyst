@@ -31,9 +31,9 @@ function PageWrapper({ Component, pageName }) {
 // Initialize database-driven plugins
 async function initializeDatabasePlugins() {
   try {
-    // Fetch active plugins from database
+    // Fetch active plugins from database (uses normalized tables structure)
     // Add timestamp to bust cache
-    const response = await fetch(`/api/plugins/registry?status=active&_t=${Date.now()}`);
+    const response = await fetch(`/api/plugins/active?_t=${Date.now()}`);
     const result = await response.json();
 
     if (!result.success) {
@@ -78,7 +78,7 @@ async function loadPluginHooksAndEvents(pluginId) {
   try {
     console.log(`🔄 Loading plugin: ${pluginId}`);
     // Add timestamp to bust cache
-    const response = await fetch(`/api/plugins/registry/${pluginId}?_t=${Date.now()}`);
+    const response = await fetch(`/api/plugins/active/${pluginId}?_t=${Date.now()}`);
     const result = await response.json();
 
     if (result.success && result.data) {

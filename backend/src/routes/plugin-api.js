@@ -148,8 +148,102 @@ router.get('/installed', async (req, res) => {
 });
 
 /**
+ * GET /api/plugins/active
+ * Get active plugins from normalized tables (for App.jsx initialization)
+ * This endpoint loads plugins with their events from the new normalized structure
+ */
+router.get('/active', async (req, res) => {
+  try {
+    // Prevent caching - always get fresh plugin data
+    res.set('Cache-Control', 'no-store, no-cache, must-revalidate, private');
+    res.set('Pragma', 'no-cache');
+    res.set('Expires', '0');
+
+    console.log('🔌 Loading active plugins from normalized tables...');
+
+    // Get active plugins from plugin_registry table
+    const plugins = await sequelize.query(`
+      SELECT
+        id, name, version, description, author, category, status, type,
+        manifest, config, created_at, updated_at
+      FROM plugin_registry
+      WHERE status = 'active'
+      ORDER BY created_at DESC
+    `, {
+      type: sequelize.QueryTypes.SELECT
+    });
+
+    console.log(`📦 Found ${plugins.length} active plugins`);
+
+    // Load events for each plugin from plugin_events table
+    const pluginsWithEvents = await Promise.all(plugins.map(async (plugin) => {
+      // Try to load events from normalized plugin_events table
+      let events = [];
+      try {
+        const eventsResult = await sequelize.query(`
+          SELECT event_name, listener_code, priority, enabled
+          FROM plugin_events
+          WHERE plugin_id = $1 AND enabled = true
+          ORDER BY priority ASC
+        `, {
+          bind: [plugin.id],
+          type: sequelize.QueryTypes.SELECT
+        });
+
+        events = eventsResult.map(e => ({
+          event_name: e.event_name,
+          listener_code: e.listener_code,
+          priority: e.priority || 10,
+          enabled: e.enabled !== false
+        }));
+
+        console.log(`  ✅ ${plugin.name}: loaded ${events.length} events from plugin_events table`);
+      } catch (eventError) {
+        console.log(`  ⚠️ ${plugin.name}: plugin_events table not found or error, trying config field...`);
+
+        // Fallback to config field if plugin_events table doesn't exist yet
+        const config = typeof plugin.config === 'string' ? JSON.parse(plugin.config) : plugin.config;
+        events = config?.events || [];
+      }
+
+      // Parse manifest
+      const manifest = typeof plugin.manifest === 'string' ? JSON.parse(plugin.manifest) : plugin.manifest;
+      const config = typeof plugin.config === 'string' ? JSON.parse(plugin.config) : plugin.config;
+
+      return {
+        id: plugin.id,
+        name: plugin.name,
+        version: plugin.version,
+        description: plugin.description,
+        author: plugin.author,
+        category: plugin.category,
+        status: plugin.status,
+        type: plugin.type,
+        generated_by_ai: manifest?.generated_by_ai || plugin.type === 'ai-generated',
+        hooks: config?.hooks || [],
+        events: events
+      };
+    }));
+
+    console.log('✅ All plugins loaded with events');
+
+    res.json({
+      success: true,
+      data: pluginsWithEvents
+    });
+  } catch (error) {
+    console.error('❌ Failed to get active plugins:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
+/**
  * GET /api/plugins/registry
  * Get all active plugins with their hooks and events (for App.jsx initialization)
+ * LEGACY ENDPOINT - kept for backward compatibility
  */
 router.get('/registry', async (req, res) => {
   try {
@@ -200,8 +294,98 @@ router.get('/registry', async (req, res) => {
 });
 
 /**
+ * GET /api/plugins/active/:pluginId
+ * Get a specific active plugin from normalized tables (for App.jsx initialization)
+ */
+router.get('/active/:pluginId', async (req, res) => {
+  try {
+    // Prevent caching - always get fresh plugin data
+    res.set('Cache-Control', 'no-store, no-cache, must-revalidate, private');
+    res.set('Pragma', 'no-cache');
+    res.set('Expires', '0');
+
+    const { pluginId } = req.params;
+
+    console.log(`🔍 Loading plugin ${pluginId} from normalized tables...`);
+
+    // Get plugin details from plugin_registry
+    const plugin = await sequelize.query(`
+      SELECT * FROM plugin_registry WHERE id = $1 AND status = 'active'
+    `, {
+      bind: [pluginId],
+      type: sequelize.QueryTypes.SELECT
+    });
+
+    if (!plugin[0]) {
+      return res.status(404).json({
+        success: false,
+        error: 'Plugin not found or not active'
+      });
+    }
+
+    // Load events from plugin_events table
+    let events = [];
+    try {
+      const eventsResult = await sequelize.query(`
+        SELECT event_name, listener_code, priority, enabled
+        FROM plugin_events
+        WHERE plugin_id = $1 AND enabled = true
+        ORDER BY priority ASC
+      `, {
+        bind: [pluginId],
+        type: sequelize.QueryTypes.SELECT
+      });
+
+      events = eventsResult.map(e => ({
+        event_name: e.event_name,
+        listener_code: e.listener_code,
+        priority: e.priority || 10,
+        enabled: e.enabled !== false
+      }));
+
+      console.log(`  ✅ Loaded ${events.length} events from plugin_events table`);
+    } catch (eventError) {
+      console.log(`  ⚠️ plugin_events table not found, trying config field...`);
+
+      // Fallback to config field if plugin_events table doesn't exist
+      const config = typeof plugin[0].config === 'string' ? JSON.parse(plugin[0].config) : plugin[0].config;
+      events = config?.events || [];
+    }
+
+    // Parse JSON fields
+    const manifest = typeof plugin[0].manifest === 'string' ? JSON.parse(plugin[0].manifest) : plugin[0].manifest;
+    const config = typeof plugin[0].config === 'string' ? JSON.parse(plugin[0].config) : plugin[0].config;
+
+    res.json({
+      success: true,
+      data: {
+        id: plugin[0].id,
+        name: plugin[0].name,
+        version: plugin[0].version,
+        description: plugin[0].description,
+        author: plugin[0].author,
+        category: plugin[0].category,
+        status: plugin[0].status,
+        type: plugin[0].type,
+        generated_by_ai: manifest?.generated_by_ai || plugin[0].type === 'ai-generated',
+        hooks: config?.hooks || [],
+        events: events,
+        manifest: manifest
+      }
+    });
+  } catch (error) {
+    console.error('❌ Failed to get plugin details:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
+/**
  * GET /api/plugins/registry/:pluginId
  * Get a specific plugin with its hooks and events (for App.jsx initialization)
+ * LEGACY ENDPOINT - kept for backward compatibility
  */
 router.get('/registry/:pluginId', async (req, res) => {
   try {
