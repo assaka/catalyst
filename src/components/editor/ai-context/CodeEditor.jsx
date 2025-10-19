@@ -161,6 +161,9 @@ const CodeEditor = ({
   const [canRedo, setCanRedo] = useState(false);
   const [showRestoreModal, setShowRestoreModal] = useState(false);
   const [isDarkMode, setIsDarkMode] = useState(true); // Theme mode state
+  const [isSaving, setIsSaving] = useState(false);
+  const [saveSuccess, setSaveSuccess] = useState(false);
+  const [saveError, setSaveError] = useState(null);
 
   const editorRef = useRef(null);
   const monacoRef = useRef(null);
@@ -874,6 +877,11 @@ const CodeEditor = ({
     });
     disposables.push(selectionDisposable);
 
+    // Add Ctrl+S / Cmd+S keyboard shortcut for save
+    editor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyS, () => {
+      handleSave();
+    });
+
     // Store disposables for cleanup
     editorRef.current._disposables = disposables;
 
@@ -881,10 +889,39 @@ const CodeEditor = ({
     updateUndoRedoState();
   };
 
-  const handleSave = () => {
-    if (isModified && onChange) {
-      onChange(localCode);
+  const handleSave = async () => {
+    if (!isModified || !onChange) return;
+
+    try {
+      setIsSaving(true);
+      setSaveError(null);
+      setSaveSuccess(false);
+
+      // Call onChange - assume it might be async
+      await Promise.resolve(onChange(localCode));
+
+      // Success!
       setIsModified(false);
+      setIsSaving(false);
+      setSaveSuccess(true);
+
+      // Clear success state after 2 seconds
+      setTimeout(() => setSaveSuccess(false), 2000);
+
+      // Emit save event for extensions
+      eventSystem.emit('codeEditor.fileSaved', {
+        fileName,
+        content: localCode,
+        language
+      });
+
+    } catch (error) {
+      console.error('Save error:', error);
+      setIsSaving(false);
+      setSaveError(error.message || 'Failed to save');
+
+      // Clear error after 5 seconds
+      setTimeout(() => setSaveError(null), 5000);
     }
   };
 
@@ -1015,15 +1052,39 @@ const CodeEditor = ({
     <div className={`h-full flex flex-col bg-background ${className}`}>
       {/* Header */}
       <div className="border-b p-2">
+        {saveError && (
+          <div className="mb-2 px-3 py-2 bg-red-50 border border-red-200 rounded-md text-sm text-red-800 flex items-center gap-2">
+            <AlertTriangle className="w-4 h-4" />
+            <span>{saveError}</span>
+          </div>
+        )}
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-2">
             <span className="text-lg">{getLanguageIcon()}</span>
             <span className="font-medium">{fileName || 'Untitled'}</span>
             {isModified && <Badge variant="outline" className="text-xs">Modified</Badge>}
+            {saveSuccess && <Badge variant="outline" className="text-xs bg-green-50 text-green-700 border-green-200">Saved!</Badge>}
             <Badge variant="secondary" className="text-xs">{language}</Badge>
           </div>
 
           <div className="flex items-center space-x-1">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={handleSave}
+              disabled={readOnly || !isModified || isSaving}
+              title={isModified ? "Save (Ctrl+S)" : "No changes to save"}
+              className={`${saveSuccess ? "bg-green-100 text-green-700" : ""} ${isModified && !isSaving && !saveSuccess ? "hover:bg-blue-50 hover:text-blue-600" : ""}`}
+            >
+              {isSaving ? (
+                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-current"></div>
+              ) : saveSuccess ? (
+                <CheckCircle className="w-4 h-4" />
+              ) : (
+                <Save className="w-4 h-4" />
+              )}
+            </Button>
+
             <Button
               variant="ghost"
               size="sm"
