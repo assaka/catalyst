@@ -23,6 +23,7 @@ import {
   FileText,
   AlertTriangle,
   CheckCircle,
+  Check,
   Info,
   RefreshCw,
   Minimize2,
@@ -1062,26 +1063,33 @@ const CodeEditor = ({
           <div className="flex items-center space-x-2">
             <span className="text-lg">{getLanguageIcon()}</span>
             <span className="font-medium">{fileName || 'Untitled'}</span>
-            {isModified && <Badge variant="outline" className="text-xs">Modified</Badge>}
-            {saveSuccess && <Badge variant="outline" className="text-xs bg-green-50 text-green-700 border-green-200">Saved!</Badge>}
+            {isModified && !saveSuccess && <Badge variant="outline" className="text-xs">Modified</Badge>}
             <Badge variant="secondary" className="text-xs">{language}</Badge>
           </div>
 
           <div className="flex items-center space-x-1">
             <Button
-              variant="ghost"
               size="sm"
               onClick={handleSave}
-              disabled={readOnly || !isModified || isSaving}
+              disabled={readOnly || !isModified || isSaving || saveSuccess}
               title={isModified ? "Save (Ctrl+S)" : "No changes to save"}
-              className={`${saveSuccess ? "bg-green-100 text-green-700" : ""} ${isModified && !isSaving && !saveSuccess ? "hover:bg-blue-50 hover:text-blue-600" : ""}`}
+              className={saveSuccess ? "bg-green-600 hover:bg-green-700" : "bg-blue-600 hover:bg-blue-700"}
             >
               {isSaving ? (
-                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-current"></div>
+                <>
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                  Saving...
+                </>
               ) : saveSuccess ? (
-                <CheckCircle className="w-4 h-4" />
+                <>
+                  <Check className="w-4 h-4 mr-2" />
+                  Saved!
+                </>
               ) : (
-                <Save className="w-4 h-4" />
+                <>
+                  <Save className="w-4 h-4 mr-2" />
+                  Save
+                </>
               )}
             </Button>
 
