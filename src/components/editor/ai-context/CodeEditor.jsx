@@ -786,6 +786,23 @@ const CodeEditor = ({
   const handleEditorDidMount = (editor, monaco) => {
     editorRef.current = editor;
 
+    // Define custom theme with green/red diff colors
+    monaco.editor.defineTheme('custom-diff-theme', {
+      base: 'vs-dark',
+      inherit: true,
+      rules: [],
+      colors: {
+        'diffEditor.insertedTextBackground': '#1a5c1a40', // Green background for additions
+        'diffEditor.removedTextBackground': '#7a1a1a40', // Red background for deletions
+        'diffEditor.insertedLineBackground': '#1a5c1a20', // Light green for added lines
+        'diffEditor.removedLineBackground': '#7a1a1a20', // Light red for removed lines
+        'diffEditor.diagonalFill': '#33333350' // Diagonal fill for unchanged areas
+      }
+    });
+
+    // Apply the custom theme
+    monaco.editor.setTheme('custom-diff-theme');
+
     // Store disposables for cleanup
     const disposables = [];
 
@@ -1044,6 +1061,18 @@ const CodeEditor = ({
                   <Split className="w-4 h-4" />
                 </Button>
 
+                {(showSplitView || showDiffView) && (
+                  <Button
+                    variant={collapseUnchanged ? "default" : "ghost"}
+                    size="sm"
+                    onClick={() => setCollapseUnchanged(!collapseUnchanged)}
+                    title={collapseUnchanged ? "Show All Lines" : "Collapse Unchanged Lines"}
+                    className="px-2"
+                  >
+                    {collapseUnchanged ? <Minimize2 className="w-4 h-4" /> : <ChevronUp className="w-4 h-4" />}
+                  </Button>
+                )}
+
                 <Button
                   variant={showDiffView ? "default" : "ghost"}
                   size="sm"
@@ -1066,120 +1095,180 @@ const CodeEditor = ({
       <div className="flex-1">
         {showSplitView && enableDiffDetection ? (
           /* Split View - Use Monaco's built-in DiffEditor */
-          <div className="h-full flex flex-col">
-            <div className="bg-muted p-2 text-sm font-medium border-b flex items-center justify-between">
-              <div className="flex items-center space-x-2">
-                <span>Comparing Changes</span>
-                {(() => {
-                  const stats = getDiffStats(originalCode || '', localCode);
-                  return (
-                    <div className="flex items-center space-x-2 text-xs">
-                      <span className="text-green-600">+{stats.additions}</span>
-                      <span className="text-red-600">-{stats.deletions}</span>
-                      <span className="text-orange-600">{stats.linesChanged} modified</span>
-                    </div>
-                  );
-                })()}
-              </div>
-            </div>
-            <div className="flex-1">
-              <DiffEditor
-                height="100%"
-                language={getMonacoLanguage()}
-                original={originalCode || ''}
-                modified={localCode}
-                onMount={(editor) => {
-                  // Store reference to the modified editor for undo/redo and change tracking
-                  const modifiedEditor = editor.getModifiedEditor();
-                  editorRef.current = modifiedEditor;
+          (() => {
+            const { original: collapsedOriginal, modified: collapsedModified } = collapseUnchanged
+              ? getCollapsedCode(originalCode, localCode)
+              : { original: originalCode, modified: localCode };
 
-                  // Set up change listener on the modified editor
-                  const model = modifiedEditor.getModel();
-                  if (model) {
-                    model.onDidChangeContent(() => {
-                      const newValue = model.getValue();
-                      handleCodeChange(newValue);
-                    });
-                  }
-                }}
-                options={{
-                  readOnly: readOnly,
-                  minimap: { enabled: false },
-                  scrollBeyondLastLine: false,
-                  fontSize: 14,
-                  lineHeight: 20,
-                  fontFamily: 'ui-monospace, SFMono-Regular, "SF Mono", Consolas, "Liberation Mono", Menlo, monospace',
-                  tabSize: 2,
-                  insertSpaces: true,
-                  wordWrap: 'off',
-                  automaticLayout: true,
-                  renderSideBySide: true,
-                  ignoreTrimWhitespace: false,
-                  renderOverviewRuler: true,
-                  diffWordWrap: 'off'
-                }}
-                theme="vs-dark"
-              />
-            </div>
-          </div>
+            return (
+              <div className="h-full flex flex-col">
+                <div className="bg-muted p-2 text-sm font-medium border-b flex items-center justify-between">
+                  <div className="flex items-center space-x-2">
+                    <span>Comparing Changes</span>
+                    {collapseUnchanged && (
+                      <Badge variant="secondary" className="text-xs">
+                        <ChevronUp className="w-3 h-3 mr-1" />
+                        Collapsed
+                      </Badge>
+                    )}
+                    {(() => {
+                      const stats = getDiffStats(originalCode || '', localCode);
+                      return (
+                        <div className="flex items-center space-x-2 text-xs">
+                          <span className="text-green-600">+{stats.additions}</span>
+                          <span className="text-red-600">-{stats.deletions}</span>
+                          <span className="text-orange-600">{stats.linesChanged} modified</span>
+                        </div>
+                      );
+                    })()}
+                  </div>
+                </div>
+                <div className="flex-1">
+                  <DiffEditor
+                    height="100%"
+                    language={getMonacoLanguage()}
+                    original={collapsedOriginal || originalCode || ''}
+                    modified={collapsedModified || localCode}
+                    onMount={(editor, monaco) => {
+                      // Define custom theme with green/red diff colors
+                      monaco.editor.defineTheme('custom-diff-theme', {
+                        base: 'vs-dark',
+                        inherit: true,
+                        rules: [],
+                        colors: {
+                          'diffEditor.insertedTextBackground': '#1a5c1a60', // Green background for additions
+                          'diffEditor.removedTextBackground': '#7a1a1a60', // Red background for deletions
+                          'diffEditor.insertedLineBackground': '#1a5c1a30', // Light green for added lines
+                          'diffEditor.removedLineBackground': '#7a1a1a30', // Light red for removed lines
+                          'diffEditor.diagonalFill': '#33333350' // Diagonal fill for unchanged areas
+                        }
+                      });
+
+                      // Apply the custom theme
+                      monaco.editor.setTheme('custom-diff-theme');
+
+                      // Store reference to the modified editor for undo/redo and change tracking
+                      const modifiedEditor = editor.getModifiedEditor();
+                      editorRef.current = modifiedEditor;
+
+                      // Set up change listener on the modified editor
+                      const model = modifiedEditor.getModel();
+                      if (model) {
+                        model.onDidChangeContent(() => {
+                          const newValue = model.getValue();
+                          handleCodeChange(newValue);
+                        });
+                      }
+                    }}
+                    options={{
+                      readOnly: readOnly,
+                      minimap: { enabled: false },
+                      scrollBeyondLastLine: false,
+                      fontSize: 14,
+                      lineHeight: 20,
+                      fontFamily: 'ui-monospace, SFMono-Regular, "SF Mono", Consolas, "Liberation Mono", Menlo, monospace',
+                      tabSize: 2,
+                      insertSpaces: true,
+                      wordWrap: 'off',
+                      automaticLayout: true,
+                      renderSideBySide: true,
+                      ignoreTrimWhitespace: false,
+                      renderOverviewRuler: true,
+                      diffWordWrap: 'off'
+                    }}
+                  />
+                </div>
+              </div>
+            );
+          })()
         ) : showDiffView && enableDiffDetection ? (
           /* Inline Diff View - Use Monaco's DiffEditor in inline mode */
-          <div className="h-full flex flex-col">
-            <div className="bg-muted p-2 text-sm font-medium border-b flex items-center justify-between">
-              <div className="flex items-center space-x-2">
-                <span>Inline Diff View</span>
-                {(() => {
-                  const stats = getDiffStats(originalCode || '', localCode);
-                  return (
-                    <div className="flex items-center space-x-2 text-xs">
-                      <span className="text-green-600">+{stats.additions}</span>
-                      <span className="text-red-600">-{stats.deletions}</span>
-                      <span className="text-orange-600">{stats.linesChanged} modified</span>
-                    </div>
-                  );
-                })()}
-              </div>
-            </div>
-            <div className="flex-1">
-              <DiffEditor
-                height="100%"
-                language={getMonacoLanguage()}
-                original={originalCode || ''}
-                modified={localCode}
-                onMount={(editor) => {
-                  // Store reference to the modified editor for undo/redo and change tracking
-                  const modifiedEditor = editor.getModifiedEditor();
-                  editorRef.current = modifiedEditor;
+          (() => {
+            const { original: collapsedOriginal, modified: collapsedModified } = collapseUnchanged
+              ? getCollapsedCode(originalCode, localCode)
+              : { original: originalCode, modified: localCode };
 
-                  // Set up change listener on the modified editor
-                  const model = modifiedEditor.getModel();
-                  if (model) {
-                    model.onDidChangeContent(() => {
-                      const newValue = model.getValue();
-                      handleCodeChange(newValue);
-                    });
-                  }
-                }}
-                options={{
-                  readOnly: readOnly,
-                  minimap: { enabled: false },
-                  scrollBeyondLastLine: false,
-                  fontSize: 14,
-                  lineHeight: 20,
-                  fontFamily: 'ui-monospace, SFMono-Regular, "SF Mono", Consolas, "Liberation Mono", Menlo, monospace',
-                  tabSize: 2,
-                  insertSpaces: true,
-                  wordWrap: 'off',
-                  automaticLayout: true,
-                  renderSideBySide: false,  // Inline mode
-                  ignoreTrimWhitespace: false,
-                  renderOverviewRuler: true,
-                  diffWordWrap: 'off'
-                }}
-                theme="vs-dark"
-              />
-            </div>
-          </div>
+            return (
+              <div className="h-full flex flex-col">
+                <div className="bg-muted p-2 text-sm font-medium border-b flex items-center justify-between">
+                  <div className="flex items-center space-x-2">
+                    <span>Inline Diff View</span>
+                    {collapseUnchanged && (
+                      <Badge variant="secondary" className="text-xs">
+                        <ChevronUp className="w-3 h-3 mr-1" />
+                        Collapsed
+                      </Badge>
+                    )}
+                    {(() => {
+                      const stats = getDiffStats(originalCode || '', localCode);
+                      return (
+                        <div className="flex items-center space-x-2 text-xs">
+                          <span className="text-green-600">+{stats.additions}</span>
+                          <span className="text-red-600">-{stats.deletions}</span>
+                          <span className="text-orange-600">{stats.linesChanged} modified</span>
+                        </div>
+                      );
+                    })()}
+                  </div>
+                </div>
+                <div className="flex-1">
+                  <DiffEditor
+                    height="100%"
+                    language={getMonacoLanguage()}
+                    original={collapsedOriginal || originalCode || ''}
+                    modified={collapsedModified || localCode}
+                    onMount={(editor, monaco) => {
+                      // Define custom theme with green/red diff colors
+                      monaco.editor.defineTheme('custom-diff-theme', {
+                        base: 'vs-dark',
+                        inherit: true,
+                        rules: [],
+                        colors: {
+                          'diffEditor.insertedTextBackground': '#1a5c1a60', // Green background for additions
+                          'diffEditor.removedTextBackground': '#7a1a1a60', // Red background for deletions
+                          'diffEditor.insertedLineBackground': '#1a5c1a30', // Light green for added lines
+                          'diffEditor.removedLineBackground': '#7a1a1a30', // Light red for removed lines
+                          'diffEditor.diagonalFill': '#33333350' // Diagonal fill for unchanged areas
+                        }
+                      });
+
+                      // Apply the custom theme
+                      monaco.editor.setTheme('custom-diff-theme');
+
+                      // Store reference to the modified editor for undo/redo and change tracking
+                      const modifiedEditor = editor.getModifiedEditor();
+                      editorRef.current = modifiedEditor;
+
+                      // Set up change listener on the modified editor
+                      const model = modifiedEditor.getModel();
+                      if (model) {
+                        model.onDidChangeContent(() => {
+                          const newValue = model.getValue();
+                          handleCodeChange(newValue);
+                        });
+                      }
+                    }}
+                    options={{
+                      readOnly: readOnly,
+                      minimap: { enabled: false },
+                      scrollBeyondLastLine: false,
+                      fontSize: 14,
+                      lineHeight: 20,
+                      fontFamily: 'ui-monospace, SFMono-Regular, "SF Mono", Consolas, "Liberation Mono", Menlo, monospace',
+                      tabSize: 2,
+                      insertSpaces: true,
+                      wordWrap: 'off',
+                      automaticLayout: true,
+                      renderSideBySide: false,  // Inline mode
+                      ignoreTrimWhitespace: false,
+                      renderOverviewRuler: true,
+                      diffWordWrap: 'off'
+                    }}
+                  />
+                </div>
+              </div>
+            );
+          })()
         ) : (
           /* Monaco Editor */
           <Editor
@@ -1215,7 +1304,7 @@ const CodeEditor = ({
                 strings: false
               }
             }}
-            theme="vs-dark"
+            theme="custom-diff-theme"
             loading={
               <div className="flex items-center justify-center h-full">
                 <div className="text-center text-muted-foreground">
