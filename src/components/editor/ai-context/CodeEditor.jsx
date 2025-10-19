@@ -786,16 +786,16 @@ const CodeEditor = ({
   const handleEditorDidMount = (editor, monaco) => {
     editorRef.current = editor;
 
-    // Define custom light theme
-    monaco.editor.defineTheme('custom-light-theme', {
-      base: 'vs', // Light theme base
+    // Define custom dark theme for regular editor
+    monaco.editor.defineTheme('custom-dark-theme', {
+      base: 'vs-dark', // Dark theme base
       inherit: true,
       rules: [],
       colors: {}
     });
 
-    // Apply the custom theme
-    monaco.editor.setTheme('custom-light-theme');
+    // Apply the dark theme
+    monaco.editor.setTheme('custom-dark-theme');
 
     // Store disposables for cleanup
     const disposables = [];
@@ -1118,23 +1118,23 @@ const CodeEditor = ({
                 original={originalCode || ''}
                 modified={localCode}
                     onMount={(editor, monaco) => {
-                      // Define custom theme with green/red diff colors on white background
-                      monaco.editor.defineTheme('custom-diff-light-theme', {
-                        base: 'vs', // Light theme base
+                      // Define custom dark theme with green/red diff colors for split view
+                      monaco.editor.defineTheme('custom-diff-dark-theme', {
+                        base: 'vs-dark', // Dark theme base
                         inherit: true,
                         rules: [],
                         colors: {
-                          'diffEditor.insertedTextBackground': '#c8e6c980', // Light green background for additions
-                          'diffEditor.removedTextBackground': '#ffcccc80', // Light red background for deletions
-                          'diffEditor.insertedLineBackground': '#e6ffed60', // Very light green for added lines
-                          'diffEditor.removedLineBackground': '#ffeef060', // Very light red for removed lines
-                          'diffEditor.border': '#e1e4e8', // Border color
-                          'diffEditor.diagonalFill': '#f6f8fa80' // Diagonal fill for unchanged areas
+                          'diffEditor.insertedTextBackground': '#1a5c1a60', // Green background for additions
+                          'diffEditor.removedTextBackground': '#7a1a1a60', // Red background for deletions
+                          'diffEditor.insertedLineBackground': '#1a5c1a30', // Dark green for added lines
+                          'diffEditor.removedLineBackground': '#7a1a1a30', // Dark red for removed lines
+                          'diffEditor.border': '#454545', // Border color
+                          'diffEditor.diagonalFill': '#33333350' // Diagonal fill for unchanged areas
                         }
                       });
 
-                      // Apply the custom theme
-                      monaco.editor.setTheme('custom-diff-light-theme');
+                      // Apply the dark theme
+                      monaco.editor.setTheme('custom-diff-dark-theme');
 
                       // Store reference to the modified editor for undo/redo and change tracking
                       const modifiedEditor = editor.getModifiedEditor();
@@ -1296,7 +1296,7 @@ const CodeEditor = ({
                 strings: false
               }
             }}
-            theme="custom-light-theme"
+            theme="custom-dark-theme"
             loading={
               <div className="flex items-center justify-center h-full">
                 <div className="text-center text-muted-foreground">
