@@ -368,13 +368,31 @@ router.put('/registry/:id/files', async (req, res) => {
       manifest.generatedFiles = updatedFiles;
     }
 
-    // Update database
+    // Special handling for event files - also update config.events
+    const config = typeof plugin[0].config === 'string'
+      ? JSON.parse(plugin[0].config)
+      : plugin[0].config || { hooks: [], events: [] };
+
+    // Check if this is an event file (e.g., events/cart.viewed.js)
+    if (normalizedRequestPath.startsWith('events/')) {
+      const eventName = normalizedRequestPath.replace('events/', '').replace('.js', '');
+
+      // Update the corresponding event in config
+      if (config.events && Array.isArray(config.events)) {
+        const eventIndex = config.events.findIndex(e => e.event_name === eventName);
+        if (eventIndex !== -1) {
+          config.events[eventIndex].listener_code = content;
+        }
+      }
+    }
+
+    // Update database with both source_code, manifest, and config
     await sequelize.query(`
       UPDATE plugin_registry
-      SET source_code = $1, manifest = $2, updated_at = NOW()
-      WHERE id = $3
+      SET source_code = $1, manifest = $2, config = $3, updated_at = NOW()
+      WHERE id = $4
     `, {
-      bind: [JSON.stringify(updatedFiles), JSON.stringify(manifest), id],
+      bind: [JSON.stringify(updatedFiles), JSON.stringify(manifest), JSON.stringify(config), id],
       type: sequelize.QueryTypes.UPDATE
     });
 
