@@ -249,7 +249,6 @@ export default function Layout({ children, currentPageName }) {
       );
 
       if (response.success && response.navigation && Array.isArray(response.navigation)) {
-        console.log('✅ Loaded navigation items:', response.navigation.length);
 
         // Build hierarchical structure using parent_key
         const allItems = response.navigation.map(item => ({

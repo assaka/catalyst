@@ -201,14 +201,6 @@ export function processVariables(content, context, pageData = {}) {
     return content;
   }
 
-  // DEBUG: Check if content has translation helpers
-  if (content.includes('{{t')) {
-    console.log('🔍 [processVariables] Content has {{t helpers:', {
-      contentPreview: content.substring(0, 200),
-      hasUiTranslations: !!(context?.settings?.ui_translations || pageData?.settings?.ui_translations)
-    });
-  }
-
   let processedContent = content;
 
   // IMPORTANT: Process loops FIRST, so conditionals inside loops get the correct item context
@@ -265,14 +257,6 @@ function processTranslations(content, context, pageData) {
   // Match {{t 'key'}} or {{t "key"}}
   const translationRegex = /\{\{t\s+['"]([^'"]+)['"]\}\}/g;
 
-  // DEBUG: Check if translation helpers exist in content
-  const hasTranslationHelpers = translationRegex.test(content);
-  if (hasTranslationHelpers) {
-    console.log('🔍 [processTranslations] Found translation helpers in content');
-    // Reset regex after test
-    translationRegex.lastIndex = 0;
-  }
-
   return content.replace(translationRegex, (match, key) => {
     const currentLang = typeof localStorage !== 'undefined'
       ? localStorage.getItem('catalyst_language') || 'en'
@@ -295,19 +279,6 @@ function processTranslations(content, context, pageData) {
       return current;
     };
 
-    // DEBUG: Log translation lookup attempts
-    if (key.includes('welcome_back') || key.includes('create_account') || key.includes('show_more') || key.includes('show_less')) {
-      console.log('🔍 Translation lookup debug:', {
-        key,
-        currentLang,
-        hasUiTranslations: !!uiTranslations,
-        hasCurrentLang: !!uiTranslations[currentLang],
-        uiTranslationsKeys: Object.keys(uiTranslations),
-        currentLangKeys: uiTranslations[currentLang] ? Object.keys(uiTranslations[currentLang]).slice(0, 10) : 'none',
-        translationValue: getNestedTranslation(uiTranslations[currentLang], key)
-      });
-    }
-
     // Try current language first
     const currentLangValue = getNestedTranslation(uiTranslations[currentLang], key);
     if (currentLangValue) {
@@ -318,11 +289,6 @@ function processTranslations(content, context, pageData) {
     const enValue = getNestedTranslation(uiTranslations.en, key);
     if (enValue) {
       return enValue;
-    }
-
-    // DEBUG: Log fallback
-    if (key.includes('welcome_back') || key.includes('create_account')) {
-      console.log('⚠️  Translation not found, using fallback for:', key);
     }
 
     // Fallback to key itself - format nicely
@@ -594,17 +560,6 @@ function processLoops(content, context, pageData, depth = 0) {
         const itemContext = typeof item === 'object' && item !== null
           ? { ...context, ...pageData, this: item, ...item }
           : { ...context, ...pageData, this: item };
-
-        // DEBUG: Log context availability before processing
-        if (itemContent.includes('settings.theme.product_tabs_title_color')) {
-          console.log('🔧 [processLoops] Processing tab item:', {
-            itemId: item?.id,
-            hasSettings: !!itemContext.settings,
-            hasTheme: !!itemContext.settings?.theme,
-            titleColor: itemContext.settings?.theme?.product_tabs_title_color,
-            contextKeys: Object.keys(itemContext).slice(0, 10)
-          });
-        }
 
         // Process conditionals with item context
         itemContent = processConditionals(itemContent, context, itemContext);

@@ -36,11 +36,6 @@ export default function HeaderSearch({ styles = {} }) {
 
   const storeCode = getStoreCode();
 
-  // Log for debugging
-  useEffect(() => {
-    console.log('📍 HeaderSearch storeCode:', storeCode, 'params:', params, 'store:', { slug: store?.slug, code: store?.code });
-  }, [storeCode, params, store]);
-
   // Extract input styles from slot configuration
   const inputStyles = {
     backgroundColor: styles?.backgroundColor,

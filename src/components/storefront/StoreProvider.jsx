@@ -692,7 +692,6 @@ export const StoreProvider = ({ children }) => {
           });
           if (!response.ok) throw new Error('Failed to fetch translations');
           const result = await response.json();
-          console.log('📥 Fresh translations loaded from API:', Object.keys(result.data?.labels || {}).length, 'keys');
           return result.data?.labels || {};
         }, CACHE_DURATION_MEDIUM);
 
