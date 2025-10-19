@@ -1096,7 +1096,7 @@ const CodeEditor = ({
             
                 {/* Modified Code with Revert Gutter */}
                 <div className="flex-1 flex">
-                  {/* Revert Gutter Column */}
+                  {/* Revert Gutter Column - Scrolls with Editor */}
                   {!collapseUnchanged && (() => {
                     const changedBlocks = getChangedBlocks();
                     if (changedBlocks.length === 0) return null;
@@ -1110,41 +1110,68 @@ const CodeEditor = ({
                     });
 
                     return (
-                      <div className="w-8 flex-shrink-0 bg-gray-800 border-r border-gray-700 font-mono text-xs overflow-hidden">
-                        {Array.from({ length: totalLines }, (_, lineIndex) => {
-                          const isChanged = changedLineNumbers.has(lineIndex);
-                          const block = changedBlocks.find(b => lineIndex >= b.startLine && lineIndex <= b.endLine);
-                          const isFirstLineOfBlock = block && lineIndex === block.startLine;
+                      <div
+                        className="w-8 flex-shrink-0 bg-gray-800 border-r border-gray-700 font-mono text-xs overflow-y-scroll overflow-x-hidden scrollbar-hide"
+                        ref={(el) => {
+                          if (!el) return;
+                          // Sync scroll with Monaco editor
+                          const syncScroll = () => {
+                            if (editorRef.current) {
+                              const scrollTop = editorRef.current.getScrollTop();
+                              el.scrollTop = scrollTop;
+                            }
+                          };
 
-                          return (
-                            <div
-                              key={lineIndex}
-                              className="h-5 flex items-center justify-center group relative"
-                              style={{ lineHeight: '20px' }}
-                            >
-                              {isChanged && (
-                                <>
-                                  <div className="absolute inset-0 bg-blue-500/0 group-hover:bg-blue-500/20 transition-colors" />
-                                  {isFirstLineOfBlock && (
-                                    <button
-                                      onClick={() => {
-                                        if (block.startLine === block.endLine) {
-                                          handleRevertLine(block.startLine);
-                                        } else {
-                                          handleRevertBlock(block.startLine, block.endLine);
-                                        }
-                                      }}
-                                      className="relative z-10 w-5 h-5 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity bg-gray-700/90 hover:bg-blue-600 text-white rounded-sm"
-                                      title={`Revert ${block.startLine === block.endLine ? 'line' : 'lines'} ${block.startLine + 1}${block.startLine !== block.endLine ? `-${block.endLine + 1}` : ''}`}
-                                    >
-                                      <ChevronLeft className="w-3 h-3" />
-                                    </button>
-                                  )}
-                                </>
-                              )}
-                            </div>
-                          );
-                        })}
+                          // Initial sync
+                          syncScroll();
+
+                          // Listen to editor scroll events
+                          if (editorRef.current) {
+                            const disposable = editorRef.current.onDidScrollChange(syncScroll);
+                            // Store disposable for cleanup
+                            if (!editorRef.current._gutterDisposables) {
+                              editorRef.current._gutterDisposables = [];
+                            }
+                            editorRef.current._gutterDisposables.push(disposable);
+                          }
+                        }}
+                      >
+                        <div style={{ height: `${totalLines * 20}px` }}>
+                          {Array.from({ length: totalLines }, (_, lineIndex) => {
+                            const isChanged = changedLineNumbers.has(lineIndex);
+                            const block = changedBlocks.find(b => lineIndex >= b.startLine && lineIndex <= b.endLine);
+                            const isFirstLineOfBlock = block && lineIndex === block.startLine;
+
+                            return (
+                              <div
+                                key={lineIndex}
+                                className="h-5 flex items-center justify-center group relative"
+                                style={{ lineHeight: '20px' }}
+                              >
+                                {isChanged && (
+                                  <>
+                                    <div className="absolute inset-0 bg-blue-500/0 group-hover:bg-blue-500/20 transition-colors" />
+                                    {isFirstLineOfBlock && (
+                                      <button
+                                        onClick={() => {
+                                          if (block.startLine === block.endLine) {
+                                            handleRevertLine(block.startLine);
+                                          } else {
+                                            handleRevertBlock(block.startLine, block.endLine);
+                                          }
+                                        }}
+                                        className="relative z-10 w-5 h-5 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity bg-gray-700/90 hover:bg-blue-600 text-white rounded-sm"
+                                        title={`Revert ${block.startLine === block.endLine ? 'line' : 'lines'} ${block.startLine + 1}${block.startLine !== block.endLine ? `-${block.endLine + 1}` : ''}`}
+                                      >
+                                        <ChevronLeft className="w-3 h-3" />
+                                      </button>
+                                    )}
+                                  </>
+                                )}
+                              </div>
+                            );
+                          })}
+                        </div>
                       </div>
                     );
                   })()}
