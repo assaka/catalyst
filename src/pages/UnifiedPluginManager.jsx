@@ -463,13 +463,30 @@ const UnifiedPluginManager = () => {
   // Handle code save within plugin
   const handleCodeSave = async () => {
     if (!selectedPlugin || !selectedFile) return;
-    
+
     try {
-      // Save to database registry (would need backend implementation)
-      alert('Database-driven plugin saving not yet implemented. Changes will be stored in the database registry system.');
-      
-      setOriginalCode(sourceCode);
-      
+      // Save to database registry via API
+      const response = await apiClient.request('PUT', `plugins/registry/${selectedPlugin.id}/files`, {
+        path: selectedFile.path,
+        content: sourceCode
+      });
+
+      if (response.success) {
+        setOriginalCode(sourceCode);
+        alert('File saved successfully!');
+
+        // Update the file in pluginFiles array to reflect the change
+        setPluginFiles(prevFiles =>
+          prevFiles.map(file =>
+            file.path === selectedFile.path
+              ? { ...file, content: sourceCode }
+              : file
+          )
+        );
+      } else {
+        throw new Error(response.error || 'Failed to save file');
+      }
+
     } catch (error) {
       console.error('Error saving plugin file:', error);
       alert(`Error saving plugin file: ${error.message}`);
