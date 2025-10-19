@@ -153,6 +153,11 @@ router.get('/installed', async (req, res) => {
  */
 router.get('/registry', async (req, res) => {
   try {
+    // Prevent caching - always get fresh plugin data
+    res.set('Cache-Control', 'no-store, no-cache, must-revalidate, private');
+    res.set('Pragma', 'no-cache');
+    res.set('Expires', '0');
+
     const { status } = req.query;
 
     // Get plugins from plugin_registry table
@@ -200,6 +205,11 @@ router.get('/registry', async (req, res) => {
  */
 router.get('/registry/:pluginId', async (req, res) => {
   try {
+    // Prevent caching - always get fresh plugin data
+    res.set('Cache-Control', 'no-store, no-cache, must-revalidate, private');
+    res.set('Pragma', 'no-cache');
+    res.set('Expires', '0');
+
     const { pluginId } = req.params;
 
     // Get plugin details from plugin_registry

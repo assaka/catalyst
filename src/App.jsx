@@ -29,7 +29,8 @@ function PageWrapper({ Component, pageName }) {
 async function initializeDatabasePlugins() {
   try {
     // Fetch active plugins from database
-    const response = await fetch('/api/plugins/registry?status=active');
+    // Add timestamp to bust cache
+    const response = await fetch(`/api/plugins/registry?status=active&_t=${Date.now()}`);
     const result = await response.json();
 
     if (!result.success) {
@@ -68,7 +69,8 @@ async function initializeDatabasePlugins() {
 async function loadPluginHooksAndEvents(pluginId) {
   try {
     console.log(`🔄 Loading plugin: ${pluginId}`);
-    const response = await fetch(`/api/plugins/registry/${pluginId}`);
+    // Add timestamp to bust cache
+    const response = await fetch(`/api/plugins/registry/${pluginId}?_t=${Date.now()}`);
     const result = await response.json();
 
     if (result.success && result.data) {
