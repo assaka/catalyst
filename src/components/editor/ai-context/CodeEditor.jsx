@@ -217,92 +217,105 @@ const CodeEditor = ({
   // Helper function to process code for collapsed view
   const getCollapsedCode = useCallback((originalCode, modifiedCode) => {
     if (!collapseUnchanged || !originalCode || !modifiedCode) {
+      console.log('⚠️ [Collapse] Not collapsing:', { collapseUnchanged, hasOriginal: !!originalCode, hasModified: !!modifiedCode });
       return { original: originalCode, modified: modifiedCode };
     }
 
+    console.log('🔽 [Collapse] Starting collapse...');
     const originalLines = originalCode.split('\n');
     const modifiedLines = modifiedCode.split('\n');
     const maxLines = Math.max(originalLines.length, modifiedLines.length);
 
     const collapsedOriginal = [];
     const collapsedModified = [];
-    let unchangedCount = 0;
     const CONTEXT_LINES = 2; // Show 2 lines before and after changes
     const MIN_COLLAPSE = 5; // Only collapse if more than 5 unchanged lines
 
+    // First pass: identify all changed line indices
+    const changedIndices = [];
     for (let i = 0; i < maxLines; i++) {
       const origLine = originalLines[i] || '';
       const modLine = modifiedLines[i] || '';
-      const isChanged = origLine !== modLine;
+      if (origLine !== modLine) {
+        changedIndices.push(i);
+      }
+    }
 
-      if (isChanged) {
-        // Add context lines before the change
-        const contextStart = Math.max(0, i - CONTEXT_LINES);
-        const contextEnd = i;
+    console.log('🔍 [Collapse] Found', changedIndices.length, 'changed lines');
 
-        // If we have accumulated many unchanged lines, show collapse indicator
-        if (unchangedCount > MIN_COLLAPSE) {
-          // Show first CONTEXT_LINES after last change
-          const linesToShow = CONTEXT_LINES;
-          const collapsedCount = unchangedCount - linesToShow - CONTEXT_LINES;
+    // If no changes, return original code
+    if (changedIndices.length === 0) {
+      return { original: originalCode, modified: modifiedCode };
+    }
 
-          if (collapsedCount > 0) {
-            collapsedOriginal.push(`... ${collapsedCount} unchanged lines ...`);
-            collapsedModified.push(`... ${collapsedCount} unchanged lines ...`);
-          }
+    // Second pass: determine which lines to show
+    const linesToShow = new Set();
 
-          // Show context before this change
-          for (let j = contextStart; j < contextEnd; j++) {
-            if (j < originalLines.length || j < modifiedLines.length) {
-              collapsedOriginal.push(originalLines[j] || '');
-              collapsedModified.push(modifiedLines[j] || '');
-            }
-          }
+    // Add context around each changed line
+    changedIndices.forEach(idx => {
+      // Add the changed line itself
+      linesToShow.add(idx);
+      // Add CONTEXT_LINES before
+      for (let i = Math.max(0, idx - CONTEXT_LINES); i < idx; i++) {
+        linesToShow.add(i);
+      }
+      // Add CONTEXT_LINES after
+      for (let i = idx + 1; i <= Math.min(maxLines - 1, idx + CONTEXT_LINES); i++) {
+        linesToShow.add(i);
+      }
+    });
+
+    console.log('📋 [Collapse] Showing', linesToShow.size, 'lines out of', maxLines);
+
+    // Third pass: build collapsed output with placeholders
+    const sortedLinesToShow = Array.from(linesToShow).sort((a, b) => a - b);
+    let lastShownLine = -1;
+
+    sortedLinesToShow.forEach((lineIdx, arrIdx) => {
+      // Check if there's a gap between this line and the last shown line
+      const gap = lineIdx - lastShownLine - 1;
+
+      if (gap > 0) {
+        if (gap >= MIN_COLLAPSE) {
+          // Large gap - show collapse indicator
+          collapsedOriginal.push(`... ${gap} unchanged lines ...`);
+          collapsedModified.push(`... ${gap} unchanged lines ...`);
         } else {
-          // Show all unchanged lines if few
-          for (let j = i - unchangedCount; j < i; j++) {
-            if (j >= 0) {
-              collapsedOriginal.push(originalLines[j] || '');
-              collapsedModified.push(modifiedLines[j] || '');
-            }
+          // Small gap - show all lines
+          for (let i = lastShownLine + 1; i < lineIdx; i++) {
+            collapsedOriginal.push(originalLines[i] || '');
+            collapsedModified.push(modifiedLines[i] || '');
           }
         }
+      }
 
-        // Add the changed line
-        collapsedOriginal.push(origLine);
-        collapsedModified.push(modLine);
+      // Add the current line
+      collapsedOriginal.push(originalLines[lineIdx] || '');
+      collapsedModified.push(modifiedLines[lineIdx] || '');
+      lastShownLine = lineIdx;
+    });
 
-        unchangedCount = 0;
+    // Handle any remaining lines after the last shown line
+    const remainingLines = maxLines - lastShownLine - 1;
+    if (remainingLines > 0) {
+      if (remainingLines >= MIN_COLLAPSE) {
+        collapsedOriginal.push(`... ${remainingLines} unchanged lines ...`);
+        collapsedModified.push(`... ${remainingLines} unchanged lines ...`);
       } else {
-        unchangedCount++;
+        for (let i = lastShownLine + 1; i < maxLines; i++) {
+          collapsedOriginal.push(originalLines[i] || '');
+          collapsedModified.push(modifiedLines[i] || '');
+        }
       }
     }
 
-    // Handle remaining unchanged lines at the end
-    if (unchangedCount > MIN_COLLAPSE) {
-      // Show only first CONTEXT_LINES
-      for (let j = 0; j < CONTEXT_LINES && j < unchangedCount; j++) {
-        const lineIndex = maxLines - unchangedCount + j;
-        collapsedOriginal.push(originalLines[lineIndex] || '');
-        collapsedModified.push(modifiedLines[lineIndex] || '');
-      }
-      const remaining = unchangedCount - CONTEXT_LINES;
-      if (remaining > 0) {
-        collapsedOriginal.push(`... ${remaining} unchanged lines ...`);
-        collapsedModified.push(`... ${remaining} unchanged lines ...`);
-      }
-    } else {
-      // Show all remaining lines
-      for (let j = maxLines - unchangedCount; j < maxLines; j++) {
-        collapsedOriginal.push(originalLines[j] || '');
-        collapsedModified.push(modifiedLines[j] || '');
-      }
-    }
-
-    return {
+    const result = {
       original: collapsedOriginal.join('\n'),
       modified: collapsedModified.join('\n')
     };
+
+    console.log('✅ [Collapse] Collapsed to', collapsedOriginal.length, 'lines');
+    return result;
   }, [collapseUnchanged]);
   
   // Version restoration removed for simplicity
@@ -1096,36 +1109,37 @@ const CodeEditor = ({
             
                 {/* Modified Code with Revert Gutter */}
                 <div className="flex-1 flex">
-                  {/* Revert Gutter Column - Scrolls with Editor */}
+                  {/* Revert Gutter Column - Syncs scroll with Monaco */}
                   {!collapseUnchanged && (() => {
                     const changedBlocks = getChangedBlocks();
                     if (changedBlocks.length === 0) return null;
 
                     const totalLines = localCode.split('\n').length;
-                    const changedLineNumbers = new Set();
-                    changedBlocks.forEach(block => {
-                      for (let i = block.startLine; i <= block.endLine; i++) {
-                        changedLineNumbers.add(i);
-                      }
-                    });
+                    const editorContainerRef = useRef(null);
 
                     return (
                       <div
-                        className="w-8 flex-shrink-0 bg-gray-800 border-r border-gray-700 font-mono text-xs overflow-y-scroll overflow-x-hidden scrollbar-hide"
+                        className="w-6 flex-shrink-0 bg-gray-800 border-r border-gray-700 overflow-hidden relative"
                         ref={(el) => {
                           if (!el) return;
-                          // Sync scroll with Monaco editor
+                          editorContainerRef.current = el;
+
+                          // Sync scroll position with Monaco
                           const syncScroll = () => {
-                            if (editorRef.current) {
+                            if (editorRef.current && el) {
                               const scrollTop = editorRef.current.getScrollTop();
-                              el.scrollTop = scrollTop;
+                              // Update transform instead of scrollTop for better performance
+                              const contentEl = el.querySelector('.gutter-content');
+                              if (contentEl) {
+                                contentEl.style.transform = `translateY(-${scrollTop}px)`;
+                              }
                             }
                           };
 
                           // Initial sync
-                          syncScroll();
+                          requestAnimationFrame(syncScroll);
 
-                          // Listen to editor scroll events
+                          // Listen to Monaco scroll events
                           if (editorRef.current) {
                             const disposable = editorRef.current.onDidScrollChange(syncScroll);
                             // Store disposable for cleanup
@@ -1136,41 +1150,42 @@ const CodeEditor = ({
                           }
                         }}
                       >
-                        <div style={{ height: `${totalLines * 20}px` }}>
-                          {Array.from({ length: totalLines }, (_, lineIndex) => {
-                            const isChanged = changedLineNumbers.has(lineIndex);
-                            const block = changedBlocks.find(b => lineIndex >= b.startLine && lineIndex <= b.endLine);
-                            const isFirstLineOfBlock = block && lineIndex === block.startLine;
+                        <div
+                          className="gutter-content relative"
+                          style={{
+                            height: `${totalLines * 20}px`,
+                            willChange: 'transform'
+                          }}
+                        >
+                          {/* Render chevrons for each changed block */}
+                          {changedBlocks.map((block, blockIndex) => (
+                            <div
+                              key={blockIndex}
+                              className="absolute left-0 w-full group"
+                              style={{
+                                top: `${block.startLine * 20}px`,
+                                height: `${(block.endLine - block.startLine + 1) * 20}px`
+                              }}
+                            >
+                              {/* Highlight bar */}
+                              <div className="absolute inset-0 bg-blue-500/0 group-hover:bg-blue-500/10 border-l-2 border-blue-500/30 transition-colors" />
 
-                            return (
-                              <div
-                                key={lineIndex}
-                                className="h-5 flex items-center justify-center group relative"
-                                style={{ lineHeight: '20px' }}
+                              {/* Revert chevron button */}
+                              <button
+                                onClick={() => {
+                                  if (block.startLine === block.endLine) {
+                                    handleRevertLine(block.startLine);
+                                  } else {
+                                    handleRevertBlock(block.startLine, block.endLine);
+                                  }
+                                }}
+                                className="absolute top-0 left-0 w-5 h-5 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity bg-gray-600/90 hover:bg-blue-600 text-white rounded-sm shadow-md ml-0.5"
+                                title={`Revert ${block.startLine === block.endLine ? 'line' : 'lines'} ${block.startLine + 1}${block.startLine !== block.endLine ? `-${block.endLine + 1}` : ''}`}
                               >
-                                {isChanged && (
-                                  <>
-                                    <div className="absolute inset-0 bg-blue-500/0 group-hover:bg-blue-500/20 transition-colors" />
-                                    {isFirstLineOfBlock && (
-                                      <button
-                                        onClick={() => {
-                                          if (block.startLine === block.endLine) {
-                                            handleRevertLine(block.startLine);
-                                          } else {
-                                            handleRevertBlock(block.startLine, block.endLine);
-                                          }
-                                        }}
-                                        className="relative z-10 w-5 h-5 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity bg-gray-700/90 hover:bg-blue-600 text-white rounded-sm"
-                                        title={`Revert ${block.startLine === block.endLine ? 'line' : 'lines'} ${block.startLine + 1}${block.startLine !== block.endLine ? `-${block.endLine + 1}` : ''}`}
-                                      >
-                                        <ChevronLeft className="w-3 h-3" />
-                                      </button>
-                                    )}
-                                  </>
-                                )}
-                              </div>
-                            );
-                          })}
+                                <ChevronLeft className="w-3 h-3" />
+                              </button>
+                            </div>
+                          ))}
                         </div>
                       </div>
                     );
