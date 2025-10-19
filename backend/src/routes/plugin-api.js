@@ -165,7 +165,7 @@ router.get('/active', async (req, res) => {
     const plugins = await sequelize.query(`
       SELECT
         id, name, version, description, author, category, status, type,
-        manifest, config, created_at, updated_at
+        manifest, created_at, updated_at
       FROM plugin_registry
       WHERE status = 'active'
       ORDER BY created_at DESC
@@ -263,7 +263,7 @@ router.get('/active', async (req, res) => {
 /**
  * GET /api/plugins/registry
  * Get all active plugins with their hooks and events (for App.jsx initialization)
- * LEGACY ENDPOINT - kept for backward compatibility
+ * LEGACY ENDPOINT - kept for backward compatibility, now uses normalized tables
  */
 router.get('/registry', async (req, res) => {
   try {
@@ -274,12 +274,14 @@ router.get('/registry', async (req, res) => {
 
     const { status } = req.query;
 
-    // Get plugins from plugin_registry table
+    console.log('🔌 [LEGACY] Loading plugins from normalized tables...');
+
+    // Get plugins from plugin_registry table (removed config column - doesn't exist in normalized structure)
     const whereClause = status === 'active' ? `WHERE status = 'active'` : '';
     const plugins = await sequelize.query(`
       SELECT
         id, name, version, description, author, category, status, type,
-        manifest, config, created_at, updated_at
+        manifest, created_at, updated_at
       FROM plugin_registry
       ${whereClause}
       ORDER BY created_at DESC
@@ -287,22 +289,78 @@ router.get('/registry', async (req, res) => {
       type: sequelize.QueryTypes.SELECT
     });
 
-    // Parse JSON fields and add generated_by_ai flag
-    const parsedPlugins = plugins.map(plugin => {
+    console.log(`📦 [LEGACY] Found ${plugins.length} plugins`);
+
+    // Load hooks and events from normalized tables (same as /active endpoint)
+    const pluginsWithData = await Promise.all(plugins.map(async (plugin) => {
+      // Load hooks from plugin_hooks table
+      let hooks = [];
+      try {
+        const hooksResult = await sequelize.query(`
+          SELECT hook_name, handler_function, priority, is_enabled
+          FROM plugin_hooks
+          WHERE plugin_id = $1 AND is_enabled = true
+          ORDER BY priority ASC
+        `, {
+          bind: [plugin.id],
+          type: sequelize.QueryTypes.SELECT
+        });
+
+        hooks = hooksResult.map(h => ({
+          hook_name: h.hook_name,
+          handler_code: h.handler_function,
+          priority: h.priority || 10,
+          enabled: h.is_enabled !== false
+        }));
+      } catch (hookError) {
+        console.log(`  ⚠️ ${plugin.name}: plugin_hooks table error`);
+      }
+
+      // Load events from plugin_events table
+      let events = [];
+      try {
+        const eventsResult = await sequelize.query(`
+          SELECT event_name, listener_function, priority, is_enabled
+          FROM plugin_events
+          WHERE plugin_id = $1 AND is_enabled = true
+          ORDER BY priority ASC
+        `, {
+          bind: [plugin.id],
+          type: sequelize.QueryTypes.SELECT
+        });
+
+        events = eventsResult.map(e => ({
+          event_name: e.event_name,
+          listener_code: e.listener_function,
+          priority: e.priority || 10,
+          enabled: e.is_enabled !== false
+        }));
+      } catch (eventError) {
+        console.log(`  ⚠️ ${plugin.name}: plugin_events table error`);
+      }
+
       const manifest = typeof plugin.manifest === 'string' ? JSON.parse(plugin.manifest) : plugin.manifest;
-      const config = typeof plugin.config === 'string' ? JSON.parse(plugin.config) : plugin.config;
 
       return {
-        ...plugin,
+        id: plugin.id,
+        name: plugin.name,
+        version: plugin.version,
+        description: plugin.description,
+        author: plugin.author,
+        category: plugin.category,
+        status: plugin.status,
+        type: plugin.type,
         generated_by_ai: manifest?.generated_by_ai || plugin.type === 'ai-generated',
-        hooks: config?.hooks || [],
-        events: config?.events || []
+        hooks: hooks,
+        events: events
       };
-    });
+    }));
+
+    console.log('✅ [LEGACY] All plugins loaded with hooks and events');
 
     res.json({
       success: true,
-      data: parsedPlugins
+      data: pluginsWithData
     });
   } catch (error) {
     console.error('Failed to get plugin registry:', error);
