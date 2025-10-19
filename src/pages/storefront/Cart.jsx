@@ -957,11 +957,23 @@ export default function Cart() {
     }, [cartItems, subtotal, discount, tax, total, cartContext, store?.slug, navigate]);
 
     // Wait for plugins to be ready before emitting events
-    const [pluginsReady, setPluginsReady] = useState(false);
+    // Check global flag immediately to handle race conditions
+    const [pluginsReady, setPluginsReady] = useState(window.__pluginsReady || false);
 
     useEffect(() => {
-        // Listen for system.ready event
-        const handleSystemReady = () => setPluginsReady(true);
+        // If plugins already ready on mount, no need to wait for event
+        if (window.__pluginsReady) {
+            console.log('🛒 Plugins already ready on mount');
+            setPluginsReady(true);
+            return;
+        }
+
+        // Otherwise wait for system.ready event
+        console.log('🛒 Waiting for system.ready event...');
+        const handleSystemReady = () => {
+            console.log('🛒 Received system.ready event');
+            setPluginsReady(true);
+        };
         eventSystem.on('system.ready', handleSystemReady);
         return () => eventSystem.off('system.ready', handleSystemReady);
     }, []);

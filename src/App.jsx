@@ -16,6 +16,9 @@ import extensionSystem from '@/core/ExtensionSystem.js'
 import hookSystem from '@/core/HookSystem.js'
 import eventSystem from '@/core/EventSystem.js'
 
+// Global flag to track if plugins are ready (survives race conditions)
+window.__pluginsReady = false;
+
 // Component to wrap pages with Layout
 function PageWrapper({ Component, pageName }) {
   return (
@@ -55,8 +58,13 @@ async function initializeDatabasePlugins() {
 
     console.log('✅ All plugins loaded');
 
+    // Set global flag to true so components can check it immediately
+    window.__pluginsReady = true;
+
     // Set up pricing notifications globally
     setupGlobalPricingNotifications();
+
+    console.log('📢 Emitting system.ready event...');
 
   } catch (error) {
     console.error('❌ Error initializing database plugins:', error);
