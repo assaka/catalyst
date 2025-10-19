@@ -1096,111 +1096,73 @@ const CodeEditor = ({
             </div>
             
                 {/* Modified Code with Revert Gutter */}
-                <div className="flex-1 flex">
-                  {/* Revert Gutter Column - Syncs scroll with Monaco */}
+                <div className="flex-1 relative">{/* Wrapper for overlay positioning */}
+                  {/* Overlay gutter - positioned on top of Monaco editor */}
                   {!collapseUnchanged && (() => {
                     const changedBlocks = getChangedBlocks();
                     if (changedBlocks.length === 0) return null;
 
-                    const totalLines = localCode.split('\n').length;
-
                     return (
                       <div
-                        className="w-6 flex-shrink-0 bg-gray-800 border-r border-gray-700 overflow-y-scroll overflow-x-hidden relative scrollbar-hide"
-                        style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
-                        ref={(el) => {
-                          if (!el) return;
-
-                          // Prevent user scrolling on gutter
-                          el.addEventListener('scroll', (e) => {
-                            e.preventDefault();
-                          });
-
-                          // Sync scroll position with Monaco
-                          const syncScroll = () => {
-                            if (editorRef.current && el) {
-                              const scrollTop = editorRef.current.getScrollTop();
-                              el.scrollTop = scrollTop;
-                            }
-                          };
-
-                          // Wait for Monaco editor to mount, then set up scroll sync
-                          const setupScrollSync = () => {
-                            if (editorRef.current) {
-                              // Initial sync
-                              syncScroll();
-
-                              // Listen to Monaco scroll events
-                              const disposable = editorRef.current.onDidScrollChange(syncScroll);
-                              // Store disposable for cleanup
-                              if (!editorRef.current._gutterDisposables) {
-                                editorRef.current._gutterDisposables = [];
-                              }
-                              editorRef.current._gutterDisposables.push(disposable);
-                            } else {
-                              // Editor not ready, try again in a bit
-                              requestAnimationFrame(setupScrollSync);
-                            }
-                          };
-
-                          // Start setup
-                          requestAnimationFrame(setupScrollSync);
-                        }}
+                        className="absolute left-0 top-0 w-6 h-full bg-gray-800/90 border-r border-gray-700 pointer-events-none z-10"
+                        style={{ marginTop: '42px' }} // Offset for header
                       >
-                        <div
-                          className="gutter-content relative"
-                          style={{
-                            height: `${totalLines * 20}px`
-                          }}
-                        >
-                          {/* Render line markers for each line (for debugging and hover) */}
-                          {Array.from({ length: totalLines }, (_, lineIndex) => {
-                            const changedLineSet = new Set();
-                            changedBlocks.forEach(block => {
-                              for (let i = block.startLine; i <= block.endLine; i++) {
-                                changedLineSet.add(i);
+                        {/* Render chevrons using Monaco's line positioning */}
+                        {changedBlocks.map((block, blockIndex) => (
+                          <div
+                            key={blockIndex}
+                            className="absolute left-0 w-full pointer-events-auto group"
+                            ref={(el) => {
+                              if (!el || !editorRef.current) return;
+
+                              // Use Monaco's API to get exact line position
+                              const updatePosition = () => {
+                                if (editorRef.current) {
+                                  try {
+                                    // Get the top position for this line from Monaco
+                                    const lineNumber = block.startLine + 1; // Monaco uses 1-indexed
+                                    const topPosition = editorRef.current.getTopForLineNumber(lineNumber);
+                                    const scrollTop = editorRef.current.getScrollTop();
+
+                                    // Position relative to viewport
+                                    const offsetTop = topPosition - scrollTop;
+                                    el.style.top = `${offsetTop}px`;
+                                    el.style.height = `${(block.endLine - block.startLine + 1) * 19}px`; // Monaco's line height
+                                  } catch (e) {
+                                    // Monaco not ready yet, try again
+                                    requestAnimationFrame(updatePosition);
+                                  }
+                                }
+                              };
+
+                              // Initial position
+                              requestAnimationFrame(updatePosition);
+
+                              // Update position on scroll
+                              if (editorRef.current && !editorRef.current._gutterScrollListener) {
+                                editorRef.current._gutterScrollListener = editorRef.current.onDidScrollChange(updatePosition);
                               }
-                            });
-                            const isChanged = changedLineSet.has(lineIndex);
-                            const block = changedBlocks.find(b => lineIndex >= b.startLine && lineIndex <= b.endLine);
-                            const isFirstLineOfBlock = block && lineIndex === block.startLine;
+                            }}
+                          >
+                            {/* Highlight bar on hover */}
+                            <div className="absolute inset-0 bg-blue-500/0 group-hover:bg-blue-500/20 border-l-2 border-blue-500/40 transition-colors" />
 
-                            return (
-                              <div
-                                key={lineIndex}
-                                className="absolute left-0 w-full group"
-                                style={{
-                                  top: `${lineIndex * 20}px`,
-                                  height: '20px'
-                                }}
-                              >
-                                {isChanged && (
-                                  <>
-                                    {/* Highlight bar on hover */}
-                                    <div className="absolute inset-0 bg-blue-500/0 group-hover:bg-blue-500/10 border-l-2 border-blue-500/30 transition-colors" />
-
-                                    {/* Revert chevron button - only show on first line of block */}
-                                    {isFirstLineOfBlock && (
-                                      <button
-                                        onClick={() => {
-                                          if (block.startLine === block.endLine) {
-                                            handleRevertLine(block.startLine);
-                                          } else {
-                                            handleRevertBlock(block.startLine, block.endLine);
-                                          }
-                                        }}
-                                        className="absolute top-0 left-0 w-5 h-5 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity bg-gray-600/90 hover:bg-blue-600 text-white rounded-sm shadow-md"
-                                        title={`Revert ${block.startLine === block.endLine ? 'line' : 'lines'} ${block.startLine + 1}${block.startLine !== block.endLine ? `-${block.endLine + 1}` : ''}`}
-                                      >
-                                        <ChevronLeft className="w-3 h-3" />
-                                      </button>
-                                    )}
-                                  </>
-                                )}
-                              </div>
-                            );
-                          })}
-                        </div>
+                            {/* Revert chevron button */}
+                            <button
+                              onClick={() => {
+                                if (block.startLine === block.endLine) {
+                                  handleRevertLine(block.startLine);
+                                } else {
+                                  handleRevertBlock(block.startLine, block.endLine);
+                                }
+                              }}
+                              className="absolute top-0 left-0.5 w-5 h-5 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity bg-gray-600/95 hover:bg-blue-600 text-white rounded-sm shadow-lg"
+                              title={`Revert ${block.startLine === block.endLine ? 'line' : 'lines'} ${block.startLine + 1}${block.startLine !== block.endLine ? `-${block.endLine + 1}` : ''}`}
+                            >
+                              <ChevronLeft className="w-3 h-3" />
+                            </button>
+                          </div>
+                        ))}
                       </div>
                     );
                   })()}
