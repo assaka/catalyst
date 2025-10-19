@@ -1069,31 +1069,6 @@ const CodeEditor = ({
 
           <div className="flex items-center space-x-1">
             <Button
-              size="sm"
-              onClick={handleSave}
-              disabled={readOnly || !isModified || isSaving || saveSuccess}
-              title={isModified ? "Save (Ctrl+S)" : "No changes to save"}
-              className={saveSuccess ? "bg-green-600 hover:bg-green-700" : "bg-blue-600 hover:bg-blue-700"}
-            >
-              {isSaving ? (
-                <>
-                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                  Saving...
-                </>
-              ) : saveSuccess ? (
-                <>
-                  <Check className="w-4 h-4 mr-2" />
-                  Saved!
-                </>
-              ) : (
-                <>
-                  <Save className="w-4 h-4 mr-2" />
-                  Save
-                </>
-              )}
-            </Button>
-
-            <Button
               variant="ghost"
               size="sm"
               onClick={handleUndo}
