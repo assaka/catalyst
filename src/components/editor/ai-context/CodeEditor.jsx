@@ -661,16 +661,11 @@ const CodeEditor = ({
 
     console.log('🔄 [CodeEditor] New code after revert has', newCode.split('\n').length, 'lines');
 
-    setLocalCode(newCode);
-    setIsModified(true);
-
-    // Call onChange to trigger diff regeneration via useEffect
+    // Only call onChange - let parent update value, which triggers useEffect to update localCode
+    // This ensures single source of truth and prevents race conditions
     if (onChange) {
       onChange(newCode);
     }
-
-    // Note: Don't manually regenerate diff here - let the useEffect handle it
-    // to avoid race conditions and ensure proper diff generation
   }, [localCode, originalCode, onChange]);
 
   // Generate diff when content changes
@@ -1157,35 +1152,53 @@ const CodeEditor = ({
                             willChange: 'transform'
                           }}
                         >
-                          {/* Render chevrons for each changed block */}
-                          {changedBlocks.map((block, blockIndex) => (
-                            <div
-                              key={blockIndex}
-                              className="absolute left-0 w-full group"
-                              style={{
-                                top: `${block.startLine * 20}px`,
-                                height: `${(block.endLine - block.startLine + 1) * 20}px`
-                              }}
-                            >
-                              {/* Highlight bar */}
-                              <div className="absolute inset-0 bg-blue-500/0 group-hover:bg-blue-500/10 border-l-2 border-blue-500/30 transition-colors" />
+                          {/* Render line markers for each line (for debugging and hover) */}
+                          {Array.from({ length: totalLines }, (_, lineIndex) => {
+                            const changedLineSet = new Set();
+                            changedBlocks.forEach(block => {
+                              for (let i = block.startLine; i <= block.endLine; i++) {
+                                changedLineSet.add(i);
+                              }
+                            });
+                            const isChanged = changedLineSet.has(lineIndex);
+                            const block = changedBlocks.find(b => lineIndex >= b.startLine && lineIndex <= b.endLine);
+                            const isFirstLineOfBlock = block && lineIndex === block.startLine;
 
-                              {/* Revert chevron button */}
-                              <button
-                                onClick={() => {
-                                  if (block.startLine === block.endLine) {
-                                    handleRevertLine(block.startLine);
-                                  } else {
-                                    handleRevertBlock(block.startLine, block.endLine);
-                                  }
+                            return (
+                              <div
+                                key={lineIndex}
+                                className="absolute left-0 w-full group"
+                                style={{
+                                  top: `${lineIndex * 20}px`,
+                                  height: '20px'
                                 }}
-                                className="absolute top-0 left-0 w-5 h-5 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity bg-gray-600/90 hover:bg-blue-600 text-white rounded-sm shadow-md ml-0.5"
-                                title={`Revert ${block.startLine === block.endLine ? 'line' : 'lines'} ${block.startLine + 1}${block.startLine !== block.endLine ? `-${block.endLine + 1}` : ''}`}
                               >
-                                <ChevronLeft className="w-3 h-3" />
-                              </button>
-                            </div>
-                          ))}
+                                {isChanged && (
+                                  <>
+                                    {/* Highlight bar on hover */}
+                                    <div className="absolute inset-0 bg-blue-500/0 group-hover:bg-blue-500/10 border-l-2 border-blue-500/30 transition-colors" />
+
+                                    {/* Revert chevron button - only show on first line of block */}
+                                    {isFirstLineOfBlock && (
+                                      <button
+                                        onClick={() => {
+                                          if (block.startLine === block.endLine) {
+                                            handleRevertLine(block.startLine);
+                                          } else {
+                                            handleRevertBlock(block.startLine, block.endLine);
+                                          }
+                                        }}
+                                        className="absolute top-0 left-0 w-5 h-5 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity bg-gray-600/90 hover:bg-blue-600 text-white rounded-sm shadow-md"
+                                        title={`Revert ${block.startLine === block.endLine ? 'line' : 'lines'} ${block.startLine + 1}${block.startLine !== block.endLine ? `-${block.endLine + 1}` : ''}`}
+                                      >
+                                        <ChevronLeft className="w-3 h-3" />
+                                      </button>
+                                    )}
+                                  </>
+                                )}
+                              </div>
+                            );
+                          })}
                         </div>
                       </div>
                     );
