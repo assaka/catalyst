@@ -114,13 +114,14 @@ function createHandlerFromDatabaseCode(code) {
   try {
     console.log('🔨 Creating handler from code:', code.substring(0, 100) + '...');
     // Create function from database code string
-    const AsyncFunction = Object.getPrototypeOf(async function(){}).constructor;
-    const handler = new AsyncFunction('return ' + code)();
+    // Use Function constructor (not AsyncFunction) to evaluate the arrow function string
+    const handler = new Function('return (' + code + ')')();
+    console.log('✅ Handler created successfully, type:', typeof handler);
     return handler;
   } catch (error) {
     console.error('❌ Error creating handler from database code:', error);
     console.error('❌ Failed code:', code);
-    return async () => {
+    return () => {
       console.log('⚠️ Fallback handler called (original handler failed to create)');
     };
   }
