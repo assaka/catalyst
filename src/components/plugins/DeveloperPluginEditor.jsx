@@ -13,7 +13,6 @@ import {
   FileText,
   Code,
   Code2,
-  Save,
   Play,
   Bug,
   GitBranch,
@@ -27,12 +26,11 @@ import {
   Search,
   Download,
   Upload,
-  RefreshCw,
   Zap,
   Sparkles,
-  Wand2,
-  Check
+  Wand2
 } from 'lucide-react';
+import SaveButton from '@/components/ui/save-button';
 import CodeEditor from '@/components/editor/ai-context/CodeEditor';
 import PluginAIAssistant from './PluginAIAssistant';
 import apiClient from '@/api/client';
@@ -392,29 +390,14 @@ const DeveloperPluginEditor = ({ plugin, onSave, onClose, onSwitchMode, initialC
               <Terminal className="w-4 h-4 mr-1" />
               Terminal
             </Button>
-            <Button
+            <SaveButton
               size="sm"
               onClick={handleSave}
-              disabled={!selectedFile || fileContent === originalContent || isSaving || saveSuccess}
-              className={saveSuccess ? "bg-green-600 hover:bg-green-700" : "bg-blue-600 hover:bg-blue-700"}
-            >
-              {isSaving ? (
-                <>
-                  <RefreshCw className="w-4 h-4 mr-1 animate-spin" />
-                  Saving...
-                </>
-              ) : saveSuccess ? (
-                <>
-                  <Check className="w-4 h-4 mr-1" />
-                  Saved!
-                </>
-              ) : (
-                <>
-                  <Save className="w-4 h-4 mr-1" />
-                  Save
-                </>
-              )}
-            </Button>
+              loading={isSaving}
+              success={saveSuccess}
+              disabled={!selectedFile || fileContent === originalContent}
+              defaultText="Save"
+            />
           </div>
         </div>
 
