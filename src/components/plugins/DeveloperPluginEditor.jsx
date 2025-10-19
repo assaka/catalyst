@@ -30,7 +30,8 @@ import {
   RefreshCw,
   Zap,
   Sparkles,
-  Wand2
+  Wand2,
+  Check
 } from 'lucide-react';
 import CodeEditor from '@/components/editor/ai-context/CodeEditor';
 import PluginAIAssistant from './PluginAIAssistant';
@@ -45,6 +46,8 @@ const DeveloperPluginEditor = ({ plugin, onSave, onClose, onSwitchMode, initialC
   const [searchQuery, setSearchQuery] = useState('');
   const [showTerminal, setShowTerminal] = useState(false);
   const [terminalOutput, setTerminalOutput] = useState([]);
+  const [isSaving, setIsSaving] = useState(false);
+  const [saveSuccess, setSaveSuccess] = useState(false);
 
   useEffect(() => {
     loadPluginFiles();
@@ -180,6 +183,9 @@ const DeveloperPluginEditor = ({ plugin, onSave, onClose, onSwitchMode, initialC
     }
 
     try {
+      setIsSaving(true);
+      setSaveSuccess(false);
+
       // Show terminal to display progress
       setShowTerminal(true);
       addTerminalOutput(`⏳ Saving ${selectedFile.name}...`, 'info');
@@ -191,12 +197,20 @@ const DeveloperPluginEditor = ({ plugin, onSave, onClose, onSwitchMode, initialC
       });
 
       setOriginalContent(fileContent);
+      setIsSaving(false);
+      setSaveSuccess(true);
+
+      // Auto-clear success state after 2 seconds
+      setTimeout(() => setSaveSuccess(false), 2000);
+
       addTerminalOutput(`✓ Saved ${selectedFile.name} successfully`, 'success');
 
       // Reload file tree to reflect changes
       await loadPluginFiles();
     } catch (error) {
       console.error('Error saving file:', error);
+      setIsSaving(false);
+      setSaveSuccess(false);
       addTerminalOutput(`✗ Error saving ${selectedFile.name}: ${error.response?.data?.error || error.message}`, 'error');
     }
   };
@@ -381,11 +395,25 @@ const DeveloperPluginEditor = ({ plugin, onSave, onClose, onSwitchMode, initialC
             <Button
               size="sm"
               onClick={handleSave}
-              disabled={!selectedFile || fileContent === originalContent}
-              className="bg-blue-600 hover:bg-blue-700"
+              disabled={!selectedFile || fileContent === originalContent || isSaving || saveSuccess}
+              className={saveSuccess ? "bg-green-600 hover:bg-green-700" : "bg-blue-600 hover:bg-blue-700"}
             >
-              <Save className="w-4 h-4 mr-1" />
-              Save
+              {isSaving ? (
+                <>
+                  <RefreshCw className="w-4 h-4 mr-1 animate-spin" />
+                  Saving...
+                </>
+              ) : saveSuccess ? (
+                <>
+                  <Check className="w-4 h-4 mr-1" />
+                  Saved!
+                </>
+              ) : (
+                <>
+                  <Save className="w-4 h-4 mr-1" />
+                  Save
+                </>
+              )}
             </Button>
           </div>
         </div>
