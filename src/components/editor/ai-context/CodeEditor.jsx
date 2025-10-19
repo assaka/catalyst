@@ -1039,23 +1039,11 @@ const CodeEditor = ({
                     setShowSplitView(true);
                     setShowDiffView(false);
                   }}
-                  title="Show Split View"
+                  title="Show Split View (Side-by-Side)"
                 >
                   <Split className="w-4 h-4" />
                 </Button>
-                
-                {showSplitView && (
-                  <Button
-                    variant={collapseUnchanged ? "default" : "ghost"}
-                    size="sm"
-                    onClick={() => setCollapseUnchanged(!collapseUnchanged)}
-                    title={collapseUnchanged ? "Show All Lines" : "Collapse Unchanged Lines"}
-                    className="px-2"
-                  >
-                    {collapseUnchanged ? <ChevronDown className="w-4 h-4" /> : <ChevronUp className="w-4 h-4" />}
-                  </Button>
-                )}
-                
+
                 <Button
                   variant={showDiffView ? "default" : "ghost"}
                   size="sm"
@@ -1063,7 +1051,7 @@ const CodeEditor = ({
                     setShowDiffView(true);
                     setShowSplitView(false);
                   }}
-                  title="Show Diff View"
+                  title="Show Diff View (Inline)"
                 >
                   <Diff className="w-4 h-4" />
                 </Button>
@@ -1134,153 +1122,62 @@ const CodeEditor = ({
               />
             </div>
           </div>
-        ) : showDiffView && enableDiffDetection && fullFileDisplayLines.length > 0 ? (
-          /* Enhanced Diff View with Statistics Panel and Revert Actions */
+        ) : showDiffView && enableDiffDetection ? (
+          /* Inline Diff View - Use Monaco's DiffEditor in inline mode */
           <div className="h-full flex flex-col">
-            {/* Diff Summary Panel */}
-            {(() => {
-              const stats = getDiffStats(originalCode || '', localCode);
-              const additions = fullFileDisplayLines.filter(line => line.type === 'addition').length;
-              const deletions = fullFileDisplayLines.filter(line => line.type === 'deletion').length;
-              const context = fullFileDisplayLines.filter(line => line.type === 'context').length;
-              
-              return (
-                <div className="border-b bg-muted/30 p-3">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center space-x-4">
-                      <div className="flex items-center space-x-2">
-                        <Diff className="w-4 h-4 text-blue-600" />
-                        <span className="font-medium">Diff Summary</span>
-                      </div>
-                      
-                      <div className="flex items-center space-x-4 text-sm">
-                        <div className="flex items-center space-x-1">
-                          <Plus className="w-3 h-3 text-green-600" />
-                          <span className="text-green-600 font-medium">{additions}</span>
-                          <span className="text-muted-foreground">additions</span>
-                        </div>
-                        
-                        <div className="flex items-center space-x-1">
-                          <Minus className="w-3 h-3 text-red-600" />
-                          <span className="text-red-600 font-medium">{deletions}</span>
-                          <span className="text-muted-foreground">deletions</span>
-                        </div>
-                        
-                        {stats.linesChanged > 0 && (
-                          <div className="flex items-center space-x-1">
-                            <FileText className="w-3 h-3 text-orange-600" />
-                            <span className="text-orange-600 font-medium">{stats.linesChanged}</span>
-                            <span className="text-muted-foreground">modified</span>
-                          </div>
-                        )}
-                        
-                        <div className="flex items-center space-x-1">
-                          <CheckCircle className="w-3 h-3 text-muted-foreground" />
-                          <span className="text-muted-foreground">{context} unchanged</span>
-                        </div>
-                      </div>
+            <div className="bg-muted p-2 text-sm font-medium border-b flex items-center justify-between">
+              <div className="flex items-center space-x-2">
+                <span>Inline Diff View</span>
+                {(() => {
+                  const stats = getDiffStats(originalCode || '', localCode);
+                  return (
+                    <div className="flex items-center space-x-2 text-xs">
+                      <span className="text-green-600">+{stats.additions}</span>
+                      <span className="text-red-600">-{stats.deletions}</span>
+                      <span className="text-orange-600">{stats.linesChanged} modified</span>
                     </div>
-                    
-                    <div className="flex items-center space-x-2">
-                      {stats.changes > 0 && (
-                        <Badge variant="outline" className="text-xs">
-                          <GitBranch className="w-3 h-3 mr-1" />
-                          {stats.changes} total changes
-                        </Badge>
-                      )}
-                      
-                      <Badge variant="secondary" className="text-xs">
-                        <FileText className="w-3 h-3 mr-1" />
-                        {fullFileDisplayLines.length} lines in diff
-                      </Badge>
-                    </div>
-                  </div>
-                  
-                  {/* Change Visualization Bar */}
-                  <div className="mt-2">
-                    <div className="flex h-2 rounded-full overflow-hidden bg-background">
-                      {stats.totalLines > 0 && (
-                        <>
-                          {additions > 0 && (
-                            <div 
-                              className="bg-green-500"
-                              style={{ width: `${(additions / stats.totalLines) * 100}%` }}
-                              title={`${additions} additions`}
-                            />
-                          )}
-                          {deletions > 0 && (
-                            <div 
-                              className="bg-red-500"
-                              style={{ width: `${(deletions / stats.totalLines) * 100}%` }}
-                              title={`${deletions} deletions`}
-                            />
-                          )}
-                          {stats.linesChanged > 0 && (
-                            <div 
-                              className="bg-orange-500"
-                              style={{ width: `${(stats.linesChanged / stats.totalLines) * 100}%` }}
-                              title={`${stats.linesChanged} modifications`}
-                            />
-                          )}
-                          {context > 0 && (
-                            <div 
-                              className="bg-muted-foreground/20"
-                              style={{ width: `${(context / stats.totalLines) * 100}%` }}
-                              title={`${context} unchanged lines`}
-                            />
-                          )}
-                        </>
-                      )}
-                    </div>
-                    <div className="flex justify-between text-xs text-muted-foreground mt-1">
-                      <span>Original: {originalCode?.split('\n').length || 0} lines</span>
-                      <span>Modified: {localCode.split('\n').length} lines</span>
-                    </div>
-                  </div>
-                </div>
-              );
-            })()}
-            
-            {/* Diff Content */}
-            <div className="flex-1 overflow-auto border">
-              <div className="min-w-max">
-                {fullFileDisplayLines.length === 0 ? (
-                  <div className="flex items-center justify-center h-full">
-                    <div className="text-center text-muted-foreground">
-                      <Diff className="w-8 h-8 mx-auto mb-2" />
-                      <p>No differences to display</p>
-                      <p className="text-sm mt-1">
-                        The original and modified code are identical
-                      </p>
-                    </div>
-                  </div>
-                ) : (
-                  <div>
-                    {fullFileDisplayLines.map((line, index) => (
-                      <div key={index} className="group relative">
-                        <DiffLine line={line} index={index} />
-                        {/* PhpStorm-style revert button for changed lines */}
-                        {line.type === 'addition' && line.newLineNumber && (
-                          <button
-                            onClick={() => {
-                              const lineIndexInFile = line.newLineNumber - 1;
-                              // For pure additions (no original), pass undefined to trigger deletion
-                              const originalLine = line.originalContent !== null && line.originalContent !== undefined
-                                ? line.originalContent
-                                : undefined;
-                              handleLineRevert(lineIndexInFile, originalLine);
-                            }}
-                            className="absolute left-2 top-1 w-5 h-5 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity bg-gray-700/90 hover:bg-blue-600 text-white rounded-sm"
-                            title={line.originalContent ? "Revert to original" : "Remove added line"}
-                          >
-                            <ChevronLeft className="w-3 h-3" />
-                          </button>
-                        )}
-                      </div>
-                    ))}
-                  </div>
-                )}
+                  );
+                })()}
               </div>
+            </div>
+            <div className="flex-1">
+              <DiffEditor
+                height="100%"
+                language={getMonacoLanguage()}
+                original={originalCode || ''}
+                modified={localCode}
+                onMount={(editor) => {
+                  // Store reference to the modified editor for undo/redo and change tracking
+                  const modifiedEditor = editor.getModifiedEditor();
+                  editorRef.current = modifiedEditor;
+
+                  // Set up change listener on the modified editor
+                  const model = modifiedEditor.getModel();
+                  if (model) {
+                    model.onDidChangeContent(() => {
+                      const newValue = model.getValue();
+                      handleCodeChange(newValue);
+                    });
+                  }
+                }}
+                options={{
+                  readOnly: readOnly,
+                  minimap: { enabled: false },
+                  scrollBeyondLastLine: false,
+                  fontSize: 14,
+                  lineHeight: 20,
+                  fontFamily: 'ui-monospace, SFMono-Regular, "SF Mono", Consolas, "Liberation Mono", Menlo, monospace',
+                  tabSize: 2,
+                  insertSpaces: true,
+                  wordWrap: 'off',
+                  automaticLayout: true,
+                  renderSideBySide: false,  // Inline mode
+                  ignoreTrimWhitespace: false,
+                  renderOverviewRuler: true,
+                  diffWordWrap: 'off'
+                }}
+                theme="vs-dark"
+              />
             </div>
           </div>
         ) : (
@@ -1337,15 +1234,16 @@ const CodeEditor = ({
           <div className="flex items-center space-x-4">
             {showSplitView ? (
               <>
-                <span>Split View</span>
+                <span>Split View (Side-by-Side)</span>
                 <span>{originalCode?.split('\n').length || 0} → {localCode.split('\n').length} lines</span>
               </>
-            ) : showDiffView && diffData ? (
+            ) : showDiffView ? (
               <>
-                <span>
-                  +{diffData.metadata?.additions || 0} -{diffData.metadata?.deletions || 0}
-                </span>
-                <span>{fullFileDisplayLines.length} lines in diff</span>
+                <span>Inline Diff View</span>
+                {(() => {
+                  const stats = getDiffStats(originalCode || '', localCode);
+                  return <span>+{stats.additions} -{stats.deletions} ~{stats.linesChanged}</span>;
+                })()}
               </>
             ) : (
               <>
@@ -1360,13 +1258,13 @@ const CodeEditor = ({
             {showSplitView && (
               <Badge variant="outline" className="text-xs">
                 <Split className="w-3 h-3 mr-1" />
-                Split View
+                Side-by-Side
               </Badge>
             )}
-            {showDiffView && diffData && (
+            {showDiffView && (
               <Badge variant="outline" className="text-xs">
                 <Diff className="w-3 h-3 mr-1" />
-                Diff View
+                Inline Diff
               </Badge>
             )}
             {isModified && <span className="text-orange-600">Unsaved changes</span>}
