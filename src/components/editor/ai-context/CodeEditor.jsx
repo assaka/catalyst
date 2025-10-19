@@ -1089,40 +1089,34 @@ const CodeEditor = ({
       <div className="flex-1">
         {showSplitView && enableDiffDetection ? (
           /* Split View - Use Monaco's built-in DiffEditor */
-          (() => {
-            const { original: collapsedOriginal, modified: collapsedModified } = collapseUnchanged
-              ? getCollapsedCode(originalCode, localCode)
-              : { original: originalCode, modified: localCode };
-
-            return (
-              <div className="h-full flex flex-col">
-                <div className="bg-muted p-2 text-sm font-medium border-b flex items-center justify-between">
-                  <div className="flex items-center space-x-2">
-                    <span>Comparing Changes</span>
-                    {collapseUnchanged && (
-                      <Badge variant="secondary" className="text-xs">
-                        <ChevronUp className="w-3 h-3 mr-1" />
-                        Collapsed
-                      </Badge>
-                    )}
-                    {(() => {
-                      const stats = getDiffStats(originalCode || '', localCode);
-                      return (
-                        <div className="flex items-center space-x-2 text-xs">
-                          <span className="text-green-600">+{stats.additions}</span>
-                          <span className="text-red-600">-{stats.deletions}</span>
-                          <span className="text-orange-600">{stats.linesChanged} modified</span>
-                        </div>
-                      );
-                    })()}
-                  </div>
-                </div>
-                <div className="flex-1">
-                  <DiffEditor
-                    height="100%"
-                    language={getMonacoLanguage()}
-                    original={collapsedOriginal || originalCode || ''}
-                    modified={collapsedModified || localCode}
+          <div className="h-full flex flex-col">
+            <div className="bg-muted p-2 text-sm font-medium border-b flex items-center justify-between">
+              <div className="flex items-center space-x-2">
+                <span>Comparing Changes</span>
+                {collapseUnchanged && (
+                  <Badge variant="secondary" className="text-xs">
+                    <ChevronUp className="w-3 h-3 mr-1" />
+                    Collapsed
+                  </Badge>
+                )}
+                {(() => {
+                  const stats = getDiffStats(originalCode || '', localCode);
+                  return (
+                    <div className="flex items-center space-x-2 text-xs">
+                      <span className="text-green-600">+{stats.additions}</span>
+                      <span className="text-red-600">-{stats.deletions}</span>
+                      <span className="text-orange-600">{stats.linesChanged} modified</span>
+                    </div>
+                  );
+                })()}
+              </div>
+            </div>
+            <div className="flex-1">
+              <DiffEditor
+                height="100%"
+                language={getMonacoLanguage()}
+                original={originalCode || ''}
+                modified={localCode}
                     onMount={(editor, monaco) => {
                       // Define custom theme with green/red diff colors on white background
                       monaco.editor.defineTheme('custom-diff-light-theme', {
@@ -1169,49 +1163,47 @@ const CodeEditor = ({
                       renderSideBySide: true,
                       ignoreTrimWhitespace: false,
                       renderOverviewRuler: true,
-                      diffWordWrap: 'off'
+                      diffWordWrap: 'off',
+                      // Use Monaco's built-in collapse feature
+                      hideUnchangedRegions: {
+                        enabled: collapseUnchanged,
+                        minimumLineCount: 5,
+                        contextLineCount: 2
+                      }
                     }}
                   />
                 </div>
               </div>
-            );
-          })()
         ) : showDiffView && enableDiffDetection ? (
           /* Inline Diff View - Use Monaco's DiffEditor in inline mode */
-          (() => {
-            const { original: collapsedOriginal, modified: collapsedModified } = collapseUnchanged
-              ? getCollapsedCode(originalCode, localCode)
-              : { original: originalCode, modified: localCode };
-
-            return (
-              <div className="h-full flex flex-col">
-                <div className="bg-muted p-2 text-sm font-medium border-b flex items-center justify-between">
-                  <div className="flex items-center space-x-2">
-                    <span>Inline Diff View</span>
-                    {collapseUnchanged && (
-                      <Badge variant="secondary" className="text-xs">
-                        <ChevronUp className="w-3 h-3 mr-1" />
-                        Collapsed
-                      </Badge>
-                    )}
-                    {(() => {
-                      const stats = getDiffStats(originalCode || '', localCode);
-                      return (
-                        <div className="flex items-center space-x-2 text-xs">
-                          <span className="text-green-600">+{stats.additions}</span>
-                          <span className="text-red-600">-{stats.deletions}</span>
-                          <span className="text-orange-600">{stats.linesChanged} modified</span>
-                        </div>
-                      );
-                    })()}
-                  </div>
-                </div>
-                <div className="flex-1">
-                  <DiffEditor
-                    height="100%"
-                    language={getMonacoLanguage()}
-                    original={collapsedOriginal || originalCode || ''}
-                    modified={collapsedModified || localCode}
+          <div className="h-full flex flex-col">
+            <div className="bg-muted p-2 text-sm font-medium border-b flex items-center justify-between">
+              <div className="flex items-center space-x-2">
+                <span>Inline Diff View</span>
+                {collapseUnchanged && (
+                  <Badge variant="secondary" className="text-xs">
+                    <ChevronUp className="w-3 h-3 mr-1" />
+                    Collapsed
+                  </Badge>
+                )}
+                {(() => {
+                  const stats = getDiffStats(originalCode || '', localCode);
+                  return (
+                    <div className="flex items-center space-x-2 text-xs">
+                      <span className="text-green-600">+{stats.additions}</span>
+                      <span className="text-red-600">-{stats.deletions}</span>
+                      <span className="text-orange-600">{stats.linesChanged} modified</span>
+                    </div>
+                  );
+                })()}
+              </div>
+            </div>
+            <div className="flex-1">
+              <DiffEditor
+                height="100%"
+                language={getMonacoLanguage()}
+                original={originalCode || ''}
+                modified={localCode}
                     onMount={(editor, monaco) => {
                       // Define custom theme with green/red diff colors on white background
                       monaco.editor.defineTheme('custom-diff-light-theme', {
@@ -1258,13 +1250,17 @@ const CodeEditor = ({
                       renderSideBySide: false,  // Inline mode
                       ignoreTrimWhitespace: false,
                       renderOverviewRuler: true,
-                      diffWordWrap: 'off'
+                      diffWordWrap: 'off',
+                      // Use Monaco's built-in collapse feature
+                      hideUnchangedRegions: {
+                        enabled: collapseUnchanged,
+                        minimumLineCount: 5,
+                        contextLineCount: 2
+                      }
                     }}
                   />
                 </div>
               </div>
-            );
-          })()
         ) : (
           /* Monaco Editor */
           <Editor
