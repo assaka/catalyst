@@ -34,4 +34,4 @@ console.log('🚀 main.jsx: Creating React root and rendering App...');
 ReactDOM.createRoot(document.getElementById('root')).render(
     <App />
 );
-console.log('🚀 main.jsx: App render called'); 
+console.log('🚀 main.jsx: App render called');

@@ -116,7 +116,6 @@ function createHandlerFromDatabaseCode(code) {
     // Create function from database code string
     const AsyncFunction = Object.getPrototypeOf(async function(){}).constructor;
     const handler = new AsyncFunction('return ' + code)();
-    console.log('✅ Handler created successfully, type:', typeof handler);
     return handler;
   } catch (error) {
     console.error('❌ Error creating handler from database code:', error);
