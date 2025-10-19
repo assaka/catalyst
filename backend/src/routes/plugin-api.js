@@ -660,31 +660,77 @@ router.put('/registry/:id/files', async (req, res) => {
       manifest.generatedFiles = updatedFiles;
     }
 
-    // Special handling for event files - also update config.events
-    const config = typeof plugin[0].config === 'string'
-      ? JSON.parse(plugin[0].config)
-      : plugin[0].config || { hooks: [], events: [] };
-
-    // Check if this is an event file (e.g., events/cart.viewed.js)
+    // Special handling for event files - update plugin_events table (normalized structure)
     if (normalizedRequestPath.startsWith('events/')) {
-      const eventName = normalizedRequestPath.replace('events/', '').replace('.js', '');
+      const eventName = normalizedRequestPath.replace('events/', '').replace('.js', '').replace(/_/g, '.');
 
-      // Update the corresponding event in config
-      if (config.events && Array.isArray(config.events)) {
-        const eventIndex = config.events.findIndex(e => e.event_name === eventName);
-        if (eventIndex !== -1) {
-          config.events[eventIndex].listener_code = content;
-        }
+      console.log(`🔄 Updating event ${eventName} in plugin_events table...`);
+
+      try {
+        // Update the event in plugin_events table
+        const updateResult = await sequelize.query(`
+          UPDATE plugin_events
+          SET listener_function = $1, updated_at = NOW()
+          WHERE plugin_id = $2 AND event_name = $3
+        `, {
+          bind: [content, id, eventName],
+          type: sequelize.QueryTypes.UPDATE
+        });
+
+        console.log(`✅ Event ${eventName} updated in plugin_events table`);
+
+        return res.json({
+          success: true,
+          message: 'Event file updated successfully in plugin_events table'
+        });
+      } catch (eventError) {
+        console.error(`❌ Error updating plugin_events table:`, eventError);
+        return res.status(500).json({
+          success: false,
+          error: `Failed to update event in plugin_events table: ${eventError.message}`
+        });
       }
     }
 
-    // Update database with both source_code, manifest, and config
+    // Special handling for hook files - update plugin_hooks table (normalized structure)
+    if (normalizedRequestPath.startsWith('hooks/')) {
+      const hookName = normalizedRequestPath.replace('hooks/', '').replace('.js', '').replace(/_/g, '.');
+
+      console.log(`🔄 Updating hook ${hookName} in plugin_hooks table...`);
+
+      try {
+        // Update the hook in plugin_hooks table
+        const updateResult = await sequelize.query(`
+          UPDATE plugin_hooks
+          SET handler_function = $1, updated_at = NOW()
+          WHERE plugin_id = $2 AND hook_name = $3
+        `, {
+          bind: [content, id, hookName],
+          type: sequelize.QueryTypes.UPDATE
+        });
+
+        console.log(`✅ Hook ${hookName} updated in plugin_hooks table`);
+
+        return res.json({
+          success: true,
+          message: 'Hook file updated successfully in plugin_hooks table'
+        });
+      } catch (hookError) {
+        console.error(`❌ Error updating plugin_hooks table:`, hookError);
+        return res.status(500).json({
+          success: false,
+          error: `Failed to update hook in plugin_hooks table: ${hookError.message}`
+        });
+      }
+    }
+
+    // For other files, update source_code and manifest fields
     await sequelize.query(`
       UPDATE plugin_registry
-      SET source_code = $1, manifest = $2, config = $3, updated_at = NOW()
-      WHERE id = $4
+      SET source_code = $1, manifest = $2, updated_at = NOW()
+      WHERE id = $3
     `, {
-      bind: [JSON.stringify(updatedFiles), JSON.stringify(manifest), JSON.stringify(config), id],
+      bind: [JSON.stringify(updatedFiles), JSON.stringify(manifest), id],
       type: sequelize.QueryTypes.UPDATE
     });
 
