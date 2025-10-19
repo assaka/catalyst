@@ -56,46 +56,64 @@ async function initializeDatabasePlugins() {
 // Load hooks and events for a specific plugin
 async function loadPluginHooksAndEvents(pluginId) {
   try {
+    console.log(`🔧 Loading plugin: ${pluginId}`);
     const response = await fetch(`/api/plugins/registry/${pluginId}`);
     const result = await response.json();
-    
+
     if (result.success && result.data) {
       const plugin = result.data;
-      
+      console.log(`✅ Plugin loaded:`, plugin.name, {
+        hooks: plugin.hooks?.length || 0,
+        events: plugin.events?.length || 0
+      });
+
       // Register hooks from database
       if (plugin.hooks) {
         for (const hook of plugin.hooks) {
           if (hook.enabled) {
+            console.log(`🪝 Registering hook: ${hook.hook_name}`);
             const handlerFunction = createHandlerFromDatabaseCode(hook.handler_code);
             hookSystem.register(hook.hook_name, handlerFunction, hook.priority);
           }
         }
       }
-      
+
       // Register events from database
       if (plugin.events) {
+        console.log(`📡 Found ${plugin.events.length} events for plugin ${plugin.name}`);
         for (const event of plugin.events) {
+          console.log(`📡 Event config:`, event);
           if (event.enabled) {
+            console.log(`✅ Registering event listener: ${event.event_name}`);
             const listenerFunction = createHandlerFromDatabaseCode(event.listener_code);
             eventSystem.on(event.event_name, listenerFunction);
+            console.log(`✅ Event listener registered for: ${event.event_name}`);
+          } else {
+            console.log(`⏭️ Skipping disabled event: ${event.event_name}`);
           }
         }
       }
     }
   } catch (error) {
-    console.error(`Error loading plugin ${pluginId}:`, error);
+    console.error(`❌ Error loading plugin ${pluginId}:`, error);
   }
 }
 
 // Create executable function from database-stored code
 function createHandlerFromDatabaseCode(code) {
   try {
+    console.log('🔨 Creating handler from code:', code.substring(0, 100) + '...');
     // Create function from database code string
     const AsyncFunction = Object.getPrototypeOf(async function(){}).constructor;
-    return new AsyncFunction('return ' + code)();
+    const handler = new AsyncFunction('return ' + code)();
+    console.log('✅ Handler created successfully, type:', typeof handler);
+    return handler;
   } catch (error) {
-    console.error('Error creating handler from database code:', error);
-    return async () => {};
+    console.error('❌ Error creating handler from database code:', error);
+    console.error('❌ Failed code:', code);
+    return async () => {
+      console.log('⚠️ Fallback handler called (original handler failed to create)');
+    };
   }
 }
 

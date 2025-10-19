@@ -959,10 +959,15 @@ export default function Cart() {
     // Emit cart viewed event
     useEffect(() => {
         if (!loading && cartItems.length >= 0) {
+            console.log('🛒 Cart.jsx: Emitting cart.viewed event', {
+                itemCount: cartItems.length,
+                total,
+                subtotal
+            });
             eventSystem.emit('cart.viewed', {
                 items: cartItems,
                 subtotal,
-                discount, 
+                discount,
                 tax,
                 total,
                 ...cartContext
