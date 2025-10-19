@@ -482,8 +482,8 @@ router.get('/active/:pluginId', async (req, res) => {
 
 /**
  * GET /api/plugins/registry/:pluginId
- * Get a specific plugin with its hooks and events (for App.jsx initialization)
- * LEGACY ENDPOINT - kept for backward compatibility
+ * Get a specific plugin with its hooks and events (for UnifiedPluginManager)
+ * LEGACY ENDPOINT - updated to use normalized tables
  */
 router.get('/registry/:pluginId', async (req, res) => {
   try {
@@ -493,6 +493,8 @@ router.get('/registry/:pluginId', async (req, res) => {
     res.set('Expires', '0');
 
     const { pluginId } = req.params;
+
+    console.log(`🔍 [LEGACY DETAIL] Loading plugin ${pluginId}...`);
 
     // Get plugin details from plugin_registry
     const plugin = await sequelize.query(`
@@ -509,9 +511,58 @@ router.get('/registry/:pluginId', async (req, res) => {
       });
     }
 
+    // Load hooks from plugin_hooks table (normalized structure)
+    let hooks = [];
+    try {
+      const hooksResult = await sequelize.query(`
+        SELECT hook_name, handler_function, priority, is_enabled
+        FROM plugin_hooks
+        WHERE plugin_id = $1 AND is_enabled = true
+        ORDER BY priority ASC
+      `, {
+        bind: [pluginId],
+        type: sequelize.QueryTypes.SELECT
+      });
+
+      hooks = hooksResult.map(h => ({
+        hook_name: h.hook_name,
+        handler_code: h.handler_function,
+        priority: h.priority || 10,
+        enabled: h.is_enabled !== false
+      }));
+
+      console.log(`  ✅ Loaded ${hooks.length} hooks from plugin_hooks table`);
+    } catch (hookError) {
+      console.log(`  ⚠️ plugin_hooks table error:`, hookError.message);
+    }
+
+    // Load events from plugin_events table (normalized structure)
+    let events = [];
+    try {
+      const eventsResult = await sequelize.query(`
+        SELECT event_name, listener_function, priority, is_enabled
+        FROM plugin_events
+        WHERE plugin_id = $1 AND is_enabled = true
+        ORDER BY priority ASC
+      `, {
+        bind: [pluginId],
+        type: sequelize.QueryTypes.SELECT
+      });
+
+      events = eventsResult.map(e => ({
+        event_name: e.event_name,
+        listener_code: e.listener_function,
+        priority: e.priority || 10,
+        enabled: e.is_enabled !== false
+      }));
+
+      console.log(`  ✅ Loaded ${events.length} events from plugin_events table`);
+    } catch (eventError) {
+      console.log(`  ⚠️ plugin_events table error:`, eventError.message);
+    }
+
     // Parse JSON fields
     const manifest = typeof plugin[0].manifest === 'string' ? JSON.parse(plugin[0].manifest) : plugin[0].manifest;
-    const config = typeof plugin[0].config === 'string' ? JSON.parse(plugin[0].config) : plugin[0].config;
     const sourceCode = typeof plugin[0].source_code === 'string' ? JSON.parse(plugin[0].source_code) : plugin[0].source_code;
 
     // Extract files from manifest or source_code
@@ -555,8 +606,8 @@ router.get('/registry/:pluginId', async (req, res) => {
       data: {
         ...plugin[0],
         generated_by_ai: manifest?.generated_by_ai || plugin[0].type === 'ai-generated',
-        hooks: config?.hooks || [],
-        events: config?.events || [],
+        hooks: hooks,
+        events: events,
         controllers,
         models,
         components,
