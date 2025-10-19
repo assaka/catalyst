@@ -31,18 +31,26 @@ function PageWrapper({ Component, pageName }) {
 // Initialize database-driven plugins
 async function initializeDatabasePlugins() {
   try {
+    console.log('🎬 initializeDatabasePlugins called - starting plugin load...');
+
     // Fetch active plugins from database (uses normalized tables structure)
     // Add timestamp to bust cache
     // Try new endpoint first, fallback to legacy if not deployed yet
+    console.log('📡 Fetching from /api/plugins/active...');
     let response = await fetch(`/api/plugins/active?_t=${Date.now()}`);
+
+    console.log('📡 Response status:', response.status, response.ok);
 
     // If new endpoint not deployed yet (404), use legacy endpoint
     if (!response.ok && response.status === 404) {
       console.log('⚠️ /api/plugins/active not available, using legacy /registry endpoint');
       response = await fetch(`/api/plugins/registry?status=active&_t=${Date.now()}`);
+      console.log('📡 Legacy endpoint response status:', response.status, response.ok);
     }
 
+    console.log('🔄 Parsing JSON response...');
     const result = await response.json();
+    console.log('✅ JSON parsed:', result);
 
     if (!result.success) {
       console.error('❌ Failed to load plugins from database:', result);
@@ -76,7 +84,9 @@ async function initializeDatabasePlugins() {
 
   } catch (error) {
     console.error('❌ Error initializing database plugins:', error);
+    console.error('❌ Error message:', error.message);
     console.error('❌ Error stack:', error.stack);
+    console.error('❌ Error name:', error.name);
     // Continue anyway - don't block the app
   }
 }
