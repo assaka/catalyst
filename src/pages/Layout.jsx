@@ -256,22 +256,33 @@ export default function Layout({ children, currentPageName }) {
       console.log('📦 Got response from API:', response);
 
       if (response.success && response.navigation && Array.isArray(response.navigation)) {
-        console.log('📦 Dynamic navigation loaded from API:', response.navigation.length, 'items');
+        console.log('📦 Dynamic navigation loaded from API:', response.navigation.length, 'top-level items');
 
-        // Build hierarchical structure using parentKey (updated to match backend response)
-        const allItems = response.navigation.map(item => ({
-          key: item.key,
-          name: item.label,
-          path: item.route?.replace('/admin/', ''), // Remove /admin/ prefix
-          icon: getIconComponent(item.icon),
-          badge: item.badge,
-          isPremium: false,
-          isPlugin: false, // Backend now only returns enabled plugins
-          parent_key: item.parentKey, // Updated from item.parent_key
-          order_position: item.order || 0 // Updated from item.order_position
-        }));
+        // Backend returns hierarchical structure - flatten it first
+        const flattenNavigation = (items, parentKey = null) => {
+          let result = [];
+          items.forEach(item => {
+            result.push({
+              key: item.key,
+              name: item.label,
+              path: item.route?.replace('/admin/', ''), // Remove /admin/ prefix
+              icon: getIconComponent(item.icon),
+              badge: item.badge,
+              isPremium: false,
+              isPlugin: false,
+              parent_key: item.parentKey || parentKey,
+              order_position: item.order || 0
+            });
+            // Recursively add children
+            if (item.children && item.children.length > 0) {
+              result = result.concat(flattenNavigation(item.children, item.key));
+            }
+          });
+          return result;
+        };
 
-        console.log('🔧 Processed items:', allItems.length);
+        const allItems = flattenNavigation(response.navigation);
+        console.log('🔧 Processed items (flattened):', allItems.length);
 
         // Find all main categories (parent_key is null and no route - these are headers)
         const mainCategories = allItems
