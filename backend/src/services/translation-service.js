@@ -1,5 +1,6 @@
 const { Translation, Language, Product, Category, CmsPage, CmsBlock } = require('../models');
 const { Op } = require('sequelize');
+const aiContextService = require('./aiContextService');
 
 class TranslationService {
   /**
@@ -147,8 +148,41 @@ class TranslationService {
     }
   }
 
-  async _translateWithClaude(text, fromLang, toLang) {
+  async _translateWithClaude(text, fromLang, toLang, context = {}) {
     const fetch = (await import('node-fetch')).default;
+
+    // Fetch translation-specific context from database
+    const ragContext = await aiContextService.getContextForQuery({
+      mode: 'all',
+      category: 'translations',
+      query: `translate from ${fromLang} to ${toLang}`,
+      limit: 3
+    });
+
+    const { type = 'general', location = 'unknown', maxLength } = context;
+
+    const systemPrompt = `You are a professional translator specializing in e-commerce localization.
+
+${ragContext}
+
+Guidelines:
+- Preserve HTML tags, placeholders {{variables}}, and special characters
+- Maintain the tone and formality of the original
+- Use natural, idiomatic expressions
+- Follow e-commerce terminology conventions
+- Consider cultural adaptation where appropriate`;
+
+    const userPrompt = `Translate from ${fromLang} to ${toLang}.
+
+Context:
+- Type: ${type} (button, heading, label, paragraph, description)
+- Location: ${location} (cart, checkout, product, homepage)
+${maxLength ? `- Max length: ${maxLength} characters` : ''}
+
+Text to translate:
+${text}
+
+Return ONLY the translated text, no explanations or notes.`;
 
     const response = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
@@ -160,9 +194,10 @@ class TranslationService {
       body: JSON.stringify({
         model: 'claude-3-haiku-20240307',
         max_tokens: 1024,
+        system: systemPrompt,
         messages: [{
           role: 'user',
-          content: `Translate the following text from ${fromLang} to ${toLang}. Return ONLY the translated text, no explanations:\n\n${text}`
+          content: userPrompt
         }]
       })
     });

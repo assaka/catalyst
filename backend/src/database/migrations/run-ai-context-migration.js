@@ -22,12 +22,17 @@ async function runAIContextMigration() {
 
     console.log('✅ Migration completed successfully!');
 
-    // Load and run seed
+    // Load and run initial seed
     console.log('🌱 Seeding initial AI context data...');
     const seed = require('../../migrations/seeds/20250120_seed_ai_context');
     await seed.up(sequelize.getQueryInterface(), require('sequelize'));
+    console.log('✅ Initial seed completed!');
 
-    console.log('✅ Seed completed successfully!');
+    // Load and run all features seed
+    console.log('🌱 Seeding all AI features context...');
+    const allFeaturesSeed = require('../../migrations/seeds/20250120_seed_ai_context_all_features');
+    await allFeaturesSeed.up(sequelize.getQueryInterface(), require('sequelize'));
+    console.log('✅ All features seed completed!');
 
     // Verify tables
     const tables = await sequelize.getQueryInterface().showAllTables();

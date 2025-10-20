@@ -1,5 +1,6 @@
 const { Product, Category, CmsPage, CmsBlock, Language, Store } = require('../models');
 const translationService = require('./translation-service');
+const aiContextService = require('./aiContextService');
 const aiPrompts = require('../config/ai-prompts');
 
 class AIStudioService {
@@ -11,8 +12,8 @@ class AIStudioService {
    * Process AI chat message with context awareness
    */
   async processMessage({ message, context, history, capabilities, userId }) {
-    // Build context-aware system prompt
-    const systemPrompt = this._buildSystemPrompt(context, capabilities);
+    // Build context-aware system prompt with RAG
+    const systemPrompt = await this._buildSystemPrompt(context, capabilities, message);
 
     // Detect intent from message
     const intent = await this._detectIntent(message, context);
@@ -47,13 +48,28 @@ class AIStudioService {
   }
 
   /**
-   * Build context-aware system prompt
+   * Build context-aware system prompt with RAG
    */
-  _buildSystemPrompt(context, capabilities) {
-    const basePrompt = aiPrompts.BASE_SYSTEM_PROMPT;
-    const contextPrompt = aiPrompts.CONTEXT_PROMPTS[context] || aiPrompts.CONTEXT_PROMPTS.general;
+  async _buildSystemPrompt(context, capabilities, query = '') {
+    // Fetch relevant context from database
+    const ragContext = await aiContextService.getContextForQuery({
+      mode: 'all',
+      category: 'ai-studio',
+      query: `${context} ${query}`,
+      limit: 5
+    });
 
-    return `${basePrompt}\n\n${contextPrompt}`;
+    const basePrompt = aiPrompts.BASE_SYSTEM_PROMPT || 'You are Catalyst AI Studio, an intelligent e-commerce assistant.';
+    const contextPrompt = aiPrompts.CONTEXT_PROMPTS?.[context] || '';
+
+    return `${basePrompt}
+
+${ragContext}
+
+${contextPrompt}
+
+Available capabilities:
+${capabilities ? capabilities.map(c => `- ${c}`).join('\n') : 'General assistance'}`;
   }
 
   /**
