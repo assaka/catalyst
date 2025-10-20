@@ -112,13 +112,19 @@ router.post('/template', async (req, res) => {
  */
 router.post('/chat', async (req, res) => {
   try {
-    const { messages, mode } = req.body;
+    const { message, mode, conversationHistory, pluginConfig, currentStep } = req.body;
 
-    if (!messages || !Array.isArray(messages)) {
-      return res.status(400).json({ error: 'Messages array is required' });
+    if (!message) {
+      return res.status(400).json({ error: 'Message is required' });
     }
 
-    const stream = await pluginAIService.chat(messages, mode);
+    const result = await pluginAIService.chatWithContext({
+      message,
+      mode: mode || 'nocode',
+      conversationHistory: conversationHistory || [],
+      pluginConfig: pluginConfig || {},
+      currentStep: currentStep || 'start'
+    });
 
     // Set headers for Server-Sent Events
     res.setHeader('Content-Type', 'text/event-stream');
@@ -126,14 +132,23 @@ router.post('/chat', async (req, res) => {
     res.setHeader('Connection', 'keep-alive');
 
     // Stream the response
-    for await (const chunk of stream) {
-      if (chunk.type === 'content_block_delta') {
-        const text = chunk.delta.text;
-        res.write(`data: ${JSON.stringify({ type: 'text', content: text })}\n\n`);
+    if (result.stream) {
+      for await (const chunk of result.stream) {
+        if (chunk.type === 'content_block_delta') {
+          const text = chunk.delta.text;
+          res.write(`data: ${JSON.stringify({ content: text })}\n\n`);
+        }
       }
     }
 
-    res.write(`data: ${JSON.stringify({ type: 'done' })}\n\n`);
+    // Send final metadata
+    res.write(`data: ${JSON.stringify({
+      config: result.config,
+      step: result.step,
+      suggestions: result.suggestions
+    })}\n\n`);
+
+    res.write(`data: [DONE]\n\n`);
     res.end();
   } catch (error) {
     console.error('Error in chat:', error);
@@ -146,9 +161,35 @@ router.post('/chat', async (req, res) => {
       });
     } else {
       // If streaming has started, send error as SSE
-      res.write(`data: ${JSON.stringify({ type: 'error', error: error.message })}\n\n`);
+      res.write(`data: ${JSON.stringify({ error: error.message })}\n\n`);
       res.end();
     }
+  }
+});
+
+/**
+ * POST /api/plugins/ai/smart-suggestions
+ * Generate smart contextual suggestions for next steps
+ */
+router.post('/smart-suggestions', async (req, res) => {
+  try {
+    const { context, currentStep, pluginConfig, recentMessages, userMessage } = req.body;
+
+    const suggestions = await pluginAIService.generateSmartSuggestions({
+      context: context || 'initial',
+      currentStep: currentStep || 'start',
+      pluginConfig: pluginConfig || {},
+      recentMessages: recentMessages || [],
+      userMessage: userMessage || ''
+    });
+
+    res.json({ suggestions });
+  } catch (error) {
+    console.error('Error generating smart suggestions:', error);
+    res.status(500).json({
+      error: 'Failed to generate suggestions',
+      message: error.message
+    });
   }
 });
 

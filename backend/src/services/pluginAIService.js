@@ -267,6 +267,146 @@ Provide production-ready code with proper error handling and best practices.`;
 
     return stream;
   }
+
+  /**
+   * Enhanced chat with context tracking for no-code builder
+   */
+  async chatWithContext({ message, mode, conversationHistory, pluginConfig, currentStep }) {
+    const systemPrompt = `You are an AI assistant helping users build plugins through conversation.
+
+Your role:
+- Ask clarifying questions to understand what they want to build
+- Provide friendly, helpful guidance without technical jargon
+- Extract plugin details from their responses
+- Update the plugin configuration as you learn more
+- Suggest next steps to keep the conversation flowing
+
+Current plugin state: ${JSON.stringify(pluginConfig, null, 2)}
+Current step: ${currentStep}
+
+When you respond:
+1. Provide a helpful, conversational response
+2. Ask follow-up questions if needed
+3. Extract any plugin details mentioned (name, features, database needs, etc.)
+
+Be conversational, friendly, and guide them naturally through the process.`;
+
+    // Build conversation context
+    const messages = [];
+
+    // Add recent conversation history (last 5 messages)
+    conversationHistory.slice(-5).forEach(msg => {
+      messages.push({
+        role: msg.role,
+        content: msg.content
+      });
+    });
+
+    // Add current user message
+    messages.push({
+      role: 'user',
+      content: message
+    });
+
+    // Create streaming response
+    const stream = await this.anthropic.messages.create({
+      model: this.model,
+      max_tokens: 2048,
+      temperature: 0.7,
+      system: systemPrompt,
+      messages,
+      stream: true
+    });
+
+    // Parse the response to extract plugin config and suggestions
+    let fullResponse = '';
+    const responseStream = {
+      stream,
+      config: pluginConfig,
+      step: currentStep,
+      suggestions: []
+    };
+
+    return responseStream;
+  }
+
+  /**
+   * Generate smart contextual suggestions for next steps
+   */
+  async generateSmartSuggestions({ context, currentStep, pluginConfig, recentMessages, userMessage }) {
+    const systemPrompt = `You are an AI assistant that generates helpful suggestions for building plugins.
+
+Based on the conversation context, generate 2-4 short, actionable questions or prompts that would help move the conversation forward.
+
+Current context: ${context}
+Current step: ${currentStep}
+Plugin config so far: ${JSON.stringify(pluginConfig, null, 2)}
+Recent conversation: ${JSON.stringify(recentMessages.slice(-3), null, 2)}
+Latest user message: ${userMessage}
+
+Generate suggestions that:
+- Help clarify requirements
+- Explore additional features
+- Move toward completing the plugin
+- Are phrased as questions the user might ask
+
+Return ONLY a JSON array of 2-4 short suggestion strings, like:
+["What features will this have?", "Will this need database storage?", "How should users access this?"]`;
+
+    try {
+      const message = await this.anthropic.messages.create({
+        model: this.model,
+        max_tokens: 512,
+        temperature: 0.8,
+        system: systemPrompt,
+        messages: [{
+          role: 'user',
+          content: 'Generate suggestions for the next steps in this conversation.'
+        }]
+      });
+
+      const responseText = message.content[0].text;
+
+      // Try to parse JSON array
+      const jsonMatch = responseText.match(/\[[\s\S]*?\]/);
+      if (jsonMatch) {
+        return JSON.parse(jsonMatch[0]);
+      }
+
+      // Fallback suggestions based on context
+      return this.getFallbackSuggestions(currentStep, pluginConfig);
+    } catch (error) {
+      console.error('Error generating smart suggestions:', error);
+      return this.getFallbackSuggestions(currentStep, pluginConfig);
+    }
+  }
+
+  /**
+   * Get fallback suggestions when AI generation fails
+   */
+  getFallbackSuggestions(currentStep, pluginConfig) {
+    if (!pluginConfig.name) {
+      return [
+        "What should we call this plugin?",
+        "What problem does this solve?",
+        "Who will use this plugin?"
+      ];
+    }
+
+    if (!pluginConfig.features || pluginConfig.features.length === 0) {
+      return [
+        "What features do you need?",
+        "Should users be able to input data?",
+        "Do you need any automated tasks?"
+      ];
+    }
+
+    return [
+      "Should we add more features?",
+      "Do you need database storage?",
+      "I'm ready to generate the plugin - shall we proceed?"
+    ];
+  }
 }
 
 module.exports = new PluginAIService();

@@ -34,13 +34,12 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import apiClient from '@/api/client';
-import FullyAIPluginBuilder from '@/components/plugins/FullyAIPluginBuilder';
-import NoCodePluginBuilder from '@/components/plugins/NoCodePluginBuilder';
+import EnhancedNoCodeBuilder from '@/components/plugins/EnhancedNoCodeBuilder';
 import DeveloperPluginEditor from '@/components/plugins/DeveloperPluginEditor';
 
 const UnifiedPluginManagerV2 = () => {
   const [activeView, setActiveView] = useState('marketplace');
-  const [builderMode, setBuilderMode] = useState(null); // null | 'nocode-ai' | 'guided' | 'developer'
+  const [builderMode, setBuilderMode] = useState(null); // null | 'nocode' | 'developer'
   const [selectedPlugin, setSelectedPlugin] = useState(null);
   const [pluginContext, setPluginContext] = useState(null); // Shared context for mode switching
   const [plugins, setPlugins] = useState([]);
@@ -168,26 +167,10 @@ const UnifiedPluginManagerV2 = () => {
   };
 
   // If in builder mode, show full-screen builder
-  if (builderMode === 'nocode-ai') {
+  if (builderMode === 'nocode') {
     return (
       <div className="fixed inset-0 bg-gray-100 z-50">
-        <FullyAIPluginBuilder
-          initialContext={pluginContext}
-          onSave={handleSavePlugin}
-          onCancel={() => {
-            setBuilderMode(null);
-            setPluginContext(null);
-          }}
-          onSwitchMode={handleSwitchMode}
-        />
-      </div>
-    );
-  }
-
-  if (builderMode === 'guided') {
-    return (
-      <div className="fixed inset-0 bg-gray-100 z-50">
-        <NoCodePluginBuilder
+        <EnhancedNoCodeBuilder
           initialContext={pluginContext}
           onSave={handleSavePlugin}
           onCancel={() => {
@@ -244,27 +227,28 @@ const UnifiedPluginManagerV2 = () => {
             </h1>
             <p className="text-gray-600 mt-1">Build plugins with AI - no coding required, or use full developer mode</p>
           </div>
-          <div className="flex gap-2">
+          <div className="flex gap-3">
             <Button
-              onClick={() => handleCreatePlugin('nocode-ai')}
+              onClick={() => handleCreatePlugin('nocode')}
               className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700"
+              size="lg"
             >
-              <Sparkles className="w-4 h-4 mr-2" />
-              No-Code AI
-            </Button>
-            <Button
-              onClick={() => handleCreatePlugin('guided')}
-              className="bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700"
-            >
-              <Wand2 className="w-4 h-4 mr-2" />
-              Guided Builder
+              <Sparkles className="w-5 h-5 mr-2" />
+              <div className="text-left">
+                <div className="font-semibold">No-Code Builder</div>
+                <div className="text-xs text-purple-100">AI-powered, no coding needed</div>
+              </div>
             </Button>
             <Button
               onClick={() => handleCreatePlugin('developer')}
               className="bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700"
+              size="lg"
             >
-              <Code2 className="w-4 h-4 mr-2" />
-              Developer Mode
+              <Code2 className="w-5 h-5 mr-2" />
+              <div className="text-left">
+                <div className="font-semibold">Developer Mode</div>
+                <div className="text-xs text-blue-100">Full code editor & control</div>
+              </div>
             </Button>
           </div>
         </div>
