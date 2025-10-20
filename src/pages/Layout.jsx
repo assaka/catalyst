@@ -246,11 +246,14 @@ export default function Layout({ children, currentPageName }) {
   };
 
   const loadDynamicNavigation = async () => {
+    console.log('🚀 loadDynamicNavigation() called - starting to load navigation...');
     try {
       // Load dynamic navigation from Plugin Architecture API (Phase 1 integration)
+      console.log('📡 Fetching navigation from /admin/navigation...');
       const response = await retryApiCall(() =>
         apiClient.get('/admin/navigation')
       );
+      console.log('📦 Got response from API:', response);
 
       if (response.success && response.navigation && Array.isArray(response.navigation)) {
         console.log('📦 Dynamic navigation loaded from API:', response.navigation.length, 'items');
@@ -296,9 +299,13 @@ export default function Layout({ children, currentPageName }) {
         });
 
         setDynamicNavItems(navigationGroups);
+        console.log('✅ setDynamicNavItems called with', navigationGroups.length, 'groups');
+      } else {
+        console.warn('⚠️ API response invalid or missing navigation:', response);
       }
     } catch (error) {
-      console.error('Error loading dynamic navigation:', error);
+      console.error('❌ Error loading dynamic navigation:', error);
+      console.error('Error stack:', error.stack);
     }
   };
 
