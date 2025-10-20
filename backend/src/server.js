@@ -102,6 +102,7 @@ const dynamicPluginRoutes = require('./routes/dynamic-plugins');
 const adminNavigationRoutes = require('./routes/admin-navigation');
 const pluginApiRoutes = require('./routes/plugin-api');
 const pluginAIRoutes = require('./routes/pluginAIRoutes');
+const chatApiRoutes = require('./routes/chat-api');
 
 const app = express();
 
@@ -1561,6 +1562,7 @@ app.use('/api/plugins', pluginRoutes); // Legacy plugin routes (kept for backwar
 app.use('/api/stores/:store_id/plugins/create', pluginCreationRoutes);
 app.use('/api/stores/:store_id/plugins', pluginRenderRoutes);
 app.use('/api/plugins', dynamicPluginRoutes.router);
+app.use('/api/chat', chatApiRoutes); // Customer service chat plugin API
 app.use('/api/storage', storageRoutes); // Main storage routes for File Library
 app.use('/api/stores/:store_id/storage', storageRoutes); // Store-specific storage routes (kept for backwards compatibility)
 app.use('/api/stores/:store_id/products', productImageRoutes);
