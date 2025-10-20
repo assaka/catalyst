@@ -81,24 +81,33 @@ const PluginAIAssistant = ({ mode = 'nocode', onCodeGenerated, onConfigGenerated
         context: currentContext
       });
 
-      // Handle response based on mode
+      // Handle response based on type
       let aiMessageContent = '';
       let generatedCode = null;
       let generatedFiles = null;
       let generatedConfig = null;
+      let isConversational = false;
 
-      if (mode === 'nocode-ai') {
-        aiMessageContent = response.explanation || '✅ Plugin generated successfully!';
-        generatedCode = response.generatedCode || response.code;
-        generatedFiles = response.generatedFiles || response.files;
-      } else if (mode === 'guided') {
-        aiMessageContent = response.suggestions?.join('\n') || 'Configuration updated!';
-        generatedConfig = response.config;
-        generatedFiles = response.generatedFiles;
-      } else if (mode === 'developer') {
-        aiMessageContent = response.explanation || 'Code generated!';
-        generatedCode = response.code;
-        generatedFiles = response.generatedFiles;
+      // Check if this is a conversational response
+      if (response.type === 'conversation' || response.isConversational) {
+        // Plain conversational response
+        aiMessageContent = response.message || response.explanation || 'I received your message!';
+        isConversational = true;
+      } else {
+        // Plugin generation response - handle based on mode
+        if (mode === 'nocode-ai') {
+          aiMessageContent = response.explanation || '✅ Plugin generated successfully!';
+          generatedCode = response.generatedCode || response.code;
+          generatedFiles = response.generatedFiles || response.files;
+        } else if (mode === 'guided') {
+          aiMessageContent = response.suggestions?.join('\n') || 'Configuration updated!';
+          generatedConfig = response.config;
+          generatedFiles = response.generatedFiles;
+        } else if (mode === 'developer') {
+          aiMessageContent = response.explanation || 'Code generated!';
+          generatedCode = response.code;
+          generatedFiles = response.generatedFiles;
+        }
       }
 
       const aiMessage = {
@@ -107,17 +116,20 @@ const PluginAIAssistant = ({ mode = 'nocode', onCodeGenerated, onConfigGenerated
         generatedCode,
         generatedConfig,
         files: generatedFiles,
+        isConversational,
         timestamp: new Date()
       };
 
       setMessages(prev => [...prev, aiMessage]);
 
-      // Notify parent components of generated code/config
-      if (generatedCode && onCodeGenerated) {
-        onCodeGenerated(generatedCode, generatedFiles);
-      }
-      if (generatedConfig && onConfigGenerated) {
-        onConfigGenerated(generatedConfig);
+      // Only notify parent components if code/config was generated
+      if (!isConversational) {
+        if (generatedCode && onCodeGenerated) {
+          onCodeGenerated(generatedCode, generatedFiles);
+        }
+        if (generatedConfig && onConfigGenerated) {
+          onConfigGenerated(generatedConfig);
+        }
       }
 
     } catch (error) {
