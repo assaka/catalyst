@@ -129,6 +129,8 @@ function getIconComponent(iconName) {
 }
 
 export default function Layout({ children, currentPageName }) {
+  console.log('🎨 Layout component mounted/rendered for page:', currentPageName);
+
   const navigate = useNavigate();
   const location = useLocation();
   const { selectedStore } = useStoreSelection();
@@ -149,6 +151,8 @@ export default function Layout({ children, currentPageName }) {
     "Advanced": false, // Added new group for Advanced features
   });
   const [dynamicNavItems, setDynamicNavItems] = useState([]);
+
+  console.log('📊 Current dynamicNavItems state:', dynamicNavItems.length, 'groups');
 
 
   // Add this block to handle the RobotsTxt page
@@ -424,6 +428,7 @@ export default function Layout({ children, currentPageName }) {
 
   // Navigation groups are now loaded dynamically from database using parent_key hierarchy
   const navigationGroups = dynamicNavItems || [];
+  console.log('🔍 Rendering sidebar with', navigationGroups.length, 'navigation groups');
 
   const toggleGroup = (groupName) => {
     setOpenGroups(prev => ({ ...prev, [groupName]: !prev[groupName] }));
