@@ -101,7 +101,11 @@ You work in NO-CODE mode. Users have ZERO technical knowledge.
 - Generate complete, working plugins automatically
 - Provide friendly, non-technical explanations
 
-Return JSON in this format:
+IMPORTANT: You MUST respond with ONLY valid JSON. No other text before or after.
+Do not wrap the JSON in markdown code blocks.
+Do not include any explanatory text outside the JSON.
+
+Return JSON in this EXACT format:
 {
   "name": "Plugin Name",
   "description": "What it does",
@@ -124,7 +128,9 @@ You work in GUIDED mode. Users have basic technical understanding.
 - Suggest best practices
 - Generate configuration and code based on user's visual choices
 
-Return JSON in this format:
+IMPORTANT: You MUST respond with ONLY valid JSON. No other text before or after.
+
+Return JSON in this EXACT format:
 {
   "config": {
     "features": [{"type": "api_endpoint", "config": {...}}],
@@ -143,7 +149,9 @@ You work in DEVELOPER mode. Users are experienced developers.
 - Follow SOLID principles and best practices
 - Add helpful comments and documentation
 
-Return JSON in this format:
+IMPORTANT: You MUST respond with ONLY valid JSON. No other text before or after.
+
+Return JSON in this EXACT format:
 {
   "code": "complete code for the requested file",
   "explanation": "Technical explanation of the implementation",
@@ -203,11 +211,17 @@ Provide production-ready code with proper error handling and best practices.`;
       return JSON.parse(responseText);
     } catch (error) {
       console.error('Failed to parse AI response as JSON:', error);
+      console.error('Raw response text:', responseText.substring(0, 500));
 
-      // Fallback: return raw text
+      // Fallback: return raw text as explanation
+      // This ensures the frontend displays the actual AI response
       return {
-        rawResponse: responseText,
-        error: 'Failed to parse JSON response'
+        explanation: responseText,
+        name: 'Generated Plugin',
+        description: 'AI-generated plugin based on your request',
+        features: [],
+        generatedFiles: [],
+        note: 'Response was in plain text format instead of JSON'
       };
     }
   }
