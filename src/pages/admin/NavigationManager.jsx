@@ -49,13 +49,18 @@ const NavigationManager = () => {
 
       // Handle both hierarchical (from backend) and flat array responses
       let items;
-      if (response.navigation && Array.isArray(response.navigation)) {
+
+      // Check if response has data property (axios wraps responses)
+      const data = response.data || response;
+
+      if (data.navigation && Array.isArray(data.navigation)) {
         // Backend returns {success: true, navigation: [...]}
-        items = flattenTree(response.navigation);
-      } else if (Array.isArray(response.data)) {
+        items = flattenTree(data.navigation);
+      } else if (Array.isArray(data)) {
         // Fallback: direct array
-        items = response.data;
+        items = data;
       } else {
+        console.error('Unexpected response structure:', response);
         throw new Error('Invalid response format');
       }
 

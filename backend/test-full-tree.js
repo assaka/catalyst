@@ -1,3 +1,4 @@
+require('dotenv').config();
 const AdminNavigationService = require('./src/services/AdminNavigationService');
 
 async function testFullTree() {
