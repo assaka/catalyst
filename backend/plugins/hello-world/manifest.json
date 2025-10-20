@@ -60,5 +60,14 @@
       "method": "POST",
       "handler": "updateMessage"
     }
-  ]
+  ],
+  "adminNavigation": {
+    "enabled": true,
+    "label": "Hello World",
+    "icon": "Smile",
+    "route": "/admin/hello-world",
+    "order": 150,
+    "parentKey": null,
+    "description": "Simple Hello World plugin example"
+  }
 }

@@ -52,5 +52,14 @@
   "permissions": [
     "read:homepage",
     "read:store"
-  ]
+  ],
+  "adminNavigation": {
+    "enabled": true,
+    "label": "Hello World Example",
+    "icon": "Code2",
+    "route": "/admin/hello-world-example",
+    "order": 151,
+    "parentKey": null,
+    "description": "Complete plugin example with animations"
+  }
 }

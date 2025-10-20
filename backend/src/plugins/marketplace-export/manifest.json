@@ -55,10 +55,13 @@
       "component": "MarketplaceExport"
     }
   ],
-  "navigation": {
-    "section": "Plugins",
-    "title": "Marketplace Export",
+  "adminNavigation": {
+    "enabled": true,
+    "label": "Marketplace Export",
     "icon": "Upload",
-    "path": "/admin/marketplace-export"
+    "route": "/admin/marketplace-export",
+    "order": 85,
+    "parentKey": "products",
+    "description": "Export products to Amazon, eBay, and Etsy"
   }
 }

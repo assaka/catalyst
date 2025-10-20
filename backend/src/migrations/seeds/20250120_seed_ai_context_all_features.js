@@ -34,7 +34,7 @@ module.exports = {
 - **Line breaks**: Preserve \\n patterns
 - **Special characters**: Handle RTL languages properly`,
         category: 'translations',
-        tags: ['translation', 'localization', 'best-practices', 'i18n'],
+        tags: JSON.stringify(['translation', 'localization', 'best-practices', 'i18n']),
         priority: 100,
         mode: 'all',
         is_active: true,
@@ -73,7 +73,7 @@ module.exports = {
 - Tracking = Order tracking number
 - Estimated Delivery = Expected arrival date`,
         category: 'translations',
-        tags: ['glossary', 'terms', 'ecommerce'],
+        tags: JSON.stringify(['glossary', 'terms', 'ecommerce']),
         priority: 90,
         mode: 'all',
         is_active: true,
@@ -115,7 +115,7 @@ module.exports = {
 - Video controls
 - Mathematical symbols`,
         category: 'translations',
-        tags: ['rtl', 'arabic', 'hebrew', 'ui', 'layout'],
+        tags: JSON.stringify(['rtl', 'arabic', 'hebrew', 'ui', 'layout']),
         priority: 80,
         mode: 'all',
         is_active: true,
@@ -152,7 +152,7 @@ module.exports = {
 - Lucide icons
 - Responsive grid system`,
         category: 'ai-studio',
-        tags: ['design', 'ui', 'layout', 'css'],
+        tags: JSON.stringify(['design', 'ui', 'layout', 'css']),
         priority: 100,
         mode: 'all',
         is_active: true,
@@ -189,7 +189,7 @@ module.exports = {
 - Accurate categorization
 - Complete attribute data`,
         category: 'ai-studio',
-        tags: ['products', 'catalog', 'seo', 'descriptions'],
+        tags: JSON.stringify(['products', 'catalog', 'seo', 'descriptions']),
         priority: 90,
         mode: 'all',
         is_active: true,
@@ -226,7 +226,7 @@ module.exports = {
 - Animation effects
 - Content blocks`,
         category: 'ai-studio',
-        tags: ['storefront', 'homepage', 'layout', 'sections'],
+        tags: JSON.stringify(['storefront', 'homepage', 'layout', 'sections']),
         priority: 85,
         mode: 'all',
         is_active: true,
@@ -268,10 +268,10 @@ Translated text:\`;
     return translation.trim();
   }
 }`,
-        files: [],
-        features: ['Context-aware translation', 'Length constraints', 'Terminology consistency'],
-        use_cases: ['UI label translation', 'Product description translation', 'Marketing content'],
-        tags: ['translation', 'ai', 'localization', 'context'],
+        files: JSON.stringify([]),
+        features: JSON.stringify(['Context-aware translation', 'Length constraints', 'Terminology consistency']),
+        use_cases: JSON.stringify(['UI label translation', 'Product description translation', 'Marketing content']),
+        tags: JSON.stringify(['translation', 'ai', 'localization', 'context']),
         is_template: true,
         is_active: true,
         rating: 4.8,
@@ -322,9 +322,9 @@ router.post('/ai/chat', async (req, res) => {
 });`,
         language: 'javascript',
         framework: 'express',
-        parameters: ['message', 'context'],
+        parameters: JSON.stringify(['message', 'context']),
         example_usage: 'Use for chat interfaces that need real-time AI responses',
-        tags: ['ai', 'streaming', 'sse', 'real-time'],
+        tags: JSON.stringify(['ai', 'streaming', 'sse', 'real-time']),
         is_active: true,
         created_at: now,
         updated_at: now
@@ -374,9 +374,9 @@ async function getAIContext(query, options = {}) {
 }`,
         language: 'javascript',
         framework: null,
-        parameters: ['query', 'options'],
+        parameters: JSON.stringify(['query', 'options']),
         example_usage: 'Call before every AI request to include relevant context',
-        tags: ['rag', 'context', 'ai', 'database'],
+        tags: JSON.stringify(['rag', 'context', 'ai', 'database']),
         is_active: true,
         created_at: now,
         updated_at: now

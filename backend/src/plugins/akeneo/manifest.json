@@ -182,10 +182,19 @@
       "description": "Daily product synchronization at 2 AM"
     },
     {
-      "name": "weekly-category-sync", 
+      "name": "weekly-category-sync",
       "schedule": "0 3 * * 0",
       "handler": "syncCategories",
       "description": "Weekly category synchronization on Sunday at 3 AM"
     }
-  ]
+  ],
+  "adminNavigation": {
+    "enabled": true,
+    "label": "Akeneo PIM",
+    "icon": "Database",
+    "route": "/admin/akeneo",
+    "order": 80,
+    "parentKey": "products",
+    "description": "Product Information Management integration"
+  }
 }

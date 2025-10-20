@@ -676,39 +676,34 @@ async function seedExamplePlugins() {
       };
 
       const [results] = await sequelize.query(`
-        INSERT INTO plugin_registry (
-          id, name, description, version, author, category, status,
-          type, framework, manifest, config, source_code,
-          created_at, updated_at
+        INSERT INTO plugins (
+          id, name, slug, version, description, category, status, is_enabled,
+          plugin_structure, installed_at, activated_at, updated_at
         )
         VALUES (
-          :id, :name, :description, :version, :author, :category, :status,
-          :type, :framework, :manifest, :config, :source_code,
-          NOW(), NOW()
+          gen_random_uuid(), :name, :slug, :version, :description, :category, :status, true,
+          :plugin_structure, NOW(), NOW(), NOW()
         )
-        ON CONFLICT (id)
+        ON CONFLICT (slug)
         DO UPDATE SET
           name = EXCLUDED.name,
           description = EXCLUDED.description,
-          manifest = EXCLUDED.manifest,
-          config = EXCLUDED.config,
-          source_code = EXCLUDED.source_code,
+          version = EXCLUDED.version,
+          plugin_structure = EXCLUDED.plugin_structure,
           updated_at = NOW()
         RETURNING *
       `, {
         replacements: {
-          id,
           name: plugin.name,
-          description: plugin.description,
+          slug: plugin.slug,
           version: plugin.version,
-          author: plugin.author,
+          description: plugin.description,
           category: plugin.category,
           status: plugin.status,
-          type: plugin.generated_by_ai ? 'ai-generated' : 'custom',
-          framework: 'react',
-          manifest: JSON.stringify(manifest),
-          config: JSON.stringify(config),
-          source_code: JSON.stringify(plugin.plugin_structure.generatedFiles || [])
+          plugin_structure: JSON.stringify({
+            ...plugin.plugin_structure,
+            manifest: manifest
+          })
         }
       });
 
