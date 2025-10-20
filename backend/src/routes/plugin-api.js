@@ -715,30 +715,50 @@ router.put('/registry/:id/files', async (req, res) => {
     if (normalizedRequestPath.startsWith('events/')) {
       const eventName = normalizedRequestPath.replace('events/', '').replace('.js', '').replace(/_/g, '.');
 
-      console.log(`🔄 Updating event ${eventName} in plugin_events table...`);
+      console.log(`🔄 Upserting event ${eventName} in plugin_events table...`);
 
       try {
-        // Update the event in plugin_events table
-        const updateResult = await sequelize.query(`
-          UPDATE plugin_events
-          SET listener_function = $1, updated_at = NOW()
-          WHERE plugin_id = $2 AND event_name = $3
+        // Check if event exists
+        const existing = await sequelize.query(`
+          SELECT id FROM plugin_events
+          WHERE plugin_id = $1 AND event_name = $2
         `, {
-          bind: [content, id, eventName],
-          type: sequelize.QueryTypes.UPDATE
+          bind: [id, eventName],
+          type: sequelize.QueryTypes.SELECT
         });
 
-        console.log(`✅ Event ${eventName} updated in plugin_events table`);
+        if (existing.length > 0) {
+          // Update existing event
+          await sequelize.query(`
+            UPDATE plugin_events
+            SET listener_function = $1, updated_at = NOW()
+            WHERE plugin_id = $2 AND event_name = $3
+          `, {
+            bind: [content, id, eventName],
+            type: sequelize.QueryTypes.UPDATE
+          });
+          console.log(`✅ Event ${eventName} updated in plugin_events table`);
+        } else {
+          // Insert new event
+          await sequelize.query(`
+            INSERT INTO plugin_events (plugin_id, event_name, listener_function, priority, is_enabled, created_at, updated_at)
+            VALUES ($1, $2, $3, 10, true, NOW(), NOW())
+          `, {
+            bind: [id, eventName, content],
+            type: sequelize.QueryTypes.INSERT
+          });
+          console.log(`✅ Event ${eventName} created in plugin_events table`);
+        }
 
         return res.json({
           success: true,
-          message: 'Event file updated successfully in plugin_events table'
+          message: 'Event file saved successfully in plugin_events table'
         });
       } catch (eventError) {
-        console.error(`❌ Error updating plugin_events table:`, eventError);
+        console.error(`❌ Error upserting plugin_events table:`, eventError);
         return res.status(500).json({
           success: false,
-          error: `Failed to update event in plugin_events table: ${eventError.message}`
+          error: `Failed to save event in plugin_events table: ${eventError.message}`
         });
       }
     }
@@ -747,30 +767,50 @@ router.put('/registry/:id/files', async (req, res) => {
     if (normalizedRequestPath.startsWith('hooks/')) {
       const hookName = normalizedRequestPath.replace('hooks/', '').replace('.js', '').replace(/_/g, '.');
 
-      console.log(`🔄 Updating hook ${hookName} in plugin_hooks table...`);
+      console.log(`🔄 Upserting hook ${hookName} in plugin_hooks table...`);
 
       try {
-        // Update the hook in plugin_hooks table
-        const updateResult = await sequelize.query(`
-          UPDATE plugin_hooks
-          SET handler_function = $1, updated_at = NOW()
-          WHERE plugin_id = $2 AND hook_name = $3
+        // Check if hook exists
+        const existing = await sequelize.query(`
+          SELECT id FROM plugin_hooks
+          WHERE plugin_id = $1 AND hook_name = $2
         `, {
-          bind: [content, id, hookName],
-          type: sequelize.QueryTypes.UPDATE
+          bind: [id, hookName],
+          type: sequelize.QueryTypes.SELECT
         });
 
-        console.log(`✅ Hook ${hookName} updated in plugin_hooks table`);
+        if (existing.length > 0) {
+          // Update existing hook
+          await sequelize.query(`
+            UPDATE plugin_hooks
+            SET handler_function = $1, updated_at = NOW()
+            WHERE plugin_id = $2 AND hook_name = $3
+          `, {
+            bind: [content, id, hookName],
+            type: sequelize.QueryTypes.UPDATE
+          });
+          console.log(`✅ Hook ${hookName} updated in plugin_hooks table`);
+        } else {
+          // Insert new hook
+          await sequelize.query(`
+            INSERT INTO plugin_hooks (plugin_id, hook_name, handler_function, priority, is_enabled, created_at, updated_at)
+            VALUES ($1, $2, $3, 10, true, NOW(), NOW())
+          `, {
+            bind: [id, hookName, content],
+            type: sequelize.QueryTypes.INSERT
+          });
+          console.log(`✅ Hook ${hookName} created in plugin_hooks table`);
+        }
 
         return res.json({
           success: true,
-          message: 'Hook file updated successfully in plugin_hooks table'
+          message: 'Hook file saved successfully in plugin_hooks table'
         });
       } catch (hookError) {
-        console.error(`❌ Error updating plugin_hooks table:`, hookError);
+        console.error(`❌ Error upserting plugin_hooks table:`, hookError);
         return res.status(500).json({
           success: false,
-          error: `Failed to update hook in plugin_hooks table: ${hookError.message}`
+          error: `Failed to save hook in plugin_hooks table: ${hookError.message}`
         });
       }
     }
