@@ -129,8 +129,6 @@ function getIconComponent(iconName) {
 }
 
 export default function Layout({ children, currentPageName }) {
-  console.log('🎨 Layout component mounted/rendered for page:', currentPageName);
-
   const navigate = useNavigate();
   const location = useLocation();
   const { selectedStore } = useStoreSelection();
@@ -151,8 +149,6 @@ export default function Layout({ children, currentPageName }) {
     "Advanced": false, // Added new group for Advanced features
   });
   const [dynamicNavItems, setDynamicNavItems] = useState([]);
-
-  console.log('📊 Current dynamicNavItems state:', dynamicNavItems.length, 'groups');
 
 
   // Add this block to handle the RobotsTxt page
@@ -246,18 +242,13 @@ export default function Layout({ children, currentPageName }) {
   };
 
   const loadDynamicNavigation = async () => {
-    console.log('🚀 loadDynamicNavigation() called - starting to load navigation...');
     try {
       // Load dynamic navigation from Plugin Architecture API (Phase 1 integration)
-      console.log('📡 Fetching navigation from /admin/navigation...');
       const response = await retryApiCall(() =>
         apiClient.get('/admin/navigation')
       );
-      console.log('📦 Got response from API:', response);
 
       if (response.success && response.navigation && Array.isArray(response.navigation)) {
-        console.log('📦 Dynamic navigation loaded from API:', response.navigation.length, 'top-level items');
-
         // Backend returns hierarchical structure - flatten it first
         const flattenNavigation = (items, parentKey = null) => {
           let result = [];
@@ -282,14 +273,11 @@ export default function Layout({ children, currentPageName }) {
         };
 
         const allItems = flattenNavigation(response.navigation);
-        console.log('🔧 Processed items (flattened):', allItems.length);
 
         // Find all main categories (parent_key is null and no route - these are headers)
         const mainCategories = allItems
           .filter(item => !item.parent_key && !item.path)
           .sort((a, b) => a.order_position - b.order_position);
-
-        console.log('📂 Main categories found:', mainCategories.length, mainCategories.map(c => c.name));
 
         // Build navigation groups with children
         const navigationGroups = mainCategories.map(category => {
@@ -304,19 +292,10 @@ export default function Layout({ children, currentPageName }) {
           };
         }).filter(group => group.items.length > 0);
 
-        console.log('✅ Navigation groups built:', navigationGroups.length, 'groups');
-        navigationGroups.forEach(group => {
-          console.log(`  - ${group.name}: ${group.items.length} items`);
-        });
-
         setDynamicNavItems(navigationGroups);
-        console.log('✅ setDynamicNavItems called with', navigationGroups.length, 'groups');
-      } else {
-        console.warn('⚠️ API response invalid or missing navigation:', response);
       }
     } catch (error) {
-      console.error('❌ Error loading dynamic navigation:', error);
-      console.error('Error stack:', error.stack);
+      console.error('Error loading dynamic navigation:', error);
     }
   };
 
@@ -446,7 +425,6 @@ export default function Layout({ children, currentPageName }) {
 
   // Navigation groups are now loaded dynamically from database using parent_key hierarchy
   const navigationGroups = dynamicNavItems || [];
-  console.log('🔍 Rendering sidebar with', navigationGroups.length, 'navigation groups');
 
   const toggleGroup = (groupName) => {
     setOpenGroups(prev => ({ ...prev, [groupName]: !prev[groupName] }));
