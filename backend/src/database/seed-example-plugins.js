@@ -676,33 +676,38 @@ async function seedExamplePlugins() {
       };
 
       const [results] = await sequelize.query(`
-        INSERT INTO plugins (
-          id, name, slug, version, description, author, category,
-          status, is_installed, is_enabled, manifest,
-          created_at, installed_at, enabled_at, updated_at
+        INSERT INTO plugin_registry (
+          id, name, version, description, author, category,
+          status, type, manifest, config, source_code,
+          created_at, updated_at
         )
         VALUES (
-          gen_random_uuid(), :name, :slug, :version, :description, :author, :category,
-          'enabled', true, true, :manifest,
-          NOW(), NOW(), NOW(), NOW()
+          :id, :name, :version, :description, :author, :category,
+          'active', :type, :manifest, :config, :source_code,
+          NOW(), NOW()
         )
-        ON CONFLICT (slug)
+        ON CONFLICT (id)
         DO UPDATE SET
           name = EXCLUDED.name,
           description = EXCLUDED.description,
           version = EXCLUDED.version,
           manifest = EXCLUDED.manifest,
+          config = EXCLUDED.config,
+          source_code = EXCLUDED.source_code,
           updated_at = NOW()
         RETURNING *
       `, {
         replacements: {
+          id,
           name: plugin.name,
-          slug: plugin.slug,
           version: plugin.version,
           description: plugin.description,
           author: plugin.author,
           category: plugin.category,
-          manifest: JSON.stringify(manifest)
+          type: plugin.generated_by_ai ? 'ai-generated' : 'custom',
+          manifest: JSON.stringify(manifest),
+          config: JSON.stringify(config),
+          source_code: JSON.stringify(plugin.plugin_structure.generatedFiles || [])
         }
       });
 
