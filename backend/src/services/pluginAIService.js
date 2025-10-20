@@ -4,6 +4,7 @@
  */
 
 const Anthropic = require('@anthropic-ai/sdk');
+const aiContextService = require('./aiContextService');
 
 class PluginAIService {
   constructor() {
@@ -20,7 +21,15 @@ class PluginAIService {
    * @param {object} context - Current plugin context
    */
   async generatePlugin(mode, userPrompt, context = {}) {
-    const systemPrompt = this.getSystemPrompt(mode);
+    // Fetch relevant context from database
+    const dynamicContext = await aiContextService.getContextForQuery({
+      mode,
+      category: context.category,
+      query: userPrompt,
+      storeId: context.storeId
+    });
+
+    const systemPrompt = await this.getSystemPrompt(mode, dynamicContext);
 
     const message = await this.anthropic.messages.create({
       model: this.model,
@@ -86,11 +95,14 @@ Question: ${question}`
   }
 
   /**
-   * Get system prompt based on mode
+   * Get system prompt based on mode with dynamic context from database
+   * @param {string} mode - Builder mode
+   * @param {string} dynamicContext - Context fetched from database
    */
-  getSystemPrompt(mode) {
-    const pluginArchitectureContext = `
-# CATALYST PLUGIN ARCHITECTURE
+  async getSystemPrompt(mode, dynamicContext = null) {
+    // Use dynamic context from database, or fallback to hardcoded
+    const pluginArchitectureContext = dynamicContext || `
+# CATALYST PLUGIN ARCHITECTURE (FALLBACK - Update database for latest context!)
 
 ## Tech Stack
 - Backend: Node.js + Express
@@ -484,7 +496,14 @@ Provide production-ready code with proper error handling and best practices.`;
    * Chat with AI assistant (streaming response)
    */
   async chat(messages, mode = 'nocode-ai') {
-    const systemPrompt = this.getSystemPrompt(mode);
+    // Get dynamic context for chat
+    const dynamicContext = await aiContextService.getContextForQuery({
+      mode,
+      query: messages[messages.length - 1]?.content || '',
+      limit: 5
+    });
+
+    const systemPrompt = await this.getSystemPrompt(mode, dynamicContext);
 
     const stream = await this.anthropic.messages.create({
       model: this.model,
@@ -505,7 +524,18 @@ Provide production-ready code with proper error handling and best practices.`;
    * Enhanced chat with context tracking for no-code builder
    */
   async chatWithContext({ message, mode, conversationHistory, pluginConfig, currentStep }) {
+    // Fetch relevant context from database
+    const dynamicContext = await aiContextService.getContextForQuery({
+      mode: mode || 'nocode',
+      category: pluginConfig.category,
+      query: message,
+      storeId: pluginConfig.storeId,
+      limit: 8
+    });
+
     const systemPrompt = `You are an AI assistant helping users build plugins through conversation.
+
+${dynamicContext}
 
 Your role:
 - Ask clarifying questions to understand what they want to build
