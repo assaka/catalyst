@@ -11,12 +11,12 @@ class AdminNavigationService {
     try {
       // 1. Get tenant's installed & active plugins
       const installedPlugins = await sequelize.query(`
-        SELECT marketplace_plugin_id
+        SELECT id
         FROM plugins
-        WHERE status = 'active' AND marketplace_plugin_id IS NOT NULL
+        WHERE status = 'installed' AND is_enabled = true
       `, { type: sequelize.QueryTypes.SELECT });
 
-      const pluginIds = installedPlugins.map(p => p.marketplace_plugin_id);
+      const pluginIds = installedPlugins.map(p => p.id);
 
       // 2. Get navigation items from master registry
       // Include: Core items + items from tenant's installed plugins
@@ -70,14 +70,22 @@ class AdminNavigationService {
     return masterItems.map(item => {
       const config = configMap.get(item.key);
 
+      // Normalize item - convert snake_case to camelCase and apply config overrides
+      const normalizedItem = {
+        ...item,
+        parentKey: item.parent_key,
+        order: item.order_position,
+        isEnabled: true
+      };
+
       if (!config) {
-        // No customization - use master item as-is
-        return item;
+        // No customization - use normalized item
+        return normalizedItem;
       }
 
       // Apply tenant overrides
       return {
-        ...item,
+        ...normalizedItem,
         label: config.custom_label || item.label,
         order: config.custom_order ?? item.order_position,
         icon: config.custom_icon || item.icon,

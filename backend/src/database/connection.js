@@ -75,31 +75,42 @@ const createSequelizeConnection = async () => {
   }
 };
 
-// Initialize sequelize connection
-sequelize = new Sequelize(process.env.SUPABASE_DB_URL || process.env.DATABASE_URL || 'sqlite::memory:', {
-  dialect: (process.env.SUPABASE_DB_URL || process.env.DATABASE_URL) ? 'postgres' : 'sqlite',
-  logging: false,
-  dialectOptions: {
-    ssl: process.env.NODE_ENV === 'production' ? {
-      require: true,
-      rejectUnauthorized: false
-    } : false
-  },
-  define: {
-    timestamps: true,
-    underscored: true,
-    freezeTableName: true
-  }
-});
+// Initialize sequelize connection synchronously with database URL
+const databaseUrl = process.env.SUPABASE_DB_URL || process.env.DATABASE_URL;
 
-// Enhance connection in background without replacing the instance
-createSequelizeConnection().then(enhancedConnection => {
-  if (enhancedConnection !== sequelize) {
-    // Test the enhanced connection works
-    enhancedConnection.authenticate().then(() => {
-      console.log('✅ Database connection enhanced and tested successfully');
-    }).catch(console.error);
-  }
-}).catch(console.error);
+if (!databaseUrl) {
+  console.warn('⚠️  No database URL provided. Using SQLite for development.');
+  sequelize = new Sequelize({
+    dialect: 'sqlite',
+    storage: './database.sqlite',
+    logging: process.env.NODE_ENV === 'development' ? console.log : false,
+    define: {
+      timestamps: true,
+      underscored: true,
+      freezeTableName: true
+    }
+  });
+} else {
+  sequelize = new Sequelize(databaseUrl, {
+    dialect: 'postgres',
+    logging: false,
+    dialectOptions: {
+      ssl: process.env.NODE_ENV === 'production' ? {
+        require: true,
+        rejectUnauthorized: false
+      } : false
+    },
+    define: {
+      timestamps: true,
+      underscored: true,
+      freezeTableName: true
+    }
+  });
+
+  // Test the connection
+  sequelize.authenticate()
+    .then(() => console.log('✅ Database connection established successfully'))
+    .catch(err => console.error('❌ Unable to connect to database:', err.message));
+}
 
 module.exports = { sequelize, supabase };
