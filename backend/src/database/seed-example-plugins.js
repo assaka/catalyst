@@ -677,19 +677,21 @@ async function seedExamplePlugins() {
 
       const [results] = await sequelize.query(`
         INSERT INTO plugins (
-          id, name, slug, version, description, category, status, is_enabled,
-          plugin_structure, installed_at, activated_at, updated_at
+          id, name, slug, version, description, author, category,
+          status, is_installed, is_enabled, manifest,
+          created_at, installed_at, enabled_at, updated_at
         )
         VALUES (
-          gen_random_uuid(), :name, :slug, :version, :description, :category, :status, true,
-          :plugin_structure, NOW(), NOW(), NOW()
+          gen_random_uuid(), :name, :slug, :version, :description, :author, :category,
+          'enabled', true, true, :manifest,
+          NOW(), NOW(), NOW(), NOW()
         )
         ON CONFLICT (slug)
         DO UPDATE SET
           name = EXCLUDED.name,
           description = EXCLUDED.description,
           version = EXCLUDED.version,
-          plugin_structure = EXCLUDED.plugin_structure,
+          manifest = EXCLUDED.manifest,
           updated_at = NOW()
         RETURNING *
       `, {
@@ -698,12 +700,9 @@ async function seedExamplePlugins() {
           slug: plugin.slug,
           version: plugin.version,
           description: plugin.description,
+          author: plugin.author,
           category: plugin.category,
-          status: plugin.status,
-          plugin_structure: JSON.stringify({
-            ...plugin.plugin_structure,
-            manifest: manifest
-          })
+          manifest: JSON.stringify(manifest)
         }
       });
 
