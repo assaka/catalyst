@@ -271,19 +271,41 @@ For plugin generation: Return ONLY valid JSON in this EXACT format:
   "slug": "plugin-name",
   "description": "What it does",
   "category": "commerce|marketing|analytics|integration",
+  "version": "1.0.0",
+  "author": "Plugin Builder",
   "features": ["List of features in simple terms"],
+  "plugin_structure": {
+    "main_file": "// Complete plugin code as string",
+    "manifest": {
+      "name": "Plugin Name",
+      "slug": "plugin-name",
+      "version": "1.0.0",
+      "description": "What it does",
+      "category": "commerce|marketing|analytics|integration",
+      "adminNavigation": {
+        "enabled": true,
+        "label": "My Plugin",
+        "icon": "Package",
+        "route": "/admin/my-plugin",
+        "order": 100,
+        "parentKey": null
+      }
+    }
+  },
   "generatedFiles": [
     {
       "name": "index.js",
-      "code": "// Complete plugin code following the structure above\\nclass MyPlugin {...}\\nmodule.exports = MyPlugin;"
-    },
-    {
-      "name": "README.md",
-      "code": "# Plugin documentation"
+      "code": "// Complete plugin code"
     }
   ],
   "explanation": "Non-technical explanation: This plugin helps you [benefit]. It works by [simple description]. You can configure [settings]."
 }
+
+ADMIN NAVIGATION:
+- Include adminNavigation in manifest if the plugin needs an admin page
+- Use appropriate Lucide icons (Package, ShoppingCart, Users, Settings, etc.)
+- Set order: 1-50 for core features, 51-100 for plugins, 100+ for utilities
+- Leave parentKey null for top-level items, or use existing keys like "products", "orders"
 
 IMPORTANT CODE REQUIREMENTS:
 - Use the Simple Plugin structure for basic plugins (no database)
@@ -292,7 +314,8 @@ IMPORTANT CODE REQUIREMENTS:
 - Include proper error handling
 - Use template literals for HTML generation
 - Escape user input to prevent XSS
-- Follow the exact hook method signatures shown above`,
+- Follow the exact hook method signatures shown above
+- Store the complete plugin code in plugin_structure.main_file as a STRING`,
 
       'guided': `${basePrompt}
 

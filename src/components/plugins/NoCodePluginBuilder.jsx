@@ -266,6 +266,119 @@ const NoCodePluginBuilder = ({ onSave, onCancel, onSwitchMode, initialContext })
                   </div>
                 </CardContent>
               </Card>
+
+              <Card>
+                <CardHeader>
+                  <CardTitle>Admin Sidebar Configuration</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="flex items-center space-x-2">
+                    <input
+                      type="checkbox"
+                      id="addToSidebar"
+                      checked={pluginConfig.adminNavigation?.enabled || false}
+                      onChange={(e) => setPluginConfig({
+                        ...pluginConfig,
+                        adminNavigation: {
+                          ...pluginConfig.adminNavigation,
+                          enabled: e.target.checked
+                        }
+                      })}
+                      className="rounded border-gray-300"
+                    />
+                    <Label htmlFor="addToSidebar">Add to Admin Sidebar</Label>
+                  </div>
+
+                  {pluginConfig.adminNavigation?.enabled && (
+                    <>
+                      <div>
+                        <Label>Menu Label</Label>
+                        <Input
+                          value={pluginConfig.adminNavigation?.label || ''}
+                          onChange={(e) => setPluginConfig({
+                            ...pluginConfig,
+                            adminNavigation: {
+                              ...pluginConfig.adminNavigation,
+                              label: e.target.value
+                            }
+                          })}
+                          placeholder="My Plugin"
+                        />
+                      </div>
+
+                      <div>
+                        <Label>Icon (Lucide icon name)</Label>
+                        <Input
+                          value={pluginConfig.adminNavigation?.icon || ''}
+                          onChange={(e) => setPluginConfig({
+                            ...pluginConfig,
+                            adminNavigation: {
+                              ...pluginConfig.adminNavigation,
+                              icon: e.target.value
+                            }
+                          })}
+                          placeholder="Package"
+                        />
+                        <p className="text-xs text-gray-500 mt-1">
+                          Browse icons at <a href="https://lucide.dev" target="_blank" rel="noopener" className="text-blue-600">lucide.dev</a>
+                        </p>
+                      </div>
+
+                      <div>
+                        <Label>Route Path</Label>
+                        <Input
+                          value={pluginConfig.adminNavigation?.route || ''}
+                          onChange={(e) => setPluginConfig({
+                            ...pluginConfig,
+                            adminNavigation: {
+                              ...pluginConfig.adminNavigation,
+                              route: e.target.value
+                            }
+                          })}
+                          placeholder="/admin/my-plugin"
+                        />
+                      </div>
+
+                      <div>
+                        <Label>Position (Order)</Label>
+                        <Input
+                          type="number"
+                          value={pluginConfig.adminNavigation?.order || 100}
+                          onChange={(e) => setPluginConfig({
+                            ...pluginConfig,
+                            adminNavigation: {
+                              ...pluginConfig.adminNavigation,
+                              order: parseInt(e.target.value) || 100
+                            }
+                          })}
+                          placeholder="100"
+                        />
+                        <p className="text-xs text-gray-500 mt-1">
+                          Lower numbers appear first. Core items use 1-50.
+                        </p>
+                      </div>
+
+                      <div>
+                        <Label>Parent Menu (Optional)</Label>
+                        <Input
+                          value={pluginConfig.adminNavigation?.parentKey || ''}
+                          onChange={(e) => setPluginConfig({
+                            ...pluginConfig,
+                            adminNavigation: {
+                              ...pluginConfig.adminNavigation,
+                              parentKey: e.target.value
+                            }
+                          })}
+                          placeholder="Leave empty for top-level"
+                        />
+                        <p className="text-xs text-gray-500 mt-1">
+                          e.g., "products" to nest under Products menu
+                        </p>
+                      </div>
+                    </>
+                  )}
+                </CardContent>
+              </Card>
             </TabsContent>
 
             {/* Features */}
