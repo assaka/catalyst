@@ -128,20 +128,6 @@ class AdminNavigationService {
         tenantConfig
       );
 
-      // DEBUG: Log items before building tree
-      console.log('\n=== DEBUG: Items before building tree ===');
-      console.log(`Total items: ${merged.length}`);
-      const pluginItems = merged.filter(item => item.key.startsWith('plugin-'));
-      console.log(`Plugin items: ${pluginItems.length}`);
-      pluginItems.forEach(item => {
-        console.log(`  - ${item.label} (${item.key}): parentKey="${item.parentKey}", order=${item.order}`);
-      });
-      const productsItem = merged.find(item => item.key === 'products');
-      console.log(`\nProducts item exists: ${!!productsItem}`);
-      if (productsItem) {
-        console.log(`  - Products: key="${productsItem.key}", parentKey="${productsItem.parentKey}"`);
-      }
-
       // 7. Build hierarchical tree
       const tree = this.buildNavigationTree(merged);
 
@@ -214,39 +200,18 @@ class AdminNavigationService {
       });
     });
 
-    // DEBUG: Check if products key exists
-    console.log(`\n=== DEBUG buildNavigationTree ===`);
-    console.log(`Total items in map: ${itemMap.size}`);
-    console.log(`Products item in map: ${itemMap.has('products')}`);
-
     // Second pass: Build hierarchy
     items.forEach(item => {
       const node = itemMap.get(item.key);
 
       if (item.parentKey && itemMap.has(item.parentKey)) {
-        // DEBUG: Log when adding children to products
-        if (item.parentKey === 'products') {
-          console.log(`  Adding ${item.label} (${item.key}) as child of products`);
-        }
         // Add as child to parent
         itemMap.get(item.parentKey).children.push(node);
       } else {
         // Add as root item
-        if (item.key.startsWith('plugin-')) {
-          console.log(`  Adding ${item.label} (${item.key}) as ROOT (parentKey="${item.parentKey}", has parent: ${itemMap.has(item.parentKey || '')})`);
-        }
         tree.push(node);
       }
     });
-
-    // DEBUG: Check products children
-    if (itemMap.has('products')) {
-      const productsNode = itemMap.get('products');
-      console.log(`\nProducts node children count: ${productsNode.children.length}`);
-      productsNode.children.forEach(child => {
-        console.log(`  - ${child.label} (${child.key})`);
-      });
-    }
 
     // Sort children by order
     tree.forEach(item => this.sortChildren(item));
