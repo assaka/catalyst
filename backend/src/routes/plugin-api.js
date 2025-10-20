@@ -536,32 +536,7 @@ router.get('/registry/:pluginId', async (req, res) => {
       console.log(`  ⚠️ plugin_hooks table error:`, hookError.message);
     }
 
-    // Load events from plugin_events table (normalized structure) - OLD TABLE
-    let events = [];
-    try {
-      const eventsResult = await sequelize.query(`
-        SELECT event_name, listener_function, priority, is_enabled
-        FROM plugin_events
-        WHERE plugin_id = $1 AND is_enabled = true
-        ORDER BY priority ASC
-      `, {
-        bind: [pluginId],
-        type: sequelize.QueryTypes.SELECT
-      });
-
-      events = eventsResult.map(e => ({
-        event_name: e.event_name,
-        listener_code: e.listener_function,
-        priority: e.priority || 10,
-        enabled: e.is_enabled !== false
-      }));
-
-      console.log(`  ✅ Loaded ${events.length} events from plugin_events table`);
-    } catch (eventError) {
-      console.log(`  ⚠️ plugin_events table error:`, eventError.message);
-    }
-
-    // Load event listeners from new junction table (file-based event listeners)
+    // Load event listeners from junction table (file-based event listeners)
     let eventListeners = [];
     try {
       const listenersResult = await sequelize.query(`
@@ -635,8 +610,7 @@ router.get('/registry/:pluginId', async (req, res) => {
         ...plugin[0],
         generated_by_ai: manifest?.generated_by_ai || plugin[0].type === 'ai-generated',
         hooks: hooks,
-        events: events,
-        eventListeners: eventListeners, // NEW: File-based event listeners
+        eventListeners: eventListeners, // File-based event listeners via junction table
         controllers,
         models,
         components,
@@ -740,56 +714,14 @@ router.put('/registry/:id/files', async (req, res) => {
       manifest.generatedFiles = updatedFiles;
     }
 
-    // Special handling for event files - update plugin_events table (normalized structure)
+    // Event files are now handled via plugin_event_listeners junction table only
+    // No automatic filename-to-event conversion
     if (normalizedRequestPath.startsWith('events/')) {
-      const eventName = normalizedRequestPath.replace('events/', '').replace('.js', '').replace(/_/g, '.');
-
-      console.log(`🔄 Upserting event ${eventName} in plugin_events table...`);
-
-      try {
-        // Check if event exists
-        const existing = await sequelize.query(`
-          SELECT id FROM plugin_events
-          WHERE plugin_id = $1 AND event_name = $2
-        `, {
-          bind: [id, eventName],
-          type: sequelize.QueryTypes.SELECT
-        });
-
-        if (existing.length > 0) {
-          // Update existing event
-          await sequelize.query(`
-            UPDATE plugin_events
-            SET listener_function = $1, updated_at = NOW()
-            WHERE plugin_id = $2 AND event_name = $3
-          `, {
-            bind: [content, id, eventName],
-            type: sequelize.QueryTypes.UPDATE
-          });
-          console.log(`✅ Event ${eventName} updated in plugin_events table`);
-        } else {
-          // Insert new event
-          await sequelize.query(`
-            INSERT INTO plugin_events (plugin_id, event_name, listener_function, priority, is_enabled, created_at, updated_at)
-            VALUES ($1, $2, $3, 10, true, NOW(), NOW())
-          `, {
-            bind: [id, eventName, content],
-            type: sequelize.QueryTypes.INSERT
-          });
-          console.log(`✅ Event ${eventName} created in plugin_events table`);
-        }
-
-        return res.json({
-          success: true,
-          message: 'Event file saved successfully in plugin_events table'
-        });
-      } catch (eventError) {
-        console.error(`❌ Error upserting plugin_events table:`, eventError);
-        return res.status(500).json({
-          success: false,
-          error: `Failed to save event in plugin_events table: ${eventError.message}`
-        });
-      }
+      console.log(`⚠️ Event files must be created via plugin_event_listeners junction table`);
+      return res.status(400).json({
+        success: false,
+        error: 'Event files must be created with event mapping. Use POST /api/plugins/:id/event-listeners instead.'
+      });
     }
 
     // Special handling for hook files - update plugin_hooks table (normalized structure)

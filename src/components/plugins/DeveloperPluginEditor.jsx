@@ -49,6 +49,8 @@ const DeveloperPluginEditor = ({ plugin, onSave, onClose, onSwitchMode, initialC
   const [showNewFileDialog, setShowNewFileDialog] = useState(false);
   const [newFileName, setNewFileName] = useState('');
   const [newFileType, setNewFileType] = useState('controller');
+  const [selectedEventName, setSelectedEventName] = useState('');
+  const [eventSearchQuery, setEventSearchQuery] = useState('');
   const [showEventMappingDialog, setShowEventMappingDialog] = useState(false);
   const [editingEventName, setEditingEventName] = useState('');
 
@@ -130,28 +132,15 @@ const DeveloperPluginEditor = ({ plugin, onSave, onClose, onSwitchMode, initialC
             name: 'events',
             type: 'folder',
             path: '/events',
-            children: [
-              // Old event system (filename = event name)
-              ...(pluginData.events?.map(e => ({
-                name: `${e.event_name}.js`,
-                type: 'file',
-                path: `/events/${e.event_name}.js`,
-                content: e.listener_code,
-                eventName: e.event_name,
-                isOldSystem: true
-              })) || []),
-              // New junction table system (flexible filename with event mapping)
-              ...(pluginData.eventListeners?.map(l => ({
-                name: l.file_name,
-                type: 'file',
-                path: l.file_path,
-                content: l.listener_code,
-                eventName: l.event_name,
-                description: l.description,
-                priority: l.priority,
-                isOldSystem: false
-              })) || [])
-            ]
+            children: pluginData.eventListeners?.map(l => ({
+              name: l.file_name,
+              type: 'file',
+              path: l.file_path,
+              content: l.listener_code,
+              eventName: l.event_name,
+              description: l.description,
+              priority: l.priority
+            })) || []
           },
           {
             name: 'manifest.json',
@@ -272,6 +261,13 @@ const DeveloperPluginEditor = ({ plugin, onSave, onClose, onSwitchMode, initialC
       return;
     }
 
+    // Validate event selection for event files
+    if (newFileType === 'event' && !selectedEventName) {
+      addTerminalOutput('✗ Please select an event for this file to listen to', 'error');
+      setShowTerminal(true);
+      return;
+    }
+
     try {
       // Determine file path based on type
       let filePath = '';
@@ -310,26 +306,45 @@ const DeveloperPluginEditor = ({ plugin, onSave, onClose, onSwitchMode, initialC
       addTerminalOutput(`⏳ Creating ${filePath}...`, 'info');
       setShowTerminal(true);
 
-      // Create empty file
-      const defaultContent = `// ${newFileName}\n// Created: ${new Date().toISOString()}\n\n`;
+      // Create default content based on file type
+      let defaultContent = `// ${newFileName}\n// Created: ${new Date().toISOString()}\n\n`;
 
-      await apiClient.put(`plugins/registry/${plugin.id}/files`, {
-        path: filePath,
-        content: defaultContent
-      });
+      if (newFileType === 'event') {
+        defaultContent = `// Event listener for: ${selectedEventName}\n// Created: ${new Date().toISOString()}\n\nreturn function(eventData) {\n  // Your code here\n  console.log('${selectedEventName} fired:', eventData);\n};\n`;
+      }
 
-      addTerminalOutput(`✓ Created ${filePath} successfully`, 'success');
+      // For event files, create the event listener mapping in junction table
+      if (newFileType === 'event') {
+        await apiClient.post(`plugins/${plugin.id}/event-listeners`, {
+          file_name: newFileName.endsWith('.js') ? newFileName : `${newFileName}.js`,
+          file_path: filePath,
+          event_name: selectedEventName,
+          listener_function: defaultContent,
+          priority: 10,
+          description: `Listens to ${selectedEventName}`
+        });
+
+        addTerminalOutput(`✓ Created ${filePath} and mapped to ${selectedEventName}`, 'success');
+      } else {
+        // For non-event files, use the old file save endpoint
+        await apiClient.put(`plugins/registry/${plugin.id}/files`, {
+          path: filePath,
+          content: defaultContent
+        });
+
+        addTerminalOutput(`✓ Created ${filePath} successfully`, 'success');
+      }
 
       // Close dialog and reset
       setShowNewFileDialog(false);
       setNewFileName('');
       setNewFileType('controller');
+      setSelectedEventName('');
+      setEventSearchQuery('');
 
       // Reload file tree
       await loadPluginFiles();
 
-      // Auto-select the new file
-      // We'll need to find it in the tree after reload
     } catch (error) {
       console.error('Error creating file:', error);
       addTerminalOutput(`✗ Error creating file: ${error.response?.data?.error || error.message}`, 'error');
@@ -628,7 +643,7 @@ const DeveloperPluginEditor = ({ plugin, onSave, onClose, onSwitchMode, initialC
       {/* New File Dialog */}
       {showNewFileDialog && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg shadow-xl p-6 w-96">
+          <div className="bg-white rounded-lg shadow-xl p-6 w-96 max-h-[90vh] overflow-y-auto">
             <h3 className="text-lg font-semibold mb-4">Create New File</h3>
 
             <div className="space-y-4">
@@ -639,11 +654,11 @@ const DeveloperPluginEditor = ({ plugin, onSave, onClose, onSwitchMode, initialC
                 <Input
                   value={newFileName}
                   onChange={(e) => setNewFileName(e.target.value)}
-                  placeholder="e.g., UserController"
+                  placeholder={newFileType === 'event' ? 'e.g., analytics_tracker' : 'e.g., UserController'}
                   className="w-full"
                   autoFocus
                   onKeyDown={(e) => {
-                    if (e.key === 'Enter') {
+                    if (e.key === 'Enter' && newFileType !== 'event') {
                       handleCreateNewFile();
                     } else if (e.key === 'Escape') {
                       setShowNewFileDialog(false);
@@ -658,22 +673,116 @@ const DeveloperPluginEditor = ({ plugin, onSave, onClose, onSwitchMode, initialC
                 </label>
                 <select
                   value={newFileType}
-                  onChange={(e) => setNewFileType(e.target.value)}
+                  onChange={(e) => {
+                    setNewFileType(e.target.value);
+                    setSelectedEventName('');
+                    setEventSearchQuery('');
+                  }}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                 >
                   <option value="controller">Controller (.js)</option>
                   <option value="model">Model (.js)</option>
                   <option value="component">Component (.jsx)</option>
                   <option value="hook">Hook (.js)</option>
-                  <option value="event">Event (.js)</option>
+                  <option value="event">Event Listener (.js)</option>
                 </select>
               </div>
+
+              {/* Event Selection - Only for Event type */}
+              {newFileType === 'event' && (
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Event to Listen To *
+                  </label>
+                  <Input
+                    value={eventSearchQuery}
+                    onChange={(e) => setEventSearchQuery(e.target.value)}
+                    placeholder="Search events..."
+                    className="w-full mb-2"
+                  />
+
+                  <div className="border border-gray-300 rounded-md max-h-48 overflow-y-auto">
+                    {/* Common Cart Events */}
+                    {['cart.viewed', 'cart.itemsLoaded', 'cart.quantityUpdated', 'cart.itemRemoved', 'cart.checkoutStarted', 'cart.checkoutBlocked']
+                      .filter(event => event.toLowerCase().includes(eventSearchQuery.toLowerCase()))
+                      .map(event => (
+                        <div
+                          key={event}
+                          className={`px-3 py-2 cursor-pointer hover:bg-blue-50 ${selectedEventName === event ? 'bg-blue-100 font-medium' : ''}`}
+                          onClick={() => setSelectedEventName(event)}
+                        >
+                          <div className="text-sm font-medium text-gray-900">{event}</div>
+                          <div className="text-xs text-gray-500">
+                            {event === 'cart.viewed' && 'Cart page loads'}
+                            {event === 'cart.itemsLoaded' && 'Cart items loaded from API'}
+                            {event === 'cart.quantityUpdated' && 'Item quantity changed'}
+                            {event === 'cart.itemRemoved' && 'Item removed from cart'}
+                            {event === 'cart.checkoutStarted' && 'User clicks checkout'}
+                            {event === 'cart.checkoutBlocked' && 'Checkout blocked (empty cart)'}
+                          </div>
+                        </div>
+                      ))}
+
+                    {/* Product Events */}
+                    {['product.view', 'product.list']
+                      .filter(event => event.toLowerCase().includes(eventSearchQuery.toLowerCase()))
+                      .map(event => (
+                        <div
+                          key={event}
+                          className={`px-3 py-2 cursor-pointer hover:bg-blue-50 ${selectedEventName === event ? 'bg-blue-100 font-medium' : ''}`}
+                          onClick={() => setSelectedEventName(event)}
+                        >
+                          <div className="text-sm font-medium text-gray-900">{event}</div>
+                          <div className="text-xs text-gray-500">
+                            {event === 'product.view' && 'Product page viewed'}
+                            {event === 'product.list' && 'Product list rendered'}
+                          </div>
+                        </div>
+                      ))}
+
+                    {/* Order Events */}
+                    {['order.after_create', 'order.status_change']
+                      .filter(event => event.toLowerCase().includes(eventSearchQuery.toLowerCase()))
+                      .map(event => (
+                        <div
+                          key={event}
+                          className={`px-3 py-2 cursor-pointer hover:bg-blue-50 ${selectedEventName === event ? 'bg-blue-100 font-medium' : ''}`}
+                          onClick={() => setSelectedEventName(event)}
+                        >
+                          <div className="text-sm font-medium text-gray-900">{event}</div>
+                          <div className="text-xs text-gray-500">
+                            {event === 'order.after_create' && 'Order created'}
+                            {event === 'order.status_change' && 'Order status changed'}
+                          </div>
+                        </div>
+                      ))}
+
+                    {/* Custom Event Option */}
+                    {eventSearchQuery && !['cart.viewed', 'cart.itemsLoaded', 'cart.quantityUpdated', 'cart.itemRemoved', 'cart.checkoutStarted', 'cart.checkoutBlocked', 'product.view', 'product.list', 'order.after_create', 'order.status_change'].includes(eventSearchQuery) && (
+                      <div
+                        className={`px-3 py-2 cursor-pointer hover:bg-blue-50 border-t ${selectedEventName === eventSearchQuery ? 'bg-blue-100 font-medium' : ''}`}
+                        onClick={() => setSelectedEventName(eventSearchQuery)}
+                      >
+                        <div className="text-sm font-medium text-gray-900">✨ Use custom: {eventSearchQuery}</div>
+                        <div className="text-xs text-gray-500">Create a custom event listener</div>
+                      </div>
+                    )}
+                  </div>
+
+                  {selectedEventName && (
+                    <div className="mt-2 p-2 bg-green-50 border border-green-200 rounded text-sm text-green-800">
+                      ✓ Will listen to: <strong>{selectedEventName}</strong>
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
 
             <div className="flex gap-2 mt-6">
               <Button
                 onClick={handleCreateNewFile}
                 className="flex-1"
+                disabled={newFileType === 'event' && !selectedEventName}
               >
                 Create
               </Button>
@@ -683,6 +792,8 @@ const DeveloperPluginEditor = ({ plugin, onSave, onClose, onSwitchMode, initialC
                   setShowNewFileDialog(false);
                   setNewFileName('');
                   setNewFileType('controller');
+                  setSelectedEventName('');
+                  setEventSearchQuery('');
                 }}
                 className="flex-1"
               >
