@@ -33,6 +33,16 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import apiClient from '@/api/client';
 import EnhancedNoCodeBuilder from '@/components/plugins/EnhancedNoCodeBuilder';
 import DeveloperPluginEditor from '@/components/plugins/DeveloperPluginEditor';
@@ -49,6 +59,17 @@ const UnifiedPluginManagerV2 = () => {
     activePlugins: 0,
     hooks: 0,
     events: 0
+  });
+
+  // Settings modal state
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const [settingsPlugin, setSettingsPlugin] = useState(null);
+  const [adminPages, setAdminPages] = useState([]);
+  const [settingsForm, setSettingsForm] = useState({
+    name: '',
+    description: '',
+    version: '',
+    author: ''
   });
 
   useEffect(() => {
@@ -155,6 +176,39 @@ const UnifiedPluginManagerV2 = () => {
   const handleSwitchMode = (newMode, context) => {
     setPluginContext(context); // Preserve context when switching
     setBuilderMode(newMode);
+  };
+
+  const handleOpenSettings = async (plugin) => {
+    setSettingsPlugin(plugin);
+    setSettingsForm({
+      name: plugin.name || '',
+      description: plugin.description || '',
+      version: plugin.version || '1.0.0',
+      author: plugin.author || ''
+    });
+
+    // Load admin pages for this plugin
+    try {
+      const response = await apiClient.get(`plugins/admin-pages/${plugin.id}`);
+      setAdminPages(response.data || []);
+    } catch (error) {
+      console.error('Error loading admin pages:', error);
+      setAdminPages([]);
+    }
+
+    setIsSettingsOpen(true);
+  };
+
+  const handleSaveSettings = async () => {
+    try {
+      await apiClient.patch(`plugins/registry/${settingsPlugin.id}`, settingsForm);
+      alert('Settings saved successfully!');
+      setIsSettingsOpen(false);
+      await loadPlugins();
+    } catch (error) {
+      console.error('Error saving settings:', error);
+      alert(`Error: ${error.message}`);
+    }
   };
 
   const getPluginIcon = (category) => {
@@ -379,6 +433,15 @@ const UnifiedPluginManagerV2 = () => {
                           <Button
                             size="sm"
                             variant="outline"
+                            onClick={() => handleOpenSettings(plugin)}
+                            className="text-gray-600"
+                          >
+                            <Settings className="w-3 h-3 mr-1" />
+                            Settings
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="outline"
                             onClick={() => handleTogglePlugin(plugin)}
                             className={plugin.isActive ? 'text-orange-600' : 'text-green-600'}
                           >
@@ -482,9 +545,13 @@ const UnifiedPluginManagerV2 = () => {
                             </DropdownMenuItem>
                           </DropdownMenuContent>
                         </DropdownMenu>
-                        <Button size="sm" variant="outline">
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => handleOpenSettings(plugin)}
+                        >
                           <Settings className="w-3 h-3 mr-1" />
-                          Configure
+                          Settings
                         </Button>
                       </div>
                     </CardContent>
@@ -494,6 +561,121 @@ const UnifiedPluginManagerV2 = () => {
             </div>
           </TabsContent>
         </Tabs>
+
+        {/* Settings Modal */}
+        <Dialog open={isSettingsOpen} onOpenChange={setIsSettingsOpen}>
+          <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle>Plugin Settings</DialogTitle>
+              <DialogDescription>
+                Configure plugin manifest and admin settings
+              </DialogDescription>
+            </DialogHeader>
+
+            {settingsPlugin && (
+              <Tabs defaultValue="manifest" className="mt-4">
+                <TabsList className="grid w-full grid-cols-2">
+                  <TabsTrigger value="manifest">Manifest</TabsTrigger>
+                  <TabsTrigger value="admin">
+                    Admin Pages {adminPages.length > 0 && `(${adminPages.length})`}
+                  </TabsTrigger>
+                </TabsList>
+
+                <TabsContent value="manifest" className="space-y-4 mt-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="plugin-name">Plugin Name</Label>
+                    <Input
+                      id="plugin-name"
+                      value={settingsForm.name}
+                      onChange={(e) => setSettingsForm({ ...settingsForm, name: e.target.value })}
+                      placeholder="My Awesome Plugin"
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="plugin-description">Description</Label>
+                    <Textarea
+                      id="plugin-description"
+                      value={settingsForm.description}
+                      onChange={(e) => setSettingsForm({ ...settingsForm, description: e.target.value })}
+                      placeholder="What does your plugin do?"
+                      rows={3}
+                    />
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="plugin-version">Version</Label>
+                      <Input
+                        id="plugin-version"
+                        value={settingsForm.version}
+                        onChange={(e) => setSettingsForm({ ...settingsForm, version: e.target.value })}
+                        placeholder="1.0.0"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="plugin-author">Author</Label>
+                      <Input
+                        id="plugin-author"
+                        value={settingsForm.author}
+                        onChange={(e) => setSettingsForm({ ...settingsForm, author: e.target.value })}
+                        placeholder="Your Name"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="flex justify-end gap-2 mt-6">
+                    <Button variant="outline" onClick={() => setIsSettingsOpen(false)}>
+                      Cancel
+                    </Button>
+                    <Button onClick={handleSaveSettings}>
+                      Save Changes
+                    </Button>
+                  </div>
+                </TabsContent>
+
+                <TabsContent value="admin" className="space-y-4 mt-4">
+                  {adminPages.length > 0 ? (
+                    <div className="space-y-3">
+                      <p className="text-sm text-gray-600 mb-4">
+                        This plugin has {adminPages.length} admin page{adminPages.length !== 1 ? 's' : ''} registered in the admin navigation.
+                      </p>
+                      {adminPages.map((page) => (
+                        <Card key={page.id} className="p-4">
+                          <div className="flex items-start justify-between">
+                            <div>
+                              <h4 className="font-medium">{page.page_name}</h4>
+                              <p className="text-sm text-gray-600">{page.route}</p>
+                              <div className="flex items-center gap-2 mt-2">
+                                <Badge variant="outline">{page.icon}</Badge>
+                                <Badge variant="outline">{page.category}</Badge>
+                                <Badge variant={page.is_enabled ? 'default' : 'secondary'}>
+                                  {page.is_enabled ? 'Enabled' : 'Disabled'}
+                                </Badge>
+                              </div>
+                            </div>
+                            <div className="text-sm text-gray-500">
+                              Order: {page.order_position}
+                            </div>
+                          </div>
+                          {page.description && (
+                            <p className="text-sm text-gray-600 mt-2">{page.description}</p>
+                          )}
+                        </Card>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="text-center py-8 text-gray-500">
+                      <Package className="w-12 h-12 mx-auto mb-3 opacity-30" />
+                      <p>No admin pages found for this plugin</p>
+                      <p className="text-sm mt-1">Admin pages can be added through the developer mode</p>
+                    </div>
+                  )}
+                </TabsContent>
+              </Tabs>
+            )}
+          </DialogContent>
+        </Dialog>
       </div>
     </div>
   );

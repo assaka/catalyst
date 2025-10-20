@@ -288,14 +288,14 @@ router.get('/registry/:pluginId/logs', authMiddleware, async (req, res) => {
   try {
     const { pluginId } = req.params;
     const { limit = 100, offset = 0 } = req.query;
-    
+
     const result = await req.db.query(`
-      SELECT * FROM plugin_execution_logs 
-      WHERE plugin_id = $1 
-      ORDER BY created_at DESC 
+      SELECT * FROM plugin_execution_logs
+      WHERE plugin_id = $1
+      ORDER BY created_at DESC
       LIMIT $2 OFFSET $3
     `, [pluginId, limit, offset]);
-    
+
     res.json({
       success: true,
       data: result.rows,
@@ -303,6 +303,40 @@ router.get('/registry/:pluginId/logs', authMiddleware, async (req, res) => {
     });
   } catch (error) {
     console.error('Error getting plugin logs:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
+// Get plugin admin pages
+router.get('/admin-pages/:pluginId', authMiddleware, async (req, res) => {
+  try {
+    const { pluginId } = req.params;
+
+    const result = await req.db.query(`
+      SELECT
+        id,
+        plugin_id,
+        page_key,
+        page_name,
+        route,
+        description,
+        icon,
+        category,
+        order_position,
+        is_enabled,
+        created_at,
+        updated_at
+      FROM plugin_admin_pages
+      WHERE plugin_id = $1
+      ORDER BY order_position ASC
+    `, [pluginId]);
+
+    res.json(result.rows);
+  } catch (error) {
+    console.error('Error getting plugin admin pages:', error);
     res.status(500).json({
       success: false,
       error: error.message
