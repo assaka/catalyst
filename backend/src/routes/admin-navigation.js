@@ -9,52 +9,26 @@ const AdminNavigationService = require('../services/AdminNavigationService');
  */
 router.get('/navigation', async (req, res) => {
   try {
-    // Simple direct query approach - fallback if service fails
-    if (!req.db) {
-      // Try using AdminNavigationService if db not available
-      const tenantId = req.user?.tenantId || 'default-tenant';
-      const navigation = await AdminNavigationService.getNavigationForTenant(tenantId);
-      return res.json({
-        success: true,
-        navigation
-      });
-    }
+    console.log('[NAV-ROUTE] ========================================');
+    console.log('[NAV-ROUTE] GET /api/admin/navigation request received');
+    console.log('[NAV-ROUTE] User:', req.user);
 
-    // Direct database query (simpler, more reliable)
-    const result = await req.db.query(`
-      SELECT
-        key, label, route, icon, parent_key, order_position,
-        is_core, is_visible, plugin_id, category, description
-      FROM admin_navigation_registry
-      WHERE is_visible = true
-      ORDER BY order_position ASC
-    `);
+    // ALWAYS use AdminNavigationService to include plugin navigation
+    const tenantId = req.user?.tenantId || 'default-tenant';
+    console.log('[NAV-ROUTE] Resolved tenant ID:', tenantId);
 
-    // Build simple tree structure
-    const items = result.rows;
-    const itemMap = {};
-    const tree = [];
+    const navigation = await AdminNavigationService.getNavigationForTenant(tenantId);
 
-    // First pass: create map
-    items.forEach(item => {
-      itemMap[item.key] = { ...item, children: [] };
-    });
-
-    // Second pass: build tree
-    items.forEach(item => {
-      if (item.parent_key && itemMap[item.parent_key]) {
-        itemMap[item.parent_key].children.push(itemMap[item.key]);
-      } else {
-        tree.push(itemMap[item.key]);
-      }
-    });
+    console.log('[NAV-ROUTE] Service returned', navigation.length, 'top-level items');
+    console.log('[NAV-ROUTE] Sending response to client');
+    console.log('[NAV-ROUTE] ========================================');
 
     res.json({
       success: true,
-      navigation: tree
+      navigation
     });
   } catch (error) {
-    console.error('Failed to get navigation:', error);
+    console.error('[NAV-ROUTE] ERROR:', error);
     res.status(500).json({
       success: false,
       error: error.message

@@ -17,18 +17,36 @@ export default function AdminSidebar() {
 
   const loadNavigation = async () => {
     try {
+      console.log('[ADMIN-SIDEBAR] Loading navigation...');
       setLoading(true);
       setError(null);
 
       const response = await apiClient.get('/admin/navigation');
+      console.log('[ADMIN-SIDEBAR] API response received:', response);
 
       if (response.success && response.navigation) {
+        console.log('[ADMIN-SIDEBAR] Navigation data:', response.navigation);
+        console.log('[ADMIN-SIDEBAR] Top-level items:', response.navigation.length);
+
+        // Log all items recursively
+        const logNavTree = (items, depth = 0) => {
+          items.forEach(item => {
+            const indent = '  '.repeat(depth);
+            console.log(`[ADMIN-SIDEBAR] ${indent}- ${item.label} (${item.key})`);
+            if (item.children && item.children.length > 0) {
+              logNavTree(item.children, depth + 1);
+            }
+          });
+        };
+        logNavTree(response.navigation);
+
         setNavigation(response.navigation);
+        console.log('[ADMIN-SIDEBAR] Navigation state updated successfully');
       } else {
         throw new Error(response.error || 'Failed to load navigation');
       }
     } catch (err) {
-      console.error('Failed to load navigation:', err);
+      console.error('[ADMIN-SIDEBAR] ERROR loading navigation:', err);
       setError(err.message);
 
       // Fallback to minimal navigation
@@ -36,8 +54,10 @@ export default function AdminSidebar() {
         { key: 'dashboard', label: 'Dashboard', icon: 'Home', route: '/admin', children: [] },
         { key: 'products', label: 'Products', icon: 'Package', route: '/admin/products', children: [] }
       ]);
+      console.log('[ADMIN-SIDEBAR] Using fallback navigation');
     } finally {
       setLoading(false);
+      console.log('[ADMIN-SIDEBAR] Loading complete');
     }
   };
 
