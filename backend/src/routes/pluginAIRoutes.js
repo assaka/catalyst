@@ -159,13 +159,25 @@ router.post('/chat', async (req, res) => {
 router.get('/status', async (req, res) => {
   try {
     const hasApiKey = !!process.env.ANTHROPIC_API_KEY;
+    const apiKey = process.env.ANTHROPIC_API_KEY || '';
+
+    // Debug: Show key format without exposing full key
+    const keyPreview = apiKey ? `${apiKey.substring(0, 15)}...${apiKey.substring(apiKey.length - 4)}` : 'not set';
+    const keyLength = apiKey.length;
+    const hasWhitespace = apiKey !== apiKey.trim();
 
     res.json({
       available: hasApiKey,
       model: 'claude-3-5-sonnet-20241022',
       message: hasApiKey
         ? 'AI service is ready'
-        : 'ANTHROPIC_API_KEY not configured'
+        : 'ANTHROPIC_API_KEY not configured',
+      debug: {
+        keyPreview,
+        keyLength,
+        hasWhitespace,
+        startsWithCorrectPrefix: apiKey.startsWith('sk-ant-')
+      }
     });
   } catch (error) {
     res.status(500).json({
