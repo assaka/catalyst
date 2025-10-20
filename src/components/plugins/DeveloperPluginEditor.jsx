@@ -46,6 +46,9 @@ const DeveloperPluginEditor = ({ plugin, onSave, onClose, onSwitchMode, initialC
   const [terminalOutput, setTerminalOutput] = useState([]);
   const [isSaving, setIsSaving] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(false);
+  const [showNewFileDialog, setShowNewFileDialog] = useState(false);
+  const [newFileName, setNewFileName] = useState('');
+  const [newFileType, setNewFileType] = useState('controller');
 
   useEffect(() => {
     loadPluginFiles();
@@ -237,14 +240,81 @@ const DeveloperPluginEditor = ({ plugin, onSave, onClose, onSwitchMode, initialC
   };
 
   const runTests = async () => {
-    addTerminalOutput('Running tests...', 'info');
+    addTerminalOutput('⚠️ Test endpoint not implemented yet', 'error');
     setShowTerminal(true);
 
+    // TODO: Backend needs to implement POST /api/plugins/registry/:id/test endpoint
+    // This should run plugin validation, linting, or other tests
+  };
+
+  const handleCreateNewFile = async () => {
+    if (!newFileName.trim()) {
+      addTerminalOutput('✗ File name cannot be empty', 'error');
+      setShowTerminal(true);
+      return;
+    }
+
     try {
-      const response = await apiClient.post(`plugins/registry/${plugin.id}/test`);
-      addTerminalOutput(response.output, 'success');
+      // Determine file path based on type
+      let filePath = '';
+      let fileExtension = '.js';
+
+      switch (newFileType) {
+        case 'controller':
+          filePath = `/src/controllers/${newFileName}`;
+          fileExtension = '.js';
+          break;
+        case 'model':
+          filePath = `/src/models/${newFileName}`;
+          fileExtension = '.js';
+          break;
+        case 'component':
+          filePath = `/src/components/${newFileName}`;
+          fileExtension = '.jsx';
+          break;
+        case 'hook':
+          filePath = `/hooks/${newFileName}`;
+          fileExtension = '.js';
+          break;
+        case 'event':
+          filePath = `/events/${newFileName}`;
+          fileExtension = '.js';
+          break;
+        default:
+          filePath = `/${newFileName}`;
+      }
+
+      // Add extension if not present
+      if (!filePath.endsWith(fileExtension) && !filePath.includes('.')) {
+        filePath += fileExtension;
+      }
+
+      addTerminalOutput(`⏳ Creating ${filePath}...`, 'info');
+      setShowTerminal(true);
+
+      // Create empty file
+      const defaultContent = `// ${newFileName}\n// Created: ${new Date().toISOString()}\n\n`;
+
+      await apiClient.put(`plugins/registry/${plugin.id}/files`, {
+        path: filePath,
+        content: defaultContent
+      });
+
+      addTerminalOutput(`✓ Created ${filePath} successfully`, 'success');
+
+      // Close dialog and reset
+      setShowNewFileDialog(false);
+      setNewFileName('');
+      setNewFileType('controller');
+
+      // Reload file tree
+      await loadPluginFiles();
+
+      // Auto-select the new file
+      // We'll need to find it in the tree after reload
     } catch (error) {
-      addTerminalOutput(`Test failed: ${error.message}`, 'error');
+      console.error('Error creating file:', error);
+      addTerminalOutput(`✗ Error creating file: ${error.response?.data?.error || error.message}`, 'error');
     }
   };
 
@@ -346,7 +416,12 @@ const DeveloperPluginEditor = ({ plugin, onSave, onClose, onSwitchMode, initialC
           {renderFileTree(fileTree)}
         </div>
         <div className="p-2 border-t bg-gray-50">
-          <Button size="sm" className="w-full" variant="outline">
+          <Button
+            size="sm"
+            className="w-full"
+            variant="outline"
+            onClick={() => setShowNewFileDialog(true)}
+          >
             <Plus className="w-4 h-4 mr-1" />
             New File
           </Button>
@@ -460,6 +535,74 @@ const DeveloperPluginEditor = ({ plugin, onSave, onClose, onSwitchMode, initialC
         />
       </div>
       </div>
+
+      {/* New File Dialog */}
+      {showNewFileDialog && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg shadow-xl p-6 w-96">
+            <h3 className="text-lg font-semibold mb-4">Create New File</h3>
+
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  File Name
+                </label>
+                <Input
+                  value={newFileName}
+                  onChange={(e) => setNewFileName(e.target.value)}
+                  placeholder="e.g., UserController"
+                  className="w-full"
+                  autoFocus
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      handleCreateNewFile();
+                    } else if (e.key === 'Escape') {
+                      setShowNewFileDialog(false);
+                    }
+                  }}
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  File Type
+                </label>
+                <select
+                  value={newFileType}
+                  onChange={(e) => setNewFileType(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                  <option value="controller">Controller (.js)</option>
+                  <option value="model">Model (.js)</option>
+                  <option value="component">Component (.jsx)</option>
+                  <option value="hook">Hook (.js)</option>
+                  <option value="event">Event (.js)</option>
+                </select>
+              </div>
+            </div>
+
+            <div className="flex gap-2 mt-6">
+              <Button
+                onClick={handleCreateNewFile}
+                className="flex-1"
+              >
+                Create
+              </Button>
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setShowNewFileDialog(false);
+                  setNewFileName('');
+                  setNewFileType('controller');
+                }}
+                className="flex-1"
+              >
+                Cancel
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
