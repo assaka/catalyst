@@ -249,8 +249,9 @@ export default function Layout({ children, currentPageName }) {
       );
 
       if (response.success && response.navigation && Array.isArray(response.navigation)) {
+        console.log('📦 Dynamic navigation loaded from API:', response.navigation.length, 'items');
 
-        // Build hierarchical structure using parent_key
+        // Build hierarchical structure using parentKey (updated to match backend response)
         const allItems = response.navigation.map(item => ({
           key: item.key,
           name: item.label,
@@ -258,15 +259,19 @@ export default function Layout({ children, currentPageName }) {
           icon: getIconComponent(item.icon),
           badge: item.badge,
           isPremium: false,
-          isPlugin: !item.is_core,
-          parent_key: item.parent_key,
-          order_position: item.order_position || 0
+          isPlugin: false, // Backend now only returns enabled plugins
+          parent_key: item.parentKey, // Updated from item.parent_key
+          order_position: item.order || 0 // Updated from item.order_position
         }));
+
+        console.log('🔧 Processed items:', allItems.length);
 
         // Find all main categories (parent_key is null and no route - these are headers)
         const mainCategories = allItems
           .filter(item => !item.parent_key && !item.path)
           .sort((a, b) => a.order_position - b.order_position);
+
+        console.log('📂 Main categories found:', mainCategories.length, mainCategories.map(c => c.name));
 
         // Build navigation groups with children
         const navigationGroups = mainCategories.map(category => {
@@ -280,6 +285,11 @@ export default function Layout({ children, currentPageName }) {
             items: children
           };
         }).filter(group => group.items.length > 0);
+
+        console.log('✅ Navigation groups built:', navigationGroups.length, 'groups');
+        navigationGroups.forEach(group => {
+          console.log(`  - ${group.name}: ${group.items.length} items`);
+        });
 
         setDynamicNavItems(navigationGroups);
       }
