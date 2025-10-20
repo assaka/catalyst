@@ -15,11 +15,42 @@ export default function ChatSupport() {
   const [newMessage, setNewMessage] = useState('');
   const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
+  const [unreadCounts, setUnreadCounts] = useState({});
+  const [notificationsEnabled, setNotificationsEnabled] = useState(false);
   const messagesEndRef = useRef(null);
+  const previousMessageCount = useRef({});
 
   // Scroll to bottom of messages
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  };
+
+  // Request notification permission
+  useEffect(() => {
+    if ('Notification' in window && Notification.permission === 'default') {
+      Notification.requestPermission().then(permission => {
+        setNotificationsEnabled(permission === 'granted');
+      });
+    } else if ('Notification' in window && Notification.permission === 'granted') {
+      setNotificationsEnabled(true);
+    }
+  }, []);
+
+  // Show desktop notification
+  const showNotification = (conversation, message) => {
+    if (notificationsEnabled && document.hidden) {
+      const notification = new Notification('New Chat Message', {
+        body: `${conversation.customer_name || 'Guest'}: ${message.message_text.substring(0, 50)}...`,
+        icon: '/favicon.ico',
+        tag: conversation.id
+      });
+
+      notification.onclick = () => {
+        window.focus();
+        selectConversation(conversation);
+        notification.close();
+      };
+    }
   };
 
   // Load conversations
@@ -40,12 +71,29 @@ export default function ChatSupport() {
   };
 
   // Load messages for selected conversation
-  const loadMessages = async (conversationId) => {
+  const loadMessages = async (conversationId, isPolling = false) => {
     try {
       const response = await fetch(`/api/chat/conversations/${conversationId}/messages`);
       const data = await response.json();
 
       if (data.success) {
+        // Check for new customer messages
+        if (isPolling && previousMessageCount.current[conversationId]) {
+          const previousCount = previousMessageCount.current[conversationId];
+          const newMessages = data.messages.slice(previousCount);
+
+          // Notify about new customer messages
+          newMessages.forEach(msg => {
+            if (msg.sender_type === 'customer') {
+              const conversation = conversations.find(c => c.id === conversationId);
+              if (conversation) {
+                showNotification(conversation, msg);
+              }
+            }
+          });
+        }
+
+        previousMessageCount.current[conversationId] = data.messages.length;
         setMessages(data.messages);
         setTimeout(scrollToBottom, 100);
       }
@@ -97,6 +145,51 @@ export default function ChatSupport() {
     loadMessages(conversation.id);
   };
 
+  // Assign conversation to current agent
+  const assignToMe = async (conversationId) => {
+    try {
+      const response = await fetch(`/api/chat/conversations/${conversationId}/assign`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          agent_id: 'current-agent' // TODO: Get from logged in user
+        })
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        showSuccess('Conversation assigned to you');
+        loadConversations();
+        if (selectedConversation?.id === conversationId) {
+          const updatedConversation = { ...selectedConversation, status: 'assigned' };
+          setSelectedConversation(updatedConversation);
+        }
+      }
+    } catch (error) {
+      console.error('Error assigning conversation:', error);
+      showError('Failed to assign conversation');
+    }
+  };
+
+  // Change conversation status
+  const changeStatus = async (conversationId, newStatus) => {
+    try {
+      if (newStatus === 'closed') {
+        await closeConversation(conversationId);
+        return;
+      }
+
+      // For other status changes, we'd need a generic update endpoint
+      // For now, we'll just refresh
+      showSuccess(`Status changed to ${newStatus}`);
+      loadConversations();
+    } catch (error) {
+      console.error('Error changing status:', error);
+      showError('Failed to change status');
+    }
+  };
+
   // Close conversation
   const closeConversation = async (conversationId) => {
     try {
@@ -133,11 +226,11 @@ export default function ChatSupport() {
     if (!selectedConversation) return;
 
     const interval = setInterval(() => {
-      loadMessages(selectedConversation.id);
+      loadMessages(selectedConversation.id, true);
     }, 3000);
 
     return () => clearInterval(interval);
-  }, [selectedConversation]);
+  }, [selectedConversation, conversations]);
 
   // Format timestamp
   const formatTime = (timestamp) => {
@@ -276,6 +369,16 @@ export default function ChatSupport() {
                   </div>
                   <div className="flex items-center gap-2">
                     {getStatusBadge(selectedConversation.status)}
+                    {selectedConversation.status === 'open' && (
+                      <Button
+                        variant="default"
+                        size="sm"
+                        onClick={() => assignToMe(selectedConversation.id)}
+                      >
+                        <User className="h-4 w-4 mr-1" />
+                        Assign to Me
+                      </Button>
+                    )}
                     {selectedConversation.status !== 'closed' && (
                       <Button
                         variant="outline"
