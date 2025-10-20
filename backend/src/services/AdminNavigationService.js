@@ -205,7 +205,8 @@ class AdminNavigationService {
       { key: 'products', label: 'Products', icon: 'Package', route: '/admin/products', order: 2, category: 'main' },
       { key: 'orders', label: 'Orders', icon: 'ShoppingCart', route: '/admin/orders', order: 3, category: 'main' },
       { key: 'customers', label: 'Customers', icon: 'Users', route: '/admin/customers', order: 4, category: 'main' },
-      { key: 'analytics', label: 'Analytics', icon: 'BarChart', route: '/admin/analytics', order: 5, category: 'main' },
+      { key: 'chat-support', label: 'Chat Support', icon: 'MessageSquare', route: '/admin/chat-support', order: 5, category: 'main' },
+      { key: 'analytics', label: 'Analytics', icon: 'BarChart', route: '/admin/analytics', order: 6, category: 'main' },
       { key: 'plugins', label: 'Plugins', icon: 'Puzzle', route: '/admin/plugins', order: 10, category: 'tools' },
       { key: 'settings', label: 'Settings', icon: 'Settings', route: '/admin/settings', order: 99, category: 'settings' }
     ];
