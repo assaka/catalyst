@@ -45,35 +45,50 @@ export default function AdminSidebar() {
   };
 
   const renderNavItem = (item, depth = 0) => {
-    const isActive = location.pathname === item.route ||
-                    location.pathname.startsWith(item.route + '/');
+    const isActive = item.route && (
+      location.pathname === item.route ||
+      location.pathname.startsWith(item.route + '/')
+    );
     const hasChildren = item.children && item.children.length > 0;
+    const isClickable = item.route !== null && item.route !== undefined;
+
+    const content = (
+      <>
+        {getIcon(item.icon)}
+        <span className="flex-1">{item.label}</span>
+        {item.badge && (
+          <Badge
+            variant="secondary"
+            className="ml-auto"
+            style={item.badge.color ? { backgroundColor: item.badge.color } : {}}
+          >
+            {item.badge.text}
+          </Badge>
+        )}
+      </>
+    );
+
+    const className = `
+      flex items-center gap-3 px-4 py-2.5 rounded-lg transition-colors
+      ${isActive
+        ? 'bg-primary text-primary-foreground font-medium'
+        : 'text-muted-foreground hover:bg-muted hover:text-foreground'
+      }
+      ${depth > 0 ? `ml-${depth * 4} text-sm` : ''}
+      ${!isClickable ? 'font-semibold text-foreground opacity-90' : ''}
+    `;
 
     return (
       <div key={item.key} className="nav-item-wrapper">
-        <Link
-          to={item.route}
-          className={`
-            flex items-center gap-3 px-4 py-2.5 rounded-lg transition-colors
-            ${isActive
-              ? 'bg-primary text-primary-foreground font-medium'
-              : 'text-muted-foreground hover:bg-muted hover:text-foreground'
-            }
-            ${depth > 0 ? `ml-${depth * 4} text-sm` : ''}
-          `}
-        >
-          {getIcon(item.icon)}
-          <span className="flex-1">{item.label}</span>
-          {item.badge && (
-            <Badge
-              variant="secondary"
-              className="ml-auto"
-              style={item.badge.color ? { backgroundColor: item.badge.color } : {}}
-            >
-              {item.badge.text}
-            </Badge>
-          )}
-        </Link>
+        {isClickable ? (
+          <Link to={item.route} className={className}>
+            {content}
+          </Link>
+        ) : (
+          <div className={className}>
+            {content}
+          </div>
+        )}
 
         {hasChildren && (
           <div className="mt-1 space-y-1">
