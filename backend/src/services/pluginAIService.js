@@ -1,6 +1,23 @@
 /**
  * Plugin AI Service - Claude API Integration
  * Handles AI-powered plugin generation and assistance
+ *
+ * RAG INTEGRATION:
+ * This service uses the RAG (Retrieval-Augmented Generation) system to enhance
+ * plugin generation with relevant context from the database.
+ *
+ * HOW RAG IS USED:
+ * 1. Before generating a plugin, fetch relevant docs/examples from aiContextService
+ * 2. Inject that context into the AI system prompt
+ * 3. AI uses the context to generate better, more accurate plugins
+ *
+ * WHAT CONTEXT IS FETCHED:
+ * - Architecture documentation (how to build plugins)
+ * - Working plugin examples (similar to what user wants)
+ * - Code patterns (database migrations, API routes, etc.)
+ *
+ * See: backend/src/services/RAG_SYSTEM.md for full RAG documentation
+ * See: backend/src/services/aiContextService.js for context fetching
  */
 
 const Anthropic = require('@anthropic-ai/sdk');
@@ -16,17 +33,46 @@ class PluginAIService {
 
   /**
    * Generate plugin code from natural language description
-   * @param {string} mode - 'nocode-ai', 'guided', or 'developer'
-   * @param {string} userPrompt - User's description
-   * @param {object} context - Current plugin context
+   *
+   * RAG USAGE:
+   * This method ALWAYS fetches RAG context from the database before generating
+   * the plugin. The context includes:
+   * - Architecture docs (how to structure plugins)
+   * - Similar plugin examples (e.g., if user wants "reviews", fetch "reviews" example)
+   * - Code patterns (migrations, API endpoints)
+   *
+   * The fetched context is injected into the system prompt, so the AI knows:
+   * - How Catalyst plugins work (architecture)
+   * - What similar plugins look like (examples)
+   * - How to implement specific features (patterns)
+   *
+   * @param {string} mode - 'nocode' | 'developer' - Which builder mode
+   * @param {string} userPrompt - User's natural language description of what they want
+   * @param {object} context - Additional context
+   * @param {string} context.category - 'commerce' | 'marketing' | 'analytics' etc.
+   * @param {number} context.storeId - Store ID for store-specific context
+   *
+   * @returns {Promise<Object>} Parsed plugin code and metadata
+   *
+   * @example
+   * const plugin = await pluginAIService.generatePlugin(
+   *   'nocode',
+   *   'Create a wishlist plugin where users can save products',
+   *   { category: 'commerce', storeId: 123 }
+   * );
    */
   async generatePlugin(mode, userPrompt, context = {}) {
-    // Fetch relevant context from database
+    // ⚡ RAG: Fetch relevant context from database (5 docs + 3 examples + 5 patterns)
+    // This gives the AI knowledge about:
+    // - How to build Catalyst plugins (docs)
+    // - Similar working plugins (examples)
+    // - Code snippets for specific tasks (patterns)
     const dynamicContext = await aiContextService.getContextForQuery({
-      mode,
-      category: context.category,
-      query: userPrompt,
-      storeId: context.storeId
+      mode,                      // 'nocode' or 'developer' - filters docs by audience
+      category: context.category, // 'commerce', 'marketing' etc - finds relevant examples
+      query: userPrompt,          // User's prompt - used for future vector search
+      storeId: context.storeId,   // Optional store-specific context
+      limit: 13                   // Total: 5 docs + 3 examples + 5 patterns
     });
 
     const systemPrompt = await this.getSystemPrompt(mode, dynamicContext);
@@ -95,12 +141,32 @@ Question: ${question}`
   }
 
   /**
-   * Get system prompt based on mode with dynamic context from database
-   * @param {string} mode - Builder mode
-   * @param {string} dynamicContext - Context fetched from database
+   * Get system prompt with RAG context injected
+   *
+   * RAG CONTEXT INJECTION:
+   * The dynamicContext parameter contains formatted markdown from the database:
+   * - Knowledge base documents (architecture, best practices)
+   * - Working plugin examples (similar code to reference)
+   * - Code patterns (reusable snippets)
+   *
+   * This context is injected BEFORE the base prompt, so the AI has all the
+   * knowledge it needs about:
+   * - How Catalyst plugins are structured
+   * - What similar plugins look like
+   * - How to implement specific features
+   *
+   * FALLBACK:
+   * If dynamicContext is null (RAG fetch failed), falls back to hardcoded
+   * architecture docs. This ensures the AI always has SOME context.
+   *
+   * @param {string} mode - 'nocode' | 'developer'
+   * @param {string} dynamicContext - Formatted markdown from aiContextService.getContextForQuery()
+   *
+   * @returns {Promise<string>} Complete system prompt with RAG context
    */
   async getSystemPrompt(mode, dynamicContext = null) {
-    // Use dynamic context from database, or fallback to hardcoded
+    // ⚡ RAG: Use dynamic context from database (preferred)
+    // Falls back to hardcoded context if database fetch failed
     const pluginArchitectureContext = dynamicContext || `
 # CATALYST PLUGIN ARCHITECTURE (FALLBACK - Update database for latest context!)
 

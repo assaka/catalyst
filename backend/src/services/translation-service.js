@@ -1,3 +1,26 @@
+/**
+ * Translation Service
+ *
+ * RAG INTEGRATION:
+ * This service uses RAG (Retrieval-Augmented Generation) to enhance AI translations
+ * with translation-specific context from the database.
+ *
+ * HOW RAG IS USED:
+ * When translating with AI (_translateWithClaude), the service fetches:
+ * - Translation best practices (preserve formatting, cultural adaptation)
+ * - E-commerce glossaries (common terms like "Cart", "Checkout", "SKU")
+ * - Language-specific guidelines (RTL support, character encoding)
+ *
+ * WHY USE RAG:
+ * - Consistent terminology across all translations
+ * - Better handling of e-commerce specific terms
+ * - Context-aware translations (button vs paragraph)
+ * - Cultural adaptation guidelines
+ *
+ * See: backend/src/services/RAG_SYSTEM.md for full RAG documentation
+ * See: backend/src/services/aiContextService.js for context fetching
+ */
+
 const { Translation, Language, Product, Category, CmsPage, CmsBlock } = require('../models');
 const { Op } = require('sequelize');
 const aiContextService = require('./aiContextService');
@@ -148,19 +171,56 @@ class TranslationService {
     }
   }
 
+  /**
+   * Translate text using Claude AI with RAG context
+   *
+   * RAG USAGE:
+   * This method ALWAYS fetches translation-specific context from the database
+   * before translating. The context includes:
+   * - Translation best practices (how to handle HTML, placeholders, etc.)
+   * - E-commerce glossaries (standard translations for common terms)
+   * - Language-specific guidelines (RTL, character limits, etc.)
+   *
+   * WHY THIS MATTERS:
+   * - Ensures consistent terminology (e.g., "Shopping Cart" not "Basket")
+   * - Preserves technical elements (HTML tags, {{variables}})
+   * - Follows e-commerce conventions (prices, SKUs, etc.)
+   *
+   * @param {string} text - Text to translate
+   * @param {string} fromLang - Source language code (e.g., 'en')
+   * @param {string} toLang - Target language code (e.g., 'fr')
+   * @param {Object} context - Translation context
+   * @param {string} context.type - 'button' | 'heading' | 'label' | 'paragraph' | 'description'
+   * @param {string} context.location - 'cart' | 'checkout' | 'product' | 'homepage'
+   * @param {number} context.maxLength - Max character limit for translation
+   *
+   * @returns {Promise<string>} Translated text
+   *
+   * @example
+   * const translated = await translationService._translateWithClaude(
+   *   'Add to Cart',
+   *   'en',
+   *   'fr',
+   *   { type: 'button', location: 'product', maxLength: 20 }
+   * );
+   */
   async _translateWithClaude(text, fromLang, toLang, context = {}) {
     const fetch = (await import('node-fetch')).default;
 
-    // Fetch translation-specific context from database
+    // ⚡ RAG: Fetch translation-specific context from database
+    // This includes: best practices, glossaries, language-specific guidelines
+    // Limit to 3 documents since translations are simpler than plugin generation
     const ragContext = await aiContextService.getContextForQuery({
-      mode: 'all',
-      category: 'translations',
-      query: `translate from ${fromLang} to ${toLang}`,
-      limit: 3
+      mode: 'all',               // Both nocode and developer translations
+      category: 'translations',  // Translation-specific context only
+      query: `translate from ${fromLang} to ${toLang}`, // Language pair (future: vector search)
+      limit: 3                   // Keep it light for fast translation
     });
 
     const { type = 'general', location = 'unknown', maxLength } = context;
 
+    // ⚡ RAG INJECTION: The ragContext is injected into the system prompt
+    // This gives the AI knowledge about translation conventions and glossaries
     const systemPrompt = `You are a professional translator specializing in e-commerce localization.
 
 ${ragContext}

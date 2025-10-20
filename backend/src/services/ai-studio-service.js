@@ -1,3 +1,33 @@
+/**
+ * AI Studio Service
+ *
+ * RAG INTEGRATION:
+ * This service uses RAG (Retrieval-Augmented Generation) to enhance AI Studio
+ * conversations with relevant context from the database.
+ *
+ * HOW RAG IS USED:
+ * When processing user messages (_buildSystemPrompt), the service fetches:
+ * - AI Studio capabilities (what the AI can do: design, products, storefront)
+ * - Feature-specific guidelines (design best practices, product management)
+ * - UI/UX patterns and recommendations
+ *
+ * WHY USE RAG:
+ * - AI knows what features are available in Catalyst
+ * - Better design suggestions based on best practices
+ * - Consistent product management recommendations
+ * - Up-to-date capabilities without code changes
+ *
+ * CONTEXTS:
+ * - 'design' - Theme, color schemes, layouts
+ * - 'product' - Product management, catalog, inventory
+ * - 'storefront' - Homepage builder, navigation, pages
+ * - 'translation' - Localization features
+ * - 'plugin' - Plugin management
+ *
+ * See: backend/src/services/RAG_SYSTEM.md for full RAG documentation
+ * See: backend/src/services/aiContextService.js for context fetching
+ */
+
 const { Product, Category, CmsPage, CmsBlock, Language, Store } = require('../models');
 const translationService = require('./translation-service');
 const aiContextService = require('./aiContextService');
@@ -10,9 +40,22 @@ class AIStudioService {
 
   /**
    * Process AI chat message with context awareness
+   *
+   * RAG USAGE:
+   * Every message is processed with RAG context via _buildSystemPrompt().
+   * The AI has knowledge about what Catalyst can do and how to help users.
+   *
+   * @param {Object} params - Message parameters
+   * @param {string} params.message - User's message
+   * @param {string} params.context - Current context ('design', 'product', 'storefront', etc.)
+   * @param {Array} params.history - Conversation history
+   * @param {Array} params.capabilities - Available AI capabilities
+   * @param {number} params.userId - User ID
+   *
+   * @returns {Promise<Object>} Response with message and metadata
    */
   async processMessage({ message, context, history, capabilities, userId }) {
-    // Build context-aware system prompt with RAG
+    // ⚡ RAG: Build context-aware system prompt with database knowledge
     const systemPrompt = await this._buildSystemPrompt(context, capabilities, message);
 
     // Detect intent from message
@@ -48,20 +91,55 @@ class AIStudioService {
   }
 
   /**
-   * Build context-aware system prompt with RAG
+   * Build context-aware system prompt with RAG context
+   *
+   * RAG USAGE:
+   * This method ALWAYS fetches AI Studio context from the database before
+   * building the system prompt. The context includes:
+   * - AI Studio capabilities (design, product management, storefront builder)
+   * - Feature-specific guidelines and best practices
+   * - UI/UX patterns and recommendations
+   *
+   * WHY THIS MATTERS:
+   * - AI knows what Catalyst can actually do (no hallucination)
+   * - Suggestions are based on documented best practices
+   * - Features can be added/updated in database without code changes
+   * - Consistent recommendations across all AI Studio contexts
+   *
+   * @param {string} context - Current AI Studio context ('design', 'product', 'storefront', etc.)
+   * @param {Array} capabilities - Available AI capabilities in current context
+   * @param {string} query - User's query (helps find relevant context)
+   *
+   * @returns {Promise<string>} Complete system prompt with RAG context
+   *
+   * PROMPT STRUCTURE:
+   * 1. Base prompt (who the AI is)
+   * 2. RAG context (capabilities, guidelines, patterns)
+   * 3. Context-specific prompt (design/product/storefront specific)
+   * 4. Available capabilities list
+   *
+   * @example
+   * const prompt = await aiStudioService._buildSystemPrompt(
+   *   'design',
+   *   ['Generate color schemes', 'Create layouts'],
+   *   'help me design a modern homepage'
+   * );
    */
   async _buildSystemPrompt(context, capabilities, query = '') {
-    // Fetch relevant context from database
+    // ⚡ RAG: Fetch AI Studio context from database
+    // This includes: capabilities documentation, best practices, UI patterns
+    // Limit to 5 documents for conversational contexts
     const ragContext = await aiContextService.getContextForQuery({
-      mode: 'all',
-      category: 'ai-studio',
-      query: `${context} ${query}`,
-      limit: 5
+      mode: 'all',                   // AI Studio serves all user types
+      category: 'ai-studio',         // AI Studio specific context
+      query: `${context} ${query}`,  // Current context + user query (future: vector search)
+      limit: 5                       // Keep context focused for chat
     });
 
     const basePrompt = aiPrompts.BASE_SYSTEM_PROMPT || 'You are Catalyst AI Studio, an intelligent e-commerce assistant.';
     const contextPrompt = aiPrompts.CONTEXT_PROMPTS?.[context] || '';
 
+    // ⚡ RAG INJECTION: Insert fetched context between base prompt and context prompt
     return `${basePrompt}
 
 ${ragContext}
