@@ -34,12 +34,37 @@ const NavigationManager = () => {
     try {
       setLoading(true);
       const response = await apiClient.get('admin/navigation');
-      const items = response.data.sort((a, b) => a.order_position - b.order_position);
-      setNavItems(items);
-      setOriginalItems(JSON.parse(JSON.stringify(items)));
+
+      // Flatten the tree into a flat array for editing
+      const flattenTree = (items, result = []) => {
+        items.forEach(item => {
+          const { children, ...itemWithoutChildren } = item;
+          result.push(itemWithoutChildren);
+          if (children && children.length > 0) {
+            flattenTree(children, result);
+          }
+        });
+        return result;
+      };
+
+      // Handle both hierarchical (from backend) and flat array responses
+      let items;
+      if (response.navigation && Array.isArray(response.navigation)) {
+        // Backend returns {success: true, navigation: [...]}
+        items = flattenTree(response.navigation);
+      } else if (Array.isArray(response.data)) {
+        // Fallback: direct array
+        items = response.data;
+      } else {
+        throw new Error('Invalid response format');
+      }
+
+      const sortedItems = items.sort((a, b) => a.order_position - b.order_position);
+      setNavItems(sortedItems);
+      setOriginalItems(JSON.parse(JSON.stringify(sortedItems)));
     } catch (error) {
       console.error('Error loading navigation:', error);
-      alert('Failed to load navigation items');
+      alert('Failed to load navigation items: ' + (error.message || 'Unknown error'));
     } finally {
       setLoading(false);
     }
