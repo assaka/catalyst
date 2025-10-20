@@ -9,7 +9,6 @@ export { default as Attributes } from './admin/Attributes';
 export { default as Orders } from './admin/Orders';
 export { default as Customers } from './admin/Customers';
 export { default as CustomerActivity } from './admin/CustomerActivity';
-export { default as ChatSupport } from './admin/ChatSupport';
 export { default as Coupons } from './admin/Coupons';
 export { default as Tax } from './admin/Tax';
 export { default as ShippingMethods } from './admin/ShippingMethods';

@@ -1,10 +1,25 @@
-import React, { useState, useEffect, useRef } from 'react';
+/**
+ * Add Chat Support admin page to database as part of customer-service-chat plugin
+ */
+
+const { Pool } = require('pg');
+require('dotenv').config();
+
+const pool = new Pool({
+  connectionString: process.env.DATABASE_URL,
+  ssl: process.env.NODE_ENV === 'production' ? {
+    require: true,
+    rejectUnauthorized: false
+  } : false
+});
+
+const chatSupportComponent = `import React, { useState, useEffect, useRef } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { MessageSquare, Send, X, User, Clock, CheckCircle, Circle } from 'lucide-react';
+import { MessageSquare, Send, X, User, Clock } from 'lucide-react';
 import { useAlertTypes } from '@/hooks/useAlert';
 
 export default function ChatSupport() {
@@ -15,7 +30,6 @@ export default function ChatSupport() {
   const [newMessage, setNewMessage] = useState('');
   const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
-  const [unreadCounts, setUnreadCounts] = useState({});
   const [notificationsEnabled, setNotificationsEnabled] = useState(false);
   const messagesEndRef = useRef(null);
   const previousMessageCount = useRef({});
@@ -40,7 +54,7 @@ export default function ChatSupport() {
   const showNotification = (conversation, message) => {
     if (notificationsEnabled && document.hidden) {
       const notification = new Notification('New Chat Message', {
-        body: `${conversation.customer_name || 'Guest'}: ${message.message_text.substring(0, 50)}...`,
+        body: \`\${conversation.customer_name || 'Guest'}: \${message.message_text.substring(0, 50)}...\`,
         icon: '/favicon.ico',
         tag: conversation.id
       });
@@ -73,7 +87,7 @@ export default function ChatSupport() {
   // Load messages for selected conversation
   const loadMessages = async (conversationId, isPolling = false) => {
     try {
-      const response = await fetch(`/api/chat/conversations/${conversationId}/messages`);
+      const response = await fetch(\`/api/chat/conversations/\${conversationId}/messages\`);
       const data = await response.json();
 
       if (data.success) {
@@ -109,13 +123,13 @@ export default function ChatSupport() {
 
     try {
       setSending(true);
-      const response = await fetch(`/api/chat/conversations/${selectedConversation.id}/messages`, {
+      const response = await fetch(\`/api/chat/conversations/\${selectedConversation.id}/messages\`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           message_text: newMessage,
           sender_type: 'agent',
-          sender_name: 'Support Agent' // TODO: Get from logged in user
+          sender_name: 'Support Agent'
         })
       });
 
@@ -123,10 +137,8 @@ export default function ChatSupport() {
 
       if (data.success) {
         setNewMessage('');
-        // Add message to local state immediately
         setMessages([...messages, data.message]);
         setTimeout(scrollToBottom, 100);
-        // Reload conversations to update last message time
         loadConversations();
       } else {
         showError('Failed to send message');
@@ -148,11 +160,11 @@ export default function ChatSupport() {
   // Assign conversation to current agent
   const assignToMe = async (conversationId) => {
     try {
-      const response = await fetch(`/api/chat/conversations/${conversationId}/assign`, {
+      const response = await fetch(\`/api/chat/conversations/\${conversationId}/assign\`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          agent_id: 'current-agent' // TODO: Get from logged in user
+          agent_id: 'current-agent'
         })
       });
 
@@ -172,28 +184,10 @@ export default function ChatSupport() {
     }
   };
 
-  // Change conversation status
-  const changeStatus = async (conversationId, newStatus) => {
-    try {
-      if (newStatus === 'closed') {
-        await closeConversation(conversationId);
-        return;
-      }
-
-      // For other status changes, we'd need a generic update endpoint
-      // For now, we'll just refresh
-      showSuccess(`Status changed to ${newStatus}`);
-      loadConversations();
-    } catch (error) {
-      console.error('Error changing status:', error);
-      showError('Failed to change status');
-    }
-  };
-
   // Close conversation
   const closeConversation = async (conversationId) => {
     try {
-      const response = await fetch(`/api/chat/conversations/${conversationId}/close`, {
+      const response = await fetch(\`/api/chat/conversations/\${conversationId}/close\`, {
         method: 'PATCH'
       });
 
@@ -216,7 +210,6 @@ export default function ChatSupport() {
   // Initial load
   useEffect(() => {
     loadConversations();
-    // Poll for new conversations every 10 seconds
     const interval = setInterval(loadConversations, 10000);
     return () => clearInterval(interval);
   }, []);
@@ -240,8 +233,8 @@ export default function ChatSupport() {
     const diffMins = Math.floor(diffMs / 60000);
 
     if (diffMins < 1) return 'Just now';
-    if (diffMins < 60) return `${diffMins}m ago`;
-    if (diffMins < 1440) return `${Math.floor(diffMins / 60)}h ago`;
+    if (diffMins < 60) return \`\${diffMins}m ago\`;
+    if (diffMins < 1440) return \`\${Math.floor(diffMins / 60)}h ago\`;
     return date.toLocaleDateString();
   };
 
@@ -316,9 +309,9 @@ export default function ChatSupport() {
                     <div
                       key={conversation.id}
                       onClick={() => selectConversation(conversation)}
-                      className={`p-4 cursor-pointer transition-colors hover:bg-gray-50 ${
+                      className={\`p-4 cursor-pointer transition-colors hover:bg-gray-50 \${
                         selectedConversation?.id === conversation.id ? 'bg-blue-50 border-l-4 border-blue-500' : ''
-                      }`}
+                      }\`}
                     >
                       <div className="flex items-start justify-between mb-2">
                         <div className="flex items-center gap-2">
@@ -405,14 +398,14 @@ export default function ChatSupport() {
                       {messages.map((message) => (
                         <div
                           key={message.id}
-                          className={`flex ${message.sender_type === 'agent' ? 'justify-end' : 'justify-start'}`}
+                          className={\`flex \${message.sender_type === 'agent' ? 'justify-end' : 'justify-start'}\`}
                         >
                           <div
-                            className={`max-w-[70%] rounded-lg p-3 ${
+                            className={\`max-w-[70%] rounded-lg p-3 \${
                               message.sender_type === 'agent'
                                 ? 'bg-blue-600 text-white'
                                 : 'bg-gray-100 text-gray-900'
-                            }`}
+                            }\`}
                           >
                             {message.sender_type === 'agent' && message.sender_name && (
                               <p className="text-xs font-semibold mb-1 opacity-90">
@@ -421,9 +414,9 @@ export default function ChatSupport() {
                             )}
                             <p className="whitespace-pre-wrap">{message.message_text}</p>
                             <p
-                              className={`text-xs mt-1 ${
+                              className={\`text-xs mt-1 \${
                                 message.sender_type === 'agent' ? 'text-blue-100' : 'text-gray-500'
-                              }`}
+                              }\`}
                             >
                               {formatMessageTime(message.created_at)}
                             </p>
@@ -463,4 +456,107 @@ export default function ChatSupport() {
       </div>
     </div>
   );
+}`;
+
+async function addChatAdminPage() {
+  const client = await pool.connect();
+
+  try {
+    console.log('📋 Adding Chat Support admin page to database...\\n');
+
+    // 1. Use plugin string ID (matches plugin_scripts.plugin_id format)
+    const pluginId = 'customer-service-chat';
+    console.log('✅ Using plugin_id:', pluginId);
+
+    // 2. Add admin page component to plugin_admin_pages table
+    await client.query(`
+      INSERT INTO plugin_admin_pages (
+        plugin_id,
+        page_key,
+        page_name,
+        route,
+        component_code,
+        description,
+        icon,
+        category,
+        order_position,
+        is_enabled
+      ) VALUES (
+        $1,
+        'chat-support',
+        'Chat Support',
+        '/admin/chat-support',
+        $2,
+        'Manage customer service conversations and live chat',
+        'MessageSquare',
+        'main',
+        5,
+        true
+      )
+      ON CONFLICT (plugin_id, page_key) DO UPDATE SET
+        component_code = EXCLUDED.component_code,
+        page_name = EXCLUDED.page_name,
+        route = EXCLUDED.route,
+        description = EXCLUDED.description,
+        icon = EXCLUDED.icon,
+        category = EXCLUDED.category,
+        order_position = EXCLUDED.order_position,
+        updated_at = NOW()
+    `, [pluginId, chatSupportComponent]);
+
+    console.log('✅ Added ChatSupport admin page component to plugin_admin_pages');
+
+    // 3. Register navigation item in admin_navigation_registry
+    // Note: Setting plugin_id to NULL because admin_navigation_registry expects UUID
+    // but our plugin system uses VARCHAR IDs like 'customer-service-chat'
+    await client.query(`
+      INSERT INTO admin_navigation_registry (
+        key,
+        label,
+        icon,
+        route,
+        order_position,
+        is_core,
+        plugin_id,
+        category,
+        is_visible
+      ) VALUES (
+        'chat-support',
+        'Chat Support',
+        'MessageSquare',
+        '/admin/chat-support',
+        5,
+        false,
+        NULL,
+        'main',
+        true
+      )
+      ON CONFLICT (key) DO UPDATE SET
+        label = EXCLUDED.label,
+        icon = EXCLUDED.icon,
+        route = EXCLUDED.route,
+        updated_at = NOW()
+    `);
+
+    console.log('✅ Registered Chat Support in admin navigation registry');
+
+    console.log('\\n🎉 Done! The Chat Support admin page is now 100% database-driven.');
+    console.log('\\nℹ️  The page will appear in the admin menu when the plugin is installed and active.');
+
+  } catch (error) {
+    console.error('❌ Error:', error);
+    throw error;
+  } finally {
+    client.release();
+    await pool.end();
+  }
 }
+
+addChatAdminPage()
+  .then(() => {
+    process.exit(0);
+  })
+  .catch((error) => {
+    console.error('\\n❌ Fatal error:', error);
+    process.exit(1);
+  });
