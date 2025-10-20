@@ -48,4 +48,46 @@ router.post('/navigation/seed', async (req, res) => {
   }
 });
 
+/**
+ * POST /api/admin/navigation/reorder
+ * Update navigation order and visibility
+ */
+router.post('/navigation/reorder', async (req, res) => {
+  try {
+    const { items } = req.body;
+
+    if (!items || !Array.isArray(items)) {
+      return res.status(400).json({
+        success: false,
+        error: 'Items array is required'
+      });
+    }
+
+    // Update each navigation item
+    for (const item of items) {
+      if (!item.key) {
+        continue;
+      }
+
+      await req.db.query(
+        `UPDATE admin_navigation_registry
+         SET order_position = $1, is_visible = $2, updated_at = CURRENT_TIMESTAMP
+         WHERE key = $3`,
+        [item.order_position, item.is_visible, item.key]
+      );
+    }
+
+    res.json({
+      success: true,
+      message: 'Navigation order updated successfully'
+    });
+  } catch (error) {
+    console.error('Failed to reorder navigation:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
 module.exports = router;
