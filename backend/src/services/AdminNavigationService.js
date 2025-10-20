@@ -106,10 +106,16 @@ class AdminNavigationService {
     const tree = [];
     const itemMap = new Map();
 
-    // First pass: Create map of all items with empty children
+    // First pass: Create map of all items with empty children and clean fields
     items.forEach(item => {
       itemMap.set(item.key, {
-        ...item,
+        key: item.key,
+        label: item.label,
+        icon: item.icon,
+        route: item.route,
+        parentKey: item.parentKey,
+        order: item.order,
+        badge: item.badge,
         children: []
       });
     });

@@ -18,18 +18,25 @@ export default function AdminSidebar() {
   const loadNavigation = async () => {
     try {
       setLoading(true);
-      const response = await apiClient.get('/admin/navigation');
+      setError(null);
 
-      if (response.success) {
+      console.log('🔄 Loading navigation from API...');
+      const response = await apiClient.get('/admin/navigation');
+      console.log('📦 Navigation API response:', response);
+
+      if (response.success && response.navigation) {
+        console.log('✅ Navigation loaded:', response.navigation.length, 'top-level items');
         setNavigation(response.navigation);
       } else {
         throw new Error(response.error || 'Failed to load navigation');
       }
     } catch (err) {
-      console.error('Failed to load navigation:', err);
+      console.error('❌ Failed to load navigation:', err);
+      console.error('Error details:', err.response || err);
       setError(err.message);
 
       // Fallback to minimal navigation
+      console.log('⚠️  Using fallback navigation');
       setNavigation([
         { key: 'dashboard', label: 'Dashboard', icon: 'Home', route: '/admin', children: [] },
         { key: 'products', label: 'Products', icon: 'Package', route: '/admin/products', children: [] }
