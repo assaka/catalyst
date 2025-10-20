@@ -378,6 +378,7 @@ function App() {
           <Route path="/admin/crm-integrations" element={<PageWrapper Component={Pages.CRMIntegrations} pageName="crm-integrations" />} />
           <Route path="/admin/shopify-integration" element={<PageWrapper Component={Pages.ShopifyIntegration} pageName="ShopifyIntegration" />} />
           <Route path="/admin/settings" element={<PageWrapper Component={Pages.Settings} pageName="SETTINGS" />} />
+          <Route path="/admin/navigation-manager" element={<PageWrapper Component={Pages.NavigationManager} pageName="NAVIGATION_MANAGER" />} />
           <Route path="/admin/theme-layout" element={<PageWrapper Component={Pages.ThemeLayout} pageName="THEME_LAYOUT" />} />
           <Route path="/admin/media-storage" element={<PageWrapper Component={Pages.MediaStorage} pageName="media-storage" />} />
           <Route path="/admin/database-integrations" element={<PageWrapper Component={Pages.DatabaseIntegrations} pageName="database-integrations" />} />

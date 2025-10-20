@@ -416,13 +416,9 @@ const UnifiedPluginManagerV2 = () => {
                               </Button>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent>
-                              <DropdownMenuItem onClick={() => handleEditPlugin(plugin, 'nocode-ai')}>
+                              <DropdownMenuItem onClick={() => handleEditPlugin(plugin, 'nocode')}>
                                 <Sparkles className="w-3 h-3 mr-2" />
-                                Edit in No-Code AI
-                              </DropdownMenuItem>
-                              <DropdownMenuItem onClick={() => handleEditPlugin(plugin, 'guided')}>
-                                <Wand2 className="w-3 h-3 mr-2" />
-                                Edit in Guided Builder
+                                Edit in No-Code Builder
                               </DropdownMenuItem>
                               <DropdownMenuItem onClick={() => handleEditPlugin(plugin, 'developer')}>
                                 <Code2 className="w-3 h-3 mr-2" />
@@ -479,13 +475,9 @@ const UnifiedPluginManagerV2 = () => {
                 <h3 className="text-lg font-medium text-gray-900 mb-2">No plugins yet</h3>
                 <p className="text-gray-600 mb-6">Create your first plugin with AI assistance</p>
                 <div className="flex gap-3 justify-center">
-                  <Button onClick={() => handleCreatePlugin('nocode-ai')}>
+                  <Button onClick={() => handleCreatePlugin('nocode')}>
                     <Sparkles className="w-4 h-4 mr-2" />
-                    No-Code AI
-                  </Button>
-                  <Button variant="outline" onClick={() => handleCreatePlugin('guided')}>
-                    <Wand2 className="w-4 h-4 mr-2" />
-                    Guided Builder
+                    No-Code Builder
                   </Button>
                   <Button variant="outline" onClick={() => handleCreatePlugin('developer')}>
                     <Code2 className="w-4 h-4 mr-2" />
@@ -531,13 +523,9 @@ const UnifiedPluginManagerV2 = () => {
                             </Button>
                           </DropdownMenuTrigger>
                           <DropdownMenuContent>
-                            <DropdownMenuItem onClick={() => handleEditPlugin(plugin, 'nocode-ai')}>
+                            <DropdownMenuItem onClick={() => handleEditPlugin(plugin, 'nocode')}>
                               <Sparkles className="w-3 h-3 mr-2" />
-                              Edit in No-Code AI
-                            </DropdownMenuItem>
-                            <DropdownMenuItem onClick={() => handleEditPlugin(plugin, 'guided')}>
-                              <Wand2 className="w-3 h-3 mr-2" />
-                              Edit in Guided Builder
+                              Edit in No-Code Builder
                             </DropdownMenuItem>
                             <DropdownMenuItem onClick={() => handleEditPlugin(plugin, 'developer')}>
                               <Code2 className="w-3 h-3 mr-2" />

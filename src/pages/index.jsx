@@ -61,6 +61,7 @@ export { default as ThemeLayout } from './admin/ThemeLayout';
 export { default as Translations } from './admin/Translations';
 export { default as AIStudio } from './admin/AIStudio';
 export { default as CookieConsent } from './admin/CookieConsent';
+export { default as NavigationManager } from './admin/NavigationManager';
 
 // Editor Pages
 export { default as AIContextWindow } from './editor/AIContextWindow';

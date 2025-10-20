@@ -9,7 +9,7 @@ class AdminNavigationService {
    */
   async getNavigationForTenant(tenantId) {
     try {
-      // 1. Get tenant's installed & active plugins
+      // 1. Get tenant's installed & active plugins from BOTH tables
       const installedPlugins = await sequelize.query(`
         SELECT id
         FROM plugins
@@ -18,7 +18,45 @@ class AdminNavigationService {
 
       const pluginIds = installedPlugins.map(p => p.id);
 
-      // 2. Get navigation items from master registry
+      // 2. Get active plugins from plugin_registry with adminNavigation
+      const registryPlugins = await sequelize.query(`
+        SELECT
+          id,
+          manifest->>'adminNavigation' as admin_nav
+        FROM plugin_registry
+        WHERE status = 'active'
+          AND manifest->>'adminNavigation' IS NOT NULL
+      `, { type: sequelize.QueryTypes.SELECT });
+
+      // Parse adminNavigation from registry plugins
+      const registryNavItems = registryPlugins
+        .filter(p => p.admin_nav)
+        .map(p => {
+          try {
+            const nav = JSON.parse(p.admin_nav);
+            if (nav && nav.enabled) {
+              return {
+                key: \`plugin-\${p.id}\`,
+                label: nav.label,
+                icon: nav.icon || 'Package',
+                route: nav.route,
+                parent_key: nav.parentKey || null,
+                order_position: nav.order || 100,
+                is_core: false,
+                plugin_id: p.id,
+                is_visible: true,
+                category: 'plugins',
+                description: nav.description
+              };
+            }
+          } catch (e) {
+            console.error(\`Failed to parse adminNavigation for plugin \${p.id}:\`, e);
+          }
+          return null;
+        })
+        .filter(Boolean);
+
+      // 3. Get navigation items from master registry
       // Include: Core items + items from tenant's installed plugins
       const navQuery = pluginIds.length > 0
         ? `SELECT * FROM admin_navigation_registry
@@ -36,6 +74,9 @@ class AdminNavigationService {
           type: sequelize.QueryTypes.SELECT
         } : { type: sequelize.QueryTypes.SELECT }
       );
+
+      // 4. Merge registry plugin nav items with master registry
+      const allNavItems = [...navItems, ...registryNavItems];
 
       // 3. Get tenant's customizations
       const tenantConfig = await sequelize.query(`
