@@ -197,20 +197,22 @@ router.get('/registry/:pluginId', authMiddleware, async (req, res) => {
     
     const plugin = pluginResult.rows[0];
     
-    // Get hooks, events, and endpoints
-    const [hooks, events, endpoints] = await Promise.all([
+    // Get hooks, events, endpoints, and admin pages
+    const [hooks, events, endpoints, adminPages] = await Promise.all([
       pluginRegistry.getPluginHooks(pluginId),
       req.db.query('SELECT * FROM plugin_events WHERE plugin_id = $1', [pluginId]),
-      pluginRegistry.getPluginEndpoints(pluginId)
+      pluginRegistry.getPluginEndpoints(pluginId),
+      req.db.query('SELECT * FROM plugin_admin_pages WHERE plugin_id = $1 ORDER BY order_position ASC', [pluginId])
     ]);
-    
+
     res.json({
       success: true,
       data: {
         ...plugin,
         hooks: hooks,
         events: events.rows,
-        endpoints: endpoints
+        endpoints: endpoints,
+        adminPages: adminPages.rows
       }
     });
   } catch (error) {

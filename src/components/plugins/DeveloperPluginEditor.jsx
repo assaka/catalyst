@@ -143,6 +143,22 @@ const DeveloperPluginEditor = ({ plugin, onSave, onClose, onSwitchMode, initialC
             })) || []
           },
           {
+            name: 'admin',
+            type: 'folder',
+            path: '/admin',
+            children: pluginData.adminPages?.map(page => ({
+              name: `${page.page_key}.jsx`,
+              type: 'file',
+              path: `/admin/${page.page_key}.jsx`,
+              content: page.component_code,
+              pageName: page.page_name,
+              route: page.route,
+              description: page.description,
+              icon: page.icon,
+              category: page.category
+            })) || []
+          },
+          {
             name: 'manifest.json',
             type: 'file',
             path: '/manifest.json',
