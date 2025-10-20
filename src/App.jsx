@@ -193,15 +193,25 @@ async function loadPluginFrontendScripts(pluginId) {
 // Create executable function from database-stored code
 function createHandlerFromDatabaseCode(code) {
   try {
-    // Use Function constructor to evaluate the arrow function string
-    const handler = new Function('return (' + code + ')')();
-    console.log('✅ Handler created for code:', code.substring(0, 50) + '...');
+    // Remove 'export default' if present (database may have full function declarations)
+    let cleanCode = code.trim();
+    if (cleanCode.startsWith('export default')) {
+      cleanCode = cleanCode.replace(/^export\s+default\s+/, '');
+    }
+
+    // If it's a function declaration, convert to expression
+    if (cleanCode.startsWith('async function') || cleanCode.startsWith('function')) {
+      cleanCode = '(' + cleanCode + ')';
+    }
+
+    // Use Function constructor to evaluate the function string
+    const handler = new Function('return ' + cleanCode)();
     return handler;
   } catch (error) {
     console.error('❌ Error creating handler from database code:', error);
     console.error('Failed code:', code);
     return () => {
-      console.warn('⚠️ Fallback handler called');
+      console.warn('⚠️ Fallback handler called - original code had syntax error');
     };
   }
 }
