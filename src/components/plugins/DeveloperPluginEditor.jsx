@@ -49,6 +49,8 @@ const DeveloperPluginEditor = ({ plugin, onSave, onClose, onSwitchMode, initialC
   const [showNewFileDialog, setShowNewFileDialog] = useState(false);
   const [newFileName, setNewFileName] = useState('');
   const [newFileType, setNewFileType] = useState('controller');
+  const [showEventMappingDialog, setShowEventMappingDialog] = useState(false);
+  const [editingEventName, setEditingEventName] = useState('');
 
   useEffect(() => {
     loadPluginFiles();
@@ -128,12 +130,28 @@ const DeveloperPluginEditor = ({ plugin, onSave, onClose, onSwitchMode, initialC
             name: 'events',
             type: 'folder',
             path: '/events',
-            children: pluginData.events?.map(e => ({
-              name: `${e.event_name}.js`,
-              type: 'file',
-              path: `/events/${e.event_name}.js`,
-              content: e.listener_code
-            })) || []
+            children: [
+              // Old event system (filename = event name)
+              ...(pluginData.events?.map(e => ({
+                name: `${e.event_name}.js`,
+                type: 'file',
+                path: `/events/${e.event_name}.js`,
+                content: e.listener_code,
+                eventName: e.event_name,
+                isOldSystem: true
+              })) || []),
+              // New junction table system (flexible filename with event mapping)
+              ...(pluginData.eventListeners?.map(l => ({
+                name: l.file_name,
+                type: 'file',
+                path: l.file_path,
+                content: l.listener_code,
+                eventName: l.event_name,
+                description: l.description,
+                priority: l.priority,
+                isOldSystem: false
+              })) || [])
+            ]
           },
           {
             name: 'manifest.json',
@@ -318,6 +336,48 @@ const DeveloperPluginEditor = ({ plugin, onSave, onClose, onSwitchMode, initialC
     }
   };
 
+  const handleUpdateEventMapping = async () => {
+    if (!editingEventName.trim()) {
+      addTerminalOutput('✗ Event name cannot be empty', 'error');
+      setShowTerminal(true);
+      return;
+    }
+
+    if (!selectedFile || !selectedFile.eventName) {
+      addTerminalOutput('✗ No event file selected', 'error');
+      setShowTerminal(true);
+      return;
+    }
+
+    try {
+      addTerminalOutput(`⏳ Updating event mapping to ${editingEventName}...`, 'info');
+      setShowTerminal(true);
+
+      // Create or update event listener mapping
+      await apiClient.post(`plugins/${plugin.id}/event-listeners`, {
+        file_name: selectedFile.name,
+        file_path: selectedFile.path,
+        event_name: editingEventName,
+        listener_function: fileContent,
+        priority: selectedFile.priority || 10,
+        description: `Listens to ${editingEventName}`
+      });
+
+      addTerminalOutput(`✓ Event mapping updated to ${editingEventName}`, 'success');
+
+      // Close dialog and reset
+      setShowEventMappingDialog(false);
+      setEditingEventName('');
+
+      // Reload file tree
+      await loadPluginFiles();
+
+    } catch (error) {
+      console.error('Error updating event mapping:', error);
+      addTerminalOutput(`✗ Error updating event mapping: ${error.response?.data?.error || error.message}`, 'error');
+    }
+  };
+
   const renderFileTree = (nodes, depth = 0) => {
     return nodes.map((node) => {
       const isExpanded = expandedFolders.has(node.path);
@@ -342,7 +402,16 @@ const DeveloperPluginEditor = ({ plugin, onSave, onClose, onSwitchMode, initialC
           >
             <Icon className="w-4 h-4 flex-shrink-0" />
             <span className="text-sm truncate">{node.name}</span>
-            {node.type === 'file' && fileContent !== originalContent && selectedFile?.path === node.path && (
+
+            {/* Show event name badge for event files */}
+            {node.eventName && (
+              <Badge className="ml-auto bg-purple-100 text-purple-700 text-xs" title={node.description || `Listens to ${node.eventName}`}>
+                {node.eventName}
+              </Badge>
+            )}
+
+            {/* Show modified badge */}
+            {node.type === 'file' && fileContent !== originalContent && selectedFile?.path === node.path && !node.eventName && (
               <Badge className="ml-auto bg-orange-100 text-orange-700 text-xs">M</Badge>
             )}
           </div>
@@ -443,12 +512,32 @@ const DeveloperPluginEditor = ({ plugin, onSave, onClose, onSwitchMode, initialC
                     Modified
                   </Badge>
                 )}
+                {selectedFile.eventName && (
+                  <Badge className="bg-purple-100 text-purple-700 text-xs">
+                    → {selectedFile.eventName}
+                  </Badge>
+                )}
               </>
             ) : (
               <span className="text-gray-500">No file selected</span>
             )}
           </div>
           <div className="flex items-center gap-2">
+            {/* Edit Event Mapping button - only for event files */}
+            {selectedFile?.eventName && (
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => {
+                  setEditingEventName(selectedFile.eventName);
+                  setShowEventMappingDialog(true);
+                }}
+                title="Edit which event this file listens to"
+              >
+                <Zap className="w-4 h-4 mr-1" />
+                Edit Event
+              </Button>
+            )}
             <Button
               size="sm"
               variant="outline"
@@ -594,6 +683,74 @@ const DeveloperPluginEditor = ({ plugin, onSave, onClose, onSwitchMode, initialC
                   setShowNewFileDialog(false);
                   setNewFileName('');
                   setNewFileType('controller');
+                }}
+                className="flex-1"
+              >
+                Cancel
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Edit Event Mapping Dialog */}
+      {showEventMappingDialog && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg shadow-xl p-6 w-96">
+            <h3 className="text-lg font-semibold mb-4">Edit Event Mapping</h3>
+
+            <div className="mb-4 p-3 bg-gray-50 rounded">
+              <div className="text-sm text-gray-600 mb-1">File:</div>
+              <div className="font-medium">{selectedFile?.name}</div>
+            </div>
+
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Event Name
+                </label>
+                <Input
+                  value={editingEventName}
+                  onChange={(e) => setEditingEventName(e.target.value)}
+                  placeholder="e.g., cart.viewed or product.added"
+                  className="w-full"
+                  autoFocus
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      handleUpdateEventMapping();
+                    } else if (e.key === 'Escape') {
+                      setShowEventMappingDialog(false);
+                    }
+                  }}
+                />
+                <p className="text-xs text-gray-500 mt-1">
+                  Examples: cart.viewed, product.view, order.after_create
+                </p>
+              </div>
+
+              <div className="bg-blue-50 border border-blue-200 rounded p-3">
+                <div className="text-xs font-medium text-blue-900 mb-1">💡 Common Events:</div>
+                <div className="text-xs text-blue-800 space-y-1">
+                  <div>• cart.viewed - Cart page loads</div>
+                  <div>• cart.itemsLoaded - Cart items loaded</div>
+                  <div>• product.view - Product page viewed</div>
+                  <div>• order.after_create - Order created</div>
+                </div>
+              </div>
+            </div>
+
+            <div className="flex gap-2 mt-6">
+              <Button
+                onClick={handleUpdateEventMapping}
+                className="flex-1"
+              >
+                Update
+              </Button>
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setShowEventMappingDialog(false);
+                  setEditingEventName('');
                 }}
                 className="flex-1"
               >

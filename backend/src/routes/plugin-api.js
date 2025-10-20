@@ -536,7 +536,7 @@ router.get('/registry/:pluginId', async (req, res) => {
       console.log(`  ⚠️ plugin_hooks table error:`, hookError.message);
     }
 
-    // Load events from plugin_events table (normalized structure)
+    // Load events from plugin_events table (normalized structure) - OLD TABLE
     let events = [];
     try {
       const eventsResult = await sequelize.query(`
@@ -559,6 +559,34 @@ router.get('/registry/:pluginId', async (req, res) => {
       console.log(`  ✅ Loaded ${events.length} events from plugin_events table`);
     } catch (eventError) {
       console.log(`  ⚠️ plugin_events table error:`, eventError.message);
+    }
+
+    // Load event listeners from new junction table (file-based event listeners)
+    let eventListeners = [];
+    try {
+      const listenersResult = await sequelize.query(`
+        SELECT file_name, file_path, event_name, listener_function, priority, is_enabled, description
+        FROM plugin_event_listeners
+        WHERE plugin_id = $1 AND is_enabled = true
+        ORDER BY file_name ASC, priority ASC
+      `, {
+        bind: [pluginId],
+        type: sequelize.QueryTypes.SELECT
+      });
+
+      eventListeners = listenersResult.map(l => ({
+        file_name: l.file_name,
+        file_path: l.file_path,
+        event_name: l.event_name,
+        listener_code: l.listener_function,
+        priority: l.priority || 10,
+        enabled: l.is_enabled !== false,
+        description: l.description
+      }));
+
+      console.log(`  ✅ Loaded ${eventListeners.length} event listeners from plugin_event_listeners table`);
+    } catch (listenerError) {
+      console.log(`  ⚠️ plugin_event_listeners table error:`, listenerError.message);
     }
 
     // Parse JSON fields
@@ -608,6 +636,7 @@ router.get('/registry/:pluginId', async (req, res) => {
         generated_by_ai: manifest?.generated_by_ai || plugin[0].type === 'ai-generated',
         hooks: hooks,
         events: events,
+        eventListeners: eventListeners, // NEW: File-based event listeners
         controllers,
         models,
         components,
@@ -1010,6 +1039,166 @@ router.get('/:pluginId/scripts', async (req, res) => {
     });
   } catch (error) {
     console.error('❌ Failed to get plugin scripts:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
+/**
+ * POST /api/plugins/:pluginId/event-listeners
+ * Create or update an event listener mapping
+ */
+router.post('/:pluginId/event-listeners', async (req, res) => {
+  try {
+    const { pluginId } = req.params;
+    const { file_name, file_path, event_name, listener_function, priority = 10, description } = req.body;
+
+    if (!file_name || !file_path || !event_name || !listener_function) {
+      return res.status(400).json({
+        success: false,
+        error: 'file_name, file_path, event_name, and listener_function are required'
+      });
+    }
+
+    console.log(`📡 Creating event listener: ${file_name} → ${event_name}`);
+
+    // Check if mapping already exists
+    const existing = await sequelize.query(`
+      SELECT id FROM plugin_event_listeners
+      WHERE plugin_id = $1 AND file_name = $2 AND event_name = $3
+    `, {
+      bind: [pluginId, file_name, event_name],
+      type: sequelize.QueryTypes.SELECT
+    });
+
+    if (existing.length > 0) {
+      // Update existing
+      await sequelize.query(`
+        UPDATE plugin_event_listeners
+        SET listener_function = $1, priority = $2, description = $3, updated_at = NOW()
+        WHERE plugin_id = $4 AND file_name = $5 AND event_name = $6
+      `, {
+        bind: [listener_function, priority, description, pluginId, file_name, event_name],
+        type: sequelize.QueryTypes.UPDATE
+      });
+
+      console.log(`✅ Updated event listener: ${file_name} → ${event_name}`);
+    } else {
+      // Insert new
+      await sequelize.query(`
+        INSERT INTO plugin_event_listeners
+        (plugin_id, file_name, file_path, event_name, listener_function, priority, description, is_enabled, created_at, updated_at)
+        VALUES ($1, $2, $3, $4, $5, $6, $7, true, NOW(), NOW())
+      `, {
+        bind: [pluginId, file_name, file_path, event_name, listener_function, priority, description],
+        type: sequelize.QueryTypes.INSERT
+      });
+
+      console.log(`✅ Created event listener: ${file_name} → ${event_name}`);
+    }
+
+    res.json({
+      success: true,
+      message: 'Event listener saved successfully'
+    });
+  } catch (error) {
+    console.error('❌ Failed to save event listener:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
+/**
+ * PUT /api/plugins/:pluginId/event-listeners/:fileName/event
+ * Update the event name for a specific file
+ */
+router.put('/:pluginId/event-listeners/:fileName/event', async (req, res) => {
+  try {
+    const { pluginId, fileName } = req.params;
+    const { old_event_name, new_event_name, priority, description } = req.body;
+
+    if (!old_event_name || !new_event_name) {
+      return res.status(400).json({
+        success: false,
+        error: 'old_event_name and new_event_name are required'
+      });
+    }
+
+    console.log(`📡 Updating event mapping: ${fileName} from ${old_event_name} → ${new_event_name}`);
+
+    // Update the event name
+    const updateFields = ['event_name = $1', 'updated_at = NOW()'];
+    const binds = [new_event_name];
+    let bindIndex = 2;
+
+    if (priority !== undefined) {
+      updateFields.push(`priority = $${bindIndex}`);
+      binds.push(priority);
+      bindIndex++;
+    }
+
+    if (description !== undefined) {
+      updateFields.push(`description = $${bindIndex}`);
+      binds.push(description);
+      bindIndex++;
+    }
+
+    binds.push(pluginId, fileName, old_event_name);
+
+    await sequelize.query(`
+      UPDATE plugin_event_listeners
+      SET ${updateFields.join(', ')}
+      WHERE plugin_id = $${bindIndex} AND file_name = $${bindIndex + 1} AND event_name = $${bindIndex + 2}
+    `, {
+      bind: binds,
+      type: sequelize.QueryTypes.UPDATE
+    });
+
+    console.log(`✅ Updated event mapping successfully`);
+
+    res.json({
+      success: true,
+      message: 'Event mapping updated successfully'
+    });
+  } catch (error) {
+    console.error('❌ Failed to update event mapping:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
+/**
+ * DELETE /api/plugins/:pluginId/event-listeners/:fileName/:eventName
+ * Delete an event listener mapping
+ */
+router.delete('/:pluginId/event-listeners/:fileName/:eventName', async (req, res) => {
+  try {
+    const { pluginId, fileName, eventName } = req.params;
+
+    console.log(`📡 Deleting event listener: ${fileName} → ${eventName}`);
+
+    await sequelize.query(`
+      DELETE FROM plugin_event_listeners
+      WHERE plugin_id = $1 AND file_name = $2 AND event_name = $3
+    `, {
+      bind: [pluginId, fileName, eventName],
+      type: sequelize.QueryTypes.DELETE
+    });
+
+    console.log(`✅ Deleted event listener successfully`);
+
+    res.json({
+      success: true,
+      message: 'Event listener deleted successfully'
+    });
+  } catch (error) {
+    console.error('❌ Failed to delete event listener:', error);
     res.status(500).json({
       success: false,
       error: error.message

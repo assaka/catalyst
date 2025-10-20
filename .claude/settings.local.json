@@ -2,19 +2,8 @@
   "$schema": "https://json.schemastore.org/claude-code-settings.json",
   "permissions": {
     "allow": [
-      "Bash(git add:*)",
-      "Bash(git commit:*)",
-      "Bash(git push:*)",
-      "Bash(NODE_ENV=production DATABASE_URL=\"postgresql://postgres.jqqfjfoigtwdpnlicjmh:Lgr5ovbpji64CooD@aws-0-eu-north-1.pooler.supabase.com:6543/postgres\" node backend/populate-file-baselines.js)",
-      "Read(/C:\\Users\\info\\PhpstormProjects\\catalyst\\src\\pages/**)",
-      "Read(/C:\\Users\\info\\PhpstormProjects\\catalyst\\src\\pages/**)",
-      "Read(/C:\\Users\\info\\PhpstormProjects\\catalyst\\src\\pages/**)",
-      "Read(/C:\\Users\\info\\PhpstormProjects\\catalyst\\src\\pages\\admin/**)",
-      "Read(/C:\\Users\\info\\PhpstormProjects\\catalyst\\src\\pages\\admin/**)",
-      "Bash(sed:*)",
-      "Bash(grep:*)",
-      "Bash(git checkout:*)",
-      "Bash(NODE_ENV=production DATABASE_URL=\"postgresql://postgres.jqqfjfoigtwdpnlicjmh:Lgr5ovbpji64CooD@aws-0-eu-north-1.pooler.supabase.com:6543/postgres\" node:*)"
+      "Bash(node check-plugin-schema.js)",
+      "Bash(git log --oneline --grep=\"plugin\\|refactor\\|normaliz\" -i -20)"
     ],
     "deny": [],
     "ask": [],
