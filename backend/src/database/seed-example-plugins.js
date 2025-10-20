@@ -62,6 +62,15 @@ const examplePlugins = [
           { name: 'Review Moderation', path: '/admin/reviews', icon: 'Star' }
         ]
       },
+      adminNavigation: {
+        enabled: true,
+        label: 'Product Reviews',
+        icon: 'Star',
+        route: '/admin/reviews',
+        order: 70,
+        parentKey: 'products',
+        description: 'Manage customer product reviews and ratings'
+      },
       generatedFiles: [
         {
           name: 'models/ProductReview.js',
@@ -231,6 +240,15 @@ const ReviewWidget = ({ productId }) => {
           { name: 'Loyalty Dashboard', path: '/admin/loyalty', icon: 'Award' },
           { name: 'Points History', path: '/admin/loyalty/history', icon: 'History' }
         ]
+      },
+      adminNavigation: {
+        enabled: true,
+        label: 'Loyalty Points',
+        icon: 'Award',
+        route: '/admin/loyalty',
+        order: 60,
+        parentKey: null,
+        description: 'Manage customer loyalty points and rewards'
       },
       generatedFiles: [
         {
@@ -581,7 +599,16 @@ const CampaignBuilder = () => {
 
 export default CampaignBuilder;`
         }
-      ]
+      ],
+      adminNavigation: {
+        enabled: true,
+        label: 'Email Campaigns',
+        icon: 'Mail',
+        route: '/admin/campaigns',
+        order: 55,
+        parentKey: null,
+        description: 'AI-powered email marketing campaigns'
+      }
     },
     hooks: [
       {
