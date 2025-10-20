@@ -36,7 +36,7 @@ class AdminNavigationService {
             const nav = JSON.parse(p.admin_nav);
             if (nav && nav.enabled) {
               return {
-                key: \`plugin-\${p.id}\`,
+                key: `plugin-${p.id}`,
                 label: nav.label,
                 icon: nav.icon || 'Package',
                 route: nav.route,
@@ -50,7 +50,7 @@ class AdminNavigationService {
               };
             }
           } catch (e) {
-            console.error(\`Failed to parse adminNavigation for plugin \${p.id}:\`, e);
+            console.error(`Failed to parse adminNavigation for plugin ${p.id}:`, e);
           }
           return null;
         })
@@ -78,18 +78,18 @@ class AdminNavigationService {
       // 4. Merge registry plugin nav items with master registry
       const allNavItems = [...navItems, ...registryNavItems];
 
-      // 3. Get tenant's customizations
+      // 5. Get tenant's customizations
       const tenantConfig = await sequelize.query(`
         SELECT * FROM admin_navigation_config
       `, { type: sequelize.QueryTypes.SELECT });
 
-      // 4. Merge and apply customizations
+      // 6. Merge and apply customizations
       const merged = this.mergeNavigation(
-        navItems,
+        allNavItems,
         tenantConfig
       );
 
-      // 5. Build hierarchical tree
+      // 7. Build hierarchical tree
       const tree = this.buildNavigationTree(merged);
 
       return tree;
