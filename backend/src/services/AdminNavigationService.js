@@ -18,7 +18,46 @@ class AdminNavigationService {
 
       const pluginIds = installedPlugins.map(p => p.id);
 
-      // 2. Get active plugins from plugin_registry with adminNavigation
+      // 2a. Get active file-based plugins with adminNavigation from manifest
+      const fileBasedPlugins = await sequelize.query(`
+        SELECT
+          id,
+          manifest->>'adminNavigation' as admin_nav
+        FROM plugins
+        WHERE status = 'installed'
+          AND is_enabled = true
+          AND manifest->>'adminNavigation' IS NOT NULL
+      `, { type: sequelize.QueryTypes.SELECT });
+
+      // Parse adminNavigation from file-based plugins
+      const fileBasedNavItems = fileBasedPlugins
+        .filter(p => p.admin_nav)
+        .map(p => {
+          try {
+            const nav = JSON.parse(p.admin_nav);
+            if (nav && nav.enabled) {
+              return {
+                key: `plugin-${p.id}`,
+                label: nav.label,
+                icon: nav.icon || 'Package',
+                route: nav.route,
+                parent_key: nav.parentKey || null,
+                order_position: nav.order || 100,
+                is_core: false,
+                plugin_id: p.id,
+                is_visible: true,
+                category: 'plugins',
+                description: nav.description
+              };
+            }
+          } catch (e) {
+            console.error(`Failed to parse adminNavigation for file-based plugin ${p.id}:`, e);
+          }
+          return null;
+        })
+        .filter(Boolean);
+
+      // 2b. Get active plugins from plugin_registry with adminNavigation
       const registryPlugins = await sequelize.query(`
         SELECT
           id,
@@ -75,8 +114,8 @@ class AdminNavigationService {
         } : { type: sequelize.QueryTypes.SELECT }
       );
 
-      // 4. Merge registry plugin nav items with master registry
-      const allNavItems = [...navItems, ...registryNavItems];
+      // 4. Merge ALL plugin nav items with master registry
+      const allNavItems = [...navItems, ...fileBasedNavItems, ...registryNavItems];
 
       // 5. Get tenant's customizations
       const tenantConfig = await sequelize.query(`
@@ -88,6 +127,20 @@ class AdminNavigationService {
         allNavItems,
         tenantConfig
       );
+
+      // DEBUG: Log items before building tree
+      console.log('\n=== DEBUG: Items before building tree ===');
+      console.log(`Total items: ${merged.length}`);
+      const pluginItems = merged.filter(item => item.key.startsWith('plugin-'));
+      console.log(`Plugin items: ${pluginItems.length}`);
+      pluginItems.forEach(item => {
+        console.log(`  - ${item.label} (${item.key}): parentKey="${item.parentKey}", order=${item.order}`);
+      });
+      const productsItem = merged.find(item => item.key === 'products');
+      console.log(`\nProducts item exists: ${!!productsItem}`);
+      if (productsItem) {
+        console.log(`  - Products: key="${productsItem.key}", parentKey="${productsItem.parentKey}"`);
+      }
 
       // 7. Build hierarchical tree
       const tree = this.buildNavigationTree(merged);
@@ -161,18 +214,39 @@ class AdminNavigationService {
       });
     });
 
+    // DEBUG: Check if products key exists
+    console.log(`\n=== DEBUG buildNavigationTree ===`);
+    console.log(`Total items in map: ${itemMap.size}`);
+    console.log(`Products item in map: ${itemMap.has('products')}`);
+
     // Second pass: Build hierarchy
     items.forEach(item => {
       const node = itemMap.get(item.key);
 
       if (item.parentKey && itemMap.has(item.parentKey)) {
+        // DEBUG: Log when adding children to products
+        if (item.parentKey === 'products') {
+          console.log(`  Adding ${item.label} (${item.key}) as child of products`);
+        }
         // Add as child to parent
         itemMap.get(item.parentKey).children.push(node);
       } else {
         // Add as root item
+        if (item.key.startsWith('plugin-')) {
+          console.log(`  Adding ${item.label} (${item.key}) as ROOT (parentKey="${item.parentKey}", has parent: ${itemMap.has(item.parentKey || '')})`);
+        }
         tree.push(node);
       }
     });
+
+    // DEBUG: Check products children
+    if (itemMap.has('products')) {
+      const productsNode = itemMap.get('products');
+      console.log(`\nProducts node children count: ${productsNode.children.length}`);
+      productsNode.children.forEach(child => {
+        console.log(`  - ${child.label} (${child.key})`);
+      });
+    }
 
     // Sort children by order
     tree.forEach(item => this.sortChildren(item));

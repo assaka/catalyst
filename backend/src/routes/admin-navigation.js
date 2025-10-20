@@ -9,14 +9,49 @@ const AdminNavigationService = require('../services/AdminNavigationService');
  */
 router.get('/navigation', async (req, res) => {
   try {
-    // TODO: Get tenantId from authenticated session
-    const tenantId = req.user?.tenantId || 'default-tenant';
+    // Simple direct query approach - fallback if service fails
+    if (!req.db) {
+      // Try using AdminNavigationService if db not available
+      const tenantId = req.user?.tenantId || 'default-tenant';
+      const navigation = await AdminNavigationService.getNavigationForTenant(tenantId);
+      return res.json({
+        success: true,
+        navigation
+      });
+    }
 
-    const navigation = await AdminNavigationService.getNavigationForTenant(tenantId);
+    // Direct database query (simpler, more reliable)
+    const result = await req.db.query(`
+      SELECT
+        key, label, route, icon, parent_key, order_position,
+        is_core, is_visible, plugin_id, category, description
+      FROM admin_navigation_registry
+      WHERE is_visible = true
+      ORDER BY order_position ASC
+    `);
+
+    // Build simple tree structure
+    const items = result.rows;
+    const itemMap = {};
+    const tree = [];
+
+    // First pass: create map
+    items.forEach(item => {
+      itemMap[item.key] = { ...item, children: [] };
+    });
+
+    // Second pass: build tree
+    items.forEach(item => {
+      if (item.parent_key && itemMap[item.parent_key]) {
+        itemMap[item.parent_key].children.push(itemMap[item.key]);
+      } else {
+        tree.push(itemMap[item.key]);
+      }
+    });
 
     res.json({
       success: true,
-      navigation
+      navigation: tree
     });
   } catch (error) {
     console.error('Failed to get navigation:', error);
