@@ -356,32 +356,35 @@ const NavigationManager = () => {
 
   const updateParent = (index, newParentKey) => {
     const newItems = [...navItems];
-    newItems[index].parent_key = newParentKey;
+    const item = newItems[index];
+
+    // Set new parent
+    item.parent_key = newParentKey;
+
+    // Calculate new order_position based on siblings
+    const siblings = newItems.filter(i =>
+      i.parent_key === newParentKey && i.key !== item.key
+    );
+
+    if (siblings.length > 0) {
+      // Set order_position to be after the last sibling
+      const maxSiblingOrder = Math.max(...siblings.map(s => s.order_position || 0));
+      item.order_position = maxSiblingOrder + 10;
+    } else {
+      // First child of this parent
+      item.order_position = 10;
+    }
+
     setNavItems(newItems);
     setHasChanges(true);
   };
 
-  // Get available parent options for an item (exclude self and descendants)
+  // Get available parent options for an item (only top-level items)
   const getAvailableParents = (itemKey) => {
-    // Find all descendants of this item
-    const getDescendants = (key, items) => {
-      const descendants = new Set([key]);
-      const addChildren = (parentKey) => {
-        items.forEach(item => {
-          if (item.parent_key === parentKey && !descendants.has(item.key)) {
-            descendants.add(item.key);
-            addChildren(item.key);
-          }
-        });
-      };
-      addChildren(key);
-      return descendants;
-    };
-
-    const descendants = getDescendants(itemKey, navItems);
-
-    // Return items that are not self or descendants
-    return navItems.filter(item => !descendants.has(item.key));
+    // Only return top-level items (parent_key = null) that are not the item itself
+    return navItems.filter(item =>
+      item.parent_key === null && item.key !== itemKey
+    );
   };
 
   const saveChanges = async () => {
