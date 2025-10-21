@@ -758,7 +758,7 @@ const UnifiedPluginManagerV2 = () => {
                             </SelectTrigger>
                             <SelectContent>
                               {navigationItems
-                                .filter(item => !item.parentKey)
+                                .filter(item => !item.parent_key)
                                 .map((item) => (
                                   <SelectItem key={item.key} value={item.key}>
                                     {item.label}
@@ -784,7 +784,7 @@ const UnifiedPluginManagerV2 = () => {
                                 </SelectTrigger>
                                 <SelectContent>
                                   {navigationItems
-                                    .filter(item => item.parentKey === navConfig.parentKey)
+                                    .filter(item => item.parent_key === navConfig.parentKey)
                                     .map((item) => (
                                       <SelectItem key={item.key} value={item.key}>
                                         {item.label}
