@@ -263,8 +263,8 @@ export default function Layout({ children, currentPageName }) {
               badge: item.badge,
               isPremium: false,
               isPlugin: false,
-              parent_key: item.parentKey || parentKey,
-              order_position: item.order || 0
+              parent_key: item.parent_key || parentKey,
+              order_position: item.order_position || 0
             });
             // Recursively add children
             if (item.children && item.children.length > 0) {
