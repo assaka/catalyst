@@ -733,8 +733,8 @@ export default function Layout({ children, currentPageName }) {
                 <CollapsibleContent className="space-y-1 overflow-hidden data-[state=open]:animate-collapsible-down data-[state=closed]:animate-collapsible-up">
                   {group.items.map((item) => {
                     let isActive = false;
-                    const itemHasTab = item.path.includes('?tab=');
-                    const isPathBased = item.path.includes('/') && !item.path.includes('?');
+                    const itemHasTab = item.path?.includes('?tab=') || false;
+                    const isPathBased = item.path?.includes('/') && !item.path?.includes('?');
                     
                     if (itemHasTab) {
                         const [basePath, query] = item.path.split('?');
@@ -749,7 +749,12 @@ export default function Layout({ children, currentPageName }) {
                         isActive = currentPath === item.path;
                     } else {
                         // For items without tabs, check if the current page name matches the item's path (ignoring any query params on item.path)
-                        isActive = currentPageName === item.path.split('?')[0];
+                        isActive = item.path ? currentPageName === item.path.split('?')[0] : false;
+                    }
+
+                    // Skip items without a path (these are typically category headers)
+                    if (!item.path) {
+                        return null;
                     }
 
                     let itemClass = `flex items-center space-x-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
@@ -757,7 +762,7 @@ export default function Layout({ children, currentPageName }) {
                             ? 'bg-blue-50 text-blue-700 border-r-2 border-blue-700'
                             : 'text-gray-700 hover:bg-gray-100'
                         }`;
-                    
+
                     if (item.path === "Billing") {
                         itemClass += " animate-pulse bg-red-50 text-red-700";
                     }
