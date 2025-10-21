@@ -361,7 +361,7 @@ const NavigationManager = () => {
     // Set new parent
     item.parent_key = newParentKey;
 
-    // Calculate new order_position based on siblings
+    // Calculate new order_position based on siblings (pattern: 1, 11, 21, 31, 41, 51...)
     const siblings = newItems.filter(i =>
       i.parent_key === newParentKey && i.key !== item.key
     );
@@ -371,8 +371,8 @@ const NavigationManager = () => {
       const maxSiblingOrder = Math.max(...siblings.map(s => s.order_position || 0));
       item.order_position = maxSiblingOrder + 10;
     } else {
-      // First child of this parent
-      item.order_position = 10;
+      // First child of this parent: start at 1
+      item.order_position = 1;
     }
 
     setNavItems(newItems);
