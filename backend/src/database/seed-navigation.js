@@ -69,7 +69,6 @@ const allNavItems = [
   { key: 'render_integration', label: 'Render', icon: 'Cloud', route: '/admin/render-integration', order: 74, category: 'store' },
   { key: 'stores', label: 'Stores', icon: 'Store', route: '/admin/stores', order: 75, category: 'store' },
   { key: 'supabase', label: 'Supabase', icon: 'Database', route: '/admin/supabase', order: 76, category: 'store' },
-  { key: 'integrations', label: 'Integrations', icon: 'Link', route: '/admin/integrations', order: 77, category: 'store' },
 
   // Advanced
   { key: 'monitoring_dashboard', label: 'Monitoring', icon: 'Activity', route: '/admin/monitoring-dashboard', order: 80, category: 'advanced' },
