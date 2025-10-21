@@ -78,8 +78,16 @@ router.post('/navigation/reorder', async (req, res) => {
     // Update each navigation item
     for (const item of items) {
       if (!item.key) {
+        console.log('[NAV-REORDER] Skipping item without key');
         continue;
       }
+
+      // Normalize item properties (handle both camelCase and snake_case)
+      const orderPosition = item.order_position ?? item.orderPosition ?? item.order ?? 0;
+      const isVisible = item.is_visible ?? item.isVisible ?? true;
+      const parentKey = item.parent_key ?? item.parentKey ?? null;
+
+      console.log('[NAV-REORDER] Processing item:', item.key, '(order:', orderPosition, ', visible:', isVisible, ')');
 
       // Check if this is a plugin item (key starts with 'plugin-')
       const isPluginItem = item.key.startsWith('plugin-');
@@ -105,9 +113,9 @@ router.post('/navigation/reorder', async (req, res) => {
               item.label || 'Plugin Item',
               item.icon || 'Package',
               item.route || '/admin',
-              item.parent_key || null,
-              item.order_position,
-              item.is_visible,
+              parentKey,
+              orderPosition,
+              isVisible,
               pluginId
             ],
             type: sequelize.QueryTypes.UPDATE
@@ -118,14 +126,14 @@ router.post('/navigation/reorder', async (req, res) => {
         // For core items, just UPDATE
         const result = await sequelize.query(
           `UPDATE admin_navigation_registry
-           SET order_position = $1, is_visible = $2, updated_at = CURRENT_TIMESTAMP
-           WHERE key = $3`,
+           SET order_position = $1, is_visible = $2, parent_key = $3, updated_at = CURRENT_TIMESTAMP
+           WHERE key = $4`,
           {
-            bind: [item.order_position, item.is_visible, item.key],
+            bind: [orderPosition, isVisible, parentKey, item.key],
             type: sequelize.QueryTypes.UPDATE
           }
         );
-        console.log('[NAV-REORDER] Updated core item:', item.key);
+        console.log('[NAV-REORDER] Updated core item:', item.key, '(rows affected:', result[1], ')');
       }
     }
 
