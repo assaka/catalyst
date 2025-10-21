@@ -2110,33 +2110,29 @@ export default function Checkout() {
 
       {/* Summary Bar - Full Width Below Step Indicators */}
       {stepsCount > 1 && currentStep > 0 && (
-        <Card className="mb-6 lg:mb-8 border-2" style={{ backgroundColor: '#FFFFFF', borderColor: '#E5E7EB' }}>
-          <CardContent className="py-4">
-            <div className="flex flex-wrap items-center gap-x-1 gap-y-3">
-              {getCompletedStepsSummary().flatMap((summary, summaryIdx) =>
+          <div className="flex flex-wrap items-center gap-x-1 gap-y-3 mb-3">
+            {getCompletedStepsSummary().flatMap((summary, summaryIdx) =>
                 summary.items.map((item, itemIdx) => (
-                  <React.Fragment key={`${summary.step}-${itemIdx}`}>
-                    {summaryIdx > 0 && itemIdx === 0 && (
-                      <div className="hidden sm:block w-px h-8 bg-gray-300 mx-4" />
-                    )}
-                    <div className="flex items-center gap-2 px-3 py-2 bg-gray-50 rounded-lg border border-gray-200">
-                      <span className="text-xs font-semibold text-gray-500 uppercase">{item.label}</span>
-                      <span className="text-sm text-gray-900 font-medium">{item.value}</span>
-                    </div>
-                  </React.Fragment>
+                    <React.Fragment key={`${summary.step}-${itemIdx}`}>
+                      {summaryIdx > 0 && itemIdx === 0 && (
+                          <div className="hidden sm:block w-px h-8 bg-gray-300 mx-4" />
+                      )}
+                      <div className="flex items-center gap-2 px-3 py-2 bg-gray-50 rounded-lg border border-gray-200">
+                        <span className="text-xs font-semibold text-gray-500 uppercase">{item.label}</span>
+                        <span className="text-sm text-gray-900 font-medium">{item.value}</span>
+                      </div>
+                    </React.Fragment>
                 ))
-              )}
-              <Button
+            )}
+            <Button
                 onClick={() => setCurrentStep(0)}
                 variant="outline"
                 size="sm"
                 className="ml-auto h-10 px-4 text-blue-600 hover:text-blue-800 hover:bg-blue-50 border-blue-300"
-              >
-                {t('checkout.edit_info', 'Edit Info')}
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
+            >
+              {t('checkout.edit_info', 'Edit Info')}
+            </Button>
+          </div>
       )}
 
       <div className={`grid grid-cols-1 lg:grid-cols-${columnCount} gap-6 lg:gap-8`}>
