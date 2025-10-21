@@ -414,12 +414,6 @@ export const StoreProvider = ({ children }) => {
         currency_symbol: (() => {
           const currencyCode = selectedStore.currency || selectedStore.settings?.currency_code || 'No Currency';
           const symbol = getCurrencySymbol(currencyCode);
-          console.log('💰 StoreProvider currency:', {
-            storeCurrency: selectedStore.currency,
-            settingsCurrencyCode: selectedStore.settings?.currency_code,
-            finalCurrencyCode: currencyCode,
-            symbol: symbol
-          });
           return symbol;
         })(),
         
