@@ -215,7 +215,27 @@ const UnifiedPluginManagerV2 = () => {
     // Load all navigation items for positioning
     try {
       const navResponse = await apiClient.get('admin/navigation');
-      setNavigationItems(navResponse.navigation || []);
+      // Flatten the hierarchical tree into a flat array with parent_key preserved
+      const flattenNav = (items) => {
+        const result = [];
+        items.forEach(item => {
+          // Add the item itself
+          result.push({
+            key: item.key,
+            label: item.label,
+            parent_key: item.parent_key || null,
+            icon: item.icon,
+            route: item.route
+          });
+          // Recursively add children
+          if (item.children && item.children.length > 0) {
+            result.push(...flattenNav(item.children));
+          }
+        });
+        return result;
+      };
+      const flatItems = flattenNav(navResponse.navigation || []);
+      setNavigationItems(flatItems);
     } catch (error) {
       console.error('Error loading navigation items:', error);
       setNavigationItems([]);
