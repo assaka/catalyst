@@ -281,6 +281,11 @@ export default function Layout({ children, currentPageName }) {
           .filter(item => !item.parent_key && !item.path)
           .sort((a, b) => a.order_position - b.order_position);
 
+        // Find standalone items (items with routes but no parent - like plugin items)
+        const standaloneItems = allItems
+          .filter(item => !item.parent_key && item.path)
+          .sort((a, b) => a.order_position - b.order_position);
+
         // Build navigation groups with children
         const navigationGroups = mainCategories.map(category => {
           const children = allItems
@@ -293,6 +298,15 @@ export default function Layout({ children, currentPageName }) {
             items: children
           };
         }).filter(group => group.items.length > 0);
+
+        // If there are standalone items, create a "Plugins & Tools" group for them
+        if (standaloneItems.length > 0) {
+          navigationGroups.push({
+            name: 'Plugins & Tools',
+            key: 'plugins-tools',
+            items: standaloneItems
+          });
+        }
 
         setDynamicNavItems(navigationGroups);
       }
