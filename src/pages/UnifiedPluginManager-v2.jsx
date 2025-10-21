@@ -906,8 +906,6 @@ const UnifiedPluginManagerV2 = () => {
                             </div>
                           </>
                         )}
-                      </>
-                    )}
 
                     {!navConfig.enabled && (
                       <div className="text-center py-8 text-gray-500">
