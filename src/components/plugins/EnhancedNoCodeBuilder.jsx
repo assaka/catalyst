@@ -33,7 +33,11 @@ const EnhancedNoCodeBuilder = ({ onSave, onCancel, onSwitchMode, initialContext 
   const [pluginConfig, setPluginConfig] = useState(initialContext || {});
   const [currentStep, setCurrentStep] = useState('start'); // start, building, reviewing, complete
   const [smartSuggestions, setSmartSuggestions] = useState([]);
-  const [showTemplates, setShowTemplates] = useState(true);
+
+  // Detect if editing existing plugin (has meaningful data like name)
+  const isEditingExisting = !!(initialContext?.name || initialContext?.id);
+  const [showTemplates, setShowTemplates] = useState(!isEditingExisting);
+
   const messagesEndRef = useRef(null);
   const chatContainerRef = useRef(null);
 
@@ -75,7 +79,12 @@ const EnhancedNoCodeBuilder = ({ onSave, onCancel, onSwitchMode, initialContext 
     }
   ];
 
-  const starterQuestions = [
+  const starterQuestions = isEditingExisting ? [
+    "Add a new feature to this plugin",
+    "What hooks or events are currently set up?",
+    "How can I improve the current functionality?",
+    "Show me what database tables exist"
+  ] : [
     "What problem are you trying to solve?",
     "What features do you need?",
     "Who will use this plugin?",
@@ -84,11 +93,18 @@ const EnhancedNoCodeBuilder = ({ onSave, onCancel, onSwitchMode, initialContext 
 
   useEffect(() => {
     if (messages.length === 0 && currentStep === 'start') {
-      // Send welcome message
-      addBotMessage(
-        "Hi! I'm your AI plugin builder assistant. I'll help you create a custom plugin by asking you a few questions.\n\nLet's get started - what kind of plugin would you like to build? You can choose a template below or describe your own idea."
-      );
-      generateSmartSuggestions('initial');
+      // Send context-aware welcome message
+      if (isEditingExisting) {
+        addBotMessage(
+          `Hi! I can see you're working on "${pluginConfig.name}".\n\nI can help you enhance, modify, or add new features to this plugin. What would you like to do?`
+        );
+        generateSmartSuggestions('editing');
+      } else {
+        addBotMessage(
+          "Hi! I'm your AI plugin builder assistant. I'll help you create a custom plugin by asking you a few questions.\n\nLet's get started - what kind of plugin would you like to build? You can choose a template below or describe your own idea."
+        );
+        generateSmartSuggestions('initial');
+      }
     }
   }, []);
 
@@ -498,6 +514,81 @@ const EnhancedNoCodeBuilder = ({ onSave, onCancel, onSwitchMode, initialContext 
             </CardContent>
           </Card>
 
+          {/* What's Already Built Card (shown when editing existing plugin) */}
+          {isEditingExisting && (
+            <Card className="bg-gradient-to-br from-green-50 to-emerald-50 border-green-200">
+              <CardHeader>
+                <CardTitle className="text-lg flex items-center gap-2">
+                  <CheckCircle className="w-5 h-5 text-green-600" />
+                  What's Already Built
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-3 text-sm">
+                {pluginConfig.hooks && pluginConfig.hooks.length > 0 && (
+                  <div>
+                    <div className="font-medium text-gray-700 mb-1">Hooks</div>
+                    <div className="space-y-1">
+                      {pluginConfig.hooks.map((hook, idx) => (
+                        <div key={idx} className="flex items-center gap-2 text-gray-600">
+                          <span className="text-green-600">⚡</span>
+                          <span className="text-xs">{hook.hookPoint || hook.name}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                {pluginConfig.events && pluginConfig.events.length > 0 && (
+                  <div>
+                    <div className="font-medium text-gray-700 mb-1">Events</div>
+                    <div className="space-y-1">
+                      {pluginConfig.events.map((event, idx) => (
+                        <div key={idx} className="flex items-center gap-2 text-gray-600">
+                          <span className="text-green-600">📡</span>
+                          <span className="text-xs">{event.eventType || event.name}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                {pluginConfig.widgets && pluginConfig.widgets.length > 0 && (
+                  <div>
+                    <div className="font-medium text-gray-700 mb-1">Widgets</div>
+                    <div className="space-y-1">
+                      {pluginConfig.widgets.map((widget, idx) => (
+                        <div key={idx} className="flex items-center gap-2 text-gray-600">
+                          <span className="text-green-600">🎨</span>
+                          <span className="text-xs">{widget.name || 'Widget'}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                {pluginConfig.database?.tables && pluginConfig.database.tables.length > 0 && (
+                  <div>
+                    <div className="font-medium text-gray-700 mb-1">Database Tables</div>
+                    <div className="space-y-1">
+                      {pluginConfig.database.tables.map((table, idx) => (
+                        <div key={idx} className="flex items-center gap-2 text-gray-600">
+                          <span className="text-green-600">🗄️</span>
+                          <span className="text-xs">{table.name}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                {(!pluginConfig.hooks || pluginConfig.hooks.length === 0) &&
+                 (!pluginConfig.events || pluginConfig.events.length === 0) &&
+                 (!pluginConfig.widgets || pluginConfig.widgets.length === 0) &&
+                 (!pluginConfig.database?.tables || pluginConfig.database.tables.length === 0) && (
+                  <div className="text-center py-4 text-gray-500">
+                    <p className="text-xs">No technical features detected yet</p>
+                    <p className="text-xs mt-1">Ask me to add hooks, events, or database tables!</p>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          )}
+
           {/* Tips Card */}
           <Card className="bg-gradient-to-br from-amber-50 to-orange-50 border-amber-200">
             <CardHeader>
@@ -530,7 +621,9 @@ const EnhancedNoCodeBuilder = ({ onSave, onCancel, onSwitchMode, initialContext 
           <Card className="bg-gradient-to-br from-blue-50 to-indigo-50 border-blue-200">
             <CardContent className="p-4">
               <div className="text-sm text-gray-700">
-                <strong className="block mb-2">Not sure what to build?</strong>
+                <strong className="block mb-2">
+                  {isEditingExisting ? "Need ideas to enhance?" : "Not sure what to build?"}
+                </strong>
                 <p className="mb-3">Try asking:</p>
                 <div className="space-y-2">
                   {starterQuestions.map((q, idx) => (
