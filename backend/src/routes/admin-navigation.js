@@ -86,7 +86,25 @@ router.put('/plugins/:pluginId/navigation', async (req, res) => {
       }
     );
 
-    console.log('[PLUGIN-NAV] Successfully updated plugin manifest');
+    console.log('[PLUGIN-NAV] Successfully updated plugins table manifest');
+
+    // Also update plugin_registry table
+    await sequelize.query(
+      `UPDATE plugin_registry
+       SET manifest = jsonb_set(
+         COALESCE(manifest, '{}'::jsonb),
+         '{adminNavigation}',
+         $1::jsonb
+       ),
+       updated_at = CURRENT_TIMESTAMP
+       WHERE id = $2`,
+      {
+        bind: [JSON.stringify(adminNavigation), pluginId],
+        type: sequelize.QueryTypes.UPDATE
+      }
+    );
+
+    console.log('[PLUGIN-NAV] Successfully updated plugin_registry table manifest');
 
     // 2. Handle admin_navigation_registry
     if (adminNavigation.enabled) {
