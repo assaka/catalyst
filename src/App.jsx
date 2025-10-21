@@ -36,21 +36,9 @@ async function initializeDatabasePlugins() {
     // Fetch active plugins from database (uses normalized tables structure)
     // Add timestamp to bust cache
     // Try new endpoint first, fallback to legacy if not deployed yet
-    console.log('📡 Fetching from /api/plugins/active...');
     let response = await fetch(`/api/plugins/active?_t=${Date.now()}`);
 
-    console.log('📡 Response status:', response.status, response.ok);
-
-    // If new endpoint not deployed yet (404), use legacy endpoint
-    if (!response.ok && response.status === 404) {
-      console.log('⚠️ /api/plugins/active not available, using legacy /registry endpoint');
-      response = await fetch(`/api/plugins/registry?status=active&_t=${Date.now()}`);
-      console.log('📡 Legacy endpoint response status:', response.status, response.ok);
-    }
-
-    console.log('🔄 Parsing JSON response...');
     const result = await response.json();
-    console.log('✅ JSON parsed:', result);
 
     if (!result.success) {
       console.error('❌ Failed to load plugins from database:', result);
@@ -58,7 +46,6 @@ async function initializeDatabasePlugins() {
     }
 
     const activePlugins = result.data || [];
-    console.log(`🔌 Loading ${activePlugins.length} plugins:`, activePlugins.map(p => p.name));
 
     // Load hooks, events AND frontend scripts for each plugin in parallel (faster!)
     // Add timeout to prevent hanging
@@ -75,15 +62,11 @@ async function initializeDatabasePlugins() {
 
     await Promise.race([loadPromise, timeoutPromise]);
 
-    console.log('✅ All plugins loaded');
-
     // Set global flag to true so components can check it immediately
     window.__pluginsReady = true;
 
     // Set up pricing notifications globally
     setupGlobalPricingNotifications();
-
-    console.log('📢 Emitting system.ready event...');
 
   } catch (error) {
     console.error('❌ Error initializing database plugins:', error);
@@ -97,21 +80,14 @@ async function initializeDatabasePlugins() {
 // Load hooks and events for a specific plugin
 async function loadPluginHooksAndEvents(pluginId) {
   try {
-    console.log(`🔄 Loading plugin: ${pluginId}`);
     // Add timestamp to bust cache
     // Try new endpoint first, fallback to legacy if not deployed yet
     let response = await fetch(`/api/plugins/active/${pluginId}?_t=${Date.now()}`);
 
-    // If new endpoint not deployed yet (404), use legacy endpoint
-    if (!response.ok && response.status === 404) {
-      response = await fetch(`/api/plugins/registry/${pluginId}?_t=${Date.now()}`);
-    }
-
     const result = await response.json();
 
     if (result.success && result.data) {
-      const plugin = result.data;
-      console.log(`✅ Plugin data received: ${plugin.name}`);
+      const plugin = result.data;      console.log(`✅ Plugin data received: ${plugin.name}`);
 
       // Register hooks from database
       if (plugin.hooks) {
@@ -125,13 +101,10 @@ async function loadPluginHooksAndEvents(pluginId) {
 
       // Register events from database
       if (plugin.events) {
-        console.log(`📡 Found ${plugin.events.length} events in ${plugin.name}`);
         for (const event of plugin.events) {
           if (event.enabled) {
-            console.log(`🔨 Creating handler for ${event.event_name}...`);
             const listenerFunction = createHandlerFromDatabaseCode(event.listener_code);
             eventSystem.on(event.event_name, listenerFunction);
-            console.log(`📡 Registered event: ${event.event_name} for plugin: ${plugin.name}`);
           }
         }
       }
@@ -148,8 +121,6 @@ async function loadPluginHooksAndEvents(pluginId) {
 // Load frontend scripts for a specific plugin
 async function loadPluginFrontendScripts(pluginId) {
   try {
-    console.log(`📜 Loading frontend scripts for plugin: ${pluginId}`);
-
     // Fetch scripts from normalized plugin_scripts table
     const response = await fetch(`/api/plugins/${pluginId}/scripts?scope=frontend&_t=${Date.now()}`);
 
@@ -161,11 +132,8 @@ async function loadPluginFrontendScripts(pluginId) {
     const result = await response.json();
 
     if (result.success && result.data && result.data.length > 0) {
-      console.log(`  📄 Found ${result.data.length} frontend scripts`);
 
       for (const script of result.data) {
-        console.log(`  🔨 Executing script: ${script.name}`);
-
         try {
           // Create a script tag and inject the code
           const scriptElement = document.createElement('script');
@@ -176,13 +144,12 @@ async function loadPluginFrontendScripts(pluginId) {
 
           document.head.appendChild(scriptElement);
 
-          console.log(`  ✅ Script loaded: ${script.name}`);
         } catch (error) {
           console.error(`  ❌ Error executing script ${script.name}:`, error);
         }
       }
     } else {
-      console.log(`  ⚠️ No frontend scripts found for ${pluginId}`);
+      console.warn(`  ⚠️ No frontend scripts found for ${pluginId}`);
     }
   } catch (error) {
     console.error(`❌ Error loading frontend scripts for ${pluginId}:`, error);
