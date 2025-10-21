@@ -169,12 +169,12 @@ const NavigationManager = () => {
       const response = await apiClient.get('admin/navigation');
 
       // Flatten the tree into a flat array for editing, preserving parent info
-      const flattenTree = (items, parentKey = null, result = []) => {
+      const flattenTree = (items, parent_key = null, result = []) => {
         items.forEach(item => {
           const { children, ...itemWithoutChildren } = item;
           result.push({
             ...itemWithoutChildren,
-            parent_key: item.parentKey || parentKey,
+            parent_key: item.parent_key || parent_key,
             children: children || []
           });
           if (children && children.length > 0) {
@@ -307,10 +307,14 @@ const NavigationManager = () => {
     try {
       setSaving(true);
 
-      // Send updates to backend
+      // Send updates to backend - include parent_key to preserve hierarchy
       await apiClient.post('admin/navigation/reorder', {
         items: navItems.map(item => ({
           key: item.key,
+          label: item.label,
+          icon: item.icon,
+          route: item.route,
+          parent_key: item.parent_key,
           order_position: item.order_position,
           is_visible: item.is_visible
         }))

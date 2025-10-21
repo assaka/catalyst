@@ -40,6 +40,7 @@ import {
 
 import PluginForm from "@/components/admin/plugins/PluginForm";
 import UninstallDialog from "@/components/admin/plugins/UninstallDialog";
+import PluginSettingsDialog from "@/components/admin/plugins/PluginSettingsDialog";
 
 export default function Plugins() {
   const [plugins, setPlugins] = useState([]);
@@ -56,6 +57,8 @@ export default function Plugins() {
   const [showUninstallDialog, setShowUninstallDialog] = useState(false);
   const [pluginToUninstall, setPluginToUninstall] = useState(null);
   const [uninstalling, setUninstalling] = useState(false);
+  const [showSettingsDialog, setShowSettingsDialog] = useState(false);
+  const [pluginToConfig, setPluginToConfig] = useState(null);
 
   useEffect(() => {
     loadData();

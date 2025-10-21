@@ -175,6 +175,7 @@ class AdminNavigationService {
 
   /**
    * Apply tenant customizations to navigation items
+   * Uses snake_case throughout for consistency with database
    */
   mergeNavigation(masterItems, tenantConfig) {
     const configMap = new Map(
@@ -184,54 +185,50 @@ class AdminNavigationService {
     return masterItems.map(item => {
       const config = configMap.get(item.key);
 
-      // Normalize item - convert snake_case to camelCase and apply config overrides
-      const normalizedItem = {
-        ...item,
-        parentKey: item.parent_key,
-        order: item.order_position,
-        isEnabled: true
-      };
-
       if (!config) {
-        // No customization - use normalized item
-        return normalizedItem;
+        // No customization - return item as-is
+        return item;
       }
 
       // Apply tenant overrides
       return {
-        ...normalizedItem,
+        ...item,
         label: config.custom_label || item.label,
-        order: config.custom_order ?? item.order_position,
+        order_position: config.custom_order ?? item.order_position,
         icon: config.custom_icon || item.icon,
-        parentKey: config.parent_key || item.parent_key,
-        isEnabled: config.is_enabled ?? true,
+        parent_key: config.parent_key || item.parent_key,
+        is_visible: config.is_enabled ?? item.is_visible,
         badge: config.badge_text ? {
           text: config.badge_text,
           color: config.badge_color
         } : null
       };
-    }).filter(item => item.isEnabled !== false);
+    }).filter(item => item.is_visible !== false);
   }
 
   /**
    * Build hierarchical navigation tree
+   * Uses snake_case throughout for consistency
    */
   buildNavigationTree(items) {
     const tree = [];
     const itemMap = new Map();
+    const hasParent = new Set();
 
-    // First pass: Create map of all items with empty children and clean fields
+    // First pass: Create map of all items with empty children
     items.forEach(item => {
       itemMap.set(item.key, {
         key: item.key,
         label: item.label,
         icon: item.icon,
         route: item.route,
-        parentKey: item.parentKey, // Keep camelCase for internal tree building
-        parent_key: item.parentKey, // Add snake_case for frontend compatibility
-        order: item.order, // Keep camelCase for sorting
-        order_position: item.order, // Add snake_case for frontend compatibility
-        is_visible: item.isEnabled !== false, // Add is_visible for frontend
+        parent_key: item.parent_key,
+        order_position: item.order_position,
+        is_visible: item.is_visible,
+        is_core: item.is_core,
+        plugin_id: item.plugin_id,
+        category: item.category,
+        description: item.description,
         badge: item.badge,
         children: []
       });
@@ -241,27 +238,32 @@ class AdminNavigationService {
     items.forEach(item => {
       const node = itemMap.get(item.key);
 
-      if (item.parentKey && itemMap.has(item.parentKey)) {
+      if (item.parent_key && itemMap.has(item.parent_key)) {
         // Add as child to parent
-        itemMap.get(item.parentKey).children.push(node);
-      } else {
-        // Add as root item
-        tree.push(node);
+        itemMap.get(item.parent_key).children.push(node);
+        hasParent.add(item.key); // Mark this item as having a parent
       }
     });
 
-    // Sort children by order
+    // Third pass: Add only root items (items without parents) to tree
+    items.forEach(item => {
+      if (!hasParent.has(item.key)) {
+        tree.push(itemMap.get(item.key));
+      }
+    });
+
+    // Sort children by order_position
     tree.forEach(item => this.sortChildren(item));
 
     return tree;
   }
 
   /**
-   * Recursively sort children by order
+   * Recursively sort children by order_position
    */
   sortChildren(item) {
     if (item.children && item.children.length > 0) {
-      item.children.sort((a, b) => (a.order || 0) - (b.order || 0));
+      item.children.sort((a, b) => (a.order_position || 0) - (b.order_position || 0));
       item.children.forEach(child => this.sortChildren(child));
     }
   }
