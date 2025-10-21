@@ -208,8 +208,9 @@ const UnifiedPluginManagerV2 = () => {
       const response = await apiClient.get(`plugins/admin-pages/${plugin.id}`);
       setAdminPages(response.data || []);
     } catch (error) {
-      console.error('Error loading admin pages:', error);
+      console.warn('[SETTINGS] Failed to load admin pages (not critical):', error.message);
       setAdminPages([]);
+      // Continue - admin pages are optional
     }
 
     // Load all navigation items for positioning
