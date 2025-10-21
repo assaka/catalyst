@@ -168,20 +168,25 @@ const UnifiedPluginManagerV2 = () => {
     }
   };
 
-  const handleEditPlugin = (plugin, mode = 'developer') => {
+  const handleEditPlugin = async (plugin, mode = 'developer') => {
     setSelectedPlugin(plugin);
 
-    // Load plugin data as context for the editor
-    const pluginContext = {
-      ...plugin,
-      name: plugin.name,
-      description: plugin.description,
-      category: plugin.category,
-      version: plugin.version
-    };
+    // Fetch FULL plugin details including controllers, models, components
+    // The list endpoint only has basic data - we need the detailed endpoint
+    try {
+      const response = await apiClient.get(`plugins/registry/${plugin.id}`);
+      const fullPluginData = response.data?.data || response.data || plugin;
 
-    setPluginContext(pluginContext);
-    setBuilderMode(mode);
+      console.log('[EDIT] Loaded full plugin data:', fullPluginData);
+
+      setPluginContext(fullPluginData);
+      setBuilderMode(mode);
+    } catch (error) {
+      console.error('[EDIT] Failed to load full plugin details, using basic data:', error);
+      // Fallback to basic plugin data if fetch fails
+      setPluginContext(plugin);
+      setBuilderMode(mode);
+    }
   };
 
   const handleCreatePlugin = (mode) => {

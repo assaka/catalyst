@@ -79,12 +79,34 @@ const EnhancedNoCodeBuilder = ({ onSave, onCancel, onSwitchMode, initialContext 
     }
   ];
 
-  const starterQuestions = isEditingExisting ? [
-    "Add a new feature to this plugin",
-    "What hooks or events are currently set up?",
-    "How can I improve the current functionality?",
-    "Show me what database tables exist"
-  ] : [
+  // Generate context-aware questions based on what exists
+  const generateEditingQuestions = () => {
+    const questions = [];
+
+    if (pluginConfig.hooks && pluginConfig.hooks.length > 0) {
+      questions.push(`What do the ${pluginConfig.hooks.length} existing hooks do?`);
+    }
+
+    if (pluginConfig.eventListeners && pluginConfig.eventListeners.length > 0) {
+      questions.push(`Explain the ${pluginConfig.eventListeners.length} event listeners`);
+    }
+
+    if (pluginConfig.components && pluginConfig.components.length > 0) {
+      questions.push(`How can I modify the ${pluginConfig.components.length} UI components?`);
+    }
+
+    questions.push("Add a new feature to this plugin");
+    questions.push("How can I improve the current functionality?");
+
+    return questions.length > 2 ? questions.slice(0, 4) : [
+      "Explain what this plugin does",
+      "Add a new feature",
+      "Show me the current implementation",
+      "How can I enhance this plugin?"
+    ];
+  };
+
+  const starterQuestions = isEditingExisting ? generateEditingQuestions() : [
     "What problem are you trying to solve?",
     "What features do you need?",
     "Who will use this plugin?",
@@ -524,65 +546,92 @@ const EnhancedNoCodeBuilder = ({ onSave, onCancel, onSwitchMode, initialContext 
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-3 text-sm">
+                {/* Show hooks */}
                 {pluginConfig.hooks && pluginConfig.hooks.length > 0 && (
                   <div>
-                    <div className="font-medium text-gray-700 mb-1">Hooks</div>
+                    <div className="font-medium text-gray-700 mb-1">Hooks ({pluginConfig.hooks.length})</div>
                     <div className="space-y-1">
                       {pluginConfig.hooks.map((hook, idx) => (
                         <div key={idx} className="flex items-center gap-2 text-gray-600">
                           <span className="text-green-600">⚡</span>
-                          <span className="text-xs">{hook.hookPoint || hook.name}</span>
+                          <span className="text-xs">{hook.hook_name || hook.hookPoint || hook.name}</span>
                         </div>
                       ))}
                     </div>
                   </div>
                 )}
-                {pluginConfig.events && pluginConfig.events.length > 0 && (
+
+                {/* Show event listeners */}
+                {pluginConfig.eventListeners && pluginConfig.eventListeners.length > 0 && (
                   <div>
-                    <div className="font-medium text-gray-700 mb-1">Events</div>
+                    <div className="font-medium text-gray-700 mb-1">Event Listeners ({pluginConfig.eventListeners.length})</div>
                     <div className="space-y-1">
-                      {pluginConfig.events.map((event, idx) => (
+                      {pluginConfig.eventListeners.map((listener, idx) => (
                         <div key={idx} className="flex items-center gap-2 text-gray-600">
                           <span className="text-green-600">📡</span>
-                          <span className="text-xs">{event.eventType || event.name}</span>
+                          <span className="text-xs">{listener.event_name || listener.eventName || listener.name}</span>
                         </div>
                       ))}
                     </div>
                   </div>
                 )}
-                {pluginConfig.widgets && pluginConfig.widgets.length > 0 && (
+
+                {/* Show code files */}
+                {((pluginConfig.controllers && pluginConfig.controllers.length > 0) ||
+                  (pluginConfig.models && pluginConfig.models.length > 0) ||
+                  (pluginConfig.components && pluginConfig.components.length > 0)) && (
                   <div>
-                    <div className="font-medium text-gray-700 mb-1">Widgets</div>
+                    <div className="font-medium text-gray-700 mb-1">Code Files</div>
                     <div className="space-y-1">
-                      {pluginConfig.widgets.map((widget, idx) => (
-                        <div key={idx} className="flex items-center gap-2 text-gray-600">
+                      {pluginConfig.controllers && pluginConfig.controllers.length > 0 && (
+                        <div className="flex items-center gap-2 text-gray-600">
+                          <span className="text-green-600">📄</span>
+                          <span className="text-xs">{pluginConfig.controllers.length} Controllers</span>
+                        </div>
+                      )}
+                      {pluginConfig.models && pluginConfig.models.length > 0 && (
+                        <div className="flex items-center gap-2 text-gray-600">
+                          <span className="text-green-600">🗃️</span>
+                          <span className="text-xs">{pluginConfig.models.length} Models</span>
+                        </div>
+                      )}
+                      {pluginConfig.components && pluginConfig.components.length > 0 && (
+                        <div className="flex items-center gap-2 text-gray-600">
                           <span className="text-green-600">🎨</span>
-                          <span className="text-xs">{widget.name || 'Widget'}</span>
+                          <span className="text-xs">{pluginConfig.components.length} Components</span>
                         </div>
-                      ))}
+                      )}
                     </div>
                   </div>
                 )}
-                {pluginConfig.database?.tables && pluginConfig.database.tables.length > 0 && (
+
+                {/* Show manifest info if available */}
+                {pluginConfig.manifest && (
                   <div>
-                    <div className="font-medium text-gray-700 mb-1">Database Tables</div>
-                    <div className="space-y-1">
-                      {pluginConfig.database.tables.map((table, idx) => (
-                        <div key={idx} className="flex items-center gap-2 text-gray-600">
-                          <span className="text-green-600">🗄️</span>
-                          <span className="text-xs">{table.name}</span>
-                        </div>
-                      ))}
+                    <div className="font-medium text-gray-700 mb-1">Plugin Info</div>
+                    <div className="space-y-1 text-xs text-gray-600">
+                      {pluginConfig.version && (
+                        <div>Version: {pluginConfig.version}</div>
+                      )}
+                      {pluginConfig.author && (
+                        <div>Author: {pluginConfig.author}</div>
+                      )}
+                      {pluginConfig.category && (
+                        <div className="capitalize">Category: {pluginConfig.category}</div>
+                      )}
                     </div>
                   </div>
                 )}
+
+                {/* Empty state */}
                 {(!pluginConfig.hooks || pluginConfig.hooks.length === 0) &&
-                 (!pluginConfig.events || pluginConfig.events.length === 0) &&
-                 (!pluginConfig.widgets || pluginConfig.widgets.length === 0) &&
-                 (!pluginConfig.database?.tables || pluginConfig.database.tables.length === 0) && (
+                 (!pluginConfig.eventListeners || pluginConfig.eventListeners.length === 0) &&
+                 (!pluginConfig.controllers || pluginConfig.controllers.length === 0) &&
+                 (!pluginConfig.models || pluginConfig.models.length === 0) &&
+                 (!pluginConfig.components || pluginConfig.components.length === 0) && (
                   <div className="text-center py-4 text-gray-500">
-                    <p className="text-xs">No technical features detected yet</p>
-                    <p className="text-xs mt-1">Ask me to add hooks, events, or database tables!</p>
+                    <p className="text-xs">Loading plugin details...</p>
+                    <p className="text-xs mt-1">Switch to Developer Mode to see code</p>
                   </div>
                 )}
               </CardContent>
