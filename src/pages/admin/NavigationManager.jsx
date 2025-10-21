@@ -361,18 +361,40 @@ const NavigationManager = () => {
     // Set new parent
     item.parent_key = newParentKey;
 
-    // Calculate new order_position based on siblings (pattern: 1, 11, 21, 31, 41, 51...)
-    const siblings = newItems.filter(i =>
-      i.parent_key === newParentKey && i.key !== item.key
-    );
+    // Calculate new order_position based on hierarchical numbering:
+    // - Top-level items (parent_key = null): 1, 10, 20, 30, 40, 50... (+10 increment)
+    // - Child items: parent_position + 1, parent_position + 2, parent_position + 3... (+1 increment)
 
-    if (siblings.length > 0) {
-      // Set order_position to be after the last sibling
-      const maxSiblingOrder = Math.max(...siblings.map(s => s.order_position || 0));
-      item.order_position = maxSiblingOrder + 10;
+    if (newParentKey === null) {
+      // Moving to top level
+      const topLevelItems = newItems.filter(i =>
+        i.parent_key === null && i.key !== item.key
+      );
+
+      if (topLevelItems.length > 0) {
+        const maxTopLevelOrder = Math.max(...topLevelItems.map(i => i.order_position || 0));
+        item.order_position = maxTopLevelOrder + 10;
+      } else {
+        item.order_position = 1;
+      }
     } else {
-      // First child of this parent: start at 1
-      item.order_position = 1;
+      // Moving to be a child of a parent
+      const parent = newItems.find(i => i.key === newParentKey);
+      const siblings = newItems.filter(i =>
+        i.parent_key === newParentKey && i.key !== item.key
+      );
+
+      if (siblings.length > 0) {
+        // Add after the last sibling (increment by 1)
+        const maxSiblingOrder = Math.max(...siblings.map(s => s.order_position || 0));
+        item.order_position = maxSiblingOrder + 1;
+      } else if (parent) {
+        // First child: parent_position + 1
+        item.order_position = (parent.order_position || 0) + 1;
+      } else {
+        // Fallback
+        item.order_position = 1;
+      }
     }
 
     setNavItems(newItems);
