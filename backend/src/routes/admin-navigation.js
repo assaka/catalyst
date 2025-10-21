@@ -59,6 +59,49 @@ router.post('/navigation/seed', async (req, res) => {
 });
 
 /**
+ * PUT /api/admin/plugins/:pluginId/navigation
+ * Update plugin navigation settings in manifest
+ */
+router.put('/plugins/:pluginId/navigation', async (req, res) => {
+  try {
+    const { pluginId } = req.params;
+    const { adminNavigation } = req.body;
+
+    console.log('[PLUGIN-NAV] Updating navigation for plugin:', pluginId);
+    console.log('[PLUGIN-NAV] New adminNavigation:', adminNavigation);
+
+    // Update the manifest in the plugins table
+    await sequelize.query(
+      `UPDATE plugins
+       SET manifest = jsonb_set(
+         COALESCE(manifest, '{}'::jsonb),
+         '{adminNavigation}',
+         $1::jsonb
+       ),
+       updated_at = CURRENT_TIMESTAMP
+       WHERE id = $2`,
+      {
+        bind: [JSON.stringify(adminNavigation), pluginId],
+        type: sequelize.QueryTypes.UPDATE
+      }
+    );
+
+    console.log('[PLUGIN-NAV] Successfully updated plugin manifest');
+
+    res.json({
+      success: true,
+      message: 'Plugin navigation settings updated successfully'
+    });
+  } catch (error) {
+    console.error('[PLUGIN-NAV] Failed to update plugin navigation:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
+/**
  * POST /api/admin/navigation/reorder
  * Update navigation order and visibility
  */

@@ -143,6 +143,16 @@ export default function Plugins() {
     setShowUninstallDialog(true);
   };
 
+  const handleConfigurePlugin = (plugin) => {
+    setPluginToConfig(plugin);
+    setShowSettingsDialog(true);
+  };
+
+  const handleSavePluginSettings = async () => {
+    // Reload plugins to reflect the changes
+    await loadData();
+  };
+
   const confirmUninstall = async (pluginSlug, options) => {
     setUninstalling(true);
     try {
@@ -481,7 +491,11 @@ export default function Plugins() {
                       </p>
                       
                       <div className="flex justify-between items-center">
-                        <Button variant="outline" size="sm">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleConfigurePlugin(plugin)}
+                        >
                           <Settings className="w-4 h-4 mr-2" />
                           Configure
                         </Button>
@@ -616,6 +630,19 @@ export default function Plugins() {
           plugin={pluginToUninstall}
           onConfirm={confirmUninstall}
           isUninstalling={uninstalling}
+        />
+
+        {/* Plugin Settings Dialog */}
+        <PluginSettingsDialog
+          plugin={pluginToConfig}
+          open={showSettingsDialog}
+          onOpenChange={(open) => {
+            setShowSettingsDialog(open);
+            if (!open) {
+              setPluginToConfig(null);
+            }
+          }}
+          onSave={handleSavePluginSettings}
         />
       </div>
     </div>
