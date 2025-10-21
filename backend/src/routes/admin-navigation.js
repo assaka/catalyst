@@ -2,6 +2,7 @@
 const express = require('express');
 const router = express.Router();
 const AdminNavigationService = require('../services/AdminNavigationService');
+const { sequelize } = require('../database/connection');
 
 /**
  * GET /api/admin/navigation
@@ -88,7 +89,7 @@ router.post('/navigation/reorder', async (req, res) => {
         // Extract plugin ID from key (format: plugin-{pluginId})
         const pluginId = item.key.replace('plugin-', '');
 
-        await req.db.query(
+        await sequelize.query(
           `INSERT INTO admin_navigation_registry
            (key, label, icon, route, parent_key, order_position, is_visible, is_core, plugin_id, category, created_at, updated_at)
            VALUES ($1, $2, $3, $4, $5, $6, $7, false, $8, 'plugins', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
@@ -98,27 +99,33 @@ router.post('/navigation/reorder', async (req, res) => {
              is_visible = EXCLUDED.is_visible,
              parent_key = EXCLUDED.parent_key,
              updated_at = CURRENT_TIMESTAMP`,
-          [
-            item.key,
-            item.label || 'Plugin Item',
-            item.icon || 'Package',
-            item.route || '/admin',
-            item.parent_key || null,
-            item.order_position,
-            item.is_visible,
-            pluginId
-          ]
+          {
+            bind: [
+              item.key,
+              item.label || 'Plugin Item',
+              item.icon || 'Package',
+              item.route || '/admin',
+              item.parent_key || null,
+              item.order_position,
+              item.is_visible,
+              pluginId
+            ],
+            type: sequelize.QueryTypes.UPDATE
+          }
         );
         console.log('[NAV-REORDER] Upserted plugin item:', item.key);
       } else {
         // For core items, just UPDATE
-        const result = await req.db.query(
+        const result = await sequelize.query(
           `UPDATE admin_navigation_registry
            SET order_position = $1, is_visible = $2, updated_at = CURRENT_TIMESTAMP
            WHERE key = $3`,
-          [item.order_position, item.is_visible, item.key]
+          {
+            bind: [item.order_position, item.is_visible, item.key],
+            type: sequelize.QueryTypes.UPDATE
+          }
         );
-        console.log('[NAV-REORDER] Updated core item:', item.key, '(rows:', result.rowCount, ')');
+        console.log('[NAV-REORDER] Updated core item:', item.key);
       }
     }
 
