@@ -212,6 +212,10 @@ class ApiClient {
 
   // Generic request method
   async request(method, endpoint, data = null, customHeaders = {}) {
+    console.log('[API-CLIENT] ======================================');
+    console.log('[API-CLIENT] Request:', method, endpoint);
+    console.log('[API-CLIENT] Base URL:', this.baseURL);
+
     const startTime = performance.now();
     const debugId = apiDebugger.debugAPICall('request', {
       endpoint,
@@ -236,9 +240,11 @@ class ApiClient {
     if (!isAuthRoute && !isPublicEndpoint && (this.isLoggedOut || localStorage.getItem('user_logged_out') === 'true')) {
       throw new Error('Session has been terminated. Please log in again.');
     }
-    
+
     const url = this.buildUrl(endpoint);
+    console.log('[API-CLIENT] Full URL:', url);
     const headers = this.getHeaders(customHeaders);
+    console.log('[API-CLIENT] Headers:', headers);
     
     // Extract options from headers (if passed as a special header)
     const skipTransform = customHeaders['x-skip-transform'] === 'true';

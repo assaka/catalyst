@@ -6,12 +6,14 @@ import apiClient from '@/api/client';
 import * as Icons from 'lucide-react';
 
 export default function AdminSidebar() {
+  console.log('[ADMIN-SIDEBAR] Component mounted/rendered');
   const [navigation, setNavigation] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const location = useLocation();
 
   useEffect(() => {
+    console.log('[ADMIN-SIDEBAR] useEffect triggered - calling loadNavigation');
     loadNavigation();
   }, []);
 
