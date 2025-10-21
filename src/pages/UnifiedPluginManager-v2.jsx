@@ -819,10 +819,11 @@ const UnifiedPluginManagerV2 = () => {
                           </p>
                         </div>
 
-                        {navConfig.parentKey && (
-                          <>
+                        {navConfig.parentKey && (() => {
+                          const siblingItems = navigationItems.filter(item => item.parent_key === navConfig.parentKey);
+                          return siblingItems.length > 0 ? (
                             <div className="space-y-2">
-                              <Label htmlFor="nav-item">Position Relative To</Label>
+                              <Label htmlFor="nav-item">Position Relative To (Optional)</Label>
                               <Select
                                 value={navConfig.relativeToKey}
                                 onValueChange={(value) => setNavConfig({ ...navConfig, relativeToKey: value })}
@@ -831,19 +832,23 @@ const UnifiedPluginManagerV2 = () => {
                                   <SelectValue placeholder="Select navigation item" />
                                 </SelectTrigger>
                                 <SelectContent>
-                                  {navigationItems
-                                    .filter(item => item.parent_key === navConfig.parentKey)
-                                    .map((item) => (
-                                      <SelectItem key={item.key} value={item.key}>
-                                        {item.label}
-                                      </SelectItem>
-                                    ))}
+                                  {siblingItems.map((item) => (
+                                    <SelectItem key={item.key} value={item.key}>
+                                      {item.label}
+                                    </SelectItem>
+                                  ))}
                                 </SelectContent>
                               </Select>
                               <p className="text-xs text-gray-500">
-                                Choose which item this plugin should be positioned near
+                                Choose which item this plugin should be positioned near, or leave empty to use order number only
                               </p>
                             </div>
+                          ) : (
+                            <div className="text-sm text-gray-500 p-3 bg-gray-50 rounded-md">
+                              No existing items in this category. Use the Sidebar Order Number below to set position.
+                            </div>
+                          );
+                        })()}
 
                             {navConfig.relativeToKey && (
                               <div className="space-y-2">

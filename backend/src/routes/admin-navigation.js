@@ -121,11 +121,16 @@ router.put('/plugins/:pluginId/navigation', async (req, res) => {
         const plugin = pluginInfo[0];
         const manifest = plugin.manifest || {};
 
-        // Calculate order_position based on relativeToKey and position
-        let orderPosition = 100; // default
+        // Calculate order_position
+        // Priority: 1) Use direct order if provided, 2) Calculate from relativeToKey, 3) Use default
+        let orderPosition;
 
-        if (adminNavigation.relativeToKey && adminNavigation.position) {
-          // Get the order_position of the relative item
+        if (adminNavigation.order !== undefined && adminNavigation.order !== null) {
+          // Use the direct order number if provided
+          orderPosition = adminNavigation.order;
+          console.log('[PLUGIN-NAV] Using direct order from manifest:', orderPosition);
+        } else if (adminNavigation.relativeToKey && adminNavigation.position) {
+          // Calculate based on relativeToKey and position
           const relativeItem = await sequelize.query(
             `SELECT order_position FROM admin_navigation_registry WHERE key = $1`,
             {
@@ -136,13 +141,18 @@ router.put('/plugins/:pluginId/navigation', async (req, res) => {
 
           if (relativeItem.length > 0) {
             if (adminNavigation.position === 'before') {
-              // Position before: use same order_position (will be slightly lower)
               orderPosition = relativeItem[0].order_position - 0.5;
             } else {
-              // Position after: increment order_position
               orderPosition = relativeItem[0].order_position + 0.5;
             }
+            console.log('[PLUGIN-NAV] Calculated order from relativeToKey:', orderPosition);
+          } else {
+            orderPosition = 100; // fallback if relative item not found
           }
+        } else {
+          // Use default
+          orderPosition = 100;
+          console.log('[PLUGIN-NAV] Using default order:', orderPosition);
         }
 
         // Upsert into admin_navigation_registry
