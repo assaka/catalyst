@@ -196,17 +196,29 @@ const UnifiedPluginManagerV2 = () => {
   };
 
   const handleOpenSettings = async (plugin) => {
-    setSettingsPlugin(plugin);
+    console.log('[SETTINGS] Opening settings for plugin:', plugin.id);
+
+    // Fetch fresh plugin data from API to get latest manifest
+    let freshPlugin = plugin;
+    try {
+      const response = await apiClient.get(`plugins/registry/${plugin.id}`);
+      freshPlugin = response.data;
+      console.log('[SETTINGS] Fetched fresh plugin data from API');
+    } catch (error) {
+      console.warn('[SETTINGS] Failed to fetch fresh plugin data, using passed plugin:', error.message);
+    }
+
+    setSettingsPlugin(freshPlugin);
     setSettingsForm({
-      name: plugin.name || '',
-      description: plugin.description || '',
-      version: plugin.version || '1.0.0',
-      author: plugin.author || ''
+      name: freshPlugin.name || '',
+      description: freshPlugin.description || '',
+      version: freshPlugin.version || '1.0.0',
+      author: freshPlugin.author || ''
     });
 
     // Load admin pages for this plugin
     try {
-      const response = await apiClient.get(`plugins/admin-pages/${plugin.id}`);
+      const response = await apiClient.get(`plugins/admin-pages/${freshPlugin.id}`);
       setAdminPages(response.data || []);
     } catch (error) {
       console.warn('[SETTINGS] Failed to load admin pages (not critical):', error.message);
@@ -244,8 +256,8 @@ const UnifiedPluginManagerV2 = () => {
     }
 
     // Load plugin's current navigation config (if exists)
-    const adminNav = plugin.manifest?.adminNavigation || {};
-    console.log('[SETTINGS] Loading navigation config for plugin:', plugin.id);
+    const adminNav = freshPlugin.manifest?.adminNavigation || {};
+    console.log('[SETTINGS] Loading navigation config for plugin:', freshPlugin.id);
     console.log('[SETTINGS] Admin navigation from manifest:', adminNav);
 
     const loadedNavConfig = {
