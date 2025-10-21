@@ -68,7 +68,8 @@ import {
   Image,
   Database,
   Cloud,
-  MessageSquare
+  MessageSquare,
+  LayoutList
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -678,6 +679,21 @@ export default function Layout({ children, currentPageName }) {
               <Home className="w-5 h-5" />
               <span className="flex-1">Dashboard</span>
               {currentPageName === 'Dashboard' && <ChevronRight className="w-4 h-4 ml-auto" />}
+            </Link>
+
+            {/* Manage Navigation Meta-Tool */}
+            <Link
+              to="/admin/navigation-manager"
+              className={`flex items-center space-x-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors mb-4 ${
+                location.pathname === '/admin/navigation-manager'
+                  ? 'bg-blue-50 text-blue-700 border-r-2 border-blue-700'
+                  : 'text-gray-700 hover:bg-gray-100'
+              }`}
+              onClick={() => setSidebarOpen(false)}
+            >
+              <LayoutList className="w-5 h-5" />
+              <span className="flex-1">Manage Navigation</span>
+              {location.pathname === '/admin/navigation-manager' && <ChevronRight className="w-4 h-4 ml-auto" />}
             </Link>
 
             {navigationGroups.map((group) => (
