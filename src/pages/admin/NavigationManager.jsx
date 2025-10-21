@@ -8,6 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
   ArrowUp,
   ArrowDown,
@@ -38,7 +39,7 @@ import { CSS } from '@dnd-kit/utilities';
 import apiClient from '@/api/client';
 
 // Sortable Item Component
-const SortableItem = ({ item, index, isChild, onMoveUp, onMoveDown, onToggleVisibility, onUpdateOrder, onToggleCollapse, isCollapsed, hasChildren, canMoveUp, canMoveDown }) => {
+const SortableItem = ({ item, index, isChild, onMoveUp, onMoveDown, onToggleVisibility, onUpdateOrder, onUpdateParent, onToggleCollapse, isCollapsed, hasChildren, canMoveUp, canMoveDown, availableParents }) => {
   const {
     attributes,
     listeners,
@@ -93,6 +94,24 @@ const SortableItem = ({ item, index, isChild, onMoveUp, onMoveDown, onToggleVisi
         onChange={(e) => onUpdateOrder(e.target.value)}
         className="w-20 text-center"
       />
+
+      {/* Parent Selector */}
+      <Select
+        value={item.parent_key || 'none'}
+        onValueChange={(value) => onUpdateParent(value === 'none' ? null : value)}
+      >
+        <SelectTrigger className="w-48">
+          <SelectValue placeholder="Parent" />
+        </SelectTrigger>
+        <SelectContent>
+          <SelectItem value="none">Top Level</SelectItem>
+          {availableParents.map(parent => (
+            <SelectItem key={parent.key} value={parent.key}>
+              {parent.label}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
 
       {/* Item Details */}
       <div className="flex-1">
@@ -220,15 +239,47 @@ const NavigationManager = () => {
     }
 
     setNavItems((items) => {
-      const oldIndex = items.findIndex((item) => item.key === active.id);
-      const newIndex = items.findIndex((item) => item.key === over.id);
+      const draggedItem = items.find(item => item.key === active.id);
+      const targetItem = items.find(item => item.key === over.id);
 
-      const newItems = arrayMove(items, oldIndex, newIndex);
+      if (!draggedItem || !targetItem) {
+        return items;
+      }
 
-      // Update order positions
-      newItems.forEach((item, idx) => {
-        item.order_position = idx + 1;
-      });
+      // Check if user is trying to drop ON an item (to make it a child)
+      // vs dropping BETWEEN items (to reorder at same level)
+      const dropOnItem = event.collisions?.[0]?.data?.droppableContainer?.id === over.id;
+
+      const newItems = [...items];
+      const draggedIndex = newItems.findIndex(item => item.key === active.id);
+      const targetIndex = newItems.findIndex(item => item.key === over.id);
+
+      if (dropOnItem && targetItem.key !== draggedItem.parent_key) {
+        // Dropping ON an item - make it a child of that item
+        console.log(`Making ${draggedItem.label} a child of ${targetItem.label}`);
+        newItems[draggedIndex] = {
+          ...draggedItem,
+          parent_key: targetItem.key
+        };
+
+        // Recalculate order positions for children of new parent
+        const siblings = newItems.filter(item =>
+          item.parent_key === targetItem.key && item.key !== draggedItem.key
+        );
+        const newOrder = siblings.length + 1;
+        newItems[draggedIndex].order_position = newOrder * 10;
+
+      } else {
+        // Dropping BETWEEN items - reorder at same level
+        const movedItems = arrayMove(newItems, draggedIndex, targetIndex);
+
+        // Update order positions
+        movedItems.forEach((item, idx) => {
+          item.order_position = (idx + 1) * 10;
+        });
+
+        return movedItems;
+      }
 
       return newItems;
     });
@@ -301,6 +352,36 @@ const NavigationManager = () => {
 
     setNavItems(newItems);
     setHasChanges(true);
+  };
+
+  const updateParent = (index, newParentKey) => {
+    const newItems = [...navItems];
+    newItems[index].parent_key = newParentKey;
+    setNavItems(newItems);
+    setHasChanges(true);
+  };
+
+  // Get available parent options for an item (exclude self and descendants)
+  const getAvailableParents = (itemKey) => {
+    // Find all descendants of this item
+    const getDescendants = (key, items) => {
+      const descendants = new Set([key]);
+      const addChildren = (parentKey) => {
+        items.forEach(item => {
+          if (item.parent_key === parentKey && !descendants.has(item.key)) {
+            descendants.add(item.key);
+            addChildren(item.key);
+          }
+        });
+      };
+      addChildren(key);
+      return descendants;
+    };
+
+    const descendants = getDescendants(itemKey, navItems);
+
+    // Return items that are not self or descendants
+    return navItems.filter(item => !descendants.has(item.key));
   };
 
   const saveChanges = async () => {
@@ -423,7 +504,9 @@ const NavigationManager = () => {
                       onMoveDown={() => moveDown(index)}
                       onToggleVisibility={() => toggleVisibility(index)}
                       onUpdateOrder={(value) => updateOrderPosition(index, value)}
+                      onUpdateParent={(value) => updateParent(index, value)}
                       onToggleCollapse={() => toggleCollapse(item.key)}
+                      availableParents={getAvailableParents(item.key)}
                     />
                   );
                 })}
@@ -438,6 +521,7 @@ const NavigationManager = () => {
         <ul className="text-sm text-gray-600 space-y-1">
           <li>• Drag items by the grip handle to reorder them</li>
           <li>• Use the up/down arrows for precise positioning</li>
+          <li>• Use the parent dropdown to change an item's hierarchy level</li>
           <li>• Click chevron icons to expand/collapse parent items with children</li>
           <li>• Click the eye icon to show/hide items from the sidebar</li>
           <li>• Enter a specific number to jump to that position</li>
