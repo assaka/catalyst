@@ -43,6 +43,13 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import apiClient from '@/api/client';
 import EnhancedNoCodeBuilder from '@/components/plugins/EnhancedNoCodeBuilder';
 import DeveloperPluginEditor from '@/components/plugins/DeveloperPluginEditor';
@@ -70,6 +77,15 @@ const UnifiedPluginManagerV2 = () => {
     description: '',
     version: '',
     author: ''
+  });
+
+  // Navigation configuration state
+  const [navigationItems, setNavigationItems] = useState([]);
+  const [navConfig, setNavConfig] = useState({
+    parentKey: '',
+    relativeToKey: '',
+    position: 'after', // 'before' or 'after'
+    enabled: false
   });
 
   useEffect(() => {
@@ -196,6 +212,23 @@ const UnifiedPluginManagerV2 = () => {
       setAdminPages([]);
     }
 
+    // Load all navigation items for positioning
+    try {
+      const navResponse = await apiClient.get('admin/navigation');
+      setNavigationItems(navResponse.navigation || []);
+    } catch (error) {
+      console.error('Error loading navigation items:', error);
+      setNavigationItems([]);
+    }
+
+    // Load plugin's current navigation config (if exists)
+    setNavConfig({
+      parentKey: plugin.manifest?.adminNavigation?.parentKey || '',
+      relativeToKey: plugin.manifest?.adminNavigation?.relativeToKey || '',
+      position: plugin.manifest?.adminNavigation?.position || 'after',
+      enabled: Boolean(plugin.manifest?.adminNavigation?.enabled)
+    });
+
     setIsSettingsOpen(true);
   };
 
@@ -207,6 +240,32 @@ const UnifiedPluginManagerV2 = () => {
       await loadPlugins();
     } catch (error) {
       console.error('Error saving settings:', error);
+      alert(`Error: ${error.message}`);
+    }
+  };
+
+  const handleSaveNavigation = async () => {
+    try {
+      // Build the adminNavigation object
+      const adminNavigation = navConfig.enabled ? {
+        enabled: true,
+        parentKey: navConfig.parentKey,
+        relativeToKey: navConfig.relativeToKey,
+        position: navConfig.position
+      } : {
+        enabled: false
+      };
+
+      // Save to plugin manifest
+      await apiClient.put(`admin/plugins/${settingsPlugin.id}/navigation`, {
+        adminNavigation
+      });
+
+      alert('Navigation settings saved successfully!');
+      setIsSettingsOpen(false);
+      await loadPlugins();
+    } catch (error) {
+      console.error('Error saving navigation settings:', error);
       alert(`Error: ${error.message}`);
     }
   };
@@ -562,10 +621,13 @@ const UnifiedPluginManagerV2 = () => {
 
             {settingsPlugin && (
               <Tabs defaultValue="manifest" className="mt-4">
-                <TabsList className="grid w-full grid-cols-2">
+                <TabsList className="grid w-full grid-cols-3">
                   <TabsTrigger value="manifest">Manifest</TabsTrigger>
                   <TabsTrigger value="admin">
                     Admin Pages {adminPages.length > 0 && `(${adminPages.length})`}
+                  </TabsTrigger>
+                  <TabsTrigger value="navigation">
+                    Navigation
                   </TabsTrigger>
                 </TabsList>
 
@@ -659,6 +721,142 @@ const UnifiedPluginManagerV2 = () => {
                       <p className="text-sm mt-1">Admin pages can be added through the developer mode</p>
                     </div>
                   )}
+                </TabsContent>
+
+                <TabsContent value="navigation" className="space-y-4 mt-4">
+                  <div className="space-y-4">
+                    <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
+                      <h4 className="font-medium text-blue-900 mb-1">Navigation Positioning</h4>
+                      <p className="text-sm text-blue-700">
+                        Configure where this plugin appears in the admin navigation menu
+                      </p>
+                    </div>
+
+                    <div className="flex items-center space-x-2 mb-4">
+                      <input
+                        type="checkbox"
+                        id="nav-enabled"
+                        checked={navConfig.enabled}
+                        onChange={(e) => setNavConfig({ ...navConfig, enabled: e.target.checked })}
+                        className="rounded border-gray-300"
+                      />
+                      <Label htmlFor="nav-enabled">Show in Admin Navigation</Label>
+                    </div>
+
+                    {navConfig.enabled && (
+                      <>
+                        <div className="space-y-2">
+                          <Label htmlFor="parent-category">Parent Category</Label>
+                          <Select
+                            value={navConfig.parentKey}
+                            onValueChange={(value) => {
+                              setNavConfig({ ...navConfig, parentKey: value, relativeToKey: '' });
+                            }}
+                          >
+                            <SelectTrigger id="parent-category">
+                              <SelectValue placeholder="Select parent category" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {navigationItems
+                                .filter(item => !item.parentKey)
+                                .map((item) => (
+                                  <SelectItem key={item.key} value={item.key}>
+                                    {item.label}
+                                  </SelectItem>
+                                ))}
+                            </SelectContent>
+                          </Select>
+                          <p className="text-xs text-gray-500">
+                            Choose which section of the navigation this plugin belongs to
+                          </p>
+                        </div>
+
+                        {navConfig.parentKey && (
+                          <>
+                            <div className="space-y-2">
+                              <Label htmlFor="nav-item">Position Relative To</Label>
+                              <Select
+                                value={navConfig.relativeToKey}
+                                onValueChange={(value) => setNavConfig({ ...navConfig, relativeToKey: value })}
+                              >
+                                <SelectTrigger id="nav-item">
+                                  <SelectValue placeholder="Select navigation item" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  {navigationItems
+                                    .filter(item => item.parentKey === navConfig.parentKey)
+                                    .map((item) => (
+                                      <SelectItem key={item.key} value={item.key}>
+                                        {item.label}
+                                      </SelectItem>
+                                    ))}
+                                </SelectContent>
+                              </Select>
+                              <p className="text-xs text-gray-500">
+                                Choose which item this plugin should be positioned near
+                              </p>
+                            </div>
+
+                            {navConfig.relativeToKey && (
+                              <div className="space-y-2">
+                                <Label>Position</Label>
+                                <div className="flex gap-4">
+                                  <div className="flex items-center space-x-2">
+                                    <input
+                                      type="radio"
+                                      id="position-before"
+                                      name="position"
+                                      value="before"
+                                      checked={navConfig.position === 'before'}
+                                      onChange={(e) => setNavConfig({ ...navConfig, position: e.target.value })}
+                                      className="border-gray-300"
+                                    />
+                                    <Label htmlFor="position-before" className="font-normal cursor-pointer">
+                                      Before
+                                    </Label>
+                                  </div>
+                                  <div className="flex items-center space-x-2">
+                                    <input
+                                      type="radio"
+                                      id="position-after"
+                                      name="position"
+                                      value="after"
+                                      checked={navConfig.position === 'after'}
+                                      onChange={(e) => setNavConfig({ ...navConfig, position: e.target.value })}
+                                      className="border-gray-300"
+                                    />
+                                    <Label htmlFor="position-after" className="font-normal cursor-pointer">
+                                      After
+                                    </Label>
+                                  </div>
+                                </div>
+                                <p className="text-xs text-gray-500">
+                                  Choose whether to show {navConfig.position} the selected item
+                                </p>
+                              </div>
+                            )}
+                          </>
+                        )}
+                      </>
+                    )}
+
+                    {!navConfig.enabled && (
+                      <div className="text-center py-8 text-gray-500">
+                        <Package className="w-12 h-12 mx-auto mb-3 opacity-30" />
+                        <p>Navigation is currently disabled for this plugin</p>
+                        <p className="text-sm mt-1">Enable it above to configure position settings</p>
+                      </div>
+                    )}
+
+                    <div className="flex justify-end gap-2 mt-6">
+                      <Button variant="outline" onClick={() => setIsSettingsOpen(false)}>
+                        Cancel
+                      </Button>
+                      <Button onClick={handleSaveNavigation}>
+                        Save Navigation Settings
+                      </Button>
+                    </div>
+                  </div>
                 </TabsContent>
               </Tabs>
             )}
