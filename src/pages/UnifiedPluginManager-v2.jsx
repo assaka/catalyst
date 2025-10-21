@@ -85,6 +85,7 @@ const UnifiedPluginManagerV2 = () => {
     parentKey: '',
     relativeToKey: '',
     position: 'after', // 'before' or 'after'
+    order: 100, // Sidebar order number
     enabled: false
   });
 
@@ -251,6 +252,7 @@ const UnifiedPluginManagerV2 = () => {
       parentKey: adminNav.parentKey || '',
       relativeToKey: adminNav.relativeToKey || '',
       position: adminNav.position || 'after',
+      order: adminNav.order || 100,
       enabled: Boolean(adminNav.enabled)
     };
 
@@ -279,7 +281,8 @@ const UnifiedPluginManagerV2 = () => {
         enabled: true,
         parentKey: navConfig.parentKey,
         relativeToKey: navConfig.relativeToKey,
-        position: navConfig.position
+        position: navConfig.position,
+        order: navConfig.order
       } : {
         enabled: false
       };
@@ -863,6 +866,22 @@ const UnifiedPluginManagerV2 = () => {
                                 </p>
                               </div>
                             )}
+
+                            <div className="space-y-2">
+                              <Label htmlFor="sidebar-order">Sidebar Order Number</Label>
+                              <input
+                                id="sidebar-order"
+                                type="number"
+                                min="0"
+                                max="999"
+                                value={navConfig.order}
+                                onChange={(e) => setNavConfig({ ...navConfig, order: parseInt(e.target.value) || 100 })}
+                                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                              />
+                              <p className="text-xs text-gray-500">
+                                Lower numbers appear first in the sidebar (default: 100)
+                              </p>
+                            </div>
                           </>
                         )}
                       </>
