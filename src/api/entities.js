@@ -219,11 +219,9 @@ class BaseEntity {
 // Authentication service
 class AuthService {
   async login(email, password, rememberMe = false, role = 'store_owner', store_id = null) {
-    console.log('🔐 AuthService.login: Starting login', { email, role, store_id });
 
     // Use customer-specific endpoint for customer login
     const endpoint = role === 'customer' ? 'auth/customer/login' : 'auth/login';
-    console.log('🔐 AuthService.login: Using endpoint:', endpoint);
 
     // Build request payload - include store_id for customer login
     const payload = { email, password, rememberMe, role };
@@ -231,48 +229,36 @@ class AuthService {
       payload.store_id = store_id;
     }
 
-    console.log('🔐 AuthService.login: Final payload being sent:', payload);
-    console.log('🔐 AuthService.login: store_id in payload:', payload.store_id);
-    console.log('🔐 AuthService.login: store_id type:', typeof payload.store_id);
-
     const response = await apiClient.post(endpoint, payload);
-    console.log('🔐 AuthService.login: Raw response:', response);
 
     let token = null;
     if (response.data && response.data.token) {
       token = response.data.token;
       apiClient.setToken(token);
-      console.log('✅ AuthService.login: Token found in response.data.token');
     } else if (response.token) {
       token = response.token;
       apiClient.setToken(token);
-      console.log('✅ AuthService.login: Token found in response.token');
     } else {
       console.error('❌ AuthService.login: No token found in response!');
     }
 
     const result = response.data || response;
-    console.log('🔐 AuthService.login: Result:', result);
 
     // CRITICAL FIX: Store user data if we have both token and user info
     // For customers, also store the current store slug to bind session to store
     const currentStoreSlug = role === 'customer' ? this.getCurrentStoreSlug() : null;
 
     if (token && result.user) {
-      console.log('✅ AuthService.login: Storing user data (result.user)');
       setRoleBasedAuthData(result.user, token, currentStoreSlug);
     } else if (token && result.id) {
-      console.log('✅ AuthService.login: Storing user data (result has id)');
       // Handle case where user data is at root level
       setRoleBasedAuthData(result, token, currentStoreSlug);
     } else if (token) {
-      console.log('⚠️ AuthService.login: Token but no user data, fetching from /auth/me');
       // If we have token but no user data, fetch it immediately
       try {
         const userResponse = await apiClient.get('auth/me');
         const userData = userResponse.data || userResponse;
         if (userData && userData.id) {
-          console.log('✅ AuthService.login: User data fetched successfully');
           setRoleBasedAuthData(userData, token, currentStoreSlug);
           // Update result to include user data
           result.user = userData;
@@ -293,7 +279,6 @@ class AuthService {
       }));
     }, 100);
 
-    console.log('🔐 AuthService.login: Returning result:', result);
     return result;
   }
 

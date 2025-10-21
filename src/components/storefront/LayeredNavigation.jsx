@@ -90,17 +90,6 @@ export default function LayeredNavigation({
     const collapseFilters = settings.collapse_filters !== false
     const maxVisibleAttributes = settings.max_visible_attributes || 5;
 
-    // Debug logging for settings
-    console.log('[LayeredNavigation] Settings:', {
-        max_visible_attributes: settings.max_visible_attributes,
-        maxVisibleAttributes,
-        enableProductFilters,
-        collapseFilters
-    });
-
-
-
-
     // FIXED: Calculate price range from products considering compare_price
     const { minPrice, maxPrice } = useMemo(() => {
         if (!products || products.length === 0) return { minPrice: 0, maxPrice: 1000 };
@@ -566,15 +555,6 @@ export default function LayeredNavigation({
                                         const isExpanded = expandedAttributes[code];
                                         const visibleValues = isExpanded ? values : values.slice(0, maxVisibleAttributes);
                                         const hasMoreValues = values.length > maxVisibleAttributes;
-
-                                        // Debug logging
-                                        console.log(`[LayeredNavigation] Attribute: ${code}`, {
-                                            totalValues: values.length,
-                                            maxVisibleAttributes,
-                                            hasMoreValues,
-                                            isExpanded,
-                                            visibleValues: visibleValues.length
-                                        });
 
                                         return (
                                             <>

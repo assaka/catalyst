@@ -31,7 +31,6 @@ function PageWrapper({ Component, pageName }) {
 // Initialize database-driven plugins
 async function initializeDatabasePlugins() {
   try {
-    console.log('🎬 initializeDatabasePlugins called - starting plugin load...');
 
     // Fetch active plugins from database (uses normalized tables structure)
     // Add timestamp to bust cache
@@ -87,7 +86,7 @@ async function loadPluginHooksAndEvents(pluginId) {
     const result = await response.json();
 
     if (result.success && result.data) {
-      const plugin = result.data;      console.log(`✅ Plugin data received: ${plugin.name}`);
+      const plugin = result.data;
 
       // Register hooks from database
       if (plugin.hooks) {
@@ -125,7 +124,6 @@ async function loadPluginFrontendScripts(pluginId) {
     const response = await fetch(`/api/plugins/${pluginId}/scripts?scope=frontend&_t=${Date.now()}`);
 
     if (!response.ok) {
-      console.log(`  ⚠️ No frontend scripts endpoint or error for ${pluginId}`);
       return;
     }
 

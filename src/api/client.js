@@ -212,9 +212,6 @@ class ApiClient {
 
   // Generic request method
   async request(method, endpoint, data = null, customHeaders = {}) {
-    console.log('[API-CLIENT] ======================================');
-    console.log('[API-CLIENT] Request:', method, endpoint);
-    console.log('[API-CLIENT] Base URL:', this.baseURL);
 
     const startTime = performance.now();
     const debugId = apiDebugger.debugAPICall('request', {
@@ -242,9 +239,7 @@ class ApiClient {
     }
 
     const url = this.buildUrl(endpoint);
-    console.log('[API-CLIENT] Full URL:', url);
     const headers = this.getHeaders(customHeaders);
-    console.log('[API-CLIENT] Headers:', headers);
     
     // Extract options from headers (if passed as a special header)
     const skipTransform = customHeaders['x-skip-transform'] === 'true';
@@ -273,16 +268,6 @@ class ApiClient {
 
 
       if (!response.ok) {
-        // Debug logging for API errors
-        if (endpoint.includes('delivery') || endpoint.includes('shipping') || endpoint.includes('payment')) {
-          console.log('🔍 API Error Debug:', {
-            status: response.status,
-            endpoint,
-            result,
-            headers: Object.fromEntries(response.headers.entries())
-          });
-        }
-        
         // Check for authentication failures that should trigger logout
         if (response.status === 401 || response.status === 403) {
           const errorMessage = result.message || '';
@@ -356,7 +341,6 @@ class ApiClient {
       
       // Special handling for patches endpoints - don't transform, return full response
       if (endpoint.includes('/patches/') || endpoint.startsWith('patches/')) {
-        console.log('🔧 API Client: Patches endpoint detected, bypassing transformation', { endpoint, hasSuccess: !!result?.success });
         const duration = performance.now() - startTime;
         apiDebugger.debugAPICall('response', {
           debugId,

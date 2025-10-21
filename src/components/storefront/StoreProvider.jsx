@@ -235,8 +235,6 @@ export const StoreProvider = ({ children }) => {
             console.warn('Failed to clear localStorage cache:', e);
           }
 
-          console.log(`✅ Cleared translations cache for language: ${language}`);
-
           // Force hard reload to bypass any browser cache
           window.location.reload(true);
         }
@@ -552,7 +550,6 @@ export const StoreProvider = ({ children }) => {
         // No language saved, set to store's default language
         const defaultLang = mergedSettings.default_language || 'en';
         localStorage.setItem('catalyst_language', defaultLang);
-        console.log('🌐 Initialized language to store default:', defaultLang);
       } else {
         // Check if saved language is in active languages
         const activeLanguages = mergedSettings.active_languages || ['en'];
@@ -560,7 +557,6 @@ export const StoreProvider = ({ children }) => {
           // Saved language is not active, reset to default
           const defaultLang = mergedSettings.default_language || 'en';
           localStorage.setItem('catalyst_language', defaultLang);
-          console.log('🌐 Reset language to store default (saved language not active):', defaultLang);
         }
       }
 
@@ -671,7 +667,6 @@ export const StoreProvider = ({ children }) => {
             console.warn('Failed to clear localStorage cache:', e);
           }
           sessionStorage.removeItem('translations_cache_cleared');
-          console.log('🔄 Bypassing translations cache after update');
         }
 
         const translationsData = await cachedApiCall(translationsCacheKey, async () => {

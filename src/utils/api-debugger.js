@@ -235,8 +235,6 @@ export class APIDebugger {
       ...data
     };
 
-    console.error(`🚨 API DEBUG ALERT [${type}]:`, alertData);
-    
     // Store alert
     this.logs.push({
       id: this.generateId(),
@@ -249,18 +247,6 @@ export class APIDebugger {
     // In development, show visual notification
     if (import.meta.env.DEV) {
       this.showVisualAlert(type, alertData);
-    }
-  }
-
-  // Warning system
-  warn(message, data) {
-    console.warn(`⚠️ API DEBUG WARNING: ${message}`, data);
-  }
-
-  // Debug logging
-  debug(message, data) {
-    if (this.isEnabled && import.meta.env.DEV) {
-      console.log(`🔍 API DEBUG: ${message}`, data);
     }
   }
 
