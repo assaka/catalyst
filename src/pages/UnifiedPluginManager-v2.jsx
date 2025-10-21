@@ -242,12 +242,19 @@ const UnifiedPluginManagerV2 = () => {
     }
 
     // Load plugin's current navigation config (if exists)
-    setNavConfig({
-      parentKey: plugin.manifest?.adminNavigation?.parentKey || '',
-      relativeToKey: plugin.manifest?.adminNavigation?.relativeToKey || '',
-      position: plugin.manifest?.adminNavigation?.position || 'after',
-      enabled: Boolean(plugin.manifest?.adminNavigation?.enabled)
-    });
+    const adminNav = plugin.manifest?.adminNavigation || {};
+    console.log('[SETTINGS] Loading navigation config for plugin:', plugin.id);
+    console.log('[SETTINGS] Admin navigation from manifest:', adminNav);
+
+    const loadedNavConfig = {
+      parentKey: adminNav.parentKey || '',
+      relativeToKey: adminNav.relativeToKey || '',
+      position: adminNav.position || 'after',
+      enabled: Boolean(adminNav.enabled)
+    };
+
+    console.log('[SETTINGS] Loaded nav config:', loadedNavConfig);
+    setNavConfig(loadedNavConfig);
 
     setIsSettingsOpen(true);
   };
