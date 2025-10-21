@@ -155,8 +155,26 @@ export default function AdminSidebar() {
         <h2 className="text-xl font-bold">Admin Panel</h2>
       </div>
 
+      {/* Manage Navigation Link */}
+      <div className="px-4 pt-4">
+        <Link
+          to="/admin/navigation-manager"
+          className={`
+            flex items-center gap-2 px-3 py-2 text-sm rounded-lg transition-colors
+            ${location.pathname === '/admin/navigation-manager'
+              ? 'bg-blue-100 text-blue-700 font-medium border border-blue-200'
+              : 'text-gray-600 hover:bg-gray-100'
+            }
+          `}
+        >
+          {getIcon('LayoutList')}
+          <span>Manage Navigation</span>
+        </Link>
+        <div className="mt-3 mb-2 border-b"></div>
+      </div>
+
       {/* Navigation */}
-      <nav className="flex-1 p-4 overflow-y-auto space-y-2">
+      <nav className="flex-1 p-4 pt-2 overflow-y-auto space-y-2">
         {navigation.map(item => renderNavItem(item))}
       </nav>
     </aside>
