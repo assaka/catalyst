@@ -227,8 +227,11 @@ class AdminNavigationService {
         label: item.label,
         icon: item.icon,
         route: item.route,
-        parentKey: item.parentKey,
-        order: item.order,
+        parentKey: item.parentKey, // Keep camelCase for internal tree building
+        parent_key: item.parentKey, // Add snake_case for frontend compatibility
+        order: item.order, // Keep camelCase for sorting
+        order_position: item.order, // Add snake_case for frontend compatibility
+        is_visible: item.isEnabled !== false, // Add is_visible for frontend
         badge: item.badge,
         children: []
       });
