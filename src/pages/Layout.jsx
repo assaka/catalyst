@@ -286,16 +286,26 @@ export default function Layout({ children, currentPageName }) {
           .filter(item => !item.parent_key && item.path)
           .sort((a, b) => a.order_position - b.order_position);
 
-        // Build navigation groups with children
+        // Build navigation groups with children (including nested children)
         const navigationGroups = mainCategories.map(category => {
-          const children = allItems
-            .filter(item => item.parent_key === category.key)
-            .sort((a, b) => a.order_position - b.order_position);
+          // Get direct children of the category
+          const directChildren = allItems
+            .filter(item => item.parent_key === category.key);
+
+          // For each direct child, also get their children (to support plugins under items like "products")
+          const allCategoryItems = [...directChildren];
+          directChildren.forEach(child => {
+            const grandchildren = allItems.filter(item => item.parent_key === child.key);
+            allCategoryItems.push(...grandchildren);
+          });
+
+          // Sort all items together by order_position
+          const sortedItems = allCategoryItems.sort((a, b) => a.order_position - b.order_position);
 
           return {
             name: category.name,
             key: category.key,
-            items: children
+            items: sortedItems
           };
         }).filter(group => group.items.length > 0);
 
