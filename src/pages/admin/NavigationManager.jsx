@@ -15,9 +15,134 @@ import {
   EyeOff,
   GripVertical,
   Save,
-  RotateCcw
+  RotateCcw,
+  ChevronDown,
+  ChevronRight
 } from 'lucide-react';
+import {
+  DndContext,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+} from '@dnd-kit/core';
+import {
+  arrayMove,
+  SortableContext,
+  sortableKeyboardCoordinates,
+  useSortable,
+  verticalListSortingStrategy,
+} from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
 import apiClient from '@/api/client';
+
+// Sortable Item Component
+const SortableItem = ({ item, index, isChild, onMoveUp, onMoveDown, onToggleVisibility, onUpdateOrder, onToggleCollapse, isCollapsed, hasChildren, canMoveUp, canMoveDown }) => {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id: item.key });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.5 : 1,
+  };
+
+  return (
+    <div
+      ref={setNodeRef}
+      style={style}
+      className={`flex items-center gap-3 p-4 rounded-lg border ${
+        item.is_visible ? 'bg-white border-gray-200' : 'bg-gray-50 border-gray-300'
+      } ${isChild ? 'ml-8' : ''}`}
+    >
+      {/* Drag Handle */}
+      <div {...attributes} {...listeners} className="flex items-center text-gray-400 cursor-grab active:cursor-grabbing">
+        <GripVertical className="w-5 h-5" />
+      </div>
+
+      {/* Collapse Toggle (only for parent items) */}
+      {hasChildren ? (
+        <Button
+          size="sm"
+          variant="ghost"
+          onClick={onToggleCollapse}
+          className="p-0 h-6 w-6"
+        >
+          {isCollapsed ? (
+            <ChevronRight className="w-4 h-4" />
+          ) : (
+            <ChevronDown className="w-4 h-4" />
+          )}
+        </Button>
+      ) : (
+        <div className="w-6" />
+      )}
+
+      {/* Order Position Input */}
+      <Input
+        type="number"
+        min="1"
+        value={item.order_position}
+        onChange={(e) => onUpdateOrder(e.target.value)}
+        className="w-20 text-center"
+      />
+
+      {/* Item Details */}
+      <div className="flex-1">
+        <div className="flex items-center gap-2">
+          <span className="font-medium text-gray-900">{item.label}</span>
+          {item.is_core && (
+            <Badge variant="secondary" className="text-xs">Core</Badge>
+          )}
+          {item.plugin_id && (
+            <Badge variant="outline" className="text-xs">Plugin</Badge>
+          )}
+        </div>
+        <div className="text-sm text-gray-500">
+          {item.route} • {item.icon}
+        </div>
+      </div>
+
+      {/* Action Buttons */}
+      <div className="flex items-center gap-2">
+        <Button
+          size="sm"
+          variant="outline"
+          onClick={onMoveUp}
+          disabled={!canMoveUp}
+        >
+          <ArrowUp className="w-4 h-4" />
+        </Button>
+        <Button
+          size="sm"
+          variant="outline"
+          onClick={onMoveDown}
+          disabled={!canMoveDown}
+        >
+          <ArrowDown className="w-4 h-4" />
+        </Button>
+        <Button
+          size="sm"
+          variant="outline"
+          onClick={onToggleVisibility}
+        >
+          {item.is_visible ? (
+            <Eye className="w-4 h-4 text-green-600" />
+          ) : (
+            <EyeOff className="w-4 h-4 text-gray-400" />
+          )}
+        </Button>
+      </div>
+    </div>
+  );
+};
 
 const NavigationManager = () => {
   const [navItems, setNavItems] = useState([]);
@@ -25,6 +150,14 @@ const NavigationManager = () => {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [hasChanges, setHasChanges] = useState(false);
+  const [collapsedItems, setCollapsedItems] = useState(new Set());
+
+  const sensors = useSensors(
+    useSensor(PointerSensor),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    })
+  );
 
   useEffect(() => {
     loadNavigationItems();
@@ -35,13 +168,17 @@ const NavigationManager = () => {
       setLoading(true);
       const response = await apiClient.get('admin/navigation');
 
-      // Flatten the tree into a flat array for editing
-      const flattenTree = (items, result = []) => {
+      // Flatten the tree into a flat array for editing, preserving parent info
+      const flattenTree = (items, parentKey = null, result = []) => {
         items.forEach(item => {
           const { children, ...itemWithoutChildren } = item;
-          result.push(itemWithoutChildren);
+          result.push({
+            ...itemWithoutChildren,
+            parent_key: item.parentKey || parentKey,
+            children: children || []
+          });
           if (children && children.length > 0) {
-            flattenTree(children, result);
+            flattenTree(children, item.key, result);
           }
         });
         return result;
@@ -73,6 +210,42 @@ const NavigationManager = () => {
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleDragEnd = (event) => {
+    const { active, over } = event;
+
+    if (!over || active.id === over.id) {
+      return;
+    }
+
+    setNavItems((items) => {
+      const oldIndex = items.findIndex((item) => item.key === active.id);
+      const newIndex = items.findIndex((item) => item.key === over.id);
+
+      const newItems = arrayMove(items, oldIndex, newIndex);
+
+      // Update order positions
+      newItems.forEach((item, idx) => {
+        item.order_position = idx + 1;
+      });
+
+      return newItems;
+    });
+
+    setHasChanges(true);
+  };
+
+  const toggleCollapse = (key) => {
+    setCollapsedItems((prev) => {
+      const newSet = new Set(prev);
+      if (newSet.has(key)) {
+        newSet.delete(key);
+      } else {
+        newSet.add(key);
+      }
+      return newSet;
+    });
   };
 
   const moveUp = (index) => {
@@ -204,84 +377,64 @@ const NavigationManager = () => {
           <CardTitle>Navigation Items</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="space-y-2">
-            {navItems.map((item, index) => (
-              <div
-                key={item.key}
-                className={`flex items-center gap-3 p-4 rounded-lg border ${
-                  item.is_visible ? 'bg-white border-gray-200' : 'bg-gray-50 border-gray-300'
-                }`}
-              >
-                {/* Drag Handle Visual */}
-                <div className="flex items-center text-gray-400">
-                  <GripVertical className="w-5 h-5" />
-                </div>
+          <DndContext
+            sensors={sensors}
+            collisionDetection={closestCenter}
+            onDragEnd={handleDragEnd}
+          >
+            <SortableContext
+              items={navItems.map(item => item.key)}
+              strategy={verticalListSortingStrategy}
+            >
+              <div className="space-y-2">
+                {navItems.map((item, index) => {
+                  // Check if this is a child item
+                  const isChild = !!item.parent_key;
 
-                {/* Order Position Input */}
-                <Input
-                  type="number"
-                  min="1"
-                  value={item.order_position}
-                  onChange={(e) => updateOrderPosition(index, e.target.value)}
-                  className="w-20 text-center"
-                />
+                  // Check if parent is collapsed
+                  const parentCollapsed = item.parent_key && collapsedItems.has(item.parent_key);
 
-                {/* Item Details */}
-                <div className="flex-1">
-                  <div className="flex items-center gap-2">
-                    <span className="font-medium text-gray-900">{item.label}</span>
-                    {item.is_core && (
-                      <Badge variant="secondary" className="text-xs">Core</Badge>
-                    )}
-                    {item.plugin_id && (
-                      <Badge variant="outline" className="text-xs">Plugin</Badge>
-                    )}
-                  </div>
-                  <div className="text-sm text-gray-500">
-                    {item.route} • {item.icon}
-                  </div>
-                </div>
+                  // Check if this item has children
+                  const hasChildren = navItems.some(child => child.parent_key === item.key);
 
-                {/* Action Buttons */}
-                <div className="flex items-center gap-2">
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={() => moveUp(index)}
-                    disabled={index === 0}
-                  >
-                    <ArrowUp className="w-4 h-4" />
-                  </Button>
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={() => moveDown(index)}
-                    disabled={index === navItems.length - 1}
-                  >
-                    <ArrowDown className="w-4 h-4" />
-                  </Button>
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={() => toggleVisibility(index)}
-                  >
-                    {item.is_visible ? (
-                      <Eye className="w-4 h-4 text-green-600" />
-                    ) : (
-                      <EyeOff className="w-4 h-4 text-gray-400" />
-                    )}
-                  </Button>
-                </div>
+                  // Check if this item is collapsed
+                  const isCollapsed = collapsedItems.has(item.key);
+
+                  // Don't render child items if their parent is collapsed
+                  if (parentCollapsed) {
+                    return null;
+                  }
+
+                  return (
+                    <SortableItem
+                      key={item.key}
+                      item={item}
+                      index={index}
+                      isChild={isChild}
+                      hasChildren={hasChildren}
+                      isCollapsed={isCollapsed}
+                      canMoveUp={index > 0}
+                      canMoveDown={index < navItems.length - 1}
+                      onMoveUp={() => moveUp(index)}
+                      onMoveDown={() => moveDown(index)}
+                      onToggleVisibility={() => toggleVisibility(index)}
+                      onUpdateOrder={(value) => updateOrderPosition(index, value)}
+                      onToggleCollapse={() => toggleCollapse(item.key)}
+                    />
+                  );
+                })}
               </div>
-            ))}
-          </div>
+            </SortableContext>
+          </DndContext>
         </CardContent>
       </Card>
 
       <div className="mt-6 p-4 bg-gray-50 rounded-lg">
         <h3 className="font-medium text-gray-900 mb-2">Tips:</h3>
         <ul className="text-sm text-gray-600 space-y-1">
-          <li>• Use the up/down arrows to reorder items</li>
+          <li>• Drag items by the grip handle to reorder them</li>
+          <li>• Use the up/down arrows for precise positioning</li>
+          <li>• Click chevron icons to expand/collapse parent items with children</li>
           <li>• Click the eye icon to show/hide items from the sidebar</li>
           <li>• Enter a specific number to jump to that position</li>
           <li>• Core items are built-in, Plugin items are added by plugins</li>
