@@ -111,7 +111,7 @@ const ModeHeader = ({ user, currentMode, showExtraButtons = false, extraButtons 
       </div>
 
       {/* Desktop Header with Store Selector */}
-      <div className="hidden lg:flex items-center justify-between h-16 px-6 bg-white border-b border-gray-200">
+      <div className="w-full hidden lg:flex items-center justify-between h-16 px-6 bg-white border-b border-gray-200">
         <div className="flex items-center space-x-4">
           <div className="flex items-center bg-gray-100 rounded-lg p-1">
             <Button
