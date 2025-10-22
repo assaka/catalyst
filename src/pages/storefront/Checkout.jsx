@@ -1842,7 +1842,7 @@ export default function Checkout() {
               ) : (
                 <div className="flex items-center justify-between bg-green-50 p-3 rounded-lg">
                   <div>
-                    <p className="text-sm font-medium text-green-800">{t('checkout.applied', 'Applied')} {appliedCoupon.name}</p>
+                    <p className="text-sm font-medium text-green-800">{appliedCoupon.name}</p>
                     <p className="text-xs text-green-600">
                       {appliedCoupon.discount_type === 'fixed'
                         ? `${formatPrice(appliedCoupon.discount_value)} ${t('checkout.off', 'off')}`
