@@ -4,20 +4,10 @@ const { supabase } = require('../database/connection');
 
 const authMiddleware = async (req, res, next) => {
   try {
-    console.log('🔍 Auth middleware called for:', req.method, req.path);
-    console.log('🔍 Headers:', {
-      'authorization': req.headers.authorization ? 'Present' : 'Missing',
-      'x-store-id': req.headers['x-store-id'],
-      'content-type': req.headers['content-type']
-    });
-    
-    
+
     const token = req.header('Authorization')?.replace('Bearer ', '');
-    console.log('🔍 Token present:', !!token);
-    console.log('🔍 Token (first 20 chars):', token?.substring(0, 20));
     
     if (!token) {
-      console.log('❌ No token provided');
       return res.status(401).json({
         error: 'Access denied',
         message: 'No token provided'
@@ -25,7 +15,6 @@ const authMiddleware = async (req, res, next) => {
     }
 
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    console.log('🔍 JWT decoded successfully:', JSON.stringify(decoded, null, 2));
     
     let user;
     
@@ -33,7 +22,6 @@ const authMiddleware = async (req, res, next) => {
     const isCustomer = decoded.role === 'customer';
     const tableName = isCustomer ? 'customers' : 'users';
     const ModelClass = isCustomer ? Customer : User;
-    console.log('🔍 User lookup details:', { isCustomer, tableName, userId: decoded.id });
     
     // Try Supabase first
     try {
@@ -49,24 +37,18 @@ const authMiddleware = async (req, res, next) => {
       
       user = supabaseUser;
     } catch (supabaseError) {
-      console.error(`❌ Supabase auth error for ${tableName}, falling back to Sequelize:`, supabaseError);
-      
       // Fallback to Sequelize with appropriate model
       user = await ModelClass.findByPk(decoded.id);
     }
     
     if (!user) {
-      console.log('❌ User not found after lookup');
       return res.status(401).json({
         error: 'Access denied',
         message: 'Invalid token'
       });
     }
 
-    console.log('✅ User found:', { id: user.id, email: user.email, role: user.role });
-
     if (!user.is_active) {
-      console.log('❌ User account is inactive');
       return res.status(401).json({
         error: 'Access denied',
         message: 'Account is inactive'
@@ -86,18 +68,13 @@ const authMiddleware = async (req, res, next) => {
           .single();
 
         if (checkError || !customerCheck) {
-          console.log('❌ No customer found with email + store_id from token');
-          console.log('   Token email:', decoded.email);
-          console.log('   Token store_id:', decoded.store_id);
           return res.status(403).json({
             error: 'Access denied',
             message: 'Invalid customer session for this store'
           });
         }
 
-        console.log('✅ Customer validated: email + store_id match');
       } catch (validationError) {
-        console.error('❌ Customer validation error:', validationError);
         return res.status(403).json({
           error: 'Access denied',
           message: 'Session validation failed'
@@ -106,10 +83,8 @@ const authMiddleware = async (req, res, next) => {
     }
 
     req.user = user;
-    console.log('✅ Auth middleware completed successfully');
     next();
   } catch (error) {
-    console.error('❌ Auth middleware error:', error);
     return res.status(401).json({
       error: 'Access denied',
       message: 'Invalid token'
