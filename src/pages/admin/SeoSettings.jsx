@@ -59,15 +59,16 @@ export default function SeoSettings() {
             <Switch id="sitemap" />
             <Label htmlFor="sitemap">Enable XML Sitemap</Label>
           </div>
-          
-          <SaveButton
+        </CardContent>
+      </Card>
+      <div className="flex justify-end mt-8">
+        <SaveButton
             onClick={handleSave}
             loading={saving}
             success={saveSuccess}
             defaultText="Save Settings"
-          />
-        </CardContent>
-      </Card>
+        />
+      </div>
     </div>
   );
 }
