@@ -10,23 +10,12 @@ router.get('/', async (req, res) => {
   try {
     const { page = 1, limit = 100, store_id, category_id, status = 'active', search, slug, sku, id, featured } = req.query;
     const offset = (page - 1) * limit;
-    
-    console.log('🔍 Public Products API called with params:', req.query);
-    console.log('📊 Featured param:', featured, typeof featured);
-    console.log('🔍 Request URL:', req.originalUrl);
 
     const where = {
       status: 'active',  // Only show active products in public API
       visibility: 'visible'  // Only show visible products
     };
 
-    console.log('🔎 Building WHERE clause with:', {
-      store_id,
-      slug,
-      status: where.status,
-      visibility: where.visibility
-    });
-    
     if (store_id) {
       where.store_id = store_id;
       
@@ -54,8 +43,7 @@ router.get('/', async (req, res) => {
             }
           ];
         }
-        
-        console.log(`📦 Stock filtering: display_out_of_stock=${displayOutOfStock}`);
+
       } catch (error) {
         console.warn('Could not load store settings for stock filtering:', error.message);
       }
@@ -74,7 +62,6 @@ router.get('/', async (req, res) => {
         // Handle JSON objects like {"$in":["uuid"]} or simple strings
         if (typeof id === 'string' && id.startsWith('{')) {
           const parsedId = JSON.parse(id);
-          console.log('Parsed ID object:', parsedId);
           
           // Handle Sequelize operators
           if (parsedId.$in && Array.isArray(parsedId.$in)) {
@@ -123,23 +110,6 @@ router.get('/', async (req, res) => {
         }
       ]
     });
-
-    console.log('✅ Public Products query result:', rows.length, 'products found');
-    console.log('📊 Final WHERE conditions:', JSON.stringify(where, null, 2));
-    if (rows.length > 0) {
-      console.log('🎯 Sample product:', {
-        id: rows[0].id,
-        name: rows[0].name,
-        slug: rows[0].slug,
-        sku: rows[0].sku,
-        status: rows[0].status,
-        visibility: rows[0].visibility,
-        store_id: rows[0].store_id,
-        attributeValuesCount: rows[0].attributeValues?.length || 0
-      });
-    } else {
-      console.log('❌ No products found with WHERE:', JSON.stringify(where, null, 2));
-    }
 
     // Get language from query or default to 'en'
     const lang = req.query.lang || 'en';
