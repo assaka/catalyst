@@ -369,9 +369,9 @@ const EnhancedNoCodeBuilder = ({ onSave, onCancel, onSwitchMode, initialContext 
 
       <div className="flex-1 flex gap-6 p-6 overflow-hidden">
         {/* Main Chat Area */}
-        <div className="flex-1 flex flex-col bg-white rounded-lg shadow-lg overflow-hidden">
+        <div className="flex-1 flex flex-col bg-white rounded-lg shadow-lg overflow-hidden h-full">
           {/* Messages */}
-          <div ref={chatContainerRef} className="flex-1 overflow-y-auto p-6 space-y-4">
+          <div ref={chatContainerRef} className="h-[calc(100vh-180px)] flex-1 overflow-y-auto p-6 space-y-4">
             {messages.map((msg, idx) => renderMessage(msg, idx))}
 
             {/* Typing indicator */}
@@ -482,167 +482,170 @@ const EnhancedNoCodeBuilder = ({ onSave, onCancel, onSwitchMode, initialContext 
         </div>
 
         {/* Right Sidebar - Progress & Info */}
-        <div className="w-80 space-y-4">
+        <div className="w-80 space-y-4 h-[calc(100vh-100px)] overflow-y-auto">
           {/* Progress Card */}
           <Card>
             <CardHeader>
               <CardTitle className="text-lg flex items-center gap-2">
-                <MessageCircle className="w-5 h-5 text-purple-600" />
+                <MessageCircle className="w-5 h-5 text-purple-600"/>
                 Your Plugin
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-3">
               {pluginConfig.name ? (
-                <>
-                  <div>
-                    <div className="text-sm font-medium text-gray-700">Name</div>
-                    <div className="text-gray-900">{pluginConfig.name}</div>
-                  </div>
-                  {pluginConfig.description && (
+                  <>
                     <div>
-                      <div className="text-sm font-medium text-gray-700">Description</div>
-                      <div className="text-sm text-gray-600">{pluginConfig.description}</div>
+                      <div className="text-sm font-medium text-gray-700">Name</div>
+                      <div className="text-gray-900">{pluginConfig.name}</div>
                     </div>
-                  )}
-                  {pluginConfig.features && pluginConfig.features.length > 0 && (
-                    <div>
-                      <div className="text-sm font-medium text-gray-700 mb-2">Features</div>
-                      <div className="space-y-1">
-                        {pluginConfig.features.map((feature, idx) => (
-                          <div key={idx} className="flex items-center gap-2 text-sm">
-                            <CheckCircle className="w-3 h-3 text-green-600" />
-                            <span className="text-gray-700">{feature.name || feature.type}</span>
+                    {pluginConfig.description && (
+                        <div>
+                          <div className="text-sm font-medium text-gray-700">Description</div>
+                          <div className="text-sm text-gray-600">{pluginConfig.description}</div>
+                        </div>
+                    )}
+                    {pluginConfig.features && pluginConfig.features.length > 0 && (
+                        <div>
+                          <div className="text-sm font-medium text-gray-700 mb-2">Features</div>
+                          <div className="space-y-1">
+                            {pluginConfig.features.map((feature, idx) => (
+                                <div key={idx} className="flex items-center gap-2 text-sm">
+                                  <CheckCircle className="w-3 h-3 text-green-600"/>
+                                  <span className="text-gray-700">{feature.name || feature.type}</span>
+                                </div>
+                            ))}
                           </div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                  {pluginConfig.generatedCode && (
-                    <Button
-                      onClick={handleSave}
-                      className="w-full bg-green-600 hover:bg-green-700 gap-2"
-                    >
-                      <Zap className="w-4 h-4" />
-                      Deploy Plugin
-                    </Button>
-                  )}
-                </>
+                        </div>
+                    )}
+                    {pluginConfig.generatedCode && (
+                        <Button
+                            onClick={handleSave}
+                            className="w-full bg-green-600 hover:bg-green-700 gap-2"
+                        >
+                          <Zap className="w-4 h-4"/>
+                          Deploy Plugin
+                        </Button>
+                    )}
+                  </>
               ) : (
-                <div className="text-center py-8 text-gray-500">
-                  <Sparkles className="w-12 h-12 mx-auto mb-2 text-gray-400" />
-                  <p className="text-sm">Start chatting to build your plugin</p>
-                </div>
+                  <div className="text-center py-8 text-gray-500">
+                    <Sparkles className="w-12 h-12 mx-auto mb-2 text-gray-400"/>
+                    <p className="text-sm">Start chatting to build your plugin</p>
+                  </div>
               )}
             </CardContent>
           </Card>
 
           {/* What's Already Built Card (shown when editing existing plugin) */}
           {isEditingExisting && (
-            <Card className="bg-gradient-to-br from-green-50 to-emerald-50 border-green-200">
-              <CardHeader>
-                <CardTitle className="text-lg flex items-center gap-2">
-                  <CheckCircle className="w-5 h-5 text-green-600" />
-                  What's Already Built
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-3 text-sm">
-                {/* Show hooks */}
-                {pluginConfig.hooks && pluginConfig.hooks.length > 0 && (
-                  <div>
-                    <div className="font-medium text-gray-700 mb-1">Hooks ({pluginConfig.hooks.length})</div>
-                    <div className="space-y-1">
-                      {pluginConfig.hooks.map((hook, idx) => (
-                        <div key={idx} className="flex items-center gap-2 text-gray-600">
-                          <span className="text-green-600">⚡</span>
-                          <span className="text-xs">{hook.hook_name || hook.hookPoint || hook.name}</span>
+              <Card className="bg-gradient-to-br from-green-50 to-emerald-50 border-green-200">
+                <CardHeader>
+                  <CardTitle className="text-lg flex items-center gap-2">
+                    <CheckCircle className="w-5 h-5 text-green-600"/>
+                    What's Already Built
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-3 text-sm">
+                  {/* Show hooks */}
+                  {pluginConfig.hooks && pluginConfig.hooks.length > 0 && (
+                      <div>
+                        <div className="font-medium text-gray-700 mb-1">Hooks ({pluginConfig.hooks.length})</div>
+                        <div className="space-y-1">
+                          {pluginConfig.hooks.map((hook, idx) => (
+                              <div key={idx} className="flex items-center gap-2 text-gray-600">
+                                <span className="text-green-600">⚡</span>
+                                <span className="text-xs">{hook.hook_name || hook.hookPoint || hook.name}</span>
+                              </div>
+                          ))}
                         </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
+                      </div>
+                  )}
 
-                {/* Show event listeners */}
-                {pluginConfig.eventListeners && pluginConfig.eventListeners.length > 0 && (
-                  <div>
-                    <div className="font-medium text-gray-700 mb-1">Event Listeners ({pluginConfig.eventListeners.length})</div>
-                    <div className="space-y-1">
-                      {pluginConfig.eventListeners.map((listener, idx) => (
-                        <div key={idx} className="flex items-center gap-2 text-gray-600">
-                          <span className="text-green-600">📡</span>
-                          <span className="text-xs">{listener.event_name || listener.eventName || listener.name}</span>
+                  {/* Show event listeners */}
+                  {pluginConfig.eventListeners && pluginConfig.eventListeners.length > 0 && (
+                      <div>
+                        <div className="font-medium text-gray-700 mb-1">Event Listeners
+                          ({pluginConfig.eventListeners.length})
                         </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
+                        <div className="space-y-1">
+                          {pluginConfig.eventListeners.map((listener, idx) => (
+                              <div key={idx} className="flex items-center gap-2 text-gray-600">
+                                <span className="text-green-600">📡</span>
+                                <span
+                                    className="text-xs">{listener.event_name || listener.eventName || listener.name}</span>
+                              </div>
+                          ))}
+                        </div>
+                      </div>
+                  )}
 
-                {/* Show code files */}
-                {((pluginConfig.controllers && pluginConfig.controllers.length > 0) ||
-                  (pluginConfig.models && pluginConfig.models.length > 0) ||
-                  (pluginConfig.components && pluginConfig.components.length > 0)) && (
-                  <div>
-                    <div className="font-medium text-gray-700 mb-1">Code Files</div>
-                    <div className="space-y-1">
-                      {pluginConfig.controllers && pluginConfig.controllers.length > 0 && (
-                        <div className="flex items-center gap-2 text-gray-600">
-                          <span className="text-green-600">📄</span>
-                          <span className="text-xs">{pluginConfig.controllers.length} Controllers</span>
+                  {/* Show code files */}
+                  {((pluginConfig.controllers && pluginConfig.controllers.length > 0) ||
+                      (pluginConfig.models && pluginConfig.models.length > 0) ||
+                      (pluginConfig.components && pluginConfig.components.length > 0)) && (
+                      <div>
+                        <div className="font-medium text-gray-700 mb-1">Code Files</div>
+                        <div className="space-y-1">
+                          {pluginConfig.controllers && pluginConfig.controllers.length > 0 && (
+                              <div className="flex items-center gap-2 text-gray-600">
+                                <span className="text-green-600">📄</span>
+                                <span className="text-xs">{pluginConfig.controllers.length} Controllers</span>
+                              </div>
+                          )}
+                          {pluginConfig.models && pluginConfig.models.length > 0 && (
+                              <div className="flex items-center gap-2 text-gray-600">
+                                <span className="text-green-600">🗃️</span>
+                                <span className="text-xs">{pluginConfig.models.length} Models</span>
+                              </div>
+                          )}
+                          {pluginConfig.components && pluginConfig.components.length > 0 && (
+                              <div className="flex items-center gap-2 text-gray-600">
+                                <span className="text-green-600">🎨</span>
+                                <span className="text-xs">{pluginConfig.components.length} Components</span>
+                              </div>
+                          )}
                         </div>
-                      )}
-                      {pluginConfig.models && pluginConfig.models.length > 0 && (
-                        <div className="flex items-center gap-2 text-gray-600">
-                          <span className="text-green-600">🗃️</span>
-                          <span className="text-xs">{pluginConfig.models.length} Models</span>
-                        </div>
-                      )}
-                      {pluginConfig.components && pluginConfig.components.length > 0 && (
-                        <div className="flex items-center gap-2 text-gray-600">
-                          <span className="text-green-600">🎨</span>
-                          <span className="text-xs">{pluginConfig.components.length} Components</span>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                )}
+                      </div>
+                  )}
 
-                {/* Show manifest info if available */}
-                {pluginConfig.manifest && (
-                  <div>
-                    <div className="font-medium text-gray-700 mb-1">Plugin Info</div>
-                    <div className="space-y-1 text-xs text-gray-600">
-                      {pluginConfig.version && (
-                        <div>Version: {pluginConfig.version}</div>
-                      )}
-                      {pluginConfig.author && (
-                        <div>Author: {pluginConfig.author}</div>
-                      )}
-                      {pluginConfig.category && (
-                        <div className="capitalize">Category: {pluginConfig.category}</div>
-                      )}
-                    </div>
-                  </div>
-                )}
+                  {/* Show manifest info if available */}
+                  {pluginConfig.manifest && (
+                      <div>
+                        <div className="font-medium text-gray-700 mb-1">Plugin Info</div>
+                        <div className="space-y-1 text-xs text-gray-600">
+                          {pluginConfig.version && (
+                              <div>Version: {pluginConfig.version}</div>
+                          )}
+                          {pluginConfig.author && (
+                              <div>Author: {pluginConfig.author}</div>
+                          )}
+                          {pluginConfig.category && (
+                              <div className="capitalize">Category: {pluginConfig.category}</div>
+                          )}
+                        </div>
+                      </div>
+                  )}
 
-                {/* Empty state */}
-                {(!pluginConfig.hooks || pluginConfig.hooks.length === 0) &&
-                 (!pluginConfig.eventListeners || pluginConfig.eventListeners.length === 0) &&
-                 (!pluginConfig.controllers || pluginConfig.controllers.length === 0) &&
-                 (!pluginConfig.models || pluginConfig.models.length === 0) &&
-                 (!pluginConfig.components || pluginConfig.components.length === 0) && (
-                  <div className="text-center py-4 text-gray-500">
-                    <p className="text-xs">Loading plugin details...</p>
-                    <p className="text-xs mt-1">Switch to Developer Mode to see code</p>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
+                  {/* Empty state */}
+                  {(!pluginConfig.hooks || pluginConfig.hooks.length === 0) &&
+                      (!pluginConfig.eventListeners || pluginConfig.eventListeners.length === 0) &&
+                      (!pluginConfig.controllers || pluginConfig.controllers.length === 0) &&
+                      (!pluginConfig.models || pluginConfig.models.length === 0) &&
+                      (!pluginConfig.components || pluginConfig.components.length === 0) && (
+                          <div className="text-center py-4 text-gray-500">
+                            <p className="text-xs">Loading plugin details...</p>
+                            <p className="text-xs mt-1">Switch to Developer Mode to see code</p>
+                          </div>
+                      )}
+                </CardContent>
+              </Card>
           )}
 
           {/* Tips Card */}
           <Card className="bg-gradient-to-br from-amber-50 to-orange-50 border-amber-200">
             <CardHeader>
               <CardTitle className="text-lg flex items-center gap-2">
-                <Lightbulb className="w-5 h-5 text-amber-600" />
+                <Lightbulb className="w-5 h-5 text-amber-600"/>
                 Pro Tips
               </CardTitle>
             </CardHeader>
@@ -676,13 +679,13 @@ const EnhancedNoCodeBuilder = ({ onSave, onCancel, onSwitchMode, initialContext 
                 <p className="mb-3">Try asking:</p>
                 <div className="space-y-2">
                   {starterQuestions.map((q, idx) => (
-                    <button
-                      key={idx}
-                      onClick={() => handleSendMessage(q)}
-                      className="block w-full text-left px-3 py-2 bg-white rounded border border-blue-200 hover:border-blue-400 hover:shadow-sm transition-all text-sm"
-                    >
-                      {q}
-                    </button>
+                      <button
+                          key={idx}
+                          onClick={() => handleSendMessage(q)}
+                          className="block w-full text-left px-3 py-2 bg-white rounded border border-blue-200 hover:border-blue-400 hover:shadow-sm transition-all text-sm"
+                      >
+                        {q}
+                      </button>
                   ))}
                 </div>
               </div>

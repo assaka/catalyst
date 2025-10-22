@@ -330,7 +330,7 @@ const UnifiedPluginManagerV2 = () => {
   // If in builder mode, show full-screen builder
   if (builderMode === 'nocode') {
     return (
-      <div className="fixed inset-0 bg-gray-100 z-50">
+      <div className="inset-0 bg-gray-100 z-50">
         <EnhancedNoCodeBuilder
           initialContext={pluginContext}
           onSave={handleSavePlugin}
