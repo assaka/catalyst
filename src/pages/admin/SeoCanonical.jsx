@@ -68,15 +68,16 @@ export default function SeoCanonical() {
               Override the default domain for all canonical URLs
             </p>
           </div>
-          
-          <SaveButton
+        </CardContent>
+      </Card>
+      <div className="flex justify-end my-8">
+        <SaveButton
             onClick={handleSave}
             loading={saving}
             success={saveSuccess}
             defaultText="Save Settings"
-          />
-        </CardContent>
-      </Card>
+        />
+      </div>
 
       <Card>
         <CardHeader>
@@ -92,15 +93,17 @@ export default function SeoCanonical() {
             <Label htmlFor="canonical-url">Canonical URL</Label>
             <Input id="canonical-url" placeholder="https://example.com/products/main-product" />
           </div>
-          
-          <SaveButton
+
+        </CardContent>
+      </Card>
+      <div className="flex justify-end mt-8">
+        <SaveButton
             onClick={handleSave}
             loading={saving}
             success={saveSuccess}
             defaultText="Add Custom Canonical"
-          />
-        </CardContent>
-      </Card>
+        />
+      </div>
     </div>
   );
 }

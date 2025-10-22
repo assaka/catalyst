@@ -75,15 +75,18 @@ export default function SeoSocial() {
                   </SelectContent>
                 </Select>
               </div>
-              
-              <SaveButton
+
+            </CardContent>
+          </Card>
+          <div className="flex justify-end mt-8">
+            <SaveButton
                 onClick={handleSave}
                 loading={saving}
                 success={saveSuccess}
-                defaultText="Save Open Graph Settings"
-              />
-            </CardContent>
-          </Card>
+                defaultText="Save Settings"
+            />
+          </div>
+
         </TabsContent>
 
         <TabsContent value="twitter" className="space-y-4">
@@ -116,15 +119,17 @@ export default function SeoSocial() {
                 <Label htmlFor="twitter-creator">Creator Username</Label>
                 <Input id="twitter-creator" placeholder="@creator" />
               </div>
-              
-              <SaveButton
+
+            </CardContent>
+          </Card>
+          <div className="flex justify-end mt-8">
+            <SaveButton
                 onClick={handleSave}
                 loading={saving}
                 success={saveSuccess}
-                defaultText="Save Twitter Settings"
-              />
-            </CardContent>
-          </Card>
+                defaultText="Save Settings"
+            />
+          </div>
         </TabsContent>
 
         <TabsContent value="schema" className="space-y-4">
@@ -170,15 +175,17 @@ export default function SeoSocial() {
                   placeholder="Mo-Fr 09:00-18:00&#10;Sa 10:00-16:00"
                 />
               </div>
-              
-              <SaveButton
+
+            </CardContent>
+          </Card>
+          <div className="flex justify-end mt-8">
+            <SaveButton
                 onClick={handleSave}
                 loading={saving}
                 success={saveSuccess}
-                defaultText="Save Schema Settings"
-              />
-            </CardContent>
-          </Card>
+                defaultText="Save Settings"
+            />
+          </div>
         </TabsContent>
       </Tabs>
     </div>

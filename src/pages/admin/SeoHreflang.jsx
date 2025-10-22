@@ -120,17 +120,16 @@ export default function SeoHreflang() {
               ))}
             </div>
           </div>
-
-          <div className="mt-4">
-            <SaveButton
-              onClick={handleSave}
-              loading={saving}
-              success={saveSuccess}
-              defaultText="Save Configuration"
-            />
-          </div>
         </CardContent>
       </Card>
+      <div className="flex justify-end mt-8">
+        <SaveButton
+            onClick={handleSave}
+            loading={saving}
+            success={saveSuccess}
+            defaultText="Save Configuration"
+        />
+      </div>
     </div>
   );
 }
