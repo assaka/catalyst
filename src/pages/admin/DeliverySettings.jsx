@@ -11,8 +11,8 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import { Calendar, Clock, Settings, Plus, Trash2 } from "lucide-react";
+import FlashMessage from "@/components/storefront/FlashMessage";
 import SaveButton from '@/components/ui/save-button';
-import { toast } from 'sonner';
 
 export default function DeliverySettings() { // Renamed the function component from DeliverySettingsPage
   const { selectedStore, getSelectedStoreId } = useStoreSelection();
@@ -21,6 +21,7 @@ export default function DeliverySettings() { // Renamed the function component f
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(false);
+  const [flashMessage, setFlashMessage] = useState(null);
   const [newBlockedDate, setNewBlockedDate] = useState('');
 
   useEffect(() => {
@@ -67,7 +68,7 @@ export default function DeliverySettings() { // Renamed the function component f
       }
     } catch (error) {
       console.error("Error loading delivery settings:", error);
-      toast.error('Failed to load settings.');
+      setFlashMessage({ type: 'error', message: 'Failed to load settings.' });
       setStore(null);
       setDeliverySettings(null);
     } finally {
@@ -78,7 +79,7 @@ export default function DeliverySettings() { // Renamed the function component f
   const handleSave = async (e) => { // Renamed from handleSubmit
     e.preventDefault();
     if (!store || !deliverySettings) {
-      toast.error('Cannot save: No store or settings data available.');
+      setFlashMessage({ type: 'error', message: 'Cannot save: No store or settings data available.' });
       return;
     }
 
@@ -114,7 +115,7 @@ export default function DeliverySettings() { // Renamed the function component f
       // Verify the result
       if (result && result.id) {
         setDeliverySettings(result); // Update state with the saved/created settings (especially if new ID generated)
-        toast.success('Delivery settings saved successfully!');
+        setFlashMessage({ type: 'success', message: 'Delivery settings saved successfully!' });
         setSaveSuccess(true);
         setTimeout(() => setSaveSuccess(false), 2000);
 
@@ -124,11 +125,11 @@ export default function DeliverySettings() { // Renamed the function component f
         }, 1000);
       } else {
         console.error('⚠️ Unexpected response format:', result);
-        toast.error('Settings may not have saved correctly. Please refresh.');
+        setFlashMessage({ type: 'warning', message: 'Settings may not have saved correctly. Please refresh.' });
       }
     } catch (error) {
       console.error("Error saving delivery settings:", error);
-      toast.error('Failed to save settings.');
+      setFlashMessage({ type: 'error', message: 'Failed to save settings.' });
     } finally {
       setSaving(false);
     }
@@ -208,6 +209,7 @@ export default function DeliverySettings() { // Renamed the function component f
   if (!store && !loading) {
     return (
       <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center p-4">
+        <FlashMessage message={flashMessage} onClose={() => setFlashMessage(null)} />
         <div className="text-center text-gray-700">
             <p className="text-lg font-semibold mb-2">No Store Found</p>
             <p>It seems your account is not associated with any store. Please ensure your store is set up correctly.</p>
@@ -221,6 +223,7 @@ export default function DeliverySettings() { // Renamed the function component f
   if (!deliverySettings && !loading) {
     return (
       <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center p-4">
+        <FlashMessage message={flashMessage} onClose={() => setFlashMessage(null)} />
         <div className="text-center text-gray-700">
             <p className="text-lg font-semibold mb-2">Error Loading Settings</p>
             <p>There was an issue loading your delivery settings. Please try again or contact support.</p>
@@ -233,6 +236,7 @@ export default function DeliverySettings() { // Renamed the function component f
   return (
     <div className="min-h-screen bg-gray-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <FlashMessage message={flashMessage} onClose={() => setFlashMessage(null)} />
         
         <div className="flex justify-between items-center mb-8">
           <div>
