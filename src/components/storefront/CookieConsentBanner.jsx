@@ -245,6 +245,26 @@ export default function CookieConsentBanner() {
     translationsData: cookieSettings?.translations
   });
 
+  // Helper function to get the correct privacy policy URL
+  const getPrivacyPolicyUrl = () => {
+    const url = cookieSettings?.privacy_policy_url;
+
+    // If no URL is set, use default privacy-policy page
+    if (!url) {
+      return createCmsPageUrl(store?.slug, 'privacy-policy');
+    }
+
+    // If URL doesn't start with /public/, it's an old/invalid format - regenerate it
+    if (!url.startsWith('/public/')) {
+      // Extract slug from old URL formats like /privacy-policy or /cms-page/privacy-policy
+      const slug = url.split('/').pop() || 'privacy-policy';
+      return createCmsPageUrl(store?.slug, slug);
+    }
+
+    // URL is already in correct format
+    return url;
+  };
+
   // Helper function to get translated text from translations JSON (no fallback)
   const getTranslatedText = (field, defaultValue = '') => {
     const translations = cookieSettings?.translations;
@@ -356,7 +376,7 @@ export default function CookieConsentBanner() {
               )}
 
               <Link
-                to={cookieSettings.privacy_policy_url || createCmsPageUrl(store?.slug, 'privacy-policy')}
+                to={getPrivacyPolicyUrl()}
                 className="text-sm text-blue-600 hover:text-blue-800 underline self-center"
               >
                 {getTranslatedText('privacy_policy_text', 'Privacy Policy')}

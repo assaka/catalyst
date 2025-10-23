@@ -2,8 +2,8 @@
 class AdminApiClient {
   constructor() {
     this.baseURL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000';
-    this.token = localStorage.getItem('admin_auth_token');
-    
+    this.token = localStorage.getItem('store_owner_auth_token');
+
     // Admin client always requires authentication
     this.requiresAuth = true;
   }
@@ -12,15 +12,15 @@ class AdminApiClient {
   setToken(token) {
     this.token = token;
     if (token) {
-      localStorage.setItem('admin_auth_token', token);
+      localStorage.setItem('store_owner_auth_token', token);
     } else {
-      localStorage.removeItem('admin_auth_token');
+      localStorage.removeItem('store_owner_auth_token');
     }
   }
 
   // Get auth token
   getToken() {
-    return this.token || localStorage.getItem('admin_auth_token');
+    return this.token || localStorage.getItem('store_owner_auth_token');
   }
 
   // Build full URL
