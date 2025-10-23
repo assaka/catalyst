@@ -69,44 +69,48 @@ const SeoSettings = sequelize.define('SeoSettings', {
     type: DataTypes.JSON,
     defaultValue: []
   },
-  schema_settings: {
+  // Consolidated social media and rich snippets settings
+  social_media_settings: {
     type: DataTypes.JSON,
     defaultValue: {
-      enable_product_schema: true,
-      enable_organization_schema: true,
-      organization_name: '',
-      organization_logo_url: '',
-      social_profiles: []
-    }
-  },
-  open_graph_settings: {
-    type: DataTypes.JSON,
-    defaultValue: {
-      default_image_url: '',
-      default_title: '',
-      default_description: '',
-      facebook_app_id: '',
-      facebook_page_url: ''
-    }
-  },
-  twitter_card_settings: {
-    type: DataTypes.JSON,
-    defaultValue: {
-      card_type: 'summary_large_image',
-      site_username: '',
-      creator_username: ''
-    }
-  },
-  social_profiles: {
-    type: DataTypes.JSON,
-    defaultValue: {
-      facebook: '',
-      twitter: '',
-      instagram: '',
-      linkedin: '',
-      youtube: '',
-      pinterest: '',
-      tiktok: ''
+      open_graph: {
+        enabled: true,
+        default_title: '',
+        default_description: '',
+        default_image_url: '',
+        facebook_app_id: '',
+        facebook_page_url: ''
+      },
+      twitter: {
+        enabled: true,
+        card_type: 'summary_large_image',
+        site_username: '',
+        creator_username: ''
+      },
+      social_profiles: {
+        facebook: '',
+        twitter: '',
+        instagram: '',
+        linkedin: '',
+        youtube: '',
+        pinterest: '',
+        tiktok: '',
+        other: []
+      },
+      schema: {
+        enable_product_schema: true,
+        enable_organization_schema: true,
+        enable_breadcrumb_schema: true,
+        organization_name: '',
+        organization_logo_url: '',
+        organization_description: '',
+        contact_type: 'customer service',
+        contact_telephone: '',
+        contact_email: '',
+        price_range: '',
+        founded_year: '',
+        founder_name: ''
+      }
     }
   },
   // XML Sitemap settings

@@ -19,38 +19,66 @@ export default function SeoSocial() {
   const [loading, setLoading] = useState(true);
   const [flashMessage, setFlashMessage] = useState(null);
 
-  // Form state
+  // Form state - using consolidated social_media_settings
   const [settings, setSettings] = useState({
-    open_graph_settings: {
-      default_image_url: '',
-      default_title: '',
-      default_description: '',
-      facebook_app_id: '',
-      facebook_page_url: ''
-    },
-    twitter_card_settings: {
-      card_type: 'summary_large_image',
-      site_username: '',
-      creator_username: ''
-    },
-    schema_settings: {
-      organization_name: '',
-      organization_logo_url: '',
-      social_profiles: []
-    },
-    social_profiles: {
-      facebook: '',
-      twitter: '',
-      instagram: '',
-      linkedin: '',
-      youtube: '',
-      pinterest: '',
-      tiktok: ''
+    social_media_settings: {
+      open_graph: {
+        enabled: true,
+        default_title: '',
+        default_description: '',
+        default_image_url: '',
+        facebook_app_id: '',
+        facebook_page_url: ''
+      },
+      twitter: {
+        enabled: true,
+        card_type: 'summary_large_image',
+        site_username: '',
+        creator_username: ''
+      },
+      social_profiles: {
+        facebook: '',
+        twitter: '',
+        instagram: '',
+        linkedin: '',
+        youtube: '',
+        pinterest: '',
+        tiktok: '',
+        other: []
+      },
+      schema: {
+        enable_product_schema: true,
+        enable_organization_schema: true,
+        enable_breadcrumb_schema: true,
+        organization_name: '',
+        organization_logo_url: '',
+        organization_description: '',
+        contact_type: 'customer service',
+        contact_telephone: '',
+        contact_email: '',
+        price_range: '',
+        founded_year: '',
+        founder_name: ''
+      }
     }
   });
 
   // Social profile input state
   const [newSocialProfile, setNewSocialProfile] = useState('');
+
+  // Helper function to update nested social media settings
+  const updateSocialMediaSettings = (section, field, value) => {
+    setSettings({
+      ...settings,
+      social_media_settings: {
+        ...settings.social_media_settings,
+        [section]: {
+          ...settings.social_media_settings[section],
+          [field]: value
+        }
+      }
+    });
+  };
 
   // Load existing settings
   useEffect(() => {
@@ -63,33 +91,56 @@ export default function SeoSocial() {
 
         if (result && result.length > 0) {
           const existingSettings = result[0];
+
+          // Use new consolidated structure, fall back to legacy fields if needed
+          const socialMediaSettings = existingSettings.social_media_settings || {
+            open_graph: existingSettings.open_graph_settings || {},
+            twitter: existingSettings.twitter_card_settings || {},
+            social_profiles: existingSettings.social_profiles || {},
+            schema: existingSettings.schema_settings || {}
+          };
+
           setSettings({
             id: existingSettings.id,
-            open_graph_settings: existingSettings.open_graph_settings || {
-              default_image_url: '',
-              default_title: '',
-              default_description: '',
-              facebook_app_id: '',
-              facebook_page_url: ''
-            },
-            twitter_card_settings: existingSettings.twitter_card_settings || {
-              card_type: 'summary_large_image',
-              site_username: '',
-              creator_username: ''
-            },
-            schema_settings: existingSettings.schema_settings || {
-              organization_name: '',
-              organization_logo_url: '',
-              social_profiles: []
-            },
-            social_profiles: existingSettings.social_profiles || {
-              facebook: '',
-              twitter: '',
-              instagram: '',
-              linkedin: '',
-              youtube: '',
-              pinterest: '',
-              tiktok: ''
+            social_media_settings: {
+              open_graph: {
+                enabled: socialMediaSettings.open_graph?.enabled !== false,
+                default_title: socialMediaSettings.open_graph?.default_title || '',
+                default_description: socialMediaSettings.open_graph?.default_description || '',
+                default_image_url: socialMediaSettings.open_graph?.default_image_url || '',
+                facebook_app_id: socialMediaSettings.open_graph?.facebook_app_id || '',
+                facebook_page_url: socialMediaSettings.open_graph?.facebook_page_url || ''
+              },
+              twitter: {
+                enabled: socialMediaSettings.twitter?.enabled !== false,
+                card_type: socialMediaSettings.twitter?.card_type || 'summary_large_image',
+                site_username: socialMediaSettings.twitter?.site_username || '',
+                creator_username: socialMediaSettings.twitter?.creator_username || ''
+              },
+              social_profiles: {
+                facebook: socialMediaSettings.social_profiles?.facebook || '',
+                twitter: socialMediaSettings.social_profiles?.twitter || '',
+                instagram: socialMediaSettings.social_profiles?.instagram || '',
+                linkedin: socialMediaSettings.social_profiles?.linkedin || '',
+                youtube: socialMediaSettings.social_profiles?.youtube || '',
+                pinterest: socialMediaSettings.social_profiles?.pinterest || '',
+                tiktok: socialMediaSettings.social_profiles?.tiktok || '',
+                other: socialMediaSettings.social_profiles?.other || []
+              },
+              schema: {
+                enable_product_schema: socialMediaSettings.schema?.enable_product_schema !== false,
+                enable_organization_schema: socialMediaSettings.schema?.enable_organization_schema !== false,
+                enable_breadcrumb_schema: socialMediaSettings.schema?.enable_breadcrumb_schema !== false,
+                organization_name: socialMediaSettings.schema?.organization_name || '',
+                organization_logo_url: socialMediaSettings.schema?.organization_logo_url || '',
+                organization_description: socialMediaSettings.schema?.organization_description || '',
+                contact_type: socialMediaSettings.schema?.contact_type || 'customer service',
+                contact_telephone: socialMediaSettings.schema?.contact_telephone || '',
+                contact_email: socialMediaSettings.schema?.contact_email || '',
+                price_range: socialMediaSettings.schema?.price_range || '',
+                founded_year: socialMediaSettings.schema?.founded_year || '',
+                founder_name: socialMediaSettings.schema?.founder_name || ''
+              }
             }
           });
         }
@@ -116,10 +167,7 @@ export default function SeoSocial() {
     try {
       const payload = {
         store_id: store.id,
-        open_graph_settings: settings.open_graph_settings,
-        twitter_card_settings: settings.twitter_card_settings,
-        schema_settings: settings.schema_settings,
-        social_profiles: settings.social_profiles
+        social_media_settings: settings.social_media_settings
       };
 
       console.log('Payload to save:', payload);
@@ -226,14 +274,8 @@ export default function SeoSocial() {
                 <Input
                   id="og-title"
                   placeholder="{{store_name}} - Quality Products"
-                  value={settings.open_graph_settings.default_title}
-                  onChange={(e) => setSettings({
-                    ...settings,
-                    open_graph_settings: {
-                      ...settings.open_graph_settings,
-                      default_title: e.target.value
-                    }
-                  })}
+                  value={settings.social_media_settings.open_graph.default_title}
+                  onChange={(e) => updateSocialMediaSettings('open_graph', 'default_title', e.target.value)}
                 />
                 <p className="text-sm text-muted-foreground">
                   Default title for social sharing. Supports templates: {'{'}{'{'} store_name {'}}'}{'}'}, {'{'}{'{'} page_title {'}'}{'}'}
@@ -245,14 +287,8 @@ export default function SeoSocial() {
                 <Textarea
                   id="og-description"
                   placeholder="Discover quality products at {{store_name}}"
-                  value={settings.open_graph_settings.default_description}
-                  onChange={(e) => setSettings({
-                    ...settings,
-                    open_graph_settings: {
-                      ...settings.open_graph_settings,
-                      default_description: e.target.value
-                    }
-                  })}
+                  value={settings.social_media_settings.open_graph.default_description}
+                  onChange={(e) => updateSocialMediaSettings('open_graph', 'default_description', e.target.value)}
                 />
                 <p className="text-sm text-muted-foreground">
                   Default description for social sharing
@@ -264,14 +300,8 @@ export default function SeoSocial() {
                 <Input
                   id="og-image"
                   placeholder="https://example.com/og-image.jpg"
-                  value={settings.open_graph_settings.default_image_url}
-                  onChange={(e) => setSettings({
-                    ...settings,
-                    open_graph_settings: {
-                      ...settings.open_graph_settings,
-                      default_image_url: e.target.value
-                    }
-                  })}
+                  value={settings.social_media_settings.open_graph.default_image_url}
+                  onChange={(e) => updateSocialMediaSettings('open_graph', 'default_image_url', e.target.value)}
                 />
                 <p className="text-sm text-muted-foreground">
                   Recommended: 1200x630px for optimal display. This will be used as fallback when pages don't have specific OG images.
