@@ -95,15 +95,14 @@ export default function DeliverySettings() { // Renamed the function component f
         out_of_office_end: deliverySettings.out_of_office_end || null
       };
 
-      let result;
       if (deliverySettings.id) {
         // If deliverySettings already has an ID, it means it exists in the DB, so update
-        result = await DeliverySettingsEntity.update(deliverySettings.id, settingsToSave);
+        await DeliverySettingsEntity.update(deliverySettings.id, settingsToSave);
       } else {
         // Otherwise, it's a new set of settings for this store, so create
-        result = await DeliverySettingsEntity.create(settingsToSave);
+        await DeliverySettingsEntity.create(settingsToSave);
       }
-      
+
       // Clear any potential cache
       try {
         localStorage.removeItem('storeProviderCache');
@@ -112,16 +111,12 @@ export default function DeliverySettings() { // Renamed the function component f
         console.warn('Failed to clear cache:', e);
       }
 
-      // Verify the result
-      if (result && result.id) {
-        setDeliverySettings(result); // Update state with the saved/created settings (especially if new ID generated)
-        setFlashMessage({ type: 'success', message: 'Delivery settings saved successfully!' });
-        setSaveSuccess(true);
-        setTimeout(() => setSaveSuccess(false), 2000);
-      } else {
-        console.error('⚠️ Unexpected response format:', result);
-        setFlashMessage({ type: 'warning', message: 'Settings may not have saved correctly. Please refresh.' });
-      }
+      setFlashMessage({ type: 'success', message: 'Delivery settings saved successfully!' });
+      setSaveSuccess(true);
+      setTimeout(() => setSaveSuccess(false), 2000);
+
+      // Reload to get the latest data from server
+      await loadDeliverySettings();
     } catch (error) {
       console.error("Error saving delivery settings:", error);
       setFlashMessage({ type: 'error', message: 'Failed to save settings.' });
@@ -195,6 +190,7 @@ export default function DeliverySettings() { // Renamed the function component f
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <FlashMessage message={flashMessage} onClose={() => setFlashMessage(null)} />
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
       </div>
     );
