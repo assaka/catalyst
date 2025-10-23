@@ -140,7 +140,10 @@ Sitemap: https://example.com/sitemap.xml`);
       }
 
       try {
-        allCategories = await Category.filter({ store_id: storeId });
+        // Use findAll() instead of filter() and manually filter by store_id
+        // Category.filter() uses admin API which may not support store_id param properly
+        const allCategoriesUnfiltered = await Category.findAll();
+        allCategories = allCategoriesUnfiltered.filter(c => c.store_id === storeId);
         console.log('Categories fetched successfully:', allCategories?.length);
       } catch (error) {
         console.error('Error fetching categories:', error);
