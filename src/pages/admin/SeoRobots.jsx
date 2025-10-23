@@ -21,10 +21,20 @@ export default function SeoRobots() {
   const [isHelpOpen, setIsHelpOpen] = useState(false);
   const [robotsTxt, setRobotsTxt] = useState(`User-agent: *
 Allow: /
+
+# Allow content directories (default behavior)
+Allow: /products/
+Allow: /categories/
+Allow: /cms-pages/
+
+# Block admin and system paths
 Disallow: /admin/
 Disallow: /api/
-Disallow: /cart
-Disallow: /checkout
+Disallow: /checkout/
+Disallow: /cart/
+Disallow: /account/
+Disallow: /login
+
 Sitemap: https://example.com/sitemap.xml`);
 
   // Quick settings state
@@ -99,45 +109,53 @@ Sitemap: https://example.com/sitemap.xml`);
         return;
       }
 
-      // Fetch products, categories, and pages with noindex/nofollow tags
+      // Fetch ONLY products, categories, and pages with noindex/nofollow tags (different from default)
       const [products, categories, pages] = await Promise.all([
         Product.filter({ store_id: storeId, "seo.meta_robots_tag": "noindex, nofollow" }),
         Category.filter({ store_id: storeId, meta_robots_tag: "noindex, nofollow" }),
         CmsPage.filter({ store_id: storeId, meta_robots_tag: "noindex, nofollow" })
       ]);
 
-      // Build default rules
+      // Build default rules with Allow directives for content directories
       const domain = selectedStore?.custom_domain || selectedStore?.domain || 'https://example.com';
       const defaultRules = [
         'User-agent: *',
         'Allow: /',
+        '',
+        '# Allow content directories (default behavior)',
+        'Allow: /products/',
+        'Allow: /categories/',
+        'Allow: /cms-pages/',
+        '',
+        '# Block admin and system paths',
         'Disallow: /admin/',
         'Disallow: /api/',
         'Disallow: /checkout/',
         'Disallow: /cart/',
         'Disallow: /account/',
         'Disallow: /login',
+        '',
         `Sitemap: ${domain}/sitemap.xml`
       ].join('\n');
 
       let newContent = [defaultRules];
 
-      // Add custom rules for products
+      // Only add Disallow rules for items that differ from default (have noindex/nofollow)
       if (products && products.length > 0) {
-        newContent.push('\n# Disallowed Products (noindex/nofollow)');
+        newContent.push('\n# Disallowed Products (noindex/nofollow - different from default)');
         products.forEach(p => newContent.push(`Disallow: /products/${p.slug || p.id}`));
       }
 
-      // Add custom rules for categories
+      // Only add Disallow rules for categories that differ from default
       if (categories && categories.length > 0) {
-        newContent.push('\n# Disallowed Categories (noindex/nofollow)');
+        newContent.push('\n# Disallowed Categories (noindex/nofollow - different from default)');
         categories.forEach(c => newContent.push(`Disallow: /categories/${c.slug}`));
       }
 
-      // Add custom rules for CMS pages
+      // Only add Disallow rules for CMS pages that differ from default
       if (pages && pages.length > 0) {
-        newContent.push('\n# Disallowed CMS Pages (noindex/nofollow)');
-        pages.forEach(p => newContent.push(`Disallow: /pages/${p.slug}`));
+        newContent.push('\n# Disallowed CMS Pages (noindex/nofollow - different from default)');
+        pages.forEach(p => newContent.push(`Disallow: /cms-pages/${p.slug}`));
       }
 
       setRobotsTxt(newContent.join('\n'));
