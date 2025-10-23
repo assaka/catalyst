@@ -95,13 +95,16 @@ const Coupon = sequelize.define('Coupon', {
   applicable_attributes: {
     type: DataTypes.JSON,
     defaultValue: []
-  },
-  // Multilingual translations
-  translations: {
-    type: DataTypes.JSON,
-    defaultValue: {},
-    comment: 'Multilingual translations: {"en": {"name": "...", "description": "..."}, "nl": {...}}'
   }
+  // NOTE: translations field will be added after running migration:
+  // node backend/run-coupon-translation-migration.js
+  // Then uncomment the field below:
+  // translations: {
+  //   type: DataTypes.JSON,
+  //   allowNull: true,
+  //   defaultValue: {},
+  //   comment: 'Multilingual translations: {"en": {"name": "...", "description": "..."}, "nl": {...}}'
+  // }
 }, {
   tableName: 'coupons'
 });

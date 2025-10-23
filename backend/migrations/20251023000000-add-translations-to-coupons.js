@@ -5,7 +5,7 @@ module.exports = {
     // 1. Add translations JSON column to coupons table
     await queryInterface.addColumn('coupons', 'translations', {
       type: Sequelize.JSON,
-      allowNull: false,
+      allowNull: true,
       defaultValue: {},
       comment: 'Multilingual translations: {"en": {"name": "...", "description": "..."}, "nl": {...}}'
     });
