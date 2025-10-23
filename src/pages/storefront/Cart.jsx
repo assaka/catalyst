@@ -844,10 +844,72 @@ export default function Cart() {
 
         let disc = 0;
         if (appliedCoupon) {
+            // Helper function to check if an item qualifies for the coupon
+            const itemQualifiesForCoupon = (item) => {
+                // If no filters are set, coupon applies to all items
+                const hasProductFilter = appliedCoupon.applicable_products && appliedCoupon.applicable_products.length > 0;
+                const hasCategoryFilter = appliedCoupon.applicable_categories && appliedCoupon.applicable_categories.length > 0;
+                const hasSkuFilter = appliedCoupon.applicable_skus && appliedCoupon.applicable_skus.length > 0;
+
+                if (!hasProductFilter && !hasCategoryFilter && !hasSkuFilter) {
+                    return true; // No filters = applies to all
+                }
+
+                // Check product ID filter
+                if (hasProductFilter) {
+                    const productId = typeof item.product_id === 'object' ?
+                        (item.product_id?.id || item.product_id?.toString() || null) :
+                        item.product_id;
+                    if (productId && appliedCoupon.applicable_products.includes(productId)) {
+                        return true;
+                    }
+                }
+
+                // Check category filter
+                if (hasCategoryFilter) {
+                    if (item.product?.category_ids?.some(catId =>
+                        appliedCoupon.applicable_categories.includes(catId)
+                    )) {
+                        return true;
+                    }
+                }
+
+                // Check SKU filter
+                if (hasSkuFilter) {
+                    if (item.product?.sku && appliedCoupon.applicable_skus.includes(item.product.sku)) {
+                        return true;
+                    }
+                }
+
+                return false;
+            };
+
+            // Calculate the total of qualifying items only
+            const qualifyingTotal = cartItems.reduce((total, item) => {
+                if (itemQualifiesForCoupon(item)) {
+                    const price = safeNumber(item.product?.price || 0);
+                    const quantity = safeNumber(item.quantity || 1);
+                    let itemTotal = price * quantity;
+
+                    // Add custom options for this item
+                    if (item.selected_options && Array.isArray(item.selected_options)) {
+                        const optionsPrice = item.selected_options.reduce((sum, option) =>
+                            sum + safeNumber(option.price), 0
+                        );
+                        itemTotal += optionsPrice * quantity;
+                    }
+
+                    return total + itemTotal;
+                }
+                return total;
+            }, 0);
+
+            // Apply discount based on type
             if (appliedCoupon.discount_type === 'fixed') {
                 disc = safeNumber(appliedCoupon.discount_value);
             } else if (appliedCoupon.discount_type === 'percentage') {
-                disc = calculatedTotalWithOptions * (safeNumber(appliedCoupon.discount_value) / 100);
+                // Apply percentage to qualifying items only
+                disc = qualifyingTotal * (safeNumber(appliedCoupon.discount_value) / 100);
 
                 // Apply max discount limit if specified
                 if (appliedCoupon.max_discount_amount && disc > safeNumber(appliedCoupon.max_discount_amount)) {
@@ -858,9 +920,11 @@ export default function Cart() {
                 disc = 0;
             }
 
-            // Ensure discount doesn't exceed total
-            if (disc > calculatedTotalWithOptions) {
-                disc = calculatedTotalWithOptions;
+            // Ensure discount doesn't exceed qualifying total for product-specific coupons
+            // or the entire total for cart-wide coupons
+            const maxDiscount = qualifyingTotal > 0 ? qualifyingTotal : calculatedTotalWithOptions;
+            if (disc > maxDiscount) {
+                disc = maxDiscount;
             }
         }
 
