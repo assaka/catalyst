@@ -27,15 +27,15 @@ export default function SeoHreflang() {
   });
 
   useEffect(() => {
-    if (selectedStore) {
+    // Only load data if store is selected
+    if (selectedStore?.id) {
       loadData();
     }
-  }, [selectedStore]);
+  }, [selectedStore?.id]);
 
   const loadData = async () => {
     const storeId = getSelectedStoreId();
     if (!storeId) {
-      setLoading(false);
       return;
     }
 
@@ -65,10 +65,8 @@ export default function SeoHreflang() {
       }
     } catch (error) {
       console.error("Error loading SEO settings:", error);
-      setFlashMessage({
-        type: 'error',
-        message: 'Failed to load SEO settings.'
-      });
+      // Don't show error flash message on initial load
+      // Just log it and continue
     } finally {
       setLoading(false);
     }
