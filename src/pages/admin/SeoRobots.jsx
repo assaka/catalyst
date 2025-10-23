@@ -251,8 +251,17 @@ Sitemap: https://example.com/sitemap.xml`);
       return;
     }
 
+    console.log('Selected Store:', selectedStore);
+
     // Construct the robots.txt URL for the selected store
-    let domain = selectedStore.custom_domain || selectedStore.domain;
+    let domain = selectedStore.custom_domain || selectedStore.domain || selectedStore.subdomain;
+
+    console.log('Domain:', domain);
+
+    if (!domain) {
+      setFlashMessage({ type: 'error', message: 'Store domain not configured' });
+      return;
+    }
 
     // Ensure domain has protocol
     if (domain && !domain.startsWith('http://') && !domain.startsWith('https://')) {
@@ -260,6 +269,8 @@ Sitemap: https://example.com/sitemap.xml`);
     }
 
     const robotsUrl = `${domain}/robots.txt`;
+
+    console.log('Opening URL:', robotsUrl);
 
     // Open in new tab
     window.open(robotsUrl, '_blank');
