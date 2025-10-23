@@ -6,6 +6,7 @@ import { CookieConsentSettings, ConsentLog } from '@/api/entities';
 import { User } from '@/api/entities';
 import { Store } from '@/api/entities';
 import { useStoreSelection } from '@/contexts/StoreSelectionContext.jsx';
+import FlashMessage from '@/components/storefront/FlashMessage';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -497,15 +498,8 @@ export default function CookieConsent() {
 
   return (
     <div className="min-h-screen bg-gray-50">
+      <FlashMessage message={flashMessage} onClose={() => setFlashMessage(null)} />
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        
-        {flashMessage && (
-          <div 
-            className={`fixed bottom-4 right-4 p-4 rounded-lg shadow-lg text-white z-50 transition-opacity duration-300 ${flashMessage.type === 'error' ? 'bg-red-500' : 'bg-green-500'}`}
-          >
-            {flashMessage.message}
-          </div>
-        )}
 
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-gray-900">Cookie Consent & GDPR</h1>

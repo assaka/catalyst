@@ -3,6 +3,7 @@ import { Store } from '@/api/entities';
 import { User } from '@/api/entities';
 import { useStoreSelection } from '@/contexts/StoreSelectionContext.jsx';
 import { clearStorefrontCache } from '@/utils/cacheUtils';
+import FlashMessage from '@/components/storefront/FlashMessage';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -435,12 +436,6 @@ export default function AnalyticsSettings() {
         }
     };
     
-    useEffect(() => {
-        if (flashMessage) {
-            const timer = setTimeout(() => setFlashMessage(null), 5000);
-            return () => clearTimeout(timer);
-        }
-    }, [flashMessage]);
 
     if (loading) {
         return (
@@ -456,14 +451,7 @@ export default function AnalyticsSettings() {
 
     return (
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-                
-            {flashMessage && (
-                <div
-                    className={`fixed bottom-4 right-4 p-4 rounded-lg shadow-lg text-white z-50 transition-opacity duration-300 ${flashMessage.type === 'error' ? 'bg-red-500' : 'bg-green-500'}`}
-                >
-                    {flashMessage.message}
-                </div>
-            )}
+            <FlashMessage message={flashMessage} onClose={() => setFlashMessage(null)} />
 
             <div className="mb-8">
                 <h1 className="text-3xl font-bold text-gray-900">Analytics & Data Layer</h1>
