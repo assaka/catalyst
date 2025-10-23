@@ -585,22 +585,20 @@ export function CartSlotRenderer({
                 <span>{t('free', settings)}</span>
               </div>
               {discount > 0 && appliedCoupon && (
-                <Accordion type="single" collapsible className="w-full">
-                  <AccordionItem value="discount-details" className="border-0">
-                    <div className="flex justify-between items-center">
-                      <AccordionTrigger className="py-2 px-0 hover:no-underline flex-1">
-                        <div className="flex items-center gap-2">
-                          <span>{t('discount', settings)}</span>
-                          {appliedCoupon && (
-                            <span className="text-xs text-gray-500">
-                              ({getEntityTranslation(appliedCoupon, 'name', 'en') || appliedCoupon.name})
-                            </span>
-                          )}
-                        </div>
-                      </AccordionTrigger>
-                      <span className="text-green-600 ml-2">-{formatPrice(discount)}</span>
-                    </div>
-                    <AccordionContent className="px-0 pt-2 pb-2">
+                <div className="w-full">
+                  <div className="flex justify-between items-center">
+                    <div className="flex-1">
+                      <Accordion type="single" collapsible className="w-full">
+                        <AccordionItem value="discount-details" className="border-0">
+                          <AccordionTrigger className="py-2 px-0 hover:no-underline">
+                            <span>{t('discount', settings)}</span>
+                            {appliedCoupon && (
+                              <span className="text-xs text-gray-500 ml-2">
+                                ({getEntityTranslation(appliedCoupon, 'name', 'en') || appliedCoupon.name})
+                              </span>
+                            )}
+                          </AccordionTrigger>
+                      <AccordionContent className="px-0 pt-2 pb-2">
                       <div className="text-sm text-gray-600 space-y-1">
                         <p className="font-medium mb-2 text-xs">{t('cart.discount_applies_to', settings) || 'Discount applies to'}:</p>
                         {(() => {
@@ -658,9 +656,13 @@ export function CartSlotRenderer({
                           );
                         })()}
                       </div>
-                    </AccordionContent>
-                  </AccordionItem>
-                </Accordion>
+                          </AccordionContent>
+                        </AccordionItem>
+                      </Accordion>
+                    </div>
+                    <span className="text-green-600">-{formatPrice(discount)}</span>
+                  </div>
+                </div>
               )}
               <div className="flex justify-between text-lg font-semibold border-t pt-4">
                 <span>{t('total', settings)}</span>
