@@ -313,14 +313,8 @@ export default function SeoSocial() {
                 <Input
                   id="fb-app-id"
                   placeholder="1234567890"
-                  value={settings.open_graph_settings.facebook_app_id}
-                  onChange={(e) => setSettings({
-                    ...settings,
-                    open_graph_settings: {
-                      ...settings.open_graph_settings,
-                      facebook_app_id: e.target.value
-                    }
-                  })}
+                  value={settings.social_media_settings.open_graph.facebook_app_id}
+                  onChange={(e) => updateSocialMediaSettings('open_graph', 'facebook_app_id', e.target.value)}
                 />
                 <p className="text-sm text-muted-foreground">
                   Used for Facebook analytics and insights
@@ -332,14 +326,8 @@ export default function SeoSocial() {
                 <Input
                   id="fb-page-url"
                   placeholder="https://facebook.com/yourstore"
-                  value={settings.open_graph_settings.facebook_page_url}
-                  onChange={(e) => setSettings({
-                    ...settings,
-                    open_graph_settings: {
-                      ...settings.open_graph_settings,
-                      facebook_page_url: e.target.value
-                    }
-                  })}
+                  value={settings.social_media_settings.open_graph.facebook_page_url}
+                  onChange={(e) => updateSocialMediaSettings('open_graph', 'facebook_page_url', e.target.value)}
                 />
                 <p className="text-sm text-muted-foreground">
                   Link to your Facebook business page
@@ -379,14 +367,8 @@ export default function SeoSocial() {
               <div className="space-y-2">
                 <Label htmlFor="twitter-card">Card Type</Label>
                 <Select
-                  value={settings.twitter_card_settings.card_type}
-                  onValueChange={(value) => setSettings({
-                    ...settings,
-                    twitter_card_settings: {
-                      ...settings.twitter_card_settings,
-                      card_type: value
-                    }
-                  })}
+                  value={settings.social_media_settings.twitter.card_type}
+                  onValueChange={(value) => updateSocialMediaSettings('twitter', 'card_type', value)}
                 >
                   <SelectTrigger>
                     <SelectValue />
@@ -405,14 +387,8 @@ export default function SeoSocial() {
                 <Input
                   id="twitter-site"
                   placeholder="@yourstore"
-                  value={settings.twitter_card_settings.site_username}
-                  onChange={(e) => setSettings({
-                    ...settings,
-                    twitter_card_settings: {
-                      ...settings.twitter_card_settings,
-                      site_username: e.target.value
-                    }
-                  })}
+                  value={settings.social_media_settings.twitter.site_username}
+                  onChange={(e) => updateSocialMediaSettings('twitter', 'site_username', e.target.value)}
                 />
                 <p className="text-sm text-muted-foreground">
                   Your store's Twitter/X handle (with or without @). Shown as the site attribution.
@@ -424,14 +400,8 @@ export default function SeoSocial() {
                 <Input
                   id="twitter-creator"
                   placeholder="@contentcreator"
-                  value={settings.twitter_card_settings.creator_username}
-                  onChange={(e) => setSettings({
-                    ...settings,
-                    twitter_card_settings: {
-                      ...settings.twitter_card_settings,
-                      creator_username: e.target.value
-                    }
-                  })}
+                  value={settings.social_media_settings.twitter.creator_username}
+                  onChange={(e) => updateSocialMediaSettings('twitter', 'creator_username', e.target.value)}
                 />
                 <p className="text-sm text-muted-foreground">
                   Attribution for the content creator (individual, not brand)
@@ -480,14 +450,8 @@ export default function SeoSocial() {
                   <Input
                     id="social-facebook"
                     placeholder="https://facebook.com/yourstore"
-                    value={settings.social_profiles.facebook}
-                    onChange={(e) => setSettings({
-                      ...settings,
-                      social_profiles: {
-                        ...settings.social_profiles,
-                        facebook: e.target.value
-                      }
-                    })}
+                    value={settings.social_media_settings.social_profiles.facebook}
+                    onChange={(e) => updateSocialMediaSettings('social_profiles', 'facebook', e.target.value)}
                   />
                 </div>
 
@@ -499,14 +463,8 @@ export default function SeoSocial() {
                   <Input
                     id="social-twitter"
                     placeholder="https://twitter.com/yourstore"
-                    value={settings.social_profiles.twitter}
-                    onChange={(e) => setSettings({
-                      ...settings,
-                      social_profiles: {
-                        ...settings.social_profiles,
-                        twitter: e.target.value
-                      }
-                    })}
+                    value={settings.social_media_settings.social_profiles.twitter}
+                    onChange={(e) => updateSocialMediaSettings('social_profiles', 'twitter', e.target.value)}
                   />
                 </div>
 
@@ -518,14 +476,8 @@ export default function SeoSocial() {
                   <Input
                     id="social-instagram"
                     placeholder="https://instagram.com/yourstore"
-                    value={settings.social_profiles.instagram}
-                    onChange={(e) => setSettings({
-                      ...settings,
-                      social_profiles: {
-                        ...settings.social_profiles,
-                        instagram: e.target.value
-                      }
-                    })}
+                    value={settings.social_media_settings.social_profiles.instagram}
+                    onChange={(e) => updateSocialMediaSettings('social_profiles', 'instagram', e.target.value)}
                   />
                 </div>
 
@@ -537,14 +489,8 @@ export default function SeoSocial() {
                   <Input
                     id="social-linkedin"
                     placeholder="https://linkedin.com/company/yourstore"
-                    value={settings.social_profiles.linkedin}
-                    onChange={(e) => setSettings({
-                      ...settings,
-                      social_profiles: {
-                        ...settings.social_profiles,
-                        linkedin: e.target.value
-                      }
-                    })}
+                    value={settings.social_media_settings.social_profiles.linkedin}
+                    onChange={(e) => updateSocialMediaSettings('social_profiles', 'linkedin', e.target.value)}
                   />
                 </div>
 
@@ -556,14 +502,8 @@ export default function SeoSocial() {
                   <Input
                     id="social-youtube"
                     placeholder="https://youtube.com/@yourstore"
-                    value={settings.social_profiles.youtube}
-                    onChange={(e) => setSettings({
-                      ...settings,
-                      social_profiles: {
-                        ...settings.social_profiles,
-                        youtube: e.target.value
-                      }
-                    })}
+                    value={settings.social_media_settings.social_profiles.youtube}
+                    onChange={(e) => updateSocialMediaSettings('social_profiles', 'youtube', e.target.value)}
                   />
                 </div>
 
