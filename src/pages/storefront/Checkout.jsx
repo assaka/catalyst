@@ -1969,26 +1969,99 @@ export default function Checkout() {
                   )}
                 </div>
               ) : (
-                <div className="flex items-center justify-between bg-green-50 p-3 rounded-lg">
-                  <div>
-                    <p className="text-sm font-medium text-green-800">
-                      {getEntityTranslation(appliedCoupon, 'name', 'en') || appliedCoupon.name}
-                    </p>
-                    <p className="text-xs text-green-600">
-                      {appliedCoupon.discount_type === 'fixed'
-                        ? `${formatPrice(appliedCoupon.discount_value)} ${t('checkout.off', 'off')}`
-                        : `${formatPrice(appliedCoupon.discount_value)}% ${t('checkout.off', 'off')}`
-                      }
-                    </p>
+                <div className="bg-green-50 p-3 rounded-lg">
+                  <div className="flex items-center justify-between">
+                    <div className="flex-1">
+                      <p className="text-sm font-medium text-green-800">
+                        {getEntityTranslation(appliedCoupon, 'name', 'en') || appliedCoupon.name}
+                      </p>
+                      <p className="text-xs text-green-600">
+                        {appliedCoupon.discount_type === 'fixed'
+                          ? `${formatPrice(appliedCoupon.discount_value)} ${t('checkout.off', 'off')}`
+                          : `${formatPrice(appliedCoupon.discount_value)}% (${formatPrice(calculateDiscount())} ${t('checkout.off', 'off')})`
+                        }
+                      </p>
+
+                      {/* Collapsible Discount Details */}
+                      <div className="mt-2">
+                        <Accordion type="single" collapsible className="w-full">
+                          <AccordionItem value="discount-details" className="border-0">
+                            <AccordionTrigger className="py-1 px-0 hover:no-underline text-xs text-green-700 font-medium">
+                              View eligible products
+                            </AccordionTrigger>
+                            <AccordionContent className="px-0 pt-2 pb-0">
+                              <div className="text-sm text-green-800 space-y-1">
+                                <p className="font-medium mb-2 text-xs">Discount applies to:</p>
+                                <ul className="space-y-1">
+                                  {(() => {
+                                    // Determine which items qualify for the coupon
+                                    const hasProductFilter = appliedCoupon.applicable_products && appliedCoupon.applicable_products.length > 0;
+                                    const hasCategoryFilter = appliedCoupon.applicable_categories && appliedCoupon.applicable_categories.length > 0;
+                                    const hasSkuFilter = appliedCoupon.applicable_skus && appliedCoupon.applicable_skus.length > 0;
+
+                                    if (!hasProductFilter && !hasCategoryFilter && !hasSkuFilter) {
+                                      return <li className="text-xs text-green-700">All products in cart</li>;
+                                    }
+
+                                    const eligibleItems = cartItems.filter(item => {
+                                      // Check product ID
+                                      if (hasProductFilter) {
+                                        const productId = typeof item.product_id === 'object' ?
+                                          (item.product_id?.id || item.product_id?.toString() || null) :
+                                          item.product_id;
+                                        if (productId && appliedCoupon.applicable_products.includes(productId)) {
+                                          return true;
+                                        }
+                                      }
+
+                                      // Check category
+                                      if (hasCategoryFilter) {
+                                        const product = cartProducts[item.product_id];
+                                        if (product?.category_ids?.some(catId =>
+                                          appliedCoupon.applicable_categories.includes(catId)
+                                        )) {
+                                          return true;
+                                        }
+                                      }
+
+                                      // Check SKU
+                                      if (hasSkuFilter) {
+                                        const product = cartProducts[item.product_id];
+                                        if (product?.sku && appliedCoupon.applicable_skus.includes(product.sku)) {
+                                          return true;
+                                        }
+                                      }
+
+                                      return false;
+                                    });
+
+                                    return eligibleItems.map((item, index) => {
+                                      const product = cartProducts[item.product_id];
+                                      const productName = getProductName(product, getCurrentLanguage()) || product?.name || item.name || 'Product';
+                                      return (
+                                        <li key={index} className="text-xs flex items-center gap-2">
+                                          <span className="inline-block w-1.5 h-1.5 bg-green-500 rounded-full"></span>
+                                          <span>{productName}</span>
+                                        </li>
+                                      );
+                                    });
+                                  })()}
+                                </ul>
+                              </div>
+                            </AccordionContent>
+                          </AccordionItem>
+                        </Accordion>
+                      </div>
+                    </div>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={handleRemoveCoupon}
+                      className="text-red-600 hover:text-red-800 ml-2"
+                    >
+                      {t('common.remove', 'Remove')}
+                    </Button>
                   </div>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={handleRemoveCoupon}
-                    className="text-red-600 hover:text-red-800"
-                  >
-                    {t('common.remove', 'Remove')}
-                  </Button>
                 </div>
               )}
             </CardContent>
