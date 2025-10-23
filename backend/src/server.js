@@ -558,8 +558,8 @@ app.post('/debug/migrate-seo-settings', async (req, res) => {
 
     const { SeoSettings } = require('./models');
 
-    // First, fix any NULL values in timestamp columns
-    console.log('🔧 Fixing NULL timestamp values...');
+    // First, drop problematic timestamp columns and let Sequelize recreate them
+    console.log('🔧 Handling timestamp columns...');
 
     // Check which timestamp columns exist
     const [timestampCols] = await sequelize.query(`
@@ -571,40 +571,19 @@ app.post('/debug/migrate-seo-settings', async (req, res) => {
     const existingTimestampCols = timestampCols.map(c => c.column_name);
     console.log('📋 Existing timestamp columns:', existingTimestampCols);
 
-    // Only update columns that exist
-    if (existingTimestampCols.includes('created_at')) {
-      await sequelize.query(`
-        UPDATE seo_settings
-        SET created_at = NOW()
-        WHERE created_at IS NULL
-      `);
+    // Drop old timestamp columns if they exist (Sequelize will recreate them)
+    for (const col of ['created_at', 'updated_at']) {
+      if (existingTimestampCols.includes(col)) {
+        try {
+          await sequelize.query(`ALTER TABLE seo_settings DROP COLUMN IF EXISTS ${col}`);
+          console.log(`🗑️ Dropped column: ${col}`);
+        } catch (err) {
+          console.warn(`⚠️  Could not drop ${col}:`, err.message);
+        }
+      }
     }
 
-    if (existingTimestampCols.includes('updated_at')) {
-      await sequelize.query(`
-        UPDATE seo_settings
-        SET updated_at = NOW()
-        WHERE updated_at IS NULL
-      `);
-    }
-
-    if (existingTimestampCols.includes('createdAt')) {
-      await sequelize.query(`
-        UPDATE seo_settings
-        SET "createdAt" = NOW()
-        WHERE "createdAt" IS NULL
-      `);
-    }
-
-    if (existingTimestampCols.includes('updatedAt')) {
-      await sequelize.query(`
-        UPDATE seo_settings
-        SET "updatedAt" = NOW()
-        WHERE "updatedAt" IS NULL
-      `);
-    }
-
-    console.log('✅ Timestamp values fixed');
+    console.log('✅ Timestamp columns handled');
 
     // Get current table columns before sync
     const [tableColumns] = await sequelize.query(`
