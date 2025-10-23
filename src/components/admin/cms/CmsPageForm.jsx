@@ -37,6 +37,7 @@ export default function CmsPageForm({ page, stores, products, onSubmit, onCancel
   const [hasManuallyEditedSlug, setHasManuallyEditedSlug] = useState(false);
   const [showMediaBrowser, setShowMediaBrowser] = useState(false);
   const [showTranslations, setShowTranslations] = useState(false);
+  const [productSearchQuery, setProductSearchQuery] = useState("");
 
   const [formData, setFormData] = useState({
     title: "",
@@ -293,9 +294,12 @@ export default function CmsPageForm({ page, stores, products, onSubmit, onCancel
       await createRedirectForSlugChange();
     }
 
-    // Prepare payload with translations
+    // Prepare payload with translations - exclude title and content as they don't exist in DB
+    // They're stored in the translations JSON field instead
+    const { title, content, ...restFormData } = formData;
+
     const payload = {
-      ...formData,
+      ...restFormData,
       translations: formData.translations || {
         en: {
           title: formData.title,
@@ -305,8 +309,8 @@ export default function CmsPageForm({ page, stores, products, onSubmit, onCancel
     };
 
     console.log('🔍 CmsPageForm: Submitting payload:', {
-      title: payload.title,
-      content: payload.content?.substring(0, 50),
+      slug: payload.slug,
+      store_id: payload.store_id,
       translations: payload.translations
     });
 
@@ -485,19 +489,34 @@ export default function CmsPageForm({ page, stores, products, onSubmit, onCancel
 
       <div>
         <Label>Related Products</Label>
+        <div className="mb-2">
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+            <Input
+              placeholder="Search products..."
+              value={productSearchQuery}
+              onChange={(e) => setProductSearchQuery(e.target.value)}
+              className="pl-10"
+            />
+          </div>
+        </div>
         <div className="border rounded-md p-2 h-48 overflow-y-auto">
-          {products.map(product => (
-            <div
-              key={product.id}
-              className={`p-2 rounded cursor-pointer flex justify-between items-center ${
-                formData.related_product_ids.includes(product.id) ? 'bg-blue-100' : ''
-              }`}
-              onClick={() => handleProductToggle(product.id)}
-            >
-              <span>{product.name}</span>
-              {formData.related_product_ids.includes(product.id) && <X className="w-4 h-4" />}
-            </div>
-          ))}
+          {products
+            .filter(product =>
+              product.name.toLowerCase().includes(productSearchQuery.toLowerCase())
+            )
+            .map(product => (
+              <div
+                key={product.id}
+                className={`p-2 rounded cursor-pointer flex justify-between items-center hover:bg-gray-50 ${
+                  formData.related_product_ids.includes(product.id) ? 'bg-blue-100' : ''
+                }`}
+                onClick={() => handleProductToggle(product.id)}
+              >
+                <span>{product.name}</span>
+                {formData.related_product_ids.includes(product.id) && <X className="w-4 h-4" />}
+              </div>
+            ))}
         </div>
         <div className="mt-2 flex flex-wrap gap-1">
           {formData.related_product_ids.map(id => {

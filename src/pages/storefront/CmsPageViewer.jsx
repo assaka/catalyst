@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { CmsPage } from '@/api/entities';
-import { Product } from '@/api/entities';
+import { StorefrontProduct } from '@/api/storefront-entities';
 import RecommendedProducts from '@/components/storefront/RecommendedProducts';
 import SeoHeadManager from '@/components/storefront/SeoHeadManager';
 // Redirect handling moved to global RedirectHandler component
@@ -25,9 +25,11 @@ export default function CmsPageViewer() {
                         const currentPage = pages[0];
                         setPage(currentPage);
                         if (currentPage.related_product_ids && currentPage.related_product_ids.length > 0) {
-                            const products = await Product.list(); // Simplified, in a real app might filter by IDs
-                            const filteredProducts = products.filter(p => currentPage.related_product_ids.includes(p.id));
-                            setRelatedProducts(filteredProducts);
+                            // Fetch only the related products using storefront API with specific IDs
+                            const products = await StorefrontProduct.filter({
+                                id: { $in: currentPage.related_product_ids }
+                            });
+                            setRelatedProducts(products || []);
                         }
                     } else {
                         // Global redirect handler already checked - just show 404
