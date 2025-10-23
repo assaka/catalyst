@@ -23,16 +23,29 @@ export default function SeoSocial() {
   const [settings, setSettings] = useState({
     open_graph_settings: {
       default_image_url: '',
-      facebook_app_id: ''
+      default_title: '',
+      default_description: '',
+      facebook_app_id: '',
+      facebook_page_url: ''
     },
     twitter_card_settings: {
       card_type: 'summary_large_image',
-      site_username: ''
+      site_username: '',
+      creator_username: ''
     },
     schema_settings: {
       organization_name: '',
       organization_logo_url: '',
       social_profiles: []
+    },
+    social_profiles: {
+      facebook: '',
+      twitter: '',
+      instagram: '',
+      linkedin: '',
+      youtube: '',
+      pinterest: '',
+      tiktok: ''
     }
   });
 
@@ -54,16 +67,29 @@ export default function SeoSocial() {
             id: existingSettings.id,
             open_graph_settings: existingSettings.open_graph_settings || {
               default_image_url: '',
-              facebook_app_id: ''
+              default_title: '',
+              default_description: '',
+              facebook_app_id: '',
+              facebook_page_url: ''
             },
             twitter_card_settings: existingSettings.twitter_card_settings || {
               card_type: 'summary_large_image',
-              site_username: ''
+              site_username: '',
+              creator_username: ''
             },
             schema_settings: existingSettings.schema_settings || {
               organization_name: '',
               organization_logo_url: '',
               social_profiles: []
+            },
+            social_profiles: existingSettings.social_profiles || {
+              facebook: '',
+              twitter: '',
+              instagram: '',
+              linkedin: '',
+              youtube: '',
+              pinterest: '',
+              tiktok: ''
             }
           });
         }
@@ -92,7 +118,8 @@ export default function SeoSocial() {
         store_id: store.id,
         open_graph_settings: settings.open_graph_settings,
         twitter_card_settings: settings.twitter_card_settings,
-        schema_settings: settings.schema_settings
+        schema_settings: settings.schema_settings,
+        social_profiles: settings.social_profiles
       };
 
       console.log('Payload to save:', payload);
@@ -184,6 +211,7 @@ export default function SeoSocial() {
         <TabsList>
           <TabsTrigger value="opengraph">Open Graph</TabsTrigger>
           <TabsTrigger value="twitter">Twitter Card</TabsTrigger>
+          <TabsTrigger value="social">Social Profiles</TabsTrigger>
           <TabsTrigger value="schema">Schema Markup</TabsTrigger>
         </TabsList>
 
@@ -193,6 +221,44 @@ export default function SeoSocial() {
               <CardTitle>Open Graph Settings</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="og-title">Default OG Title (Optional)</Label>
+                <Input
+                  id="og-title"
+                  placeholder="{{store_name}} - Quality Products"
+                  value={settings.open_graph_settings.default_title}
+                  onChange={(e) => setSettings({
+                    ...settings,
+                    open_graph_settings: {
+                      ...settings.open_graph_settings,
+                      default_title: e.target.value
+                    }
+                  })}
+                />
+                <p className="text-sm text-muted-foreground">
+                  Default title for social sharing. Supports templates: {'{'}{'{'} store_name {'}}'}{'}'}, {'{'}{'{'} page_title {'}'}{'}'}
+                </p>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="og-description">Default OG Description (Optional)</Label>
+                <Textarea
+                  id="og-description"
+                  placeholder="Discover quality products at {{store_name}}"
+                  value={settings.open_graph_settings.default_description}
+                  onChange={(e) => setSettings({
+                    ...settings,
+                    open_graph_settings: {
+                      ...settings.open_graph_settings,
+                      default_description: e.target.value
+                    }
+                  })}
+                />
+                <p className="text-sm text-muted-foreground">
+                  Default description for social sharing
+                </p>
+              </div>
+
               <div className="space-y-2">
                 <Label htmlFor="og-image">Default OG Image URL</Label>
                 <Input
@@ -229,6 +295,36 @@ export default function SeoSocial() {
                 <p className="text-sm text-muted-foreground">
                   Used for Facebook analytics and insights
                 </p>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="fb-page-url">Facebook Page URL (Optional)</Label>
+                <Input
+                  id="fb-page-url"
+                  placeholder="https://facebook.com/yourstore"
+                  value={settings.open_graph_settings.facebook_page_url}
+                  onChange={(e) => setSettings({
+                    ...settings,
+                    open_graph_settings: {
+                      ...settings.open_graph_settings,
+                      facebook_page_url: e.target.value
+                    }
+                  })}
+                />
+                <p className="text-sm text-muted-foreground">
+                  Link to your Facebook business page
+                </p>
+              </div>
+
+              <div className="mt-4 p-4 bg-blue-50 rounded-lg">
+                <h4 className="font-semibold text-sm mb-2">Open Graph Best Practices:</h4>
+                <ul className="text-sm text-muted-foreground space-y-1 list-disc list-inside">
+                  <li>Image should be 1200x630px for optimal display on all platforms</li>
+                  <li>Title should be 40-60 characters</li>
+                  <li>Description should be 155-160 characters</li>
+                  <li>Use high-quality images that represent your brand</li>
+                  <li>Test your OG tags with Facebook Sharing Debugger</li>
+                </ul>
               </div>
 
             </CardContent>
@@ -289,10 +385,206 @@ export default function SeoSocial() {
                   })}
                 />
                 <p className="text-sm text-muted-foreground">
-                  Your store's Twitter/X handle (with or without @)
+                  Your store's Twitter/X handle (with or without @). Shown as the site attribution.
                 </p>
               </div>
 
+              <div className="space-y-2">
+                <Label htmlFor="twitter-creator">Twitter Creator Username (Optional)</Label>
+                <Input
+                  id="twitter-creator"
+                  placeholder="@contentcreator"
+                  value={settings.twitter_card_settings.creator_username}
+                  onChange={(e) => setSettings({
+                    ...settings,
+                    twitter_card_settings: {
+                      ...settings.twitter_card_settings,
+                      creator_username: e.target.value
+                    }
+                  })}
+                />
+                <p className="text-sm text-muted-foreground">
+                  Attribution for the content creator (individual, not brand)
+                </p>
+              </div>
+
+              <div className="mt-4 p-4 bg-blue-50 rounded-lg">
+                <h4 className="font-semibold text-sm mb-2">Twitter Card Best Practices:</h4>
+                <ul className="text-sm text-muted-foreground space-y-1 list-disc list-inside">
+                  <li>"Summary Large Image" is recommended for most e-commerce sites</li>
+                  <li>Images should be at least 300x157px (better 1200x628px)</li>
+                  <li>Use @site for brand account, @creator for author attribution</li>
+                  <li>Validate cards with Twitter Card Validator</li>
+                  <li>Cards appear when your URLs are shared on X/Twitter</li>
+                </ul>
+              </div>
+
+            </CardContent>
+          </Card>
+          <div className="flex justify-end mt-8">
+            <SaveButton
+                onClick={handleSave}
+                loading={saving}
+                success={saveSuccess}
+                defaultText="Save Settings"
+            />
+          </div>
+        </TabsContent>
+
+        <TabsContent value="social" className="space-y-4">
+          <Card>
+            <CardHeader>
+              <CardTitle>Social Media Profiles</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <p className="text-sm text-muted-foreground mb-4">
+                Add your social media profile URLs. These will be displayed in your website's structured data and can improve your brand presence in search results.
+              </p>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="social-facebook">
+                    <Facebook className="w-4 h-4 inline mr-2" />
+                    Facebook
+                  </Label>
+                  <Input
+                    id="social-facebook"
+                    placeholder="https://facebook.com/yourstore"
+                    value={settings.social_profiles.facebook}
+                    onChange={(e) => setSettings({
+                      ...settings,
+                      social_profiles: {
+                        ...settings.social_profiles,
+                        facebook: e.target.value
+                      }
+                    })}
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="social-twitter">
+                    <Twitter className="w-4 h-4 inline mr-2" />
+                    Twitter / X
+                  </Label>
+                  <Input
+                    id="social-twitter"
+                    placeholder="https://twitter.com/yourstore"
+                    value={settings.social_profiles.twitter}
+                    onChange={(e) => setSettings({
+                      ...settings,
+                      social_profiles: {
+                        ...settings.social_profiles,
+                        twitter: e.target.value
+                      }
+                    })}
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="social-instagram">
+                    <Share2 className="w-4 h-4 inline mr-2" />
+                    Instagram
+                  </Label>
+                  <Input
+                    id="social-instagram"
+                    placeholder="https://instagram.com/yourstore"
+                    value={settings.social_profiles.instagram}
+                    onChange={(e) => setSettings({
+                      ...settings,
+                      social_profiles: {
+                        ...settings.social_profiles,
+                        instagram: e.target.value
+                      }
+                    })}
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="social-linkedin">
+                    <Share2 className="w-4 h-4 inline mr-2" />
+                    LinkedIn
+                  </Label>
+                  <Input
+                    id="social-linkedin"
+                    placeholder="https://linkedin.com/company/yourstore"
+                    value={settings.social_profiles.linkedin}
+                    onChange={(e) => setSettings({
+                      ...settings,
+                      social_profiles: {
+                        ...settings.social_profiles,
+                        linkedin: e.target.value
+                      }
+                    })}
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="social-youtube">
+                    <Share2 className="w-4 h-4 inline mr-2" />
+                    YouTube
+                  </Label>
+                  <Input
+                    id="social-youtube"
+                    placeholder="https://youtube.com/@yourstore"
+                    value={settings.social_profiles.youtube}
+                    onChange={(e) => setSettings({
+                      ...settings,
+                      social_profiles: {
+                        ...settings.social_profiles,
+                        youtube: e.target.value
+                      }
+                    })}
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="social-pinterest">
+                    <Share2 className="w-4 h-4 inline mr-2" />
+                    Pinterest
+                  </Label>
+                  <Input
+                    id="social-pinterest"
+                    placeholder="https://pinterest.com/yourstore"
+                    value={settings.social_profiles.pinterest}
+                    onChange={(e) => setSettings({
+                      ...settings,
+                      social_profiles: {
+                        ...settings.social_profiles,
+                        pinterest: e.target.value
+                      }
+                    })}
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="social-tiktok">
+                    <Share2 className="w-4 h-4 inline mr-2" />
+                    TikTok
+                  </Label>
+                  <Input
+                    id="social-tiktok"
+                    placeholder="https://tiktok.com/@yourstore"
+                    value={settings.social_profiles.tiktok}
+                    onChange={(e) => setSettings({
+                      ...settings,
+                      social_profiles: {
+                        ...settings.social_profiles,
+                        tiktok: e.target.value
+                      }
+                    })}
+                  />
+                </div>
+              </div>
+
+              <div className="mt-4 p-4 bg-blue-50 rounded-lg">
+                <h4 className="font-semibold text-sm mb-2">Best Practices:</h4>
+                <ul className="text-sm text-muted-foreground space-y-1 list-disc list-inside">
+                  <li>Use complete profile URLs, not just usernames</li>
+                  <li>Ensure your profiles are public and active</li>
+                  <li>Keep profile information consistent across platforms</li>
+                  <li>These URLs will be included in your site's structured data</li>
+                </ul>
+              </div>
             </CardContent>
           </Card>
           <div className="flex justify-end mt-8">

@@ -72,6 +72,32 @@ const SeoSettings = sequelize.define('SeoSettings', {
     type: DataTypes.BOOLEAN,
     defaultValue: true
   },
+  // HTML Sitemap settings
+  enable_html_sitemap: {
+    type: DataTypes.BOOLEAN,
+    defaultValue: true
+  },
+  html_sitemap_include_products: {
+    type: DataTypes.BOOLEAN,
+    defaultValue: true
+  },
+  html_sitemap_include_categories: {
+    type: DataTypes.BOOLEAN,
+    defaultValue: true
+  },
+  html_sitemap_include_pages: {
+    type: DataTypes.BOOLEAN,
+    defaultValue: true
+  },
+  html_sitemap_max_products: {
+    type: DataTypes.INTEGER,
+    defaultValue: 20
+  },
+  html_sitemap_product_sort: {
+    type: DataTypes.STRING,
+    defaultValue: '-updated_date',
+    allowNull: true
+  },
   auto_canonical_filtered_pages: {
     type: DataTypes.BOOLEAN,
     defaultValue: true
@@ -95,14 +121,30 @@ const SeoSettings = sequelize.define('SeoSettings', {
     type: DataTypes.JSON,
     defaultValue: {
       default_image_url: '',
-      facebook_app_id: ''
+      default_title: '',
+      default_description: '',
+      facebook_app_id: '',
+      facebook_page_url: ''
     }
   },
   twitter_card_settings: {
     type: DataTypes.JSON,
     defaultValue: {
       card_type: 'summary_large_image',
-      site_username: ''
+      site_username: '',
+      creator_username: ''
+    }
+  },
+  social_profiles: {
+    type: DataTypes.JSON,
+    defaultValue: {
+      facebook: '',
+      twitter: '',
+      instagram: '',
+      linkedin: '',
+      youtube: '',
+      pinterest: '',
+      tiktok: ''
     }
   }
 }, {
