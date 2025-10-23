@@ -508,22 +508,28 @@ export default function CmsPageForm({ page, stores, products, onSubmit, onCancel
           </div>
         </div>
         <div className="border rounded-md p-2 h-48 overflow-y-auto">
-          {products
-            .filter(product =>
-              product.name?.toLowerCase().includes(productSearchQuery.toLowerCase())
-            )
-            .map(product => (
-              <div
-                key={product.id}
-                className={`p-2 rounded cursor-pointer flex justify-between items-center hover:bg-gray-50 ${
-                  formData.related_product_ids.includes(product.id) ? 'bg-blue-100' : ''
-                }`}
-                onClick={() => handleProductToggle(product.id)}
-              >
-                <span>{product.name}</span>
-                {formData.related_product_ids.includes(product.id) && <X className="w-4 h-4" />}
-              </div>
-            ))}
+          {!products || products.length === 0 ? (
+            <div className="text-center text-gray-500 py-8">
+              No products available. Please add products to your store first.
+            </div>
+          ) : (
+            products
+              .filter(product =>
+                product.name?.toLowerCase().includes(productSearchQuery.toLowerCase())
+              )
+              .map(product => (
+                <div
+                  key={product.id}
+                  className={`p-2 rounded cursor-pointer flex justify-between items-center hover:bg-gray-50 ${
+                    formData.related_product_ids.includes(product.id) ? 'bg-blue-100' : ''
+                  }`}
+                  onClick={() => handleProductToggle(product.id)}
+                >
+                  <span>{product.name}</span>
+                  {formData.related_product_ids.includes(product.id) && <X className="w-4 h-4" />}
+                </div>
+              ))
+          )}
         </div>
         <div className="mt-2 flex flex-wrap gap-1">
           {formData.related_product_ids.map(id => {

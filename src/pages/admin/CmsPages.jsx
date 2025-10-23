@@ -88,7 +88,13 @@ export default function CmsPages() {
         CmsPage.filter({ store_id: storeId }),
         Product.filter({ store_id: storeId })
       ]);
-      
+
+      console.log('📦 CmsPages: Loaded data:', {
+        pagesCount: pagesData?.length || 0,
+        productsCount: productsData?.length || 0,
+        storeId
+      });
+
       setPages(pagesData || []);
       setProducts(productsData || []);
     } catch (error) {
