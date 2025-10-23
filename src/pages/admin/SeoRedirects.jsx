@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { RefreshCw, Plus, Trash2, Download, Upload } from "lucide-react";
+import { RefreshCw, Plus, Trash2, Download, Upload, HelpCircle, AlertCircle, CheckCircle, Info } from "lucide-react";
 import { useStoreSelection } from "@/contexts/StoreSelectionContext.jsx";
 import adminApiClient from "@/api/admin-client";
 import { toast } from "sonner";
@@ -239,6 +239,109 @@ export default function SeoRedirects() {
               )}
             </TableBody>
           </Table>
+        </CardContent>
+      </Card>
+
+      <Card className="border-blue-200 bg-blue-50/50">
+        <CardHeader>
+          <div className="flex items-center gap-2">
+            <HelpCircle className="h-5 w-5 text-blue-600" />
+            <CardTitle className="text-blue-900">Help & Best Practices</CardTitle>
+          </div>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="space-y-3">
+            <div className="flex gap-3">
+              <Info className="h-5 w-5 text-blue-600 flex-shrink-0 mt-0.5" />
+              <div>
+                <h4 className="font-semibold text-sm mb-1">How Redirects Work</h4>
+                <p className="text-sm text-gray-700">
+                  When a visitor accesses a URL, the system checks if a redirect exists. If found, they're automatically sent to the new URL.
+                  This is essential for maintaining SEO rankings when you change URLs.
+                </p>
+              </div>
+            </div>
+
+            <div className="flex gap-3">
+              <CheckCircle className="h-5 w-5 text-green-600 flex-shrink-0 mt-0.5" />
+              <div>
+                <h4 className="font-semibold text-sm mb-1">Use Relative Paths</h4>
+                <p className="text-sm text-gray-700 mb-2">
+                  Always use paths relative to your store URL. Don't include the <code className="bg-gray-200 px-1 py-0.5 rounded text-xs">/public/storename</code> prefix.
+                </p>
+                <div className="bg-white p-2 rounded border border-gray-200 text-xs space-y-1">
+                  <div className="flex items-start gap-2">
+                    <span className="text-green-600">✓</span>
+                    <div>
+                      <strong>Correct:</strong>
+                      <div className="font-mono text-gray-600 mt-1">
+                        From: <code className="bg-gray-100 px-1">/category/old-name</code><br />
+                        To: <code className="bg-gray-100 px-1">/category/new-name</code>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="flex items-start gap-2">
+                    <span className="text-red-600">✗</span>
+                    <div>
+                      <strong>Wrong:</strong>
+                      <div className="font-mono text-gray-600 mt-1">
+                        From: <code className="bg-gray-100 px-1">/public/hamid2/category/old-name</code>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="flex gap-3">
+              <AlertCircle className="h-5 w-5 text-amber-600 flex-shrink-0 mt-0.5" />
+              <div>
+                <h4 className="font-semibold text-sm mb-1">Redirect Types</h4>
+                <ul className="text-sm text-gray-700 space-y-1">
+                  <li><strong>301 (Permanent):</strong> Use when the old URL is permanently moved. Best for SEO as it transfers link equity.</li>
+                  <li><strong>302 (Temporary):</strong> Use for temporary changes. Search engines won't transfer ranking signals.</li>
+                  <li><strong>307 (Temporary):</strong> Like 302 but preserves the HTTP method (POST/GET).</li>
+                  <li><strong>308 (Permanent):</strong> Like 301 but preserves the HTTP method (POST/GET).</li>
+                </ul>
+              </div>
+            </div>
+
+            <div className="flex gap-3">
+              <Info className="h-5 w-5 text-blue-600 flex-shrink-0 mt-0.5" />
+              <div>
+                <h4 className="font-semibold text-sm mb-1">Common Use Cases</h4>
+                <ul className="text-sm text-gray-700 space-y-1">
+                  <li>• Product URL changed: <code className="bg-gray-100 px-1 text-xs">/product/old-sku</code> → <code className="bg-gray-100 px-1 text-xs">/product/new-sku</code></li>
+                  <li>• Category renamed: <code className="bg-gray-100 px-1 text-xs">/category/electronics</code> → <code className="bg-gray-100 px-1 text-xs">/category/tech</code></li>
+                  <li>• Page moved: <code className="bg-gray-100 px-1 text-xs">/about-us</code> → <code className="bg-gray-100 px-1 text-xs">/company/about</code></li>
+                  <li>• External redirect: <code className="bg-gray-100 px-1 text-xs">/blog</code> → <code className="bg-gray-100 px-1 text-xs">https://blog.example.com</code></li>
+                </ul>
+              </div>
+            </div>
+
+            <div className="flex gap-3">
+              <CheckCircle className="h-5 w-5 text-green-600 flex-shrink-0 mt-0.5" />
+              <div>
+                <h4 className="font-semibold text-sm mb-1">Best Practices</h4>
+                <ul className="text-sm text-gray-700 space-y-1">
+                  <li>• Always test redirects after creating them</li>
+                  <li>• Avoid redirect chains (A → B → C). Redirect directly (A → C)</li>
+                  <li>• Use 301 for SEO benefits when the change is permanent</li>
+                  <li>• Monitor hit counts to track which redirects are being used</li>
+                  <li>• Clean up old redirects that are no longer needed</li>
+                  <li>• Redirects are automatically created when you change category/product slugs</li>
+                </ul>
+              </div>
+            </div>
+
+            <div className="bg-amber-50 border border-amber-200 rounded p-3 flex gap-2">
+              <AlertCircle className="h-5 w-5 text-amber-600 flex-shrink-0 mt-0.5" />
+              <div className="text-sm">
+                <strong className="text-amber-900">Note:</strong>
+                <span className="text-amber-800"> Redirects only work on storefront pages. Admin pages and API endpoints are not affected by redirects.</span>
+              </div>
+            </div>
+          </div>
         </CardContent>
       </Card>
     </div>
