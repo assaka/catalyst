@@ -104,19 +104,33 @@ Sitemap: https://example.com/sitemap.xml`);
     setGenerating(true);
     try {
       const storeId = getSelectedStoreId();
+      console.log('Store ID:', storeId);
+      console.log('Selected Store:', selectedStore);
+
       if (!storeId) {
         alert('Please select a store first');
         return;
       }
 
       // Fetch ALL products, categories, and pages to filter those with non-default meta robots tags
+      console.log('Fetching categories with store_id:', storeId);
+
+      // Try fetching all categories first to see if any exist
+      const testCategories = await Category.all();
+      console.log('All categories (no filter):', testCategories);
+
       const [allProducts, allCategories, allPages] = await Promise.all([
         Product.filter({ store_id: storeId }),
         Category.filter({ store_id: storeId }),
         CmsPage.filter({ store_id: storeId })
-      ]);
+      ]).catch(error => {
+        console.error('Error fetching data:', error);
+        return [[], [], []];
+      });
 
+      console.log('Fetched products count:', allProducts?.length);
       console.log('Fetched categories:', allCategories);
+      console.log('Fetched categories count:', allCategories?.length);
       console.log('Categories with meta_robots_tag:', allCategories.filter(c => c.meta_robots_tag).map(c => ({
         name: c.name,
         slug: c.slug,
