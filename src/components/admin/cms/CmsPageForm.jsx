@@ -356,34 +356,6 @@ export default function CmsPageForm({ page, stores, products, onSubmit, onCancel
             <Languages className="w-4 h-4" />
             {showTranslations ? 'Hide translations' : 'Manage translations'}
           </button>
-
-          {showTranslations && (
-            <div className="mt-4 border-2 border-blue-200 bg-blue-50 rounded-lg p-4 col-span-2">
-              <div className="flex items-center gap-2 mb-4">
-                <Languages className="w-5 h-5 text-blue-600" />
-                <h3 className="text-base font-semibold text-blue-900">Page Translations</h3>
-              </div>
-              <TranslationFields
-                translations={formData.translations}
-                onChange={(newTranslations) => {
-                  setFormData(prev => ({
-                    ...prev,
-                    translations: newTranslations,
-                    // Sync main fields with English translation
-                    title: newTranslations.en?.title || prev.title,
-                    content: newTranslations.en?.content || prev.content
-                  }));
-                }}
-                fields={[
-                  { name: 'title', label: 'Page Title', type: 'text', required: true },
-                  { name: 'content', label: 'Page Content', type: 'textarea', rows: 10 }
-                ]}
-              />
-              <p className="text-sm text-gray-600 mt-3">
-                Translate page content to provide a localized experience for your customers
-              </p>
-            </div>
-          )}
         </div>
         <div>
           <div className="flex items-center justify-between mb-2">
@@ -435,6 +407,34 @@ export default function CmsPageForm({ page, stores, products, onSubmit, onCancel
         </div>
       </div>
 
+      {showTranslations && (
+        <div className="border-2 border-blue-200 bg-blue-50 rounded-lg p-4">
+          <div className="flex items-center gap-2 mb-4">
+            <Languages className="w-5 h-5 text-blue-600" />
+            <h3 className="text-base font-semibold text-blue-900">Page Translations</h3>
+          </div>
+          <TranslationFields
+            translations={formData.translations}
+            onChange={(newTranslations) => {
+              setFormData(prev => ({
+                ...prev,
+                translations: newTranslations,
+                // Sync main fields with English translation
+                title: newTranslations.en?.title || prev.title,
+                content: newTranslations.en?.content || prev.content
+              }));
+            }}
+            fields={[
+              { name: 'title', label: 'Page Title', type: 'text', required: true },
+              { name: 'content', label: 'Page Content', type: 'textarea', rows: 10 }
+            ]}
+          />
+          <p className="text-sm text-gray-600 mt-3">
+            Translate page content to provide a localized experience for your customers
+          </p>
+        </div>
+      )}
+
       {showSlugChangeWarning && hasManuallyEditedSlug && isEditingSlug && (
         <Alert className="border-amber-200 bg-amber-50">
           <AlertTriangle className="h-4 w-4 text-amber-600" />
@@ -468,29 +468,31 @@ export default function CmsPageForm({ page, stores, products, onSubmit, onCancel
         </Alert>
       )}
 
-      <div>
-        <div className="flex items-center justify-between mb-2">
-          <Label htmlFor="content">Content (HTML)</Label>
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            onClick={() => setShowMediaBrowser(true)}
-            className="flex items-center gap-2"
-          >
-            <ImagePlus className="w-4 h-4" />
-            Insert Media
-          </Button>
+      {!showTranslations && (
+        <div>
+          <div className="flex items-center justify-between mb-2">
+            <Label htmlFor="content">Content (HTML)</Label>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => setShowMediaBrowser(true)}
+              className="flex items-center gap-2"
+            >
+              <ImagePlus className="w-4 h-4" />
+              Insert Media
+            </Button>
+          </div>
+          <Textarea
+            ref={contentTextareaRef}
+            id="content"
+            name="content" // Added name prop for consistency
+            value={formData.content}
+            onChange={(e) => handleInputChange(e)} // Use generic handler
+            rows={10}
+          />
         </div>
-        <Textarea
-          ref={contentTextareaRef}
-          id="content"
-          name="content" // Added name prop for consistency
-          value={formData.content}
-          onChange={(e) => handleInputChange(e)} // Use generic handler
-          rows={10}
-        />
-      </div>
+      )}
 
       <div>
         <Label>Related Products</Label>
