@@ -344,7 +344,7 @@ export default function SeoHeadManager({ pageType, pageData, pageTitle, pageDesc
 
         // Hreflang tags
 
-        if (seoSettings?.enable_hreflang && seoSettings?.hreflang_settings && Array.isArray(seoSettings.hreflang_settings) && seoSettings.hreflang_settings.length > 0) {
+        if (seoSettings?.hreflang_settings && Array.isArray(seoSettings.hreflang_settings) && seoSettings.hreflang_settings.length > 0) {
             // Remove existing hreflang tags
             const existingHreflangs = document.querySelectorAll('link[rel="alternate"][hreflang]');
             existingHreflangs.forEach(link => link.remove());

@@ -76,10 +76,6 @@ const SeoSettings = sequelize.define('SeoSettings', {
     type: DataTypes.BOOLEAN,
     defaultValue: true
   },
-  enable_hreflang: {
-    type: DataTypes.BOOLEAN,
-    defaultValue: false
-  },
   // Complex settings as JSON
   hreflang_settings: {
     type: DataTypes.JSON,
