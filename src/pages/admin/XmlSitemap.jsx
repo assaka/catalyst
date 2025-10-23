@@ -105,19 +105,29 @@ export default function XmlSitemap() {
         return <div>Generating sitemap...</div>;
     }
 
-    // Set content type to XML
-    React.useEffect(() => {
-        const response = new Response(sitemapXml, {
-            headers: {
-                'Content-Type': 'application/xml',
-            },
-        });
-        return response;
-    }, [sitemapXml]);
+    const downloadSitemap = () => {
+        const blob = new Blob([sitemapXml], { type: 'application/xml' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'sitemap.xml';
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+    };
 
     return (
-        <pre style={{ whiteSpace: 'pre-wrap', fontFamily: 'monospace' }}>
-            {sitemapXml}
-        </pre>
+        <div>
+            <button
+                onClick={downloadSitemap}
+                style={{ marginBottom: '20px', padding: '10px 20px', cursor: 'pointer' }}
+            >
+                Download Sitemap XML
+            </button>
+            <pre style={{ whiteSpace: 'pre-wrap', fontFamily: 'monospace' }}>
+                {sitemapXml}
+            </pre>
+        </div>
     );
 }
