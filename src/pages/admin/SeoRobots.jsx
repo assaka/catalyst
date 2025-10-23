@@ -277,25 +277,9 @@ Sitemap: https://example.com/sitemap.xml`);
       return;
     }
 
-    // Check for custom domain in settings or construct from current domain + store slug
-    let domain = selectedStore.settings?.custom_domain ||
-                 selectedStore.settings?.domain ||
-                 selectedStore.custom_domain ||
-                 selectedStore.domain;
-
-    let robotsUrl;
-
-    if (domain) {
-      // Has custom domain - use it
-      if (!domain.startsWith('http://') && !domain.startsWith('https://')) {
-        domain = 'https://' + domain;
-      }
-      robotsUrl = `${domain}/robots.txt`;
-    } else {
-      // No custom domain - construct from current domain and store slug
-      const currentDomain = window.location.origin;
-      robotsUrl = `${currentDomain}/public/${selectedStore.slug}/robots.txt`;
-    }
+    // Construct proper robots.txt URL for SEO crawlers
+    const currentDomain = window.location.origin;
+    const robotsUrl = `${currentDomain}/public/${selectedStore.slug}/robots.txt`;
 
     // Open in new tab
     window.open(robotsUrl, '_blank');
