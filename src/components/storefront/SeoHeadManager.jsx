@@ -310,12 +310,12 @@ export default function SeoHeadManager({ pageType, pageData, pageTitle, pageDesc
         updateMetaTag('robots', robotsTag);
 
         // Canonical URL with template replacement
-        // Priority: Custom canonical URL from database > pageData > canonical_base_url > current URL
+        // Priority: Custom canonical URL from database > pageData > canonical base URL > current URL
         let canonicalUrl = customCanonicalUrl || pageData?.canonical_url;
 
         if (!canonicalUrl) {
-            // Apply template replacement to canonical base URL
-            const canonicalBase = applyTemplate(seoSettings?.canonical_base_url || '', pageData);
+            // Apply template replacement to canonical base URL from settings
+            const canonicalBase = applyTemplate(seoSettings?.canonical_settings?.base_url || '', pageData);
 
             if (canonicalBase && canonicalBase.trim()) {
                 // Ensure the base URL doesn't end with / and pathname starts with /

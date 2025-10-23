@@ -22,7 +22,10 @@ export default function SeoHreflang() {
 
   const [seoSettings, setSeoSettings] = useState({
     hreflang_settings: [],
-    canonical_base_url: '',
+    canonical_settings: {
+      base_url: '',
+      auto_canonical_filtered_pages: true
+    },
     store_id: ''
   });
 
@@ -49,7 +52,10 @@ export default function SeoHreflang() {
         setSeoSettings({
           ...loadedSettings,
           hreflang_settings: Array.isArray(loadedSettings.hreflang_settings) ? loadedSettings.hreflang_settings : [],
-          canonical_base_url: loadedSettings.canonical_base_url || '',
+          canonical_settings: loadedSettings.canonical_settings || {
+            base_url: '',
+            auto_canonical_filtered_pages: true
+          },
           store_id: storeId
         });
 
@@ -270,7 +276,7 @@ export default function SeoHreflang() {
                       </div>
                       <div className="mt-2 text-xs text-gray-500">
                         Preview: {hreflang.url_pattern
-                          .replace(/\{\{base_url\}\}/g, seoSettings.canonical_base_url || 'https://yourdomain.com')
+                          .replace(/\{\{base_url\}\}/g, seoSettings.canonical_settings?.base_url || 'https://yourdomain.com')
                           .replace(/\{\{language_code\}\}/g, hreflang.language_code || 'lang')
                           .replace(/\{\{absolute_path\}\}/g, '/public/storename/category/example')
                           .replace(/\{\{relative_path\}\}/g, '/category/example')

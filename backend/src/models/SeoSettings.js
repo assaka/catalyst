@@ -26,18 +26,18 @@ const SeoSettings = sequelize.define('SeoSettings', {
       meta_robots: 'index, follow'
     }
   },
-  canonical_base_url: {
-    type: DataTypes.STRING,
-    allowNull: true
+  // Canonical URL settings (consolidated)
+  canonical_settings: {
+    type: DataTypes.JSON,
+    defaultValue: {
+      base_url: '',
+      auto_canonical_filtered_pages: true
+    }
   },
   // Robots and sitemap
   robots_txt_content: {
     type: DataTypes.TEXT,
     allowNull: true
-  },
-  auto_canonical_filtered_pages: {
-    type: DataTypes.BOOLEAN,
-    defaultValue: true
   },
   // Complex settings as JSON
   hreflang_settings: {
