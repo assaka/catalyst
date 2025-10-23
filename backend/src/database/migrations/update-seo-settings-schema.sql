@@ -2,7 +2,7 @@
 -- This migration adds all missing columns that the frontend expects
 
 -- Add new columns to seo_settings table
-ALTER TABLE seo_settings 
+ALTER TABLE seo_settings
   ADD COLUMN IF NOT EXISTS default_meta_title VARCHAR(255),
   ADD COLUMN IF NOT EXISTS default_meta_description TEXT,
   ADD COLUMN IF NOT EXISTS default_meta_keywords TEXT,
@@ -13,6 +13,7 @@ ALTER TABLE seo_settings
   ADD COLUMN IF NOT EXISTS sitemap_include_categories BOOLEAN DEFAULT true,
   ADD COLUMN IF NOT EXISTS sitemap_include_pages BOOLEAN DEFAULT true,
   ADD COLUMN IF NOT EXISTS auto_canonical_filtered_pages BOOLEAN DEFAULT true,
+  ADD COLUMN IF NOT EXISTS enable_hreflang BOOLEAN DEFAULT false,
   ADD COLUMN IF NOT EXISTS hreflang_settings JSONB DEFAULT '[]',
   ADD COLUMN IF NOT EXISTS open_graph_settings JSONB DEFAULT '{"default_image_url": "", "facebook_app_id": ""}',
   ADD COLUMN IF NOT EXISTS twitter_card_settings JSONB DEFAULT '{"card_type": "summary_large_image", "site_username": ""}';

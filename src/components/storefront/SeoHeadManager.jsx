@@ -302,28 +302,28 @@ export default function SeoHeadManager({ pageType, pageData, pageTitle, pageDesc
         canonicalLink.setAttribute('href', canonicalUrl);
 
         // Hreflang tags
-        
-        if (seoSettings?.hreflang_settings && Array.isArray(seoSettings.hreflang_settings) && seoSettings.hreflang_settings.length > 0) {
+
+        if (seoSettings?.enable_hreflang && seoSettings?.hreflang_settings && Array.isArray(seoSettings.hreflang_settings) && seoSettings.hreflang_settings.length > 0) {
             // Remove existing hreflang tags
             const existingHreflangs = document.querySelectorAll('link[rel="alternate"][hreflang]');
             existingHreflangs.forEach(link => link.remove());
-            
+
             // Add new hreflang tags
             seoSettings.hreflang_settings.forEach(hreflang => {
                 if (hreflang.is_active && hreflang.language_code && hreflang.url_pattern) {
-                    const hreflangUrl = applyTemplate(hreflang.url_pattern, { 
+                    const hreflangUrl = applyTemplate(hreflang.url_pattern, {
                         current_url: window.location.href,
                         current_path: window.location.pathname,
                         language_code: hreflang.language_code,
-                        ...pageData 
+                        ...pageData
                     });
-                    
+
                     if (hreflangUrl) {
                         const hreflangLink = document.createElement('link');
                         hreflangLink.setAttribute('rel', 'alternate');
-                        hreflangLink.setAttribute('hreflang', 
-                            hreflang.country_code ? 
-                                `${hreflang.language_code}-${hreflang.country_code}` : 
+                        hreflangLink.setAttribute('hreflang',
+                            hreflang.country_code ?
+                                `${hreflang.language_code}-${hreflang.country_code}` :
                                 hreflang.language_code
                         );
                         hreflangLink.setAttribute('href', hreflangUrl);

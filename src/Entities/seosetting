@@ -44,6 +44,11 @@
       "default": true,
       "description": "Automatically set canonical URL for filtered pages to the base category URL"
     },
+    "enable_hreflang": {
+      "type": "boolean",
+      "default": false,
+      "description": "Enable or disable hreflang tags globally"
+    },
     "hreflang_settings": {
       "type": "array",
       "items": {
