@@ -603,6 +603,7 @@ export const StoreProvider = ({ children }) => {
             banner_position: cookieSettings.banner_position || "bottom",
             show_close_button: cookieSettings.show_close_button ?? true,
             consent_expiry_days: cookieSettings.consent_expiry_days || 365,
+            translations: cookieSettings.translations || {}, // IMPORTANT: Include translations for multilingual support
             categories: cookieSettings.categories || [
               {
                 id: "necessary",
@@ -613,7 +614,7 @@ export const StoreProvider = ({ children }) => {
               },
               {
                 id: "analytics",
-                name: "Analytics Cookies", 
+                name: "Analytics Cookies",
                 description: "These cookies help us understand how visitors interact with our website.",
                 required: false,
                 default_enabled: cookieSettings.analytics_cookies || false
