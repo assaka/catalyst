@@ -1268,11 +1268,7 @@ const CartCouponSlot = createSlotComponent({
           appliedSection.style.display = 'block';
           const couponNameEl = appliedSection.querySelector('[data-coupon-name]');
           const currentLang = getCurrentLanguage();
-          console.log('🐛 CartCouponSlot - Current language:', currentLang);
-          console.log('🐛 CartCouponSlot - Coupon data:', appliedCoupon);
-          console.log('🐛 CartCouponSlot - Coupon translations:', appliedCoupon.translations);
           const translatedName = getTranslatedField(appliedCoupon, 'name', currentLang, 'en') || appliedCoupon.name || appliedCoupon.code;
-          console.log('🐛 CartCouponSlot - Translated name:', translatedName);
           if (couponNameEl) couponNameEl.textContent = translatedName;
 
           // Display discount information
