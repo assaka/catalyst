@@ -25,12 +25,13 @@ router.get('/', async (req, res) => {
       where,
       limit: parseInt(limit),
       offset: parseInt(offset),
-      order: [['sort_order', 'ASC'], ['title', 'ASC']],
+      order: [['sort_order', 'ASC'], ['slug', 'ASC']],
     });
 
     res.json({ success: true, data: { pages: rows, pagination: { current_page: parseInt(page), per_page: parseInt(limit), total: count, total_pages: Math.ceil(count / limit) } } });
   } catch (error) {
-    res.status(500).json({ success: false, message: 'Server error' });
+    console.error('Error fetching CMS pages:', error);
+    res.status(500).json({ success: false, message: 'Server error', error: error.message });
   }
 });
 
@@ -239,7 +240,7 @@ router.post('/bulk-translate', [
     // Get all pages for this store
     const pages = await CmsPage.findAll({
       where: { store_id },
-      order: [['sort_order', 'ASC'], ['title', 'ASC']]
+      order: [['sort_order', 'ASC'], ['slug', 'ASC']]
     });
 
     if (pages.length === 0) {
