@@ -26,10 +26,9 @@ export function getTranslatedField(entity, field, lang = 'en', fallbackLang = 'e
     return entity.translations[fallbackLang][field];
   }
 
-  // Fallback to direct property if translations are not available
-  // This ensures backward compatibility and handles cases where translations haven't been populated yet
-  if (entity[field]) {
-    return entity[field];
+  // For title field, fallback to slug if available (useful for CMS pages)
+  if (field === 'title' && entity.slug) {
+    return entity.slug;
   }
 
   return '';
