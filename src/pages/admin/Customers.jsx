@@ -226,6 +226,7 @@ export default function Customers() {
                                 <tr className="border-b">
                                     <th className="text-left py-3 px-4 font-medium">Name</th>
                                     <th className="text-left py-3 px-4 font-medium">Email</th>
+                                    <th className="text-left py-3 px-4 font-medium">Address</th>
                                     <th className="text-left py-3 px-4 font-medium">Total Orders</th>
                                     <th className="text-left py-3 px-4 font-medium">Total Spent</th>
                                     <th className="text-left py-3 px-4 font-medium">Last Order</th>
@@ -237,6 +238,21 @@ export default function Customers() {
                                     <tr key={customer.id} className="border-b hover:bg-gray-50">
                                         <td className="py-3 px-4">{customer.first_name} {customer.last_name}</td>
                                         <td className="py-3 px-4">{customer.email}</td>
+                                        <td className="py-3 px-4">
+                                            {(() => {
+                                                const addressData = customer.address_data?.shipping_address || customer.address_data?.billing_address;
+                                                if (addressData) {
+                                                    const parts = [
+                                                        addressData.street,
+                                                        addressData.city,
+                                                        addressData.state,
+                                                        addressData.postal_code
+                                                    ].filter(Boolean);
+                                                    return parts.length > 0 ? parts.join(', ') : 'N/A';
+                                                }
+                                                return 'N/A';
+                                            })()}
+                                        </td>
                                         <td className="py-3 px-4">{customer.total_orders}</td>
                                         <td className="py-3 px-4">${(() => {
                                             const totalSpent = parseFloat(customer.total_spent || 0);
