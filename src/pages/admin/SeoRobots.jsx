@@ -490,6 +490,14 @@ Sitemap: https://example.com/sitemap.xml`);
           <CardTitle>Quick Settings</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
+          <Alert className="bg-amber-50 border-amber-200">
+            <AlertCircle className="h-4 w-4 text-amber-600" />
+            <AlertDescription className="text-amber-800">
+              <strong>Warning:</strong> Enabling these settings may negatively affect your SEO.
+              Use with caution and only when necessary for specific use cases like maintenance mode or server load management.
+            </AlertDescription>
+          </Alert>
+
           <div className="flex items-center justify-between space-x-2">
             <Label htmlFor="block-crawlers" className="cursor-pointer">
               Block all crawlers (maintenance mode)
