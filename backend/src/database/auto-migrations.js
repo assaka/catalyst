@@ -253,6 +253,119 @@ const migrations = [
         return false;
       }
     }
+  },
+  {
+    name: 'update-redirects-columns-and-types',
+    up: async () => {
+      console.log('🔄 Running migration: update-redirects-columns-and-types');
+
+      try {
+        // Check if redirects table exists
+        const [tableExists] = await sequelize.query(`
+          SELECT EXISTS (
+            SELECT FROM information_schema.tables
+            WHERE table_name = 'redirects'
+          ) as exists
+        `);
+
+        if (!tableExists[0].exists) {
+          console.log('✅ Redirects table does not exist yet, skipping');
+          return true;
+        }
+
+        // Get current column names
+        const [columns] = await sequelize.query(`
+          SELECT column_name
+          FROM information_schema.columns
+          WHERE table_name = 'redirects'
+        `);
+
+        const columnNames = columns.map(c => c.column_name);
+
+        // Rename columns if using old names
+        if (columnNames.includes('source_path')) {
+          await sequelize.query(`
+            ALTER TABLE redirects RENAME COLUMN source_path TO from_url
+          `);
+          console.log('✅ Renamed source_path to from_url');
+        }
+
+        if (columnNames.includes('target_path')) {
+          await sequelize.query(`
+            ALTER TABLE redirects RENAME COLUMN target_path TO to_url
+          `);
+          console.log('✅ Renamed target_path to to_url');
+        }
+
+        if (columnNames.includes('redirect_type')) {
+          await sequelize.query(`
+            ALTER TABLE redirects RENAME COLUMN redirect_type TO type
+          `);
+          console.log('✅ Renamed redirect_type to type');
+        }
+
+        // Update the enum type to include 307 and 308
+        // First check if we need to update the enum
+        const [enumValues] = await sequelize.query(`
+          SELECT enumlabel
+          FROM pg_enum
+          WHERE enumtypid = (
+            SELECT oid
+            FROM pg_type
+            WHERE typname = 'enum_redirects_type'
+          )
+        `);
+
+        const currentValues = enumValues.map(v => v.enumlabel);
+
+        if (!currentValues.includes('307') || !currentValues.includes('308')) {
+          console.log('🔄 Updating redirect type enum to include 307 and 308...');
+
+          // Temporarily change to string
+          await sequelize.query(`
+            ALTER TABLE redirects
+            ALTER COLUMN type TYPE VARCHAR(3)
+          `);
+
+          // Drop old enum type
+          await sequelize.query(`
+            DROP TYPE IF EXISTS enum_redirects_type
+          `);
+
+          // Create new enum type
+          await sequelize.query(`
+            CREATE TYPE enum_redirects_type AS ENUM ('301', '302', '307', '308')
+          `);
+
+          // Apply new enum type
+          await sequelize.query(`
+            ALTER TABLE redirects
+            ALTER COLUMN type TYPE enum_redirects_type USING type::enum_redirects_type
+          `);
+
+          console.log('✅ Updated redirect type enum');
+        } else {
+          console.log('✅ Redirect type enum already up to date');
+        }
+
+        // Update index name if needed
+        await sequelize.query(`
+          DROP INDEX IF EXISTS idx_redirects_store_source_unique
+        `).catch(() => {});
+
+        await sequelize.query(`
+          CREATE UNIQUE INDEX IF NOT EXISTS idx_redirects_store_from_unique
+          ON redirects(store_id, from_url)
+        `);
+
+        console.log('✅ Redirect columns and types updated');
+        return true;
+      } catch (error) {
+        console.error('❌ Migration failed:', error.message);
+        console.error(error);
+        return false;
+      }
+    }
   }
 ];
 

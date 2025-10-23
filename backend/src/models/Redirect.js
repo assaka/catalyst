@@ -24,7 +24,7 @@ const Redirect = sequelize.define('Redirect', {
     allowNull: false
   },
   type: {
-    type: DataTypes.ENUM('301', '302'),
+    type: DataTypes.ENUM('301', '302', '307', '308'),
     allowNull: false,
     defaultValue: '301'
   },
