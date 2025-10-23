@@ -503,7 +503,7 @@ export default function CmsPageForm({ page, stores, products, onSubmit, onCancel
         <div className="border rounded-md p-2 h-48 overflow-y-auto">
           {products
             .filter(product =>
-              product.name.toLowerCase().includes(productSearchQuery.toLowerCase())
+              product.name?.toLowerCase().includes(productSearchQuery.toLowerCase())
             )
             .map(product => (
               <div
