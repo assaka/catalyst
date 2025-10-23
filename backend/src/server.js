@@ -1386,17 +1386,35 @@ app.use('/api/sitemap', sitemapRoutes);
 // Public preview routes (no authentication required)
 app.use('/api/preview', previewRoutes);
 
+// Store-specific robots.txt route (for multi-store)
+app.get('/public/:storeSlug/robots.txt', async (req, res) => {
+  try {
+    const { storeSlug } = req.params;
+
+    // Redirect to the store-specific robots.txt API endpoint
+    return res.redirect(301, `/api/robots/store/${storeSlug}`);
+  } catch (error) {
+    console.error('[Robots] Error serving store robots.txt:', error);
+    res.set({
+      'Content-Type': 'text/plain; charset=utf-8',
+      'Cache-Control': 'public, max-age=3600'
+    }).send(`User-agent: *
+Allow: /
+Disallow: /admin/`);
+  }
+});
+
 // Standard robots.txt route (for default store)
 app.get('/robots.txt', async (req, res) => {
   try {
     const { Store, SeoSettings } = require('./models');
-    
+
     // Get the first active store as default
     const defaultStore = await Store.findOne({
       where: { is_active: true },
       order: [['createdAt', 'ASC']]
     });
-    
+
     if (!defaultStore) {
       return res.set({
         'Content-Type': 'text/plain; charset=utf-8',
@@ -1405,7 +1423,7 @@ app.get('/robots.txt', async (req, res) => {
 Allow: /
 Disallow: /admin/`);
     }
-    
+
     // Redirect to the store-specific robots.txt API endpoint
     return res.redirect(301, `/api/robots/store/${defaultStore.slug}`);
   } catch (error) {
