@@ -799,6 +799,7 @@ export default function ProductForm({ product, categories, stores, taxes, attrib
                   <Input
                     id="name"
                     value={formData.name}
+                    className="mt-2"
                     onChange={(e) => handleInputChange("name", e.target.value)}
                     required
                   />
@@ -816,6 +817,7 @@ export default function ProductForm({ product, categories, stores, taxes, attrib
                   <Input
                     id="sku"
                     value={formData.sku}
+                    className="mt-2"
                     onChange={(e) => handleInputChange("sku", e.target.value)}
                     required
                   />
