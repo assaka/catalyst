@@ -112,27 +112,31 @@ export default function CmsPages() {
       if (!pageData.store_id) {
         pageData.store_id = storeId;
       }
-      
+
+      console.log('🔍 CmsPages: Creating page with data:', pageData);
       await CmsPage.create(pageData);
       await loadPages();
       setShowForm(false);
       setFlashMessage({ type: 'success', message: 'CMS Page created successfully!' });
     } catch (error) {
-      console.error("Error creating CMS page:", error);
-      setFlashMessage({ type: 'error', message: 'Failed to create CMS page.' });
+      console.error("❌ Error creating CMS page:", error);
+      console.error("Error response:", error.response?.data);
+      setFlashMessage({ type: 'error', message: `Failed to create CMS page: ${error.response?.data?.error || error.message}` });
     }
   };
 
   const handleUpdatePage = async (pageData) => {
     try {
+      console.log('🔍 CmsPages: Updating page', editingPage.id, 'with data:', pageData);
       await CmsPage.update(editingPage.id, pageData);
       await loadPages();
       setShowForm(false);
       setEditingPage(null);
       setFlashMessage({ type: 'success', message: 'CMS Page updated successfully!' });
     } catch (error) {
-      console.error("Error updating CMS page:", error);
-      setFlashMessage({ type: 'error', message: 'Failed to update CMS page.' });
+      console.error("❌ Error updating CMS page:", error);
+      console.error("Error response:", error.response?.data);
+      setFlashMessage({ type: 'error', message: `Failed to update CMS page: ${error.response?.data?.error || error.message}` });
     }
   };
 

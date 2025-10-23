@@ -59,44 +59,54 @@ router.post('/', async (req, res) => {
   try {
     const { store_id } = req.body;
     const store = await Store.findByPk(store_id);
-    
+
     if (!store) return res.status(404).json({ success: false, message: 'Store not found' });
-    
+
     if (req.user.role !== 'admin') {
       const { checkUserStoreAccess } = require('../utils/storeAccess');
       const access = await checkUserStoreAccess(req.user.id, store.id);
-      
+
       if (!access) {
         return res.status(403).json({ success: false, message: 'Access denied' });
       }
     }
 
+    console.log('Creating CMS page with data:', JSON.stringify(req.body, null, 2));
     const page = await CmsPage.create(req.body);
+    console.log('CMS page created successfully:', page.id);
     res.status(201).json({ success: true, message: 'Page created successfully', data: page });
   } catch (error) {
-    res.status(500).json({ success: false, message: 'Server error' });
+    console.error('Error creating CMS page:', error);
+    console.error('Error details:', error.message);
+    console.error('Request body:', JSON.stringify(req.body, null, 2));
+    res.status(500).json({ success: false, message: 'Server error', error: error.message });
   }
 });
 
 router.put('/:id', async (req, res) => {
   try {
     const page = await CmsPage.findByPk(req.params.id);
-    
+
     if (!page) return res.status(404).json({ success: false, message: 'Page not found' });
-    
+
     if (req.user.role !== 'admin') {
       const { checkUserStoreAccess } = require('../utils/storeAccess');
       const access = await checkUserStoreAccess(req.user.id, page.store_id);
-      
+
       if (!access) {
         return res.status(403).json({ success: false, message: 'Access denied' });
       }
     }
 
+    console.log('Updating CMS page:', req.params.id, 'with data:', JSON.stringify(req.body, null, 2));
     await page.update(req.body);
+    console.log('CMS page updated successfully:', page.id);
     res.json({ success: true, message: 'Page updated successfully', data: page });
   } catch (error) {
-    res.status(500).json({ success: false, message: 'Server error' });
+    console.error('Error updating CMS page:', error);
+    console.error('Error details:', error.message);
+    console.error('Request body:', JSON.stringify(req.body, null, 2));
+    res.status(500).json({ success: false, message: 'Server error', error: error.message });
   }
 });
 
