@@ -1244,7 +1244,8 @@ const CartCouponSlot = createSlotComponent({
       appliedCoupon = null,
       discount = 0,
       formatPrice = formatPriceUtil,
-      settings = {}
+      settings = {},
+      cartItems = []
     } = cartContext || {};
 
     const processedContent = processVariables(content, variableContext);
@@ -1336,6 +1337,87 @@ const CartCouponSlot = createSlotComponent({
       window.addEventListener('languageChanged', handleLanguageChange);
       return () => window.removeEventListener('languageChanged', handleLanguageChange);
     }, [appliedCoupon]);
+
+    // Handle discount details toggle and populate eligible products
+    React.useEffect(() => {
+      if (!containerRef.current || !appliedCoupon || discount <= 0) return;
+
+      const discountToggle = containerRef.current.querySelector('[data-discount-toggle]');
+      const discountDetails = containerRef.current.querySelector('[data-discount-details]');
+      const discountChevron = containerRef.current.querySelector('[data-discount-chevron]');
+      const eligibleProductsList = containerRef.current.querySelector('[data-eligible-products]');
+
+      if (!discountToggle || !discountDetails) return;
+
+      // Populate eligible products list
+      const hasProductFilter = appliedCoupon.applicable_products && appliedCoupon.applicable_products.length > 0;
+      const hasCategoryFilter = appliedCoupon.applicable_categories && appliedCoupon.applicable_categories.length > 0;
+      const hasSkuFilter = appliedCoupon.applicable_skus && appliedCoupon.applicable_skus.length > 0;
+
+      if (!hasProductFilter && !hasCategoryFilter && !hasSkuFilter) {
+        eligibleProductsList.innerHTML = '<li class="text-xs text-green-700">All products in cart</li>';
+      } else {
+        const eligibleItems = cartItems.filter(item => {
+          // Check product ID
+          if (hasProductFilter) {
+            const productId = typeof item.product_id === 'object' ?
+              (item.product_id?.id || item.product_id?.toString() || null) :
+              item.product_id;
+            if (productId && appliedCoupon.applicable_products.includes(productId)) {
+              return true;
+            }
+          }
+
+          // Check category
+          if (hasCategoryFilter) {
+            if (item.product?.category_ids?.some(catId =>
+              appliedCoupon.applicable_categories.includes(catId)
+            )) {
+              return true;
+            }
+          }
+
+          // Check SKU
+          if (hasSkuFilter) {
+            if (item.product?.sku && appliedCoupon.applicable_skus.includes(item.product.sku)) {
+              return true;
+            }
+          }
+
+          return false;
+        });
+
+        eligibleProductsList.innerHTML = eligibleItems.map(item => {
+          const productName = item.product?.name || item.name || 'Product';
+          return `<li class="text-xs flex items-center gap-2">
+            <span class="inline-block w-1.5 h-1.5 bg-green-500 rounded-full"></span>
+            <span>${productName}</span>
+          </li>`;
+        }).join('');
+      }
+
+      // Toggle handler
+      const handleToggle = () => {
+        const isHidden = discountDetails.classList.contains('hidden');
+        if (isHidden) {
+          discountDetails.classList.remove('hidden');
+          if (discountChevron) {
+            discountChevron.style.transform = 'rotate(180deg)';
+          }
+        } else {
+          discountDetails.classList.add('hidden');
+          if (discountChevron) {
+            discountChevron.style.transform = 'rotate(0deg)';
+          }
+        }
+      };
+
+      discountToggle.addEventListener('click', handleToggle);
+
+      return () => {
+        discountToggle.removeEventListener('click', handleToggle);
+      };
+    }, [appliedCoupon, discount, cartItems]);
 
     return (
       <div ref={containerRef} className={className} style={styles}
