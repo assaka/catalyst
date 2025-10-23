@@ -560,19 +560,50 @@ app.post('/debug/migrate-seo-settings', async (req, res) => {
 
     // First, fix any NULL values in timestamp columns
     console.log('🔧 Fixing NULL timestamp values...');
-    await sequelize.query(`
-      UPDATE seo_settings
-      SET "createdAt" = COALESCE("createdAt", created_at, NOW()),
-          "updatedAt" = COALESCE("updatedAt", updated_at, NOW())
-      WHERE "createdAt" IS NULL OR "updatedAt" IS NULL
-    `);
 
-    await sequelize.query(`
-      UPDATE seo_settings
-      SET created_at = COALESCE(created_at, "createdAt", NOW()),
-          updated_at = COALESCE(updated_at, "updatedAt", NOW())
-      WHERE created_at IS NULL OR updated_at IS NULL
+    // Check which timestamp columns exist
+    const [timestampCols] = await sequelize.query(`
+      SELECT column_name
+      FROM information_schema.columns
+      WHERE table_name = 'seo_settings'
+      AND column_name IN ('createdAt', 'updatedAt', 'created_at', 'updated_at')
     `);
+    const existingTimestampCols = timestampCols.map(c => c.column_name);
+    console.log('📋 Existing timestamp columns:', existingTimestampCols);
+
+    // Only update columns that exist
+    if (existingTimestampCols.includes('created_at')) {
+      await sequelize.query(`
+        UPDATE seo_settings
+        SET created_at = NOW()
+        WHERE created_at IS NULL
+      `);
+    }
+
+    if (existingTimestampCols.includes('updated_at')) {
+      await sequelize.query(`
+        UPDATE seo_settings
+        SET updated_at = NOW()
+        WHERE updated_at IS NULL
+      `);
+    }
+
+    if (existingTimestampCols.includes('createdAt')) {
+      await sequelize.query(`
+        UPDATE seo_settings
+        SET "createdAt" = NOW()
+        WHERE "createdAt" IS NULL
+      `);
+    }
+
+    if (existingTimestampCols.includes('updatedAt')) {
+      await sequelize.query(`
+        UPDATE seo_settings
+        SET "updatedAt" = NOW()
+        WHERE "updatedAt" IS NULL
+      `);
+    }
+
     console.log('✅ Timestamp values fixed');
 
     // Get current table columns before sync
