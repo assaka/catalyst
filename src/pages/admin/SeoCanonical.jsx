@@ -40,6 +40,126 @@ export default function SeoCanonical() {
 
       <Card>
         <CardHeader>
+          <CardTitle>Canonical Settings</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-6">
+          <div className="space-y-4 border-l-2 border-blue-200 pl-4">
+            <div className="space-y-2">
+              <div className="flex items-center space-x-2">
+                <Switch id="auto-canonical" defaultChecked />
+                <Label htmlFor="auto-canonical" className="font-medium">Auto-generate canonical URLs</Label>
+              </div>
+              <p className="text-sm text-muted-foreground ml-12">
+                Automatically add canonical tags to all pages. Recommended for most sites to prevent duplicate content issues.
+              </p>
+            </div>
+          </div>
+
+          <div className="space-y-4 border-l-2 border-green-200 pl-4">
+            <div className="space-y-2">
+              <div className="flex items-center space-x-2">
+                <Switch id="https-canonical" defaultChecked />
+                <Label htmlFor="https-canonical" className="font-medium">Force HTTPS in canonical URLs</Label>
+              </div>
+              <p className="text-sm text-muted-foreground ml-12">
+                Always use HTTPS protocol in canonical URLs for better security and SEO. Enable if your site has an SSL certificate.
+              </p>
+            </div>
+          </div>
+
+          <div className="space-y-4 border-l-2 border-purple-200 pl-4">
+            <div className="space-y-2">
+              <div className="flex items-center space-x-2">
+                <Switch id="www-canonical" />
+                <Label htmlFor="www-canonical" className="font-medium">Include www in canonical URLs</Label>
+              </div>
+              <p className="text-sm text-muted-foreground ml-12">
+                Add "www" subdomain to canonical URLs (e.g., www.example.com vs example.com). Choose one format and use it consistently.
+              </p>
+            </div>
+          </div>
+
+          <div className="space-y-4 border-l-2 border-orange-200 pl-4">
+            <div className="space-y-2">
+              <div className="flex items-center space-x-2">
+                <Switch id="trailing-slash" />
+                <Label htmlFor="trailing-slash" className="font-medium">Add trailing slash to canonical URLs</Label>
+              </div>
+              <p className="text-sm text-muted-foreground ml-12">
+                End URLs with a forward slash (e.g., /products/ instead of /products). Important for consistency with your URL structure.
+              </p>
+            </div>
+          </div>
+
+          <div className="space-y-2 pt-4 border-t">
+            <Label htmlFor="canonical-domain" className="font-medium">Canonical Domain Override</Label>
+            <Input id="canonical-domain" placeholder="https://example.com" />
+            <p className="text-sm text-muted-foreground">
+              Specify a different domain for all canonical URLs. Useful when your site is accessible via multiple domains (e.g., .com, .net) but you want to consolidate SEO signals to one primary domain.
+            </p>
+          </div>
+        </CardContent>
+      </Card>
+      <div className="flex justify-end my-8">
+        <SaveButton
+            onClick={handleSave}
+            loading={saving}
+            success={saveSuccess}
+            defaultText="Save Settings"
+        />
+      </div>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Custom Canonical URLs</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <Alert>
+            <Info className="h-4 w-4" />
+            <AlertDescription>
+              Override the auto-generated canonical URL for specific pages. This is useful when you want to consolidate similar pages or point duplicate content to a preferred version.
+            </AlertDescription>
+          </Alert>
+
+          <div className="space-y-2">
+            <Label htmlFor="page-url" className="font-medium">Page URL (Source)</Label>
+            <Input id="page-url" placeholder="/products/example-product" />
+            <p className="text-sm text-muted-foreground">
+              Enter the relative path of the page that needs a custom canonical URL (e.g., /products/variant-1)
+            </p>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="canonical-url" className="font-medium">Canonical URL (Target)</Label>
+            <Input id="canonical-url" placeholder="https://example.com/products/main-product" />
+            <p className="text-sm text-muted-foreground">
+              Enter the full canonical URL that the page should point to. Use absolute URLs with the full domain.
+            </p>
+          </div>
+
+          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mt-4">
+            <p className="text-sm font-medium text-blue-900 mb-2">Example Use Case:</p>
+            <div className="text-xs text-blue-800 space-y-1">
+              <p><strong>Scenario:</strong> You have similar product pages that should consolidate to one main page</p>
+              <p><strong>Page URL:</strong> <code className="bg-white px-1 py-0.5 rounded">/products/wireless-headphones-red</code></p>
+              <p><strong>Canonical URL:</strong> <code className="bg-white px-1 py-0.5 rounded">https://example.com/products/wireless-headphones</code></p>
+              <p className="mt-2 italic">Result: The red variant page will indicate that the main product page is the preferred version for search engines.</p>
+            </div>
+          </div>
+
+        </CardContent>
+      </Card>
+      <div className="flex justify-end mt-8">
+        <SaveButton
+            onClick={handleSave}
+            loading={saving}
+            success={saveSuccess}
+            defaultText="Add Custom Canonical"
+        />
+      </div>
+
+      <Card>
+        <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <HelpCircle className="h-5 w-5" />
             Help & Best Practices
@@ -234,126 +354,6 @@ export default function SeoCanonical() {
           </Accordion>
         </CardContent>
       </Card>
-
-      <Card>
-        <CardHeader>
-          <CardTitle>Canonical Settings</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-6">
-          <div className="space-y-4 border-l-2 border-blue-200 pl-4">
-            <div className="space-y-2">
-              <div className="flex items-center space-x-2">
-                <Switch id="auto-canonical" defaultChecked />
-                <Label htmlFor="auto-canonical" className="font-medium">Auto-generate canonical URLs</Label>
-              </div>
-              <p className="text-sm text-muted-foreground ml-12">
-                Automatically add canonical tags to all pages. Recommended for most sites to prevent duplicate content issues.
-              </p>
-            </div>
-          </div>
-
-          <div className="space-y-4 border-l-2 border-green-200 pl-4">
-            <div className="space-y-2">
-              <div className="flex items-center space-x-2">
-                <Switch id="https-canonical" defaultChecked />
-                <Label htmlFor="https-canonical" className="font-medium">Force HTTPS in canonical URLs</Label>
-              </div>
-              <p className="text-sm text-muted-foreground ml-12">
-                Always use HTTPS protocol in canonical URLs for better security and SEO. Enable if your site has an SSL certificate.
-              </p>
-            </div>
-          </div>
-
-          <div className="space-y-4 border-l-2 border-purple-200 pl-4">
-            <div className="space-y-2">
-              <div className="flex items-center space-x-2">
-                <Switch id="www-canonical" />
-                <Label htmlFor="www-canonical" className="font-medium">Include www in canonical URLs</Label>
-              </div>
-              <p className="text-sm text-muted-foreground ml-12">
-                Add "www" subdomain to canonical URLs (e.g., www.example.com vs example.com). Choose one format and use it consistently.
-              </p>
-            </div>
-          </div>
-
-          <div className="space-y-4 border-l-2 border-orange-200 pl-4">
-            <div className="space-y-2">
-              <div className="flex items-center space-x-2">
-                <Switch id="trailing-slash" />
-                <Label htmlFor="trailing-slash" className="font-medium">Add trailing slash to canonical URLs</Label>
-              </div>
-              <p className="text-sm text-muted-foreground ml-12">
-                End URLs with a forward slash (e.g., /products/ instead of /products). Important for consistency with your URL structure.
-              </p>
-            </div>
-          </div>
-
-          <div className="space-y-2 pt-4 border-t">
-            <Label htmlFor="canonical-domain" className="font-medium">Canonical Domain Override</Label>
-            <Input id="canonical-domain" placeholder="https://example.com" />
-            <p className="text-sm text-muted-foreground">
-              Specify a different domain for all canonical URLs. Useful when your site is accessible via multiple domains (e.g., .com, .net) but you want to consolidate SEO signals to one primary domain.
-            </p>
-          </div>
-        </CardContent>
-      </Card>
-      <div className="flex justify-end my-8">
-        <SaveButton
-            onClick={handleSave}
-            loading={saving}
-            success={saveSuccess}
-            defaultText="Save Settings"
-        />
-      </div>
-
-      <Card>
-        <CardHeader>
-          <CardTitle>Custom Canonical URLs</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <Alert>
-            <Info className="h-4 w-4" />
-            <AlertDescription>
-              Override the auto-generated canonical URL for specific pages. This is useful when you want to consolidate similar pages or point duplicate content to a preferred version.
-            </AlertDescription>
-          </Alert>
-
-          <div className="space-y-2">
-            <Label htmlFor="page-url" className="font-medium">Page URL (Source)</Label>
-            <Input id="page-url" placeholder="/products/example-product" />
-            <p className="text-sm text-muted-foreground">
-              Enter the relative path of the page that needs a custom canonical URL (e.g., /products/variant-1)
-            </p>
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="canonical-url" className="font-medium">Canonical URL (Target)</Label>
-            <Input id="canonical-url" placeholder="https://example.com/products/main-product" />
-            <p className="text-sm text-muted-foreground">
-              Enter the full canonical URL that the page should point to. Use absolute URLs with the full domain.
-            </p>
-          </div>
-
-          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mt-4">
-            <p className="text-sm font-medium text-blue-900 mb-2">Example Use Case:</p>
-            <div className="text-xs text-blue-800 space-y-1">
-              <p><strong>Scenario:</strong> You have similar product pages that should consolidate to one main page</p>
-              <p><strong>Page URL:</strong> <code className="bg-white px-1 py-0.5 rounded">/products/wireless-headphones-red</code></p>
-              <p><strong>Canonical URL:</strong> <code className="bg-white px-1 py-0.5 rounded">https://example.com/products/wireless-headphones</code></p>
-              <p className="mt-2 italic">Result: The red variant page will indicate that the main product page is the preferred version for search engines.</p>
-            </div>
-          </div>
-
-        </CardContent>
-      </Card>
-      <div className="flex justify-end mt-8">
-        <SaveButton
-            onClick={handleSave}
-            loading={saving}
-            success={saveSuccess}
-            defaultText="Add Custom Canonical"
-        />
-      </div>
     </div>
   );
 }
