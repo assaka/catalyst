@@ -67,17 +67,21 @@ export default function XmlSitemap() {
                 if (result && result.length > 0) {
                     const existingSettings = result[0];
                     setSeoSettingId(existingSettings.id);
+
+                    // Extract from JSON field
+                    const xmlSettings = existingSettings.xml_sitemap_settings || {};
+
                     setSettings({
-                        sitemap_include_products: existingSettings.sitemap_include_products ?? true,
-                        sitemap_include_categories: existingSettings.sitemap_include_categories ?? true,
-                        sitemap_include_pages: existingSettings.sitemap_include_pages ?? true,
-                        sitemap_include_images: existingSettings.sitemap_include_images ?? false,
-                        sitemap_include_videos: existingSettings.sitemap_include_videos ?? false,
-                        sitemap_enable_news: existingSettings.sitemap_enable_news ?? false,
-                        sitemap_enable_index: existingSettings.sitemap_enable_index ?? false,
-                        sitemap_max_urls: existingSettings.sitemap_max_urls ?? 50000,
-                        google_search_console_api_key: existingSettings.google_search_console_api_key ?? '',
-                        sitemap_auto_submit: existingSettings.sitemap_auto_submit ?? false
+                        sitemap_include_products: xmlSettings.include_products ?? true,
+                        sitemap_include_categories: xmlSettings.include_categories ?? true,
+                        sitemap_include_pages: xmlSettings.include_pages ?? true,
+                        sitemap_include_images: xmlSettings.include_images ?? false,
+                        sitemap_include_videos: xmlSettings.include_videos ?? false,
+                        sitemap_enable_news: xmlSettings.enable_news ?? false,
+                        sitemap_enable_index: xmlSettings.enable_index ?? false,
+                        sitemap_max_urls: xmlSettings.max_urls ?? 50000,
+                        google_search_console_api_key: xmlSettings.google_search_console_api_key ?? '',
+                        sitemap_auto_submit: xmlSettings.auto_submit ?? false
                     });
                 }
             } catch (error) {
@@ -494,18 +498,24 @@ export default function XmlSitemap() {
         setSaveSuccess(false);
 
         try {
+            // Package settings into JSON structure
+            const xmlSitemapSettings = {
+                enabled: settings.enable_sitemap ?? true,
+                include_products: settings.sitemap_include_products,
+                include_categories: settings.sitemap_include_categories,
+                include_pages: settings.sitemap_include_pages,
+                include_images: settings.sitemap_include_images,
+                include_videos: settings.sitemap_include_videos,
+                enable_news: settings.sitemap_enable_news,
+                enable_index: settings.sitemap_enable_index,
+                max_urls: settings.sitemap_max_urls,
+                google_search_console_api_key: settings.google_search_console_api_key,
+                auto_submit: settings.sitemap_auto_submit
+            };
+
             const payload = {
                 store_id: store.id,
-                sitemap_include_products: settings.sitemap_include_products,
-                sitemap_include_categories: settings.sitemap_include_categories,
-                sitemap_include_pages: settings.sitemap_include_pages,
-                sitemap_include_images: settings.sitemap_include_images,
-                sitemap_include_videos: settings.sitemap_include_videos,
-                sitemap_enable_news: settings.sitemap_enable_news,
-                sitemap_enable_index: settings.sitemap_enable_index,
-                sitemap_max_urls: settings.sitemap_max_urls,
-                google_search_console_api_key: settings.google_search_console_api_key,
-                sitemap_auto_submit: settings.sitemap_auto_submit
+                xml_sitemap_settings: xmlSitemapSettings
             };
 
             if (seoSettingId) {

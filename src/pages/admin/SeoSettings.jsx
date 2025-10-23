@@ -66,14 +66,19 @@ export default function SeoSettings() {
     setSaveSuccess(false);
 
     try {
+      // Package HTML sitemap settings into JSON structure
+      const htmlSitemapSettings = {
+        enabled: enableHtmlSitemap,
+        include_categories: includeCategories,
+        include_products: includeProducts,
+        include_pages: includePages,
+        max_products: maxProducts,
+        product_sort: productSort
+      };
+
       const data = {
         store_id: store.id,
-        enable_html_sitemap: enableHtmlSitemap,
-        html_sitemap_include_categories: includeCategories,
-        html_sitemap_include_products: includeProducts,
-        html_sitemap_include_pages: includePages,
-        html_sitemap_max_products: maxProducts,
-        html_sitemap_product_sort: productSort
+        html_sitemap_settings: htmlSitemapSettings
       };
 
       if (seoSettingsId) {

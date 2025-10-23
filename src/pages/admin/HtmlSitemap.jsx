@@ -25,19 +25,22 @@ export default function HtmlSitemap() {
             try {
                 // Fetch SEO settings first to determine what to display
                 const seoSettings = store?.id ? await SeoSetting.filter({ store_id: store.id }) : [];
-                const htmlSitemapSettings = seoSettings?.[0] || {
-                    enable_html_sitemap: true,
-                    html_sitemap_include_categories: true,
-                    html_sitemap_include_products: true,
-                    html_sitemap_include_pages: true,
-                    html_sitemap_max_products: 20,
-                    html_sitemap_product_sort: '-updated_date'
+                const seoRecord = seoSettings?.[0];
+
+                // Extract HTML sitemap settings from JSON field
+                const htmlSitemapSettings = seoRecord?.html_sitemap_settings || {
+                    enabled: true,
+                    include_categories: true,
+                    include_products: true,
+                    include_pages: true,
+                    max_products: 20,
+                    product_sort: '-updated_date'
                 };
 
                 setSettings(htmlSitemapSettings);
 
                 // Only fetch data if sitemap is enabled
-                if (!htmlSitemapSettings.enable_html_sitemap) {
+                if (!htmlSitemapSettings.enabled) {
                     setLoading(false);
                     return;
                 }
@@ -45,21 +48,21 @@ export default function HtmlSitemap() {
                 // Fetch data based on settings
                 const promises = [];
 
-                if (htmlSitemapSettings.html_sitemap_include_categories) {
+                if (htmlSitemapSettings.include_categories) {
                     promises.push(Category.filter({ is_active: true }, "sort_order"));
                 } else {
                     promises.push(Promise.resolve([]));
                 }
 
-                if (htmlSitemapSettings.html_sitemap_include_products) {
-                    const maxProducts = htmlSitemapSettings.html_sitemap_max_products || 20;
-                    const sortOrder = htmlSitemapSettings.html_sitemap_product_sort || '-updated_date';
+                if (htmlSitemapSettings.include_products) {
+                    const maxProducts = htmlSitemapSettings.max_products || 20;
+                    const sortOrder = htmlSitemapSettings.product_sort || '-updated_date';
                     promises.push(Product.filter({ status: 'active' }, sortOrder, maxProducts));
                 } else {
                     promises.push(Promise.resolve([]));
                 }
 
-                if (htmlSitemapSettings.html_sitemap_include_pages) {
+                if (htmlSitemapSettings.include_pages) {
                     promises.push(CmsPage.filter({ is_active: true }));
                 } else {
                     promises.push(Promise.resolve([]));
@@ -103,7 +106,7 @@ export default function HtmlSitemap() {
     }
 
     // Check if HTML sitemap is disabled
-    if (settings && !settings.enable_html_sitemap) {
+    if (settings && !settings.enabled) {
         return (
             <div className="max-w-4xl mx-auto p-8 bg-white my-8 rounded-lg shadow">
                 <h1 className="text-3xl font-bold mb-8 text-gray-800">HTML Sitemap</h1>
@@ -120,7 +123,7 @@ export default function HtmlSitemap() {
         <div className="max-w-4xl mx-auto p-8 bg-white my-8 rounded-lg shadow">
             <h1 className="text-3xl font-bold mb-8 text-gray-800">HTML Sitemap</h1>
 
-            {settings?.html_sitemap_include_categories && (
+            {settings?.include_categories && (
                 <section className="mb-8">
                     <h2 className="text-2xl font-semibold mb-4 border-b pb-2 flex items-center">
                         <Layout className="w-6 h-6 mr-3 text-gray-600"/>
@@ -130,7 +133,7 @@ export default function HtmlSitemap() {
                 </section>
             )}
 
-            {settings?.html_sitemap_include_products && (
+            {settings?.include_products && (
                 <section className="mb-8">
                     <h2 className="text-2xl font-semibold mb-4 border-b pb-2 flex items-center">
                         <Package className="w-6 h-6 mr-3 text-gray-600"/>
@@ -151,7 +154,7 @@ export default function HtmlSitemap() {
                 </section>
             )}
 
-            {settings?.html_sitemap_include_pages && (
+            {settings?.include_pages && (
                 <section>
                     <h2 className="text-2xl font-semibold mb-4 border-b pb-2 flex items-center">
                         <FileText className="w-6 h-6 mr-3 text-gray-600"/>

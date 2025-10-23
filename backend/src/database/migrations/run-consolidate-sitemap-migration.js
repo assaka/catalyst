@@ -4,15 +4,15 @@ const fs = require('fs');
 const path = require('path');
 const { sequelize, supabase } = require('../connection');
 
-async function runHtmlSitemapMigration() {
+async function runConsolidateSitemapMigration() {
   try {
-    console.log('🚀 Starting HTML sitemap settings migration...');
+    console.log('🚀 Starting sitemap consolidation migration...');
 
     // Read the SQL migration file
-    const migrationPath = path.join(__dirname, 'add-html-sitemap-settings.sql');
+    const migrationPath = path.join(__dirname, 'consolidate-sitemap-settings.sql');
     const migrationSQL = fs.readFileSync(migrationPath, 'utf8');
 
-    console.log('📄 HTML sitemap migration file loaded');
+    console.log('📄 Consolidation migration file loaded');
 
     // Test database connection
     await sequelize.authenticate();
@@ -20,7 +20,7 @@ async function runHtmlSitemapMigration() {
 
     // Run the migration using Supabase if available, otherwise use Sequelize
     if (supabase) {
-      console.log('🔄 Running HTML sitemap migration with Supabase client...');
+      console.log('🔄 Running consolidation migration with Supabase client...');
 
       // Split SQL into individual statements
       const statements = migrationSQL
@@ -48,11 +48,11 @@ async function runHtmlSitemapMigration() {
         }
       }
     } else {
-      console.log('🔄 Running HTML sitemap migration with Sequelize...');
+      console.log('🔄 Running consolidation migration with Sequelize...');
       await sequelize.query(migrationSQL);
     }
 
-    console.log('✅ HTML sitemap settings migration completed successfully!');
+    console.log('✅ Sitemap consolidation migration completed successfully!');
 
     // Test the migration by checking the updated table structure
     try {
@@ -64,18 +64,15 @@ async function runHtmlSitemapMigration() {
       const seoSettingsCount = await SeoSettings.count();
       console.log(`📊 SEO Settings count: ${seoSettingsCount}`);
 
-      // Test by trying to fetch a record with the new fields
+      // Test by trying to fetch a record with the new JSON fields
       const settings = await SeoSettings.findOne();
       if (settings) {
-        console.log('📋 HTML Sitemap fields:');
-        console.log(`  - enable_html_sitemap: ${settings.enable_html_sitemap ?? 'default'}`);
-        console.log(`  - html_sitemap_include_categories: ${settings.html_sitemap_include_categories ?? 'default'}`);
-        console.log(`  - html_sitemap_include_products: ${settings.html_sitemap_include_products ?? 'default'}`);
-        console.log(`  - html_sitemap_include_pages: ${settings.html_sitemap_include_pages ?? 'default'}`);
-        console.log(`  - html_sitemap_max_products: ${settings.html_sitemap_max_products ?? 'default'}`);
+        console.log('📋 Sitemap JSON fields:');
+        console.log(`  - xml_sitemap_settings:`, settings.xml_sitemap_settings);
+        console.log(`  - html_sitemap_settings:`, settings.html_sitemap_settings);
       }
 
-      console.log('🎉 HTML sitemap settings are working correctly!');
+      console.log('🎉 Sitemap settings consolidated into JSON successfully!');
 
     } catch (modelError) {
       console.error('⚠️  Model test error (this might be normal):', modelError.message);
@@ -86,7 +83,7 @@ async function runHtmlSitemapMigration() {
       process.exit(0);
     }
   } catch (error) {
-    console.error('❌ HTML sitemap migration failed:', error);
+    console.error('❌ Consolidation migration failed:', error);
     // Only exit if called directly from command line
     if (require.main === module) {
       process.exit(1);
@@ -99,7 +96,7 @@ async function runHtmlSitemapMigration() {
 
 // Run if called directly
 if (require.main === module) {
-  runHtmlSitemapMigration();
+  runConsolidateSitemapMigration();
 }
 
-module.exports = runHtmlSitemapMigration;
+module.exports = runConsolidateSitemapMigration;

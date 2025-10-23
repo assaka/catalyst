@@ -60,44 +60,6 @@ const SeoSettings = sequelize.define('SeoSettings', {
     type: DataTypes.BOOLEAN,
     defaultValue: true
   },
-  sitemap_include_products: {
-    type: DataTypes.BOOLEAN,
-    defaultValue: true
-  },
-  sitemap_include_categories: {
-    type: DataTypes.BOOLEAN,
-    defaultValue: true
-  },
-  sitemap_include_pages: {
-    type: DataTypes.BOOLEAN,
-    defaultValue: true
-  },
-  // HTML Sitemap settings
-  enable_html_sitemap: {
-    type: DataTypes.BOOLEAN,
-    defaultValue: true
-  },
-  html_sitemap_include_products: {
-    type: DataTypes.BOOLEAN,
-    defaultValue: true
-  },
-  html_sitemap_include_categories: {
-    type: DataTypes.BOOLEAN,
-    defaultValue: true
-  },
-  html_sitemap_include_pages: {
-    type: DataTypes.BOOLEAN,
-    defaultValue: true
-  },
-  html_sitemap_max_products: {
-    type: DataTypes.INTEGER,
-    defaultValue: 20
-  },
-  html_sitemap_product_sort: {
-    type: DataTypes.STRING,
-    defaultValue: '-updated_date',
-    allowNull: true
-  },
   auto_canonical_filtered_pages: {
     type: DataTypes.BOOLEAN,
     defaultValue: true
@@ -145,6 +107,35 @@ const SeoSettings = sequelize.define('SeoSettings', {
       youtube: '',
       pinterest: '',
       tiktok: ''
+    }
+  },
+  // XML Sitemap settings
+  xml_sitemap_settings: {
+    type: DataTypes.JSON,
+    defaultValue: {
+      enabled: true,
+      include_products: true,
+      include_categories: true,
+      include_pages: true,
+      include_images: false,
+      include_videos: false,
+      enable_news: false,
+      enable_index: false,
+      max_urls: 50000,
+      google_search_console_api_key: '',
+      auto_submit: false
+    }
+  },
+  // HTML Sitemap settings
+  html_sitemap_settings: {
+    type: DataTypes.JSON,
+    defaultValue: {
+      enabled: true,
+      include_products: true,
+      include_categories: true,
+      include_pages: true,
+      max_products: 20,
+      product_sort: '-updated_date'
     }
   }
 }, {
