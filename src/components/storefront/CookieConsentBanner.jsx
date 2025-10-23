@@ -9,6 +9,7 @@ import { Label } from '@/components/ui/label';
 import { X, Settings, Shield } from 'lucide-react';
 import { useStore } from './StoreProvider';
 import { getCurrentLanguage } from '@/utils/translationUtils';
+import { createCmsPageUrl } from '@/utils/urlUtils';
 
 const getUserCountry = async () => {
   try {
@@ -355,7 +356,7 @@ export default function CookieConsentBanner() {
               )}
 
               <Link
-                to={cookieSettings.privacy_policy_url || `/public/${store?.slug}/cms-page/privacy-policy`}
+                to={cookieSettings.privacy_policy_url || createCmsPageUrl(store?.slug, 'privacy-policy')}
                 className="text-sm text-blue-600 hover:text-blue-800 underline self-center"
               >
                 {getTranslatedText('privacy_policy_text', 'Privacy Policy')}

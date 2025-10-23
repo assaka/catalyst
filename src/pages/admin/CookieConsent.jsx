@@ -2,6 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { createPageUrl } from '@/utils';
+import { createCmsPageUrl } from '@/utils/urlUtils';
 import { CookieConsentSettings, ConsentLog, CmsPage } from '@/api/entities';
 import { User } from '@/api/entities';
 import { Store } from '@/api/entities';
@@ -783,7 +784,7 @@ export default function CookieConsent() {
                         {cmsPages
                           .filter(page => page.is_system)
                           .map((page) => (
-                            <SelectItem key={page.id} value={`/public/${store?.slug}/cms-page/${page.slug}`}>
+                            <SelectItem key={page.id} value={createCmsPageUrl(store?.slug, page.slug)}>
                               {page.translations?.en?.title || page.slug} (System)
                             </SelectItem>
                           ))
@@ -792,7 +793,7 @@ export default function CookieConsent() {
                         {cmsPages
                           .filter(page => !page.is_system)
                           .map((page) => (
-                            <SelectItem key={page.id} value={`/public/${store?.slug}/cms-page/${page.slug}`}>
+                            <SelectItem key={page.id} value={createCmsPageUrl(store?.slug, page.slug)}>
                               {page.translations?.en?.title || page.slug}
                             </SelectItem>
                           ))
