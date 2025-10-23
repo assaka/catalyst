@@ -3,6 +3,7 @@ import { ShippingMethod } from "@/api/entities";
 import { useStoreSelection } from "@/contexts/StoreSelectionContext.jsx";
 import NoStoreSelected from "@/components/admin/NoStoreSelected";
 import { formatPrice } from "@/utils/priceUtils";
+import FlashMessage from "@/components/storefront/FlashMessage";
 import {
   Truck,
   Plus,
@@ -53,10 +54,14 @@ export default function ShippingMethodsPage() {
   const [selectedMethod, setSelectedMethod] = useState(null);
   const [showForm, setShowForm] = useState(false);
   const [flashMessage, setFlashMessage] = useState(null);
+  // Local state for store settings to avoid reload on changes
+  const [localStoreSettings, setLocalStoreSettings] = useState(selectedStore?.settings || {});
 
   useEffect(() => {
     if (selectedStore) {
       loadData();
+      // Sync local settings with context when store changes
+      setLocalStoreSettings(selectedStore.settings || {});
     }
   }, [selectedStore]);
 
@@ -71,13 +76,6 @@ export default function ShippingMethodsPage() {
     window.addEventListener('storeSelectionChanged', handleStoreChange);
     return () => window.removeEventListener('storeSelectionChanged', handleStoreChange);
   }, [selectedStore]);
-
-  useEffect(() => {
-      if (flashMessage) {
-          const timer = setTimeout(() => setFlashMessage(null), 5000);
-          return () => clearTimeout(timer);
-      }
-  }, [flashMessage]);
 
   const loadData = async () => {
     const storeId = getSelectedStoreId();
@@ -106,9 +104,13 @@ export default function ShippingMethodsPage() {
             return;
         }
 
-        const newSettings = { ...(selectedStore.settings || {}) };
+        // Create a deep copy of the settings object
+        const newSettings = { ...localStoreSettings };
         newSettings[key] = value;
-        
+
+        // Update local state immediately for instant UI feedback
+        setLocalStoreSettings(newSettings);
+
         try {
             const { Store } = await import("@/api/entities");
             await Store.update(selectedStore.id, { settings: newSettings });
@@ -121,11 +123,12 @@ export default function ShippingMethodsPage() {
                 console.warn('Failed to clear cache:', e);
             }
 
-            setFlashMessage({ type: 'success', message: 'Setting updated successfully!' });
-            // The store context will handle the state update
+            setFlashMessage({ type: 'success', message: 'Shipping settings saved successfully!' });
         } catch (error) {
+            // Revert local state on error
+            setLocalStoreSettings(selectedStore.settings || {});
             console.error("Failed to update setting:", error);
-            setFlashMessage({ type: 'error', message: 'Failed to update setting.' });
+            setFlashMessage({ type: 'error', message: 'Failed to update shipping settings.' });
         }
     };
 
@@ -171,6 +174,7 @@ export default function ShippingMethodsPage() {
 
   return (
     <div className="min-h-screen bg-gray-50 p-8">
+      <FlashMessage message={flashMessage} onClose={() => setFlashMessage(null)} />
       <div className="max-w-6xl mx-auto">
         <div className="flex justify-between items-center mb-8">
           <div>
@@ -188,12 +192,6 @@ export default function ShippingMethodsPage() {
           </Button>
         </div>
 
-        {flashMessage && (
-            <div className={`mb-4 p-4 rounded-lg text-white ${flashMessage.type === 'error' ? 'bg-red-500' : 'bg-green-500'}`}>
-                {flashMessage.message}
-            </div>
-        )}
-
         <Card className="mb-8 material-elevation-1 border-0">
             <CardHeader>
                 <CardTitle>Global Shipping Settings</CardTitle>
@@ -205,9 +203,9 @@ export default function ShippingMethodsPage() {
                         <Label htmlFor="hide_shipping_costs" className="font-medium">Hide Shipping Costs on Storefront</Label>
                         <p className="text-sm text-gray-500">Enable this to hide all shipping costs from customers.</p>
                     </div>
-                    <Switch 
-                        id="hide_shipping_costs" 
-                        checked={!!selectedStore?.settings?.hide_shipping_costs} 
+                    <Switch
+                        id="hide_shipping_costs"
+                        checked={!!localStoreSettings.hide_shipping_costs}
                         onCheckedChange={(c) => handleSettingsChange('hide_shipping_costs', c)}
                         disabled={!selectedStore}
                     />
