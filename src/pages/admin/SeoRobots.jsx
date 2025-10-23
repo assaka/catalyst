@@ -13,8 +13,10 @@ import { CmsPage } from '@/api/entities';
 import { useStoreSelection } from '@/contexts/StoreSelectionContext.jsx';
 
 export default function SeoRobots() {
+  const { selectedStore, getSelectedStoreId } = useStoreSelection();
   const [saveSuccess, setSaveSuccess] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [generating, setGenerating] = useState(false);
   const [robotsTxt, setRobotsTxt] = useState(`User-agent: *
 Allow: /
 Disallow: /admin/
@@ -85,6 +87,66 @@ Sitemap: https://example.com/sitemap.xml`);
     setRobotsTxt(lines.join('\n'));
   };
 
+  // Import custom rules from products, categories, and CMS pages
+  const importCustomRules = async () => {
+    setGenerating(true);
+    try {
+      const storeId = getSelectedStoreId();
+      if (!storeId) {
+        alert('Please select a store first');
+        return;
+      }
+
+      // Fetch products, categories, and pages with noindex/nofollow tags
+      const [products, categories, pages] = await Promise.all([
+        Product.filter({ store_id: storeId, "seo.meta_robots_tag": "noindex, nofollow" }),
+        Category.filter({ store_id: storeId, meta_robots_tag: "noindex, nofollow" }),
+        CmsPage.filter({ store_id: storeId, meta_robots_tag: "noindex, nofollow" })
+      ]);
+
+      // Build default rules
+      const domain = selectedStore?.custom_domain || selectedStore?.domain || 'https://example.com';
+      const defaultRules = [
+        'User-agent: *',
+        'Allow: /',
+        'Disallow: /admin/',
+        'Disallow: /api/',
+        'Disallow: /checkout/',
+        'Disallow: /cart/',
+        'Disallow: /account/',
+        'Disallow: /login',
+        `Sitemap: ${domain}/sitemap.xml`
+      ].join('\n');
+
+      let newContent = [defaultRules];
+
+      // Add custom rules for products
+      if (products && products.length > 0) {
+        newContent.push('\n# Disallowed Products (noindex/nofollow)');
+        products.forEach(p => newContent.push(`Disallow: /products/${p.slug || p.id}`));
+      }
+
+      // Add custom rules for categories
+      if (categories && categories.length > 0) {
+        newContent.push('\n# Disallowed Categories (noindex/nofollow)');
+        categories.forEach(c => newContent.push(`Disallow: /categories/${c.slug}`));
+      }
+
+      // Add custom rules for CMS pages
+      if (pages && pages.length > 0) {
+        newContent.push('\n# Disallowed CMS Pages (noindex/nofollow)');
+        pages.forEach(p => newContent.push(`Disallow: /pages/${p.slug}`));
+      }
+
+      setRobotsTxt(newContent.join('\n'));
+    } catch (error) {
+      console.error("Error importing custom rules:", error);
+      alert('Failed to import custom rules. Please try again.');
+    } finally {
+      setGenerating(false);
+    }
+  };
+
   const handleSave = async () => {
     setSaving(true);
     setSaveSuccess(false);
@@ -108,6 +170,7 @@ Sitemap: https://example.com/sitemap.xml`);
         <AlertCircle className="h-4 w-4" />
         <AlertDescription>
           The robots.txt file tells search engines which pages to crawl and which to avoid.
+          Use <strong>Import Custom Rules</strong> to automatically add products, categories, and CMS pages marked with noindex/nofollow tags.
         </AlertDescription>
       </Alert>
 
@@ -127,13 +190,25 @@ Sitemap: https://example.com/sitemap.xml`);
             />
           </div>
           
-          <div className="flex gap-2">
+          <div className="flex flex-wrap gap-2">
             <SaveButton
               onClick={handleSave}
               loading={saving}
               success={saveSuccess}
               defaultText="Save Changes"
             />
+            <Button
+              variant="outline"
+              onClick={importCustomRules}
+              disabled={generating || !selectedStore}
+            >
+              {generating ? (
+                <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
+              ) : (
+                <RefreshCw className="w-4 h-4 mr-2" />
+              )}
+              Import Custom Rules
+            </Button>
             <Button variant="outline">Preview</Button>
             <Button variant="outline">Validate</Button>
           </div>
