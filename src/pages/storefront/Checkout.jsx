@@ -86,27 +86,27 @@ export default function Checkout() {
   const [saveShippingAddress, setSaveShippingAddress] = useState(false);
   const [saveBillingAddress, setSaveBillingAddress] = useState(false);
   
-  const [shippingAddress, setShippingAddress] = useState({
+  const [shippingAddress, setShippingAddress] = useState(() => ({
     full_name: '',
     email: '',
     street: '',
     city: '',
     state: '',
     postal_code: '',
-    country: selectedCountry || 'US',
+    country: selectedCountry || localStorage.getItem('selectedCountry') || 'US',
     phone: ''
-  });
-  
-  const [billingAddress, setBillingAddress] = useState({
+  }));
+
+  const [billingAddress, setBillingAddress] = useState(() => ({
     full_name: '',
     email: '',
     street: '',
     city: '',
     state: '',
     postal_code: '',
-    country: selectedCountry || 'US',
+    country: selectedCountry || localStorage.getItem('selectedCountry') || 'US',
     phone: ''
-  });
+  }));
   
   const [shippingCost, setShippingCost] = useState(0);
   const [paymentFee, setPaymentFee] = useState(0);
@@ -274,10 +274,14 @@ export default function Checkout() {
     // Only update if user is entering a new address (not selecting a saved one)
     if (selectedShippingAddress === 'new' || !selectedShippingAddress) {
       // Always sync country with global selector, even if form has data
-      setShippingAddress(prev => ({
-        ...prev,
-        country: selectedCountry || 'US'
-      }));
+      const currentCountry = selectedCountry || localStorage.getItem('selectedCountry') || 'US';
+      setShippingAddress(prev => {
+        // Only update if country actually changed to avoid unnecessary re-renders
+        if (prev.country !== currentCountry) {
+          return { ...prev, country: currentCountry };
+        }
+        return prev;
+      });
     }
   }, [selectedCountry, selectedShippingAddress]);
 
@@ -285,10 +289,14 @@ export default function Checkout() {
   useEffect(() => {
     if (!useShippingForBilling && (selectedBillingAddress === 'new' || !selectedBillingAddress)) {
       // Always sync country with global selector, even if form has data
-      setBillingAddress(prev => ({
-        ...prev,
-        country: selectedCountry || 'US'
-      }));
+      const currentCountry = selectedCountry || localStorage.getItem('selectedCountry') || 'US';
+      setBillingAddress(prev => {
+        // Only update if country actually changed to avoid unnecessary re-renders
+        if (prev.country !== currentCountry) {
+          return { ...prev, country: currentCountry };
+        }
+        return prev;
+      });
     }
   }, [selectedCountry, selectedBillingAddress, useShippingForBilling]);
 
@@ -725,7 +733,8 @@ export default function Checkout() {
 
   // Memoize tax calculation to avoid recalculating on every render
   const taxCalculationResult = React.useMemo(() => {
-    if (!store || !taxRules.length || !cartItems.length) {
+    // Wait for store to fully load before calculating tax
+    if (!store || storeLoading || !taxRules.length || !cartItems.length) {
       return { taxAmount: 0, effectiveRate: 0, country: null };
     }
 
@@ -764,7 +773,7 @@ export default function Checkout() {
       effectiveRate: taxResult.effectiveRate || 0,
       country: currentShippingCountry
     };
-  }, [store, taxRules, cartItems, cartProducts, shippingAddress, selectedCountry, selectedShippingAddress, appliedCoupon, user, userAddresses]);
+  }, [store, storeLoading, taxRules, cartItems, cartProducts, shippingAddress, selectedCountry, selectedShippingAddress, appliedCoupon, user, userAddresses]);
 
   const handleLogin = async (e) => {
     e.preventDefault();
