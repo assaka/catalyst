@@ -735,8 +735,17 @@ export default function Checkout() {
     const subtotal = calculateSubtotal();
     const discount = calculateDiscount();
 
-    // Get the current shipping country for tax calculation
-    const currentShippingCountry = getShippingCountry();
+    // Inline getShippingCountry logic to avoid lexical declaration error
+    let currentShippingCountry;
+    if (user && selectedShippingAddress && selectedShippingAddress !== 'new') {
+      const address = userAddresses.find(a => a.id === selectedShippingAddress);
+      currentShippingCountry = address?.country || 'US';
+    } else if (shippingAddress.street || shippingAddress.city) {
+      currentShippingCountry = shippingAddress.country || 'US';
+    } else {
+      currentShippingCountry = selectedCountry || shippingAddress.country || 'US';
+    }
+
     const taxShippingAddress = {
       ...shippingAddress,
       country: currentShippingCountry
@@ -757,7 +766,7 @@ export default function Checkout() {
       effectiveRate: taxResult.effectiveRate || 0,
       country: currentShippingCountry
     };
-  }, [store, taxRules, cartItems, cartProducts, shippingAddress, selectedCountry, selectedShippingAddress, appliedCoupon]);
+  }, [store, taxRules, cartItems, cartProducts, shippingAddress, selectedCountry, selectedShippingAddress, appliedCoupon, user, userAddresses]);
 
   const handleLogin = async (e) => {
     e.preventDefault();
