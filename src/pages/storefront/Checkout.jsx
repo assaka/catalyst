@@ -484,8 +484,7 @@ export default function Checkout() {
     const discount = calculateDiscount();
     const shipping = isNaN(parseFloat(shippingCost)) ? 0 : parseFloat(shippingCost);
     const paymentMethodFee = isNaN(parseFloat(paymentFee)) ? 0 : parseFloat(paymentFee);
-    const taxResult = calculateTax();
-    const tax = taxResult.taxAmount;
+    const tax = taxCalculationResult.taxAmount;
     const total = subtotal + optionsTotal - discount + shipping + paymentMethodFee + tax;
 
 
@@ -727,7 +726,8 @@ export default function Checkout() {
     return discount;
   };
 
-  const calculateTax = () => {
+  // Memoize tax calculation to avoid recalculating on every render
+  const taxCalculationResult = React.useMemo(() => {
     if (!store || !taxRules.length || !cartItems.length) {
       return { taxAmount: 0, effectiveRate: 0, country: null };
     }
@@ -757,7 +757,7 @@ export default function Checkout() {
       effectiveRate: taxResult.effectiveRate || 0,
       country: currentShippingCountry
     };
-  };
+  }, [store, taxRules, cartItems, cartProducts, shippingAddress, selectedCountry, selectedShippingAddress, appliedCoupon]);
 
   const handleLogin = async (e) => {
     e.preventDefault();
@@ -1010,7 +1010,7 @@ export default function Checkout() {
         shippingAddress: finalShippingAddress,
         billingAddress: finalBillingAddress,
         store,
-        taxAmount: calculateTax().taxAmount,
+        taxAmount: taxCalculationResult.taxAmount,
         shippingCost,
         paymentFee,
         shippingMethod: selectedMethod,
@@ -2009,22 +2009,19 @@ export default function Checkout() {
                   </div>
                 )}
 
-                {(() => {
-                  const taxResult = calculateTax();
-                  return taxResult.taxAmount > 0 && (
-                    <div className="flex justify-between">
-                      <span>
-                        {t('checkout.tax', 'Tax')}
-                        {taxResult.country && (
-                          <span className="text-gray-500 text-sm ml-1">
-                            ({taxResult.country} {taxResult.effectiveRate ? `${taxResult.effectiveRate}%` : ''})
-                          </span>
-                        )}
-                      </span>
-                      <span>{formatPrice(taxResult.taxAmount)}</span>
-                    </div>
-                  );
-                })()}
+                {taxCalculationResult.taxAmount > 0 && (
+                  <div className="flex justify-between">
+                    <span>
+                      {t('checkout.tax', 'Tax')}
+                      {taxCalculationResult.country && (
+                        <span className="text-gray-500 text-sm ml-1">
+                          ({taxCalculationResult.country} {taxCalculationResult.effectiveRate ? `${taxCalculationResult.effectiveRate}%` : ''})
+                        </span>
+                      )}
+                    </span>
+                    <span>{formatPrice(taxCalculationResult.taxAmount)}</span>
+                  </div>
+                )}
 
                 <div className="flex justify-between text-xl font-bold border-t pt-2">
                   <span>{t('checkout.total', 'Total')}</span>
