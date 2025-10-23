@@ -269,6 +269,32 @@ export default function Checkout() {
     };
   }, [loading]);
 
+  // Sync shipping and billing address countries with selectedCountry when it changes
+  useEffect(() => {
+    // Only update if user is entering a new address (not selecting a saved one)
+    // and hasn't filled in the address form yet
+    if (selectedShippingAddress === 'new' || !selectedShippingAddress) {
+      if (!shippingAddress.street && !shippingAddress.city) {
+        setShippingAddress(prev => ({
+          ...prev,
+          country: selectedCountry || 'US'
+        }));
+      }
+    }
+  }, [selectedCountry, selectedShippingAddress]);
+
+  // Sync billing address country separately
+  useEffect(() => {
+    if (!useShippingForBilling && (selectedBillingAddress === 'new' || !selectedBillingAddress)) {
+      if (!billingAddress.street && !billingAddress.city) {
+        setBillingAddress(prev => ({
+          ...prev,
+          country: selectedCountry || 'US'
+        }));
+      }
+    }
+  }, [selectedCountry, selectedBillingAddress, useShippingForBilling]);
+
   // Trigger tax recalculation when shipping address country changes
   useEffect(() => {
     // Tax will be recalculated automatically through getTotalAmount since it calls calculateTax
@@ -895,22 +921,34 @@ export default function Checkout() {
   };
 
   const getShippingCountry = () => {
+    // If user has selected a saved address, use that country
     if (user && selectedShippingAddress && selectedShippingAddress !== 'new') {
       const address = userAddresses.find(a => a.id === selectedShippingAddress);
       return address?.country || 'US';
     }
-    return shippingAddress.country || 'US';
+    // If shipping address form is filled, use that country
+    if (shippingAddress.street || shippingAddress.city) {
+      return shippingAddress.country || 'US';
+    }
+    // Otherwise, use the global selected country from the country selector
+    return selectedCountry || shippingAddress.country || 'US';
   };
 
   const getBillingCountry = () => {
     if (useShippingForBilling) {
       return getShippingCountry();
     }
+    // If user has selected a saved address, use that country
     if (user && selectedBillingAddress && selectedBillingAddress !== 'new') {
       const address = userAddresses.find(a => a.id === selectedBillingAddress);
       return address?.country || 'US';
     }
-    return billingAddress.country || 'US';
+    // If billing address form is filled, use that country
+    if (billingAddress.street || billingAddress.city) {
+      return billingAddress.country || 'US';
+    }
+    // Otherwise, use the global selected country from the country selector
+    return selectedCountry || billingAddress.country || 'US';
   };
 
   const handleCheckout = async () => {
