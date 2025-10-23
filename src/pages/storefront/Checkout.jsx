@@ -1688,43 +1688,45 @@ export default function Checkout() {
         );
 
       case 'Delivery Settings':
-        return isSectionVisible('delivery') && deliverySettings && deliverySettings.enable_delivery_date && (
+        return isSectionVisible('delivery') && deliverySettings && (deliverySettings.enable_delivery_date || deliverySettings.enable_comments) && (
           <Card key="delivery-settings" style={{ backgroundColor: checkoutSectionBgColor, borderColor: checkoutSectionBorderColor }}>
             <CardHeader>
               <CardTitle style={{ color: checkoutSectionTitleColor, fontSize: checkoutSectionTitleSize }}>{t('checkout.delivery_settings', 'Delivery Settings')}</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
-                <div>
-                  <Label>{t('checkout.preferred_delivery_date', 'Preferred Delivery Date')}</Label>
-                  <Popover>
-                    <PopoverTrigger asChild>
-                      <Button
-                        variant="outline"
-                        className="w-full justify-start text-left font-normal mt-1"
-                      >
-                        <CalendarIcon className="mr-2 h-4 w-4" />
-                        {deliveryDate ? deliveryDate.toLocaleDateString('en-US', {
-                          weekday: 'long',
-                          year: 'numeric',
-                          month: 'long',
-                          day: 'numeric'
-                        }) : t('checkout.select_delivery_date', 'Select delivery date')}
-                      </Button>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-auto p-0" align="start">
-                      <Calendar
-                        mode="single"
-                        selected={deliveryDate}
-                        onSelect={setDeliveryDate}
-                        disabled={isDateDisabled}
-                        initialFocus
-                      />
-                    </PopoverContent>
-                  </Popover>
-                </div>
+                {deliverySettings.enable_delivery_date && (
+                  <div>
+                    <Label>{t('checkout.preferred_delivery_date', 'Preferred Delivery Date')}</Label>
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <Button
+                          variant="outline"
+                          className="w-full justify-start text-left font-normal mt-1"
+                        >
+                          <CalendarIcon className="mr-2 h-4 w-4" />
+                          {deliveryDate ? deliveryDate.toLocaleDateString('en-US', {
+                            weekday: 'long',
+                            year: 'numeric',
+                            month: 'long',
+                            day: 'numeric'
+                          }) : t('checkout.select_delivery_date', 'Select delivery date')}
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-auto p-0" align="start">
+                        <Calendar
+                          mode="single"
+                          selected={deliveryDate}
+                          onSelect={setDeliveryDate}
+                          disabled={isDateDisabled}
+                          initialFocus
+                        />
+                      </PopoverContent>
+                    </Popover>
+                  </div>
+                )}
 
-                {getAvailableTimeSlots().length > 0 && (
+                {deliverySettings.enable_delivery_date && getAvailableTimeSlots().length > 0 && (
                   <div>
                     <Label htmlFor="delivery-time">{t('checkout.preferred_time_slot', 'Preferred Time Slot')}</Label>
                     <select
