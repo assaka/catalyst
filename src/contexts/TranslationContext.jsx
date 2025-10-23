@@ -127,21 +127,27 @@ export function TranslationProvider({ children }) {
    * Get entity translation (for products, categories, etc.)
    */
   const getEntityTranslation = useCallback((entity, field, fallbackLang = 'en') => {
+    console.log('🐛 getEntityTranslation called:', { currentLanguage, field, entity: entity?.code || entity?.name, translations: entity?.translations });
+
     if (!entity || !entity.translations) {
+      console.log('🐛 getEntityTranslation - No entity or translations');
       return '';
     }
 
     // Try current language first
     if (entity.translations[currentLanguage] && entity.translations[currentLanguage][field]) {
+      console.log('🐛 getEntityTranslation - Found translation for', currentLanguage, ':', entity.translations[currentLanguage][field]);
       return entity.translations[currentLanguage][field];
     }
 
     // Fallback to specified language
     if (entity.translations[fallbackLang] && entity.translations[fallbackLang][field]) {
+      console.log('🐛 getEntityTranslation - Using fallback', fallbackLang, ':', entity.translations[fallbackLang][field]);
       return entity.translations[fallbackLang][field];
     }
 
     // Return empty string if not found
+    console.log('🐛 getEntityTranslation - No translation found');
     return '';
   }, [currentLanguage]);
 

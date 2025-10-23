@@ -469,7 +469,12 @@ export function CartSlotRenderer({
               <div className="flex justify-between items-center">
                 <div className="bg-green-50 p-3 rounded-lg flex-1 mr-2">
                   <p className="text-sm font-medium text-green-800">
-                    {getEntityTranslation(appliedCoupon, 'name', 'en') || appliedCoupon.name}
+                    {(() => {
+                      const translatedName = getEntityTranslation(appliedCoupon, 'name', 'en') || appliedCoupon.name;
+                      console.log('🐛 CartSlotRenderer - Coupon:', appliedCoupon);
+                      console.log('🐛 CartSlotRenderer - Translated name:', translatedName);
+                      return translatedName;
+                    })()}
                   </p>
                   <p className="text-xs text-green-600">
                     {appliedCoupon.discount_type === 'fixed'
