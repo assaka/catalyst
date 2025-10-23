@@ -194,7 +194,7 @@ const [labels, setLabels] = useState([]);
         ) : labels.length > 0 ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {labels.map(label => (
-              <Card key={label.id} className="material-elevation-1 border-0 hover:material-elevation-2 transition-all duration-300">
+              <Card key={label.id} className="material-elevation-1 border-0 hover:material-elevation-2 transition-all duration-300 flex flex-col">
                 <CardHeader className="pb-3">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center space-x-3">
@@ -216,31 +216,33 @@ const [labels, setLabels] = useState([]);
                     </div>
                   </div>
                 </CardHeader>
-                <CardContent className="space-y-4">
-                  {(label.conditions?.attribute_conditions?.length > 0 ||
-                    label.conditions?.price_conditions?.has_sale_price ||
-                    label.conditions?.price_conditions?.is_new) && (
-                    <div className="text-sm">
-                      <span className="font-medium">Conditions:</span>
-                      <div className="mt-1 space-y-1">
-                        {label.conditions?.attribute_conditions?.length > 0 && (
-                          <Badge variant="outline" className="mr-1">
-                            {label.conditions.attribute_conditions.length} Attribute Rules
-                          </Badge>
-                        )}
-                        {label.conditions?.price_conditions?.has_sale_price && (
-                          <Badge variant="outline" className="mr-1">
-                            On Sale
-                          </Badge>
-                        )}
-                        {label.conditions?.price_conditions?.is_new && (
-                          <Badge variant="outline" className="mr-1">
-                            New Products
-                          </Badge>
-                        )}
+                <CardContent className="flex-1 flex flex-col justify-between">
+                  <div>
+                    {(label.conditions?.attribute_conditions?.length > 0 ||
+                      label.conditions?.price_conditions?.has_sale_price ||
+                      label.conditions?.price_conditions?.is_new) && (
+                      <div className="text-sm mb-4">
+                        <span className="font-medium">Conditions:</span>
+                        <div className="mt-1 space-y-1">
+                          {label.conditions?.attribute_conditions?.length > 0 && (
+                            <Badge variant="outline" className="mr-1">
+                              {label.conditions.attribute_conditions.length} Attribute Rules
+                            </Badge>
+                          )}
+                          {label.conditions?.price_conditions?.has_sale_price && (
+                            <Badge variant="outline" className="mr-1">
+                              On Sale
+                            </Badge>
+                          )}
+                          {label.conditions?.price_conditions?.is_new && (
+                            <Badge variant="outline" className="mr-1">
+                              New Products
+                            </Badge>
+                          )}
+                        </div>
                       </div>
-                    </div>
-                  )}
+                    )}
+                  </div>
 
                   <div className="flex justify-between items-center pt-2">
                     <div className="flex items-center space-x-2">
