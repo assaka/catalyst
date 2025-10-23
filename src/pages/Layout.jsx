@@ -138,7 +138,6 @@ export default function Layout({ children, currentPageName }) {
   const [user, setUser] = useState(null);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
-  const [gtmConfig, setGtmConfig] = useState(null);
   const [openGroups, setOpenGroups] = useState({
     "Catalog": false,
     "Sales": false,
@@ -162,7 +161,6 @@ export default function Layout({ children, currentPageName }) {
   useEffect(() => {
     const loadData = async () => {
         await loadUserAndHandleCredits(); // Combined function
-        await loadGTMConfig();
         await loadDynamicNavigation();
     }
     loadData();
@@ -215,33 +213,6 @@ export default function Layout({ children, currentPageName }) {
     }
   };
 
-  const loadGTMConfig = async () => {
-    try {
-      if (!user) return;
-      
-      const { StorePlugin } = await import("@/api/entities");
-
-      const userStores = await retryApiCall(() => Store.findAll());
-      
-      if (userStores && Array.isArray(userStores) && userStores.length > 0) {
-        const selectedStore = userStores[0];
-        const storePlugins = await retryApiCall(() => 
-          StorePlugin.filter({ 
-            is_active: true, 
-            store_id: selectedStore.id 
-          })
-        );
-        
-        if (storePlugins && Array.isArray(storePlugins) && storePlugins.length > 0) {
-          const gtmPlugin = storePlugins.find(p => p.plugin_slug === 'google-tag-manager');
-          if (gtmPlugin && gtmPlugin.configuration?.gtm_script) {
-            setGtmConfig(gtmPlugin.configuration);
-          }
-        }
-      }
-    } catch (error) {
-    }
-  };
 
   const loadDynamicNavigation = async () => {
     try {
@@ -386,9 +357,6 @@ export default function Layout({ children, currentPageName }) {
     return (
       <div className="min-h-screen bg-gray-50">
         <RoleSwitcher />
-        {gtmConfig?.gtm_script && (
-          <div dangerouslySetInnerHTML={{ __html: gtmConfig.gtm_script }} />
-        )}
 
         <style>{`
           :root {

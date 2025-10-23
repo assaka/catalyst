@@ -59,7 +59,6 @@ export const URL_CONFIG = {
     PRODUCT_LABELS: 'product-labels',
     CUSTOM_OPTION_RULES: 'custom-option-rules',
     SHIPPING_METHODS: 'shipping-methods',
-    GOOGLE_TAG_MANAGER: 'google-tag-manager',
     DELIVERY_SETTINGS: 'delivery-settings',
     THEME_LAYOUT: 'theme-layout',
     MARKETPLACE_EXPORT: 'marketplace-export',
