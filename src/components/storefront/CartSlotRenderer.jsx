@@ -2,7 +2,8 @@ import React from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent } from '@/components/ui/card';
-import { Trash2, Plus, Minus, Tag, ShoppingCart } from 'lucide-react';
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
+import { Trash2, Plus, Minus, Tag, ShoppingCart, ChevronDown } from 'lucide-react';
 import { SlotManager } from '@/utils/slotUtils';
 import { filterSlotsByViewMode, sortSlotsByGridCoordinates } from '@/hooks/useSlotConfiguration';
 import { useTranslation } from '@/contexts/TranslationContext';
@@ -583,11 +584,86 @@ export function CartSlotRenderer({
                 <span>{t('shipping', settings)}</span>
                 <span>{t('free', settings)}</span>
               </div>
-              {discount > 0 && (
-                <div className="flex justify-between">
-                  <span>{t('discount', settings)}</span>
-                  <span className="text-green-600">-{formatPrice(discount)}</span>
-                </div>
+              {discount > 0 && appliedCoupon && (
+                <Accordion type="single" collapsible className="w-full -mx-2">
+                  <AccordionItem value="discount-details" className="border-0">
+                    <div className="flex justify-between items-center px-2">
+                      <div className="flex items-center gap-2 flex-1">
+                        <span>{t('discount', settings)}</span>
+                        {appliedCoupon && (
+                          <span className="text-xs text-gray-500">
+                            ({getEntityTranslation(appliedCoupon, 'name', 'en') || appliedCoupon.name})
+                          </span>
+                        )}
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <span className="text-green-600">-{formatPrice(discount)}</span>
+                        <AccordionTrigger className="p-0 hover:no-underline [&[data-state=open]>svg]:rotate-180">
+                          <ChevronDown className="h-4 w-4 text-gray-500 transition-transform duration-200" />
+                        </AccordionTrigger>
+                      </div>
+                    </div>
+                    <AccordionContent className="px-2 pt-2 pb-0">
+                      <div className="text-sm text-gray-600 space-y-1">
+                        <p className="font-medium mb-2">{t('cart.discount_applies_to', settings) || 'Discount applies to'}:</p>
+                        {(() => {
+                          // Determine which items qualify for the coupon
+                          const hasProductFilter = appliedCoupon.applicable_products && appliedCoupon.applicable_products.length > 0;
+                          const hasCategoryFilter = appliedCoupon.applicable_categories && appliedCoupon.applicable_categories.length > 0;
+                          const hasSkuFilter = appliedCoupon.applicable_skus && appliedCoupon.applicable_skus.length > 0;
+
+                          if (!hasProductFilter && !hasCategoryFilter && !hasSkuFilter) {
+                            return <p className="text-xs text-gray-500">{t('cart.all_products', settings) || 'All products in cart'}</p>;
+                          }
+
+                          const eligibleItems = cartItems.filter(item => {
+                            // Check product ID
+                            if (hasProductFilter) {
+                              const productId = typeof item.product_id === 'object' ?
+                                (item.product_id?.id || item.product_id?.toString() || null) :
+                                item.product_id;
+                              if (productId && appliedCoupon.applicable_products.includes(productId)) {
+                                return true;
+                              }
+                            }
+
+                            // Check category
+                            if (hasCategoryFilter) {
+                              if (item.product?.category_ids?.some(catId =>
+                                appliedCoupon.applicable_categories.includes(catId)
+                              )) {
+                                return true;
+                              }
+                            }
+
+                            // Check SKU
+                            if (hasSkuFilter) {
+                              if (item.product?.sku && appliedCoupon.applicable_skus.includes(item.product.sku)) {
+                                return true;
+                              }
+                            }
+
+                            return false;
+                          });
+
+                          return (
+                            <ul className="space-y-1">
+                              {eligibleItems.map((item, index) => {
+                                const productName = item.product?.name || item.name || 'Product';
+                                return (
+                                  <li key={index} className="text-xs flex items-center gap-2">
+                                    <span className="inline-block w-1.5 h-1.5 bg-green-500 rounded-full"></span>
+                                    <span>{productName}</span>
+                                  </li>
+                                );
+                              })}
+                            </ul>
+                          );
+                        })()}
+                      </div>
+                    </AccordionContent>
+                  </AccordionItem>
+                </Accordion>
               )}
               <div className="flex justify-between text-lg font-semibold border-t pt-4">
                 <span>{t('total', settings)}</span>
