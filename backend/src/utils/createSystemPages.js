@@ -1,5 +1,10 @@
 const { default404Content, default404Metadata } = require('./default404Content');
-const { defaultPrivacyPolicyContent, defaultPrivacyPolicyMetadata } = require('./defaultPrivacyPolicyContent');
+const {
+  defaultPrivacyPolicyContent,
+  defaultPrivacyPolicyMetadata,
+  defaultPrivacyPolicyContentNL,
+  defaultPrivacyPolicyMetadataNL
+} = require('./defaultPrivacyPolicyContent');
 
 /**
  * Create system CMS pages (404, Privacy Policy) for a store

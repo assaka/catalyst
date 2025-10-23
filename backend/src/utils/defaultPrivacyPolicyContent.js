@@ -117,7 +117,128 @@ const defaultPrivacyPolicyMetadata = {
   meta_robots_tag: "index, follow"
 };
 
+// Dutch translation
+const defaultPrivacyPolicyContentNL = `
+<div style="max-width: 900px; margin: 0 auto; padding: 2rem; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;">
+  <h1 style="font-size: 2.5rem; font-weight: bold; color: #111827; margin-bottom: 1.5rem; border-bottom: 3px solid #2563EB; padding-bottom: 0.5rem;">
+    Privacybeleid
+  </h1>
+
+  <p style="color: #6B7280; margin-bottom: 2rem; font-size: 0.95rem;">
+    <em>Laatst bijgewerkt: ${new Date().toLocaleDateString('nl-NL')}</em>
+  </p>
+
+  <div style="line-height: 1.8; color: #374151;">
+    <section style="margin-bottom: 2rem;">
+      <h2 style="font-size: 1.5rem; font-weight: 600; color: #111827; margin-bottom: 1rem;">Introductie</h2>
+      <p style="margin-bottom: 1rem;">
+        Welkom bij {{store_name}}. Wij respecteren uw privacy en zijn toegewijd aan het beschermen van uw persoonlijke gegevens.
+        Dit privacybeleid informeert u over hoe wij met uw persoonlijke gegevens omgaan wanneer u onze website bezoekt
+        en vertelt u over uw privacyrechten en hoe de wet u beschermt.
+      </p>
+    </section>
+
+    <section style="margin-bottom: 2rem;">
+      <h2 style="font-size: 1.5rem; font-weight: 600; color: #111827; margin-bottom: 1rem;">Informatie die wij verzamelen</h2>
+      <p style="margin-bottom: 0.5rem;">Wij kunnen verschillende soorten persoonlijke gegevens over u verzamelen, gebruiken, opslaan en overdragen:</p>
+      <ul style="margin-left: 1.5rem; margin-bottom: 1rem;">
+        <li style="margin-bottom: 0.5rem;"><strong>Identiteitsgegevens:</strong> Naam, gebruikersnaam of vergelijkbare identificatie</li>
+        <li style="margin-bottom: 0.5rem;"><strong>Contactgegevens:</strong> E-mailadres, telefoonnummer, facturatie- en bezorgadressen</li>
+        <li style="margin-bottom: 0.5rem;"><strong>Transactiegegevens:</strong> Details over betalingen en producten die u bij ons hebt gekocht</li>
+        <li style="margin-bottom: 0.5rem;"><strong>Technische gegevens:</strong> IP-adres, browsertype, tijdzone-instelling en locatie</li>
+        <li style="margin-bottom: 0.5rem;"><strong>Gebruiksgegevens:</strong> Informatie over hoe u onze website en diensten gebruikt</li>
+        <li style="margin-bottom: 0.5rem;"><strong>Marketinggegevens:</strong> Uw voorkeuren voor het ontvangen van marketing van ons</li>
+      </ul>
+    </section>
+
+    <section style="margin-bottom: 2rem;">
+      <h2 style="font-size: 1.5rem; font-weight: 600; color: #111827; margin-bottom: 1rem;">Hoe wij uw informatie gebruiken</h2>
+      <p style="margin-bottom: 0.5rem;">Wij gebruiken uw persoonlijke gegevens voor de volgende doeleinden:</p>
+      <ul style="margin-left: 1.5rem; margin-bottom: 1rem;">
+        <li style="margin-bottom: 0.5rem;">Om uw bestellingen te verwerken en te leveren</li>
+        <li style="margin-bottom: 0.5rem;">Om uw account te beheren en klantenondersteuning te bieden</li>
+        <li style="margin-bottom: 0.5rem;">Om onze website, producten en diensten te verbeteren</li>
+        <li style="margin-bottom: 0.5rem;">Om u marketingcommunicatie te sturen (met uw toestemming)</li>
+        <li style="margin-bottom: 0.5rem;">Om te voldoen aan wettelijke verplichtingen</li>
+      </ul>
+    </section>
+
+    <section style="margin-bottom: 2rem;">
+      <h2 style="font-size: 1.5rem; font-weight: 600; color: #111827; margin-bottom: 1rem;">Cookies</h2>
+      <p style="margin-bottom: 1rem;">
+        Wij gebruiken cookies en vergelijkbare trackingtechnologieën om activiteiten op onze website bij te houden en bepaalde informatie op te slaan.
+        U kunt uw browser instrueren om alle cookies te weigeren of aan te geven wanneer een cookie wordt verzonden.
+        Als u echter geen cookies accepteert, kunt u mogelijk niet alle delen van onze website gebruiken.
+      </p>
+      <p style="margin-bottom: 1rem;">
+        Voor meer informatie over de cookies die wij gebruiken, zie onze Cookie-toestemmingsbanner wanneer u onze website voor het eerst bezoekt.
+      </p>
+    </section>
+
+    <section style="margin-bottom: 2rem;">
+      <h2 style="font-size: 1.5rem; font-weight: 600; color: #111827; margin-bottom: 1rem;">Gegevensbeveiliging</h2>
+      <p style="margin-bottom: 1rem;">
+        Wij hebben passende beveiligingsmaatregelen getroffen om te voorkomen dat uw persoonlijke gegevens per ongeluk verloren gaan,
+        gebruikt worden of op ongeoorloofde wijze worden geopend. Wij beperken de toegang tot uw persoonlijke gegevens tot werknemers, agenten,
+        aannemers en andere derden die een zakelijke noodzaak hebben om dit te weten.
+      </p>
+    </section>
+
+    <section style="margin-bottom: 2rem;">
+      <h2 style="font-size: 1.5rem; font-weight: 600; color: #111827; margin-bottom: 1rem;">Uw rechten</h2>
+      <p style="margin-bottom: 0.5rem;">Onder de wetgeving op het gebied van gegevensbescherming heeft u rechten, waaronder:</p>
+      <ul style="margin-left: 1.5rem; margin-bottom: 1rem;">
+        <li style="margin-bottom: 0.5rem;"><strong>Recht op toegang:</strong> Vraag toegang tot uw persoonlijke gegevens</li>
+        <li style="margin-bottom: 0.5rem;"><strong>Recht op rectificatie:</strong> Vraag correctie van onjuiste gegevens</li>
+        <li style="margin-bottom: 0.5rem;"><strong>Recht op verwijdering:</strong> Vraag verwijdering van uw persoonlijke gegevens</li>
+        <li style="margin-bottom: 0.5rem;"><strong>Recht op beperking van verwerking:</strong> Vraag beperking van de verwerking</li>
+        <li style="margin-bottom: 0.5rem;"><strong>Recht op gegevensoverdraagbaarheid:</strong> Vraag overdracht van uw gegevens</li>
+        <li style="margin-bottom: 0.5rem;"><strong>Recht van bezwaar:</strong> Bezwaar maken tegen de verwerking van uw persoonlijke gegevens</li>
+      </ul>
+    </section>
+
+    <section style="margin-bottom: 2rem;">
+      <h2 style="font-size: 1.5rem; font-weight: 600; color: #111827; margin-bottom: 1rem;">Links naar derden</h2>
+      <p style="margin-bottom: 1rem;">
+        Onze website kan links naar websites van derden, plug-ins en applicaties bevatten. Door op die links te klikken
+        kunnen derden gegevens over u verzamelen of delen. Wij hebben geen controle over deze websites van derden
+        en zijn niet verantwoordelijk voor hun privacyverklaringen.
+      </p>
+    </section>
+
+    <section style="margin-bottom: 2rem;">
+      <h2 style="font-size: 1.5rem; font-weight: 600; color: #111827; margin-bottom: 1rem;">Wijzigingen in dit privacybeleid</h2>
+      <p style="margin-bottom: 1rem;">
+        Wij kunnen ons privacybeleid van tijd tot tijd bijwerken. Wij zullen u op de hoogte stellen van eventuele wijzigingen door het nieuwe
+        privacybeleid op deze pagina te plaatsen en de datum "Laatst bijgewerkt" bovenaan dit privacybeleid bij te werken.
+      </p>
+    </section>
+
+    <section style="margin-bottom: 2rem;">
+      <h2 style="font-size: 1.5rem; font-weight: 600; color: #111827; margin-bottom: 1rem;">Contact opnemen</h2>
+      <p style="margin-bottom: 1rem;">
+        Als u vragen heeft over dit privacybeleid of onze privacypraktijken, neem dan contact met ons op via:
+      </p>
+      <div style="background-color: #F3F4F6; padding: 1rem; border-radius: 8px; margin-top: 1rem;">
+        <p style="margin: 0; color: #374151;">
+          <strong>E-mail:</strong> <a href="mailto:privacy@{{store_name}}.com" style="color: #2563EB; text-decoration: none;">privacy@{{store_name}}.com</a>
+        </p>
+      </div>
+    </section>
+  </div>
+</div>
+`;
+
+const defaultPrivacyPolicyMetadataNL = {
+  meta_title: "Privacybeleid | {{store_name}}",
+  meta_description: "Leer hoe {{store_name}} uw persoonlijke informatie verzamelt, gebruikt en beschermt. Lees ons privacybeleid voor details over gegevensbescherming en uw rechten.",
+  meta_keywords: "privacybeleid, gegevensbescherming, persoonlijke informatie, privacyrechten, AVG",
+  meta_robots_tag: "index, follow"
+};
+
 module.exports = {
   defaultPrivacyPolicyContent,
-  defaultPrivacyPolicyMetadata
+  defaultPrivacyPolicyMetadata,
+  defaultPrivacyPolicyContentNL,
+  defaultPrivacyPolicyMetadataNL
 };

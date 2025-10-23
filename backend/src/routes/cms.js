@@ -307,4 +307,58 @@ router.post('/bulk-translate', [
   }
 });
 
+// @route   POST /api/cms-pages/create-system-pages
+// @desc    Create system pages (404, Privacy Policy) for a store
+// @access  Private (requires store access)
+router.post('/create-system-pages', async (req, res) => {
+  try {
+    const { store_id } = req.body;
+
+    if (!store_id) {
+      return res.status(400).json({
+        success: false,
+        message: 'Store ID is required'
+      });
+    }
+
+    // Check store access
+    if (req.user.role !== 'admin') {
+      const { checkUserStoreAccess } = require('../utils/storeAccess');
+      const access = await checkUserStoreAccess(req.user.id, store_id);
+
+      if (!access) {
+        return res.status(403).json({
+          success: false,
+          message: 'Access denied'
+        });
+      }
+    }
+
+    // Get the store
+    const store = await Store.findByPk(store_id);
+    if (!store) {
+      return res.status(404).json({
+        success: false,
+        message: 'Store not found'
+      });
+    }
+
+    // Create system pages using the utility function
+    const { createSystemPages } = require('../utils/createSystemPages');
+    const createdPages = await createSystemPages(store, CmsPage);
+
+    res.json({
+      success: true,
+      message: `Created ${createdPages.length} system page(s)`,
+      data: createdPages
+    });
+  } catch (error) {
+    console.error('Error creating system pages:', error);
+    res.status(500).json({
+      success: false,
+      message: error.message || 'Server error'
+    });
+  }
+});
+
 module.exports = router;

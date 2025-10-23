@@ -12,6 +12,20 @@ export default function XmlSitemap() {
         generateSitemap();
     }, []);
 
+    // Helper function to safely format dates
+    const formatDate = (dateValue) => {
+        try {
+            if (!dateValue) return new Date().toISOString().split('T')[0];
+            const date = new Date(dateValue);
+            if (isNaN(date.getTime())) {
+                return new Date().toISOString().split('T')[0];
+            }
+            return date.toISOString().split('T')[0];
+        } catch (error) {
+            return new Date().toISOString().split('T')[0];
+        }
+    };
+
     const generateSitemap = async () => {
         try {
             const [products, categories, pages, seoSettings] = await Promise.all([
@@ -39,12 +53,13 @@ export default function XmlSitemap() {
             // Add categories
             if (settings.sitemap_include_categories && categories?.length > 0) {
                 categories.forEach(category => {
+                    const lastmod = formatDate(category.updatedAt || category.updated_date || category.createdAt || category.created_date);
                     xml += `
   <url>
     <loc>${window.location.origin}/category/${category.slug || category.id}</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
-    <lastmod>${new Date(category.updated_date || category.created_date).toISOString().split('T')[0]}</lastmod>
+    <lastmod>${lastmod}</lastmod>
   </url>`;
                 });
             }
@@ -52,12 +67,13 @@ export default function XmlSitemap() {
             // Add products
             if (settings.sitemap_include_products && products?.length > 0) {
                 products.forEach(product => {
+                    const lastmod = formatDate(product.updatedAt || product.updated_date || product.createdAt || product.created_date);
                     xml += `
   <url>
     <loc>${window.location.origin}/product/${product.slug || product.id}</loc>
     <changefreq>weekly</changefreq>
     <priority>0.6</priority>
-    <lastmod>${new Date(product.updated_date || product.created_date).toISOString().split('T')[0]}</lastmod>
+    <lastmod>${lastmod}</lastmod>
   </url>`;
                 });
             }
@@ -65,12 +81,13 @@ export default function XmlSitemap() {
             // Add CMS pages
             if (settings.sitemap_include_pages && pages?.length > 0) {
                 pages.forEach(page => {
+                    const lastmod = formatDate(page.updatedAt || page.updated_date || page.createdAt || page.created_date);
                     xml += `
   <url>
     <loc>${window.location.origin}/page/${page.slug}</loc>
     <changefreq>monthly</changefreq>
     <priority>0.5</priority>
-    <lastmod>${new Date(page.updated_date || page.created_date).toISOString().split('T')[0]}</lastmod>
+    <lastmod>${lastmod}</lastmod>
   </url>`;
                 });
             }

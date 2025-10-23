@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
 import { User, ConsentLog } from '@/api/entities';
 import { CustomerAuth } from '@/api/storefront-entities';
 import { Button } from '@/components/ui/button';
@@ -353,12 +354,12 @@ export default function CookieConsentBanner() {
                 </Button>
               )}
 
-              <a
-                href={cookieSettings.privacy_policy_url || '/privacy-policy'}
+              <Link
+                to={cookieSettings.privacy_policy_url || `/public/${store?.slug}/cms-page/privacy-policy`}
                 className="text-sm text-blue-600 hover:text-blue-800 underline self-center"
               >
                 {getTranslatedText('privacy_policy_text', 'Privacy Policy')}
-              </a>
+              </Link>
             </div>
           </CardContent>
         </Card>
