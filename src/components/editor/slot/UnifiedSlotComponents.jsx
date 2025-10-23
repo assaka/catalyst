@@ -1386,7 +1386,8 @@ const CartOrderSummarySlot = createSlotComponent({
       customOptionsTotal = 0,
       taxDetails = null,
       handleCheckout = () => {},
-      appliedCoupon = null
+      appliedCoupon = null,
+      cartItems = []
     } = cartContext || {};
 
     const processedContent = processVariables(content, variableContext);
