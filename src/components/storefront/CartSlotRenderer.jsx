@@ -17,7 +17,7 @@ export function CartSlotRenderer({
   viewMode = 'emptyCart',
   cartContext = {}
 }) {
-  const { t } = useTranslation();
+  const { t, getEntityTranslation } = useTranslation();
   const {
     cartItems = [],
     appliedCoupon,
@@ -468,7 +468,9 @@ export function CartSlotRenderer({
             ) : (
               <div className="flex justify-between items-center">
                 <div className="bg-green-50 p-3 rounded-lg flex-1 mr-2">
-                  <p className="text-sm font-medium text-green-800">{appliedCoupon.name}</p>
+                  <p className="text-sm font-medium text-green-800">
+                    {getEntityTranslation(appliedCoupon, 'name', 'en') || appliedCoupon.name}
+                  </p>
                   <p className="text-xs text-green-600">
                     {appliedCoupon.discount_type === 'fixed'
                       ? `${formatPrice(appliedCoupon.discount_value)} ${t('off', settings)}`

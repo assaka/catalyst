@@ -30,7 +30,7 @@ import TotalPriceDisplayComponent from '@/components/storefront/TotalPriceDispla
 import CmsBlockRendererComponent from '@/components/storefront/CmsBlockRenderer';
 import ConfigurableProductSelectorComponent from '@/components/storefront/ConfigurableProductSelector';
 import ProductLabelComponent from '@/components/storefront/ProductLabel';
-import { getCurrentLanguage } from '@/utils/translationUtils';
+import { getCurrentLanguage, getTranslatedField } from '@/utils/translationUtils';
 
 // Import category and header slot components to register them
 import './CategorySlotComponents.jsx';
@@ -1267,7 +1267,9 @@ const CartCouponSlot = createSlotComponent({
         if (appliedSection) {
           appliedSection.style.display = 'block';
           const couponNameEl = appliedSection.querySelector('[data-coupon-name]');
-          if (couponNameEl) couponNameEl.textContent = appliedCoupon.name || appliedCoupon.code;
+          const currentLang = getCurrentLanguage();
+          const translatedName = getTranslatedField(appliedCoupon, 'name', currentLang, 'en') || appliedCoupon.name || appliedCoupon.code;
+          if (couponNameEl) couponNameEl.textContent = translatedName;
 
           // Display discount information
           const couponDiscountEl = appliedSection.querySelector('[data-coupon-discount]');
@@ -1426,7 +1428,9 @@ const CartOrderSummarySlot = createSlotComponent({
       // Show/hide discount
       if (appliedCoupon && discount > 0) {
         if (discountRow) discountRow.style.display = 'flex';
-        if (discountLabelEl) discountLabelEl.textContent = `Discount (${appliedCoupon.name})`;
+        const currentLang = getCurrentLanguage();
+        const translatedName = getTranslatedField(appliedCoupon, 'name', currentLang, 'en') || appliedCoupon.name;
+        if (discountLabelEl) discountLabelEl.textContent = `Discount (${translatedName})`;
         if (discountEl) discountEl.textContent = `-${formatPriceUtil(discount)}`;
       } else {
         if (discountRow) discountRow.style.display = 'none';

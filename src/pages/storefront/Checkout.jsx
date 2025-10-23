@@ -44,7 +44,7 @@ import CmsBlockRenderer from "@/components/storefront/CmsBlockRenderer";
 import apiClient from "@/api/client";
 import StepIndicator from "@/components/storefront/StepIndicator";
 import { formatPrice as formatPriceUtil } from '@/utils/priceUtils';
-import { getProductName, getCurrentLanguage, getShippingMethodName, getShippingMethodDescription, getPaymentMethodName, getPaymentMethodDescription } from '@/utils/translationUtils';
+import { getProductName, getCurrentLanguage, getShippingMethodName, getShippingMethodDescription, getPaymentMethodName, getPaymentMethodDescription, getTranslatedField } from '@/utils/translationUtils';
 import { useTranslation } from '@/contexts/TranslationContext';
 
 export default function Checkout() {
@@ -1903,7 +1903,9 @@ export default function Checkout() {
               ) : (
                 <div className="flex items-center justify-between bg-green-50 p-3 rounded-lg">
                   <div>
-                    <p className="text-sm font-medium text-green-800">{appliedCoupon.name}</p>
+                    <p className="text-sm font-medium text-green-800">
+                      {getTranslatedField(appliedCoupon, 'name', getCurrentLanguage(), 'en') || appliedCoupon.name}
+                    </p>
                     <p className="text-xs text-green-600">
                       {appliedCoupon.discount_type === 'fixed'
                         ? `${formatPrice(appliedCoupon.discount_value)} ${t('checkout.off', 'off')}`
@@ -2006,7 +2008,9 @@ export default function Checkout() {
 
                 {appliedCoupon && calculateDiscount() > 0 && (
                   <div className="flex justify-between text-green-600">
-                    <span>{t('checkout.discount', 'Discount')} ({appliedCoupon.name})</span>
+                    <span>
+                      {t('checkout.discount', 'Discount')} ({getTranslatedField(appliedCoupon, 'name', getCurrentLanguage(), 'en') || appliedCoupon.name})
+                    </span>
                     <span>-{formatPrice(calculateDiscount())}</span>
                   </div>
                 )}
