@@ -248,6 +248,29 @@ class StorefrontProductService extends StorefrontBaseEntity {
     super('products');
   }
 
+  // Override findAll to handle complex query parameters (like id with $in operator)
+  async findAll(params = {}) {
+    try {
+      // Handle complex id parameter (like {$in: [...]})
+      const sanitizedParams = { ...params };
+      if (sanitizedParams.id && typeof sanitizedParams.id === 'object') {
+        // Stringify complex id parameter for backend parsing
+        sanitizedParams.id = JSON.stringify(sanitizedParams.id);
+      }
+
+      const queryString = new URLSearchParams(sanitizedParams).toString();
+      const url = queryString ? `${this.endpoint}?${queryString}` : this.endpoint;
+
+      const response = await this.client.getPublic(url);
+
+      return Array.isArray(response) ? response : [];
+    } catch (error) {
+      console.error(`❌ Storefront ${this.endpoint}.findAll() error:`, error.message);
+      console.error(`❌ Full error:`, error);
+      return []; // Return empty array instead of throwing for public APIs
+    }
+  }
+
   async search(query, params = {}) {
     const result = await this.findAll({ ...params, search: query });
     return Array.isArray(result) ? result : [];
