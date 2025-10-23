@@ -232,7 +232,8 @@ export default function Layout({ children, currentPageName }) {
               path: item.route?.replace('/admin/', ''), // Remove /admin/ prefix
               icon: getIconComponent(item.icon),
               badge: item.badge,
-              isPremium: false,
+              type: item.type || 'standard',
+              isPremium: item.type === 'premium',
               isPlugin: false,
               parent_key: item.parent_key || parentKey,
               order_position: item.order_position || 0
@@ -737,8 +738,17 @@ export default function Layout({ children, currentPageName }) {
 
                     return (
                       <div key={item.name} className="relative">
-                        {item.isPremium && (
+                        {item.type === 'premium' && (
                           <Crown className="absolute top-0 right-0 w-4 h-4 text-yellow-500 font-bold z-10 pointer-events-none" />
+                        )}
+                        {item.type === 'coming_soon' && (
+                          <Badge className="absolute top-0 right-0 text-[8px] px-1 py-0 h-4 bg-gray-500 text-white z-10 pointer-events-none">Soon</Badge>
+                        )}
+                        {item.type === 'beta' && (
+                          <Badge className="absolute top-0 right-0 text-[8px] px-1 py-0 h-4 bg-blue-500 text-white z-10 pointer-events-none">Beta</Badge>
+                        )}
+                        {item.type === 'new' && (
+                          <Badge className="absolute top-0 right-0 text-[8px] px-1 py-0 h-4 bg-green-500 text-white z-10 pointer-events-none">New</Badge>
                         )}
                         <Link
                           to={createAdminUrl(item.path)}

@@ -230,6 +230,7 @@ class AdminNavigationService {
         category: item.category,
         description: item.description,
         badge: item.badge,
+        type: item.type || 'standard',
         children: []
       });
     });
