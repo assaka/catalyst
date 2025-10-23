@@ -14,6 +14,7 @@ import { Category } from '@/api/entities';
 import { Product } from '@/api/entities';
 import { AttributeSet } from '@/api/entities';
 import { Attribute } from '@/api/entities';
+import { getProductName } from '@/utils/translationUtils';
 
 export default function CouponForm({ coupon, onSubmit, onCancel, storeId }) {
   const [showTranslations, setShowTranslations] = useState(false);
@@ -185,7 +186,7 @@ export default function CouponForm({ coupon, onSubmit, onCancel, storeId }) {
   };
 
   const categoryOptions = categories.map(cat => ({ value: cat.id, label: cat.name }));
-  const productOptions = products.map(prod => ({ value: prod.id, label: `${prod.name} (${prod.sku})` }));
+  const productOptions = products.map(prod => ({ value: prod.id, label: `${getProductName(prod) || prod.sku || 'Unnamed Product'} (${prod.sku})` }));
   const attributeSetOptions = attributeSets.map(set => ({ value: set.id, label: set.name }));
   const attributeOptions = attributes.map(attr => ({ value: attr.id, label: `${attr.name} (${attr.code})` }));
 
