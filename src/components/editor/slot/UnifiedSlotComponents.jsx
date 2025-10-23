@@ -1241,7 +1241,10 @@ const CartCouponSlot = createSlotComponent({
       handleApplyCoupon = () => {},
       handleRemoveCoupon = () => {},
       handleCouponKeyPress = () => {},
-      appliedCoupon = null
+      appliedCoupon = null,
+      discount = 0,
+      formatPrice = formatPriceUtil,
+      settings = {}
     } = cartContext || {};
 
     const processedContent = processVariables(content, variableContext);
@@ -1265,6 +1268,18 @@ const CartCouponSlot = createSlotComponent({
           appliedSection.style.display = 'block';
           const couponNameEl = appliedSection.querySelector('[data-coupon-name]');
           if (couponNameEl) couponNameEl.textContent = appliedCoupon.name || appliedCoupon.code;
+
+          // Display discount information
+          const couponDiscountEl = appliedSection.querySelector('[data-coupon-discount]');
+          if (couponDiscountEl) {
+            let discountText = '';
+            if (appliedCoupon.discount_type === 'fixed') {
+              discountText = `${formatPrice(appliedCoupon.discount_value)} off`;
+            } else if (appliedCoupon.discount_type === 'percentage') {
+              discountText = `${appliedCoupon.discount_value}% (${formatPrice(discount)} off)`;
+            }
+            couponDiscountEl.textContent = discountText;
+          }
         }
       } else {
         // Show input section
@@ -1302,7 +1317,7 @@ const CartCouponSlot = createSlotComponent({
           removeButton.removeEventListener('click', handleRemoveCoupon);
         }
       };
-    }, [couponCode, setCouponCode, handleApplyCoupon, handleRemoveCoupon, handleCouponKeyPress, appliedCoupon]);
+    }, [couponCode, setCouponCode, handleApplyCoupon, handleRemoveCoupon, handleCouponKeyPress, appliedCoupon, discount, formatPrice]);
 
     return (
       <div ref={containerRef} className={className} style={styles}
