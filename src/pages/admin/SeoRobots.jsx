@@ -116,17 +116,35 @@ Sitemap: https://example.com/sitemap.xml`);
       console.log('Fetching categories with store_id:', storeId);
 
       // Try fetching all categories first to see if any exist
-      const testCategories = await Category.all();
-      console.log('All categories (no filter):', testCategories);
+      try {
+        const testCategories = await Category.findAll();
+        console.log('All categories (no filter):', testCategories);
+      } catch (err) {
+        console.error('Error fetching all categories:', err);
+      }
 
-      const [allProducts, allCategories, allPages] = await Promise.all([
-        Product.filter({ store_id: storeId }),
-        Category.filter({ store_id: storeId }),
-        CmsPage.filter({ store_id: storeId })
-      ]).catch(error => {
-        console.error('Error fetching data:', error);
-        return [[], [], []];
-      });
+      let allProducts = [], allCategories = [], allPages = [];
+
+      try {
+        allProducts = await Product.filter({ store_id: storeId });
+        console.log('Products fetched successfully:', allProducts?.length);
+      } catch (error) {
+        console.error('Error fetching products:', error);
+      }
+
+      try {
+        allCategories = await Category.filter({ store_id: storeId });
+        console.log('Categories fetched successfully:', allCategories?.length);
+      } catch (error) {
+        console.error('Error fetching categories:', error);
+      }
+
+      try {
+        allPages = await CmsPage.filter({ store_id: storeId });
+        console.log('Pages fetched successfully:', allPages?.length);
+      } catch (error) {
+        console.error('Error fetching pages:', error);
+      }
 
       console.log('Fetched products count:', allProducts?.length);
       console.log('Fetched categories:', allCategories);
