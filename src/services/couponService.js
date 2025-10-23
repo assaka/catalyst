@@ -9,7 +9,21 @@ class CouponService {
     getAppliedCoupon() {
         try {
             const stored = localStorage.getItem(this.storageKey);
-            return stored ? JSON.parse(stored) : null;
+            if (!stored) return null;
+
+            const coupon = JSON.parse(stored);
+
+            // Parse translations if it's a string
+            if (coupon && typeof coupon.translations === 'string') {
+                try {
+                    coupon.translations = JSON.parse(coupon.translations);
+                } catch (e) {
+                    console.warn('Failed to parse coupon translations:', e);
+                    coupon.translations = {};
+                }
+            }
+
+            return coupon;
         } catch (error) {
             console.warn('Failed to get applied coupon from storage:', error);
             return null;
@@ -20,14 +34,24 @@ class CouponService {
     setAppliedCoupon(coupon) {
         try {
             if (coupon) {
+                // Parse translations if it's a string (from API)
+                if (typeof coupon.translations === 'string') {
+                    try {
+                        coupon.translations = JSON.parse(coupon.translations);
+                    } catch (e) {
+                        console.warn('Failed to parse coupon translations:', e);
+                        coupon.translations = {};
+                    }
+                }
+
                 localStorage.setItem(this.storageKey, JSON.stringify(coupon));
             } else {
                 localStorage.removeItem(this.storageKey);
             }
-            
+
             // Notify all listeners about the change
             this.notifyListeners(coupon);
-            
+
             return { success: true };
         } catch (error) {
             console.error('Failed to set applied coupon:', error);

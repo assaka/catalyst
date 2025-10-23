@@ -34,7 +34,7 @@ router.get('/', async (req, res) => {
       FROM cms_blocks 
       WHERE store_id::text = $1
       AND is_active = true
-      ORDER BY sort_order ASC, title ASC
+      ORDER BY sort_order ASC, identifier ASC
     `, {
       bind: [store_id],
       type: QueryTypes.SELECT

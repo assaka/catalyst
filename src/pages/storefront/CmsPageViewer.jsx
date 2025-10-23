@@ -15,13 +15,24 @@ export default function CmsPageViewer() {
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
+        console.log('🔍 CmsPageViewer: Component mounted, slug:', slug);
+        if (!slug) {
+            console.warn('⚠️ CmsPageViewer: No slug found in URL params');
+            setLoading(false);
+            return;
+        }
         if (slug) {
             const fetchPage = async () => {
                 try {
                     setLoading(true);
+                    console.log('🔍 CmsPageViewer: Fetching page with slug:', slug);
                     // Fetch CMS page using slug query parameter
-                    const response = await fetch(`/api/public/cms-pages?slug=${encodeURIComponent(slug)}`);
+                    const apiUrl = `/api/public/cms-pages?slug=${encodeURIComponent(slug)}`;
+                    console.log('🔍 CmsPageViewer: API URL:', apiUrl);
+                    const response = await fetch(apiUrl);
+                    console.log('🔍 CmsPageViewer: Response status:', response.status);
                     const result = await response.json();
+                    console.log('🔍 CmsPageViewer: Response data:', result);
 
                     if (result.success && result.data) {
                         const currentPage = result.data;

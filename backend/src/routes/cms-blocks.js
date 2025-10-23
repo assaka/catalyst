@@ -52,7 +52,7 @@ router.get('/public', async (req, res) => {
         FROM cms_blocks 
         WHERE store_id::text = $1
         AND is_active = true
-        ORDER BY sort_order ASC, title ASC
+        ORDER BY sort_order ASC, identifier ASC
       `, {
         bind: [store_id],
         type: QueryTypes.SELECT
@@ -114,7 +114,7 @@ router.get('/', async (req, res) => {
       where,
       limit: parseInt(limit),
       offset: parseInt(offset),
-      order: [['sort_order', 'ASC'], ['title', 'ASC']],
+      order: [['sort_order', 'ASC'], ['identifier', 'ASC']],
       include: [{
         model: Store,
         attributes: ['id', 'name']
@@ -567,7 +567,7 @@ router.post('/bulk-translate', [
     // Get all blocks for this store
     const blocks = await CmsBlock.findAll({
       where: { store_id },
-      order: [['sort_order', 'ASC'], ['title', 'ASC']]
+      order: [['sort_order', 'ASC'], ['identifier', 'ASC']]
     });
 
     if (blocks.length === 0) {
