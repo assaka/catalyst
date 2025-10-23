@@ -95,12 +95,17 @@ export default function DeliverySettings() { // Renamed the function component f
         out_of_office_end: deliverySettings.out_of_office_end || null
       };
 
+      let result;
       if (deliverySettings.id) {
         // If deliverySettings already has an ID, it means it exists in the DB, so update
-        await DeliverySettingsEntity.update(deliverySettings.id, settingsToSave);
+        result = await DeliverySettingsEntity.update(deliverySettings.id, settingsToSave);
       } else {
         // Otherwise, it's a new set of settings for this store, so create
-        await DeliverySettingsEntity.create(settingsToSave);
+        result = await DeliverySettingsEntity.create(settingsToSave);
+        // Update state with the created record (to get the new ID)
+        if (result) {
+          setDeliverySettings({ ...settingsToSave, id: result.id || result[0]?.id });
+        }
       }
 
       // Clear any potential cache
@@ -114,9 +119,6 @@ export default function DeliverySettings() { // Renamed the function component f
       setFlashMessage({ type: 'success', message: 'Delivery settings saved successfully!' });
       setSaveSuccess(true);
       setTimeout(() => setSaveSuccess(false), 2000);
-
-      // Reload to get the latest data from server
-      await loadDeliverySettings();
     } catch (error) {
       console.error("Error saving delivery settings:", error);
       setFlashMessage({ type: 'error', message: 'Failed to save settings.' });
@@ -190,7 +192,6 @@ export default function DeliverySettings() { // Renamed the function component f
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <FlashMessage message={flashMessage} onClose={() => setFlashMessage(null)} />
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
       </div>
     );
