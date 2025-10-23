@@ -206,6 +206,109 @@ Sitemap: https://example.com/sitemap.xml`);
     }
   };
 
+  const handlePreview = () => {
+    if (!selectedStore) {
+      alert('Please select a store first');
+      return;
+    }
+
+    // Construct the robots.txt URL for the selected store
+    const domain = selectedStore.custom_domain || selectedStore.domain;
+    const robotsUrl = `${domain}/robots.txt`;
+
+    // Open in new tab
+    window.open(robotsUrl, '_blank');
+  };
+
+  const handleValidate = () => {
+    const errors = [];
+    const warnings = [];
+
+    // Check if robots.txt is empty
+    if (!robotsTxt.trim()) {
+      errors.push('Robots.txt is empty. Add at least "User-agent: *" and "Allow: /"');
+      alert('Validation Errors:\n\n' + errors.join('\n'));
+      return;
+    }
+
+    const lines = robotsTxt.split('\n');
+    let hasUserAgent = false;
+    let hasSitemap = false;
+    let currentUserAgent = null;
+
+    lines.forEach((line, index) => {
+      const trimmed = line.trim();
+
+      // Skip empty lines and comments
+      if (!trimmed || trimmed.startsWith('#')) return;
+
+      // Check for User-agent
+      if (trimmed.toLowerCase().startsWith('user-agent:')) {
+        hasUserAgent = true;
+        currentUserAgent = trimmed.split(':')[1]?.trim();
+      }
+
+      // Check for Sitemap
+      if (trimmed.toLowerCase().startsWith('sitemap:')) {
+        hasSitemap = true;
+      }
+
+      // Check for valid directives
+      const directive = trimmed.split(':')[0]?.toLowerCase();
+      const validDirectives = ['user-agent', 'allow', 'disallow', 'sitemap', 'crawl-delay'];
+      if (!validDirectives.includes(directive)) {
+        warnings.push(`Line ${index + 1}: Unknown directive "${directive}"`);
+      }
+
+      // Check if Disallow/Allow comes after User-agent
+      if ((directive === 'allow' || directive === 'disallow') && !currentUserAgent) {
+        errors.push(`Line ${index + 1}: ${directive} must come after User-agent directive`);
+      }
+
+      // Check for common mistakes
+      if (trimmed.toLowerCase().includes('disallow: /css') ||
+          trimmed.toLowerCase().includes('disallow: /*.css')) {
+        warnings.push(`Line ${index + 1}: Blocking CSS may harm SEO (Google needs CSS to render pages)`);
+      }
+
+      if (trimmed.toLowerCase().includes('disallow: /js') ||
+          trimmed.toLowerCase().includes('disallow: /*.js')) {
+        warnings.push(`Line ${index + 1}: Blocking JavaScript may harm SEO (Google needs JS to render pages)`);
+      }
+    });
+
+    // Check for required elements
+    if (!hasUserAgent) {
+      errors.push('Missing User-agent directive. Add at least "User-agent: *"');
+    }
+
+    if (!hasSitemap) {
+      warnings.push('No Sitemap directive found. Consider adding your sitemap URL');
+    }
+
+    // Show results
+    if (errors.length === 0 && warnings.length === 0) {
+      alert('✓ Validation Passed!\n\nNo errors or warnings found. Your robots.txt looks good!');
+    } else {
+      let message = '';
+
+      if (errors.length > 0) {
+        message += '❌ ERRORS:\n\n' + errors.join('\n\n');
+      }
+
+      if (warnings.length > 0) {
+        if (message) message += '\n\n';
+        message += '⚠️ WARNINGS:\n\n' + warnings.join('\n\n');
+      }
+
+      if (errors.length === 0) {
+        message += '\n\n✓ No critical errors found, but please review the warnings above.';
+      }
+
+      alert(message);
+    }
+  };
+
   const handleSave = async () => {
     setSaving(true);
     setSaveSuccess(false);
@@ -268,8 +371,19 @@ Sitemap: https://example.com/sitemap.xml`);
               )}
               Import Custom Rules
             </Button>
-            <Button variant="outline">Preview</Button>
-            <Button variant="outline">Validate</Button>
+            <Button
+              variant="outline"
+              onClick={handlePreview}
+              disabled={!selectedStore}
+            >
+              Preview
+            </Button>
+            <Button
+              variant="outline"
+              onClick={handleValidate}
+            >
+              Validate
+            </Button>
           </div>
         </CardContent>
       </Card>
@@ -411,6 +525,17 @@ Sitemap: https://example.com/sitemap.xml`);
                     <p className="text-sm text-gray-700 mt-2">
                       This ensures your robots.txt stays in sync with your SEO settings. Only items with non-default settings are listed, making it easy to see exceptions at a glance.
                     </p>
+                  </div>
+                </div>
+
+                <div className="flex gap-3">
+                  <Info className="h-5 w-5 text-blue-600 flex-shrink-0 mt-0.5" />
+                  <div>
+                    <h4 className="font-semibold text-sm mb-1">Preview & Validate Buttons</h4>
+                    <ul className="text-sm text-gray-700 space-y-1">
+                      <li>• <strong>Preview:</strong> Opens your live robots.txt URL in a new tab. This shows you exactly what search engines will see when they access yoursite.com/robots.txt</li>
+                      <li>• <strong>Validate:</strong> Checks your robots.txt for syntax errors and common SEO mistakes before saving. It warns you about blocking important resources like CSS/JS, missing directives, and invalid syntax</li>
+                    </ul>
                   </div>
                 </div>
 
