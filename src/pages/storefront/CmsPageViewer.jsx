@@ -8,7 +8,8 @@ import { useNotFound } from '@/utils/notFoundUtils';
 import { getPageTitle, getPageContent } from '@/utils/translationUtils';
 
 export default function CmsPageViewer() {
-    const { slug } = useParams();
+    const { pageSlug } = useParams();
+    const slug = pageSlug;
     const { showNotFound } = useNotFound();
     const [page, setPage] = useState(null);
     const [relatedProducts, setRelatedProducts] = useState([]);
