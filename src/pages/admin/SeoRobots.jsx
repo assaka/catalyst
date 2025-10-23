@@ -109,12 +109,28 @@ Sitemap: https://example.com/sitemap.xml`);
         return;
       }
 
-      // Fetch ONLY products, categories, and pages with noindex/nofollow tags (different from default)
-      const [products, categories, pages] = await Promise.all([
-        Product.filter({ store_id: storeId, "seo.meta_robots_tag": "noindex, nofollow" }),
-        Category.filter({ store_id: storeId, meta_robots_tag: "noindex, nofollow" }),
-        CmsPage.filter({ store_id: storeId, meta_robots_tag: "noindex, nofollow" })
+      // Fetch ALL products, categories, and pages to filter those with non-default meta robots tags
+      const [allProducts, allCategories, allPages] = await Promise.all([
+        Product.filter({ store_id: storeId }),
+        Category.filter({ store_id: storeId }),
+        CmsPage.filter({ store_id: storeId })
       ]);
+
+      // Filter items with noindex tags (any variation: "noindex, nofollow", "noindex, follow", "follow, noindex")
+      const products = allProducts.filter(p => {
+        const tag = p.seo?.meta_robots_tag?.toLowerCase() || '';
+        return tag.includes('noindex');
+      });
+
+      const categories = allCategories.filter(c => {
+        const tag = c.meta_robots_tag?.toLowerCase() || '';
+        return tag.includes('noindex');
+      });
+
+      const pages = allPages.filter(p => {
+        const tag = p.meta_robots_tag?.toLowerCase() || '';
+        return tag.includes('noindex');
+      });
 
       // Build default rules with Allow directives for content directories
       const domain = selectedStore?.custom_domain || selectedStore?.domain || 'https://example.com';
@@ -140,22 +156,31 @@ Sitemap: https://example.com/sitemap.xml`);
 
       let newContent = [defaultRules];
 
-      // Only add Disallow rules for items that differ from default (have noindex/nofollow)
+      // Only add Disallow rules for items that have noindex (different from default)
       if (products && products.length > 0) {
-        newContent.push('\n# Disallowed Products (noindex/nofollow - different from default)');
-        products.forEach(p => newContent.push(`Disallow: /products/${p.slug || p.id}`));
+        newContent.push('\n# Disallowed Products (noindex - different from default)');
+        products.forEach(p => {
+          const tag = p.seo?.meta_robots_tag || 'default';
+          newContent.push(`Disallow: /products/${p.slug || p.id}  # ${tag}`);
+        });
       }
 
-      // Only add Disallow rules for categories that differ from default
+      // Only add Disallow rules for categories that have noindex
       if (categories && categories.length > 0) {
-        newContent.push('\n# Disallowed Categories (noindex/nofollow - different from default)');
-        categories.forEach(c => newContent.push(`Disallow: /categories/${c.slug}`));
+        newContent.push('\n# Disallowed Categories (noindex - different from default)');
+        categories.forEach(c => {
+          const tag = c.meta_robots_tag || 'default';
+          newContent.push(`Disallow: /categories/${c.slug}  # ${tag}`);
+        });
       }
 
-      // Only add Disallow rules for CMS pages that differ from default
+      // Only add Disallow rules for CMS pages that have noindex
       if (pages && pages.length > 0) {
-        newContent.push('\n# Disallowed CMS Pages (noindex/nofollow - different from default)');
-        pages.forEach(p => newContent.push(`Disallow: /cms-pages/${p.slug}`));
+        newContent.push('\n# Disallowed CMS Pages (noindex - different from default)');
+        pages.forEach(p => {
+          const tag = p.meta_robots_tag || 'default';
+          newContent.push(`Disallow: /cms-pages/${p.slug}  # ${tag}`);
+        });
       }
 
       setRobotsTxt(newContent.join('\n'));
@@ -359,16 +384,17 @@ Sitemap: https://example.com/sitemap.xml`);
                   <div>
                     <h4 className="font-semibold text-sm mb-1">Import Custom Rules</h4>
                     <p className="text-sm text-gray-700 mb-2">
-                      The <strong>Import Custom Rules</strong> button automatically generates robots.txt rules from your content settings:
+                      The <strong>Import Custom Rules</strong> button automatically generates robots.txt rules from your content with non-default SEO settings:
                     </p>
                     <ul className="text-sm text-gray-700 space-y-1">
-                      <li>• Products marked with "noindex, nofollow" meta robots tag</li>
-                      <li>• Categories marked with "noindex, nofollow" meta robots tag</li>
-                      <li>• CMS pages marked with "noindex, nofollow" meta robots tag</li>
-                      <li>• Your store's custom domain for the sitemap URL</li>
+                      <li>• Products with "noindex" in meta robots tag (noindex/nofollow, noindex/follow, etc.)</li>
+                      <li>• Categories with "noindex" in meta robots tag</li>
+                      <li>• CMS pages with "noindex" in meta robots tag</li>
+                      <li>• Adds inline comments showing the actual meta robots tag for each item</li>
+                      <li>• Uses your store's custom domain for the sitemap URL</li>
                     </ul>
                     <p className="text-sm text-gray-700 mt-2">
-                      This ensures your robots.txt stays in sync with your SEO settings across products, categories, and pages.
+                      This ensures your robots.txt stays in sync with your SEO settings. Only items with non-default settings are listed, making it easy to see exceptions at a glance.
                     </p>
                   </div>
                 </div>
