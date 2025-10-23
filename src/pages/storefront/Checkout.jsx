@@ -728,6 +728,13 @@ export default function Checkout() {
 
   // Memoize tax calculation to avoid recalculating on every render
   const taxCalculationResult = React.useMemo(() => {
+    console.log('🔍 === TAX CALCULATION DEBUG ===');
+    console.log('🔍 selectedCountry from context:', selectedCountry);
+    console.log('🔍 shippingAddress.country:', shippingAddress.country);
+    console.log('🔍 shippingAddress.street:', shippingAddress.street);
+    console.log('🔍 shippingAddress.city:', shippingAddress.city);
+    console.log('🔍 selectedShippingAddress:', selectedShippingAddress);
+
     if (!store || !taxRules.length || !cartItems.length) {
       return { taxAmount: 0, effectiveRate: 0, country: null };
     }
@@ -740,11 +747,14 @@ export default function Checkout() {
     if (user && selectedShippingAddress && selectedShippingAddress !== 'new') {
       const address = userAddresses.find(a => a.id === selectedShippingAddress);
       currentShippingCountry = address?.country || 'US';
+      console.log('🔍 Branch 1: Using saved address country:', currentShippingCountry);
     } else if (shippingAddress.street || shippingAddress.city) {
       currentShippingCountry = shippingAddress.country || 'US';
+      console.log('🔍 Branch 2: Using form country (form has data):', currentShippingCountry);
     } else {
       // When form is empty, ONLY use selectedCountry (don't fall back to shippingAddress.country)
       currentShippingCountry = selectedCountry || 'US';
+      console.log('🔍 Branch 3: Using selectedCountry (form empty):', currentShippingCountry);
     }
 
     const taxShippingAddress = {
