@@ -587,9 +587,9 @@ export function CartSlotRenderer({
               {discount > 0 && appliedCoupon && (
                 <Accordion type="single" collapsible className="w-full">
                   <AccordionItem value="discount-details" className="border-0">
-                    <AccordionTrigger className="py-2 px-0 hover:no-underline">
-                      <div className="flex justify-between items-center w-full pr-2">
-                        <div className="flex items-center gap-2 flex-1">
+                    <div className="flex justify-between items-center">
+                      <AccordionTrigger className="py-2 px-0 hover:no-underline flex-1">
+                        <div className="flex items-center gap-2">
                           <span>{t('discount', settings)}</span>
                           {appliedCoupon && (
                             <span className="text-xs text-gray-500">
@@ -597,9 +597,9 @@ export function CartSlotRenderer({
                             </span>
                           )}
                         </div>
-                        <span className="text-green-600">-{formatPrice(discount)}</span>
-                      </div>
-                    </AccordionTrigger>
+                      </AccordionTrigger>
+                      <span className="text-green-600 ml-2">-{formatPrice(discount)}</span>
+                    </div>
                     <AccordionContent className="px-0 pt-2 pb-2">
                       <div className="text-sm text-gray-600 space-y-1">
                         <p className="font-medium mb-2 text-xs">{t('cart.discount_applies_to', settings) || 'Discount applies to'}:</p>
