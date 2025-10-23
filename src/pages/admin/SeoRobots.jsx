@@ -4,9 +4,13 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import SaveButton from '@/components/ui/save-button';
-import { Bot, AlertCircle } from "lucide-react";
+import { Bot, AlertCircle, RefreshCw } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Switch } from "@/components/ui/switch";
+import { Product } from '@/api/entities';
+import { Category } from '@/api/entities';
+import { CmsPage } from '@/api/entities';
+import { useStoreSelection } from '@/contexts/StoreSelectionContext.jsx';
 
 export default function SeoRobots() {
   const [saveSuccess, setSaveSuccess] = useState(false);

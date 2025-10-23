@@ -1,15 +1,53 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useStore } from './StoreProvider';
 import { useSeoSettings } from './SeoSettingsProvider';
+import apiClient from '@/api/client';
 
 export default function SeoHeadManager({ pageType, pageData, pageTitle, pageDescription, imageUrl }) {
     const storeContext = useStore();
     const seoContext = useSeoSettings();
-    
+
     // Handle cases where components are used outside of providers
     const store = storeContext?.store || {};
     const seoTemplates = storeContext?.seoTemplates || {};
     const seoSettings = seoContext?.seoSettings || {};
+
+    const [customCanonicalUrl, setCustomCanonicalUrl] = useState(null);
+
+    // Fetch custom canonical URL for the current page
+    useEffect(() => {
+        const fetchCustomCanonical = async () => {
+            if (!store?.id) return;
+
+            try {
+                // Extract relative path without store-specific prefix
+                const absolutePath = window.location.pathname || '';
+                let relativePath = absolutePath;
+
+                // Remove store-specific prefix like /public/hamid2 to get the actual content path
+                if (store?.slug) {
+                    const storePrefix = `/public/${store.slug}`;
+                    if (absolutePath.startsWith(storePrefix)) {
+                        relativePath = absolutePath.substring(storePrefix.length) || '/';
+                    }
+                }
+
+                // Check if there's a custom canonical URL for this path
+                const response = await apiClient.get(`/canonical-urls/check?store_id=${store.id}&path=${encodeURIComponent(relativePath)}`);
+
+                if (response?.found && response?.canonical_url) {
+                    setCustomCanonicalUrl(response.canonical_url);
+                } else {
+                    setCustomCanonicalUrl(null);
+                }
+            } catch (error) {
+                console.error('Error fetching custom canonical URL:', error);
+                setCustomCanonicalUrl(null);
+            }
+        };
+
+        fetchCustomCanonical();
+    }, [store?.id, store?.slug, window.location.pathname]);
 
     useEffect(() => {
         // Don't proceed if we don't have store data yet
@@ -270,26 +308,29 @@ export default function SeoHeadManager({ pageType, pageData, pageTitle, pageDesc
         updateMetaTag('robots', robotsTag);
 
         // Canonical URL with template replacement
-        let canonicalUrl = pageData?.canonical_url;
-        
+        // Priority: Custom canonical URL from database > pageData > canonical_base_url > current URL
+        let canonicalUrl = customCanonicalUrl || pageData?.canonical_url;
+
         if (!canonicalUrl) {
             // Apply template replacement to canonical base URL
             const canonicalBase = applyTemplate(seoSettings?.canonical_base_url || '', pageData);
-            
+
             if (canonicalBase && canonicalBase.trim()) {
                 // Ensure the base URL doesn't end with / and pathname starts with /
                 const cleanBase = canonicalBase.replace(/\/$/, '');
-                const cleanPath = window.location.pathname.startsWith('/') 
-                    ? window.location.pathname 
+                const cleanPath = window.location.pathname.startsWith('/')
+                    ? window.location.pathname
                     : '/' + window.location.pathname;
                 canonicalUrl = `${cleanBase}${cleanPath}`;
             } else {
                 canonicalUrl = window.location.href;
             }
         }
-        
-        // Apply template replacement to the final canonical URL
-        canonicalUrl = applyTemplate(canonicalUrl, pageData);
+
+        // Apply template replacement to the final canonical URL (unless it's a custom canonical URL which should be used as-is)
+        if (!customCanonicalUrl) {
+            canonicalUrl = applyTemplate(canonicalUrl, pageData);
+        }
         
         
         // Update or create canonical link
@@ -578,7 +619,7 @@ export default function SeoHeadManager({ pageType, pageData, pageTitle, pageDesc
             document.querySelectorAll('script[src*="googletagmanager.com/gtm.js"]').forEach(el => el.remove());
             document.querySelectorAll('script[src*="googletagmanager.com/gtag/js"]').forEach(el => el.remove());
         };
-    }, [pageType, pageData, pageTitle, pageDescription, imageUrl, store, seoSettings, seoTemplates]);
+    }, [pageType, pageData, pageTitle, pageDescription, imageUrl, store, seoSettings, seoTemplates, customCanonicalUrl]);
 
     return null;
 }
