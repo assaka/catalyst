@@ -728,6 +728,11 @@ export default function Checkout() {
 
   // Memoize tax calculation to avoid recalculating on every render
   const taxCalculationResult = React.useMemo(() => {
+    console.log('🔍 Checkout tax calculation triggered');
+    console.log('🔍 selectedCountry:', selectedCountry);
+    console.log('🔍 shippingAddress:', shippingAddress);
+    console.log('🔍 selectedShippingAddress:', selectedShippingAddress);
+
     if (!store || !taxRules.length || !cartItems.length) {
       return { taxAmount: 0, effectiveRate: 0, country: null };
     }
@@ -740,10 +745,13 @@ export default function Checkout() {
     if (user && selectedShippingAddress && selectedShippingAddress !== 'new') {
       const address = userAddresses.find(a => a.id === selectedShippingAddress);
       currentShippingCountry = address?.country || 'US';
+      console.log('🔍 Using saved address country:', currentShippingCountry);
     } else if (shippingAddress.street || shippingAddress.city) {
       currentShippingCountry = shippingAddress.country || 'US';
+      console.log('🔍 Using form country (form filled):', currentShippingCountry);
     } else {
       currentShippingCountry = selectedCountry || shippingAddress.country || 'US';
+      console.log('🔍 Using selectedCountry (form empty):', currentShippingCountry);
     }
 
     const taxShippingAddress = {
@@ -760,6 +768,12 @@ export default function Checkout() {
       subtotal,
       discount
     );
+
+    console.log('🔍 Tax result:', {
+      taxAmount: taxResult.taxAmount,
+      effectiveRate: taxResult.effectiveRate,
+      country: currentShippingCountry
+    });
 
     return {
       taxAmount: taxResult.taxAmount || 0,
