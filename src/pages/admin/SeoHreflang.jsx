@@ -151,13 +151,7 @@ export default function SeoHreflang() {
 
   return (
     <div className="container mx-auto p-6 space-y-6">
-      {flashMessage && (
-        <FlashMessage
-          type={flashMessage.type}
-          message={flashMessage.message}
-          onClose={() => setFlashMessage(null)}
-        />
-      )}
+      <FlashMessage message={flashMessage} onClose={() => setFlashMessage(null)} />
 
       <div className="flex items-center gap-2 mb-6">
         <Globe className="h-6 w-6" />
@@ -308,19 +302,19 @@ export default function SeoHreflang() {
               ) : (
                 <p className="text-gray-600">No hreflang settings configured yet. Click "Add Language" to get started.</p>
               )}
-
-              <div className="flex justify-end mt-4">
-                <SaveButton
-                  onClick={handleSave}
-                  loading={saving}
-                  success={saveSuccess}
-                  defaultText="Save Hreflang Settings"
-                />
-              </div>
             </>
           )}
         </CardContent>
       </Card>
+
+      <div className="flex justify-end mt-4">
+        <SaveButton
+            onClick={handleSave}
+            loading={saving}
+            success={saveSuccess}
+            defaultText="Save Hreflang Settings"
+        />
+      </div>
     </div>
   );
 }
