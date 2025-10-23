@@ -551,6 +551,37 @@ app.post('/debug/migrate-consent', async (req, res) => {
   }
 });
 
+// SEO Settings migration endpoint
+app.post('/debug/migrate-seo-settings', async (req, res) => {
+  try {
+    console.log('🔄 Running SeoSettings migration...');
+
+    const { SeoSettings } = require('./models');
+
+    // Sync SeoSettings table
+    await SeoSettings.sync({ alter: true });
+    console.log('✅ SeoSettings table synced successfully');
+
+    // Test the table
+    const count = await SeoSettings.count();
+    console.log(`📊 Found ${count} SEO settings records`);
+
+    res.json({
+      success: true,
+      message: 'SeoSettings migration completed successfully',
+      count: count
+    });
+  } catch (error) {
+    console.error('❌ SeoSettings migration failed:', error);
+    res.status(500).json({
+      success: false,
+      message: 'SeoSettings migration failed',
+      error: error.message,
+      stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
+    });
+  }
+});
+
 // Public database migration endpoint
 app.post('/debug/migrate', async (req, res) => {
   try {
