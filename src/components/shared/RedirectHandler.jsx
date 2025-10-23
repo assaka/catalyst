@@ -47,29 +47,26 @@ const RedirectHandler = ({ children, storeId }) => {
 
             // Determine if this is an external redirect (absolute URL)
             const isAbsoluteUrl = data.to_url.startsWith('http://') || data.to_url.startsWith('https://');
-            const isFullInternalPath = data.to_url.startsWith('/public/');
 
-            // Build the full destination URL
-            let destinationUrl = data.to_url;
+            let destinationUrl;
 
-            if (!isAbsoluteUrl && !isFullInternalPath) {
-              // Relative path - prepend the store prefix from current URL
-              if (publicMatch) {
-                destinationUrl = `/public/${publicMatch[1]}${data.to_url}`;
-              }
-            }
-
-            console.log(`🔀 Redirecting to: ${destinationUrl} (type: ${isAbsoluteUrl ? 'external' : 'internal'})`);
-
-            // For external URLs, use window.location for proper navigation
             if (isAbsoluteUrl) {
+              // External URL - use as-is
+              destinationUrl = data.to_url;
+              console.log(`🔀 Redirecting to external: ${destinationUrl}`);
               window.location.href = destinationUrl;
               return;
+            } else {
+              // Internal relative path - prepend the store prefix
+              if (publicMatch) {
+                destinationUrl = `/public/${publicMatch[1]}${data.to_url}`;
+              } else {
+                destinationUrl = data.to_url;
+              }
+              console.log(`🔀 Redirecting to internal: ${destinationUrl}`);
+              navigate(destinationUrl, { replace: true });
+              return;
             }
-
-            // For internal URLs, use React Router navigate
-            navigate(destinationUrl, { replace: true });
-            return; // Don't set hasChecked since we're navigating away
           }
         }
       } catch (error) {
