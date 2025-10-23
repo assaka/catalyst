@@ -188,26 +188,6 @@ export default function SeoHreflang() {
 
           {showHreflangFields && (
             <>
-              <div className="bg-blue-50 p-4 rounded-lg mb-4">
-                <h4 className="font-medium text-blue-900 mb-2">Hreflang Configuration</h4>
-                <p className="text-sm text-blue-800 mb-2">
-                  Hreflang tags help search engines understand which language and region your content targets.
-                  Use the "Active" toggle on each language to control whether it's rendered on your site.
-                </p>
-                <div className="text-sm text-blue-700">
-                  <p className="font-medium mb-1">Available variables in URL patterns:</p>
-                  <ul className="list-disc list-inside space-y-1">
-                    <li><code>{'{{base_url}}'}</code> - Your canonical base URL</li>
-                    <li><code>{'{{absolute_path}}'}</code> - Full current path including store prefix</li>
-                    <li><code>{'{{relative_path}}'}</code> - Clean content path without store prefix (recommended for custom domains)</li>
-                    <li><code>{'{{language_code}}'}</code> - The language code (e.g., 'en', 'de')</li>
-                  </ul>
-                  <p className="text-xs mt-2 bg-blue-100 p-2 rounded">
-                    💡 <strong>Tip:</strong> Use <code>{'{{base_url}}/{{language_code}}{{relative_path}}'}</code> for URLs that work with custom domains
-                  </p>
-                </div>
-              </div>
-
               {!hasActiveLanguages && (
                 <div className="bg-yellow-50 border border-yellow-200 p-4 rounded-lg mb-4">
                   <div className="flex items-start gap-2">
@@ -302,6 +282,26 @@ export default function SeoHreflang() {
               ) : (
                 <p className="text-gray-600">No hreflang settings configured yet. Click "Add Language" to get started.</p>
               )}
+
+              <div className="bg-blue-50 p-4 rounded-lg mt-6">
+                <h4 className="font-medium text-blue-900 mb-2">Hreflang Configuration</h4>
+                <p className="text-sm text-blue-800 mb-2">
+                  Hreflang tags help search engines understand which language and region your content targets.
+                  Use the "Active" toggle on each language to control whether it's rendered on your site.
+                </p>
+                <div className="text-sm text-blue-700">
+                  <p className="font-medium mb-1">Available variables in URL patterns:</p>
+                  <ul className="list-disc list-inside space-y-1">
+                    <li><code>{'{{base_url}}'}</code> - Your canonical base URL</li>
+                    <li><code>{'{{absolute_path}}'}</code> - Full current path including store prefix</li>
+                    <li><code>{'{{relative_path}}'}</code> - Clean content path without store prefix (recommended for custom domains)</li>
+                    <li><code>{'{{language_code}}'}</code> - The language code (e.g., 'en', 'de')</li>
+                  </ul>
+                  <p className="text-xs mt-2 bg-blue-100 p-2 rounded">
+                    💡 <strong>Tip:</strong> Use <code>{'{{base_url}}/{{language_code}}{{relative_path}}'}</code> for URLs that work with custom domains
+                  </p>
+                </div>
+              </div>
             </>
           )}
         </CardContent>
