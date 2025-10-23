@@ -249,11 +249,17 @@ export default function ProductDetail() {
       return [];
     }
 
+    // Extract key attributes for logging
+    const manufacturerAttr = product.attributes?.find(attr => attr.code === 'manufacturer');
+    const brandAttr = product.attributes?.find(attr => attr.code === 'brand');
+
     console.log('🏷️ evaluateProductLabels: Starting evaluation', {
       productSku: product.sku,
       productName: product.name,
-      productBrand: product.brand,
-      productAttributes: product.attributes,
+      productAttributesCount: product.attributes?.length || 0,
+      manufacturer: manufacturerAttr?.value || manufacturerAttr,
+      brand: brandAttr?.value || brandAttr,
+      allAttributeCodes: product.attributes?.map(a => a.code || a.attribute_code),
       labelsCount: labels.length
     });
 
@@ -294,11 +300,25 @@ export default function ProductDetail() {
 
           // If not found directly, check in product.attributes
           if (productValue === undefined && product.attributes) {
-            productValue = product.attributes[condition.attribute_code];
+            // Handle both array and object structures for attributes
+            if (Array.isArray(product.attributes)) {
+              // Attributes stored as array - find by code or attribute_code
+              const attrObj = product.attributes.find(
+                attr => attr.code === condition.attribute_code || attr.attribute_code === condition.attribute_code
+              );
 
-            // Handle attributes that are objects with value/label structure
-            if (productValue && typeof productValue === 'object' && productValue.value) {
-              productValue = productValue.value;
+              if (attrObj) {
+                // Handle different attribute structures
+                productValue = attrObj.value || attrObj.label || attrObj;
+              }
+            } else {
+              // Attributes stored as object - direct property access
+              productValue = product.attributes[condition.attribute_code];
+
+              // Handle attributes that are objects with value/label structure
+              if (productValue && typeof productValue === 'object' && productValue.value) {
+                productValue = productValue.value;
+              }
             }
           }
 
@@ -306,6 +326,7 @@ export default function ProductDetail() {
             attributeCode: condition.attribute_code,
             expectedValue: condition.attribute_value,
             actualValue: productValue,
+            productValueType: typeof productValue,
             matches: productValue === condition.attribute_value
           });
 
