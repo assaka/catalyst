@@ -4,6 +4,7 @@ import { Tax } from "@/api/entities";
 import { useStoreSelection } from "@/contexts/StoreSelectionContext.jsx";
 import NoStoreSelected from "@/components/admin/NoStoreSelected";
 import { clearTaxesCache } from "@/utils/cacheUtils";
+import { toast } from "sonner";
 import {
   Receipt,
   Plus,
@@ -53,7 +54,7 @@ const retryApiCall = async (apiCall, maxRetries = 5, baseDelay = 3000) => {
 };
 
 export default function TaxPage() {
-  const { selectedStore, getSelectedStoreId, refreshStores } = useStoreSelection();
+  const { selectedStore, getSelectedStoreId, selectStore } = useStoreSelection();
   const { showError, showConfirm, AlertComponent } = useAlertTypes();
   const [taxes, setTaxes] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -118,8 +119,9 @@ export default function TaxPage() {
       const { Store } = await import('@/api/entities');
       await Store.update(selectedStore.id, { settings: newSettings });
 
-      // Refresh the store data in the context to get the latest settings
-      await refreshStores();
+      // Update local context state with the new settings
+      const updatedStore = { ...selectedStore, settings: newSettings };
+      selectStore(updatedStore);
 
       // Clear storefront cache to ensure tax setting changes are reflected immediately
       if (typeof window !== 'undefined') {
@@ -134,6 +136,9 @@ export default function TaxPage() {
           window.clearCache();
         }
       }
+
+      // Show success notification
+      toast.success('Tax settings saved successfully');
 
     } catch (error) {
       showError(`Failed to update tax settings: ${error.message}`);
