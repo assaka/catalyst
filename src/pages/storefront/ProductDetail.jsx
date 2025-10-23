@@ -150,6 +150,12 @@ export default function ProductDetail() {
 
   // Re-evaluate labels when productLabels are loaded
   useEffect(() => {
+    console.log('🏷️ productLabels changed:', {
+      hasProduct: !!product,
+      productLabelsCount: productLabels?.length,
+      productLabels: productLabels
+    });
+
     if (product && productLabels && productLabels.length > 0) {
       const applicableLabels = evaluateProductLabels(product, productLabels);
 
@@ -239,13 +245,29 @@ export default function ProductDetail() {
    */
   const evaluateProductLabels = (product, labels) => {
     if (!labels || !Array.isArray(labels) || !product) {
+      console.log('🏷️ evaluateProductLabels: Missing data', { hasProduct: !!product, labelsCount: labels?.length });
       return [];
     }
+
+    console.log('🏷️ evaluateProductLabels: Starting evaluation', {
+      productSku: product.sku,
+      productName: product.name,
+      productBrand: product.brand,
+      productAttributes: product.attributes,
+      labelsCount: labels.length
+    });
 
     const applicableLabels = [];
 
     for (const label of labels) {
+      console.log('🏷️ Evaluating label:', {
+        labelText: label.translations?.en?.text || label.text,
+        isActive: label.is_active,
+        conditions: label.conditions
+      });
+
       if (!label.is_active) {
+        console.log('🏷️ Label skipped: not active');
         continue;
       }
 
@@ -264,6 +286,8 @@ export default function ProductDetail() {
 
       // Check attribute conditions
       if (conditions?.attribute_conditions?.length > 0) {
+        console.log('🏷️ Checking attribute conditions:', conditions.attribute_conditions);
+
         for (const condition of conditions.attribute_conditions) {
           // Check both direct product properties and nested attributes
           let productValue = product[condition.attribute_code];
@@ -278,6 +302,12 @@ export default function ProductDetail() {
             }
           }
 
+          console.log('🏷️ Attribute condition check:', {
+            attributeCode: condition.attribute_code,
+            expectedValue: condition.attribute_value,
+            actualValue: productValue,
+            matches: productValue === condition.attribute_value
+          });
 
           if (productValue !== condition.attribute_value) {
             shouldApply = false;
@@ -306,9 +336,17 @@ export default function ProductDetail() {
       }
 
       if (shouldApply) {
+        console.log('✅ Label APPLIES:', label.translations?.en?.text || label.text);
         applicableLabels.push(label);
+      } else {
+        console.log('❌ Label DOES NOT apply:', label.translations?.en?.text || label.text);
       }
     }
+
+    console.log('🏷️ Final applicable labels:', {
+      count: applicableLabels.length,
+      labels: applicableLabels.map(l => l.translations?.en?.text || l.text)
+    });
 
     // Sort by priority if specified
     applicableLabels.sort((a, b) => (b.priority || 0) - (a.priority || 0));
