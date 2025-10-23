@@ -3,14 +3,18 @@ import { Product } from '@/api/entities';
 import { Category } from '@/api/entities';
 import { CmsPage } from '@/api/entities';
 import { SeoSetting } from '@/api/entities';
+import { useStore } from '@/components/storefront/StoreProvider';
 
 export default function XmlSitemap() {
+    const { store } = useStore();
     const [loading, setLoading] = useState(true);
     const [sitemapXml, setSitemapXml] = useState('');
 
     useEffect(() => {
-        generateSitemap();
-    }, []);
+        if (store?.id) {
+            generateSitemap();
+        }
+    }, [store?.id]);
 
     // Helper function to safely format dates
     const formatDate = (dateValue) => {
@@ -27,12 +31,14 @@ export default function XmlSitemap() {
     };
 
     const generateSitemap = async () => {
+        if (!store?.id) return;
+
         try {
             const [products, categories, pages, seoSettings] = await Promise.all([
                 Product.filter({ status: 'active' }),
                 Category.filter({ is_active: true }),
                 CmsPage.filter({ is_active: true }),
-                SeoSetting.list()
+                SeoSetting.filter({ store_id: store.id })
             ]);
 
             const settings = seoSettings?.[0] || {
@@ -101,7 +107,7 @@ export default function XmlSitemap() {
         }
     };
 
-    if (loading) {
+    if (!store?.id || loading) {
         return <div>Generating sitemap...</div>;
     }
 
