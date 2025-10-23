@@ -288,9 +288,7 @@ export default function RecommendedProducts({ product: currentProduct, storeId, 
                         product={product}
                         settings={settings || {}}
                         store={store}
-                        taxes={taxes}
-                        selectedCountry={selectedCountry}
-                        productLabels={productLabels}
+                        productLabels={[]}
                         viewMode="grid"
                         slotConfig={{}}
                     />

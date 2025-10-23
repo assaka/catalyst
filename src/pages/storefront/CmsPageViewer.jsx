@@ -5,7 +5,10 @@ import RecommendedProducts from '@/components/storefront/RecommendedProducts';
 import SeoHeadManager from '@/components/storefront/SeoHeadManager';
 // Redirect handling moved to global RedirectHandler component
 import { useNotFound } from '@/utils/notFoundUtils';
-import { getPageTitle, getPageContent } from '@/utils/translationUtils';
+import { getPageTitle, getPageContent, getProductName, getCurrentLanguage } from '@/utils/translationUtils';
+import { Input } from '@/components/ui/input';
+import { Search, X } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 
 export default function CmsPageViewer() {
     const { pageSlug } = useParams();
@@ -13,6 +16,8 @@ export default function CmsPageViewer() {
     const { showNotFound } = useNotFound();
     const [page, setPage] = useState(null);
     const [relatedProducts, setRelatedProducts] = useState([]);
+    const [filteredProducts, setFilteredProducts] = useState([]);
+    const [searchQuery, setSearchQuery] = useState('');
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
@@ -37,6 +42,7 @@ export default function CmsPageViewer() {
                                 id: { $in: currentPage.related_product_ids }
                             });
                             setRelatedProducts(products || []);
+                            setFilteredProducts(products || []);
                         }
                     } else {
                         // Global redirect handler already checked - just show 404
@@ -52,6 +58,33 @@ export default function CmsPageViewer() {
             fetchPage();
         }
     }, [slug]);
+
+    // Filter related products based on search query
+    useEffect(() => {
+        if (!searchQuery.trim()) {
+            setFilteredProducts(relatedProducts);
+            return;
+        }
+
+        const searchLower = searchQuery.toLowerCase();
+        const currentLang = getCurrentLanguage();
+
+        const filtered = relatedProducts.filter(product => {
+            const translatedName = getProductName(product, currentLang) || product.name || '';
+            const sku = product.sku || '';
+
+            return (
+                translatedName.toLowerCase().includes(searchLower) ||
+                sku.toLowerCase().includes(searchLower)
+            );
+        });
+
+        setFilteredProducts(filtered);
+    }, [searchQuery, relatedProducts]);
+
+    const clearSearch = () => {
+        setSearchQuery('');
+    };
 
     if (loading) {
         return <div className="text-center p-8">Loading...</div>;
@@ -76,8 +109,40 @@ export default function CmsPageViewer() {
 
             {relatedProducts.length > 0 && (
                 <div className="mt-16">
-                    <h2 className="text-2xl font-bold text-center mb-8">Related Products</h2>
-                    <RecommendedProducts products={relatedProducts} />
+                    <h2 className="text-2xl font-bold text-center mb-6">Related Products</h2>
+
+                    {/* Search bar for related products */}
+                    <div className="max-w-md mx-auto mb-8">
+                        <div className="relative">
+                            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+                            <Input
+                                type="text"
+                                placeholder="Search related products..."
+                                value={searchQuery}
+                                onChange={(e) => setSearchQuery(e.target.value)}
+                                className="pl-10 pr-12 py-2 w-full"
+                            />
+                            {searchQuery && (
+                                <Button
+                                    type="button"
+                                    variant="ghost"
+                                    size="sm"
+                                    className="absolute right-1 top-1/2 transform -translate-y-1/2 h-6 w-6 p-0"
+                                    onClick={clearSearch}
+                                >
+                                    <X className="w-4 h-4" />
+                                </Button>
+                            )}
+                        </div>
+                    </div>
+
+                    {filteredProducts.length > 0 ? (
+                        <RecommendedProducts products={filteredProducts} />
+                    ) : (
+                        <div className="text-center text-gray-500 py-8">
+                            No products found matching "{searchQuery}"
+                        </div>
+                    )}
                 </div>
             )}
         </div>

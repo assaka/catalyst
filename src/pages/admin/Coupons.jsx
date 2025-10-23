@@ -100,23 +100,14 @@ export default function CouponsPage() {
       return;
     }
 
-    console.log('🐛 Coupons.jsx handleSubmit - Received coupon data:', {
-      code: couponData.code,
-      name: couponData.name,
-      fullData: couponData
-    });
-
     try {
       if (editingCoupon) {
         // Update existing coupon
-        console.log('🐛 Updating coupon ID:', editingCoupon.id, 'with code:', couponData.code);
         await Coupon.update(editingCoupon.id, { ...couponData, store_id: storeId });
         setFlashMessage({ type: 'success', message: 'Coupon updated successfully!' });
       } else {
         // Create new coupon
-        console.log('🐛 Creating new coupon with code:', couponData.code);
-        const result = await Coupon.create({ ...couponData, store_id: storeId });
-        console.log('🐛 Coupon created successfully:', result);
+        await Coupon.create({ ...couponData, store_id: storeId });
         setFlashMessage({ type: 'success', message: `Coupon "${couponData.code}" created successfully!` });
       }
 
