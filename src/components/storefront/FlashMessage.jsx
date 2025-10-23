@@ -16,12 +16,14 @@ export default function FlashMessage({ message, onClose }) {
 
   const icons = {
     success: CheckCircle,
-    error: AlertCircle
+    error: AlertCircle,
+    warning: AlertCircle
   };
 
   const colors = {
     success: "bg-green-100 border-green-500 text-green-800",
-    error: "bg-red-100 border-red-500 text-red-800"
+    error: "bg-red-100 border-red-500 text-red-800",
+    warning: "bg-yellow-100 border-yellow-500 text-yellow-800"
   };
 
   const Icon = icons[message.type] || AlertCircle;

@@ -118,11 +118,6 @@ export default function DeliverySettings() { // Renamed the function component f
         setFlashMessage({ type: 'success', message: 'Delivery settings saved successfully!' });
         setSaveSuccess(true);
         setTimeout(() => setSaveSuccess(false), 2000);
-
-        // Reload to confirm persistence
-        setTimeout(() => {
-          loadDeliverySettings();
-        }, 1000);
       } else {
         console.error('⚠️ Unexpected response format:', result);
         setFlashMessage({ type: 'warning', message: 'Settings may not have saved correctly. Please refresh.' });
