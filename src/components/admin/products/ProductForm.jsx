@@ -734,6 +734,7 @@ export default function ProductForm({ product, categories, stores, taxes, attrib
         configurable_attributes: Array.isArray(formData.configurable_attributes) ? formData.configurable_attributes : [], // Configurable attributes
         attributes: formData.attributes || {},
         translations: formData.translations || {},
+        slug: formData.seo.url_key || "", // IMPORTANT: Update the slug field with url_key
         seo: {
           meta_title: formData.seo.meta_title || "",
           meta_description: formData.seo.meta_description || "",
