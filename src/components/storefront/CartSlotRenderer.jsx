@@ -471,8 +471,8 @@ export function CartSlotRenderer({
                   <p className="text-sm font-medium text-green-800">{appliedCoupon.name}</p>
                   <p className="text-xs text-green-600">
                     {appliedCoupon.discount_type === 'fixed'
-                      ? `${formatPrice(appliedCoupon.discount_value)} off`
-                      : `${formatPrice(appliedCoupon.discount_value)}% off`
+                      ? `${formatPrice(appliedCoupon.discount_value)} ${t('off', settings)}`
+                      : `${appliedCoupon.discount_value}% (${formatPrice(discount)} ${t('off', settings)})`
                     }
                   </p>
                 </div>
