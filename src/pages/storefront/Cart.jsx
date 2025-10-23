@@ -920,9 +920,19 @@ export default function Cart() {
                 const qualifies = itemQualifiesForCoupon(item);
 
                 if (qualifies) {
-                    const price = safeNumber(item.product?.price || 0);
+                    // Use same price logic as cart display: item.price first, then fallback to product price
+                    const price = safeNumber(item.price) || safeNumber(item.product?.sale_price || item.product?.price || 0);
                     const quantity = safeNumber(item.quantity || 1);
                     let itemTotal = price * quantity;
+
+                    console.log(`💰 Price details for ${item.product?.name}:`, {
+                        'item.price': item.price,
+                        'item.product.price': item.product?.price,
+                        'item.product.sale_price': item.product?.sale_price,
+                        'Using price': price,
+                        'Quantity': quantity,
+                        'Item total': itemTotal
+                    });
 
                     // Add custom options for this item
                     if (item.selected_options && Array.isArray(item.selected_options)) {
