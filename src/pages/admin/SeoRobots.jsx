@@ -439,12 +439,6 @@ Sitemap: https://example.com/sitemap.xml`);
           </div>
           
           <div className="flex flex-wrap gap-2">
-            <SaveButton
-              onClick={handleSave}
-              loading={saving}
-              success={saveSuccess}
-              defaultText="Save Changes"
-            />
             <Button
               variant="outline"
               onClick={importCustomRules}
@@ -473,6 +467,14 @@ Sitemap: https://example.com/sitemap.xml`);
           </div>
         </CardContent>
       </Card>
+      <div className="flex justify-end mt-4">
+        <SaveButton
+            onClick={handleSave}
+            loading={saving}
+            success={saveSuccess}
+            defaultText="Save Changes"
+        />
+      </div>
 
       <Card>
         <CardHeader>
@@ -492,32 +494,48 @@ Sitemap: https://example.com/sitemap.xml`);
             />
           </div>
 
-          <div className="flex items-center justify-between space-x-2">
-            <Label htmlFor="block-images" className="cursor-pointer">
-              Prevent image indexing
-            </Label>
-            <Switch
-              id="block-images"
-              checked={blockImages}
-              onCheckedChange={(checked) => {
-                setBlockImages(checked);
-              }}
-              disabled={blockAllCrawlers}
-            />
+          <div className="space-y-1">
+            <div className="flex items-center justify-between space-x-2">
+              <Label htmlFor="block-images" className="cursor-pointer">
+                Prevent image indexing
+              </Label>
+              <Switch
+                id="block-images"
+                checked={blockImages}
+                onCheckedChange={(checked) => {
+                  setBlockImages(checked);
+                }}
+                disabled={blockAllCrawlers}
+              />
+            </div>
+            {blockImages && (
+              <p className="text-xs text-amber-600 flex items-center gap-1">
+                <AlertCircle className="h-3 w-3" />
+                Warning: Blocking images may affect how Google renders and indexes your pages
+              </p>
+            )}
           </div>
 
-          <div className="flex items-center justify-between space-x-2">
-            <Label htmlFor="block-js-css" className="cursor-pointer">
-              Block JS/CSS crawling
-            </Label>
-            <Switch
-              id="block-js-css"
-              checked={blockJsCss}
-              onCheckedChange={(checked) => {
-                setBlockJsCss(checked);
-              }}
-              disabled={blockAllCrawlers}
-            />
+          <div className="space-y-1">
+            <div className="flex items-center justify-between space-x-2">
+              <Label htmlFor="block-js-css" className="cursor-pointer">
+                Block JS/CSS crawling
+              </Label>
+              <Switch
+                id="block-js-css"
+                checked={blockJsCss}
+                onCheckedChange={(checked) => {
+                  setBlockJsCss(checked);
+                }}
+                disabled={blockAllCrawlers}
+              />
+            </div>
+            {blockJsCss && (
+              <p className="text-xs text-red-600 flex items-center gap-1">
+                <AlertCircle className="h-3 w-3" />
+                Warning: Blocking JS/CSS can seriously harm SEO! Google needs these to render your pages correctly.
+              </p>
+            )}
           </div>
 
           <div className="space-y-2">
@@ -536,16 +554,16 @@ Sitemap: https://example.com/sitemap.xml`);
               Delay between requests for crawlers (0 = no delay)
             </p>
           </div>
-
-          <Button
-            onClick={applyQuickSettings}
-            className="w-full"
-            variant="secondary"
-          >
-            Apply Quick Settings
-          </Button>
         </CardContent>
       </Card>
+      <div className="flex justify-end mt-4">
+        <SaveButton
+            onClick={applyQuickSettings}
+            loading={saving}
+            success={saveSuccess}
+            defaultText="Save Quick Settings"
+        />
+      </div>
 
       <Collapsible open={isHelpOpen} onOpenChange={setIsHelpOpen}>
         <Card className="border-blue-200 bg-blue-50/50">
