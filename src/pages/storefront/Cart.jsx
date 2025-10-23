@@ -839,7 +839,6 @@ export default function Cart() {
     }, [cartItems]);
 
     const { subtotal, discount, tax, total, customOptionsTotal, taxDetails } = useMemo(() => {
-        console.log('🔍 Cart tax calculation - selectedCountry:', selectedCountry);
         const calculatedSubtotal = calculateSubtotal();
 
         // Calculate custom options total separately
@@ -906,13 +905,6 @@ export default function Cart() {
                 calculatedTotalWithOptions,
                 disc
             );
-
-            console.log('🔍 Tax calculation result:', {
-                selectedCountry,
-                shippingAddress,
-                taxResult: result,
-                taxRules: taxRules.length
-            });
 
             return {
                 taxAmount: result.taxAmount || 0,

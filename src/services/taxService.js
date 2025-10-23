@@ -140,11 +140,7 @@ class TaxService {
    * @returns {number} - Tax rate percentage
    */
   getTaxRateForCountry(taxRule, country = 'US') {
-    console.log('🔍 getTaxRateForCountry - looking for country:', country);
-    console.log('🔍 Available country rates:', taxRule.country_rates);
-
     if (!taxRule.country_rates || !Array.isArray(taxRule.country_rates)) {
-      console.log('❌ No country_rates found');
       return 0;
     }
 
@@ -154,11 +150,8 @@ class TaxService {
     );
 
     if (countryRate) {
-      console.log('✅ Found country rate:', countryRate);
       return parseFloat(countryRate.rate) || 0;
     }
-
-    console.log('⚠️ Country not found, falling back to US');
 
     // If country not found, try to find a default rate (US)
     const defaultRate = taxRule.country_rates.find(rate =>

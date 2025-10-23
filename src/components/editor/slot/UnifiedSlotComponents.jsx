@@ -1344,6 +1344,7 @@ const CartOrderSummarySlot = createSlotComponent({
       tax = 0,
       total = 0,
       customOptionsTotal = 0,
+      taxDetails = null,
       handleCheckout = () => {},
       appliedCoupon = null
     } = cartContext || {};
@@ -1365,7 +1366,31 @@ const CartOrderSummarySlot = createSlotComponent({
       const checkoutBtn = containerRef.current.querySelector('[data-action="checkout"]');
 
       if (subtotalEl) subtotalEl.textContent = formatPriceUtil(subtotal);
-      if (taxEl) taxEl.textContent = formatPriceUtil(tax);
+
+      // Update tax with country and percentage if available
+      if (taxEl) {
+        let taxText = formatPriceUtil(tax);
+        if (taxDetails && taxDetails.country && taxDetails.effectiveRate > 0) {
+          // Find the parent element to insert country/rate info
+          const taxParent = taxEl.parentElement;
+          if (taxParent) {
+            // Look for existing tax label span or create structure
+            let taxLabelSpan = taxParent.querySelector('span:first-child');
+            if (taxLabelSpan && taxLabelSpan !== taxEl) {
+              // Check if we already added the details span
+              let detailsSpan = taxLabelSpan.querySelector('.tax-details');
+              if (!detailsSpan) {
+                detailsSpan = document.createElement('span');
+                detailsSpan.className = 'tax-details text-gray-500 text-sm ml-1';
+                taxLabelSpan.appendChild(detailsSpan);
+              }
+              detailsSpan.textContent = `(${taxDetails.country} ${taxDetails.effectiveRate}%)`;
+            }
+          }
+        }
+        taxEl.textContent = taxText;
+      }
+
       if (totalEl) totalEl.textContent = formatPriceUtil(total);
 
       // Show/hide custom options
@@ -1395,7 +1420,7 @@ const CartOrderSummarySlot = createSlotComponent({
           checkoutBtn.removeEventListener('click', handleCheckout);
         }
       };
-    }, [subtotal, discount, tax, total, customOptionsTotal, handleCheckout, appliedCoupon]);
+    }, [subtotal, discount, tax, total, customOptionsTotal, taxDetails, handleCheckout, appliedCoupon]);
 
     return (
       <div ref={containerRef} className={className} style={styles}
