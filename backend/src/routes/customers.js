@@ -52,8 +52,8 @@ router.get('/', storeOwnerOnly, async (req, res) => {
         });
 
         if (addresses.length > 0) {
-          const shippingAddr = addresses.find(a => a.type === 'shipping');
-          const billingAddr = addresses.find(a => a.type === 'billing');
+          const shippingAddr = addresses.find(a => a.type === 'shipping' || a.type === 'both');
+          const billingAddr = addresses.find(a => a.type === 'billing' || a.type === 'both');
 
           customerData.address_data = {
             shipping_address: shippingAddr ? {
