@@ -5,10 +5,11 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { RefreshCw, Plus, Trash2, Download, Upload, HelpCircle, AlertCircle, CheckCircle, Info } from "lucide-react";
+import { RefreshCw, Plus, Trash2, Download, Upload, HelpCircle, AlertCircle, CheckCircle, Info, ChevronDown } from "lucide-react";
 import { useStoreSelection } from "@/contexts/StoreSelectionContext.jsx";
 import adminApiClient from "@/api/admin-client";
 import { toast } from "sonner";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 
 export default function SeoRedirects() {
   const { getSelectedStoreId } = useStoreSelection();
@@ -17,6 +18,7 @@ export default function SeoRedirects() {
   const [fromUrl, setFromUrl] = useState('');
   const [toUrl, setToUrl] = useState('');
   const [redirectType, setRedirectType] = useState('301');
+  const [isHelpOpen, setIsHelpOpen] = useState(false);
 
   // Check if To URL is an absolute URL
   const isAbsoluteUrl = toUrl.startsWith('http://') || toUrl.startsWith('https://');
@@ -257,14 +259,25 @@ export default function SeoRedirects() {
         </CardContent>
       </Card>
 
-      <Card className="border-blue-200 bg-blue-50/50">
-        <CardHeader>
-          <div className="flex items-center gap-2">
-            <HelpCircle className="h-5 w-5 text-blue-600" />
-            <CardTitle className="text-blue-900">Help & Best Practices</CardTitle>
-          </div>
-        </CardHeader>
-        <CardContent className="space-y-4">
+      <Collapsible open={isHelpOpen} onOpenChange={setIsHelpOpen}>
+        <Card className="border-blue-200 bg-blue-50/50">
+          <CardHeader>
+            <CollapsibleTrigger className="w-full">
+              <div className="flex items-center justify-between w-full">
+                <div className="flex items-center gap-2">
+                  <HelpCircle className="h-5 w-5 text-blue-600" />
+                  <CardTitle className="text-blue-900">Help & Best Practices</CardTitle>
+                </div>
+                <ChevronDown
+                  className={`h-5 w-5 text-blue-600 transition-transform duration-200 ${
+                    isHelpOpen ? 'transform rotate-180' : ''
+                  }`}
+                />
+              </div>
+            </CollapsibleTrigger>
+          </CardHeader>
+          <CollapsibleContent>
+            <CardContent className="space-y-4">
           <div className="space-y-3">
             <div className="flex gap-3">
               <Info className="h-5 w-5 text-blue-600 flex-shrink-0 mt-0.5" />
@@ -371,7 +384,9 @@ export default function SeoRedirects() {
             </div>
           </div>
         </CardContent>
-      </Card>
+          </CollapsibleContent>
+        </Card>
+      </Collapsible>
     </div>
   );
 }
