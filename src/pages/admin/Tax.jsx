@@ -4,7 +4,7 @@ import { Tax } from "@/api/entities";
 import { useStoreSelection } from "@/contexts/StoreSelectionContext.jsx";
 import NoStoreSelected from "@/components/admin/NoStoreSelected";
 import { clearTaxesCache } from "@/utils/cacheUtils";
-import { toast } from "sonner";
+import FlashMessage from "@/components/storefront/FlashMessage";
 import {
   Receipt,
   Plus,
@@ -54,18 +54,23 @@ const retryApiCall = async (apiCall, maxRetries = 5, baseDelay = 3000) => {
 };
 
 export default function TaxPage() {
-  const { selectedStore, getSelectedStoreId, selectStore } = useStoreSelection();
+  const { selectedStore, getSelectedStoreId } = useStoreSelection();
   const { showError, showConfirm, AlertComponent } = useAlertTypes();
   const [taxes, setTaxes] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedTax, setSelectedTax] = useState(null);
   const [showTaxForm, setShowTaxForm] = useState(false);
+  const [flashMessage, setFlashMessage] = useState(null);
+  // Local state for store settings to avoid reload on changes
+  const [localStoreSettings, setLocalStoreSettings] = useState(selectedStore?.settings || {});
 
   useEffect(() => {
     document.title = "Tax Rules - Admin Dashboard";
     if (selectedStore) {
       loadData();
+      // Sync local settings with context when store changes
+      setLocalStoreSettings(selectedStore.settings || {});
     }
   }, [selectedStore]);
 
@@ -109,19 +114,18 @@ export default function TaxPage() {
 
     // Create a deep copy of the settings object to avoid mutation issues
     // and ensure `settings` object exists if it's null/undefined
-    const newSettings = { ...(selectedStore.settings || {}) };
+    const newSettings = { ...localStoreSettings };
 
     // Update the specific setting
     newSettings[key] = value;
+
+    // Update local state immediately for instant UI feedback
+    setLocalStoreSettings(newSettings);
 
     try {
       // Update the entire settings object in the store using admin API
       const { Store } = await import('@/api/entities');
       await Store.update(selectedStore.id, { settings: newSettings });
-
-      // Update local context state with the new settings
-      const updatedStore = { ...selectedStore, settings: newSettings };
-      selectStore(updatedStore);
 
       // Clear storefront cache to ensure tax setting changes are reflected immediately
       if (typeof window !== 'undefined') {
@@ -138,10 +142,12 @@ export default function TaxPage() {
       }
 
       // Show success notification
-      toast.success('Tax settings saved successfully');
+      setFlashMessage({ type: 'success', message: 'Tax settings saved successfully!' });
 
     } catch (error) {
-      showError(`Failed to update tax settings: ${error.message}`);
+      // Revert local state on error
+      setLocalStoreSettings(selectedStore.settings || {});
+      setFlashMessage({ type: 'error', message: `Failed to update tax settings: ${error.message}` });
     }
   };
 
@@ -222,6 +228,7 @@ export default function TaxPage() {
 
   return (
     <div className="min-h-screen bg-gray-50">
+      <FlashMessage message={flashMessage} onClose={() => setFlashMessage(null)} />
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8">
           <div>
@@ -251,11 +258,10 @@ export default function TaxPage() {
               <div>
                 <Label htmlFor="default_tax_included_in_prices" className="font-medium">Prices Include Tax by Default</Label>
                 <p className="text-sm text-gray-500">Determines if entered product prices already include tax.</p>
-                <p className="text-xs text-blue-600 mt-1">Current value: {String(selectedStore?.settings?.default_tax_included_in_prices || false)}</p>
               </div>
               <Switch
                 id="default_tax_included_in_prices"
-                checked={selectedStore?.settings?.default_tax_included_in_prices || false}
+                checked={localStoreSettings.default_tax_included_in_prices || false}
                 onCheckedChange={(checked) => {
                   handleSettingsChange('default_tax_included_in_prices', checked);
                 }}
@@ -266,11 +272,10 @@ export default function TaxPage() {
               <div>
                 <Label htmlFor="display_tax_inclusive_prices" className="font-medium">Display Tax-Inclusive Prices</Label>
                 <p className="text-sm text-gray-500">Shows prices with tax included on your storefront.</p>
-                <p className="text-xs text-blue-600 mt-1">Current value: {String(selectedStore?.settings?.display_tax_inclusive_prices || false)}</p>
               </div>
               <Switch
                 id="display_tax_inclusive_prices"
-                checked={selectedStore?.settings?.display_tax_inclusive_prices || false}
+                checked={localStoreSettings.display_tax_inclusive_prices || false}
                 onCheckedChange={(checked) => {
                   handleSettingsChange('display_tax_inclusive_prices', checked);
                 }}
@@ -284,7 +289,7 @@ export default function TaxPage() {
               </div>
               <Switch
                 id="calculate_tax_after_discount"
-                checked={selectedStore?.settings?.calculate_tax_after_discount !== false} // default to true if undefined/null
+                checked={localStoreSettings.calculate_tax_after_discount !== false} // default to true if undefined/null
                 onCheckedChange={(checked) => handleSettingsChange('calculate_tax_after_discount', checked)}
                 disabled={!selectedStore}
               />
