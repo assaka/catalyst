@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
+import SaveButton from '@/components/ui/save-button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
@@ -44,6 +45,8 @@ export default function CouponForm({ coupon, onSubmit, onCancel, storeId }) {
   const [attributeSets, setAttributeSets] = useState([]);
   const [attributes, setAttributes] = useState([]);
   const [errors, setErrors] = useState({});
+  const [isSaving, setIsSaving] = useState(false);
+  const [saveSuccess, setSaveSuccess] = useState(false);
 
   useEffect(() => {
     loadData();
@@ -134,7 +137,7 @@ export default function CouponForm({ coupon, onSubmit, onCancel, storeId }) {
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
 
     if (!validateForm()) {
@@ -148,12 +151,12 @@ export default function CouponForm({ coupon, onSubmit, onCancel, storeId }) {
       name: submitData.name,
       fullData: submitData
     });
-    
+
     // Convert empty strings to null for optional numeric fields
     if (submitData.min_purchase_amount === '') submitData.min_purchase_amount = null;
     if (submitData.max_discount_amount === '') submitData.max_discount_amount = null;
     if (submitData.usage_limit === '') submitData.usage_limit = null;
-    
+
     // Convert dates to ISO format or null if empty
     if (submitData.start_date) {
       const startDate = new Date(submitData.start_date);
@@ -161,7 +164,7 @@ export default function CouponForm({ coupon, onSubmit, onCancel, storeId }) {
     } else {
       submitData.start_date = null;
     }
-    
+
     if (submitData.end_date) {
       const endDate = new Date(submitData.end_date);
       submitData.end_date = isNaN(endDate.getTime()) ? null : endDate.toISOString();
@@ -173,7 +176,18 @@ export default function CouponForm({ coupon, onSubmit, onCancel, storeId }) {
       submitData.id = coupon.id;
     }
 
-    onSubmit(submitData);
+    setIsSaving(true);
+    setSaveSuccess(false);
+
+    try {
+      await onSubmit(submitData);
+      setSaveSuccess(true);
+      setTimeout(() => setSaveSuccess(false), 2000);
+    } catch (error) {
+      console.error('Error saving coupon:', error);
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   const categoryOptions = categories.map(cat => ({ value: cat.id, label: cat.name }));
@@ -510,9 +524,14 @@ export default function CouponForm({ coupon, onSubmit, onCancel, storeId }) {
         <Button type="button" variant="outline" onClick={onCancel}>
           Cancel
         </Button>
-        <Button type="submit" className="bg-blue-600 hover:bg-blue-700 text-white">
-          {coupon ? 'Update Coupon' : 'Create Coupon'}
-        </Button>
+        <SaveButton
+          type="submit"
+          loading={isSaving}
+          success={saveSuccess}
+          defaultText={coupon ? 'Update Coupon' : 'Create Coupon'}
+          loadingText={coupon ? 'Updating...' : 'Creating...'}
+          successText={coupon ? 'Updated!' : 'Created!'}
+        />
       </div>
     </form>
   );
