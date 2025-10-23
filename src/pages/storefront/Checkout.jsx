@@ -1991,7 +1991,6 @@ export default function Checkout() {
                             </AccordionTrigger>
                             <AccordionContent className="px-0 pt-2 pb-0">
                               <div className="text-sm text-green-800 space-y-1">
-                                <p className="font-medium mb-2 text-xs">Discount applies to:</p>
                                 <ul className="space-y-1">
                                   {(() => {
                                     // Determine which items qualify for the coupon

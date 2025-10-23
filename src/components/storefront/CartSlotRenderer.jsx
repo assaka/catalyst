@@ -601,7 +601,6 @@ export function CartSlotRenderer({
                           </AccordionTrigger>
                       <AccordionContent className="px-0 pt-2 pb-2">
                       <div className="text-sm text-gray-600 space-y-1">
-                        <p className="font-medium mb-2 text-xs">{t('cart.discount_applies_to', settings) || 'Discount applies to'}:</p>
                         {(() => {
                           // Determine which items qualify for the coupon
                           const hasProductFilter = appliedCoupon.applicable_products && appliedCoupon.applicable_products.length > 0;
