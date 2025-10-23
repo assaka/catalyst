@@ -558,6 +558,23 @@ app.post('/debug/migrate-seo-settings', async (req, res) => {
 
     const { SeoSettings } = require('./models');
 
+    // First, fix any NULL values in timestamp columns
+    console.log('🔧 Fixing NULL timestamp values...');
+    await sequelize.query(`
+      UPDATE seo_settings
+      SET "createdAt" = COALESCE("createdAt", created_at, NOW()),
+          "updatedAt" = COALESCE("updatedAt", updated_at, NOW())
+      WHERE "createdAt" IS NULL OR "updatedAt" IS NULL
+    `);
+
+    await sequelize.query(`
+      UPDATE seo_settings
+      SET created_at = COALESCE(created_at, "createdAt", NOW()),
+          updated_at = COALESCE(updated_at, "updatedAt", NOW())
+      WHERE created_at IS NULL OR updated_at IS NULL
+    `);
+    console.log('✅ Timestamp values fixed');
+
     // Get current table columns before sync
     const [tableColumns] = await sequelize.query(`
       SELECT column_name
@@ -574,7 +591,7 @@ app.post('/debug/migrate-seo-settings', async (req, res) => {
     // Find columns to remove (in table but not in model)
     const columnsToRemove = tableColumns
       .map(c => c.column_name)
-      .filter(col => !modelColumns.includes(col) && !['createdAt', 'updatedAt'].includes(col));
+      .filter(col => !modelColumns.includes(col) && !['createdAt', 'updatedAt', 'created_at', 'updated_at'].includes(col));
 
     if (columnsToRemove.length > 0) {
       console.log('🗑️  Removing old columns:', columnsToRemove);
