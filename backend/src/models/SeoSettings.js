@@ -16,23 +16,15 @@ const SeoSettings = sequelize.define('SeoSettings', {
       key: 'id'
     }
   },
-  // Basic meta settings
-  default_meta_title: {
-    type: DataTypes.STRING,
-    allowNull: true
-  },
-  default_meta_description: {
-    type: DataTypes.TEXT,
-    allowNull: true
-  },
-  default_meta_keywords: {
-    type: DataTypes.TEXT,
-    allowNull: true
-  },
-  default_meta_robots: {
-    type: DataTypes.STRING,
-    allowNull: true,
-    defaultValue: 'index, follow'
+  // Default meta settings (consolidated)
+  default_meta_settings: {
+    type: DataTypes.JSON,
+    defaultValue: {
+      meta_title: '',
+      meta_description: '',
+      meta_keywords: '',
+      meta_robots: 'index, follow'
+    }
   },
   canonical_base_url: {
     type: DataTypes.STRING,

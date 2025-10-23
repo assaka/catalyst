@@ -111,10 +111,11 @@ export default function SeoHeadManager({ pageType, pageData, pageTitle, pageDesc
             return result.trim();
         };
 
-        // Get default SEO settings values
-        const seoDefaultTitle = seoSettings?.default_meta_title || '';
-        const seoDefaultDescription = seoSettings?.default_meta_description || '';
-        const seoDefaultKeywords = seoSettings?.default_meta_keywords || '';
+        // Get default SEO settings values from consolidated JSON
+        const defaultMetaSettings = seoSettings?.default_meta_settings || {};
+        const seoDefaultTitle = defaultMetaSettings.meta_title || '';
+        const seoDefaultDescription = defaultMetaSettings.meta_description || '';
+        const seoDefaultKeywords = defaultMetaSettings.meta_keywords || '';
 
         // Apply templates to get processed defaults
         const processedDefaultTitle = applyTemplate(seoDefaultTitle, pageData);
@@ -266,8 +267,8 @@ export default function SeoHeadManager({ pageType, pageData, pageTitle, pageDesc
                 }
             }
             
-            
-            robotsTag = shouldDisallow ? 'noindex, nofollow' : (seoSettings?.default_meta_robots || 'index, follow');
+
+            robotsTag = shouldDisallow ? 'noindex, nofollow' : (defaultMetaSettings.meta_robots || 'index, follow');
         }
 
         const ogImage = imageUrl ||
