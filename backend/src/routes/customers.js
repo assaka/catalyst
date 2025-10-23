@@ -45,8 +45,8 @@ router.get('/', storeOwnerOnly, async (req, res) => {
     const enhancedCustomers = await Promise.all(customers.rows.map(async (customer) => {
       const customerData = customer.toJSON();
 
-      // For registered customers (with password), fetch from addresses table
-      if (customer.password) {
+      // For registered customers, fetch from addresses table
+      if (customer.customer_type === 'registered') {
         const addresses = await Address.findAll({
           where: { customer_id: customer.id }
         });
@@ -219,7 +219,7 @@ router.put('/:id', authMiddleware, enforceCustomerStoreBinding, async (req, res)
     await customer.update(customerData);
 
     // Handle address updates for registered customers only
-    if (address_data && customer.password) {
+    if (address_data && customer.customer_type === 'registered') {
       const { Address } = require('../models');
 
       // Update or create shipping address

@@ -96,6 +96,14 @@ const Customer = sequelize.define('Customer', {
     type: DataTypes.STRING,
     defaultValue: 'individual',
     allowNull: false
+  },
+  customer_type: {
+    type: DataTypes.STRING,
+    defaultValue: 'guest',
+    allowNull: false,
+    validate: {
+      isIn: [['guest', 'registered']]
+    }
   }
 }, {
   tableName: 'customers',
@@ -110,11 +118,19 @@ const Customer = sequelize.define('Customer', {
     beforeCreate: async (customer) => {
       if (customer.password) {
         customer.password = await bcrypt.hash(customer.password, 10);
+        // Set customer_type to registered if password is provided
+        if (!customer.customer_type) {
+          customer.customer_type = 'registered';
+        }
       }
     },
     beforeUpdate: async (customer) => {
       if (customer.changed('password')) {
         customer.password = await bcrypt.hash(customer.password, 10);
+        // Update customer_type to registered when password is added
+        if (customer.password && customer.customer_type !== 'registered') {
+          customer.customer_type = 'registered';
+        }
       }
     }
   }

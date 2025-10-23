@@ -76,7 +76,7 @@ export default function Customers() {
 
     const handleEditCustomer = (customer) => {
         setEditingCustomer(customer);
-        setIsViewOnly(!customer.password); // View-only for guest customers
+        setIsViewOnly(customer.customer_type === 'guest'); // View-only for guest customers
         setIsEditModalOpen(true);
     };
 
