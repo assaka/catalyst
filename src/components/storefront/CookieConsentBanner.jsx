@@ -47,16 +47,22 @@ export default function CookieConsentBanner() {
       autoDetect: settings?.cookie_consent?.auto_detect_country
     });
 
-    if (store?.id && settings?.cookie_consent) {
-      detectUserCountry();
-      loadUser();
-      checkExistingConsent();
-    } else {
-      console.log('🍪 Cookie consent not loaded:', {
-        storeId: store?.id,
-        settingsKeys: settings ? Object.keys(settings) : 'no settings'
-      });
-    }
+    const initializeBanner = async () => {
+      if (store?.id && settings?.cookie_consent) {
+        // IMPORTANT: Wait for country detection to complete BEFORE checking consent
+        // This fixes the race condition where checkExistingConsent was using default 'US'
+        await detectUserCountry();
+        await loadUser();
+        checkExistingConsent();
+      } else {
+        console.log('🍪 Cookie consent not loaded:', {
+          storeId: store?.id,
+          settingsKeys: settings ? Object.keys(settings) : 'no settings'
+        });
+      }
+    };
+
+    initializeBanner();
   }, [store?.id, settings?.cookie_consent]);
 
   const loadUser = async () => {
@@ -75,6 +81,7 @@ export default function CookieConsentBanner() {
 
   const detectUserCountry = async () => {
     const country = await getUserCountry();
+    console.log('🍪 Country detected:', country);
     setUserCountry(country);
   };
 
