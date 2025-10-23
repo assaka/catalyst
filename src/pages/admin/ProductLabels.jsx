@@ -217,14 +217,6 @@ const [labels, setLabels] = useState([]);
                   </div>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm font-medium">Active</span>
-                    <Switch
-                      checked={label.is_active}
-                      onCheckedChange={() => handleToggleActive(label)}
-                    />
-                  </div>
-                  
                   {(label.conditions?.attribute_conditions?.length > 0 ||
                     label.conditions?.price_conditions?.has_sale_price ||
                     label.conditions?.price_conditions?.is_new) && (
@@ -249,11 +241,15 @@ const [labels, setLabels] = useState([]);
                       </div>
                     </div>
                   )}
-                  
+
                   <div className="flex justify-between items-center pt-2">
-                    <Badge variant={label.is_active ? "default" : "secondary"}>
-                      {label.is_active ? "Active" : "Inactive"}
-                    </Badge>
+                    <div className="flex items-center space-x-2">
+                      <Switch
+                        checked={label.is_active}
+                        onCheckedChange={() => handleToggleActive(label)}
+                      />
+                      <span className="text-sm font-medium">Active</span>
+                    </div>
                     <div className="flex space-x-2">
                       <Button variant="outline" size="sm" onClick={() => handleEdit(label)}>
                         <Edit className="h-4 w-4" />
