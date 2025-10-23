@@ -53,6 +53,19 @@ export default function Customers() {
         try {
             setLoading(true);
             const customerData = await Customer.filter({ store_id: storeId }, '-last_order_date');
+
+            // Debug: Log customer data to see what we're receiving
+            console.log('📦 Customers loaded:', customerData?.length);
+            const testCustomer = customerData?.find(c => c.email === 'haha@test.nl');
+            if (testCustomer) {
+                console.log('🔍 haha@test.nl customer data:', {
+                    email: testCustomer.email,
+                    customer_type: testCustomer.customer_type,
+                    has_password_field: 'password' in testCustomer,
+                    address_data: testCustomer.address_data
+                });
+            }
+
             setCustomers(customerData || []);
         } catch (error) {
             console.error("❌ Error loading customers:", error);
