@@ -60,6 +60,13 @@ export default function CmsPageForm({ page, stores, products, onSubmit, onCancel
   });
 
   useEffect(() => {
+    console.log('🔍 CmsPageForm: Component mounted/updated', {
+      hasPage: !!page,
+      productsCount: products?.length || 0,
+      productsArray: products,
+      pageRelatedIds: page?.related_product_ids
+    });
+
     if (page) {
       // Initialize translations with existing data or empty structure
       const translations = page.translations || {
