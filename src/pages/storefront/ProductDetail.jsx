@@ -300,6 +300,13 @@ export default function ProductDetail() {
 
           // If not found directly, check in product.attributes
           if (productValue === undefined && product.attributes) {
+            console.log('🔍 Looking for attribute in product.attributes:', {
+              isArray: Array.isArray(product.attributes),
+              attributeCode: condition.attribute_code,
+              sampleAttributes: product.attributes.slice(0, 3), // Show first 3 attributes
+              totalCount: product.attributes.length
+            });
+
             // Handle both array and object structures for attributes
             if (Array.isArray(product.attributes)) {
               // Attributes stored as array - find by code or attribute_code
@@ -307,9 +314,20 @@ export default function ProductDetail() {
                 attr => attr.code === condition.attribute_code || attr.attribute_code === condition.attribute_code
               );
 
+              console.log('🔍 Found attribute object:', attrObj);
+
               if (attrObj) {
                 // Handle different attribute structures
                 productValue = attrObj.value || attrObj.label || attrObj;
+                console.log('🔍 Extracted value:', productValue);
+              } else {
+                // Try to find by searching all possible property names
+                console.log('🔍 Searching all attributes for manufacturer...');
+                product.attributes.forEach((attr, index) => {
+                  if (index < 5) { // Log first 5 for debugging
+                    console.log(`Attribute ${index}:`, attr);
+                  }
+                });
               }
             } else {
               // Attributes stored as object - direct property access
