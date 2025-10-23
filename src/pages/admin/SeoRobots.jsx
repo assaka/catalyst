@@ -138,37 +138,17 @@ Sitemap: https://example.com/sitemap.xml`);
     setGenerating(true);
     try {
       const storeId = getSelectedStoreId();
-      console.log('Store ID:', storeId);
-      console.log('Selected Store:', selectedStore);
 
       if (!storeId) {
-        alert('Please select a store first');
+        setFlashMessage({ type: 'error', message: 'Please select a store first' });
         return;
       }
 
       // Fetch ALL products, categories, and pages to filter those with non-default meta robots tags
-      console.log('Fetching categories with store_id:', storeId);
-
-      // Try fetching all categories first to see if any exist
-      try {
-        const testCategories = await Category.findAll();
-        console.log('All categories (no filter):', testCategories);
-        console.log('First category structure:', testCategories[0]);
-        console.log('First category store_id:', testCategories[0]?.store_id);
-        console.log('Looking for store_id:', storeId);
-
-        // Manual filter to see if any match
-        const manualMatch = testCategories.filter(c => c.store_id === storeId);
-        console.log('Manual filter match:', manualMatch);
-      } catch (err) {
-        console.error('Error fetching all categories:', err);
-      }
-
       let allProducts = [], allCategories = [], allPages = [];
 
       try {
         allProducts = await Product.filter({ store_id: storeId });
-        console.log('Products fetched successfully:', allProducts?.length);
       } catch (error) {
         console.error('Error fetching products:', error);
       }
@@ -178,26 +158,15 @@ Sitemap: https://example.com/sitemap.xml`);
         // Category.filter() uses admin API which may not support store_id param properly
         const allCategoriesUnfiltered = await Category.findAll();
         allCategories = allCategoriesUnfiltered.filter(c => c.store_id === storeId);
-        console.log('Categories fetched successfully:', allCategories?.length);
       } catch (error) {
         console.error('Error fetching categories:', error);
       }
 
       try {
         allPages = await CmsPage.filter({ store_id: storeId });
-        console.log('Pages fetched successfully:', allPages?.length);
       } catch (error) {
         console.error('Error fetching pages:', error);
       }
-
-      console.log('Fetched products count:', allProducts?.length);
-      console.log('Fetched categories:', allCategories);
-      console.log('Fetched categories count:', allCategories?.length);
-      console.log('Categories with meta_robots_tag:', allCategories.filter(c => c.meta_robots_tag).map(c => ({
-        name: c.name,
-        slug: c.slug,
-        meta_robots_tag: c.meta_robots_tag
-      })));
 
       // Filter items with ANY non-default meta robots tags
       // Default is "index, follow" or empty/null, so we exclude those
@@ -208,19 +177,13 @@ Sitemap: https://example.com/sitemap.xml`);
 
       const categories = allCategories.filter(c => {
         const tag = c.meta_robots_tag?.toLowerCase()?.trim() || '';
-        const shouldInclude = tag && tag !== 'index, follow';
-        if (shouldInclude) {
-          console.log('Including category:', c.name, 'with tag:', tag);
-        }
-        return shouldInclude;
+        return tag && tag !== 'index, follow';
       });
 
       const pages = allPages.filter(p => {
         const tag = p.meta_robots_tag?.toLowerCase()?.trim() || '';
         return tag && tag !== 'index, follow';
       });
-
-      console.log('Filtered categories:', categories);
 
       // Build default rules with Allow directives for content directories
       const domain = selectedStore?.custom_domain || selectedStore?.domain || 'https://example.com';
