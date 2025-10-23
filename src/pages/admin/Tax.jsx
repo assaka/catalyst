@@ -53,7 +53,7 @@ const retryApiCall = async (apiCall, maxRetries = 5, baseDelay = 3000) => {
 };
 
 export default function TaxPage() {
-  const { selectedStore, getSelectedStoreId } = useStoreSelection();
+  const { selectedStore, getSelectedStoreId, refreshStores } = useStoreSelection();
   const { showError, showConfirm, AlertComponent } = useAlertTypes();
   const [taxes, setTaxes] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -116,35 +116,25 @@ export default function TaxPage() {
     try {
       // Update the entire settings object in the store using admin API
       const { Store } = await import('@/api/entities');
-      const updateResult = await Store.update(selectedStore.id, { settings: newSettings });
+      await Store.update(selectedStore.id, { settings: newSettings });
+
+      // Refresh the store data in the context to get the latest settings
+      await refreshStores();
 
       // Clear storefront cache to ensure tax setting changes are reflected immediately
       if (typeof window !== 'undefined') {
         // Clear localStorage cache used by StoreProvider
         localStorage.removeItem('storeProviderCache');
-        
+
         // Clear any manual cache clearing flags
         localStorage.setItem('forceRefreshStore', 'true');
-        
+
         // Trigger global cache clear if available
         if (window.clearCache) {
           window.clearCache();
         }
       }
 
-      // Update local state immediately for UI responsiveness
-      const updatedStore = { ...selectedStore, settings: newSettings };
-      
-      // Trigger a store selection change event to refresh data across components
-      window.dispatchEvent(new CustomEvent('storeSelectionChanged', {
-        detail: { updatedStore }
-      }));
-      
-      // Also manually refresh the page data to ensure consistency
-      setTimeout(() => {
-        loadData();
-      }, 100);
-      
     } catch (error) {
       showError(`Failed to update tax settings: ${error.message}`);
     }
