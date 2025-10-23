@@ -585,27 +585,24 @@ export function CartSlotRenderer({
                 <span>{t('free', settings)}</span>
               </div>
               {discount > 0 && appliedCoupon && (
-                <Accordion type="single" collapsible className="w-full -mx-2">
+                <Accordion type="single" collapsible className="w-full">
                   <AccordionItem value="discount-details" className="border-0">
-                    <div className="flex justify-between items-center px-2">
-                      <div className="flex items-center gap-2 flex-1">
-                        <span>{t('discount', settings)}</span>
-                        {appliedCoupon && (
-                          <span className="text-xs text-gray-500">
-                            ({getEntityTranslation(appliedCoupon, 'name', 'en') || appliedCoupon.name})
-                          </span>
-                        )}
-                      </div>
-                      <div className="flex items-center gap-2">
+                    <AccordionTrigger className="py-2 px-0 hover:no-underline">
+                      <div className="flex justify-between items-center w-full pr-2">
+                        <div className="flex items-center gap-2 flex-1">
+                          <span>{t('discount', settings)}</span>
+                          {appliedCoupon && (
+                            <span className="text-xs text-gray-500">
+                              ({getEntityTranslation(appliedCoupon, 'name', 'en') || appliedCoupon.name})
+                            </span>
+                          )}
+                        </div>
                         <span className="text-green-600">-{formatPrice(discount)}</span>
-                        <AccordionTrigger className="p-0 hover:no-underline [&[data-state=open]>svg]:rotate-180">
-                          <ChevronDown className="h-4 w-4 text-gray-500 transition-transform duration-200" />
-                        </AccordionTrigger>
                       </div>
-                    </div>
-                    <AccordionContent className="px-2 pt-2 pb-0">
+                    </AccordionTrigger>
+                    <AccordionContent className="px-0 pt-2 pb-2">
                       <div className="text-sm text-gray-600 space-y-1">
-                        <p className="font-medium mb-2">{t('cart.discount_applies_to', settings) || 'Discount applies to'}:</p>
+                        <p className="font-medium mb-2 text-xs">{t('cart.discount_applies_to', settings) || 'Discount applies to'}:</p>
                         {(() => {
                           // Determine which items qualify for the coupon
                           const hasProductFilter = appliedCoupon.applicable_products && appliedCoupon.applicable_products.length > 0;
