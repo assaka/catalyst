@@ -238,7 +238,7 @@ export default function Customers() {
                             </thead>
                             <tbody>
                                 {filteredCustomers.map(customer => {
-                                    const isGuest = !customer.password;
+                                    const isGuest = customer.customer_type === 'guest';
                                     return (
                                         <tr key={customer.id} className="border-b hover:bg-gray-50">
                                             <td className="py-3 px-4">{customer.first_name} {customer.last_name}</td>
