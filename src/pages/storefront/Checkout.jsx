@@ -52,8 +52,6 @@ export default function Checkout() {
   const { store, settings, loading: storeLoading, selectedCountry, setSelectedCountry } = useStore();
   const { showError, AlertComponent } = useAlertTypes();
 
-  console.log('🎯 CHECKOUT COMPONENT - selectedCountry from useStore:', selectedCountry);
-
   // Get currency symbol from settings
   // Currency symbol comes from StoreProvider which derives it from store.currency → getCurrencySymbol()
   const currencySymbol = settings?.currency_symbol;
@@ -274,26 +272,23 @@ export default function Checkout() {
   // Sync shipping and billing address countries with selectedCountry when it changes
   useEffect(() => {
     // Only update if user is entering a new address (not selecting a saved one)
-    // and hasn't filled in the address form yet
     if (selectedShippingAddress === 'new' || !selectedShippingAddress) {
-      if (!shippingAddress.street && !shippingAddress.city) {
-        setShippingAddress(prev => ({
-          ...prev,
-          country: selectedCountry || 'US'
-        }));
-      }
+      // Always sync country with global selector, even if form has data
+      setShippingAddress(prev => ({
+        ...prev,
+        country: selectedCountry || 'US'
+      }));
     }
   }, [selectedCountry, selectedShippingAddress]);
 
   // Sync billing address country separately
   useEffect(() => {
     if (!useShippingForBilling && (selectedBillingAddress === 'new' || !selectedBillingAddress)) {
-      if (!billingAddress.street && !billingAddress.city) {
-        setBillingAddress(prev => ({
-          ...prev,
-          country: selectedCountry || 'US'
-        }));
-      }
+      // Always sync country with global selector, even if form has data
+      setBillingAddress(prev => ({
+        ...prev,
+        country: selectedCountry || 'US'
+      }));
     }
   }, [selectedCountry, selectedBillingAddress, useShippingForBilling]);
 
@@ -730,13 +725,6 @@ export default function Checkout() {
 
   // Memoize tax calculation to avoid recalculating on every render
   const taxCalculationResult = React.useMemo(() => {
-    console.log('🔍 === TAX CALCULATION DEBUG ===');
-    console.log('🔍 selectedCountry from context:', selectedCountry);
-    console.log('🔍 shippingAddress.country:', shippingAddress.country);
-    console.log('🔍 shippingAddress.street:', shippingAddress.street);
-    console.log('🔍 shippingAddress.city:', shippingAddress.city);
-    console.log('🔍 selectedShippingAddress:', selectedShippingAddress);
-
     if (!store || !taxRules.length || !cartItems.length) {
       return { taxAmount: 0, effectiveRate: 0, country: null };
     }
@@ -749,14 +737,11 @@ export default function Checkout() {
     if (user && selectedShippingAddress && selectedShippingAddress !== 'new') {
       const address = userAddresses.find(a => a.id === selectedShippingAddress);
       currentShippingCountry = address?.country || 'US';
-      console.log('🔍 Branch 1: Using saved address country:', currentShippingCountry);
     } else if (shippingAddress.street || shippingAddress.city) {
       currentShippingCountry = shippingAddress.country || 'US';
-      console.log('🔍 Branch 2: Using form country (form has data):', currentShippingCountry);
     } else {
       // When form is empty, ONLY use selectedCountry (don't fall back to shippingAddress.country)
       currentShippingCountry = selectedCountry || 'US';
-      console.log('🔍 Branch 3: Using selectedCountry (form empty):', currentShippingCountry);
     }
 
     const taxShippingAddress = {
