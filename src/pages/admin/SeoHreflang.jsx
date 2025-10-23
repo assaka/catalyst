@@ -10,10 +10,11 @@ import { Switch } from "@/components/ui/switch";
 import { SeoSetting } from "@/api/entities";
 import { useStoreSelection } from '@/contexts/StoreSelectionContext.jsx';
 import FlashMessage from "@/components/storefront/FlashMessage";
+import NoStoreSelected from "@/components/admin/NoStoreSelected";
 
 export default function SeoHreflang() {
-  const { selectedStore } = useStoreSelection();
-  const [loading, setLoading] = useState(true);
+  const { selectedStore, getSelectedStoreId } = useStoreSelection();
+  const [loading, setLoading] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(false);
   const [saving, setSaving] = useState(false);
   const [showHreflangFields, setShowHreflangFields] = useState(false);
@@ -32,20 +33,15 @@ export default function SeoHreflang() {
   }, [selectedStore]);
 
   const loadData = async () => {
+    const storeId = getSelectedStoreId();
+    if (!storeId) {
+      setLoading(false);
+      return;
+    }
+
+    setLoading(true);
     try {
-      setLoading(true);
-
-      if (!selectedStore) {
-        setLoading(false);
-        return;
-      }
-
-      let settingsData = [];
-      try {
-        settingsData = await SeoSetting.filter({ store_id: selectedStore.id });
-      } catch (fetchError) {
-        settingsData = [];
-      }
+      const settingsData = await SeoSetting.filter({ store_id: storeId });
 
       if (settingsData && settingsData.length > 0) {
         const loadedSettings = settingsData[0];
@@ -54,7 +50,7 @@ export default function SeoHreflang() {
           ...loadedSettings,
           hreflang_settings: Array.isArray(loadedSettings.hreflang_settings) ? loadedSettings.hreflang_settings : [],
           canonical_base_url: loadedSettings.canonical_base_url || '',
-          store_id: selectedStore.id
+          store_id: storeId
         });
 
         // Auto-enable hreflang fields if there are existing settings
@@ -64,7 +60,7 @@ export default function SeoHreflang() {
       } else {
         setSeoSettings(prev => ({
           ...prev,
-          store_id: selectedStore.id
+          store_id: storeId
         }));
       }
     } catch (error) {
@@ -139,6 +135,10 @@ export default function SeoHreflang() {
       hreflang_settings: prev.hreflang_settings.filter((_, i) => i !== index)
     }));
   };
+
+  if (!selectedStore) {
+    return <NoStoreSelected />;
+  }
 
   if (loading) {
     return (
