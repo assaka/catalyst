@@ -157,6 +157,28 @@ export function getShippingMethodDescription(shippingMethod, lang = 'en') {
 }
 
 /**
+ * Get translated payment method name
+ *
+ * @param {Object} paymentMethod - Payment method object
+ * @param {String} lang - Language code (default: 'en')
+ * @returns {String} Translated payment method name
+ */
+export function getPaymentMethodName(paymentMethod, lang = 'en') {
+  return getTranslatedField(paymentMethod, 'name', lang);
+}
+
+/**
+ * Get translated payment method description
+ *
+ * @param {Object} paymentMethod - Payment method object
+ * @param {String} lang - Language code (default: 'en')
+ * @returns {String} Translated payment method description
+ */
+export function getPaymentMethodDescription(paymentMethod, lang = 'en') {
+  return getTranslatedField(paymentMethod, 'description', lang);
+}
+
+/**
  * Get current language from localStorage or browser
  *
  * @returns {String} Current language code

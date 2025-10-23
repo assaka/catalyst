@@ -33,7 +33,8 @@ router.get('/', async (req, res) => {
         'fee_type',
         'fee_amount',
         'countries',
-        'sort_order'
+        'sort_order',
+        'translations'
       ]
     });
     

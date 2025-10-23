@@ -73,6 +73,12 @@ const PaymentMethod = sequelize.define('PaymentMethod', {
       model: 'stores',
       key: 'id'
     }
+  },
+  // Multilingual translations
+  translations: {
+    type: DataTypes.JSON,
+    defaultValue: {},
+    comment: 'Multilingual translations: {"en": {"name": "...", "description": "..."}, "nl": {...}}'
   }
 }, {
   tableName: 'payment_methods',

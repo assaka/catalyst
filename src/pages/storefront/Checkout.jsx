@@ -44,7 +44,7 @@ import CmsBlockRenderer from "@/components/storefront/CmsBlockRenderer";
 import apiClient from "@/api/client";
 import StepIndicator from "@/components/storefront/StepIndicator";
 import { formatPrice as formatPriceUtil } from '@/utils/priceUtils';
-import { getProductName, getCurrentLanguage, getShippingMethodName, getShippingMethodDescription } from '@/utils/translationUtils';
+import { getProductName, getCurrentLanguage, getShippingMethodName, getShippingMethodDescription, getPaymentMethodName, getPaymentMethodDescription } from '@/utils/translationUtils';
 import { useTranslation } from '@/contexts/TranslationContext';
 
 export default function Checkout() {
@@ -1791,9 +1791,9 @@ export default function Checkout() {
                         <img src={method.icon_url} alt={method.name} className="w-8 h-8 object-contain" />
                       )}
                       <div className="flex-1">
-                        <p className="font-medium">{method.name}</p>
-                        {method.description && (
-                          <p className="text-sm text-gray-500">{method.description}</p>
+                        <p className="font-medium">{getPaymentMethodName(method, getCurrentLanguage()) || method.name}</p>
+                        {(getPaymentMethodDescription(method, getCurrentLanguage()) || method.description) && (
+                          <p className="text-sm text-gray-500">{getPaymentMethodDescription(method, getCurrentLanguage()) || method.description}</p>
                         )}
                         {method.fee_type !== 'none' && method.fee_amount > 0 && (
                           <p className="text-sm text-gray-600">

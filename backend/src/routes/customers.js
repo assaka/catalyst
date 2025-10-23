@@ -40,13 +40,40 @@ router.get('/', storeOwnerOnly, async (req, res) => {
       offset: parseInt(offset)
     });
 
-    // Enhance customer data with last order addresses for guest customers
-    const { Order } = require('../models');
+    // Enhance customer data with addresses
+    const { Order, Address } = require('../models');
     const enhancedCustomers = await Promise.all(customers.rows.map(async (customer) => {
       const customerData = customer.toJSON();
 
-      // For guest customers (no password), fetch address from last order
-      if (!customer.password) {
+      // For registered customers (with password), fetch from addresses table
+      if (customer.password) {
+        const addresses = await Address.findAll({
+          where: { customer_id: customer.id }
+        });
+
+        if (addresses.length > 0) {
+          const shippingAddr = addresses.find(a => a.type === 'shipping');
+          const billingAddr = addresses.find(a => a.type === 'billing');
+
+          customerData.address_data = {
+            shipping_address: shippingAddr ? {
+              street: shippingAddr.street,
+              city: shippingAddr.city,
+              state: shippingAddr.state,
+              postal_code: shippingAddr.postal_code,
+              country: shippingAddr.country
+            } : null,
+            billing_address: billingAddr ? {
+              street: billingAddr.street,
+              city: billingAddr.city,
+              state: billingAddr.state,
+              postal_code: billingAddr.postal_code,
+              country: billingAddr.country
+            } : null
+          };
+        }
+      } else {
+        // For guest customers (no password), fetch address from last order
         const lastOrder = await Order.findOne({
           where: { customer_id: customer.id },
           order: [['created_at', 'DESC']],
@@ -185,7 +212,59 @@ router.put('/:id', authMiddleware, enforceCustomerStoreBinding, async (req, res)
       });
     }
 
-    await customer.update(req.body);
+    // Extract address_data before updating customer
+    const { address_data, ...customerData } = req.body;
+
+    // Update customer basic info
+    await customer.update(customerData);
+
+    // Handle address updates for registered customers only
+    if (address_data && customer.password) {
+      const { Address } = require('../models');
+
+      // Update or create shipping address
+      if (address_data.shipping_address) {
+        const existingShipping = await Address.findOne({
+          where: { customer_id: customer.id, type: 'shipping' }
+        });
+
+        if (existingShipping) {
+          await existingShipping.update({
+            ...address_data.shipping_address,
+            full_name: `${customer.first_name} ${customer.last_name}`
+          });
+        } else {
+          await Address.create({
+            customer_id: customer.id,
+            type: 'shipping',
+            full_name: `${customer.first_name} ${customer.last_name}`,
+            ...address_data.shipping_address
+          });
+        }
+      }
+
+      // Update or create billing address if provided
+      if (address_data.billing_address) {
+        const existingBilling = await Address.findOne({
+          where: { customer_id: customer.id, type: 'billing' }
+        });
+
+        if (existingBilling) {
+          await existingBilling.update({
+            ...address_data.billing_address,
+            full_name: `${customer.first_name} ${customer.last_name}`
+          });
+        } else {
+          await Address.create({
+            customer_id: customer.id,
+            type: 'billing',
+            full_name: `${customer.first_name} ${customer.last_name}`,
+            ...address_data.billing_address
+          });
+        }
+      }
+    }
+
     res.json({
       success: true,
       data: customer
