@@ -144,6 +144,7 @@ router.get('/', async (req, res) => {
           }
 
           return {
+            id: attr.id,
             code: attr.code,
             label: attrLabel,
             value: valueLabel,
@@ -236,6 +237,7 @@ router.get('/:id', async (req, res) => {
         }
 
         return {
+          id: attr.id,
           code: attr.code,
           label: attrLabel,
           value: valueLabel,
