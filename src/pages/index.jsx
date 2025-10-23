@@ -46,7 +46,6 @@ export { default as SeoReport } from './admin/SeoReport';
 export { default as XmlSitemap } from './admin/XmlSitemap';
 export { default as RobotsTxt } from './admin/RobotsTxt';
 export { default as HtmlSitemap } from './admin/HtmlSitemap';
-export { default as GoogleTagManager } from './admin/GoogleTagManager';
 export { default as AnalyticsSettings } from './admin/AnalyticsSettings';
 export { default as HeatmapAnalytics } from './admin/HeatmapAnalytics';
 export { default as HeatMaps } from './admin/HeatMaps';
