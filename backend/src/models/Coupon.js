@@ -95,6 +95,12 @@ const Coupon = sequelize.define('Coupon', {
   applicable_attributes: {
     type: DataTypes.JSON,
     defaultValue: []
+  },
+  // Multilingual translations
+  translations: {
+    type: DataTypes.JSON,
+    defaultValue: {},
+    comment: 'Multilingual translations: {"en": {"name": "...", "description": "..."}, "nl": {...}}'
   }
 }, {
   tableName: 'coupons'
