@@ -83,6 +83,18 @@ export default function ProductTabs({ productTabs = [], product = null, settings
       }));
     }
 
+    // Get the active tab to check if it has specific attribute_ids
+    const activeTab = tabsData[activeTabIndex];
+
+    // Filter attributes based on the tab's attribute_ids (for "attributes" tab type)
+    if (activeTab?.tab_type === 'attributes' && activeTab?.attribute_ids && activeTab.attribute_ids.length > 0) {
+      // Filter to only show attributes that are in the attribute_ids array
+      attributesArray = attributesArray.filter(attr => {
+        // Match by attribute ID if available, otherwise skip
+        return attr.id && activeTab.attribute_ids.includes(attr.id);
+      });
+    }
+
     if (!attributesArray || attributesArray.length === 0) {
       attributesContainers.forEach(container => {
         container.innerHTML = '<p class="text-gray-500">No specifications available for this product.</p>';
