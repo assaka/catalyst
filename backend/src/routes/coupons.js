@@ -75,6 +75,7 @@ router.post('/', async (req, res) => {
   try {
     console.log('🐛 POST /api/coupons DEBUG:', {
       body: req.body,
+      translations: req.body.translations,
       user: req.user?.email,
       userRole: req.user?.role
     });
@@ -94,6 +95,7 @@ router.post('/', async (req, res) => {
     }
 
     const coupon = await Coupon.create(req.body);
+    console.log('🐛 Created coupon with translations:', coupon.translations);
     res.status(201).json({ success: true, message: 'Coupon created successfully', data: coupon });
   } catch (error) {
     console.error('Create coupon error:', error);
@@ -131,22 +133,28 @@ router.post('/', async (req, res) => {
 
 router.put('/:id', async (req, res) => {
   try {
+    console.log('🐛 PUT /api/coupons/:id DEBUG:', {
+      id: req.params.id,
+      translations: req.body.translations
+    });
+
     const coupon = await Coupon.findByPk(req.params.id, {
       include: [{ model: Store, attributes: ['id', 'name', 'user_id'] }]
     });
-    
+
     if (!coupon) return res.status(404).json({ success: false, message: 'Coupon not found' });
-    
+
     if (req.user.role !== 'admin') {
       const { checkUserStoreAccess } = require('../utils/storeAccess');
       const access = await checkUserStoreAccess(req.user.id, coupon.Store.id);
-      
+
       if (!access) {
         return res.status(403).json({ success: false, message: 'Access denied' });
       }
     }
 
     await coupon.update(req.body);
+    console.log('🐛 Updated coupon with translations:', coupon.translations);
     res.json({ success: true, message: 'Coupon updated successfully', data: coupon });
   } catch (error) {
     res.status(500).json({ success: false, message: 'Server error' });
