@@ -4,19 +4,21 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import SaveButton from '@/components/ui/save-button';
-import { Bot, AlertCircle, RefreshCw } from "lucide-react";
+import { Bot, AlertCircle, RefreshCw, HelpCircle, Info, CheckCircle, ChevronDown } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Switch } from "@/components/ui/switch";
 import { Product } from '@/api/entities';
 import { Category } from '@/api/entities';
 import { CmsPage } from '@/api/entities';
 import { useStoreSelection } from '@/contexts/StoreSelectionContext.jsx';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 
 export default function SeoRobots() {
   const { selectedStore, getSelectedStoreId } = useStoreSelection();
   const [saveSuccess, setSaveSuccess] = useState(false);
   const [saving, setSaving] = useState(false);
   const [generating, setGenerating] = useState(false);
+  const [isHelpOpen, setIsHelpOpen] = useState(false);
   const [robotsTxt, setRobotsTxt] = useState(`User-agent: *
 Allow: /
 Disallow: /admin/
@@ -287,6 +289,151 @@ Sitemap: https://example.com/sitemap.xml`);
           </Button>
         </CardContent>
       </Card>
+
+      <Collapsible open={isHelpOpen} onOpenChange={setIsHelpOpen}>
+        <Card className="border-blue-200 bg-blue-50/50">
+          <CardHeader>
+            <CollapsibleTrigger className="w-full">
+              <div className="flex items-center justify-between w-full">
+                <div className="flex items-center gap-2">
+                  <HelpCircle className="h-5 w-5 text-blue-600" />
+                  <CardTitle className="text-blue-900">Help & Best Practices</CardTitle>
+                </div>
+                <ChevronDown
+                  className={`h-5 w-5 text-blue-600 transition-transform duration-200 ${
+                    isHelpOpen ? 'transform rotate-180' : ''
+                  }`}
+                />
+              </div>
+            </CollapsibleTrigger>
+          </CardHeader>
+          <CollapsibleContent>
+            <CardContent className="space-y-4">
+              <div className="space-y-3">
+                <div className="flex gap-3">
+                  <Info className="h-5 w-5 text-blue-600 flex-shrink-0 mt-0.5" />
+                  <div>
+                    <h4 className="font-semibold text-sm mb-1">What is robots.txt?</h4>
+                    <p className="text-sm text-gray-700">
+                      The robots.txt file tells search engine crawlers which pages or sections of your site they can or cannot access.
+                      It's a critical tool for SEO management and controlling how search engines index your content.
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex gap-3">
+                  <CheckCircle className="h-5 w-5 text-green-600 flex-shrink-0 mt-0.5" />
+                  <div>
+                    <h4 className="font-semibold text-sm mb-1">Basic Syntax</h4>
+                    <div className="bg-white p-3 rounded border border-gray-200 text-xs space-y-2 font-mono">
+                      <div><strong>User-agent: *</strong> - Applies to all search engines</div>
+                      <div><strong>Allow: /</strong> - Allows crawling of all pages</div>
+                      <div><strong>Disallow: /admin/</strong> - Blocks the /admin/ directory</div>
+                      <div><strong>Disallow: /*.pdf$</strong> - Blocks all PDF files</div>
+                      <div><strong>Crawl-delay: 10</strong> - Wait 10 seconds between requests</div>
+                      <div><strong>Sitemap: https://example.com/sitemap.xml</strong> - Location of your sitemap</div>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="flex gap-3">
+                  <RefreshCw className="h-5 w-5 text-purple-600 flex-shrink-0 mt-0.5" />
+                  <div>
+                    <h4 className="font-semibold text-sm mb-1">Import Custom Rules</h4>
+                    <p className="text-sm text-gray-700 mb-2">
+                      The <strong>Import Custom Rules</strong> button automatically generates robots.txt rules from your content settings:
+                    </p>
+                    <ul className="text-sm text-gray-700 space-y-1">
+                      <li>• Products marked with "noindex, nofollow" meta robots tag</li>
+                      <li>• Categories marked with "noindex, nofollow" meta robots tag</li>
+                      <li>• CMS pages marked with "noindex, nofollow" meta robots tag</li>
+                      <li>• Your store's custom domain for the sitemap URL</li>
+                    </ul>
+                    <p className="text-sm text-gray-700 mt-2">
+                      This ensures your robots.txt stays in sync with your SEO settings across products, categories, and pages.
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex gap-3">
+                  <AlertCircle className="h-5 w-5 text-amber-600 flex-shrink-0 mt-0.5" />
+                  <div>
+                    <h4 className="font-semibold text-sm mb-1">Quick Settings Features</h4>
+                    <ul className="text-sm text-gray-700 space-y-1">
+                      <li>• <strong>Block all crawlers:</strong> Enables maintenance mode - blocks all search engines from your entire site</li>
+                      <li>• <strong>Prevent image indexing:</strong> Blocks image search engines and common image file formats</li>
+                      <li>• <strong>Block JS/CSS crawling:</strong> Prevents search engines from crawling JavaScript and CSS files</li>
+                      <li>• <strong>Crawl Delay:</strong> Sets the minimum time (in seconds) between crawler requests to prevent server overload</li>
+                    </ul>
+                  </div>
+                </div>
+
+                <div className="flex gap-3">
+                  <Info className="h-5 w-5 text-blue-600 flex-shrink-0 mt-0.5" />
+                  <div>
+                    <h4 className="font-semibold text-sm mb-1">Common Use Cases</h4>
+                    <ul className="text-sm text-gray-700 space-y-1">
+                      <li>• <strong>Block admin/private areas:</strong> <code className="bg-gray-100 px-1 text-xs">Disallow: /admin/</code></li>
+                      <li>• <strong>Block checkout process:</strong> <code className="bg-gray-100 px-1 text-xs">Disallow: /checkout/</code></li>
+                      <li>• <strong>Block specific products:</strong> <code className="bg-gray-100 px-1 text-xs">Disallow: /products/discontinued-item</code></li>
+                      <li>• <strong>Block all images:</strong> <code className="bg-gray-100 px-1 text-xs">Disallow: /*.jpg$</code></li>
+                      <li>• <strong>Allow specific bot:</strong> <code className="bg-gray-100 px-1 text-xs">User-agent: Googlebot</code> then <code className="bg-gray-100 px-1 text-xs">Allow: /</code></li>
+                      <li>• <strong>Set crawl rate:</strong> <code className="bg-gray-100 px-1 text-xs">Crawl-delay: 10</code> (10 seconds between requests)</li>
+                    </ul>
+                  </div>
+                </div>
+
+                <div className="flex gap-3">
+                  <CheckCircle className="h-5 w-5 text-green-600 flex-shrink-0 mt-0.5" />
+                  <div>
+                    <h4 className="font-semibold text-sm mb-1">Best Practices</h4>
+                    <ul className="text-sm text-gray-700 space-y-1">
+                      <li>• Always include your sitemap URL in robots.txt</li>
+                      <li>• Don't block your CSS and JavaScript files (unless using Quick Settings intentionally)</li>
+                      <li>• Test your robots.txt with Google Search Console's robots.txt Tester</li>
+                      <li>• Use Disallow for pages you don't want indexed (admin, checkout, cart)</li>
+                      <li>• Be careful with wildcards (*) - they match any sequence of characters</li>
+                      <li>• Remember: robots.txt is a suggestion, not a security measure</li>
+                      <li>• Update robots.txt when you change site structure or add new sections</li>
+                    </ul>
+                  </div>
+                </div>
+
+                <div className="flex gap-3">
+                  <AlertCircle className="h-5 w-5 text-purple-600 flex-shrink-0 mt-0.5" />
+                  <div>
+                    <h4 className="font-semibold text-sm mb-1">User-Agent Examples</h4>
+                    <div className="bg-white p-3 rounded border border-gray-200 text-xs space-y-2">
+                      <div><code className="bg-gray-100 px-1">User-agent: *</code> - All crawlers</div>
+                      <div><code className="bg-gray-100 px-1">User-agent: Googlebot</code> - Google's main crawler</div>
+                      <div><code className="bg-gray-100 px-1">User-agent: Googlebot-Image</code> - Google's image crawler</div>
+                      <div><code className="bg-gray-100 px-1">User-agent: Bingbot</code> - Microsoft Bing's crawler</div>
+                      <div><code className="bg-gray-100 px-1">User-agent: AhrefsBot</code> - Ahrefs SEO tool crawler</div>
+                      <div><code className="bg-gray-100 px-1">User-agent: SemrushBot</code> - SEMrush tool crawler</div>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="bg-amber-50 border border-amber-200 rounded p-3 flex gap-2">
+                  <AlertCircle className="h-5 w-5 text-amber-600 flex-shrink-0 mt-0.5" />
+                  <div className="text-sm">
+                    <strong className="text-amber-900">Important:</strong>
+                    <span className="text-amber-800"> robots.txt only controls crawler behavior. It does NOT provide security or prevent access to pages. Use proper authentication for sensitive content. Also, malicious bots may ignore robots.txt rules.</span>
+                  </div>
+                </div>
+
+                <div className="bg-green-50 border border-green-200 rounded p-3 flex gap-2">
+                  <CheckCircle className="h-5 w-5 text-green-600 flex-shrink-0 mt-0.5" />
+                  <div className="text-sm">
+                    <strong className="text-green-900">Pro Tip:</strong>
+                    <span className="text-green-800"> Use the "Import Custom Rules" feature regularly to keep your robots.txt in sync with your product, category, and page SEO settings. This ensures search engines don't waste time crawling content you've marked as noindex.</span>
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </CollapsibleContent>
+        </Card>
+      </Collapsible>
     </div>
   );
 }
