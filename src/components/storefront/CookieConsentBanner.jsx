@@ -50,10 +50,15 @@ export default function CookieConsentBanner() {
     const initializeBanner = async () => {
       if (store?.id && settings?.cookie_consent) {
         // IMPORTANT: Wait for country detection to complete BEFORE checking consent
-        // This fixes the race condition where checkExistingConsent was using default 'US'
-        await detectUserCountry();
+        // Get the country directly to avoid React state update timing issues
+        const detectedCountry = await getUserCountry();
+        console.log('🍪 Country detected:', detectedCountry);
+        setUserCountry(detectedCountry);
+
         await loadUser();
-        checkExistingConsent();
+
+        // Pass the detected country directly instead of relying on state
+        checkExistingConsent(detectedCountry);
       } else {
         console.log('🍪 Cookie consent not loaded:', {
           storeId: store?.id,
@@ -81,17 +86,17 @@ export default function CookieConsentBanner() {
 
   const detectUserCountry = async () => {
     const country = await getUserCountry();
-    console.log('🍪 Country detected:', country);
     setUserCountry(country);
   };
 
-  const checkExistingConsent = () => {
+  const checkExistingConsent = (detectedCountry) => {
     const consent = localStorage.getItem('cookie_consent');
     const consentExpiry = localStorage.getItem('cookie_consent_expiry');
 
     console.log('🍪 checkExistingConsent:', {
       hasStoredConsent: !!consent,
-      consentExpiry: consentExpiry
+      consentExpiry: consentExpiry,
+      detectedCountry: detectedCountry
     });
 
     if (consent && consentExpiry) {
@@ -103,7 +108,8 @@ export default function CookieConsentBanner() {
     }
 
     // Show banner if should be shown
-    const shouldShow = shouldShowBanner();
+    // Pass the detected country directly to avoid state timing issues
+    const shouldShow = shouldShowBanner(detectedCountry);
     console.log('🍪 shouldShow result:', shouldShow);
 
     if (shouldShow) {
@@ -124,23 +130,28 @@ export default function CookieConsentBanner() {
     }
   };
 
-  const isGDPRCountry = () => {
+  const isGDPRCountry = (country) => {
     const gdprCountries = settings?.cookie_consent?.gdpr_countries || [
-      "AT", "BE", "BG", "HR", "CY", "CZ", "DK", "EE", "FI", "FR", 
-      "DE", "GR", "HU", "IE", "IT", "LV", "LT", "LU", "MT", "NL", 
+      "AT", "BE", "BG", "HR", "CY", "CZ", "DK", "EE", "FI", "FR",
+      "DE", "GR", "HU", "IE", "IT", "LV", "LT", "LU", "MT", "NL",
       "PL", "PT", "RO", "SK", "SI", "ES", "SE"
     ];
-    return gdprCountries.includes(userCountry);
+    const countryToCheck = country || userCountry;
+    return gdprCountries.includes(countryToCheck);
   };
 
-  const shouldShowBanner = () => {
+  const shouldShowBanner = (detectedCountry) => {
     const cookieSettings = settings?.cookie_consent;
+    const countryToCheck = detectedCountry || userCountry;
+
     console.log('🍪 shouldShowBanner check:', {
       hasCookieSettings: !!cookieSettings,
       enabled: cookieSettings?.enabled,
       gdprMode: cookieSettings?.gdpr_mode,
       autoDetect: cookieSettings?.auto_detect_country,
-      userCountry: userCountry
+      detectedCountry: detectedCountry,
+      userCountryState: userCountry,
+      countryToCheck: countryToCheck
     });
 
     if (!cookieSettings?.enabled) {
@@ -149,8 +160,8 @@ export default function CookieConsentBanner() {
     }
 
     if (cookieSettings.gdpr_mode && cookieSettings.auto_detect_country) {
-      const isGDPR = isGDPRCountry();
-      console.log('🍪 GDPR mode active, isGDPRCountry:', isGDPR);
+      const isGDPR = isGDPRCountry(countryToCheck);
+      console.log('🍪 GDPR mode active, isGDPRCountry:', isGDPR, 'for country:', countryToCheck);
       return isGDPR;
     }
 
