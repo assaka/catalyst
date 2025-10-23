@@ -298,14 +298,19 @@ export default function CmsPageForm({ page, stores, products, onSubmit, onCancel
     // They're stored in the translations JSON field instead
     const { title, content, ...restFormData } = formData;
 
+    // Ensure translations are synced with main title/content fields
+    const syncedTranslations = {
+      ...formData.translations,
+      en: {
+        ...formData.translations?.en,
+        title: formData.title || formData.translations?.en?.title || '',
+        content: formData.content || formData.translations?.en?.content || ''
+      }
+    };
+
     const payload = {
       ...restFormData,
-      translations: formData.translations || {
-        en: {
-          title: formData.title,
-          content: formData.content
-        }
-      }
+      translations: syncedTranslations
     };
 
     console.log('🔍 CmsPageForm: Submitting payload:', {
