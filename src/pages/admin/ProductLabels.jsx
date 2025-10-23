@@ -225,26 +225,30 @@ const [labels, setLabels] = useState([]);
                     />
                   </div>
                   
-                  <div className="text-sm">
-                    <span className="font-medium">Conditions:</span>
-                    <div className="mt-1 space-y-1">
-                      {label.conditions?.attribute_conditions?.length > 0 && (
-                        <Badge variant="outline" className="mr-1">
-                          {label.conditions.attribute_conditions.length} Attribute Rules
-                        </Badge>
-                      )}
-                      {label.conditions?.price_conditions?.has_sale_price && (
-                        <Badge variant="outline" className="mr-1">
-                          On Sale
-                        </Badge>
-                      )}
-                      {label.conditions?.price_conditions?.is_new && (
-                        <Badge variant="outline" className="mr-1">
-                          New Products
-                        </Badge>
-                      )}
+                  {(label.conditions?.attribute_conditions?.length > 0 ||
+                    label.conditions?.price_conditions?.has_sale_price ||
+                    label.conditions?.price_conditions?.is_new) && (
+                    <div className="text-sm">
+                      <span className="font-medium">Conditions:</span>
+                      <div className="mt-1 space-y-1">
+                        {label.conditions?.attribute_conditions?.length > 0 && (
+                          <Badge variant="outline" className="mr-1">
+                            {label.conditions.attribute_conditions.length} Attribute Rules
+                          </Badge>
+                        )}
+                        {label.conditions?.price_conditions?.has_sale_price && (
+                          <Badge variant="outline" className="mr-1">
+                            On Sale
+                          </Badge>
+                        )}
+                        {label.conditions?.price_conditions?.is_new && (
+                          <Badge variant="outline" className="mr-1">
+                            New Products
+                          </Badge>
+                        )}
+                      </div>
                     </div>
-                  </div>
+                  )}
                   
                   <div className="flex justify-between items-center pt-2">
                     <Badge variant={label.is_active ? "default" : "secondary"}>
