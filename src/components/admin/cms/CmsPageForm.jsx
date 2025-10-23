@@ -25,6 +25,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useStoreSelection } from '@/contexts/StoreSelectionContext.jsx';
 import MediaBrowser from './MediaBrowser';
 import TranslationFields from '@/components/admin/TranslationFields';
+import { getProductName } from '@/utils/translationUtils';
 
 // Ensure 'products' is part of the props as it's used in the component
 export default function CmsPageForm({ page, stores, products, onSubmit, onCancel }) {
@@ -521,9 +522,10 @@ export default function CmsPageForm({ page, stores, products, onSubmit, onCancel
             </div>
           ) : (
             products
-              .filter(product =>
-                product.name?.toLowerCase().includes(productSearchQuery.toLowerCase())
-              )
+              .filter(product => {
+                const productName = getProductName(product);
+                return productName?.toLowerCase().includes(productSearchQuery.toLowerCase());
+              })
               .map(product => (
                 <div
                   key={product.id}
@@ -532,7 +534,7 @@ export default function CmsPageForm({ page, stores, products, onSubmit, onCancel
                   }`}
                   onClick={() => handleProductToggle(product.id)}
                 >
-                  <span>{product.name}</span>
+                  <span>{getProductName(product)}</span>
                   {formData.related_product_ids.includes(product.id) && <X className="w-4 h-4" />}
                 </div>
               ))
@@ -541,7 +543,7 @@ export default function CmsPageForm({ page, stores, products, onSubmit, onCancel
         <div className="mt-2 flex flex-wrap gap-1">
           {formData.related_product_ids.map(id => {
             const product = products.find(p => p.id === id);
-            return product ? <Badge key={id}>{product.name}</Badge> : null;
+            return product ? <Badge key={id}>{getProductName(product)}</Badge> : null;
           })}
         </div>
       </div>
