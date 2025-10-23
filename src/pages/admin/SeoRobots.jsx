@@ -119,6 +119,13 @@ Sitemap: https://example.com/sitemap.xml`);
       try {
         const testCategories = await Category.findAll();
         console.log('All categories (no filter):', testCategories);
+        console.log('First category structure:', testCategories[0]);
+        console.log('First category store_id:', testCategories[0]?.store_id);
+        console.log('Looking for store_id:', storeId);
+
+        // Manual filter to see if any match
+        const manualMatch = testCategories.filter(c => c.store_id === storeId);
+        console.log('Manual filter match:', manualMatch);
       } catch (err) {
         console.error('Error fetching all categories:', err);
       }
