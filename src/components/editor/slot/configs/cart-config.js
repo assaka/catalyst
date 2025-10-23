@@ -260,16 +260,32 @@ export const cartConfig = {
 
           <!-- Applied Coupon Section (hidden by default) -->
           <div data-applied-coupon-section style="display: none;">
-            <div class="bg-green-50 p-3 rounded flex items-center justify-between">
-              <div>
-                <p class="text-sm font-medium text-green-800" data-coupon-name></p>
-                <p class="text-xs text-green-600" data-coupon-discount></p>
+            <div class="bg-green-50 p-3 rounded">
+              <div class="flex items-center justify-between">
+                <div class="flex-1">
+                  <p class="text-sm font-medium text-green-800" data-coupon-name></p>
+                  <p class="text-xs text-green-600" data-coupon-discount></p>
+
+                  <!-- Collapsible Discount Details -->
+                  <div class="mt-2">
+                    <div class="flex items-center gap-2 cursor-pointer hover:bg-green-100 py-1 px-2 rounded -mx-2" data-discount-toggle>
+                      <span class="text-xs text-green-700 font-medium">View eligible products</span>
+                      <svg class="h-3 w-3 text-green-600 transition-transform duration-200" data-discount-chevron fill="none" stroke="currentColor" viewBox="0 0 24 24" style="transform: rotate(0deg);">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                      </svg>
+                    </div>
+                    <div class="hidden mt-2 ml-2 text-sm text-green-800" data-discount-details>
+                      <p class="font-medium mb-2 text-xs">Discount applies to:</p>
+                      <ul class="space-y-1" data-eligible-products></ul>
+                    </div>
+                  </div>
+                </div>
+                <button class="text-red-600 hover:text-red-700 ml-2" data-action="remove-coupon">
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+                  </svg>
+                </button>
               </div>
-              <button class="text-red-600 hover:text-red-700" data-action="remove-coupon">
-                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
-                </svg>
-              </button>
             </div>
           </div>
 
@@ -315,20 +331,9 @@ export const cartConfig = {
               <span>{{t "common.additional_products"}}</span>
               <span data-custom-options-total>$0.00</span>
             </div>
-            <div data-discount-row style="display: none;">
-              <div class="flex justify-between items-center cursor-pointer hover:bg-gray-50 py-1 rounded" data-discount-toggle>
-                <div class="flex items-center gap-2">
-                  <span data-discount-label>{{t "common.discount"}}</span>
-                  <svg class="h-4 w-4 text-gray-400 transition-transform duration-200" data-discount-chevron fill="none" stroke="currentColor" viewBox="0 0 24 24" style="transform: rotate(180deg);">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
-                  </svg>
-                </div>
-                <span data-discount class="text-green-600">$0.00</span>
-              </div>
-              <div class="mt-2 ml-4 text-sm text-gray-600" data-discount-details>
-                <p class="font-medium mb-2 text-xs">Discount applies to:</p>
-                <ul class="space-y-1" data-eligible-products></ul>
-              </div>
+            <div class="flex justify-between" data-discount-row style="display: none;">
+              <span data-discount-label>{{t "common.discount"}}</span>
+              <span data-discount class="text-green-600">$0.00</span>
             </div>
             <div class="flex justify-between">
               <span>{{t "common.tax"}}</span>
