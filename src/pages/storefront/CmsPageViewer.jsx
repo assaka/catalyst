@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { CmsPage } from '@/api/entities';
-import { StorefrontProduct } from '@/api/storefront-entities';
+import { StorefrontCmsPage, StorefrontProduct } from '@/api/storefront-entities';
 import RecommendedProducts from '@/components/storefront/RecommendedProducts';
 import SeoHeadManager from '@/components/storefront/SeoHeadManager';
 // Redirect handling moved to global RedirectHandler component
@@ -20,9 +19,12 @@ export default function CmsPageViewer() {
             const fetchPage = async () => {
                 try {
                     setLoading(true);
-                    const pages = await CmsPage.filter({ slug: slug, is_active: true });
-                    if (pages && pages.length > 0) {
-                        const currentPage = pages[0];
+                    // Fetch CMS page using slug query parameter
+                    const response = await fetch(`/api/public/cms-pages?slug=${encodeURIComponent(slug)}`);
+                    const result = await response.json();
+
+                    if (result.success && result.data) {
+                        const currentPage = result.data;
                         setPage(currentPage);
                         if (currentPage.related_product_ids && currentPage.related_product_ids.length > 0) {
                             // Fetch only the related products using storefront API with specific IDs

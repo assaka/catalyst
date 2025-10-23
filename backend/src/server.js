@@ -68,6 +68,7 @@ const consentLogRoutes = require('./routes/consent-logs');
 const customOptionRuleRoutes = require('./routes/custom-option-rules');
 const addressRoutes = require('./routes/addresses');
 const publicCmsBlocksRoutes = require('./routes/public-cms-blocks');
+const publicCmsPagesRoutes = require('./routes/public-cms-pages');
 const storeTeamRoutes = require('./routes/store-teams');
 const robotsRoutes = require('./routes/robots');
 const integrationRoutes = require('./routes/integrations');
@@ -1372,6 +1373,7 @@ app.use('/api/public/seo-settings', seoSettingsRoutes);
 app.use('/api/public/cookie-consent-settings', cookieConsentRoutes);
 // Use dedicated working route for public CMS blocks
 app.use('/api/public/cms-blocks', publicCmsBlocksRoutes);
+app.use('/api/public/cms-pages', publicCmsPagesRoutes);
 app.use('/api/public/product-tabs', productTabRoutes);
 app.use('/api/public/custom-option-rules', customOptionRuleRoutes);
 app.use('/api/public/payment-methods', publicPaymentMethodRoutes);
