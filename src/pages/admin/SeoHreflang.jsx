@@ -1,35 +1,166 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import SaveButton from '@/components/ui/save-button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Globe, Plus, Trash2 } from "lucide-react";
+import { Globe, Plus, Trash2, AlertTriangle } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
+import { SeoSetting } from "@/api/entities";
+import { useStoreSelection } from '@/contexts/StoreSelectionContext.jsx';
+import FlashMessage from "@/components/storefront/FlashMessage";
 
 export default function SeoHreflang() {
+  const { selectedStore } = useStoreSelection();
+  const [loading, setLoading] = useState(true);
   const [saveSuccess, setSaveSuccess] = useState(false);
   const [saving, setSaving] = useState(false);
-  const [languages, setLanguages] = useState([
-    { id: 1, code: 'en-US', url: 'https://example.com' },
-    { id: 2, code: 'es-ES', url: 'https://example.es' }
-  ]);
+  const [showHreflangFields, setShowHreflangFields] = useState(false);
+  const [flashMessage, setFlashMessage] = useState(null);
+
+  const [seoSettings, setSeoSettings] = useState({
+    hreflang_settings: [],
+    canonical_base_url: '',
+    store_id: ''
+  });
+
+  useEffect(() => {
+    if (selectedStore) {
+      loadData();
+    }
+  }, [selectedStore]);
+
+  const loadData = async () => {
+    try {
+      setLoading(true);
+
+      if (!selectedStore) {
+        setLoading(false);
+        return;
+      }
+
+      let settingsData = [];
+      try {
+        settingsData = await SeoSetting.filter({ store_id: selectedStore.id });
+      } catch (fetchError) {
+        settingsData = [];
+      }
+
+      if (settingsData && settingsData.length > 0) {
+        const loadedSettings = settingsData[0];
+
+        setSeoSettings({
+          ...loadedSettings,
+          hreflang_settings: Array.isArray(loadedSettings.hreflang_settings) ? loadedSettings.hreflang_settings : [],
+          canonical_base_url: loadedSettings.canonical_base_url || '',
+          store_id: selectedStore.id
+        });
+
+        // Auto-enable hreflang fields if there are existing settings
+        if (loadedSettings.hreflang_settings && loadedSettings.hreflang_settings.length > 0) {
+          setShowHreflangFields(true);
+        }
+      } else {
+        setSeoSettings(prev => ({
+          ...prev,
+          store_id: selectedStore.id
+        }));
+      }
+    } catch (error) {
+      console.error("Error loading SEO settings:", error);
+      setFlashMessage({
+        type: 'error',
+        message: 'Failed to load SEO settings.'
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleSave = async () => {
     setSaving(true);
     setSaveSuccess(false);
 
-    // Simulate save operation
-    await new Promise(resolve => setTimeout(resolve, 500));
+    try {
+      if (seoSettings.id) {
+        await SeoSetting.update(seoSettings.id, seoSettings);
+      } else {
+        await SeoSetting.create(seoSettings);
+      }
 
-    setSaveSuccess(true);
-    setSaving(false);
-    setTimeout(() => setSaveSuccess(false), 2000);
+      setSaveSuccess(true);
+      setFlashMessage({
+        type: 'success',
+        message: 'Hreflang settings saved successfully!'
+      });
+
+      // Reload to get the updated data
+      await loadData();
+    } catch (error) {
+      console.error('Error saving hreflang settings:', error);
+      setFlashMessage({
+        type: 'error',
+        message: 'Failed to save hreflang settings.'
+      });
+    } finally {
+      setSaving(false);
+      setTimeout(() => setSaveSuccess(false), 2000);
+    }
   };
+
+  const addHreflangSetting = () => {
+    setSeoSettings(prev => ({
+      ...prev,
+      hreflang_settings: [
+        ...prev.hreflang_settings,
+        {
+          language_code: '',
+          country_code: '',
+          url_pattern: '{{base_url}}/{{language_code}}{{relative_path}}',
+          is_active: true
+        }
+      ]
+    }));
+  };
+
+  const updateHreflangSetting = (index, field, value) => {
+    setSeoSettings(prev => ({
+      ...prev,
+      hreflang_settings: prev.hreflang_settings.map((item, i) =>
+        i === index ? { ...item, [field]: value } : item
+      )
+    }));
+  };
+
+  const removeHreflangSetting = (index) => {
+    setSeoSettings(prev => ({
+      ...prev,
+      hreflang_settings: prev.hreflang_settings.filter((_, i) => i !== index)
+    }));
+  };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+      </div>
+    );
+  }
+
+  const activeLanguages = selectedStore?.settings?.active_languages || [];
+  const hasActiveLanguages = activeLanguages.length > 0;
 
   return (
     <div className="container mx-auto p-6 space-y-6">
+      {flashMessage && (
+        <FlashMessage
+          type={flashMessage.type}
+          message={flashMessage.message}
+          onClose={() => setFlashMessage(null)}
+        />
+      )}
+
       <div className="flex items-center gap-2 mb-6">
         <Globe className="h-6 w-6" />
         <h1 className="text-3xl font-bold">Hreflang Tags</h1>
@@ -37,99 +168,161 @@ export default function SeoHreflang() {
 
       <Card>
         <CardHeader>
-          <CardTitle>Multi-Language Configuration</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="flex items-center space-x-2">
-            <Switch id="enable-hreflang" />
-            <Label htmlFor="enable-hreflang">Enable hreflang tags</Label>
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="default-language">Default Language</Label>
-            <Select defaultValue="en-US">
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="en-US">English (US)</SelectItem>
-                <SelectItem value="en-GB">English (UK)</SelectItem>
-                <SelectItem value="es-ES">Spanish (Spain)</SelectItem>
-                <SelectItem value="fr-FR">French (France)</SelectItem>
-                <SelectItem value="de-DE">German (Germany)</SelectItem>
-                <SelectItem value="it-IT">Italian (Italy)</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-
-          <div className="flex items-center space-x-2">
-            <Switch id="x-default" defaultChecked />
-            <Label htmlFor="x-default">Include x-default hreflang</Label>
-          </div>
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader>
-          <CardTitle>Language Versions</CardTitle>
+          <CardTitle className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              Hreflang Settings
+              <div className="flex items-center gap-2">
+                <Switch
+                  checked={showHreflangFields}
+                  onCheckedChange={setShowHreflangFields}
+                />
+                <Label className="text-sm font-normal">Enable hreflang tags</Label>
+              </div>
+            </div>
+            {showHreflangFields && (
+              <Button onClick={addHreflangSetting}>
+                <Plus className="w-4 h-4 mr-2" />
+                Add Language
+              </Button>
+            )}
+          </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div className="space-y-2">
-                <Label>Language Code</Label>
-                <Select>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select language" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="en-US">en-US</SelectItem>
-                    <SelectItem value="en-GB">en-GB</SelectItem>
-                    <SelectItem value="es-ES">es-ES</SelectItem>
-                    <SelectItem value="fr-FR">fr-FR</SelectItem>
-                    <SelectItem value="de-DE">de-DE</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              
-              <div className="space-y-2">
-                <Label>URL</Label>
-                <Input placeholder="https://example.com/lang" />
-              </div>
-              
-              <div className="flex items-end">
-                <Button className="w-full">
-                  <Plus className="h-4 w-4 mr-2" />
-                  Add Language
-                </Button>
-              </div>
-            </div>
+          {!showHreflangFields && (
+            <p className="text-gray-600">
+              Enable hreflang tags to configure language and region targeting for search engines.
+            </p>
+          )}
 
-            <div className="space-y-2 mt-6">
-              <h3 className="font-semibold">Configured Languages</h3>
-              {languages.map(lang => (
-                <div key={lang.id} className="flex items-center justify-between p-3 border rounded">
-                  <div>
-                    <span className="font-mono font-medium">{lang.code}</span>
-                    <p className="text-sm text-muted-foreground">{lang.url}</p>
-                  </div>
-                  <Button variant="ghost" size="sm">
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
+          {showHreflangFields && (
+            <>
+              <div className="bg-blue-50 p-4 rounded-lg mb-4">
+                <h4 className="font-medium text-blue-900 mb-2">Hreflang Configuration</h4>
+                <p className="text-sm text-blue-800 mb-2">
+                  Hreflang tags help search engines understand which language and region your content targets.
+                  Use the "Active" toggle on each language to control whether it's rendered on your site.
+                </p>
+                <div className="text-sm text-blue-700">
+                  <p className="font-medium mb-1">Available variables in URL patterns:</p>
+                  <ul className="list-disc list-inside space-y-1">
+                    <li><code>{'{{base_url}}'}</code> - Your canonical base URL</li>
+                    <li><code>{'{{absolute_path}}'}</code> - Full current path including store prefix</li>
+                    <li><code>{'{{relative_path}}'}</code> - Clean content path without store prefix (recommended for custom domains)</li>
+                    <li><code>{'{{language_code}}'}</code> - The language code (e.g., 'en', 'de')</li>
+                  </ul>
+                  <p className="text-xs mt-2 bg-blue-100 p-2 rounded">
+                    💡 <strong>Tip:</strong> Use <code>{'{{base_url}}/{{language_code}}{{relative_path}}'}</code> for URLs that work with custom domains
+                  </p>
                 </div>
-              ))}
-            </div>
-          </div>
+              </div>
+
+              {!hasActiveLanguages && (
+                <div className="bg-yellow-50 border border-yellow-200 p-4 rounded-lg mb-4">
+                  <div className="flex items-start gap-2">
+                    <AlertTriangle className="w-5 h-5 text-yellow-600 mt-0.5" />
+                    <div>
+                      <h4 className="font-medium text-yellow-900 mb-1">No Active Languages Configured</h4>
+                      <p className="text-sm text-yellow-800">
+                        Please configure your store's active languages in the{' '}
+                        <a href="/admin/settings" className="underline font-medium">Store Settings</a>{' '}
+                        page before adding hreflang tags. Active languages are used to populate the language dropdown.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {seoSettings.hreflang_settings.length > 0 ? (
+                <div className="space-y-4">
+                  {seoSettings.hreflang_settings.map((hreflang, index) => (
+                    <div key={index} className="border rounded-lg p-4">
+                      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
+                        <div>
+                          <Label>Language Code</Label>
+                          {hasActiveLanguages ? (
+                            <Select
+                              value={hreflang.language_code}
+                              onValueChange={(value) => updateHreflangSetting(index, 'language_code', value)}
+                            >
+                              <SelectTrigger>
+                                <SelectValue placeholder="Select language" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {activeLanguages.map((lang) => (
+                                  <SelectItem key={lang} value={lang}>
+                                    {lang.toUpperCase()}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          ) : (
+                            <Input
+                              value={hreflang.language_code}
+                              onChange={(e) => updateHreflangSetting(index, 'language_code', e.target.value)}
+                              placeholder="en"
+                            />
+                          )}
+                        </div>
+                        <div>
+                          <Label>Country Code (Optional)</Label>
+                          <Input
+                            value={hreflang.country_code}
+                            onChange={(e) => updateHreflangSetting(index, 'country_code', e.target.value)}
+                            placeholder="US"
+                          />
+                        </div>
+                        <div>
+                          <Label>URL Pattern</Label>
+                          <Input
+                            value={hreflang.url_pattern}
+                            onChange={(e) => updateHreflangSetting(index, 'url_pattern', e.target.value)}
+                            placeholder="{{base_url}}/{{language_code}}{{relative_path}}"
+                          />
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <div className="flex items-center space-x-2">
+                            <Switch
+                              checked={hreflang.is_active}
+                              onCheckedChange={(checked) => updateHreflangSetting(index, 'is_active', checked)}
+                            />
+                            <Label>Active</Label>
+                          </div>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => removeHreflangSetting(index)}
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </Button>
+                        </div>
+                      </div>
+                      <div className="mt-2 text-xs text-gray-500">
+                        Preview: {hreflang.url_pattern
+                          .replace(/\{\{base_url\}\}/g, seoSettings.canonical_base_url || 'https://yourdomain.com')
+                          .replace(/\{\{language_code\}\}/g, hreflang.language_code || 'lang')
+                          .replace(/\{\{absolute_path\}\}/g, '/public/storename/category/example')
+                          .replace(/\{\{relative_path\}\}/g, '/category/example')
+                          .replace(/\{\{current_url\}\}/g, '/current-page')}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-gray-600">No hreflang settings configured yet. Click "Add Language" to get started.</p>
+              )}
+
+              <div className="flex justify-end mt-4">
+                <SaveButton
+                  onClick={handleSave}
+                  loading={saving}
+                  success={saveSuccess}
+                  defaultText="Save Hreflang Settings"
+                />
+              </div>
+            </>
+          )}
         </CardContent>
       </Card>
-      <div className="flex justify-end mt-8">
-        <SaveButton
-            onClick={handleSave}
-            loading={saving}
-            success={saveSuccess}
-            defaultText="Save Configuration"
-        />
-      </div>
     </div>
   );
 }
