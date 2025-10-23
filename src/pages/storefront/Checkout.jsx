@@ -111,6 +111,7 @@ export default function Checkout() {
   const [shippingCost, setShippingCost] = useState(0);
   const [paymentFee, setPaymentFee] = useState(0);
   const [taxAmount, setTaxAmount] = useState(0);
+  const [taxDetails, setTaxDetails] = useState({ effectiveRate: 0, country: null });
   const [taxRules, setTaxRules] = useState([]);
   const [deliveryDate, setDeliveryDate] = useState(null);
   const [deliveryTimeSlot, setDeliveryTimeSlot] = useState('');
@@ -708,14 +709,14 @@ export default function Checkout() {
 
     const subtotal = calculateSubtotal();
     const discount = calculateDiscount();
-    
+
     // Get the current shipping country for tax calculation
     const currentShippingCountry = getShippingCountry();
-    const taxShippingAddress = { 
-      ...shippingAddress, 
-      country: currentShippingCountry 
+    const taxShippingAddress = {
+      ...shippingAddress,
+      country: currentShippingCountry
     };
-    
+
     const taxResult = taxService.calculateTax(
       cartItems,
       cartProducts,
@@ -725,6 +726,13 @@ export default function Checkout() {
       subtotal,
       discount
     );
+
+    // Update tax details state
+    setTaxDetails({
+      effectiveRate: taxResult.effectiveRate || 0,
+      country: currentShippingCountry
+    });
+
     return taxResult.taxAmount || 0;
   };
 
@@ -1968,7 +1976,14 @@ export default function Checkout() {
 
                 {calculateTax() > 0 && (
                   <div className="flex justify-between">
-                    <span>{t('checkout.tax', 'Tax')}</span>
+                    <span>
+                      {t('checkout.tax', 'Tax')}
+                      {taxDetails && taxDetails.country && (
+                        <span className="text-gray-500 text-sm ml-1">
+                          ({taxDetails.country} {taxDetails.effectiveRate ? `${taxDetails.effectiveRate}%` : ''})
+                        </span>
+                      )}
+                    </span>
                     <span>{formatPrice(calculateTax())}</span>
                   </div>
                 )}

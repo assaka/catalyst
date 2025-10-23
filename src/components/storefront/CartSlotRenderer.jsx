@@ -26,6 +26,7 @@ export function CartSlotRenderer({
     discount,
     tax,
     total,
+    taxDetails,
     currencySymbol,
     settings,
     store,
@@ -563,10 +564,19 @@ export function CartSlotRenderer({
                 <span>{t('subtotal', settings)}</span>
                 <span>{formatPrice(subtotal)}</span>
               </div>
-              <div className="flex justify-between">
-                <span>{t('tax', settings)}</span>
-                <span>{formatPrice(tax)}</span>
-              </div>
+              {tax > 0 && (
+                <div className="flex justify-between">
+                  <span>
+                    {t('tax', settings)}
+                    {taxDetails && taxDetails.country && (
+                      <span className="text-gray-500 text-sm ml-1">
+                        ({taxDetails.country} {taxDetails.effectiveRate ? `${taxDetails.effectiveRate}%` : ''})
+                      </span>
+                    )}
+                  </span>
+                  <span>{formatPrice(tax)}</span>
+                </div>
+              )}
               <div className="flex justify-between">
                 <span>{t('shipping', settings)}</span>
                 <span>{t('free', settings)}</span>

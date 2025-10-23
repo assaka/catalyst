@@ -838,7 +838,7 @@ export default function Cart() {
         }, 0);
     }, [cartItems]);
 
-    const { subtotal, discount, tax, total, customOptionsTotal } = useMemo(() => {
+    const { subtotal, discount, tax, total, customOptionsTotal, taxDetails } = useMemo(() => {
         const calculatedSubtotal = calculateSubtotal();
 
         // Calculate custom options total separately
@@ -878,16 +878,16 @@ export default function Cart() {
         }
 
         const subAfterDiscount = calculatedTotalWithOptions - disc;
-        
+
         // Use new tax service for calculation
-        const taxAmount = (() => {
+        const taxResult = (() => {
             if (!store || !taxRules.length || !cartItems.length) {
-                return 0;
+                return { taxAmount: 0, effectiveRate: 0, country: null };
             }
 
             // Create a shipping address object from selected country
             const shippingAddress = { country: selectedCountry || 'US' };
-            
+
             // Create a simple product map for taxService
             const cartProducts = {};
             cartItems.forEach(item => {
@@ -896,7 +896,7 @@ export default function Cart() {
                 }
             });
 
-            const taxResult = taxService.calculateTax(
+            const result = taxService.calculateTax(
                 cartItems,
                 cartProducts,
                 store,
@@ -906,17 +906,22 @@ export default function Cart() {
                 disc
             );
 
-            return taxResult.taxAmount || 0;
+            return {
+                taxAmount: result.taxAmount || 0,
+                effectiveRate: result.effectiveRate || 0,
+                country: selectedCountry || 'US'
+            };
         })();
-        
-        const totalAmount = subAfterDiscount + taxAmount;
+
+        const totalAmount = subAfterDiscount + taxResult.taxAmount;
 
         return {
             subtotal: calculatedSubtotal,
             customOptionsTotal: calculatedCustomOptionsTotal,
             discount: disc,
-            tax: taxAmount,
-            total: totalAmount
+            tax: taxResult.taxAmount,
+            total: totalAmount,
+            taxDetails: taxResult
         };
     }, [cartItems, appliedCoupon, store, taxRules, selectedCountry, calculateSubtotal]);
 
@@ -1086,6 +1091,7 @@ export default function Cart() {
                                 discount,
                                 tax,
                                 total,
+                                taxDetails,
                                 currencySymbol,
                                 settings,
                                 store,
