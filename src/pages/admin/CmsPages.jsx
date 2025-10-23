@@ -120,8 +120,16 @@ export default function CmsPages() {
       setFlashMessage({ type: 'success', message: 'CMS Page created successfully!' });
     } catch (error) {
       console.error("❌ Error creating CMS page:", error);
-      console.error("Error response:", error.response?.data);
-      setFlashMessage({ type: 'error', message: `Failed to create CMS page: ${error.response?.data?.error || error.message}` });
+      console.error("❌ Error response data:", error.response?.data);
+      console.error("❌ Error response status:", error.response?.status);
+      console.error("❌ Full error object:", JSON.stringify(error, Object.getOwnPropertyNames(error), 2));
+
+      const errorMsg = error.response?.data?.error ||
+                      error.response?.data?.message ||
+                      error.message ||
+                      'Unknown error';
+
+      setFlashMessage({ type: 'error', message: `Failed to create CMS page: ${errorMsg}` });
     }
   };
 
@@ -135,8 +143,16 @@ export default function CmsPages() {
       setFlashMessage({ type: 'success', message: 'CMS Page updated successfully!' });
     } catch (error) {
       console.error("❌ Error updating CMS page:", error);
-      console.error("Error response:", error.response?.data);
-      setFlashMessage({ type: 'error', message: `Failed to update CMS page: ${error.response?.data?.error || error.message}` });
+      console.error("❌ Error response data:", error.response?.data);
+      console.error("❌ Error response status:", error.response?.status);
+      console.error("❌ Full error object:", JSON.stringify(error, Object.getOwnPropertyNames(error), 2));
+
+      const errorMsg = error.response?.data?.error ||
+                      error.response?.data?.message ||
+                      error.message ||
+                      'Unknown error';
+
+      setFlashMessage({ type: 'error', message: `Failed to update CMS page: ${errorMsg}` });
     }
   };
 
