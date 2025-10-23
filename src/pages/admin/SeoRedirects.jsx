@@ -104,29 +104,34 @@ export default function SeoRedirects() {
       <Card>
         <CardHeader>
           <CardTitle>Add New Redirect</CardTitle>
+          <p className="text-sm text-muted-foreground mt-2">
+            Use relative URLs without the store prefix. Example: <code className="bg-muted px-1 py-0.5 rounded">/category/old-name</code> instead of <code className="bg-muted px-1 py-0.5 rounded">/public/hamid2/category/old-name</code>
+          </p>
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="from-url">From URL</Label>
+              <Label htmlFor="from-url">From URL (relative)</Label>
               <Input
                 id="from-url"
-                placeholder="/old-path"
+                placeholder="/category/old-name"
                 value={fromUrl}
                 onChange={(e) => setFromUrl(e.target.value)}
                 disabled={loading}
               />
+              <p className="text-xs text-muted-foreground">The old path to redirect from</p>
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="to-url">To URL</Label>
+              <Label htmlFor="to-url">To URL (relative)</Label>
               <Input
                 id="to-url"
-                placeholder="/new-path"
+                placeholder="/category/new-name"
                 value={toUrl}
                 onChange={(e) => setToUrl(e.target.value)}
                 disabled={loading}
               />
+              <p className="text-xs text-muted-foreground">The new path to redirect to</p>
             </div>
 
             <div className="space-y-2">

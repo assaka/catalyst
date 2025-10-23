@@ -12,15 +12,15 @@ const RedirectHandler = ({ children, storeId }) => {
   useEffect(() => {
     // Only check once per location change and only if we have a store ID
     if (!storeId || hasChecked || isChecking) return;
-    
+
     const checkForRedirect = async () => {
       setIsChecking(true);
-      
+
       try {
         const currentPath = location.pathname;
         // Skip redirect checking for admin routes, API routes, etc.
-        if (currentPath.startsWith('/admin') || 
-            currentPath.startsWith('/api') || 
+        if (currentPath.startsWith('/admin') ||
+            currentPath.startsWith('/api') ||
             currentPath.startsWith('/auth') ||
             currentPath === '/') {
           setHasChecked(true);
@@ -28,15 +28,37 @@ const RedirectHandler = ({ children, storeId }) => {
           return;
         }
 
-        // Check for redirect using the current full path
-        const response = await fetch(`/api/redirects/check?store_id=${storeId}&path=${encodeURIComponent(currentPath)}`);
-        
+        // Extract relative path by removing /public/{storeSlug} prefix
+        // Example: /public/hamid2/category/old-name → /category/old-name
+        let relativePath = currentPath;
+        const publicMatch = currentPath.match(/^\/public\/([^\/]+)(.*)/);
+        if (publicMatch) {
+          const storeSlugFromUrl = publicMatch[1];
+          relativePath = publicMatch[2] || '/';
+        }
+
+        // Check for redirect using the relative path
+        const response = await fetch(`/api/redirects/check?store_id=${storeId}&path=${encodeURIComponent(relativePath)}`);
+
         if (response.ok) {
           const data = await response.json();
           if (data.found && data.to_url) {
-            console.log(`🔀 Global redirect: ${currentPath} → ${data.to_url}`);
+            console.log(`🔀 Redirect found: ${relativePath} → ${data.to_url}`);
+
+            // Build the full destination URL
+            // If to_url is absolute (starts with http), use it as-is
+            // Otherwise, prepend the store prefix if it's a relative path
+            let destinationUrl = data.to_url;
+            if (!data.to_url.startsWith('http') && !data.to_url.startsWith('/public/')) {
+              // Relative path - prepend the store prefix from current URL
+              if (publicMatch) {
+                destinationUrl = `/public/${publicMatch[1]}${data.to_url}`;
+              }
+            }
+
+            console.log(`🔀 Redirecting to: ${destinationUrl}`);
             // Navigate to the redirect destination
-            navigate(data.to_url, { replace: true });
+            navigate(destinationUrl, { replace: true });
             return; // Don't set hasChecked since we're navigating away
           }
         }

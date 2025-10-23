@@ -89,27 +89,36 @@
             <h3>📋 Instructions:</h3>
             <ol>
                 <li>First, go to <strong>/admin/seo-redirects</strong> and create a test redirect</li>
-                <li>Example: From <code>/old-page</code> to <code>/new-page</code></li>
+                <li><strong>Use relative URLs:</strong> From <code>/category/old-name</code> to <code>/category/new-name</code></li>
+                <li><strong>Don't include the store prefix</strong> (e.g., <code>/public/hamid2</code>)</li>
                 <li>Then use this tester to verify it works</li>
             </ol>
+            <div style="background: #e7f3ff; padding: 10px; border-radius: 4px; margin-top: 10px;">
+                <strong>💡 Tip:</strong> Redirects use relative paths. When you visit <code>/public/hamid2/category/old-name</code>,
+                it checks for a redirect from <code>/category/old-name</code> and redirects to <code>/category/new-name</code>.
+            </div>
         </div>
 
         <div class="test-section">
             <h3>Test 1: Check API Endpoint</h3>
-            <p>This tests if the backend redirect API is responding correctly.</p>
+            <p>This tests if the backend redirect API is responding correctly using <strong>relative paths</strong>.</p>
             <label>Store ID: <input type="text" id="storeId" value="1" placeholder="Enter store ID"></label><br>
-            <label>Path: <input type="text" id="testPath" value="/old-page" placeholder="e.g., /old-page"></label><br>
+            <label>Relative Path: <input type="text" id="testPath" value="/category/old-name" placeholder="e.g., /category/old-name"></label><br>
             <button onclick="testRedirectAPI()">Test API</button>
             <div id="apiResult"></div>
+            <p class="info" style="margin-top: 10px; font-size: 12px;">
+                ℹ️ Use relative paths like <code>/category/old-name</code>, not full URLs like <code>/public/hamid2/category/old-name</code>
+            </p>
         </div>
 
         <div class="test-section">
             <h3>Test 2: Test Actual Navigation</h3>
             <p>This will navigate to a path and check if redirect happens.</p>
-            <label>URL Path: <input type="text" id="navPath" value="/old-page" placeholder="e.g., /old-page"></label><br>
+            <label>Store Slug: <input type="text" id="navStoreSlug" value="hamid2" placeholder="e.g., hamid2"></label><br>
+            <label>Relative Path: <input type="text" id="navPath" value="/category/old-name" placeholder="e.g., /category/old-name"></label><br>
             <button onclick="testNavigation()">Navigate & Test</button>
             <p class="info" style="margin-top: 10px;">
-                ⚠️ Note: This will navigate away from this page. You should see the redirect happen in real-time.
+                ⚠️ Note: This will navigate to <code>/public/{storeSlug}{path}</code>. You should see the redirect happen in real-time if one exists.
             </p>
         </div>
 
@@ -177,17 +186,20 @@
         }
 
         function testNavigation() {
+            const storeSlug = document.getElementById('navStoreSlug').value;
             const path = document.getElementById('navPath').value;
-            if (!path) {
-                alert('Please enter a path');
+
+            if (!storeSlug || !path) {
+                alert('Please enter both store slug and path');
                 return;
             }
 
-            console.log('Navigating to:', path);
-            alert(`Navigating to: ${path}\n\nWatch the URL bar - if a redirect exists, you should be redirected automatically.`);
+            const fullUrl = `/public/${storeSlug}${path}`;
+            console.log('Navigating to:', fullUrl);
+            alert(`Navigating to: ${fullUrl}\n\nWatch the URL bar - if a redirect exists for "${path}", you should be redirected automatically.`);
 
-            // Navigate to the path
-            window.location.href = path;
+            // Navigate to the full path
+            window.location.href = fullUrl;
         }
 
         async function listRedirects() {
