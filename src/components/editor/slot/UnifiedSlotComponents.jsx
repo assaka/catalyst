@@ -1321,6 +1321,22 @@ const CartCouponSlot = createSlotComponent({
       };
     }, [couponCode, setCouponCode, handleApplyCoupon, handleRemoveCoupon, handleCouponKeyPress, appliedCoupon, discount, formatPrice]);
 
+    // Re-render when language changes
+    React.useEffect(() => {
+      const handleLanguageChange = () => {
+        // Update coupon name when language changes
+        if (containerRef.current && appliedCoupon) {
+          const couponNameEl = containerRef.current.querySelector('[data-coupon-name]');
+          const currentLang = getCurrentLanguage();
+          const translatedName = getTranslatedField(appliedCoupon, 'name', currentLang, 'en') || appliedCoupon.name || appliedCoupon.code;
+          if (couponNameEl) couponNameEl.textContent = translatedName;
+        }
+      };
+
+      window.addEventListener('languageChanged', handleLanguageChange);
+      return () => window.removeEventListener('languageChanged', handleLanguageChange);
+    }, [appliedCoupon]);
+
     return (
       <div ref={containerRef} className={className} style={styles}
            dangerouslySetInnerHTML={{ __html: processedContent }} />
@@ -1447,6 +1463,21 @@ const CartOrderSummarySlot = createSlotComponent({
         }
       };
     }, [subtotal, discount, tax, total, customOptionsTotal, taxDetails, handleCheckout, appliedCoupon]);
+
+    // Re-render discount label when language changes
+    React.useEffect(() => {
+      const handleLanguageChange = () => {
+        if (containerRef.current && appliedCoupon && discount > 0) {
+          const discountLabelEl = containerRef.current.querySelector('[data-discount-label]');
+          const currentLang = getCurrentLanguage();
+          const translatedName = getTranslatedField(appliedCoupon, 'name', currentLang, 'en') || appliedCoupon.name;
+          if (discountLabelEl) discountLabelEl.textContent = `Discount (${translatedName})`;
+        }
+      };
+
+      window.addEventListener('languageChanged', handleLanguageChange);
+      return () => window.removeEventListener('languageChanged', handleLanguageChange);
+    }, [appliedCoupon, discount]);
 
     return (
       <div ref={containerRef} className={className} style={styles}

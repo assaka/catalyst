@@ -102,6 +102,9 @@ export function TranslationProvider({ children }) {
 
     // Load translations for new language
     await loadTranslations(langCode);
+
+    // Dispatch custom event for language change
+    window.dispatchEvent(new CustomEvent('languageChanged', { detail: { language: langCode } }));
   }, [availableLanguages, loadTranslations]);
 
   /**

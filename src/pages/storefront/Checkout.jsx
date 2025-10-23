@@ -48,7 +48,7 @@ import { getProductName, getCurrentLanguage, getShippingMethodName, getShippingM
 import { useTranslation } from '@/contexts/TranslationContext';
 
 export default function Checkout() {
-  const { t } = useTranslation();
+  const { t, getEntityTranslation, currentLanguage } = useTranslation();
   const { store, settings, loading: storeLoading, selectedCountry, setSelectedCountry } = useStore();
   const { showError, AlertComponent } = useAlertTypes();
 
@@ -1904,7 +1904,7 @@ export default function Checkout() {
                 <div className="flex items-center justify-between bg-green-50 p-3 rounded-lg">
                   <div>
                     <p className="text-sm font-medium text-green-800">
-                      {getTranslatedField(appliedCoupon, 'name', getCurrentLanguage(), 'en') || appliedCoupon.name}
+                      {getEntityTranslation(appliedCoupon, 'name', 'en') || appliedCoupon.name}
                     </p>
                     <p className="text-xs text-green-600">
                       {appliedCoupon.discount_type === 'fixed'
@@ -2009,7 +2009,7 @@ export default function Checkout() {
                 {appliedCoupon && calculateDiscount() > 0 && (
                   <div className="flex justify-between text-green-600">
                     <span>
-                      {t('checkout.discount', 'Discount')} ({getTranslatedField(appliedCoupon, 'name', getCurrentLanguage(), 'en') || appliedCoupon.name})
+                      {t('checkout.discount', 'Discount')} ({getEntityTranslation(appliedCoupon, 'name', 'en') || appliedCoupon.name})
                     </span>
                     <span>-{formatPrice(calculateDiscount())}</span>
                   </div>
