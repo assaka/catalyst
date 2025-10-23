@@ -170,22 +170,28 @@ export default function AnalyticsSettings() {
                     enable_google_tag_manager: gtmSettings.enabled
                 }
             };
-            
+
             await Store.update(storeId, { settings: updatedSettings });
-            
+
+            // Update local state to avoid reload
+            setStore(prev => ({
+                ...prev,
+                settings: updatedSettings
+            }));
+
             // Reload GTM if enabled
             if (gtmSettings.enabled && gtmSettings.container_id) {
                 loadGTMScript();
             }
-            
+
             // Clear all cache for instant updates
-            clearStorefrontCache(storeId, ['stores']);
             try {
                 localStorage.removeItem('storeProviderCache');
                 sessionStorage.removeItem('storeProviderCache');
             } catch (e) {
                 console.warn('Failed to clear cache:', e);
             }
+
             setFlashMessage({ type: 'success', message: 'Analytics settings saved successfully!' });
             setSaveSuccess(true);
             setTimeout(() => setSaveSuccess(false), 2000);
