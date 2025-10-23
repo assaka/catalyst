@@ -37,31 +37,6 @@ import { UnifiedSlotRenderer } from '@/components/editor/slot/UnifiedSlotRendere
 import '@/components/editor/slot/UnifiedSlotComponents'; // Register unified components
 import { productConfig } from '@/components/editor/slot/configs/product-config';
 
-// Product Label Component
-const ProductLabelComponent = ({ label }) => {
-  if (!label || !label.text) return null;
-
-  const positionClasses = {
-    'top-left': 'top-2 left-2',
-    'top-right': 'top-2 right-2',
-    'bottom-left': 'bottom-2 left-2',
-    'bottom-right': 'bottom-2 right-2',
-    'center': 'top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2',
-  }[label.position || 'top-left'];
-
-  return (
-    <div
-      className={`absolute ${positionClasses} text-xs font-semibold px-2 py-1 rounded-md z-10`}
-      style={{
-        backgroundColor: label.background_color || '#000000',
-        color: label.text_color || '#FFFFFF',
-      }}
-    >
-      {label.text}
-    </div>
-  );
-};
-
 // Utility function to generate a product name from attributes
 const generateProductName = (product, basePrefix = '') => {
   if (!product?.attributes) return '';

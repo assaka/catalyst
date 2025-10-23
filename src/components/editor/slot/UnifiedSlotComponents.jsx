@@ -29,6 +29,8 @@ import CustomOptionsComponent from '@/components/storefront/CustomOptions';
 import TotalPriceDisplayComponent from '@/components/storefront/TotalPriceDisplay';
 import CmsBlockRendererComponent from '@/components/storefront/CmsBlockRenderer';
 import ConfigurableProductSelectorComponent from '@/components/storefront/ConfigurableProductSelector';
+import ProductLabelComponent from '@/components/storefront/ProductLabel';
+import { getCurrentLanguage } from '@/utils/translationUtils';
 
 // Import category and header slot components to register them
 import './CategorySlotComponents.jsx';
@@ -423,19 +425,24 @@ const ProductGallery = createSlotComponent({
             {/* Product Labels */}
             {productContext.productLabels && productContext.productLabels.length > 0 && (
               <div className="absolute top-2 left-2 right-2 flex flex-wrap gap-2 justify-between">
-                {productContext.productLabels.map((label, index) => (
-                  <Badge
-                    key={index}
-                    variant="default"
-                    className="bg-blue-600 text-white"
-                    style={{
-                      backgroundColor: label.background_color || '#3B82F6',
-                      color: label.text_color || '#FFFFFF'
-                    }}
-                  >
-                    {label.text || label}
-                  </Badge>
-                ))}
+                {productContext.productLabels.map((label, index) => {
+                  const currentLang = getCurrentLanguage();
+                  const labelText = label.translations?.[currentLang]?.text || label.translations?.en?.text || label.text || label;
+
+                  return (
+                    <Badge
+                      key={index}
+                      variant="default"
+                      className="bg-blue-600 text-white"
+                      style={{
+                        backgroundColor: label.background_color || '#3B82F6',
+                        color: label.text_color || '#FFFFFF'
+                      }}
+                    >
+                      {labelText}
+                    </Badge>
+                  );
+                })}
               </div>
             )}
             {/* Sale Badge */}
