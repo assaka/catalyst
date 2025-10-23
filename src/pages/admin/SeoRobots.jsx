@@ -10,8 +10,10 @@ import { Switch } from "@/components/ui/switch";
 import { Product } from '@/api/entities';
 import { Category } from '@/api/entities';
 import { CmsPage } from '@/api/entities';
+import { SeoSetting } from '@/api/entities';
 import { useStoreSelection } from '@/contexts/StoreSelectionContext.jsx';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import FlashMessage from "@/components/storefront/FlashMessage";
 
 export default function SeoRobots() {
   const { selectedStore, getSelectedStoreId } = useStoreSelection();
@@ -19,6 +21,9 @@ export default function SeoRobots() {
   const [saving, setSaving] = useState(false);
   const [generating, setGenerating] = useState(false);
   const [isHelpOpen, setIsHelpOpen] = useState(false);
+  const [seoSetting, setSeoSetting] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [flashMessage, setFlashMessage] = useState(null);
   const [robotsTxt, setRobotsTxt] = useState(`User-agent: *
 Allow: /
 
@@ -42,6 +47,35 @@ Sitemap: https://example.com/sitemap.xml`);
   const [blockImages, setBlockImages] = useState(false);
   const [blockJsCss, setBlockJsCss] = useState(false);
   const [crawlDelay, setCrawlDelay] = useState(0);
+
+  // Load SEO settings on mount and when store changes
+  React.useEffect(() => {
+    const loadData = async () => {
+      setLoading(true);
+      try {
+        if (!selectedStore) {
+          setLoading(false);
+          return;
+        }
+        const settings = await SeoSetting.filter({ store_id: selectedStore.id });
+        if (settings && settings.length > 0) {
+          setSeoSetting(settings[0]);
+          if (settings[0].robots_txt_content) {
+            setRobotsTxt(settings[0].robots_txt_content);
+          }
+        }
+      } catch (error) {
+        console.error("Error loading SEO settings:", error);
+        setFlashMessage({ type: 'error', message: 'Failed to load robots.txt settings' });
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    if (selectedStore) {
+      loadData();
+    }
+  }, [selectedStore]);
 
   // Apply quick settings to robots.txt content
   const applyQuickSettings = () => {
@@ -250,12 +284,18 @@ Sitemap: https://example.com/sitemap.xml`);
 
   const handlePreview = () => {
     if (!selectedStore) {
-      alert('Please select a store first');
+      setFlashMessage({ type: 'error', message: 'Please select a store first' });
       return;
     }
 
     // Construct the robots.txt URL for the selected store
-    const domain = selectedStore.custom_domain || selectedStore.domain;
+    let domain = selectedStore.custom_domain || selectedStore.domain;
+
+    // Ensure domain has protocol
+    if (domain && !domain.startsWith('http://') && !domain.startsWith('https://')) {
+      domain = 'https://' + domain;
+    }
+
     const robotsUrl = `${domain}/robots.txt`;
 
     // Open in new tab
@@ -355,16 +395,46 @@ Sitemap: https://example.com/sitemap.xml`);
     setSaving(true);
     setSaveSuccess(false);
 
-    // Simulate save operation
-    await new Promise(resolve => setTimeout(resolve, 500));
+    try {
+      const storeId = getSelectedStoreId();
+      if (!storeId) {
+        setFlashMessage({ type: 'error', message: 'Please select a store first' });
+        return;
+      }
 
-    setSaveSuccess(true);
-    setSaving(false);
-    setTimeout(() => setSaveSuccess(false), 2000);
+      if (seoSetting) {
+        // Update existing setting
+        await SeoSetting.update(seoSetting.id, { robots_txt_content: robotsTxt });
+      } else {
+        // Create new setting
+        const newSetting = await SeoSetting.create({
+          store_id: storeId,
+          robots_txt_content: robotsTxt
+        });
+        setSeoSetting(newSetting);
+      }
+
+      // Clear cache
+      if (typeof window !== 'undefined' && window.clearCache) {
+        window.clearCache();
+      }
+      localStorage.setItem('forceRefreshStore', 'true');
+
+      setSaveSuccess(true);
+      setFlashMessage({ type: 'success', message: 'Robots.txt saved successfully!' });
+      setTimeout(() => setSaveSuccess(false), 2000);
+    } catch (error) {
+      console.error("Error saving robots.txt:", error);
+      setFlashMessage({ type: 'error', message: 'Failed to save robots.txt. Please try again.' });
+    } finally {
+      setSaving(false);
+    }
   };
 
   return (
     <div className="container mx-auto p-6 space-y-6">
+      <FlashMessage message={flashMessage} onClose={() => setFlashMessage(null)} />
+
       <div className="flex items-center gap-2 mb-6">
         <Bot className="h-6 w-6" />
         <h1 className="text-3xl font-bold">Robots.txt Configuration</h1>
