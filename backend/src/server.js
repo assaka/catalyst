@@ -1564,7 +1564,8 @@ app.get('/api/orders/by-payment-reference/:payment_reference', async (req, res) 
 app.use('/api/orders', authMiddleware, orderRoutes);
 app.use('/api/coupons', authMiddleware, couponRoutes);
 app.use('/api/attributes', authMiddleware, attributeRoutes);
-app.use('/api/cms', authMiddleware, cmsRoutes);
+app.use('/api/cms-pages', authMiddleware, cmsRoutes);
+app.use('/api/cms', authMiddleware, cmsRoutes); // Legacy route for backward compatibility
 app.use('/api/cms-blocks', authMiddleware, cmsBlockRoutes);
 app.use('/api/shipping', authMiddleware, shippingRoutes);
 app.use('/api/tax', authMiddleware, taxRoutes);

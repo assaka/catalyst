@@ -33,7 +33,7 @@ export const endpointAccessConfig = {
     'shipping',
     'delivery',
     'coupons',
-    'cms',
+    'cms-pages',
   ],
 
   // Endpoints that require store owner/admin authentication
