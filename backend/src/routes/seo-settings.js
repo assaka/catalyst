@@ -57,7 +57,7 @@ router.get('/', async (req, res) => {
   }
 
   // Private/authenticated request - continue with auth middleware
-  auth(req, res, async () => {
+  authMiddleware(req, res, async () => {
   try {
     const { store_id } = req.query;
 
