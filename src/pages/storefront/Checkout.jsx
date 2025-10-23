@@ -110,8 +110,6 @@ export default function Checkout() {
   
   const [shippingCost, setShippingCost] = useState(0);
   const [paymentFee, setPaymentFee] = useState(0);
-  const [taxAmount, setTaxAmount] = useState(0);
-  const [taxDetails, setTaxDetails] = useState({ effectiveRate: 0, country: null });
   const [taxRules, setTaxRules] = useState([]);
   const [deliveryDate, setDeliveryDate] = useState(null);
   const [deliveryTimeSlot, setDeliveryTimeSlot] = useState('');
@@ -460,10 +458,11 @@ export default function Checkout() {
     const discount = calculateDiscount();
     const shipping = isNaN(parseFloat(shippingCost)) ? 0 : parseFloat(shippingCost);
     const paymentMethodFee = isNaN(parseFloat(paymentFee)) ? 0 : parseFloat(paymentFee);
-    const tax = calculateTax(); // Use calculated tax instead of state
+    const taxResult = calculateTax();
+    const tax = taxResult.taxAmount;
     const total = subtotal + optionsTotal - discount + shipping + paymentMethodFee + tax;
-    
-    
+
+
     return isNaN(total) ? 0 : total;
   };
 
@@ -704,7 +703,7 @@ export default function Checkout() {
 
   const calculateTax = () => {
     if (!store || !taxRules.length || !cartItems.length) {
-      return 0;
+      return { taxAmount: 0, effectiveRate: 0, country: null };
     }
 
     const subtotal = calculateSubtotal();
@@ -727,13 +726,11 @@ export default function Checkout() {
       discount
     );
 
-    // Update tax details state
-    setTaxDetails({
+    return {
+      taxAmount: taxResult.taxAmount || 0,
       effectiveRate: taxResult.effectiveRate || 0,
       country: currentShippingCountry
-    });
-
-    return taxResult.taxAmount || 0;
+    };
   };
 
   const handleLogin = async (e) => {
@@ -975,7 +972,7 @@ export default function Checkout() {
         shippingAddress: finalShippingAddress,
         billingAddress: finalBillingAddress,
         store,
-        taxAmount: calculateTax(),
+        taxAmount: calculateTax().taxAmount,
         shippingCost,
         paymentFee,
         shippingMethod: selectedMethod,
@@ -1974,19 +1971,22 @@ export default function Checkout() {
                   </div>
                 )}
 
-                {calculateTax() > 0 && (
-                  <div className="flex justify-between">
-                    <span>
-                      {t('checkout.tax', 'Tax')}
-                      {taxDetails && taxDetails.country && (
-                        <span className="text-gray-500 text-sm ml-1">
-                          ({taxDetails.country} {taxDetails.effectiveRate ? `${taxDetails.effectiveRate}%` : ''})
-                        </span>
-                      )}
-                    </span>
-                    <span>{formatPrice(calculateTax())}</span>
-                  </div>
-                )}
+                {(() => {
+                  const taxResult = calculateTax();
+                  return taxResult.taxAmount > 0 && (
+                    <div className="flex justify-between">
+                      <span>
+                        {t('checkout.tax', 'Tax')}
+                        {taxResult.country && (
+                          <span className="text-gray-500 text-sm ml-1">
+                            ({taxResult.country} {taxResult.effectiveRate ? `${taxResult.effectiveRate}%` : ''})
+                          </span>
+                        )}
+                      </span>
+                      <span>{formatPrice(taxResult.taxAmount)}</span>
+                    </div>
+                  );
+                })()}
 
                 <div className="flex justify-between text-xl font-bold border-t pt-2">
                   <span>{t('checkout.total', 'Total')}</span>
