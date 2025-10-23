@@ -590,13 +590,14 @@ export function CartSlotRenderer({
                     <div className="flex-1">
                       <Accordion type="single" collapsible className="w-full">
                         <AccordionItem value="discount-details" className="border-0">
-                          <AccordionTrigger className="py-2 px-0 hover:no-underline">
+                          <AccordionTrigger className="py-2 px-0 hover:no-underline flex gap-2 items-center">
                             <span>{t('discount', settings)}</span>
                             {appliedCoupon && (
-                              <span className="text-xs text-gray-500 ml-2">
+                              <span className="text-xs text-gray-500">
                                 ({getEntityTranslation(appliedCoupon, 'name', 'en') || appliedCoupon.name})
                               </span>
                             )}
+                            <ChevronDown className="h-4 w-4 shrink-0 text-gray-400 transition-transform duration-200" />
                           </AccordionTrigger>
                       <AccordionContent className="px-0 pt-2 pb-2">
                       <div className="text-sm text-gray-600 space-y-1">
