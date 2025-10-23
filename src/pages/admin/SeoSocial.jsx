@@ -10,12 +10,14 @@ import { Share2, Facebook, Twitter, Plus, X } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useStore } from '@/components/storefront/StoreProvider';
 import { SeoSetting } from '@/api/entities';
+import FlashMessage from '@/components/storefront/FlashMessage';
 
 export default function SeoSocial() {
   const { store } = useStore();
   const [saveSuccess, setSaveSuccess] = useState(false);
   const [saving, setSaving] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [flashMessage, setFlashMessage] = useState(null);
 
   // Form state
   const [settings, setSettings] = useState({
@@ -76,8 +78,12 @@ export default function SeoSocial() {
   }, [store?.id]);
 
   const handleSave = async () => {
-    if (!store?.id) return;
+    if (!store?.id) {
+      console.error('No store ID available');
+      return;
+    }
 
+    console.log('Starting save with store ID:', store.id);
     setSaving(true);
     setSaveSuccess(false);
 
@@ -89,18 +95,40 @@ export default function SeoSocial() {
         schema_settings: settings.schema_settings
       };
 
+      console.log('Payload to save:', payload);
+      console.log('Existing settings ID:', settings.id);
+
+      let response;
       if (settings.id) {
-        await SeoSetting.update(settings.id, payload);
+        console.log('Updating existing settings with ID:', settings.id);
+        response = await SeoSetting.update(settings.id, payload);
+        console.log('Update response:', response);
       } else {
-        const created = await SeoSetting.create(payload);
-        setSettings({ ...settings, id: created.id });
+        console.log('Creating new settings');
+        response = await SeoSetting.create(payload);
+        console.log('Create response:', response);
+
+        // Handle different response formats
+        const createdData = Array.isArray(response) ? response[0] : response;
+        if (createdData?.id) {
+          setSettings({ ...settings, id: createdData.id });
+        }
       }
 
       setSaveSuccess(true);
+      console.log('Save successful!');
+      setFlashMessage({
+        type: 'success',
+        message: 'Social media settings saved successfully!'
+      });
       setTimeout(() => setSaveSuccess(false), 2000);
     } catch (error) {
       console.error('Error saving SEO settings:', error);
-      alert('Failed to save settings. Please try again.');
+      console.error('Error details:', error.message, error.stack);
+      setFlashMessage({
+        type: 'error',
+        message: `Failed to save settings: ${error.message || 'Unknown error'}`
+      });
     } finally {
       setSaving(false);
     }
@@ -142,6 +170,11 @@ export default function SeoSocial() {
   }
   return (
     <div className="container mx-auto p-6 space-y-6">
+      <FlashMessage
+        message={flashMessage}
+        onClose={() => setFlashMessage(null)}
+      />
+
       <div className="flex items-center gap-2 mb-6">
         <Share2 className="h-6 w-6" />
         <h1 className="text-3xl font-bold">Social Media & Schema</h1>
