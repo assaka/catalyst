@@ -779,15 +779,36 @@ export default function CookieConsent() {
                         <SelectItem value="">
                           <span className="text-gray-500">No privacy policy page</span>
                         </SelectItem>
-                        {cmsPages.map((page) => (
-                          <SelectItem key={page.id} value={`/public/${store?.slug}/cms-page/${page.slug}`}>
-                            {page.title} ({page.slug})
-                          </SelectItem>
-                        ))}
+                        {/* System pages first */}
+                        {cmsPages
+                          .filter(page => page.is_system)
+                          .map((page) => (
+                            <SelectItem key={page.id} value={`/public/${store?.slug}/cms-page/${page.slug}`}>
+                              <div className="flex items-center gap-2">
+                                <span>{page.translations?.en?.title || page.slug}</span>
+                                <Badge variant="secondary" className="text-xs">System</Badge>
+                              </div>
+                            </SelectItem>
+                          ))
+                        }
+                        {/* Regular pages */}
+                        {cmsPages
+                          .filter(page => !page.is_system)
+                          .map((page) => (
+                            <SelectItem key={page.id} value={`/public/${store?.slug}/cms-page/${page.slug}`}>
+                              {page.translations?.en?.title || page.slug} ({page.slug})
+                            </SelectItem>
+                          ))
+                        }
                       </SelectContent>
                     </Select>
                     <p className="text-sm text-gray-500 mt-1">
                       Select a CMS page to use as your privacy policy. The page will be linked in the cookie banner.
+                      {cmsPages.filter(p => p.slug === 'privacy-policy').length === 0 && (
+                        <span className="block mt-1 text-amber-600">
+                          ⚠️ No Privacy Policy page found. System pages should be created automatically.
+                        </span>
+                      )}
                     </p>
                   </div>
                 </CardContent>
