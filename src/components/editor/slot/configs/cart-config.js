@@ -315,9 +315,20 @@ export const cartConfig = {
               <span>{{t "common.additional_products"}}</span>
               <span data-custom-options-total>$0.00</span>
             </div>
-            <div class="flex justify-between" data-discount-row style="display: none;">
-              <span data-discount-label>{{t "common.discount"}}</span>
-              <span data-discount>$0.00</span>
+            <div data-discount-row style="display: none;">
+              <div class="flex justify-between items-center cursor-pointer hover:bg-gray-50 py-1 rounded" data-discount-toggle>
+                <div class="flex items-center gap-2">
+                  <span data-discount-label>{{t "common.discount"}}</span>
+                  <svg class="h-4 w-4 text-gray-400 transition-transform duration-200" data-discount-chevron fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                  </svg>
+                </div>
+                <span data-discount class="text-green-600">$0.00</span>
+              </div>
+              <div class="hidden mt-2 ml-4 text-sm text-gray-600" data-discount-details>
+                <p class="font-medium mb-2 text-xs">Discount applies to:</p>
+                <ul class="space-y-1" data-eligible-products></ul>
+              </div>
             </div>
             <div class="flex justify-between">
               <span>{{t "common.tax"}}</span>
