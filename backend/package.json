@@ -12,6 +12,7 @@
     "migrate:tabs": "node src/database/migrations/run-product-tabs-migration.js",
     "migrate:shipping": "node src/database/migrations/run-shipping-translations-migration.js",
     "migrate:payment": "node src/database/migrations/run-payment-translations-migration.js",
+    "migrate:seo-types": "node src/database/migrations/run-expand-seo-type-migration.js",
     "sync:tables": "node src/database/sync-tables.js",
     "migrate:alter-tabs": "node src/database/migrations/run-alter-product-tabs.js",
     "migrate:payment-fee": "node run-payment-fee-migration-simple.js",
