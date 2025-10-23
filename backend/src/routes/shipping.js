@@ -99,7 +99,8 @@ router.put('/:id', async (req, res) => {
     await shippingMethod.update(req.body);
     res.json({ success: true, message: 'Shipping method updated successfully', data: shippingMethod });
   } catch (error) {
-    res.status(500).json({ success: false, message: 'Server error' });
+    console.error('Error updating shipping method:', error);
+    res.status(500).json({ success: false, message: 'Server error', error: error.message });
   }
 });
 

@@ -135,6 +135,28 @@ export function getBlockContent(block, lang = 'en') {
 }
 
 /**
+ * Get translated shipping method name
+ *
+ * @param {Object} shippingMethod - Shipping method object
+ * @param {String} lang - Language code (default: 'en')
+ * @returns {String} Translated shipping method name
+ */
+export function getShippingMethodName(shippingMethod, lang = 'en') {
+  return getTranslatedField(shippingMethod, 'name', lang);
+}
+
+/**
+ * Get translated shipping method description
+ *
+ * @param {Object} shippingMethod - Shipping method object
+ * @param {String} lang - Language code (default: 'en')
+ * @returns {String} Translated shipping method description
+ */
+export function getShippingMethodDescription(shippingMethod, lang = 'en') {
+  return getTranslatedField(shippingMethod, 'description', lang);
+}
+
+/**
  * Get current language from localStorage or browser
  *
  * @returns {String} Current language code

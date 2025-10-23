@@ -75,6 +75,12 @@ const ShippingMethod = sequelize.define('ShippingMethod', {
   sort_order: {
     type: DataTypes.INTEGER,
     defaultValue: 0
+  },
+  // Multilingual translations
+  translations: {
+    type: DataTypes.JSON,
+    defaultValue: {},
+    comment: 'Multilingual translations: {"en": {"name": "...", "description": "..."}, "nl": {...}}'
   }
 }, {
   tableName: 'shipping_methods'

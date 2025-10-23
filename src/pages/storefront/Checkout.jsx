@@ -44,7 +44,7 @@ import CmsBlockRenderer from "@/components/storefront/CmsBlockRenderer";
 import apiClient from "@/api/client";
 import StepIndicator from "@/components/storefront/StepIndicator";
 import { formatPrice as formatPriceUtil } from '@/utils/priceUtils';
-import { getProductName, getCurrentLanguage } from '@/utils/translationUtils';
+import { getProductName, getCurrentLanguage, getShippingMethodName, getShippingMethodDescription } from '@/utils/translationUtils';
 import { useTranslation } from '@/contexts/TranslationContext';
 
 export default function Checkout() {
@@ -1483,7 +1483,7 @@ export default function Checkout() {
                       className="text-blue-600"
                     />
                     <label htmlFor={`shipping-method-${method.id}`} className="flex-1 cursor-pointer flex justify-between">
-                      <span>{method.name}</span>
+                      <span>{getShippingMethodName(method, getCurrentLanguage()) || method.name}</span>
                       <span className="font-medium">
                         {method.type === 'free_shipping' && calculateSubtotal() >= (method.free_shipping_min_order || 0)
                           ? t('common.free', 'Free')

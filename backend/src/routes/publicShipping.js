@@ -26,15 +26,16 @@ router.get('/', async (req, res) => {
       where,
       order: [['sort_order', 'ASC'], ['name', 'ASC']],
       attributes: [
-        'id', 
-        'name', 
-        'type', 
-        'flat_rate_cost', 
+        'id',
+        'name',
+        'type',
+        'flat_rate_cost',
         'free_shipping_min_order',
         'availability',
         'countries',
         'description',
-        'sort_order'
+        'sort_order',
+        'translations'
       ]
     });
     
