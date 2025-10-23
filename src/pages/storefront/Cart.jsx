@@ -844,6 +844,13 @@ export default function Cart() {
 
         let disc = 0;
         if (appliedCoupon) {
+            console.log('🎟️ Applying coupon:', appliedCoupon.name);
+            console.log('📦 Coupon filters:', {
+                applicable_products: appliedCoupon.applicable_products,
+                applicable_categories: appliedCoupon.applicable_categories,
+                applicable_skus: appliedCoupon.applicable_skus
+            });
+
             // Helper function to check if an item qualifies for the coupon
             const itemQualifiesForCoupon = (item) => {
                 // If no filters are set, coupon applies to all items
@@ -852,6 +859,7 @@ export default function Cart() {
                 const hasSkuFilter = appliedCoupon.applicable_skus && appliedCoupon.applicable_skus.length > 0;
 
                 if (!hasProductFilter && !hasCategoryFilter && !hasSkuFilter) {
+                    console.log('✅ No filters - applies to all items');
                     return true; // No filters = applies to all
                 }
 
@@ -860,33 +868,58 @@ export default function Cart() {
                     const productId = typeof item.product_id === 'object' ?
                         (item.product_id?.id || item.product_id?.toString() || null) :
                         item.product_id;
+
+                    console.log(`🔍 Checking product ${item.product?.name || productId}:`, {
+                        productId,
+                        productIdType: typeof productId,
+                        inApplicableProducts: appliedCoupon.applicable_products.includes(productId),
+                        applicableProducts: appliedCoupon.applicable_products,
+                        applicableProductsTypes: appliedCoupon.applicable_products.map(id => typeof id)
+                    });
+
                     if (productId && appliedCoupon.applicable_products.includes(productId)) {
+                        console.log('✅ Product matches by ID');
                         return true;
                     }
                 }
 
                 // Check category filter
                 if (hasCategoryFilter) {
+                    console.log(`🔍 Checking categories for ${item.product?.name}:`, {
+                        category_ids: item.product?.category_ids,
+                        applicable_categories: appliedCoupon.applicable_categories
+                    });
+
                     if (item.product?.category_ids?.some(catId =>
                         appliedCoupon.applicable_categories.includes(catId)
                     )) {
+                        console.log('✅ Product matches by category');
                         return true;
                     }
                 }
 
                 // Check SKU filter
                 if (hasSkuFilter) {
+                    console.log(`🔍 Checking SKU for ${item.product?.name}:`, {
+                        sku: item.product?.sku,
+                        applicable_skus: appliedCoupon.applicable_skus
+                    });
+
                     if (item.product?.sku && appliedCoupon.applicable_skus.includes(item.product.sku)) {
+                        console.log('✅ Product matches by SKU');
                         return true;
                     }
                 }
 
+                console.log(`❌ Product ${item.product?.name} does NOT qualify`);
                 return false;
             };
 
             // Calculate the total of qualifying items only
             const qualifyingTotal = cartItems.reduce((total, item) => {
-                if (itemQualifiesForCoupon(item)) {
+                const qualifies = itemQualifiesForCoupon(item);
+
+                if (qualifies) {
                     const price = safeNumber(item.product?.price || 0);
                     const quantity = safeNumber(item.quantity || 1);
                     let itemTotal = price * quantity;
@@ -899,10 +932,14 @@ export default function Cart() {
                         itemTotal += optionsPrice * quantity;
                     }
 
+                    console.log(`💰 Adding qualifying item ${item.product?.name}: $${itemTotal}`);
                     return total + itemTotal;
                 }
                 return total;
             }, 0);
+
+            console.log('💵 Qualifying total:', qualifyingTotal);
+            console.log('💵 Cart total with options:', calculatedTotalWithOptions);
 
             // Apply discount based on type
             if (appliedCoupon.discount_type === 'fixed') {
@@ -926,6 +963,8 @@ export default function Cart() {
             if (disc > maxDiscount) {
                 disc = maxDiscount;
             }
+
+            console.log('🎁 Final discount amount:', disc);
         }
 
         const subAfterDiscount = calculatedTotalWithOptions - disc;
