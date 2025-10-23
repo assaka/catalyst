@@ -116,20 +116,21 @@ Sitemap: https://example.com/sitemap.xml`);
         CmsPage.filter({ store_id: storeId })
       ]);
 
-      // Filter items with noindex tags (any variation: "noindex, nofollow", "noindex, follow", "follow, noindex")
+      // Filter items with ANY non-default meta robots tags
+      // Default is "index, follow" or empty/null, so we exclude those
       const products = allProducts.filter(p => {
-        const tag = p.seo?.meta_robots_tag?.toLowerCase() || '';
-        return tag.includes('noindex');
+        const tag = p.seo?.meta_robots_tag?.toLowerCase()?.trim() || '';
+        return tag && tag !== 'index, follow';
       });
 
       const categories = allCategories.filter(c => {
-        const tag = c.meta_robots_tag?.toLowerCase() || '';
-        return tag.includes('noindex');
+        const tag = c.meta_robots_tag?.toLowerCase()?.trim() || '';
+        return tag && tag !== 'index, follow';
       });
 
       const pages = allPages.filter(p => {
-        const tag = p.meta_robots_tag?.toLowerCase() || '';
-        return tag.includes('noindex');
+        const tag = p.meta_robots_tag?.toLowerCase()?.trim() || '';
+        return tag && tag !== 'index, follow';
       });
 
       // Build default rules with Allow directives for content directories
@@ -156,27 +157,27 @@ Sitemap: https://example.com/sitemap.xml`);
 
       let newContent = [defaultRules];
 
-      // Only add Disallow rules for items that have noindex (different from default)
+      // Only add Disallow rules for items with non-default meta robots tags
       if (products && products.length > 0) {
-        newContent.push('\n# Disallowed Products (noindex - different from default)');
+        newContent.push('\n# Disallowed Products (non-default meta robots tags)');
         products.forEach(p => {
           const tag = p.seo?.meta_robots_tag || 'default';
           newContent.push(`Disallow: /products/${p.slug || p.id}  # ${tag}`);
         });
       }
 
-      // Only add Disallow rules for categories that have noindex
+      // Only add Disallow rules for categories with non-default meta robots tags
       if (categories && categories.length > 0) {
-        newContent.push('\n# Disallowed Categories (noindex - different from default)');
+        newContent.push('\n# Disallowed Categories (non-default meta robots tags)');
         categories.forEach(c => {
           const tag = c.meta_robots_tag || 'default';
           newContent.push(`Disallow: /categories/${c.slug}  # ${tag}`);
         });
       }
 
-      // Only add Disallow rules for CMS pages that have noindex
+      // Only add Disallow rules for CMS pages with non-default meta robots tags
       if (pages && pages.length > 0) {
-        newContent.push('\n# Disallowed CMS Pages (noindex - different from default)');
+        newContent.push('\n# Disallowed CMS Pages (non-default meta robots tags)');
         pages.forEach(p => {
           const tag = p.meta_robots_tag || 'default';
           newContent.push(`Disallow: /cms-pages/${p.slug}  # ${tag}`);
@@ -387,9 +388,10 @@ Sitemap: https://example.com/sitemap.xml`);
                       The <strong>Import Custom Rules</strong> button automatically generates robots.txt rules from your content with non-default SEO settings:
                     </p>
                     <ul className="text-sm text-gray-700 space-y-1">
-                      <li>• Products with "noindex" in meta robots tag (noindex/nofollow, noindex/follow, etc.)</li>
-                      <li>• Categories with "noindex" in meta robots tag</li>
-                      <li>• CMS pages with "noindex" in meta robots tag</li>
+                      <li>• Products with ANY non-default meta robots tag (noindex/nofollow, noindex/follow, index/nofollow, etc.)</li>
+                      <li>• Categories with ANY non-default meta robots tag</li>
+                      <li>• CMS pages with ANY non-default meta robots tag</li>
+                      <li>• Default is "index, follow" - anything else gets added to robots.txt</li>
                       <li>• Adds inline comments showing the actual meta robots tag for each item</li>
                       <li>• Uses your store's custom domain for the sitemap URL</li>
                     </ul>
