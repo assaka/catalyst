@@ -558,9 +558,47 @@ app.post('/debug/migrate-seo-settings', async (req, res) => {
 
     const { SeoSettings } = require('./models');
 
-    // Sync SeoSettings table
+    // Get current table columns before sync
+    const [tableColumns] = await sequelize.query(`
+      SELECT column_name
+      FROM information_schema.columns
+      WHERE table_name = 'seo_settings'
+      AND table_schema = 'public'
+    `);
+    console.log('📋 Current columns:', tableColumns.map(c => c.column_name));
+
+    // Get model attributes
+    const modelColumns = Object.keys(SeoSettings.rawAttributes);
+    console.log('📋 Model columns:', modelColumns);
+
+    // Find columns to remove (in table but not in model)
+    const columnsToRemove = tableColumns
+      .map(c => c.column_name)
+      .filter(col => !modelColumns.includes(col) && !['createdAt', 'updatedAt'].includes(col));
+
+    if (columnsToRemove.length > 0) {
+      console.log('🗑️  Removing old columns:', columnsToRemove);
+      for (const column of columnsToRemove) {
+        try {
+          await sequelize.query(`ALTER TABLE seo_settings DROP COLUMN IF EXISTS "${column}"`);
+          console.log(`✅ Dropped column: ${column}`);
+        } catch (dropError) {
+          console.warn(`⚠️  Could not drop column ${column}:`, dropError.message);
+        }
+      }
+    }
+
+    // Sync SeoSettings table (add missing columns, alter existing ones)
     await SeoSettings.sync({ alter: true });
     console.log('✅ SeoSettings table synced successfully');
+
+    // Get updated column list
+    const [updatedColumns] = await sequelize.query(`
+      SELECT column_name
+      FROM information_schema.columns
+      WHERE table_name = 'seo_settings'
+      AND table_schema = 'public'
+    `);
 
     // Test the table
     const count = await SeoSettings.count();
@@ -569,7 +607,9 @@ app.post('/debug/migrate-seo-settings', async (req, res) => {
     res.json({
       success: true,
       message: 'SeoSettings migration completed successfully',
-      count: count
+      count: count,
+      columnsRemoved: columnsToRemove,
+      currentColumns: updatedColumns.map(c => c.column_name)
     });
   } catch (error) {
     console.error('❌ SeoSettings migration failed:', error);
