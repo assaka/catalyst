@@ -784,10 +784,7 @@ export default function CookieConsent() {
                           .filter(page => page.is_system)
                           .map((page) => (
                             <SelectItem key={page.id} value={`/public/${store?.slug}/cms-page/${page.slug}`}>
-                              <div className="flex items-center gap-2">
-                                <span>{page.translations?.en?.title || page.slug}</span>
-                                <Badge variant="secondary" className="text-xs">System</Badge>
-                              </div>
+                              {page.translations?.en?.title || page.slug} (System)
                             </SelectItem>
                           ))
                         }
@@ -796,7 +793,7 @@ export default function CookieConsent() {
                           .filter(page => !page.is_system)
                           .map((page) => (
                             <SelectItem key={page.id} value={`/public/${store?.slug}/cms-page/${page.slug}`}>
-                              {page.translations?.en?.title || page.slug} ({page.slug})
+                              {page.translations?.en?.title || page.slug}
                             </SelectItem>
                           ))
                         }
