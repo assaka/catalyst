@@ -110,7 +110,7 @@ export default function CmsPageViewer() {
             {relatedProducts.length > 0 && (
                 <div className="mt-16">
                     {/* Search bar for related products */}
-                    <div className="max-w-md mx-auto mb-8">
+                    <div className="max-w-md mx-auto">
                         <div className="relative">
                             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
                             <Input
