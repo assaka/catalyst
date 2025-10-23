@@ -38,10 +38,24 @@ export default function CookieConsentBanner() {
   const [user, setUser] = useState(null);
 
   useEffect(() => {
+    console.log('🍪 CookieConsentBanner useEffect triggered', {
+      hasStore: !!store?.id,
+      storeId: store?.id,
+      hasCookieConsent: !!settings?.cookie_consent,
+      cookieConsentEnabled: settings?.cookie_consent?.enabled,
+      gdprMode: settings?.cookie_consent?.gdpr_mode,
+      autoDetect: settings?.cookie_consent?.auto_detect_country
+    });
+
     if (store?.id && settings?.cookie_consent) {
       detectUserCountry();
       loadUser();
       checkExistingConsent();
+    } else {
+      console.log('🍪 Cookie consent not loaded:', {
+        storeId: store?.id,
+        settingsKeys: settings ? Object.keys(settings) : 'no settings'
+      });
     }
   }, [store?.id, settings?.cookie_consent]);
 
@@ -67,18 +81,28 @@ export default function CookieConsentBanner() {
   const checkExistingConsent = () => {
     const consent = localStorage.getItem('cookie_consent');
     const consentExpiry = localStorage.getItem('cookie_consent_expiry');
-    
+
+    console.log('🍪 checkExistingConsent:', {
+      hasStoredConsent: !!consent,
+      consentExpiry: consentExpiry
+    });
+
     if (consent && consentExpiry) {
       const expiryDate = new Date(consentExpiry);
       if (expiryDate > new Date()) {
+        console.log('🍪 Existing valid consent found, not showing banner');
         return;
       }
     }
-    
+
     // Show banner if should be shown
-    if (shouldShowBanner()) {
+    const shouldShow = shouldShowBanner();
+    console.log('🍪 shouldShow result:', shouldShow);
+
+    if (shouldShow) {
+      console.log('🍪 Setting showBanner to TRUE');
       setShowBanner(true);
-      
+
       // Initialize selected categories
       const cookieSettings = settings.cookie_consent;
       if (cookieSettings?.categories) {
@@ -88,6 +112,8 @@ export default function CookieConsentBanner() {
         });
         setSelectedCategories(initialCategories);
       }
+    } else {
+      console.log('🍪 NOT showing banner based on shouldShowBanner check');
     }
   };
 
@@ -102,11 +128,26 @@ export default function CookieConsentBanner() {
 
   const shouldShowBanner = () => {
     const cookieSettings = settings?.cookie_consent;
-    if (!cookieSettings?.enabled) return false;
-    
-    if (cookieSettings.gdpr_mode && cookieSettings.auto_detect_country) {
-      return isGDPRCountry();
+    console.log('🍪 shouldShowBanner check:', {
+      hasCookieSettings: !!cookieSettings,
+      enabled: cookieSettings?.enabled,
+      gdprMode: cookieSettings?.gdpr_mode,
+      autoDetect: cookieSettings?.auto_detect_country,
+      userCountry: userCountry
+    });
+
+    if (!cookieSettings?.enabled) {
+      console.log('🍪 Banner NOT shown: Cookie consent is disabled');
+      return false;
     }
+
+    if (cookieSettings.gdpr_mode && cookieSettings.auto_detect_country) {
+      const isGDPR = isGDPRCountry();
+      console.log('🍪 GDPR mode active, isGDPRCountry:', isGDPR);
+      return isGDPR;
+    }
+
+    console.log('🍪 Banner SHOULD show (no GDPR restrictions)');
     return true;
   };
 
