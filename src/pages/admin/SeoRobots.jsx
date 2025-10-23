@@ -126,8 +126,22 @@ Sitemap: https://example.com/sitemap.xml`);
         lines.push(`Crawl-delay: ${crawlDelay}`);
       }
 
+      // Construct sitemap URL
+      let domain = selectedStore?.settings?.custom_domain ||
+                   selectedStore?.settings?.domain ||
+                   selectedStore?.custom_domain ||
+                   selectedStore?.domain;
+
+      if (!domain) {
+        // Construct from current domain + store slug
+        const currentDomain = window.location.origin;
+        domain = `${currentDomain}/public/${selectedStore?.slug}`;
+      } else if (!domain.startsWith('http://') && !domain.startsWith('https://')) {
+        domain = 'https://' + domain;
+      }
+
       lines.push('');
-      lines.push('Sitemap: https://example.com/sitemap.xml');
+      lines.push(`Sitemap: ${domain}/sitemap.xml`);
     }
 
     setRobotsTxt(lines.join('\n'));
@@ -186,7 +200,19 @@ Sitemap: https://example.com/sitemap.xml`);
       });
 
       // Build default rules with Allow directives for content directories
-      const domain = selectedStore?.custom_domain || selectedStore?.domain || 'https://example.com';
+      let domain = selectedStore?.settings?.custom_domain ||
+                   selectedStore?.settings?.domain ||
+                   selectedStore?.custom_domain ||
+                   selectedStore?.domain;
+
+      if (!domain) {
+        // Construct from current domain + store slug
+        const currentDomain = window.location.origin;
+        domain = `${currentDomain}/public/${selectedStore.slug}`;
+      } else if (!domain.startsWith('http://') && !domain.startsWith('https://')) {
+        domain = 'https://' + domain;
+      }
+
       const defaultRules = [
         'User-agent: *',
         'Allow: /',
@@ -251,26 +277,25 @@ Sitemap: https://example.com/sitemap.xml`);
       return;
     }
 
-    console.log('Selected Store:', selectedStore);
+    // Check for custom domain in settings or construct from current domain + store slug
+    let domain = selectedStore.settings?.custom_domain ||
+                 selectedStore.settings?.domain ||
+                 selectedStore.custom_domain ||
+                 selectedStore.domain;
 
-    // Construct the robots.txt URL for the selected store
-    let domain = selectedStore.custom_domain || selectedStore.domain || selectedStore.subdomain;
+    let robotsUrl;
 
-    console.log('Domain:', domain);
-
-    if (!domain) {
-      setFlashMessage({ type: 'error', message: 'Store domain not configured' });
-      return;
+    if (domain) {
+      // Has custom domain - use it
+      if (!domain.startsWith('http://') && !domain.startsWith('https://')) {
+        domain = 'https://' + domain;
+      }
+      robotsUrl = `${domain}/robots.txt`;
+    } else {
+      // No custom domain - construct from current domain and store slug
+      const currentDomain = window.location.origin;
+      robotsUrl = `${currentDomain}/public/${selectedStore.slug}/robots.txt`;
     }
-
-    // Ensure domain has protocol
-    if (domain && !domain.startsWith('http://') && !domain.startsWith('https://')) {
-      domain = 'https://' + domain;
-    }
-
-    const robotsUrl = `${domain}/robots.txt`;
-
-    console.log('Opening URL:', robotsUrl);
 
     // Open in new tab
     window.open(robotsUrl, '_blank');
