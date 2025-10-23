@@ -93,7 +93,7 @@ export default function CouponForm({ coupon, onSubmit, onCancel, storeId }) {
 
     try {
       const [categoriesData, productsData, attributeSetsData, attributesData] = await Promise.all([
-        Category.filter({ store_id: storeId }),
+        Category.findAll({ store_id: storeId }),
         Product.filter({ store_id: storeId }),
         AttributeSet.filter({ store_id: storeId }),
         Attribute.filter({ store_id: storeId })
