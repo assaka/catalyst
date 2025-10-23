@@ -122,6 +122,7 @@ const OrderSummarySlot = createSlotComponent({
     const subtotal = variableContext?.subtotal || 0;
     const tax = variableContext?.tax || 0;
     const total = variableContext?.total || 0;
+    const taxDetails = variableContext?.taxDetails || null;
 
     return (
       <div className={slot.className} style={slot.styles}>
@@ -136,10 +137,19 @@ const OrderSummarySlot = createSlotComponent({
               <span>Shipping</span>
               <span>{formatPrice(0)}</span>
             </div>
-            <div className="flex justify-between text-sm">
-              <span>Tax</span>
-              <span>{formatPrice(tax)}</span>
-            </div>
+            {tax > 0 && (
+              <div className="flex justify-between text-sm">
+                <span>
+                  Tax
+                  {taxDetails && taxDetails.country && taxDetails.effectiveRate > 0 && (
+                    <span className="text-gray-500 text-xs ml-1">
+                      ({taxDetails.country} {taxDetails.effectiveRate}%)
+                    </span>
+                  )}
+                </span>
+                <span>{formatPrice(tax)}</span>
+              </div>
+            )}
             <div className="border-t pt-3 flex justify-between font-bold">
               <span>Total</span>
               <span>{formatPrice(total)}</span>
