@@ -52,6 +52,8 @@ export default function Checkout() {
   const { store, settings, loading: storeLoading, selectedCountry, setSelectedCountry } = useStore();
   const { showError, AlertComponent } = useAlertTypes();
 
+  console.log('🎯 CHECKOUT COMPONENT - selectedCountry from useStore:', selectedCountry);
+
   // Get currency symbol from settings
   // Currency symbol comes from StoreProvider which derives it from store.currency → getCurrencySymbol()
   const currencySymbol = settings?.currency_symbol;
