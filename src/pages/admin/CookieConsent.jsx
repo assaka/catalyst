@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { createPageUrl } from '@/utils';
-import { CookieConsentSettings, ConsentLog } from '@/api/entities';
+import { CookieConsentSettings, ConsentLog, CmsPage } from '@/api/entities';
 import { User } from '@/api/entities';
 import { Store } from '@/api/entities';
 import { useStoreSelection } from '@/contexts/StoreSelectionContext.jsx';
@@ -198,6 +198,7 @@ export default function CookieConsent() {
   const [flashMessage, setFlashMessage] = useState(null);
   const [store, setStore] = useState(null);
   const [user, setUser] = useState(null); // Added user state
+  const [cmsPages, setCmsPages] = useState([]); // CMS pages for privacy policy dropdown
   const [showTranslations, setShowTranslations] = useState(false);
   const [showCategoryTranslations, setShowCategoryTranslations] = useState({});
 
@@ -271,6 +272,15 @@ export default function CookieConsent() {
         setSettings(defaultSettings);
       }
       
+      // Load CMS pages for privacy policy dropdown
+      try {
+        const pages = await retryApiCall(() => CmsPage.filter({ store_id: selectedStore.id }));
+        setCmsPages(pages || []);
+      } catch (pagesError) {
+        console.error('Error loading CMS pages:', pagesError);
+        setCmsPages([]);
+      }
+
       // Load consent logs
       try {
         const logs = await retryApiCall(() => ConsentLog.filter({ store_id: selectedStore.id }));
@@ -757,12 +767,28 @@ export default function CookieConsent() {
                   )}
 
                   <div>
-                    <Label htmlFor="privacy_policy_url">Privacy Policy URL</Label>
-                    <Input
-                      id="privacy_policy_url"
-                      value={settings.privacy_policy_url}
-                      onChange={(e) => setSettings({ ...settings, privacy_policy_url: e.target.value })}
-                    />
+                    <Label htmlFor="privacy_policy_page">Privacy Policy Page</Label>
+                    <Select
+                      value={settings.privacy_policy_url || ''}
+                      onValueChange={(value) => setSettings({ ...settings, privacy_policy_url: value })}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select a CMS page for privacy policy" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="">
+                          <span className="text-gray-500">No privacy policy page</span>
+                        </SelectItem>
+                        {cmsPages.map((page) => (
+                          <SelectItem key={page.id} value={`/public/${store?.slug}/cms-page/${page.slug}`}>
+                            {page.title} ({page.slug})
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <p className="text-sm text-gray-500 mt-1">
+                      Select a CMS page to use as your privacy policy. The page will be linked in the cookie banner.
+                    </p>
                   </div>
                 </CardContent>
               </Card>
