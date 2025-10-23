@@ -71,6 +71,7 @@ const publicCmsBlocksRoutes = require('./routes/public-cms-blocks');
 const publicCmsPagesRoutes = require('./routes/public-cms-pages');
 const storeTeamRoutes = require('./routes/store-teams');
 const robotsRoutes = require('./routes/robots');
+const sitemapRoutes = require('./routes/sitemap');
 const integrationRoutes = require('./routes/integrations');
 const supabaseRoutes = require('./routes/supabase');
 const supabaseSetupRoutes = require('./routes/supabase-setup');
@@ -1379,6 +1380,8 @@ app.use('/api/public/custom-option-rules', customOptionRuleRoutes);
 app.use('/api/public/payment-methods', publicPaymentMethodRoutes);
 // Robots.txt serving route
 app.use('/api/robots', robotsRoutes);
+// Sitemap.xml serving route
+app.use('/api/sitemap', sitemapRoutes);
 // Public preview routes (no authentication required)
 app.use('/api/preview', previewRoutes);
 
@@ -1412,6 +1415,47 @@ Disallow: /admin/`);
     }).send(`User-agent: *
 Allow: /
 Disallow: /admin/`);
+  }
+});
+
+// Standard sitemap.xml route (for default store)
+app.get('/sitemap.xml', async (req, res) => {
+  try {
+    const { Store } = require('./models');
+
+    // Get the first active store as default
+    const defaultStore = await Store.findOne({
+      where: { is_active: true },
+      order: [['createdAt', 'ASC']]
+    });
+
+    if (!defaultStore) {
+      return res.status(404).set({
+        'Content-Type': 'text/plain; charset=utf-8'
+      }).send('No active store found');
+    }
+
+    // Redirect to the store-specific sitemap.xml API endpoint
+    return res.redirect(301, `/api/sitemap/store/${defaultStore.slug}`);
+  } catch (error) {
+    console.error('[Sitemap] Error serving default sitemap.xml:', error);
+    res.status(500).set({
+      'Content-Type': 'text/plain; charset=utf-8'
+    }).send('Error generating sitemap');
+  }
+});
+
+// Public store-specific sitemap.xml route
+app.get('/public/:storeSlug/sitemap.xml', async (req, res) => {
+  try {
+    const { storeSlug } = req.params;
+    // Redirect to the API endpoint
+    return res.redirect(301, `/api/sitemap/store/${storeSlug}`);
+  } catch (error) {
+    console.error('[Sitemap] Error serving public sitemap.xml:', error);
+    res.status(500).set({
+      'Content-Type': 'text/plain; charset=utf-8'
+    }).send('Error generating sitemap');
   }
 });
 
