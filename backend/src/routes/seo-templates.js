@@ -127,9 +127,25 @@ router.post('/', authMiddleware, async (req, res) => {
     res.status(201).json(template);
   } catch (error) {
     console.error('Create SEO template error:', error);
+
+    // Provide more specific error messages
+    if (error.name === 'SequelizeValidationError') {
+      return res.status(400).json({
+        success: false,
+        message: 'Validation error: ' + error.errors.map(e => e.message).join(', ')
+      });
+    }
+
+    if (error.name === 'SequelizeUniqueConstraintError') {
+      return res.status(400).json({
+        success: false,
+        message: 'A template with this name already exists for this store'
+      });
+    }
+
     res.status(500).json({
       success: false,
-      message: 'Server error'
+      message: 'Server error: ' + (error.message || 'Unknown error')
     });
   }
 });

@@ -86,9 +86,11 @@ export default function SeoTemplates() {
 
     setSaving(true);
     try {
+      // Generate unique name if not provided
+      const timestamp = new Date().toISOString().slice(0, 19).replace('T', ' ');
       const templateData = {
         ...formData,
-        name: formData.name || `${formData.type} Template`,
+        name: formData.name || `${formData.type} Template - ${timestamp}`,
         store_id: storeId
       };
 
@@ -114,9 +116,13 @@ export default function SeoTemplates() {
       });
     } catch (error) {
       console.error('Error adding SEO template:', error);
+
+      // Extract error message from response
+      const errorMessage = error.response?.data?.message || error.message || 'Failed to add SEO template';
+
       setFlashMessage({
         type: 'error',
-        message: 'Failed to add SEO template'
+        message: errorMessage
       });
     } finally {
       setSaving(false);
