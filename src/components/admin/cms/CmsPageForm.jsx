@@ -1,6 +1,7 @@
 
 import React, { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
+import SaveButton from "@/components/ui/save-button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -39,6 +40,8 @@ export default function CmsPageForm({ page, stores, products, onSubmit, onCancel
   const [showMediaBrowser, setShowMediaBrowser] = useState(false);
   const [showTranslations, setShowTranslations] = useState(false);
   const [productSearchQuery, setProductSearchQuery] = useState("");
+  const [saving, setSaving] = useState(false);
+  const [saveSuccess, setSaveSuccess] = useState(false);
 
   const [formData, setFormData] = useState({
     title: "",
@@ -297,37 +300,49 @@ export default function CmsPageForm({ page, stores, products, onSubmit, onCancel
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    // Always create redirect if slug changed (essential for SEO)
-    if (page && originalSlug && formData.slug !== originalSlug) {
-      await createRedirectForSlugChange();
-    }
+    try {
+      setSaving(true);
+      setSaveSuccess(false);
 
-    // Prepare payload with translations - exclude title and content as they don't exist in DB
-    // They're stored in the translations JSON field instead
-    const { title, content, ...restFormData } = formData;
-
-    // Ensure translations are synced with main title/content fields
-    const syncedTranslations = {
-      ...formData.translations,
-      en: {
-        ...formData.translations?.en,
-        title: formData.title || formData.translations?.en?.title || '',
-        content: formData.content || formData.translations?.en?.content || ''
+      // Always create redirect if slug changed (essential for SEO)
+      if (page && originalSlug && formData.slug !== originalSlug) {
+        await createRedirectForSlugChange();
       }
-    };
 
-    const payload = {
-      ...restFormData,
-      translations: syncedTranslations
-    };
+      // Prepare payload with translations - exclude title and content as they don't exist in DB
+      // They're stored in the translations JSON field instead
+      const { title, content, ...restFormData } = formData;
 
-    console.log('🔍 CmsPageForm: Submitting payload:', {
-      slug: payload.slug,
-      store_id: payload.store_id,
-      translations: payload.translations
-    });
+      // Ensure translations are synced with main title/content fields
+      const syncedTranslations = {
+        ...formData.translations,
+        en: {
+          ...formData.translations?.en,
+          title: formData.title || formData.translations?.en?.title || '',
+          content: formData.content || formData.translations?.en?.content || ''
+        }
+      };
 
-    onSubmit(payload);
+      const payload = {
+        ...restFormData,
+        translations: syncedTranslations
+      };
+
+      console.log('🔍 CmsPageForm: Submitting payload:', {
+        slug: payload.slug,
+        store_id: payload.store_id,
+        translations: payload.translations
+      });
+
+      await onSubmit(payload);
+
+      setSaveSuccess(true);
+      setTimeout(() => setSaveSuccess(false), 2000);
+    } catch (error) {
+      console.error('Error submitting form:', error);
+    } finally {
+      setSaving(false);
+    }
   };
 
   return (
@@ -634,9 +649,14 @@ export default function CmsPageForm({ page, stores, products, onSubmit, onCancel
         <Button type="button" variant="outline" onClick={onCancel}>
           Cancel
         </Button>
-        <Button type="submit">
-          {page ? "Update Page" : "Create Page"}
-        </Button>
+        <SaveButton
+          type="submit"
+          loading={saving}
+          success={saveSuccess}
+          defaultText={page ? "Update Page" : "Create Page"}
+          loadingText={page ? "Updating..." : "Creating..."}
+          successText={page ? "Updated!" : "Created!"}
+        />
       </div>
 
       {/* Media Browser Dialog */}
