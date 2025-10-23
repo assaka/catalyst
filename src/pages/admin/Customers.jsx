@@ -9,7 +9,7 @@ import SaveButton from '@/components/ui/save-button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { Users, Search, Download, Edit, Trash2, UserPlus } from 'lucide-react';
+import { Users, Search, Download, Edit, Trash2, UserPlus, Eye } from 'lucide-react';
 import { useAlertTypes } from '@/hooks/useAlert';
 
 export default function Customers() {
@@ -20,6 +20,7 @@ export default function Customers() {
     const [searchTerm, setSearchTerm] = useState('');
     const [editingCustomer, setEditingCustomer] = useState(null);
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+    const [isViewOnly, setIsViewOnly] = useState(false);
     const [saving, setSaving] = useState(false);
     const [saveSuccess, setSaveSuccess] = useState(false);
 
@@ -75,6 +76,7 @@ export default function Customers() {
 
     const handleEditCustomer = (customer) => {
         setEditingCustomer(customer);
+        setIsViewOnly(!customer.password); // View-only for guest customers
         setIsEditModalOpen(true);
     };
 
@@ -226,6 +228,7 @@ export default function Customers() {
                                 <tr className="border-b">
                                     <th className="text-left py-3 px-4 font-medium">Name</th>
                                     <th className="text-left py-3 px-4 font-medium">Email</th>
+                                    <th className="text-left py-3 px-4 font-medium">Type</th>
                                     <th className="text-left py-3 px-4 font-medium">Address</th>
                                     <th className="text-left py-3 px-4 font-medium">Total Orders</th>
                                     <th className="text-left py-3 px-4 font-medium">Total Spent</th>
@@ -234,53 +237,66 @@ export default function Customers() {
                                 </tr>
                             </thead>
                             <tbody>
-                                {filteredCustomers.map(customer => (
-                                    <tr key={customer.id} className="border-b hover:bg-gray-50">
-                                        <td className="py-3 px-4">{customer.first_name} {customer.last_name}</td>
-                                        <td className="py-3 px-4">{customer.email}</td>
-                                        <td className="py-3 px-4">
-                                            {(() => {
-                                                const addressData = customer.address_data?.shipping_address || customer.address_data?.billing_address;
-                                                if (addressData) {
-                                                    const parts = [
-                                                        addressData.street,
-                                                        addressData.city,
-                                                        addressData.state,
-                                                        addressData.postal_code
-                                                    ].filter(Boolean);
-                                                    return parts.length > 0 ? parts.join(', ') : 'N/A';
-                                                }
-                                                return 'N/A';
-                                            })()}
-                                        </td>
-                                        <td className="py-3 px-4">{customer.total_orders}</td>
-                                        <td className="py-3 px-4">${(() => {
-                                            const totalSpent = parseFloat(customer.total_spent || 0);
-                                            return isNaN(totalSpent) ? '0.00' : totalSpent.toFixed(2);
-                                        })()}</td>
-                                        <td className="py-3 px-4">{customer.last_order_date ? new Date(customer.last_order_date).toLocaleDateString() : 'N/A'}</td>
-                                        <td className="py-3 px-4">
-                                            <div className="flex space-x-2">
-                                                <Button
-                                                    size="sm"
-                                                    variant="outline"
-                                                    onClick={() => handleEditCustomer(customer)}
-                                                    className="h-8 w-8 p-0"
-                                                >
-                                                    <Edit className="h-4 w-4" />
-                                                </Button>
-                                                <Button
-                                                    size="sm"
-                                                    variant="outline"
-                                                    onClick={() => handleDeleteCustomer(customer.id)}
-                                                    className="h-8 w-8 p-0 text-red-600 hover:text-red-700 hover:bg-red-50"
-                                                >
-                                                    <Trash2 className="h-4 w-4" />
-                                                </Button>
-                                            </div>
-                                        </td>
-                                    </tr>
-                                ))}
+                                {filteredCustomers.map(customer => {
+                                    const isGuest = !customer.password;
+                                    return (
+                                        <tr key={customer.id} className="border-b hover:bg-gray-50">
+                                            <td className="py-3 px-4">{customer.first_name} {customer.last_name}</td>
+                                            <td className="py-3 px-4">{customer.email}</td>
+                                            <td className="py-3 px-4">
+                                                <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                                                    isGuest
+                                                        ? 'bg-gray-100 text-gray-700'
+                                                        : 'bg-blue-100 text-blue-700'
+                                                }`}>
+                                                    {isGuest ? 'Guest' : 'Registered'}
+                                                </span>
+                                            </td>
+                                            <td className="py-3 px-4">
+                                                {(() => {
+                                                    const addressData = customer.address_data?.shipping_address || customer.address_data?.billing_address;
+                                                    if (addressData) {
+                                                        const parts = [
+                                                            addressData.street,
+                                                            addressData.city,
+                                                            addressData.state,
+                                                            addressData.postal_code
+                                                        ].filter(Boolean);
+                                                        return parts.length > 0 ? parts.join(', ') : 'N/A';
+                                                    }
+                                                    return 'N/A';
+                                                })()}
+                                            </td>
+                                            <td className="py-3 px-4">{customer.total_orders}</td>
+                                            <td className="py-3 px-4">${(() => {
+                                                const totalSpent = parseFloat(customer.total_spent || 0);
+                                                return isNaN(totalSpent) ? '0.00' : totalSpent.toFixed(2);
+                                            })()}</td>
+                                            <td className="py-3 px-4">{customer.last_order_date ? new Date(customer.last_order_date).toLocaleDateString() : 'N/A'}</td>
+                                            <td className="py-3 px-4">
+                                                <div className="flex space-x-2">
+                                                    <Button
+                                                        size="sm"
+                                                        variant="outline"
+                                                        onClick={() => handleEditCustomer(customer)}
+                                                        className="h-8 w-8 p-0"
+                                                        title={isGuest ? 'View customer' : 'Edit customer'}
+                                                    >
+                                                        {isGuest ? <Eye className="h-4 w-4" /> : <Edit className="h-4 w-4" />}
+                                                    </Button>
+                                                    <Button
+                                                        size="sm"
+                                                        variant="outline"
+                                                        onClick={() => handleDeleteCustomer(customer.id)}
+                                                        className="h-8 w-8 p-0 text-red-600 hover:text-red-700 hover:bg-red-50"
+                                                    >
+                                                        <Trash2 className="h-4 w-4" />
+                                                    </Button>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    );
+                                })}
                             </tbody>
                         </table>
                     </div>
@@ -294,11 +310,16 @@ export default function Customers() {
                 </CardContent>
             </Card>
 
-            {/* Edit Customer Modal */}
+            {/* Edit/View Customer Modal */}
             <Dialog open={isEditModalOpen} onOpenChange={setIsEditModalOpen}>
                 <DialogContent className="max-w-2xl">
                     <DialogHeader>
-                        <DialogTitle>Edit Customer</DialogTitle>
+                        <DialogTitle>{isViewOnly ? 'View Customer' : 'Edit Customer'}</DialogTitle>
+                        {isViewOnly && (
+                            <p className="text-sm text-gray-500 mt-1">
+                                Guest customer information (read-only)
+                            </p>
+                        )}
                     </DialogHeader>
                     {editingCustomer && (
                         <form onSubmit={handleSaveCustomer} className="space-y-4">
@@ -310,6 +331,7 @@ export default function Customers() {
                                         name="first_name"
                                         defaultValue={editingCustomer.first_name || ''}
                                         required
+                                        disabled={isViewOnly}
                                     />
                                 </div>
                                 <div>
@@ -319,10 +341,11 @@ export default function Customers() {
                                         name="last_name"
                                         defaultValue={editingCustomer.last_name || ''}
                                         required
+                                        disabled={isViewOnly}
                                     />
                                 </div>
                             </div>
-                            
+
                             <div>
                                 <Label htmlFor="email">Email</Label>
                                 <Input
@@ -331,26 +354,29 @@ export default function Customers() {
                                     type="email"
                                     defaultValue={editingCustomer.email || ''}
                                     required
+                                    disabled={isViewOnly}
                                 />
                             </div>
-                            
+
                             <div>
                                 <Label htmlFor="phone">Phone</Label>
                                 <Input
                                     id="phone"
                                     name="phone"
                                     defaultValue={editingCustomer.phone || ''}
+                                    disabled={isViewOnly}
                                 />
                             </div>
-                            
+
                             <div className="space-y-3">
-                                <h4 className="font-medium">Address Information</h4>
+                                <h4 className="font-medium">Address Information{isViewOnly && ' (from last order)'}</h4>
                                 <div>
                                     <Label htmlFor="street">Street Address</Label>
                                     <Input
                                         id="street"
                                         name="street"
                                         defaultValue={editingCustomer.address_data?.shipping_address?.street || ''}
+                                        disabled={isViewOnly}
                                     />
                                 </div>
                                 <div className="grid grid-cols-2 gap-4">
@@ -360,6 +386,7 @@ export default function Customers() {
                                             id="city"
                                             name="city"
                                             defaultValue={editingCustomer.address_data?.shipping_address?.city || ''}
+                                            disabled={isViewOnly}
                                         />
                                     </div>
                                     <div>
@@ -368,6 +395,7 @@ export default function Customers() {
                                             id="state"
                                             name="state"
                                             defaultValue={editingCustomer.address_data?.shipping_address?.state || ''}
+                                            disabled={isViewOnly}
                                         />
                                     </div>
                                 </div>
@@ -378,6 +406,7 @@ export default function Customers() {
                                             id="postal_code"
                                             name="postal_code"
                                             defaultValue={editingCustomer.address_data?.shipping_address?.postal_code || ''}
+                                            disabled={isViewOnly}
                                         />
                                     </div>
                                     <div>
@@ -386,11 +415,12 @@ export default function Customers() {
                                             id="country"
                                             name="country"
                                             defaultValue={editingCustomer.address_data?.shipping_address?.country || ''}
+                                            disabled={isViewOnly}
                                         />
                                     </div>
                                 </div>
                             </div>
-                            
+
                             <div className="flex justify-end space-x-2 pt-4">
                                 <Button
                                     type="button"
@@ -398,14 +428,16 @@ export default function Customers() {
                                     onClick={() => setIsEditModalOpen(false)}
                                     disabled={saving}
                                 >
-                                    Cancel
+                                    {isViewOnly ? 'Close' : 'Cancel'}
                                 </Button>
-                                <SaveButton
-                                    type="submit"
-                                    loading={saving}
-                                    success={saveSuccess}
-                                    defaultText="Save Changes"
-                                />
+                                {!isViewOnly && (
+                                    <SaveButton
+                                        type="submit"
+                                        loading={saving}
+                                        success={saveSuccess}
+                                        defaultText="Save Changes"
+                                    />
+                                )}
                             </div>
                         </form>
                     )}

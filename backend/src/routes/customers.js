@@ -40,10 +40,34 @@ router.get('/', storeOwnerOnly, async (req, res) => {
       offset: parseInt(offset)
     });
 
+    // Enhance customer data with last order addresses for guest customers
+    const { Order } = require('../models');
+    const enhancedCustomers = await Promise.all(customers.rows.map(async (customer) => {
+      const customerData = customer.toJSON();
+
+      // For guest customers (no password), fetch address from last order
+      if (!customer.password) {
+        const lastOrder = await Order.findOne({
+          where: { customer_id: customer.id },
+          order: [['created_at', 'DESC']],
+          attributes: ['shipping_address', 'billing_address']
+        });
+
+        if (lastOrder) {
+          customerData.address_data = {
+            shipping_address: lastOrder.shipping_address,
+            billing_address: lastOrder.billing_address
+          };
+        }
+      }
+
+      return customerData;
+    }));
+
     res.json({
       success: true,
       data: {
-        customers: customers.rows,
+        customers: enhancedCustomers,
         pagination: {
           current_page: parseInt(page),
           total_pages: Math.ceil(customers.count / limit),
