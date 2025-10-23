@@ -9,14 +9,14 @@ import SaveButton from '@/components/ui/save-button';
 import { Settings, FileText } from "lucide-react";
 import { SeoSetting } from '@/api/entities';
 import { useStore } from '@/components/storefront/StoreProvider';
-import { useToast } from "@/hooks/use-toast";
+import FlashMessage from '@/components/storefront/FlashMessage';
 
 export default function SeoSettings() {
   const { store } = useStore();
-  const { toast } = useToast();
   const [saveSuccess, setSaveSuccess] = useState(false);
   const [saving, setSaving] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [flashMessage, setFlashMessage] = useState(null);
 
   // HTML Sitemap Settings
   const [enableHtmlSitemap, setEnableHtmlSitemap] = useState(true);
@@ -39,19 +39,22 @@ export default function SeoSettings() {
       if (settings && settings.length > 0) {
         const s = settings[0];
         setSeoSettingsId(s.id);
-        setEnableHtmlSitemap(s.enable_html_sitemap ?? true);
-        setIncludeCategories(s.html_sitemap_include_categories ?? true);
-        setIncludeProducts(s.html_sitemap_include_products ?? true);
-        setIncludePages(s.html_sitemap_include_pages ?? true);
-        setMaxProducts(s.html_sitemap_max_products ?? 20);
-        setProductSort(s.html_sitemap_product_sort ?? '-updated_date');
+
+        // Extract from JSON field
+        const htmlSettings = s.html_sitemap_settings || {};
+
+        setEnableHtmlSitemap(htmlSettings.enabled ?? true);
+        setIncludeCategories(htmlSettings.include_categories ?? true);
+        setIncludeProducts(htmlSettings.include_products ?? true);
+        setIncludePages(htmlSettings.include_pages ?? true);
+        setMaxProducts(htmlSettings.max_products ?? 20);
+        setProductSort(htmlSettings.product_sort ?? '-updated_date');
       }
     } catch (error) {
       console.error('Error loading SEO settings:', error);
-      toast({
-        title: "Error",
-        description: "Failed to load SEO settings",
-        variant: "destructive"
+      setFlashMessage({
+        type: 'error',
+        message: 'Failed to load SEO settings'
       });
     } finally {
       setLoading(false);
@@ -81,16 +84,15 @@ export default function SeoSettings() {
       }
 
       setSaveSuccess(true);
-      toast({
-        title: "Success",
-        description: "HTML sitemap settings saved successfully"
+      setFlashMessage({
+        type: 'success',
+        message: 'HTML sitemap settings saved successfully'
       });
     } catch (error) {
       console.error('Error saving SEO settings:', error);
-      toast({
-        title: "Error",
-        description: "Failed to save SEO settings",
-        variant: "destructive"
+      setFlashMessage({
+        type: 'error',
+        message: 'Failed to save SEO settings'
       });
     } finally {
       setSaving(false);
@@ -103,6 +105,8 @@ export default function SeoSettings() {
   }
   return (
     <div className="container mx-auto p-6 space-y-6">
+      <FlashMessage message={flashMessage} onClose={() => setFlashMessage(null)} />
+
       <div className="flex items-center gap-2 mb-6">
         <Settings className="h-6 w-6" />
         <h1 className="text-3xl font-bold">SEO Settings</h1>
