@@ -792,7 +792,7 @@ export default function ProductForm({ product, categories, stores, taxes, attrib
               <span className="text-lg font-semibold">Basic Information</span>
             </AccordionTrigger>
             <AccordionContent className="space-y-4 pt-4">
-              {/* Product Name, SKU, and Barcode on one line */}
+              {/* Product Name, SKU, and URL Key on one line */}
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div>
                   <Label htmlFor="name">Product Name *</Label>
@@ -821,14 +821,90 @@ export default function ProductForm({ product, categories, stores, taxes, attrib
                   />
                 </div>
                 <div>
-                  <Label htmlFor="barcode">Barcode (ISBN, UPC, GTIN, etc.)</Label>
+                  <div className="flex items-center justify-between mb-2">
+                    <Label htmlFor="url_key">URL Key (Slug)</Label>
+                    <div className="flex items-center space-x-2">
+                      <Switch
+                        id="edit-url-key"
+                        checked={isEditingUrlKey}
+                        onCheckedChange={(checked) => {
+                          setIsEditingUrlKey(checked);
+                          if (!checked) {
+                            // Revert to original URL key or auto-generate from name
+                            if (product && originalUrlKey) {
+                              // Editing existing product - revert to original
+                              setFormData(prev => ({
+                                ...prev,
+                                seo: { ...prev.seo, url_key: originalUrlKey }
+                              }));
+                            } else {
+                              // New product - regenerate from name
+                              const generatedUrlKey = slugify(formData.name);
+                              setFormData(prev => ({
+                                ...prev,
+                                seo: { ...prev.seo, url_key: generatedUrlKey }
+                              }));
+                            }
+                            setHasManuallyEditedUrlKey(false);
+                            setShowSlugChangeWarning(false);
+                          }
+                        }}
+                      />
+                      <Label htmlFor="edit-url-key" className="text-sm">
+                        Enable editing
+                      </Label>
+                    </div>
+                  </div>
                   <Input
-                    id="barcode"
-                    value={formData.barcode}
-                    onChange={(e) => handleInputChange("barcode", e.target.value)}
+                    id="url_key"
+                    name="seo.url_key"
+                    value={formData.seo.url_key || ""}
+                    onChange={handleSeoChange}
+                    placeholder="Auto-generated from product name"
+                    disabled={!isEditingUrlKey}
+                    className={!isEditingUrlKey ? "bg-gray-50 text-gray-600" : ""}
                   />
+                  <p className="text-xs text-gray-500 mt-1">
+                    {!isEditingUrlKey
+                      ? "Auto-generated from product name"
+                      : "Custom URL key for this product"
+                    }
+                  </p>
                 </div>
               </div>
+
+              {showSlugChangeWarning && hasManuallyEditedUrlKey && isEditingUrlKey && (
+                <Alert className="border-amber-200 bg-amber-50">
+                  <AlertTriangle className="h-4 w-4 text-amber-600" />
+                  <AlertDescription className="text-amber-800">
+                    <div className="space-y-3">
+                      <div>
+                        <strong>URL Key Change Detected</strong>
+                        <p className="text-sm mt-1">
+                          Changing the URL key from "<code className="bg-amber-100 px-1 rounded">{originalUrlKey}</code>" to
+                          "<code className="bg-amber-100 px-1 rounded">{formData.seo.url_key}</code>" will change the product's URL.
+                        </p>
+                      </div>
+                      <div className="flex items-center space-x-2">
+                        <Switch
+                          id="create-redirect-product"
+                          checked={createRedirect}
+                          onCheckedChange={setCreateRedirect}
+                        />
+                        <Label htmlFor="create-redirect-product" className="text-sm font-medium">
+                          Create automatic redirect from old URL to new URL (Recommended)
+                        </Label>
+                      </div>
+                      <p className="text-xs text-amber-700">
+                        {createRedirect
+                          ? "✅ A redirect will be created to prevent broken links and maintain SEO."
+                          : "⚠️ No redirect will be created. Visitors to the old URL will see a 404 error."
+                        }
+                      </p>
+                    </div>
+                  </AlertDescription>
+                </Alert>
+              )}
 
               {/* Short Description and Description below - Hidden when translations shown */}
               {!showTranslations && (
@@ -2696,89 +2772,13 @@ export default function ProductForm({ product, categories, stores, taxes, attrib
                 </Select>
               </div>
               <div>
-                <div className="flex items-center justify-between mb-2">
-                  <Label htmlFor="url_key">URL Key (Slug)</Label>
-                  <div className="flex items-center space-x-2">
-                    <Switch
-                      id="edit-url-key"
-                      checked={isEditingUrlKey}
-                      onCheckedChange={(checked) => {
-                        setIsEditingUrlKey(checked);
-                        if (!checked) {
-                          // Revert to original URL key or auto-generate from name
-                          if (product && originalUrlKey) {
-                            // Editing existing product - revert to original
-                            setFormData(prev => ({
-                              ...prev,
-                              seo: { ...prev.seo, url_key: originalUrlKey }
-                            }));
-                          } else {
-                            // New product - regenerate from name
-                            const generatedUrlKey = slugify(formData.name);
-                            setFormData(prev => ({
-                              ...prev,
-                              seo: { ...prev.seo, url_key: generatedUrlKey }
-                            }));
-                          }
-                          setHasManuallyEditedUrlKey(false);
-                          setShowSlugChangeWarning(false);
-                        }
-                      }}
-                    />
-                    <Label htmlFor="edit-url-key" className="text-sm">
-                      Enable editing
-                    </Label>
-                  </div>
-                </div>
+                <Label htmlFor="barcode">Barcode (ISBN, UPC, GTIN, etc.)</Label>
                 <Input
-                  id="url_key"
-                  name="seo.url_key"
-                  value={formData.seo.url_key || ""}
-                  onChange={handleSeoChange}
-                  placeholder="Auto-generated from product name"
-                  disabled={!isEditingUrlKey}
-                  className={!isEditingUrlKey ? "bg-gray-50 text-gray-600" : ""}
+                  id="barcode"
+                  value={formData.barcode}
+                  onChange={(e) => handleInputChange("barcode", e.target.value)}
                 />
-                <p className="text-xs text-gray-500 mt-1">
-                  {!isEditingUrlKey 
-                    ? "Showing the product slug. Auto-generated from product name. Enable editing to customize."
-                    : "Custom URL key (slug) for this product. Changes will affect the product's URL."
-                  }
-                </p>
               </div>
-
-              {showSlugChangeWarning && hasManuallyEditedUrlKey && isEditingUrlKey && (
-                <Alert className="border-amber-200 bg-amber-50">
-                  <AlertTriangle className="h-4 w-4 text-amber-600" />
-                  <AlertDescription className="text-amber-800">
-                    <div className="space-y-3">
-                      <div>
-                        <strong>URL Key Change Detected</strong>
-                        <p className="text-sm mt-1">
-                          Changing the URL key from "<code className="bg-amber-100 px-1 rounded">{originalUrlKey}</code>" to 
-                          "<code className="bg-amber-100 px-1 rounded">{formData.seo.url_key}</code>" will change the product's URL.
-                        </p>
-                      </div>
-                      <div className="flex items-center space-x-2">
-                        <Switch
-                          id="create-redirect-product"
-                          checked={createRedirect}
-                          onCheckedChange={setCreateRedirect}
-                        />
-                        <Label htmlFor="create-redirect-product" className="text-sm font-medium">
-                          Create automatic redirect from old URL to new URL (Recommended)
-                        </Label>
-                      </div>
-                      <p className="text-xs text-amber-700">
-                        {createRedirect 
-                          ? "✅ A redirect will be created to prevent broken links and maintain SEO."
-                          : "⚠️ No redirect will be created. Visitors to the old URL will see a 404 error."
-                        }
-                      </p>
-                    </div>
-                  </AlertDescription>
-                </Alert>
-              )}
             </AccordionContent>
           </AccordionItem>
         </Accordion>

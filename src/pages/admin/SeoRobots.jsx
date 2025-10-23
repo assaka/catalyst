@@ -116,6 +116,13 @@ Sitemap: https://example.com/sitemap.xml`);
         CmsPage.filter({ store_id: storeId })
       ]);
 
+      console.log('Fetched categories:', allCategories);
+      console.log('Categories with meta_robots_tag:', allCategories.filter(c => c.meta_robots_tag).map(c => ({
+        name: c.name,
+        slug: c.slug,
+        meta_robots_tag: c.meta_robots_tag
+      })));
+
       // Filter items with ANY non-default meta robots tags
       // Default is "index, follow" or empty/null, so we exclude those
       const products = allProducts.filter(p => {
@@ -125,13 +132,19 @@ Sitemap: https://example.com/sitemap.xml`);
 
       const categories = allCategories.filter(c => {
         const tag = c.meta_robots_tag?.toLowerCase()?.trim() || '';
-        return tag && tag !== 'index, follow';
+        const shouldInclude = tag && tag !== 'index, follow';
+        if (shouldInclude) {
+          console.log('Including category:', c.name, 'with tag:', tag);
+        }
+        return shouldInclude;
       });
 
       const pages = allPages.filter(p => {
         const tag = p.meta_robots_tag?.toLowerCase()?.trim() || '';
         return tag && tag !== 'index, follow';
       });
+
+      console.log('Filtered categories:', categories);
 
       // Build default rules with Allow directives for content directories
       const domain = selectedStore?.custom_domain || selectedStore?.domain || 'https://example.com';
