@@ -26,6 +26,7 @@ const StorePlugin = require('./StorePlugin');
 const SeoSettings = require('./SeoSettings');
 const SeoTemplate = require('./SeoTemplate');
 const Redirect = require('./Redirect');
+const CanonicalUrl = require('./CanonicalUrl');
 const ProductLabel = require('./ProductLabel');
 const PaymentMethod = require('./PaymentMethod');
 const CookieConsentSettings = require('./CookieConsentSettings');
@@ -194,6 +195,11 @@ const defineAssociations = () => {
   Redirect.belongsTo(Store, { foreignKey: 'store_id' });
   Store.hasMany(Redirect, { foreignKey: 'store_id' });
 
+  // CanonicalUrl associations
+  CanonicalUrl.belongsTo(Store, { foreignKey: 'store_id' });
+  CanonicalUrl.belongsTo(User, { foreignKey: 'created_by', as: 'creator' });
+  Store.hasMany(CanonicalUrl, { foreignKey: 'store_id' });
+
   // ProductLabel associations
   ProductLabel.belongsTo(Store, { foreignKey: 'store_id' });
   Store.hasMany(ProductLabel, { foreignKey: 'store_id' });
@@ -342,6 +348,7 @@ module.exports = {
   SeoSettings,
   SeoTemplate,
   Redirect,
+  CanonicalUrl,
   ProductLabel,
   PaymentMethod,
   CookieConsentSettings,

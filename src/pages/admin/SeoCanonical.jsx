@@ -1,23 +1,132 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
 import { Button } from "@/components/ui/button";
 import SaveButton from '@/components/ui/save-button';
-import { Link2, HelpCircle, Info } from "lucide-react";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Link2, HelpCircle, Info, Plus, Trash2, Pencil } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from "@/components/ui/accordion";
+import { useStoreSelection } from "@/contexts/StoreSelectionContext.jsx";
+import adminApiClient from "@/api/admin-client";
+import { toast } from "sonner";
 
 export default function SeoCanonical() {
+  const { getSelectedStoreId } = useStoreSelection();
   const [saveSuccess, setSaveSuccess] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [canonicalUrls, setCanonicalUrls] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [pageUrl, setPageUrl] = useState('');
+  const [canonicalUrl, setCanonicalUrl] = useState('');
+  const [editingId, setEditingId] = useState(null);
+
+  useEffect(() => {
+    loadCanonicalUrls();
+  }, []);
+
+  const loadCanonicalUrls = async () => {
+    const storeId = getSelectedStoreId();
+    if (!storeId) {
+      toast.error('No store selected');
+      return;
+    }
+
+    try {
+      setLoading(true);
+      const response = await adminApiClient.get(`/canonical-urls?store_id=${storeId}`);
+      setCanonicalUrls(Array.isArray(response) ? response : []);
+    } catch (error) {
+      console.error('Error loading canonical URLs:', error);
+      toast.error('Failed to load canonical URLs');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleAddCanonicalUrl = async () => {
+    const storeId = getSelectedStoreId();
+    if (!storeId) {
+      toast.error('No store selected');
+      return;
+    }
+
+    if (!pageUrl || !canonicalUrl) {
+      toast.error('Please enter both Page URL and Canonical URL');
+      return;
+    }
+
+    try {
+      setLoading(true);
+      if (editingId) {
+        // Update existing
+        await adminApiClient.put(`/canonical-urls/${editingId}`, {
+          page_url: pageUrl,
+          canonical_url: canonicalUrl,
+          is_active: true
+        });
+        toast.success('Canonical URL updated successfully');
+      } else {
+        // Create new
+        await adminApiClient.post('/canonical-urls', {
+          store_id: storeId,
+          page_url: pageUrl,
+          canonical_url: canonicalUrl,
+          is_active: true
+        });
+        toast.success('Canonical URL added successfully');
+      }
+
+      setPageUrl('');
+      setCanonicalUrl('');
+      setEditingId(null);
+      await loadCanonicalUrls();
+    } catch (error) {
+      console.error('Error saving canonical URL:', error);
+      toast.error(error.response?.data?.message || 'Failed to save canonical URL');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleEdit = (canonicalUrlItem) => {
+    setPageUrl(canonicalUrlItem.page_url);
+    setCanonicalUrl(canonicalUrlItem.canonical_url);
+    setEditingId(canonicalUrlItem.id);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const handleCancelEdit = () => {
+    setPageUrl('');
+    setCanonicalUrl('');
+    setEditingId(null);
+  };
+
+  const handleDeleteCanonicalUrl = async (id) => {
+    if (!confirm('Are you sure you want to delete this canonical URL?')) {
+      return;
+    }
+
+    try {
+      setLoading(true);
+      await adminApiClient.delete(`/canonical-urls/${id}`);
+      toast.success('Canonical URL deleted successfully');
+      await loadCanonicalUrls();
+    } catch (error) {
+      console.error('Error deleting canonical URL:', error);
+      toast.error('Failed to delete canonical URL');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleSave = async () => {
     setSaving(true);
     setSaveSuccess(false);
 
-    // Simulate save operation
+    // Simulate save operation for settings
     await new Promise(resolve => setTimeout(resolve, 500));
 
     setSaveSuccess(true);
@@ -111,7 +220,7 @@ export default function SeoCanonical() {
 
       <Card>
         <CardHeader>
-          <CardTitle>Custom Canonical URLs</CardTitle>
+          <CardTitle>{editingId ? 'Edit Custom Canonical URL' : 'Add Custom Canonical URL'}</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
           <Alert>
@@ -123,7 +232,13 @@ export default function SeoCanonical() {
 
           <div className="space-y-2">
             <Label htmlFor="page-url" className="font-medium">Page URL (Source)</Label>
-            <Input id="page-url" placeholder="/products/example-product" />
+            <Input
+              id="page-url"
+              placeholder="/products/example-product"
+              value={pageUrl}
+              onChange={(e) => setPageUrl(e.target.value)}
+              disabled={loading}
+            />
             <p className="text-sm text-muted-foreground">
               Enter the relative path of the page that needs a custom canonical URL (e.g., /products/variant-1)
             </p>
@@ -131,7 +246,13 @@ export default function SeoCanonical() {
 
           <div className="space-y-2">
             <Label htmlFor="canonical-url" className="font-medium">Canonical URL (Target)</Label>
-            <Input id="canonical-url" placeholder="https://example.com/products/main-product" />
+            <Input
+              id="canonical-url"
+              placeholder="https://example.com/products/main-product"
+              value={canonicalUrl}
+              onChange={(e) => setCanonicalUrl(e.target.value)}
+              disabled={loading}
+            />
             <p className="text-sm text-muted-foreground">
               Enter the full canonical URL that the page should point to. Use absolute URLs with the full domain.
             </p>
@@ -149,14 +270,93 @@ export default function SeoCanonical() {
 
         </CardContent>
       </Card>
-      <div className="flex justify-end mt-8">
-        <SaveButton
-            onClick={handleSave}
-            loading={saving}
-            success={saveSuccess}
-            defaultText="Add Custom Canonical"
-        />
+      <div className="flex justify-end gap-2 mt-4">
+        {editingId && (
+          <Button
+            variant="outline"
+            onClick={handleCancelEdit}
+            disabled={loading}
+          >
+            Cancel
+          </Button>
+        )}
+        <Button
+          onClick={handleAddCanonicalUrl}
+          disabled={loading}
+        >
+          <Plus className="h-4 w-4 mr-2" />
+          {editingId ? 'Update Canonical URL' : 'Add Custom Canonical'}
+        </Button>
       </div>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Existing Custom Canonical URLs</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Page URL</TableHead>
+                <TableHead>Canonical URL</TableHead>
+                <TableHead>Status</TableHead>
+                <TableHead className="text-right">Actions</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {loading ? (
+                <TableRow>
+                  <TableCell colSpan={4} className="text-center py-8">
+                    Loading canonical URLs...
+                  </TableCell>
+                </TableRow>
+              ) : canonicalUrls.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={4} className="text-center py-8">
+                    No custom canonical URLs found. Add your first canonical URL above.
+                  </TableCell>
+                </TableRow>
+              ) : (
+                canonicalUrls.map(item => (
+                  <TableRow key={item.id}>
+                    <TableCell className="font-mono text-sm">{item.page_url}</TableCell>
+                    <TableCell className="font-mono text-sm">{item.canonical_url}</TableCell>
+                    <TableCell>
+                      <span className={`px-2 py-1 text-xs rounded ${
+                        item.is_active
+                          ? 'bg-green-100 text-green-800'
+                          : 'bg-gray-100 text-gray-800'
+                      }`}>
+                        {item.is_active ? 'active' : 'inactive'}
+                      </span>
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <div className="flex justify-end gap-2">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleEdit(item)}
+                          disabled={loading}
+                        >
+                          <Pencil className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleDeleteCanonicalUrl(item.id)}
+                          disabled={loading}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))
+              )}
+            </TableBody>
+          </Table>
+        </CardContent>
+      </Card>
 
       <Card>
         <CardHeader>
