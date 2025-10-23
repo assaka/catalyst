@@ -45,19 +45,29 @@ const RedirectHandler = ({ children, storeId }) => {
           if (data.found && data.to_url) {
             console.log(`🔀 Redirect found: ${relativePath} → ${data.to_url}`);
 
+            // Determine if this is an external redirect (absolute URL)
+            const isAbsoluteUrl = data.to_url.startsWith('http://') || data.to_url.startsWith('https://');
+            const isFullInternalPath = data.to_url.startsWith('/public/');
+
             // Build the full destination URL
-            // If to_url is absolute (starts with http), use it as-is
-            // Otherwise, prepend the store prefix if it's a relative path
             let destinationUrl = data.to_url;
-            if (!data.to_url.startsWith('http') && !data.to_url.startsWith('/public/')) {
+
+            if (!isAbsoluteUrl && !isFullInternalPath) {
               // Relative path - prepend the store prefix from current URL
               if (publicMatch) {
                 destinationUrl = `/public/${publicMatch[1]}${data.to_url}`;
               }
             }
 
-            console.log(`🔀 Redirecting to: ${destinationUrl}`);
-            // Navigate to the redirect destination
+            console.log(`🔀 Redirecting to: ${destinationUrl} (type: ${isAbsoluteUrl ? 'external' : 'internal'})`);
+
+            // For external URLs, use window.location for proper navigation
+            if (isAbsoluteUrl) {
+              window.location.href = destinationUrl;
+              return;
+            }
+
+            // For internal URLs, use React Router navigate
             navigate(destinationUrl, { replace: true });
             return; // Don't set hasChecked since we're navigating away
           }

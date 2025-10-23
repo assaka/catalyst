@@ -18,6 +18,9 @@ export default function SeoRedirects() {
   const [toUrl, setToUrl] = useState('');
   const [redirectType, setRedirectType] = useState('301');
 
+  // Check if To URL is an absolute URL
+  const isAbsoluteUrl = toUrl.startsWith('http://') || toUrl.startsWith('https://');
+
   useEffect(() => {
     loadRedirects();
   }, []);
@@ -105,7 +108,7 @@ export default function SeoRedirects() {
         <CardHeader>
           <CardTitle>Add New Redirect</CardTitle>
           <p className="text-sm text-muted-foreground mt-2">
-            Use relative URLs without the store prefix. Example: <code className="bg-muted px-1 py-0.5 rounded">/category/old-name</code> instead of <code className="bg-muted px-1 py-0.5 rounded">/public/hamid2/category/old-name</code>
+            Use relative URLs for internal pages (e.g., <code className="bg-muted px-1 py-0.5 rounded">/category/old-name</code>) or absolute URLs for external sites (e.g., <code className="bg-muted px-1 py-0.5 rounded">https://example.com</code>)
           </p>
         </CardHeader>
         <CardContent>
@@ -123,15 +126,27 @@ export default function SeoRedirects() {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="to-url">To URL (relative)</Label>
+              <Label htmlFor="to-url">To URL (relative or absolute)</Label>
               <Input
                 id="to-url"
-                placeholder="/category/new-name"
+                placeholder="/category/new-name or https://example.com"
                 value={toUrl}
                 onChange={(e) => setToUrl(e.target.value)}
                 disabled={loading}
               />
-              <p className="text-xs text-muted-foreground">The new path to redirect to</p>
+              {isAbsoluteUrl && (
+                <p className="text-xs text-blue-600 flex items-center gap-1">
+                  <span className="font-semibold">🌐 External URL detected</span> - Will redirect to external website
+                </p>
+              )}
+              {!isAbsoluteUrl && toUrl && (
+                <p className="text-xs text-green-600 flex items-center gap-1">
+                  <span className="font-semibold">🏠 Internal URL</span> - Will redirect within your store
+                </p>
+              )}
+              {!toUrl && (
+                <p className="text-xs text-muted-foreground">The new path to redirect to (internal or external)</p>
+              )}
             </div>
 
             <div className="space-y-2">
@@ -265,15 +280,16 @@ export default function SeoRedirects() {
             <div className="flex gap-3">
               <CheckCircle className="h-5 w-5 text-green-600 flex-shrink-0 mt-0.5" />
               <div>
-                <h4 className="font-semibold text-sm mb-1">Use Relative Paths</h4>
+                <h4 className="font-semibold text-sm mb-1">Internal vs External Redirects</h4>
                 <p className="text-sm text-gray-700 mb-2">
-                  Always use paths relative to your store URL. Don't include the <code className="bg-gray-200 px-1 py-0.5 rounded text-xs">/public/storename</code> prefix.
+                  For <strong>internal redirects</strong> (within your store), use relative paths without the store prefix.
+                  For <strong>external redirects</strong> (to other websites), use absolute URLs.
                 </p>
-                <div className="bg-white p-2 rounded border border-gray-200 text-xs space-y-1">
+                <div className="bg-white p-2 rounded border border-gray-200 text-xs space-y-2">
                   <div className="flex items-start gap-2">
                     <span className="text-green-600">✓</span>
                     <div>
-                      <strong>Correct:</strong>
+                      <strong>Internal Redirect:</strong>
                       <div className="font-mono text-gray-600 mt-1">
                         From: <code className="bg-gray-100 px-1">/category/old-name</code><br />
                         To: <code className="bg-gray-100 px-1">/category/new-name</code>
@@ -281,9 +297,19 @@ export default function SeoRedirects() {
                     </div>
                   </div>
                   <div className="flex items-start gap-2">
+                    <span className="text-green-600">✓</span>
+                    <div>
+                      <strong>External Redirect:</strong>
+                      <div className="font-mono text-gray-600 mt-1">
+                        From: <code className="bg-gray-100 px-1">/blog</code><br />
+                        To: <code className="bg-gray-100 px-1">https://blog.example.com</code>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="flex items-start gap-2">
                     <span className="text-red-600">✗</span>
                     <div>
-                      <strong>Wrong:</strong>
+                      <strong>Wrong - Don't include store prefix:</strong>
                       <div className="font-mono text-gray-600 mt-1">
                         From: <code className="bg-gray-100 px-1">/public/hamid2/category/old-name</code>
                       </div>
@@ -311,10 +337,12 @@ export default function SeoRedirects() {
               <div>
                 <h4 className="font-semibold text-sm mb-1">Common Use Cases</h4>
                 <ul className="text-sm text-gray-700 space-y-1">
-                  <li>• Product URL changed: <code className="bg-gray-100 px-1 text-xs">/product/old-sku</code> → <code className="bg-gray-100 px-1 text-xs">/product/new-sku</code></li>
-                  <li>• Category renamed: <code className="bg-gray-100 px-1 text-xs">/category/electronics</code> → <code className="bg-gray-100 px-1 text-xs">/category/tech</code></li>
-                  <li>• Page moved: <code className="bg-gray-100 px-1 text-xs">/about-us</code> → <code className="bg-gray-100 px-1 text-xs">/company/about</code></li>
-                  <li>• External redirect: <code className="bg-gray-100 px-1 text-xs">/blog</code> → <code className="bg-gray-100 px-1 text-xs">https://blog.example.com</code></li>
+                  <li>• <strong>Product URL changed:</strong> <code className="bg-gray-100 px-1 text-xs">/product/old-sku</code> → <code className="bg-gray-100 px-1 text-xs">/product/new-sku</code></li>
+                  <li>• <strong>Category renamed:</strong> <code className="bg-gray-100 px-1 text-xs">/category/electronics</code> → <code className="bg-gray-100 px-1 text-xs">/category/tech</code></li>
+                  <li>• <strong>Page moved:</strong> <code className="bg-gray-100 px-1 text-xs">/about-us</code> → <code className="bg-gray-100 px-1 text-xs">/company/about</code></li>
+                  <li>• <strong>External blog:</strong> <code className="bg-gray-100 px-1 text-xs">/blog</code> → <code className="bg-gray-100 px-1 text-xs">https://blog.example.com</code></li>
+                  <li>• <strong>Social media:</strong> <code className="bg-gray-100 px-1 text-xs">/instagram</code> → <code className="bg-gray-100 px-1 text-xs">https://instagram.com/yourstore</code></li>
+                  <li>• <strong>Partner site:</strong> <code className="bg-gray-100 px-1 text-xs">/support</code> → <code className="bg-gray-100 px-1 text-xs">https://support.yourcompany.com</code></li>
                 </ul>
               </div>
             </div>
