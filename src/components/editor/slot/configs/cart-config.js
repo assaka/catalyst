@@ -275,7 +275,6 @@ export const cartConfig = {
                       </svg>
                     </div>
                     <div class="hidden mt-2 ml-2 text-sm text-green-800" data-discount-details>
-                      <p class="font-medium mb-2 text-xs">Discount applies to:</p>
                       <ul class="space-y-1" data-eligible-products></ul>
                     </div>
                   </div>
