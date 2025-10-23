@@ -236,9 +236,25 @@ export default function CookieConsentBanner() {
   const cookieSettings = settings.cookie_consent;
   const currentLang = getCurrentLanguage();
 
+  console.log('🍪 Cookie consent language:', {
+    currentLang,
+    hasTranslations: !!cookieSettings?.translations,
+    availableLanguages: cookieSettings?.translations ? Object.keys(cookieSettings.translations) : [],
+    translationsData: cookieSettings?.translations
+  });
+
   // Helper function to get translated text from translations JSON (no fallback)
   const getTranslatedText = (field, defaultValue = '') => {
     const translations = cookieSettings?.translations;
+
+    console.log(`🍪 getTranslatedText('${field}'):`, {
+      currentLang,
+      hasTranslations: !!translations,
+      hasCurrentLang: !!(translations && translations[currentLang]),
+      hasField: !!(translations && translations[currentLang] && translations[currentLang][field]),
+      value: translations?.[currentLang]?.[field] || translations?.en?.[field] || defaultValue
+    });
+
     if (translations && translations[currentLang] && translations[currentLang][field]) {
       return translations[currentLang][field];
     }
