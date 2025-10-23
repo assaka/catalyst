@@ -145,10 +145,10 @@ class AdminApiClient {
     } catch (error) {
       console.error('Admin logout failed:', error.message);
     }
-    
+
     this.setToken(null);
-    localStorage.removeItem('admin_user_data');
-    
+    localStorage.removeItem('store_owner_user_data');
+
     return { success: true };
   }
 
