@@ -750,7 +750,8 @@ export default function Checkout() {
       currentShippingCountry = shippingAddress.country || 'US';
       console.log('🔍 Using form country (form filled):', currentShippingCountry);
     } else {
-      currentShippingCountry = selectedCountry || shippingAddress.country || 'US';
+      // When form is empty, ONLY use selectedCountry (don't fall back to shippingAddress.country)
+      currentShippingCountry = selectedCountry || 'US';
       console.log('🔍 Using selectedCountry (form empty):', currentShippingCountry);
     }
 
@@ -953,8 +954,8 @@ export default function Checkout() {
     if (shippingAddress.street || shippingAddress.city) {
       return shippingAddress.country || 'US';
     }
-    // Otherwise, use the global selected country from the country selector
-    return selectedCountry || shippingAddress.country || 'US';
+    // Otherwise, use ONLY the global selected country from the country selector
+    return selectedCountry || 'US';
   };
 
   const getBillingCountry = () => {
@@ -970,8 +971,8 @@ export default function Checkout() {
     if (billingAddress.street || billingAddress.city) {
       return billingAddress.country || 'US';
     }
-    // Otherwise, use the global selected country from the country selector
-    return selectedCountry || billingAddress.country || 'US';
+    // Otherwise, use ONLY the global selected country from the country selector
+    return selectedCountry || 'US';
   };
 
   const handleCheckout = async () => {
