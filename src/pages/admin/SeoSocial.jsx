@@ -63,8 +63,6 @@ export default function SeoSocial() {
     }
   });
 
-  // Social profile input state
-  const [newSocialProfile, setNewSocialProfile] = useState('');
 
   // Helper function to update nested social media settings
   const updateSocialMediaSettings = (section, field, value) => {
@@ -209,28 +207,6 @@ export default function SeoSocial() {
     }
   };
 
-  const addSocialProfile = () => {
-    if (newSocialProfile.trim()) {
-      setSettings({
-        ...settings,
-        schema_settings: {
-          ...settings.schema_settings,
-          social_profiles: [...settings.schema_settings.social_profiles, newSocialProfile.trim()]
-        }
-      });
-      setNewSocialProfile('');
-    }
-  };
-
-  const removeSocialProfile = (index) => {
-    setSettings({
-      ...settings,
-      schema_settings: {
-        ...settings.schema_settings,
-        social_profiles: settings.schema_settings.social_profiles.filter((_, i) => i !== index)
-      }
-    });
-  };
 
   if (loading) {
     return (
@@ -515,14 +491,8 @@ export default function SeoSocial() {
                   <Input
                     id="social-pinterest"
                     placeholder="https://pinterest.com/yourstore"
-                    value={settings.social_profiles.pinterest}
-                    onChange={(e) => setSettings({
-                      ...settings,
-                      social_profiles: {
-                        ...settings.social_profiles,
-                        pinterest: e.target.value
-                      }
-                    })}
+                    value={settings.social_media_settings.social_profiles.pinterest}
+                    onChange={(e) => updateSocialMediaSettings('social_profiles', 'pinterest', e.target.value)}
                   />
                 </div>
 
@@ -534,14 +504,8 @@ export default function SeoSocial() {
                   <Input
                     id="social-tiktok"
                     placeholder="https://tiktok.com/@yourstore"
-                    value={settings.social_profiles.tiktok}
-                    onChange={(e) => setSettings({
-                      ...settings,
-                      social_profiles: {
-                        ...settings.social_profiles,
-                        tiktok: e.target.value
-                      }
-                    })}
+                    value={settings.social_media_settings.social_profiles.tiktok}
+                    onChange={(e) => updateSocialMediaSettings('social_profiles', 'tiktok', e.target.value)}
                   />
                 </div>
               </div>
@@ -578,14 +542,8 @@ export default function SeoSocial() {
                 <Input
                   id="org-name"
                   placeholder="Your Company Name"
-                  value={settings.schema_settings.organization_name}
-                  onChange={(e) => setSettings({
-                    ...settings,
-                    schema_settings: {
-                      ...settings.schema_settings,
-                      organization_name: e.target.value
-                    }
-                  })}
+                  value={settings.social_media_settings.schema.organization_name}
+                  onChange={(e) => updateSocialMediaSettings('schema', 'organization_name', e.target.value)}
                 />
                 <p className="text-sm text-muted-foreground">
                   Used in structured data markup for search engines
@@ -597,60 +555,19 @@ export default function SeoSocial() {
                 <Input
                   id="org-logo"
                   placeholder="https://example.com/logo.png"
-                  value={settings.schema_settings.organization_logo_url}
-                  onChange={(e) => setSettings({
-                    ...settings,
-                    schema_settings: {
-                      ...settings.schema_settings,
-                      organization_logo_url: e.target.value
-                    }
-                  })}
+                  value={settings.social_media_settings.schema.organization_logo_url}
+                  onChange={(e) => updateSocialMediaSettings('schema', 'organization_logo_url', e.target.value)}
                 />
                 <p className="text-sm text-muted-foreground">
                   URL to your organization's logo image
                 </p>
               </div>
 
-              <div className="space-y-2">
-                <Label>Social Media Profiles</Label>
-                <p className="text-sm text-muted-foreground mb-2">
-                  Add links to your social media profiles (Facebook, Twitter, Instagram, LinkedIn, etc.)
+              <div className="p-4 bg-blue-50 rounded-lg">
+                <h4 className="font-semibold text-sm mb-2">ℹ️ Note:</h4>
+                <p className="text-sm text-muted-foreground">
+                  Social media profiles are configured in the "Social Profiles" tab. They will automatically be included in your Schema.org structured data.
                 </p>
-
-                {settings.schema_settings.social_profiles.map((profile, index) => (
-                  <div key={index} className="flex items-center gap-2 mb-2">
-                    <Input value={profile} disabled className="flex-1" />
-                    <Button
-                      type="button"
-                      variant="destructive"
-                      size="icon"
-                      onClick={() => removeSocialProfile(index)}
-                    >
-                      <X className="h-4 w-4" />
-                    </Button>
-                  </div>
-                ))}
-
-                <div className="flex items-center gap-2">
-                  <Input
-                    placeholder="https://facebook.com/yourstore"
-                    value={newSocialProfile}
-                    onChange={(e) => setNewSocialProfile(e.target.value)}
-                    onKeyPress={(e) => {
-                      if (e.key === 'Enter') {
-                        e.preventDefault();
-                        addSocialProfile();
-                      }
-                    }}
-                  />
-                  <Button
-                    type="button"
-                    onClick={addSocialProfile}
-                    size="icon"
-                  >
-                    <Plus className="h-4 w-4" />
-                  </Button>
-                </div>
               </div>
 
             </CardContent>

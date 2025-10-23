@@ -270,9 +270,10 @@ export default function SeoHeadManager({ pageType, pageData, pageTitle, pageDesc
             robotsTag = shouldDisallow ? 'noindex, nofollow' : (seoSettings?.default_meta_robots || 'index, follow');
         }
 
-        const ogImage = imageUrl || 
-                       pageData?.images?.[0] || 
-                       seoSettings?.open_graph_settings?.default_image_url || 
+        const ogImage = imageUrl ||
+                       pageData?.images?.[0] ||
+                       seoSettings?.social_media_settings?.open_graph?.default_image_url ||
+                       seoSettings?.open_graph_settings?.default_image_url ||
                        store?.logo_url;
 
 
@@ -398,15 +399,19 @@ export default function SeoHeadManager({ pageType, pageData, pageTitle, pageDesc
             updateMetaTag('og:url', window.location.href, true);
             
             // Facebook App ID if provided
-            if (seoSettings?.open_graph_settings?.facebook_app_id) {
-                updateMetaTag('fb:app_id', seoSettings.open_graph_settings.facebook_app_id, true);
+            const fbAppId = seoSettings?.social_media_settings?.open_graph?.facebook_app_id ||
+                           seoSettings?.open_graph_settings?.facebook_app_id;
+            if (fbAppId) {
+                updateMetaTag('fb:app_id', fbAppId, true);
             }
         }
 
         // Twitter Card Tags (check if enabled)
         const enableTwitterCards = seoSettings?.enable_twitter_cards === true;
         if (enableTwitterCards) {
-            const cardType = seoSettings?.twitter_card_settings?.card_type || 'summary_large_image';
+            const cardType = seoSettings?.social_media_settings?.twitter?.card_type ||
+                            seoSettings?.twitter_card_settings?.card_type ||
+                            'summary_large_image';
             updateMetaTag('twitter:card', cardType);
             updateMetaTag('twitter:title', title);
             updateMetaTag('twitter:description', description);
@@ -416,10 +421,12 @@ export default function SeoHeadManager({ pageType, pageData, pageTitle, pageDesc
             }
             
             // Twitter site username if provided
-            if (seoSettings?.twitter_card_settings?.site_username) {
-                const username = seoSettings.twitter_card_settings.site_username.startsWith('@') 
-                    ? seoSettings.twitter_card_settings.site_username 
-                    : `@${seoSettings.twitter_card_settings.site_username}`;
+            const twitterSiteUsername = seoSettings?.social_media_settings?.twitter?.site_username ||
+                                       seoSettings?.twitter_card_settings?.site_username;
+            if (twitterSiteUsername) {
+                const username = twitterSiteUsername.startsWith('@')
+                    ? twitterSiteUsername
+                    : `@${twitterSiteUsername}`;
                 updateMetaTag('twitter:site', username);
             }
         }
@@ -436,7 +443,9 @@ export default function SeoHeadManager({ pageType, pageData, pageTitle, pageDesc
                 existingSchema.remove();
             }
             
-            const enableProductSchema = seoSettings?.schema_settings?.enable_product_schema === true;
+            const enableProductSchema = seoSettings?.social_media_settings?.schema?.enable_product_schema ??
+                                       seoSettings?.schema_settings?.enable_product_schema ??
+                                       true;
             if (enableProductSchema) {
                 const script = document.createElement('script');
                 script.type = 'application/ld+json';
@@ -451,7 +460,9 @@ export default function SeoHeadManager({ pageType, pageData, pageTitle, pageDesc
                     "sku": pageData.sku,
                     "brand": {
                         "@type": "Brand",
-                        "name": seoSettings?.schema_settings?.organization_name || store?.name || "Store"
+                        "name": seoSettings?.social_media_settings?.schema?.organization_name ||
+                               seoSettings?.schema_settings?.organization_name ||
+                               store?.name || "Store"
                     },
                     "offers": {
                         "@type": "Offer",
@@ -477,7 +488,9 @@ export default function SeoHeadManager({ pageType, pageData, pageTitle, pageDesc
                 existingSchema.remove();
             }
             
-            const enableOrgSchema = seoSettings?.schema_settings?.enable_organization_schema === true;
+            const enableOrgSchema = seoSettings?.social_media_settings?.schema?.enable_organization_schema ??
+                                   seoSettings?.schema_settings?.enable_organization_schema ??
+                                   true;
             if (enableOrgSchema) {
                 const script = document.createElement('script');
                 script.type = 'application/ld+json';
@@ -486,22 +499,36 @@ export default function SeoHeadManager({ pageType, pageData, pageTitle, pageDesc
                 const structuredData = {
                     "@context": "https://schema.org",
                     "@type": "Organization",
-                    "name": seoSettings?.schema_settings?.organization_name || store.name,
+                    "name": seoSettings?.social_media_settings?.schema?.organization_name ||
+                           seoSettings?.schema_settings?.organization_name ||
+                           store.name,
                     "description": store.description || defaultDescription,
                     "url": window.location.origin
                 };
 
                 // Add logo if provided
-                if (seoSettings?.schema_settings?.organization_logo_url) {
-                    structuredData.logo = seoSettings.schema_settings.organization_logo_url;
+                const orgLogoUrl = seoSettings?.social_media_settings?.schema?.organization_logo_url ||
+                                  seoSettings?.schema_settings?.organization_logo_url;
+                if (orgLogoUrl) {
+                    structuredData.logo = orgLogoUrl;
                 }
 
-                // Add social profiles if provided
-                if (seoSettings?.schema_settings?.social_profiles && Array.isArray(seoSettings.schema_settings.social_profiles) && seoSettings.schema_settings.social_profiles.length > 0) {
-                    const validProfiles = seoSettings.schema_settings.social_profiles.filter(profile => profile && profile.trim());
-                    if (validProfiles.length > 0) {
-                        structuredData.sameAs = validProfiles;
-                    }
+                // Add social profiles from new consolidated structure
+                let socialProfiles = [];
+                if (seoSettings?.social_media_settings?.social_profiles) {
+                    const profiles = seoSettings.social_media_settings.social_profiles;
+                    socialProfiles = Object.values(profiles)
+                        .filter(url => url && typeof url === 'string' && url.trim())
+                        .concat(Array.isArray(profiles.other) ? profiles.other.filter(url => url && url.trim()) : []);
+                }
+                // Fallback to legacy social_profiles array
+                else if (seoSettings?.schema_settings?.social_profiles && Array.isArray(seoSettings.schema_settings.social_profiles)) {
+                    socialProfiles = seoSettings.schema_settings.social_profiles.filter(profile => profile && profile.trim());
+                }
+
+                // Add social profiles to structured data if any exist
+                if (socialProfiles.length > 0) {
+                    structuredData.sameAs = socialProfiles;
                 }
 
                 script.textContent = JSON.stringify(structuredData);
