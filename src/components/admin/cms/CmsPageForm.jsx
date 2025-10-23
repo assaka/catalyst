@@ -543,7 +543,16 @@ export default function CmsPageForm({ page, stores, products, onSubmit, onCancel
         <div className="mt-2 flex flex-wrap gap-1">
           {formData.related_product_ids.map(id => {
             const product = products.find(p => p.id === id);
-            return product ? <Badge key={id}>{getProductName(product)}</Badge> : null;
+            return product ? (
+              <Badge
+                key={id}
+                className="flex items-center gap-1 cursor-pointer hover:bg-destructive/80 transition-colors"
+                onClick={() => handleProductToggle(id)}
+              >
+                {getProductName(product)}
+                <X className="w-3 h-3" />
+              </Badge>
+            ) : null;
           })}
         </div>
       </div>
