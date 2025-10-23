@@ -109,8 +109,6 @@ export default function CmsPageViewer() {
 
             {relatedProducts.length > 0 && (
                 <div className="mt-16">
-                    <h2 className="text-2xl font-bold text-center mb-6">Related Products</h2>
-
                     {/* Search bar for related products */}
                     <div className="max-w-md mx-auto mb-8">
                         <div className="relative">
@@ -137,7 +135,7 @@ export default function CmsPageViewer() {
                     </div>
 
                     {filteredProducts.length > 0 ? (
-                        <RecommendedProducts products={filteredProducts} />
+                        <RecommendedProducts products={filteredProducts} title="Related Products" />
                     ) : (
                         <div className="text-center text-gray-500 py-8">
                             No products found matching "{searchQuery}"
