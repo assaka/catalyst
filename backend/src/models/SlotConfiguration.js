@@ -43,7 +43,6 @@ async function loadPageConfig(pageType) {
       throw new Error(`Config export '${configExport}' not found in ${configPath}`);
     }
 
-    console.log(`📦 Backend: Successfully loaded ${pageType} configuration`);
     return config;
   } catch (error) {
     console.error(`Failed to load ${pageType}-config.js:`, error);
@@ -266,7 +265,6 @@ SlotConfiguration.findLatestAcceptance = async function(storeId, pageType) {
 
 // Create or update a draft - proper upsert logic with init->draft flow
 SlotConfiguration.upsertDraft = async function(userId, storeId, pageType, configuration = null, isNewChanges = true, isReset = false) {
-  console.log('🔄 BACKEND - upsertDraft called:', { userId, storeId, pageType, hasConfiguration: !!configuration, isNewChanges, isReset });
 
   // Try to find existing draft or init record
   const existingRecord = await this.findOne({
@@ -280,28 +278,19 @@ SlotConfiguration.upsertDraft = async function(userId, storeId, pageType, config
   });
 
   if (existingRecord) {
-    console.log('📝 BACKEND - Found existing record:', {
-      id: existingRecord.id,
-      status: existingRecord.status,
-      hasSlots: !!existingRecord.configuration?.slots,
-      slotsCount: Object.keys(existingRecord.configuration?.slots || {}).length
-    });
 
     // Handle init->draft transition
     if (existingRecord.status === 'init' && configuration) {
-      console.log('🔄 BACKEND - Transitioning init->draft with full configuration');
       existingRecord.configuration = configuration;
       existingRecord.status = 'draft';
       existingRecord.updated_at = new Date();
       existingRecord.has_unpublished_changes = isReset ? false : isNewChanges;
       await existingRecord.save();
-      console.log('✅ BACKEND - Successfully transitioned to draft status');
       return existingRecord;
     }
 
     // Update existing draft
     if (configuration) {
-      console.log('📝 BACKEND - Updating existing configuration');
       existingRecord.configuration = configuration;
       existingRecord.updated_at = new Date();
       existingRecord.has_unpublished_changes = isReset ? false : isNewChanges;
@@ -309,8 +298,6 @@ SlotConfiguration.upsertDraft = async function(userId, storeId, pageType, config
     }
     return existingRecord;
   }
-
-  console.log('🆕 BACKEND - No existing record found, creating new one');
 
   // Determine version number
   const maxVersion = await this.max('version_number', {
@@ -322,7 +309,6 @@ SlotConfiguration.upsertDraft = async function(userId, storeId, pageType, config
 
   // If configuration is provided, create a draft; otherwise create an init record
   if (configuration) {
-    console.log('📝 BACKEND - Creating new draft with full configuration');
     const newDraft = await this.create({
       user_id: userId,
       store_id: storeId,
@@ -337,19 +323,15 @@ SlotConfiguration.upsertDraft = async function(userId, storeId, pageType, config
     });
     return newDraft;
   } else {
-    console.log('🏗️ BACKEND - Creating new init record');
-
     // Try to copy from latest published configuration instead of creating empty
     const latestPublished = await this.findLatestPublished(storeId, pageType);
 
     let configurationToUse;
     let statusToUse = 'init';
     if (latestPublished && latestPublished.configuration) {
-      console.log('✅ BACKEND - Copying configuration from latest published version');
       configurationToUse = latestPublished.configuration;
       statusToUse = 'draft'; // Set to draft since it's already populated from published
     } else {
-      console.log('⚠️ BACKEND - No published version found, loading from config.js');
       // Load configuration from the appropriate config file (cart-config.js, category-config.js, etc.)
       const pageConfig = await loadPageConfig(pageType);
       configurationToUse = {
@@ -381,14 +363,12 @@ SlotConfiguration.upsertDraft = async function(userId, storeId, pageType, config
       parent_version_id: null,
       has_unpublished_changes: false
     });
-    console.log('✅ BACKEND - Created new record with status:', statusToUse, 'ID:', newRecord.id);
     return newRecord;
   }
 };
 
 // Create draft - uses upsert logic (creates init record first)
 SlotConfiguration.createDraft = async function(userId, storeId, pageType) {
-  console.log('🏗️ BACKEND - createDraft called, will create init record');
   return this.upsertDraft(userId, storeId, pageType, null, false, false);
 };
 

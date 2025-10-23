@@ -64,15 +64,15 @@ export default function CmsPageForm({ page, stores, products, onSubmit, onCancel
       // Initialize translations with existing data or empty structure
       const translations = page.translations || {
         en: {
-          title: page.title || '',
-          content: page.content || ''
+          title: '',
+          content: ''
         }
       };
 
       setFormData({
-        title: translations.en?.title || page.title || "",
+        title: translations.en?.title || "",
         slug: page.slug || "",
-        content: translations.en?.content || page.content || "",
+        content: translations.en?.content || "",
         is_active: page.is_active ?? true,
         store_id: page.store_id || getSelectedStoreId() || "",
         related_product_ids: page.related_product_ids || [],

@@ -8,6 +8,7 @@ import { createPageUrl } from '@/utils';
 import { createCmsPageUrl } from '@/utils/urlUtils';
 import { useStore } from '@/components/storefront/StoreProvider';
 import { Layout, FileText, ChevronRight, Package } from 'lucide-react';
+import { getPageTitle } from '@/utils/translationUtils';
 
 export default function HtmlSitemap() {
     const { storeCode } = useParams();
@@ -102,7 +103,7 @@ export default function HtmlSitemap() {
                             <li key={page.id} className="my-2">
                                 <Link to={createCmsPageUrl(store?.slug || storeCode, page.slug)} className="flex items-center text-blue-600 hover:underline">
                                     <ChevronRight className="w-4 h-4 mr-2" />
-                                    {page.title}
+                                    {getPageTitle(page)}
                                 </Link>
                             </li>
                         ))}

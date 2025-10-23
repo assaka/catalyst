@@ -1826,7 +1826,7 @@ export default function Translations() {
                       .filter(page => {
                         if (!cmsSearchQuery.trim()) return true;
                         const query = cmsSearchQuery.toLowerCase();
-                        const title = (page.translations?.en?.title || page.title || '').toLowerCase();
+                        const title = (page.translations?.en?.title || '').toLowerCase();
                         const slug = (page.slug || '').toLowerCase();
                         return title.includes(query) || slug.includes(query);
                       })
@@ -1876,7 +1876,7 @@ export default function Translations() {
                       Showing {cmsPages.filter(page => {
                         if (!cmsSearchQuery.trim()) return true;
                         const query = cmsSearchQuery.toLowerCase();
-                        const title = (page.translations?.en?.title || page.title || '').toLowerCase();
+                        const title = (page.translations?.en?.title || '').toLowerCase();
                         const slug = (page.slug || '').toLowerCase();
                         return title.includes(query) || slug.includes(query);
                       }).length} pages and {cmsBlocks.filter(block => {
@@ -1893,7 +1893,7 @@ export default function Translations() {
                       Showing {cmsPages.filter(page => {
                         if (!cmsSearchQuery.trim()) return true;
                         const query = cmsSearchQuery.toLowerCase();
-                        const title = (page.translations?.en?.title || page.title || '').toLowerCase();
+                        const title = (page.translations?.en?.title || '').toLowerCase();
                         const slug = (page.slug || '').toLowerCase();
                         return title.includes(query) || slug.includes(query);
                       }).length} of {cmsPages.length} pages

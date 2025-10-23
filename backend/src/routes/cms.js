@@ -286,7 +286,7 @@ router.post('/bulk-translate', [
         results.failed++;
         results.errors.push({
           pageId: page.id,
-          pageTitle: page.translations?.[fromLang]?.title || page.title,
+          pageTitle: page.translations?.[fromLang]?.title || page.slug,
           error: error.message
         });
       }

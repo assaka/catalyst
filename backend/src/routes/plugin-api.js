@@ -274,8 +274,6 @@ router.get('/registry', async (req, res) => {
 
     const { status } = req.query;
 
-    console.log('🔌 [LEGACY] Loading plugins from normalized tables...');
-
     // Get plugins from plugin_registry table (removed config column - doesn't exist in normalized structure)
     const whereClause = status === 'active' ? `WHERE status = 'active'` : '';
     const plugins = await sequelize.query(`
@@ -313,7 +311,6 @@ router.get('/registry', async (req, res) => {
           enabled: h.is_enabled !== false
         }));
       } catch (hookError) {
-        console.log(`  ⚠️ ${plugin.name}: plugin_hooks table error`);
       }
 
       // Load events from plugin_events table
@@ -336,7 +333,6 @@ router.get('/registry', async (req, res) => {
           enabled: e.is_enabled !== false
         }));
       } catch (eventError) {
-        console.log(`  ⚠️ ${plugin.name}: plugin_events table error`);
       }
 
       const manifest = typeof plugin.manifest === 'string' ? JSON.parse(plugin.manifest) : plugin.manifest;
