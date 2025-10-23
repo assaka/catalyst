@@ -38,27 +38,10 @@ const SeoSettings = sequelize.define('SeoSettings', {
     type: DataTypes.STRING,
     allowNull: true
   },
-  // Rich snippets and social
-  enable_rich_snippets: {
-    type: DataTypes.BOOLEAN,
-    defaultValue: true
-  },
-  enable_open_graph: {
-    type: DataTypes.BOOLEAN,
-    defaultValue: true
-  },
-  enable_twitter_cards: {
-    type: DataTypes.BOOLEAN,
-    defaultValue: true
-  },
   // Robots and sitemap
   robots_txt_content: {
     type: DataTypes.TEXT,
     allowNull: true
-  },
-  enable_sitemap: {
-    type: DataTypes.BOOLEAN,
-    defaultValue: true
   },
   auto_canonical_filtered_pages: {
     type: DataTypes.BOOLEAN,

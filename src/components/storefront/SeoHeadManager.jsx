@@ -375,9 +375,8 @@ export default function SeoHeadManager({ pageType, pageData, pageTitle, pageDesc
             });
         }
 
-        // Open Graph Tags (check if enabled)
-        const enableOpenGraph = seoSettings?.enable_open_graph === true;
-        if (enableOpenGraph) {
+        // Open Graph Tags (always enabled, controlled via settings)
+        if (true) {
             // Use Open Graph specific template values if available, otherwise fall back to regular meta values
             const ogTitle = pageData?.og_title || 
                            pageData?.seo?.og_title || 
@@ -406,9 +405,8 @@ export default function SeoHeadManager({ pageType, pageData, pageTitle, pageDesc
             }
         }
 
-        // Twitter Card Tags (check if enabled)
-        const enableTwitterCards = seoSettings?.enable_twitter_cards === true;
-        if (enableTwitterCards) {
+        // Twitter Card Tags (always enabled, controlled via settings)
+        if (true) {
             const cardType = seoSettings?.social_media_settings?.twitter?.card_type ||
                             seoSettings?.twitter_card_settings?.card_type ||
                             'summary_large_image';
@@ -431,11 +429,10 @@ export default function SeoHeadManager({ pageType, pageData, pageTitle, pageDesc
             }
         }
 
-        // Rich Snippets / Schema.org (check if enabled)
-        const enableRichSnippets = seoSettings?.enable_rich_snippets === true;
-        
+        // Rich Snippets / Schema.org (always enabled, controlled via individual schema settings)
+
         // Product-specific Schema.org structured data
-        if (enableRichSnippets && pageType === 'product' && pageData) {
+        if (pageType === 'product' && pageData) {
             
             // Remove existing schema first
             const existingSchema = document.querySelector('script[type="application/ld+json"][data-type="product"]');
@@ -480,7 +477,7 @@ export default function SeoHeadManager({ pageType, pageData, pageTitle, pageDesc
         }
 
         // Organization structured data for non-product pages
-        if (enableRichSnippets && pageType !== 'product' && store) {
+        if (pageType !== 'product' && store) {
             
             // Remove existing schema first
             const existingSchema = document.querySelector('script[type="application/ld+json"][data-type="organization"]');
@@ -537,7 +534,7 @@ export default function SeoHeadManager({ pageType, pageData, pageTitle, pageDesc
         }
 
         // Website structured data for homepage
-        if (enableRichSnippets && pageType === 'homepage' && store) {
+        if (pageType === 'homepage' && store) {
             
             // Remove existing schema first
             const existingSchema = document.querySelector('script[type="application/ld+json"][data-type="website"]');

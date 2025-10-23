@@ -12,11 +12,6 @@ async function generateSitemapXml(storeId, baseUrl) {
       where: { store_id: storeId }
     });
 
-    // Check if sitemap is enabled
-    if (seoSettings && seoSettings.enable_sitemap === false) {
-      return null;
-    }
-
     const urls = [];
 
     // Add homepage

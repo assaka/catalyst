@@ -93,10 +93,7 @@ router.get('/', async (req, res) => {
     if (!seoSettings) {
       // Create default SEO settings
       seoSettings = await SeoSettings.create({
-        store_id,
-        enable_rich_snippets: true,
-        enable_open_graph: true,
-        enable_twitter_cards: true
+        store_id
       });
     }
 
