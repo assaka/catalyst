@@ -769,14 +769,14 @@ export default function CookieConsent() {
                   <div>
                     <Label htmlFor="privacy_policy_page">Privacy Policy Page</Label>
                     <Select
-                      value={settings.privacy_policy_url || ''}
-                      onValueChange={(value) => setSettings({ ...settings, privacy_policy_url: value })}
+                      value={settings.privacy_policy_url || 'none'}
+                      onValueChange={(value) => setSettings({ ...settings, privacy_policy_url: value === 'none' ? '' : value })}
                     >
                       <SelectTrigger>
                         <SelectValue placeholder="Select a CMS page for privacy policy" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="">
+                        <SelectItem value="none">
                           <span className="text-gray-500">No privacy policy page</span>
                         </SelectItem>
                         {/* System pages first */}
