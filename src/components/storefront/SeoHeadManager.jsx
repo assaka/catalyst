@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useStore } from './StoreProvider';
 import { useSeoSettings } from './SeoSettingsProvider';
 import apiClient from '@/api/client';
+import { getPriceDisplay } from '@/utils/priceUtils';
 
 export default function SeoHeadManager({ pageType, pageData, pageTitle, pageDescription, imageUrl }) {
     const storeContext = useStore();
@@ -491,7 +492,11 @@ export default function SeoHeadManager({ pageType, pageData, pageTitle, pageDesc
                 const script = document.createElement('script');
                 script.type = 'application/ld+json';
                 script.setAttribute('data-type', 'product');
-                
+
+                // Get correct pricing using priceUtils
+                const priceInfo = getPriceDisplay(pageData);
+                const actualPrice = priceInfo.displayPrice; // Use the selling price (discounted if applicable)
+
                 const structuredData = {
                     "@context": "https://schema.org/",
                     "@type": "Product",
@@ -509,11 +514,22 @@ export default function SeoHeadManager({ pageType, pageData, pageTitle, pageDesc
                         "@type": "Offer",
                         "url": window.location.href,
                         "priceCurrency": store?.currency || "No Currency",
-                        "price": pageData.price,
-                        "availability": (pageData.stock_quantity > 0 || pageData.infinite_stock) ? 
+                        "price": actualPrice,
+                        "availability": (pageData.stock_quantity > 0 || pageData.infinite_stock) ?
                             "https://schema.org/InStock" : "https://schema.org/OutOfStock"
                     }
                 };
+
+                // Add price specification if there's a discount
+                if (priceInfo.hasComparePrice && priceInfo.originalPrice) {
+                    structuredData.offers.priceSpecification = {
+                        "@type": "PriceSpecification",
+                        "price": actualPrice,
+                        "priceCurrency": store?.currency || "No Currency"
+                    };
+                    // Add the original (higher) price for reference
+                    structuredData.offers.priceValidUntil = new Date(new Date().setFullYear(new Date().getFullYear() + 1)).toISOString().split('T')[0];
+                }
 
                 script.textContent = JSON.stringify(structuredData);
                 document.head.appendChild(script);

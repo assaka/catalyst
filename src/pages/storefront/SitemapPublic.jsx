@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
-import { StorefrontCategory, StorefrontProduct, StorefrontCmsPage, StorefrontSeoSetting } from '@/api/storefront-entities';
+import { StorefrontCategory, StorefrontProduct, StorefrontSeoSetting } from '@/api/storefront-entities';
+import { CmsPage } from '@/api/entities';
 import { Link } from 'react-router-dom';
 import { createPageUrl } from '@/utils';
 import { createCmsPageUrl } from '@/utils/urlUtils';
@@ -69,7 +70,7 @@ export default function SitemapPublic() {
                 if (htmlSitemapSettings.include_pages) {
                     promises.push(
                         store?.id
-                            ? StorefrontCmsPage.filter({ is_active: true, store_id: store.id })
+                            ? CmsPage.filter({ is_active: true, store_id: store.id })
                             : Promise.resolve([])
                     );
                 } else {
@@ -78,16 +79,20 @@ export default function SitemapPublic() {
 
                 const [categoryData, productData, pageData] = await Promise.all(promises);
 
+                // Filter out system pages (404, privacy policy, etc.)
+                const nonSystemPages = (pageData || []).filter(page => !page.is_system);
+
                 console.log('Sitemap data fetched:', {
                     categories: categoryData,
                     products: productData,
                     pages: pageData,
+                    nonSystemPages: nonSystemPages,
                     storeId: store?.id
                 });
 
                 setCategories(categoryData || []);
                 setProducts(productData || []);
-                setPages(pageData || []);
+                setPages(nonSystemPages);
             } catch (error) {
                 console.error("Error fetching sitemap data:", error);
             } finally {

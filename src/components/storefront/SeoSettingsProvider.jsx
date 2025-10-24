@@ -25,6 +25,19 @@ const loadSeoSettingsWithSimpleCache = async (storeId) => {
       
       seoSettings = {
         ...rawSettings,
+        // Global SEO settings
+        site_title: rawSettings.site_title || '',
+        title_separator: rawSettings.title_separator || '|',
+        default_meta_description: rawSettings.default_meta_description || '',
+        auto_generate_meta: rawSettings.auto_generate_meta !== false,
+        enable_sitemap: rawSettings.enable_sitemap !== false,
+        // Default meta settings (for templates)
+        default_meta_settings: rawSettings.default_meta_settings || {
+          meta_title: rawSettings.site_title || '',
+          meta_description: rawSettings.default_meta_description || '',
+          meta_keywords: '',
+          meta_robots: 'index, follow'
+        },
         schema_settings: rawSettings.schema_settings || {
           enable_product_schema: true,
           enable_organization_schema: true,
