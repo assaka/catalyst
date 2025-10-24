@@ -644,7 +644,8 @@ export default function Category() {
         pageData={currentCategory ? {
           ...currentCategory,
           category_ids: [currentCategory.id],
-          categories: [currentCategory.id]
+          categories: [currentCategory.id],
+          breadcrumbs: buildCategoryBreadcrumbs(currentCategory, storeCode, categories, settings)
         } : store}
         pageTitle={pageTitle}
       />

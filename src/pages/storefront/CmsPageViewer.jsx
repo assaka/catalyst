@@ -3,6 +3,8 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { StorefrontCmsPage, StorefrontProduct } from '@/api/storefront-entities';
 import RecommendedProducts from '@/components/storefront/RecommendedProducts';
 import SeoHeadManager from '@/components/storefront/SeoHeadManager';
+import { buildCmsBreadcrumbs } from '@/utils/breadcrumbUtils';
+import { useStore } from '@/components/storefront/StoreProvider';
 // Redirect handling moved to global RedirectHandler component
 import { useNotFound } from '@/utils/notFoundUtils';
 import { getPageTitle, getPageContent, getProductName, getCurrentLanguage } from '@/utils/translationUtils';
@@ -11,7 +13,8 @@ import { Search, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
 export default function CmsPageViewer() {
-    const { pageSlug } = useParams();
+    const { pageSlug, storeCode } = useParams();
+    const { settings } = useStore();
     const slug = pageSlug;
     const { showNotFound } = useNotFound();
     const [page, setPage] = useState(null);
@@ -101,7 +104,13 @@ export default function CmsPageViewer() {
 
     return (
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-            <SeoHeadManager pageType="cms_page" pageData={page} />
+            <SeoHeadManager
+                pageType="cms_page"
+                pageData={{
+                    ...page,
+                    breadcrumbs: buildCmsBreadcrumbs(page, storeCode, settings)
+                }}
+            />
             <article className="prose lg:prose-xl mx-auto bg-white p-8 rounded-lg shadow">
                 <h1>{pageTitle}</h1>
                 <div dangerouslySetInnerHTML={{ __html: pageContent }} />
