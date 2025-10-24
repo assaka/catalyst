@@ -29,6 +29,7 @@ export default function XmlSitemap() {
     const [sitemapIndexXml, setSitemapIndexXml] = useState('');
     const [flashMessage, setFlashMessage] = useState(null);
 
+
     // Statistics
     const [stats, setStats] = useState({
         totalUrls: 0,
@@ -652,13 +653,7 @@ export default function XmlSitemap() {
                             </Alert>
 
                             <div className="space-y-4">
-                                <div className="flex items-center justify-between">
-                                    <div className="space-y-0.5">
-                                        <Label htmlFor="include-products">Include Products</Label>
-                                        <p className="text-sm text-muted-foreground">
-                                            Add all active products to the sitemap
-                                        </p>
-                                    </div>
+                                <div className="flex items-center space-x-2">
                                     <Switch
                                         id="include-products"
                                         checked={settings.sitemap_include_products}
@@ -666,15 +661,9 @@ export default function XmlSitemap() {
                                             setSettings({ ...settings, sitemap_include_products: checked });
                                         }}
                                     />
+                                    <Label htmlFor="include-products">Include Products</Label>
                                 </div>
-
-                                <div className="flex items-center justify-between">
-                                    <div className="space-y-0.5">
-                                        <Label htmlFor="include-categories">Include Categories</Label>
-                                        <p className="text-sm text-muted-foreground">
-                                            Add all active categories to the sitemap
-                                        </p>
-                                    </div>
+                                <div className="flex items-center space-x-2">
                                     <Switch
                                         id="include-categories"
                                         checked={settings.sitemap_include_categories}
@@ -682,15 +671,9 @@ export default function XmlSitemap() {
                                             setSettings({ ...settings, sitemap_include_categories: checked });
                                         }}
                                     />
+                                    <Label htmlFor="include-products">Include Categories</Label>
                                 </div>
-
-                                <div className="flex items-center justify-between">
-                                    <div className="space-y-0.5">
-                                        <Label htmlFor="include-pages">Include CMS Pages</Label>
-                                        <p className="text-sm text-muted-foreground">
-                                            Add all active CMS pages to the sitemap
-                                        </p>
-                                    </div>
+                                <div className="flex items-center space-x-2">
                                     <Switch
                                         id="include-pages"
                                         checked={settings.sitemap_include_pages}
@@ -698,6 +681,7 @@ export default function XmlSitemap() {
                                             setSettings({ ...settings, sitemap_include_pages: checked });
                                         }}
                                     />
+                                    <Label htmlFor="include-products">Include CMS Pages</Label>
                                 </div>
                             </div>
                         </CardContent>

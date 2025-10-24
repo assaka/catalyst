@@ -82,5 +82,6 @@ export { default as Storefront } from './storefront/Storefront';
 export { default as CmsPageViewer } from './storefront/CmsPageViewer';
 export { default as RobotsPublic } from './storefront/RobotsPublic';
 export { default as RobotsTxtHandler } from './RobotsTxtHandler';
+export { default as SitemapPublic } from './storefront/SitemapPublic';
 export { default as Landing } from './storefront/Landing';
 export { default as NotFound } from './storefront/NotFound';
