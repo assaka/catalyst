@@ -84,6 +84,8 @@ export function TranslationProvider({ children }) {
    * Change current language
    */
   const changeLanguage = useCallback(async (langCode) => {
+    console.log(`🌍 [Frontend] Language changing to: "${langCode}"`);
+
     // Save to localStorage
     localStorage.setItem('catalyst_language', langCode);
 
@@ -94,6 +96,7 @@ export function TranslationProvider({ children }) {
     const language = availableLanguages.find(lang => lang.code === langCode);
     if (language) {
       setIsRTL(language.is_rtl || false);
+      console.log(`🌍 [Frontend] Language "${langCode}" - RTL: ${language.is_rtl || false}`);
 
       // Update HTML dir attribute for RTL
       document.documentElement.dir = language.is_rtl ? 'rtl' : 'ltr';
@@ -102,6 +105,8 @@ export function TranslationProvider({ children }) {
 
     // Load translations for new language
     await loadTranslations(langCode);
+
+    console.log(`✅ [Frontend] Language changed to: "${langCode}"`);
 
     // Dispatch custom event for language change
     window.dispatchEvent(new CustomEvent('languageChanged', { detail: { language: langCode } }));
@@ -194,7 +199,14 @@ export function TranslationProvider({ children }) {
 
       // Check for saved language preference
       const savedLang = localStorage.getItem('catalyst_language');
-      const initialLang = savedLang || navigator.language?.split('-')[0] || 'en';
+      const browserLang = navigator.language?.split('-')[0];
+      const initialLang = savedLang || browserLang || 'en';
+
+      console.log(`🌍 [Frontend] Initializing language:`, {
+        saved: savedLang || 'none',
+        browser: browserLang || 'none',
+        selected: initialLang
+      });
 
       // Set initial language
       setCurrentLanguage(initialLang);
@@ -204,6 +216,8 @@ export function TranslationProvider({ children }) {
 
       // Load translations
       await loadTranslations(initialLang);
+
+      console.log(`✅ [Frontend] Current language: "${initialLang}"`);
     };
 
     initializeTranslations();
