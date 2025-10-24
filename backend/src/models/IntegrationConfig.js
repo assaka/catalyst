@@ -210,20 +210,48 @@ IntegrationConfig.findByStoreAndType = async function(storeId, integrationType) 
 };
 
 IntegrationConfig.createOrUpdate = async function(storeId, integrationType, configData) {
-  const existingConfig = await this.findByStoreAndType(storeId, integrationType);
-  
+  // First try to find active config
+  let existingConfig = await this.findByStoreAndType(storeId, integrationType);
+
+  // If not found, check for inactive config (to avoid unique constraint violation)
+  if (!existingConfig) {
+    existingConfig = await this.findOne({
+      where: {
+        store_id: storeId,
+        integration_type: integrationType
+      }
+    });
+  }
+
   if (existingConfig) {
     existingConfig.config_data = configData;
     existingConfig.is_active = true;
     await existingConfig.save();
     return existingConfig;
   } else {
-    return await this.create({
-      store_id: storeId,
-      integration_type: integrationType,
-      config_data: configData,
-      is_active: true
-    });
+    try {
+      return await this.create({
+        store_id: storeId,
+        integration_type: integrationType,
+        config_data: configData,
+        is_active: true
+      });
+    } catch (error) {
+      console.error('IntegrationConfig.create failed:', {
+        storeId,
+        integrationType,
+        configData,
+        error: error.message,
+        name: error.name,
+        errors: error.errors?.map(e => ({
+          field: e.path,
+          message: e.message,
+          type: e.type,
+          value: e.value
+        }))
+      });
+      throw error;
+    }
   }
 };
 
