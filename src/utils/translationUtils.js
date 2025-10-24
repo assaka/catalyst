@@ -7,23 +7,21 @@
 /**
  * Get translated field from an entity (category, product, CMS page, etc.)
  *
- * @param {Object} entity - The entity with translations
+ * The backend returns entities with translated fields directly on the object,
+ * fetched from normalized translation tables based on the X-Language header.
+ *
+ * @param {Object} entity - The entity with translated fields
  * @param {String} field - The field name (e.g., 'name', 'description')
- * @param {String} lang - Language code (default: 'en')
- * @param {String} fallbackLang - Fallback language code (default: 'en')
- * @returns {String} Translated value or fallback
+ * @param {String} lang - Language code (not used, kept for API compatibility)
+ * @param {String} fallbackLang - Fallback language code (not used, kept for API compatibility)
+ * @returns {String} Translated value
  */
 export function getTranslatedField(entity, field, lang = 'en', fallbackLang = 'en') {
   if (!entity) return '';
 
-  // Try translations object first
-  if (entity.translations && entity.translations[lang] && entity.translations[lang][field]) {
-    return entity.translations[lang][field];
-  }
-
-  // Try fallback language
-  if (lang !== fallbackLang && entity.translations && entity.translations[fallbackLang] && entity.translations[fallbackLang][field]) {
-    return entity.translations[fallbackLang][field];
+  // Return field directly from entity (from normalized translations)
+  if (entity[field] !== undefined && entity[field] !== null) {
+    return entity[field];
   }
 
   // For title field, fallback to slug if available (useful for CMS pages)
