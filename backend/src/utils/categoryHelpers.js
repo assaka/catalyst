@@ -46,8 +46,8 @@ async function getCategoriesWithTranslations(where = {}, lang = 'en') {
       c.product_count,
       c.created_at,
       c.updated_at,
-      COALESCE(ct.name, c.translations->'en'->>'name') as name,
-      COALESCE(ct.description, c.translations->'en'->>'description') as description
+      ct.name as name,
+      ct.description as description
     FROM categories c
     LEFT JOIN category_translations ct
       ON c.id = ct.category_id AND ct.language_code = :lang
@@ -113,8 +113,8 @@ async function getCategoryById(id, lang = 'en') {
       c.product_count,
       c.created_at,
       c.updated_at,
-      COALESCE(ct.name, c.translations->'en'->>'name') as name,
-      COALESCE(ct.description, c.translations->'en'->>'description') as description
+      ct.name as name,
+      ct.description as description
     FROM categories c
     LEFT JOIN category_translations ct
       ON c.id = ct.category_id AND ct.language_code = :lang
@@ -144,12 +144,12 @@ async function createCategoryWithTranslations(categoryData, translations = {}) {
     const [category] = await sequelize.query(`
       INSERT INTO categories (
         id, slug, image_url, sort_order, is_active, hide_in_menu, seo,
-        store_id, parent_id, level, path, product_count, translations,
+        store_id, parent_id, level, path, product_count,
         created_at, updated_at
       ) VALUES (
         gen_random_uuid(),
         :slug, :image_url, :sort_order, :is_active, :hide_in_menu, :seo,
-        :store_id, :parent_id, :level, :path, :product_count, :translations,
+        :store_id, :parent_id, :level, :path, :product_count,
         NOW(), NOW()
       )
       RETURNING *
@@ -165,8 +165,7 @@ async function createCategoryWithTranslations(categoryData, translations = {}) {
         parent_id: categoryData.parent_id || null,
         level: categoryData.level || 0,
         path: categoryData.path || null,
-        product_count: categoryData.product_count || 0,
-        translations: JSON.stringify(categoryData.translations || {})
+        product_count: categoryData.product_count || 0
       },
       type: sequelize.QueryTypes.SELECT,
       transaction
@@ -251,10 +250,7 @@ async function updateCategoryWithTranslations(id, categoryData, translations = {
       updateFields.push('seo = :seo');
       replacements.seo = JSON.stringify(categoryData.seo);
     }
-    if (categoryData.translations !== undefined) {
-      updateFields.push('translations = :translations');
-      replacements.translations = JSON.stringify(categoryData.translations);
-    }
+    // Translations handled separately via normalized table (below)
 
     if (updateFields.length > 0) {
       updateFields.push('updated_at = NOW()');

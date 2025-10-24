@@ -64,25 +64,13 @@ const Category = sequelize.define('Category', {
   product_count: {
     type: DataTypes.INTEGER,
     defaultValue: 0
-  },
-  // Multilingual translations
-  translations: {
-    type: DataTypes.JSON,
-    defaultValue: {},
-    comment: 'Multilingual translations: {"en": {"name": "...", "description": "..."}, "es": {...}}'
   }
+  // Translations now stored in normalized category_translations table
+  // Removed translations JSON column - using normalized table for better search performance
 }, {
-  tableName: 'categories',
-  hooks: {
-    beforeCreate: (category) => {
-      // Only generate slug on creation if not provided
-      if (!category.slug && category.translations && category.translations.en && category.translations.en.name) {
-        category.slug = category.translations.en.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
-      }
-    }
-    // URL key (slug) is preserved when updating translations
-    // It can only be changed by explicitly updating the slug field
-  }
+  tableName: 'categories'
+  // Removed hooks that referenced category.translations
+  // Slug must be provided when creating categories (no longer auto-generated from translations)
 });
 
 module.exports = Category;
