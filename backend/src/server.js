@@ -723,41 +723,57 @@ app.post('/debug/seed', async (req, res) => {
 
     // Check existing products
     const existingProducts = await Product.findAll({ where: { store_id: store.id } });
-    
+
     let productsCreated = 0;
     if (existingProducts.length === 0) {
       const sampleProducts = [
         {
-          name: 'Sample Product 1',
           slug: 'sample-product-1',
-          description: 'This is a sample product for testing the storefront',
+          translations: {
+            en: {
+              name: 'Sample Product 1',
+              description: 'This is a sample product for testing the storefront'
+            }
+          },
           sku: 'SAMPLE-001',
           price: 29.99,
           featured: true,
           store_id: store.id
         },
         {
-          name: 'Featured Product 2',
           slug: 'featured-product-2',
-          description: 'Another great sample product',
+          translations: {
+            en: {
+              name: 'Featured Product 2',
+              description: 'Another great sample product'
+            }
+          },
           sku: 'SAMPLE-002',
           price: 49.99,
           featured: true,
           store_id: store.id
         },
         {
-          name: 'Regular Product 3',
           slug: 'regular-product-3',
-          description: 'A regular sample product',
+          translations: {
+            en: {
+              name: 'Regular Product 3',
+              description: 'A regular sample product'
+            }
+          },
           sku: 'SAMPLE-003',
           price: 19.99,
           featured: false,
           store_id: store.id
         },
         {
-          name: 'Premium Product 4',
           slug: 'premium-product-4',
-          description: 'Premium sample product with great features',
+          translations: {
+            en: {
+              name: 'Premium Product 4',
+              description: 'Premium sample product with great features'
+            }
+          },
           sku: 'SAMPLE-004',
           price: 99.99,
           featured: true,
@@ -767,7 +783,7 @@ app.post('/debug/seed', async (req, res) => {
 
       for (const productData of sampleProducts) {
         try {
-          console.log('Creating product:', productData.name);
+          console.log('Creating product:', productData.translations.en.name);
           await Product.create(productData);
           productsCreated++;
           console.log('✅ Product created successfully');
@@ -780,20 +796,28 @@ app.post('/debug/seed', async (req, res) => {
 
     // Check existing categories
     const existingCategories = await Category.findAll({ where: { store_id: store.id } });
-    
+
     let categoriesCreated = 0;
     if (existingCategories.length === 0) {
       const sampleCategories = [
         {
-          name: 'Electronics',
           slug: 'electronics',
-          description: 'Electronic products and gadgets',
+          translations: {
+            en: {
+              name: 'Electronics',
+              description: 'Electronic products and gadgets'
+            }
+          },
           store_id: store.id
         },
         {
-          name: 'Clothing',
           slug: 'clothing',
-          description: 'Fashion and clothing items',
+          translations: {
+            en: {
+              name: 'Clothing',
+              description: 'Fashion and clothing items'
+            }
+          },
           store_id: store.id
         }
       ];
@@ -1012,14 +1036,14 @@ app.post('/debug/create-categories', async (req, res) => {
 app.get('/debug/view-categories', async (req, res) => {
   try {
     const { Category, Store } = require('./models');
-    
+
     const categories = await Category.findAll({
       include: [{
         model: Store,
         as: 'store',
         attributes: ['id', 'name', 'slug']
       }],
-      order: [['name', 'ASC']]
+      order: [['sort_order', 'ASC'], ['created_at', 'DESC']]
     });
 
     res.json({
@@ -1027,8 +1051,9 @@ app.get('/debug/view-categories', async (req, res) => {
       count: categories.length,
       categories: categories.map(cat => ({
         id: cat.id,
-        name: cat.name,
+        name: cat.translations?.en?.name || cat.slug, // Get name from translations JSON
         slug: cat.slug,
+        translations: cat.translations,
         is_active: cat.is_active,
         hide_in_menu: cat.hide_in_menu,
         store_id: cat.store_id,
