@@ -3,7 +3,7 @@ import React, { useState, useEffect, useCallback, Fragment } from "react";
 import { useParams, useSearchParams, Link, useNavigate } from "react-router-dom";
 import { createPageUrl } from "@/utils";
 import { buildProductBreadcrumbs } from "@/utils/breadcrumbUtils";
-import { getCategoryName as getTranslatedCategoryName, getProductName, getCurrentLanguage, getTranslatedField } from "@/utils/translationUtils";
+import { getCategoryName as getTranslatedCategoryName, getProductName, getCurrentLanguage, getTranslatedField, getProductLabelText, getProductTabName, getProductTabContent } from "@/utils/translationUtils";
 import { useTranslation } from '@/contexts/TranslationContext';
 // Redirect handling moved to global RedirectHandler component
 import { useNotFound } from "@/utils/notFoundUtils";
@@ -160,9 +160,10 @@ export default function ProductDetail() {
       const applicableLabels = evaluateProductLabels(product, productLabels);
 
       // Update product with new labels
+      const currentLang = getCurrentLanguage();
       setProduct(prevProduct => ({
         ...prevProduct,
-        labels: applicableLabels.map(label => label.text),
+        labels: applicableLabels.map(label => getProductLabelText(label, currentLang)),
         applicableLabels: applicableLabels // Keep full label objects for styling
       }));
     }
@@ -265,9 +266,10 @@ export default function ProductDetail() {
 
     const applicableLabels = [];
 
+    const currentLang = getCurrentLanguage();
     for (const label of labels) {
       console.log('🏷️ Evaluating label:', {
-        labelText: label.translations?.en?.text || label.text,
+        labelText: getProductLabelText(label, currentLang),
         isActive: label.is_active,
         conditions: label.conditions
       });
@@ -375,10 +377,10 @@ export default function ProductDetail() {
       }
 
       if (shouldApply) {
-        console.log('✅ Label APPLIES:', label.translations?.en?.text || label.text);
+        console.log('✅ Label APPLIES:', getProductLabelText(label, currentLang));
         applicableLabels.push(label);
       } else {
-        console.log('❌ Label DOES NOT apply:', label.translations?.en?.text || label.text);
+        console.log('❌ Label DOES NOT apply:', getProductLabelText(label, currentLang));
       }
     }
 
@@ -442,9 +444,10 @@ export default function ProductDetail() {
         
         // Evaluate and apply product labels based on conditions
         const applicableLabels = evaluateProductLabels(foundProduct, productLabels);
+        const currentLang = getCurrentLanguage();
         const productWithLabels = {
           ...foundProduct,
-          labels: applicableLabels.map(label => label.text),
+          labels: applicableLabels.map(label => getProductLabelText(label, currentLang)),
           applicableLabels: applicableLabels // Keep full label objects for styling
         };
 

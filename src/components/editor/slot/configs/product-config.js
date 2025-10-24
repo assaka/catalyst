@@ -157,7 +157,7 @@ export const productConfig = {
                 {{#if productLabels}}
                   {{#each productLabels}}
                     <div class="label-{{position}} absolute z-10 px-2 py-1 text-xs font-bold rounded shadow-lg pointer-events-none" style="background-color: {{background_color}}; color: {{color}};">
-                      {{text}}
+                      {{#if (lookup this.translations ../currentLang)}}{{lookup (lookup this.translations ../currentLang) 'text'}}{{else}}{{text}}{{/if}}
                     </div>
                   {{/each}}
                 {{else}}
@@ -259,7 +259,7 @@ export const productConfig = {
                   {{#if productLabels}}
                     {{#each productLabels}}
                       <div data-position="{{this.position}}" class="product-label-{{this.position}} absolute z-10 px-2 py-1 text-xs font-bold rounded shadow-lg pointer-events-none" style="background-color: {{this.background_color}}; color: {{#if this.color}}{{this.color}}{{else}}#FFFFFF{{/if}};">
-                        {{this.text}}
+                        {{#if (lookup this.translations ../currentLang)}}{{lookup (lookup this.translations ../currentLang) 'text'}}{{else}}{{this.text}}{{/if}}
                       </div>
                     {{/each}}
                   {{else}}
@@ -332,7 +332,7 @@ export const productConfig = {
                   {{#if productLabels}}
                     {{#each productLabels}}
                       <div data-position="{{this.position}}" class="product-label-{{this.position}} absolute z-10 px-2 py-1 text-xs font-bold rounded shadow-lg pointer-events-none" style="background-color: {{this.background_color}}; color: {{#if this.color}}{{this.color}}{{else}}#FFFFFF{{/if}};">
-                        {{this.text}}
+                        {{#if (lookup this.translations ../currentLang)}}{{lookup (lookup this.translations ../currentLang) 'text'}}{{else}}{{this.text}}{{/if}}
                       </div>
                     {{/each}}
                   {{else}}
@@ -840,7 +840,7 @@ export const productConfig = {
                   style="font-size: {{settings.theme.product_tabs_title_size}}; {{#if this.isActive}}color: #2563eb; border-color: #2563eb;{{else}}color: #6b7280;{{/if}}"
                   data-action="switch-tab"
                   data-tab-id="{{this.id}}">
-                  {{this.title}}
+                  {{#if (lookup this.translations ../currentLang)}}{{lookup (lookup this.translations ../currentLang) 'name'}}{{else}}{{this.title}}{{/if}}
                 </button>
               {{/each}}
             </nav>
@@ -866,11 +866,13 @@ export const productConfig = {
                   </div>
                 '>
                   {{#if (eq this.tab_type "text")}}
-                    <div>{{{this.content}}}</div>
+                    <div>{{{#if (lookup this.translations ../currentLang)}}{{lookup (lookup this.translations ../currentLang) 'content'}}{{else}}{{this.content}}{{/if}}}</div>
                   {{/if}}
 
                   {{#if (eq this.tab_type "description")}}
-                    {{#if this.content}}
+                    {{#if (lookup this.translations ../currentLang)}}
+                      <div>{{{lookup (lookup this.translations ../currentLang) 'content'}}}</div>
+                    {{else if this.content}}
                       <div>{{{this.content}}}</div>
                     {{else}}
                       <div>{{{../product.description}}}</div>
@@ -894,7 +896,7 @@ export const productConfig = {
                   class="w-full flex items-center justify-between p-4 text-left hover:bg-gray-50 transition-colors duration-200"
                   data-action="toggle-accordion"
                   data-accordion-index="{{@index}}">
-                  <span class="font-medium" style="font-size: {{settings.theme.product_tabs_title_size}}; color: #2563eb;">{{this.title}}</span>
+                  <span class="font-medium" style="font-size: {{settings.theme.product_tabs_title_size}}; color: #2563eb;">{{#if (lookup this.translations ../currentLang)}}{{lookup (lookup this.translations ../currentLang) 'name'}}{{else}}{{this.title}}{{/if}}</span>
                   <svg
                     class="w-5 h-5 transition-transform duration-200 accordion-chevron"
                     style="color: #2563eb;"
@@ -921,11 +923,13 @@ export const productConfig = {
                     </div>
                   '>
                     {{#if (eq this.tab_type "text")}}
-                      <div>{{{this.content}}}</div>
+                      <div>{{{#if (lookup this.translations ../currentLang)}}{{lookup (lookup this.translations ../currentLang) 'content'}}{{else}}{{this.content}}{{/if}}}</div>
                     {{/if}}
 
                     {{#if (eq this.tab_type "description")}}
-                      {{#if this.content}}
+                      {{#if (lookup this.translations ../currentLang)}}
+                        <div>{{{lookup (lookup this.translations ../currentLang) 'content'}}}</div>
+                      {{else if this.content}}
                         <div>{{{this.content}}}</div>
                       {{else}}
                         <div>{{{../product.description}}}</div>

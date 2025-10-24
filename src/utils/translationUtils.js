@@ -178,6 +178,50 @@ export function getPaymentMethodDescription(paymentMethod, lang = 'en') {
 }
 
 /**
+ * Get translated product label text
+ *
+ * @param {Object} label - Product label object
+ * @param {String} lang - Language code (default: 'en')
+ * @returns {String} Translated label text
+ */
+export function getProductLabelText(label, lang = 'en') {
+  return getTranslatedField(label, 'text', lang) || label.text || '';
+}
+
+/**
+ * Get translated product label name
+ *
+ * @param {Object} label - Product label object
+ * @param {String} lang - Language code (default: 'en')
+ * @returns {String} Translated label name
+ */
+export function getProductLabelName(label, lang = 'en') {
+  return getTranslatedField(label, 'name', lang) || label.name || '';
+}
+
+/**
+ * Get translated product tab name
+ *
+ * @param {Object} tab - Product tab object
+ * @param {String} lang - Language code (default: 'en')
+ * @returns {String} Translated tab name
+ */
+export function getProductTabName(tab, lang = 'en') {
+  return getTranslatedField(tab, 'name', lang) || tab.name || '';
+}
+
+/**
+ * Get translated product tab content
+ *
+ * @param {Object} tab - Product tab object
+ * @param {String} lang - Language code (default: 'en')
+ * @returns {String} Translated tab content
+ */
+export function getProductTabContent(tab, lang = 'en') {
+  return getTranslatedField(tab, 'content', lang) || tab.content || '';
+}
+
+/**
  * Get current language from localStorage or browser
  *
  * @returns {String} Current language code
