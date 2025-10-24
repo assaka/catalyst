@@ -740,17 +740,49 @@ class CategoryService extends BaseEntity {
     }
   }
 
-  // Public findAll (no authentication required)
+  // Smart findAll - uses authenticated API for admin, public API for storefront
   async findAll(params = {}) {
     try {
       const queryString = new URLSearchParams(params).toString();
       const url = queryString ? `categories?${queryString}` : 'categories';
-      
-      const response = await apiClient.publicRequest('GET', url);
-      
+
+      // Check if user is authenticated (admin or store owner)
+      const hasToken = apiClient.getToken();
+      let response;
+
+      if (hasToken) {
+        try {
+          // Try authenticated API first for admin users
+          response = await apiClient.get(url);
+
+          // Handle paginated admin response: {success: true, data: {categories: [...], pagination: {...}}}
+          if (response && response.success && response.data) {
+            if (Array.isArray(response.data.categories)) {
+              return response.data.categories;
+            } else if (Array.isArray(response.data)) {
+              return response.data;
+            }
+          }
+
+          // Handle direct array response
+          const result = Array.isArray(response) ? response : [];
+          return result;
+        } catch (authError) {
+          // If authenticated request fails (e.g., 401), fall back to public API
+          if (authError.status === 401 || authError.status === 403) {
+            console.warn('CategoryService: Authenticated request failed, falling back to public API');
+            response = await apiClient.publicRequest('GET', url);
+          } else {
+            throw authError;
+          }
+        }
+      } else {
+        // No token, use public API
+        response = await apiClient.publicRequest('GET', url);
+      }
+
       // Ensure response is always an array
       const result = Array.isArray(response) ? response : [];
-      
       return result;
     } catch (error) {
       console.error(`CategoryService.findAll() error:`, error.message);
