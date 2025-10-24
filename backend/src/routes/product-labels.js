@@ -2,6 +2,7 @@ const express = require('express');
 const { body, validationResult } = require('express-validator');
 const { authMiddleware } = require('../middleware/auth');
 const translationService = require('../services/translation-service');
+const { getLanguageFromRequest } = require('../utils/languageUtils');
 const {
   getProductLabelsWithTranslations,
   getProductLabelById,
@@ -59,7 +60,8 @@ router.get('/', optionalAuth, async (req, res) => {
       }
     }
 
-    const labels = await getProductLabelsWithTranslations(whereClause);
+    const lang = getLanguageFromRequest(req);
+    const labels = await getProductLabelsWithTranslations(whereClause, lang);
 
     if (isPublicRequest) {
       // Return just the array for public requests (for compatibility)
@@ -85,7 +87,8 @@ router.get('/', optionalAuth, async (req, res) => {
 // @access  Private
 router.get('/:id', authMiddleware, async (req, res) => {
   try {
-    const label = await getProductLabelById(req.params.id);
+    const lang = getLanguageFromRequest(req);
+    const label = await getProductLabelById(req.params.id, lang);
 
     if (!label) {
       return res.status(404).json({
@@ -282,7 +285,8 @@ router.post('/:id/translate', authMiddleware, [
     }
 
     const { fromLang, toLang } = req.body;
-    const productLabel = await getProductLabelById(req.params.id);
+    const lang = getLanguageFromRequest(req);
+    const productLabel = await getProductLabelById(req.params.id, lang);
 
     if (!productLabel) {
       return res.status(404).json({
@@ -380,7 +384,8 @@ router.post('/bulk-translate', authMiddleware, [
     }
 
     // Get all product labels for this store
-    const labels = await getProductLabelsWithTranslations({ store_id });
+    const lang = getLanguageFromRequest(req);
+    const labels = await getProductLabelsWithTranslations({ store_id }, lang);
 
     if (labels.length === 0) {
       return res.json({

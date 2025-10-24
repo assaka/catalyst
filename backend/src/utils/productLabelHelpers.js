@@ -11,9 +11,10 @@ const { sequelize } = require('../database/connection');
  * Get product labels with translations from normalized tables
  *
  * @param {Object} where - WHERE clause conditions
- * @returns {Promise<Array>} Product labels with translations JSON
+ * @param {string} lang - Language code (default: 'en')
+ * @returns {Promise<Array>} Product labels with translated fields
  */
-async function getProductLabelsWithTranslations(where = {}) {
+async function getProductLabelsWithTranslations(where = {}, lang = 'en') {
   const whereConditions = Object.entries(where)
     .map(([key, value]) => {
       if (value === true || value === false) {
@@ -27,25 +28,28 @@ async function getProductLabelsWithTranslations(where = {}) {
 
   const query = `
     SELECT
-      pl.*,
-      COALESCE(
-        json_object_agg(
-          plt.language_code,
-          json_build_object(
-            'name', plt.name,
-            'text', plt.text
-          )
-        ) FILTER (WHERE plt.language_code IS NOT NULL),
-        '{}'::json
-      ) as translations
+      pl.id,
+      pl.store_id,
+      pl.slug,
+      pl.background_color,
+      pl.color,
+      pl.position,
+      pl.priority,
+      pl.sort_order,
+      pl.is_active,
+      pl.conditions,
+      pl.created_at,
+      pl.updated_at,
+      COALESCE(plt.name, pl.name) as name,
+      COALESCE(plt.text, pl.text) as text
     FROM product_labels pl
-    LEFT JOIN product_label_translations plt ON pl.id = plt.product_label_id
+    LEFT JOIN product_label_translations plt ON pl.id = plt.product_label_id AND plt.language_code = :lang
     ${whereClause}
-    GROUP BY pl.id
     ORDER BY pl.sort_order ASC, pl.priority DESC, pl.name ASC
   `;
 
   const results = await sequelize.query(query, {
+    replacements: { lang },
     type: sequelize.QueryTypes.SELECT
   });
 
@@ -56,30 +60,33 @@ async function getProductLabelsWithTranslations(where = {}) {
  * Get single product label with translations
  *
  * @param {string} id - Product label ID
- * @returns {Promise<Object|null>} Product label with translations or null
+ * @param {string} lang - Language code (default: 'en')
+ * @returns {Promise<Object|null>} Product label with translated fields
  */
-async function getProductLabelById(id) {
+async function getProductLabelById(id, lang = 'en') {
   const query = `
     SELECT
-      pl.*,
-      COALESCE(
-        json_object_agg(
-          plt.language_code,
-          json_build_object(
-            'name', plt.name,
-            'text', plt.text
-          )
-        ) FILTER (WHERE plt.language_code IS NOT NULL),
-        '{}'::json
-      ) as translations
+      pl.id,
+      pl.store_id,
+      pl.slug,
+      pl.background_color,
+      pl.color,
+      pl.position,
+      pl.priority,
+      pl.sort_order,
+      pl.is_active,
+      pl.conditions,
+      pl.created_at,
+      pl.updated_at,
+      COALESCE(plt.name, pl.name) as name,
+      COALESCE(plt.text, pl.text) as text
     FROM product_labels pl
-    LEFT JOIN product_label_translations plt ON pl.id = plt.product_label_id
+    LEFT JOIN product_label_translations plt ON pl.id = plt.product_label_id AND plt.language_code = :lang
     WHERE pl.id = :id
-    GROUP BY pl.id
   `;
 
   const results = await sequelize.query(query, {
-    replacements: { id },
+    replacements: { id, lang },
     type: sequelize.QueryTypes.SELECT
   });
 

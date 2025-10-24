@@ -3,6 +3,7 @@ const { body, validationResult } = require('express-validator');
 const { Store } = require('../models');
 const { authMiddleware } = require('../middleware/auth');
 const translationService = require('../services/translation-service');
+const { getLanguageFromRequest } = require('../utils/languageUtils');
 const {
   getProductTabsWithTranslations,
   getProductTabById,
@@ -26,10 +27,11 @@ router.get('/', async (req, res) => {
       });
     }
 
+    const lang = getLanguageFromRequest(req);
     const productTabs = await getProductTabsWithTranslations({
       store_id,
       is_active: true
-    });
+    }, lang);
 
     console.log('📋 Backend: Loaded product tabs:', {
       store_id,
@@ -70,7 +72,8 @@ router.get('/', async (req, res) => {
 // @access  Public
 router.get('/:id', async (req, res) => {
   try {
-    const productTab = await getProductTabById(req.params.id);
+    const lang = getLanguageFromRequest(req);
+    const productTab = await getProductTabById(req.params.id, lang);
 
     if (!productTab) {
       return res.status(404).json({
@@ -416,7 +419,8 @@ router.post('/bulk-translate', authMiddleware, [
     }
 
     // Get all product tabs for this store
-    const tabs = await getProductTabsWithTranslations({ store_id });
+    const lang = getLanguageFromRequest(req);
+    const tabs = await getProductTabsWithTranslations({ store_id }, lang);
 
     if (tabs.length === 0) {
       return res.json({

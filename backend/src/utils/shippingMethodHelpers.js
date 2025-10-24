@@ -11,10 +11,11 @@ const { sequelize } = require('../database/connection');
  * Get shipping methods with translations from normalized tables
  *
  * @param {Object} where - WHERE clause conditions
- * @param {Object} options - Query options (limit, offset, include)
- * @returns {Promise<Array>} Shipping methods with translations JSON
+ * @param {Object} options - Query options (limit, offset, lang)
+ * @returns {Promise<Array>} Shipping methods with translated fields
  */
 async function getShippingMethodsWithTranslations(where = {}, options = {}) {
+  const lang = options.lang || 'en';
   const whereConditions = Object.entries(where)
     .map(([key, value]) => {
       if (value === true || value === false) {
@@ -35,27 +36,33 @@ async function getShippingMethodsWithTranslations(where = {}, options = {}) {
 
   const query = `
     SELECT
-      sm.*,
-      COALESCE(
-        json_object_agg(
-          smt.language_code,
-          json_build_object(
-            'name', smt.name,
-            'description', smt.description
-          )
-        ) FILTER (WHERE smt.language_code IS NOT NULL),
-        '{}'::json
-      ) as translations
+      sm.id,
+      sm.store_id,
+      sm.is_active,
+      sm.type,
+      sm.flat_rate_cost,
+      sm.free_shipping_min_order,
+      sm.weight_ranges,
+      sm.price_ranges,
+      sm.availability,
+      sm.countries,
+      sm.min_delivery_days,
+      sm.max_delivery_days,
+      sm.sort_order,
+      sm.created_at,
+      sm.updated_at,
+      COALESCE(smt.name, sm.name) as name,
+      COALESCE(smt.description, sm.description) as description
     FROM shipping_methods sm
-    LEFT JOIN shipping_method_translations smt ON sm.id = smt.shipping_method_id
+    LEFT JOIN shipping_method_translations smt ON sm.id = smt.shipping_method_id AND smt.language_code = :lang
     ${whereClause}
-    GROUP BY sm.id
     ORDER BY sm.sort_order ASC, sm.name ASC
     ${limitClause}
     ${offsetClause}
   `;
 
   const results = await sequelize.query(query, {
+    replacements: { lang },
     type: sequelize.QueryTypes.SELECT
   });
 
@@ -101,30 +108,36 @@ async function getShippingMethodsCount(where = {}) {
  * Get single shipping method with translations
  *
  * @param {string} id - Shipping method ID
- * @returns {Promise<Object|null>} Shipping method with translations or null
+ * @param {string} lang - Language code (default: 'en')
+ * @returns {Promise<Object|null>} Shipping method with translated fields
  */
-async function getShippingMethodById(id) {
+async function getShippingMethodById(id, lang = 'en') {
   const query = `
     SELECT
-      sm.*,
-      COALESCE(
-        json_object_agg(
-          smt.language_code,
-          json_build_object(
-            'name', smt.name,
-            'description', smt.description
-          )
-        ) FILTER (WHERE smt.language_code IS NOT NULL),
-        '{}'::json
-      ) as translations
+      sm.id,
+      sm.store_id,
+      sm.is_active,
+      sm.type,
+      sm.flat_rate_cost,
+      sm.free_shipping_min_order,
+      sm.weight_ranges,
+      sm.price_ranges,
+      sm.availability,
+      sm.countries,
+      sm.min_delivery_days,
+      sm.max_delivery_days,
+      sm.sort_order,
+      sm.created_at,
+      sm.updated_at,
+      COALESCE(smt.name, sm.name) as name,
+      COALESCE(smt.description, sm.description) as description
     FROM shipping_methods sm
-    LEFT JOIN shipping_method_translations smt ON sm.id = smt.shipping_method_id
+    LEFT JOIN shipping_method_translations smt ON sm.id = smt.shipping_method_id AND smt.language_code = :lang
     WHERE sm.id = :id
-    GROUP BY sm.id
   `;
 
   const results = await sequelize.query(query, {
-    replacements: { id },
+    replacements: { id, lang },
     type: sequelize.QueryTypes.SELECT
   });
 

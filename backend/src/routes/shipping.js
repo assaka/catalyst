@@ -1,6 +1,7 @@
 const express = require('express');
 const { Store } = require('../models');
 const { Op } = require('sequelize');
+const { getLanguageFromRequest } = require('../utils/languageUtils');
 const {
   getShippingMethodsWithTranslations,
   getShippingMethodsCount,
@@ -27,10 +28,12 @@ router.get('/', async (req, res) => {
 
     if (store_id) where.store_id = store_id;
 
+    const lang = getLanguageFromRequest(req);
     const [rows, count] = await Promise.all([
       getShippingMethodsWithTranslations(where, {
         limit: parseInt(limit),
-        offset: parseInt(offset)
+        offset: parseInt(offset),
+        lang
       }),
       getShippingMethodsCount(where)
     ]);
@@ -43,7 +46,8 @@ router.get('/', async (req, res) => {
 
 router.get('/:id', async (req, res) => {
   try {
-    const shippingMethod = await getShippingMethodById(req.params.id);
+    const lang = getLanguageFromRequest(req);
+    const shippingMethod = await getShippingMethodById(req.params.id, lang);
 
     if (!shippingMethod) return res.status(404).json({ success: false, message: 'Shipping method not found' });
 
@@ -90,7 +94,8 @@ router.post('/', async (req, res) => {
 
 router.put('/:id', async (req, res) => {
   try {
-    const existingMethod = await getShippingMethodById(req.params.id);
+    const lang = getLanguageFromRequest(req);
+    const existingMethod = await getShippingMethodById(req.params.id, lang);
 
     if (!existingMethod) return res.status(404).json({ success: false, message: 'Shipping method not found' });
 
@@ -116,7 +121,8 @@ router.put('/:id', async (req, res) => {
 
 router.delete('/:id', async (req, res) => {
   try {
-    const shippingMethod = await getShippingMethodById(req.params.id);
+    const lang = getLanguageFromRequest(req);
+    const shippingMethod = await getShippingMethodById(req.params.id, lang);
 
     if (!shippingMethod) return res.status(404).json({ success: false, message: 'Shipping method not found' });
 

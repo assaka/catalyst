@@ -1,4 +1,5 @@
 const express = require('express');
+const { getLanguageFromRequest } = require('../utils/languageUtils');
 const { getShippingMethodsWithTranslations } = require('../utils/shippingMethodHelpers');
 const router = express.Router();
 
@@ -21,7 +22,8 @@ router.get('/', async (req, res) => {
       is_active: true  // Only show active shipping methods
     };
 
-    const shippingMethods = await getShippingMethodsWithTranslations(where);
+    const lang = getLanguageFromRequest(req);
+    const shippingMethods = await getShippingMethodsWithTranslations(where, { lang });
     
     // Filter by country if provided
     let filteredMethods = shippingMethods;
