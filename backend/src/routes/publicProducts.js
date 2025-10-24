@@ -1,6 +1,8 @@
 const express = require('express');
 const { Product, Store, ProductAttributeValue, Attribute, AttributeValue } = require('../models');
 const { Op } = require('sequelize');
+const { getLanguageFromRequest } = require('../utils/languageUtils');
+const { applyProductTranslationsToMany, applyProductTranslations } = require('../utils/productHelpers');
 const router = express.Router();
 
 // @route   GET /api/public/products
@@ -130,12 +132,15 @@ router.get('/', async (req, res) => {
       ]
     });
 
-    // Get language from query or default to 'en'
-    const lang = req.query.lang || 'en';
+    // Get language from request headers/query
+    const lang = getLanguageFromRequest(req);
+    console.log('🌍 Public Products: Requesting language:', lang);
+
+    // Apply translations from normalized table
+    const productsWithTranslations = await applyProductTranslationsToMany(rows, lang);
 
     // Transform products to include formatted attributes
-    const productsWithAttributes = rows.map(product => {
-      const productData = product.toJSON();
+    const productsWithAttributes = productsWithTranslations.map(productData => {
 
       // Format attributes for frontend
       if (productData.attributeValues && Array.isArray(productData.attributeValues)) {
@@ -198,7 +203,8 @@ router.get('/', async (req, res) => {
 // @access  Public
 router.get('/:id', async (req, res) => {
   try {
-    const { lang = 'en' } = req.query;
+    const lang = getLanguageFromRequest(req);
+    console.log('🌍 Public Product Detail: Requesting language:', lang);
 
     const product = await Product.findByPk(req.params.id, {
       include: [
@@ -227,8 +233,8 @@ router.get('/:id', async (req, res) => {
       });
     }
 
-    // Transform product to include formatted attributes
-    const productData = product.toJSON();
+    // Apply translations from normalized table
+    const productData = await applyProductTranslations(product, lang);
 
     // Format attributes for frontend
     if (productData.attributeValues && Array.isArray(productData.attributeValues)) {
