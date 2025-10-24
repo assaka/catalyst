@@ -47,15 +47,30 @@ router.get('/', async (req, res) => {
     const paginatedCategories = filteredCategories.slice(offset, offset + parseInt(limit));
 
     console.log('✅ Public Categories query result:', paginatedCategories.length, 'categories found');
+    console.log('🔍 Total categories before pagination:', filteredCategories.length);
+    console.log('🔍 Pagination: offset =', offset, ', limit =', limit);
+
     if (paginatedCategories.length > 0) {
-      console.log('🎯 Sample category:', {
+      console.log('🎯 First category being returned:', JSON.stringify({
         id: paginatedCategories[0].id,
         name: paginatedCategories[0].name,
-        lang: lang
-      });
+        slug: paginatedCategories[0].slug,
+        is_active: paginatedCategories[0].is_active,
+        hide_in_menu: paginatedCategories[0].hide_in_menu,
+        parent_id: paginatedCategories[0].parent_id,
+        lang: lang,
+        has_name: !!paginatedCategories[0].name,
+        name_value: paginatedCategories[0].name
+      }, null, 2));
+    } else {
+      console.log('⚠️ NO CATEGORIES TO RETURN');
+      console.log('⚠️ Categories from DB:', categories.length);
+      console.log('⚠️ After filtering:', filteredCategories.length);
+      console.log('⚠️ Where clause:', JSON.stringify(where, null, 2));
     }
 
     // Return just the array for public requests (for compatibility)
+    console.log('📤 Returning', paginatedCategories.length, 'categories to frontend');
     res.json(paginatedCategories);
   } catch (error) {
     console.error('Get public categories error:', error);

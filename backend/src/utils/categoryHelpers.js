@@ -57,6 +57,7 @@ async function getCategoriesWithTranslations(where = {}, lang = 'en') {
 
   console.log('🔍 SQL Query for categories:', query.replace(/\s+/g, ' '));
   console.log('🔍 Language parameter:', lang);
+  console.log('🔍 Where conditions:', whereConditions || 'NONE');
 
   const results = await sequelize.query(query, {
     replacements: { lang },
@@ -65,14 +66,24 @@ async function getCategoriesWithTranslations(where = {}, lang = 'en') {
 
   console.log('✅ Query returned', results.length, 'categories');
   if (results.length > 0) {
-    console.log('📝 Sample category:', JSON.stringify({
-      id: results[0].id,
-      name: results[0].name,
-      slug: results[0].slug,
-      description: results[0].description?.substring(0, 50),
-      has_name: !!results[0].name,
-      name_length: results[0].name?.length
-    }, null, 2));
+    console.log('📝 First 3 categories:');
+    results.slice(0, 3).forEach((cat, index) => {
+      console.log(`   Category ${index + 1}:`, JSON.stringify({
+        id: cat.id,
+        name: cat.name,
+        slug: cat.slug,
+        is_active: cat.is_active,
+        hide_in_menu: cat.hide_in_menu,
+        parent_id: cat.parent_id,
+        description_preview: cat.description?.substring(0, 30),
+        has_name: !!cat.name,
+        name_length: cat.name?.length,
+        name_type: typeof cat.name
+      }, null, 2));
+    });
+  } else {
+    console.log('⚠️ NO CATEGORIES RETURNED FROM DATABASE');
+    console.log('⚠️ Check if category_translations table has data for language:', lang);
   }
 
   return results;

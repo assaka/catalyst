@@ -46,10 +46,13 @@ router.get('/', authMiddleware, authorize(['admin', 'store_owner']), async (req,
     if (parent_id) where.parent_id = parent_id;
 
     const lang = getLanguageFromRequest(req);
-    console.log('🌍 Categories: Requesting language:', lang);
+    console.log('🌍 Admin Categories: Requesting language:', lang);
+    console.log('🔍 Admin Categories: Where clause:', JSON.stringify(where, null, 2));
+    console.log('🔍 Admin Categories: User role:', req.user?.role, 'User ID:', req.user?.id);
 
     // Get categories with translations
     const categories = await getCategoriesWithTranslations(where, lang);
+    console.log('✅ Admin Categories: Fetched', categories.length, 'categories from DB');
 
     // Handle search in memory (if needed) - TODO: move to SQL query
     let filteredCategories = categories;
@@ -59,11 +62,28 @@ router.get('/', authMiddleware, authorize(['admin', 'store_owner']), async (req,
         cat.name?.toLowerCase().includes(searchLower) ||
         cat.description?.toLowerCase().includes(searchLower)
       );
+      console.log('🔍 Admin Categories: After search filter:', filteredCategories.length);
     }
 
     // Apply pagination
     const total = filteredCategories.length;
     const paginatedCategories = filteredCategories.slice(offset, offset + parseInt(limit));
+
+    console.log('🔍 Admin Categories: After pagination:', paginatedCategories.length);
+    if (paginatedCategories.length > 0) {
+      console.log('🎯 Admin Categories: First category:', JSON.stringify({
+        id: paginatedCategories[0].id,
+        name: paginatedCategories[0].name,
+        slug: paginatedCategories[0].slug,
+        is_active: paginatedCategories[0].is_active,
+        store_id: paginatedCategories[0].store_id,
+        has_name: !!paginatedCategories[0].name
+      }, null, 2));
+    } else {
+      console.log('⚠️ Admin Categories: NO CATEGORIES TO RETURN');
+    }
+
+    console.log('📤 Admin Categories: Returning', paginatedCategories.length, 'categories');
 
     res.json({
       success: true,

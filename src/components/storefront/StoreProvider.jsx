@@ -741,7 +741,21 @@ export const StoreProvider = ({ children }) => {
         
         // MEDIUM cache (5 minutes) - semi-static data
         cachedApiCall(`categories-${selectedStore.id}`, async () => {
+          console.log('🔍 Frontend: Fetching categories for store:', selectedStore.id);
           const result = await StorefrontCategory.filter({ store_id: selectedStore.id, limit: 1000 });
+          console.log('📥 Frontend: Received categories:', result?.length || 0);
+          if (result && result.length > 0) {
+            console.log('📝 Frontend: First category:', JSON.stringify({
+              id: result[0].id,
+              name: result[0].name,
+              slug: result[0].slug,
+              has_name: !!result[0].name,
+              name_value: result[0].name,
+              name_type: typeof result[0].name
+            }, null, 2));
+          } else {
+            console.log('⚠️ Frontend: NO CATEGORIES RECEIVED FROM API');
+          }
           return Array.isArray(result) ? result : [];
         }, CACHE_DURATION_MEDIUM),
         
