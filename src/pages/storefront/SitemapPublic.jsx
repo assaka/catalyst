@@ -1,9 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
-import { Category } from '@/api/entities';
-import { Product } from '@/api/entities';
-import { CmsPage } from '@/api/entities';
-import { SeoSetting } from '@/api/entities';
+import { StorefrontCategory, StorefrontProduct, StorefrontCmsPage, StorefrontSeoSetting } from '@/api/storefront-entities';
 import { Link } from 'react-router-dom';
 import { createPageUrl } from '@/utils';
 import { createCmsPageUrl } from '@/utils/urlUtils';
@@ -24,7 +21,7 @@ export default function SitemapPublic() {
         const fetchData = async () => {
             try {
                 // Fetch SEO settings first to determine what to display
-                const seoSettings = store?.id ? await SeoSetting.filter({ store_id: store.id }) : [];
+                const seoSettings = store?.id ? await StorefrontSeoSetting.filter({ store_id: store.id }) : [];
                 const seoRecord = seoSettings?.[0];
 
                 // Extract HTML sitemap settings from JSON field
@@ -45,13 +42,13 @@ export default function SitemapPublic() {
                     return;
                 }
 
-                // Fetch data based on settings - must filter by store_id
+                // Fetch data based on settings - use storefront API
                 const promises = [];
 
                 if (htmlSitemapSettings.include_categories) {
                     promises.push(
                         store?.id
-                            ? Category.filter({ is_active: true, store_id: store.id }, "sort_order")
+                            ? StorefrontCategory.filter({ is_active: true, store_id: store.id, limit: 1000 })
                             : Promise.resolve([])
                     );
                 } else {
@@ -60,10 +57,9 @@ export default function SitemapPublic() {
 
                 if (htmlSitemapSettings.include_products) {
                     const maxProducts = htmlSitemapSettings.max_products || 20;
-                    const sortOrder = htmlSitemapSettings.product_sort || '-updated_date';
                     promises.push(
                         store?.id
-                            ? Product.filter({ status: 'active', store_id: store.id }, sortOrder, maxProducts)
+                            ? StorefrontProduct.filter({ status: 'active', store_id: store.id, limit: maxProducts })
                             : Promise.resolve([])
                     );
                 } else {
@@ -73,7 +69,7 @@ export default function SitemapPublic() {
                 if (htmlSitemapSettings.include_pages) {
                     promises.push(
                         store?.id
-                            ? CmsPage.filter({ is_active: true, store_id: store.id })
+                            ? StorefrontCmsPage.filter({ is_active: true, store_id: store.id })
                             : Promise.resolve([])
                     );
                 } else {
