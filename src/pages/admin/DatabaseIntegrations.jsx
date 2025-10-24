@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useStoreSelection } from '@/contexts/StoreSelectionContext';
+import SupabasePage from './SupabasePage';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -114,8 +115,15 @@ const DatabaseIntegrations = () => {
         </p>
       </div>
 
-      <Tabs defaultValue="aiven" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-2">
+      <Tabs defaultValue="supabase" className="space-y-6">
+        <TabsList className="grid w-full grid-cols-3">
+          <TabsTrigger value="supabase" className="flex items-center space-x-2 relative">
+            <Database className="w-4 h-4" />
+            <span>Supabase</span>
+            {defaultProvider === 'supabase' && (
+              <Badge variant="secondary" className="ml-2 text-xs">Default</Badge>
+            )}
+          </TabsTrigger>
           <TabsTrigger value="aiven" className="flex items-center space-x-2 relative">
             <Server className="w-4 h-4" />
             <span>Aiven</span>
@@ -128,6 +136,24 @@ const DatabaseIntegrations = () => {
             <span>Cloud Databases</span>
           </TabsTrigger>
         </TabsList>
+
+        <TabsContent value="supabase" className="space-y-6">
+          {/* Render the Supabase page content directly without wrapper */}
+          {storeId ? (
+            <>
+              {/* Show the unified Supabase interface */}
+              <SupabasePage />
+            </>
+          ) : (
+            <Card>
+              <CardContent className="py-8">
+                <p className="text-center text-gray-600">
+                  Please select a store from the dropdown above to manage database integrations.
+                </p>
+              </CardContent>
+            </Card>
+          )}
+        </TabsContent>
 
         <TabsContent value="aiven" className="space-y-6">
           <Card>
