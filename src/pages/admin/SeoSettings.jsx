@@ -4,6 +4,7 @@ import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import SaveButton from '@/components/ui/save-button';
 import { Settings } from "lucide-react";
 import { useStore } from '@/components/storefront/StoreProvider';
@@ -198,14 +199,26 @@ export default function SeoSettings() {
 
           <div className="space-y-2">
             <Label htmlFor="meta-robots">Default Meta Robots</Label>
-            <Input
-              id="meta-robots"
-              placeholder="index, follow"
+            <Select
               value={settings.meta_robots}
-              onChange={(e) => setSettings({ ...settings, meta_robots: e.target.value })}
-            />
+              onValueChange={(value) => setSettings({ ...settings, meta_robots: value })}
+            >
+              <SelectTrigger id="meta-robots">
+                <SelectValue placeholder="Select robots directive" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="index, follow">index, follow (Default - Allow indexing and following links)</SelectItem>
+                <SelectItem value="noindex, nofollow">noindex, nofollow (Block indexing and following links)</SelectItem>
+                <SelectItem value="index, nofollow">index, nofollow (Allow indexing but don't follow links)</SelectItem>
+                <SelectItem value="noindex, follow">noindex, follow (Block indexing but follow links)</SelectItem>
+                <SelectItem value="none">none (Same as noindex, nofollow)</SelectItem>
+                <SelectItem value="noarchive">noarchive (Prevent cached copy)</SelectItem>
+                <SelectItem value="nosnippet">nosnippet (Prevent text snippets in search results)</SelectItem>
+                <SelectItem value="noimageindex">noimageindex (Don't index images on this page)</SelectItem>
+              </SelectContent>
+            </Select>
             <p className="text-sm text-muted-foreground">
-              Controls how search engines index your pages (e.g., "index, follow", "noindex, nofollow")
+              Controls how search engines index your pages
             </p>
           </div>
 
