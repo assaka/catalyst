@@ -5,14 +5,6 @@
       "destination": "https://catalyst-backend-fzhu.onrender.com/api/$1"
     },
     {
-      "source": "/public/:storeSlug/robots.txt",
-      "destination": "https://catalyst-backend-fzhu.onrender.com/public/$storeSlug/robots.txt"
-    },
-    {
-      "source": "/robots.txt",
-      "destination": "https://catalyst-backend-fzhu.onrender.com/robots.txt"
-    },
-    {
       "source": "/(.*)",
       "destination": "/index.html"
     }
