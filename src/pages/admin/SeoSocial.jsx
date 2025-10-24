@@ -34,6 +34,8 @@ export default function SeoSocial() {
       twitter: {
         enabled: true,
         card_type: 'summary_large_image',
+        default_title: '',
+        default_description: '',
         site_username: '',
         creator_username: ''
       },
@@ -114,6 +116,8 @@ export default function SeoSocial() {
               twitter: {
                 enabled: socialMediaSettings.twitter?.enabled !== false,
                 card_type: socialMediaSettings.twitter?.card_type || 'summary_large_image',
+                default_title: socialMediaSettings.twitter?.default_title || '',
+                default_description: socialMediaSettings.twitter?.default_description || '',
                 site_username: socialMediaSettings.twitter?.site_username || '',
                 creator_username: socialMediaSettings.twitter?.creator_username || ''
               },
@@ -376,6 +380,32 @@ export default function SeoSocial() {
                   checked={settings.social_media_settings.twitter.enabled}
                   onCheckedChange={(checked) => updateSocialMediaSettings('twitter', 'enabled', checked)}
                 />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="twitter-title">Default Twitter Title (Optional)</Label>
+                <Input
+                  id="twitter-title"
+                  placeholder="{{store_name}} - Quality Products"
+                  value={settings.social_media_settings.twitter.default_title}
+                  onChange={(e) => updateSocialMediaSettings('twitter', 'default_title', e.target.value)}
+                />
+                <p className="text-sm text-muted-foreground">
+                  Default title for Twitter sharing. Supports templates: {'{'}{'{'} store_name {'}}'}{'}'}, {'{'}{'{'} page_title {'}'}{'}'}
+                </p>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="twitter-description">Default Twitter Description (Optional)</Label>
+                <Textarea
+                  id="twitter-description"
+                  placeholder="Discover quality products at {{store_name}}"
+                  value={settings.social_media_settings.twitter.default_description}
+                  onChange={(e) => updateSocialMediaSettings('twitter', 'default_description', e.target.value)}
+                />
+                <p className="text-sm text-muted-foreground">
+                  Default description for Twitter sharing
+                </p>
               </div>
 
               <div className="space-y-2">

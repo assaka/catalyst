@@ -428,15 +428,29 @@ export default function SeoHeadManager({ pageType, pageData, pageTitle, pageDesc
         // Twitter Card Tags (controlled via settings)
         const twitterEnabled = seoSettings?.social_media_settings?.twitter?.enabled !== false;
         if (twitterEnabled) {
+            // Get default Twitter values from settings
+            const twitterDefaultTitle = applyTemplate(
+                seoSettings?.social_media_settings?.twitter?.default_title || '',
+                pageData
+            );
+            const twitterDefaultDescription = applyTemplate(
+                seoSettings?.social_media_settings?.twitter?.default_description || '',
+                pageData
+            );
+
+            // Priority: Twitter-specific defaults > general title/description
+            const twitterTitle = twitterDefaultTitle || title;
+            const twitterDescription = twitterDefaultDescription || description;
+
             const cardType = seoSettings?.social_media_settings?.twitter?.card_type ||
                             seoSettings?.twitter_card_settings?.card_type ||
                             'summary_large_image';
             updateMetaTag('twitter:card', cardType);
-            updateMetaTag('twitter:title', title);
-            updateMetaTag('twitter:description', description);
+            updateMetaTag('twitter:title', twitterTitle);
+            updateMetaTag('twitter:description', twitterDescription);
             if (ogImage) {
                 updateMetaTag('twitter:image', ogImage);
-                updateMetaTag('twitter:image:alt', `${title} - ${store.name}`);
+                updateMetaTag('twitter:image:alt', `${twitterTitle} - ${store.name}`);
             }
 
             // Twitter site username if provided
