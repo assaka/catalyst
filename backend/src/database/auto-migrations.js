@@ -366,6 +366,71 @@ const migrations = [
         return false;
       }
     }
+  },
+  {
+    name: 'remove-legacy-name-description-columns',
+    up: async () => {
+      console.log('🔄 Running migration: remove-legacy-name-description-columns');
+
+      try {
+        // Check if products table has name or description columns
+        const [productColumns] = await sequelize.query(`
+          SELECT column_name
+          FROM information_schema.columns
+          WHERE table_name = 'products' AND column_name IN ('name', 'description')
+        `);
+
+        // Drop name and description from products if they exist
+        for (const col of productColumns) {
+          await sequelize.query(`
+            ALTER TABLE products DROP COLUMN IF EXISTS ${col.column_name}
+          `);
+          console.log(`✅ Dropped ${col.column_name} column from products table`);
+        }
+
+        // Check if categories table has name or description columns
+        const [categoryColumns] = await sequelize.query(`
+          SELECT column_name
+          FROM information_schema.columns
+          WHERE table_name = 'categories' AND column_name IN ('name', 'description')
+        `);
+
+        // Drop name and description from categories if they exist
+        for (const col of categoryColumns) {
+          await sequelize.query(`
+            ALTER TABLE categories DROP COLUMN IF EXISTS ${col.column_name}
+          `);
+          console.log(`✅ Dropped ${col.column_name} column from categories table`);
+        }
+
+        // Check if cms_pages table has title or content columns
+        const [cmsColumns] = await sequelize.query(`
+          SELECT column_name
+          FROM information_schema.columns
+          WHERE table_name = 'cms_pages' AND column_name IN ('title', 'content')
+        `);
+
+        // Drop title and content from cms_pages if they exist
+        for (const col of cmsColumns) {
+          await sequelize.query(`
+            ALTER TABLE cms_pages DROP COLUMN IF EXISTS ${col.column_name}
+          `);
+          console.log(`✅ Dropped ${col.column_name} column from cms_pages table`);
+        }
+
+        if (productColumns.length === 0 && categoryColumns.length === 0 && cmsColumns.length === 0) {
+          console.log('✅ No legacy columns found, all entities already using translations');
+        } else {
+          console.log('✅ Legacy name/description/title/content columns removed');
+          console.log('   All entities now use the translations JSON field for multilingual support');
+        }
+
+        return true;
+      } catch (error) {
+        console.error('❌ Migration failed:', error.message);
+        return false;
+      }
+    }
   }
 ];
 
