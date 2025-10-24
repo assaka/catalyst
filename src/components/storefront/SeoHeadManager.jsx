@@ -76,6 +76,7 @@ export default function SeoHeadManager({ pageType, pageData, pageTitle, pageDesc
             }
             
             // Replace common placeholders
+            const titleSeparator = seoSettings?.title_separator || '|';
             const replacements = {
                 '{{store_name}}': store?.name || '',
                 '{{page_title}}': pageTitle || '',
@@ -90,6 +91,7 @@ export default function SeoHeadManager({ pageType, pageData, pageTitle, pageDesc
                 '{{relative_path}}': relativePath,
                 '{{language_code}}': data?.language_code || '',
                 '{{site_name}}': store?.name || '',
+                '{{separator}}': titleSeparator,
                 '{{year}}': new Date().getFullYear().toString(),
                 '{{currency}}': store?.currency || 'No Currency'
             };
@@ -208,7 +210,9 @@ export default function SeoHeadManager({ pageType, pageData, pageTitle, pageDesc
             applyTemplate(matchingTemplate.og_description, pageData) : '';
 
         // Fallback to basic defaults if SEO settings don't provide them
-        const basicDefaultTitle = store?.name ? `${pageTitle} | ${store.name}` : pageTitle;
+        // Use title separator from settings, default to |
+        const titleSeparator = seoSettings?.title_separator || '|';
+        const basicDefaultTitle = store?.name ? `${pageTitle} ${titleSeparator} ${store.name}` : pageTitle;
         const basicDefaultDescription = pageDescription || store?.description || `Welcome to ${store?.name || 'our store'}. Discover quality products and excellent service.`;
 
         // Final values with priority: page data > SEO templates > SEO defaults > basic defaults
@@ -272,8 +276,16 @@ export default function SeoHeadManager({ pageType, pageData, pageTitle, pageDesc
             robotsTag = shouldDisallow ? 'noindex, nofollow' : (defaultMetaSettings.meta_robots || 'index, follow');
         }
 
+        // Extract image URL - handle both string URLs and image objects
+        const getImageUrl = (img) => {
+            if (!img) return null;
+            if (typeof img === 'string') return img;
+            if (typeof img === 'object') return img.url || img.src || img.image_url || null;
+            return null;
+        };
+
         const ogImage = imageUrl ||
-                       pageData?.images?.[0] ||
+                       getImageUrl(pageData?.images?.[0]) ||
                        seoSettings?.social_media_settings?.open_graph?.default_image_url ||
                        seoSettings?.open_graph_settings?.default_image_url ||
                        store?.logo_url;
