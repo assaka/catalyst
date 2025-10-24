@@ -305,16 +305,22 @@ router.get('/', async (req, res) => {
   
   if (isPublicRequest) {
     try {
-      const { slug, page = 1, limit = 10 } = req.query;
+      const { id, slug, page = 1, limit = 10 } = req.query;
       const offset = (page - 1) * limit;
-      
+
       const where = {
         is_active: true // Only return active stores
       };
-      
+
+      // Filter by id if provided (takes precedence)
+      if (id) {
+        where.id = id;
+        console.log('🔍 Public stores API: Filtering by ID:', id);
+      }
       // Filter by slug if provided
-      if (slug) {
+      else if (slug) {
         where.slug = slug;
+        console.log('🔍 Public stores API: Filtering by slug:', slug);
       }
       
       const { count, rows } = await Store.findAndCountAll({
