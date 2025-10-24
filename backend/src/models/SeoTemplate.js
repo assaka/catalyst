@@ -20,8 +20,9 @@ const SeoTemplate = sequelize.define('SeoTemplate', {
     allowNull: false
   },
   type: {
-    type: DataTypes.ENUM('product', 'category', 'cms', 'brand'),
-    allowNull: false
+    type: DataTypes.ENUM('product', 'category', 'cms_page', 'homepage', 'brand', 'blog_post'),
+    allowNull: false,
+    comment: 'Page type: product, category, cms_page, homepage, brand, blog_post'
   },
   meta_title: {
     type: DataTypes.STRING,

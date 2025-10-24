@@ -38,6 +38,24 @@ const CmsPage = sequelize.define('CmsPage', {
     type: DataTypes.STRING,
     defaultValue: 'index, follow'
   },
+  // Open Graph fields
+  og_title: {
+    type: DataTypes.STRING,
+    allowNull: true
+  },
+  og_description: {
+    type: DataTypes.TEXT,
+    allowNull: true
+  },
+  og_image_url: {
+    type: DataTypes.STRING,
+    allowNull: true
+  },
+  // Canonical URL
+  canonical_url: {
+    type: DataTypes.STRING,
+    allowNull: true
+  },
   // Foreign keys
   store_id: {
     type: DataTypes.UUID,

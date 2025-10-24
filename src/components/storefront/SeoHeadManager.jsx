@@ -56,7 +56,34 @@ export default function SeoHeadManager({ pageType, pageData, pageTitle, pageDesc
             return;
         }
 
-        
+        /**
+         * SEO PRIORITY CASCADE SYSTEM
+         * ===========================
+         *
+         * This component implements a 5-level priority cascade for SEO metadata:
+         *
+         * 1. ENTITY-SPECIFIC OVERRIDES (Highest Priority)
+         *    - product.meta_title, product.og_title, etc.
+         *    - category.meta_title, category.og_title, etc.
+         *    - cms_page.meta_title, cms_page.og_title, etc.
+         *
+         * 2. CONDITIONAL PAGE TYPE TEMPLATES
+         *    - Templates with specific conditions (e.g., products in "Electronics" category)
+         *    - Matched by type and conditions (categories, attribute_sets)
+         *
+         * 3. GENERIC PAGE TYPE TEMPLATES
+         *    - Templates without conditions (e.g., all product pages)
+         *    - Matched by type only
+         *
+         * 4. GLOBAL SEO DEFAULTS
+         *    - Site-wide default settings from seoSettings
+         *    - Includes Open Graph and Twitter defaults
+         *
+         * 5. AUTOMATIC FALLBACKS (Lowest Priority)
+         *    - Generated from entity data and store information
+         *    - E.g., "{product.name} | {store.name}"
+         */
+
         // Apply SEO settings defaults with template replacement
         const applyTemplate = (template, data = {}) => {
             if (!template) return '';
@@ -192,9 +219,17 @@ export default function SeoHeadManager({ pageType, pageData, pageTitle, pageDesc
         };
 
         // Get matching templates for current page type
-        const currentPageType = pageType === 'product' ? 'product' : 
-                               pageType === 'category' ? 'category' : null;
-        
+        // Map page types to template types
+        const templateTypeMap = {
+            'product': 'product',
+            'category': 'category',
+            'cms_page': 'cms_page',
+            'homepage': 'homepage',
+            'blog_post': 'blog_post',
+            'brand': 'brand'
+        };
+
+        const currentPageType = templateTypeMap[pageType] || null;
         const matchingTemplate = currentPageType ? findMatchingSeoTemplate(currentPageType) : null;
 
         // Apply templates to get processed template values
@@ -215,32 +250,45 @@ export default function SeoHeadManager({ pageType, pageData, pageTitle, pageDesc
         const basicDefaultTitle = store?.name ? `${pageTitle} ${titleSeparator} ${store.name}` : pageTitle;
         const basicDefaultDescription = pageDescription || store?.description || `Welcome to ${store?.name || 'our store'}. Discover quality products and excellent service.`;
 
-        // Final values with priority: page data > SEO templates > SEO defaults > basic defaults
-        const title = pageData?.meta_title || 
-                     pageData?.seo?.meta_title || 
-                     templateTitle ||
-                     processedDefaultTitle || 
-                     basicDefaultTitle;
-                     
-        const description = pageData?.meta_description || 
-                           pageData?.seo?.meta_description || 
-                           templateDescription ||
-                           processedDefaultDescription || 
-                           basicDefaultDescription;
-                           
-        const keywords = pageData?.meta_keywords || 
-                        pageData?.seo?.meta_keywords || 
-                        templateKeywords ||
-                        processedDefaultKeywords || 
-                        `${store?.name}, products, quality, shopping`;
+        /**
+         * PRIORITY CASCADE: META TAGS
+         * ============================
+         * Priority order: Entity > Conditional Template > Generic Template > Global Default > Fallback
+         */
+
+        // 1. Entity-specific overrides (product.meta_title, category.meta_title, etc.)
+        // 2. Legacy seo JSON field (backward compatibility)
+        // 3. Conditional template values
+        // 4. Global default values
+        // 5. Automatic fallbacks
+        const title = pageData?.meta_title ||                    // Entity override
+                     pageData?.seo?.meta_title ||                // Legacy JSON field
+                     templateTitle ||                            // Template (conditional or generic)
+                     processedDefaultTitle ||                    // Global default
+                     basicDefaultTitle;                          // Fallback
+
+        const description = pageData?.meta_description ||        // Entity override
+                           pageData?.seo?.meta_description ||    // Legacy JSON field
+                           templateDescription ||                // Template
+                           processedDefaultDescription ||        // Global default
+                           basicDefaultDescription;              // Fallback
+
+        const keywords = pageData?.meta_keywords ||              // Entity override
+                        pageData?.seo?.meta_keywords ||          // Legacy JSON field
+                        templateKeywords ||                      // Template
+                        processedDefaultKeywords ||              // Global default
+                        `${store?.name}, products, quality, shopping`;  // Fallback
 
         // Default description for structured data
         const defaultDescription = description || store?.description || 'Quality products and services';
 
 
-        // Determine the robots tag - check SEO settings and robots.txt rules
-        let robotsTag = pageData?.meta_robots_tag || 
-                       pageData?.seo?.meta_robots_tag;
+        /**
+         * PRIORITY CASCADE: ROBOTS TAG
+         * =============================
+         */
+        let robotsTag = pageData?.meta_robots_tag ||             // Entity override
+                       pageData?.seo?.meta_robots_tag;           // Legacy JSON field
         
         // If no page-specific robots tag, check robots.txt content for current page
         if (!robotsTag) {
@@ -284,11 +332,16 @@ export default function SeoHeadManager({ pageType, pageData, pageTitle, pageDesc
             return null;
         };
 
-        const ogImage = imageUrl ||
-                       getImageUrl(pageData?.images?.[0]) ||
-                       seoSettings?.social_media_settings?.open_graph?.default_image_url ||
-                       seoSettings?.open_graph_settings?.default_image_url ||
-                       store?.logo_url;
+        /**
+         * PRIORITY CASCADE: OG IMAGE
+         * ===========================
+         */
+        const ogImage = pageData?.og_image_url ||                // Entity OG override
+                       imageUrl ||                              // Passed via prop
+                       getImageUrl(pageData?.images?.[0]) ||    // Entity's first image
+                       seoSettings?.social_media_settings?.open_graph?.default_image_url ||  // Global OG default
+                       seoSettings?.open_graph_settings?.default_image_url ||                // Legacy OG default
+                       store?.logo_url;                         // Store logo fallback
 
 
         // Update document title
@@ -322,9 +375,13 @@ export default function SeoHeadManager({ pageType, pageData, pageTitle, pageDesc
         if (keywords) updateMetaTag('keywords', keywords);
         updateMetaTag('robots', robotsTag);
 
-        // Canonical URL with template replacement
-        // Priority: Custom canonical URL from database > pageData > canonical base URL > current URL
-        let canonicalUrl = customCanonicalUrl || pageData?.canonical_url;
+        /**
+         * PRIORITY CASCADE: CANONICAL URL
+         * ================================
+         * Priority: Custom DB > Entity > Template Base > Current URL
+         */
+        let canonicalUrl = customCanonicalUrl ||                 // Custom canonical from database
+                          pageData?.canonical_url;               // Entity canonical override
 
         if (!canonicalUrl) {
             // Apply template replacement to canonical base URL from settings
@@ -402,17 +459,22 @@ export default function SeoHeadManager({ pageType, pageData, pageTitle, pageDesc
                 pageData
             );
 
-            // Use Open Graph specific template values if available, otherwise fall back to regular meta values
-            const ogTitle = pageData?.og_title ||
-                           pageData?.seo?.og_title ||
-                           templateOgTitle ||
-                           ogDefaultTitle ||
-                           title;
-            const ogDescription = pageData?.og_description ||
-                                 pageData?.seo?.og_description ||
-                                 templateOgDescription ||
-                                 ogDefaultDescription ||
-                                 description;
+            /**
+             * PRIORITY CASCADE: OPEN GRAPH TAGS
+             * ==================================
+             * Priority: Entity OG > Template OG > Global OG Default > Meta Tag Fallback
+             */
+            const ogTitle = pageData?.og_title ||                    // Entity OG override
+                           pageData?.seo?.og_title ||                // Legacy JSON field
+                           templateOgTitle ||                        // Template OG
+                           ogDefaultTitle ||                         // Global OG default
+                           title;                                    // Meta title fallback
+
+            const ogDescription = pageData?.og_description ||        // Entity OG override
+                                 pageData?.seo?.og_description ||    // Legacy JSON field
+                                 templateOgDescription ||            // Template OG
+                                 ogDefaultDescription ||             // Global OG default
+                                 description;                        // Meta description fallback
 
             updateMetaTag('og:title', ogTitle, true);
             updateMetaTag('og:description', ogDescription, true);
