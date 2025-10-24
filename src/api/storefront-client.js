@@ -86,10 +86,16 @@ class StorefrontApiClient {
 
   // Public headers (no auth required)
   getPublicHeaders(customHeaders = {}) {
-    return {
+    const headers = {
       'Content-Type': 'application/json',
       ...customHeaders
     };
+
+    // Add language header from localStorage
+    const currentLanguage = localStorage.getItem('catalyst_language') || 'en';
+    headers['X-Language'] = currentLanguage;
+
+    return headers;
   }
 
   // Customer headers (with optional auth)
@@ -103,6 +109,10 @@ class StorefrontApiClient {
     if (token) {
       headers.Authorization = `Bearer ${token}`;
     }
+
+    // Add language header from localStorage
+    const currentLanguage = localStorage.getItem('catalyst_language') || 'en';
+    headers['X-Language'] = currentLanguage;
 
     return headers;
   }
