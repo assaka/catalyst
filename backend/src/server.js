@@ -79,11 +79,9 @@ const supabaseSetupRoutes = require('./routes/supabase-setup');
 const shopifyRoutes = require('./routes/shopify');
 const imageRoutes = require('./routes/images');
 const cloudflareOAuthRoutes = require('./routes/cloudflare-oauth');
-const renderOAuthRoutes = require('./routes/render-oauth');
 const domainSettingsRoutes = require('./routes/domain-settings');
 const pluginRoutes = require('./routes/plugins');
 const pluginCreationRoutes = require('./routes/plugin-creation');
-const pluginRenderRoutes = require('./routes/plugin-render');
 const storageRoutes = require('./routes/storage');
 const productImageRoutes = require('./routes/product-images');
 const categoryImageRoutes = require('./routes/category-images');
@@ -106,6 +104,15 @@ const adminNavigationRoutes = require('./routes/admin-navigation');
 const pluginApiRoutes = require('./routes/plugin-api');
 const pluginAIRoutes = require('./routes/pluginAIRoutes');
 const chatApiRoutes = require('./routes/chat-api');
+const databaseProvisioningRoutes = require('./routes/database-provisioning');
+
+// Import usage tracking middleware
+const {
+  apiLogger,
+  trackApiCall,
+  trackApiError,
+  checkUsageLimits
+} = require('./middleware/usageTracking');
 
 const app = express();
 
@@ -240,6 +247,12 @@ app.use(passport.session());
 
 // Static files
 app.use('/uploads', express.static('uploads'));
+
+// Usage tracking middleware (must be after body parsers, before routes)
+app.use(apiLogger); // Log all API requests
+app.use(trackApiCall); // Track API usage for billing
+app.use(trackApiError); // Track API errors
+// Note: checkUsageLimits is applied selectively on routes that need it
 
 // Health check endpoint (no DB required)
 app.get('/health', (req, res) => {
@@ -1743,14 +1756,13 @@ app.use('/api/integrations', authMiddleware, integrationRoutes);
 app.use('/api/supabase', supabaseRoutes);
 app.use('/api/supabase', supabaseSetupRoutes);
 app.use('/api/shopify', shopifyRoutes);
+app.use('/api/database-provisioning', authMiddleware, databaseProvisioningRoutes); // Master DB: provisioning, subscriptions, billing
 app.use('/api/images', authMiddleware, imageRoutes);
 app.use('/api/cloudflare/oauth', cloudflareOAuthRoutes);
-app.use('/api/render/oauth', renderOAuthRoutes);
 app.use('/api/admin', adminNavigationRoutes); // Dynamic navigation API (Plugin Architecture Phase 1)
 app.use('/api/plugins', pluginApiRoutes); // Modern plugin system: widgets, marketplace, purchases (Plugin Architecture Phase 1)
 app.use('/api/plugins', pluginRoutes); // Legacy plugin routes (kept for backwards compatibility)
 app.use('/api/stores/:store_id/plugins/create', pluginCreationRoutes);
-app.use('/api/stores/:store_id/plugins', pluginRenderRoutes);
 app.use('/api/plugins', dynamicPluginRoutes.router);
 app.use('/api/chat', chatApiRoutes); // Customer service chat plugin API
 app.use('/api/storage', storageRoutes); // Main storage routes for File Library
