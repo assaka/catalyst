@@ -49,29 +49,13 @@ const CmsPage = sequelize.define('CmsPage', {
   sort_order: {
     type: DataTypes.INTEGER,
     defaultValue: 0
-  },
-  // Multilingual translations
-  translations: {
-    type: DataTypes.JSON,
-    defaultValue: {},
-    comment: 'Multilingual translations: {"en": {"title": "...", "content": "..."}, "es": {...}}'
   }
+  // Translations now stored in normalized cms_page_translations table
+  // Removed translations JSON column - using normalized table for better search performance
 }, {
-  tableName: 'cms_pages',
-  hooks: {
-    beforeCreate: (page) => {
-      if (!page.slug && page.translations && page.translations.en && page.translations.en.title) {
-        page.slug = page.translations.en.title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
-      }
-    },
-    beforeUpdate: (page) => {
-      if (page.changed('translations') && !page.changed('slug')) {
-        if (page.translations && page.translations.en && page.translations.en.title) {
-          page.slug = page.translations.en.title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
-        }
-      }
-    }
-  }
+  tableName: 'cms_pages'
+  // Removed hooks that referenced page.translations
+  // Slug must be provided when creating pages
 });
 
 module.exports = CmsPage;

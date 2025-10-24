@@ -45,13 +45,9 @@ const CmsBlock = sequelize.define('CmsBlock', {
       model: 'stores',
       key: 'id'
     }
-  },
-  // Multilingual translations
-  translations: {
-    type: DataTypes.JSON,
-    defaultValue: {},
-    comment: 'Multilingual translations: {"en": {"title": "...", "content": "..."}, "es": {...}}'
   }
+  // Translations now stored in normalized cms_block_translations table
+  // Removed translations JSON column - using normalized table for better search performance
 }, {
   tableName: 'cms_blocks',
   indexes: [
@@ -59,21 +55,9 @@ const CmsBlock = sequelize.define('CmsBlock', {
       unique: true,
       fields: ['identifier', 'store_id']  // Unique identifier per store
     }
-  ],
-  hooks: {
-    beforeCreate: (block) => {
-      if (!block.identifier && block.translations && block.translations.en && block.translations.en.title) {
-        block.identifier = block.translations.en.title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
-      }
-    },
-    beforeUpdate: (block) => {
-      if (block.changed('translations') && !block.changed('identifier')) {
-        if (block.translations && block.translations.en && block.translations.en.title) {
-          block.identifier = block.translations.en.title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
-        }
-      }
-    }
-  }
+  ]
+  // Removed hooks that referenced block.translations
+  // Identifier must be provided when creating blocks
 });
 
 module.exports = CmsBlock;
