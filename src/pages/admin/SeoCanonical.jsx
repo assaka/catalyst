@@ -12,6 +12,7 @@ import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from "@/
 import { useStoreSelection } from "@/contexts/StoreSelectionContext.jsx";
 import adminApiClient from "@/api/admin-client";
 import { toast } from "sonner";
+import { SeoSetting } from '@/api/entities';
 
 export default function SeoCanonical() {
   const { getSelectedStoreId } = useStoreSelection();
@@ -22,10 +23,51 @@ export default function SeoCanonical() {
   const [pageUrl, setPageUrl] = useState('');
   const [canonicalUrl, setCanonicalUrl] = useState('');
   const [editingId, setEditingId] = useState(null);
+  const [seoSettingId, setSeoSettingId] = useState(null);
+
+  // Canonical settings state
+  const [canonicalSettings, setCanonicalSettings] = useState({
+    auto_canonical: true,
+    https_canonical: true,
+    www_canonical: false,
+    trailing_slash: false,
+    base_url: ''
+  });
 
   useEffect(() => {
     loadCanonicalUrls();
+    loadCanonicalSettings();
   }, []);
+
+  const loadCanonicalSettings = async () => {
+    const storeId = getSelectedStoreId();
+    if (!storeId) return;
+
+    try {
+      setLoading(true);
+      const result = await SeoSetting.filter({ store_id: storeId });
+
+      if (result && result.length > 0) {
+        const seoSetting = result[0];
+        setSeoSettingId(seoSetting.id);
+
+        // Load canonical settings from the JSON field
+        const canonicalData = seoSetting.canonical_settings || {};
+        setCanonicalSettings({
+          auto_canonical: canonicalData.auto_canonical ?? true,
+          https_canonical: canonicalData.https_canonical ?? true,
+          www_canonical: canonicalData.www_canonical ?? false,
+          trailing_slash: canonicalData.trailing_slash ?? false,
+          base_url: canonicalData.base_url || ''
+        });
+      }
+    } catch (error) {
+      console.error('Error loading canonical settings:', error);
+      toast.error('Failed to load canonical settings');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const loadCanonicalUrls = async () => {
     const storeId = getSelectedStoreId();
@@ -123,15 +165,37 @@ export default function SeoCanonical() {
   };
 
   const handleSave = async () => {
+    const storeId = getSelectedStoreId();
+    if (!storeId) {
+      toast.error('No store selected');
+      return;
+    }
+
     setSaving(true);
     setSaveSuccess(false);
 
-    // Simulate save operation for settings
-    await new Promise(resolve => setTimeout(resolve, 500));
+    try {
+      const payload = {
+        store_id: storeId,
+        canonical_settings: canonicalSettings
+      };
 
-    setSaveSuccess(true);
-    setSaving(false);
-    setTimeout(() => setSaveSuccess(false), 2000);
+      if (seoSettingId) {
+        await SeoSetting.update(seoSettingId, payload);
+      } else {
+        const created = await SeoSetting.create(payload);
+        setSeoSettingId(created.id);
+      }
+
+      setSaveSuccess(true);
+      toast.success('Canonical settings saved successfully');
+      setTimeout(() => setSaveSuccess(false), 2000);
+    } catch (error) {
+      console.error('Error saving canonical settings:', error);
+      toast.error('Failed to save canonical settings');
+    } finally {
+      setSaving(false);
+    }
   };
   return (
     <div className="container mx-auto p-6 space-y-6">
@@ -155,7 +219,13 @@ export default function SeoCanonical() {
           <div className="space-y-4 border-l-2 border-blue-200 pl-4">
             <div className="space-y-2">
               <div className="flex items-center space-x-2">
-                <Switch id="auto-canonical" defaultChecked />
+                <Switch
+                  id="auto-canonical"
+                  checked={canonicalSettings.auto_canonical}
+                  onCheckedChange={(checked) =>
+                    setCanonicalSettings({ ...canonicalSettings, auto_canonical: checked })
+                  }
+                />
                 <Label htmlFor="auto-canonical" className="font-medium">Auto-generate canonical URLs</Label>
               </div>
               <p className="text-sm text-muted-foreground ml-12">
@@ -167,7 +237,13 @@ export default function SeoCanonical() {
           <div className="space-y-4 border-l-2 border-green-200 pl-4">
             <div className="space-y-2">
               <div className="flex items-center space-x-2">
-                <Switch id="https-canonical" defaultChecked />
+                <Switch
+                  id="https-canonical"
+                  checked={canonicalSettings.https_canonical}
+                  onCheckedChange={(checked) =>
+                    setCanonicalSettings({ ...canonicalSettings, https_canonical: checked })
+                  }
+                />
                 <Label htmlFor="https-canonical" className="font-medium">Force HTTPS in canonical URLs</Label>
               </div>
               <p className="text-sm text-muted-foreground ml-12">
@@ -179,7 +255,13 @@ export default function SeoCanonical() {
           <div className="space-y-4 border-l-2 border-purple-200 pl-4">
             <div className="space-y-2">
               <div className="flex items-center space-x-2">
-                <Switch id="www-canonical" />
+                <Switch
+                  id="www-canonical"
+                  checked={canonicalSettings.www_canonical}
+                  onCheckedChange={(checked) =>
+                    setCanonicalSettings({ ...canonicalSettings, www_canonical: checked })
+                  }
+                />
                 <Label htmlFor="www-canonical" className="font-medium">Include www in canonical URLs</Label>
               </div>
               <p className="text-sm text-muted-foreground ml-12">
@@ -191,7 +273,13 @@ export default function SeoCanonical() {
           <div className="space-y-4 border-l-2 border-orange-200 pl-4">
             <div className="space-y-2">
               <div className="flex items-center space-x-2">
-                <Switch id="trailing-slash" />
+                <Switch
+                  id="trailing-slash"
+                  checked={canonicalSettings.trailing_slash}
+                  onCheckedChange={(checked) =>
+                    setCanonicalSettings({ ...canonicalSettings, trailing_slash: checked })
+                  }
+                />
                 <Label htmlFor="trailing-slash" className="font-medium">Add trailing slash to canonical URLs</Label>
               </div>
               <p className="text-sm text-muted-foreground ml-12">
@@ -202,7 +290,14 @@ export default function SeoCanonical() {
 
           <div className="space-y-2 pt-4 border-t">
             <Label htmlFor="canonical-domain" className="font-medium">Canonical Domain Override</Label>
-            <Input id="canonical-domain" placeholder="https://example.com" />
+            <Input
+              id="canonical-domain"
+              placeholder="https://example.com"
+              value={canonicalSettings.base_url}
+              onChange={(e) =>
+                setCanonicalSettings({ ...canonicalSettings, base_url: e.target.value })
+              }
+            />
             <p className="text-sm text-muted-foreground">
               Specify a different domain for all canonical URLs. Useful when your site is accessible via multiple domains (e.g., .com, .net) but you want to consolidate SEO signals to one primary domain.
             </p>
