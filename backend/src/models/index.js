@@ -41,8 +41,13 @@ const Plugin = require('./Plugin');
 const PluginConfiguration = require('./PluginConfiguration');
 const SupabaseOAuthToken = require('./SupabaseOAuthToken');
 const ShopifyOAuthToken = require('./ShopifyOAuthToken');
-const RenderOAuthToken = require('./RenderOAuthToken');
 const MediaAsset = require('./MediaAsset');
+// Master database models (business management)
+const Subscription = require('./Subscription');
+const BillingTransaction = require('./BillingTransaction');
+const UsageMetric = require('./UsageMetric');
+const ApiUsageLog = require('./ApiUsageLog');
+const PlatformAdmin = require('./PlatformAdmin');
 const AkeneoCustomMapping = require('./AkeneoCustomMapping');
 const AkeneoSchedule = require('./AkeneoSchedule');
 const Credit = require('./Credit');
@@ -268,9 +273,30 @@ const defineAssociations = () => {
   ShopifyOAuthToken.belongsTo(Store, { foreignKey: 'store_id' });
   Store.hasOne(ShopifyOAuthToken, { foreignKey: 'store_id' });
   
-  // RenderOAuthToken associations
-  RenderOAuthToken.belongsTo(Store, { foreignKey: 'store_id' });
-  Store.hasOne(RenderOAuthToken, { foreignKey: 'store_id' });
+  // Master database associations
+  // Subscription associations
+  Subscription.belongsTo(Store, { foreignKey: 'store_id', as: 'store' });
+  Store.hasMany(Subscription, { foreignKey: 'store_id', as: 'subscriptions' });
+
+  // BillingTransaction associations
+  BillingTransaction.belongsTo(Store, { foreignKey: 'store_id', as: 'store' });
+  BillingTransaction.belongsTo(Subscription, { foreignKey: 'subscription_id', as: 'subscription' });
+  Store.hasMany(BillingTransaction, { foreignKey: 'store_id', as: 'transactions' });
+  Subscription.hasMany(BillingTransaction, { foreignKey: 'subscription_id', as: 'transactions' });
+
+  // UsageMetric associations
+  UsageMetric.belongsTo(Store, { foreignKey: 'store_id', as: 'store' });
+  Store.hasMany(UsageMetric, { foreignKey: 'store_id', as: 'usageMetrics' });
+
+  // ApiUsageLog associations
+  ApiUsageLog.belongsTo(Store, { foreignKey: 'store_id', as: 'store' });
+  ApiUsageLog.belongsTo(User, { foreignKey: 'user_id', as: 'user' });
+  Store.hasMany(ApiUsageLog, { foreignKey: 'store_id', as: 'apiLogs' });
+  User.hasMany(ApiUsageLog, { foreignKey: 'user_id', as: 'apiLogs' });
+
+  // PlatformAdmin associations
+  PlatformAdmin.belongsTo(User, { foreignKey: 'user_id', as: 'user' });
+  User.hasOne(PlatformAdmin, { foreignKey: 'user_id', as: 'platformAdmin' });
 
   // Credit system associations
   Credit.belongsTo(User, { foreignKey: 'user_id' });
@@ -363,8 +389,13 @@ module.exports = {
   PluginConfiguration,
   SupabaseOAuthToken,
   ShopifyOAuthToken,
-  RenderOAuthToken,
   MediaAsset,
+  // Master database models
+  Subscription,
+  BillingTransaction,
+  UsageMetric,
+  ApiUsageLog,
+  PlatformAdmin,
   AkeneoCustomMapping,
   AkeneoSchedule,
   Credit,
