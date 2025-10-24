@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
-const { authMiddleware, storeResolver } = require('../middleware/auth');
+const { authMiddleware } = require('../middleware/auth');
+const { storeResolver } = require('../middleware/storeResolver');
 const { requireActiveSubscription } = require('../middleware/subscriptionEnforcement');
 const CustomDomainService = require('../services/CustomDomainService');
 const { CustomDomain } = require('../models');
