@@ -44,6 +44,14 @@ const SeoTemplate = sequelize.define('SeoTemplate', {
     type: DataTypes.TEXT,
     allowNull: true
   },
+  twitter_title: {
+    type: DataTypes.STRING,
+    allowNull: true
+  },
+  twitter_description: {
+    type: DataTypes.TEXT,
+    allowNull: true
+  },
   sort_order: {
     type: DataTypes.INTEGER,
     defaultValue: 0

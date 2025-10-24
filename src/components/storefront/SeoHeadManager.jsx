@@ -239,10 +239,14 @@ export default function SeoHeadManager({ pageType, pageData, pageTitle, pageDesc
             applyTemplate(matchingTemplate.meta_description, pageData) : '';
         const templateKeywords = matchingTemplate?.meta_keywords ? 
             applyTemplate(matchingTemplate.meta_keywords, pageData) : '';
-        const templateOgTitle = matchingTemplate?.og_title ? 
+        const templateOgTitle = matchingTemplate?.og_title ?
             applyTemplate(matchingTemplate.og_title, pageData) : '';
-        const templateOgDescription = matchingTemplate?.og_description ? 
+        const templateOgDescription = matchingTemplate?.og_description ?
             applyTemplate(matchingTemplate.og_description, pageData) : '';
+        const templateTwitterTitle = matchingTemplate?.twitter_title ?
+            applyTemplate(matchingTemplate.twitter_title, pageData) : '';
+        const templateTwitterDescription = matchingTemplate?.twitter_description ?
+            applyTemplate(matchingTemplate.twitter_description, pageData) : '';
 
         // Fallback to basic defaults if SEO settings don't provide them
         // Use title separator from settings, default to |
@@ -515,9 +519,32 @@ export default function SeoHeadManager({ pageType, pageData, pageTitle, pageDesc
                 pageData
             );
 
-            // Priority: Twitter-specific defaults > general title/description
-            const twitterTitle = twitterDefaultTitle || title;
-            const twitterDescription = twitterDefaultDescription || description;
+            /**
+             * PRIORITY CASCADE: TWITTER CARD TAGS
+             * ====================================
+             * Priority: Entity Twitter > Template Twitter > Global Twitter Default > OG Fallback > Meta Fallback
+             */
+            const twitterTitle = pageData?.twitter_title ||              // Entity Twitter override
+                                pageData?.seo?.twitter_title ||          // Legacy JSON field
+                                templateTwitterTitle ||                   // Template Twitter
+                                twitterDefaultTitle ||                    // Global Twitter default
+                                ogTitle ||                                // OG title fallback
+                                title;                                    // Meta title fallback
+
+            const twitterDescription = pageData?.twitter_description ||   // Entity Twitter override
+                                      pageData?.seo?.twitter_description || // Legacy JSON field
+                                      templateTwitterDescription ||       // Template Twitter
+                                      twitterDefaultDescription ||        // Global Twitter default
+                                      ogDescription ||                    // OG description fallback
+                                      description;                        // Meta description fallback
+
+            /**
+             * PRIORITY CASCADE: TWITTER IMAGE
+             * ================================
+             */
+            const twitterImage = pageData?.twitter_image_url ||         // Entity Twitter image override
+                                pageData?.seo?.twitter_image_url ||     // Legacy JSON field
+                                ogImage;                                // Fallback to OG image
 
             const cardType = seoSettings?.social_media_settings?.twitter?.card_type ||
                             seoSettings?.twitter_card_settings?.card_type ||
@@ -525,8 +552,8 @@ export default function SeoHeadManager({ pageType, pageData, pageTitle, pageDesc
             updateMetaTag('twitter:card', cardType);
             updateMetaTag('twitter:title', twitterTitle);
             updateMetaTag('twitter:description', twitterDescription);
-            if (ogImage) {
-                updateMetaTag('twitter:image', ogImage);
+            if (twitterImage) {
+                updateMetaTag('twitter:image', twitterImage);
                 updateMetaTag('twitter:image:alt', `${twitterTitle} - ${store.name}`);
             }
 

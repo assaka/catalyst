@@ -58,6 +58,19 @@ const Category = sequelize.define('Category', {
     type: DataTypes.STRING,
     allowNull: true
   },
+  // Twitter Card fields
+  twitter_title: {
+    type: DataTypes.STRING,
+    allowNull: true
+  },
+  twitter_description: {
+    type: DataTypes.TEXT,
+    allowNull: true
+  },
+  twitter_image_url: {
+    type: DataTypes.STRING,
+    allowNull: true
+  },
   // Canonical URL
   canonical_url: {
     type: DataTypes.STRING,

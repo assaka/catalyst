@@ -5,11 +5,12 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { FileText, Plus, Trash2, Loader2 } from "lucide-react";
+import { FileText, Plus, Trash2, Loader2, Info, ChevronDown, ChevronUp } from "lucide-react";
 import { SeoTemplate } from "@/api/entities";
 import { useStoreSelection } from "@/contexts/StoreSelectionContext.jsx";
 import NoStoreSelected from "@/components/admin/NoStoreSelected";
 import FlashMessage from "@/components/storefront/FlashMessage";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 
 export default function SeoTemplates() {
   const { selectedStore, getSelectedStoreId } = useStoreSelection();
@@ -17,6 +18,7 @@ export default function SeoTemplates() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [flashMessage, setFlashMessage] = useState(null);
+  const [showVariables, setShowVariables] = useState(false);
 
   // Form state for new template
   const [formData, setFormData] = useState({
@@ -26,7 +28,9 @@ export default function SeoTemplates() {
     meta_description: '',
     meta_keywords: '',
     og_title: '',
-    og_description: ''
+    og_description: '',
+    twitter_title: '',
+    twitter_description: ''
   });
 
   useEffect(() => {
@@ -104,7 +108,9 @@ export default function SeoTemplates() {
         meta_description: '',
         meta_keywords: '',
         og_title: '',
-        og_description: ''
+        og_description: '',
+        twitter_title: '',
+        twitter_description: ''
       });
 
       // Reload templates
@@ -198,7 +204,9 @@ export default function SeoTemplates() {
                 <SelectContent>
                   <SelectItem value="product">Product Pages</SelectItem>
                   <SelectItem value="category">Category Pages</SelectItem>
-                  <SelectItem value="cms">CMS Pages</SelectItem>
+                  <SelectItem value="cms_page">CMS Pages</SelectItem>
+                  <SelectItem value="homepage">Homepage</SelectItem>
+                  <SelectItem value="blog_post">Blog Posts</SelectItem>
                   <SelectItem value="brand">Brand Pages</SelectItem>
                 </SelectContent>
               </Select>
@@ -210,12 +218,73 @@ export default function SeoTemplates() {
                 id="title-template"
                 value={formData.meta_title}
                 onChange={(e) => handleInputChange('meta_title', e.target.value)}
-                placeholder="{{name}} | {{category}} | {{store_name}}"
+                placeholder="{{product_name}} | {{store_name}}"
               />
-              <p className="text-sm text-muted-foreground">
-                Available variables: {'{{name}}'}, {'{{category}}'}, {'{{store_name}}'}, {'{{price}}'}
-              </p>
             </div>
+
+            {/* Variable Reference */}
+            <Collapsible open={showVariables} onOpenChange={setShowVariables}>
+              <CollapsibleTrigger asChild>
+                <Button variant="outline" size="sm" className="w-full">
+                  {showVariables ? <ChevronUp className="h-4 w-4 mr-2" /> : <ChevronDown className="h-4 w-4 mr-2" />}
+                  {showVariables ? 'Hide' : 'Show'} Available Variables
+                </Button>
+              </CollapsibleTrigger>
+              <CollapsibleContent className="mt-2 p-4 border rounded bg-muted/50">
+                <div className="space-y-3">
+                  <div>
+                    <h4 className="font-medium text-sm mb-2 flex items-center gap-2">
+                      <Info className="h-4 w-4" />
+                      Common Variables (All Page Types)
+                    </h4>
+                    <ul className="text-xs space-y-1 ml-6">
+                      <li><code className="bg-background px-1 py-0.5 rounded">{'{{store_name}}'}</code> - Your store name</li>
+                      <li><code className="bg-background px-1 py-0.5 rounded">{'{{store_description}}'}</code> - Store description</li>
+                      <li><code className="bg-background px-1 py-0.5 rounded">{'{{site_name}}'}</code> - Site name (same as store_name)</li>
+                      <li><code className="bg-background px-1 py-0.5 rounded">{'{{base_url}}'}</code> - Base URL of your site</li>
+                      <li><code className="bg-background px-1 py-0.5 rounded">{'{{current_url}}'}</code> - Current page URL</li>
+                      <li><code className="bg-background px-1 py-0.5 rounded">{'{{separator}}'}</code> - Title separator (e.g., |)</li>
+                      <li><code className="bg-background px-1 py-0.5 rounded">{'{{year}}'}</code> - Current year</li>
+                      <li><code className="bg-background px-1 py-0.5 rounded">{'{{currency}}'}</code> - Store currency</li>
+                    </ul>
+                  </div>
+
+                  {formData.type === 'product' && (
+                    <div>
+                      <h4 className="font-medium text-sm mb-2">Product Page Variables</h4>
+                      <ul className="text-xs space-y-1 ml-6">
+                        <li><code className="bg-background px-1 py-0.5 rounded">{'{{product_name}}'}</code> - Product name</li>
+                        <li><code className="bg-background px-1 py-0.5 rounded">{'{{product_description}}'}</code> - Product description</li>
+                        <li><code className="bg-background px-1 py-0.5 rounded">{'{{category_name}}'}</code> - Product's category name</li>
+                      </ul>
+                    </div>
+                  )}
+
+                  {formData.type === 'category' && (
+                    <div>
+                      <h4 className="font-medium text-sm mb-2">Category Page Variables</h4>
+                      <ul className="text-xs space-y-1 ml-6">
+                        <li><code className="bg-background px-1 py-0.5 rounded">{'{{category_name}}'}</code> - Category name</li>
+                        <li><code className="bg-background px-1 py-0.5 rounded">{'{{category_description}}'}</code> - Category description</li>
+                      </ul>
+                    </div>
+                  )}
+
+                  {formData.type === 'cms_page' && (
+                    <div>
+                      <h4 className="font-medium text-sm mb-2">CMS Page Variables</h4>
+                      <ul className="text-xs space-y-1 ml-6">
+                        <li><code className="bg-background px-1 py-0.5 rounded">{'{{page_title}}'}</code> - Page title</li>
+                      </ul>
+                    </div>
+                  )}
+
+                  <p className="text-xs text-muted-foreground mt-2">
+                    💡 Tip: You can use both single and double curly braces (e.g., {'{product_name}'} or {'{{product_name}}'})
+                  </p>
+                </div>
+              </CollapsibleContent>
+            </Collapsible>
 
             <div className="space-y-2">
               <Label htmlFor="description-template">Meta Description Template</Label>
@@ -255,6 +324,30 @@ export default function SeoTemplates() {
                 value={formData.og_description}
                 onChange={(e) => handleInputChange('og_description', e.target.value)}
                 placeholder="Defaults to meta description if empty"
+                rows={2}
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="twitter-title-template">Twitter Card Title (Optional)</Label>
+              <Input
+                id="twitter-title-template"
+                value={formData.twitter_title}
+                onChange={(e) => handleInputChange('twitter_title', e.target.value)}
+                placeholder="Defaults to OG title if empty"
+              />
+              <p className="text-sm text-muted-foreground">
+                Separate title for Twitter cards (falls back to OG title if not set)
+              </p>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="twitter-description-template">Twitter Card Description (Optional)</Label>
+              <Textarea
+                id="twitter-description-template"
+                value={formData.twitter_description}
+                onChange={(e) => handleInputChange('twitter_description', e.target.value)}
+                placeholder="Defaults to OG description if empty"
                 rows={2}
               />
             </div>
