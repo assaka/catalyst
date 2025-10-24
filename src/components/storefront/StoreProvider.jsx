@@ -46,12 +46,23 @@ const cleanCheckoutLayout = (layout) => {
 const CACHE_DURATION_LONG = 3600000; // 1 hour - for data that rarely changes (stores, cookie consent)
 const CACHE_DURATION_MEDIUM = 300000; // 5 minutes - for semi-static data (categories, attributes)
 const CACHE_DURATION_SHORT = 60000; // 1 minute - for frequently updated data (taxes, labels, templates)
+const CACHE_VERSION = '2.0'; // Increment this to invalidate all cached data
 const apiCache = new Map();
 
 // Load from localStorage on init
 const loadCacheFromStorage = () => {
   try {
     const stored = localStorage.getItem('storeProviderCache');
+    const storedVersion = localStorage.getItem('storeProviderCacheVersion');
+
+    // Invalidate cache if version changed
+    if (storedVersion !== CACHE_VERSION) {
+      console.log('🔄 Cache version changed, clearing old cache');
+      localStorage.removeItem('storeProviderCache');
+      localStorage.setItem('storeProviderCacheVersion', CACHE_VERSION);
+      return;
+    }
+
     if (stored) {
       const parsed = JSON.parse(stored);
       Object.entries(parsed).forEach(([key, value]) => {
