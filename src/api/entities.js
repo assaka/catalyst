@@ -726,13 +726,21 @@ class CategoryService extends BaseEntity {
     try {
       const queryString = new URLSearchParams(params).toString();
       const url = queryString ? `categories?${queryString}` : 'categories';
-      
+
       // Use authenticated request for admin API, not public API
       const response = await apiClient.get(url);
-      
-      // Ensure response is always an array
+
+      // Handle paginated admin response: {success: true, data: {categories: [...], pagination: {...}}}
+      if (response && response.success && response.data) {
+        if (Array.isArray(response.data.categories)) {
+          return response.data.categories;
+        } else if (Array.isArray(response.data)) {
+          return response.data;
+        }
+      }
+
+      // Handle direct array response
       const result = Array.isArray(response) ? response : [];
-      
       return result;
     } catch (error) {
       console.error(`CategoryService.filter() error:`, error.message);
@@ -753,19 +761,30 @@ class CategoryService extends BaseEntity {
       if (hasToken) {
         try {
           // Try authenticated API first for admin users
+          console.log('CategoryService.findAll() - Using authenticated API:', url);
           response = await apiClient.get(url);
+          console.log('CategoryService.findAll() - Response structure:', {
+            hasSuccess: !!response?.success,
+            hasData: !!response?.data,
+            hasCategories: !!response?.data?.categories,
+            categoriesLength: response?.data?.categories?.length,
+            isArray: Array.isArray(response)
+          });
 
           // Handle paginated admin response: {success: true, data: {categories: [...], pagination: {...}}}
           if (response && response.success && response.data) {
             if (Array.isArray(response.data.categories)) {
+              console.log(`CategoryService.findAll() - Returning ${response.data.categories.length} categories from admin API`);
               return response.data.categories;
             } else if (Array.isArray(response.data)) {
+              console.log(`CategoryService.findAll() - Returning ${response.data.length} categories (data is array)`);
               return response.data;
             }
           }
 
           // Handle direct array response
           const result = Array.isArray(response) ? response : [];
+          console.log(`CategoryService.findAll() - Returning ${result.length} categories (direct array)`);
           return result;
         } catch (authError) {
           // If authenticated request fails (e.g., 401), fall back to public API
@@ -778,14 +797,16 @@ class CategoryService extends BaseEntity {
         }
       } else {
         // No token, use public API
+        console.log('CategoryService.findAll() - Using public API (no token):', url);
         response = await apiClient.publicRequest('GET', url);
       }
 
       // Ensure response is always an array
       const result = Array.isArray(response) ? response : [];
+      console.log(`CategoryService.findAll() - Returning ${result.length} categories from public API`);
       return result;
     } catch (error) {
-      console.error(`CategoryService.findAll() error:`, error.message);
+      console.error(`CategoryService.findAll() error:`, error.message, error);
       return [];
     }
   }
