@@ -1,5 +1,7 @@
 const express = require('express');
 const { Wishlist } = require('../models');
+const { getLanguageFromRequest } = require('../utils/languageUtils');
+const { applyProductTranslationsToMany } = require('../utils/productHelpers');
 
 const router = express.Router();
 
@@ -26,15 +28,28 @@ router.get('/', async (req, res) => {
       include: [
         {
           model: require('../models').Product,
-          attributes: ['id', 'translations', 'price', 'images', 'slug']
+          attributes: ['id', 'price', 'images', 'slug']
         }
       ],
       order: [['added_at', 'DESC']]
     });
 
+    // Get language and apply translations
+    const lang = getLanguageFromRequest(req);
+    const wishlistWithTranslations = await Promise.all(
+      wishlist.map(async (item) => {
+        const itemData = item.toJSON();
+        if (itemData.Product) {
+          const [productWithTranslation] = await applyProductTranslationsToMany([itemData.Product], lang);
+          itemData.Product = productWithTranslation;
+        }
+        return itemData;
+      })
+    );
+
     res.json({
       success: true,
-      data: wishlist
+      data: wishlistWithTranslations
     });
   } catch (error) {
     console.error('Get wishlist error:', error);
