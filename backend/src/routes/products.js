@@ -73,11 +73,10 @@ router.get('/', authMiddleware, authorize(['admin', 'store_owner']), async (req,
       where.id = id;
     }
     if (search) {
-      where[Op.or] = [
-        { name: { [Op.iLike]: `%${search}%` } },
-        { sku: { [Op.iLike]: `%${search}%` } },
-        { description: { [Op.iLike]: `%${search}%` } }
-      ];
+      // Note: Search limited to SKU only - Product model now uses translations JSON
+      // field instead of direct name/description columns
+      // TODO: Implement JSON-based search or add computed columns for search
+      where.sku = { [Op.iLike]: `%${search}%` };
     }
 
     console.log('🔎 Final WHERE clause for products query:', JSON.stringify(where, null, 2));
@@ -470,7 +469,7 @@ router.post('/bulk-translate', authMiddleware, authorize(['admin', 'store_owner'
         results.failed++;
         results.errors.push({
           productId: product.id,
-          productName: product.translations?.[fromLang]?.name || product.name,
+          productName: product.translations?.[fromLang]?.name || 'Unknown',
           error: error.message
         });
       }

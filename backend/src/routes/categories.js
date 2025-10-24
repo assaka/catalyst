@@ -36,11 +36,12 @@ router.get('/', authMiddleware, authorize(['admin', 'store_owner']), async (req,
 
     if (store_id) where.store_id = store_id;
     if (parent_id) where.parent_id = parent_id;
+
+    // Note: Search functionality removed temporarily - Category model now uses
+    // translations JSON field instead of direct name/description columns
+    // TODO: Implement JSON-based search or add computed columns for search
     if (search) {
-      where[Op.or] = [
-        { name: { [Op.iLike]: `%${search}%` } },
-        { description: { [Op.iLike]: `%${search}%` } }
-      ];
+      console.warn('Search parameter provided but search is not yet implemented for translations JSON field');
     }
 
     // Temporarily remove Store include to avoid association errors
@@ -48,7 +49,7 @@ router.get('/', authMiddleware, authorize(['admin', 'store_owner']), async (req,
       where,
       limit: parseInt(limit),
       offset: parseInt(offset),
-      order: [['sort_order', 'ASC'], ['name', 'ASC']]
+      order: [['sort_order', 'ASC'], ['created_at', 'DESC']]
     });
 
     res.json({
@@ -345,7 +346,7 @@ router.post('/bulk-translate', authMiddleware, authorize(['admin', 'store_owner'
     // Get all categories for this store
     const categories = await Category.findAll({
       where: { store_id },
-      order: [['sort_order', 'ASC'], ['name', 'ASC']]
+      order: [['sort_order', 'ASC'], ['created_at', 'DESC']]
     });
 
     if (categories.length === 0) {
@@ -392,7 +393,7 @@ router.post('/bulk-translate', authMiddleware, authorize(['admin', 'store_owner'
         results.failed++;
         results.errors.push({
           categoryId: category.id,
-          categoryName: category.translations?.[fromLang]?.name || category.name,
+          categoryName: category.translations?.[fromLang]?.name || 'Unknown',
           error: error.message
         });
       }
