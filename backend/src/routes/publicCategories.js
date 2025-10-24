@@ -22,18 +22,19 @@ router.get('/', async (req, res) => {
     if (store_id) where.store_id = store_id;
     if (parent_id !== undefined) where.parent_id = parent_id;
     
-    if (search) {
-      where[Op.or] = [
-        { name: { [Op.iLike]: `%${search}%` } },
-        { description: { [Op.iLike]: `%${search}%` } }
-      ];
-    }
+    // Note: Search is disabled for now as translations are in JSON format
+    // TODO: Implement JSON-based search using PostgreSQL JSONB operators
+    // if (search) {
+    //   where[Op.or] = [
+    //     // Search in translations JSON: translations->>'en'->'name' ILIKE '%search%'
+    //   ];
+    // }
 
     const { count, rows } = await Category.findAndCountAll({
       where,
       limit: parseInt(limit),
       offset: parseInt(offset),
-      order: [['name', 'ASC']] // Removed sort_order which might not exist
+      order: [['sort_order', 'ASC'], ['created_at', 'DESC']]
     });
 
     console.log('✅ Public Categories query result:', rows.length, 'categories found');

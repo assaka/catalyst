@@ -78,11 +78,12 @@ router.get('/', async (req, res) => {
       }
     }
     
+    // Note: Search on name/description is disabled for now as they are in JSON translations format
+    // TODO: Implement JSON-based search using PostgreSQL JSONB operators
     if (search) {
       where[Op.or] = [
-        { name: { [Op.iLike]: `%${search}%` } },
-        { description: { [Op.iLike]: `%${search}%` } },
         { sku: { [Op.iLike]: `%${search}%` } }
+        // Search in translations JSON would require: translations->>'en'->'name' ILIKE '%search%'
       ];
     }
 
