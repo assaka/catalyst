@@ -3,6 +3,14 @@ const { body, validationResult } = require('express-validator');
 const { CookieConsentSettings, Store } = require('../models');
 const { Op } = require('sequelize');
 const translationService = require('../services/translation-service');
+const { getLanguageFromRequest } = require('../utils/languageUtils');
+const {
+  getCookieConsentSettingsWithTranslations,
+  getCookieConsentSettingsById,
+  createCookieConsentSettingsWithTranslations,
+  updateCookieConsentSettingsWithTranslations,
+  deleteCookieConsentSettings
+} = require('../utils/cookieConsentHelpers');
 const router = express.Router();
 
 // Helper function to check store access (ownership or team membership)
@@ -54,14 +62,10 @@ router.get('/', async (req, res) => {
       }
     }
 
-    const settings = await CookieConsentSettings.findAll({
-      where,
-      include: [{
-        model: Store,
-        attributes: ['id', 'name'],
-        required: false  // Make this a LEFT JOIN - don't filter out results if Store is missing
-      }]
-    });
+    const lang = getLanguageFromRequest(req);
+    console.log('🌍 Cookie Consent: Requesting language:', lang);
+
+    const settings = await getCookieConsentSettingsWithTranslations(where, lang);
 
     console.log(`Found ${settings.length} cookie consent settings for query:`, where);
 
@@ -89,13 +93,9 @@ router.get('/', async (req, res) => {
 // @access  Private
 router.get('/:id', async (req, res) => {
   try {
-    const settings = await CookieConsentSettings.findByPk(req.params.id, {
-      include: [{
-        model: Store,
-        attributes: ['id', 'name', 'user_id']
-      }]
-    });
-    
+    const lang = getLanguageFromRequest(req);
+    const settings = await getCookieConsentSettingsById(req.params.id, lang);
+
     if (!settings) {
       return res.status(404).json({
         success: false,
@@ -103,11 +103,16 @@ router.get('/:id', async (req, res) => {
       });
     }
 
+    // Get store info for access check (still needed)
+    const storeInfo = await Store.findByPk(settings.store_id, {
+      attributes: ['id', 'name', 'user_id']
+    });
+
     // Check store access
     if (req.user.role !== 'admin') {
       const { checkUserStoreAccess } = require('../utils/storeAccess');
-      const access = await checkUserStoreAccess(req.user.id, settings.Store.id);
-      
+      const access = await checkUserStoreAccess(req.user.id, settings.store_id);
+
       if (!access) {
         return res.status(403).json({
           success: false,
@@ -155,6 +160,9 @@ router.post('/', [
       });
     }
 
+    // Extract translations from request body
+    const { translations, ...settingsData } = req.body;
+
     // UPSERT: Check if settings already exist for this store
     const existingSettings = await CookieConsentSettings.findOne({
       where: { store_id }
@@ -165,12 +173,15 @@ router.post('/', [
 
     if (existingSettings) {
       // Update existing settings
-      await existingSettings.update(req.body);
-      settings = existingSettings;
+      settings = await updateCookieConsentSettingsWithTranslations(
+        existingSettings.id,
+        settingsData,
+        translations || {}
+      );
       console.log(`Updated existing cookie consent settings for store ${store_id}, ID: ${settings.id}`);
     } else {
       // Create new settings
-      settings = await CookieConsentSettings.create(req.body);
+      settings = await createCookieConsentSettingsWithTranslations(settingsData, translations || {});
       isNew = true;
       console.log(`Created new cookie consent settings for store ${store_id}, ID: ${settings.id}`);
     }
@@ -201,14 +212,10 @@ router.post('/', [
 // @access  Private
 router.put('/:id', async (req, res) => {
   try {
-    const settings = await CookieConsentSettings.findByPk(req.params.id, {
-      include: [{
-        model: Store,
-        attributes: ['id', 'name', 'user_id']
-      }]
-    });
-    
-    if (!settings) {
+    // First check if settings exist
+    const existingSettings = await CookieConsentSettings.findByPk(req.params.id);
+
+    if (!existingSettings) {
       return res.status(404).json({
         success: false,
         message: 'Cookie consent settings not found'
@@ -218,8 +225,8 @@ router.put('/:id', async (req, res) => {
     // Check store access
     if (req.user.role !== 'admin') {
       const { checkUserStoreAccess } = require('../utils/storeAccess');
-      const access = await checkUserStoreAccess(req.user.id, settings.Store.id);
-      
+      const access = await checkUserStoreAccess(req.user.id, existingSettings.store_id);
+
       if (!access) {
         return res.status(403).json({
           success: false,
@@ -228,7 +235,15 @@ router.put('/:id', async (req, res) => {
       }
     }
 
-    await settings.update(req.body);
+    // Extract translations from request body
+    const { translations, ...settingsData } = req.body;
+
+    // Update using helper
+    const settings = await updateCookieConsentSettingsWithTranslations(
+      req.params.id,
+      settingsData,
+      translations || {}
+    );
 
     res.json({
       success: true,
@@ -249,13 +264,8 @@ router.put('/:id', async (req, res) => {
 // @access  Private
 router.delete('/:id', async (req, res) => {
   try {
-    const settings = await CookieConsentSettings.findByPk(req.params.id, {
-      include: [{
-        model: Store,
-        attributes: ['id', 'name', 'user_id']
-      }]
-    });
-    
+    const settings = await CookieConsentSettings.findByPk(req.params.id);
+
     if (!settings) {
       return res.status(404).json({
         success: false,
@@ -266,8 +276,8 @@ router.delete('/:id', async (req, res) => {
     // Check store access
     if (req.user.role !== 'admin') {
       const { checkUserStoreAccess } = require('../utils/storeAccess');
-      const access = await checkUserStoreAccess(req.user.id, settings.Store.id);
-      
+      const access = await checkUserStoreAccess(req.user.id, settings.store_id);
+
       if (!access) {
         return res.status(403).json({
           success: false,
@@ -276,7 +286,7 @@ router.delete('/:id', async (req, res) => {
       }
     }
 
-    await settings.destroy();
+    await deleteCookieConsentSettings(req.params.id);
 
     res.json({
       success: true,

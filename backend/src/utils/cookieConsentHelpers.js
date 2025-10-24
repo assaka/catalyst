@@ -1,0 +1,400 @@
+/**
+ * Cookie Consent Settings Helpers for Normalized Translations
+ *
+ * These helpers construct the same format that the frontend expects
+ * from normalized translation tables.
+ */
+
+const { sequelize } = require('../database/connection');
+
+/**
+ * Get cookie consent settings with translations from normalized tables
+ *
+ * @param {Object} where - WHERE clause conditions
+ * @param {string} lang - Language code (default: 'en')
+ * @returns {Promise<Array>} Cookie consent settings with translated fields
+ */
+async function getCookieConsentSettingsWithTranslations(where = {}, lang = 'en') {
+  const whereConditions = Object.entries(where)
+    .map(([key, value]) => {
+      if (value === true || value === false) {
+        return `ccs.${key} = ${value}`;
+      }
+      return `ccs.${key} = '${value}'`;
+    })
+    .join(' AND ');
+
+  const whereClause = whereConditions ? `WHERE ${whereConditions}` : '';
+
+  const query = `
+    SELECT
+      ccs.id,
+      ccs.store_id,
+      ccs.is_enabled,
+      ccs.banner_position,
+      ccs.privacy_policy_url,
+      ccs.necessary_cookies,
+      ccs.analytics_cookies,
+      ccs.marketing_cookies,
+      ccs.functional_cookies,
+      ccs.theme,
+      ccs.primary_color,
+      ccs.background_color,
+      ccs.text_color,
+      ccs.gdpr_mode,
+      ccs.auto_detect_country,
+      ccs.audit_enabled,
+      ccs.consent_expiry_days,
+      ccs.show_close_button,
+      ccs.categories,
+      ccs.gdpr_countries,
+      ccs.google_analytics_id,
+      ccs.google_tag_manager_id,
+      ccs.custom_css,
+      ccs.created_at,
+      ccs.updated_at,
+      COALESCE(ccst.banner_text, ccs.banner_text) as banner_text,
+      COALESCE(ccst.accept_button_text, ccs.accept_button_text) as accept_button_text,
+      COALESCE(ccst.reject_button_text, ccs.reject_button_text) as reject_button_text,
+      COALESCE(ccst.settings_button_text, ccs.settings_button_text) as settings_button_text,
+      COALESCE(ccst.privacy_policy_text, ccs.privacy_policy_text) as privacy_policy_text
+    FROM cookie_consent_settings ccs
+    LEFT JOIN cookie_consent_settings_translations ccst
+      ON ccs.id = ccst.cookie_consent_settings_id AND ccst.language_code = :lang
+    ${whereClause}
+    ORDER BY ccs.created_at DESC
+  `;
+
+  console.log('🔍 SQL Query for cookie consent:', query.replace(/\s+/g, ' '));
+  console.log('🔍 Language parameter:', lang);
+
+  const results = await sequelize.query(query, {
+    replacements: { lang },
+    type: sequelize.QueryTypes.SELECT
+  });
+
+  console.log('✅ Query returned', results.length, 'cookie consent settings');
+  if (results.length > 0) {
+    console.log('📝 Sample settings:', JSON.stringify({
+      id: results[0].id,
+      banner_text: results[0].banner_text?.substring(0, 50) + '...',
+      accept_button_text: results[0].accept_button_text,
+      reject_button_text: results[0].reject_button_text
+    }, null, 2));
+  }
+
+  return results;
+}
+
+/**
+ * Get single cookie consent settings with translations
+ *
+ * @param {string} id - Cookie consent settings ID
+ * @param {string} lang - Language code (default: 'en')
+ * @returns {Promise<Object|null>} Cookie consent settings with translated fields
+ */
+async function getCookieConsentSettingsById(id, lang = 'en') {
+  const query = `
+    SELECT
+      ccs.id,
+      ccs.store_id,
+      ccs.is_enabled,
+      ccs.banner_position,
+      ccs.privacy_policy_url,
+      ccs.necessary_cookies,
+      ccs.analytics_cookies,
+      ccs.marketing_cookies,
+      ccs.functional_cookies,
+      ccs.theme,
+      ccs.primary_color,
+      ccs.background_color,
+      ccs.text_color,
+      ccs.gdpr_mode,
+      ccs.auto_detect_country,
+      ccs.audit_enabled,
+      ccs.consent_expiry_days,
+      ccs.show_close_button,
+      ccs.categories,
+      ccs.gdpr_countries,
+      ccs.google_analytics_id,
+      ccs.google_tag_manager_id,
+      ccs.custom_css,
+      ccs.created_at,
+      ccs.updated_at,
+      COALESCE(ccst.banner_text, ccs.banner_text) as banner_text,
+      COALESCE(ccst.accept_button_text, ccs.accept_button_text) as accept_button_text,
+      COALESCE(ccst.reject_button_text, ccs.reject_button_text) as reject_button_text,
+      COALESCE(ccst.settings_button_text, ccs.settings_button_text) as settings_button_text,
+      COALESCE(ccst.privacy_policy_text, ccs.privacy_policy_text) as privacy_policy_text
+    FROM cookie_consent_settings ccs
+    LEFT JOIN cookie_consent_settings_translations ccst
+      ON ccs.id = ccst.cookie_consent_settings_id AND ccst.language_code = :lang
+    WHERE ccs.id = :id
+  `;
+
+  const results = await sequelize.query(query, {
+    replacements: { id, lang },
+    type: sequelize.QueryTypes.SELECT
+  });
+
+  return results[0] || null;
+}
+
+/**
+ * Create cookie consent settings with translations
+ *
+ * @param {Object} settingsData - Cookie consent settings data (without translations)
+ * @param {Object} translations - Translations object { en: {...}, nl: {...} }
+ * @returns {Promise<Object>} Created cookie consent settings with translations
+ */
+async function createCookieConsentSettingsWithTranslations(settingsData, translations = {}) {
+  const transaction = await sequelize.transaction();
+
+  try {
+    // Insert cookie consent settings
+    const [settings] = await sequelize.query(`
+      INSERT INTO cookie_consent_settings (
+        id, store_id, is_enabled, banner_position, banner_text, privacy_policy_url,
+        accept_button_text, reject_button_text, settings_button_text,
+        necessary_cookies, analytics_cookies, marketing_cookies, functional_cookies,
+        theme, primary_color, background_color, text_color,
+        gdpr_mode, auto_detect_country, audit_enabled, consent_expiry_days,
+        show_close_button, privacy_policy_text, categories, gdpr_countries,
+        google_analytics_id, google_tag_manager_id, custom_css,
+        created_at, updated_at
+      ) VALUES (
+        gen_random_uuid(),
+        :store_id, :is_enabled, :banner_position, :banner_text, :privacy_policy_url,
+        :accept_button_text, :reject_button_text, :settings_button_text,
+        :necessary_cookies, :analytics_cookies, :marketing_cookies, :functional_cookies,
+        :theme, :primary_color, :background_color, :text_color,
+        :gdpr_mode, :auto_detect_country, :audit_enabled, :consent_expiry_days,
+        :show_close_button, :privacy_policy_text, :categories, :gdpr_countries,
+        :google_analytics_id, :google_tag_manager_id, :custom_css,
+        NOW(), NOW()
+      )
+      RETURNING *
+    `, {
+      replacements: {
+        store_id: settingsData.store_id,
+        is_enabled: settingsData.is_enabled !== false,
+        banner_position: settingsData.banner_position || 'bottom',
+        banner_text: settingsData.banner_text || '',
+        privacy_policy_url: settingsData.privacy_policy_url || '',
+        accept_button_text: settingsData.accept_button_text || 'Accept All',
+        reject_button_text: settingsData.reject_button_text || 'Reject All',
+        settings_button_text: settingsData.settings_button_text || 'Cookie Settings',
+        necessary_cookies: settingsData.necessary_cookies !== false,
+        analytics_cookies: settingsData.analytics_cookies || false,
+        marketing_cookies: settingsData.marketing_cookies || false,
+        functional_cookies: settingsData.functional_cookies || false,
+        theme: settingsData.theme || 'light',
+        primary_color: settingsData.primary_color || '#007bff',
+        background_color: settingsData.background_color || '#ffffff',
+        text_color: settingsData.text_color || '#333333',
+        gdpr_mode: settingsData.gdpr_mode !== false,
+        auto_detect_country: settingsData.auto_detect_country !== false,
+        audit_enabled: settingsData.audit_enabled !== false,
+        consent_expiry_days: settingsData.consent_expiry_days || 365,
+        show_close_button: settingsData.show_close_button !== false,
+        privacy_policy_text: settingsData.privacy_policy_text || 'Privacy Policy',
+        categories: JSON.stringify(settingsData.categories || {}),
+        gdpr_countries: JSON.stringify(settingsData.gdpr_countries || []),
+        google_analytics_id: settingsData.google_analytics_id || null,
+        google_tag_manager_id: settingsData.google_tag_manager_id || null,
+        custom_css: settingsData.custom_css || null
+      },
+      type: sequelize.QueryTypes.SELECT,
+      transaction
+    });
+
+    // Insert translations
+    for (const [langCode, data] of Object.entries(translations)) {
+      if (data && Object.keys(data).length > 0) {
+        await sequelize.query(`
+          INSERT INTO cookie_consent_settings_translations (
+            id, cookie_consent_settings_id, language_code, banner_text,
+            accept_button_text, reject_button_text, settings_button_text,
+            privacy_policy_text, created_at, updated_at
+          ) VALUES (
+            gen_random_uuid(), :settings_id, :lang_code, :banner_text,
+            :accept_button_text, :reject_button_text, :settings_button_text,
+            :privacy_policy_text, NOW(), NOW()
+          )
+          ON CONFLICT (cookie_consent_settings_id, language_code) DO UPDATE
+          SET
+            banner_text = EXCLUDED.banner_text,
+            accept_button_text = EXCLUDED.accept_button_text,
+            reject_button_text = EXCLUDED.reject_button_text,
+            settings_button_text = EXCLUDED.settings_button_text,
+            privacy_policy_text = EXCLUDED.privacy_policy_text,
+            updated_at = NOW()
+        `, {
+          replacements: {
+            settings_id: settings.id,
+            lang_code: langCode,
+            banner_text: data.banner_text || null,
+            accept_button_text: data.accept_button_text || null,
+            reject_button_text: data.reject_button_text || null,
+            settings_button_text: data.settings_button_text || null,
+            privacy_policy_text: data.privacy_policy_text || null
+          },
+          transaction
+        });
+      }
+    }
+
+    await transaction.commit();
+
+    // Return the created settings with translations
+    return await getCookieConsentSettingsById(settings.id);
+  } catch (error) {
+    await transaction.rollback();
+    throw error;
+  }
+}
+
+/**
+ * Update cookie consent settings with translations
+ *
+ * @param {string} id - Cookie consent settings ID
+ * @param {Object} settingsData - Cookie consent settings data (without translations)
+ * @param {Object} translations - Translations object { en: {...}, nl: {...} }
+ * @returns {Promise<Object>} Updated cookie consent settings with translations
+ */
+async function updateCookieConsentSettingsWithTranslations(id, settingsData, translations = {}) {
+  const transaction = await sequelize.transaction();
+
+  try {
+    // Build update fields
+    const updateFields = [];
+    const replacements = { id };
+
+    // Add all possible fields
+    const fieldMappings = {
+      is_enabled: 'is_enabled',
+      banner_position: 'banner_position',
+      banner_text: 'banner_text',
+      privacy_policy_url: 'privacy_policy_url',
+      accept_button_text: 'accept_button_text',
+      reject_button_text: 'reject_button_text',
+      settings_button_text: 'settings_button_text',
+      necessary_cookies: 'necessary_cookies',
+      analytics_cookies: 'analytics_cookies',
+      marketing_cookies: 'marketing_cookies',
+      functional_cookies: 'functional_cookies',
+      theme: 'theme',
+      primary_color: 'primary_color',
+      background_color: 'background_color',
+      text_color: 'text_color',
+      gdpr_mode: 'gdpr_mode',
+      auto_detect_country: 'auto_detect_country',
+      audit_enabled: 'audit_enabled',
+      consent_expiry_days: 'consent_expiry_days',
+      show_close_button: 'show_close_button',
+      privacy_policy_text: 'privacy_policy_text',
+      google_analytics_id: 'google_analytics_id',
+      google_tag_manager_id: 'google_tag_manager_id',
+      custom_css: 'custom_css'
+    };
+
+    Object.entries(fieldMappings).forEach(([key, field]) => {
+      if (settingsData[key] !== undefined) {
+        updateFields.push(`${field} = :${key}`);
+        replacements[key] = settingsData[key];
+      }
+    });
+
+    // Handle JSON fields separately
+    if (settingsData.categories !== undefined) {
+      updateFields.push('categories = :categories');
+      replacements.categories = JSON.stringify(settingsData.categories);
+    }
+    if (settingsData.gdpr_countries !== undefined) {
+      updateFields.push('gdpr_countries = :gdpr_countries');
+      replacements.gdpr_countries = JSON.stringify(settingsData.gdpr_countries);
+    }
+
+    if (updateFields.length > 0) {
+      updateFields.push('updated_at = NOW()');
+
+      await sequelize.query(`
+        UPDATE cookie_consent_settings
+        SET ${updateFields.join(', ')}
+        WHERE id = :id
+      `, {
+        replacements,
+        transaction
+      });
+    }
+
+    // Update translations
+    for (const [langCode, data] of Object.entries(translations)) {
+      if (data && Object.keys(data).length > 0) {
+        await sequelize.query(`
+          INSERT INTO cookie_consent_settings_translations (
+            id, cookie_consent_settings_id, language_code, banner_text,
+            accept_button_text, reject_button_text, settings_button_text,
+            privacy_policy_text, created_at, updated_at
+          ) VALUES (
+            gen_random_uuid(), :settings_id, :lang_code, :banner_text,
+            :accept_button_text, :reject_button_text, :settings_button_text,
+            :privacy_policy_text, NOW(), NOW()
+          )
+          ON CONFLICT (cookie_consent_settings_id, language_code) DO UPDATE
+          SET
+            banner_text = COALESCE(EXCLUDED.banner_text, cookie_consent_settings_translations.banner_text),
+            accept_button_text = COALESCE(EXCLUDED.accept_button_text, cookie_consent_settings_translations.accept_button_text),
+            reject_button_text = COALESCE(EXCLUDED.reject_button_text, cookie_consent_settings_translations.reject_button_text),
+            settings_button_text = COALESCE(EXCLUDED.settings_button_text, cookie_consent_settings_translations.settings_button_text),
+            privacy_policy_text = COALESCE(EXCLUDED.privacy_policy_text, cookie_consent_settings_translations.privacy_policy_text),
+            updated_at = NOW()
+        `, {
+          replacements: {
+            settings_id: id,
+            lang_code: langCode,
+            banner_text: data.banner_text,
+            accept_button_text: data.accept_button_text,
+            reject_button_text: data.reject_button_text,
+            settings_button_text: data.settings_button_text,
+            privacy_policy_text: data.privacy_policy_text
+          },
+          transaction
+        });
+      }
+    }
+
+    await transaction.commit();
+
+    // Return the updated settings with translations
+    return await getCookieConsentSettingsById(id);
+  } catch (error) {
+    await transaction.rollback();
+    throw error;
+  }
+}
+
+/**
+ * Delete cookie consent settings (translations are CASCADE deleted)
+ *
+ * @param {string} id - Cookie consent settings ID
+ * @returns {Promise<boolean>} Success status
+ */
+async function deleteCookieConsentSettings(id) {
+  await sequelize.query(`
+    DELETE FROM cookie_consent_settings WHERE id = :id
+  `, {
+    replacements: { id },
+    type: sequelize.QueryTypes.DELETE
+  });
+
+  return true;
+}
+
+module.exports = {
+  getCookieConsentSettingsWithTranslations,
+  getCookieConsentSettingsById,
+  createCookieConsentSettingsWithTranslations,
+  updateCookieConsentSettingsWithTranslations,
+  deleteCookieConsentSettings
+};
