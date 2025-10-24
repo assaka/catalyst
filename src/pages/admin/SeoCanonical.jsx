@@ -212,7 +212,9 @@ export default function SeoCanonical() {
       setSaveSuccess(true);
       setFlashMessage({ type: 'success', message: 'Canonical settings saved successfully' });
       toast.success('Canonical settings saved successfully');
-      setTimeout(() => setSaveSuccess(false), 2000);
+
+      // Keep success state visible
+      setTimeout(() => setSaveSuccess(false), 3000);
     } catch (error) {
       console.error('❌ Error saving canonical settings:', error);
       console.error('Error details:', {
