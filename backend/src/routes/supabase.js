@@ -224,47 +224,29 @@ router.get('/callback', async (req, res) => {
           ${isLimitedScope ? '<p class="email" style="color: #f59e0b;">⚠️ Limited permissions - some features may not work</p>' : ''}
         </div>
         <script>
-          // Notify parent window of success
+          // Notify parent window of success immediately
           if (window.opener) {
-            window.opener.postMessage({ 
+            window.opener.postMessage({
               type: 'supabase-oauth-success',
               project: '${projectUrl}',
               userEmail: '${userEmail}'
             }, '${process.env.FRONTEND_URL || 'http://localhost:3000'}');
-          }
-          
-          // Try to close window after 2 seconds
-          setTimeout(() => {
-            try {
-              // Try window.close() first
+
+            // Parent will close this window, but try to close anyway after a short delay
+            setTimeout(() => {
               window.close();
-              
-              // If still open after 100ms, try alternative methods
-              setTimeout(() => {
-                // For some browsers, we need to use self.close()
-                self.close();
-                
-                // If still not closed, show a message
-                setTimeout(() => {
-                  document.querySelector('.container').innerHTML = 
-                    '<div class="success">✓</div>' +
-                    '<h1>All Done!</h1>' +
-                    '<p>You can now close this window and return to the dashboard.</p>' +
-                    '<button onclick="window.close(); self.close();" style="' +
-                    'background: #10b981; color: white; border: none; ' +
-                    'padding: 10px 20px; border-radius: 6px; cursor: pointer; ' +
-                    'font-size: 16px; margin-top: 10px;">Close Window</button>';
-                }, 100);
-              }, 100);
-            } catch (e) {
-              console.error('Cannot close window:', e);
-              // Show manual close message
-              document.querySelector('.container').innerHTML = 
-                '<div class="success">✓</div>' +
-                '<h1>All Done!</h1>' +
-                '<p>You can now close this window and return to the dashboard.</p>';
-            }
-          }, 2000);
+            }, 500);
+          } else {
+            // No opener, show manual close button immediately
+            document.querySelector('.container').innerHTML =
+              '<div class="success">✓</div>' +
+              '<h1>Connection Successful!</h1>' +
+              '<p>Please close this window and return to the dashboard.</p>' +
+              '<button onclick="window.close();" style="' +
+              'background: #10b981; color: white; border: none; ' +
+              'padding: 10px 20px; border-radius: 6px; cursor: pointer; ' +
+              'font-size: 16px; margin-top: 10px;">Close Window</button>';
+          }
         </script>
       </body>
       </html>
@@ -332,35 +314,28 @@ router.get('/callback', async (req, res) => {
           <div class="error-details">${error.message}</div>
         </div>
         <script>
-          // Notify parent window of error
+          // Notify parent window of error immediately
           if (window.opener) {
-            window.opener.postMessage({ 
+            window.opener.postMessage({
               type: 'supabase-oauth-error',
               error: '${error.message.replace(/'/g, "\\'")}'
             }, '${process.env.FRONTEND_URL || 'http://localhost:3000'}');
-          }
-          
-          // Try to close window after 3 seconds
-          setTimeout(() => {
-            try {
+
+            // Parent will close this window, but try to close anyway after a short delay
+            setTimeout(() => {
               window.close();
-              self.close();
-              
-              // If still not closed, show manual close option
-              setTimeout(() => {
-                document.querySelector('.container').innerHTML = 
-                  '<div class="error">✗</div>' +
-                  '<h1>Connection Failed</h1>' +
-                  '<p>You can close this window and try again.</p>' +
-                  '<button onclick="window.close(); self.close();" style="' +
-                  'background: #ef4444; color: white; border: none; ' +
-                  'padding: 10px 20px; border-radius: 6px; cursor: pointer; ' +
-                  'font-size: 16px; margin-top: 10px;">Close Window</button>';
-              }, 200);
-            } catch (e) {
-              console.error('Cannot close window:', e);
-            }
-          }, 3000);
+            }, 500);
+          } else {
+            // No opener, show manual close button immediately
+            document.querySelector('.container').innerHTML =
+              '<div class="error">✗</div>' +
+              '<h1>Connection Failed</h1>' +
+              '<p>You can close this window and try again.</p>' +
+              '<button onclick="window.close();" style="' +
+              'background: #ef4444; color: white; border: none; ' +
+              'padding: 10px 20px; border-radius: 6px; cursor: pointer; ' +
+              'font-size: 16px; margin-top: 10px;">Close Window</button>';
+          }
         </script>
       </body>
       </html>

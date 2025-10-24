@@ -234,16 +234,29 @@ const SupabaseIntegration = ({ storeId, context = 'full' }) => {
           if (event.data.type === 'supabase-oauth-success') {
             console.log('Supabase OAuth success:', event.data);
             window.removeEventListener('message', messageHandler);
+            clearInterval(checkClosed);
             setConnecting(false);
+
+            // Close the popup window
+            if (authWindow && !authWindow.closed) {
+              authWindow.close();
+            }
+
             toast.success('Successfully connected to Supabase!');
+
             // Reload status to show connection
-            setTimeout(() => {
-              loadStatus();
-            }, 500);
+            loadStatus();
           } else if (event.data.type === 'supabase-oauth-error') {
             console.error('Supabase OAuth error:', event.data.error);
             window.removeEventListener('message', messageHandler);
+            clearInterval(checkClosed);
             setConnecting(false);
+
+            // Close the popup window
+            if (authWindow && !authWindow.closed) {
+              authWindow.close();
+            }
+
             toast.error(event.data.error || 'Failed to connect to Supabase');
           }
         };
