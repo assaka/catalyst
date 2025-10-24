@@ -13,6 +13,7 @@ import { useStoreSelection } from "@/contexts/StoreSelectionContext.jsx";
 import adminApiClient from "@/api/admin-client";
 import { toast } from "sonner";
 import { SeoSetting } from '@/api/entities';
+import FlashMessage from '@/components/storefront/FlashMessage';
 
 export default function SeoCanonical() {
   const { getSelectedStoreId } = useStoreSelection();
@@ -24,6 +25,7 @@ export default function SeoCanonical() {
   const [canonicalUrl, setCanonicalUrl] = useState('');
   const [editingId, setEditingId] = useState(null);
   const [seoSettingId, setSeoSettingId] = useState(null);
+  const [flashMessage, setFlashMessage] = useState(null);
 
   // Canonical settings state
   const [canonicalSettings, setCanonicalSettings] = useState({
@@ -168,8 +170,15 @@ export default function SeoCanonical() {
     const storeId = getSelectedStoreId();
     if (!storeId) {
       toast.error('No store selected');
+      setFlashMessage({ type: 'error', message: 'No store selected' });
       return;
     }
+
+    console.log('💾 Saving canonical settings:', {
+      storeId,
+      seoSettingId,
+      canonicalSettings
+    });
 
     setSaving(true);
     setSaveSuccess(false);
@@ -180,18 +189,31 @@ export default function SeoCanonical() {
         canonical_settings: canonicalSettings
       };
 
+      console.log('📤 Payload to save:', payload);
+
       if (seoSettingId) {
-        await SeoSetting.update(seoSettingId, payload);
+        console.log('🔄 Updating existing SEO setting:', seoSettingId);
+        const result = await SeoSetting.update(seoSettingId, payload);
+        console.log('✅ Update result:', result);
       } else {
+        console.log('➕ Creating new SEO setting');
         const created = await SeoSetting.create(payload);
-        setSeoSettingId(created.id);
+        console.log('✅ Create result:', created);
+        setSeoSettingId(created.id || (Array.isArray(created) && created[0]?.id));
       }
 
       setSaveSuccess(true);
+      setFlashMessage({ type: 'success', message: 'Canonical settings saved successfully' });
       toast.success('Canonical settings saved successfully');
       setTimeout(() => setSaveSuccess(false), 2000);
     } catch (error) {
-      console.error('Error saving canonical settings:', error);
+      console.error('❌ Error saving canonical settings:', error);
+      console.error('Error details:', {
+        message: error.message,
+        response: error.response,
+        stack: error.stack
+      });
+      setFlashMessage({ type: 'error', message: 'Failed to save canonical settings: ' + error.message });
       toast.error('Failed to save canonical settings');
     } finally {
       setSaving(false);
@@ -199,6 +221,8 @@ export default function SeoCanonical() {
   };
   return (
     <div className="container mx-auto p-6 space-y-6">
+      <FlashMessage message={flashMessage} onClose={() => setFlashMessage(null)} />
+
       <div className="flex items-center gap-2 mb-6">
         <Link2 className="h-6 w-6" />
         <h1 className="text-3xl font-bold">Canonical URLs</h1>
