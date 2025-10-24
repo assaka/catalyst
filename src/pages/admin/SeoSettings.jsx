@@ -222,6 +222,34 @@ export default function SeoSettings() {
             </p>
           </div>
 
+          <div className="mt-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+            <h4 className="font-semibold text-sm mb-3 flex items-center gap-2">
+              <span className="text-blue-600">ℹ️</span>
+              Available Template Variables
+            </h4>
+            <p className="text-sm text-muted-foreground mb-3">
+              You can use these variables in your titles and descriptions. They will be automatically replaced with actual values:
+            </p>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-sm">
+              <div><code className="bg-white px-2 py-1 rounded">{'{{store_name}}'}</code> - Your store name</div>
+              <div><code className="bg-white px-2 py-1 rounded">{'{{site_name}}'}</code> - Same as store name</div>
+              <div><code className="bg-white px-2 py-1 rounded">{'{{page_title}}'}</code> - Current page title</div>
+              <div><code className="bg-white px-2 py-1 rounded">{'{{separator}}'}</code> - Title separator character</div>
+              <div><code className="bg-white px-2 py-1 rounded">{'{{product_name}}'}</code> - Product name (on product pages)</div>
+              <div><code className="bg-white px-2 py-1 rounded">{'{{category_name}}'}</code> - Category name (on category pages)</div>
+              <div><code className="bg-white px-2 py-1 rounded">{'{{product_description}}'}</code> - Product description</div>
+              <div><code className="bg-white px-2 py-1 rounded">{'{{category_description}}'}</code> - Category description</div>
+              <div><code className="bg-white px-2 py-1 rounded">{'{{store_description}}'}</code> - Your store description</div>
+              <div><code className="bg-white px-2 py-1 rounded">{'{{base_url}}'}</code> - Your website URL</div>
+              <div><code className="bg-white px-2 py-1 rounded">{'{{current_url}}'}</code> - Current page URL</div>
+              <div><code className="bg-white px-2 py-1 rounded">{'{{year}}'}</code> - Current year</div>
+              <div><code className="bg-white px-2 py-1 rounded">{'{{currency}}'}</code> - Store currency</div>
+            </div>
+            <p className="text-sm text-muted-foreground mt-3">
+              <strong>Example:</strong> <code className="bg-white px-2 py-1 rounded">{'{{page_title}} {{separator}} {{store_name}}'}</code> becomes "Product Name | My Store"
+            </p>
+          </div>
+
           <div className="flex items-center justify-between p-4 bg-slate-50 rounded-lg">
             <div className="space-y-0.5">
               <Label htmlFor="auto-generate" className="text-base font-semibold">Auto-generate meta tags</Label>

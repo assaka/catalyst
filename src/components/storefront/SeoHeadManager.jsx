@@ -145,7 +145,7 @@ export default function SeoHeadManager({ pageType, pageData, pageTitle, pageDesc
         const defaultMetaSettings = seoSettings?.default_meta_settings || {};
         const seoDefaultTitle = defaultMetaSettings.meta_title || '';
         const seoDefaultDescription = defaultMetaSettings.meta_description || '';
-        const seoDefaultKeywords = defaultMetaSettings.meta_keywords || '';
+        const seoDefaultKeywords = seoSettings?.meta_keywords || defaultMetaSettings.meta_keywords || '';
 
         // Apply templates to get processed defaults
         const processedDefaultTitle = applyTemplate(seoDefaultTitle, pageData);
@@ -321,7 +321,9 @@ export default function SeoHeadManager({ pageType, pageData, pageTitle, pageDesc
             }
             
 
-            robotsTag = shouldDisallow ? 'noindex, nofollow' : (defaultMetaSettings.meta_robots || 'index, follow');
+            // Use global default meta_robots from settings
+            const globalMetaRobots = seoSettings?.meta_robots || defaultMetaSettings.meta_robots || 'index, follow';
+            robotsTag = shouldDisallow ? 'noindex, nofollow' : globalMetaRobots;
         }
 
         // Extract image URL - handle both string URLs and image objects
