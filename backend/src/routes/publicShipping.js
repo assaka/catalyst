@@ -1,6 +1,5 @@
 const express = require('express');
-const { ShippingMethod, Store } = require('../models');
-const { Op } = require('sequelize');
+const { getShippingMethodsWithTranslations } = require('../utils/shippingMethodHelpers');
 const router = express.Router();
 
 // @route   GET /api/public/shipping
@@ -22,22 +21,7 @@ router.get('/', async (req, res) => {
       is_active: true  // Only show active shipping methods
     };
 
-    const shippingMethods = await ShippingMethod.findAll({
-      where,
-      order: [['sort_order', 'ASC'], ['name', 'ASC']],
-      attributes: [
-        'id',
-        'name',
-        'type',
-        'flat_rate_cost',
-        'free_shipping_min_order',
-        'availability',
-        'countries',
-        'description',
-        'sort_order',
-        'translations'
-      ]
-    });
+    const shippingMethods = await getShippingMethodsWithTranslations(where);
     
     // Filter by country if provided
     let filteredMethods = shippingMethods;

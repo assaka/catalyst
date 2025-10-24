@@ -1,6 +1,14 @@
 const express = require('express');
-const { ShippingMethod, Store } = require('../models');
+const { Store } = require('../models');
 const { Op } = require('sequelize');
+const {
+  getShippingMethodsWithTranslations,
+  getShippingMethodsCount,
+  getShippingMethodById,
+  createShippingMethodWithTranslations,
+  updateShippingMethodWithTranslations,
+  deleteShippingMethod
+} = require('../utils/shippingMethodHelpers');
 const router = express.Router();
 
 // Basic CRUD operations for shipping methods
@@ -14,18 +22,18 @@ router.get('/', async (req, res) => {
       const { getUserStoresForDropdown } = require('../utils/storeAccess');
       const accessibleStores = await getUserStoresForDropdown(req.user.id);
       const storeIds = accessibleStores.map(store => store.id);
-      where.store_id = { [Op.in]: storeIds };
+      where.store_id = storeIds; // Helper handles array conversion
     }
 
     if (store_id) where.store_id = store_id;
 
-    const { count, rows } = await ShippingMethod.findAndCountAll({
-      where,
-      limit: parseInt(limit),
-      offset: parseInt(offset),
-      order: [['sort_order', 'ASC'], ['name', 'ASC']],
-      include: [{ model: Store, attributes: ['id', 'name'] }]
-    });
+    const [rows, count] = await Promise.all([
+      getShippingMethodsWithTranslations(where, {
+        limit: parseInt(limit),
+        offset: parseInt(offset)
+      }),
+      getShippingMethodsCount(where)
+    ]);
 
     res.json({ success: true, data: { shipping_methods: rows, pagination: { current_page: parseInt(page), per_page: parseInt(limit), total: count, total_pages: Math.ceil(count / limit) } } });
   } catch (error) {
@@ -35,16 +43,14 @@ router.get('/', async (req, res) => {
 
 router.get('/:id', async (req, res) => {
   try {
-    const shippingMethod = await ShippingMethod.findByPk(req.params.id, {
-      include: [{ model: Store, attributes: ['id', 'name', 'user_id'] }]
-    });
-    
+    const shippingMethod = await getShippingMethodById(req.params.id);
+
     if (!shippingMethod) return res.status(404).json({ success: false, message: 'Shipping method not found' });
-    
+
     if (req.user.role !== 'admin') {
       const { checkUserStoreAccess } = require('../utils/storeAccess');
-      const access = await checkUserStoreAccess(req.user.id, shippingMethod.Store.id);
-      
+      const access = await checkUserStoreAccess(req.user.id, shippingMethod.store_id);
+
       if (!access) {
         return res.status(403).json({ success: false, message: 'Access denied' });
       }
@@ -60,19 +66,22 @@ router.post('/', async (req, res) => {
   try {
     const { store_id } = req.body;
     const store = await Store.findByPk(store_id);
-    
+
     if (!store) return res.status(404).json({ success: false, message: 'Store not found' });
-    
+
     if (req.user.role !== 'admin') {
       const { checkUserStoreAccess } = require('../utils/storeAccess');
       const access = await checkUserStoreAccess(req.user.id, store.id);
-      
+
       if (!access) {
         return res.status(403).json({ success: false, message: 'Access denied' });
       }
     }
 
-    const shippingMethod = await ShippingMethod.create(req.body);
+    // Extract translations from request body
+    const { translations, ...methodData } = req.body;
+
+    const shippingMethod = await createShippingMethodWithTranslations(methodData, translations || {});
     res.status(201).json({ success: true, message: 'Shipping method created successfully', data: shippingMethod });
   } catch (error) {
     res.status(500).json({ success: false, message: 'Server error' });
@@ -81,22 +90,23 @@ router.post('/', async (req, res) => {
 
 router.put('/:id', async (req, res) => {
   try {
-    const shippingMethod = await ShippingMethod.findByPk(req.params.id, {
-      include: [{ model: Store, attributes: ['id', 'name', 'user_id'] }]
-    });
-    
-    if (!shippingMethod) return res.status(404).json({ success: false, message: 'Shipping method not found' });
-    
+    const existingMethod = await getShippingMethodById(req.params.id);
+
+    if (!existingMethod) return res.status(404).json({ success: false, message: 'Shipping method not found' });
+
     if (req.user.role !== 'admin') {
       const { checkUserStoreAccess } = require('../utils/storeAccess');
-      const access = await checkUserStoreAccess(req.user.id, shippingMethod.Store.id);
-      
+      const access = await checkUserStoreAccess(req.user.id, existingMethod.store_id);
+
       if (!access) {
         return res.status(403).json({ success: false, message: 'Access denied' });
       }
     }
 
-    await shippingMethod.update(req.body);
+    // Extract translations from request body
+    const { translations, ...methodData } = req.body;
+
+    const shippingMethod = await updateShippingMethodWithTranslations(req.params.id, methodData, translations || {});
     res.json({ success: true, message: 'Shipping method updated successfully', data: shippingMethod });
   } catch (error) {
     console.error('Error updating shipping method:', error);
@@ -106,22 +116,20 @@ router.put('/:id', async (req, res) => {
 
 router.delete('/:id', async (req, res) => {
   try {
-    const shippingMethod = await ShippingMethod.findByPk(req.params.id, {
-      include: [{ model: Store, attributes: ['id', 'name', 'user_id'] }]
-    });
-    
+    const shippingMethod = await getShippingMethodById(req.params.id);
+
     if (!shippingMethod) return res.status(404).json({ success: false, message: 'Shipping method not found' });
-    
+
     if (req.user.role !== 'admin') {
       const { checkUserStoreAccess } = require('../utils/storeAccess');
-      const access = await checkUserStoreAccess(req.user.id, shippingMethod.Store.id);
-      
+      const access = await checkUserStoreAccess(req.user.id, shippingMethod.store_id);
+
       if (!access) {
         return res.status(403).json({ success: false, message: 'Access denied' });
       }
     }
 
-    await shippingMethod.destroy();
+    await deleteShippingMethod(req.params.id);
     res.json({ success: true, message: 'Shipping method deleted successfully' });
   } catch (error) {
     res.status(500).json({ success: false, message: 'Server error' });

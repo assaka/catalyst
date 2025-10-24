@@ -1,8 +1,14 @@
 const express = require('express');
 const { body, validationResult } = require('express-validator');
-const { ProductLabel } = require('../models');
 const { authMiddleware } = require('../middleware/auth');
 const translationService = require('../services/translation-service');
+const {
+  getProductLabelsWithTranslations,
+  getProductLabelById,
+  createProductLabelWithTranslations,
+  updateProductLabelWithTranslations,
+  deleteProductLabel
+} = require('../utils/productLabelHelpers');
 
 const router = express.Router();
 
@@ -35,7 +41,7 @@ router.get('/', optionalAuth, async (req, res) => {
     }
 
     const whereClause = { store_id };
-    
+
     if (isPublicRequest) {
       // Public access - only return active labels
       whereClause.is_active = true;
@@ -47,16 +53,13 @@ router.get('/', optionalAuth, async (req, res) => {
           message: 'Authentication required'
         });
       }
-      
+
       if (is_active !== undefined) {
         whereClause.is_active = is_active === 'true';
       }
     }
 
-    const labels = await ProductLabel.findAll({
-      where: whereClause,
-      order: [['sort_order', 'ASC'], ['priority', 'DESC'], ['name', 'ASC']]
-    });
+    const labels = await getProductLabelsWithTranslations(whereClause);
 
     if (isPublicRequest) {
       // Return just the array for public requests (for compatibility)
@@ -82,7 +85,7 @@ router.get('/', optionalAuth, async (req, res) => {
 // @access  Private
 router.get('/:id', authMiddleware, async (req, res) => {
   try {
-    const label = await ProductLabel.findByPk(req.params.id);
+    const label = await getProductLabelById(req.params.id);
 
     if (!label) {
       return res.status(404).json({
@@ -110,7 +113,7 @@ router.get('/:id', authMiddleware, async (req, res) => {
 router.post('/test', authMiddleware, async (req, res) => {
   try {
     console.log('🧪 Creating test product label...');
-    
+
     const testLabelData = {
       store_id: req.body.store_id || req.query.store_id,
       name: 'Test Label - Debug',
@@ -122,12 +125,12 @@ router.post('/test', authMiddleware, async (req, res) => {
       is_active: true,
       conditions: {}
     };
-    
+
     console.log('🧪 Test label data:', testLabelData);
-    
-    const label = await ProductLabel.create(testLabelData);
-    console.log('✅ Test label created successfully:', label.toJSON());
-    
+
+    const label = await createProductLabelWithTranslations(testLabelData, {});
+    console.log('✅ Test label created successfully:', label);
+
     res.status(201).json({
       success: true,
       data: label,
@@ -155,16 +158,18 @@ router.post('/', authMiddleware, async (req, res) => {
       sort_order: req.body.sort_order,
       sortOrderType: typeof req.body.sort_order
     });
-    
+
+    // Extract translations from request body
+    const { translations, ...labelData } = req.body;
+
     // Ensure slug is generated if not provided (fallback for hook issues)
-    const labelData = { ...req.body };
     if (!labelData.slug && labelData.name) {
       labelData.slug = labelData.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
       console.log('🔧 Fallback slug generation:', labelData.slug);
     }
-    
-    const label = await ProductLabel.create(labelData);
-    console.log('✅ Product label created successfully:', label.toJSON());
+
+    const label = await createProductLabelWithTranslations(labelData, translations || {});
+    console.log('✅ Product label created successfully:', label);
     console.log('✅ Created label priority field:', {
       priority: label.priority,
       sort_order: label.sort_order
@@ -201,17 +206,20 @@ router.put('/:id', authMiddleware, async (req, res) => {
       sort_order: req.body.sort_order,
       sortOrderType: typeof req.body.sort_order
     });
-    
-    const label = await ProductLabel.findByPk(req.params.id);
 
-    if (!label) {
+    // Check if label exists
+    const existingLabel = await getProductLabelById(req.params.id);
+    if (!existingLabel) {
       return res.status(404).json({
         success: false,
         message: 'Product label not found'
       });
     }
 
-    await label.update(req.body);
+    // Extract translations from request body
+    const { translations, ...labelData } = req.body;
+
+    const label = await updateProductLabelWithTranslations(req.params.id, labelData, translations || {});
     console.log('✅ Updated label priority field:', {
       priority: label.priority,
       sort_order: label.sort_order
@@ -234,7 +242,7 @@ router.put('/:id', authMiddleware, async (req, res) => {
 // @access  Private
 router.delete('/:id', authMiddleware, async (req, res) => {
   try {
-    const label = await ProductLabel.findByPk(req.params.id);
+    const label = await getProductLabelById(req.params.id);
 
     if (!label) {
       return res.status(404).json({
@@ -243,7 +251,7 @@ router.delete('/:id', authMiddleware, async (req, res) => {
       });
     }
 
-    await label.destroy();
+    await deleteProductLabel(req.params.id);
     res.json({
       success: true,
       message: 'Product label deleted successfully'
@@ -274,7 +282,7 @@ router.post('/:id/translate', authMiddleware, [
     }
 
     const { fromLang, toLang } = req.body;
-    const productLabel = await ProductLabel.findByPk(req.params.id);
+    const productLabel = await getProductLabelById(req.params.id);
 
     if (!productLabel) {
       return res.status(404).json({
@@ -304,8 +312,26 @@ router.post('/:id/translate', authMiddleware, [
       });
     }
 
-    // Translate the product label
-    const updatedLabel = await translationService.aiTranslateEntity('product_label', req.params.id, fromLang, toLang);
+    // Get source translation
+    const sourceTranslation = productLabel.translations[fromLang];
+    const translatedData = {};
+
+    // Translate each field using AI
+    for (const [key, value] of Object.entries(sourceTranslation)) {
+      if (typeof value === 'string' && value.trim()) {
+        translatedData[key] = await translationService.aiTranslate(value, fromLang, toLang);
+      }
+    }
+
+    // Save the translation using normalized tables
+    const translations = productLabel.translations || {};
+    translations[toLang] = translatedData;
+
+    const updatedLabel = await updateProductLabelWithTranslations(
+      req.params.id,
+      {},
+      translations
+    );
 
     res.json({
       success: true,
@@ -354,10 +380,7 @@ router.post('/bulk-translate', authMiddleware, [
     }
 
     // Get all product labels for this store
-    const labels = await ProductLabel.findAll({
-      where: { store_id },
-      order: [['sort_order', 'ASC'], ['priority', 'DESC'], ['name', 'ASC']]
-    });
+    const labels = await getProductLabelsWithTranslations({ store_id });
 
     if (labels.length === 0) {
       return res.json({
@@ -395,8 +418,21 @@ router.post('/bulk-translate', authMiddleware, [
           continue;
         }
 
-        // Translate the label
-        await translationService.aiTranslateEntity('product_label', label.id, fromLang, toLang);
+        // Get source translation and translate each field
+        const sourceTranslation = label.translations[fromLang];
+        const translatedData = {};
+
+        for (const [key, value] of Object.entries(sourceTranslation)) {
+          if (typeof value === 'string' && value.trim()) {
+            translatedData[key] = await translationService.aiTranslate(value, fromLang, toLang);
+          }
+        }
+
+        // Save the translation using normalized tables
+        const translations = label.translations || {};
+        translations[toLang] = translatedData;
+
+        await updateProductLabelWithTranslations(label.id, {}, translations);
         results.translated++;
       } catch (error) {
         console.error(`Error translating product label ${label.id}:`, error);

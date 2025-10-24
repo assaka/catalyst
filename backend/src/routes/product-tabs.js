@@ -1,8 +1,15 @@
 const express = require('express');
 const { body, validationResult } = require('express-validator');
-const { ProductTab, Store } = require('../models');
+const { Store } = require('../models');
 const { authMiddleware } = require('../middleware/auth');
 const translationService = require('../services/translation-service');
+const {
+  getProductTabsWithTranslations,
+  getProductTabById,
+  createProductTabWithTranslations,
+  updateProductTabWithTranslations,
+  deleteProductTab
+} = require('../utils/productTabHelpers');
 const router = express.Router();
 
 // @route   GET /api/product-tabs
@@ -19,12 +26,9 @@ router.get('/', async (req, res) => {
       });
     }
 
-    const productTabs = await ProductTab.findAll({
-      where: {
-        store_id,
-        is_active: true
-      },
-      order: [['sort_order', 'ASC'], ['name', 'ASC']]
+    const productTabs = await getProductTabsWithTranslations({
+      store_id,
+      is_active: true
     });
 
     console.log('📋 Backend: Loaded product tabs:', {
@@ -66,8 +70,8 @@ router.get('/', async (req, res) => {
 // @access  Public
 router.get('/:id', async (req, res) => {
   try {
-    const productTab = await ProductTab.findByPk(req.params.id);
-    
+    const productTab = await getProductTabById(req.params.id);
+
     if (!productTab) {
       return res.status(404).json({
         success: false,
@@ -148,7 +152,10 @@ router.post('/', authMiddleware, [
 
     console.log('🔧 Route: Creating ProductTab with explicit slug:', { name: trimmedName, slug: finalSlug });
 
-    const productTab = await ProductTab.create({
+    // Extract translations from request body
+    const { translations, ...tabData } = req.body;
+
+    const productTab = await createProductTabWithTranslations({
       store_id,
       name: trimmedName,
       slug: finalSlug,
@@ -158,7 +165,7 @@ router.post('/', authMiddleware, [
       attribute_set_ids: attribute_set_ids || [],
       sort_order: sort_order || 0,
       is_active: is_active !== undefined ? is_active : true
-    });
+    }, translations || {});
 
     res.status(201).json({
       success: true,
@@ -195,11 +202,9 @@ router.put('/:id', authMiddleware, [
       });
     }
 
-    const productTab = await ProductTab.findByPk(req.params.id, {
-      include: [{ model: Store, attributes: ['user_id'] }]
-    });
-
-    if (!productTab) {
+    // Check if tab exists
+    const existingTab = await getProductTabById(req.params.id);
+    if (!existingTab) {
       return res.status(404).json({
         success: false,
         message: 'Product tab not found'
@@ -209,7 +214,7 @@ router.put('/:id', authMiddleware, [
     // Check store access
     if (req.user.role !== 'admin') {
       const { checkUserStoreAccess } = require('../utils/storeAccess');
-      const access = await checkUserStoreAccess(req.user.id, productTab.store_id);
+      const access = await checkUserStoreAccess(req.user.id, existingTab.store_id);
 
       if (!access) {
         return res.status(403).json({
@@ -227,7 +232,10 @@ router.put('/:id', authMiddleware, [
       nlTranslation: req.body.translations?.nl
     });
 
-    await productTab.update(req.body);
+    // Extract translations from request body
+    const { translations, ...tabData } = req.body;
+
+    const productTab = await updateProductTabWithTranslations(req.params.id, tabData, translations || {});
 
     console.log('✅ Backend: Product tab updated:', {
       id: productTab.id,
@@ -256,10 +264,8 @@ router.put('/:id', authMiddleware, [
 // @access  Private
 router.delete('/:id', authMiddleware, async (req, res) => {
   try {
-    const productTab = await ProductTab.findByPk(req.params.id, {
-      include: [{ model: Store, attributes: ['user_id'] }]
-    });
-    
+    const productTab = await getProductTabById(req.params.id);
+
     if (!productTab) {
       return res.status(404).json({
         success: false,
@@ -271,7 +277,7 @@ router.delete('/:id', authMiddleware, async (req, res) => {
     if (req.user.role !== 'admin') {
       const { checkUserStoreAccess } = require('../utils/storeAccess');
       const access = await checkUserStoreAccess(req.user.id, productTab.store_id);
-      
+
       if (!access) {
         return res.status(403).json({
           success: false,
@@ -280,7 +286,7 @@ router.delete('/:id', authMiddleware, async (req, res) => {
       }
     }
 
-    await productTab.destroy();
+    await deleteProductTab(req.params.id);
 
     res.json({
       success: true,
@@ -312,7 +318,7 @@ router.post('/:id/translate', authMiddleware, [
     }
 
     const { fromLang, toLang } = req.body;
-    const productTab = await ProductTab.findByPk(req.params.id);
+    const productTab = await getProductTabById(req.params.id);
 
     if (!productTab) {
       return res.status(404).json({
@@ -342,8 +348,26 @@ router.post('/:id/translate', authMiddleware, [
       });
     }
 
-    // Translate the product tab
-    const updatedTab = await translationService.aiTranslateEntity('product_tab', req.params.id, fromLang, toLang);
+    // Get source translation
+    const sourceTranslation = productTab.translations[fromLang];
+    const translatedData = {};
+
+    // Translate each field using AI
+    for (const [key, value] of Object.entries(sourceTranslation)) {
+      if (typeof value === 'string' && value.trim()) {
+        translatedData[key] = await translationService.aiTranslate(value, fromLang, toLang);
+      }
+    }
+
+    // Save the translation using normalized tables
+    const translations = productTab.translations || {};
+    translations[toLang] = translatedData;
+
+    const updatedTab = await updateProductTabWithTranslations(
+      req.params.id,
+      {},
+      translations
+    );
 
     res.json({
       success: true,
@@ -392,10 +416,7 @@ router.post('/bulk-translate', authMiddleware, [
     }
 
     // Get all product tabs for this store
-    const tabs = await ProductTab.findAll({
-      where: { store_id },
-      order: [['sort_order', 'ASC'], ['name', 'ASC']]
-    });
+    const tabs = await getProductTabsWithTranslations({ store_id });
 
     if (tabs.length === 0) {
       return res.json({
@@ -433,8 +454,21 @@ router.post('/bulk-translate', authMiddleware, [
           continue;
         }
 
-        // Translate the tab
-        await translationService.aiTranslateEntity('product_tab', tab.id, fromLang, toLang);
+        // Get source translation and translate each field
+        const sourceTranslation = tab.translations[fromLang];
+        const translatedData = {};
+
+        for (const [key, value] of Object.entries(sourceTranslation)) {
+          if (typeof value === 'string' && value.trim()) {
+            translatedData[key] = await translationService.aiTranslate(value, fromLang, toLang);
+          }
+        }
+
+        // Save the translation using normalized tables
+        const translations = tab.translations || {};
+        translations[toLang] = translatedData;
+
+        await updateProductTabWithTranslations(tab.id, {}, translations);
         results.translated++;
       } catch (error) {
         console.error(`Error translating product tab ${tab.id}:`, error);
