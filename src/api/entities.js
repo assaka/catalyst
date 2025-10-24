@@ -1032,7 +1032,53 @@ export const CookieConsentSettings = new BaseEntity('cookie-consent-settings');
 export const ConsentLog = new BaseEntity('consent-logs');
 export const PriceAlertSubscription = new BaseEntity('price-alert-subscriptions');
 export const StockAlertSubscription = new BaseEntity('stock-alert-subscriptions');
-export const PaymentMethod = new BaseEntity('payment-methods');
+
+// PaymentMethod service with public API support for storefront
+class PaymentMethodService extends BaseEntity {
+  constructor() {
+    super('payment-methods');
+  }
+
+  // Override filter to use public API for storefront access with language support
+  async filter(params = {}) {
+    try {
+      const queryString = new URLSearchParams(params).toString();
+      const url = queryString ? `payment-methods?${queryString}` : 'payment-methods';
+
+      console.log('🔍 PaymentMethodService.filter() - Fetching payment methods with params:', params);
+
+      // Use public request for payment method filtering (no authentication required for storefront)
+      // This will automatically send X-Language header from localStorage
+      const response = await apiClient.publicRequest('GET', url);
+
+      console.log('📥 PaymentMethodService.filter() - Received payment methods:', response?.length || 0);
+      if (response && response.length > 0) {
+        console.log('📝 PaymentMethodService.filter() - First payment method:', {
+          code: response[0].code,
+          name: response[0].name,
+          has_name: !!response[0].name,
+          name_value: response[0].name,
+          name_type: typeof response[0].name
+        });
+      }
+
+      // Ensure response is always an array
+      const result = Array.isArray(response) ? response : [];
+
+      return result;
+    } catch (error) {
+      console.error(`❌ PaymentMethodService.filter() error:`, error.message);
+      return [];
+    }
+  }
+
+  // Override findAll to use public API
+  async findAll(params = {}) {
+    return this.filter(params);
+  }
+}
+
+export const PaymentMethod = new PaymentMethodService();
 export const Customer = new BaseEntity('customers');
 export const CustomerActivity = new BaseEntity('customer-activity');
 export const Redirect = new BaseEntity('redirects');
