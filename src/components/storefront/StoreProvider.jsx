@@ -195,6 +195,21 @@ export const StoreProvider = ({ children }) => {
     fetchStoreData();
   }, [location.pathname]);
 
+  // Listen for store selection changes from admin
+  useEffect(() => {
+    const handleStoreChange = (event) => {
+      console.log('🔄 StoreProvider: Detected store selection change:', event.detail?.store);
+      // Clear cache when store changes
+      apiCache.clear();
+      localStorage.removeItem('storeProviderCache');
+      // Refetch store data with the new selection
+      fetchStoreData();
+    };
+
+    window.addEventListener('storeSelectionChanged', handleStoreChange);
+    return () => window.removeEventListener('storeSelectionChanged', handleStoreChange);
+  }, []);
+
   // Listen for cache clear broadcasts from admin
   useEffect(() => {
     try {
