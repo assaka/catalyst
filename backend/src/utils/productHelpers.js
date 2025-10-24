@@ -74,10 +74,12 @@ async function applyProductTranslationsToMany(products, lang = 'en') {
   // Fetch all translations in one query
   const productIds = products.map(p => p.id || (p.toJSON ? p.toJSON().id : null)).filter(Boolean);
 
+  if (productIds.length === 0) return products;
+
   const query = `
     SELECT product_id, name, description, short_description
     FROM product_translations
-    WHERE product_id = ANY(:productIds) AND language_code = :lang
+    WHERE product_id IN (:productIds) AND language_code = :lang
   `;
 
   const translations = await sequelize.query(query, {
