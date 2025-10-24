@@ -372,6 +372,7 @@ function App() {
           <Route path="/editor/cart" element={<PageWrapper Component={Pages.CartSlotsEditor} pageName="CartSlotsEditor" />} />
           
           {/* Public/Storefront routes with store code and dynamic parameters */}
+          <Route path="/public/:storeCode/robots.txt" element={<Pages.RobotsTxtHandler />} />
           <Route path="/public/:storeCode/category/*" element={<PageWrapper Component={Pages.Category} pageName="Category" />} />
           <Route path="/public/:storeCode/product/:productSlug" element={<PageWrapper Component={Pages.ProductDetail} pageName="ProductDetail" />} />
           <Route path="/public/:storeCode/cart" element={<PageWrapper Component={Pages.Cart} pageName="Cart" />} />
