@@ -22,6 +22,8 @@ export default function SeoSettings() {
     site_title: '',
     title_separator: '|',
     default_meta_description: '',
+    meta_keywords: '',
+    meta_robots: 'index, follow',
     auto_generate_meta: true,
     enable_sitemap: true
   });
@@ -44,6 +46,8 @@ export default function SeoSettings() {
             site_title: defaultMeta.site_title || '',
             title_separator: defaultMeta.title_separator || '|',
             default_meta_description: defaultMeta.default_meta_description || defaultMeta.meta_description || '',
+            meta_keywords: defaultMeta.meta_keywords || '',
+            meta_robots: defaultMeta.meta_robots || 'index, follow',
             auto_generate_meta: defaultMeta.auto_generate_meta !== false,
             enable_sitemap: defaultMeta.enable_sitemap !== false
           });
@@ -76,8 +80,8 @@ export default function SeoSettings() {
           default_meta_description: settings.default_meta_description,
           meta_title: settings.site_title, // Use site_title as default meta_title
           meta_description: settings.default_meta_description,
-          meta_keywords: '',
-          meta_robots: 'index, follow',
+          meta_keywords: settings.meta_keywords,
+          meta_robots: settings.meta_robots,
           auto_generate_meta: settings.auto_generate_meta,
           enable_sitemap: settings.enable_sitemap
         }
@@ -176,6 +180,32 @@ export default function SeoSettings() {
             />
             <p className="text-sm text-muted-foreground">
               Fallback meta description used when pages don't have specific descriptions
+            </p>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="meta-keywords">Default Meta Keywords</Label>
+            <Input
+              id="meta-keywords"
+              placeholder="ecommerce, online store, products"
+              value={settings.meta_keywords}
+              onChange={(e) => setSettings({ ...settings, meta_keywords: e.target.value })}
+            />
+            <p className="text-sm text-muted-foreground">
+              Comma-separated keywords for SEO (optional, less important for modern SEO)
+            </p>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="meta-robots">Default Meta Robots</Label>
+            <Input
+              id="meta-robots"
+              placeholder="index, follow"
+              value={settings.meta_robots}
+              onChange={(e) => setSettings({ ...settings, meta_robots: e.target.value })}
+            />
+            <p className="text-sm text-muted-foreground">
+              Controls how search engines index your pages (e.g., "index, follow", "noindex, nofollow")
             </p>
           </div>
 

@@ -32,6 +32,8 @@ const loadSeoSettingsWithSimpleCache = async (storeId) => {
         site_title: defaultMeta.site_title || '',
         title_separator: defaultMeta.title_separator || '|',
         default_meta_description: defaultMeta.default_meta_description || defaultMeta.meta_description || '',
+        meta_keywords: defaultMeta.meta_keywords || '',
+        meta_robots: defaultMeta.meta_robots || 'index, follow',
         auto_generate_meta: defaultMeta.auto_generate_meta !== false,
         enable_sitemap: defaultMeta.enable_sitemap !== false,
         // Keep the full default_meta_settings for templates and other uses
