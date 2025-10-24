@@ -316,9 +316,11 @@ export const StoreProvider = ({ children }) => {
       } else {
         // No URL slug found - check if we're in admin/editor context with a selected store
         const selectedStoreId = localStorage.getItem('selectedStoreId');
+        console.log('🔍 StoreProvider: Checking localStorage for selectedStoreId:', selectedStoreId);
         if (selectedStoreId) {
           storeCacheKey = `store-id-${selectedStoreId}`;
           storeId = selectedStoreId;
+          console.log('✅ StoreProvider: Using store ID from localStorage:', storeId);
         }
       }
 
@@ -333,7 +335,9 @@ export const StoreProvider = ({ children }) => {
         }
       } else if (storeId) {
         try {
+          console.log('🔎 StoreProvider: Fetching store by ID:', storeId);
           const result = await StorefrontStore.filter({ id: storeId });
+          console.log('📦 StoreProvider: API returned stores:', result?.map(s => ({ id: s.id, name: s.name })));
           stores = Array.isArray(result) ? result : [];
         } catch (error) {
           console.error(`StoreProvider: StorefrontStore.filter failed for id:`, error);
