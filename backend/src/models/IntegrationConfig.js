@@ -20,7 +20,23 @@ const IntegrationConfig = sequelize.define('IntegrationConfig', {
     type: DataTypes.STRING(50),
     allowNull: false,
     validate: {
-      isIn: [['akeneo', 'magento', 'shopify', 'woocommerce', 'supabase']] // Extensible for future integrations
+      isIn: [[
+        // E-commerce platforms
+        'akeneo', 'magento', 'shopify', 'woocommerce',
+
+        // Database integrations
+        'supabase', // Legacy - will be split into supabase-database + supabase-storage
+        'supabase-database',
+        'postgresql',
+        'mysql',
+
+        // Storage integrations
+        'supabase-storage',
+        'google-cloud-storage',
+        'aws-s3',
+        'cloudflare-r2',
+        'local-storage'
+      ]]
     }
   },
   config_data: {
@@ -104,13 +120,26 @@ IntegrationConfig.getEncryptionKey = () => {
 
 IntegrationConfig.getSensitiveFields = (integrationType) => {
   const sensitiveFieldsMap = {
+    // E-commerce platforms
     akeneo: ['clientSecret', 'password'],
     magento: ['apiKey', 'password'],
     shopify: ['accessToken', 'apiSecret'],
     woocommerce: ['consumerSecret'],
-    supabase: ['accessToken', 'refreshToken', 'serviceRoleKey', 'databaseUrl']
+
+    // Database integrations
+    supabase: ['accessToken', 'refreshToken', 'serviceRoleKey', 'databaseUrl'],
+    'supabase-database': ['accessToken', 'refreshToken', 'serviceRoleKey', 'connectionString'],
+    postgresql: ['password', 'connectionString'],
+    mysql: ['password', 'connectionString'],
+
+    // Storage integrations
+    'supabase-storage': ['serviceRoleKey', 'accessToken'],
+    'google-cloud-storage': ['privateKey', 'credentials'],
+    'aws-s3': ['accessKeyId', 'secretAccessKey', 'sessionToken'],
+    'cloudflare-r2': ['accessKeyId', 'secretAccessKey'],
+    'local-storage': []
   };
-  
+
   return sensitiveFieldsMap[integrationType] || [];
 };
 
