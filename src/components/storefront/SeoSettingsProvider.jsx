@@ -23,36 +23,95 @@ const loadSeoSettingsWithSimpleCache = async (storeId) => {
     if (result && result.length > 0) {
       const rawSettings = result[0];
       
+      // Extract global SEO settings from default_meta_settings JSON
+      const defaultMeta = rawSettings.default_meta_settings || {};
+
       seoSettings = {
         ...rawSettings,
-        // Global SEO settings
-        site_title: rawSettings.site_title || '',
-        title_separator: rawSettings.title_separator || '|',
-        default_meta_description: rawSettings.default_meta_description || '',
-        auto_generate_meta: rawSettings.auto_generate_meta !== false,
-        enable_sitemap: rawSettings.enable_sitemap !== false,
-        // Default meta settings (for templates)
-        default_meta_settings: rawSettings.default_meta_settings || {
-          meta_title: rawSettings.site_title || '',
-          meta_description: rawSettings.default_meta_description || '',
-          meta_keywords: '',
-          meta_robots: 'index, follow'
+        // Global SEO settings (extracted from JSON for easy access)
+        site_title: defaultMeta.site_title || '',
+        title_separator: defaultMeta.title_separator || '|',
+        default_meta_description: defaultMeta.default_meta_description || defaultMeta.meta_description || '',
+        auto_generate_meta: defaultMeta.auto_generate_meta !== false,
+        enable_sitemap: defaultMeta.enable_sitemap !== false,
+        // Keep the full default_meta_settings for templates and other uses
+        default_meta_settings: {
+          site_title: defaultMeta.site_title || '',
+          title_separator: defaultMeta.title_separator || '|',
+          default_meta_description: defaultMeta.default_meta_description || defaultMeta.meta_description || '',
+          meta_title: defaultMeta.meta_title || defaultMeta.site_title || '',
+          meta_description: defaultMeta.meta_description || defaultMeta.default_meta_description || '',
+          meta_keywords: defaultMeta.meta_keywords || '',
+          meta_robots: defaultMeta.meta_robots || 'index, follow',
+          auto_generate_meta: defaultMeta.auto_generate_meta !== false,
+          enable_sitemap: defaultMeta.enable_sitemap !== false
         },
-        schema_settings: rawSettings.schema_settings || {
+        // Social media settings (consolidated)
+        social_media_settings: rawSettings.social_media_settings || {
+          open_graph: {
+            enabled: true,
+            default_title: '',
+            default_description: '',
+            default_image_url: '',
+            facebook_app_id: '',
+            facebook_page_url: ''
+          },
+          twitter: {
+            enabled: true,
+            card_type: 'summary_large_image',
+            default_title: '',
+            default_description: '',
+            site_username: '',
+            creator_username: ''
+          },
+          social_profiles: {
+            facebook: '',
+            twitter: '',
+            instagram: '',
+            linkedin: '',
+            youtube: '',
+            pinterest: '',
+            tiktok: '',
+            other: []
+          },
+          schema: {
+            enable_product_schema: true,
+            enable_organization_schema: true,
+            enable_breadcrumb_schema: true,
+            enable_social_profiles: true,
+            organization_name: '',
+            organization_logo_url: '',
+            organization_description: '',
+            contact_type: 'customer service',
+            contact_telephone: '',
+            contact_email: '',
+            price_range: '',
+            founded_year: '',
+            founder_name: ''
+          }
+        },
+        // Legacy fallbacks for backward compatibility
+        schema_settings: rawSettings.schema_settings || rawSettings.social_media_settings?.schema || {
           enable_product_schema: true,
           enable_organization_schema: true,
           organization_name: '',
           organization_logo_url: '',
           social_profiles: []
         },
-        open_graph_settings: rawSettings.open_graph_settings || {
+        open_graph_settings: rawSettings.open_graph_settings || rawSettings.social_media_settings?.open_graph || {
           default_image_url: '',
           facebook_app_id: ''
         },
-        twitter_card_settings: rawSettings.twitter_card_settings || {
+        twitter_card_settings: rawSettings.twitter_card_settings || rawSettings.social_media_settings?.twitter || {
           card_type: 'summary_large_image',
           site_username: ''
         },
+        // Canonical settings
+        canonical_settings: rawSettings.canonical_settings || {
+          base_url: '',
+          auto_canonical_filtered_pages: true
+        },
+        // Hreflang settings
         hreflang_settings: (() => {
           try {
             if (typeof rawSettings.hreflang_settings === 'string') {
@@ -63,7 +122,22 @@ const loadSeoSettingsWithSimpleCache = async (storeId) => {
             console.warn('Failed to parse hreflang_settings:', e);
             return [];
           }
-        })()
+        })(),
+        // Robots.txt content
+        robots_txt_content: rawSettings.robots_txt_content || '',
+        // Sitemap settings
+        xml_sitemap_settings: rawSettings.xml_sitemap_settings || {
+          enabled: true,
+          include_products: true,
+          include_categories: true,
+          include_pages: true
+        },
+        html_sitemap_settings: rawSettings.html_sitemap_settings || {
+          enabled: true,
+          include_products: true,
+          include_categories: true,
+          include_pages: true
+        }
       };
     }
     

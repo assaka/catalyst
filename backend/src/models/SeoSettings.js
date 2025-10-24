@@ -16,14 +16,22 @@ const SeoSettings = sequelize.define('SeoSettings', {
       key: 'id'
     }
   },
-  // Default meta settings (consolidated)
+  // Default meta settings (consolidated) - Global SEO Configuration
   default_meta_settings: {
     type: DataTypes.JSON,
     defaultValue: {
+      // Global site settings
+      site_title: '',
+      title_separator: '|',
+      default_meta_description: '',
+      // Meta tag defaults
       meta_title: '',
       meta_description: '',
       meta_keywords: '',
-      meta_robots: 'index, follow'
+      meta_robots: 'index, follow',
+      // Advanced options
+      auto_generate_meta: true,
+      enable_sitemap: true
     }
   },
   // Canonical URL settings (consolidated)

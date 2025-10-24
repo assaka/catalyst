@@ -37,13 +37,15 @@ export default function SeoSettings() {
 
         if (result && result.length > 0) {
           const existingSettings = result[0];
+          const defaultMeta = existingSettings.default_meta_settings || {};
+
           setSettings({
             id: existingSettings.id,
-            site_title: existingSettings.site_title || '',
-            title_separator: existingSettings.title_separator || '|',
-            default_meta_description: existingSettings.default_meta_description || '',
-            auto_generate_meta: existingSettings.auto_generate_meta !== false,
-            enable_sitemap: existingSettings.enable_sitemap !== false
+            site_title: defaultMeta.site_title || '',
+            title_separator: defaultMeta.title_separator || '|',
+            default_meta_description: defaultMeta.default_meta_description || defaultMeta.meta_description || '',
+            auto_generate_meta: defaultMeta.auto_generate_meta !== false,
+            enable_sitemap: defaultMeta.enable_sitemap !== false
           });
         }
       } catch (error) {
@@ -68,11 +70,17 @@ export default function SeoSettings() {
     try {
       const payload = {
         store_id: store.id,
-        site_title: settings.site_title,
-        title_separator: settings.title_separator,
-        default_meta_description: settings.default_meta_description,
-        auto_generate_meta: settings.auto_generate_meta,
-        enable_sitemap: settings.enable_sitemap
+        default_meta_settings: {
+          site_title: settings.site_title,
+          title_separator: settings.title_separator,
+          default_meta_description: settings.default_meta_description,
+          meta_title: settings.site_title, // Use site_title as default meta_title
+          meta_description: settings.default_meta_description,
+          meta_keywords: '',
+          meta_robots: 'index, follow',
+          auto_generate_meta: settings.auto_generate_meta,
+          enable_sitemap: settings.enable_sitemap
+        }
       };
 
       let response;
