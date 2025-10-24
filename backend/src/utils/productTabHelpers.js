@@ -46,10 +46,18 @@ async function getProductTabsWithTranslations(where = {}, lang = 'en') {
     ORDER BY pt.sort_order ASC, pt.name ASC
   `;
 
+  console.log('🔍 SQL Query for product tabs:', query.replace(/\s+/g, ' '));
+  console.log('🔍 Language parameter:', lang);
+
   const results = await sequelize.query(query, {
     replacements: { lang },
     type: sequelize.QueryTypes.SELECT
   });
+
+  console.log('✅ Query returned', results.length, 'tabs');
+  if (results.length > 0) {
+    console.log('📝 Sample tab:', JSON.stringify(results[0], null, 2));
+  }
 
   return results;
 }

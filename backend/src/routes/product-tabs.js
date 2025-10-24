@@ -28,22 +28,25 @@ router.get('/', async (req, res) => {
     }
 
     const lang = getLanguageFromRequest(req);
+    console.log('🌍 Product Tabs: Requesting language:', lang, 'Headers:', {
+      'x-language': req.headers['x-language'],
+      'accept-language': req.headers['accept-language'],
+      'query-lang': req.query.lang
+    });
+
     const productTabs = await getProductTabsWithTranslations({
       store_id,
       is_active: true
     }, lang);
 
-    console.log('📋 Backend: Loaded product tabs:', {
-      store_id,
-      count: productTabs.length,
-      tabs: productTabs.map(tab => ({
-        id: tab.id,
-        name: tab.name,
-        hasTranslations: !!tab.translations,
-        translationKeys: Object.keys(tab.translations || {}),
-        nlTranslation: tab.translations?.nl
-      }))
-    });
+    console.log('📋 Product Tabs: Retrieved', productTabs.length, 'tabs');
+    if (productTabs.length > 0) {
+      console.log('📝 Sample tab:', {
+        id: productTabs[0].id,
+        name: productTabs[0].name,
+        content: productTabs[0].content?.substring(0, 50) + '...'
+      });
+    }
 
     // Check if this is a public request - return just the array for consistency with other public APIs
     const isPublicRequest = req.originalUrl.includes('/api/public/product-tabs');
@@ -243,9 +246,7 @@ router.put('/:id', authMiddleware, [
     console.log('✅ Backend: Product tab updated:', {
       id: productTab.id,
       name: productTab.name,
-      translations: productTab.translations,
-      translationKeys: Object.keys(productTab.translations || {}),
-      nlTranslation: productTab.translations?.nl
+      content: productTab.content?.substring(0, 50) + '...'
     });
 
     res.json({
