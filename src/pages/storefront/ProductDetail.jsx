@@ -869,7 +869,10 @@ export default function ProductDetail() {
 
       <SeoHeadManager
         pageType="product"
-        pageData={product}
+        pageData={{
+          ...product,
+          breadcrumbs: buildProductBreadcrumbs(product, storeCode, categories, settings)
+        }}
         pageTitle={product?.name}
       />
 

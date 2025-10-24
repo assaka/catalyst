@@ -3,8 +3,9 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
+import { Button } from "@/components/ui/button";
 import SaveButton from '@/components/ui/save-button';
-import { FileText } from "lucide-react";
+import { FileText, ExternalLink } from "lucide-react";
 import { SeoSetting } from '@/api/entities';
 import { useStore } from '@/components/storefront/StoreProvider';
 import FlashMessage from '@/components/storefront/FlashMessage';
@@ -204,9 +205,23 @@ export default function HtmlSitemap() {
               </div>
 
               <div className="mt-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
-                <p className="text-sm text-blue-800">
-                  <strong>Public URL:</strong> /public/{store?.slug || 'your-store'}/sitemap
-                </p>
+                <div className="flex items-center justify-between">
+                  <p className="text-sm text-blue-800">
+                    <strong>Public URL:</strong> /public/{store?.slug || 'your-store'}/sitemap
+                  </p>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      const url = `/public/${store?.slug || 'your-store'}/sitemap`;
+                      window.open(url, '_blank');
+                    }}
+                    disabled={!store?.slug}
+                  >
+                    <ExternalLink className="w-4 h-4 mr-2" />
+                    View
+                  </Button>
+                </div>
               </div>
             </>
           )}

@@ -1,14 +1,127 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
+import SaveButton from '@/components/ui/save-button';
 import { Settings } from "lucide-react";
+import { useStore } from '@/components/storefront/StoreProvider';
+import { SeoSetting } from '@/api/entities';
+import FlashMessage from '@/components/storefront/FlashMessage';
 
 export default function SeoSettings() {
+  const { store } = useStore();
+  const [saveSuccess, setSaveSuccess] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [flashMessage, setFlashMessage] = useState(null);
+
+  // Form state
+  const [settings, setSettings] = useState({
+    site_title: '',
+    title_separator: '|',
+    default_meta_description: '',
+    auto_generate_meta: true,
+    enable_sitemap: true
+  });
+
+  // Load existing settings
+  useEffect(() => {
+    const loadSettings = async () => {
+      if (!store?.id) return;
+
+      try {
+        setLoading(true);
+        const result = await SeoSetting.filter({ store_id: store.id });
+
+        if (result && result.length > 0) {
+          const existingSettings = result[0];
+          setSettings({
+            id: existingSettings.id,
+            site_title: existingSettings.site_title || '',
+            title_separator: existingSettings.title_separator || '|',
+            default_meta_description: existingSettings.default_meta_description || '',
+            auto_generate_meta: existingSettings.auto_generate_meta !== false,
+            enable_sitemap: existingSettings.enable_sitemap !== false
+          });
+        }
+      } catch (error) {
+        console.error('Error loading SEO settings:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadSettings();
+  }, [store?.id]);
+
+  const handleSave = async () => {
+    if (!store?.id) {
+      console.error('No store ID available');
+      return;
+    }
+
+    setSaving(true);
+    setSaveSuccess(false);
+
+    try {
+      const payload = {
+        store_id: store.id,
+        site_title: settings.site_title,
+        title_separator: settings.title_separator,
+        default_meta_description: settings.default_meta_description,
+        auto_generate_meta: settings.auto_generate_meta,
+        enable_sitemap: settings.enable_sitemap
+      };
+
+      let response;
+      if (settings.id) {
+        response = await SeoSetting.update(settings.id, payload);
+      } else {
+        response = await SeoSetting.create(payload);
+        const createdData = Array.isArray(response) ? response[0] : response;
+        if (createdData?.id) {
+          setSettings({ ...settings, id: createdData.id });
+        }
+      }
+
+      setSaveSuccess(true);
+      setFlashMessage({
+        type: 'success',
+        message: 'SEO settings saved successfully!'
+      });
+      setTimeout(() => setSaveSuccess(false), 2000);
+    } catch (error) {
+      console.error('Error saving SEO settings:', error);
+      setFlashMessage({
+        type: 'error',
+        message: `Failed to save settings: ${error.message || 'Unknown error'}`
+      });
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="container mx-auto p-6">
+        <div className="flex items-center gap-2 mb-6">
+          <Settings className="h-6 w-6" />
+          <h1 className="text-3xl font-bold">SEO Settings</h1>
+        </div>
+        <p>Loading settings...</p>
+      </div>
+    );
+  }
+
   return (
     <div className="container mx-auto p-6 space-y-6">
+      <FlashMessage
+        message={flashMessage}
+        onClose={() => setFlashMessage(null)}
+      />
+
       <div className="flex items-center gap-2 mb-6">
         <Settings className="h-6 w-6" />
         <h1 className="text-3xl font-bold">SEO Settings</h1>
@@ -21,30 +134,81 @@ export default function SeoSettings() {
         <CardContent className="space-y-4">
           <div className="space-y-2">
             <Label htmlFor="site-title">Site Title</Label>
-            <Input id="site-title" placeholder="Your Store Name" />
+            <Input
+              id="site-title"
+              placeholder="Your Store Name"
+              value={settings.site_title}
+              onChange={(e) => setSettings({ ...settings, site_title: e.target.value })}
+            />
+            <p className="text-sm text-muted-foreground">
+              The main title for your store used in meta tags and page titles
+            </p>
           </div>
 
           <div className="space-y-2">
             <Label htmlFor="title-separator">Title Separator</Label>
-            <Input id="title-separator" placeholder="|" />
+            <Input
+              id="title-separator"
+              placeholder="|"
+              value={settings.title_separator}
+              onChange={(e) => setSettings({ ...settings, title_separator: e.target.value })}
+            />
+            <p className="text-sm text-muted-foreground">
+              Character used to separate page title from site title (e.g., "Page | Store Name")
+            </p>
           </div>
 
           <div className="space-y-2">
             <Label htmlFor="meta-description">Default Meta Description</Label>
-            <Textarea id="meta-description" placeholder="Default description for pages" />
+            <Textarea
+              id="meta-description"
+              placeholder="Default description for pages"
+              value={settings.default_meta_description}
+              onChange={(e) => setSettings({ ...settings, default_meta_description: e.target.value })}
+            />
+            <p className="text-sm text-muted-foreground">
+              Fallback meta description used when pages don't have specific descriptions
+            </p>
           </div>
 
-          <div className="flex items-center space-x-2">
-            <Switch id="auto-generate" />
-            <Label htmlFor="auto-generate">Auto-generate meta tags</Label>
+          <div className="flex items-center justify-between p-4 bg-slate-50 rounded-lg">
+            <div className="space-y-0.5">
+              <Label htmlFor="auto-generate" className="text-base font-semibold">Auto-generate meta tags</Label>
+              <p className="text-sm text-muted-foreground">
+                Automatically generate meta descriptions from page content when not set
+              </p>
+            </div>
+            <Switch
+              id="auto-generate"
+              checked={settings.auto_generate_meta}
+              onCheckedChange={(checked) => setSettings({ ...settings, auto_generate_meta: checked })}
+            />
           </div>
 
-          <div className="flex items-center space-x-2">
-            <Switch id="sitemap" />
-            <Label htmlFor="sitemap">Enable XML Sitemap</Label>
+          <div className="flex items-center justify-between p-4 bg-slate-50 rounded-lg">
+            <div className="space-y-0.5">
+              <Label htmlFor="sitemap" className="text-base font-semibold">Enable XML Sitemap</Label>
+              <p className="text-sm text-muted-foreground">
+                Generate and enable XML sitemap for search engines
+              </p>
+            </div>
+            <Switch
+              id="sitemap"
+              checked={settings.enable_sitemap}
+              onCheckedChange={(checked) => setSettings({ ...settings, enable_sitemap: checked })}
+            />
           </div>
         </CardContent>
       </Card>
+
+      <div className="flex justify-end">
+        <SaveButton
+          onClick={handleSave}
+          loading={saving}
+          success={saveSuccess}
+          defaultText="Save Settings"
+        />
+      </div>
     </div>
   );
 }

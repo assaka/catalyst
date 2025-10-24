@@ -9,7 +9,7 @@ import { createPageUrl } from '@/utils';
 import { createCmsPageUrl } from '@/utils/urlUtils';
 import { useStore } from '@/components/storefront/StoreProvider';
 import { Layout, FileText, ChevronRight, Package } from 'lucide-react';
-import { getPageTitle } from '@/utils/translationUtils';
+import { getPageTitle, getProductName, getCategoryName } from '@/utils/translationUtils';
 
 export default function SitemapPublic() {
     const { storeCode } = useParams();
@@ -45,11 +45,15 @@ export default function SitemapPublic() {
                     return;
                 }
 
-                // Fetch data based on settings
+                // Fetch data based on settings - must filter by store_id
                 const promises = [];
 
                 if (htmlSitemapSettings.include_categories) {
-                    promises.push(Category.filter({ is_active: true }, "sort_order"));
+                    promises.push(
+                        store?.id
+                            ? Category.filter({ is_active: true, store_id: store.id }, "sort_order")
+                            : Promise.resolve([])
+                    );
                 } else {
                     promises.push(Promise.resolve([]));
                 }
@@ -57,18 +61,33 @@ export default function SitemapPublic() {
                 if (htmlSitemapSettings.include_products) {
                     const maxProducts = htmlSitemapSettings.max_products || 20;
                     const sortOrder = htmlSitemapSettings.product_sort || '-updated_date';
-                    promises.push(Product.filter({ status: 'active' }, sortOrder, maxProducts));
+                    promises.push(
+                        store?.id
+                            ? Product.filter({ status: 'active', store_id: store.id }, sortOrder, maxProducts)
+                            : Promise.resolve([])
+                    );
                 } else {
                     promises.push(Promise.resolve([]));
                 }
 
                 if (htmlSitemapSettings.include_pages) {
-                    promises.push(CmsPage.filter({ is_active: true }));
+                    promises.push(
+                        store?.id
+                            ? CmsPage.filter({ is_active: true, store_id: store.id })
+                            : Promise.resolve([])
+                    );
                 } else {
                     promises.push(Promise.resolve([]));
                 }
 
                 const [categoryData, productData, pageData] = await Promise.all(promises);
+
+                console.log('Sitemap data fetched:', {
+                    categories: categoryData,
+                    products: productData,
+                    pages: pageData,
+                    storeId: store?.id
+                });
 
                 setCategories(categoryData || []);
                 setProducts(productData || []);
@@ -92,7 +111,7 @@ export default function SitemapPublic() {
                     <li key={category.id} className="my-2">
                         <Link to={createPageUrl(`Storefront?category=${category.slug}`)} className="flex items-center text-blue-600 hover:underline">
                             <ChevronRight className="w-4 h-4 mr-2" />
-                            {category.name}
+                            {getCategoryName(category)}
                         </Link>
                         {renderCategoryTree(category.id)}
                     </li>
@@ -145,7 +164,7 @@ export default function SitemapPublic() {
                                 <li key={product.id} className="my-2">
                                     <Link to={createPageUrl(`ProductDetail?id=${product.id}`)} className="flex items-center text-blue-600 hover:underline">
                                         <ChevronRight className="w-4 h-4 mr-2" />
-                                        {product.name}
+                                        {getProductName(product)}
                                     </Link>
                                 </li>
                             ))}
