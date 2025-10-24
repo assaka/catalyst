@@ -95,19 +95,21 @@ async function applyProductTranslationsToMany(products, lang = 'en') {
 
   // Apply translations to each product
   return products.map(product => {
-    const productData = product.toJSON ? product.toJSON() : product;
+    // Convert to plain object but preserve all nested data
+    const productData = product.toJSON ? product.toJSON() : { ...product };
     const translation = translationMap[productData.id];
 
     if (translation) {
+      // Use normalized translation
       productData.name = translation.name;
       productData.description = translation.description;
       productData.short_description = translation.short_description;
     } else if (productData.translations) {
       // Fallback to JSON column
       const fallbackLang = productData.translations[lang] || productData.translations.en || {};
-      productData.name = fallbackLang.name;
-      productData.description = fallbackLang.description;
-      productData.short_description = fallbackLang.short_description;
+      productData.name = fallbackLang.name || '';
+      productData.description = fallbackLang.description || '';
+      productData.short_description = fallbackLang.short_description || '';
     }
 
     return productData;
