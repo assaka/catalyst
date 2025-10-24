@@ -68,7 +68,10 @@ async function getCategoriesWithTranslations(where = {}, lang = 'en') {
     console.log('📝 Sample category:', JSON.stringify({
       id: results[0].id,
       name: results[0].name,
-      description: results[0].description?.substring(0, 50) + '...'
+      slug: results[0].slug,
+      description: results[0].description?.substring(0, 50),
+      has_name: !!results[0].name,
+      name_length: results[0].name?.length
     }, null, 2));
   }
 
