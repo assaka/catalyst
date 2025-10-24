@@ -98,7 +98,10 @@ router.get('/callback', async (req, res) => {
   try {
     console.log('Supabase OAuth callback received:', {
       query: req.query,
-      headers: req.headers
+      frontendUrl: process.env.FRONTEND_URL,
+      hasCode: !!req.query.code,
+      hasState: !!req.query.state,
+      hasError: !!req.query.error
     });
 
     const { code, state, error, error_description } = req.query;
@@ -116,12 +119,24 @@ router.get('/callback', async (req, res) => {
     // Parse state to get store ID
     let storeId;
     try {
-      const stateData = JSON.parse(state);
+      // Decode the state parameter first (it may be URL-encoded)
+      const decodedState = decodeURIComponent(state);
+      console.log('Decoded state:', decodedState);
+
+      const stateData = JSON.parse(decodedState);
       storeId = stateData.storeId;
-      console.log('Parsed state:', stateData);
+      console.log('Parsed state data:', stateData);
+
+      if (!storeId) {
+        throw new Error('Store ID not found in state');
+      }
     } catch (err) {
-      console.error('Failed to parse state:', state, err);
-      throw new Error('Invalid state parameter');
+      console.error('Failed to parse state:', {
+        raw: state,
+        error: err.message,
+        stack: err.stack
+      });
+      throw new Error('Invalid state parameter - unable to identify store');
     }
 
     // Exchange code for token
@@ -255,7 +270,13 @@ router.get('/callback', async (req, res) => {
       </html>
     `);
   } catch (error) {
-    console.error('OAuth callback error:', error);
+    console.error('OAuth callback error:', {
+      message: error.message,
+      stack: error.stack,
+      query: req.query,
+      frontendUrl: process.env.FRONTEND_URL || 'http://localhost:3000'
+    });
+
     // Send error page that closes the popup window
     res.send(`
       <!DOCTYPE html>
