@@ -48,10 +48,18 @@ async function getProductLabelsWithTranslations(where = {}, lang = 'en') {
     ORDER BY pl.sort_order ASC, pl.priority DESC, pl.name ASC
   `;
 
+  console.log('🔍 SQL Query for product labels:', query.replace(/\s+/g, ' '));
+  console.log('🔍 Language parameter:', lang);
+
   const results = await sequelize.query(query, {
     replacements: { lang },
     type: sequelize.QueryTypes.SELECT
   });
+
+  console.log('✅ Query returned', results.length, 'labels');
+  if (results.length > 0) {
+    console.log('📝 Sample label:', JSON.stringify(results[0], null, 2));
+  }
 
   return results;
 }

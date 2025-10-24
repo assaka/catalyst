@@ -61,7 +61,13 @@ router.get('/', optionalAuth, async (req, res) => {
     }
 
     const lang = getLanguageFromRequest(req);
+    console.log('🌍 Product Labels: Requesting language:', lang, 'Headers:', {
+      'x-language': req.headers['x-language'],
+      'accept-language': req.headers['accept-language'],
+      'query-lang': req.query.lang
+    });
     const labels = await getProductLabelsWithTranslations(whereClause, lang);
+    console.log('🏷️ Product Labels: Retrieved', labels.length, 'labels', labels.slice(0, 2));
 
     if (isPublicRequest) {
       // Return just the array for public requests (for compatibility)
