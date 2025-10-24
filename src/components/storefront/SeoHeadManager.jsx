@@ -232,21 +232,21 @@ export default function SeoHeadManager({ pageType, pageData, pageTitle, pageDesc
         const currentPageType = templateTypeMap[pageType] || null;
         const matchingTemplate = currentPageType ? findMatchingSeoTemplate(currentPageType) : null;
 
-        // Apply templates to get processed template values
-        const templateTitle = matchingTemplate?.meta_title ? 
-            applyTemplate(matchingTemplate.meta_title, pageData) : '';
-        const templateDescription = matchingTemplate?.meta_description ? 
-            applyTemplate(matchingTemplate.meta_description, pageData) : '';
-        const templateKeywords = matchingTemplate?.meta_keywords ? 
-            applyTemplate(matchingTemplate.meta_keywords, pageData) : '';
-        const templateOgTitle = matchingTemplate?.og_title ?
-            applyTemplate(matchingTemplate.og_title, pageData) : '';
-        const templateOgDescription = matchingTemplate?.og_description ?
-            applyTemplate(matchingTemplate.og_description, pageData) : '';
-        const templateTwitterTitle = matchingTemplate?.twitter_title ?
-            applyTemplate(matchingTemplate.twitter_title, pageData) : '';
-        const templateTwitterDescription = matchingTemplate?.twitter_description ?
-            applyTemplate(matchingTemplate.twitter_description, pageData) : '';
+        // Apply templates to get processed template values (from JSON)
+        const templateTitle = matchingTemplate?.template?.meta_title ?
+            applyTemplate(matchingTemplate.template.meta_title, pageData) : '';
+        const templateDescription = matchingTemplate?.template?.meta_description ?
+            applyTemplate(matchingTemplate.template.meta_description, pageData) : '';
+        const templateKeywords = matchingTemplate?.template?.meta_keywords ?
+            applyTemplate(matchingTemplate.template.meta_keywords, pageData) : '';
+        const templateOgTitle = matchingTemplate?.template?.og_title ?
+            applyTemplate(matchingTemplate.template.og_title, pageData) : '';
+        const templateOgDescription = matchingTemplate?.template?.og_description ?
+            applyTemplate(matchingTemplate.template.og_description, pageData) : '';
+        const templateTwitterTitle = matchingTemplate?.template?.twitter_title ?
+            applyTemplate(matchingTemplate.template.twitter_title, pageData) : '';
+        const templateTwitterDescription = matchingTemplate?.template?.twitter_description ?
+            applyTemplate(matchingTemplate.template.twitter_description, pageData) : '';
 
         // Fallback to basic defaults if SEO settings don't provide them
         // Use title separator from settings, default to |
@@ -257,28 +257,21 @@ export default function SeoHeadManager({ pageType, pageData, pageTitle, pageDesc
         /**
          * PRIORITY CASCADE: META TAGS
          * ============================
-         * Priority order: Entity > Conditional Template > Generic Template > Global Default > Fallback
+         * Priority order: Entity SEO JSON > Template JSON > Global Default > Fallback
          */
 
-        // 1. Entity-specific overrides (product.meta_title, category.meta_title, etc.)
-        // 2. Legacy seo JSON field (backward compatibility)
-        // 3. Conditional template values
-        // 4. Global default values
-        // 5. Automatic fallbacks
-        const title = pageData?.meta_title ||                    // Entity override
-                     pageData?.seo?.meta_title ||                // Legacy JSON field
+        // All entity SEO data comes from the seo JSON field
+        const title = pageData?.seo?.meta_title ||               // Entity SEO JSON
                      templateTitle ||                            // Template (conditional or generic)
                      processedDefaultTitle ||                    // Global default
                      basicDefaultTitle;                          // Fallback
 
-        const description = pageData?.meta_description ||        // Entity override
-                           pageData?.seo?.meta_description ||    // Legacy JSON field
+        const description = pageData?.seo?.meta_description ||   // Entity SEO JSON
                            templateDescription ||                // Template
                            processedDefaultDescription ||        // Global default
                            basicDefaultDescription;              // Fallback
 
-        const keywords = pageData?.meta_keywords ||              // Entity override
-                        pageData?.seo?.meta_keywords ||          // Legacy JSON field
+        const keywords = pageData?.seo?.meta_keywords ||         // Entity SEO JSON
                         templateKeywords ||                      // Template
                         processedDefaultKeywords ||              // Global default
                         `${store?.name}, products, quality, shopping`;  // Fallback
@@ -291,8 +284,7 @@ export default function SeoHeadManager({ pageType, pageData, pageTitle, pageDesc
          * PRIORITY CASCADE: ROBOTS TAG
          * =============================
          */
-        let robotsTag = pageData?.meta_robots_tag ||             // Entity override
-                       pageData?.seo?.meta_robots_tag;           // Legacy JSON field
+        let robotsTag = pageData?.seo?.meta_robots_tag;          // Entity SEO JSON
         
         // If no page-specific robots tag, check robots.txt content for current page
         if (!robotsTag) {
@@ -342,7 +334,7 @@ export default function SeoHeadManager({ pageType, pageData, pageTitle, pageDesc
          * PRIORITY CASCADE: OG IMAGE
          * ===========================
          */
-        const ogImage = pageData?.og_image_url ||                // Entity OG override
+        const ogImage = pageData?.seo?.og_image_url ||           // Entity SEO JSON
                        imageUrl ||                              // Passed via prop
                        getImageUrl(pageData?.images?.[0]) ||    // Entity's first image
                        seoSettings?.social_media_settings?.open_graph?.default_image_url ||  // Global OG default
@@ -384,10 +376,10 @@ export default function SeoHeadManager({ pageType, pageData, pageTitle, pageDesc
         /**
          * PRIORITY CASCADE: CANONICAL URL
          * ================================
-         * Priority: Custom DB > Entity > Template Base > Current URL
+         * Priority: Custom DB > Entity SEO JSON > Template Base > Current URL
          */
         let canonicalUrl = customCanonicalUrl ||                 // Custom canonical from database
-                          pageData?.canonical_url;               // Entity canonical override
+                          pageData?.seo?.canonical_url;          // Entity SEO JSON
 
         if (!canonicalUrl) {
             // Apply template replacement to canonical base URL from settings
@@ -472,16 +464,14 @@ export default function SeoHeadManager({ pageType, pageData, pageTitle, pageDesc
             /**
              * PRIORITY CASCADE: OPEN GRAPH TAGS
              * ==================================
-             * Priority: Entity OG > Template OG > Global OG Default > Meta Tag Fallback
+             * Priority: Entity SEO JSON > Template JSON > Global OG Default > Meta Tag Fallback
              */
-            ogTitle = pageData?.og_title ||                    // Entity OG override
-                     pageData?.seo?.og_title ||                // Legacy JSON field
+            ogTitle = pageData?.seo?.og_title ||               // Entity SEO JSON
                      templateOgTitle ||                        // Template OG
                      ogDefaultTitle ||                         // Global OG default
                      title;                                    // Meta title fallback
 
-            ogDescription = pageData?.og_description ||        // Entity OG override
-                           pageData?.seo?.og_description ||    // Legacy JSON field
+            ogDescription = pageData?.seo?.og_description ||   // Entity SEO JSON
                            templateOgDescription ||            // Template OG
                            ogDefaultDescription ||             // Global OG default
                            description;                        // Meta description fallback
@@ -526,17 +516,15 @@ export default function SeoHeadManager({ pageType, pageData, pageTitle, pageDesc
             /**
              * PRIORITY CASCADE: TWITTER CARD TAGS
              * ====================================
-             * Priority: Entity Twitter > Template Twitter > Global Twitter Default > OG Fallback > Meta Fallback
+             * Priority: Entity SEO JSON > Template JSON > Global Twitter Default > OG Fallback > Meta Fallback
              */
-            const twitterTitle = pageData?.twitter_title ||              // Entity Twitter override
-                                pageData?.seo?.twitter_title ||          // Legacy JSON field
+            const twitterTitle = pageData?.seo?.twitter_title ||         // Entity SEO JSON
                                 templateTwitterTitle ||                   // Template Twitter
                                 twitterDefaultTitle ||                    // Global Twitter default
                                 ogTitle ||                                // OG title fallback
                                 title;                                    // Meta title fallback
 
-            const twitterDescription = pageData?.twitter_description ||   // Entity Twitter override
-                                      pageData?.seo?.twitter_description || // Legacy JSON field
+            const twitterDescription = pageData?.seo?.twitter_description || // Entity SEO JSON
                                       templateTwitterDescription ||       // Template Twitter
                                       twitterDefaultDescription ||        // Global Twitter default
                                       ogDescription ||                    // OG description fallback
@@ -546,8 +534,7 @@ export default function SeoHeadManager({ pageType, pageData, pageTitle, pageDesc
              * PRIORITY CASCADE: TWITTER IMAGE
              * ================================
              */
-            const twitterImage = pageData?.twitter_image_url ||         // Entity Twitter image override
-                                pageData?.seo?.twitter_image_url ||     // Legacy JSON field
+            const twitterImage = pageData?.seo?.twitter_image_url ||    // Entity SEO JSON
                                 ogImage;                                // Fallback to OG image
 
             const cardType = seoSettings?.social_media_settings?.twitter?.card_type ||

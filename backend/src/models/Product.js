@@ -95,59 +95,11 @@ const Product = sequelize.define('Product', {
     type: DataTypes.JSON,
     defaultValue: []
   },
-  // SEO fields - explicit columns for common fields (consistent with Category/CmsPage)
-  meta_title: {
-    type: DataTypes.STRING,
-    allowNull: true
-  },
-  meta_description: {
-    type: DataTypes.TEXT,
-    allowNull: true
-  },
-  meta_keywords: {
-    type: DataTypes.STRING,
-    allowNull: true
-  },
-  meta_robots_tag: {
-    type: DataTypes.STRING,
-    defaultValue: 'index, follow'
-  },
-  // Open Graph fields
-  og_title: {
-    type: DataTypes.STRING,
-    allowNull: true
-  },
-  og_description: {
-    type: DataTypes.TEXT,
-    allowNull: true
-  },
-  og_image_url: {
-    type: DataTypes.STRING,
-    allowNull: true
-  },
-  // Twitter Card fields
-  twitter_title: {
-    type: DataTypes.STRING,
-    allowNull: true
-  },
-  twitter_description: {
-    type: DataTypes.TEXT,
-    allowNull: true
-  },
-  twitter_image_url: {
-    type: DataTypes.STRING,
-    allowNull: true
-  },
-  // Canonical URL
-  canonical_url: {
-    type: DataTypes.STRING,
-    allowNull: true
-  },
-  // Advanced SEO - JSON field for additional custom SEO data
+  // SEO fields - ALL SEO data in single JSON column
   seo: {
     type: DataTypes.JSON,
     defaultValue: {},
-    comment: 'Advanced/custom SEO fields beyond standard meta tags'
+    comment: 'All SEO fields: meta_title, meta_description, og_title, twitter_title, canonical_url, etc.'
   },
   // Foreign keys
   store_id: {

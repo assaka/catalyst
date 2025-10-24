@@ -24,33 +24,11 @@ const SeoTemplate = sequelize.define('SeoTemplate', {
     allowNull: false,
     comment: 'Page type: product, category, cms_page, homepage, brand, blog_post'
   },
-  meta_title: {
-    type: DataTypes.STRING,
-    allowNull: true
-  },
-  meta_description: {
-    type: DataTypes.TEXT,
-    allowNull: true
-  },
-  meta_keywords: {
-    type: DataTypes.TEXT,
-    allowNull: true
-  },
-  og_title: {
-    type: DataTypes.STRING,
-    allowNull: true
-  },
-  og_description: {
-    type: DataTypes.TEXT,
-    allowNull: true
-  },
-  twitter_title: {
-    type: DataTypes.STRING,
-    allowNull: true
-  },
-  twitter_description: {
-    type: DataTypes.TEXT,
-    allowNull: true
+  // Template fields - ALL template fields in single JSON column
+  template: {
+    type: DataTypes.JSON,
+    defaultValue: {},
+    comment: 'Template fields: meta_title, meta_description, og_title, twitter_title, etc.'
   },
   sort_order: {
     type: DataTypes.INTEGER,

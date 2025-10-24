@@ -92,9 +92,22 @@ export default function SeoTemplates() {
     try {
       // Generate unique name if not provided
       const timestamp = new Date().toISOString().slice(0, 19).replace('T', ' ');
+
+      // Build template JSON from form fields
+      const template = {
+        meta_title: formData.meta_title,
+        meta_description: formData.meta_description,
+        meta_keywords: formData.meta_keywords,
+        og_title: formData.og_title,
+        og_description: formData.og_description,
+        twitter_title: formData.twitter_title,
+        twitter_description: formData.twitter_description
+      };
+
       const templateData = {
-        ...formData,
         name: formData.name || `${formData.type} Template - ${timestamp}`,
+        type: formData.type,
+        template: template,
         store_id: storeId
       };
 
@@ -395,11 +408,11 @@ export default function SeoTemplates() {
                       )}
                     </div>
                     <p className="text-sm mb-1">
-                      <strong>Title:</strong> {template.meta_title}
+                      <strong>Title:</strong> {template.template?.meta_title || template.meta_title}
                     </p>
-                    {template.meta_description && (
+                    {(template.template?.meta_description || template.meta_description) && (
                       <p className="text-sm text-muted-foreground">
-                        <strong>Description:</strong> {template.meta_description}
+                        <strong>Description:</strong> {template.template?.meta_description || template.meta_description}
                       </p>
                     )}
                   </div>
