@@ -78,13 +78,31 @@ router.get('/', async (req, res) => {
       }
     }
     
-    // Note: Search on name/description is disabled for now as they are in JSON translations format
-    // TODO: Implement JSON-based search using PostgreSQL JSONB operators
+    // Search with normalized translations (much faster!)
     if (search) {
-      where[Op.or] = [
-        { sku: { [Op.iLike]: `%${search}%` } }
-        // Search in translations JSON would require: translations->>'en'->'name' ILIKE '%search%'
-      ];
+      const { sequelize } = require('../database/connection');
+
+      // Search in normalized translation tables for product IDs
+      const productIds = await sequelize.query(`
+        SELECT DISTINCT product_id
+        FROM product_translations
+        WHERE name ILIKE :search
+           OR description ILIKE :search
+      `, {
+        replacements: { search: `%${search}%` },
+        type: sequelize.QueryTypes.SELECT
+      });
+
+      if (productIds.length > 0) {
+        where[Op.or] = [
+          { id: { [Op.in]: productIds.map(p => p.product_id) } },
+          { sku: { [Op.iLike]: `%${search}%` } }
+        ];
+      } else {
+        where[Op.or] = [
+          { sku: { [Op.iLike]: `%${search}%` } }
+        ];
+      }
     }
 
     // Include attributeValues with associations

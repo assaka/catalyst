@@ -21,14 +21,29 @@ router.get('/', async (req, res) => {
     
     if (store_id) where.store_id = store_id;
     if (parent_id !== undefined) where.parent_id = parent_id;
-    
-    // Note: Search is disabled for now as translations are in JSON format
-    // TODO: Implement JSON-based search using PostgreSQL JSONB operators
-    // if (search) {
-    //   where[Op.or] = [
-    //     // Search in translations JSON: translations->>'en'->'name' ILIKE '%search%'
-    //   ];
-    // }
+
+    // Search with normalized translations (much faster!)
+    if (search) {
+      const { sequelize } = require('../database/connection');
+
+      // Search in normalized translation tables for category IDs
+      const categoryIds = await sequelize.query(`
+        SELECT DISTINCT category_id
+        FROM category_translations
+        WHERE name ILIKE :search
+           OR description ILIKE :search
+      `, {
+        replacements: { search: `%${search}%` },
+        type: sequelize.QueryTypes.SELECT
+      });
+
+      if (categoryIds.length > 0) {
+        where.id = { [Op.in]: categoryIds.map(c => c.category_id) };
+      } else {
+        // No matches found, return empty result
+        where.id = { [Op.in]: [] };
+      }
+    }
 
     const { count, rows } = await Category.findAndCountAll({
       where,
