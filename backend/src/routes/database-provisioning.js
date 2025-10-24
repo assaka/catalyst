@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
-const { authMiddleware, storeResolver } = require('../middleware/auth');
+const { authMiddleware } = require('../middleware/auth');
+const { checkStoreOwnership } = require('../middleware/storeAuth');
 const DatabaseProvisioningService = require('../services/database/DatabaseProvisioningService');
 const ConnectionManager = require('../services/database/ConnectionManager');
 const { Store, Subscription, UsageMetric, BillingTransaction } = require('../models');
@@ -9,7 +10,7 @@ const { Op } = require('sequelize');
 /**
  * Provision database for a new store
  */
-router.post('/provision', authMiddleware, storeResolver(), async (req, res) => {
+router.post('/provision', authMiddleware, checkStoreOwnership, async (req, res) => {
   try {
     const { databaseType, config } = req.body;
 
@@ -45,7 +46,7 @@ router.post('/provision', authMiddleware, storeResolver(), async (req, res) => {
 /**
  * Check provisioning status
  */
-router.get('/status', authMiddleware, storeResolver(), async (req, res) => {
+router.get('/status', authMiddleware, checkStoreOwnership, async (req, res) => {
   try {
     const store = await Store.findByPk(req.storeId);
 
@@ -77,7 +78,7 @@ router.get('/status', authMiddleware, storeResolver(), async (req, res) => {
 /**
  * Test database connection
  */
-router.post('/test-connection', authMiddleware, storeResolver(), async (req, res) => {
+router.post('/test-connection', authMiddleware, checkStoreOwnership, async (req, res) => {
   try {
     const result = await ConnectionManager.testStoreConnection(req.storeId);
     res.json(result);
@@ -92,7 +93,7 @@ router.post('/test-connection', authMiddleware, storeResolver(), async (req, res
 /**
  * Get connection info (without sensitive data)
  */
-router.get('/connection-info', authMiddleware, storeResolver(), async (req, res) => {
+router.get('/connection-info', authMiddleware, checkStoreOwnership, async (req, res) => {
   try {
     const info = await ConnectionManager.getConnectionInfo(req.storeId);
 
@@ -118,7 +119,7 @@ router.get('/connection-info', authMiddleware, storeResolver(), async (req, res)
 /**
  * Re-provision database (admin only)
  */
-router.post('/reprovision', authMiddleware, storeResolver(), async (req, res) => {
+router.post('/reprovision', authMiddleware, checkStoreOwnership, async (req, res) => {
   try {
     // Check if user is admin
     if (!req.user.is_admin && !req.user.platformAdmin) {
@@ -142,7 +143,7 @@ router.post('/reprovision', authMiddleware, storeResolver(), async (req, res) =>
 /**
  * Get store subscription info
  */
-router.get('/subscription', authMiddleware, storeResolver(), async (req, res) => {
+router.get('/subscription', authMiddleware, checkStoreOwnership, async (req, res) => {
   try {
     const subscription = await Subscription.findOne({
       where: {
@@ -189,7 +190,7 @@ router.get('/subscription', authMiddleware, storeResolver(), async (req, res) =>
 /**
  * Get usage metrics
  */
-router.get('/usage', authMiddleware, storeResolver(), async (req, res) => {
+router.get('/usage', authMiddleware, checkStoreOwnership, async (req, res) => {
   try {
     const { startDate, endDate } = req.query;
     const start = startDate || new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
@@ -222,7 +223,7 @@ router.get('/usage', authMiddleware, storeResolver(), async (req, res) => {
 /**
  * Get billing history
  */
-router.get('/billing/history', authMiddleware, storeResolver(), async (req, res) => {
+router.get('/billing/history', authMiddleware, checkStoreOwnership, async (req, res) => {
   try {
     const transactions = await BillingTransaction.findAll({
       where: { store_id: req.storeId },
