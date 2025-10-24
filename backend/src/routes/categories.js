@@ -3,6 +3,14 @@ const { body, validationResult } = require('express-validator');
 const { Category, Store, Language } = require('../models');
 const { Op } = require('sequelize');
 const translationService = require('../services/translation-service');
+const { getLanguageFromRequest } = require('../utils/languageUtils');
+const {
+  getCategoriesWithTranslations,
+  getCategoryById,
+  createCategoryWithTranslations,
+  updateCategoryWithTranslations,
+  deleteCategory
+} = require('../utils/categoryHelpers');
 const router = express.Router();
 
 // Helper function to check store access (ownership or team membership)
@@ -25,7 +33,7 @@ router.get('/', authMiddleware, authorize(['admin', 'store_owner']), async (req,
     const offset = (page - 1) * limit;
 
     const where = {};
-    
+
     // Filter by store access (ownership + team membership)
     if (req.user.role !== 'admin') {
       const { getUserStoresForDropdown } = require('../utils/storeAccess');
@@ -37,30 +45,35 @@ router.get('/', authMiddleware, authorize(['admin', 'store_owner']), async (req,
     if (store_id) where.store_id = store_id;
     if (parent_id) where.parent_id = parent_id;
 
-    // Note: Search functionality removed temporarily - Category model now uses
-    // translations JSON field instead of direct name/description columns
-    // TODO: Implement JSON-based search or add computed columns for search
+    const lang = getLanguageFromRequest(req);
+    console.log('🌍 Categories: Requesting language:', lang);
+
+    // Get categories with translations
+    const categories = await getCategoriesWithTranslations(where, lang);
+
+    // Handle search in memory (if needed) - TODO: move to SQL query
+    let filteredCategories = categories;
     if (search) {
-      console.warn('Search parameter provided but search is not yet implemented for translations JSON field');
+      const searchLower = search.toLowerCase();
+      filteredCategories = categories.filter(cat =>
+        cat.name?.toLowerCase().includes(searchLower) ||
+        cat.description?.toLowerCase().includes(searchLower)
+      );
     }
 
-    // Temporarily remove Store include to avoid association errors
-    const { count, rows } = await Category.findAndCountAll({
-      where,
-      limit: parseInt(limit),
-      offset: parseInt(offset),
-      order: [['sort_order', 'ASC'], ['created_at', 'DESC']]
-    });
+    // Apply pagination
+    const total = filteredCategories.length;
+    const paginatedCategories = filteredCategories.slice(offset, offset + parseInt(limit));
 
     res.json({
       success: true,
       data: {
-        categories: rows,
+        categories: paginatedCategories,
         pagination: {
           current_page: parseInt(page),
           per_page: parseInt(limit),
-          total: count,
-          total_pages: Math.ceil(count / limit)
+          total: total,
+          total_pages: Math.ceil(total / limit)
         }
       }
     });
@@ -78,8 +91,9 @@ router.get('/', authMiddleware, authorize(['admin', 'store_owner']), async (req,
 // @access  Private
 router.get('/:id', authMiddleware, authorize(['admin', 'store_owner']), async (req, res) => {
   try {
-    const category = await Category.findByPk(req.params.id);
-    
+    const lang = getLanguageFromRequest(req);
+    const category = await getCategoryById(req.params.id, lang);
+
     if (!category) {
       return res.status(404).json({
         success: false,
@@ -140,7 +154,10 @@ router.post('/', authMiddleware, authorize(['admin', 'store_owner']), [
       });
     }
 
-    const category = await Category.create(req.body);
+    // Extract translations from request body
+    const { translations, ...categoryData } = req.body;
+
+    const category = await createCategoryWithTranslations(categoryData, translations || {});
 
     res.status(201).json({
       success: true,
@@ -171,9 +188,10 @@ router.put('/:id', authMiddleware, authorize(['admin', 'store_owner']), [
       });
     }
 
-    const category = await Category.findByPk(req.params.id);
-    
-    if (!category) {
+    // Check if category exists
+    const existingCategory = await Category.findByPk(req.params.id);
+
+    if (!existingCategory) {
       return res.status(404).json({
         success: false,
         message: 'Category not found'
@@ -183,7 +201,7 @@ router.put('/:id', authMiddleware, authorize(['admin', 'store_owner']), [
     // Check store access
     if (req.user.role !== 'admin') {
       const { checkUserStoreAccess } = require('../utils/storeAccess');
-      const access = await checkUserStoreAccess(req.user.id, category.store_id);
+      const access = await checkUserStoreAccess(req.user.id, existingCategory.store_id);
 
       if (!access) {
         return res.status(403).json({
@@ -193,7 +211,10 @@ router.put('/:id', authMiddleware, authorize(['admin', 'store_owner']), [
       }
     }
 
-    await category.update(req.body);
+    // Extract translations from request body
+    const { translations, ...categoryData } = req.body;
+
+    const category = await updateCategoryWithTranslations(req.params.id, categoryData, translations || {});
 
     res.json({
       success: true,
@@ -215,7 +236,7 @@ router.put('/:id', authMiddleware, authorize(['admin', 'store_owner']), [
 router.delete('/:id', authMiddleware, authorize(['admin', 'store_owner']), async (req, res) => {
   try {
     const category = await Category.findByPk(req.params.id);
-    
+
     if (!category) {
       return res.status(404).json({
         success: false,
@@ -236,7 +257,7 @@ router.delete('/:id', authMiddleware, authorize(['admin', 'store_owner']), async
       }
     }
 
-    await category.destroy();
+    await deleteCategory(req.params.id);
 
     res.json({
       success: true,
@@ -268,7 +289,7 @@ router.post('/:id/translate', authMiddleware, authorize(['admin', 'store_owner']
     }
 
     const { fromLang, toLang } = req.body;
-    const category = await Category.findByPk(req.params.id);
+    const category = await getCategoryById(req.params.id, fromLang);
 
     if (!category) {
       return res.status(404).json({
@@ -290,16 +311,32 @@ router.post('/:id/translate', authMiddleware, authorize(['admin', 'store_owner']
       }
     }
 
-    // Check if source translation exists
-    if (!category.translations || !category.translations[fromLang]) {
+    // Check if source translation exists (from normalized table)
+    if (!category.name && !category.description) {
       return res.status(400).json({
         success: false,
         message: `No ${fromLang} translation found for this category`
       });
     }
 
-    // Translate the category
-    const updatedCategory = await translationService.aiTranslateEntity('category', req.params.id, fromLang, toLang);
+    // Translate each field using AI
+    const translatedData = {};
+    if (category.name) {
+      translatedData.name = await translationService.aiTranslate(category.name, fromLang, toLang);
+    }
+    if (category.description) {
+      translatedData.description = await translationService.aiTranslate(category.description, fromLang, toLang);
+    }
+
+    // Save the translation using normalized tables
+    const translations = {};
+    translations[toLang] = translatedData;
+
+    const updatedCategory = await updateCategoryWithTranslations(
+      req.params.id,
+      {},
+      translations
+    );
 
     res.json({
       success: true,
@@ -343,11 +380,8 @@ router.post('/bulk-translate', authMiddleware, authorize(['admin', 'store_owner'
       });
     }
 
-    // Get all categories for this store
-    const categories = await Category.findAll({
-      where: { store_id },
-      order: [['sort_order', 'ASC'], ['created_at', 'DESC']]
-    });
+    // Get all categories for this store with fromLang translations
+    const categories = await getCategoriesWithTranslations({ store_id }, fromLang);
 
     if (categories.length === 0) {
       return res.json({
@@ -374,26 +408,39 @@ router.post('/bulk-translate', authMiddleware, authorize(['admin', 'store_owner'
     for (const category of categories) {
       try {
         // Check if source translation exists
-        if (!category.translations || !category.translations[fromLang]) {
+        if (!category.name && !category.description) {
           results.skipped++;
           continue;
         }
 
         // Check if target translation already exists
-        if (category.translations[toLang]) {
+        const categoryWithToLang = await getCategoryById(category.id, toLang);
+        if (categoryWithToLang && (categoryWithToLang.name || categoryWithToLang.description)) {
           results.skipped++;
           continue;
         }
 
-        // Translate the category
-        await translationService.aiTranslateEntity('category', category.id, fromLang, toLang);
+        // Translate each field using AI
+        const translatedData = {};
+        if (category.name) {
+          translatedData.name = await translationService.aiTranslate(category.name, fromLang, toLang);
+        }
+        if (category.description) {
+          translatedData.description = await translationService.aiTranslate(category.description, fromLang, toLang);
+        }
+
+        // Save the translation using normalized tables
+        const translations = {};
+        translations[toLang] = translatedData;
+
+        await updateCategoryWithTranslations(category.id, {}, translations);
         results.translated++;
       } catch (error) {
         console.error(`Error translating category ${category.id}:`, error);
         results.failed++;
         results.errors.push({
           categoryId: category.id,
-          categoryName: category.translations?.[fromLang]?.name || 'Unknown',
+          categoryName: category.name || 'Unknown',
           error: error.message
         });
       }

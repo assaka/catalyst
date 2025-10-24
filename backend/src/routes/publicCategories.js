@@ -1,6 +1,11 @@
 const express = require('express');
 const { Category, Store } = require('../models');
 const { Op } = require('sequelize');
+const { getLanguageFromRequest } = require('../utils/languageUtils');
+const {
+  getCategoriesWithTranslations,
+  getCategoryById
+} = require('../utils/categoryHelpers');
 const router = express.Router();
 
 // @route   GET /api/public/categories
@@ -10,7 +15,7 @@ router.get('/', async (req, res) => {
   try {
     const { page = 1, limit = 100, store_id, parent_id, search } = req.query;
     const offset = (page - 1) * limit;
-    
+
     console.log('🔍 Public Categories API called with params:', req.query);
     console.log('🔍 Request URL:', req.originalUrl);
 
@@ -18,48 +23,40 @@ router.get('/', async (req, res) => {
       is_active: true,  // Only show active categories
       hide_in_menu: false  // Only show categories not hidden in menu
     };
-    
+
     if (store_id) where.store_id = store_id;
     if (parent_id !== undefined) where.parent_id = parent_id;
 
-    // Search with normalized translations (much faster!)
+    const lang = getLanguageFromRequest(req);
+    console.log('🌍 Public Categories: Requesting language:', lang);
+
+    // Get categories with translations
+    const categories = await getCategoriesWithTranslations(where, lang);
+
+    // Handle search in memory (if needed) - already supports translation search in normalized table
+    let filteredCategories = categories;
     if (search) {
-      const { sequelize } = require('../database/connection');
+      const searchLower = search.toLowerCase();
+      filteredCategories = categories.filter(cat =>
+        cat.name?.toLowerCase().includes(searchLower) ||
+        cat.description?.toLowerCase().includes(searchLower)
+      );
+    }
 
-      // Search in normalized translation tables for category IDs
-      const categoryIds = await sequelize.query(`
-        SELECT DISTINCT category_id
-        FROM category_translations
-        WHERE name ILIKE :search
-           OR description ILIKE :search
-      `, {
-        replacements: { search: `%${search}%` },
-        type: sequelize.QueryTypes.SELECT
+    // Apply pagination
+    const paginatedCategories = filteredCategories.slice(offset, offset + parseInt(limit));
+
+    console.log('✅ Public Categories query result:', paginatedCategories.length, 'categories found');
+    if (paginatedCategories.length > 0) {
+      console.log('🎯 Sample category:', {
+        id: paginatedCategories[0].id,
+        name: paginatedCategories[0].name,
+        lang: lang
       });
-
-      if (categoryIds.length > 0) {
-        where.id = { [Op.in]: categoryIds.map(c => c.category_id) };
-      } else {
-        // No matches found, return empty result
-        where.id = { [Op.in]: [] };
-      }
     }
 
-    const { count, rows } = await Category.findAndCountAll({
-      where,
-      limit: parseInt(limit),
-      offset: parseInt(offset),
-      order: [['sort_order', 'ASC'], ['created_at', 'DESC']]
-    });
-
-    console.log('✅ Public Categories query result:', rows.length, 'categories found');
-    console.log('📊 WHERE conditions:', where);
-    if (rows.length > 0) {
-      console.log('🎯 Sample category:', JSON.stringify(rows[0], null, 2));
-    }
-    
     // Return just the array for public requests (for compatibility)
-    res.json(rows);
+    res.json(paginatedCategories);
   } catch (error) {
     console.error('Get public categories error:', error);
     res.status(500).json({
@@ -74,8 +71,9 @@ router.get('/', async (req, res) => {
 // @access  Public
 router.get('/:id', async (req, res) => {
   try {
-    const category = await Category.findByPk(req.params.id);
-    
+    const lang = getLanguageFromRequest(req);
+    const category = await getCategoryById(req.params.id, lang);
+
     if (!category || !category.is_active) {
       return res.status(404).json({
         success: false,
