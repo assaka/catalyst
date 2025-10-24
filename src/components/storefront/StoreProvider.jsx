@@ -210,6 +210,21 @@ export const StoreProvider = ({ children }) => {
     return () => window.removeEventListener('storeSelectionChanged', handleStoreChange);
   }, []);
 
+  // Listen for language changes
+  useEffect(() => {
+    const handleLanguageChange = (event) => {
+      console.log('🌍 StoreProvider: Detected language change:', event.detail?.language);
+      // Clear cache when language changes
+      apiCache.clear();
+      localStorage.removeItem('storeProviderCache');
+      // Refetch store data with the new language
+      fetchStoreData();
+    };
+
+    window.addEventListener('languageChanged', handleLanguageChange);
+    return () => window.removeEventListener('languageChanged', handleLanguageChange);
+  }, []);
+
   // Listen for cache clear broadcasts from admin
   useEffect(() => {
     try {
