@@ -44,11 +44,13 @@ function getLanguageFromRequest(req) {
   // 4. Default to English
   language = 'en';
   source = 'default fallback';
-  console.log(`🌍 Language detected: "${language}" (from ${source})`);
-  console.log(`📋 Available headers:`, {
-    'x-language': req.headers['x-language'] || 'not set',
-    'accept-language': req.headers['accept-language'] || 'not set',
-    'query.lang': req.query.lang || 'not set'
+  console.log(`⚠️ Language defaulting to: "${language}" (${source})`);
+  console.log(`📋 Request details:`, {
+    url: req.originalUrl || req.url,
+    'x-language header': req.headers['x-language'] || 'NOT SET',
+    'accept-language header': req.headers['accept-language'] || 'NOT SET',
+    'query.lang': req.query.lang || 'NOT SET',
+    'all headers': Object.keys(req.headers).join(', ')
   });
   return language;
 }

@@ -1,6 +1,6 @@
 const express = require('express');
-const { PaymentMethod, Store } = require('../models');
-const { Op } = require('sequelize');
+const { getLanguageFromRequest } = require('../utils/languageUtils');
+const { getPaymentMethodsWithTranslations } = require('../utils/paymentMethodHelpers');
 const router = express.Router();
 
 // @route   GET /api/public/payment-methods
@@ -9,11 +9,11 @@ const router = express.Router();
 router.get('/', async (req, res) => {
   try {
     const { store_id, country } = req.query;
-    
+
     if (!store_id) {
-      return res.status(400).json({ 
-        success: false, 
-        message: 'store_id is required' 
+      return res.status(400).json({
+        success: false,
+        message: 'store_id is required'
       });
     }
 
@@ -22,22 +22,22 @@ router.get('/', async (req, res) => {
       is_active: true  // Only show active payment methods
     };
 
-    const paymentMethods = await PaymentMethod.findAll({
-      where,
-      order: [['sort_order', 'ASC'], ['name', 'ASC']],
-      attributes: [
-        'id',
-        'code',
-        'name',
-        'description',
-        'fee_type',
-        'fee_amount',
-        'countries',
-        'sort_order',
-        'translations'
-      ]
-    });
-    
+    const lang = getLanguageFromRequest(req);
+    console.log('🌍 Public Payment Methods: Requesting language:', lang);
+
+    // Get payment methods with translations from normalized table
+    const paymentMethods = await getPaymentMethodsWithTranslations(where, lang);
+
+    console.log(`📦 Found ${paymentMethods.length} payment methods`);
+    if (paymentMethods.length > 0) {
+      console.log('📝 First payment method:', {
+        id: paymentMethods[0].id,
+        name: paymentMethods[0].name,
+        code: paymentMethods[0].code,
+        lang: lang
+      });
+    }
+
     // Filter by country if provided
     let filteredMethods = paymentMethods;
     if (country) {
@@ -49,17 +49,17 @@ router.get('/', async (req, res) => {
       });
     }
 
-    res.json({ 
-      success: true, 
-      data: filteredMethods 
+    res.json({
+      success: true,
+      data: filteredMethods
     });
-    
+
   } catch (error) {
     console.error('❌ Public payment methods route error:', error);
-    res.status(500).json({ 
-      success: false, 
+    res.status(500).json({
+      success: false,
       message: 'Server error',
-      error: error.message 
+      error: error.message
     });
   }
 });
