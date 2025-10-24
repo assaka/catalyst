@@ -9,7 +9,7 @@ export default defineConfig({
     allowedHosts: true,
     proxy: {
       '/api': {
-        target: 'http://localhost:5000',
+        target: process.env.VITE_API_BASE_URL || 'https://catalyst-backend-fzhu.onrender.com',
         changeOrigin: true,
         secure: false
       }
