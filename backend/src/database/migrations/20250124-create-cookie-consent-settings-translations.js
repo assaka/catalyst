@@ -6,8 +6,9 @@ module.exports = {
     await queryInterface.createTable('cookie_consent_settings_translations', {
       id: {
         type: DataTypes.UUID,
-        defaultValue: DataTypes.UUIDV4,
-        primaryKey: true
+        defaultValue: DataTypes.literal('gen_random_uuid()'),
+        primaryKey: true,
+        allowNull: false
       },
       cookie_consent_settings_id: {
         type: DataTypes.UUID,

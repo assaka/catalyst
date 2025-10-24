@@ -213,11 +213,11 @@ async function createCookieConsentSettingsWithTranslations(settingsData, transla
       if (data && Object.keys(data).length > 0) {
         await sequelize.query(`
           INSERT INTO cookie_consent_settings_translations (
-            id, cookie_consent_settings_id, language_code, banner_text,
+            cookie_consent_settings_id, language_code, banner_text,
             accept_button_text, reject_button_text, settings_button_text,
             privacy_policy_text, created_at, updated_at
           ) VALUES (
-            gen_random_uuid(), :settings_id, :lang_code, :banner_text,
+            :settings_id, :lang_code, :banner_text,
             :accept_button_text, :reject_button_text, :settings_button_text,
             :privacy_policy_text, NOW(), NOW()
           )
@@ -333,11 +333,11 @@ async function updateCookieConsentSettingsWithTranslations(id, settingsData, tra
       if (data && Object.keys(data).length > 0) {
         await sequelize.query(`
           INSERT INTO cookie_consent_settings_translations (
-            id, cookie_consent_settings_id, language_code, banner_text,
+            cookie_consent_settings_id, language_code, banner_text,
             accept_button_text, reject_button_text, settings_button_text,
             privacy_policy_text, created_at, updated_at
           ) VALUES (
-            gen_random_uuid(), :settings_id, :lang_code, :banner_text,
+            :settings_id, :lang_code, :banner_text,
             :accept_button_text, :reject_button_text, :settings_button_text,
             :privacy_policy_text, NOW(), NOW()
           )
