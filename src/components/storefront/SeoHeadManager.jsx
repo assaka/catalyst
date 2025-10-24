@@ -452,6 +452,10 @@ export default function SeoHeadManager({ pageType, pageData, pageTitle, pageDesc
             });
         }
 
+        // Declare OG variables outside the block so they can be used by Twitter fallback
+        let ogTitle = title;  // Default to meta title
+        let ogDescription = description;  // Default to meta description
+
         // Open Graph Tags (controlled via settings)
         const ogEnabled = seoSettings?.social_media_settings?.open_graph?.enabled !== false;
         if (ogEnabled) {
@@ -470,17 +474,17 @@ export default function SeoHeadManager({ pageType, pageData, pageTitle, pageDesc
              * ==================================
              * Priority: Entity OG > Template OG > Global OG Default > Meta Tag Fallback
              */
-            const ogTitle = pageData?.og_title ||                    // Entity OG override
-                           pageData?.seo?.og_title ||                // Legacy JSON field
-                           templateOgTitle ||                        // Template OG
-                           ogDefaultTitle ||                         // Global OG default
-                           title;                                    // Meta title fallback
+            ogTitle = pageData?.og_title ||                    // Entity OG override
+                     pageData?.seo?.og_title ||                // Legacy JSON field
+                     templateOgTitle ||                        // Template OG
+                     ogDefaultTitle ||                         // Global OG default
+                     title;                                    // Meta title fallback
 
-            const ogDescription = pageData?.og_description ||        // Entity OG override
-                                 pageData?.seo?.og_description ||    // Legacy JSON field
-                                 templateOgDescription ||            // Template OG
-                                 ogDefaultDescription ||             // Global OG default
-                                 description;                        // Meta description fallback
+            ogDescription = pageData?.og_description ||        // Entity OG override
+                           pageData?.seo?.og_description ||    // Legacy JSON field
+                           templateOgDescription ||            // Template OG
+                           ogDefaultDescription ||             // Global OG default
+                           description;                        // Meta description fallback
 
             updateMetaTag('og:title', ogTitle, true);
             updateMetaTag('og:description', ogDescription, true);
