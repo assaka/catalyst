@@ -73,13 +73,9 @@ const PaymentMethod = sequelize.define('PaymentMethod', {
       model: 'stores',
       key: 'id'
     }
-  },
-  // Multilingual translations
-  translations: {
-    type: DataTypes.JSON,
-    defaultValue: {},
-    comment: 'Multilingual translations: {"en": {"name": "...", "description": "..."}, "nl": {...}}'
   }
+  // Translations now stored in normalized payment_method_translations table
+  // Removed translations JSON column - using normalized table for better search performance
 }, {
   tableName: 'payment_methods',
   hooks: {

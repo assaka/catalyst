@@ -137,6 +137,10 @@ class ApiClient {
       headers.Authorization = `Bearer ${token}`;
     }
 
+    // Add X-Language header from localStorage
+    const currentLanguage = localStorage.getItem('catalyst_language') || 'en';
+    headers['X-Language'] = currentLanguage;
+
     return headers;
   }
 
@@ -145,9 +149,13 @@ class ApiClient {
     // For public endpoints, use /api/public/ prefix
     const publicEndpoint = endpoint.startsWith('public/') ? endpoint : `public/${endpoint}`;
     const url = this.buildUrl(publicEndpoint);
-    
+
+    // Add X-Language header from localStorage
+    const currentLanguage = localStorage.getItem('catalyst_language') || 'en';
+
     const headers = {
       'Content-Type': 'application/json',
+      'X-Language': currentLanguage,
       ...customHeaders
     };
 
