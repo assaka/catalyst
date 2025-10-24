@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const { authMiddleware, storeResolver } = require('../middleware/authMiddleware');
+const { authMiddleware, storeResolver } = require('../middleware/auth');
 const DatabaseProvisioningService = require('../services/database/DatabaseProvisioningService');
 const ConnectionManager = require('../services/database/ConnectionManager');
 const { Store, Subscription, UsageMetric, BillingTransaction } = require('../models');
