@@ -46,11 +46,13 @@ async function getCategoriesWithTranslations(where = {}, lang = 'en') {
       c.product_count,
       c.created_at,
       c.updated_at,
-      ct.name as name,
-      ct.description as description
+      COALESCE(ct.name, ct_en.name, c.slug) as name,
+      COALESCE(ct.description, ct_en.description) as description
     FROM categories c
     LEFT JOIN category_translations ct
       ON c.id = ct.category_id AND ct.language_code = :lang
+    LEFT JOIN category_translations ct_en
+      ON c.id = ct_en.category_id AND ct_en.language_code = 'en'
     ${whereClause}
     ORDER BY c.sort_order ASC, c.created_at DESC
   `;
@@ -113,11 +115,13 @@ async function getCategoryById(id, lang = 'en') {
       c.product_count,
       c.created_at,
       c.updated_at,
-      ct.name as name,
-      ct.description as description
+      COALESCE(ct.name, ct_en.name, c.slug) as name,
+      COALESCE(ct.description, ct_en.description) as description
     FROM categories c
     LEFT JOIN category_translations ct
       ON c.id = ct.category_id AND ct.language_code = :lang
+    LEFT JOIN category_translations ct_en
+      ON c.id = ct_en.category_id AND ct_en.language_code = 'en'
     WHERE c.id = :id
   `;
 
