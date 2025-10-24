@@ -1,6 +1,5 @@
 import { useEffect } from 'react';
 import { useParams } from 'react-router-dom';
-import apiClient from '@/api/client';
 
 export default function RobotsTxtHandler() {
   const { storeCode } = useParams();
@@ -8,12 +7,12 @@ export default function RobotsTxtHandler() {
   useEffect(() => {
     const fetchRobotsTxt = async () => {
       try {
-        // Fetch robots.txt content from API
-        const response = await apiClient.publicRequest('GET', `robots/store/${storeCode}`);
+        // Fetch robots.txt content from API as plain text
+        const response = await fetch(`/api/robots/store/${storeCode}`);
+        const text = await response.text();
 
-        // Set content type and render as plain text
-        document.documentElement.innerHTML = `<pre style="margin:0;font-family:monospace;white-space:pre-wrap;word-wrap:break-word;">${response}</pre>`;
-        document.contentType = 'text/plain';
+        // Replace entire document with plain text robots.txt
+        document.documentElement.innerHTML = `<pre style="margin:0;font-family:monospace;white-space:pre-wrap;word-wrap:break-word;">${text}</pre>`;
 
       } catch (error) {
         console.error('Error fetching robots.txt:', error);
