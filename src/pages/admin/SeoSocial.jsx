@@ -351,15 +351,6 @@ export default function SeoSocial() {
 
             </CardContent>
           </Card>
-          <div className="flex justify-end mt-8">
-            <SaveButton
-                onClick={handleSave}
-                loading={saving}
-                success={saveSuccess}
-                defaultText="Save Settings"
-            />
-          </div>
-
         </TabsContent>
 
         <TabsContent value="twitter" className="space-y-4">
@@ -465,14 +456,6 @@ export default function SeoSocial() {
 
             </CardContent>
           </Card>
-          <div className="flex justify-end mt-8">
-            <SaveButton
-                onClick={handleSave}
-                loading={saving}
-                success={saveSuccess}
-                defaultText="Save Settings"
-            />
-          </div>
         </TabsContent>
 
         <TabsContent value="social" className="space-y-4">
@@ -595,14 +578,6 @@ export default function SeoSocial() {
               </div>
             </CardContent>
           </Card>
-          <div className="flex justify-end mt-8">
-            <SaveButton
-                onClick={handleSave}
-                loading={saving}
-                success={saveSuccess}
-                defaultText="Save Settings"
-            />
-          </div>
         </TabsContent>
 
         <TabsContent value="schema" className="space-y-4">
@@ -792,16 +767,17 @@ export default function SeoSocial() {
 
             </CardContent>
           </Card>
-          <div className="flex justify-end mt-8">
-            <SaveButton
-                onClick={handleSave}
-                loading={saving}
-                success={saveSuccess}
-                defaultText="Save Settings"
-            />
-          </div>
         </TabsContent>
       </Tabs>
+
+      <div className="flex justify-end mt-6">
+        <SaveButton
+          onClick={handleSave}
+          loading={saving}
+          success={saveSuccess}
+          defaultText="Save All Settings"
+        />
+      </div>
     </div>
   );
 }
