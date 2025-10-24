@@ -1,4 +1,5 @@
 const { Subscription, UsageMetric, Store } = require('../models');
+const { sequelize } = require('../database/connection');
 const { Op } = require('sequelize');
 
 /**
