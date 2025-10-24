@@ -48,6 +48,7 @@ const BillingTransaction = require('./BillingTransaction');
 const UsageMetric = require('./UsageMetric');
 const ApiUsageLog = require('./ApiUsageLog');
 const PlatformAdmin = require('./PlatformAdmin');
+const CustomDomain = require('./CustomDomain');
 const AkeneoCustomMapping = require('./AkeneoCustomMapping');
 const AkeneoSchedule = require('./AkeneoSchedule');
 const Credit = require('./Credit');
@@ -298,6 +299,10 @@ const defineAssociations = () => {
   PlatformAdmin.belongsTo(User, { foreignKey: 'user_id', as: 'user' });
   User.hasOne(PlatformAdmin, { foreignKey: 'user_id', as: 'platformAdmin' });
 
+  // CustomDomain associations
+  CustomDomain.belongsTo(Store, { foreignKey: 'store_id', as: 'store' });
+  Store.hasMany(CustomDomain, { foreignKey: 'store_id', as: 'customDomains' });
+
   // Credit system associations
   Credit.belongsTo(User, { foreignKey: 'user_id' });
   Credit.belongsTo(Store, { foreignKey: 'store_id' });
@@ -396,6 +401,7 @@ module.exports = {
   UsageMetric,
   ApiUsageLog,
   PlatformAdmin,
+  CustomDomain,
   AkeneoCustomMapping,
   AkeneoSchedule,
   Credit,

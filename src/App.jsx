@@ -347,7 +347,6 @@ function App() {
           <Route path="/admin/media-storage" element={<PageWrapper Component={Pages.MediaStorage} pageName="media-storage" />} />
           <Route path="/admin/database-integrations" element={<PageWrapper Component={Pages.DatabaseIntegrations} pageName="database-integrations" />} />
           <Route path="/admin/stores" element={<PageWrapper Component={Pages.Stores} pageName="STORES" />} />
-          <Route path="/admin/supabase" element={<PageWrapper Component={Pages.SupabasePage} pageName="SupabasePage" />} />
           <Route path="/admin/monitoring-dashboard" element={<PageWrapper Component={Pages.MonitoringDashboard} pageName="monitoring-dashboard" />} />
           <Route path="/admin/scheduled-jobs" element={<PageWrapper Component={Pages.ScheduledJobs} pageName="scheduled-jobs" />} />
           <Route path="/admin/billing" element={<PageWrapper Component={Pages.Billing} pageName="Billing" />} />

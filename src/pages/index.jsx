@@ -27,7 +27,6 @@ export { default as DatabaseIntegrations } from './admin/DatabaseIntegrations';
 export { default as ShopifyIntegration } from './admin/ShopifyIntegration';
 export { default as AkeneoIntegration } from './admin/AkeneoIntegration';
 export { default as RenderIntegration } from './admin/RenderIntegration';
-export { default as SupabasePage } from './admin/SupabasePage';
 // Unified Plugin System
 export { default as UnifiedPluginManager } from './UnifiedPluginManager-v2';
 export { default as ProductTabs } from './admin/ProductTabs';

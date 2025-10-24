@@ -105,6 +105,7 @@ const pluginApiRoutes = require('./routes/plugin-api');
 const pluginAIRoutes = require('./routes/pluginAIRoutes');
 const chatApiRoutes = require('./routes/chat-api');
 const databaseProvisioningRoutes = require('./routes/database-provisioning');
+const customDomainsRoutes = require('./routes/custom-domains');
 
 // Import usage tracking middleware
 const {
@@ -113,6 +114,14 @@ const {
   trackApiError,
   checkUsageLimits
 } = require('./middleware/usageTracking');
+
+// Import subscription enforcement middleware
+const {
+  requireActiveSubscription,
+  enforceReadOnly,
+  checkResourceLimit,
+  warnApproachingLimits
+} = require('./middleware/subscriptionEnforcement');
 
 const app = express();
 
@@ -1757,6 +1766,7 @@ app.use('/api/supabase', supabaseRoutes);
 app.use('/api/supabase', supabaseSetupRoutes);
 app.use('/api/shopify', shopifyRoutes);
 app.use('/api/database-provisioning', authMiddleware, databaseProvisioningRoutes); // Master DB: provisioning, subscriptions, billing
+app.use('/api/custom-domains', customDomainsRoutes); // Custom domain management: DNS verification, SSL provisioning
 app.use('/api/images', authMiddleware, imageRoutes);
 app.use('/api/cloudflare/oauth', cloudflareOAuthRoutes);
 app.use('/api/admin', adminNavigationRoutes); // Dynamic navigation API (Plugin Architecture Phase 1)
