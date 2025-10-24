@@ -417,6 +417,12 @@ export default function SeoHeadManager({ pageType, pageData, pageTitle, pageDesc
             if (fbAppId) {
                 updateMetaTag('fb:app_id', fbAppId, true);
             }
+
+            // Facebook Page URL (article:publisher) if provided
+            const fbPageUrl = seoSettings?.social_media_settings?.open_graph?.facebook_page_url;
+            if (fbPageUrl) {
+                updateMetaTag('article:publisher', fbPageUrl, true);
+            }
         }
 
         // Twitter Card Tags (controlled via settings)
@@ -567,22 +573,25 @@ export default function SeoHeadManager({ pageType, pageData, pageTitle, pageDesc
                     }
                 }
 
-                // Add social profiles from new consolidated structure
-                let socialProfiles = [];
-                if (seoSettings?.social_media_settings?.social_profiles) {
-                    const profiles = seoSettings.social_media_settings.social_profiles;
-                    socialProfiles = Object.values(profiles)
-                        .filter(url => url && typeof url === 'string' && url.trim())
-                        .concat(Array.isArray(profiles.other) ? profiles.other.filter(url => url && url.trim()) : []);
-                }
-                // Fallback to legacy social_profiles array
-                else if (seoSettings?.schema_settings?.social_profiles && Array.isArray(seoSettings.schema_settings.social_profiles)) {
-                    socialProfiles = seoSettings.schema_settings.social_profiles.filter(profile => profile && profile.trim());
-                }
+                // Add social profiles from new consolidated structure (only if enabled)
+                const enableSocialProfiles = schemaSettings.enable_social_profiles !== false;
+                if (enableSocialProfiles) {
+                    let socialProfiles = [];
+                    if (seoSettings?.social_media_settings?.social_profiles) {
+                        const profiles = seoSettings.social_media_settings.social_profiles;
+                        socialProfiles = Object.values(profiles)
+                            .filter(url => url && typeof url === 'string' && url.trim())
+                            .concat(Array.isArray(profiles.other) ? profiles.other.filter(url => url && url.trim()) : []);
+                    }
+                    // Fallback to legacy social_profiles array
+                    else if (seoSettings?.schema_settings?.social_profiles && Array.isArray(seoSettings.schema_settings.social_profiles)) {
+                        socialProfiles = seoSettings.schema_settings.social_profiles.filter(profile => profile && profile.trim());
+                    }
 
-                // Add social profiles to structured data if any exist
-                if (socialProfiles.length > 0) {
-                    structuredData.sameAs = socialProfiles;
+                    // Add social profiles to structured data if any exist
+                    if (socialProfiles.length > 0) {
+                        structuredData.sameAs = socialProfiles;
+                    }
                 }
 
                 script.textContent = JSON.stringify(structuredData);

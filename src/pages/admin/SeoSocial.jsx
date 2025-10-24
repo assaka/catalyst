@@ -51,6 +51,7 @@ export default function SeoSocial() {
         enable_product_schema: true,
         enable_organization_schema: true,
         enable_breadcrumb_schema: true,
+        enable_social_profiles: true,
         organization_name: '',
         organization_logo_url: '',
         organization_description: '',
@@ -130,6 +131,7 @@ export default function SeoSocial() {
                 enable_product_schema: socialMediaSettings.schema?.enable_product_schema !== false,
                 enable_organization_schema: socialMediaSettings.schema?.enable_organization_schema !== false,
                 enable_breadcrumb_schema: socialMediaSettings.schema?.enable_breadcrumb_schema !== false,
+                enable_social_profiles: socialMediaSettings.schema?.enable_social_profiles !== false,
                 organization_name: socialMediaSettings.schema?.organization_name || '',
                 organization_logo_url: socialMediaSettings.schema?.organization_logo_url || '',
                 organization_description: socialMediaSettings.schema?.organization_description || '',
@@ -321,7 +323,14 @@ export default function SeoSocial() {
                   onChange={(e) => updateSocialMediaSettings('open_graph', 'facebook_page_url', e.target.value)}
                 />
                 <p className="text-sm text-muted-foreground">
-                  Link to your Facebook business page
+                  Link to your Facebook business page (used for article:publisher tag)
+                </p>
+              </div>
+
+              <div className="mt-4 p-4 bg-amber-50 border border-amber-200 rounded-lg">
+                <h4 className="font-semibold text-sm mb-2">💡 Tip:</h4>
+                <p className="text-sm text-muted-foreground">
+                  This Facebook Page URL is used specifically for Open Graph article:publisher metadata. It should match your Facebook profile in the "Social Profiles" tab for consistency.
                 </p>
               </div>
 
@@ -442,9 +451,15 @@ export default function SeoSocial() {
               <CardTitle>Social Media Profiles</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-              <p className="text-sm text-muted-foreground mb-4">
-                Add your social media profile URLs. These will be displayed in your website's structured data and can improve your brand presence in search results.
-              </p>
+              <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg mb-4">
+                <h4 className="font-semibold text-sm mb-2">ℹ️ About Social Profiles</h4>
+                <p className="text-sm text-muted-foreground mb-2">
+                  These URLs are included in your website's Schema.org structured data and help search engines understand your brand's online presence.
+                </p>
+                <p className="text-sm text-muted-foreground">
+                  <strong>Note:</strong> For best results, ensure your Facebook URL here matches the "Facebook Page URL" in Open Graph settings, and your Twitter URL corresponds to the handle in Twitter Card settings.
+                </p>
+              </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
@@ -608,6 +623,20 @@ export default function SeoSocial() {
                     onCheckedChange={(checked) => updateSocialMediaSettings('schema', 'enable_breadcrumb_schema', checked)}
                   />
                 </div>
+
+                <div className="flex items-center justify-between">
+                  <div className="space-y-0.5">
+                    <Label htmlFor="schema-social-profiles" className="text-base font-semibold">Enable Social Profiles</Label>
+                    <p className="text-sm text-muted-foreground">
+                      Include social media profiles in structured data
+                    </p>
+                  </div>
+                  <Switch
+                    id="schema-social-profiles"
+                    checked={settings.social_media_settings.schema.enable_social_profiles}
+                    onCheckedChange={(checked) => updateSocialMediaSettings('schema', 'enable_social_profiles', checked)}
+                  />
+                </div>
               </div>
 
               <div className="space-y-2">
@@ -727,7 +756,7 @@ export default function SeoSocial() {
               <div className="p-4 bg-blue-50 rounded-lg">
                 <h4 className="font-semibold text-sm mb-2">ℹ️ Note:</h4>
                 <p className="text-sm text-muted-foreground">
-                  Social media profiles are configured in the "Social Profiles" tab. They will automatically be included in your Schema.org structured data.
+                  Social media profiles are configured in the "Social Profiles" tab. When "Enable Social Profiles" is turned on above, they will be included in your Schema.org structured data (Organization schema).
                 </p>
               </div>
 
