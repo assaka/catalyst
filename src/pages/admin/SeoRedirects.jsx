@@ -46,6 +46,23 @@ export default function SeoRedirects() {
     }
   };
 
+  // Helper function to ensure relative URLs start with /
+  const normalizeUrl = (url) => {
+    const trimmedUrl = url.trim();
+
+    // If it's an absolute URL (starts with http:// or https://), don't modify it
+    if (trimmedUrl.startsWith('http://') || trimmedUrl.startsWith('https://')) {
+      return trimmedUrl;
+    }
+
+    // For relative URLs, ensure they start with /
+    if (!trimmedUrl.startsWith('/')) {
+      return '/' + trimmedUrl;
+    }
+
+    return trimmedUrl;
+  };
+
   const handleAddRedirect = async () => {
     const storeId = getSelectedStoreId();
     if (!storeId) {
@@ -58,12 +75,16 @@ export default function SeoRedirects() {
       return;
     }
 
+    // Normalize URLs to ensure relative URLs start with /
+    const normalizedFromUrl = normalizeUrl(fromUrl);
+    const normalizedToUrl = normalizeUrl(toUrl);
+
     try {
       setLoading(true);
       await adminApiClient.post('/redirects', {
         store_id: storeId,
-        from_url: fromUrl,
-        to_url: toUrl,
+        from_url: normalizedFromUrl,
+        to_url: normalizedToUrl,
         type: redirectType,
         is_active: true
       });

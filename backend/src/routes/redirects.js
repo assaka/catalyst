@@ -4,6 +4,25 @@ const { authMiddleware } = require('../middleware/auth');
 
 const router = express.Router();
 
+// Helper function to ensure relative URLs start with /
+const normalizeUrl = (url) => {
+  if (!url) return url;
+
+  const trimmedUrl = url.trim();
+
+  // If it's an absolute URL (starts with http:// or https://), don't modify it
+  if (trimmedUrl.startsWith('http://') || trimmedUrl.startsWith('https://')) {
+    return trimmedUrl;
+  }
+
+  // For relative URLs, ensure they start with /
+  if (!trimmedUrl.startsWith('/')) {
+    return '/' + trimmedUrl;
+  }
+
+  return trimmedUrl;
+};
+
 // @route   GET /api/redirects/check
 // @desc    Check for redirect (for storefront use)
 // @access  Public (no auth required)
@@ -136,7 +155,14 @@ router.get('/:id', authMiddleware, async (req, res) => {
 // @access  Private
 router.post('/', authMiddleware, async (req, res) => {
   try {
-    const redirect = await Redirect.create(req.body);
+    // Normalize URLs to ensure relative URLs start with /
+    const redirectData = {
+      ...req.body,
+      from_url: normalizeUrl(req.body.from_url),
+      to_url: normalizeUrl(req.body.to_url)
+    };
+
+    const redirect = await Redirect.create(redirectData);
     // Return format that frontend expects
     res.status(201).json(redirect);
   } catch (error) {
@@ -162,7 +188,16 @@ router.put('/:id', authMiddleware, async (req, res) => {
       });
     }
 
-    await redirect.update(req.body);
+    // Normalize URLs to ensure relative URLs start with /
+    const updateData = { ...req.body };
+    if (updateData.from_url) {
+      updateData.from_url = normalizeUrl(updateData.from_url);
+    }
+    if (updateData.to_url) {
+      updateData.to_url = normalizeUrl(updateData.to_url);
+    }
+
+    await redirect.update(updateData);
     // Return format that frontend expects
     res.json(redirect);
   } catch (error) {
