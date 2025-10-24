@@ -6,6 +6,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import SaveButton from '@/components/ui/save-button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Switch } from "@/components/ui/switch";
 import { Share2, Facebook, Twitter, Plus, X } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useStore } from '@/components/storefront/StoreProvider';
@@ -245,6 +246,20 @@ export default function SeoSocial() {
               <CardTitle>Open Graph Settings</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
+              <div className="flex items-center justify-between p-4 bg-slate-50 rounded-lg">
+                <div className="space-y-0.5">
+                  <Label htmlFor="og-enabled" className="text-base font-semibold">Enable Open Graph</Label>
+                  <p className="text-sm text-muted-foreground">
+                    Enable Open Graph meta tags for social media sharing (Facebook, LinkedIn, etc.)
+                  </p>
+                </div>
+                <Switch
+                  id="og-enabled"
+                  checked={settings.social_media_settings.open_graph.enabled}
+                  onCheckedChange={(checked) => updateSocialMediaSettings('open_graph', 'enabled', checked)}
+                />
+              </div>
+
               <div className="space-y-2">
                 <Label htmlFor="og-title">Default OG Title (Optional)</Label>
                 <Input
@@ -340,6 +355,20 @@ export default function SeoSocial() {
               <CardTitle>Twitter Card Settings</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
+              <div className="flex items-center justify-between p-4 bg-slate-50 rounded-lg">
+                <div className="space-y-0.5">
+                  <Label htmlFor="twitter-enabled" className="text-base font-semibold">Enable Twitter Card</Label>
+                  <p className="text-sm text-muted-foreground">
+                    Enable Twitter Card meta tags for enhanced sharing on X/Twitter
+                  </p>
+                </div>
+                <Switch
+                  id="twitter-enabled"
+                  checked={settings.social_media_settings.twitter.enabled}
+                  onCheckedChange={(checked) => updateSocialMediaSettings('twitter', 'enabled', checked)}
+                />
+              </div>
+
               <div className="space-y-2">
                 <Label htmlFor="twitter-card">Card Type</Label>
                 <Select
@@ -537,6 +566,50 @@ export default function SeoSocial() {
               <CardTitle>Schema Markup Configuration</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
+              <div className="space-y-4 p-4 bg-slate-50 rounded-lg">
+                <div className="flex items-center justify-between">
+                  <div className="space-y-0.5">
+                    <Label htmlFor="schema-product" className="text-base font-semibold">Enable Product Schema</Label>
+                    <p className="text-sm text-muted-foreground">
+                      Add structured data for product pages
+                    </p>
+                  </div>
+                  <Switch
+                    id="schema-product"
+                    checked={settings.social_media_settings.schema.enable_product_schema}
+                    onCheckedChange={(checked) => updateSocialMediaSettings('schema', 'enable_product_schema', checked)}
+                  />
+                </div>
+
+                <div className="flex items-center justify-between">
+                  <div className="space-y-0.5">
+                    <Label htmlFor="schema-organization" className="text-base font-semibold">Enable Organization Schema</Label>
+                    <p className="text-sm text-muted-foreground">
+                      Add structured data for organization information
+                    </p>
+                  </div>
+                  <Switch
+                    id="schema-organization"
+                    checked={settings.social_media_settings.schema.enable_organization_schema}
+                    onCheckedChange={(checked) => updateSocialMediaSettings('schema', 'enable_organization_schema', checked)}
+                  />
+                </div>
+
+                <div className="flex items-center justify-between">
+                  <div className="space-y-0.5">
+                    <Label htmlFor="schema-breadcrumb" className="text-base font-semibold">Enable Breadcrumb Schema</Label>
+                    <p className="text-sm text-muted-foreground">
+                      Add structured data for navigation breadcrumbs
+                    </p>
+                  </div>
+                  <Switch
+                    id="schema-breadcrumb"
+                    checked={settings.social_media_settings.schema.enable_breadcrumb_schema}
+                    onCheckedChange={(checked) => updateSocialMediaSettings('schema', 'enable_breadcrumb_schema', checked)}
+                  />
+                </div>
+              </div>
+
               <div className="space-y-2">
                 <Label htmlFor="org-name">Organization Name</Label>
                 <Input
@@ -561,6 +634,94 @@ export default function SeoSocial() {
                 <p className="text-sm text-muted-foreground">
                   URL to your organization's logo image
                 </p>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="org-description">Organization Description (Optional)</Label>
+                <Textarea
+                  id="org-description"
+                  placeholder="Brief description of your organization"
+                  value={settings.social_media_settings.schema.organization_description}
+                  onChange={(e) => updateSocialMediaSettings('schema', 'organization_description', e.target.value)}
+                />
+                <p className="text-sm text-muted-foreground">
+                  A brief description of your organization for structured data
+                </p>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="contact-type">Contact Type (Optional)</Label>
+                  <Select
+                    value={settings.social_media_settings.schema.contact_type}
+                    onValueChange={(value) => updateSocialMediaSettings('schema', 'contact_type', value)}
+                  >
+                    <SelectTrigger id="contact-type">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="customer service">Customer Service</SelectItem>
+                      <SelectItem value="technical support">Technical Support</SelectItem>
+                      <SelectItem value="billing support">Billing Support</SelectItem>
+                      <SelectItem value="sales">Sales</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="contact-telephone">Contact Telephone (Optional)</Label>
+                  <Input
+                    id="contact-telephone"
+                    placeholder="+1-555-123-4567"
+                    value={settings.social_media_settings.schema.contact_telephone}
+                    onChange={(e) => updateSocialMediaSettings('schema', 'contact_telephone', e.target.value)}
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="contact-email">Contact Email (Optional)</Label>
+                  <Input
+                    id="contact-email"
+                    type="email"
+                    placeholder="contact@example.com"
+                    value={settings.social_media_settings.schema.contact_email}
+                    onChange={(e) => updateSocialMediaSettings('schema', 'contact_email', e.target.value)}
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="price-range">Price Range (Optional)</Label>
+                  <Input
+                    id="price-range"
+                    placeholder="$$"
+                    value={settings.social_media_settings.schema.price_range}
+                    onChange={(e) => updateSocialMediaSettings('schema', 'price_range', e.target.value)}
+                  />
+                  <p className="text-sm text-muted-foreground">
+                    E.g., $, $$, $$$, or $$$$
+                  </p>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="founded-year">Founded Year (Optional)</Label>
+                  <Input
+                    id="founded-year"
+                    type="number"
+                    placeholder="2020"
+                    value={settings.social_media_settings.schema.founded_year}
+                    onChange={(e) => updateSocialMediaSettings('schema', 'founded_year', e.target.value)}
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="founder-name">Founder Name (Optional)</Label>
+                  <Input
+                    id="founder-name"
+                    placeholder="John Doe"
+                    value={settings.social_media_settings.schema.founder_name}
+                    onChange={(e) => updateSocialMediaSettings('schema', 'founder_name', e.target.value)}
+                  />
+                </div>
               </div>
 
               <div className="p-4 bg-blue-50 rounded-lg">

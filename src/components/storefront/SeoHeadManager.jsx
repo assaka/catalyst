@@ -376,18 +376,31 @@ export default function SeoHeadManager({ pageType, pageData, pageTitle, pageDesc
             });
         }
 
-        // Open Graph Tags (always enabled, controlled via settings)
-        if (true) {
+        // Open Graph Tags (controlled via settings)
+        const ogEnabled = seoSettings?.social_media_settings?.open_graph?.enabled !== false;
+        if (ogEnabled) {
+            // Get default OG values from settings
+            const ogDefaultTitle = applyTemplate(
+                seoSettings?.social_media_settings?.open_graph?.default_title || '',
+                pageData
+            );
+            const ogDefaultDescription = applyTemplate(
+                seoSettings?.social_media_settings?.open_graph?.default_description || '',
+                pageData
+            );
+
             // Use Open Graph specific template values if available, otherwise fall back to regular meta values
-            const ogTitle = pageData?.og_title || 
-                           pageData?.seo?.og_title || 
+            const ogTitle = pageData?.og_title ||
+                           pageData?.seo?.og_title ||
                            templateOgTitle ||
+                           ogDefaultTitle ||
                            title;
-            const ogDescription = pageData?.og_description || 
-                                 pageData?.seo?.og_description || 
+            const ogDescription = pageData?.og_description ||
+                                 pageData?.seo?.og_description ||
                                  templateOgDescription ||
+                                 ogDefaultDescription ||
                                  description;
-            
+
             updateMetaTag('og:title', ogTitle, true);
             updateMetaTag('og:description', ogDescription, true);
             updateMetaTag('og:type', pageType === 'product' ? 'product' : 'website', true);
@@ -397,7 +410,7 @@ export default function SeoHeadManager({ pageType, pageData, pageTitle, pageDesc
             }
             if (store?.name) updateMetaTag('og:site_name', store.name, true);
             updateMetaTag('og:url', window.location.href, true);
-            
+
             // Facebook App ID if provided
             const fbAppId = seoSettings?.social_media_settings?.open_graph?.facebook_app_id ||
                            seoSettings?.open_graph_settings?.facebook_app_id;
@@ -406,8 +419,9 @@ export default function SeoHeadManager({ pageType, pageData, pageTitle, pageDesc
             }
         }
 
-        // Twitter Card Tags (always enabled, controlled via settings)
-        if (true) {
+        // Twitter Card Tags (controlled via settings)
+        const twitterEnabled = seoSettings?.social_media_settings?.twitter?.enabled !== false;
+        if (twitterEnabled) {
             const cardType = seoSettings?.social_media_settings?.twitter?.card_type ||
                             seoSettings?.twitter_card_settings?.card_type ||
                             'summary_large_image';
@@ -418,7 +432,7 @@ export default function SeoHeadManager({ pageType, pageData, pageTitle, pageDesc
                 updateMetaTag('twitter:image', ogImage);
                 updateMetaTag('twitter:image:alt', `${title} - ${store.name}`);
             }
-            
+
             // Twitter site username if provided
             const twitterSiteUsername = seoSettings?.social_media_settings?.twitter?.site_username ||
                                        seoSettings?.twitter_card_settings?.site_username;
@@ -427,6 +441,15 @@ export default function SeoHeadManager({ pageType, pageData, pageTitle, pageDesc
                     ? twitterSiteUsername
                     : `@${twitterSiteUsername}`;
                 updateMetaTag('twitter:site', username);
+            }
+
+            // Twitter creator username if provided
+            const twitterCreatorUsername = seoSettings?.social_media_settings?.twitter?.creator_username;
+            if (twitterCreatorUsername) {
+                const creatorUsername = twitterCreatorUsername.startsWith('@')
+                    ? twitterCreatorUsername
+                    : `@${twitterCreatorUsername}`;
+                updateMetaTag('twitter:creator', creatorUsername);
             }
         }
 
@@ -479,13 +502,13 @@ export default function SeoHeadManager({ pageType, pageData, pageTitle, pageDesc
 
         // Organization structured data for non-product pages
         if (pageType !== 'product' && store) {
-            
+
             // Remove existing schema first
             const existingSchema = document.querySelector('script[type="application/ld+json"][data-type="organization"]');
             if (existingSchema) {
                 existingSchema.remove();
             }
-            
+
             const enableOrgSchema = seoSettings?.social_media_settings?.schema?.enable_organization_schema ??
                                    seoSettings?.schema_settings?.enable_organization_schema ??
                                    true;
@@ -493,22 +516,55 @@ export default function SeoHeadManager({ pageType, pageData, pageTitle, pageDesc
                 const script = document.createElement('script');
                 script.type = 'application/ld+json';
                 script.setAttribute('data-type', 'organization');
-                
+
+                const schemaSettings = seoSettings?.social_media_settings?.schema || seoSettings?.schema_settings || {};
+
                 const structuredData = {
                     "@context": "https://schema.org",
                     "@type": "Organization",
-                    "name": seoSettings?.social_media_settings?.schema?.organization_name ||
-                           seoSettings?.schema_settings?.organization_name ||
-                           store.name,
-                    "description": store.description || defaultDescription,
+                    "name": schemaSettings.organization_name || store.name,
+                    "description": schemaSettings.organization_description || store.description || defaultDescription,
                     "url": window.location.origin
                 };
 
                 // Add logo if provided
-                const orgLogoUrl = seoSettings?.social_media_settings?.schema?.organization_logo_url ||
-                                  seoSettings?.schema_settings?.organization_logo_url;
+                const orgLogoUrl = schemaSettings.organization_logo_url;
                 if (orgLogoUrl) {
                     structuredData.logo = orgLogoUrl;
+                }
+
+                // Add founding date if provided
+                if (schemaSettings.founded_year) {
+                    structuredData.foundingDate = schemaSettings.founded_year.toString();
+                }
+
+                // Add founder if provided
+                if (schemaSettings.founder_name) {
+                    structuredData.founder = {
+                        "@type": "Person",
+                        "name": schemaSettings.founder_name
+                    };
+                }
+
+                // Add price range if provided
+                if (schemaSettings.price_range) {
+                    structuredData.priceRange = schemaSettings.price_range;
+                }
+
+                // Add contact point if contact info is provided
+                if (schemaSettings.contact_telephone || schemaSettings.contact_email) {
+                    structuredData.contactPoint = {
+                        "@type": "ContactPoint",
+                        "contactType": schemaSettings.contact_type || "customer service"
+                    };
+
+                    if (schemaSettings.contact_telephone) {
+                        structuredData.contactPoint.telephone = schemaSettings.contact_telephone;
+                    }
+
+                    if (schemaSettings.contact_email) {
+                        structuredData.contactPoint.email = schemaSettings.contact_email;
+                    }
                 }
 
                 // Add social profiles from new consolidated structure
@@ -536,23 +592,54 @@ export default function SeoHeadManager({ pageType, pageData, pageTitle, pageDesc
 
         // Website structured data for homepage
         if (pageType === 'homepage' && store) {
-            
+
             // Remove existing schema first
             const existingSchema = document.querySelector('script[type="application/ld+json"][data-type="website"]');
             if (existingSchema) {
                 existingSchema.remove();
             }
-            
+
             const script = document.createElement('script');
             script.type = 'application/ld+json';
             script.setAttribute('data-type', 'website');
-            
+
             const structuredData = {
                 "@context": "https://schema.org",
                 "@type": "WebSite",
                 "name": store.name,
                 "description": store.description || defaultDescription,
                 "url": window.location.origin
+            };
+
+            script.textContent = JSON.stringify(structuredData);
+            document.head.appendChild(script);
+        }
+
+        // Breadcrumb structured data
+        const enableBreadcrumbSchema = seoSettings?.social_media_settings?.schema?.enable_breadcrumb_schema !== false;
+        if (enableBreadcrumbSchema && pageData?.breadcrumbs && Array.isArray(pageData.breadcrumbs) && pageData.breadcrumbs.length > 0) {
+
+            // Remove existing breadcrumb schema first
+            const existingBreadcrumb = document.querySelector('script[type="application/ld+json"][data-type="breadcrumb"]');
+            if (existingBreadcrumb) {
+                existingBreadcrumb.remove();
+            }
+
+            const script = document.createElement('script');
+            script.type = 'application/ld+json';
+            script.setAttribute('data-type', 'breadcrumb');
+
+            const breadcrumbItems = pageData.breadcrumbs.map((crumb, index) => ({
+                "@type": "ListItem",
+                "position": index + 1,
+                "name": crumb.name || crumb.label || crumb.title,
+                "item": crumb.url || crumb.href || window.location.href
+            }));
+
+            const structuredData = {
+                "@context": "https://schema.org",
+                "@type": "BreadcrumbList",
+                "itemListElement": breadcrumbItems
             };
 
             script.textContent = JSON.stringify(structuredData);
