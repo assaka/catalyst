@@ -155,33 +155,18 @@ const Product = sequelize.define('Product', {
     type: DataTypes.INTEGER,
     defaultValue: 0
   },
-  // Multilingual translations
-  translations: {
-    type: DataTypes.JSON,
-    defaultValue: {},
-    comment: 'Multilingual translations: {"en": {"name": "...", "description": "...", "short_description": "..."}, "es": {...}}'
-  }
+  // Translations now stored in normalized product_translations table
+  // Removed translations JSON column - using normalized table for better search performance
 }, {
   tableName: 'products',
   hooks: {
     beforeCreate: (product) => {
-      // Generate slug from English name in translations if slug not provided
-      if (!product.slug && product.translations && product.translations.en && product.translations.en.name) {
-        product.slug = product.translations.en.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
-      }
-
+      // Slug must be provided when creating products (no longer auto-generated from translations)
       // Apply data validation using utility function
       const sanitizedData = sanitizeNumericFields(product, ['price', 'compare_price', 'cost_price', 'weight']);
       Object.assign(product, sanitizedData);
     },
     beforeUpdate: (product) => {
-      // Update slug if English name changed and slug not manually changed
-      if (product.changed('translations') && !product.changed('slug')) {
-        if (product.translations && product.translations.en && product.translations.en.name) {
-          product.slug = product.translations.en.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
-        }
-      }
-
       // Apply data validation using utility function
       const sanitizedData = sanitizeNumericFields(product, ['price', 'compare_price', 'cost_price', 'weight']);
       Object.assign(product, sanitizedData);

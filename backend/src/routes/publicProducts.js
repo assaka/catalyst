@@ -113,6 +113,7 @@ router.get('/', async (req, res) => {
       limit: parseInt(limit),
       offset: parseInt(offset),
       order: [['created_at', 'DESC']],
+      attributes: { exclude: ['translations'] }, // Exclude translations column - using normalized table
       include: [
         {
           model: ProductAttributeValue,
@@ -207,6 +208,7 @@ router.get('/:id', async (req, res) => {
     console.log('🌍 Public Product Detail: Requesting language:', lang);
 
     const product = await Product.findByPk(req.params.id, {
+      attributes: { exclude: ['translations'] }, // Exclude translations column - using normalized table
       include: [
         {
           model: ProductAttributeValue,
