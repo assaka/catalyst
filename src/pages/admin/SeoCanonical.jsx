@@ -26,6 +26,7 @@ export default function SeoCanonical() {
   const [editingId, setEditingId] = useState(null);
   const [seoSettingId, setSeoSettingId] = useState(null);
   const [flashMessage, setFlashMessage] = useState(null);
+  const [showAddForm, setShowAddForm] = useState(false);
 
   // Canonical settings state
   const [canonicalSettings, setCanonicalSettings] = useState({
@@ -126,6 +127,7 @@ export default function SeoCanonical() {
       setPageUrl('');
       setCanonicalUrl('');
       setEditingId(null);
+      setShowAddForm(false);
       await loadCanonicalUrls();
     } catch (error) {
       console.error('Error saving canonical URL:', error);
@@ -139,13 +141,18 @@ export default function SeoCanonical() {
     setPageUrl(canonicalUrlItem.page_url);
     setCanonicalUrl(canonicalUrlItem.canonical_url);
     setEditingId(canonicalUrlItem.id);
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    setShowAddForm(true);
+    // Scroll to the form
+    setTimeout(() => {
+      document.getElementById('canonical-form-card')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }, 100);
   };
 
   const handleCancelEdit = () => {
     setPageUrl('');
     setCanonicalUrl('');
     setEditingId(null);
+    setShowAddForm(false);
   };
 
   const handleDeleteCanonicalUrl = async (id) => {
@@ -339,78 +346,18 @@ export default function SeoCanonical() {
 
       <Card>
         <CardHeader>
-          <CardTitle>{editingId ? 'Edit Custom Canonical URL' : 'Add Custom Canonical URL'}</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <Alert>
-            <Info className="h-4 w-4" />
-            <AlertDescription>
-              Override the auto-generated canonical URL for specific pages. This is useful when you want to consolidate similar pages or point duplicate content to a preferred version.
-            </AlertDescription>
-          </Alert>
-
-          <div className="space-y-2">
-            <Label htmlFor="page-url" className="font-medium">Page URL (Source)</Label>
-            <Input
-              id="page-url"
-              placeholder="/products/example-product"
-              value={pageUrl}
-              onChange={(e) => setPageUrl(e.target.value)}
-              disabled={loading}
-            />
-            <p className="text-sm text-muted-foreground">
-              Enter the relative path of the page that needs a custom canonical URL (e.g., /products/variant-1)
-            </p>
+          <div className="flex items-center justify-between">
+            <CardTitle>Existing Custom Canonical URLs</CardTitle>
+            {!showAddForm && (
+              <Button
+                onClick={() => setShowAddForm(true)}
+                variant="default"
+              >
+                <Plus className="h-4 w-4 mr-2" />
+                Add Custom Canonical
+              </Button>
+            )}
           </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="canonical-url" className="font-medium">Canonical URL (Target)</Label>
-            <Input
-              id="canonical-url"
-              placeholder="https://example.com/products/main-product"
-              value={canonicalUrl}
-              onChange={(e) => setCanonicalUrl(e.target.value)}
-              disabled={loading}
-            />
-            <p className="text-sm text-muted-foreground">
-              Enter the full canonical URL that the page should point to. Use absolute URLs with the full domain.
-            </p>
-          </div>
-
-          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mt-4">
-            <p className="text-sm font-medium text-blue-900 mb-2">Example Use Case:</p>
-            <div className="text-xs text-blue-800 space-y-1">
-              <p><strong>Scenario:</strong> You have similar product pages that should consolidate to one main page</p>
-              <p><strong>Page URL:</strong> <code className="bg-white px-1 py-0.5 rounded">/products/wireless-headphones-red</code></p>
-              <p><strong>Canonical URL:</strong> <code className="bg-white px-1 py-0.5 rounded">https://example.com/products/wireless-headphones</code></p>
-              <p className="mt-2 italic">Result: The red variant page will indicate that the main product page is the preferred version for search engines.</p>
-            </div>
-          </div>
-
-        </CardContent>
-      </Card>
-      <div className="flex justify-end gap-2 mt-4">
-        {editingId && (
-          <Button
-            variant="outline"
-            onClick={handleCancelEdit}
-            disabled={loading}
-          >
-            Cancel
-          </Button>
-        )}
-        <Button
-          onClick={handleAddCanonicalUrl}
-          disabled={loading}
-        >
-          <Plus className="h-4 w-4 mr-2" />
-          {editingId ? 'Update Canonical URL' : 'Add Custom Canonical'}
-        </Button>
-      </div>
-
-      <Card>
-        <CardHeader>
-          <CardTitle>Existing Custom Canonical URLs</CardTitle>
         </CardHeader>
         <CardContent>
           <Table>
@@ -432,7 +379,7 @@ export default function SeoCanonical() {
               ) : canonicalUrls.length === 0 ? (
                 <TableRow>
                   <TableCell colSpan={4} className="text-center py-8">
-                    No custom canonical URLs found. Add your first canonical URL above.
+                    No custom canonical URLs found. Click "Add Custom Canonical" to add your first one.
                   </TableCell>
                 </TableRow>
               ) : (
@@ -476,6 +423,77 @@ export default function SeoCanonical() {
           </Table>
         </CardContent>
       </Card>
+
+      {showAddForm && (
+        <Card id="canonical-form-card">
+          <CardHeader>
+            <CardTitle>{editingId ? 'Edit Custom Canonical URL' : 'Add Custom Canonical URL'}</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <Alert>
+              <Info className="h-4 w-4" />
+              <AlertDescription>
+                Override the auto-generated canonical URL for specific pages. This is useful when you want to consolidate similar pages or point duplicate content to a preferred version.
+              </AlertDescription>
+            </Alert>
+
+            <div className="space-y-2">
+              <Label htmlFor="page-url" className="font-medium">Page URL (Source)</Label>
+              <Input
+                id="page-url"
+                placeholder="/products/example-product"
+                value={pageUrl}
+                onChange={(e) => setPageUrl(e.target.value)}
+                disabled={loading}
+              />
+              <p className="text-sm text-muted-foreground">
+                Enter the relative path of the page that needs a custom canonical URL (e.g., /products/variant-1)
+              </p>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="canonical-url" className="font-medium">Canonical URL (Target)</Label>
+              <Input
+                id="canonical-url"
+                placeholder="https://example.com/products/main-product"
+                value={canonicalUrl}
+                onChange={(e) => setCanonicalUrl(e.target.value)}
+                disabled={loading}
+              />
+              <p className="text-sm text-muted-foreground">
+                Enter the full canonical URL that the page should point to. Use absolute URLs with the full domain.
+              </p>
+            </div>
+
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mt-4">
+              <p className="text-sm font-medium text-blue-900 mb-2">Example Use Case:</p>
+              <div className="text-xs text-blue-800 space-y-1">
+                <p><strong>Scenario:</strong> You have similar product pages that should consolidate to one main page</p>
+                <p><strong>Page URL:</strong> <code className="bg-white px-1 py-0.5 rounded">/products/wireless-headphones-red</code></p>
+                <p><strong>Canonical URL:</strong> <code className="bg-white px-1 py-0.5 rounded">https://example.com/products/wireless-headphones</code></p>
+                <p className="mt-2 italic">Result: The red variant page will indicate that the main product page is the preferred version for search engines.</p>
+              </div>
+            </div>
+
+            <div className="flex justify-end gap-2 mt-4">
+              <Button
+                variant="outline"
+                onClick={handleCancelEdit}
+                disabled={loading}
+              >
+                Cancel
+              </Button>
+              <Button
+                onClick={handleAddCanonicalUrl}
+                disabled={loading}
+              >
+                <Plus className="h-4 w-4 mr-2" />
+                {editingId ? 'Update Canonical URL' : 'Add Custom Canonical'}
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       <Card>
         <CardHeader>
