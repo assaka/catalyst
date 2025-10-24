@@ -265,7 +265,7 @@ router.get('/customer-orders', authMiddleware, async (req, res) => {
           include: [
             {
               model: Product,
-              attributes: ['id', 'translations', 'sku', 'images', 'price']
+              attributes: ['id', 'sku', 'images', 'price']
             }
           ]
         }
@@ -533,7 +533,7 @@ router.get('/', async (req, res) => {
         },
         {
           model: OrderItem,
-          include: [{ model: Product, attributes: ['id', 'translations', 'sku'] }]
+          include: [{ model: Product, attributes: ['id', 'sku'] }]
         }
       ]
     });
@@ -572,7 +572,7 @@ router.get('/:id', async (req, res) => {
         },
         {
           model: OrderItem,
-          include: [{ model: Product, attributes: ['id', 'translations', 'sku'] }]
+          include: [{ model: Product, attributes: ['id', 'sku'] }]
         }
       ]
     });
@@ -672,7 +672,7 @@ router.post('/', [
         },
         {
           model: OrderItem,
-          include: [{ model: Product, attributes: ['id', 'translations', 'sku'] }]
+          include: [{ model: Product, attributes: ['id', 'sku'] }]
         }
       ]
     });
