@@ -65,7 +65,6 @@ const allNavItems = [
   { key: 'theme_layout', label: 'Theme & Layout', icon: 'Palette', route: '/admin/theme-layout', order: 71, category: 'store' },
   { key: 'media_storage', label: 'Media Storage', icon: 'Image', route: '/admin/media-storage', order: 72, category: 'store' },
   { key: 'database_integrations', label: 'Database', icon: 'Database', route: '/admin/database-integrations', order: 73, category: 'store' },
-  { key: 'render_integration', label: 'Render', icon: 'Cloud', route: '/admin/render-integration', order: 74, category: 'store' },
   { key: 'stores', label: 'Stores', icon: 'Store', route: '/admin/stores', order: 75, category: 'store' },
   { key: 'supabase', label: 'Supabase', icon: 'Database', route: '/admin/supabase', order: 76, category: 'store' },
 

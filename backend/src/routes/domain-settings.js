@@ -1,7 +1,6 @@
 const express = require('express');
 const router = express.Router();
 const domainConfiguration = require('../services/domain-configuration');
-const renderIntegration = require('../services/render-integration');
 const { authMiddleware } = require('../middleware/auth');
 const { checkStoreOwnership } = require('../middleware/storeAuth');
 
@@ -206,20 +205,21 @@ router.post('/dns-preview', authMiddleware, async (req, res) => {
       });
     }
 
-    const dnsInstructions = renderIntegration.generateDNSInstructions(domain);
-
-    // If service name is provided, update the CNAME value
-    if (service_name) {
-      dnsInstructions.records = dnsInstructions.records.map(record => {
-        if (record.type === 'CNAME') {
-          return {
-            ...record,
-            value: `${service_name}.onrender.com`
-          };
+    const dnsInstructions = {
+      records: [
+        {
+          type: 'CNAME',
+          name: domain.replace(/^www\./, ''),
+          value: service_name ? `${service_name}.yourdomain.com` : 'your-service.yourdomain.com',
+          ttl: 3600,
+          priority: null
         }
-        return record;
-      });
-    }
+      ],
+      notes: [
+        'Add a CNAME record pointing your domain to your hosting service',
+        'DNS changes may take 15 minutes to 48 hours to propagate'
+      ]
+    };
 
     const setupInstructions = {
       domain: domain,
@@ -314,56 +314,5 @@ router.post('/:store_id/domain/verify', authMiddleware, checkStoreOwnership, asy
   }
 });
 
-/**
- * Get available Render services for domain configuration
- */
-router.get('/:store_id/render-services', authMiddleware, checkStoreOwnership, async (req, res) => {
-  try {
-    const { store_id } = req.params;
-    
-    const credentials = await renderIntegration.getStoredCredentials(store_id);
-    
-    if (!credentials) {
-      return res.json({
-        success: true,
-        render_connected: false,
-        services: [],
-        message: 'Connect to Render to manage domains automatically'
-      });
-    }
-
-    try {
-      const services = await renderIntegration.getUserServices(credentials.access_token);
-      
-      res.json({
-        success: true,
-        render_connected: true,
-        services: services.map(service => ({
-          id: service.id,
-          name: service.name,
-          type: service.type,
-          url: service.serviceDetails?.url,
-          status: service.serviceDetails?.buildDetails?.status
-        }))
-      });
-    } catch (serviceError) {
-      console.warn('Failed to get Render services:', serviceError.message);
-      res.json({
-        success: true,
-        render_connected: false,
-        services: [],
-        message: 'Unable to connect to Render. Please reconnect your account.'
-      });
-    }
-    
-  } catch (error) {
-    console.error('Failed to get Render services:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Failed to get Render services',
-      error: error.message
-    });
-  }
-});
 
 module.exports = router;

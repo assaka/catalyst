@@ -339,6 +339,241 @@ CREATE INDEX IF NOT EXISTS idx_stores_subscription_status ON stores(subscription
 CREATE INDEX IF NOT EXISTS idx_stores_last_activity ON stores(last_activity_at DESC);
 
 -- ==========================================
+-- HELPER FUNCTIONS
+-- ==========================================
+
+-- Function to execute SQL (needed for DatabaseProvisioningService)
+CREATE OR REPLACE FUNCTION exec_sql(sql_query TEXT)
+RETURNS VOID AS $$
+BEGIN
+  EXECUTE sql_query;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- Function to get current month usage for a store
+CREATE OR REPLACE FUNCTION get_monthly_usage(p_store_id UUID, p_year INTEGER, p_month INTEGER)
+RETURNS TABLE (
+  total_products_created INTEGER,
+  total_orders INTEGER,
+  total_api_calls INTEGER,
+  total_storage_bytes BIGINT
+) AS $$
+BEGIN
+  RETURN QUERY
+  SELECT
+    COALESCE(SUM(products_created), 0)::INTEGER,
+    COALESCE(SUM(orders_created), 0)::INTEGER,
+    COALESCE(SUM(api_calls), 0)::INTEGER,
+    COALESCE(MAX(storage_total_bytes), 0)::BIGINT
+  FROM usage_metrics
+  WHERE store_id = p_store_id
+    AND EXTRACT(YEAR FROM metric_date) = p_year
+    AND EXTRACT(MONTH FROM metric_date) = p_month;
+END;
+$$ LANGUAGE plpgsql;
+
+-- Function to check if usage limit exceeded
+CREATE OR REPLACE FUNCTION check_usage_limit(p_store_id UUID, p_limit_type VARCHAR)
+RETURNS BOOLEAN AS $$
+DECLARE
+  v_current_usage INTEGER;
+  v_limit INTEGER;
+  v_subscription RECORD;
+BEGIN
+  -- Get active subscription
+  SELECT * INTO v_subscription
+  FROM subscriptions
+  WHERE store_id = p_store_id
+    AND status IN ('active', 'trial')
+  ORDER BY created_at DESC
+  LIMIT 1;
+
+  IF v_subscription IS NULL THEN
+    RETURN false; -- No subscription, allow
+  END IF;
+
+  -- Get current month usage
+  SELECT
+    total_products_created,
+    total_orders,
+    total_api_calls
+  INTO v_current_usage
+  FROM get_monthly_usage(
+    p_store_id,
+    EXTRACT(YEAR FROM CURRENT_DATE)::INTEGER,
+    EXTRACT(MONTH FROM CURRENT_DATE)::INTEGER
+  );
+
+  -- Check limit
+  CASE p_limit_type
+    WHEN 'api_calls' THEN
+      v_limit := v_subscription.max_api_calls_per_month;
+    WHEN 'products' THEN
+      v_limit := v_subscription.max_products;
+    WHEN 'orders' THEN
+      v_limit := v_subscription.max_orders_per_month;
+    ELSE
+      RETURN false;
+  END CASE;
+
+  IF v_limit IS NULL THEN
+    RETURN false; -- No limit set
+  END IF;
+
+  RETURN v_current_usage >= v_limit;
+END;
+$$ LANGUAGE plpgsql;
+
+-- ==========================================
+-- TRIGGERS FOR UPDATED_AT
+-- ==========================================
+
+CREATE OR REPLACE FUNCTION update_updated_at_column()
+RETURNS TRIGGER AS $$
+BEGIN
+  NEW.updated_at = NOW();
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER update_subscriptions_updated_at
+  BEFORE UPDATE ON subscriptions
+  FOR EACH ROW
+  EXECUTE FUNCTION update_updated_at_column();
+
+CREATE TRIGGER update_billing_transactions_updated_at
+  BEFORE UPDATE ON billing_transactions
+  FOR EACH ROW
+  EXECUTE FUNCTION update_updated_at_column();
+
+CREATE TRIGGER update_usage_metrics_updated_at
+  BEFORE UPDATE ON usage_metrics
+  FOR EACH ROW
+  EXECUTE FUNCTION update_updated_at_column();
+
+CREATE TRIGGER update_platform_admins_updated_at
+  BEFORE UPDATE ON platform_admins
+  FOR EACH ROW
+  EXECUTE FUNCTION update_updated_at_column();
+
+CREATE TRIGGER update_store_analytics_updated_at
+  BEFORE UPDATE ON store_analytics
+  FOR EACH ROW
+  EXECUTE FUNCTION update_updated_at_column();
+
+-- ==========================================
+-- ROW LEVEL SECURITY (RLS)
+-- ==========================================
+
+-- Enable RLS on sensitive tables
+ALTER TABLE subscriptions ENABLE ROW LEVEL SECURITY;
+ALTER TABLE billing_transactions ENABLE ROW LEVEL SECURITY;
+ALTER TABLE usage_metrics ENABLE ROW LEVEL SECURITY;
+ALTER TABLE platform_admins ENABLE ROW LEVEL SECURITY;
+ALTER TABLE audit_logs ENABLE ROW LEVEL SECURITY;
+
+-- RLS Policies for subscriptions
+CREATE POLICY "Store owners can view their subscriptions"
+  ON subscriptions FOR SELECT
+  USING (
+    store_id IN (
+      SELECT id FROM stores WHERE owner_id = auth.uid()
+    )
+  );
+
+CREATE POLICY "Platform admins can view all subscriptions"
+  ON subscriptions FOR ALL
+  USING (
+    EXISTS (
+      SELECT 1 FROM platform_admins
+      WHERE user_id = auth.uid() AND is_active = true
+    )
+  );
+
+-- RLS Policies for billing_transactions
+CREATE POLICY "Store owners can view their billing"
+  ON billing_transactions FOR SELECT
+  USING (
+    store_id IN (
+      SELECT id FROM stores WHERE owner_id = auth.uid()
+    )
+  );
+
+CREATE POLICY "Platform admins can manage all billing"
+  ON billing_transactions FOR ALL
+  USING (
+    EXISTS (
+      SELECT 1 FROM platform_admins
+      WHERE user_id = auth.uid() AND is_active = true
+    )
+  );
+
+-- RLS Policies for usage_metrics
+CREATE POLICY "Store owners can view their usage metrics"
+  ON usage_metrics FOR SELECT
+  USING (
+    store_id IN (
+      SELECT id FROM stores WHERE owner_id = auth.uid()
+    )
+  );
+
+CREATE POLICY "Platform admins can view all usage metrics"
+  ON usage_metrics FOR ALL
+  USING (
+    EXISTS (
+      SELECT 1 FROM platform_admins
+      WHERE user_id = auth.uid() AND is_active = true
+    )
+  );
+
+-- RLS Policies for platform_admins
+CREATE POLICY "Platform admins can view other admins"
+  ON platform_admins FOR SELECT
+  USING (
+    EXISTS (
+      SELECT 1 FROM platform_admins
+      WHERE user_id = auth.uid() AND is_active = true
+    )
+  );
+
+CREATE POLICY "Super admins can manage platform admins"
+  ON platform_admins FOR ALL
+  USING (
+    EXISTS (
+      SELECT 1 FROM platform_admins
+      WHERE user_id = auth.uid() AND role = 'super_admin' AND is_active = true
+    )
+  );
+
+-- RLS Policies for audit_logs
+CREATE POLICY "Platform admins can view audit logs"
+  ON audit_logs FOR SELECT
+  USING (
+    EXISTS (
+      SELECT 1 FROM platform_admins
+      WHERE user_id = auth.uid() AND is_active = true
+    )
+  );
+
+CREATE POLICY "Users can view their own audit logs"
+  ON audit_logs FOR SELECT
+  USING (user_id = auth.uid());
+
+-- ==========================================
+-- INITIAL DATA
+-- ==========================================
+
+-- Insert default subscription plans (templates)
+-- These can be used to create subscriptions for stores
+INSERT INTO subscriptions (id, store_id, plan_name, status, price_monthly, price_annual, max_products, max_orders_per_month, max_storage_gb, max_api_calls_per_month, max_admin_users)
+VALUES
+  ('00000000-0000-0000-0000-000000000001'::UUID, '00000000-0000-0000-0000-000000000001'::UUID, 'free', 'active', 0, 0, 10, 100, 1, 1000, 1),
+  ('00000000-0000-0000-0000-000000000002'::UUID, '00000000-0000-0000-0000-000000000001'::UUID, 'starter', 'active', 29.99, 299.99, 100, 1000, 10, 10000, 3),
+  ('00000000-0000-0000-0000-000000000003'::UUID, '00000000-0000-0000-0000-000000000001'::UUID, 'professional', 'active', 99.99, 999.99, 1000, 10000, 50, 100000, 10),
+  ('00000000-0000-0000-0000-000000000004'::UUID, '00000000-0000-0000-0000-000000000001'::UUID, 'enterprise', 'active', 299.99, 2999.99, -1, -1, 200, -1, -1)
+ON CONFLICT (id) DO NOTHING;
+
+-- ==========================================
 -- COMMENTS
 -- ==========================================
 COMMENT ON TABLE subscriptions IS 'Store subscription plans and billing cycles';
@@ -348,3 +583,29 @@ COMMENT ON TABLE api_usage_logs IS 'API request logs for monitoring and debuggin
 COMMENT ON TABLE platform_admins IS 'Platform administrators with elevated permissions';
 COMMENT ON TABLE store_analytics IS 'Aggregated analytics and business intelligence';
 COMMENT ON TABLE audit_logs IS 'Audit trail for all significant actions';
+
+COMMENT ON FUNCTION exec_sql IS 'Execute arbitrary SQL - used by DatabaseProvisioningService';
+COMMENT ON FUNCTION get_monthly_usage IS 'Get aggregated usage metrics for a store for a specific month';
+COMMENT ON FUNCTION check_usage_limit IS 'Check if a store has exceeded a specific usage limit';
+
+-- ==========================================
+-- VERIFICATION
+-- ==========================================
+
+-- Verify all tables were created successfully
+SELECT
+  schemaname,
+  tablename,
+  pg_size_pretty(pg_total_relation_size(schemaname||'.'||tablename)) AS size
+FROM pg_tables
+WHERE schemaname = 'public'
+  AND tablename IN (
+    'subscriptions',
+    'billing_transactions',
+    'usage_metrics',
+    'api_usage_logs',
+    'platform_admins',
+    'store_analytics',
+    'audit_logs'
+  )
+ORDER BY tablename;

@@ -6,7 +6,6 @@ const Store = require('../models/Store');
 const creditService = require('../services/credit-service');
 const autoRenderService = require('../services/auto-render-service');
 const autoSupabaseService = require('../services/auto-supabase-service');
-const renderIntegration = require('../services/render-integration');
 const supabaseIntegration = require('../services/supabase-integration');
 
 const router = express.Router();
@@ -28,11 +27,10 @@ router.get('/:storeId/status', authorize(['store_owner']), checkStoreOwnership, 
 
     // Check credit balance
     const creditInfo = await creditService.canPublishStore(req.user.id, storeId);
-    
+
     // Check external connections
-    const renderStatus = await renderIntegration.getConnectionStatus(storeId);
     const supabaseStatus = await supabaseIntegration.getConnectionStatus(storeId);
-    
+
     res.json({
       success: true,
       data: {
@@ -41,21 +39,15 @@ router.get('/:storeId/status', authorize(['store_owner']), checkStoreOwnership, 
           name: store.name,
           deployment_status: store.deployment_status,
           published: store.published,
-          published_at: store.published_at,
-          render_service_url: store.render_service_url
+          published_at: store.published_at
         },
         credits: creditInfo,
         connections: {
-          render: {
-            connected: renderStatus.connected,
-            user_email: renderStatus.user_email
-          },
           supabase: {
             connected: supabaseStatus.connected
           }
         },
         auto_deployment: {
-          render_service_id: store.render_service_id,
           supabase_project_id: store.auto_supabase_project_id
         }
       }
@@ -145,54 +137,6 @@ router.post('/:storeId/deploy', authorize(['store_owner']), checkStoreOwnership,
   }
 });
 
-// @route   POST /api/store-publishing/:storeId/transfer-render
-// @desc    Transfer Render project to user's account
-// @access  Private
-router.post('/:storeId/transfer-render', authorize(['store_owner']), checkStoreOwnership, [
-  body('render_token').notEmpty().withMessage('Render personal access token is required')
-], async (req, res) => {
-  try {
-    const errors = validationResult(req);
-    if (!errors.isEmpty()) {
-      return res.status(400).json({
-        success: false,
-        errors: errors.array()
-      });
-    }
-
-    const { storeId } = req.params;
-    const { render_token, user_email } = req.body;
-    
-    // First, store user's Render credentials
-    const credentialsResult = await renderIntegration.storePersonalAccessToken(storeId, render_token, user_email);
-    
-    if (!credentialsResult.success) {
-      return res.status(400).json({
-        success: false,
-        message: credentialsResult.error
-      });
-    }
-    
-    // Attempt to transfer project ownership
-    const transferResult = await autoRenderService.transferProjectOwnership(storeId, {
-      access_token: render_token,
-      user_email: user_email
-    });
-    
-    res.json({
-      success: true,
-      credentials_stored: credentialsResult.success,
-      transfer_result: transferResult,
-      message: 'Render integration configured successfully'
-    });
-  } catch (error) {
-    console.error('Transfer Render project error:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Server error'
-    });
-  }
-});
 
 // @route   POST /api/store-publishing/:storeId/transfer-supabase
 // @desc    Transfer Supabase project to user's account

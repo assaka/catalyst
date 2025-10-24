@@ -346,7 +346,6 @@ function App() {
           <Route path="/admin/theme-layout" element={<PageWrapper Component={Pages.ThemeLayout} pageName="THEME_LAYOUT" />} />
           <Route path="/admin/media-storage" element={<PageWrapper Component={Pages.MediaStorage} pageName="media-storage" />} />
           <Route path="/admin/database-integrations" element={<PageWrapper Component={Pages.DatabaseIntegrations} pageName="database-integrations" />} />
-          <Route path="/admin/render-integration" element={<PageWrapper Component={Pages.RenderIntegration} pageName="render-integration" />} />
           <Route path="/admin/stores" element={<PageWrapper Component={Pages.Stores} pageName="STORES" />} />
           <Route path="/admin/supabase" element={<PageWrapper Component={Pages.SupabasePage} pageName="SupabasePage" />} />
           <Route path="/admin/monitoring-dashboard" element={<PageWrapper Component={Pages.MonitoringDashboard} pageName="monitoring-dashboard" />} />

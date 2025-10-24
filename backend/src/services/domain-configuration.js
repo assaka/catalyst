@@ -1,5 +1,4 @@
 const { Store } = require('../models');
-const renderIntegration = require('./render-integration');
 
 class DomainConfiguration {
   /**
@@ -93,48 +92,29 @@ class DomainConfiguration {
       }
 
       // Generate DNS instructions
-      let dnsInstructions;
-      let renderDomain = null;
-
-      // If Render service is provided and auto-configure is enabled
-      if (render_service_id && auto_configure_render) {
-        try {
-          const renderResult = await renderIntegration.addCustomDomain(storeId, render_service_id, domain);
-          if (renderResult.success) {
-            renderDomain = renderResult.domain;
-            dnsInstructions = renderIntegration.generateDNSInstructions(domain, renderDomain.dnsRecords);
+      const dnsInstructions = {
+        records: [
+          {
+            type: 'CNAME',
+            name: domain.replace(/^www\./, ''),
+            value: render_service_id ? `${render_service_id}.onrender.com` : 'your-service.yourdomain.com',
+            ttl: 3600,
+            priority: null
           }
-        } catch (renderError) {
-          console.warn('Failed to add domain to Render:', renderError.message);
-          // Continue with manual DNS instructions
-        }
-      }
-
-      // Generate manual DNS instructions if Render setup failed or wasn't attempted
-      if (!dnsInstructions) {
-        dnsInstructions = renderIntegration.generateDNSInstructions(domain);
-        if (render_service_id) {
-          // Update CNAME to point to Render service
-          dnsInstructions.records = dnsInstructions.records.map(record => {
-            if (record.type === 'CNAME') {
-              return {
-                ...record,
-                value: `${render_service_id}.onrender.com`
-              };
-            }
-            return record;
-          });
-        }
-      }
+        ],
+        notes: [
+          'Add a CNAME record pointing your domain to your hosting service',
+          'DNS changes may take 15 minutes to 48 hours to propagate',
+          'Make sure to configure SSL/TLS in your hosting dashboard'
+        ]
+      };
 
       // Save domain configuration to store
       const domainConfig = {
         primary_domain: domain,
         ssl_enabled,
         redirect_www,
-        render_service_id,
-        render_domain_id: renderDomain?.id,
-        verification_status: renderDomain?.verificationStatus || 'pending',
+        verification_status: 'pending',
         dns_configured: false,
         dns_instructions: dnsInstructions,
         added_at: new Date().toISOString()
@@ -150,7 +130,6 @@ class DomainConfiguration {
         success: true,
         domain: domain,
         domain_config: domainConfig,
-        render_domain: renderDomain,
         dns_instructions: dnsInstructions,
         message: 'Domain added successfully. Configure DNS to complete setup.'
       };
@@ -175,19 +154,6 @@ class DomainConfiguration {
       }
 
       const domainConfig = store.settings?.domain || {};
-      
-      // Remove from Render if configured
-      if (domainConfig.render_service_id && domainConfig.render_domain_id) {
-        try {
-          await renderIntegration.removeCustomDomain(
-            storeId,
-            domainConfig.render_service_id,
-            domainConfig.render_domain_id
-          );
-        } catch (renderError) {
-          console.warn('Failed to remove domain from Render:', renderError.message);
-        }
-      }
 
       // Remove domain configuration from store settings
       const currentSettings = store.settings || {};
@@ -229,36 +195,8 @@ class DomainConfiguration {
         };
       }
 
-      let verificationStatus = domainConfig.verification_status || 'pending';
-      let dnsConfigured = domainConfig.dns_configured || false;
-
-      // Check with Render if domain is configured there
-      if (domainConfig.render_service_id && domainConfig.render_domain_id) {
-        try {
-          const renderStatus = await renderIntegration.getDomainVerificationStatus(
-            storeId,
-            domainConfig.render_service_id,
-            domainConfig.render_domain_id
-          );
-
-          if (renderStatus.success) {
-            verificationStatus = renderStatus.domain.verification_status;
-            dnsConfigured = verificationStatus === 'verified';
-
-            // Update store settings with latest status
-            const updatedConfig = {
-              ...domainConfig,
-              verification_status: verificationStatus,
-              dns_configured: dnsConfigured,
-              last_checked: new Date().toISOString()
-            };
-
-            await this.saveDomainConfig(storeId, updatedConfig);
-          }
-        } catch (renderError) {
-          console.warn('Failed to check Render domain status:', renderError.message);
-        }
-      }
+      const verificationStatus = domainConfig.verification_status || 'pending';
+      const dnsConfigured = domainConfig.dns_configured || false;
 
       return {
         success: true,
@@ -317,7 +255,21 @@ class DomainConfiguration {
    */
   generateSetupInstructions(storeId, domainConfig) {
     const domain = domainConfig.primary_domain;
-    const dnsInstructions = domainConfig.dns_instructions || renderIntegration.generateDNSInstructions(domain);
+    const dnsInstructions = domainConfig.dns_instructions || {
+      records: [
+        {
+          type: 'CNAME',
+          name: domain.replace(/^www\./, ''),
+          value: 'your-service.yourdomain.com',
+          ttl: 3600,
+          priority: null
+        }
+      ],
+      notes: [
+        'Add a CNAME record pointing your domain to your hosting service',
+        'DNS changes may take 15 minutes to 48 hours to propagate'
+      ]
+    };
 
     return {
       domain: domain,
