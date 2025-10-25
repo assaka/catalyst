@@ -98,6 +98,49 @@ async function getProductTabById(id, lang = 'en') {
 }
 
 /**
+ * Get single product tab with ALL translations
+ * Returns format: { id, name, ..., translations: {en: {name, content}, nl: {...}} }
+ *
+ * @param {string} id - Product tab ID
+ * @returns {Promise<Object|null>} Product tab with all translations
+ */
+async function getProductTabWithAllTranslations(id) {
+  const query = `
+    SELECT
+      pt.id,
+      pt.store_id,
+      pt.name,
+      pt.slug,
+      pt.tab_type,
+      pt.content,
+      pt.attribute_ids,
+      pt.attribute_set_ids,
+      pt.sort_order,
+      pt.is_active,
+      pt.created_at,
+      pt.updated_at,
+      COALESCE(
+        json_object_agg(
+          t.language_code,
+          json_build_object('name', t.name, 'content', t.content)
+        ) FILTER (WHERE t.language_code IS NOT NULL),
+        '{}'::json
+      ) as translations
+    FROM product_tabs pt
+    LEFT JOIN product_tab_translations t ON pt.id = t.product_tab_id
+    WHERE pt.id = :id
+    GROUP BY pt.id
+  `;
+
+  const results = await sequelize.query(query, {
+    replacements: { id },
+    type: sequelize.QueryTypes.SELECT
+  });
+
+  return results[0] || null;
+}
+
+/**
  * Create product tab with translations
  *
  * @param {Object} tabData - Product tab data (without translations)
@@ -169,8 +212,8 @@ async function createProductTabWithTranslations(tabData, translations = {}) {
 
     await transaction.commit();
 
-    // Return the created tab with translations
-    return await getProductTabById(tab.id);
+    // Return the created tab with all translations
+    return await getProductTabWithAllTranslations(tab.id);
   } catch (error) {
     await transaction.rollback();
     throw error;
@@ -267,8 +310,8 @@ async function updateProductTabWithTranslations(id, tabData, translations = {}) 
 
     await transaction.commit();
 
-    // Return the updated tab with translations
-    return await getProductTabById(id);
+    // Return the updated tab with all translations
+    return await getProductTabWithAllTranslations(id);
   } catch (error) {
     await transaction.rollback();
     throw error;
@@ -295,6 +338,7 @@ async function deleteProductTab(id) {
 module.exports = {
   getProductTabsWithTranslations,
   getProductTabById,
+  getProductTabWithAllTranslations,
   createProductTabWithTranslations,
   updateProductTabWithTranslations,
   deleteProductTab

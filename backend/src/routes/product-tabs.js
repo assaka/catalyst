@@ -7,6 +7,7 @@ const { getLanguageFromRequest } = require('../utils/languageUtils');
 const {
   getProductTabsWithTranslations,
   getProductTabById,
+  getProductTabWithAllTranslations,
   createProductTabWithTranslations,
   updateProductTabWithTranslations,
   deleteProductTab
@@ -71,12 +72,11 @@ router.get('/', async (req, res) => {
 });
 
 // @route   GET /api/product-tabs/:id
-// @desc    Get product tab by ID
+// @desc    Get product tab by ID with all translations
 // @access  Public
 router.get('/:id', async (req, res) => {
   try {
-    const lang = getLanguageFromRequest(req);
-    const productTab = await getProductTabById(req.params.id, lang);
+    const productTab = await getProductTabWithAllTranslations(req.params.id);
 
     if (!productTab) {
       return res.status(404).json({
@@ -84,6 +84,14 @@ router.get('/:id', async (req, res) => {
         message: 'Product tab not found'
       });
     }
+
+    console.log('📝 Backend: Loaded product tab with translations:', {
+      id: productTab.id,
+      name: productTab.name,
+      translations: productTab.translations,
+      translationKeys: Object.keys(productTab.translations || {}),
+      nlTranslation: productTab.translations?.nl
+    });
 
     res.json({
       success: true,
