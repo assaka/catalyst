@@ -39,7 +39,7 @@ router.post('/:store_id/domain', authMiddleware, checkStoreOwnership, async (req
     const { store_id } = req.params;
     const {
       domain,
-      render_service_id,
+      render_service_id, // Optional: for DNS CNAME generation only (not stored in stores table)
       auto_configure_render = true,
       ssl_enabled = true,
       redirect_www = true
