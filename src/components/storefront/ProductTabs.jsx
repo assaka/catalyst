@@ -41,9 +41,9 @@ export default function ProductTabs({ productTabs = [], product = null, settings
     }
 
     const mappedTabs = tabsToRender.map((tab, index) => {
-      // Get translated title and content from translations JSON, fallback to original name field
-      const translatedTitle = tab.translations?.[currentLang]?.name || tab.translations?.en?.name || tab.name || 'No Tab Name';
-      const translatedContent = tab.translations?.[currentLang]?.content || tab.translations?.en?.content || tab.content || '';
+      // Backend returns translated name/content in base fields (based on X-Language header)
+      const translatedTitle = tab.name || 'No Tab Name';
+      const translatedContent = tab.content || '';
 
       return {
         ...tab,

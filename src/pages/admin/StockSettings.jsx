@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Store } from '@/api/entities';
+import api from '@/utils/api';
 import { useStoreSelection } from '@/contexts/StoreSelectionContext';
 import { clearStorefrontCache } from '@/utils/cacheUtils';
 import { Button } from '@/components/ui/button';
