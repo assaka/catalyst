@@ -65,6 +65,13 @@ const PaymentMethod = sequelize.define('PaymentMethod', {
     allowNull: true,
     defaultValue: []
   },
+  // Conditions for displaying payment method (optional)
+  conditions: {
+    type: DataTypes.JSONB,
+    allowNull: true,
+    defaultValue: {},
+    comment: 'Optional conditions for displaying payment method: {"categories": [], "attribute_sets": [], "skus": [], "attribute_conditions": []}'
+  },
   // Foreign key
   store_id: {
     type: DataTypes.UUID,

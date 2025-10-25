@@ -139,8 +139,29 @@ const [labels, setLabels] = useState([]);
     }
   };
 
-  const handleEdit = (label) => {
-    setEditingLabel(label); // Update the label to be edited
+  const handleEdit = async (label) => {
+    if (label) {
+      // Fetch the full label with all translations from the API
+      console.log('🔍 Frontend: Fetching full label with all translations for ID:', label.id);
+      try {
+        const response = await ProductLabel.findById(label.id);
+        console.log('🔍 Frontend: Received response from API:', response);
+        // Extract the actual label data from the API response
+        const fullLabel = response?.data || response;
+        console.log('🔍 Frontend: Full label with translations:', {
+          id: fullLabel.id,
+          translations: fullLabel.translations,
+          translationKeys: Object.keys(fullLabel.translations || {})
+        });
+        setEditingLabel(fullLabel);
+      } catch (error) {
+        console.error('Failed to fetch full label:', error);
+        showError('Failed to load label details');
+        return;
+      }
+    } else {
+      setEditingLabel(null);
+    }
     setShowForm(true); // Show the form
   };
 

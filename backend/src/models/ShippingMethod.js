@@ -81,6 +81,13 @@ const ShippingMethod = sequelize.define('ShippingMethod', {
     type: DataTypes.JSON,
     defaultValue: {},
     comment: 'Multilingual translations: {"en": {"name": "...", "description": "..."}, "nl": {...}}'
+  },
+  // Conditions for displaying shipping method (optional)
+  conditions: {
+    type: DataTypes.JSONB,
+    allowNull: true,
+    defaultValue: {},
+    comment: 'Optional conditions for displaying shipping method: {"categories": [], "attribute_sets": [], "skus": [], "attribute_conditions": []}'
   }
 }, {
   tableName: 'shipping_methods'

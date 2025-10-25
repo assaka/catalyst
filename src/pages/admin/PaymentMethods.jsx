@@ -1,9 +1,14 @@
 import React, { useState, useEffect } from "react";
 import { PaymentMethod } from "@/api/entities";
+import { Category } from "@/api/entities";
+import { AttributeSet } from "@/api/entities";
+import { Attribute } from "@/api/entities";
 import { Store } from "@/api/entities";
 import { User } from "@/api/entities";
 import { useStoreSelection } from "@/contexts/StoreSelectionContext.jsx";
+import { useTranslation } from "@/contexts/TranslationContext";
 import { formatPrice } from "@/utils/priceUtils";
+import { getAttributeLabel, getAttributeValueLabel } from "@/utils/attributeUtils";
 import { Button } from "@/components/ui/button";
 import SaveButton from '@/components/ui/save-button';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -13,13 +18,16 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
-import { Plus, Edit, Trash2, CreditCard, Banknote, CheckCircle, AlertCircle, Languages } from "lucide-react";
+import { Plus, Edit, Trash2, CreditCard, Banknote, CheckCircle, AlertCircle, Languages, X, ChevronsUpDown, Check } from "lucide-react";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
 import FlashMessage from "@/components/storefront/FlashMessage";
 import { CountrySelect } from "@/components/ui/country-select";
 import TranslationFields from "@/components/admin/TranslationFields";
 
 export default function PaymentMethods() {
   const { selectedStore, getSelectedStoreId } = useStoreSelection();
+  const { currentLanguage } = useTranslation();
   const [paymentMethods, setPaymentMethods] = useState([]);
   const [store, setStore] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -29,6 +37,14 @@ export default function PaymentMethods() {
   const [showForm, setShowForm] = useState(false);
   const [editingMethod, setEditingMethod] = useState(null);
   const [showTranslations, setShowTranslations] = useState(false);
+
+  // Conditions data
+  const [categories, setCategories] = useState([]);
+  const [attributeSets, setAttributeSets] = useState([]);
+  const [attributes, setAttributes] = useState([]);
+  const [showCategorySelect, setShowCategorySelect] = useState(false);
+  const [showAttributeSetSelect, setShowAttributeSetSelect] = useState(false);
+  const [skuInput, setSkuInput] = useState('');
 
   const [formData, setFormData] = useState({
     name: '',
@@ -44,6 +60,12 @@ export default function PaymentMethods() {
     fee_amount: 0,
     availability: 'all',
     countries: [],
+    conditions: {
+      categories: [],
+      attribute_sets: [],
+      skus: [],
+      attribute_conditions: []
+    },
     translations: {}
   });
 
@@ -74,8 +96,45 @@ export default function PaymentMethods() {
   useEffect(() => {
     if (selectedStore) {
       loadPaymentMethods();
+      loadConditionsData();
     }
-  }, [selectedStore]);
+  }, [selectedStore, currentLanguage]);
+
+  const loadConditionsData = async () => {
+    try {
+      const storeId = getSelectedStoreId();
+      if (!storeId) return;
+
+      const [attributeSetsData, attributesData, categoriesData] = await Promise.all([
+        AttributeSet.filter({ store_id: storeId }).catch(() => []),
+        Attribute.filter({ store_id: storeId }).catch(() => []),
+        Category.filter({ store_id: storeId }).catch(() => [])
+      ]);
+
+      // Transform attribute values into options format
+      const transformedAttributes = (attributesData || []).map(attr => {
+        if (attr.values && Array.isArray(attr.values)) {
+          return {
+            ...attr,
+            options: attr.values.map(v => ({
+              value: v.code,
+              label: getAttributeValueLabel(v, currentLanguage)
+            }))
+          };
+        }
+        return attr;
+      });
+
+      setAttributeSets(Array.isArray(attributeSetsData) ? attributeSetsData : []);
+      setAttributes(transformedAttributes);
+      setCategories(Array.isArray(categoriesData) ? categoriesData : []);
+    } catch (error) {
+      console.error("Error loading conditions data:", error);
+      setAttributeSets([]);
+      setAttributes([]);
+      setCategories([]);
+    }
+  };
 
   const loadPaymentMethods = async () => {
     setLoading(true);
@@ -146,6 +205,24 @@ export default function PaymentMethods() {
       };
     }
 
+    // Parse conditions if it's a string
+    let conditions = method.conditions || {};
+    if (typeof conditions === 'string') {
+      try {
+        conditions = JSON.parse(conditions);
+      } catch (e) {
+        conditions = {};
+      }
+    }
+
+    // Ensure conditions has all required fields
+    conditions = {
+      categories: conditions.categories || [],
+      attribute_sets: conditions.attribute_sets || [],
+      skus: conditions.skus || [],
+      attribute_conditions: conditions.attribute_conditions || []
+    };
+
     setFormData({
       name: method.name,
       code: method.code,
@@ -160,6 +237,7 @@ export default function PaymentMethods() {
       fee_amount: method.fee_amount || 0,
       availability: method.availability || 'all',
       countries: method.countries || [],
+      conditions: conditions,
       translations: translations
     });
     setEditingMethod(method);
@@ -180,20 +258,146 @@ export default function PaymentMethods() {
 
   const resetForm = () => {
     setFormData({
-      name: '', 
-      code: '', 
+      name: '',
+      code: '',
       type: 'credit_card',
-      is_active: true, 
-      description: '', 
-      icon_url: '', 
+      is_active: true,
+      description: '',
+      icon_url: '',
       sort_order: 0,
-      min_amount: '', 
-      max_amount: '', 
+      min_amount: '',
+      max_amount: '',
       fee_type: 'none',
       fee_amount: 0,
       availability: 'all',
-      countries: []
+      countries: [],
+      conditions: {
+        categories: [],
+        attribute_sets: [],
+        skus: [],
+        attribute_conditions: []
+      },
+      translations: {}
     });
+  };
+
+  // Conditions handlers
+  const handleConditionChange = (conditionType, value) => {
+    setFormData(prev => ({
+      ...prev,
+      conditions: {
+        ...prev.conditions,
+        [conditionType]: value
+      }
+    }));
+  };
+
+  const handleMultiSelectToggle = (condition, id) => {
+    const currentValues = formData.conditions[condition] || [];
+    const newValues = currentValues.includes(id)
+      ? currentValues.filter(item => item !== id)
+      : [...currentValues, id];
+
+    handleConditionChange(condition, newValues);
+  };
+
+  const handleSkuAdd = () => {
+    const trimmedSku = skuInput.trim();
+    if (trimmedSku && !formData.conditions.skus?.includes(trimmedSku)) {
+      const currentSkus = formData.conditions.skus || [];
+      handleConditionChange('skus', [...currentSkus, trimmedSku]);
+      setSkuInput('');
+    }
+  };
+
+  const handleSkuRemove = (skuToRemove) => {
+    const currentSkus = formData.conditions.skus || [];
+    handleConditionChange('skus', currentSkus.filter(sku => sku !== skuToRemove));
+  };
+
+  const handleSkuKeyPress = (e) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      handleSkuAdd();
+    }
+  };
+
+  const addAttributeCondition = () => {
+    const currentConditions = formData.conditions.attribute_conditions || [];
+    handleConditionChange('attribute_conditions', [...currentConditions, { attribute_code: '', attribute_value: '' }]);
+  };
+
+  const removeAttributeCondition = (index) => {
+    const currentConditions = formData.conditions.attribute_conditions || [];
+    handleConditionChange('attribute_conditions', currentConditions.filter((_, i) => i !== index));
+  };
+
+  const updateAttributeCondition = (index, field, value) => {
+    const currentConditions = formData.conditions.attribute_conditions || [];
+    const updatedConditions = [...currentConditions];
+    updatedConditions[index] = {
+      ...updatedConditions[index],
+      [field]: value,
+      // Reset attribute_value when attribute_code changes
+      ...(field === 'attribute_code' ? { attribute_value: '' } : {})
+    };
+    handleConditionChange('attribute_conditions', updatedConditions);
+  };
+
+  const getSelectedCategoryNames = () => {
+    if (!Array.isArray(categories)) return [];
+    return categories.filter(cat => cat && formData.conditions.categories?.includes(cat.id)).map(cat => cat.name);
+  };
+
+  const getSelectedAttributeSetNames = () => {
+    if (!Array.isArray(attributeSets)) return [];
+    return attributeSets.filter(set => set && formData.conditions.attribute_sets?.includes(set.id)).map(set => set.name);
+  };
+
+  const getSelectableAttributes = () => {
+    if (!Array.isArray(attributes)) return [];
+    const usableAttributes = attributes.filter(attr => attr && attr.is_usable_in_conditions);
+    return usableAttributes.length > 0 ? usableAttributes : attributes.slice(0, 20);
+  };
+
+  const getAttributeOptions = (attributeCode) => {
+    if (!Array.isArray(attributes)) return [];
+    const attribute = attributes.find(attr => attr && attr.code === attributeCode);
+    return attribute?.options || [];
+  };
+
+  const renderConditionValueInput = (condition, index) => {
+    const selectedAttr = attributes.find(attr => attr.code === condition.attribute_code);
+    const hasOptions = selectedAttr && (selectedAttr.type === 'select' || selectedAttr.type === 'multiselect') && selectedAttr.options?.length > 0;
+
+    if (hasOptions) {
+      return (
+        <Select
+          value={condition.attribute_value}
+          onValueChange={(value) => updateAttributeCondition(index, 'attribute_value', value)}
+        >
+          <SelectTrigger className="flex-1">
+            <SelectValue placeholder="Select value" />
+          </SelectTrigger>
+          <SelectContent>
+            {selectedAttr.options.map(option => (
+              <SelectItem key={option.value} value={option.value}>
+                {option.label}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      );
+    }
+
+    return (
+      <Input
+        placeholder="Value"
+        value={condition.attribute_value}
+        onChange={(e) => updateAttributeCondition(index, 'attribute_value', e.target.value)}
+        className="flex-1"
+      />
+    );
   };
 
   const handleQuickAdd = async (method) => {
@@ -603,6 +807,234 @@ export default function PaymentMethods() {
                         )}
                       </div>
                     )}
+                  </div>
+                </div>
+
+                {/* Conditions (Optional) */}
+                <div className="border-t pt-4 space-y-4">
+                  <div>
+                    <h3 className="text-lg font-medium mb-2">Conditions (Optional)</h3>
+                    <p className="text-sm text-gray-600">
+                      Optionally specify conditions to control when this payment method is available. If no conditions are specified, the payment method will always be available.
+                    </p>
+                  </div>
+
+                  {/* Categories */}
+                  <div>
+                    <Label>Categories</Label>
+                    <Popover open={showCategorySelect} onOpenChange={setShowCategorySelect}>
+                      <PopoverTrigger asChild>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          role="combobox"
+                          className={`w-full justify-between ${formData.conditions.categories?.length ? '' : 'text-muted-foreground'}`}
+                        >
+                          {formData.conditions.categories?.length
+                            ? `${formData.conditions.categories.length} categories selected`
+                            : "Select categories..."
+                          }
+                          <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-full p-0">
+                        <Command>
+                          <CommandInput placeholder="Search categories..." />
+                          <CommandEmpty>No categories found.</CommandEmpty>
+                          <CommandList>
+                            <CommandGroup>
+                              {categories.map((category) => (
+                                <CommandItem
+                                  key={category.id}
+                                  onSelect={() => handleMultiSelectToggle('categories', category.id)}
+                                >
+                                  <Check
+                                    className={`mr-2 h-4 w-4 ${
+                                      formData.conditions.categories?.includes(category.id) ? "opacity-100" : "opacity-0"
+                                    }`}
+                                  />
+                                  {category.name}
+                                </CommandItem>
+                              ))}
+                            </CommandGroup>
+                          </CommandList>
+                        </Command>
+                      </PopoverContent>
+                    </Popover>
+
+                    {formData.conditions.categories?.length > 0 && (
+                      <div className="flex flex-wrap gap-2 mt-2">
+                        {getSelectedCategoryNames().map((name, index) => {
+                          const categoryId = categories.find(c => c && c.name === name)?.id;
+                          return (
+                            <Badge key={index} variant="secondary" className="text-xs">
+                              {name}
+                              <X
+                                className="ml-1 h-3 w-3 cursor-pointer"
+                                onClick={() => {
+                                  if (categoryId) handleMultiSelectToggle('categories', categoryId);
+                                }}
+                              />
+                            </Badge>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Attribute Sets */}
+                  <div>
+                    <Label>Attribute Sets</Label>
+                    <Popover open={showAttributeSetSelect} onOpenChange={setShowAttributeSetSelect}>
+                      <PopoverTrigger asChild>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          role="combobox"
+                          className={`w-full justify-between ${formData.conditions.attribute_sets?.length ? '' : 'text-muted-foreground'}`}
+                        >
+                          {formData.conditions.attribute_sets?.length
+                            ? `${formData.conditions.attribute_sets.length} attribute sets selected`
+                            : "Select attribute sets..."
+                          }
+                          <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-full p-0">
+                        <Command>
+                          <CommandInput placeholder="Search attribute sets..." />
+                          <CommandEmpty>No attribute sets found.</CommandEmpty>
+                          <CommandList>
+                            <CommandGroup>
+                              {attributeSets.map((set) => (
+                                <CommandItem
+                                  key={set.id}
+                                  onSelect={() => handleMultiSelectToggle('attribute_sets', set.id)}
+                                >
+                                  <Check
+                                    className={`mr-2 h-4 w-4 ${
+                                      formData.conditions.attribute_sets?.includes(set.id) ? "opacity-100" : "opacity-0"
+                                    }`}
+                                  />
+                                  {set.name}
+                                </CommandItem>
+                              ))}
+                            </CommandGroup>
+                          </CommandList>
+                        </Command>
+                      </PopoverContent>
+                    </Popover>
+
+                    {formData.conditions.attribute_sets?.length > 0 && (
+                      <div className="flex flex-wrap gap-2 mt-2">
+                        {getSelectedAttributeSetNames().map((name, index) => {
+                          const setId = attributeSets.find(s => s && s.name === name)?.id;
+                          return (
+                            <Badge key={index} variant="secondary" className="text-xs">
+                              {name}
+                              <X
+                                className="ml-1 h-3 w-3 cursor-pointer"
+                                onClick={() => {
+                                  if (setId) handleMultiSelectToggle('attribute_sets', setId);
+                                }}
+                              />
+                            </Badge>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Attribute Conditions */}
+                  <div>
+                    <Label>Specific Attribute Values</Label>
+                    <p className="text-sm text-gray-500 mb-3">Show this payment method when products have specific attribute values</p>
+
+                    <div className="space-y-3">
+                      {formData.conditions.attribute_conditions?.map((condition, index) => (
+                        <div key={index} className="flex items-center space-x-2 p-3 border rounded-lg">
+                          <Select
+                            value={condition.attribute_code}
+                            onValueChange={(value) => updateAttributeCondition(index, 'attribute_code', value)}
+                          >
+                            <SelectTrigger className="flex-1">
+                              <SelectValue placeholder="Select attribute" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {getSelectableAttributes().map(attr => (
+                                <SelectItem key={attr.id} value={attr.code}>
+                                  {getAttributeLabel(attr, currentLanguage)}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+
+                          {renderConditionValueInput(condition, index)}
+
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => removeAttributeCondition(index)}
+                          >
+                            <X className="w-4 h-4" />
+                          </Button>
+                        </div>
+                      ))}
+
+                      <Button
+                        type="button"
+                        variant="outline"
+                        onClick={addAttributeCondition}
+                        className="w-full"
+                      >
+                        <Plus className="w-4 h-4 mr-2" />
+                        Add Attribute Condition
+                      </Button>
+                    </div>
+                  </div>
+
+                  {/* SKUs */}
+                  <div>
+                    <Label>SKUs</Label>
+                    <div className="space-y-2">
+                      {formData.conditions.skus?.map((sku, index) => (
+                        <div key={index} className="flex items-center justify-between gap-2 p-2 bg-gray-50 rounded">
+                          <span className="text-sm font-mono">{sku}</span>
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleSkuRemove(sku)}
+                          >
+                            <X className="w-4 h-4" />
+                          </Button>
+                        </div>
+                      ))}
+
+                      <div className="flex gap-2">
+                        <Input
+                          id="skus"
+                          value={skuInput}
+                          onChange={(e) => setSkuInput(e.target.value)}
+                          onKeyPress={handleSkuKeyPress}
+                          placeholder="Enter SKU and press Enter or click Add"
+                          className="flex-1"
+                        />
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={handleSkuAdd}
+                          disabled={!skuInput.trim()}
+                        >
+                          Add
+                        </Button>
+                      </div>
+                    </div>
+                    <p className="text-xs text-gray-500 mt-1">
+                      Add individual SKUs. This payment method will be available for products matching any of these SKUs.
+                    </p>
                   </div>
                 </div>
 
