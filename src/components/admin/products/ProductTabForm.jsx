@@ -22,8 +22,11 @@ import {
 } from "@/components/ui/accordion";
 import { Languages } from "lucide-react";
 import TranslationFields from "@/components/admin/TranslationFields";
+import { useTranslation } from "@/contexts/TranslationContext";
+import { getAttributeLabel } from "@/utils/attributeUtils";
 
 export default function ProductTabForm({ tab, attributes = [], attributeSets = [], onSubmit, onCancel }) {
+  const { currentLanguage } = useTranslation();
   const [formData, setFormData] = useState({
     name: "",
     tab_type: "text",
@@ -246,7 +249,7 @@ export default function ProductTabForm({ tab, attributes = [], attributeSets = [
                         onCheckedChange={(checked) => handleArrayChange("attribute_ids", attribute.id, checked)}
                       />
                       <Label htmlFor={`attr-${attribute.id}`} className="text-sm cursor-pointer">
-                        {attribute.name}
+                        {getAttributeLabel(attribute, currentLanguage)}
                       </Label>
                     </div>
                   ))

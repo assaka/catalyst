@@ -25,6 +25,8 @@ import {
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { toast } from 'sonner';
 import { getCategoryName } from "@/utils/translationUtils";
+import { useTranslation } from "@/contexts/TranslationContext";
+import { getAttributeLabel, getAttributeValueLabel } from "@/utils/attributeUtils";
 
 const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 
@@ -44,6 +46,7 @@ const retryApiCall = async (apiCall, maxRetries = 3, baseDelay = 1000) => {
 
 export default function ProductForm({ product, categories, stores, taxes, attributes: passedAttributes, attributeSets: passedAttributeSets, onSubmit, onCancel }) {
   const { selectedStore, getSelectedStoreId } = useStoreSelection();
+  const { currentLanguage } = useTranslation();
   const [flashMessage, setFlashMessage] = useState(null);
   const [originalUrlKey, setOriginalUrlKey] = useState("");
   const [showSlugChangeWarning, setShowSlugChangeWarning] = useState(false);
@@ -1544,7 +1547,7 @@ export default function ProductForm({ product, categories, stores, taxes, attrib
                               return (
                                 <div key={attribute.id} className="border rounded-lg p-4 bg-green-50">
                                   <div className="flex items-start justify-between mb-3">
-                                    <Label className="font-medium text-green-800">{attribute.name}</Label>
+                                    <Label className="font-medium text-green-800">{getAttributeLabel(attribute, currentLanguage)}</Label>
                                     <button
                                       type="button"
                                       onClick={() => handleAttributeValueChange(attribute.code, null)}
@@ -1557,9 +1560,9 @@ export default function ProductForm({ product, categories, stores, taxes, attrib
                                   
                                   {imageUrl && (
                                     <div className="mb-3">
-                                      <img 
-                                        src={imageUrl} 
-                                        alt={attribute.name}
+                                      <img
+                                        src={imageUrl}
+                                        alt={getAttributeLabel(attribute, currentLanguage)}
                                         className="w-full h-32 object-cover rounded border"
                                       />
                                     </div>
@@ -1626,7 +1629,7 @@ export default function ProductForm({ product, categories, stores, taxes, attrib
                           <div className="grid md:grid-cols-2 gap-4">
                             {attributesWithoutImages.map(attribute => (
                               <div key={attribute.id} className="border-2 border-dashed border-amber-300 rounded-lg p-4 bg-amber-50">
-                                <Label className="font-medium text-amber-800 mb-3 block">{attribute.name}</Label>
+                                <Label className="font-medium text-amber-800 mb-3 block">{getAttributeLabel(attribute, currentLanguage)}</Label>
                                 
                                 <div className="space-y-2">
                                   <div className="flex gap-2">
@@ -1690,7 +1693,7 @@ export default function ProductForm({ product, categories, stores, taxes, attrib
                     
                     // Check if the attribute code or name contains image-related keywords
                     const lowerCode = (attr.code || '').toLowerCase();
-                    const lowerName = (attr.name || '').toLowerCase();
+                    const lowerName = (getAttributeLabel(attr, currentLanguage) || '').toLowerCase();
                     const imageKeywords = ['image', 'gallery', 'picture', 'photo', 'thumbnail', 'thumb', 'banner', 'logo'];
                     
                     if (imageKeywords.some(keyword => 
@@ -1711,13 +1714,13 @@ export default function ProductForm({ product, categories, stores, taxes, attrib
                         const attributeValue = formData.attributes[attribute.code];
                         return (
                           <div key={attribute.id}>
-                            <Label htmlFor={`attr_${attribute.code}`}>{attribute.name}</Label>
+                            <Label htmlFor={`attr_${attribute.code}`}>{getAttributeLabel(attribute, currentLanguage)}</Label>
                             {attribute.type === 'select' && attribute.values && attribute.values.length > 0 ? (
                               <Select
                                 value={(typeof attributeValue === 'object' && attributeValue?.value) ? attributeValue.value : (attributeValue || "")}
                                 onValueChange={(v) => handleAttributeValueChange(attribute.code, v)}
                               >
-                                <SelectTrigger><SelectValue placeholder={`Select ${attribute.name}`} /></SelectTrigger>
+                                <SelectTrigger><SelectValue placeholder={`Select ${getAttributeLabel(attribute, currentLanguage)}`} /></SelectTrigger>
                                 <SelectContent>
                                   {attribute.values.filter(val => val.code !== "").map(attrVal => {
                                     const label = attrVal.translations?.en?.label || attrVal.translations?.nl?.label || attrVal.code;
@@ -1919,7 +1922,7 @@ export default function ProductForm({ product, categories, stores, taxes, attrib
                         .filter(attr => {
                           const isSuitableType = attr.type === 'select' || attr.type === 'multiselect';
                           const matchesSearch = attributeSearch === '' ||
-                            attr.name.toLowerCase().includes(attributeSearch.toLowerCase()) ||
+                            getAttributeLabel(attr, currentLanguage).toLowerCase().includes(attributeSearch.toLowerCase()) ||
                             attr.code.toLowerCase().includes(attributeSearch.toLowerCase());
                           return isSuitableType && matchesSearch;
                         })
@@ -1932,7 +1935,7 @@ export default function ProductForm({ product, categories, stores, taxes, attrib
                           >
                             <div className="flex-1">
                               <div className="flex items-center gap-2">
-                                <span className="font-medium text-sm">{attribute.name}</span>
+                                <span className="font-medium text-sm">{getAttributeLabel(attribute, currentLanguage)}</span>
                                 <Badge variant="outline" className="text-xs">{attribute.code}</Badge>
                                 <Badge variant="secondary" className="text-xs">{attribute.type}</Badge>
                               </div>
@@ -1954,7 +1957,7 @@ export default function ProductForm({ product, categories, stores, taxes, attrib
                                     attr.id === attribute.id ? { ...attr, is_configurable: checked } : attr
                                   );
                                   setUpdatedAttributes(updated);
-                                  toast.success(`${attribute.name} ${checked ? 'marked' : 'unmarked'} as configurable`);
+                                  toast.success(`${getAttributeLabel(attribute, currentLanguage)} ${checked ? 'marked' : 'unmarked'} as configurable`);
                                 } catch (error) {
                                   console.error('Error updating attribute:', error);
                                   toast.error('Failed to update attribute');
@@ -1988,7 +1991,7 @@ export default function ProductForm({ product, categories, stores, taxes, attrib
                               }
                             }}
                           >
-                            {attribute.name}
+                            {getAttributeLabel(attribute, currentLanguage)}
                             {isSelected && <X className="w-3 h-3 ml-1.5" />}
                           </Badge>
                         );
@@ -2204,7 +2207,7 @@ export default function ProductForm({ product, categories, stores, taxes, attrib
 
                         {updatedAttributes.filter(attr => formData.configurable_attributes.includes(attr.id)).map(attr => (
                           <div key={attr.id} className="space-y-2">
-                            <Label className="text-sm font-medium">{attr.name}</Label>
+                            <Label className="text-sm font-medium">{getAttributeLabel(attr, currentLanguage)}</Label>
                             <div className="flex flex-wrap gap-2">
                               {attr.options && attr.options.map(opt => {
                                 const isSelected = selectedAttributeValues[attr.code]?.includes(opt.value);
@@ -2537,7 +2540,7 @@ export default function ProductForm({ product, categories, stores, taxes, attrib
                                   const displayValue = typeof attrValue === 'object' && attrValue !== null
                                     ? (attrValue.value || attrValue.label || JSON.stringify(attrValue))
                                     : String(attrValue);
-                                  return `${attr.name}: ${displayValue}`;
+                                  return `${getAttributeLabel(attr, currentLanguage)}: ${displayValue}`;
                                 }
                                 return null;
                               }).filter(Boolean);

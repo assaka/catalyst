@@ -16,8 +16,11 @@ import {
   AccordionTrigger,
 } from "@/components/ui/accordion";
 import TranslationFields from "@/components/admin/TranslationFields";
+import { useTranslation } from "@/contexts/TranslationContext";
+import { getAttributeLabel } from "@/utils/attributeUtils";
 
 export default function ProductLabelForm({ label, attributes, onSubmit, onCancel }) {
+  const { currentLanguage } = useTranslation();
   const [formData, setFormData] = useState({
     name: '',
     text: '',
@@ -397,7 +400,7 @@ export default function ProductLabelForm({ label, attributes, onSubmit, onCancel
                         
                         return attributesToShow.map(attr => (
                           <SelectItem key={attr.id} value={attr.code}>
-                            {attr.name}
+                            {getAttributeLabel(attr, currentLanguage)}
                           </SelectItem>
                         ));
                       })()}
