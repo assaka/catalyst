@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { StorefrontCmsPage, StorefrontProduct } from '@/api/storefront-entities';
+import { CmsPage } from '@/api/entities';
 import RecommendedProducts from '@/components/storefront/RecommendedProducts';
 import SeoHeadManager from '@/components/storefront/SeoHeadManager';
 import { buildCmsBreadcrumbs } from '@/utils/breadcrumbUtils';
@@ -35,15 +36,13 @@ export default function CmsPageViewer() {
                     const currentLanguage = localStorage.getItem('catalyst_language') || 'en';
                     console.log('🌍 CmsPageViewer: Fetching page with language:', currentLanguage);
 
-                    // Fetch CMS page using slug query parameter
-                    // The backend route will automatically use X-Language header
-                    const response = await fetch(`/api/public/cms-pages?slug=${encodeURIComponent(slug)}`);
-                    const result = await response.json();
+                    // Fetch CMS page using CmsPageService which automatically sends X-Language header
+                    const pages = await CmsPage.filter({ slug: slug });
 
-                    console.log('📥 CmsPageViewer: Received page:', result.success ? result.data.slug : 'not found');
+                    console.log('📥 CmsPageViewer: Received page:', pages.length > 0 ? pages[0].slug : 'not found');
 
-                    if (result.success && result.data) {
-                        const currentPage = result.data;
+                    if (pages && pages.length > 0) {
+                        const currentPage = pages[0];
                         setPage(currentPage);
                         if (currentPage.related_product_ids && currentPage.related_product_ids.length > 0) {
                             // Fetch only the related products using storefront API with specific IDs
@@ -81,11 +80,11 @@ export default function CmsPageViewer() {
                         setLoading(true);
                         console.log('🔄 CmsPageViewer: Refetching page for language:', newLanguage);
 
-                        const response = await fetch(`/api/public/cms-pages?slug=${encodeURIComponent(slug)}`);
-                        const result = await response.json();
+                        // Use CmsPageService which automatically sends X-Language header
+                        const pages = await CmsPage.filter({ slug: slug });
 
-                        if (result.success && result.data) {
-                            const currentPage = result.data;
+                        if (pages && pages.length > 0) {
+                            const currentPage = pages[0];
                             setPage(currentPage);
                             console.log('✅ CmsPageViewer: Page updated with new language');
                         }
