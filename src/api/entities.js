@@ -1093,6 +1093,62 @@ class CmsBlockService extends BaseEntity {
 
 export const CmsPage = new CmsPageService();
 export const CmsBlock = new CmsBlockService();
+
+// Storefront CMS entities - use public routes without authentication
+class StorefrontCmsPageService extends BaseEntity {
+  constructor() {
+    super('public-cms-pages');
+  }
+
+  async findAll(params = {}) {
+    try {
+      const queryString = new URLSearchParams(params).toString();
+      const url = queryString ? `${this.endpoint}?${queryString}` : this.endpoint;
+
+      // Use public API client (no authentication)
+      const response = await publicApiClient.get(url);
+
+      // Public route returns array directly, not wrapped
+      return Array.isArray(response) ? response : [];
+    } catch (error) {
+      console.error(`❌ StorefrontCmsPageService.findAll() error:`, error.message);
+      return [];
+    }
+  }
+}
+
+class StorefrontCmsBlockService extends BaseEntity {
+  constructor() {
+    super('public-cms-blocks');
+  }
+
+  async findAll(params = {}) {
+    try {
+      const queryString = new URLSearchParams(params).toString();
+      const url = queryString ? `${this.endpoint}?${queryString}` : this.endpoint;
+
+      console.log('🔍 StorefrontCmsBlockService.findAll() - Fetching blocks (public) with params:', params);
+
+      // Use public API client (no authentication)
+      const response = await publicApiClient.get(url);
+
+      console.log('📥 StorefrontCmsBlockService.findAll() - Response:', {
+        isArray: Array.isArray(response),
+        length: response?.length
+      });
+
+      // Public route returns array directly, not wrapped
+      return Array.isArray(response) ? response : [];
+    } catch (error) {
+      console.error(`❌ StorefrontCmsBlockService.findAll() error:`, error.message);
+      return [];
+    }
+  }
+}
+
+export const StorefrontCmsPage = new StorefrontCmsPageService();
+export const StorefrontCmsBlock = new StorefrontCmsBlockService();
+
 export const Tax = new BaseEntity('tax');
 export const ShippingMethod = new BaseEntity('shipping');
 export const ShippingMethodType = new BaseEntity('shipping-types');

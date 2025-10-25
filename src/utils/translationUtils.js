@@ -7,26 +7,47 @@
 /**
  * Get translated field from an entity (category, product, CMS page, etc.)
  *
- * The backend returns entities with translated fields directly on the object,
- * fetched from normalized translation tables based on the X-Language header.
+ * Handles two structures:
+ * 1. Admin with all translations: entity.translations.en.name, entity.translations.nl.name
+ * 2. Public/storefront: entity.name, entity.description (single language from X-Language header)
  *
  * @param {Object} entity - The entity with translated fields
- * @param {String} field - The field name (e.g., 'name', 'description')
- * @param {String} lang - Language code (not used, kept for API compatibility)
- * @param {String} fallbackLang - Fallback language code (not used, kept for API compatibility)
+ * @param {String} field - The field name (e.g., 'name', 'description', 'title', 'content')
+ * @param {String} lang - Language code (default: 'en')
+ * @param {String} fallbackLang - Fallback language code (default: 'en')
  * @returns {String} Translated value
  */
 export function getTranslatedField(entity, field, lang = 'en', fallbackLang = 'en') {
   if (!entity) return '';
 
-  // Return field directly from entity (from normalized translations)
+  // NEW: Check for normalized translations object (admin with include_all_translations)
+  if (entity.translations && typeof entity.translations === 'object') {
+    // Try requested language
+    if (entity.translations[lang] && entity.translations[lang][field]) {
+      return entity.translations[lang][field];
+    }
+    // Fallback to fallbackLang (usually 'en')
+    if (lang !== fallbackLang && entity.translations[fallbackLang] && entity.translations[fallbackLang][field]) {
+      return entity.translations[fallbackLang][field];
+    }
+    // Fallback to any available language
+    const availableLangs = Object.keys(entity.translations);
+    for (const availLang of availableLangs) {
+      if (entity.translations[availLang] && entity.translations[availLang][field]) {
+        return entity.translations[availLang][field];
+      }
+    }
+  }
+
+  // OLD: Return field directly from entity (from normalized translations with X-Language header)
   if (entity[field] !== undefined && entity[field] !== null) {
     return entity[field];
   }
 
-  // For title field, fallback to slug if available (useful for CMS pages)
-  if (field === 'title' && entity.slug) {
-    return entity.slug;
+  // For title field, fallback to identifier or slug if available
+  if (field === 'title') {
+    if (entity.identifier) return entity.identifier;
+    if (entity.slug) return entity.slug;
   }
 
   return '';

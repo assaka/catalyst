@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { CmsBlock } from '@/api/entities';
+import { StorefrontCmsBlock } from '@/api/entities';
 import { useStoreSelection } from '@/contexts/StoreSelectionContext';
 import { useStore } from '@/components/storefront/StoreProvider';
 import { getBlockContent } from '@/utils/translationUtils';
@@ -60,7 +60,7 @@ const loadCmsBlocksWithCache = async (storeId) => {
   const requestPromise = retryApiCall(async () => {
     try {
       console.log('🌍 CmsBlockRenderer: Fetching blocks for store:', storeId, 'language:', currentLanguage);
-      const blocks = await CmsBlock.findAll({ store_id: storeId });
+      const blocks = await StorefrontCmsBlock.findAll({ store_id: storeId });
       console.log('📥 CmsBlockRenderer: Received blocks:', blocks?.length || 0);
       return blocks;
     } catch (error) {
