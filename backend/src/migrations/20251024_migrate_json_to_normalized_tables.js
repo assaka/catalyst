@@ -290,7 +290,7 @@ module.exports = {
     await migrateEntityTranslations(
       'cookie_consent_settings',
       'cookie_consent_settings_translations',
-      'settings_id',
+      'cookie_consent_settings_id',
       ['banner_text', 'accept_button_text', 'reject_button_text', 'settings_button_text', 'privacy_policy_text']
     );
 

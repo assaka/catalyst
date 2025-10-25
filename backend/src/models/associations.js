@@ -27,6 +27,7 @@ const CookieConsentSettings = require('./CookieConsentSettings');
 // Import translation models
 const ProductTranslation = require('./ProductTranslation');
 const CategoryTranslation = require('./CategoryTranslation');
+const CookieConsentSettingsTranslation = require('./CookieConsentSettingsTranslation');
 // Note: Other translation models will be created similarly
 
 // Import SEO models
@@ -79,6 +80,21 @@ function setupAssociations() {
     as: 'category'
   });
 
+  // ========================================
+  // COOKIE CONSENT SETTINGS ASSOCIATIONS
+  // ========================================
+
+  CookieConsentSettings.hasMany(CookieConsentSettingsTranslation, {
+    foreignKey: 'cookie_consent_settings_id',
+    as: 'translationsData',
+    onDelete: 'CASCADE'
+  });
+
+  CookieConsentSettingsTranslation.belongsTo(CookieConsentSettings, {
+    foreignKey: 'cookie_consent_settings_id',
+    as: 'cookieConsentSettings'
+  });
+
   // Note: CategorySeo associations would go here
   // Similar pattern for all other entities
 
@@ -92,5 +108,7 @@ module.exports = {
   ProductTranslation,
   ProductSeo,
   Category,
-  CategoryTranslation
+  CategoryTranslation,
+  CookieConsentSettings,
+  CookieConsentSettingsTranslation
 };
