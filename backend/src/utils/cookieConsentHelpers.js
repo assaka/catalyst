@@ -67,7 +67,16 @@ async function getCookieConsentSettingsWithTranslations(where = {}, lang = 'en')
             'accept_button_text', ccst.accept_button_text,
             'reject_button_text', ccst.reject_button_text,
             'settings_button_text', ccst.settings_button_text,
-            'privacy_policy_text', ccst.privacy_policy_text
+            'privacy_policy_text', ccst.privacy_policy_text,
+            'save_preferences_button_text', ccst.save_preferences_button_text,
+            'necessary_name', ccst.necessary_name,
+            'necessary_description', ccst.necessary_description,
+            'analytics_name', ccst.analytics_name,
+            'analytics_description', ccst.analytics_description,
+            'marketing_name', ccst.marketing_name,
+            'marketing_description', ccst.marketing_description,
+            'functional_name', ccst.functional_name,
+            'functional_description', ccst.functional_description
           )
         ) FILTER (WHERE ccst.language_code IS NOT NULL),
         '{}'::json
@@ -145,7 +154,16 @@ async function getCookieConsentSettingsById(id, lang = 'en') {
             'accept_button_text', ccst.accept_button_text,
             'reject_button_text', ccst.reject_button_text,
             'settings_button_text', ccst.settings_button_text,
-            'privacy_policy_text', ccst.privacy_policy_text
+            'privacy_policy_text', ccst.privacy_policy_text,
+            'save_preferences_button_text', ccst.save_preferences_button_text,
+            'necessary_name', ccst.necessary_name,
+            'necessary_description', ccst.necessary_description,
+            'analytics_name', ccst.analytics_name,
+            'analytics_description', ccst.analytics_description,
+            'marketing_name', ccst.marketing_name,
+            'marketing_description', ccst.marketing_description,
+            'functional_name', ccst.functional_name,
+            'functional_description', ccst.functional_description
           )
         ) FILTER (WHERE ccst.language_code IS NOT NULL),
         '{}'::json
@@ -240,11 +258,21 @@ async function createCookieConsentSettingsWithTranslations(settingsData, transla
           INSERT INTO cookie_consent_settings_translations (
             cookie_consent_settings_id, language_code, banner_text,
             accept_button_text, reject_button_text, settings_button_text,
-            privacy_policy_text, created_at, updated_at
+            privacy_policy_text, save_preferences_button_text,
+            necessary_name, necessary_description,
+            analytics_name, analytics_description,
+            marketing_name, marketing_description,
+            functional_name, functional_description,
+            created_at, updated_at
           ) VALUES (
             :settings_id, :lang_code, :banner_text,
             :accept_button_text, :reject_button_text, :settings_button_text,
-            :privacy_policy_text, NOW(), NOW()
+            :privacy_policy_text, :save_preferences_button_text,
+            :necessary_name, :necessary_description,
+            :analytics_name, :analytics_description,
+            :marketing_name, :marketing_description,
+            :functional_name, :functional_description,
+            NOW(), NOW()
           )
           ON CONFLICT (cookie_consent_settings_id, language_code) DO UPDATE
           SET
@@ -253,6 +281,15 @@ async function createCookieConsentSettingsWithTranslations(settingsData, transla
             reject_button_text = EXCLUDED.reject_button_text,
             settings_button_text = EXCLUDED.settings_button_text,
             privacy_policy_text = EXCLUDED.privacy_policy_text,
+            save_preferences_button_text = EXCLUDED.save_preferences_button_text,
+            necessary_name = EXCLUDED.necessary_name,
+            necessary_description = EXCLUDED.necessary_description,
+            analytics_name = EXCLUDED.analytics_name,
+            analytics_description = EXCLUDED.analytics_description,
+            marketing_name = EXCLUDED.marketing_name,
+            marketing_description = EXCLUDED.marketing_description,
+            functional_name = EXCLUDED.functional_name,
+            functional_description = EXCLUDED.functional_description,
             updated_at = NOW()
         `, {
           replacements: {
@@ -262,7 +299,16 @@ async function createCookieConsentSettingsWithTranslations(settingsData, transla
             accept_button_text: data.accept_button_text || null,
             reject_button_text: data.reject_button_text || null,
             settings_button_text: data.settings_button_text || null,
-            privacy_policy_text: data.privacy_policy_text || null
+            privacy_policy_text: data.privacy_policy_text || null,
+            save_preferences_button_text: data.save_preferences_button_text || null,
+            necessary_name: data.necessary_name || null,
+            necessary_description: data.necessary_description || null,
+            analytics_name: data.analytics_name || null,
+            analytics_description: data.analytics_description || null,
+            marketing_name: data.marketing_name || null,
+            marketing_description: data.marketing_description || null,
+            functional_name: data.functional_name || null,
+            functional_description: data.functional_description || null
           },
           transaction
         });
@@ -360,11 +406,21 @@ async function updateCookieConsentSettingsWithTranslations(id, settingsData, tra
           INSERT INTO cookie_consent_settings_translations (
             cookie_consent_settings_id, language_code, banner_text,
             accept_button_text, reject_button_text, settings_button_text,
-            privacy_policy_text, created_at, updated_at
+            privacy_policy_text, save_preferences_button_text,
+            necessary_name, necessary_description,
+            analytics_name, analytics_description,
+            marketing_name, marketing_description,
+            functional_name, functional_description,
+            created_at, updated_at
           ) VALUES (
             :settings_id, :lang_code, :banner_text,
             :accept_button_text, :reject_button_text, :settings_button_text,
-            :privacy_policy_text, NOW(), NOW()
+            :privacy_policy_text, :save_preferences_button_text,
+            :necessary_name, :necessary_description,
+            :analytics_name, :analytics_description,
+            :marketing_name, :marketing_description,
+            :functional_name, :functional_description,
+            NOW(), NOW()
           )
           ON CONFLICT (cookie_consent_settings_id, language_code) DO UPDATE
           SET
@@ -373,6 +429,15 @@ async function updateCookieConsentSettingsWithTranslations(id, settingsData, tra
             reject_button_text = COALESCE(EXCLUDED.reject_button_text, cookie_consent_settings_translations.reject_button_text),
             settings_button_text = COALESCE(EXCLUDED.settings_button_text, cookie_consent_settings_translations.settings_button_text),
             privacy_policy_text = COALESCE(EXCLUDED.privacy_policy_text, cookie_consent_settings_translations.privacy_policy_text),
+            save_preferences_button_text = COALESCE(EXCLUDED.save_preferences_button_text, cookie_consent_settings_translations.save_preferences_button_text),
+            necessary_name = COALESCE(EXCLUDED.necessary_name, cookie_consent_settings_translations.necessary_name),
+            necessary_description = COALESCE(EXCLUDED.necessary_description, cookie_consent_settings_translations.necessary_description),
+            analytics_name = COALESCE(EXCLUDED.analytics_name, cookie_consent_settings_translations.analytics_name),
+            analytics_description = COALESCE(EXCLUDED.analytics_description, cookie_consent_settings_translations.analytics_description),
+            marketing_name = COALESCE(EXCLUDED.marketing_name, cookie_consent_settings_translations.marketing_name),
+            marketing_description = COALESCE(EXCLUDED.marketing_description, cookie_consent_settings_translations.marketing_description),
+            functional_name = COALESCE(EXCLUDED.functional_name, cookie_consent_settings_translations.functional_name),
+            functional_description = COALESCE(EXCLUDED.functional_description, cookie_consent_settings_translations.functional_description),
             updated_at = NOW()
         `, {
           replacements: {
@@ -382,7 +447,16 @@ async function updateCookieConsentSettingsWithTranslations(id, settingsData, tra
             accept_button_text: data.accept_button_text,
             reject_button_text: data.reject_button_text,
             settings_button_text: data.settings_button_text,
-            privacy_policy_text: data.privacy_policy_text
+            privacy_policy_text: data.privacy_policy_text,
+            save_preferences_button_text: data.save_preferences_button_text,
+            necessary_name: data.necessary_name,
+            necessary_description: data.necessary_description,
+            analytics_name: data.analytics_name,
+            analytics_description: data.analytics_description,
+            marketing_name: data.marketing_name,
+            marketing_description: data.marketing_description,
+            functional_name: data.functional_name,
+            functional_description: data.functional_description
           },
           transaction
         });

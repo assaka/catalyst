@@ -302,24 +302,30 @@ export default function CookieConsentBanner() {
 
             {showPreferences && cookieSettings.categories && (
               <div className="mb-4 space-y-3">
-                {cookieSettings.categories.map(category => (
-                  <div key={category.id} className="flex items-start justify-between p-3 border rounded">
-                    <div className="flex-1">
-                      <div className="flex items-center gap-2 mb-1">
-                        <Label className="font-medium">{category.name}</Label>
-                        {category.required && (
-                          <span className="text-xs bg-gray-100 px-2 py-1 rounded">Required</span>
-                        )}
+                {cookieSettings.categories.map(category => {
+                  // Get translated category name and description
+                  const categoryName = getTranslatedText(`${category.id}_name`, category.name);
+                  const categoryDescription = getTranslatedText(`${category.id}_description`, category.description);
+
+                  return (
+                    <div key={category.id} className="flex items-start justify-between p-3 border rounded">
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2 mb-1">
+                          <Label className="font-medium">{categoryName}</Label>
+                          {category.required && (
+                            <span className="text-xs bg-gray-100 px-2 py-1 rounded">Required</span>
+                          )}
+                        </div>
+                        <p className="text-xs text-gray-500">{categoryDescription}</p>
                       </div>
-                      <p className="text-xs text-gray-500">{category.description}</p>
+                      <Switch
+                        checked={selectedCategories[category.id] || false}
+                        onCheckedChange={(checked) => handleCategoryChange(category.id, checked)}
+                        disabled={category.required}
+                      />
                     </div>
-                    <Switch
-                      checked={selectedCategories[category.id] || false}
-                      onCheckedChange={(checked) => handleCategoryChange(category.id, checked)}
-                      disabled={category.required}
-                    />
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             )}
 
@@ -351,7 +357,7 @@ export default function CookieConsentBanner() {
                   onClick={handleSavePreferences}
                   className="bg-green-600 hover:bg-green-700"
                 >
-                  Save Preferences
+                  {getTranslatedText('save_preferences_button_text', 'Save Preferences')}
                 </Button>
               )}
 

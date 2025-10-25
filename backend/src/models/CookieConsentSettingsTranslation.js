@@ -40,6 +40,42 @@ const CookieConsentSettingsTranslation = sequelize.define('CookieConsentSettings
   privacy_policy_text: {
     type: DataTypes.STRING,
     allowNull: true
+  },
+  save_preferences_button_text: {
+    type: DataTypes.STRING,
+    allowNull: true
+  },
+  necessary_name: {
+    type: DataTypes.STRING,
+    allowNull: true
+  },
+  necessary_description: {
+    type: DataTypes.TEXT,
+    allowNull: true
+  },
+  analytics_name: {
+    type: DataTypes.STRING,
+    allowNull: true
+  },
+  analytics_description: {
+    type: DataTypes.TEXT,
+    allowNull: true
+  },
+  marketing_name: {
+    type: DataTypes.STRING,
+    allowNull: true
+  },
+  marketing_description: {
+    type: DataTypes.TEXT,
+    allowNull: true
+  },
+  functional_name: {
+    type: DataTypes.STRING,
+    allowNull: true
+  },
+  functional_description: {
+    type: DataTypes.TEXT,
+    allowNull: true
   }
 }, {
   tableName: 'cookie_consent_settings_translations',
