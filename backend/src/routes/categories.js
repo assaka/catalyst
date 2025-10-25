@@ -6,6 +6,7 @@ const translationService = require('../services/translation-service');
 const { getLanguageFromRequest } = require('../utils/languageUtils');
 const {
   getCategoriesWithTranslations,
+  getCategoriesWithAllTranslations,
   getCategoryById,
   createCategoryWithTranslations,
   updateCategoryWithTranslations,
@@ -29,7 +30,7 @@ const { authMiddleware, authorize } = require('../middleware/auth');
 
 router.get('/', authMiddleware, authorize(['admin', 'store_owner']), async (req, res) => {
   try {
-    const { page = 1, limit = 100, store_id, parent_id, search } = req.query;
+    const { page = 1, limit = 100, store_id, parent_id, search, include_all_translations } = req.query;
     const offset = (page - 1) * limit;
 
     const where = {};
@@ -49,9 +50,12 @@ router.get('/', authMiddleware, authorize(['admin', 'store_owner']), async (req,
     console.log('🌍 Admin Categories: Requesting language:', lang);
     console.log('🔍 Admin Categories: Where clause:', JSON.stringify(where, null, 2));
     console.log('🔍 Admin Categories: User role:', req.user?.role, 'User ID:', req.user?.id);
+    console.log('🔍 Admin Categories: Include all translations:', include_all_translations);
 
-    // Get categories with translations
-    const categories = await getCategoriesWithTranslations(where, lang);
+    // Get categories with translations (all or single language)
+    const categories = include_all_translations === 'true'
+      ? await getCategoriesWithAllTranslations(where)
+      : await getCategoriesWithTranslations(where, lang);
     console.log('✅ Admin Categories: Fetched', categories.length, 'categories from DB');
 
     // Handle search in memory (if needed) - TODO: move to SQL query

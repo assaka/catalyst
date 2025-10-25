@@ -38,22 +38,30 @@ const retryApiCall = async (apiCall, maxRetries = 3, baseDelay = 2000) => {
 };
 
 const loadCmsBlocksWithCache = async (storeId) => {
-  const cacheKey = `store_${storeId}`;
+  // Include language in cache key to ensure proper translation switching
+  const currentLanguage = localStorage.getItem('catalyst_language') || 'en';
+  const cacheKey = `store_${storeId}_lang_${currentLanguage}`;
+
+  console.log('🔍 CmsBlockRenderer: Loading blocks with cache key:', cacheKey);
 
   // Check cache first
   if (cmsBlockCache.has(cacheKey)) {
+    console.log('✅ CmsBlockRenderer: Using cached blocks for language:', currentLanguage);
     return cmsBlockCache.get(cacheKey);
   }
 
   // Check if there's already a pending request
   if (pendingRequests.has(cacheKey)) {
+    console.log('⏳ CmsBlockRenderer: Waiting for pending request');
     return pendingRequests.get(cacheKey);
   }
 
   // Create new request to load CMS blocks
   const requestPromise = retryApiCall(async () => {
     try {
+      console.log('🌍 CmsBlockRenderer: Fetching blocks for store:', storeId, 'language:', currentLanguage);
       const blocks = await CmsBlock.findAll({ store_id: storeId });
+      console.log('📥 CmsBlockRenderer: Received blocks:', blocks?.length || 0);
       return blocks;
     } catch (error) {
       console.warn('⚠️ CmsBlockRenderer: Backend CMS blocks API failed, this is expected if backend is not properly configured:', error.message);
@@ -65,6 +73,7 @@ const loadCmsBlocksWithCache = async (storeId) => {
       const result = blocks || [];
       cmsBlockCache.set(cacheKey, result);
       pendingRequests.delete(cacheKey);
+      console.log('💾 CmsBlockRenderer: Cached blocks for language:', currentLanguage);
       return result;
     })
     .catch(error => {
@@ -170,6 +179,54 @@ export default function CmsBlockRenderer({ position, page, storeId }) {
 
     loadBlocks();
   }, [position, page, storeIdToUse]);
+
+  // Listen for language changes and clear cache
+  useEffect(() => {
+    const handleLanguageChange = (event) => {
+      const newLanguage = event.detail?.language;
+      console.log('🌍 CmsBlockRenderer: Language changed to:', newLanguage);
+      console.log('🧹 CmsBlockRenderer: Clearing CMS blocks cache');
+
+      // Clear all cached blocks
+      cmsBlockCache.clear();
+      pendingRequests.clear();
+
+      // Trigger reload by setting loading state
+      setLoading(true);
+
+      // Reload blocks with new language
+      if (storeIdToUse) {
+        loadCmsBlocksWithCache(storeIdToUse).then(allBlocks => {
+          const filteredBlocks = allBlocks.filter(block => {
+            if (!block.is_active) return false;
+            let placements = [];
+            if (Array.isArray(block.placement)) {
+              placements = block.placement;
+            } else if (typeof block.placement === 'string') {
+              placements = [block.placement];
+            } else if (typeof block.placement === 'object' && block.placement.position) {
+              placements = [block.placement.position];
+            } else {
+              placements = ['content'];
+            }
+            return placements.includes(position);
+          });
+
+          filteredBlocks.sort((a, b) => {
+            const aOrder = a.sort_order || 0;
+            const bOrder = b.sort_order || 0;
+            return aOrder - bOrder;
+          });
+
+          setBlocks(filteredBlocks);
+          setLoading(false);
+        });
+      }
+    };
+
+    window.addEventListener('languageChanged', handleLanguageChange);
+    return () => window.removeEventListener('languageChanged', handleLanguageChange);
+  }, [position, storeIdToUse]);
 
   if (loading) {
     return null; // Don't show loading spinner for CMS blocks

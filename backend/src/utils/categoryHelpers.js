@@ -181,22 +181,30 @@ async function createCategoryWithTranslations(categoryData, translations = {}) {
         await sequelize.query(`
           INSERT INTO category_translations (
             category_id, language_code, name, description,
+            meta_title, meta_description, meta_keywords,
             created_at, updated_at
           ) VALUES (
             :category_id, :lang_code, :name, :description,
+            :meta_title, :meta_description, :meta_keywords,
             NOW(), NOW()
           )
           ON CONFLICT (category_id, language_code) DO UPDATE
           SET
             name = EXCLUDED.name,
             description = EXCLUDED.description,
+            meta_title = EXCLUDED.meta_title,
+            meta_description = EXCLUDED.meta_description,
+            meta_keywords = EXCLUDED.meta_keywords,
             updated_at = NOW()
         `, {
           replacements: {
             category_id: category.id,
             lang_code: langCode,
             name: data.name || null,
-            description: data.description || null
+            description: data.description || null,
+            meta_title: data.meta_title || null,
+            meta_description: data.meta_description || null,
+            meta_keywords: data.meta_keywords || null
           },
           transaction
         });
@@ -275,22 +283,30 @@ async function updateCategoryWithTranslations(id, categoryData, translations = {
         await sequelize.query(`
           INSERT INTO category_translations (
             category_id, language_code, name, description,
+            meta_title, meta_description, meta_keywords,
             created_at, updated_at
           ) VALUES (
             :category_id, :lang_code, :name, :description,
+            :meta_title, :meta_description, :meta_keywords,
             NOW(), NOW()
           )
           ON CONFLICT (category_id, language_code) DO UPDATE
           SET
             name = COALESCE(EXCLUDED.name, category_translations.name),
             description = COALESCE(EXCLUDED.description, category_translations.description),
+            meta_title = COALESCE(EXCLUDED.meta_title, category_translations.meta_title),
+            meta_description = COALESCE(EXCLUDED.meta_description, category_translations.meta_description),
+            meta_keywords = COALESCE(EXCLUDED.meta_keywords, category_translations.meta_keywords),
             updated_at = NOW()
         `, {
           replacements: {
             category_id: id,
             lang_code: langCode,
             name: data.name,
-            description: data.description
+            description: data.description,
+            meta_title: data.meta_title,
+            meta_description: data.meta_description,
+            meta_keywords: data.meta_keywords
           },
           transaction
         });
@@ -305,6 +321,104 @@ async function updateCategoryWithTranslations(id, categoryData, translations = {
     await transaction.rollback();
     throw error;
   }
+}
+
+/**
+ * Get categories with ALL translations for admin translation management
+ *
+ * @param {Object} where - WHERE clause conditions
+ * @returns {Promise<Array>} Categories with all translations nested by language code
+ */
+async function getCategoriesWithAllTranslations(where = {}) {
+  const whereConditions = Object.entries(where)
+    .map(([key, value]) => {
+      if (value === true || value === false) {
+        return `c.${key} = ${value}`;
+      }
+      if (Array.isArray(value)) {
+        // Handle Op.in case
+        return `c.${key} IN (${value.map(v => `'${v}'`).join(', ')})`;
+      }
+      return `c.${key} = '${value}'`;
+    })
+    .join(' AND ');
+
+  const whereClause = whereConditions ? `WHERE ${whereConditions}` : '';
+
+  // Get categories
+  const categoriesQuery = `
+    SELECT
+      c.id,
+      c.slug,
+      c.image_url,
+      c.sort_order,
+      c.is_active,
+      c.hide_in_menu,
+      c.seo,
+      c.store_id,
+      c.parent_id,
+      c.level,
+      c.path,
+      c.product_count,
+      c.created_at,
+      c.updated_at,
+      ct_en.name as name
+    FROM categories c
+    LEFT JOIN category_translations ct_en
+      ON c.id = ct_en.category_id AND ct_en.language_code = 'en'
+    ${whereClause}
+    ORDER BY c.sort_order ASC, c.created_at DESC
+  `;
+
+  const categories = await sequelize.query(categoriesQuery, {
+    type: sequelize.QueryTypes.SELECT
+  });
+
+  // Get all translations for these categories
+  const categoryIds = categories.map(c => c.id);
+
+  if (categoryIds.length === 0) {
+    return [];
+  }
+
+  const translationsQuery = `
+    SELECT
+      category_id,
+      language_code,
+      name,
+      description,
+      meta_title,
+      meta_description,
+      meta_keywords
+    FROM category_translations
+    WHERE category_id IN (:categoryIds)
+  `;
+
+  const translations = await sequelize.query(translationsQuery, {
+    replacements: { categoryIds },
+    type: sequelize.QueryTypes.SELECT
+  });
+
+  // Group translations by category_id and language_code
+  const translationsByCategory = {};
+  translations.forEach(t => {
+    if (!translationsByCategory[t.category_id]) {
+      translationsByCategory[t.category_id] = {};
+    }
+    translationsByCategory[t.category_id][t.language_code] = {
+      name: t.name,
+      description: t.description,
+      meta_title: t.meta_title,
+      meta_description: t.meta_description,
+      meta_keywords: t.meta_keywords
+    };
+  });
+
+  // Attach translations to categories
+  return categories.map(category => ({
+    ...category,
+    translations: translationsByCategory[category.id] || {}
+  }));
 }
 
 /**
@@ -326,6 +440,7 @@ async function deleteCategory(id) {
 
 module.exports = {
   getCategoriesWithTranslations,
+  getCategoriesWithAllTranslations,
   getCategoryById,
   createCategoryWithTranslations,
   updateCategoryWithTranslations,

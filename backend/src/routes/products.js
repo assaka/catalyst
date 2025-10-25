@@ -3,6 +3,7 @@ const { body, validationResult } = require('express-validator');
 const { Product, Store } = require('../models');
 const { Op } = require('sequelize');
 const translationService = require('../services/translation-service');
+const { applyAllProductTranslations, updateProductTranslations } = require('../utils/productHelpers');
 const router = express.Router();
 
 // Import the new store auth middleware
@@ -16,7 +17,7 @@ const { authorize } = require('../middleware/auth');
 
 router.get('/', authMiddleware, authorize(['admin', 'store_owner']), async (req, res) => {
   try {
-    const { page = 1, limit = 100, store_id, category_id, status, search, slug, sku, id } = req.query;
+    const { page = 1, limit = 100, store_id, category_id, status, search, slug, sku, id, include_all_translations } = req.query;
     const offset = (page - 1) * limit;
     
     console.log('🔍 Admin Products API called with params:', req.query);
@@ -89,11 +90,17 @@ router.get('/', authMiddleware, authorize(['admin', 'store_owner']), async (req,
       order: [['created_at', 'DESC']]
     });
 
+    // Apply all translations if requested (for admin translation management)
+    let products = rows;
+    if (include_all_translations === 'true') {
+      console.log('🌍 Products: Including all translations');
+      products = await applyAllProductTranslations(rows);
+    }
 
     res.json({
       success: true,
       data: {
-        products: rows,
+        products,
         pagination: {
           current_page: parseInt(page),
           per_page: parseInt(limit),
@@ -265,7 +272,16 @@ router.put('/:id',
       }
     }
 
-    await product.update(req.body);
+    // Extract translations from request body
+    const { translations, ...productData } = req.body;
+
+    // Update product data (excluding translations)
+    await product.update(productData);
+
+    // Update translations in normalized table if provided
+    if (translations && Object.keys(translations).length > 0) {
+      await updateProductTranslations(product.id, translations);
+    }
 
     res.json({
       success: true,

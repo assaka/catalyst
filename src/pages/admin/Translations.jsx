@@ -292,7 +292,7 @@ export default function Translations() {
 
     try {
       setLoadingProducts(true);
-      const response = await api.get(`/products?store_id=${storeId}&limit=1000`);
+      const response = await api.get(`/products?store_id=${storeId}&limit=1000&include_all_translations=true`);
 
       if (response && response.success && response.data) {
         setProducts(response.data.products || []);
@@ -317,7 +317,7 @@ export default function Translations() {
 
     try {
       setLoadingCategories(true);
-      const response = await api.get(`/categories?store_id=${storeId}&limit=1000`);
+      const response = await api.get(`/categories?store_id=${storeId}&limit=1000&include_all_translations=true`);
 
       if (response && response.success && response.data) {
         setProductCategories(response.data.categories || []);

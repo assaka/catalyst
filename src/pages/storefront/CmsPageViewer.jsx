@@ -32,9 +32,15 @@ export default function CmsPageViewer() {
             const fetchPage = async () => {
                 try {
                     setLoading(true);
+                    const currentLanguage = localStorage.getItem('catalyst_language') || 'en';
+                    console.log('🌍 CmsPageViewer: Fetching page with language:', currentLanguage);
+
                     // Fetch CMS page using slug query parameter
+                    // The backend route will automatically use X-Language header
                     const response = await fetch(`/api/public/cms-pages?slug=${encodeURIComponent(slug)}`);
                     const result = await response.json();
+
+                    console.log('📥 CmsPageViewer: Received page:', result.success ? result.data.slug : 'not found');
 
                     if (result.success && result.data) {
                         const currentPage = result.data;
@@ -60,6 +66,41 @@ export default function CmsPageViewer() {
             };
             fetchPage();
         }
+    }, [slug]);
+
+    // Listen for language changes and refetch the page
+    useEffect(() => {
+        const handleLanguageChange = (event) => {
+            const newLanguage = event.detail?.language;
+            console.log('🌍 CmsPageViewer: Language changed to:', newLanguage);
+
+            // Refetch the page with new language
+            if (slug) {
+                const fetchPage = async () => {
+                    try {
+                        setLoading(true);
+                        console.log('🔄 CmsPageViewer: Refetching page for language:', newLanguage);
+
+                        const response = await fetch(`/api/public/cms-pages?slug=${encodeURIComponent(slug)}`);
+                        const result = await response.json();
+
+                        if (result.success && result.data) {
+                            const currentPage = result.data;
+                            setPage(currentPage);
+                            console.log('✅ CmsPageViewer: Page updated with new language');
+                        }
+                    } catch (error) {
+                        console.error("Error refetching CMS page:", error);
+                    } finally {
+                        setLoading(false);
+                    }
+                };
+                fetchPage();
+            }
+        };
+
+        window.addEventListener('languageChanged', handleLanguageChange);
+        return () => window.removeEventListener('languageChanged', handleLanguageChange);
     }, [slug]);
 
     // Filter related products based on search query
