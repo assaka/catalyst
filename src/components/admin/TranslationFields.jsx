@@ -36,6 +36,10 @@ export default function TranslationFields({
 
   // Update local state when translations prop changes
   useEffect(() => {
+    console.log('🔍 TranslationFields - Translations prop changed:', {
+      translationsKeys: Object.keys(translations || {}),
+      translations: translations
+    });
     setLocalTranslations(translations);
   }, [translations]);
 
