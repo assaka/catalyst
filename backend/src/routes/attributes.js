@@ -99,6 +99,7 @@ router.get('/', async (req, res) => {
       limit: parseInt(limit),
       offset: parseInt(offset),
       order: [['sort_order', 'ASC'], ['name', 'ASC']],
+      attributes: { exclude: ['translations'] }, // Exclude translations JSON column - using normalized table
       include: [{ model: Store, attributes: ['id', 'name'] }]
     });
 
@@ -127,6 +128,7 @@ router.get('/', async (req, res) => {
         const values = await AttributeValue.findAll({
           where: { attribute_id: attr.id },
           order: [['sort_order', 'ASC'], ['code', 'ASC']],
+          attributes: { exclude: ['translations'] }, // Exclude translations JSON column - using normalized table
           // No limit for filterable attributes - need all values for filters
           limit: (isPublicRequest && attr.is_filterable) ? undefined : 10
         });
