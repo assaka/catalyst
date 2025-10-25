@@ -642,7 +642,16 @@ export const StoreProvider = ({ children }) => {
         
         if (cookieConsentData && cookieConsentData.length > 0) {
           const cookieSettings = cookieConsentData[0];
-          
+
+          console.log('🎨 [StoreProvider] Cookie settings from backend:', {
+            accept_button_bg_color: cookieSettings.accept_button_bg_color,
+            accept_button_text_color: cookieSettings.accept_button_text_color,
+            reject_button_bg_color: cookieSettings.reject_button_bg_color,
+            reject_button_text_color: cookieSettings.reject_button_text_color,
+            save_preferences_button_bg_color: cookieSettings.save_preferences_button_bg_color,
+            save_preferences_button_text_color: cookieSettings.save_preferences_button_text_color
+          });
+
           // Map backend cookie settings to frontend format
           const frontendCookieSettings = {
             enabled: cookieSettings.is_enabled || false,
