@@ -201,6 +201,19 @@ async function createProductLabelWithTranslations(labelData, translations = {}) 
     // Insert translations
     for (const [langCode, data] of Object.entries(translations)) {
       if (data && (data.name || data.text)) {
+        const replacements = {
+          label_id: label.id,
+          lang_code: langCode,
+          name: data.name ?? null,
+          text: data.text ?? null
+        };
+
+        console.log('🔍 Creating product label translation:', {
+          langCode,
+          data,
+          replacements
+        });
+
         await sequelize.query(`
           INSERT INTO product_label_translations (
             product_label_id, language_code, name, text, created_at, updated_at
@@ -210,12 +223,7 @@ async function createProductLabelWithTranslations(labelData, translations = {}) 
           ON CONFLICT (product_label_id, language_code) DO UPDATE
           SET name = EXCLUDED.name, text = EXCLUDED.text, updated_at = NOW()
         `, {
-          replacements: {
-            label_id: label.id,
-            lang_code: langCode,
-            name: data.name ?? null,
-            text: data.text ?? null
-          },
+          replacements,
           transaction
         });
       }
@@ -304,6 +312,19 @@ async function updateProductLabelWithTranslations(id, labelData, translations = 
     // Update translations
     for (const [langCode, data] of Object.entries(translations)) {
       if (data && (data.name !== undefined || data.text !== undefined)) {
+        const replacements = {
+          label_id: id,
+          lang_code: langCode,
+          name: data.name ?? null,
+          text: data.text ?? null
+        };
+
+        console.log('🔍 Updating product label translation:', {
+          langCode,
+          data,
+          replacements
+        });
+
         await sequelize.query(`
           INSERT INTO product_label_translations (
             product_label_id, language_code, name, text, created_at, updated_at
@@ -316,12 +337,7 @@ async function updateProductLabelWithTranslations(id, labelData, translations = 
             text = COALESCE(EXCLUDED.text, product_label_translations.text),
             updated_at = NOW()
         `, {
-          replacements: {
-            label_id: id,
-            lang_code: langCode,
-            name: data.name ?? null,
-            text: data.text ?? null
-          },
+          replacements,
           transaction
         });
       }
