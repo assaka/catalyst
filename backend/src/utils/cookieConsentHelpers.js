@@ -378,7 +378,13 @@ async function updateCookieConsentSettingsWithTranslations(id, settingsData, tra
       privacy_policy_text: 'privacy_policy_text',
       google_analytics_id: 'google_analytics_id',
       google_tag_manager_id: 'google_tag_manager_id',
-      custom_css: 'custom_css'
+      custom_css: 'custom_css',
+      accept_button_bg_color: 'accept_button_bg_color',
+      accept_button_text_color: 'accept_button_text_color',
+      reject_button_bg_color: 'reject_button_bg_color',
+      reject_button_text_color: 'reject_button_text_color',
+      save_preferences_button_bg_color: 'save_preferences_button_bg_color',
+      save_preferences_button_text_color: 'save_preferences_button_text_color'
     };
 
     Object.entries(fieldMappings).forEach(([key, field]) => {

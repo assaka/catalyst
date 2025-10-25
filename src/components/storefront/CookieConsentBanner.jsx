@@ -10,6 +10,7 @@ import { X, Settings, Shield } from 'lucide-react';
 import { useStore } from './StoreProvider';
 import { getCurrentLanguage } from '@/utils/translationUtils';
 import { createCmsPageUrl } from '@/utils/urlUtils';
+import { useTranslation } from '@/contexts/TranslationContext';
 
 const getUserCountry = async () => {
   try {
@@ -33,6 +34,7 @@ const getSessionId = () => {
 
 export default function CookieConsentBanner() {
   const { store, settings } = useStore();
+  const { t } = useTranslation();
   const [showBanner, setShowBanner] = useState(false);
   const [showPreferences, setShowPreferences] = useState(false);
   const [userCountry, setUserCountry] = useState('US');
@@ -301,16 +303,6 @@ export default function CookieConsentBanner() {
           <CardContent className="p-6">
             <div className="flex items-start justify-between mb-4">
               <div className="flex items-center gap-2 mb-2">
-                {showPreferences && (
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => setShowPreferences(false)}
-                    className="mr-1 px-2"
-                  >
-                    <span className="text-xl">←</span>
-                  </Button>
-                )}
                 <Shield className="w-5 h-5 text-blue-600" />
                 <h3 className="text-lg font-semibold">
                   {showPreferences ? 'Manage Cookie Preferences' : 'Cookie Preferences'}
@@ -344,7 +336,7 @@ export default function CookieConsentBanner() {
                         <div className="flex items-center gap-2 mb-1">
                           <Label className="font-medium">{categoryName}</Label>
                           {category.required && (
-                            <span className="text-xs bg-gray-100 px-2 py-1 rounded">Required</span>
+                            <span className="text-xs bg-gray-100 px-2 py-1 rounded">{t('common.required')}</span>
                           )}
                         </div>
                         <p className="text-xs text-gray-500">{categoryDescription}</p>
@@ -411,6 +403,17 @@ export default function CookieConsentBanner() {
               >
                 {getTranslatedText('privacy_policy_text', 'Privacy Policy')}
               </Link>
+
+              {showPreferences && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setShowPreferences(false)}
+                  className="ml-auto"
+                >
+                  {t('common.back')}
+                </Button>
+              )}
             </div>
           </CardContent>
         </Card>
