@@ -398,15 +398,22 @@ export default function CookieConsent() {
         await loadData();
       }
 
-      setFlashMessage({ type: 'success', message: 'Cookie consent settings saved successfully!' });
-      setSaveSuccess(true);
-      setTimeout(() => setSaveSuccess(false), 2000);
-
       // Clear storefront cache so changes appear immediately
       console.log('🗑️ Clearing storefront cache for immediate updates...');
       localStorage.removeItem('storeProviderCache');
       localStorage.removeItem(`cookie-consent-${currentStoreId}`);
-      console.log('✅ Storefront cache cleared - changes will appear on next page load');
+
+      // Increment cache version to force storefront to refetch
+      const cacheVersion = parseInt(localStorage.getItem('cookieConsentCacheVersion') || '0', 10);
+      localStorage.setItem('cookieConsentCacheVersion', String(cacheVersion + 1));
+      console.log(`✅ Cache version incremented to ${cacheVersion + 1}`);
+
+      setFlashMessage({
+        type: 'success',
+        message: 'Cookie consent settings saved! Refresh your storefront to see changes.'
+      });
+      setSaveSuccess(true);
+      setTimeout(() => setSaveSuccess(false), 2000);
 
     } catch (error) {
       console.error('Error saving cookie consent settings:', error);

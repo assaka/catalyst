@@ -635,6 +635,17 @@ export const StoreProvider = ({ children }) => {
 
       // Load cookie consent settings and update store settings
       try {
+        // Check if cache version changed (admin panel increments this on save)
+        const currentCacheVersion = localStorage.getItem('cookieConsentCacheVersion') || '0';
+        const lastKnownVersion = sessionStorage.getItem('lastCookieConsentVersion') || '0';
+
+        // If version changed, clear the cookie consent cache
+        if (currentCacheVersion !== lastKnownVersion) {
+          console.log(`🔄 Cookie consent cache version changed (${lastKnownVersion} → ${currentCacheVersion}), invalidating cache...`);
+          apiCache.delete(`cookie-consent-${selectedStore.id}`);
+          sessionStorage.setItem('lastCookieConsentVersion', currentCacheVersion);
+        }
+
         const cookieConsentData = await cachedApiCall(`cookie-consent-${selectedStore.id}`, async () => {
           const result = await StorefrontCookieConsentSettings.filter({ store_id: selectedStore.id });
           return Array.isArray(result) ? result : [];
