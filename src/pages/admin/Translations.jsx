@@ -294,6 +294,18 @@ export default function Translations() {
       setLoadingProducts(true);
       const response = await api.get(`/products?store_id=${storeId}&limit=1000&include_all_translations=true`);
 
+      console.log('🔍 loadProducts - API Response:', {
+        success: response?.success,
+        productsCount: response?.data?.products?.length,
+        firstProduct: response?.data?.products?.[0] ? {
+          id: response.data.products[0].id,
+          name: response.data.products[0].name,
+          sku: response.data.products[0].sku,
+          translations: response.data.products[0].translations,
+          translationKeys: Object.keys(response.data.products[0].translations || {})
+        } : null
+      });
+
       if (response && response.success && response.data) {
         setProducts(response.data.products || []);
       }
@@ -318,6 +330,18 @@ export default function Translations() {
     try {
       setLoadingCategories(true);
       const response = await api.get(`/categories?store_id=${storeId}&limit=1000&include_all_translations=true`);
+
+      console.log('🔍 loadCategories - API Response:', {
+        success: response?.success,
+        categoriesCount: response?.data?.categories?.length,
+        firstCategory: response?.data?.categories?.[0] ? {
+          id: response.data.categories[0].id,
+          name: response.data.categories[0].name,
+          slug: response.data.categories[0].slug,
+          translations: response.data.categories[0].translations,
+          translationKeys: Object.keys(response.data.categories[0].translations || {})
+        } : null
+      });
 
       if (response && response.success && response.data) {
         setProductCategories(response.data.categories || []);
