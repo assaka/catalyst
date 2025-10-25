@@ -741,11 +741,16 @@ class CategoryService extends BaseEntity {
   // Smart findAll - uses authenticated API for admin, public API for storefront
   async findAll(params = {}) {
     try {
-      const queryString = new URLSearchParams(params).toString();
+      // Add include_all_translations for authenticated admin requests
+      const hasToken = apiClient.getToken();
+      const enhancedParams = hasToken
+        ? { ...params, include_all_translations: 'true' }
+        : params;
+
+      const queryString = new URLSearchParams(enhancedParams).toString();
       const url = queryString ? `categories?${queryString}` : 'categories';
 
       // Check if user is authenticated (admin or store owner)
-      const hasToken = apiClient.getToken();
       let response;
 
       if (hasToken) {
@@ -758,6 +763,8 @@ class CategoryService extends BaseEntity {
             hasData: !!response?.data,
             hasCategories: !!response?.data?.categories,
             categoriesLength: response?.data?.categories?.length,
+            firstCategoryHasTranslations: response?.data?.categories?.[0]?.translations ?
+              Object.keys(response.data.categories[0].translations) : null,
             isArray: Array.isArray(response)
           });
 
