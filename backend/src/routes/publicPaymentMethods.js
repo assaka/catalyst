@@ -1,6 +1,7 @@
 const express = require('express');
 const { getLanguageFromRequest } = require('../utils/languageUtils');
 const { getPaymentMethodsWithTranslations } = require('../utils/paymentMethodHelpers');
+const { evaluateConditions } = require('../utils/conditionEvaluator');
 const router = express.Router();
 
 // @route   GET /api/public/payment-methods
@@ -8,7 +9,7 @@ const router = express.Router();
 // @access  Public
 router.get('/', async (req, res) => {
   try {
-    const { store_id, country } = req.query;
+    const { store_id, country, product_ids } = req.query;
 
     if (!store_id) {
       return res.status(400).json({
@@ -47,6 +48,29 @@ router.get('/', async (req, res) => {
         // Otherwise check if country is in the list
         return method.countries.includes(country);
       });
+    }
+
+    // Filter by conditions if product_ids provided
+    if (product_ids) {
+      // Parse product_ids (can be comma-separated string or array)
+      const productIdArray = Array.isArray(product_ids)
+        ? product_ids
+        : product_ids.split(',').map(id => id.trim());
+
+      // Evaluate conditions for each payment method
+      const methodsWithConditions = await Promise.all(
+        filteredMethods.map(async (method) => {
+          const meetsConditions = await evaluateConditions(method.conditions, productIdArray);
+          return { method, meetsConditions };
+        })
+      );
+
+      // Filter to only methods that meet conditions
+      filteredMethods = methodsWithConditions
+        .filter(({ meetsConditions }) => meetsConditions)
+        .map(({ method }) => method);
+
+      console.log(`📊 Filtered to ${filteredMethods.length} methods based on conditions`);
     }
 
     res.json({
