@@ -1,6 +1,14 @@
 # Clear Cookie Consent Cache
 
-The cookie consent settings are cached for 1 hour for performance. If you've updated translations and they're not showing, you need to clear the cache.
+⚠️ **IMPORTANT**: The cookie consent settings are cached for 1 hour for performance.
+
+**If translations are not showing in the storefront**, you MUST clear the cache!
+
+This cache stores:
+- All translations (banner text, button text, category translations)
+- Button colors
+- Cookie categories
+- All cookie consent settings
 
 ## Method 1: Browser Console (Recommended)
 
