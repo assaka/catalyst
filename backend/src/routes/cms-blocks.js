@@ -88,11 +88,11 @@ const checkStoreAccess = async (storeId, userId, userRole) => {
 // @access  Private
 router.get('/', async (req, res) => {
   try {
-    const { page = 1, limit = 10, store_id, search } = req.query;
+    const { page = 1, limit = 10, store_id, search, include_all_translations } = req.query;
     const offset = (page - 1) * limit;
 
     const where = {};
-    
+
     // Filter by store ownership and team membership
     if (req.user.role !== 'admin') {
       const { getUserStoresForDropdown } = require('../utils/storeAccess');
@@ -102,6 +102,54 @@ router.get('/', async (req, res) => {
     }
 
     if (store_id) where.store_id = store_id;
+
+    // If include_all_translations is requested, use helper function
+    if (include_all_translations === 'true') {
+      const { getCMSBlocksWithAllTranslations } = require('../utils/cmsHelpers');
+
+      // Build where clause for helper
+      const helperWhere = {};
+      if (store_id) helperWhere.store_id = store_id;
+
+      const blocks = await getCMSBlocksWithAllTranslations(helperWhere);
+
+      console.log(`🔍 CMS Blocks route - Fetched ${blocks.length} blocks with all translations`);
+
+      // Apply search filter in memory if needed
+      let filteredBlocks = blocks;
+      if (search) {
+        const searchLower = search.toLowerCase();
+        filteredBlocks = blocks.filter(block => {
+          // Search in English translations
+          const enTitle = block.translations?.en?.title || '';
+          const enContent = block.translations?.en?.content || '';
+          const identifier = block.identifier || '';
+
+          return enTitle.toLowerCase().includes(searchLower) ||
+                 enContent.toLowerCase().includes(searchLower) ||
+                 identifier.toLowerCase().includes(searchLower);
+        });
+      }
+
+      // Apply pagination
+      const total = filteredBlocks.length;
+      const paginatedBlocks = filteredBlocks.slice(offset, offset + parseInt(limit));
+
+      return res.json({
+        success: true,
+        data: {
+          blocks: paginatedBlocks,
+          pagination: {
+            current_page: parseInt(page),
+            per_page: parseInt(limit),
+            total: total,
+            total_pages: Math.ceil(total / limit)
+          }
+        }
+      });
+    }
+
+    // Standard query without all translations
     if (search) {
       where[Op.or] = [
         { title: { [Op.iLike]: `%${search}%` } },
@@ -147,13 +195,59 @@ router.get('/', async (req, res) => {
 // @access  Private
 router.get('/:id', async (req, res) => {
   try {
+    const { include_all_translations } = req.query;
+
+    // If include_all_translations is requested, use helper function
+    if (include_all_translations === 'true') {
+      const { getCMSBlockWithAllTranslations } = require('../utils/cmsHelpers');
+
+      const block = await getCMSBlockWithAllTranslations(req.params.id);
+
+      if (!block) {
+        return res.status(404).json({
+          success: false,
+          message: 'CMS block not found'
+        });
+      }
+
+      console.log(`🔍 CMS Block by ID - Fetched block ${req.params.id} with all translations:`, {
+        blockId: block.id,
+        identifier: block.identifier,
+        translationKeys: Object.keys(block.translations || {})
+      });
+
+      // Check ownership - fetch store separately for access check
+      const storeBlock = await CmsBlock.findByPk(req.params.id, {
+        include: [{
+          model: Store,
+          attributes: ['id', 'name', 'user_id']
+        }]
+      });
+
+      if (req.user.role !== 'admin') {
+        const hasAccess = await checkStoreAccess(storeBlock.Store.id, req.user.id, req.user.role);
+        if (!hasAccess) {
+          return res.status(403).json({
+            success: false,
+            message: 'Access denied'
+          });
+        }
+      }
+
+      return res.json({
+        success: true,
+        data: block
+      });
+    }
+
+    // Standard query without all translations
     const block = await CmsBlock.findByPk(req.params.id, {
       include: [{
         model: Store,
         attributes: ['id', 'name', 'user_id']
       }]
     });
-    
+
     if (!block) {
       return res.status(404).json({
         success: false,
@@ -406,12 +500,27 @@ router.put('/:id', [
       console.log('✅ Processed placement data:', updateData.placement);
     }
 
-    await block.update(updateData);
+    // Handle translations if provided
+    const { translations, ...blockData } = updateData;
+
+    // Update main block fields (excluding translations)
+    await block.update(blockData);
+
+    // Save translations to normalized table if provided
+    if (translations && typeof translations === 'object') {
+      const { saveCMSBlockTranslations } = require('../utils/cmsHelpers');
+      await saveCMSBlockTranslations(block.id, translations);
+      console.log(`✅ CMS block ${block.id} translations saved to normalized table`);
+    }
+
+    // Fetch updated block with all translations
+    const { getCMSBlockWithAllTranslations } = require('../utils/cmsHelpers');
+    const updatedBlock = await getCMSBlockWithAllTranslations(block.id);
 
     res.json({
       success: true,
       message: 'CMS block updated successfully',
-      data: block
+      data: updatedBlock
     });
   } catch (error) {
     console.error('Update CMS block error:', error);
