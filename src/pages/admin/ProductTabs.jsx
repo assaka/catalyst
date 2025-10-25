@@ -149,6 +149,32 @@ export default function ProductTabs() {
     }
   };
 
+  const handleEdit = async (tab) => {
+    if (tab) {
+      // Fetch the full tab with all translations from the API
+      console.log('🔍 Frontend: Fetching full tab with all translations for ID:', tab.id);
+      try {
+        const response = await ProductTab.findById(tab.id);
+        console.log('🔍 Frontend: Received response from API:', response);
+        // Extract the actual tab data from the API response
+        const fullTab = response?.data || response;
+        console.log('🔍 Frontend: Full tab with translations:', {
+          id: fullTab.id,
+          translations: fullTab.translations,
+          translationKeys: Object.keys(fullTab.translations || {})
+        });
+        setEditingTab(fullTab);
+      } catch (error) {
+        console.error('Failed to fetch full tab:', error);
+        setFlashMessage({ type: 'error', message: 'Failed to load tab details' });
+        return;
+      }
+    } else {
+      setEditingTab(null);
+    }
+    setShowForm(true);
+  };
+
   const handleDeleteTab = async (tabId) => {
     if (window.confirm("Are you sure you want to delete this product tab?")) {
       try {
@@ -231,10 +257,7 @@ export default function ProductTabs() {
             <p className="text-gray-600 mt-1">Configure product detail page tabs</p>
           </div>
           <Button
-            onClick={() => {
-              setEditingTab(null); // Set editingTab to null for new tab creation
-              setShowForm(true); // Open the form dialog
-            }}
+            onClick={() => handleEdit(null)}
             className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 material-ripple material-elevation-1"
           >
             <Plus className="w-4 h-4 mr-2" />
@@ -298,10 +321,7 @@ export default function ProductTabs() {
                     <Button
                       variant="ghost"
                       size="sm"
-                      onClick={() => {
-                        setEditingTab(tab); // Set editingTab to the current tab for editing
-                        setShowForm(true); // Open the form dialog
-                      }}
+                      onClick={() => handleEdit(tab)}
                     >
                       <Edit className="w-4 h-4" />
                     </Button>
@@ -411,10 +431,7 @@ export default function ProductTabs() {
                   : "Start by creating your first product tab"}
               </p>
               <Button
-                onClick={() => {
-                  setEditingTab(null); // Ensure null for new tab
-                  setShowForm(true); // Open the form
-                }}
+                onClick={() => handleEdit(null)}
                 className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 material-ripple"
               >
                 <Plus className="w-4 h-4 mr-2" />
