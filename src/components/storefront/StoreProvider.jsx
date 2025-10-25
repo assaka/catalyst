@@ -807,14 +807,15 @@ export const StoreProvider = ({ children }) => {
         }, CACHE_DURATION_MEDIUM),
         
         // SHORT cache (1 minute) - frequently updated by admin
-        cachedApiCall(`labels-${selectedStore.id}`, async () => {
+        // Include language in cache key to ensure proper translation switching
+        cachedApiCall(`labels-${selectedStore.id}-${localStorage.getItem('catalyst_language') || 'en'}`, async () => {
           try {
+            console.log('🏷️ StoreProvider: Fetching product labels for store:', selectedStore.id, 'language:', localStorage.getItem('catalyst_language'));
             const result = await StorefrontProductLabel.filter({ store_id: selectedStore.id });
             console.log('🏷️ StoreProvider: Loaded product labels:', {
               count: result?.length,
               sampleLabel: result?.[0],
-              hasTranslations: !!result?.[0]?.translations,
-              translationKeys: Object.keys(result?.[0]?.translations || {})
+              language: localStorage.getItem('catalyst_language')
             });
             const activeLabels = Array.isArray(result) ? result.filter(label => label.is_active !== false) : [];
             return activeLabels;
