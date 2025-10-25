@@ -85,7 +85,7 @@ export default function ProductDetail() {
   const { store, settings, loading: storeLoading, categories, productLabels, taxes, selectedCountry } = useStore();
   const navigate = useNavigate();
   const { showNotFound } = useNotFound();
-  const { t, currentLanguage } = useTranslation();
+  const { t, currentLanguage, translations } = useTranslation();
   const [product, setProduct] = useState(null);
   const [loading, setLoading] = useState(true);
   const [quantity, setQuantity] = useState(1);
@@ -142,11 +142,12 @@ export default function ProductDetail() {
   }, []);
 
   // Load product data with aggressive caching
+  // Include currentLanguage to reload when language changes
   useEffect(() => {
     if (!storeLoading && store?.id && slug) {
       loadProductData();
     }
-  }, [slug, store?.id, storeLoading]);
+  }, [slug, store?.id, storeLoading, currentLanguage]);
 
   // Re-evaluate labels when productLabels are loaded
   useEffect(() => {
@@ -624,13 +625,15 @@ export default function ProductDetail() {
   const loadProductTabs = async () => {
     if (!store?.id) return;
     try {
+      // Include language in cache key to ensure proper translation switching
       const tabs = await cachedApiCall(
-        `product-tabs-${store.id}`,
+        `product-tabs-${store.id}-${currentLanguage}`,
         () => StorefrontProductTab.filter({ store_id: store.id, is_active: true })
       );
       console.log('✅ ProductDetail: Loaded product tabs:', {
         count: tabs?.length,
-        tabs: tabs?.map(t => ({ id: t.id, name: t.name, translations: t.translations }))
+        language: currentLanguage,
+        tabs: tabs?.map(t => ({ id: t.id, name: t.name }))
       });
       setProductTabs(tabs || []);
     } catch (error) {
@@ -942,7 +945,9 @@ export default function ProductDetail() {
               // Configurable product support
               selectedVariant,
               handleVariantChange,
-              ConfigurableProductSelector // Pass the component itself
+              ConfigurableProductSelector, // Pass the component itself
+              // Translations for stock labels
+              translations
             }}
           />
         </div>

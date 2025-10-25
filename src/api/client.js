@@ -513,6 +513,7 @@ class ApiClient {
   }
 
   async put(endpoint, data, customHeaders = {}) {
+    console.log('🔍 apiClient.put() - Endpoint:', endpoint, 'BuildUrl will create:', this.buildUrl(endpoint));
     return this.request('PUT', endpoint, data, customHeaders);
   }
 

@@ -72,7 +72,9 @@ class BaseEntity {
 
   // Update record by ID
   async update(id, data) {
-    return await apiClient.put(`${this.endpoint}/${id}`, data);;
+    const url = `${this.endpoint}/${id}`;
+    console.log('🔍 BaseEntity.update() - Endpoint:', this.endpoint, 'ID:', id, 'Full URL:', url);
+    return await apiClient.put(url, data);;
   }
 
   // Delete record by ID
