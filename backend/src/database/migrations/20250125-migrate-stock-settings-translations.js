@@ -92,7 +92,33 @@ module.exports = {
       }
 
       console.log(`✅ Successfully migrated ${migratedCount} stock label translations`);
-      console.log('ℹ️  Original data preserved in stores.settings for backward compatibility');
+
+      // Clean up old translations from stores.settings.stock_settings
+      console.log('\n🧹 Cleaning up old translations from stores.settings...');
+
+      for (const store of stores) {
+        try {
+          const settings = store.settings || {};
+          if (settings.stock_settings && settings.stock_settings.translations) {
+            // Remove the translations field
+            delete settings.stock_settings.translations;
+
+            await sequelize.query(`
+              UPDATE stores
+              SET settings = :settings
+              WHERE id = :id
+            `, {
+              replacements: { settings: JSON.stringify(settings), id: store.id }
+            });
+
+            console.log(`  ✅ Cleaned up store: ${store.id}`);
+          }
+        } catch (error) {
+          console.error(`  ❌ Error cleaning store ${store.id}:`, error.message);
+        }
+      }
+
+      console.log('✅ Cleanup completed');
 
     } catch (error) {
       console.error('❌ Migration error:', error);
@@ -105,6 +131,45 @@ module.exports = {
 
     console.log('🔄 Rolling back stock settings translations migration...');
 
+    // Get translations to restore
+    const [translations] = await sequelize.query(`
+      SELECT key, language_code, value
+      FROM translations
+      WHERE category = 'stock'
+    `);
+
+    // Restore translations to stores.settings if any exist
+    if (translations.length > 0) {
+      console.log(`📦 Restoring ${translations.length} translations to stores.settings...`);
+
+      const [stores] = await sequelize.query(`SELECT id, settings FROM stores`);
+
+      for (const store of stores) {
+        const settings = store.settings || {};
+        settings.stock_settings = settings.stock_settings || {};
+        settings.stock_settings.translations = {};
+
+        // Rebuild translations object
+        translations.forEach(t => {
+          const fieldKey = t.key.replace('stock.', '');
+          if (!settings.stock_settings.translations[t.language_code]) {
+            settings.stock_settings.translations[t.language_code] = {};
+          }
+          settings.stock_settings.translations[t.language_code][fieldKey] = t.value;
+        });
+
+        await sequelize.query(`
+          UPDATE stores
+          SET settings = :settings
+          WHERE id = :id
+        `, {
+          replacements: { settings: JSON.stringify(settings), id: store.id }
+        });
+      }
+
+      console.log('✅ Translations restored to stores.settings');
+    }
+
     // Remove stock translations from translations table
     await sequelize.query(`
       DELETE FROM translations
@@ -112,6 +177,5 @@ module.exports = {
     `);
 
     console.log('✅ Stock settings translations removed from translations table');
-    console.log('ℹ️  Original data still exists in stores.settings');
   }
 };

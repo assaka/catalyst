@@ -207,24 +207,12 @@ export function getStockLabel(product, settings = {}, lang = null, globalTransla
 
   // Helper function to get translated label
   const getTranslatedLabel = (labelField) => {
-    // Priority 1: Use global translations table (new approach)
+    // Use global translations table
     if (globalTranslations && globalTranslations.stock && globalTranslations.stock[labelField]) {
       return globalTranslations.stock[labelField];
     }
 
-    // Priority 2: Use old translations from stockSettings (backward compatibility)
-    const oldTranslations = stockSettings.translations;
-    if (oldTranslations && oldTranslations[lang] && oldTranslations[lang][labelField]) {
-      return oldTranslations[lang][labelField];
-    }
-
-    // Priority 3: Fallback to English in old translations
-    if (oldTranslations && oldTranslations.en && oldTranslations.en[labelField]) {
-      return oldTranslations.en[labelField];
-    }
-
-    // Priority 4: Final fallback - use the direct label field from stockSettings
-    // This ensures labels still work even when translations haven't been set up
+    // Fallback to direct label field from stockSettings (for default/English labels)
     return stockSettings[labelField] || 'No Stock Label';
   };
 

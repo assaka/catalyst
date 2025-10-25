@@ -7,7 +7,6 @@ import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
-import { Languages } from 'lucide-react';
 import SaveButton from '@/components/ui/save-button';
 import {
   Accordion,
@@ -15,7 +14,6 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion";
-import TranslationFields from "@/components/admin/TranslationFields";
 
 const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 
@@ -47,7 +45,6 @@ export default function StockSettings() {
   const [saving, setSaving] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(false);
   const [flashMessage, setFlashMessage] = useState(null);
-  const [showTranslations, setShowTranslations] = useState(false);
 
   useEffect(() => {
     if (selectedStore) {
@@ -76,18 +73,6 @@ export default function StockSettings() {
       
       const storeSettings = selectedStore.settings || {};
 
-      // Handle translations with backward compatibility
-      let translations = storeSettings.stock_settings?.translations || {};
-
-      // Ensure English translation exists (backward compatibility)
-      if (!translations.en || (!translations.en.in_stock_label && storeSettings.stock_settings?.in_stock_label)) {
-        translations.en = {
-          in_stock_label: storeSettings.stock_settings?.in_stock_label || 'In Stock',
-          out_of_stock_label: storeSettings.stock_settings?.out_of_stock_label || 'Out of Stock',
-          low_stock_label: storeSettings.stock_settings?.low_stock_label || 'Low stock, {just {quantity} left}'
-        };
-      }
-
       setSettings({
         id: selectedStore.id,
         name: selectedStore.name,
@@ -100,7 +85,6 @@ export default function StockSettings() {
         out_of_stock_label: storeSettings.stock_settings?.out_of_stock_label || 'Out of Stock',
         low_stock_label: storeSettings.stock_settings?.low_stock_label || 'Low stock, {just {quantity} left}',
         show_stock_label: storeSettings.stock_settings?.show_stock_label !== undefined ? storeSettings.stock_settings.show_stock_label : true,
-        translations: translations,
         // Color settings for each stock type
         in_stock_text_color: storeSettings.stock_settings?.in_stock_text_color || '#166534',
         in_stock_bg_color: storeSettings.stock_settings?.in_stock_bg_color || '#dcfce7',
@@ -148,7 +132,6 @@ export default function StockSettings() {
             out_of_stock_label: settings.out_of_stock_label || 'Out of Stock',
             low_stock_label: settings.low_stock_label || 'Low stock, {just {quantity} left}',
             show_stock_label: settings.show_stock_label !== undefined ? settings.show_stock_label : true,
-            translations: settings.translations || {},
             // Save color settings
             in_stock_text_color: settings.in_stock_text_color || '#166534',
             in_stock_bg_color: settings.in_stock_bg_color || '#dcfce7',
@@ -341,14 +324,6 @@ export default function StockSettings() {
                       value={settings.in_stock_label}
                       onChange={(e) => handleSettingsChange('in_stock_label', e.target.value)}
                     />
-                    <button
-                      type="button"
-                      onClick={() => setShowTranslations(!showTranslations)}
-                      className="text-sm text-blue-600 hover:text-blue-800 mt-1 flex items-center gap-1"
-                    >
-                      <Languages className="w-4 h-4" />
-                      {showTranslations ? 'Hide translations' : 'Manage translations'}
-                    </button>
                     <p className="text-sm text-gray-500 mt-1">
                       Text to display when a product is in stock. Use <code>{'{quantity}'}</code> blocks for flexible formatting.
                     </p>
@@ -378,33 +353,6 @@ export default function StockSettings() {
                       </div>
                     </div>
                   </div>
-
-                  {showTranslations && (
-                    <Card className="border-blue-200 bg-blue-50">
-                      <CardHeader>
-                        <CardTitle className="text-base flex items-center gap-2">
-                          <Languages className="w-5 h-5" />
-                          Stock Label Translations
-                        </CardTitle>
-                      </CardHeader>
-                      <CardContent>
-                        <TranslationFields
-                          translations={settings.translations}
-                          onChange={(newTranslations) => {
-                            setSettings(prev => ({ ...prev, translations: newTranslations }));
-                          }}
-                          fields={[
-                            { name: 'in_stock_label', label: 'In Stock Label', type: 'text', required: true },
-                            { name: 'out_of_stock_label', label: 'Out of Stock Label', type: 'text', required: true },
-                            { name: 'low_stock_label', label: 'Low Stock Label', type: 'text', required: true }
-                          ]}
-                        />
-                        <p className="text-sm text-gray-600 mt-3">
-                          Translate stock status labels to provide localized messages to your customers. Placeholders like {'{quantity}'} work in all languages.
-                        </p>
-                      </CardContent>
-                    </Card>
-                  )}
 
                   <div>
                     <Label htmlFor="out_of_stock_label">"Out of Stock" Label</Label>

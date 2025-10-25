@@ -245,6 +245,15 @@ export default function ProductDetail() {
   const getLabelText = (label) => {
     if (!label) return '';
 
+    console.log('🔍 getLabelText:', {
+      labelId: label.id,
+      currentLanguage,
+      hasTranslations: !!label.translations,
+      translationKeys: Object.keys(label.translations || {}),
+      currentLangText: label.translations?.[currentLanguage]?.text,
+      baseText: label.text
+    });
+
     // Try to get translation for current language
     const translation = label.translations?.[currentLanguage];
     if (translation?.text) {
@@ -260,6 +269,15 @@ export default function ProductDetail() {
    */
   const getTabName = (tab) => {
     if (!tab) return '';
+
+    console.log('🔍 getTabName:', {
+      tabId: tab.id,
+      currentLanguage,
+      hasTranslations: !!tab.translations,
+      translationKeys: Object.keys(tab.translations || {}),
+      currentLangName: tab.translations?.[currentLanguage]?.name,
+      baseName: tab.name
+    });
 
     // Try to get translation for current language
     const translation = tab.translations?.[currentLanguage];

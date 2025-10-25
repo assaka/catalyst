@@ -810,6 +810,12 @@ export const StoreProvider = ({ children }) => {
         cachedApiCall(`labels-${selectedStore.id}`, async () => {
           try {
             const result = await StorefrontProductLabel.filter({ store_id: selectedStore.id });
+            console.log('🏷️ StoreProvider: Loaded product labels:', {
+              count: result?.length,
+              sampleLabel: result?.[0],
+              hasTranslations: !!result?.[0]?.translations,
+              translationKeys: Object.keys(result?.[0]?.translations || {})
+            });
             const activeLabels = Array.isArray(result) ? result.filter(label => label.is_active !== false) : [];
             return activeLabels;
           } catch (error) {
