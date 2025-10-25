@@ -75,12 +75,15 @@ Runs both migrations in sequence with:
 
 ### 4. Translation Helpers (✅ Complete)
 
-**File:** `backend/src/utils/translationHelpers.js`
+**Files:**
+- `backend/src/utils/translationHelpers.js`
+- `backend/src/utils/cookieConsentHelpers.js`
 
 **Functions:**
 - `getProductsWithTranslations(where)` - Get products with translations + SEO
 - `getCategoriesWithTranslations(where)` - Get categories with translations + SEO
 - `getCmsPagesWithTranslations(where)` - Get CMS pages with translations + SEO
+- `getCookieConsentSettingsWithTranslations(where)` - Get cookie consent with translations
 - `buildEntityComplete()` - Generic builder for any entity
 
 **How it works:**
@@ -122,7 +125,34 @@ Created example models:
 - `backend/src/models/ProductTranslation.js`
 - `backend/src/models/ProductSeo.js`
 - `backend/src/models/CategoryTranslation.js`
+- `backend/src/models/CookieConsentSettingsTranslation.js`
 - `backend/src/models/associations.js`
+
+### 7. Cookie Consent Implementation (✅ Complete - Oct 25, 2025)
+
+**Files Modified:**
+- `backend/src/utils/cookieConsentHelpers.js` - Updated to return full translations object
+- `backend/src/models/CookieConsentSettingsTranslation.js` - Created model
+- `backend/src/models/associations.js` - Added cookie consent associations
+- `backend/src/migrations/20251024_migrate_json_to_normalized_tables.js` - Fixed field name bug
+
+**What was done:**
+1. Created `cookie_consent_settings_translations` table (already existed)
+2. Migrated data from JSON column to normalized table
+3. Updated helpers to use `json_object_agg()` pattern (same as products/categories)
+4. Created Sequelize model and associations
+5. Frontend requires zero changes (already using `translations[lang][field]` pattern)
+
+**Data Migration:**
+- Migrated 2 translation records (en, nl)
+- Fixed field name bug: `settings_id` → `cookie_consent_settings_id`
+- Data verified and working correctly
+
+**Status:** ✅ Fully operational
+- Backend returns `translations: { en: {...}, nl: {...} }` format
+- Frontend reads translations correctly via `getTranslatedText()`
+- Language switching works (en ↔ nl)
+- StoreProvider caches cookie consent settings (1-hour TTL)
 
 ## 🔄 Pending Work
 
