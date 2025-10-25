@@ -254,6 +254,16 @@ export default function CookieConsentBanner() {
     });
   }
 
+  // Debug: Log button colors
+  console.log('🎨 Button colors:', {
+    accept_bg: cookieSettings?.accept_button_bg_color,
+    accept_text: cookieSettings?.accept_button_text_color,
+    reject_bg: cookieSettings?.reject_button_bg_color,
+    reject_text: cookieSettings?.reject_button_text_color,
+    save_bg: cookieSettings?.save_preferences_button_bg_color,
+    save_text: cookieSettings?.save_preferences_button_text_color
+  });
+
   // Helper function to get translated text from translations JSON (no fallback)
   const getTranslatedText = (field, defaultValue = '') => {
     const translations = cookieSettings?.translations;
@@ -291,8 +301,20 @@ export default function CookieConsentBanner() {
           <CardContent className="p-6">
             <div className="flex items-start justify-between mb-4">
               <div className="flex items-center gap-2 mb-2">
+                {showPreferences && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setShowPreferences(false)}
+                    className="mr-1 px-2"
+                  >
+                    <span className="text-xl">←</span>
+                  </Button>
+                )}
                 <Shield className="w-5 h-5 text-blue-600" />
-                <h3 className="text-lg font-semibold">Cookie Preferences</h3>
+                <h3 className="text-lg font-semibold">
+                  {showPreferences ? 'Manage Cookie Preferences' : 'Cookie Preferences'}
+                </h3>
               </div>
               {cookieSettings.show_close_button && (
                 <Button
