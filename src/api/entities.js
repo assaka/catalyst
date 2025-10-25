@@ -812,6 +812,73 @@ class CategoryService extends BaseEntity {
     const result = await this.findAll({ ...params, parent_id: parentId });
     return Array.isArray(result) ? result : [];
   }
+
+  // Override findPaginated to include all translations for admin
+  async findPaginated(page = 1, limit = 10, filters = {}) {
+    try {
+      const params = {
+        page: page,
+        limit: limit,
+        include_all_translations: 'true', // Always include all translations for admin
+        ...filters
+      };
+
+      const queryString = new URLSearchParams(params).toString();
+      const url = `${this.endpoint}?${queryString}`;
+
+      const hasToken = apiClient.getToken();
+      if (!hasToken) {
+        // No auth, use public API (without translations)
+        const response = await apiClient.publicRequest('GET', url);
+        return {
+          data: Array.isArray(response) ? response : [],
+          pagination: {
+            current_page: page,
+            per_page: limit,
+            total: response.length || 0,
+            total_pages: Math.ceil((response.length || 0) / limit)
+          }
+        };
+      }
+
+      // Use authenticated API
+      const response = await apiClient.get(url);
+
+      // Handle paginated admin response
+      if (response && response.success && response.data) {
+        return {
+          data: response.data.categories || [],
+          pagination: response.data.pagination || {
+            current_page: page,
+            per_page: limit,
+            total: 0,
+            total_pages: 0
+          }
+        };
+      }
+
+      return {
+        data: [],
+        pagination: {
+          current_page: page,
+          per_page: limit,
+          total: 0,
+          total_pages: 0
+        }
+      };
+    } catch (error) {
+      console.error(`CategoryService.findPaginated() error:`, error.message);
+      return {
+        data: [],
+        pagination: {
+          current_page: page,
+          per_page: limit,
+          total: 0,
+          total_pages: 0
+        }
+      };
+    }
+  }
 }
 
 // Order service with status methods

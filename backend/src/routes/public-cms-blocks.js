@@ -41,10 +41,9 @@ router.get('/', async (req, res) => {
       });
     }
 
-    res.json({
-      success: true,
-      data: blocks
-    });
+    // Return data directly (not wrapped) for storefront client compatibility
+    // Storefront client expects direct array, not {success: true, data: ...}
+    res.json(blocks);
 
   } catch (error) {
     console.error('🚨 Public CMS Blocks error:', error);

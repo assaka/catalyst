@@ -49,11 +49,9 @@ router.get('/', async (req, res) => {
       });
     }
 
-    // If slug was provided, return single page, otherwise return array
-    res.json({
-      success: true,
-      data: slug ? pages[0] : pages
-    });
+    // Return data directly (not wrapped) for storefront client compatibility
+    // Storefront client expects direct array/object, not {success: true, data: ...}
+    res.json(slug ? pages[0] : pages);
 
   } catch (error) {
     console.error('🚨 Public CMS Pages error:', error);
