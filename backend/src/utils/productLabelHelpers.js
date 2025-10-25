@@ -102,6 +102,51 @@ async function getProductLabelById(id, lang = 'en') {
 }
 
 /**
+ * Get single product label with ALL translations
+ * Returns format: { id, name, text, ..., translations: {en: {name, text}, nl: {...}} }
+ *
+ * @param {string} id - Product label ID
+ * @returns {Promise<Object|null>} Product label with all translations
+ */
+async function getProductLabelWithAllTranslations(id) {
+  const query = `
+    SELECT
+      pl.id,
+      pl.store_id,
+      pl.name,
+      pl.slug,
+      pl.text,
+      pl.background_color,
+      pl.color,
+      pl.position,
+      pl.priority,
+      pl.sort_order,
+      pl.is_active,
+      pl.conditions,
+      pl.created_at,
+      pl.updated_at,
+      COALESCE(
+        json_object_agg(
+          t.language_code,
+          json_build_object('name', t.name, 'text', t.text)
+        ) FILTER (WHERE t.language_code IS NOT NULL),
+        '{}'::json
+      ) as translations
+    FROM product_labels pl
+    LEFT JOIN product_label_translations t ON pl.id = t.product_label_id
+    WHERE pl.id = :id
+    GROUP BY pl.id
+  `;
+
+  const results = await sequelize.query(query, {
+    replacements: { id },
+    type: sequelize.QueryTypes.SELECT
+  });
+
+  return results[0] || null;
+}
+
+/**
  * Create product label with translations
  *
  * @param {Object} labelData - Product label data (without translations)
@@ -178,8 +223,8 @@ async function createProductLabelWithTranslations(labelData, translations = {}) 
 
     await transaction.commit();
 
-    // Return the created label with translations
-    return await getProductLabelById(label.id);
+    // Return the created label with all translations
+    return await getProductLabelWithAllTranslations(label.id);
   } catch (error) {
     await transaction.rollback();
     throw error;
@@ -284,8 +329,8 @@ async function updateProductLabelWithTranslations(id, labelData, translations = 
 
     await transaction.commit();
 
-    // Return the updated label with translations
-    return await getProductLabelById(id);
+    // Return the updated label with all translations
+    return await getProductLabelWithAllTranslations(id);
   } catch (error) {
     await transaction.rollback();
     throw error;
@@ -312,6 +357,7 @@ async function deleteProductLabel(id) {
 module.exports = {
   getProductLabelsWithTranslations,
   getProductLabelById,
+  getProductLabelWithAllTranslations,
   createProductLabelWithTranslations,
   updateProductLabelWithTranslations,
   deleteProductLabel

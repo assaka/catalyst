@@ -6,6 +6,7 @@ const { getLanguageFromRequest } = require('../utils/languageUtils');
 const {
   getProductLabelsWithTranslations,
   getProductLabelById,
+  getProductLabelWithAllTranslations,
   createProductLabelWithTranslations,
   updateProductLabelWithTranslations,
   deleteProductLabel
@@ -89,12 +90,11 @@ router.get('/', optionalAuth, async (req, res) => {
 });
 
 // @route   GET /api/product-labels/:id
-// @desc    Get single product label
+// @desc    Get single product label with all translations
 // @access  Private
 router.get('/:id', authMiddleware, async (req, res) => {
   try {
-    const lang = getLanguageFromRequest(req);
-    const label = await getProductLabelById(req.params.id, lang);
+    const label = await getProductLabelWithAllTranslations(req.params.id);
 
     if (!label) {
       return res.status(404).json({
@@ -102,6 +102,14 @@ router.get('/:id', authMiddleware, async (req, res) => {
         message: 'Product label not found'
       });
     }
+
+    console.log('📝 Backend: Loaded product label with translations:', {
+      id: label.id,
+      name: label.name,
+      text: label.text,
+      translations: label.translations,
+      translationKeys: Object.keys(label.translations || {})
+    });
 
     res.json({
       success: true,

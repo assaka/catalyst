@@ -49,9 +49,11 @@ import AttributeSetForm from "@/components/admin/attributes/AttributeSetForm";
 import BulkTranslateDialog from "@/components/admin/BulkTranslateDialog";
 import { toast } from "sonner";
 import { useTranslation } from "@/contexts/TranslationContext.jsx";
+import { getAttributeLabel } from "@/utils/attributeUtils";
 
 export default function Attributes() {
   const { selectedStore, getSelectedStoreId } = useStoreSelection();
+  const { currentLanguage } = useTranslation();
   const [attributes, setAttributes] = useState([]);
   const [attributeSets, setAttributeSets] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -559,7 +561,7 @@ export default function Attributes() {
                   <CardHeader className="pb-3">
                     <div className="flex items-center justify-between">
                       <div>
-                        <CardTitle className="text-lg">{attribute.name}</CardTitle>
+                        <CardTitle className="text-lg">{getAttributeLabel(attribute, currentLanguage)}</CardTitle>
                         <p className="text-sm text-gray-500 font-mono">{attribute.code}</p>
                       </div>
                       <DropdownMenu>
@@ -746,7 +748,7 @@ export default function Attributes() {
                               .slice(0, 4)
                               .map((attr) => (
                                 <Badge key={attr.id} variant="outline" className="text-xs">
-                                  {attr.name}
+                                  {getAttributeLabel(attr, currentLanguage)}
                                 </Badge>
                               ))}
                             {attributeSet.attribute_ids.length > 4 && (
