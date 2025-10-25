@@ -132,9 +132,20 @@ async function getProductTabWithAllTranslations(id) {
     GROUP BY pt.id
   `;
 
+  console.log('🔍 Backend: Querying product tab with all translations for ID:', id);
+
   const results = await sequelize.query(query, {
     replacements: { id },
     type: sequelize.QueryTypes.SELECT
+  });
+
+  console.log('🔍 Backend: Query result:', {
+    hasResults: !!results[0],
+    translations: results[0]?.translations,
+    translationType: typeof results[0]?.translations,
+    translationKeys: Object.keys(results[0]?.translations || {}),
+    enTranslation: results[0]?.translations?.en,
+    nlTranslation: results[0]?.translations?.nl
   });
 
   return results[0] || null;
