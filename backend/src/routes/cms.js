@@ -3,13 +3,17 @@ const { body, validationResult } = require('express-validator');
 const { CmsPage, Store } = require('../models');
 const { Op } = require('sequelize');
 const translationService = require('../services/translation-service');
+const {
+  getCMSPagesWithAllTranslations,
+  getCMSPageWithAllTranslations,
+  saveCMSPageTranslations
+} = require('../utils/cmsHelpers');
 const router = express.Router();
 
 // Basic CRUD operations for CMS pages
 router.get('/', async (req, res) => {
   try {
     const { page = 1, limit = 10, store_id } = req.query;
-    const offset = (page - 1) * limit;
 
     const where = {};
     if (req.user.role !== 'admin') {
@@ -21,14 +25,26 @@ router.get('/', async (req, res) => {
 
     if (store_id) where.store_id = store_id;
 
-    const { count, rows } = await CmsPage.findAndCountAll({
-      where,
-      limit: parseInt(limit),
-      offset: parseInt(offset),
-      order: [['sort_order', 'ASC'], ['slug', 'ASC']],
-    });
+    // Use helper to get pages with all translations
+    const allPages = await getCMSPagesWithAllTranslations(where);
 
-    res.json({ success: true, data: { pages: rows, pagination: { current_page: parseInt(page), per_page: parseInt(limit), total: count, total_pages: Math.ceil(count / limit) } } });
+    // Manually paginate the results
+    const offset = (page - 1) * limit;
+    const paginatedPages = allPages.slice(offset, offset + parseInt(limit));
+    const count = allPages.length;
+
+    res.json({
+      success: true,
+      data: {
+        pages: paginatedPages,
+        pagination: {
+          current_page: parseInt(page),
+          per_page: parseInt(limit),
+          total: count,
+          total_pages: Math.ceil(count / limit)
+        }
+      }
+    });
   } catch (error) {
     console.error('Error fetching CMS pages:', error);
     res.status(500).json({ success: false, message: 'Server error', error: error.message });
@@ -37,14 +53,15 @@ router.get('/', async (req, res) => {
 
 router.get('/:id', async (req, res) => {
   try {
-    const page = await CmsPage.findByPk(req.params.id);
-    
+    // Use helper to get page with all translations
+    const page = await getCMSPageWithAllTranslations(req.params.id);
+
     if (!page) return res.status(404).json({ success: false, message: 'Page not found' });
-    
+
     if (req.user.role !== 'admin') {
       const { checkUserStoreAccess } = require('../utils/storeAccess');
       const access = await checkUserStoreAccess(req.user.id, page.store_id);
-      
+
       if (!access) {
         return res.status(403).json({ success: false, message: 'Access denied' });
       }
@@ -52,13 +69,14 @@ router.get('/:id', async (req, res) => {
 
     res.json({ success: true, data: page });
   } catch (error) {
-    res.status(500).json({ success: false, message: 'Server error' });
+    console.error('Error fetching CMS page:', error);
+    res.status(500).json({ success: false, message: 'Server error', error: error.message });
   }
 });
 
 router.post('/', async (req, res) => {
   try {
-    const { store_id } = req.body;
+    const { store_id, translations, ...pageData } = req.body;
     const store = await Store.findByPk(store_id);
 
     if (!store) return res.status(404).json({ success: false, message: 'Store not found' });
@@ -72,10 +90,22 @@ router.post('/', async (req, res) => {
       }
     }
 
-    console.log('Creating CMS page with data:', JSON.stringify(req.body, null, 2));
-    const page = await CmsPage.create(req.body);
+    console.log('Creating CMS page with data:', JSON.stringify({ ...pageData, store_id }, null, 2));
+
+    // Create the page without translations
+    const page = await CmsPage.create({ ...pageData, store_id });
     console.log('CMS page created successfully:', page.id);
-    res.status(201).json({ success: true, message: 'Page created successfully', data: page });
+
+    // Save translations to normalized table
+    if (translations) {
+      await saveCMSPageTranslations(page.id, translations);
+      console.log('CMS page translations saved successfully');
+    }
+
+    // Fetch page with all translations to return
+    const pageWithTranslations = await getCMSPageWithAllTranslations(page.id);
+
+    res.status(201).json({ success: true, message: 'Page created successfully', data: pageWithTranslations });
   } catch (error) {
     console.error('Error creating CMS page:', error);
     console.error('Error details:', error.message);
@@ -99,10 +129,24 @@ router.put('/:id', async (req, res) => {
       }
     }
 
-    console.log('Updating CMS page:', req.params.id, 'with data:', JSON.stringify(req.body, null, 2));
-    await page.update(req.body);
+    const { translations, ...pageData } = req.body;
+
+    console.log('Updating CMS page:', req.params.id, 'with data:', JSON.stringify(pageData, null, 2));
+
+    // Update page without translations
+    await page.update(pageData);
     console.log('CMS page updated successfully:', page.id);
-    res.json({ success: true, message: 'Page updated successfully', data: page });
+
+    // Save translations to normalized table
+    if (translations) {
+      await saveCMSPageTranslations(page.id, translations);
+      console.log('CMS page translations saved successfully');
+    }
+
+    // Fetch page with all translations to return
+    const pageWithTranslations = await getCMSPageWithAllTranslations(page.id);
+
+    res.json({ success: true, message: 'Page updated successfully', data: pageWithTranslations });
   } catch (error) {
     console.error('Error updating CMS page:', error);
     console.error('Error details:', error.message);
