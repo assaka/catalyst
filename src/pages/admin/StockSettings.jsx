@@ -223,7 +223,7 @@ export default function StockSettings() {
         console.warn('Failed to clear cache:', e);
       }
 
-      setFlashMessage({ type: 'success', message: 'Stock settings saved successfully! Reloading page...' });
+      setFlashMessage({ type: 'success', message: 'Stock settings saved successfully!' });
       setSaveSuccess(true);
       setTimeout(() => setSaveSuccess(false), 2000);
 
@@ -235,11 +235,6 @@ export default function StockSettings() {
       } catch (e) {
         console.warn('BroadcastChannel not supported:', e);
       }
-
-      await delay(1000);
-
-      // Force page reload to ensure all caches are cleared
-      window.location.reload();
       
     } catch (error) {
       console.error('Failed to save settings:', error);
