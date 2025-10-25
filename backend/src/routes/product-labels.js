@@ -179,6 +179,12 @@ router.post('/', authMiddleware, async (req, res) => {
     // Extract translations from request body
     const { translations, ...labelData } = req.body;
 
+    console.log('🌍 Translations received from frontend:', {
+      translations,
+      translationKeys: Object.keys(translations || {}),
+      translationValues: translations
+    });
+
     // Ensure slug is generated if not provided (fallback for hook issues)
     if (!labelData.slug && labelData.name) {
       labelData.slug = labelData.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
@@ -235,6 +241,12 @@ router.put('/:id', authMiddleware, async (req, res) => {
 
     // Extract translations from request body
     const { translations, ...labelData } = req.body;
+
+    console.log('🌍 Translations received from frontend:', {
+      translations,
+      translationKeys: Object.keys(translations || {}),
+      translationValues: translations
+    });
 
     const label = await updateProductLabelWithTranslations(req.params.id, labelData, translations || {});
     console.log('✅ Updated label priority field:', {
