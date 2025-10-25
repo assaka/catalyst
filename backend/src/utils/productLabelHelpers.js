@@ -168,8 +168,8 @@ async function createProductLabelWithTranslations(labelData, translations = {}) 
           replacements: {
             label_id: label.id,
             lang_code: langCode,
-            name: data.name || '',
-            text: data.text || ''
+            name: data.name ?? null,
+            text: data.text ?? null
           },
           transaction
         });
@@ -274,8 +274,8 @@ async function updateProductLabelWithTranslations(id, labelData, translations = 
           replacements: {
             label_id: id,
             lang_code: langCode,
-            name: data.name,
-            text: data.text
+            name: data.name ?? null,
+            text: data.text ?? null
           },
           transaction
         });
