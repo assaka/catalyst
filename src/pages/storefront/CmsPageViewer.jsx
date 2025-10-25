@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { StorefrontCmsPage, StorefrontProduct } from '@/api/storefront-entities';
-import { CmsPage } from '@/api/entities';
 import RecommendedProducts from '@/components/storefront/RecommendedProducts';
 import SeoHeadManager from '@/components/storefront/SeoHeadManager';
 import { buildCmsBreadcrumbs } from '@/utils/breadcrumbUtils';
@@ -36,8 +35,8 @@ export default function CmsPageViewer() {
                     const currentLanguage = localStorage.getItem('catalyst_language') || 'en';
                     console.log('🌍 CmsPageViewer: Fetching page with language:', currentLanguage);
 
-                    // Fetch CMS page using CmsPageService which automatically sends X-Language header
-                    const pages = await CmsPage.filter({ slug: slug });
+                    // Fetch CMS page using StorefrontCmsPage which uses public API (better performance)
+                    const pages = await StorefrontCmsPage.filter({ slug: slug });
 
                     console.log('📥 CmsPageViewer: Received page:', pages.length > 0 ? pages[0].slug : 'not found');
 
@@ -80,8 +79,8 @@ export default function CmsPageViewer() {
                         setLoading(true);
                         console.log('🔄 CmsPageViewer: Refetching page for language:', newLanguage);
 
-                        // Use CmsPageService which automatically sends X-Language header
-                        const pages = await CmsPage.filter({ slug: slug });
+                        // Use StorefrontCmsPage which uses public API (better performance)
+                        const pages = await StorefrontCmsPage.filter({ slug: slug });
 
                         if (pages && pages.length > 0) {
                             const currentPage = pages[0];

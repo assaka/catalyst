@@ -858,70 +858,42 @@ export const Order = new OrderService();
 export const OrderItem = new BaseEntity('order-items');
 export const Coupon = new BaseEntity('coupons');
 
-// CmsPage service with public API support for storefront
+// CmsPage service - ADMIN ONLY (use StorefrontCmsPage for public/storefront)
 class CmsPageService extends BaseEntity {
   constructor() {
     super('cms-pages');
   }
 
-  // Smart filter - uses authenticated API for admin, public API for storefront
+  // Admin filter - uses authenticated API only
   async filter(params = {}) {
     try {
       const queryString = new URLSearchParams(params).toString();
       const url = queryString ? `cms-pages?${queryString}` : 'cms-pages';
 
-      console.log('🔍 CmsPageService.filter() - Fetching CMS pages with params:', params);
+      console.log('🔍 CmsPageService.filter() - Fetching CMS pages (admin) with params:', params);
 
-      // Check if user is authenticated (admin or store owner)
-      const hasToken = apiClient.getToken();
-      let response;
+      const response = await apiClient.get(url);
+      console.log('CmsPageService.filter() - Response structure:', {
+        hasSuccess: !!response?.success,
+        hasData: !!response?.data,
+        hasPages: !!response?.data?.pages,
+        pagesLength: response?.data?.pages?.length
+      });
 
-      if (hasToken) {
-        try {
-          // Try authenticated API first for admin users
-          console.log('CmsPageService.filter() - Using authenticated API:', url);
-          response = await apiClient.get(url);
-          console.log('CmsPageService.filter() - Response structure:', {
-            hasSuccess: !!response?.success,
-            hasData: !!response?.data,
-            hasPages: !!response?.data?.pages,
-            pagesLength: response?.data?.pages?.length,
-            isArray: Array.isArray(response)
-          });
-
-          // Handle paginated admin response: {success: true, data: {pages: [...], pagination: {...}}}
-          if (response && response.success && response.data) {
-            if (Array.isArray(response.data.pages)) {
-              console.log(`CmsPageService.filter() - Returning ${response.data.pages.length} pages from admin API`);
-              return response.data.pages;
-            } else if (Array.isArray(response.data)) {
-              console.log(`CmsPageService.filter() - Returning ${response.data.length} pages (data is array)`);
-              return response.data;
-            }
-          }
-
-          // Handle direct array response
-          const result = Array.isArray(response) ? response : [];
-          console.log(`CmsPageService.filter() - Returning ${result.length} pages (direct array)`);
-          return result;
-        } catch (authError) {
-          // If authenticated request fails (e.g., 401), fall back to public API
-          if (authError.status === 401 || authError.status === 403) {
-            console.warn('CmsPageService: Authenticated request failed, falling back to public API');
-            response = await apiClient.publicRequest('GET', url);
-          } else {
-            throw authError;
-          }
+      // Handle paginated admin response: {success: true, data: {pages: [...], pagination: {...}}}
+      if (response && response.success && response.data) {
+        if (Array.isArray(response.data.pages)) {
+          console.log(`CmsPageService.filter() - Returning ${response.data.pages.length} pages from admin API`);
+          return response.data.pages;
+        } else if (Array.isArray(response.data)) {
+          console.log(`CmsPageService.filter() - Returning ${response.data.length} pages`);
+          return response.data;
         }
-      } else {
-        // No token, use public API
-        console.log('CmsPageService.filter() - Using public API (no token):', url);
-        response = await apiClient.publicRequest('GET', url);
       }
 
-      // Handle public API response (typically just an array)
+      // Handle direct array response
       const result = Array.isArray(response) ? response : [];
-      console.log(`CmsPageService.filter() - Returning ${result.length} pages from public API`);
+      console.log(`CmsPageService.filter() - Returning ${result.length} pages`);
       return result;
     } catch (error) {
       console.error(`❌ CmsPageService.filter() error:`, error.message);
@@ -929,95 +901,56 @@ class CmsPageService extends BaseEntity {
     }
   }
 
-  // Smart findAll - uses authenticated API for admin, public API for storefront
+  // Admin findAll - uses authenticated API only
   async findAll(params = {}) {
     return this.filter(params);
   }
 }
 
-// CmsBlock service with public API support for storefront
+// CmsBlock service - ADMIN ONLY (use StorefrontCmsBlock for public/storefront)
 class CmsBlockService extends BaseEntity {
   constructor() {
     super('cms-blocks');
   }
 
-  // Smart filter - uses authenticated API for admin, public API for storefront
+  // Admin filter - uses authenticated API only
   async filter(params = {}) {
     try {
       const queryString = new URLSearchParams(params).toString();
       const url = queryString ? `cms-blocks?${queryString}` : 'cms-blocks';
 
-      console.log('🔍 CmsBlockService.filter() - Fetching CMS blocks with params:', params);
+      console.log('🔍 CmsBlockService.filter() - Fetching CMS blocks (admin) with params:', params);
 
-      // Check if user is authenticated (admin or store owner)
-      const hasToken = apiClient.getToken();
-      let response;
+      const response = await apiClient.get(url);
+      console.log('CmsBlockService.filter() - Response structure:', {
+        hasSuccess: !!response?.success,
+        hasData: !!response?.data,
+        hasBlocks: !!response?.data?.blocks,
+        blocksLength: response?.data?.blocks?.length
+      });
 
-      if (hasToken) {
-        try {
-          // Try authenticated API first for admin users
-          console.log('CmsBlockService.filter() - Using authenticated API:', url);
-          response = await apiClient.get(url);
-          console.log('CmsBlockService.filter() - Response structure:', {
-            hasSuccess: !!response?.success,
-            hasData: !!response?.data,
-            hasBlocks: !!response?.data?.blocks,
-            blocksLength: response?.data?.blocks?.length,
-            isArray: Array.isArray(response)
-          });
-
-          // Handle paginated admin response: {success: true, data: {blocks: [...], pagination: {...}}}
-          if (response && response.success && response.data) {
-            if (Array.isArray(response.data.blocks)) {
-              console.log(`CmsBlockService.filter() - Returning ${response.data.blocks.length} blocks from admin API`);
-              return response.data.blocks;
-            } else if (Array.isArray(response.data)) {
-              console.log(`CmsBlockService.filter() - Returning ${response.data.length} blocks (data is array)`);
-              return response.data;
-            }
-          }
-
-          // Handle direct array response
-          const result = Array.isArray(response) ? response : [];
-          console.log(`CmsBlockService.filter() - Returning ${result.length} blocks (direct array)`);
-          return result;
-        } catch (authError) {
-          // If authenticated request fails (e.g., 401), fall back to public API
-          if (authError.status === 401 || authError.status === 403) {
-            console.warn('CmsBlockService: Authenticated request failed, falling back to public API');
-            response = await apiClient.publicRequest('GET', url);
-          } else {
-            throw authError;
-          }
+      // Handle paginated admin response: {success: true, data: {blocks: [...], pagination: {...}}}
+      if (response && response.success && response.data) {
+        if (Array.isArray(response.data.blocks)) {
+          console.log(`CmsBlockService.filter() - Returning ${response.data.blocks.length} blocks from admin API`);
+          return response.data.blocks;
+        } else if (Array.isArray(response.data)) {
+          console.log(`CmsBlockService.filter() - Returning ${response.data.length} blocks`);
+          return response.data;
         }
-      } else {
-        // No token, use public API
-        console.log('CmsBlockService.filter() - Using public API (no token):', url);
-        response = await apiClient.publicRequest('GET', url);
       }
 
-      // Handle public API response (typically just an array)
-      console.log('📥 CmsBlockService.filter() - Received CMS blocks:', response?.length || 0);
-      if (response && response.length > 0) {
-        console.log('📝 CmsBlockService.filter() - First CMS block:', {
-          identifier: response[0].identifier,
-          title: response[0].title,
-          has_content: !!response[0].content
-        });
-      }
-
-      // Ensure response is always an array
+      // Handle direct array response
       const result = Array.isArray(response) ? response : [];
-      console.log(`CmsBlockService.filter() - Returning ${result.length} blocks from public API`);
+      console.log(`CmsBlockService.filter() - Returning ${result.length} blocks`);
       return result;
     } catch (error) {
-      // CMS blocks failures are common and should not break the page
-      console.warn(`⚠️ CmsBlockService.filter() warning:`, error.message, '(CMS blocks are optional)');
+      console.error(`❌ CmsBlockService.filter() error:`, error.message);
       return [];
     }
   }
 
-  // Smart findAll - uses authenticated API for admin, public API for storefront
+  // Admin findAll - uses authenticated API only
   async findAll(params = {}) {
     return this.filter(params);
   }
