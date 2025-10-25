@@ -757,8 +757,9 @@ export const StoreProvider = ({ children }) => {
         }, CACHE_DURATION_SHORT),
         
         // MEDIUM cache (5 minutes) - semi-static data
-        cachedApiCall(`categories-${selectedStore.id}`, async () => {
-          console.log('🔍 Frontend: Fetching categories for store:', selectedStore.id);
+        // Include language in cache key to ensure proper translation switching
+        cachedApiCall(`categories-${selectedStore.id}-${localStorage.getItem('catalyst_language') || 'en'}`, async () => {
+          console.log('🔍 Frontend: Fetching categories for store:', selectedStore.id, 'language:', localStorage.getItem('catalyst_language'));
           const result = await StorefrontCategory.filter({ store_id: selectedStore.id, limit: 1000 });
           console.log('📥 Frontend: Received categories:', result?.length || 0);
           if (result && result.length > 0) {
