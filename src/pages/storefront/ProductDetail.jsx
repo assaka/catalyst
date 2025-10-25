@@ -240,56 +240,6 @@ export default function ProductDetail() {
   }, [store?.id, storeLoading]);
 
   /**
-   * Get translated label text based on current language
-   */
-  const getLabelText = (label) => {
-    if (!label) return '';
-
-    console.log('🔍 getLabelText:', {
-      labelId: label.id,
-      currentLanguage,
-      hasTranslations: !!label.translations,
-      translationKeys: Object.keys(label.translations || {}),
-      currentLangText: label.translations?.[currentLanguage]?.text,
-      baseText: label.text
-    });
-
-    // Try to get translation for current language
-    const translation = label.translations?.[currentLanguage];
-    if (translation?.text) {
-      return translation.text;
-    }
-
-    // Fallback to base text field
-    return label.text || '';
-  };
-
-  /**
-   * Get translated tab name based on current language
-   */
-  const getTabName = (tab) => {
-    if (!tab) return '';
-
-    console.log('🔍 getTabName:', {
-      tabId: tab.id,
-      currentLanguage,
-      hasTranslations: !!tab.translations,
-      translationKeys: Object.keys(tab.translations || {}),
-      currentLangName: tab.translations?.[currentLanguage]?.name,
-      baseName: tab.name
-    });
-
-    // Try to get translation for current language
-    const translation = tab.translations?.[currentLanguage];
-    if (translation?.name) {
-      return translation.name;
-    }
-
-    // Fallback to base name field
-    return tab.name || '';
-  };
-
-  /**
    * Evaluate which labels apply to the product based on their conditions
    */
   const evaluateProductLabels = (product, labels) => {

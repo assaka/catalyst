@@ -145,6 +145,39 @@ export default function StockSettings() {
 
       const result = await retryApiCall(() => Store.update(storeId, payload));
 
+      // Also save English labels to translations table
+      try {
+        const stockLabels = [
+          {
+            key: 'stock.in_stock_label',
+            language_code: 'en',
+            value: settings.in_stock_label || 'In Stock',
+            category: 'stock',
+            type: 'system'
+          },
+          {
+            key: 'stock.out_of_stock_label',
+            language_code: 'en',
+            value: settings.out_of_stock_label || 'Out of Stock',
+            category: 'stock',
+            type: 'system'
+          },
+          {
+            key: 'stock.low_stock_label',
+            language_code: 'en',
+            value: settings.low_stock_label || 'Low stock, {just {quantity} left}',
+            category: 'stock',
+            type: 'system'
+          }
+        ];
+
+        await api.post('/translations/ui-labels/bulk', { labels: stockLabels });
+        console.log('Stock labels saved to translations table');
+      } catch (translationError) {
+        console.error('Failed to save stock labels to translations table:', translationError);
+        // Don't fail the entire save if translation sync fails
+      }
+
       // Clear all cache for instant updates
       clearStorefrontCache(storeId, ['stores', 'products']);
 
