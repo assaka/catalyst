@@ -52,11 +52,9 @@ export default function AttributeForm({ attribute, onSubmit, onCancel }) {
         ? JSON.parse(JSON.stringify(attribute.translations))
         : {};
 
-      // Clean up translations: remove 'label' field, only keep 'name'
+      // Use 'label' field from normalized tables (not 'name')
+      // Clean up empty descriptions
       Object.keys(translations).forEach(lang => {
-        if (translations[lang].label) {
-          delete translations[lang].label;
-        }
         if (translations[lang].description === "") {
           delete translations[lang].description;
         }
@@ -64,15 +62,15 @@ export default function AttributeForm({ attribute, onSubmit, onCancel }) {
 
       // Use the default language (NL) for the main name field
       // Fallback order: defaultLanguage -> en -> attribute.name
-      const attributeName = translations[defaultLanguage]?.name
-        || translations.en?.name
+      const attributeName = translations[defaultLanguage]?.label
+        || translations.en?.label
         || attribute.name;
 
       // Ensure default language translation is populated
       if (!translations[defaultLanguage]) {
-        translations[defaultLanguage] = { name: attribute.name };
-      } else if (!translations[defaultLanguage].name) {
-        translations[defaultLanguage].name = attribute.name;
+        translations[defaultLanguage] = { label: attribute.name };
+      } else if (!translations[defaultLanguage].label) {
+        translations[defaultLanguage].label = attribute.name;
       }
 
       console.log('Loading attribute with translations:', {
@@ -160,7 +158,7 @@ export default function AttributeForm({ attribute, onSubmit, onCancel }) {
     }));
   };
 
-  // Update attribute name translations
+  // Update attribute label translations
   const handleAttributeTranslationChange = (langCode, value) => {
     setFormData(prev => ({
       ...prev,
@@ -168,7 +166,7 @@ export default function AttributeForm({ attribute, onSubmit, onCancel }) {
         ...prev.translations,
         [langCode]: {
           ...(prev.translations[langCode] || {}),
-          name: value
+          label: value
         }
       }
     }));
@@ -278,8 +276,8 @@ export default function AttributeForm({ attribute, onSubmit, onCancel }) {
                 <div className="mt-3 space-y-2 p-3 bg-gray-50 border border-gray-200 rounded-lg">
                   {availableLanguages.map((lang) => {
                     const isRTL = lang.is_rtl || false;
-                    // Always get value from translations, including English
-                    const value = formData.translations[lang.code]?.name || '';
+                    // Get value from translations using 'label' field
+                    const value = formData.translations[lang.code]?.label || '';
 
                     return (
                       <div key={lang.code} className="flex items-center gap-3">

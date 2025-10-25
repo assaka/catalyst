@@ -197,6 +197,14 @@ router.get('/:id', async (req, res) => {
       Store: attribute.Store
     };
 
+    console.log('📝 Backend: Loaded attribute with translations:', {
+      id: attributeData.id,
+      name: attributeData.name,
+      code: attributeData.code,
+      translations: attributeData.translations,
+      translationKeys: Object.keys(attributeData.translations || {})
+    });
+
     res.json({ success: true, data: attributeData });
   } catch (error) {
     console.error('❌ Get attribute error:', error);

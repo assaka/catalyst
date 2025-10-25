@@ -11,14 +11,17 @@ import { Badge } from '@/components/ui/badge';
 import { Switch } from '@/components/ui/switch';
 import { Plus, Edit, Trash2, Tag } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { getAttributeValueLabel } from '@/utils/attributeUtils';
+import { useTranslation } from '@/contexts/TranslationContext';
 
 import { useAlertTypes } from '@/hooks/useAlert';
 export default function ProductLabels() {
-  
+
   const { showError, showWarning, showInfo, showSuccess, AlertComponent } = useAlertTypes();
 const [labels, setLabels] = useState([]);
   const [attributes, setAttributes] = useState([]);
   const { selectedStore, getSelectedStoreId } = useStoreSelection();
+  const { currentLanguage } = useTranslation();
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [editingLabel, setEditingLabel] = useState(null); // Renamed from selectedLabel for clarity
@@ -27,7 +30,7 @@ const [labels, setLabels] = useState([]);
     if (selectedStore) {
       loadData();
     }
-  }, [selectedStore]);
+  }, [selectedStore, currentLanguage]);
 
   const loadData = async () => {
     setLoading(true);
@@ -45,7 +48,22 @@ const [labels, setLabels] = useState([]);
         ProductLabel.filter({ store_id: storeId })
       ]);
 
-      setAttributes(attributesData || []);
+      // Transform attribute values into options format for the form
+      const transformedAttributes = (attributesData || []).map(attr => {
+        // If attribute has values (for select/multiselect types), transform them to options
+        if (attr.values && Array.isArray(attr.values)) {
+          return {
+            ...attr,
+            options: attr.values.map(v => ({
+              value: v.code,
+              label: getAttributeValueLabel(v, currentLanguage)
+            }))
+          };
+        }
+        return attr;
+      });
+
+      setAttributes(transformedAttributes);
       setLabels(labelsData || []);
     } catch (error) {
       console.error("Failed to load product labels or attributes", error);
