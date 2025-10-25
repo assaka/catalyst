@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { ChevronDown, ChevronRight, Globe, Wand2 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -18,6 +18,17 @@ export default function CategoryTranslationRow({ category, selectedLanguages, on
   const [saving, setSaving] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(false);
   const [translating, setTranslating] = useState({});
+
+  // Update translations when category prop changes
+  useEffect(() => {
+    console.log('CategoryTranslationRow - Category changed:', {
+      categoryId: category.id,
+      categoryName: category.name,
+      translations: category.translations,
+      translationKeys: Object.keys(category.translations || {})
+    });
+    setTranslations(category.translations || {});
+  }, [category]);
 
   // Filter languages by selected languages
   const filteredLanguages = availableLanguages.filter(lang =>

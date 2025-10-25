@@ -399,6 +399,13 @@ async function getCategoriesWithAllTranslations(where = {}) {
     type: sequelize.QueryTypes.SELECT
   });
 
+  console.log('📊 getCategoriesWithAllTranslations - Fetched translations:', {
+    categoryCount: categories.length,
+    translationCount: translations.length,
+    sampleTranslations: translations.slice(0, 5),
+    categoryIds: categoryIds.slice(0, 3)
+  });
+
   // Group translations by category_id and language_code
   const translationsByCategory = {};
   translations.forEach(t => {
@@ -414,11 +421,29 @@ async function getCategoriesWithAllTranslations(where = {}) {
     };
   });
 
+  console.log('📦 getCategoriesWithAllTranslations - Grouped translations:', {
+    categoryIdsWithTranslations: Object.keys(translationsByCategory),
+    sampleGrouped: Object.entries(translationsByCategory).slice(0, 2).map(([id, trans]) => ({
+      categoryId: id,
+      languages: Object.keys(trans)
+    }))
+  });
+
   // Attach translations to categories
-  return categories.map(category => ({
+  const result = categories.map(category => ({
     ...category,
     translations: translationsByCategory[category.id] || {}
   }));
+
+  console.log('✅ getCategoriesWithAllTranslations - Final result sample:', {
+    firstCategory: result[0] ? {
+      id: result[0].id,
+      name: result[0].name,
+      translationKeys: Object.keys(result[0].translations || {})
+    } : null
+  });
+
+  return result;
 }
 
 /**

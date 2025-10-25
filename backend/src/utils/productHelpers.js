@@ -151,6 +151,13 @@ async function applyAllProductTranslations(products) {
     type: sequelize.QueryTypes.SELECT
   });
 
+  console.log('📊 applyAllProductTranslations - Fetched translations:', {
+    productCount: productData.length,
+    translationCount: translations.length,
+    sampleTranslations: translations.slice(0, 5),
+    productIds: productIds.slice(0, 3)
+  });
+
   // Group translations by product_id and language_code
   const translationsByProduct = {};
   translations.forEach(t => {
@@ -167,11 +174,29 @@ async function applyAllProductTranslations(products) {
     };
   });
 
+  console.log('📦 applyAllProductTranslations - Grouped translations:', {
+    productIdsWithTranslations: Object.keys(translationsByProduct),
+    sampleGrouped: Object.entries(translationsByProduct).slice(0, 2).map(([id, trans]) => ({
+      productId: id,
+      languages: Object.keys(trans)
+    }))
+  });
+
   // Attach translations to products
-  return productData.map(product => ({
+  const result = productData.map(product => ({
     ...product,
     translations: translationsByProduct[product.id] || {}
   }));
+
+  console.log('✅ applyAllProductTranslations - Final result sample:', {
+    firstProduct: result[0] ? {
+      id: result[0].id,
+      name: result[0].name,
+      translationKeys: Object.keys(result[0].translations || {})
+    } : null
+  });
+
+  return result;
 }
 
 /**

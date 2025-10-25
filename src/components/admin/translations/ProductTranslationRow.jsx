@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { ChevronDown, ChevronRight, Globe, Wand2 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -19,6 +19,17 @@ export default function ProductTranslationRow({ product, selectedLanguages, onUp
   const [saving, setSaving] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(false);
   const [translating, setTranslating] = useState({});
+
+  // Update translations when product prop changes
+  useEffect(() => {
+    console.log('ProductTranslationRow - Product changed:', {
+      productId: product.id,
+      productName: product.name,
+      translations: product.translations,
+      translationKeys: Object.keys(product.translations || {})
+    });
+    setTranslations(product.translations || {});
+  }, [product]);
 
   // Filter languages by selected languages
   const filteredLanguages = availableLanguages.filter(lang =>
