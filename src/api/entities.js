@@ -528,19 +528,23 @@ class ProductService extends BaseEntity {
   // Override findPaginated to handle both authenticated and public access
   async findPaginated(page = 1, limit = 10, filters = {}) {
     try {
+      // Add include_all_translations for authenticated admin requests
+      const token = apiClient.getToken();
+      const enhancedFilters = token
+        ? { ...filters, include_all_translations: 'true' }
+        : filters;
+
       const params = {
         page: page,
         limit: limit,
-        ...filters
+        ...enhancedFilters
       };
-      
+
       const queryString = new URLSearchParams(params).toString();
       const url = `${this.endpoint}?${queryString}`;
 
-      // Check if we have a token
-      const token = apiClient.getToken();
       let response;
-      
+
       if (token) {
         // Use authenticated endpoint if token is available
         response = await apiClient.get(url);
@@ -668,18 +672,52 @@ class ProductService extends BaseEntity {
     }
   }
 
-  // Public findAll (no authentication required)
+  // Smart findAll - uses authenticated API for admin, public API for storefront
   async findAll(params = {}) {
     try {
-      const queryString = new URLSearchParams(params).toString();
+      // Add include_all_translations for authenticated admin requests
+      const hasToken = apiClient.getToken();
+      const enhancedParams = hasToken
+        ? { ...params, include_all_translations: 'true' }
+        : params;
+
+      const queryString = new URLSearchParams(enhancedParams).toString();
       const url = queryString ? `products?${queryString}` : 'products';
-      
-      const response = await apiClient.publicRequest('GET', url);
-      
+
+      let response;
+
+      if (hasToken) {
+        try {
+          // Try authenticated API first for admin users
+          response = await apiClient.get(url);
+
+          // Handle paginated admin response
+          if (response && response.success && response.data) {
+            if (Array.isArray(response.data.products)) {
+              return response.data.products;
+            } else if (Array.isArray(response.data)) {
+              return response.data;
+            }
+          }
+
+          // Handle direct array response
+          return Array.isArray(response) ? response : [];
+        } catch (authError) {
+          // If authenticated request fails, fall back to public API
+          if (authError.status === 401 || authError.status === 403) {
+            console.warn('ProductService: Authenticated request failed, falling back to public API');
+            response = await apiClient.publicRequest('GET', url);
+          } else {
+            throw authError;
+          }
+        }
+      } else {
+        // No token, use public API
+        response = await apiClient.publicRequest('GET', url);
+      }
+
       // Ensure response is always an array
-      const result = Array.isArray(response) ? response : [];
-      
-      return result;
+      return Array.isArray(response) ? response : [];
     } catch (error) {
       console.error(`ProductService.findAll() error:`, error.message);
       return [];
@@ -958,10 +996,13 @@ class CmsPageService extends BaseEntity {
   // Admin filter - uses authenticated API only
   async filter(params = {}) {
     try {
-      const queryString = new URLSearchParams(params).toString();
+      // Add include_all_translations for admin requests
+      const enhancedParams = { ...params, include_all_translations: 'true' };
+
+      const queryString = new URLSearchParams(enhancedParams).toString();
       const url = queryString ? `cms-pages?${queryString}` : 'cms-pages';
 
-      console.log('🔍 CmsPageService.filter() - Fetching CMS pages (admin) with params:', params);
+      console.log('🔍 CmsPageService.filter() - Fetching CMS pages (admin) with params:', enhancedParams);
 
       const response = await apiClient.get(url);
       console.log('CmsPageService.filter() - Response structure:', {
@@ -1007,7 +1048,10 @@ class CmsBlockService extends BaseEntity {
   // Admin filter - uses authenticated API only
   async filter(params = {}) {
     try {
-      const queryString = new URLSearchParams(params).toString();
+      // Add include_all_translations for admin requests
+      const enhancedParams = { ...params, include_all_translations: 'true' };
+
+      const queryString = new URLSearchParams(enhancedParams).toString();
       const url = queryString ? `cms-blocks?${queryString}` : 'cms-blocks';
 
       console.log('🔍 CmsBlockService.filter() - Fetching CMS blocks (admin) with params:', params);
