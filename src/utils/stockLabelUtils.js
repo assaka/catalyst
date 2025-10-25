@@ -296,7 +296,8 @@ function processLabel(label, quantity, settings) {
   // If quantity is null (infinite stock or hidden), remove all blocks containing {quantity}
   if (quantity === null) {
     return processedLabel
-      .replace(/\{[^}]*\{quantity\}[^}]*\}/gi, '')
+      .replace(/\{[^}]*\{quantity\}[^}]*\}/gi, '') // Remove nested blocks
+      .replace(/\{quantity\}/gi, '') // Remove standalone {quantity}
       .replace(/\s+/g, ' ')
       .replace(/,\s*$/, '')
       .trim();
@@ -326,6 +327,13 @@ function processLabel(label, quantity, settings) {
       }
     }
   }
+
+  // Also replace any standalone placeholders that weren't in outer braces
+  processedLabel = processedLabel
+    .replace(/\{quantity\}/gi, quantity)
+    .replace(/\{item\}/gi, quantity === 1 ? 'item' : 'items')
+    .replace(/\{unit\}/gi, quantity === 1 ? 'unit' : 'units')
+    .replace(/\{piece\}/gi, quantity === 1 ? 'piece' : 'pieces');
 
   return processedLabel;
 }
