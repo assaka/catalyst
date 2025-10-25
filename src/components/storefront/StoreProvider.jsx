@@ -1,5 +1,5 @@
 
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { useLocation, useParams } from 'react-router-dom';
 import {
   StorefrontStore,
@@ -205,7 +205,8 @@ export const StoreProvider = ({ children }) => {
   useEffect(() => {
     console.log('🔄 StoreProvider: Location pathname changed:', location.pathname);
     fetchStoreData();
-  }, [location.pathname, fetchStoreData]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [location.pathname]);
 
   // Listen for store selection changes from admin
   useEffect(() => {
@@ -222,7 +223,8 @@ export const StoreProvider = ({ children }) => {
 
     window.addEventListener('storeSelectionChanged', handleStoreChange);
     return () => window.removeEventListener('storeSelectionChanged', handleStoreChange);
-  }, [fetchStoreData]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // Listen for language changes
   useEffect(() => {
@@ -240,7 +242,8 @@ export const StoreProvider = ({ children }) => {
 
     window.addEventListener('languageChanged', handleLanguageChange);
     return () => window.removeEventListener('languageChanged', handleLanguageChange);
-  }, [fetchStoreData]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // Listen for cache clear broadcasts from admin
   useEffect(() => {
@@ -296,7 +299,7 @@ export const StoreProvider = ({ children }) => {
     }
   }, []);
 
-  const fetchStoreData = async () => {
+  const fetchStoreData = useCallback(async () => {
     try {
       setLoading(true);
       
@@ -856,7 +859,7 @@ export const StoreProvider = ({ children }) => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [location]);
 
   // Wrapper function to persist country selection to localStorage
   const handleSetSelectedCountry = (country) => {
