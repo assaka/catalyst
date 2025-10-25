@@ -861,19 +861,20 @@ export const Coupon = new BaseEntity('coupons');
 // CmsPage service with public API support for storefront
 class CmsPageService extends BaseEntity {
   constructor() {
-    super('public-cms-pages');
+    super('cms-pages');
   }
 
   // Override filter to use public API for storefront access with language support
   async filter(params = {}) {
     try {
       const queryString = new URLSearchParams(params).toString();
-      const url = queryString ? `public-cms-pages?${queryString}` : 'public-cms-pages';
+      const url = queryString ? `cms-pages?${queryString}` : 'cms-pages';
 
       console.log('🔍 CmsPageService.filter() - Fetching CMS page with params:', params);
 
       // Use public request for CMS page filtering (no authentication required for storefront)
       // This will automatically send X-Language header from localStorage
+      // publicRequest() will add 'public/' prefix, resulting in /api/public/cms-pages
       const response = await apiClient.publicRequest('GET', url);
 
       console.log('📥 CmsPageService.filter() - Received response:', response);
@@ -897,19 +898,20 @@ class CmsPageService extends BaseEntity {
 // CmsBlock service with public API support for storefront
 class CmsBlockService extends BaseEntity {
   constructor() {
-    super('public-cms-blocks');
+    super('cms-blocks');
   }
 
   // Override filter to use public API for storefront access with language support
   async filter(params = {}) {
     try {
       const queryString = new URLSearchParams(params).toString();
-      const url = queryString ? `public-cms-blocks?${queryString}` : 'public-cms-blocks';
+      const url = queryString ? `cms-blocks?${queryString}` : 'cms-blocks';
 
       console.log('🔍 CmsBlockService.filter() - Fetching CMS blocks with params:', params);
 
       // Use public request for CMS block filtering (no authentication required for storefront)
       // This will automatically send X-Language header from localStorage
+      // publicRequest() will add 'public/' prefix, resulting in /api/public/cms-blocks
       const response = await apiClient.publicRequest('GET', url);
 
       console.log('📥 CmsBlockService.filter() - Received CMS blocks:', response?.length || 0);

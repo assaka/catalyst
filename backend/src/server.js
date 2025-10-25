@@ -1759,7 +1759,7 @@ app.use('/api/cookie-consent-settings', authMiddleware, cookieConsentRoutes);
 app.use('/api/consent-logs', authMiddleware, consentLogRoutes);
 app.use('/api/custom-option-rules', authMiddleware, customOptionRuleRoutes);
 app.use('/api/addresses', addressRoutes);
-app.use('/api/public-cms-blocks', publicCmsBlocksRoutes);
+// CMS blocks route moved to line 1522 with correct /api/public/cms-blocks path
 app.use('/api/store-teams', authMiddleware, storeTeamRoutes);
 app.use('/api/integrations', authMiddleware, integrationRoutes);
 app.use('/api/supabase', supabaseRoutes);
