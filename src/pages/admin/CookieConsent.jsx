@@ -759,7 +759,7 @@ export default function CookieConsent() {
                           { name: 'accept_button_text', label: 'Accept Button Text', type: 'text', required: true },
                           { name: 'reject_button_text', label: 'Reject Button Text', type: 'text', required: true },
                           { name: 'settings_button_text', label: 'Cookie Settings Button Text', type: 'text', required: true },
-                          { name: 'save_preferences_button_text', label: 'Save Preferences Button Text', type: 'text', required: false },
+                          { name: 'save_preferences_button_text', label: 'Save Preferences Button Text', type: 'text', required: true },
                           { name: 'privacy_policy_text', label: 'Privacy Policy Link Text', type: 'text', required: true }
                         ]}
                       />
@@ -769,47 +769,70 @@ export default function CookieConsent() {
                     </div>
                   )}
 
-                  <div>
-                    <Label htmlFor="privacy_policy_page">Privacy Policy Page</Label>
-                    <Select
-                      value={settings.privacy_policy_url || 'none'}
-                      onValueChange={(value) => setSettings({ ...settings, privacy_policy_url: value === 'none' ? '' : value })}
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select a CMS page for privacy policy" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="none">
-                          <span className="text-gray-500">No privacy policy page</span>
-                        </SelectItem>
-                        {/* System pages first */}
-                        {cmsPages
-                          .filter(page => page.is_system)
-                          .map((page) => (
-                            <SelectItem key={page.id} value={createCmsPageUrl(store?.slug, page.slug)}>
-                              {page.translations?.en?.title || page.slug} (System)
-                            </SelectItem>
-                          ))
-                        }
-                        {/* Regular pages */}
-                        {cmsPages
-                          .filter(page => !page.is_system)
-                          .map((page) => (
-                            <SelectItem key={page.id} value={createCmsPageUrl(store?.slug, page.slug)}>
-                              {page.translations?.en?.title || page.slug}
-                            </SelectItem>
-                          ))
-                        }
-                      </SelectContent>
-                    </Select>
-                    <p className="text-sm text-gray-500 mt-1">
-                      Select a CMS page to use as your privacy policy. The page will be linked in the cookie banner.
-                      {cmsPages.filter(p => p.slug === 'privacy-policy').length === 0 && (
-                        <span className="block mt-1 text-amber-600">
-                          ⚠️ No Privacy Policy page found. System pages should be created automatically.
-                        </span>
-                      )}
-                    </p>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                      <Label htmlFor="privacy_policy_page">Privacy Policy Page</Label>
+                      <Select
+                        value={settings.privacy_policy_url || 'none'}
+                        onValueChange={(value) => setSettings({ ...settings, privacy_policy_url: value === 'none' ? '' : value })}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select a CMS page for privacy policy" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="none">
+                            <span className="text-gray-500">No privacy policy page</span>
+                          </SelectItem>
+                          {/* System pages first */}
+                          {cmsPages
+                            .filter(page => page.is_system)
+                            .map((page) => (
+                              <SelectItem key={page.id} value={createCmsPageUrl(store?.slug, page.slug)}>
+                                {page.translations?.en?.title || page.slug} (System)
+                              </SelectItem>
+                            ))
+                          }
+                          {/* Regular pages */}
+                          {cmsPages
+                            .filter(page => !page.is_system)
+                            .map((page) => (
+                              <SelectItem key={page.id} value={createCmsPageUrl(store?.slug, page.slug)}>
+                                {page.translations?.en?.title || page.slug}
+                              </SelectItem>
+                            ))
+                          }
+                        </SelectContent>
+                      </Select>
+                      <p className="text-sm text-gray-500 mt-1">
+                        Select a CMS page to use as your privacy policy. The page will be linked in the cookie banner.
+                        {cmsPages.filter(p => p.slug === 'privacy-policy').length === 0 && (
+                          <span className="block mt-1 text-amber-600">
+                            ⚠️ No Privacy Policy page found. System pages should be created automatically.
+                          </span>
+                        )}
+                      </p>
+                    </div>
+
+                    <div>
+                      <Label>Save Preferences Button</Label>
+                      <div className="mt-2 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                        <p className="text-sm text-blue-900 font-medium mb-2">
+                          Button Text Translation
+                        </p>
+                        <p className="text-xs text-blue-700">
+                          The "Save Preferences" button appears when users click "Cookie Settings" to manage their preferences.
+                          Translate the button text in the <strong>Banner Text Translations</strong> section above.
+                        </p>
+                        <div className="mt-3 p-2 bg-white border border-blue-200 rounded text-center">
+                          <button className="px-4 py-2 bg-green-600 text-white text-sm font-medium rounded hover:bg-green-700 transition-colors">
+                            {settings.translations?.en?.save_preferences_button_text || 'Save Preferences'}
+                          </button>
+                        </div>
+                        <p className="text-xs text-gray-600 mt-2">
+                          Preview of the button (English text shown)
+                        </p>
+                      </div>
+                    </div>
                   </div>
                 </CardContent>
               </Card>
