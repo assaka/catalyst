@@ -219,7 +219,7 @@ CustomDomain.prototype.getRequiredDNSRecords = function() {
 CustomDomain.findByDomain = async function(domain) {
   return await this.findOne({
     where: { domain },
-    include: ['Store']
+    include: ['store']
   });
 };
 
