@@ -1723,7 +1723,7 @@ export default function ProductForm({ product, categories, stores, taxes, attrib
                                 <SelectTrigger><SelectValue placeholder={`Select ${getAttributeLabel(attribute, currentLanguage)}`} /></SelectTrigger>
                                 <SelectContent>
                                   {attribute.values.filter(val => val.code !== "").map(attrVal => {
-                                    const label = attrVal.translations?.en?.label || attrVal.translations?.nl?.label || attrVal.code;
+                                    const label = getAttributeValueLabel(attrVal, currentLanguage);
                                     return (
                                       <SelectItem key={attrVal.code} value={attrVal.code}>{label}</SelectItem>
                                     );
@@ -1735,7 +1735,7 @@ export default function ProductForm({ product, categories, stores, taxes, attrib
                                 <div className="text-sm text-gray-600 mb-2">Select multiple options:</div>
                                 <div className="space-y-2 max-h-48 overflow-y-auto border rounded-md p-3">
                                   {attribute.values.filter(val => val.code !== "").map(attrVal => {
-                                    const label = attrVal.translations?.en?.label || attrVal.translations?.nl?.label || attrVal.code;
+                                    const label = getAttributeValueLabel(attrVal, currentLanguage);
                                     const valueCode = attrVal.code;
                                     const isSelected = Array.isArray(attributeValue)
                                       ? attributeValue.some(val => (typeof val === 'object' ? val.value : val) === valueCode)

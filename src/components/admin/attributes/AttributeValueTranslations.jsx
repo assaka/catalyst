@@ -12,7 +12,7 @@ export default function AttributeValueTranslations({
   onTranslationChange,
   onDelete
 }) {
-  const { availableLanguages } = useTranslation();
+  const { availableLanguages, currentLanguage } = useTranslation();
   const [isExpanded, setIsExpanded] = useState(false);
 
   const translations = attributeValue.translations || {};
@@ -72,7 +72,7 @@ export default function AttributeValueTranslations({
           )}
 
           <span className="text-sm text-gray-900">
-            {getLabel('en') || code} <span className="text-gray-500">({code})</span>
+            {getLabel(currentLanguage) || code} <span className="text-gray-500">({code})</span>
           </span>
         </button>
 
