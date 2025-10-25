@@ -108,7 +108,8 @@ router.get('/:id', authMiddleware, async (req, res) => {
       name: label.name,
       text: label.text,
       translations: label.translations,
-      translationKeys: Object.keys(label.translations || {})
+      translationKeys: Object.keys(label.translations || {}),
+      fullTranslations: JSON.stringify(label.translations, null, 2)
     });
 
     res.json({

@@ -40,15 +40,30 @@ export default function ProductLabelForm({ label, attributes, onSubmit, onCancel
 
   useEffect(() => {
     if (label) {
+      console.log('🔍 Frontend: Loading label into form:', {
+        labelId: label.id,
+        labelText: label.text,
+        labelName: label.name,
+        labelTranslations: label.translations,
+        translationKeys: Object.keys(label.translations || {})
+      });
+
       // Handle translations with backward compatibility
       let translations = label.translations || {};
 
       // Ensure English translation exists (backward compatibility)
       if (!translations.en || (!translations.en.text && label.text)) {
+        console.log('🔍 Frontend: Creating EN translation from base text field');
         translations.en = {
           text: label.text || ""
         };
       }
+
+      console.log('🔍 Frontend: Final translations for form:', {
+        translations,
+        enText: translations.en?.text,
+        nlText: translations.nl?.text
+      });
 
       setFormData({
         name: label.name || '',
@@ -69,11 +84,13 @@ export default function ProductLabelForm({ label, attributes, onSubmit, onCancel
   }, [label]);
 
   const handleInputChange = (field, value) => {
+    console.log('🔍 Frontend: handleInputChange called:', { field, value });
     setFormData(prev => {
       const newState = { ...prev, [field]: value };
 
       // Sync main field with English translation (bidirectional)
       if (field === "text") {
+        console.log('🔍 Frontend: Syncing text field to EN translation');
         newState.translations = {
           ...prev.translations,
           en: {
@@ -81,6 +98,11 @@ export default function ProductLabelForm({ label, attributes, onSubmit, onCancel
             text: value
           }
         };
+        console.log('🔍 Frontend: Updated translations:', {
+          translations: newState.translations,
+          enText: newState.translations.en?.text,
+          nlText: newState.translations.nl?.text
+        });
       }
 
       return newState;
@@ -237,6 +259,12 @@ export default function ProductLabelForm({ label, attributes, onSubmit, onCancel
                 <TranslationFields
                   translations={formData.translations}
                   onChange={(newTranslations) => {
+                    console.log('🔍 Frontend: TranslationFields onChange called:', {
+                      newTranslations,
+                      translationKeys: Object.keys(newTranslations || {}),
+                      enText: newTranslations?.en?.text,
+                      nlText: newTranslations?.nl?.text
+                    });
                     setFormData(prev => ({
                       ...prev,
                       translations: newTranslations,
