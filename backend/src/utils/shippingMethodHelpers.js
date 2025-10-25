@@ -46,6 +46,7 @@ async function getShippingMethodsWithTranslations(where = {}, options = {}) {
       sm.price_ranges,
       sm.availability,
       sm.countries,
+      sm.conditions,
       sm.min_delivery_days,
       sm.max_delivery_days,
       sm.sort_order,
@@ -124,6 +125,7 @@ async function getShippingMethodById(id, lang = 'en') {
       sm.price_ranges,
       sm.availability,
       sm.countries,
+      sm.conditions,
       sm.min_delivery_days,
       sm.max_delivery_days,
       sm.sort_order,
@@ -160,7 +162,7 @@ async function createShippingMethodWithTranslations(methodData, translations = {
       INSERT INTO shipping_methods (
         id, store_id, name, description, is_active, type,
         flat_rate_cost, free_shipping_min_order, weight_ranges, price_ranges,
-        availability, countries, min_delivery_days, max_delivery_days, sort_order,
+        availability, countries, conditions, min_delivery_days, max_delivery_days, sort_order,
         created_at, updated_at
       ) VALUES (
         gen_random_uuid(),
@@ -175,6 +177,7 @@ async function createShippingMethodWithTranslations(methodData, translations = {
         :price_ranges,
         :availability,
         :countries,
+        :conditions,
         :min_delivery_days,
         :max_delivery_days,
         :sort_order,
@@ -195,6 +198,7 @@ async function createShippingMethodWithTranslations(methodData, translations = {
         price_ranges: JSON.stringify(methodData.price_ranges || []),
         availability: methodData.availability || 'all',
         countries: JSON.stringify(methodData.countries || []),
+        conditions: JSON.stringify(methodData.conditions || {}),
         min_delivery_days: methodData.min_delivery_days || 1,
         max_delivery_days: methodData.max_delivery_days || 7,
         sort_order: methodData.sort_order || 0
@@ -291,6 +295,10 @@ async function updateShippingMethodWithTranslations(id, methodData, translations
     if (methodData.countries !== undefined) {
       updateFields.push('countries = :countries');
       replacements.countries = JSON.stringify(methodData.countries);
+    }
+    if (methodData.conditions !== undefined) {
+      updateFields.push('conditions = :conditions');
+      replacements.conditions = JSON.stringify(methodData.conditions);
     }
     if (methodData.min_delivery_days !== undefined) {
       updateFields.push('min_delivery_days = :min_delivery_days');
