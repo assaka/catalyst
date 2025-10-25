@@ -275,6 +275,7 @@ export default function ProductLabelForm({ label, attributes, onSubmit, onCancel
                   fields={[
                     { name: 'text', label: 'Display Text', type: 'text', required: true }
                   ]}
+                  defaultLanguage="en"
                 />
                 <p className="text-sm text-gray-600 mt-3">
                   Translate the label text that will be displayed on product images

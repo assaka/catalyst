@@ -75,8 +75,16 @@ const [labels, setLabels] = useState([]);
   };
 
   const handleSubmit = async (labelData) => {
+    console.log('🔍 Frontend: handleSubmit called with labelData:', {
+      labelData,
+      translations: labelData.translations,
+      translationKeys: Object.keys(labelData.translations || {}),
+      enText: labelData.translations?.en?.text,
+      nlText: labelData.translations?.nl?.text
+    });
+
     const storeId = getSelectedStoreId();
-    if (!storeId) { 
+    if (!storeId) {
       console.error("Cannot save product label: No store selected.");
       return;
     }
@@ -102,9 +110,17 @@ const [labels, setLabels] = useState([]);
       priority: parseInt(labelData.priority) || 0, // Ensure priority is a number
       sort_order: parseInt(labelData.sort_order) || 0 // Ensure sort_order is a number
     };
-    
+
     // Remove the frontend field name
     delete backendData.text_color;
+
+    console.log('🔍 Frontend: Sending to API:', {
+      backendData,
+      translations: backendData.translations,
+      translationKeys: Object.keys(backendData.translations || {}),
+      enText: backendData.translations?.en?.text,
+      nlText: backendData.translations?.nl?.text
+    });
 
     try {
       if (editingLabel) {
