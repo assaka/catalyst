@@ -426,8 +426,8 @@ const ProductGallery = createSlotComponent({
             {productContext.productLabels && productContext.productLabels.length > 0 && (
               <div className="absolute top-2 left-2 right-2 flex flex-wrap gap-2 justify-between">
                 {productContext.productLabels.map((label, index) => {
-                  const currentLang = getCurrentLanguage();
-                  const labelText = label.translations?.[currentLang]?.text || label.translations?.en?.text || label.text || label;
+                  // Backend returns translated text in label.text (based on X-Language header)
+                  const labelText = label.text || label;
 
                   return (
                     <Badge
