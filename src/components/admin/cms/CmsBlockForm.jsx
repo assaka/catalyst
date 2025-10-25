@@ -43,6 +43,14 @@ export default function CmsBlockForm({ block, onSubmit, onCancel }) {
 
   useEffect(() => {
     if (block) {
+      console.log('🔍 CmsBlockForm - Block received:', {
+        blockId: block.id,
+        blockIdentifier: block.identifier,
+        hasTranslations: !!block.translations,
+        translationKeys: Object.keys(block.translations || {}),
+        translations: block.translations
+      });
+
       // Initialize translations with existing data or empty structure
       const translations = block.translations || {
         en: {
@@ -50,6 +58,8 @@ export default function CmsBlockForm({ block, onSubmit, onCancel }) {
           content: block.content || ''
         }
       };
+
+      console.log('🔍 CmsBlockForm - Initialized translations:', translations);
 
       setFormData({
         title: translations.en?.title || block.title || '',

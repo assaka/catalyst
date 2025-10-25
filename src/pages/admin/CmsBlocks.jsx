@@ -49,6 +49,12 @@ export default function CmsBlocks() {
     setLoading(true);
     try {
       const blocksData = await CmsBlock.filter({ store_id: storeId });
+      console.log('🔍 CmsBlocks - Loaded blocks:', {
+        count: blocksData?.length,
+        firstBlock: blocksData?.[0],
+        firstBlockTranslations: blocksData?.[0]?.translations,
+        firstBlockTranslationKeys: Object.keys(blocksData?.[0]?.translations || {})
+      });
       setBlocks(blocksData || []);
     } catch (error) {
       console.error("Error loading CMS blocks:", error);
@@ -84,6 +90,13 @@ export default function CmsBlocks() {
   };
 
   const handleEdit = (block) => {
+    console.log('🔍 CmsBlocks - Edit clicked on block:', {
+      blockId: block?.id,
+      blockIdentifier: block?.identifier,
+      hasTranslations: !!block?.translations,
+      translationKeys: Object.keys(block?.translations || {}),
+      translations: block?.translations
+    });
     setEditingBlock(block); // Changed from 'setSelectedBlock'
     setShowForm(true);
   };
