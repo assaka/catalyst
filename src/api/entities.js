@@ -826,6 +826,12 @@ class CategoryService extends BaseEntity {
       const queryString = new URLSearchParams(params).toString();
       const url = `${this.endpoint}?${queryString}`;
 
+      console.log('🔍 CategoryService.findPaginated() - Request:', {
+        url,
+        params,
+        queryString
+      });
+
       const hasToken = apiClient.getToken();
       if (!hasToken) {
         // No auth, use public API (without translations)
@@ -843,6 +849,17 @@ class CategoryService extends BaseEntity {
 
       // Use authenticated API
       const response = await apiClient.get(url);
+
+      console.log('🔍 CategoryService.findPaginated() - Response:', {
+        hasSuccess: !!response?.success,
+        categoriesCount: response?.data?.categories?.length,
+        firstCategory: response?.data?.categories?.[0] ? {
+          id: response.data.categories[0].id,
+          name: response.data.categories[0].name,
+          hasTranslations: !!response.data.categories[0].translations,
+          translationKeys: Object.keys(response.data.categories[0].translations || {})
+        } : null
+      });
 
       // Handle paginated admin response
       if (response && response.success && response.data) {
