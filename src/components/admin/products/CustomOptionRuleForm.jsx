@@ -28,7 +28,7 @@ import {
 } from "@/components/ui/select";
 import TranslationFields from "@/components/admin/TranslationFields";
 import { useTranslation } from "@/contexts/TranslationContext";
-import { getAttributeLabel } from "@/utils/attributeUtils";
+import { getAttributeLabel, getAttributeValueLabel } from "@/utils/attributeUtils";
 
 import { useAlertTypes } from '@/hooks/useAlert';
 export default function CustomOptionRuleForm({ rule, onSubmit, onCancel }) {
@@ -76,16 +76,31 @@ export default function CustomOptionRuleForm({ rule, onSubmit, onCancel }) {
       try {
         // Set store ID in form data
         setFormData(prev => ({ ...prev, store_id: storeId }));
-        
+
         // Load store-specific data
         const [attributeSetsData, attributesData, categoriesData] = await Promise.all([
           AttributeSet.filter({ store_id: storeId }).catch(() => []),
           Attribute.filter({ store_id: storeId }).catch(() => []),
           Category.filter({ store_id: storeId }).catch(() => [])
         ]);
-        
+
+        // Transform attribute values into options format for the form
+        const transformedAttributes = (attributesData || []).map(attr => {
+          // If attribute has values (for select/multiselect types), transform them to options
+          if (attr.values && Array.isArray(attr.values)) {
+            return {
+              ...attr,
+              options: attr.values.map(v => ({
+                value: v.code,
+                label: getAttributeValueLabel(v, currentLanguage)
+              }))
+            };
+          }
+          return attr;
+        });
+
         setAttributeSets(Array.isArray(attributeSetsData) ? attributeSetsData : []);
-        setAttributes(Array.isArray(attributesData) ? attributesData : []);
+        setAttributes(transformedAttributes);
         setCategories(Array.isArray(categoriesData) ? categoriesData : []);
       } catch (error) {
         console.error("Error loading static data:", error);
@@ -98,7 +113,7 @@ export default function CustomOptionRuleForm({ rule, onSubmit, onCancel }) {
     if (selectedStore) {
       loadStaticData();
     }
-  }, [selectedStore]);
+  }, [selectedStore, currentLanguage]);
 
   // Load custom option products whenever store_id changes
   useEffect(() => {
