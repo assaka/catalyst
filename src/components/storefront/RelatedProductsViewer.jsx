@@ -7,9 +7,11 @@ import { Badge } from '@/components/ui/badge';
 import { formatPrice } from '@/utils/priceUtils';
 import { useStore } from '@/components/storefront/StoreProvider';
 import { getStockLabel, getStockLabelStyle } from '@/utils/stockLabelUtils';
+import { useTranslation } from '@/contexts/TranslationContext';
 
 const MiniProductCard = ({ product }) => {
     const { store, settings, taxes, selectedCountry } = useStore();
+    const { translations } = useTranslation();
 
     return (
         <Link to={createPageUrl(`ProductDetail?id=${product.id}`)}>
@@ -25,8 +27,8 @@ const MiniProductCard = ({ product }) => {
                         {formatPrice(product.price)}
                     </p>
                     {(() => {
-                        const stockLabelInfo = getStockLabel(product, settings);
-                        const stockLabelStyle = getStockLabelStyle(product, settings);
+                        const stockLabelInfo = getStockLabel(product, settings, null, translations);
+                        const stockLabelStyle = getStockLabelStyle(product, settings, null, translations);
 
                         if (!stockLabelInfo) return null;
 

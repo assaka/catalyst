@@ -884,9 +884,10 @@ function formatValue(value, path, context, pageData) {
  *
  * Uses stockLabelUtils.getStockLabel() for consistency with other stock displays.
  * Respects admin settings (in_stock_label, out_of_stock_label, low_stock_label).
+ * Supports global translations from translations table.
  *
  * @param {Object} product - Product object
- * @param {Object} context - Data context with settings
+ * @param {Object} context - Data context with settings and translations
  * @param {Object} pageData - Additional data
  * @returns {string} Stock status text (no HTML/styling)
  * @private
@@ -895,9 +896,10 @@ function formatStockStatus(product, context, pageData) {
   if (!product) return '';
 
   const settings = context.settings || {};
+  const translations = context.translations || null;
 
-  // Use centralized stock label utility
-  const stockLabelInfo = getStockLabel(product, settings);
+  // Use centralized stock label utility with translations
+  const stockLabelInfo = getStockLabel(product, settings, null, translations);
 
   // Return just the text (no color styling in template variables)
   return stockLabelInfo?.text || '';

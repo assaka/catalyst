@@ -10,6 +10,20 @@
       "type": "string",
       "description": "Unique payment method code (e.g., creditcard, paypal, ideal)"
     },
+    "type": {
+      "type": "string",
+      "enum": [
+        "credit_card",
+        "debit_card",
+        "paypal",
+        "stripe",
+        "bank_transfer",
+        "cash_on_delivery",
+        "other"
+      ],
+      "default": "credit_card",
+      "description": "Payment method type"
+    },
     "provider": {
       "type": "string",
       "enum": [
@@ -43,12 +57,78 @@
       "type": "number",
       "description": "Maximum order amount for this payment method"
     },
+    "fee_type": {
+      "type": "string",
+      "enum": [
+        "fixed",
+        "percentage",
+        "none"
+      ],
+      "default": "none",
+      "description": "Type of fee applied to this payment method"
+    },
+    "fee_amount": {
+      "type": "number",
+      "default": 0,
+      "description": "Fee amount (either fixed amount or percentage)"
+    },
+    "availability": {
+      "type": "string",
+      "enum": [
+        "all",
+        "specific_countries"
+      ],
+      "default": "all",
+      "description": "Availability of this payment method"
+    },
     "countries": {
       "type": "array",
       "items": {
         "type": "string"
       },
       "description": "Countries where this payment method is available"
+    },
+    "translations": {
+      "type": "object",
+      "description": "Multilingual translations for name and description"
+    },
+    "conditions": {
+      "type": "object",
+      "properties": {
+        "categories": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "attribute_sets": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "skus": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "attribute_conditions": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "attribute_code": {
+                "type": "string"
+              },
+              "attribute_value": {
+                "type": "string"
+              }
+            }
+          }
+        }
+      },
+      "description": "Optional conditions for when this payment method is available"
     },
     "store_id": {
       "type": "string",

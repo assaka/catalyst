@@ -15,6 +15,7 @@ import { formatPrice, getPriceDisplay } from '@/utils/priceUtils';
 import { getStockLabel, getStockLabelStyle } from '@/utils/stockLabelUtils';
 import { getCategoryName, getProductName, getCurrentLanguage } from '@/utils/translationUtils';
 import { processVariables } from '@/utils/variableProcessor';
+import { useTranslation } from '@/contexts/TranslationContext';
 
 /**
  * CategorySlotRenderer - Data Processor & Slot Tree Renderer for Category Pages
@@ -59,6 +60,8 @@ export function CategorySlotRenderer({
   viewMode = 'grid',
   categoryContext = {}
 }) {
+  // Get translations for stock labels
+  const { translations } = useTranslation();
 
   // Helper function to generate dynamic grid classes
   const getDynamicGridClasses = (slot) => {
@@ -237,8 +240,8 @@ export function CategorySlotRenderer({
         const isInStock = product.infinite_stock || (product.stock_quantity !== undefined && product.stock_quantity > 0);
 
         // Get stock label from centralized utility
-        const stockLabelInfo = getStockLabel(product, settings);
-        const stockLabelStyle = getStockLabelStyle(product, settings);
+        const stockLabelInfo = getStockLabel(product, settings, null, translations);
+        const stockLabelStyle = getStockLabelStyle(product, settings, null, translations);
 
         return {
           ...product,

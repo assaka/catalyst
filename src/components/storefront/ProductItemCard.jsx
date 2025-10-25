@@ -29,7 +29,7 @@ const ProductItemCard = ({
   isEditorMode = false,
   onElementClick = null
 }) => {
-  const { t } = useTranslation();
+  const { t, translations } = useTranslation();
 
   // Local state for add to cart if not managed externally
   const [localIsAddingToCart, setLocalIsAddingToCart] = useState(false);
@@ -291,8 +291,8 @@ const ProductItemCard = ({
           <div className="space-y-3 mt-4">
             {/* Stock label - uses centralized utility */}
             {(() => {
-              const stockLabelInfo = getStockLabel(product, settings);
-              const stockLabelStyle = getStockLabelStyle(product, settings);
+              const stockLabelInfo = getStockLabel(product, settings, null, translations);
+              const stockLabelStyle = getStockLabelStyle(product, settings, null, translations);
 
               if (!stockLabelInfo) return null;
 
@@ -372,8 +372,8 @@ const ProductItemCard = ({
 
             {/* Stock status for list view */}
             {viewMode === 'list' && (() => {
-              const stockLabelInfo = getStockLabel(product, settings);
-              const stockLabelStyle = getStockLabelStyle(product, settings);
+              const stockLabelInfo = getStockLabel(product, settings, null, translations);
+              const stockLabelStyle = getStockLabelStyle(product, settings, null, translations);
 
               if (!stockLabelInfo) return null;
 

@@ -17,6 +17,7 @@
     "migrate:alter-tabs": "node src/database/migrations/run-alter-product-tabs.js",
     "migrate:payment-fee": "node run-payment-fee-migration-simple.js",
     "migrate:conditions": "node src/database/migrations/run-conditions-migration.js",
+    "migrate:stock": "node src/database/migrations/run-stock-settings-migration.js",
     "init:customizations": "node src/database/init-customizations-db.js",
     "seed": "node src/database/seed.js",
     "test": "jest",

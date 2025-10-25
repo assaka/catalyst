@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { ChevronDown, ChevronRight, Globe, Wand2 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -9,11 +9,13 @@ import api from '@/utils/api';
 
 /**
  * Accordion row for managing stock label translations
+ * Now uses the global translations table instead of stores.settings
  */
 export default function StockLabelTranslationRow({ storeId, stockSettings, onUpdate, selectedLanguages }) {
   const { availableLanguages } = useTranslation();
   const [isExpanded, setIsExpanded] = useState(false);
-  const [translations, setTranslations] = useState(stockSettings?.translations || {});
+  const [translations, setTranslations] = useState({});
+  const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(false);
   const [translating, setTranslating] = useState({});
@@ -26,6 +28,49 @@ export default function StockLabelTranslationRow({ storeId, stockSettings, onUpd
     { key: 'out_of_stock_label', label: 'Out of Stock Label', placeholder: 'Out of Stock' },
     { key: 'low_stock_label', label: 'Low Stock Label', placeholder: 'Low stock, {just {quantity} left}' }
   ];
+
+  // Load translations from translations table on mount
+  useEffect(() => {
+    loadTranslations();
+  }, []);
+
+  // Load stock label translations from the translations API
+  const loadTranslations = async () => {
+    try {
+      setLoading(true);
+
+      // Fetch translations for all languages
+      const translationsData = {};
+
+      for (const lang of availableLanguages) {
+        try {
+          const response = await api.get(`/translations/ui-labels?lang=${lang.code}`);
+
+          if (response && response.success && response.data) {
+            const { labels } = response.data;
+
+            // Extract stock labels from the response
+            if (labels.stock) {
+              translationsData[lang.code] = {
+                in_stock_label: labels.stock.in_stock_label || '',
+                out_of_stock_label: labels.stock.out_of_stock_label || '',
+                low_stock_label: labels.stock.low_stock_label || ''
+              };
+            }
+          }
+        } catch (error) {
+          console.error(`Error loading ${lang.code} translations:`, error);
+        }
+      }
+
+      setTranslations(translationsData);
+    } catch (error) {
+      console.error('Error loading stock translations:', error);
+      toast.error('Failed to load translations');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   // Get translation status
   const getTranslationStatus = () => {
@@ -60,27 +105,39 @@ export default function StockLabelTranslationRow({ storeId, stockSettings, onUpd
     }));
   };
 
-  // Save translations
+  // Save translations to the global translations table
   const handleSave = async () => {
-    if (!storeId) {
-      toast.error('No store selected');
-      return;
-    }
-
     try {
       setSaving(true);
       setSaveSuccess(false);
 
-      // Update store settings with new stock label translations
-      // The backend merges settings, so we only send the stock_settings part we want to update
-      await api.put(`/stores/${storeId}`, {
-        settings: {
-          stock_settings: {
-            ...stockSettings,
-            translations
+      // Prepare bulk translations payload
+      const labels = [];
+
+      for (const [langCode, langTranslations] of Object.entries(translations)) {
+        for (const field of labelFields) {
+          const value = langTranslations[field.key];
+
+          if (value && value.trim()) {
+            labels.push({
+              key: `stock.${field.key}`,
+              language_code: langCode,
+              value: value.trim(),
+              category: 'stock',
+              type: 'system'
+            });
           }
         }
-      });
+      }
+
+      if (labels.length === 0) {
+        toast.error('No translations to save');
+        setSaving(false);
+        return;
+      }
+
+      // Save using bulk translations API
+      await api.post('/translations/ui-labels/bulk', { labels });
 
       toast.success('Stock label translations updated successfully');
       if (onUpdate) onUpdate(translations);

@@ -152,9 +152,9 @@
  * @param {Object} settings - Store settings
  * @param {Object} settings.stock_settings - Stock label settings from admin
  * @param {boolean} settings.stock_settings.show_stock_label - Show/hide stock labels globally
- * @param {string} settings.stock_settings.in_stock_label - In stock label text
- * @param {string} settings.stock_settings.out_of_stock_label - Out of stock label text
- * @param {string} settings.stock_settings.low_stock_label - Low stock label text (with placeholders)
+ * @param {string} settings.stock_settings.in_stock_label - In stock label text (fallback)
+ * @param {string} settings.stock_settings.out_of_stock_label - Out of stock label text (fallback)
+ * @param {string} settings.stock_settings.low_stock_label - Low stock label text (fallback)
  * @param {string} settings.stock_settings.in_stock_text_color - In stock text color (hex)
  * @param {string} settings.stock_settings.in_stock_bg_color - In stock background color (hex)
  * @param {string} settings.stock_settings.out_of_stock_text_color - Out of stock text color
@@ -164,24 +164,25 @@
  * @param {boolean} [settings.hide_stock_quantity] - Hide quantity numbers in labels
  * @param {number} [settings.display_low_stock_threshold] - Default low stock threshold
  * @param {string} [lang] - Language code (default: current browser language)
+ * @param {Object} [globalTranslations] - Global translations object from TranslationContext (preferred)
  * @returns {Object|null} { text: string, textColor: string, bgColor: string } or null if disabled
  *
  * @example
  * // Infinite stock
- * getStockLabel({ infinite_stock: true }, settings)
+ * getStockLabel({ infinite_stock: true }, settings, null, translations)
  * // { text: "In Stock", textColor: "#22c55e", bgColor: "#dcfce7" }
  *
  * @example
  * // Low stock with quantity
- * getStockLabel({ stock_quantity: 3, low_stock_threshold: 5 }, settings)
+ * getStockLabel({ stock_quantity: 3, low_stock_threshold: 5 }, settings, null, translations)
  * // { text: "Only 3 left!", textColor: "#f59e0b", bgColor: "#fef3c7" }
  *
  * @example
  * // Out of stock
- * getStockLabel({ stock_quantity: 0 }, settings)
+ * getStockLabel({ stock_quantity: 0 }, settings, null, translations)
  * // { text: "Out of Stock", textColor: "#ef4444", bgColor: "#fee2e2" }
  */
-export function getStockLabel(product, settings = {}, lang = null) {
+export function getStockLabel(product, settings = {}, lang = null, globalTranslations = null) {
   // Check if stock labels should be shown at all
   const showStockLabel = settings?.stock_settings?.show_stock_label !== false;
   if (!showStockLabel) return null;
@@ -204,21 +205,25 @@ export function getStockLabel(product, settings = {}, lang = null) {
   // Stock settings are required - no fallbacks needed as StockSettings.jsx handles defaults
   const stockSettings = settings?.stock_settings || {};
 
-  // Helper function to get translated label from translations JSON
+  // Helper function to get translated label
   const getTranslatedLabel = (labelField) => {
-    const translations = stockSettings.translations;
-
-    // Try current language translation
-    if (translations && translations[lang] && translations[lang][labelField]) {
-      return translations[lang][labelField];
+    // Priority 1: Use global translations table (new approach)
+    if (globalTranslations && globalTranslations.stock && globalTranslations.stock[labelField]) {
+      return globalTranslations.stock[labelField];
     }
 
-    // Fallback to English if current language not available
-    if (translations && translations.en && translations.en[labelField]) {
-      return translations.en[labelField];
+    // Priority 2: Use old translations from stockSettings (backward compatibility)
+    const oldTranslations = stockSettings.translations;
+    if (oldTranslations && oldTranslations[lang] && oldTranslations[lang][labelField]) {
+      return oldTranslations[lang][labelField];
     }
 
-    // Final fallback: use the direct label field from stockSettings (non-translated)
+    // Priority 3: Fallback to English in old translations
+    if (oldTranslations && oldTranslations.en && oldTranslations.en[labelField]) {
+      return oldTranslations.en[labelField];
+    }
+
+    // Priority 4: Final fallback - use the direct label field from stockSettings
     // This ensures labels still work even when translations haven't been set up
     return stockSettings[labelField] || 'No Stock Label';
   };
@@ -370,31 +375,33 @@ export function getStockLabelClass(product, settings = {}) {
  *
  * @param {Object} product - Product object
  * @param {Object} settings - Store settings with stock_settings
+ * @param {string} [lang] - Language code (default: current browser language)
+ * @param {Object} [globalTranslations] - Global translations object from TranslationContext
  * @returns {Object} Style object { backgroundColor: string, color: string }
  *
  * @example
  * // In Stock
- * getStockLabelStyle({ stock_quantity: 50 }, settings)
+ * getStockLabelStyle({ stock_quantity: 50 }, settings, null, translations)
  * // { backgroundColor: "#dcfce7", color: "#22c55e" }
  *
  * @example
  * // Low Stock
- * getStockLabelStyle({ stock_quantity: 3, low_stock_threshold: 5 }, settings)
+ * getStockLabelStyle({ stock_quantity: 3, low_stock_threshold: 5 }, settings, null, translations)
  * // { backgroundColor: "#fef3c7", color: "#f59e0b" }
  *
  * @example
  * // Out of Stock
- * getStockLabelStyle({ stock_quantity: 0 }, settings)
+ * getStockLabelStyle({ stock_quantity: 0 }, settings, null, translations)
  * // { backgroundColor: "#fee2e2", color: "#ef4444" }
  *
  * @example
  * // Usage in component
- * <Badge style={getStockLabelStyle(product, settings)}>
- *   {getStockLabel(product, settings)?.text}
+ * <Badge style={getStockLabelStyle(product, settings, null, translations)}>
+ *   {getStockLabel(product, settings, null, translations)?.text}
  * </Badge>
  */
-export function getStockLabelStyle(product, settings = {}) {
-  const stockLabel = getStockLabel(product, settings);
+export function getStockLabelStyle(product, settings = {}, lang = null, globalTranslations = null) {
+  const stockLabel = getStockLabel(product, settings, lang, globalTranslations);
   if (!stockLabel) return {};
 
   return {
