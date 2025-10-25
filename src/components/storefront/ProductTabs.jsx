@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { processVariables } from '@/utils/variableProcessor';
-import { getCurrentLanguage } from '@/utils/translationUtils';
 
 /**
  * ProductTabs Component
@@ -9,7 +8,6 @@ import { getCurrentLanguage } from '@/utils/translationUtils';
 export default function ProductTabs({ productTabs = [], product = null, settings = {}, className = '', slotConfig = null }) {
   const containerRef = useRef(null);
   const [activeTabIndex, setActiveTabIndex] = useState(0);
-  const currentLang = getCurrentLanguage();
 
   // Prepare tabs data with active state
   const tabsData = useMemo(() => {
@@ -21,8 +19,8 @@ export default function ProductTabs({ productTabs = [], product = null, settings
 
     // Add default description tab if needed
     const hasDescriptionTab = validTabs.some(tab => {
-      // Get translated title/name from translations JSON
-      const translatedTitle = tab.translations?.[currentLang]?.name || tab.translations?.en?.name;
+      // Backend returns translated name in base field (based on X-Language header)
+      const translatedTitle = tab.name;
       return translatedTitle?.toLowerCase().includes('description');
     });
 
@@ -30,10 +28,7 @@ export default function ProductTabs({ productTabs = [], product = null, settings
     if (product?.description && !hasDescriptionTab) {
       tabsToRender.unshift({
         id: 'description',
-        translations: {
-          en: { name: 'Description' },
-          [currentLang]: { name: 'Description' }
-        },
+        name: 'Description', // Backend will translate if needed
         content: product.description,
         is_active: true,
         tab_type: 'description'
@@ -56,7 +51,7 @@ export default function ProductTabs({ productTabs = [], product = null, settings
     });
 
     return mappedTabs;
-  }, [productTabs, product, activeTabIndex, currentLang]);
+  }, [productTabs, product, activeTabIndex]);
 
   // Render attributes dynamically (processVariables doesn't support {{@key}})
   useEffect(() => {
@@ -127,7 +122,7 @@ export default function ProductTabs({ productTabs = [], product = null, settings
     attributesContainers.forEach(container => {
       container.innerHTML = attributesHTML;
     });
-  }, [product, tabsData, activeTabIndex, settings, currentLang]);
+  }, [product, tabsData, activeTabIndex, settings]);
 
   // Attach tab click handlers
   useEffect(() => {
