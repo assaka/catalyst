@@ -4,9 +4,49 @@ Utility scripts for database maintenance, translations, and data management.
 
 ## Translation Scripts
 
-### Create Missing NL Product Translations
+### Copy EN to NL Product Translations (Quick & Simple)
+
+Simply copies all EN product translations to NL without AI translation.
+Use this when you need NL content quickly and will translate properly later.
+
+**File:** `copy-en-to-nl-products.js`
+
+**Usage:**
+
+```bash
+# Copy for all products in all stores
+node backend/src/scripts/copy-en-to-nl-products.js
+
+# Copy for products in a specific store
+node backend/src/scripts/copy-en-to-nl-products.js STORE_UUID_HERE
+```
+
+**What it does:**
+- Copies EN product names, descriptions, and short descriptions to NL
+- Only copies for products that DON'T already have NL translations
+- Fast and simple (no AI API calls needed)
+- Safe to re-run (uses ON CONFLICT DO NOTHING)
+
+**Example output:**
+```
+🔄 Starting EN to NL copy process...
+
+📋 Executing copy query...
+
+============================================================
+📊 Copy Results:
+Total NL translations now: 50
+============================================================
+
+✅ Copy completed successfully!
+```
+
+---
+
+### Create Missing NL Product Translations (AI Translation)
 
 Automatically translates all products from English to Dutch using Claude AI.
+Use this for professional, proper translations.
 
 **File:** `create-missing-nl-product-translations.js`
 
