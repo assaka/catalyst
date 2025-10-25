@@ -159,10 +159,10 @@ export default function ProductDetail() {
     if (product && productLabels && productLabels.length > 0) {
       const applicableLabels = evaluateProductLabels(product, productLabels);
 
-      // Update product with new labels (with translated text)
+      // Update product with new labels (backend returns translated text in base field)
       setProduct(prevProduct => ({
         ...prevProduct,
-        labels: applicableLabels.map(label => getLabelText(label)),
+        labels: applicableLabels.map(label => label.text),
         applicableLabels: applicableLabels // Keep full label objects for styling
       }));
     }
@@ -443,7 +443,7 @@ export default function ProductDetail() {
         const applicableLabels = evaluateProductLabels(foundProduct, productLabels);
         const productWithLabels = {
           ...foundProduct,
-          labels: applicableLabels.map(label => getLabelText(label)),
+          labels: applicableLabels.map(label => label.text),
           applicableLabels: applicableLabels // Keep full label objects for styling
         };
 
