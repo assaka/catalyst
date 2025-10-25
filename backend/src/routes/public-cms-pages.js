@@ -12,21 +12,18 @@ router.get('/', async (req, res) => {
 
     console.log('🎯 Public CMS Pages: Request received', { slug, store_id });
 
-    if (!slug) {
-      return res.status(400).json({
-        success: false,
-        message: 'Slug is required'
-      });
-    }
-
     const lang = getLanguageFromRequest(req);
     console.log('🌍 Public CMS Pages: Requesting language:', lang);
 
     // Build where conditions
     const where = {
-      slug: slug,
       is_active: true
     };
+
+    // Add slug filter if provided (for single page fetch)
+    if (slug) {
+      where.slug = slug;
+    }
 
     if (store_id) {
       where.store_id = store_id;
@@ -48,13 +45,14 @@ router.get('/', async (req, res) => {
     if (pages.length === 0) {
       return res.status(404).json({
         success: false,
-        message: 'CMS page not found'
+        message: slug ? 'CMS page not found' : 'No CMS pages found for this store'
       });
     }
 
+    // If slug was provided, return single page, otherwise return array
     res.json({
       success: true,
-      data: pages[0]
+      data: slug ? pages[0] : pages
     });
 
   } catch (error) {
