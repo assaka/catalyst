@@ -203,38 +203,44 @@ export const StoreProvider = ({ children }) => {
   const location = useLocation();
 
   useEffect(() => {
+    console.log('🔄 StoreProvider: Location pathname changed:', location.pathname);
     fetchStoreData();
-  }, [location.pathname]);
+  }, [location.pathname, fetchStoreData]);
 
   // Listen for store selection changes from admin
   useEffect(() => {
     const handleStoreChange = (event) => {
       console.log('🔄 StoreProvider: Detected store selection change:', event.detail?.store);
+      console.log('🧹 StoreProvider: Clearing caches for store change');
       // Clear cache when store changes
       apiCache.clear();
       localStorage.removeItem('storeProviderCache');
+      sessionStorage.removeItem('storeProviderCache');
       // Refetch store data with the new selection
       fetchStoreData();
     };
 
     window.addEventListener('storeSelectionChanged', handleStoreChange);
     return () => window.removeEventListener('storeSelectionChanged', handleStoreChange);
-  }, []);
+  }, [fetchStoreData]);
 
   // Listen for language changes
   useEffect(() => {
     const handleLanguageChange = (event) => {
       console.log('🌍 StoreProvider: Detected language change:', event.detail?.language);
+      console.log('🧹 StoreProvider: Clearing all caches for language change');
       // Clear cache when language changes
       apiCache.clear();
       localStorage.removeItem('storeProviderCache');
+      sessionStorage.removeItem('storeProviderCache');
+      console.log('🔄 StoreProvider: Refetching store data with new language');
       // Refetch store data with the new language
       fetchStoreData();
     };
 
     window.addEventListener('languageChanged', handleLanguageChange);
     return () => window.removeEventListener('languageChanged', handleLanguageChange);
-  }, []);
+  }, [fetchStoreData]);
 
   // Listen for cache clear broadcasts from admin
   useEffect(() => {
