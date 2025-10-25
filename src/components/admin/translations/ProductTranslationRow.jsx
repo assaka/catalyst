@@ -56,10 +56,7 @@ export default function ProductTranslationRow({ product, selectedLanguages, onUp
   const fields = [
     { key: 'name', label: 'Name', multiline: false },
     { key: 'short_description', label: 'Short Description', multiline: true },
-    { key: 'description', label: 'Description', multiline: true },
-    { key: 'meta_title', label: 'Meta Title', multiline: false },
-    { key: 'meta_description', label: 'Meta Description', multiline: true },
-    { key: 'meta_keywords', label: 'Meta Keywords', multiline: false }
+    { key: 'description', label: 'Description', multiline: true }
   ];
 
   // Handle translation change

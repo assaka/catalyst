@@ -181,30 +181,22 @@ async function createCategoryWithTranslations(categoryData, translations = {}) {
         await sequelize.query(`
           INSERT INTO category_translations (
             category_id, language_code, name, description,
-            meta_title, meta_description, meta_keywords,
             created_at, updated_at
           ) VALUES (
             :category_id, :lang_code, :name, :description,
-            :meta_title, :meta_description, :meta_keywords,
             NOW(), NOW()
           )
           ON CONFLICT (category_id, language_code) DO UPDATE
           SET
             name = EXCLUDED.name,
             description = EXCLUDED.description,
-            meta_title = EXCLUDED.meta_title,
-            meta_description = EXCLUDED.meta_description,
-            meta_keywords = EXCLUDED.meta_keywords,
             updated_at = NOW()
         `, {
           replacements: {
             category_id: category.id,
             lang_code: langCode,
             name: data.name || null,
-            description: data.description || null,
-            meta_title: data.meta_title || null,
-            meta_description: data.meta_description || null,
-            meta_keywords: data.meta_keywords || null
+            description: data.description || null
           },
           transaction
         });
@@ -283,30 +275,22 @@ async function updateCategoryWithTranslations(id, categoryData, translations = {
         await sequelize.query(`
           INSERT INTO category_translations (
             category_id, language_code, name, description,
-            meta_title, meta_description, meta_keywords,
             created_at, updated_at
           ) VALUES (
             :category_id, :lang_code, :name, :description,
-            :meta_title, :meta_description, :meta_keywords,
             NOW(), NOW()
           )
           ON CONFLICT (category_id, language_code) DO UPDATE
           SET
             name = COALESCE(EXCLUDED.name, category_translations.name),
             description = COALESCE(EXCLUDED.description, category_translations.description),
-            meta_title = COALESCE(EXCLUDED.meta_title, category_translations.meta_title),
-            meta_description = COALESCE(EXCLUDED.meta_description, category_translations.meta_description),
-            meta_keywords = COALESCE(EXCLUDED.meta_keywords, category_translations.meta_keywords),
             updated_at = NOW()
         `, {
           replacements: {
             category_id: id,
             lang_code: langCode,
             name: data.name,
-            description: data.description,
-            meta_title: data.meta_title,
-            meta_description: data.meta_description,
-            meta_keywords: data.meta_keywords
+            description: data.description
           },
           transaction
         });
@@ -386,10 +370,7 @@ async function getCategoriesWithAllTranslations(where = {}) {
       category_id,
       language_code,
       name,
-      description,
-      meta_title,
-      meta_description,
-      meta_keywords
+      description
     FROM category_translations
     WHERE category_id IN (:categoryIds)
   `;
@@ -414,10 +395,7 @@ async function getCategoriesWithAllTranslations(where = {}) {
     }
     translationsByCategory[t.category_id][t.language_code] = {
       name: t.name,
-      description: t.description,
-      meta_title: t.meta_title,
-      meta_description: t.meta_description,
-      meta_keywords: t.meta_keywords
+      description: t.description
     };
   });
 

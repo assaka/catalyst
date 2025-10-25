@@ -15,10 +15,7 @@ const CategoryTranslation = sequelize.define('CategoryTranslation', {
     references: { model: 'languages', key: 'code' }
   },
   name: { type: DataTypes.STRING(255), allowNull: false },
-  description: { type: DataTypes.TEXT, allowNull: true },
-  meta_title: { type: DataTypes.STRING(255), allowNull: true },
-  meta_description: { type: DataTypes.TEXT, allowNull: true },
-  meta_keywords: { type: DataTypes.STRING(255), allowNull: true }
+  description: { type: DataTypes.TEXT, allowNull: true }
 }, {
   tableName: 'category_translations',
   underscored: true

@@ -31,18 +31,6 @@ const ProductTranslation = sequelize.define('ProductTranslation', {
   short_description: {
     type: DataTypes.TEXT,
     allowNull: true
-  },
-  meta_title: {
-    type: DataTypes.STRING(255),
-    allowNull: true
-  },
-  meta_description: {
-    type: DataTypes.TEXT,
-    allowNull: true
-  },
-  meta_keywords: {
-    type: DataTypes.STRING(255),
-    allowNull: true
   }
 }, {
   tableName: 'product_translations',

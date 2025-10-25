@@ -138,10 +138,7 @@ async function applyAllProductTranslations(products) {
       language_code,
       name,
       description,
-      short_description,
-      meta_title,
-      meta_description,
-      meta_keywords
+      short_description
     FROM product_translations
     WHERE product_id IN (:productIds)
   `;
@@ -167,10 +164,7 @@ async function applyAllProductTranslations(products) {
     translationsByProduct[t.product_id][t.language_code] = {
       name: t.name,
       description: t.description,
-      short_description: t.short_description,
-      meta_title: t.meta_title,
-      meta_description: t.meta_description,
-      meta_keywords: t.meta_keywords
+      short_description: t.short_description
     };
   });
 
@@ -216,11 +210,9 @@ async function updateProductTranslations(productId, translations = {}) {
         await sequelize.query(`
           INSERT INTO product_translations (
             product_id, language_code, name, description, short_description,
-            meta_title, meta_description, meta_keywords,
             created_at, updated_at
           ) VALUES (
             :product_id, :lang_code, :name, :description, :short_description,
-            :meta_title, :meta_description, :meta_keywords,
             NOW(), NOW()
           )
           ON CONFLICT (product_id, language_code) DO UPDATE
@@ -228,9 +220,6 @@ async function updateProductTranslations(productId, translations = {}) {
             name = COALESCE(EXCLUDED.name, product_translations.name),
             description = COALESCE(EXCLUDED.description, product_translations.description),
             short_description = COALESCE(EXCLUDED.short_description, product_translations.short_description),
-            meta_title = COALESCE(EXCLUDED.meta_title, product_translations.meta_title),
-            meta_description = COALESCE(EXCLUDED.meta_description, product_translations.meta_description),
-            meta_keywords = COALESCE(EXCLUDED.meta_keywords, product_translations.meta_keywords),
             updated_at = NOW()
         `, {
           replacements: {
@@ -238,10 +227,7 @@ async function updateProductTranslations(productId, translations = {}) {
             lang_code: langCode,
             name: data.name,
             description: data.description,
-            short_description: data.short_description,
-            meta_title: data.meta_title,
-            meta_description: data.meta_description,
-            meta_keywords: data.meta_keywords
+            short_description: data.short_description
           },
           transaction
         });
