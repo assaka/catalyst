@@ -75,6 +75,15 @@ export default function CategoryForm({ category, onSubmit, onCancel, parentCateg
       // If translations exist, use them; otherwise create from old columns
       let translations = category.translations || {};
 
+      console.log('🔍 CategoryForm - Category received:', {
+        categoryId: category.id,
+        categorySlug: category.slug,
+        categoryName: category.name,
+        hasTranslations: !!category.translations,
+        translationsKeys: Object.keys(category.translations || {}),
+        translations: category.translations
+      });
+
       // Ensure English translation exists (backward compatibility)
       if (!translations.en || (!translations.en.name && category.name)) {
         translations.en = {
