@@ -138,9 +138,19 @@ async function getProductLabelWithAllTranslations(id) {
     GROUP BY pl.id
   `;
 
+  console.log('🔍 Backend: Querying product label with all translations for ID:', id);
+
   const results = await sequelize.query(query, {
     replacements: { id },
     type: sequelize.QueryTypes.SELECT
+  });
+
+  console.log('🔍 Backend: Query result:', {
+    hasResults: !!results[0],
+    translations: results[0]?.translations,
+    translationType: typeof results[0]?.translations,
+    translationKeys: Object.keys(results[0]?.translations || {}),
+    rawResult: results[0]
   });
 
   return results[0] || null;
