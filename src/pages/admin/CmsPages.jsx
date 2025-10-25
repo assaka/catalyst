@@ -86,7 +86,7 @@ export default function CmsPages() {
 
       const [pagesData, productsData] = await Promise.all([
         CmsPage.filter({ store_id: storeId }),
-        Product.filter({ store_id: storeId })
+        Product.filter({ store_id: storeId, include_all_translations: 'true' })
       ]);
 
       console.log('📦 CmsPages: Loaded data:', {
