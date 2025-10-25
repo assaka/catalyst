@@ -73,6 +73,7 @@ const mapBackendToFrontend = (backendSettings) => {
       accept_button_text: backendSettings.accept_button_text || "Accept All",
       reject_button_text: backendSettings.reject_button_text || "Reject All",
       settings_button_text: backendSettings.settings_button_text || "Cookie Settings",
+      save_preferences_button_text: backendSettings.save_preferences_button_text || "Save Preferences",
       privacy_policy_text: backendSettings.privacy_policy_text || "Privacy Policy"
     };
   }
@@ -758,6 +759,7 @@ export default function CookieConsent() {
                           { name: 'accept_button_text', label: 'Accept Button Text', type: 'text', required: true },
                           { name: 'reject_button_text', label: 'Reject Button Text', type: 'text', required: true },
                           { name: 'settings_button_text', label: 'Cookie Settings Button Text', type: 'text', required: true },
+                          { name: 'save_preferences_button_text', label: 'Save Preferences Button Text', type: 'text', required: false },
                           { name: 'privacy_policy_text', label: 'Privacy Policy Link Text', type: 'text', required: true }
                         ]}
                       />
