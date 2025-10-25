@@ -567,6 +567,7 @@ export function UnifiedSlotRenderer({
     category: categoryData?.category || categoryData,
     cart: cartData,
     settings: fullSettings, // Keep ui_translations for {{t "key"}} processing
+    translations: productData.translations || categoryData?.translations || null, // Translations from TranslationContext
     productLabels: productData.productLabels || categoryData?.productLabels,
     // Product-specific data
     customOptions: productData.customOptions || [],
