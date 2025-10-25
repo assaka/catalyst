@@ -329,6 +329,15 @@ export function CategorySlotRenderer({
             // Find the AttributeValue record for this code
             const attrValue = attributeValues.find(av => av.code === valueCode);
 
+            // Count products that have this attribute value
+            const productCount = allProducts.filter(p => {
+              const productAttributes = p.attributes || [];
+              if (!Array.isArray(productAttributes)) return false;
+
+              const matchingAttr = productAttributes.find(pAttr => pAttr.code === attrCode);
+              return matchingAttr && String(matchingAttr.value) === String(valueCode);
+            }).length;
+
             if (attrValue) {
               // Get translated label
               const valueLabel = attrValue.translations?.[currentLang]?.label ||
@@ -338,7 +347,7 @@ export function CategorySlotRenderer({
               return {
                 value: valueCode,
                 label: valueLabel,
-                count: 0,
+                count: productCount,
                 active: false,
                 attributeCode: attrCode,
                 sort_order: attrValue.sort_order || 0
@@ -349,7 +358,7 @@ export function CategorySlotRenderer({
             return {
               value: valueCode,
               label: valueCode,
-              count: 0,
+              count: productCount,
               active: false,
               attributeCode: attrCode,
               sort_order: 999
