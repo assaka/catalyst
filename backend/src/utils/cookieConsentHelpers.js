@@ -11,8 +11,8 @@ const { sequelize } = require('../database/connection');
  * Get cookie consent settings with translations from normalized tables
  *
  * @param {Object} where - WHERE clause conditions
- * @param {string} lang - Language code (default: 'en')
- * @returns {Promise<Array>} Cookie consent settings with translated fields
+ * @param {string} lang - Language code (optional, not used but kept for compatibility)
+ * @returns {Promise<Array>} Cookie consent settings with full translations object
  */
 async function getCookieConsentSettingsWithTranslations(where = {}, lang = 'en') {
   const whereConditions = Object.entries(where)
@@ -26,13 +26,19 @@ async function getCookieConsentSettingsWithTranslations(where = {}, lang = 'en')
 
   const whereClause = whereConditions ? `WHERE ${whereConditions}` : '';
 
+  // Build translations JSON from normalized table using json_object_agg
   const query = `
     SELECT
       ccs.id,
       ccs.store_id,
       ccs.is_enabled,
       ccs.banner_position,
+      ccs.banner_text,
       ccs.privacy_policy_url,
+      ccs.accept_button_text,
+      ccs.reject_button_text,
+      ccs.settings_button_text,
+      ccs.privacy_policy_text,
       ccs.necessary_cookies,
       ccs.analytics_cookies,
       ccs.marketing_cookies,
@@ -53,23 +59,30 @@ async function getCookieConsentSettingsWithTranslations(where = {}, lang = 'en')
       ccs.custom_css,
       ccs.created_at,
       ccs.updated_at,
-      COALESCE(ccst.banner_text, ccs.banner_text) as banner_text,
-      COALESCE(ccst.accept_button_text, ccs.accept_button_text) as accept_button_text,
-      COALESCE(ccst.reject_button_text, ccs.reject_button_text) as reject_button_text,
-      COALESCE(ccst.settings_button_text, ccs.settings_button_text) as settings_button_text,
-      COALESCE(ccst.privacy_policy_text, ccs.privacy_policy_text) as privacy_policy_text
+      COALESCE(
+        json_object_agg(
+          ccst.language_code,
+          json_build_object(
+            'banner_text', ccst.banner_text,
+            'accept_button_text', ccst.accept_button_text,
+            'reject_button_text', ccst.reject_button_text,
+            'settings_button_text', ccst.settings_button_text,
+            'privacy_policy_text', ccst.privacy_policy_text
+          )
+        ) FILTER (WHERE ccst.language_code IS NOT NULL),
+        '{}'::json
+      ) as translations
     FROM cookie_consent_settings ccs
     LEFT JOIN cookie_consent_settings_translations ccst
-      ON ccs.id = ccst.cookie_consent_settings_id AND ccst.language_code = :lang
+      ON ccs.id = ccst.cookie_consent_settings_id
     ${whereClause}
+    GROUP BY ccs.id
     ORDER BY ccs.created_at DESC
   `;
 
   console.log('🔍 SQL Query for cookie consent:', query.replace(/\s+/g, ' '));
-  console.log('🔍 Language parameter:', lang);
 
   const results = await sequelize.query(query, {
-    replacements: { lang },
     type: sequelize.QueryTypes.SELECT
   });
 
@@ -77,9 +90,7 @@ async function getCookieConsentSettingsWithTranslations(where = {}, lang = 'en')
   if (results.length > 0) {
     console.log('📝 Sample settings:', JSON.stringify({
       id: results[0].id,
-      banner_text: results[0].banner_text?.substring(0, 50) + '...',
-      accept_button_text: results[0].accept_button_text,
-      reject_button_text: results[0].reject_button_text
+      translations: results[0].translations
     }, null, 2));
   }
 
@@ -90,8 +101,8 @@ async function getCookieConsentSettingsWithTranslations(where = {}, lang = 'en')
  * Get single cookie consent settings with translations
  *
  * @param {string} id - Cookie consent settings ID
- * @param {string} lang - Language code (default: 'en')
- * @returns {Promise<Object|null>} Cookie consent settings with translated fields
+ * @param {string} lang - Language code (optional, not used but kept for compatibility)
+ * @returns {Promise<Object|null>} Cookie consent settings with full translations object
  */
 async function getCookieConsentSettingsById(id, lang = 'en') {
   const query = `
@@ -100,7 +111,12 @@ async function getCookieConsentSettingsById(id, lang = 'en') {
       ccs.store_id,
       ccs.is_enabled,
       ccs.banner_position,
+      ccs.banner_text,
       ccs.privacy_policy_url,
+      ccs.accept_button_text,
+      ccs.reject_button_text,
+      ccs.settings_button_text,
+      ccs.privacy_policy_text,
       ccs.necessary_cookies,
       ccs.analytics_cookies,
       ccs.marketing_cookies,
@@ -121,19 +137,28 @@ async function getCookieConsentSettingsById(id, lang = 'en') {
       ccs.custom_css,
       ccs.created_at,
       ccs.updated_at,
-      COALESCE(ccst.banner_text, ccs.banner_text) as banner_text,
-      COALESCE(ccst.accept_button_text, ccs.accept_button_text) as accept_button_text,
-      COALESCE(ccst.reject_button_text, ccs.reject_button_text) as reject_button_text,
-      COALESCE(ccst.settings_button_text, ccs.settings_button_text) as settings_button_text,
-      COALESCE(ccst.privacy_policy_text, ccs.privacy_policy_text) as privacy_policy_text
+      COALESCE(
+        json_object_agg(
+          ccst.language_code,
+          json_build_object(
+            'banner_text', ccst.banner_text,
+            'accept_button_text', ccst.accept_button_text,
+            'reject_button_text', ccst.reject_button_text,
+            'settings_button_text', ccst.settings_button_text,
+            'privacy_policy_text', ccst.privacy_policy_text
+          )
+        ) FILTER (WHERE ccst.language_code IS NOT NULL),
+        '{}'::json
+      ) as translations
     FROM cookie_consent_settings ccs
     LEFT JOIN cookie_consent_settings_translations ccst
-      ON ccs.id = ccst.cookie_consent_settings_id AND ccst.language_code = :lang
+      ON ccs.id = ccst.cookie_consent_settings_id
     WHERE ccs.id = :id
+    GROUP BY ccs.id
   `;
 
   const results = await sequelize.query(query, {
-    replacements: { id, lang },
+    replacements: { id },
     type: sequelize.QueryTypes.SELECT
   });
 
