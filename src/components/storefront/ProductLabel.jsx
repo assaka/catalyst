@@ -1,5 +1,4 @@
 import React from 'react';
-import { getCurrentLanguage } from '@/utils/translationUtils';
 
 const getPositionClasses = (position) => {
   const baseClasses = "absolute z-10 px-2 py-1 text-xs font-bold rounded shadow-lg";
@@ -21,10 +20,8 @@ const getPositionClasses = (position) => {
 export default function ProductLabel({ label, style = {} }) {
   if (!label) return null;
 
-  const currentLang = getCurrentLanguage();
-
-  // Get translated text from translations JSON (no fallback)
-  const labelText = label.translations?.[currentLang]?.text || label.translations?.en?.text;
+  // Backend returns translated text in label.text (based on X-Language header)
+  const labelText = label.text || label;
 
   if (!labelText) return null;
 
