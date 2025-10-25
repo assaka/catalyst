@@ -1,4 +1,6 @@
 import React, { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
+import { createPageUrl } from '@/utils';
 import { Store } from '@/api/entities';
 import api from '@/utils/api';
 import { useStoreSelection } from '@/contexts/StoreSelectionContext';
@@ -9,6 +11,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import SaveButton from '@/components/ui/save-button';
+import { Languages, ArrowRight } from 'lucide-react';
 import {
   Accordion,
   AccordionContent,
@@ -307,94 +310,147 @@ export default function StockSettings() {
               </div>
 
               {/* Stock Label Translation Message */}
-              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mt-6">
-                <h4 className="font-semibold text-blue-900 mb-2">Stock Label Translations</h4>
-                <p className="text-blue-700 mb-3">
-                  Stock label text and translations (In Stock, Out of Stock, Low Stock) are now managed in the <strong>Layout → Translations</strong> page under the "Stock Labels" section.
-                </p>
-                <p className="text-sm text-blue-600">
-                  You can customize label text for all languages, use dynamic placeholders like {'{quantity}'}, and configure multi-language support from the Translations page.
-                </p>
+              <div className="bg-blue-50 border-l-4 border-blue-500 rounded-lg p-4 mt-6">
+                <div className="flex items-start gap-3">
+                  <Languages className="w-5 h-5 text-blue-600 mt-0.5 flex-shrink-0" />
+                  <div className="flex-1">
+                    <h4 className="font-semibold text-blue-900 mb-2">Stock Label Translations</h4>
+                    <p className="text-blue-700 mb-3">
+                      Stock label text and translations (In Stock, Out of Stock, Low Stock) are managed in <strong>Layout → Translations</strong> under the "Stock Labels" section.
+                    </p>
+                    <p className="text-sm text-blue-600 mb-3">
+                      You can customize label text for all languages, use dynamic placeholders like {'{quantity}'}, and configure multi-language support.
+                    </p>
+                    <Link to={createPageUrl('Translations')}>
+                      <Button
+                        type="button"
+                        size="sm"
+                        className="bg-blue-600 hover:bg-blue-700 text-white"
+                      >
+                        <Languages className="w-4 h-4 mr-2" />
+                        Manage Stock Label Translations
+                        <ArrowRight className="w-4 h-4 ml-2" />
+                      </Button>
+                    </Link>
+                  </div>
+                </div>
               </div>
 
               {/* Stock Label Color Settings */}
-              <div className="space-y-4 pt-4 border-t">
+              <div className="space-y-4 pt-6 border-t">
                 <h4 className="font-medium text-gray-900 mb-3">Stock Label Colors</h4>
+                <p className="text-sm text-gray-600 mb-4">Configure text and background colors for each stock status label</p>
 
                 <div>
-                  <Label className="font-medium">"In Stock" Colors</Label>
-                  <div className="grid grid-cols-2 gap-4 mt-2">
-                    <div>
-                      <Label htmlFor="in_stock_text_color" className="text-xs">Text Color</Label>
-                      <Input
-                        id="in_stock_text_color"
-                        type="color"
-                        value={settings.in_stock_text_color}
-                        onChange={(e) => handleSettingsChange('in_stock_text_color', e.target.value)}
-                        className="h-10 cursor-pointer"
-                      />
+                  <Label className="font-medium text-gray-900 mb-2 block">In Stock Label</Label>
+                  <div className="flex gap-2 items-center">
+                    <span className="text-sm text-gray-600 min-w-[120px]">Colors:</span>
+                    <div className="flex gap-2">
+                      <div className="relative">
+                        <Input
+                          type="color"
+                          className="w-16 h-10 p-1 cursor-pointer"
+                          value={settings.in_stock_text_color}
+                          onChange={(e) => handleSettingsChange('in_stock_text_color', e.target.value)}
+                          title="Text Color"
+                        />
+                        <span className="text-xs text-gray-500 absolute -bottom-5 left-0 whitespace-nowrap">Text</span>
+                      </div>
+                      <div className="relative">
+                        <Input
+                          type="color"
+                          className="w-16 h-10 p-1 cursor-pointer"
+                          value={settings.in_stock_bg_color}
+                          onChange={(e) => handleSettingsChange('in_stock_bg_color', e.target.value)}
+                          title="Background Color"
+                        />
+                        <span className="text-xs text-gray-500 absolute -bottom-5 left-0 whitespace-nowrap">Background</span>
+                      </div>
                     </div>
-                    <div>
-                      <Label htmlFor="in_stock_bg_color" className="text-xs">Background Color</Label>
-                      <Input
-                        id="in_stock_bg_color"
-                        type="color"
-                        value={settings.in_stock_bg_color}
-                        onChange={(e) => handleSettingsChange('in_stock_bg_color', e.target.value)}
-                        className="h-10 cursor-pointer"
-                      />
+                    <div
+                      className="ml-4 px-3 py-1.5 rounded text-sm font-medium"
+                      style={{
+                        backgroundColor: settings.in_stock_bg_color,
+                        color: settings.in_stock_text_color
+                      }}
+                    >
+                      Preview
                     </div>
                   </div>
                 </div>
 
                 <div>
-                  <Label className="font-medium">"Out of Stock" Colors</Label>
-                  <div className="grid grid-cols-2 gap-4 mt-2">
-                    <div>
-                      <Label htmlFor="out_of_stock_text_color" className="text-xs">Text Color</Label>
-                      <Input
-                        id="out_of_stock_text_color"
-                        type="color"
-                        value={settings.out_of_stock_text_color}
-                        onChange={(e) => handleSettingsChange('out_of_stock_text_color', e.target.value)}
-                        className="h-10 cursor-pointer"
-                      />
+                  <Label className="font-medium text-gray-900 mb-2 block">Out of Stock Label</Label>
+                  <div className="flex gap-2 items-center">
+                    <span className="text-sm text-gray-600 min-w-[120px]">Colors:</span>
+                    <div className="flex gap-2">
+                      <div className="relative">
+                        <Input
+                          type="color"
+                          className="w-16 h-10 p-1 cursor-pointer"
+                          value={settings.out_of_stock_text_color}
+                          onChange={(e) => handleSettingsChange('out_of_stock_text_color', e.target.value)}
+                          title="Text Color"
+                        />
+                        <span className="text-xs text-gray-500 absolute -bottom-5 left-0 whitespace-nowrap">Text</span>
+                      </div>
+                      <div className="relative">
+                        <Input
+                          type="color"
+                          className="w-16 h-10 p-1 cursor-pointer"
+                          value={settings.out_of_stock_bg_color}
+                          onChange={(e) => handleSettingsChange('out_of_stock_bg_color', e.target.value)}
+                          title="Background Color"
+                        />
+                        <span className="text-xs text-gray-500 absolute -bottom-5 left-0 whitespace-nowrap">Background</span>
+                      </div>
                     </div>
-                    <div>
-                      <Label htmlFor="out_of_stock_bg_color" className="text-xs">Background Color</Label>
-                      <Input
-                        id="out_of_stock_bg_color"
-                        type="color"
-                        value={settings.out_of_stock_bg_color}
-                        onChange={(e) => handleSettingsChange('out_of_stock_bg_color', e.target.value)}
-                        className="h-10 cursor-pointer"
-                      />
+                    <div
+                      className="ml-4 px-3 py-1.5 rounded text-sm font-medium"
+                      style={{
+                        backgroundColor: settings.out_of_stock_bg_color,
+                        color: settings.out_of_stock_text_color
+                      }}
+                    >
+                      Preview
                     </div>
                   </div>
                 </div>
 
                 <div>
-                  <Label className="font-medium">"Low Stock" Colors</Label>
-                  <div className="grid grid-cols-2 gap-4 mt-2">
-                    <div>
-                      <Label htmlFor="low_stock_text_color" className="text-xs">Text Color</Label>
-                      <Input
-                        id="low_stock_text_color"
-                        type="color"
-                        value={settings.low_stock_text_color}
-                        onChange={(e) => handleSettingsChange('low_stock_text_color', e.target.value)}
-                        className="h-10 cursor-pointer"
-                      />
+                  <Label className="font-medium text-gray-900 mb-2 block">Low Stock Label</Label>
+                  <div className="flex gap-2 items-center">
+                    <span className="text-sm text-gray-600 min-w-[120px]">Colors:</span>
+                    <div className="flex gap-2">
+                      <div className="relative">
+                        <Input
+                          type="color"
+                          className="w-16 h-10 p-1 cursor-pointer"
+                          value={settings.low_stock_text_color}
+                          onChange={(e) => handleSettingsChange('low_stock_text_color', e.target.value)}
+                          title="Text Color"
+                        />
+                        <span className="text-xs text-gray-500 absolute -bottom-5 left-0 whitespace-nowrap">Text</span>
+                      </div>
+                      <div className="relative">
+                        <Input
+                          type="color"
+                          className="w-16 h-10 p-1 cursor-pointer"
+                          value={settings.low_stock_bg_color}
+                          onChange={(e) => handleSettingsChange('low_stock_bg_color', e.target.value)}
+                          title="Background Color"
+                        />
+                        <span className="text-xs text-gray-500 absolute -bottom-5 left-0 whitespace-nowrap">Background</span>
+                      </div>
                     </div>
-                    <div>
-                      <Label htmlFor="low_stock_bg_color" className="text-xs">Background Color</Label>
-                      <Input
-                        id="low_stock_bg_color"
-                        type="color"
-                        value={settings.low_stock_bg_color}
-                        onChange={(e) => handleSettingsChange('low_stock_bg_color', e.target.value)}
-                        className="h-10 cursor-pointer"
-                      />
+                    <div
+                      className="ml-4 px-3 py-1.5 rounded text-sm font-medium"
+                      style={{
+                        backgroundColor: settings.low_stock_bg_color,
+                        color: settings.low_stock_text_color
+                      }}
+                    >
+                      Preview
                     </div>
                   </div>
                 </div>
