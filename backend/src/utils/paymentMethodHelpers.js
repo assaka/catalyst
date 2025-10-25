@@ -15,6 +15,8 @@ const { sequelize } = require('../database/connection');
  * @returns {Promise<Array>} Payment methods with translated fields
  */
 async function getPaymentMethodsWithTranslations(where = {}, lang = 'en') {
+  console.log('🔍 [Helper] getPaymentMethodsWithTranslations called with:', { where, lang });
+
   const whereConditions = Object.entries(where)
     .map(([key, value]) => {
       if (value === true || value === false) {
@@ -46,6 +48,9 @@ async function getPaymentMethodsWithTranslations(where = {}, lang = 'en') {
       pm.store_id,
       pm.created_at,
       pm.updated_at,
+      pm.name as pm_name,
+      pmt.name as pmt_name,
+      pmt_en.name as pmt_en_name,
       COALESCE(pmt.name, pmt_en.name, pm.name) as name,
       COALESCE(pmt.description, pmt_en.description, pm.description) as description
     FROM payment_methods pm
@@ -57,12 +62,31 @@ async function getPaymentMethodsWithTranslations(where = {}, lang = 'en') {
     ORDER BY pm.sort_order ASC, pm.created_at DESC
   `;
 
+  console.log('📋 [Helper] Executing SQL query with lang:', lang);
+
   const results = await sequelize.query(query, {
     replacements: { lang },
     type: sequelize.QueryTypes.SELECT
   });
 
-  return results;
+  console.log(`📦 [Helper] Query returned ${results.length} payment methods`);
+
+  if (results.length > 0) {
+    console.log('📝 [Helper] First payment method details:', {
+      id: results[0].id,
+      code: results[0].code,
+      pm_name: results[0].pm_name,
+      pmt_name: results[0].pmt_name,
+      pmt_en_name: results[0].pmt_en_name,
+      final_name: results[0].name,
+      lang: lang
+    });
+  }
+
+  // Remove debug fields before returning
+  const cleanResults = results.map(({ pm_name, pmt_name, pmt_en_name, ...rest }) => rest);
+
+  return cleanResults;
 }
 
 /**
