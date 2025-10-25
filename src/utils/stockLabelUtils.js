@@ -304,8 +304,10 @@ function processLabel(label, quantity, settings) {
   }
 
   // Process nested braces by finding outer {...} blocks first
+  // BUT skip single-level placeholders (they'll be handled later)
   let depth = 0;
   let start = -1;
+  const knownPlaceholders = ['quantity', 'item', 'unit', 'piece'];
 
   for (let i = 0; i < processedLabel.length; i++) {
     if (processedLabel[i] === '{') {
@@ -315,20 +317,27 @@ function processLabel(label, quantity, settings) {
       depth--;
       if (depth === 0 && start !== -1) {
         const content = processedLabel.substring(start + 1, i);
-        const processed = content
-          .replace(/\{quantity\}/gi, quantity)
-          .replace(/\{item\}/gi, quantity === 1 ? 'item' : 'items')
-          .replace(/\{unit\}/gi, quantity === 1 ? 'unit' : 'units')
-          .replace(/\{piece\}/gi, quantity === 1 ? 'piece' : 'pieces');
 
-        processedLabel = processedLabel.substring(0, start) + processed + processedLabel.substring(i + 1);
-        i = start + processed.length - 1;
+        // Check if this is a single placeholder (not a nested block)
+        const isSinglePlaceholder = knownPlaceholders.some(p => content.toLowerCase() === p);
+
+        // Only process if it's actually a nested block (contains inner braces)
+        if (!isSinglePlaceholder && content.includes('{')) {
+          const processed = content
+            .replace(/\{quantity\}/gi, quantity)
+            .replace(/\{item\}/gi, quantity === 1 ? 'item' : 'items')
+            .replace(/\{unit\}/gi, quantity === 1 ? 'unit' : 'units')
+            .replace(/\{piece\}/gi, quantity === 1 ? 'piece' : 'pieces');
+
+          processedLabel = processedLabel.substring(0, start) + processed + processedLabel.substring(i + 1);
+          i = start + processed.length - 1;
+        }
         start = -1;
       }
     }
   }
 
-  // Also replace any standalone placeholders that weren't in outer braces
+  // Now replace all standalone placeholders
   processedLabel = processedLabel
     .replace(/\{quantity\}/gi, quantity)
     .replace(/\{item\}/gi, quantity === 1 ? 'item' : 'items')

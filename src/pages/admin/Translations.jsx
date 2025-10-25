@@ -2199,6 +2199,115 @@ export default function Translations() {
                   </p>
                 </div>
 
+                {/* Extensive Help Documentation */}
+                <div className="mb-6 space-y-4 border-l-4 border-blue-500 bg-blue-50 p-4 rounded">
+                  <div>
+                    <h4 className="font-semibold text-blue-900 mb-2">How Stock Labels Work</h4>
+                    <p className="text-sm text-blue-800 mb-2">
+                      Stock labels are dynamic text messages displayed on products based on their inventory status.
+                      There are three types of labels:
+                    </p>
+                    <ul className="text-sm text-blue-800 list-disc list-inside space-y-1 ml-2">
+                      <li><strong>In Stock:</strong> Shown when a product has sufficient inventory</li>
+                      <li><strong>Out of Stock:</strong> Shown when a product has zero inventory</li>
+                      <li><strong>Low Stock:</strong> Shown when inventory falls below the threshold set in Catalog → Stock Settings</li>
+                    </ul>
+                  </div>
+
+                  <div className="border-t border-blue-200 pt-3">
+                    <h4 className="font-semibold text-blue-900 mb-2">Using Dynamic Placeholders</h4>
+                    <p className="text-sm text-blue-800 mb-2">
+                      Make your stock labels dynamic by using placeholders that automatically update based on actual inventory:
+                    </p>
+                    <div className="bg-white border border-blue-200 rounded p-3 text-sm space-y-2">
+                      <div>
+                        <code className="bg-blue-100 text-blue-900 px-2 py-0.5 rounded font-mono">{'{quantity}'}</code>
+                        <span className="text-gray-700 ml-2">- The actual stock number (e.g., 1, 5, 20)</span>
+                      </div>
+                      <div>
+                        <code className="bg-blue-100 text-blue-900 px-2 py-0.5 rounded font-mono">{'{item}'}</code>
+                        <span className="text-gray-700 ml-2">- Auto-pluralizes: "item" (quantity=1) or "items" (quantity>1)</span>
+                      </div>
+                      <div>
+                        <code className="bg-blue-100 text-blue-900 px-2 py-0.5 rounded font-mono">{'{unit}'}</code>
+                        <span className="text-gray-700 ml-2">- Auto-pluralizes: "unit" (quantity=1) or "units" (quantity>1)</span>
+                      </div>
+                      <div>
+                        <code className="bg-blue-100 text-blue-900 px-2 py-0.5 rounded font-mono">{'{piece}'}</code>
+                        <span className="text-gray-700 ml-2">- Auto-pluralizes: "piece" (quantity=1) or "pieces" (quantity>1)</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="border-t border-blue-200 pt-3">
+                    <h4 className="font-semibold text-blue-900 mb-2">Nested Brace Format for Smart Privacy</h4>
+                    <p className="text-sm text-blue-800 mb-2">
+                      Use nested braces <code className="bg-blue-100 px-1 rounded">{'{...}'}</code> to create flexible text blocks that can be automatically hidden when the "Hide Stock Quantity" setting is enabled:
+                    </p>
+                    <div className="bg-white border border-blue-200 rounded p-3 text-sm space-y-3">
+                      <div>
+                        <div className="font-medium text-gray-900 mb-1">Example 1: Optional quantity display</div>
+                        <div className="font-mono text-xs bg-gray-50 p-2 rounded mb-1">
+                          In Stock <code className="bg-blue-100 text-blue-900 px-1">{'{({quantity} available)}'}</code>
+                        </div>
+                        <div className="text-gray-600">
+                          • Shows as: <span className="text-green-700 font-medium">"In Stock (5 available)"</span> when quantity visible<br/>
+                          • Shows as: <span className="text-green-700 font-medium">"In Stock"</span> when quantity hidden
+                        </div>
+                      </div>
+                      <div>
+                        <div className="font-medium text-gray-900 mb-1">Example 2: Flexible low stock warning</div>
+                        <div className="font-mono text-xs bg-gray-50 p-2 rounded mb-1">
+                          Low stock<code className="bg-blue-100 text-blue-900 px-1">{', {just {quantity} {item} left}'}</code>
+                        </div>
+                        <div className="text-gray-600">
+                          • Shows as: <span className="text-orange-700 font-medium">"Low stock, just 2 items left"</span> when quantity visible<br/>
+                          • Shows as: <span className="text-orange-700 font-medium">"Low stock"</span> when quantity hidden
+                        </div>
+                      </div>
+                      <div>
+                        <div className="font-medium text-gray-900 mb-1">Example 3: Urgent messaging</div>
+                        <div className="font-mono text-xs bg-gray-50 p-2 rounded mb-1">
+                          Hurry! <code className="bg-blue-100 text-blue-900 px-1">{'{Only {quantity} {piece} remaining}'}</code>
+                        </div>
+                        <div className="text-gray-600">
+                          • Shows as: <span className="text-orange-700 font-medium">"Hurry! Only 1 piece remaining"</span> when quantity visible<br/>
+                          • Shows as: <span className="text-orange-700 font-medium">"Hurry!"</span> when quantity hidden
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="border-t border-blue-200 pt-3">
+                    <h4 className="font-semibold text-blue-900 mb-2">Multi-Language Best Practices</h4>
+                    <ul className="text-sm text-blue-800 list-disc list-inside space-y-1 ml-2">
+                      <li>Translate the entire message, not just placeholders - placeholders work the same in all languages</li>
+                      <li>Consider cultural differences: Some languages may prefer more formal or urgent messaging</li>
+                      <li>Test your translations with both singular and plural quantities (1 item vs. 5 items)</li>
+                      <li>Keep nested brace structure consistent across all languages for proper privacy handling</li>
+                      <li>Example for Dutch: <code className="bg-blue-100 px-1 rounded">Op voorraad {'{({quantity} beschikbaar)}'}</code></li>
+                      <li>Example for German: <code className="bg-blue-100 px-1 rounded">Auf Lager {'{({quantity} verfügbar)}'}</code></li>
+                    </ul>
+                  </div>
+
+                  <div className="border-t border-blue-200 pt-3">
+                    <h4 className="font-semibold text-blue-900 mb-2">Configuration Notes</h4>
+                    <ul className="text-sm text-blue-800 list-disc list-inside space-y-1 ml-2">
+                      <li>Stock label colors are configured in <strong>Catalog → Stock Settings</strong></li>
+                      <li>The "Show Stock Labels" toggle in Stock Settings controls whether labels display at all</li>
+                      <li>The "Hide Stock Quantity" toggle automatically removes any nested blocks containing <code className="bg-blue-100 px-1">{'{quantity}'}</code></li>
+                      <li>Low stock threshold (when low stock label appears) is set in Stock Settings</li>
+                      <li>Changes take effect immediately after saving - no page reload needed</li>
+                    </ul>
+                  </div>
+
+                  <div className="bg-blue-100 border border-blue-300 rounded p-3 mt-3">
+                    <p className="text-xs text-blue-900">
+                      <strong>💡 Pro Tip:</strong> Start with simple labels and gradually add placeholders as needed. Test with different quantity values to ensure proper pluralization and formatting in all languages.
+                    </p>
+                  </div>
+                </div>
+
                 {loadingStockSettings ? (
                   <div className="py-8 text-center">
                     <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-2"></div>

@@ -74,26 +74,6 @@ export default function StockSettings() {
       
       const storeSettings = selectedStore.settings || {};
 
-      // Load English labels from translations table
-      let englishLabels = {
-        in_stock_label: 'In Stock',
-        out_of_stock_label: 'Out of Stock',
-        low_stock_label: 'Low stock, {just {quantity} left}'
-      };
-
-      try {
-        const translationsResponse = await api.get('/translations/ui-labels?lang=en');
-        if (translationsResponse?.success && translationsResponse.data?.labels?.stock) {
-          englishLabels = {
-            in_stock_label: translationsResponse.data.labels.stock.in_stock_label || englishLabels.in_stock_label,
-            out_of_stock_label: translationsResponse.data.labels.stock.out_of_stock_label || englishLabels.out_of_stock_label,
-            low_stock_label: translationsResponse.data.labels.stock.low_stock_label || englishLabels.low_stock_label
-          };
-        }
-      } catch (error) {
-        console.error('Failed to load stock label translations:', error);
-      }
-
       setSettings({
         id: selectedStore.id,
         name: selectedStore.name,
@@ -102,9 +82,6 @@ export default function StockSettings() {
         display_out_of_stock_variants: storeSettings.hasOwnProperty('display_out_of_stock_variants') ? storeSettings.display_out_of_stock_variants : true,
         hide_stock_quantity: storeSettings.hasOwnProperty('hide_stock_quantity') ? storeSettings.hide_stock_quantity : false,
         display_low_stock_threshold: storeSettings.hasOwnProperty('display_low_stock_threshold') ? storeSettings.display_low_stock_threshold : 0,
-        in_stock_label: englishLabels.in_stock_label,
-        out_of_stock_label: englishLabels.out_of_stock_label,
-        low_stock_label: englishLabels.low_stock_label,
         show_stock_label: storeSettings.stock_settings?.show_stock_label !== undefined ? storeSettings.stock_settings.show_stock_label : true,
         // Color settings for each stock type
         in_stock_text_color: storeSettings.stock_settings?.in_stock_text_color || '#166534',
@@ -162,39 +139,6 @@ export default function StockSettings() {
       };
 
       const result = await retryApiCall(() => Store.update(storeId, payload));
-
-      // Also save English labels to translations table
-      try {
-        const stockLabels = [
-          {
-            key: 'stock.in_stock_label',
-            language_code: 'en',
-            value: settings.in_stock_label || 'In Stock',
-            category: 'stock',
-            type: 'system'
-          },
-          {
-            key: 'stock.out_of_stock_label',
-            language_code: 'en',
-            value: settings.out_of_stock_label || 'Out of Stock',
-            category: 'stock',
-            type: 'system'
-          },
-          {
-            key: 'stock.low_stock_label',
-            language_code: 'en',
-            value: settings.low_stock_label || 'Low stock, {just {quantity} left}',
-            category: 'stock',
-            type: 'system'
-          }
-        ];
-
-        await api.post('/translations/ui-labels/bulk', { labels: stockLabels });
-        console.log('Stock labels saved to translations table');
-      } catch (translationError) {
-        console.error('Failed to save stock labels to translations table:', translationError);
-        // Don't fail the entire save if translation sync fails
-      }
 
       // Clear all cache for instant updates
       clearStorefrontCache(storeId, ['stores', 'products']);
@@ -362,141 +306,97 @@ export default function StockSettings() {
                 </div>
               </div>
 
-              <div className="space-y-4 pt-4 border-t">
-                  <div>
-                    <Label htmlFor="in_stock_label">"In Stock" Label</Label>
-                    <Input
-                      id="in_stock_label"
-                      value={settings.in_stock_label}
-                      onChange={(e) => handleSettingsChange('in_stock_label', e.target.value)}
-                    />
-                    <p className="text-sm text-gray-500 mt-1">
-                      Text to display when a product is in stock. Use <code>{'{quantity}'}</code> blocks for flexible formatting.
-                    </p>
-                    <p className="text-xs text-gray-400 mt-1">
-                      Examples: <code>In Stock {'{({quantity} available)}'}</code> → "In Stock (5 available)" | <code>Available {'{({quantity} {item})}'}</code> → "Available (1 item)"
-                    </p>
-                    <div className="grid grid-cols-2 gap-4 mt-3">
-                      <div>
-                        <Label htmlFor="in_stock_text_color" className="text-xs">Text Color</Label>
-                        <Input
-                          id="in_stock_text_color"
-                          type="color"
-                          value={settings.in_stock_text_color}
-                          onChange={(e) => handleSettingsChange('in_stock_text_color', e.target.value)}
-                          className="h-10 cursor-pointer"
-                        />
-                      </div>
-                      <div>
-                        <Label htmlFor="in_stock_bg_color" className="text-xs">Background Color</Label>
-                        <Input
-                          id="in_stock_bg_color"
-                          type="color"
-                          value={settings.in_stock_bg_color}
-                          onChange={(e) => handleSettingsChange('in_stock_bg_color', e.target.value)}
-                          className="h-10 cursor-pointer"
-                        />
-                      </div>
-                    </div>
-                  </div>
-
-                  <div>
-                    <Label htmlFor="out_of_stock_label">"Out of Stock" Label</Label>
-                    <Input
-                      id="out_of_stock_label"
-                      value={settings.out_of_stock_label}
-                      onChange={(e) => handleSettingsChange('out_of_stock_label', e.target.value)}
-                    />
-                    <p className="text-sm text-gray-500 mt-1">
-                      Text to display when a product is out of stock.
-                    </p>
-                    <div className="grid grid-cols-2 gap-4 mt-3">
-                      <div>
-                        <Label htmlFor="out_of_stock_text_color" className="text-xs">Text Color</Label>
-                        <Input
-                          id="out_of_stock_text_color"
-                          type="color"
-                          value={settings.out_of_stock_text_color}
-                          onChange={(e) => handleSettingsChange('out_of_stock_text_color', e.target.value)}
-                          className="h-10 cursor-pointer"
-                        />
-                      </div>
-                      <div>
-                        <Label htmlFor="out_of_stock_bg_color" className="text-xs">Background Color</Label>
-                        <Input
-                          id="out_of_stock_bg_color"
-                          type="color"
-                          value={settings.out_of_stock_bg_color}
-                          onChange={(e) => handleSettingsChange('out_of_stock_bg_color', e.target.value)}
-                          className="h-10 cursor-pointer"
-                        />
-                      </div>
-                    </div>
-                  </div>
-                  <div>
-                    <Label htmlFor="low_stock_label">"Low Stock" Label</Label>
-                    <Input
-                      id="low_stock_label"
-                      value={settings.low_stock_label}
-                      onChange={(e) => handleSettingsChange('low_stock_label', e.target.value)}
-                    />
-                    <p className="text-sm text-gray-500 mt-1">
-                      Text for low stock warning. Use <code>{'{quantity}'}</code> blocks for flexible formatting.
-                    </p>
-                    <p className="text-xs text-gray-400 mt-1">
-                      Examples: <code>Low stock, {'{just {quantity} left}'}</code> → "Low stock, just 2 left" | <code>Hurry! {'{Only {quantity} {piece} remaining}'}</code> → "Hurry! Only 1 piece remaining"
-                    </p>
-                    <div className="grid grid-cols-2 gap-4 mt-3">
-                      <div>
-                        <Label htmlFor="low_stock_text_color" className="text-xs">Text Color</Label>
-                        <Input
-                          id="low_stock_text_color"
-                          type="color"
-                          value={settings.low_stock_text_color}
-                          onChange={(e) => handleSettingsChange('low_stock_text_color', e.target.value)}
-                          className="h-10 cursor-pointer"
-                        />
-                      </div>
-                      <div>
-                        <Label htmlFor="low_stock_bg_color" className="text-xs">Background Color</Label>
-                        <Input
-                          id="low_stock_bg_color"
-                          type="color"
-                          value={settings.low_stock_bg_color}
-                          onChange={(e) => handleSettingsChange('low_stock_bg_color', e.target.value)}
-                          className="h-10 cursor-pointer"
-                        />
-                      </div>
-                    </div>
-                  </div>
+              {/* Stock Label Translation Message */}
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mt-6">
+                <h4 className="font-semibold text-blue-900 mb-2">Stock Label Translations</h4>
+                <p className="text-blue-700 mb-3">
+                  Stock label text and translations (In Stock, Out of Stock, Low Stock) are now managed in the <strong>Layout → Translations</strong> page under the "Stock Labels" section.
+                </p>
+                <p className="text-sm text-blue-600">
+                  You can customize label text for all languages, use dynamic placeholders like {'{quantity}'}, and configure multi-language support from the Translations page.
+                </p>
               </div>
 
-              {/* Placeholder Help Section */}
-              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mt-6">
-                <h4 className="font-semibold text-blue-900 mb-3">Available Placeholders & Formatting</h4>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
-                  <div>
-                    <h5 className="font-medium text-blue-800 mb-2">Block Format</h5>
-                    <p className="text-blue-700 mb-2">Use <code className="bg-blue-100 px-1 rounded">{'{...}'}</code> blocks to create flexible text that can be hidden when stock quantities are hidden.</p>
-                    <div className="space-y-1 text-blue-600">
-                      <div><code className="bg-blue-100 px-1 rounded">{'{just {quantity} left}'}</code> → "just 5 left"</div>
-                      <div><code className="bg-blue-100 px-1 rounded">{'{({quantity} available)}'}</code> → "(3 available)"</div>
+              {/* Stock Label Color Settings */}
+              <div className="space-y-4 pt-4 border-t">
+                <h4 className="font-medium text-gray-900 mb-3">Stock Label Colors</h4>
+
+                <div>
+                  <Label className="font-medium">"In Stock" Colors</Label>
+                  <div className="grid grid-cols-2 gap-4 mt-2">
+                    <div>
+                      <Label htmlFor="in_stock_text_color" className="text-xs">Text Color</Label>
+                      <Input
+                        id="in_stock_text_color"
+                        type="color"
+                        value={settings.in_stock_text_color}
+                        onChange={(e) => handleSettingsChange('in_stock_text_color', e.target.value)}
+                        className="h-10 cursor-pointer"
+                      />
                     </div>
-                  </div>
-                  <div>
-                    <h5 className="font-medium text-blue-800 mb-2">Available Placeholders</h5>
-                    <div className="space-y-1 text-blue-600">
-                      <div><code className="bg-blue-100 px-1 rounded">{'{quantity}'}</code> - Stock number (1, 2, 5, etc.)</div>
-                      <div><code className="bg-blue-100 px-1 rounded">{'{item}'}</code> - "item" or "items" (auto-plural)</div>
-                      <div><code className="bg-blue-100 px-1 rounded">{'{unit}'}</code> - "unit" or "units" (auto-plural)</div>
-                      <div><code className="bg-blue-100 px-1 rounded">{'{piece}'}</code> - "piece" or "pieces" (auto-plural)</div>
+                    <div>
+                      <Label htmlFor="in_stock_bg_color" className="text-xs">Background Color</Label>
+                      <Input
+                        id="in_stock_bg_color"
+                        type="color"
+                        value={settings.in_stock_bg_color}
+                        onChange={(e) => handleSettingsChange('in_stock_bg_color', e.target.value)}
+                        className="h-10 cursor-pointer"
+                      />
                     </div>
                   </div>
                 </div>
-                <div className="mt-4 p-3 bg-blue-100 rounded border-l-4 border-blue-400">
-                  <p className="text-blue-800 text-sm">
-                    <strong>Smart Privacy:</strong> When "Hide Stock Quantity" is enabled, entire blocks containing <code>{'{quantity}'}</code> are automatically removed, leaving clean text.
-                  </p>
+
+                <div>
+                  <Label className="font-medium">"Out of Stock" Colors</Label>
+                  <div className="grid grid-cols-2 gap-4 mt-2">
+                    <div>
+                      <Label htmlFor="out_of_stock_text_color" className="text-xs">Text Color</Label>
+                      <Input
+                        id="out_of_stock_text_color"
+                        type="color"
+                        value={settings.out_of_stock_text_color}
+                        onChange={(e) => handleSettingsChange('out_of_stock_text_color', e.target.value)}
+                        className="h-10 cursor-pointer"
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="out_of_stock_bg_color" className="text-xs">Background Color</Label>
+                      <Input
+                        id="out_of_stock_bg_color"
+                        type="color"
+                        value={settings.out_of_stock_bg_color}
+                        onChange={(e) => handleSettingsChange('out_of_stock_bg_color', e.target.value)}
+                        className="h-10 cursor-pointer"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                <div>
+                  <Label className="font-medium">"Low Stock" Colors</Label>
+                  <div className="grid grid-cols-2 gap-4 mt-2">
+                    <div>
+                      <Label htmlFor="low_stock_text_color" className="text-xs">Text Color</Label>
+                      <Input
+                        id="low_stock_text_color"
+                        type="color"
+                        value={settings.low_stock_text_color}
+                        onChange={(e) => handleSettingsChange('low_stock_text_color', e.target.value)}
+                        className="h-10 cursor-pointer"
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="low_stock_bg_color" className="text-xs">Background Color</Label>
+                      <Input
+                        id="low_stock_bg_color"
+                        type="color"
+                        value={settings.low_stock_bg_color}
+                        onChange={(e) => handleSettingsChange('low_stock_bg_color', e.target.value)}
+                        className="h-10 cursor-pointer"
+                      />
+                    </div>
+                  </div>
                 </div>
               </div>
             </CardContent>
