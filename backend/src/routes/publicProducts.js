@@ -108,7 +108,7 @@ router.get('/', async (req, res) => {
       }
     }
 
-    // Include attributeValues with associations
+    // Include attributeValues with associations (WITHOUT translations - using normalized tables)
     const { count, rows } = await Product.findAndCountAll({
       where,
       limit: parseInt(limit),
@@ -122,12 +122,12 @@ router.get('/', async (req, res) => {
           include: [
             {
               model: Attribute,
-              attributes: ['id', 'code', 'type', 'translations', 'is_filterable']
+              attributes: ['id', 'code', 'type', 'is_filterable'] // NO translations - using normalized table
             },
             {
               model: AttributeValue,
               as: 'value',
-              attributes: ['id', 'code', 'translations', 'metadata']
+              attributes: ['id', 'code', 'metadata'] // NO translations - using normalized table
             }
           ]
         }
@@ -138,10 +138,44 @@ router.get('/', async (req, res) => {
     const lang = getLanguageFromRequest(req);
     console.log('🌍 Public Products: Requesting language:', lang);
 
-    // Apply translations from normalized table
+    // Apply product translations from normalized table
     const productsWithTranslations = await applyProductTranslationsToMany(rows, lang);
 
-    // Transform products to include formatted attributes
+    // Collect all attribute and attribute value IDs
+    const attributeIds = new Set();
+    const attributeValueIds = new Set();
+
+    productsWithTranslations.forEach(product => {
+      if (product.attributeValues && Array.isArray(product.attributeValues)) {
+        product.attributeValues.forEach(pav => {
+          if (pav.Attribute) {
+            attributeIds.add(pav.Attribute.id);
+          }
+          if (pav.value_id && pav.value) {
+            attributeValueIds.add(pav.value.id);
+          }
+        });
+      }
+    });
+
+    // Fetch attribute translations from normalized tables
+    const attributeTranslations = attributeIds.size > 0
+      ? await getAttributesWithTranslations({ id: Array.from(attributeIds) })
+      : [];
+
+    const valueTranslations = attributeValueIds.size > 0
+      ? await getAttributeValuesWithTranslations({ id: Array.from(attributeValueIds) })
+      : [];
+
+    // Create lookup maps
+    const attrTransMap = new Map(
+      attributeTranslations.map(attr => [attr.id, attr.translations])
+    );
+    const valTransMap = new Map(
+      valueTranslations.map(val => [val.id, val.translations])
+    );
+
+    // Transform products to include formatted attributes with normalized translations
     const productsWithAttributes = productsWithTranslations.map(productData => {
 
       // Format attributes for frontend
@@ -150,17 +184,20 @@ router.get('/', async (req, res) => {
           const attr = pav.Attribute;
           if (!attr) return null;
 
-          const attrLabel = attr.translations?.[lang]?.label ||
-                           attr.translations?.en?.label ||
+          // Get translations from normalized table
+          const attrTranslations = attrTransMap.get(attr.id) || {};
+          const attrLabel = attrTranslations[lang]?.label ||
+                           attrTranslations.en?.label ||
                            attr.code;
 
           let value, valueLabel, metadata = null;
 
           if (pav.value_id && pav.value) {
-            // Select/multiselect attribute
+            // Select/multiselect attribute - get translation from normalized table
             value = pav.value.code;
-            valueLabel = pav.value.translations?.[lang]?.label ||
-                        pav.value.translations?.en?.label ||
+            const valTranslations = valTransMap.get(pav.value.id) || {};
+            valueLabel = valTranslations[lang]?.label ||
+                        valTranslations.en?.label ||
                         pav.value.code;
             metadata = pav.value.metadata || null;
           } else {
@@ -217,12 +254,12 @@ router.get('/:id', async (req, res) => {
           include: [
             {
               model: Attribute,
-              attributes: ['id', 'code', 'type', 'translations']
+              attributes: ['id', 'code', 'type'] // NO translations - using normalized table
             },
             {
               model: AttributeValue,
               as: 'value',
-              attributes: ['id', 'code', 'translations', 'metadata']
+              attributes: ['id', 'code', 'metadata'] // NO translations - using normalized table
             }
           ]
         }
@@ -236,26 +273,61 @@ router.get('/:id', async (req, res) => {
       });
     }
 
-    // Apply translations from normalized table
+    // Apply product translations from normalized table
     const productData = await applyProductTranslations(product, lang);
 
-    // Format attributes for frontend
+    // Collect attribute and attribute value IDs
+    const attributeIds = new Set();
+    const attributeValueIds = new Set();
+
+    if (productData.attributeValues && Array.isArray(productData.attributeValues)) {
+      productData.attributeValues.forEach(pav => {
+        if (pav.Attribute) {
+          attributeIds.add(pav.Attribute.id);
+        }
+        if (pav.value_id && pav.value) {
+          attributeValueIds.add(pav.value.id);
+        }
+      });
+    }
+
+    // Fetch attribute translations from normalized tables
+    const attributeTranslations = attributeIds.size > 0
+      ? await getAttributesWithTranslations({ id: Array.from(attributeIds) })
+      : [];
+
+    const valueTranslations = attributeValueIds.size > 0
+      ? await getAttributeValuesWithTranslations({ id: Array.from(attributeValueIds) })
+      : [];
+
+    // Create lookup maps
+    const attrTransMap = new Map(
+      attributeTranslations.map(attr => [attr.id, attr.translations])
+    );
+    const valTransMap = new Map(
+      valueTranslations.map(val => [val.id, val.translations])
+    );
+
+    // Format attributes for frontend with normalized translations
     if (productData.attributeValues && Array.isArray(productData.attributeValues)) {
       productData.attributes = productData.attributeValues.map(pav => {
         const attr = pav.Attribute;
         if (!attr) return null;
 
-        const attrLabel = attr.translations?.[lang]?.label ||
-                         attr.translations?.en?.label ||
+        // Get translations from normalized table
+        const attrTranslations = attrTransMap.get(attr.id) || {};
+        const attrLabel = attrTranslations[lang]?.label ||
+                         attrTranslations.en?.label ||
                          attr.code;
 
         let value, valueLabel, metadata = null;
 
         if (pav.value_id && pav.value) {
-          // Select/multiselect attribute
+          // Select/multiselect attribute - get translation from normalized table
           value = pav.value.code;
-          valueLabel = pav.value.translations?.[lang]?.label ||
-                      pav.value.translations?.en?.label ||
+          const valTranslations = valTransMap.get(pav.value.id) || {};
+          valueLabel = valTranslations[lang]?.label ||
+                      valTranslations.en?.label ||
                       pav.value.code;
           metadata = pav.value.metadata || null;
         } else {
