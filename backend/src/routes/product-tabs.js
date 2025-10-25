@@ -52,9 +52,7 @@ router.get('/', async (req, res) => {
       });
     }
 
-    // Check if this is a public request - return just the array for consistency with other public APIs
-    const isPublicRequest = req.originalUrl.includes('/api/public/product-tabs');
-
+    // Return format based on request type
     if (isPublicRequest) {
       // Return just the array for public requests (for compatibility with StorefrontBaseEntity)
       res.json(productTabs);
