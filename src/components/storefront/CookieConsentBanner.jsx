@@ -245,6 +245,15 @@ export default function CookieConsentBanner() {
     translationsData: cookieSettings?.translations
   });
 
+  // Debug: Log sample translation access
+  if (cookieSettings?.translations) {
+    console.log('🍪 Sample translation test:', {
+      necessary_name_en: cookieSettings.translations.en?.necessary_name,
+      necessary_name_nl: cookieSettings.translations.nl?.necessary_name,
+      banner_text_nl: cookieSettings.translations.nl?.banner_text
+    });
+  }
+
   // Helper function to get translated text from translations JSON (no fallback)
   const getTranslatedText = (field, defaultValue = '') => {
     const translations = cookieSettings?.translations;
