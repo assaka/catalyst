@@ -205,15 +205,15 @@ export function getStockLabel(product, settings = {}, lang = null, globalTransla
   // Stock settings are required - no fallbacks needed as StockSettings.jsx handles defaults
   const stockSettings = settings?.stock_settings || {};
 
-  // Helper function to get translated label
+  // Helper function to get translated label from translations table only
   const getTranslatedLabel = (labelField) => {
-    // Use global translations table
+    // Use global translations table - no fallback
     if (globalTranslations && globalTranslations.stock && globalTranslations.stock[labelField]) {
       return globalTranslations.stock[labelField];
     }
 
-    // Fallback to direct label field from stockSettings (for default/English labels)
-    return stockSettings[labelField] || 'No Stock Label';
+    // No translation found
+    return 'No Stock Label';
   };
 
   // Handle infinite stock

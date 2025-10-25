@@ -73,6 +73,26 @@ export default function StockSettings() {
       
       const storeSettings = selectedStore.settings || {};
 
+      // Load English labels from translations table
+      let englishLabels = {
+        in_stock_label: 'In Stock',
+        out_of_stock_label: 'Out of Stock',
+        low_stock_label: 'Low stock, {just {quantity} left}'
+      };
+
+      try {
+        const translationsResponse = await api.get('/translations/ui-labels?lang=en');
+        if (translationsResponse?.success && translationsResponse.data?.labels?.stock) {
+          englishLabels = {
+            in_stock_label: translationsResponse.data.labels.stock.in_stock_label || englishLabels.in_stock_label,
+            out_of_stock_label: translationsResponse.data.labels.stock.out_of_stock_label || englishLabels.out_of_stock_label,
+            low_stock_label: translationsResponse.data.labels.stock.low_stock_label || englishLabels.low_stock_label
+          };
+        }
+      } catch (error) {
+        console.error('Failed to load stock label translations:', error);
+      }
+
       setSettings({
         id: selectedStore.id,
         name: selectedStore.name,
@@ -81,9 +101,9 @@ export default function StockSettings() {
         display_out_of_stock_variants: storeSettings.hasOwnProperty('display_out_of_stock_variants') ? storeSettings.display_out_of_stock_variants : true,
         hide_stock_quantity: storeSettings.hasOwnProperty('hide_stock_quantity') ? storeSettings.hide_stock_quantity : false,
         display_low_stock_threshold: storeSettings.hasOwnProperty('display_low_stock_threshold') ? storeSettings.display_low_stock_threshold : 0,
-        in_stock_label: storeSettings.stock_settings?.in_stock_label || 'In Stock',
-        out_of_stock_label: storeSettings.stock_settings?.out_of_stock_label || 'Out of Stock',
-        low_stock_label: storeSettings.stock_settings?.low_stock_label || 'Low stock, {just {quantity} left}',
+        in_stock_label: englishLabels.in_stock_label,
+        out_of_stock_label: englishLabels.out_of_stock_label,
+        low_stock_label: englishLabels.low_stock_label,
         show_stock_label: storeSettings.stock_settings?.show_stock_label !== undefined ? storeSettings.stock_settings.show_stock_label : true,
         // Color settings for each stock type
         in_stock_text_color: storeSettings.stock_settings?.in_stock_text_color || '#166534',
@@ -128,11 +148,8 @@ export default function StockSettings() {
           hide_stock_quantity: settings.hide_stock_quantity,
           display_low_stock_threshold: settings.display_low_stock_threshold,
           stock_settings: {
-            in_stock_label: settings.in_stock_label || 'In Stock',
-            out_of_stock_label: settings.out_of_stock_label || 'Out of Stock',
-            low_stock_label: settings.low_stock_label || 'Low stock, {just {quantity} left}',
             show_stock_label: settings.show_stock_label !== undefined ? settings.show_stock_label : true,
-            // Save color settings
+            // Only save color settings to stores.settings (labels go to translations table)
             in_stock_text_color: settings.in_stock_text_color || '#166534',
             in_stock_bg_color: settings.in_stock_bg_color || '#dcfce7',
             out_of_stock_text_color: settings.out_of_stock_text_color || '#991b1b',

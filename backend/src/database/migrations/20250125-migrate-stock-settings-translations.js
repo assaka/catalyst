@@ -93,32 +93,58 @@ module.exports = {
 
       console.log(`✅ Successfully migrated ${migratedCount} stock label translations`);
 
-      // Clean up old translations from stores.settings.stock_settings
-      console.log('\n🧹 Cleaning up old translations from stores.settings...');
+      // Clean up old data from stores.settings.stock_settings
+      console.log('\n🧹 Cleaning up old data from stores.settings...');
 
-      for (const store of stores) {
+      // Get all stores
+      const [allStores] = await sequelize.query(`
+        SELECT id, settings FROM stores
+      `);
+
+      for (const store of allStores) {
         try {
           const settings = store.settings || {};
-          if (settings.stock_settings && settings.stock_settings.translations) {
+          let modified = false;
+
+          if (settings.stock_settings) {
             // Remove the translations field
-            delete settings.stock_settings.translations;
+            if (settings.stock_settings.translations) {
+              delete settings.stock_settings.translations;
+              modified = true;
+            }
 
-            await sequelize.query(`
-              UPDATE stores
-              SET settings = :settings
-              WHERE id = :id
-            `, {
-              replacements: { settings: JSON.stringify(settings), id: store.id }
-            });
+            // Remove individual label fields (now only in translations table)
+            if (settings.stock_settings.in_stock_label) {
+              delete settings.stock_settings.in_stock_label;
+              modified = true;
+            }
+            if (settings.stock_settings.out_of_stock_label) {
+              delete settings.stock_settings.out_of_stock_label;
+              modified = true;
+            }
+            if (settings.stock_settings.low_stock_label) {
+              delete settings.stock_settings.low_stock_label;
+              modified = true;
+            }
 
-            console.log(`  ✅ Cleaned up store: ${store.id}`);
+            if (modified) {
+              await sequelize.query(`
+                UPDATE stores
+                SET settings = :settings
+                WHERE id = :id
+              `, {
+                replacements: { settings: JSON.stringify(settings), id: store.id }
+              });
+
+              console.log(`  ✅ Cleaned up store: ${store.id}`);
+            }
           }
         } catch (error) {
           console.error(`  ❌ Error cleaning store ${store.id}:`, error.message);
         }
       }
 
-      console.log('✅ Cleanup completed');
+      console.log('✅ Cleanup completed - all label fields removed from stores.settings');
 
     } catch (error) {
       console.error('❌ Migration error:', error);
@@ -149,6 +175,9 @@ module.exports = {
         settings.stock_settings = settings.stock_settings || {};
         settings.stock_settings.translations = {};
 
+        // Also restore individual label fields for backward compatibility
+        const englishLabels = {};
+
         // Rebuild translations object
         translations.forEach(t => {
           const fieldKey = t.key.replace('stock.', '');
@@ -156,7 +185,17 @@ module.exports = {
             settings.stock_settings.translations[t.language_code] = {};
           }
           settings.stock_settings.translations[t.language_code][fieldKey] = t.value;
+
+          // Store English labels separately
+          if (t.language_code === 'en') {
+            englishLabels[fieldKey] = t.value;
+          }
         });
+
+        // Restore individual English label fields
+        if (englishLabels.in_stock_label) settings.stock_settings.in_stock_label = englishLabels.in_stock_label;
+        if (englishLabels.out_of_stock_label) settings.stock_settings.out_of_stock_label = englishLabels.out_of_stock_label;
+        if (englishLabels.low_stock_label) settings.stock_settings.low_stock_label = englishLabels.low_stock_label;
 
         await sequelize.query(`
           UPDATE stores
@@ -167,7 +206,7 @@ module.exports = {
         });
       }
 
-      console.log('✅ Translations restored to stores.settings');
+      console.log('✅ Translations and label fields restored to stores.settings');
     }
 
     // Remove stock translations from translations table
