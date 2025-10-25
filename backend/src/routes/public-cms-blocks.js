@@ -1,17 +1,17 @@
 const express = require('express');
-const { sequelize } = require('../database/connection');
-const { QueryTypes } = require('sequelize');
+const { getLanguageFromRequest } = require('../utils/languageUtils');
+const { getCMSBlocksWithTranslations } = require('../utils/cmsHelpers');
 const router = express.Router();
 
 // @route   GET /api/public-cms-blocks
-// @desc    Get active CMS blocks for public display (clean version)
+// @desc    Get active CMS blocks for public display with translations
 // @access  Public
 router.get('/', async (req, res) => {
   try {
     const { store_id } = req.query;
-    
+
     console.log('🎯 Public CMS Blocks: Request received', { store_id });
-    
+
     if (!store_id) {
       return res.status(400).json({
         success: false,
@@ -19,29 +19,28 @@ router.get('/', async (req, res) => {
       });
     }
 
-    console.log('🎯 Public CMS Blocks: Executing query...');
-    
-    // Use the exact same working query from simple test
-    const blocks = await sequelize.query(`
-      SELECT 
-        id::text as id,
-        title,
-        identifier,
-        content,
-        placement,
-        sort_order,
-        is_active
-      FROM cms_blocks 
-      WHERE store_id::text = $1
-      AND is_active = true
-      ORDER BY sort_order ASC, identifier ASC
-    `, {
-      bind: [store_id],
-      type: QueryTypes.SELECT
-    });
+    const lang = getLanguageFromRequest(req);
+    console.log('🌍 Public CMS Blocks: Requesting language:', lang);
+
+    // Build where conditions
+    const where = {
+      store_id: store_id,
+      is_active: true
+    };
+
+    // Get CMS blocks with translations from normalized table
+    const blocks = await getCMSBlocksWithTranslations(where, lang);
 
     console.log('🎯 Public CMS Blocks: Query successful, found:', blocks.length, 'blocks');
-    
+    if (blocks.length > 0) {
+      console.log('📝 First CMS block:', {
+        identifier: blocks[0].identifier,
+        title: blocks[0].title,
+        has_content: !!blocks[0].content,
+        lang: lang
+      });
+    }
+
     res.json({
       success: true,
       data: blocks

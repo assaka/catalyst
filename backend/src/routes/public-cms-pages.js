@@ -1,10 +1,10 @@
 const express = require('express');
-const { sequelize } = require('../database/connection');
-const { QueryTypes } = require('sequelize');
+const { getLanguageFromRequest } = require('../utils/languageUtils');
+const { getCMSPagesWithTranslations } = require('../utils/cmsHelpers');
 const router = express.Router();
 
 // @route   GET /api/public-cms-pages
-// @desc    Get active CMS pages for public display
+// @desc    Get active CMS pages for public display with translations
 // @access  Public
 router.get('/', async (req, res) => {
   try {
@@ -19,43 +19,31 @@ router.get('/', async (req, res) => {
       });
     }
 
-    console.log('🎯 Public CMS Pages: Executing query...');
+    const lang = getLanguageFromRequest(req);
+    console.log('🌍 Public CMS Pages: Requesting language:', lang);
 
-    // Query to get CMS page by slug
-    const whereConditions = ['slug = $1', 'is_active = true'];
-    const bindings = [slug];
+    // Build where conditions
+    const where = {
+      slug: slug,
+      is_active: true
+    };
 
     if (store_id) {
-      whereConditions.push('store_id::text = $2');
-      bindings.push(store_id);
+      where.store_id = store_id;
     }
 
-    const pages = await sequelize.query(`
-      SELECT
-        id::text as id,
-        slug,
-        is_active,
-        is_system,
-        meta_title,
-        meta_description,
-        meta_keywords,
-        meta_robots_tag,
-        store_id::text as store_id,
-        related_product_ids,
-        published_at,
-        sort_order,
-        translations,
-        created_at,
-        updated_at
-      FROM cms_pages
-      WHERE ${whereConditions.join(' AND ')}
-      LIMIT 1
-    `, {
-      bind: bindings,
-      type: QueryTypes.SELECT
-    });
+    // Get CMS pages with translations from normalized table
+    const pages = await getCMSPagesWithTranslations(where, lang);
 
     console.log('🎯 Public CMS Pages: Query successful, found:', pages.length, 'page(s)');
+    if (pages.length > 0) {
+      console.log('📝 First CMS page:', {
+        slug: pages[0].slug,
+        title: pages[0].title,
+        has_content: !!pages[0].content,
+        lang: lang
+      });
+    }
 
     if (pages.length === 0) {
       return res.status(404).json({

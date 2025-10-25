@@ -54,12 +54,7 @@ class BaseEntity {
         return Array.isArray(response) ? response : [];
       }
     } catch (error) {
-      // Use different log levels based on endpoint - CMS blocks failures are common due to backend issues
-      if (this.endpoint === 'cms-blocks') {
-        console.warn(`⚠️ BaseEntity.findAll() warning for ${this.endpoint}:`, error.message, '(CMS blocks are optional)');
-      } else {
-        console.error(`BaseEntity.findAll() error for ${this.endpoint}:`, error.message);
-      }
+      console.error(`BaseEntity.findAll() error for ${this.endpoint}:`, error.message);
       return [];
     }
   }
@@ -106,12 +101,7 @@ class BaseEntity {
       
       return finalResult;
     } catch (error) {
-      // Use different log levels based on endpoint - CMS blocks failures are common due to backend issues
-      if (this.endpoint === 'cms-blocks') {
-        console.warn(`⚠️ BaseEntity.filter() warning for ${this.endpoint}:`, error.message, '(CMS blocks are optional)');
-      } else {
-        console.error(`BaseEntity.filter() error for ${this.endpoint}:`, error.message);
-      }
+      console.error(`BaseEntity.filter() error for ${this.endpoint}:`, error.message);
       return [];
     }
   }
@@ -867,7 +857,89 @@ export const AttributeSet = new BaseEntity('attribute-sets');
 export const Order = new OrderService();
 export const OrderItem = new BaseEntity('order-items');
 export const Coupon = new BaseEntity('coupons');
-export const CmsPage = new BaseEntity('cms-pages');
+
+// CmsPage service with public API support for storefront
+class CmsPageService extends BaseEntity {
+  constructor() {
+    super('public-cms-pages');
+  }
+
+  // Override filter to use public API for storefront access with language support
+  async filter(params = {}) {
+    try {
+      const queryString = new URLSearchParams(params).toString();
+      const url = queryString ? `public-cms-pages?${queryString}` : 'public-cms-pages';
+
+      console.log('🔍 CmsPageService.filter() - Fetching CMS page with params:', params);
+
+      // Use public request for CMS page filtering (no authentication required for storefront)
+      // This will automatically send X-Language header from localStorage
+      const response = await apiClient.publicRequest('GET', url);
+
+      console.log('📥 CmsPageService.filter() - Received response:', response);
+
+      // Ensure response is always an array
+      const result = Array.isArray(response) ? response : [];
+
+      return result;
+    } catch (error) {
+      console.error(`❌ CmsPageService.filter() error:`, error.message);
+      return [];
+    }
+  }
+
+  // Override findAll to use public API
+  async findAll(params = {}) {
+    return this.filter(params);
+  }
+}
+
+// CmsBlock service with public API support for storefront
+class CmsBlockService extends BaseEntity {
+  constructor() {
+    super('public-cms-blocks');
+  }
+
+  // Override filter to use public API for storefront access with language support
+  async filter(params = {}) {
+    try {
+      const queryString = new URLSearchParams(params).toString();
+      const url = queryString ? `public-cms-blocks?${queryString}` : 'public-cms-blocks';
+
+      console.log('🔍 CmsBlockService.filter() - Fetching CMS blocks with params:', params);
+
+      // Use public request for CMS block filtering (no authentication required for storefront)
+      // This will automatically send X-Language header from localStorage
+      const response = await apiClient.publicRequest('GET', url);
+
+      console.log('📥 CmsBlockService.filter() - Received CMS blocks:', response?.length || 0);
+      if (response && response.length > 0) {
+        console.log('📝 CmsBlockService.filter() - First CMS block:', {
+          identifier: response[0].identifier,
+          title: response[0].title,
+          has_content: !!response[0].content
+        });
+      }
+
+      // Ensure response is always an array
+      const result = Array.isArray(response) ? response : [];
+
+      return result;
+    } catch (error) {
+      // CMS blocks failures are common and should not break the page
+      console.warn(`⚠️ CmsBlockService.filter() warning:`, error.message, '(CMS blocks are optional)');
+      return [];
+    }
+  }
+
+  // Override findAll to use public API
+  async findAll(params = {}) {
+    return this.filter(params);
+  }
+}
+
+export const CmsPage = new CmsPageService();
+export const CmsBlock = new CmsBlockService();
 export const Tax = new BaseEntity('tax');
 export const ShippingMethod = new BaseEntity('shipping');
 export const ShippingMethodType = new BaseEntity('shipping-types');
@@ -875,7 +947,6 @@ export const DeliverySettings = new BaseEntity('delivery');
 
 // Additional entities (you can implement these as needed)
 export const Cart = new BaseEntity('cart');
-export const CmsBlock = new BaseEntity('cms-blocks');
 export const ProductLabel = new BaseEntity('product-labels');
 // Admin ProductTab entity - forces authenticated API usage for admin operations
 class AdminProductTabEntity extends BaseEntity {
