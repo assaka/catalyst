@@ -1,4 +1,5 @@
 import apiClient from './client';
+import storefrontApiClient from './storefront-client';
 import { shouldUsePublicAPI, hasAccessToEndpoint } from './endpointAccess';
 import { setRoleBasedAuthData } from '../utils/auth';
 
@@ -1097,18 +1098,25 @@ export const CmsBlock = new CmsBlockService();
 // Storefront CMS entities - use public routes without authentication
 class StorefrontCmsPageService extends BaseEntity {
   constructor() {
-    super('public-cms-pages');
+    super('cms-pages'); // Endpoint without 'public-' prefix (storefront client adds it)
   }
 
   async findAll(params = {}) {
     try {
       const queryString = new URLSearchParams(params).toString();
-      const url = queryString ? `${this.endpoint}?${queryString}` : this.endpoint;
+      const endpoint = queryString ? `cms-pages?${queryString}` : 'cms-pages';
 
-      // Use public API client (no authentication)
-      const response = await publicApiClient.get(url);
+      console.log('🔍 StorefrontCmsPageService.findAll() - Fetching pages (public) with params:', params);
 
-      // Public route returns array directly, not wrapped
+      // Use storefront API client (public route with X-Language header)
+      const response = await storefrontApiClient.getPublic(endpoint);
+
+      console.log('📥 StorefrontCmsPageService.findAll() - Response:', {
+        isArray: Array.isArray(response),
+        length: response?.length
+      });
+
+      // Public route returns array directly
       return Array.isArray(response) ? response : [];
     } catch (error) {
       console.error(`❌ StorefrontCmsPageService.findAll() error:`, error.message);
@@ -1119,25 +1127,25 @@ class StorefrontCmsPageService extends BaseEntity {
 
 class StorefrontCmsBlockService extends BaseEntity {
   constructor() {
-    super('public-cms-blocks');
+    super('cms-blocks'); // Endpoint without 'public-' prefix (storefront client adds it)
   }
 
   async findAll(params = {}) {
     try {
       const queryString = new URLSearchParams(params).toString();
-      const url = queryString ? `${this.endpoint}?${queryString}` : this.endpoint;
+      const endpoint = queryString ? `cms-blocks?${queryString}` : 'cms-blocks';
 
       console.log('🔍 StorefrontCmsBlockService.findAll() - Fetching blocks (public) with params:', params);
 
-      // Use public API client (no authentication)
-      const response = await publicApiClient.get(url);
+      // Use storefront API client (public route with X-Language header)
+      const response = await storefrontApiClient.getPublic(endpoint);
 
       console.log('📥 StorefrontCmsBlockService.findAll() - Response:', {
         isArray: Array.isArray(response),
         length: response?.length
       });
 
-      // Public route returns array directly, not wrapped
+      // Public route returns array directly
       return Array.isArray(response) ? response : [];
     } catch (error) {
       console.error(`❌ StorefrontCmsBlockService.findAll() error:`, error.message);
