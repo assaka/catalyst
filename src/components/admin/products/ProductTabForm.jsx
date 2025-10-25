@@ -43,16 +43,33 @@ export default function ProductTabForm({ tab, attributes = [], attributeSets = [
 
   useEffect(() => {
     if (tab) {
+      console.log('🔍 Frontend: Loading tab into form:', {
+        tabId: tab.id,
+        tabName: tab.name,
+        tabContent: tab.content,
+        tabTranslations: tab.translations,
+        translationKeys: Object.keys(tab.translations || {})
+      });
+
       // Handle translations with backward compatibility
       let translations = tab.translations || {};
 
       // Ensure English translation exists (backward compatibility)
       if (!translations.en || (!translations.en.name && tab.name)) {
+        console.log('🔍 Frontend: Creating EN translation from base fields');
         translations.en = {
           name: tab.name || "",
           content: tab.content || ""
         };
       }
+
+      console.log('🔍 Frontend: Final translations for form:', {
+        translations,
+        enName: translations.en?.name,
+        enContent: translations.en?.content,
+        nlName: translations.nl?.name,
+        nlContent: translations.nl?.content
+      });
 
       setFormData({
         name: translations.en?.name || "",
@@ -194,6 +211,7 @@ export default function ProductTabForm({ tab, attributes = [], attributeSets = [
                     { name: 'name', label: 'Tab Name', type: 'text', required: true },
                     { name: 'content', label: 'Tab Content', type: 'textarea', rows: 6, condition: formData.tab_type === 'text' }
                   ]}
+                  defaultLanguage="en"
                 />
                 <p className="text-sm text-gray-600 mt-3">
                   Note: Content translation only applies when Tab Type is "Text Content"
