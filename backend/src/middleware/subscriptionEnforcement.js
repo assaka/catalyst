@@ -55,7 +55,7 @@ async function getStoreAccessLevel(storeId) {
       order: [['created_at', 'DESC']]
     });
 
-    // No subscription found
+    // No subscription found - allow full access (no subscription requirement)
     if (!subscription) {
       // Check for past_due or cancelled subscriptions
       const pastDueSubscription = await Subscription.findOne({
@@ -79,7 +79,11 @@ async function getStoreAccessLevel(storeId) {
         }
       }
 
-      return { level: ACCESS_LEVELS.SUSPENDED, reason: 'No active subscription - please subscribe to a plan' };
+      // No subscription found - allow full access without restrictions
+      return {
+        level: ACCESS_LEVELS.FULL,
+        subscription: null
+      };
     }
 
     // Check if trial has expired
