@@ -657,6 +657,12 @@ export const StoreProvider = ({ children }) => {
             banner_position: cookieSettings.banner_position || "bottom",
             show_close_button: cookieSettings.show_close_button ?? true,
             consent_expiry_days: cookieSettings.consent_expiry_days || 365,
+            accept_button_bg_color: cookieSettings.accept_button_bg_color || '#2563eb',
+            accept_button_text_color: cookieSettings.accept_button_text_color || '#ffffff',
+            reject_button_bg_color: cookieSettings.reject_button_bg_color || '#ffffff',
+            reject_button_text_color: cookieSettings.reject_button_text_color || '#374151',
+            save_preferences_button_bg_color: cookieSettings.save_preferences_button_bg_color || '#16a34a',
+            save_preferences_button_text_color: cookieSettings.save_preferences_button_text_color || '#ffffff',
             translations: cookieSettings.translations || {}, // IMPORTANT: Include translations for multilingual support
             categories: cookieSettings.categories || [
               {

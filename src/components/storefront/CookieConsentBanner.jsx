@@ -341,14 +341,23 @@ export default function CookieConsentBanner() {
             <div className="flex flex-wrap gap-2">
               <Button
                 onClick={handleAcceptAll}
-                className="bg-blue-600 hover:bg-blue-700"
+                style={{
+                  backgroundColor: cookieSettings.accept_button_bg_color || '#2563eb',
+                  color: cookieSettings.accept_button_text_color || '#ffffff'
+                }}
+                className="hover:opacity-90"
               >
                 {getTranslatedText('accept_button_text', 'Accept All')}
               </Button>
 
               <Button
                 onClick={handleRejectAll}
-                variant="outline"
+                style={{
+                  backgroundColor: cookieSettings.reject_button_bg_color || '#ffffff',
+                  color: cookieSettings.reject_button_text_color || '#374151',
+                  border: '1px solid #d1d5db'
+                }}
+                className="hover:opacity-90"
               >
                 {getTranslatedText('reject_button_text', 'Reject All')}
               </Button>
@@ -364,7 +373,11 @@ export default function CookieConsentBanner() {
               ) : (
                 <Button
                   onClick={handleSavePreferences}
-                  className="bg-green-600 hover:bg-green-700"
+                  style={{
+                    backgroundColor: cookieSettings.save_preferences_button_bg_color || '#16a34a',
+                    color: cookieSettings.save_preferences_button_text_color || '#ffffff'
+                  }}
+                  className="hover:opacity-90"
                 >
                   {getTranslatedText('save_preferences_button_text', 'Save Preferences')}
                 </Button>

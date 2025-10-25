@@ -28,6 +28,8 @@ const CookieConsentSettings = require('./CookieConsentSettings');
 const ProductTranslation = require('./ProductTranslation');
 const CategoryTranslation = require('./CategoryTranslation');
 const CookieConsentSettingsTranslation = require('./CookieConsentSettingsTranslation');
+const AttributeTranslation = require('./AttributeTranslation');
+const AttributeValueTranslation = require('./AttributeValueTranslation');
 // Note: Other translation models will be created similarly
 
 // Import SEO models
@@ -95,6 +97,36 @@ function setupAssociations() {
     as: 'cookieConsentSettings'
   });
 
+  // ========================================
+  // ATTRIBUTE ASSOCIATIONS
+  // ========================================
+
+  Attribute.hasMany(AttributeTranslation, {
+    foreignKey: 'attribute_id',
+    as: 'translationsData',
+    onDelete: 'CASCADE'
+  });
+
+  AttributeTranslation.belongsTo(Attribute, {
+    foreignKey: 'attribute_id',
+    as: 'attribute'
+  });
+
+  // ========================================
+  // ATTRIBUTE VALUE ASSOCIATIONS
+  // ========================================
+
+  AttributeValue.hasMany(AttributeValueTranslation, {
+    foreignKey: 'attribute_value_id',
+    as: 'translationsData',
+    onDelete: 'CASCADE'
+  });
+
+  AttributeValueTranslation.belongsTo(AttributeValue, {
+    foreignKey: 'attribute_value_id',
+    as: 'attributeValue'
+  });
+
   // Note: CategorySeo associations would go here
   // Similar pattern for all other entities
 
@@ -110,5 +142,9 @@ module.exports = {
   Category,
   CategoryTranslation,
   CookieConsentSettings,
-  CookieConsentSettingsTranslation
+  CookieConsentSettingsTranslation,
+  Attribute,
+  AttributeTranslation,
+  AttributeValue,
+  AttributeValueTranslation
 };

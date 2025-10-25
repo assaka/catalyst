@@ -28,7 +28,7 @@ module.exports = {
     // ========================================
     // HELPER FUNCTION: Migrate entity translations
     // ========================================
-    async function migrateEntityTranslations(entityTable, translationTable, entityIdField, fields) {
+    async function migrateEntityTranslations(entityTable, translationTable, entityIdField, fields, fieldMapping = null) {
       console.log(`\n📦 Migrating ${entityTable} → ${translationTable}...`);
 
       try {
@@ -57,7 +57,9 @@ module.exports = {
 
             // Build field list and values
             const fieldValues = fields.map(field => {
-              const value = data[field];
+              // If fieldMapping exists, use it to map JSON field names to table column names
+              const jsonField = fieldMapping && fieldMapping[field] ? fieldMapping[field] : field;
+              const value = data[jsonField];
               // Escape single quotes for SQL
               if (value === null || value === undefined) return null;
               if (typeof value === 'string') {
@@ -235,7 +237,8 @@ module.exports = {
       'attribute_values',
       'attribute_value_translations',
       'attribute_value_id',
-      ['value', 'description']
+      ['value', 'description'],
+      { value: 'label' } // Map JSON 'label' field to table 'value' column
     );
 
     // 6. CMS Blocks

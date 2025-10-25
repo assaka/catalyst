@@ -3,6 +3,13 @@ const { body, validationResult } = require('express-validator');
 const { Attribute, AttributeValue, Store, AttributeSet } = require('../models');
 const { Op } = require('sequelize');
 const translationService = require('../services/translation-service');
+const {
+  getAttributesWithTranslations,
+  getAttributeValuesWithTranslations,
+  getAttributeWithValues,
+  saveAttributeTranslations,
+  saveAttributeValueTranslations
+} = require('../utils/attributeHelpers');
 const router = express.Router();
 
 // Import auth middleware
@@ -95,10 +102,27 @@ router.get('/', async (req, res) => {
       include: [{ model: Store, attributes: ['id', 'name'] }]
     });
 
+    // Get attribute IDs for translation lookup
+    const attributeIds = rows.map(attr => attr.id);
+
+    // Fetch translations from normalized tables
+    const attributesWithTranslations = attributeIds.length > 0
+      ? await getAttributesWithTranslations({ id: { [Op.in]: attributeIds } })
+      : [];
+
+    // Create a map for quick lookup
+    const translationsMap = new Map(
+      attributesWithTranslations.map(attr => [attr.id, attr.translations])
+    );
+
     // Fetch attribute values for select/multiselect attributes
     // For filterable attributes, always include all values (no limit)
     const attributesWithValues = await Promise.all(rows.map(async (attr) => {
       const attrData = attr.toJSON();
+
+      // Replace translations with normalized data
+      attrData.translations = translationsMap.get(attr.id) || {};
+
       if (attr.type === 'select' || attr.type === 'multiselect') {
         const values = await AttributeValue.findAll({
           where: { attribute_id: attr.id },
@@ -106,7 +130,24 @@ router.get('/', async (req, res) => {
           // No limit for filterable attributes - need all values for filters
           limit: (isPublicRequest && attr.is_filterable) ? undefined : 10
         });
-        attrData.values = values;
+
+        // Get value IDs for translation lookup
+        const valueIds = values.map(v => v.id);
+        const valuesWithTranslations = valueIds.length > 0
+          ? await getAttributeValuesWithTranslations({ id: { [Op.in]: valueIds } })
+          : [];
+
+        // Create translation map for values
+        const valueTranslationsMap = new Map(
+          valuesWithTranslations.map(val => [val.id, val.translations])
+        );
+
+        // Merge translations into values
+        attrData.values = values.map(v => {
+          const valData = v.toJSON();
+          valData.translations = valueTranslationsMap.get(v.id) || {};
+          return valData;
+        });
       }
       return attrData;
     }));
@@ -141,18 +182,18 @@ router.get('/:id', async (req, res) => {
       }
     }
 
-    // Fetch attribute values if this is a select/multiselect attribute
-    let attributeValues = [];
-    if (attribute.type === 'select' || attribute.type === 'multiselect') {
-      attributeValues = await AttributeValue.findAll({
-        where: { attribute_id: attribute.id },
-        order: [['sort_order', 'ASC'], ['code', 'ASC']]
-      });
+    // Fetch translations from normalized tables
+    const attributeWithTranslations = await getAttributeWithValues(attribute.id);
+
+    if (!attributeWithTranslations) {
+      return res.status(404).json({ success: false, message: 'Attribute not found' });
     }
 
-    // Add values to the response
-    const attributeData = attribute.toJSON();
-    attributeData.values = attributeValues;
+    // Merge with Sequelize data to include Store
+    const attributeData = {
+      ...attributeWithTranslations,
+      Store: attribute.Store
+    };
 
     res.json({ success: true, data: attributeData });
   } catch (error) {

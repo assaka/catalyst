@@ -249,11 +249,33 @@ async function getCmsPagesWithTranslations(where = {}) {
   );
 }
 
+async function getAttributesWithTranslations(where = {}) {
+  return buildEntityWithTranslations(
+    'attributes',
+    'attribute_translations',
+    'attribute_id',
+    ['label', 'description'],
+    where
+  );
+}
+
+async function getAttributeValuesWithTranslations(where = {}) {
+  return buildEntityWithTranslations(
+    'attribute_values',
+    'attribute_value_translations',
+    'attribute_value_id',
+    ['value', 'description'],
+    where
+  );
+}
+
 module.exports = {
   buildEntityWithTranslations,
   buildEntityWithSEO,
   buildEntityComplete,
   getProductsWithTranslations,
   getCategoriesWithTranslations,
-  getCmsPagesWithTranslations
+  getCmsPagesWithTranslations,
+  getAttributesWithTranslations,
+  getAttributeValuesWithTranslations
 };

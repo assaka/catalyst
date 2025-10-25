@@ -106,6 +106,12 @@ const mapBackendToFrontend = (backendSettings) => {
     banner_position: backendSettings.banner_position || "bottom",
     show_close_button: backendSettings.show_close_button ?? true,
     consent_expiry_days: backendSettings.consent_expiry_days || 365,
+    accept_button_bg_color: backendSettings.accept_button_bg_color || '#2563eb',
+    accept_button_text_color: backendSettings.accept_button_text_color || '#ffffff',
+    reject_button_bg_color: backendSettings.reject_button_bg_color || '#ffffff',
+    reject_button_text_color: backendSettings.reject_button_text_color || '#374151',
+    save_preferences_button_bg_color: backendSettings.save_preferences_button_bg_color || '#16a34a',
+    save_preferences_button_text_color: backendSettings.save_preferences_button_text_color || '#ffffff',
     translations: translations,
     categories: backendSettings.categories || [
       {
@@ -169,6 +175,12 @@ const mapFrontendToBackend = (frontendSettings) => {
     banner_position: frontendSettings.banner_position,
     consent_expiry_days: frontendSettings.consent_expiry_days,
     show_close_button: frontendSettings.show_close_button,
+    accept_button_bg_color: frontendSettings.accept_button_bg_color,
+    accept_button_text_color: frontendSettings.accept_button_text_color,
+    reject_button_bg_color: frontendSettings.reject_button_bg_color,
+    reject_button_text_color: frontendSettings.reject_button_text_color,
+    save_preferences_button_bg_color: frontendSettings.save_preferences_button_bg_color,
+    save_preferences_button_text_color: frontendSettings.save_preferences_button_text_color,
     translations: frontendSettings.translations || {},
     // GDPR and compliance settings
     gdpr_mode: frontendSettings.gdpr_mode,
@@ -641,42 +653,92 @@ export default function CookieConsent() {
                   {/* Button Text Fields - Hidden when translations shown */}
                   {!showTranslations && (
                     <>
-                      <div className="grid grid-cols-2 gap-4">
+                      <div className="grid grid-cols-1 gap-4">
                         <div>
-                          <Label htmlFor="accept_all_text">Accept Button Text</Label>
-                          <Input
-                            id="accept_all_text"
-                            value={settings.accept_all_text}
-                            onChange={(e) => {
-                              const newValue = e.target.value;
-                              const updatedTranslations = { ...settings.translations };
-                              if (!updatedTranslations.en) updatedTranslations.en = {};
-                              updatedTranslations.en.accept_button_text = newValue;
-                              setSettings({
-                                ...settings,
-                                accept_all_text: newValue,
-                                translations: updatedTranslations
-                              });
-                            }}
-                          />
+                          <Label htmlFor="accept_all_text">Accept Button</Label>
+                          <div className="flex gap-2">
+                            <Input
+                              id="accept_all_text"
+                              className="flex-1"
+                              value={settings.accept_all_text}
+                              onChange={(e) => {
+                                const newValue = e.target.value;
+                                const updatedTranslations = { ...settings.translations };
+                                if (!updatedTranslations.en) updatedTranslations.en = {};
+                                updatedTranslations.en.accept_button_text = newValue;
+                                setSettings({
+                                  ...settings,
+                                  accept_all_text: newValue,
+                                  translations: updatedTranslations
+                                });
+                              }}
+                              placeholder="Accept All"
+                            />
+                            <div className="flex gap-1">
+                              <div className="relative">
+                                <Input
+                                  type="color"
+                                  className="w-12 h-10 p-1 cursor-pointer"
+                                  value={settings.accept_button_bg_color || '#2563eb'}
+                                  onChange={(e) => setSettings({ ...settings, accept_button_bg_color: e.target.value })}
+                                  title="Background Color"
+                                />
+                              </div>
+                              <div className="relative">
+                                <Input
+                                  type="color"
+                                  className="w-12 h-10 p-1 cursor-pointer"
+                                  value={settings.accept_button_text_color || '#ffffff'}
+                                  onChange={(e) => setSettings({ ...settings, accept_button_text_color: e.target.value })}
+                                  title="Text Color"
+                                />
+                              </div>
+                            </div>
+                          </div>
+                          <p className="text-xs text-gray-500 mt-1">Button text and colors (Background & Text)</p>
                         </div>
                         <div>
-                          <Label htmlFor="reject_all_text">Reject Button Text</Label>
-                          <Input
-                            id="reject_all_text"
-                            value={settings.reject_all_text}
-                            onChange={(e) => {
-                              const newValue = e.target.value;
-                              const updatedTranslations = { ...settings.translations };
-                              if (!updatedTranslations.en) updatedTranslations.en = {};
-                              updatedTranslations.en.reject_button_text = newValue;
-                              setSettings({
-                                ...settings,
-                                reject_all_text: newValue,
-                                translations: updatedTranslations
-                              });
-                            }}
-                          />
+                          <Label htmlFor="reject_all_text">Reject Button</Label>
+                          <div className="flex gap-2">
+                            <Input
+                              id="reject_all_text"
+                              className="flex-1"
+                              value={settings.reject_all_text}
+                              onChange={(e) => {
+                                const newValue = e.target.value;
+                                const updatedTranslations = { ...settings.translations };
+                                if (!updatedTranslations.en) updatedTranslations.en = {};
+                                updatedTranslations.en.reject_button_text = newValue;
+                                setSettings({
+                                  ...settings,
+                                  reject_all_text: newValue,
+                                  translations: updatedTranslations
+                                });
+                              }}
+                              placeholder="Reject All"
+                            />
+                            <div className="flex gap-1">
+                              <div className="relative">
+                                <Input
+                                  type="color"
+                                  className="w-12 h-10 p-1 cursor-pointer"
+                                  value={settings.reject_button_bg_color || '#ffffff'}
+                                  onChange={(e) => setSettings({ ...settings, reject_button_bg_color: e.target.value })}
+                                  title="Background Color"
+                                />
+                              </div>
+                              <div className="relative">
+                                <Input
+                                  type="color"
+                                  className="w-12 h-10 p-1 cursor-pointer"
+                                  value={settings.reject_button_text_color || '#374151'}
+                                  onChange={(e) => setSettings({ ...settings, reject_button_text_color: e.target.value })}
+                                  title="Text Color"
+                                />
+                              </div>
+                            </div>
+                          </div>
+                          <p className="text-xs text-gray-500 mt-1">Button text and colors (Background & Text)</p>
                         </div>
                       </div>
 
@@ -815,23 +877,46 @@ export default function CookieConsent() {
 
                     <div>
                       <Label>Save Preferences Button</Label>
-                      <div className="mt-2 p-4 bg-blue-50 border border-blue-200 rounded-lg">
-                        <p className="text-sm text-blue-900 font-medium mb-2">
-                          Button Text Translation
-                        </p>
-                        <p className="text-xs text-blue-700">
-                          The "Save Preferences" button appears when users click "Cookie Settings" to manage their preferences.
-                          Translate the button text in the <strong>Banner Text Translations</strong> section above.
-                        </p>
-                        <div className="mt-3 p-2 bg-white border border-blue-200 rounded text-center">
-                          <button className="px-4 py-2 bg-green-600 text-white text-sm font-medium rounded hover:bg-green-700 transition-colors">
-                            {settings.translations?.en?.save_preferences_button_text || 'Save Preferences'}
-                          </button>
+                      <div className="flex gap-2">
+                        <Input
+                          className="flex-1"
+                          value={settings.translations?.en?.save_preferences_button_text || 'Save Preferences'}
+                          onChange={(e) => {
+                            const newValue = e.target.value;
+                            const updatedTranslations = { ...settings.translations };
+                            if (!updatedTranslations.en) updatedTranslations.en = {};
+                            updatedTranslations.en.save_preferences_button_text = newValue;
+                            setSettings({
+                              ...settings,
+                              translations: updatedTranslations
+                            });
+                          }}
+                          placeholder="Save Preferences"
+                        />
+                        <div className="flex gap-1">
+                          <div className="relative">
+                            <Input
+                              type="color"
+                              className="w-12 h-10 p-1 cursor-pointer"
+                              value={settings.save_preferences_button_bg_color || '#16a34a'}
+                              onChange={(e) => setSettings({ ...settings, save_preferences_button_bg_color: e.target.value })}
+                              title="Background Color"
+                            />
+                          </div>
+                          <div className="relative">
+                            <Input
+                              type="color"
+                              className="w-12 h-10 p-1 cursor-pointer"
+                              value={settings.save_preferences_button_text_color || '#ffffff'}
+                              onChange={(e) => setSettings({ ...settings, save_preferences_button_text_color: e.target.value })}
+                              title="Text Color"
+                            />
+                          </div>
                         </div>
-                        <p className="text-xs text-gray-600 mt-2">
-                          Preview of the button (English text shown)
-                        </p>
                       </div>
+                      <p className="text-xs text-gray-500 mt-1">
+                        Button text and colors (Background & Text) - Translate in Banner Text Translations section above
+                      </p>
                     </div>
                   </div>
                 </CardContent>

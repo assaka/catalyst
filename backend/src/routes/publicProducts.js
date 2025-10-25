@@ -3,6 +3,7 @@ const { Product, Store, ProductAttributeValue, Attribute, AttributeValue } = req
 const { Op } = require('sequelize');
 const { getLanguageFromRequest } = require('../utils/languageUtils');
 const { applyProductTranslationsToMany, applyProductTranslations } = require('../utils/productHelpers');
+const { getAttributesWithTranslations, getAttributeValuesWithTranslations } = require('../utils/attributeHelpers');
 const router = express.Router();
 
 // @route   GET /api/public/products

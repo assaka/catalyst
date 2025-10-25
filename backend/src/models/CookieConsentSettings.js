@@ -94,6 +94,31 @@ const CookieConsentSettings = sequelize.define('CookieConsentSettings', {
     type: DataTypes.STRING,
     defaultValue: 'Privacy Policy'
   },
+  // Button colors
+  accept_button_bg_color: {
+    type: DataTypes.STRING,
+    defaultValue: '#2563eb'
+  },
+  accept_button_text_color: {
+    type: DataTypes.STRING,
+    defaultValue: '#ffffff'
+  },
+  reject_button_bg_color: {
+    type: DataTypes.STRING,
+    defaultValue: '#ffffff'
+  },
+  reject_button_text_color: {
+    type: DataTypes.STRING,
+    defaultValue: '#374151'
+  },
+  save_preferences_button_bg_color: {
+    type: DataTypes.STRING,
+    defaultValue: '#16a34a'
+  },
+  save_preferences_button_text_color: {
+    type: DataTypes.STRING,
+    defaultValue: '#ffffff'
+  },
   // JSON fields for complex data
   categories: {
     type: DataTypes.JSON,
