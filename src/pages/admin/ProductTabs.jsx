@@ -28,9 +28,12 @@ import {
 
 import FlashMessage from "@/components/storefront/FlashMessage";
 import ProductTabForm from "@/components/admin/products/ProductTabForm";
+import { useTranslation } from "@/contexts/TranslationContext";
+import { getAttributeLabel } from "@/utils/attributeUtils";
 
 export default function ProductTabs() {
   const { selectedStore, getSelectedStoreId } = useStoreSelection();
+  const { currentLanguage } = useTranslation();
   const [tabs, setTabs] = useState([]); // Renamed from productTabs
   const [attributes, setAttributes] = useState([]);
   const [attributeSets, setAttributeSets] = useState([]);
@@ -340,7 +343,7 @@ export default function ProductTabs() {
                             const attr = attributes.find(a => a.id === attrId);
                             return (
                               <Badge key={idx} variant="outline" className="text-xs">
-                                {attr?.name || `Attr ${attrId.slice(0, 8)}`}
+                                {attr ? getAttributeLabel(attr, currentLanguage) : `Attr ${attrId.slice(0, 8)}`}
                               </Badge>
                             );
                           })}
