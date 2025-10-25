@@ -19,6 +19,7 @@ export { default as CmsBlocks } from './admin/CmsBlocks';
 export { default as CmsPages } from './admin/CmsPages';
 export { default as FileLibrary } from './admin/FileLibrary';
 export { default as MediaStorage } from './admin/MediaStorage';
+export { default as CustomDomains } from './admin/CustomDomains';
 export { default as Stores } from './admin/Stores';
 export { default as Settings } from './admin/Settings';
 export { default as EcommerceIntegrations } from './admin/EcommerceIntegrations';
