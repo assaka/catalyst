@@ -35,6 +35,16 @@ export default function CategoryTranslationRow({ category, selectedLanguages, on
     selectedLanguages?.includes(lang.code)
   );
 
+  console.log('🔍 CategoryTranslationRow - Language filtering:', {
+    categoryId: category.id,
+    categorySlug: category.slug,
+    availableLanguages: availableLanguages.map(l => l.code),
+    selectedLanguages,
+    filteredLanguages: filteredLanguages.map(l => l.code),
+    translationsInCategory: translations,
+    translationKeys: Object.keys(translations || {})
+  });
+
   // Get translation status
   const getTranslationStatus = () => {
     const translatedCount = filteredLanguages.filter(lang => {
