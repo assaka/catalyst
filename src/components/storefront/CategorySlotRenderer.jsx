@@ -508,6 +508,7 @@ export function CategorySlotRenderer({
           current: sortOption
         },
         settings: settingsWithDefaults,
+        translations, // Add translations from TranslationContext
         filterOptionStyles: filterOptionStyles,
         attributeLabelStyles: attributeLabelStyles,
         activeFilterStyles: activeFilterStyles

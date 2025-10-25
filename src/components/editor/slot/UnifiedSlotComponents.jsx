@@ -1587,7 +1587,7 @@ registerSlotComponent('TotalPriceDisplay', TotalPriceDisplay);
 const StockStatus = createSlotComponent({
   name: 'StockStatus',
 
-  render: ({ slot, className, styles, productContext, context }) => {
+  render: ({ slot, className, styles, productContext, context, variableContext }) => {
     if (context === 'editor') {
       // Editor version - shows static example
       return (
@@ -1601,6 +1601,7 @@ const StockStatus = createSlotComponent({
 
     // Storefront version - use centralized stock label utility
     const { product, settings } = productContext || {};
+    const translations = variableContext?.translations || null;
 
     if (!product) {
       return (
@@ -1612,9 +1613,9 @@ const StockStatus = createSlotComponent({
       );
     }
 
-    // Use centralized utility
-    const stockLabelInfo = getStockLabelUtil(product, settings);
-    const stockLabelStyle = getStockLabelStyle(product, settings);
+    // Use centralized utility with translations
+    const stockLabelInfo = getStockLabelUtil(product, settings, null, translations);
+    const stockLabelStyle = getStockLabelStyle(product, settings, null, translations);
 
     if (!stockLabelInfo) {
       return null;
