@@ -67,8 +67,10 @@ router.get('/', optionalAuth, async (req, res) => {
       'accept-language': req.headers['accept-language'],
       'query-lang': req.query.lang
     });
-    const labels = await getProductLabelsWithTranslations(whereClause, lang);
-    console.log('🏷️ Product Labels: Retrieved', labels.length, 'labels', labels.slice(0, 2));
+
+    // For public/storefront requests, return all translations so the frontend can pick the right one
+    const labels = await getProductLabelsWithTranslations(whereClause, lang, isPublicRequest);
+    console.log('🏷️ Product Labels: Retrieved', labels.length, 'labels', isPublicRequest ? '(with all translations)' : `(${lang} only)`, labels.slice(0, 2));
 
     if (isPublicRequest) {
       // Return just the array for public requests (for compatibility)

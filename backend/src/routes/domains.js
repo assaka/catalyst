@@ -49,11 +49,8 @@ router.get('/storefront-url', async (req, res) => {
       }
     }
     
-    // Fallback to Render service URL
-    if (!storefrontUrl && store.render_service_url) {
-      storefrontUrl = store.render_service_url;
-      source = 'render_service';
-    }
+    // Note: render_service_url column has been removed
+    // If needed, it can be stored in settings.render_service_url
     
     // Final fallback to slug-based URL
     if (!storefrontUrl) {

@@ -102,31 +102,6 @@ const Store = sequelize.define('Store', {
     type: DataTypes.STRING,
     allowNull: true
   },
-  facebook_url: {
-    type: DataTypes.STRING,
-    allowNull: true
-  },
-  twitter_url: {
-    type: DataTypes.STRING,
-    allowNull: true
-  },
-  instagram_url: {
-    type: DataTypes.STRING,
-    allowNull: true
-  },
-  // SEO
-  meta_title: {
-    type: DataTypes.STRING,
-    allowNull: true
-  },
-  meta_description: {
-    type: DataTypes.TEXT,
-    allowNull: true
-  },
-  meta_keywords: {
-    type: DataTypes.STRING,
-    allowNull: true
-  },
   // Stripe Connect
   stripe_account_id: {
     type: DataTypes.STRING,
@@ -143,26 +118,6 @@ const Store = sequelize.define('Store', {
   },
   published_at: {
     type: DataTypes.DATE,
-    allowNull: true
-  },
-  render_service_id: {
-    type: DataTypes.STRING,
-    allowNull: true
-  },
-  render_service_url: {
-    type: DataTypes.STRING,
-    allowNull: true
-  },
-  auto_supabase_project_id: {
-    type: DataTypes.STRING,
-    allowNull: true
-  },
-  auto_supabase_project_url: {
-    type: DataTypes.STRING,
-    allowNull: true
-  },
-  github_repo_url: {
-    type: DataTypes.STRING,
     allowNull: true
   }
 }, {
@@ -202,13 +157,8 @@ Store.prototype.unpublish = function() {
   });
 };
 
-Store.prototype.updateDeploymentStatus = function(status, serviceId = null, serviceUrl = null) {
-  const updateData = { deployment_status: status };
-  
-  if (serviceId) updateData.render_service_id = serviceId;
-  if (serviceUrl) updateData.render_service_url = serviceUrl;
-  
-  return this.update(updateData);
+Store.prototype.updateDeploymentStatus = function(status) {
+  return this.update({ deployment_status: status });
 };
 
 // Static methods for deployment management
@@ -247,13 +197,8 @@ Store.prototype.unpublish = function() {
   });
 };
 
-Store.prototype.updateDeploymentStatus = function(status, serviceId = null, serviceUrl = null) {
-  const updateData = { deployment_status: status };
-  
-  if (serviceId) updateData.render_service_id = serviceId;
-  if (serviceUrl) updateData.render_service_url = serviceUrl;
-  
-  return this.update(updateData);
+Store.prototype.updateDeploymentStatus = function(status) {
+  return this.update({ deployment_status: status });
 };
 
 // Static methods for deployment management

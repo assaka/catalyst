@@ -11,10 +11,11 @@ const { sequelize } = require('../database/connection');
  * Get product labels with translations from normalized tables
  *
  * @param {Object} where - WHERE clause conditions
- * @param {string} lang - Language code (default: 'en')
+ * @param {string} lang - Language code (default: 'en') - ignored if allTranslations is true
+ * @param {boolean} allTranslations - If true, returns all translations for all languages
  * @returns {Promise<Array>} Product labels with translated fields
  */
-async function getProductLabelsWithTranslations(where = {}, lang = 'en') {
+async function getProductLabelsWithTranslations(where = {}, lang = 'en', allTranslations = false) {
   const whereConditions = Object.entries(where)
     .map(([key, value]) => {
       if (value === true || value === false) {
@@ -26,6 +27,60 @@ async function getProductLabelsWithTranslations(where = {}, lang = 'en') {
 
   const whereClause = whereConditions ? `WHERE ${whereConditions}` : '';
 
+  // If allTranslations is true, return ALL translations for each label
+  if (allTranslations) {
+    const query = `
+      SELECT
+        pl.id,
+        pl.store_id,
+        pl.name,
+        pl.slug,
+        pl.text,
+        pl.background_color,
+        pl.color,
+        pl.position,
+        pl.priority,
+        pl.sort_order,
+        pl.is_active,
+        pl.conditions,
+        pl.created_at,
+        pl.updated_at,
+        COALESCE(
+          json_object_agg(
+            t.language_code,
+            json_build_object('name', t.name, 'text', t.text)
+          ) FILTER (WHERE t.language_code IS NOT NULL),
+          '{}'::json
+        ) as translations
+      FROM product_labels pl
+      LEFT JOIN product_label_translations t ON pl.id = t.product_label_id
+      ${whereClause}
+      GROUP BY pl.id
+      ORDER BY pl.sort_order ASC, pl.priority DESC, pl.name ASC
+    `;
+
+    console.log('🔍 SQL Query for product labels (all translations):', query.replace(/\s+/g, ' '));
+
+    const results = await sequelize.query(query, {
+      replacements: {},
+      type: sequelize.QueryTypes.SELECT
+    });
+
+    console.log('✅ Query returned', results.length, 'labels with all translations');
+    if (results.length > 0) {
+      console.log('📝 Sample label:', {
+        id: results[0].id,
+        name: results[0].name,
+        text: results[0].text,
+        translations: results[0].translations,
+        translationKeys: Object.keys(results[0].translations || {})
+      });
+    }
+
+    return results;
+  }
+
+  // Original single-language query
   const query = `
     SELECT
       pl.id,

@@ -44,13 +44,16 @@ class AutoSupabaseService {
       // Generate API keys
       const apiKeys = await this.generateProjectKeys(project.id);
 
-      // Update store with Supabase project info
+      // Note: auto_supabase_project_id and auto_supabase_project_url columns have been removed
+      // Store Supabase project info in settings if needed
       const Store = require('../models/Store');
       const store = await Store.findByPk(storeId);
-      await store.update({
-        auto_supabase_project_id: project.id,
-        auto_supabase_project_url: `https://${project.ref}.supabase.co`
-      });
+      const settings = store.settings || {};
+      settings.supabase = {
+        project_id: project.id,
+        project_url: `https://${project.ref}.supabase.co`
+      };
+      await store.update({ settings });
 
       return {
         success: true,
@@ -260,8 +263,9 @@ class AutoSupabaseService {
     try {
       const Store = require('../models/Store');
       const store = await Store.findByPk(storeId);
-      
-      if (!store.auto_supabase_project_id) {
+
+      // Check for Supabase project in settings (columns auto_supabase_project_id removed)
+      if (!store.settings?.supabase?.project_id) {
         return {
           success: false,
           message: 'No auto-created project to transfer'
@@ -289,8 +293,10 @@ class AutoSupabaseService {
     try {
       const Store = require('../models/Store');
       const store = await Store.findByPk(storeId);
-      
-      if (!store.auto_supabase_project_id || !store.auto_supabase_project_id.startsWith('placeholder-')) {
+
+      // Check for placeholder project in settings (columns auto_supabase_project_id removed)
+      const projectId = store.settings?.supabase?.project_id;
+      if (!projectId || !projectId.startsWith('placeholder-')) {
         return {
           success: false,
           message: 'Store does not have a placeholder project'
@@ -299,13 +305,15 @@ class AutoSupabaseService {
 
       // Create real Supabase project
       const realProject = await this.autoCreateProject(storeId, store.dataValues, store.user_id);
-      
+
       if (realProject.success && !realProject.is_placeholder) {
-        // Update store with real project info
-        await store.update({
-          auto_supabase_project_id: realProject.project.id,
-          auto_supabase_project_url: realProject.project.url
-        });
+        // Update store with real project info in settings
+        const settings = store.settings || {};
+        settings.supabase = {
+          project_id: realProject.project.id,
+          project_url: realProject.project.url
+        };
+        await store.update({ settings });
 
         return {
           success: true,

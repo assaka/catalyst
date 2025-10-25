@@ -35,12 +35,15 @@ router.get('/', async (req, res) => {
       'query-lang': req.query.lang
     });
 
+    // For public/storefront requests, return all translations so the frontend can pick the right one
+    const isPublicRequest = req.originalUrl.includes('/api/public/product-tabs');
+
     const productTabs = await getProductTabsWithTranslations({
       store_id,
       is_active: true
-    }, lang);
+    }, lang, isPublicRequest); // Pass true for allTranslations if public request
 
-    console.log('📋 Product Tabs: Retrieved', productTabs.length, 'tabs');
+    console.log('📋 Product Tabs: Retrieved', productTabs.length, 'tabs', isPublicRequest ? '(with all translations)' : `(${lang} only)`);
     if (productTabs.length > 0) {
       console.log('📝 Sample tab:', {
         id: productTabs[0].id,

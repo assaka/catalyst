@@ -11,10 +11,11 @@ const { sequelize } = require('../database/connection');
  * Get product tabs with translations from normalized tables
  *
  * @param {Object} where - WHERE clause conditions
- * @param {string} lang - Language code (default: 'en')
+ * @param {string} lang - Language code (default: 'en') - ignored if allTranslations is true
+ * @param {boolean} allTranslations - If true, returns all translations for all languages
  * @returns {Promise<Array>} Product tabs with translated fields
  */
-async function getProductTabsWithTranslations(where = {}, lang = 'en') {
+async function getProductTabsWithTranslations(where = {}, lang = 'en', allTranslations = false) {
   const whereConditions = Object.entries(where)
     .map(([key, value]) => {
       if (value === true || value === false) {
@@ -26,6 +27,57 @@ async function getProductTabsWithTranslations(where = {}, lang = 'en') {
 
   const whereClause = whereConditions ? `WHERE ${whereConditions}` : '';
 
+  // If allTranslations is true, return ALL translations for each tab
+  if (allTranslations) {
+    const query = `
+      SELECT
+        pt.id,
+        pt.store_id,
+        pt.name,
+        pt.slug,
+        pt.tab_type,
+        pt.content,
+        pt.attribute_ids,
+        pt.attribute_set_ids,
+        pt.sort_order,
+        pt.is_active,
+        pt.created_at,
+        pt.updated_at,
+        COALESCE(
+          json_object_agg(
+            t.language_code,
+            json_build_object('name', t.name, 'content', t.content)
+          ) FILTER (WHERE t.language_code IS NOT NULL),
+          '{}'::json
+        ) as translations
+      FROM product_tabs pt
+      LEFT JOIN product_tab_translations t ON pt.id = t.product_tab_id
+      ${whereClause}
+      GROUP BY pt.id
+      ORDER BY pt.sort_order ASC, pt.name ASC
+    `;
+
+    console.log('🔍 SQL Query for product tabs (all translations):', query.replace(/\s+/g, ' '));
+
+    const results = await sequelize.query(query, {
+      replacements: {},
+      type: sequelize.QueryTypes.SELECT
+    });
+
+    console.log('✅ Query returned', results.length, 'tabs with all translations');
+    if (results.length > 0) {
+      console.log('📝 Sample tab:', {
+        id: results[0].id,
+        name: results[0].name,
+        translations: results[0].translations,
+        translationKeys: Object.keys(results[0].translations || {})
+      });
+    }
+
+    return results;
+  }
+
+  // Original single-language query
   const query = `
     SELECT
       pt.id,

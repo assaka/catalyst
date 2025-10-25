@@ -48,7 +48,7 @@ router.get('/:storeId/status', authorize(['store_owner']), checkStoreOwnership, 
           }
         },
         auto_deployment: {
-          supabase_project_id: store.auto_supabase_project_id
+          supabase_project_id: store.settings?.supabase?.project_id || null
         }
       }
     });
@@ -120,8 +120,8 @@ router.post('/:storeId/deploy', authorize(['store_owner']), checkStoreOwnership,
     const deployResult = await autoRenderService.autoDeployStore(storeId, store.dataValues, req.user.id);
     
     if (deployResult.success) {
-      // Also create auto-Supabase project if not exists
-      if (!store.auto_supabase_project_id) {
+      // Also create auto-Supabase project if not exists (stored in settings.supabase now)
+      if (!store.settings?.supabase?.project_id) {
         const supabaseResult = await autoSupabaseService.autoCreateProject(storeId, store.dataValues, req.user.id);
         deployResult.supabase_project = supabaseResult;
       }

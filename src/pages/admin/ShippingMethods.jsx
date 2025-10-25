@@ -2,7 +2,6 @@ import React, { useState, useEffect } from "react";
 import { ShippingMethod } from "@/api/entities";
 import { useStoreSelection } from "@/contexts/StoreSelectionContext.jsx";
 import NoStoreSelected from "@/components/admin/NoStoreSelected";
-import { formatPrice } from "@/utils/priceUtils";
 import FlashMessage from "@/components/storefront/FlashMessage";
 import {
   Truck,
@@ -56,6 +55,13 @@ export default function ShippingMethodsPage() {
   const [flashMessage, setFlashMessage] = useState(null);
   // Local state for store settings to avoid reload on changes
   const [localStoreSettings, setLocalStoreSettings] = useState(selectedStore?.settings || {});
+
+  // Local formatPrice helper that uses selectedStore's currency
+  const formatPrice = (value, decimals = 2) => {
+    const num = typeof value === 'number' ? value : parseFloat(value) || 0;
+    const symbol = selectedStore?.currency_symbol || selectedStore?.settings?.currency_symbol || '$';
+    return `${symbol}${num.toFixed(decimals)}`;
+  };
 
   useEffect(() => {
     if (selectedStore) {

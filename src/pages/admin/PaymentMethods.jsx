@@ -7,7 +7,6 @@ import { Store } from "@/api/entities";
 import { User } from "@/api/entities";
 import { useStoreSelection } from "@/contexts/StoreSelectionContext.jsx";
 import { useTranslation } from "@/contexts/TranslationContext";
-import { formatPrice } from "@/utils/priceUtils";
 import { getAttributeLabel, getAttributeValueLabel } from "@/utils/attributeUtils";
 import { Button } from "@/components/ui/button";
 import SaveButton from '@/components/ui/save-button';
@@ -68,6 +67,13 @@ export default function PaymentMethods() {
     },
     translations: {}
   });
+
+  // Local formatPrice helper that uses selectedStore's currency
+  const formatPrice = (value, decimals = 2) => {
+    const num = typeof value === 'number' ? value : parseFloat(value) || 0;
+    const symbol = selectedStore?.currency_symbol || selectedStore?.settings?.currency_symbol || store?.currency_symbol || store?.settings?.currency_symbol || '$';
+    return `${symbol}${num.toFixed(decimals)}`;
+  };
 
   const quickAddMethods = [
     {

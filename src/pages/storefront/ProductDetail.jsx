@@ -85,7 +85,7 @@ export default function ProductDetail() {
   const { store, settings, loading: storeLoading, categories, productLabels, taxes, selectedCountry } = useStore();
   const navigate = useNavigate();
   const { showNotFound } = useNotFound();
-  const { t } = useTranslation();
+  const { t, currentLanguage } = useTranslation();
   const [product, setProduct] = useState(null);
   const [loading, setLoading] = useState(true);
   const [quantity, setQuantity] = useState(1);
@@ -159,14 +159,14 @@ export default function ProductDetail() {
     if (product && productLabels && productLabels.length > 0) {
       const applicableLabels = evaluateProductLabels(product, productLabels);
 
-      // Update product with new labels
+      // Update product with new labels (with translated text)
       setProduct(prevProduct => ({
         ...prevProduct,
-        labels: applicableLabels.map(label => label.text),
+        labels: applicableLabels.map(label => getLabelText(label)),
         applicableLabels: applicableLabels // Keep full label objects for styling
       }));
     }
-  }, [productLabels]);
+  }, [productLabels, currentLanguage]);
 
   // Load product layout configuration directly
   useEffect(() => {
@@ -239,6 +239,37 @@ export default function ProductDetail() {
     }
   }, [store?.id, storeLoading]);
 
+  /**
+   * Get translated label text based on current language
+   */
+  const getLabelText = (label) => {
+    if (!label) return '';
+
+    // Try to get translation for current language
+    const translation = label.translations?.[currentLanguage];
+    if (translation?.text) {
+      return translation.text;
+    }
+
+    // Fallback to base text field
+    return label.text || '';
+  };
+
+  /**
+   * Get translated tab name based on current language
+   */
+  const getTabName = (tab) => {
+    if (!tab) return '';
+
+    // Try to get translation for current language
+    const translation = tab.translations?.[currentLanguage];
+    if (translation?.name) {
+      return translation.name;
+    }
+
+    // Fallback to base name field
+    return tab.name || '';
+  };
 
   /**
    * Evaluate which labels apply to the product based on their conditions
@@ -444,7 +475,7 @@ export default function ProductDetail() {
         const applicableLabels = evaluateProductLabels(foundProduct, productLabels);
         const productWithLabels = {
           ...foundProduct,
-          labels: applicableLabels.map(label => label.text),
+          labels: applicableLabels.map(label => getLabelText(label)),
           applicableLabels: applicableLabels // Keep full label objects for styling
         };
 
