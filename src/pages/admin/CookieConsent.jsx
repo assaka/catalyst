@@ -402,6 +402,12 @@ export default function CookieConsent() {
       setSaveSuccess(true);
       setTimeout(() => setSaveSuccess(false), 2000);
 
+      // Clear storefront cache so changes appear immediately
+      console.log('🗑️ Clearing storefront cache for immediate updates...');
+      localStorage.removeItem('storeProviderCache');
+      localStorage.removeItem(`cookie-consent-${currentStoreId}`);
+      console.log('✅ Storefront cache cleared - changes will appear on next page load');
+
     } catch (error) {
       console.error('Error saving cookie consent settings:', error);
       console.error('Error response:', error.response?.data);
