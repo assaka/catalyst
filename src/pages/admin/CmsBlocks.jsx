@@ -11,13 +11,17 @@ import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import { Plus, Edit, Trash2, FileText } from "lucide-react"; // Removed Eye, Code as they are not used
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import FlashMessage from "@/components/storefront/FlashMessage";
+import { useAlertTypes } from "@/hooks/useAlert";
 
 export default function CmsBlocks() {
   const { selectedStore, getSelectedStoreId } = useStoreSelection();
+  const { showConfirm, AlertComponent } = useAlertTypes();
   const [blocks, setBlocks] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [editingBlock, setEditingBlock] = useState(null);
+  const [flashMessage, setFlashMessage] = useState(null);
 
   useEffect(() => {
     if (selectedStore) {
@@ -68,6 +72,7 @@ export default function CmsBlocks() {
     const storeId = getSelectedStoreId();
     if (!storeId) {
       console.error("Cannot save CMS block: No store selected.");
+      setFlashMessage({ type: 'error', message: 'Cannot save CMS block: No store selected.' });
       return;
     }
 
@@ -79,13 +84,16 @@ export default function CmsBlocks() {
 
       if (editingBlock) {
         await CmsBlock.update(editingBlock.id, formData);
+        setFlashMessage({ type: 'success', message: 'CMS Block updated successfully!' });
       } else {
         await CmsBlock.create(formData);
+        setFlashMessage({ type: 'success', message: 'CMS Block created successfully!' });
       }
       closeForm();
       loadBlocks();
     } catch (error) {
       console.error("Failed to save CMS block", error);
+      setFlashMessage({ type: 'error', message: 'Failed to save CMS block.' });
     }
   };
 
@@ -102,12 +110,15 @@ export default function CmsBlocks() {
   };
 
   const handleDelete = async (blockId) => {
-    if (window.confirm("Are you sure you want to delete this CMS block?")) {
+    const confirmed = await showConfirm("Are you sure you want to delete this CMS block?", "Delete CMS Block");
+    if (confirmed) {
       try {
         await CmsBlock.delete(blockId);
+        setFlashMessage({ type: 'success', message: 'CMS Block deleted successfully!' });
         loadBlocks(); // Call loadBlocks
       } catch (error) {
         console.error("Failed to delete CMS block", error);
+        setFlashMessage({ type: 'error', message: 'Failed to delete CMS block.' });
       }
     }
   };
@@ -115,9 +126,11 @@ export default function CmsBlocks() {
   const handleToggleActive = async (block) => {
     try {
       await CmsBlock.update(block.id, { ...block, is_active: !block.is_active });
+      setFlashMessage({ type: 'success', message: `CMS Block ${block.is_active ? 'deactivated' : 'activated'} successfully!` });
       loadBlocks(); // Call loadBlocks
     } catch (error) {
       console.error("Failed to toggle block status", error);
+      setFlashMessage({ type: 'error', message: 'Failed to toggle block status.' });
     }
   };
 
@@ -141,6 +154,8 @@ export default function CmsBlocks() {
 
   return (
     <div className="min-h-screen bg-gray-50">
+      <FlashMessage message={flashMessage} onClose={() => setFlashMessage(null)} />
+      <AlertComponent />
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8">
           <div>

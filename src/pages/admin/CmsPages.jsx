@@ -28,9 +28,11 @@ import { createCmsPageUrl } from "@/utils/urlUtils";
 import FlashMessage from "@/components/storefront/FlashMessage";
 import CmsPageForm from "@/components/admin/cms/CmsPageForm";
 import { getPageTitle } from "@/utils/translationUtils";
+import { useAlertTypes } from "@/hooks/useAlert";
 
 export default function CmsPages() {
   const { selectedStore, getSelectedStoreId } = useStoreSelection();
+  const { showConfirm, AlertComponent } = useAlertTypes();
   const [pages, setPages] = useState([]);
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -172,7 +174,8 @@ export default function CmsPages() {
       return;
     }
 
-    if (window.confirm("Are you sure you want to delete this CMS page?")) {
+    const confirmed = await showConfirm("Are you sure you want to delete this CMS page?", "Delete CMS Page");
+    if (confirmed) {
       try {
         await CmsPage.delete(pageId);
         await loadPages();
@@ -204,6 +207,7 @@ export default function CmsPages() {
   return (
     <div className="min-h-screen bg-gray-50">
       <FlashMessage message={flashMessage} onClose={() => setFlashMessage(null)} />
+      <AlertComponent />
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8">
           <div>

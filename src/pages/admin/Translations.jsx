@@ -201,13 +201,13 @@ export default function Translations() {
         setSaving(false);
 
         // Show success message
-        toast.success('Translation saved successfully');
+        showMessage('Translation saved successfully', 'success');
       } else {
         setSaving(false);
       }
     } catch (error) {
       console.error('Failed to save label:', error);
-      toast.error('Failed to save translation');
+      showMessage('Failed to save translation', 'error');
       setSaving(false);
     }
   };
