@@ -1,9 +1,12 @@
 const express = require('express');
-const { Store, Language, Category } = require('../models');
+const { Store, Language, Category, Wishlist, User, SeoSettings, SeoTemplate } = require('../models');
+const SlotConfiguration = require('../models/SlotConfiguration');
 const translationService = require('../services/translation-service');
 const { getCategoriesWithTranslations } = require('../utils/categoryHelpers');
 const { getLanguageFromRequest } = require('../utils/languageUtils');
 const { applyCacheHeaders } = require('../utils/cacheUtils');
+const { applyProductTranslationsToMany } = require('../utils/productHelpers');
+const jwt = require('jsonwebtoken');
 const router = express.Router();
 
 /**
@@ -12,16 +15,25 @@ const router = express.Router();
  * @access  Public
  * @query   {string} slug - Store slug (required)
  * @query   {string} lang - Language code (optional, defaults to 'en')
+ * @query   {string} session_id - Guest session ID for wishlist (optional)
+ * @query   {string} user_id - User ID for wishlist (optional)
+ * @header  {string} Authorization - Bearer token for user authentication (optional)
  *
  * @returns {Object} Combined response containing:
  *   - store: Store configuration
  *   - languages: Available languages
  *   - translations: UI translations for the specified language
  *   - categories: Category tree for navigation
+ *   - wishlist: User's wishlist items (if session_id/user_id/auth provided)
+ *   - user: Current user data (if authenticated)
+ *   - headerSlotConfig: Header layout configuration
+ *   - seoSettings: Store SEO settings
+ *   - seoTemplates: Active SEO templates
  */
 router.get('/', async (req, res) => {
   try {
-    const { slug, lang } = req.query;
+    const { slug, lang, session_id, user_id } = req.query;
+    const authHeader = req.headers.authorization;
 
     // Validate required parameters
     if (!slug) {
@@ -33,12 +45,31 @@ router.get('/', async (req, res) => {
 
     const language = lang || 'en';
 
+    // Try to extract user from JWT token if provided
+    let authenticatedUser = null;
+    if (authHeader && authHeader.startsWith('Bearer ')) {
+      try {
+        const token = authHeader.substring(7);
+        const decoded = jwt.verify(token, process.env.JWT_SECRET || 'your-secret-key');
+        authenticatedUser = await User.findByPk(decoded.id, {
+          attributes: { exclude: ['password'] }
+        });
+      } catch (err) {
+        // Invalid token - continue without auth
+        console.warn('Invalid auth token in bootstrap request:', err.message);
+      }
+    }
+
     // Execute all queries in parallel for optimal performance
     const [
       stores,
       languages,
       translationsResult,
-      categoriesResult
+      categoriesResult,
+      wishlistResult,
+      headerSlotConfigResult,
+      seoSettingsResult,
+      seoTemplatesResult
     ] = await Promise.all([
       // 1. Get store by slug
       Store.findAll({
@@ -78,6 +109,129 @@ router.get('/', async (req, res) => {
           language,
           { limit: 1000, offset: 0 }
         );
+      })(),
+
+      // 5. Get wishlist (if session_id, user_id, or auth provided)
+      (async () => {
+        const effectiveUserId = authenticatedUser?.id || user_id;
+        const effectiveSessionId = session_id;
+
+        if (!effectiveUserId && !effectiveSessionId) {
+          return [];
+        }
+
+        try {
+          const whereClause = {};
+          if (effectiveUserId) whereClause.user_id = effectiveUserId;
+          if (effectiveSessionId) whereClause.session_id = effectiveSessionId;
+
+          const wishlist = await Wishlist.findAll({
+            where: whereClause,
+            include: [
+              {
+                model: require('../models').Product,
+                attributes: ['id', 'price', 'images', 'slug', 'name']
+              }
+            ],
+            order: [['added_at', 'DESC']]
+          });
+
+          // Apply translations to products in wishlist
+          const wishlistWithTranslations = await Promise.all(
+            wishlist.map(async (item) => {
+              const itemData = item.toJSON();
+              if (itemData.Product) {
+                const [productWithTranslation] = await applyProductTranslationsToMany([itemData.Product], language);
+                itemData.Product = productWithTranslation;
+              }
+              return itemData;
+            })
+          );
+
+          return wishlistWithTranslations;
+        } catch (error) {
+          console.error('Error fetching wishlist in bootstrap:', error);
+          return [];
+        }
+      })(),
+
+      // 6. Get header slot configuration
+      (async () => {
+        const storeForSlots = await Store.findOne({
+          where: { slug, is_active: true }
+        });
+
+        if (!storeForSlots) {
+          return null;
+        }
+
+        try {
+          // First try to find published version
+          let configuration = await SlotConfiguration.findLatestPublished(storeForSlots.id, 'header');
+
+          // If no published version, try to find draft
+          if (!configuration) {
+            configuration = await SlotConfiguration.findOne({
+              where: {
+                store_id: storeForSlots.id,
+                status: 'draft',
+                page_type: 'header'
+              },
+              order: [['version_number', 'DESC']]
+            });
+          }
+
+          return configuration;
+        } catch (error) {
+          console.error('Error fetching header slot config in bootstrap:', error);
+          return null;
+        }
+      })(),
+
+      // 7. Get SEO settings
+      (async () => {
+        const storeForSeo = await Store.findOne({
+          where: { slug, is_active: true }
+        });
+
+        if (!storeForSeo) {
+          return null;
+        }
+
+        try {
+          const seoSettings = await SeoSettings.findOne({
+            where: { store_id: storeForSeo.id }
+          });
+          return seoSettings;
+        } catch (error) {
+          console.error('Error fetching SEO settings in bootstrap:', error);
+          return null;
+        }
+      })(),
+
+      // 8. Get active SEO templates
+      (async () => {
+        const storeForTemplates = await Store.findOne({
+          where: { slug, is_active: true }
+        });
+
+        if (!storeForTemplates) {
+          return [];
+        }
+
+        try {
+          const templates = await SeoTemplate.findAll({
+            where: {
+              store_id: storeForTemplates.id,
+              is_active: true
+            },
+            order: [['sort_order', 'ASC'], ['type', 'ASC']]
+          });
+          return templates;
+        } catch (error) {
+          console.error('Error fetching SEO templates in bootstrap:', error);
+          return [];
+        }
       })()
     ]);
 
@@ -110,8 +264,15 @@ router.get('/', async (req, res) => {
           customKeys: translationsResult.customKeys || []
         },
         categories: categoryTree,
+        wishlist: wishlistResult || [],
+        user: authenticatedUser || null,
+        headerSlotConfig: headerSlotConfigResult || null,
+        seoSettings: seoSettingsResult || null,
+        seoTemplates: seoTemplatesResult || [],
         meta: {
           categoriesCount: categoriesResult.count || 0,
+          wishlistCount: wishlistResult?.length || 0,
+          authenticated: !!authenticatedUser,
           timestamp: new Date().toISOString()
         }
       }
