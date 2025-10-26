@@ -232,8 +232,7 @@ export default function SeoTemplates() {
     <div className="container mx-auto p-6 space-y-6">
       {flashMessage && (
         <FlashMessage
-          type={flashMessage.type}
-          message={flashMessage.message}
+          message={flashMessage}
           onClose={() => setFlashMessage(null)}
         />
       )}
