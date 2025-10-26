@@ -115,4 +115,163 @@ router.get('/:id', async (req, res) => {
   }
 });
 
+// @route   GET /api/public/categories/by-slug/:slug/full
+// @desc    Get complete category data with products in one request
+// @access  Public
+router.get('/by-slug/:slug/full', async (req, res) => {
+  try {
+    const { slug } = req.params;
+    const { store_id } = req.query;
+    const lang = getLanguageFromRequest(req);
+
+    if (!store_id) {
+      return res.status(400).json({
+        success: false,
+        message: 'store_id is required'
+      });
+    }
+
+    // 1. Find category by slug
+    const category = await Category.findOne({
+      where: {
+        store_id,
+        slug,
+        is_active: true,
+        hide_in_menu: false
+      }
+    });
+
+    if (!category) {
+      return res.status(404).json({
+        success: false,
+        message: 'Category not found'
+      });
+    }
+
+    // Apply category translations
+    const { getCategoryWithTranslations } = require('../utils/categoryHelpers');
+    const categoryWithTranslations = await getCategoryWithTranslations(category.id, lang);
+
+    // 2. Get all products in this category
+    const { Product, ProductAttributeValue, Attribute, AttributeValue } = require('../models');
+    const { applyProductTranslationsToMany } = require('../utils/productHelpers');
+    const { getAttributesWithTranslations, getAttributeValuesWithTranslations } = require('../utils/attributeHelpers');
+
+    const products = await Product.findAll({
+      where: {
+        store_id,
+        status: 'active',
+        visibility: 'visible',
+        category_ids: {
+          [Op.contains]: [category.id]
+        }
+      },
+      attributes: { exclude: ['translations'] },
+      include: [
+        {
+          model: ProductAttributeValue,
+          as: 'attributeValues',
+          include: [
+            {
+              model: Attribute,
+              attributes: ['id', 'code', 'type']
+            },
+            {
+              model: AttributeValue,
+              as: 'value',
+              attributes: ['id', 'code', 'metadata']
+            }
+          ]
+        }
+      ],
+      order: [['created_at', 'DESC']]
+    });
+
+    // Apply product translations
+    const productsWithTranslations = await applyProductTranslationsToMany(products, lang);
+
+    // Collect attribute and value IDs for bulk translation lookup
+    const attributeIds = new Set();
+    const attributeValueIds = new Set();
+
+    productsWithTranslations.forEach(product => {
+      if (product.attributeValues && Array.isArray(product.attributeValues)) {
+        product.attributeValues.forEach(pav => {
+          if (pav.Attribute) attributeIds.add(pav.Attribute.id);
+          if (pav.value_id && pav.value) attributeValueIds.add(pav.value.id);
+        });
+      }
+    });
+
+    // Fetch attribute translations in bulk
+    const [attributeTranslations, valueTranslations] = await Promise.all([
+      attributeIds.size > 0 ? getAttributesWithTranslations({ id: Array.from(attributeIds) }) : [],
+      attributeValueIds.size > 0 ? getAttributeValuesWithTranslations({ id: Array.from(attributeValueIds) }) : []
+    ]);
+
+    // Create lookup maps
+    const attrTransMap = new Map(attributeTranslations.map(attr => [attr.id, attr.translations]));
+    const valTransMap = new Map(valueTranslations.map(val => [val.id, val.translations]));
+
+    // Format products with attributes and translations
+    const productsWithAttributes = productsWithTranslations.map(productData => {
+      // Format attributes for frontend
+      if (productData.attributeValues && Array.isArray(productData.attributeValues)) {
+        productData.attributes = productData.attributeValues.map(pav => {
+          const attr = pav.Attribute;
+          if (!attr) return null;
+
+          const attrTranslations = attrTransMap.get(attr.id) || {};
+          const attrLabel = attrTranslations[lang]?.label || attrTranslations.en?.label || attr.code;
+
+          let value, valueLabel, metadata = null;
+
+          if (pav.value_id && pav.value) {
+            value = pav.value.code;
+            const valTranslations = valTransMap.get(pav.value.id) || {};
+            valueLabel = valTranslations[lang]?.label || valTranslations.en?.label || pav.value.code;
+            metadata = pav.value.metadata || null;
+          } else {
+            value = pav.text_value || pav.number_value || pav.date_value || pav.boolean_value;
+            valueLabel = String(value);
+          }
+
+          return {
+            id: attr.id,
+            code: attr.code,
+            label: attrLabel,
+            value: valueLabel,
+            rawValue: value,
+            type: attr.type,
+            metadata
+          };
+        }).filter(Boolean);
+      } else {
+        productData.attributes = [];
+      }
+
+      delete productData.attributeValues;
+      return productData;
+    });
+
+    // Apply cache headers based on store settings
+    await applyCacheHeaders(res, store_id);
+
+    // Return combined response
+    res.json({
+      category: categoryWithTranslations,
+      products: productsWithAttributes,
+      total: productsWithAttributes.length
+    });
+
+  } catch (error) {
+    console.error('Get category with products error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Server error',
+      error: error.message
+    });
+  }
+});
+
 module.exports = router;

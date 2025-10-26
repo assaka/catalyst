@@ -274,49 +274,34 @@ export default function Category() {
         return;
       }
 
-      let category = null;
-      if (categories) {
-        category = categories.find(c => c?.slug === categorySlug);
-      }
+      // Use new optimized endpoint that returns category + products in one call
+      const response = await fetch(
+        `/api/public/categories/by-slug/${encodeURIComponent(categorySlug)}/full?store_id=${store.id}`,
+        {
+          headers: {
+            'X-Language': getCurrentLanguage()
+          }
+        }
+      );
 
-      if (!category) {
-        console.warn(`Category with slug '${categorySlug}' not found.`);
-        showNotFound(`Category "${categorySlug}" not found`);
-        setLoading(false);
+      if (!response.ok) {
+        if (response.status === 404) {
+          showNotFound(`Category "${categorySlug}" not found`);
+        }
+        setProducts([]);
         return;
       }
-      
-      setCurrentCategory(category);
-      
-      const currentLang = getCurrentLanguage();
-      const cacheKey = `products-category-${category.id}-${currentLang}-v6`;
-      let productsData = await cachedApiCall(cacheKey, async () => {
-        try {
-          const exact = await StorefrontProduct.getByCategory(category.id, {
-            store_id: store.id,
-            lang: currentLang
-          });
 
-          if (exact && exact.length > 0) {
-            return exact;
-          }
-        } catch {
-          console.warn("Failed to get products by category, falling back to filtered approach");
-        }
+      const data = await response.json();
 
-        const allProducts = await cachedApiCall(`all-active-products-${store.id}-${currentLang}`, () =>
-          StorefrontProduct.filter({ store_id: store.id, lang: currentLang })
-        );
-        
-        const filtered = (allProducts || []).filter(product => {
-          const hasCategories = product.category_ids && Array.isArray(product.category_ids);
-          const includesCategory = hasCategories && product.category_ids.includes(category.id);
-          return includesCategory;
-        });
-        return filtered;
-      });
-      
-      setProducts(ensureArray(productsData));
+      if (!data.category) {
+        showNotFound(`Category "${categorySlug}" not found`);
+        setProducts([]);
+        return;
+      }
+
+      setCurrentCategory(data.category);
+      setProducts(ensureArray(data.products));
     } catch (error) {
       console.error("Category: Error loading products:", error);
       setProducts([]);
