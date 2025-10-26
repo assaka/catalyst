@@ -10,11 +10,12 @@ import { CategorySlotRenderer } from "@/components/storefront/CategorySlotRender
 import { usePagination, useSorting } from "@/hooks/useUrlUtils";
 import { Package } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
-import slotConfigurationService from '@/services/slotConfigurationService';
 import { categoryConfig } from '@/components/editor/slot/configs/category-config';
 import { formatPrice } from '@/utils/priceUtils';
 import { getCategoryName, getCurrentLanguage } from "@/utils/translationUtils";
 import { useTranslation } from '@/contexts/TranslationContext';
+// React Query hooks for optimized API calls
+import { useCategory, useSlotConfiguration } from '@/hooks/useApiQueries';
 
 const ensureArray = (data) => {
   if (Array.isArray(data)) return data;
@@ -26,10 +27,28 @@ export default function Category() {
   const { store, settings, loading: storeLoading, categories, filterableAttributes } = useStore();
   const { showNotFound } = useNotFound();
   const { t } = useTranslation();
-  
+
+  const { storeCode } = useParams();
+  const location = useLocation();
+
+  // Extract category path from URL: /public/storeCode/category/path/to/category
+  const categoryPath = location.pathname.split('/').slice(4).join('/');
+  const categorySlug = categoryPath.split('/').pop(); // Get the last segment as the actual category slug
+
+  // Use React Query hooks for automatic caching & deduplication
+  const {
+    data: categoryData,
+    isLoading: categoryLoading,
+    error: categoryError
+  } = useCategory(categorySlug, store?.id, {
+    enabled: !storeLoading && !!store?.id && !!categorySlug
+  });
+
+  // Use React Query hook for slot configuration
+  const { data: slotConfig } = useSlotConfiguration(store?.id, 'category');
+
   const [products, setProducts] = useState([]);
   const [currentCategory, setCurrentCategory] = useState(null);
-  const [loading, setLoading] = useState(true);
   const [activeFilters, setActiveFilters] = useState({});
   // Detect current breakpoint based on window width
   const getCurrentBreakpoint = () => {
@@ -81,19 +100,12 @@ export default function Category() {
   const [categoryConfigLoaded, setCategoryConfigLoaded] = useState(false);
   const [viewMode, setViewMode] = useState('grid');
 
-  const { storeCode } = useParams();
-  const location = useLocation();
-
   // Update viewMode when settings are loaded
   useEffect(() => {
     if (settings?.default_view_mode) {
       setViewMode(settings.default_view_mode);
     }
   }, [settings?.default_view_mode]);
-
-  // Extract category path from URL: /public/storeCode/category/path/to/category
-  const categoryPath = location.pathname.split('/').slice(4).join('/');
-  const categorySlug = categoryPath.split('/').pop(); // Get the last segment as the actual category slug
 
   const { currentPage, setPage } = usePagination();
   const { currentSort, setSort } = useSorting();
@@ -122,79 +134,25 @@ export default function Category() {
     return () => window.removeEventListener('resize', handleResize);
   }, [settings?.product_grid, itemsPerPage, setPage]);
 
-  // Load category layout configuration directly
+  // Update layout config when slotConfig changes from React Query
   useEffect(() => {
-    const loadCategoryLayoutConfig = async () => {
-      if (!store?.id) {
-        return;
-      }
-
-      try {
-        // Load published configuration using the new versioning API
-        const response = await slotConfigurationService.getPublishedConfiguration(store.id, 'category');
-
-        // Check for various "no published config" scenarios
-        if (response.success && response.data &&
-            response.data.configuration &&
-            response.data.configuration.slots &&
-            Object.keys(response.data.configuration.slots).length > 0) {
-
-          const publishedConfig = response.data;
-          setCategoryLayoutConfig(publishedConfig.configuration);
-          setCategoryConfigLoaded(true);
-
-        } else {
-          // Fallback to category-config.js
-          const fallbackConfig = {
-            slots: { ...categoryConfig.slots },
-            metadata: {
-              ...categoryConfig.metadata,
-              fallbackUsed: true,
-              fallbackReason: `No valid published configuration`
-            }
-          };
-
-          setCategoryLayoutConfig(fallbackConfig);
-          setCategoryConfigLoaded(true);
+    if (slotConfig) {
+      setCategoryLayoutConfig(slotConfig);
+      setCategoryConfigLoaded(true);
+    } else if (slotConfig === null) {
+      // Use fallback config when no published config exists
+      const fallbackConfig = {
+        slots: { ...categoryConfig.slots },
+        metadata: {
+          ...categoryConfig.metadata,
+          fallbackUsed: true,
+          fallbackReason: 'No published configuration'
         }
-      } catch (error) {
-        console.error('❌ Error loading published slot configuration:', error);
-
-        // Fallback to category-config.js
-        const fallbackConfig = {
-          slots: { ...categoryConfig.slots },
-          metadata: {
-            ...categoryConfig.metadata,
-            fallbackUsed: true,
-            fallbackReason: `Error loading configuration: ${error.message}`
-          }
-        };
-
-        setCategoryLayoutConfig(fallbackConfig);
-        setCategoryConfigLoaded(true);
-      }
-    };
-
-    loadCategoryLayoutConfig();
-
-    // Listen for configuration updates from editor
-    const handleStorageChange = (e) => {
-      if (e.key === 'slot_config_updated' && e.newValue) {
-        const updateData = JSON.parse(e.newValue);
-        if (updateData.storeId === store?.id && updateData.pageType === 'category') {
-          loadCategoryLayoutConfig();
-          // Clear the notification
-          localStorage.removeItem('slot_config_updated');
-        }
-      }
-    };
-
-    window.addEventListener('storage', handleStorageChange);
-
-    return () => {
-      window.removeEventListener('storage', handleStorageChange);
-    };
-  }, [store?.id]);
+      };
+      setCategoryLayoutConfig(fallbackConfig);
+      setCategoryConfigLoaded(true);
+    }
+  }, [slotConfig]);
 
   // Extract slots from the loaded configuration
   const categorySlots = categoryLayoutConfig?.slots || null;
@@ -244,72 +202,28 @@ export default function Category() {
     return 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-2';
   };
 
-    useEffect(() => {
-    if (!storeLoading && store?.id && categorySlug) {
-      loadCategoryProducts();
+  // Update state when categoryData changes from React Query
+  useEffect(() => {
+    if (categoryData && categoryData.category) {
+      setCurrentCategory(categoryData.category);
+      setProducts(ensureArray(categoryData.products));
+      setActiveFilters({});
 
       // Track category view
       if (typeof window !== 'undefined' && window.catalyst?.trackEvent) {
-        const category = categories?.find(c => c?.slug === categorySlug);
-        if (category) {
-          window.catalyst.trackEvent('page_view', {
-            page_type: 'category',
-            category_name: getCategoryName(category, getCurrentLanguage()),
-            category_id: category.id,
-            store_name: store.name,
-            store_id: store.id
-          });
-        }
+        window.catalyst.trackEvent('page_view', {
+          page_type: 'category',
+          category_name: getCategoryName(categoryData.category, getCurrentLanguage()),
+          category_id: categoryData.category.id,
+          store_name: store.name,
+          store_id: store.id
+        });
       }
-    }
-  }, [categorySlug, store?.id, storeLoading, categories]);
-
-  const loadCategoryProducts = async () => {
-    try {
-      setLoading(true);
-      setActiveFilters({});
-
-      if (!store || !categorySlug) {
-        setLoading(false);
-        return;
-      }
-
-      // Use new optimized endpoint that returns category + products in one call
-      const response = await fetch(
-        `/api/public/categories/by-slug/${encodeURIComponent(categorySlug)}/full?store_id=${store.id}`,
-        {
-          headers: {
-            'X-Language': getCurrentLanguage()
-          }
-        }
-      );
-
-      if (!response.ok) {
-        if (response.status === 404) {
-          showNotFound(`Category "${categorySlug}" not found`);
-        }
-        setProducts([]);
-        return;
-      }
-
-      const response_data = await response.json();
-      const data = response_data.data;
-
-      if (!data || !data.category) {
-        showNotFound(`Category "${categorySlug}" not found`);
-        setProducts([]);
-        return;
-      }
-
-      setCurrentCategory(data.category);
-      setProducts(ensureArray(data.products));
-    } catch (error) {
-      console.error("Category: Error loading products:", error);
+    } else if (categoryError) {
+      showNotFound(`Category "${categorySlug}" not found`);
       setProducts([]);
-    } finally {
-      setLoading(false);
     }
-  };
+  }, [categoryData, categoryError, store, categorySlug]);
   
   const filteredProducts = useMemo(() => {
     let currentProducts = products;
@@ -613,7 +527,10 @@ export default function Category() {
     onProductClick: (product) => window.location.href = createProductUrl(storeCode, product.slug)
   };
 
-  if (storeLoading) {
+  // Combined loading state from both store and category
+  const loading = storeLoading || categoryLoading;
+
+  if (loading) {
     return (
       <div className="flex items-center justify-center h-96">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
