@@ -59,8 +59,21 @@ const MediaBrowser = ({ isOpen, onClose, onInsert, allowMultiple = false, upload
 
   // Load files from storage
   const loadFiles = async () => {
+    console.log('🔍 MediaBrowser: loadFiles called', {
+      uploadFolder,
+      selectedStoreId: selectedStore?.id
+    });
+
     try {
       setLoading(true);
+
+      if (!selectedStore?.id) {
+        console.warn('⚠️ MediaBrowser: No store selected');
+        toast.error('No store selected');
+        setFiles([]);
+        setLoading(false);
+        return;
+      }
 
       // When uploadFolder is 'category', only show category images
       // Otherwise show all files for general media library
@@ -71,8 +84,16 @@ const MediaBrowser = ({ isOpen, onClose, onInsert, allowMultiple = false, upload
         params.folder = 'category';
       }
 
+      console.log('📡 MediaBrowser: Fetching files...', { requestUrl, params });
+
       const response = await apiClient.get(requestUrl, { params });
-      
+
+      console.log('✅ MediaBrowser: Response received', {
+        success: response?.success,
+        hasData: !!response?.data,
+        filesCount: response?.data?.files?.length
+      });
+
       if (response.success && response.data) {
         const rawFiles = response.data.files || [];
         const transformedFiles = rawFiles.map(file => ({
@@ -83,15 +104,18 @@ const MediaBrowser = ({ isOpen, onClose, onInsert, allowMultiple = false, upload
           mimeType: file.metadata?.mimetype || file.mimetype || 'application/octet-stream',
           uploadedAt: file.created_at || file.updated_at || new Date().toISOString()
         }));
+        console.log(`📁 MediaBrowser: Loaded ${transformedFiles.length} files`);
         setFiles(transformedFiles);
       } else {
+        console.warn('⚠️ MediaBrowser: No files in response');
         setFiles([]);
       }
     } catch (error) {
-      console.error('Error loading files:', error);
-      toast.error('Failed to load media files');
+      console.error('❌ MediaBrowser: Error loading files:', error);
+      toast.error(`Failed to load media files: ${error.message || 'Unknown error'}`);
       setFiles([]);
     } finally {
+      console.log('🏁 MediaBrowser: loadFiles complete');
       setLoading(false);
     }
   };
@@ -120,25 +144,34 @@ const MediaBrowser = ({ isOpen, onClose, onInsert, allowMultiple = false, upload
 
   // Check storage connection status
   const checkStorageConnection = async () => {
+    console.log('🔍 MediaBrowser: checkStorageConnection called');
     try {
-      if (!selectedStore?.id) return;
-      
+      if (!selectedStore?.id) {
+        console.warn('⚠️ MediaBrowser: No store ID for storage check');
+        return;
+      }
+
+      console.log('📡 MediaBrowser: Fetching storage providers...');
       const response = await apiClient.get('/storage/providers');
-      
+
+      console.log('✅ MediaBrowser: Storage providers response:', response);
+
       if (response.success && response.data) {
         const currentProvider = response.data.current;
         const isAvailable = response.data.providers[currentProvider?.provider]?.available;
-        
+
         if (isAvailable) {
+          console.log('✅ Storage connected:', currentProvider);
           setStorageConnected(true);
           setStorageError(null);
         } else {
+          console.warn('⚠️ Storage not available:', currentProvider);
           setStorageConnected(false);
           setStorageError(`${currentProvider?.name || 'Storage provider'} is not properly configured`);
         }
       }
     } catch (error) {
-      console.error('Error checking storage connection:', error);
+      console.error('❌ MediaBrowser: Error checking storage connection:', error);
       setStorageConnected(false);
       setStorageError('Unable to check storage connection status');
     }
