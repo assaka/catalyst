@@ -2,7 +2,8 @@ import React, { useEffect, useState } from 'react';
 import { useStore } from './StoreProvider';
 import { useSeoSettings } from './SeoSettingsProvider';
 import apiClient from '@/api/client';
-import { getPriceDisplay } from '@/utils/priceUtils';
+import { getPriceDisplay, formatPrice } from '@/utils/priceUtils';
+import { getCategoryName, getProductName, getCurrentLanguage } from '@/utils/translationUtils';
 
 export default function SeoHeadManager({ pageType, pageData, pageTitle, pageDescription, imageUrl }) {
     const storeContext = useStore();
@@ -104,11 +105,21 @@ export default function SeoHeadManager({ pageType, pageData, pageTitle, pageDesc
             
             // Replace common placeholders
             const titleSeparator = seoSettings?.title_separator || '|';
+            const currentLang = getCurrentLanguage();
+
+            // Get translated names if available
+            const productName = pageType === 'product' && data ?
+                (getProductName(data, currentLang) || data?.name || '') :
+                (data?.name || '');
+            const categoryName = pageType === 'category' && data ?
+                (getCategoryName(data, currentLang) || data?.name || '') :
+                (data?.name || '');
+
             const replacements = {
                 '{{store_name}}': store?.name || '',
                 '{{page_title}}': pageTitle || '',
-                '{{product_name}}': data?.name || '',
-                '{{category_name}}': data?.name || '',
+                '{{product_name}}': productName,
+                '{{category_name}}': categoryName,
                 '{{product_description}}': data?.description || data?.short_description || '',
                 '{{category_description}}': data?.description || '',
                 '{{store_description}}': store?.description || '',
@@ -116,11 +127,16 @@ export default function SeoHeadManager({ pageType, pageData, pageTitle, pageDesc
                 '{{current_url}}': window.location.href || '',
                 '{{absolute_path}}': absolutePath,
                 '{{relative_path}}': relativePath,
-                '{{language_code}}': data?.language_code || '',
+                '{{language_code}}': currentLang || data?.language_code || '',
                 '{{site_name}}': store?.name || '',
                 '{{separator}}': titleSeparator,
                 '{{year}}': new Date().getFullYear().toString(),
-                '{{currency}}': store?.currency || 'No Currency'
+                '{{month}}': new Date().toLocaleString('default', { month: 'long' }),
+                '{{day}}': new Date().getDate().toString(),
+                '{{currency}}': store?.currency || 'No Currency',
+                '{{sku}}': data?.sku || '',
+                '{{price}}': data?.price ? formatPrice(data.price, store?.currency) : '',
+                '{{brand}}': data?.brand || ''
             };
             
             

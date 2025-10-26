@@ -310,8 +310,11 @@ export default function SeoTemplates() {
                       <li><code className="bg-background px-1 py-0.5 rounded">{'{{base_url}}'}</code> - Base URL of your site</li>
                       <li><code className="bg-background px-1 py-0.5 rounded">{'{{current_url}}'}</code> - Current page URL</li>
                       <li><code className="bg-background px-1 py-0.5 rounded">{'{{separator}}'}</code> - Title separator (e.g., |)</li>
-                      <li><code className="bg-background px-1 py-0.5 rounded">{'{{year}}'}</code> - Current year</li>
+                      <li><code className="bg-background px-1 py-0.5 rounded">{'{{year}}'}</code> - Current year (e.g., 2025)</li>
+                      <li><code className="bg-background px-1 py-0.5 rounded">{'{{month}}'}</code> - Current month name</li>
+                      <li><code className="bg-background px-1 py-0.5 rounded">{'{{day}}'}</code> - Current day</li>
                       <li><code className="bg-background px-1 py-0.5 rounded">{'{{currency}}'}</code> - Store currency</li>
+                      <li><code className="bg-background px-1 py-0.5 rounded">{'{{language_code}}'}</code> - Current language code</li>
                     </ul>
                   </div>
 
@@ -319,9 +322,12 @@ export default function SeoTemplates() {
                     <div>
                       <h4 className="font-medium text-sm mb-2">Product Page Variables</h4>
                       <ul className="text-xs space-y-1 ml-6">
-                        <li><code className="bg-background px-1 py-0.5 rounded">{'{{product_name}}'}</code> - Product name</li>
+                        <li><code className="bg-background px-1 py-0.5 rounded">{'{{product_name}}'}</code> - Product name (translated)</li>
                         <li><code className="bg-background px-1 py-0.5 rounded">{'{{product_description}}'}</code> - Product description</li>
                         <li><code className="bg-background px-1 py-0.5 rounded">{'{{category_name}}'}</code> - Product's category name</li>
+                        <li><code className="bg-background px-1 py-0.5 rounded">{'{{sku}}'}</code> - Product SKU</li>
+                        <li><code className="bg-background px-1 py-0.5 rounded">{'{{price}}'}</code> - Product price (formatted)</li>
+                        <li><code className="bg-background px-1 py-0.5 rounded">{'{{brand}}'}</code> - Product brand</li>
                       </ul>
                     </div>
                   )}
@@ -330,7 +336,7 @@ export default function SeoTemplates() {
                     <div>
                       <h4 className="font-medium text-sm mb-2">Category Page Variables</h4>
                       <ul className="text-xs space-y-1 ml-6">
-                        <li><code className="bg-background px-1 py-0.5 rounded">{'{{category_name}}'}</code> - Category name</li>
+                        <li><code className="bg-background px-1 py-0.5 rounded">{'{{category_name}}'}</code> - Category name (translated)</li>
                         <li><code className="bg-background px-1 py-0.5 rounded">{'{{category_description}}'}</code> - Category description</li>
                       </ul>
                     </div>
