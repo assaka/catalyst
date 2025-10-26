@@ -73,8 +73,8 @@ const FileLibrary = () => {
     try {
       setLoading(true);
 
-      // Use the same API as FilePickerModal for consistency
-      const response = await apiClient.get('/supabase/storage/list/suprshop-assets');
+      // Use Supabase storage endpoint - backend determines bucket name for the store
+      const response = await apiClient.get('/supabase/storage/list');
       
       // Check if we have valid storage data (same format as FilePickerModal)
       if (response.success && response.files) {

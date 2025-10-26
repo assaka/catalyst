@@ -75,12 +75,18 @@ const MediaBrowser = ({ isOpen, onClose, onInsert, allowMultiple = false, upload
         return;
       }
 
-      // Use the same direct Supabase endpoint as FileLibrary (bypasses storage-manager)
-      const requestUrl = '/supabase/storage/list/suprshop-assets';
+      // Use Supabase endpoint - let backend determine the bucket name for this store
+      const requestUrl = '/supabase/storage/list';
+      const params = {};
 
-      console.log('📡 MediaBrowser: Fetching files...', { requestUrl });
+      // Add folder filter if specified
+      if (uploadFolder === 'category') {
+        params.folder = 'category';
+      }
 
-      const response = await apiClient.get(requestUrl);
+      console.log('📡 MediaBrowser: Fetching files...', { requestUrl, params });
+
+      const response = await apiClient.get(requestUrl, { params });
 
       console.log('✅ MediaBrowser: Response received', {
         success: response?.success,
