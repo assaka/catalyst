@@ -99,20 +99,6 @@ export default function ProductDetail() {
     enabled: !storeLoading && !!store?.id && !!slug
   });
 
-  // Debug logging
-  useEffect(() => {
-    console.log('🔍 ProductDetail Debug:', {
-      slug,
-      storeId: store?.id,
-      storeLoading,
-      productLoading,
-      hasProductData: !!productData,
-      hasProduct: !!product,
-      hasError: !!productError,
-      errorMessage: productError?.message
-    });
-  }, [slug, store?.id, storeLoading, productLoading, productData, product, productError]);
-
   const [product, setProduct] = useState(null);
   const [quantity, setQuantity] = useState(1);
   const [activeImage, setActiveImage] = useState(0);
@@ -150,6 +136,20 @@ export default function ProductDetail() {
   const handleVariantChange = (variant) => {
     setSelectedVariant(variant);
   };
+
+  // Debug logging (after all state declarations)
+  useEffect(() => {
+    console.log('🔍 ProductDetail Debug:', {
+      slug,
+      storeId: store?.id,
+      storeLoading,
+      productLoading,
+      hasProductData: !!productData,
+      hasProduct: !!product,
+      hasError: !!productError,
+      errorMessage: productError?.message
+    });
+  }, [slug, store?.id, storeLoading, productLoading, productData, product, productError]);
 
   // Update product state when productData changes from React Query
   useEffect(() => {
