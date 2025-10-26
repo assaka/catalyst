@@ -42,26 +42,20 @@ const loadCmsBlocksWithCache = async (storeId) => {
   const currentLanguage = localStorage.getItem('catalyst_language') || 'en';
   const cacheKey = `store_${storeId}_lang_${currentLanguage}`;
 
-  console.log('🔍 CmsBlockRenderer: Loading blocks with cache key:', cacheKey);
-
   // Check cache first
   if (cmsBlockCache.has(cacheKey)) {
-    console.log('✅ CmsBlockRenderer: Using cached blocks for language:', currentLanguage);
     return cmsBlockCache.get(cacheKey);
   }
 
   // Check if there's already a pending request
   if (pendingRequests.has(cacheKey)) {
-    console.log('⏳ CmsBlockRenderer: Waiting for pending request');
     return pendingRequests.get(cacheKey);
   }
 
   // Create new request to load CMS blocks
   const requestPromise = retryApiCall(async () => {
     try {
-      console.log('🌍 CmsBlockRenderer: Fetching blocks for store:', storeId, 'language:', currentLanguage);
       const blocks = await StorefrontCmsBlock.findAll({ store_id: storeId });
-      console.log('📥 CmsBlockRenderer: Received blocks:', blocks?.length || 0);
       return blocks;
     } catch (error) {
       console.warn('⚠️ CmsBlockRenderer: Backend CMS blocks API failed, this is expected if backend is not properly configured:', error.message);
@@ -73,7 +67,6 @@ const loadCmsBlocksWithCache = async (storeId) => {
       const result = blocks || [];
       cmsBlockCache.set(cacheKey, result);
       pendingRequests.delete(cacheKey);
-      console.log('💾 CmsBlockRenderer: Cached blocks for language:', currentLanguage);
       return result;
     })
     .catch(error => {
@@ -184,9 +177,6 @@ export default function CmsBlockRenderer({ position, page, storeId }) {
   useEffect(() => {
     const handleLanguageChange = (event) => {
       const newLanguage = event.detail?.language;
-      console.log('🌍 CmsBlockRenderer: Language changed to:', newLanguage);
-      console.log('🧹 CmsBlockRenderer: Clearing CMS blocks cache');
-
       // Clear all cached blocks
       cmsBlockCache.clear();
       pendingRequests.clear();

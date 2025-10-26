@@ -6,6 +6,7 @@
  */
 
 const { sequelize } = require('../database/connection');
+const { Op } = require('sequelize');
 
 /**
  * Get product translation from normalized table
@@ -148,13 +149,6 @@ async function applyAllProductTranslations(products) {
     type: sequelize.QueryTypes.SELECT
   });
 
-  console.log('📊 applyAllProductTranslations - Fetched translations:', {
-    productCount: productData.length,
-    translationCount: translations.length,
-    sampleTranslations: translations.slice(0, 5),
-    productIds: productIds.slice(0, 3)
-  });
-
   // Group translations by product_id and language_code
   const translationsByProduct = {};
   translations.forEach(t => {
@@ -168,27 +162,11 @@ async function applyAllProductTranslations(products) {
     };
   });
 
-  console.log('📦 applyAllProductTranslations - Grouped translations:', {
-    productIdsWithTranslations: Object.keys(translationsByProduct),
-    sampleGrouped: Object.entries(translationsByProduct).slice(0, 2).map(([id, trans]) => ({
-      productId: id,
-      languages: Object.keys(trans)
-    }))
-  });
-
   // Attach translations to products
   const result = productData.map(product => ({
     ...product,
     translations: translationsByProduct[product.id] || {}
   }));
-
-  console.log('✅ applyAllProductTranslations - Final result sample:', {
-    firstProduct: result[0] ? {
-      id: result[0].id,
-      name: result[0].name,
-      translationKeys: Object.keys(result[0].translations || {})
-    } : null
-  });
 
   return result;
 }
@@ -241,10 +219,109 @@ async function updateProductTranslations(productId, translations = {}) {
   }
 }
 
+/**
+ * Get products with all data (translations, attributes) in optimized SQL queries
+ * Reduces N+1 queries by using JOINs
+ *
+ * @param {Object} where - Sequelize WHERE conditions
+ * @param {string} lang - Language code
+ * @param {Object} options - { limit, offset, order }
+ * @returns {Promise<Object>} { rows, count }
+ */
+async function getProductsOptimized(where = {}, lang = 'en', options = {}) {
+  const { limit, offset, order = [['created_at', 'DESC']] } = options;
+
+  // Build WHERE clause for raw SQL
+  const buildWhereClause = (conditions) => {
+    const clauses = [];
+    const replacements = {};
+
+    Object.entries(conditions).forEach(([key, value]) => {
+      if (key === 'category_ids' && value[Op.contains]) {
+        // Handle JSONB contains for categories
+        clauses.push(`p.category_ids @> :category_ids`);
+        replacements.category_ids = JSON.stringify(value[Op.contains]);
+      } else if (typeof value === 'object' && value[Op.or]) {
+        // Handle complex OR conditions (for stock filtering)
+        const orClauses = value[Op.or].map((condition, idx) => {
+          if (condition.type === 'configurable') {
+            return `p.type = 'configurable'`;
+          } else if (condition.infinite_stock === true) {
+            return `p.infinite_stock = true`;
+          } else if (condition.manage_stock === false) {
+            return `p.manage_stock = false`;
+          } else if (condition[Op.and]) {
+            return `(p.manage_stock = true AND p.stock_quantity > 0)`;
+          }
+          return null;
+        }).filter(Boolean);
+        if (orClauses.length > 0) {
+          clauses.push(`(${orClauses.join(' OR ')})`);
+        }
+      } else {
+        // Simple equality
+        clauses.push(`p.${key} = :${key}`);
+        replacements[key] = value;
+      }
+    });
+
+    return { clause: clauses.length > 0 ? `WHERE ${clauses.join(' AND ')}` : '', replacements };
+  };
+
+  const { clause: whereClause, replacements: whereReplacements } = buildWhereClause(where);
+
+  // Count query
+  const countQuery = `
+    SELECT COUNT(DISTINCT p.id) as count
+    FROM products p
+    ${whereClause}
+  `;
+
+  // Main query with JOINs for translations
+  const paginationClause = [];
+  if (limit) paginationClause.push(`LIMIT ${parseInt(limit)}`);
+  if (offset) paginationClause.push(`OFFSET ${parseInt(offset)}`);
+
+  const dataQuery = `
+    SELECT
+      p.*,
+      COALESCE(pt.name, pt_en.name, '') as name,
+      COALESCE(pt.description, pt_en.description, '') as description,
+      COALESCE(pt.short_description, pt_en.short_description, '') as short_description
+    FROM products p
+    LEFT JOIN product_translations pt
+      ON p.id = pt.product_id AND pt.language_code = :lang
+    LEFT JOIN product_translations pt_en
+      ON p.id = pt_en.product_id AND pt_en.language_code = 'en'
+    ${whereClause}
+    ORDER BY p.created_at DESC
+    ${paginationClause.join(' ')}
+  `;
+
+  const replacements = { ...whereReplacements, lang };
+
+  // Execute both queries in parallel
+  const [countResult, products] = await Promise.all([
+    sequelize.query(countQuery, {
+      replacements,
+      type: sequelize.QueryTypes.SELECT
+    }),
+    sequelize.query(dataQuery, {
+      replacements,
+      type: sequelize.QueryTypes.SELECT
+    })
+  ]);
+
+  const count = parseInt(countResult[0]?.count || 0);
+
+  return { rows: products, count };
+}
+
 module.exports = {
   getProductTranslation,
   applyProductTranslations,
   applyProductTranslationsToMany,
   applyAllProductTranslations,
-  updateProductTranslations
+  updateProductTranslations,
+  getProductsOptimized
 };

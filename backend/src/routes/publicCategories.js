@@ -17,9 +17,6 @@ router.get('/', async (req, res) => {
     const { page = 1, limit = 100, store_id, parent_id, search } = req.query;
     const offset = (page - 1) * limit;
 
-    console.log('🔍 Public Categories API called with params:', req.query);
-    console.log('🔍 Request URL:', req.originalUrl);
-
     const where = {
       is_active: true,  // Only show active categories
       hide_in_menu: false  // Only show categories not hidden in menu
@@ -29,46 +26,13 @@ router.get('/', async (req, res) => {
     if (parent_id !== undefined) where.parent_id = parent_id;
 
     const lang = getLanguageFromRequest(req);
-    console.log('🌍 Public Categories: Requesting language:', lang);
 
-    // Get categories with translations
-    const categories = await getCategoriesWithTranslations(where, lang);
-
-    // Handle search in memory (if needed) - already supports translation search in normalized table
-    let filteredCategories = categories;
-    if (search) {
-      const searchLower = search.toLowerCase();
-      filteredCategories = categories.filter(cat =>
-        cat.name?.toLowerCase().includes(searchLower) ||
-        cat.description?.toLowerCase().includes(searchLower)
-      );
-    }
-
-    // Apply pagination
-    const paginatedCategories = filteredCategories.slice(offset, offset + parseInt(limit));
-
-    console.log('✅ Public Categories query result:', paginatedCategories.length, 'categories found');
-    console.log('🔍 Total categories before pagination:', filteredCategories.length);
-    console.log('🔍 Pagination: offset =', offset, ', limit =', limit);
-
-    if (paginatedCategories.length > 0) {
-      console.log('🎯 First category being returned:', JSON.stringify({
-        id: paginatedCategories[0].id,
-        name: paginatedCategories[0].name,
-        slug: paginatedCategories[0].slug,
-        is_active: paginatedCategories[0].is_active,
-        hide_in_menu: paginatedCategories[0].hide_in_menu,
-        parent_id: paginatedCategories[0].parent_id,
-        lang: lang,
-        has_name: !!paginatedCategories[0].name,
-        name_value: paginatedCategories[0].name
-      }, null, 2));
-    } else {
-      console.log('⚠️ NO CATEGORIES TO RETURN');
-      console.log('⚠️ Categories from DB:', categories.length);
-      console.log('⚠️ After filtering:', filteredCategories.length);
-      console.log('⚠️ Where clause:', JSON.stringify(where, null, 2));
-    }
+    // Get categories with SQL-based pagination and search
+    const { rows: categories, count } = await getCategoriesWithTranslations(
+      where,
+      lang,
+      { limit: parseInt(limit), offset: parseInt(offset), search }
+    );
 
     // Apply cache headers based on store settings
     if (store_id) {
@@ -76,8 +40,7 @@ router.get('/', async (req, res) => {
     }
 
     // Return just the array for public requests (for compatibility)
-    console.log('📤 Returning', paginatedCategories.length, 'categories to frontend');
-    res.json(paginatedCategories);
+    res.json(categories);
   } catch (error) {
     console.error('Get public categories error:', error);
     res.status(500).json({

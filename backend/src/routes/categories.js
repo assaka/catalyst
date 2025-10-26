@@ -47,52 +47,43 @@ router.get('/', authMiddleware, authorize(['admin', 'store_owner']), async (req,
     if (parent_id) where.parent_id = parent_id;
 
     const lang = getLanguageFromRequest(req);
-    console.log('🌍 Admin Categories: Requesting language:', lang);
-    console.log('🔍 Admin Categories: Where clause:', JSON.stringify(where, null, 2));
-    console.log('🔍 Admin Categories: User role:', req.user?.role, 'User ID:', req.user?.id);
-    console.log('🔍 Admin Categories: Include all translations:', include_all_translations);
 
     // Get categories with translations (all or single language)
-    const categories = include_all_translations === 'true'
-      ? await getCategoriesWithAllTranslations(where)
-      : await getCategoriesWithTranslations(where, lang);
-    console.log('✅ Admin Categories: Fetched', categories.length, 'categories from DB');
+    // Use optimized SQL-based pagination and search for single language queries
+    let categories, total;
 
-    // Handle search in memory (if needed) - TODO: move to SQL query
-    let filteredCategories = categories;
-    if (search) {
-      const searchLower = search.toLowerCase();
-      filteredCategories = categories.filter(cat =>
-        cat.name?.toLowerCase().includes(searchLower) ||
-        cat.description?.toLowerCase().includes(searchLower)
-      );
-      console.log('🔍 Admin Categories: After search filter:', filteredCategories.length);
-    }
+    if (include_all_translations === 'true') {
+      // For admin translation management, fetch all translations
+      // (Less common operation, in-memory pagination acceptable)
+      const allCategories = await getCategoriesWithAllTranslations(where);
 
-    // Apply pagination
-    const total = filteredCategories.length;
-    const paginatedCategories = filteredCategories.slice(offset, offset + parseInt(limit));
+      // Apply search filter if needed
+      let filteredCategories = allCategories;
+      if (search) {
+        const searchLower = search.toLowerCase();
+        filteredCategories = allCategories.filter(cat =>
+          cat.name?.toLowerCase().includes(searchLower) ||
+          cat.description?.toLowerCase().includes(searchLower)
+        );
+      }
 
-    console.log('🔍 Admin Categories: After pagination:', paginatedCategories.length);
-    if (paginatedCategories.length > 0) {
-      console.log('🎯 Admin Categories: First category:', JSON.stringify({
-        id: paginatedCategories[0].id,
-        name: paginatedCategories[0].name,
-        slug: paginatedCategories[0].slug,
-        is_active: paginatedCategories[0].is_active,
-        store_id: paginatedCategories[0].store_id,
-        has_name: !!paginatedCategories[0].name
-      }, null, 2));
+      total = filteredCategories.length;
+      categories = filteredCategories.slice(offset, offset + parseInt(limit));
     } else {
-      console.log('⚠️ Admin Categories: NO CATEGORIES TO RETURN');
+      // Use optimized SQL-based pagination and search
+      const result = await getCategoriesWithTranslations(
+        where,
+        lang,
+        { limit: parseInt(limit), offset, search }
+      );
+      categories = result.rows;
+      total = result.count;
     }
-
-    console.log('📤 Admin Categories: Returning', paginatedCategories.length, 'categories');
 
     res.json({
       success: true,
       data: {
-        categories: paginatedCategories,
+        categories: categories,
         pagination: {
           current_page: parseInt(page),
           per_page: parseInt(limit),

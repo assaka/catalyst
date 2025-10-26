@@ -5,6 +5,7 @@ const { getLanguageFromRequest } = require('../utils/languageUtils');
 const { applyProductTranslationsToMany, applyProductTranslations } = require('../utils/productHelpers');
 const { getAttributesWithTranslations, getAttributeValuesWithTranslations } = require('../utils/attributeHelpers');
 const { applyCacheHeaders } = require('../utils/cacheUtils');
+const { getStoreSettings } = require('../utils/storeCache');
 const router = express.Router();
 
 // @route   GET /api/public/products
@@ -22,15 +23,12 @@ router.get('/', async (req, res) => {
 
     if (store_id) {
       where.store_id = store_id;
-      
-      // Check store's display_out_of_stock setting
+
+      // Check store's display_out_of_stock setting (cached)
       try {
-        const store = await Store.findByPk(store_id, {
-          attributes: ['settings']
-        });
-        
-        const displayOutOfStock = store?.settings?.display_out_of_stock !== false; // Default to true
-        
+        const storeSettings = await getStoreSettings(store_id);
+        const displayOutOfStock = storeSettings?.display_out_of_stock !== false; // Default to true
+
         if (!displayOutOfStock) {
           // Filter out products that are out of stock
           // Note: Configurable products are EXCLUDED from stock filtering
@@ -137,7 +135,6 @@ router.get('/', async (req, res) => {
 
     // Get language from request headers/query
     const lang = getLanguageFromRequest(req);
-    console.log('🌍 Public Products: Requesting language:', lang);
 
     // Apply product translations from normalized table
     const productsWithTranslations = await applyProductTranslationsToMany(rows, lang);
@@ -249,7 +246,6 @@ router.get('/', async (req, res) => {
 router.get('/:id', async (req, res) => {
   try {
     const lang = getLanguageFromRequest(req);
-    console.log('🌍 Public Product Detail: Requesting language:', lang);
 
     const product = await Product.findByPk(req.params.id, {
       attributes: { exclude: ['translations'] }, // Exclude translations column - using normalized table

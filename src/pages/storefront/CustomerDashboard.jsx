@@ -1098,7 +1098,6 @@ export default function CustomerDashboard() {
         ]);
 
       } catch (error) {
-        console.log('Customer not authenticated:', error.message);
         setUser(null);
         setIsGuest(true);
         // Clear any user-specific data from previous sessions if error occurs

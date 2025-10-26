@@ -77,13 +77,6 @@ const [labels, setLabels] = useState([]);
   };
 
   const handleSubmit = async (labelData) => {
-    console.log('🔍 Frontend: handleSubmit called with labelData:', {
-      labelData,
-      translations: labelData.translations,
-      translationKeys: Object.keys(labelData.translations || {}),
-      enText: labelData.translations?.en?.text,
-      nlText: labelData.translations?.nl?.text
-    });
 
     const storeId = getSelectedStoreId();
     if (!storeId) {
@@ -116,14 +109,6 @@ const [labels, setLabels] = useState([]);
     // Remove the frontend field name
     delete backendData.text_color;
 
-    console.log('🔍 Frontend: Sending to API:', {
-      backendData,
-      translations: backendData.translations,
-      translationKeys: Object.keys(backendData.translations || {}),
-      enText: backendData.translations?.en?.text,
-      nlText: backendData.translations?.nl?.text
-    });
-
     try {
       if (editingLabel) {
         await ProductLabel.update(editingLabel.id, backendData);
@@ -147,17 +132,10 @@ const [labels, setLabels] = useState([]);
   const handleEdit = async (label) => {
     if (label) {
       // Fetch the full label with all translations from the API
-      console.log('🔍 Frontend: Fetching full label with all translations for ID:', label.id);
       try {
         const response = await ProductLabel.findById(label.id);
-        console.log('🔍 Frontend: Received response from API:', response);
         // Extract the actual label data from the API response
         const fullLabel = response?.data || response;
-        console.log('🔍 Frontend: Full label with translations:', {
-          id: fullLabel.id,
-          translations: fullLabel.translations,
-          translationKeys: Object.keys(fullLabel.translations || {})
-        });
         setEditingLabel(fullLabel);
       } catch (error) {
         console.error('Failed to fetch full label:', error);

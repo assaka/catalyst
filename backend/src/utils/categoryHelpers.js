@@ -12,9 +12,12 @@ const { sequelize } = require('../database/connection');
  *
  * @param {Object} where - WHERE clause conditions
  * @param {string} lang - Language code (default: 'en')
- * @returns {Promise<Array>} Categories with translated fields
+ * @param {Object} options - Query options { limit, offset, search }
+ * @returns {Promise<Object>} { rows, count } - Categories with translated fields and total count
  */
-async function getCategoriesWithTranslations(where = {}, lang = 'en') {
+async function getCategoriesWithTranslations(where = {}, lang = 'en', options = {}) {
+  const { limit, offset, search } = options;
+
   const whereConditions = Object.entries(where)
     .map(([key, value]) => {
       if (value === true || value === false) {
@@ -28,7 +31,36 @@ async function getCategoriesWithTranslations(where = {}, lang = 'en') {
     })
     .join(' AND ');
 
-  const whereClause = whereConditions ? `WHERE ${whereConditions}` : '';
+  const whereClauses = [];
+  if (whereConditions) whereClauses.push(whereConditions);
+
+  // Add search to SQL WHERE clause for better performance
+  if (search) {
+    whereClauses.push(`(
+      ct.name ILIKE :search OR
+      ct.description ILIKE :search OR
+      ct_en.name ILIKE :search OR
+      ct_en.description ILIKE :search
+    )`);
+  }
+
+  const whereClause = whereClauses.length > 0 ? `WHERE ${whereClauses.join(' AND ')}` : '';
+
+  // First get total count
+  const countQuery = `
+    SELECT COUNT(DISTINCT c.id) as count
+    FROM categories c
+    LEFT JOIN category_translations ct
+      ON c.id = ct.category_id AND ct.language_code = :lang
+    LEFT JOIN category_translations ct_en
+      ON c.id = ct_en.category_id AND ct_en.language_code = 'en'
+    ${whereClause}
+  `;
+
+  // Build pagination clause
+  const paginationClause = [];
+  if (limit) paginationClause.push(`LIMIT ${parseInt(limit)}`);
+  if (offset) paginationClause.push(`OFFSET ${parseInt(offset)}`);
 
   const query = `
     SELECT
@@ -55,40 +87,27 @@ async function getCategoriesWithTranslations(where = {}, lang = 'en') {
       ON c.id = ct_en.category_id AND ct_en.language_code = 'en'
     ${whereClause}
     ORDER BY c.sort_order ASC, c.created_at DESC
+    ${paginationClause.join(' ')}
   `;
 
-  console.log('🔍 SQL Query for categories:', query.replace(/\s+/g, ' '));
-  console.log('🔍 Language parameter:', lang);
-  console.log('🔍 Where conditions:', whereConditions || 'NONE');
+  const replacements = { lang };
+  if (search) replacements.search = `%${search}%`;
 
-  const results = await sequelize.query(query, {
-    replacements: { lang },
-    type: sequelize.QueryTypes.SELECT
-  });
+  // Execute count and data queries in parallel
+  const [countResult, results] = await Promise.all([
+    sequelize.query(countQuery, {
+      replacements,
+      type: sequelize.QueryTypes.SELECT
+    }),
+    sequelize.query(query, {
+      replacements,
+      type: sequelize.QueryTypes.SELECT
+    })
+  ]);
 
-  console.log('✅ Query returned', results.length, 'categories');
-  if (results.length > 0) {
-    console.log('📝 First 3 categories:');
-    results.slice(0, 3).forEach((cat, index) => {
-      console.log(`   Category ${index + 1}:`, JSON.stringify({
-        id: cat.id,
-        name: cat.name,
-        slug: cat.slug,
-        is_active: cat.is_active,
-        hide_in_menu: cat.hide_in_menu,
-        parent_id: cat.parent_id,
-        description_preview: cat.description?.substring(0, 30),
-        has_name: !!cat.name,
-        name_length: cat.name?.length,
-        name_type: typeof cat.name
-      }, null, 2));
-    });
-  } else {
-    console.log('⚠️ NO CATEGORIES RETURNED FROM DATABASE');
-    console.log('⚠️ Check if category_translations table has data for language:', lang);
-  }
+  const count = parseInt(countResult[0]?.count || 0);
 
-  return results;
+  return { rows: results, count };
 }
 
 /**
@@ -380,13 +399,6 @@ async function getCategoriesWithAllTranslations(where = {}) {
     type: sequelize.QueryTypes.SELECT
   });
 
-  console.log('📊 getCategoriesWithAllTranslations - Fetched translations:', {
-    categoryCount: categories.length,
-    translationCount: translations.length,
-    sampleTranslations: translations.slice(0, 5),
-    categoryIds: categoryIds.slice(0, 3)
-  });
-
   // Group translations by category_id and language_code
   const translationsByCategory = {};
   translations.forEach(t => {
@@ -399,27 +411,11 @@ async function getCategoriesWithAllTranslations(where = {}) {
     };
   });
 
-  console.log('📦 getCategoriesWithAllTranslations - Grouped translations:', {
-    categoryIdsWithTranslations: Object.keys(translationsByCategory),
-    sampleGrouped: Object.entries(translationsByCategory).slice(0, 2).map(([id, trans]) => ({
-      categoryId: id,
-      languages: Object.keys(trans)
-    }))
-  });
-
   // Attach translations to categories
   const result = categories.map(category => ({
     ...category,
     translations: translationsByCategory[category.id] || {}
   }));
-
-  console.log('✅ getCategoriesWithAllTranslations - Final result sample:', {
-    firstCategory: result[0] ? {
-      id: result[0].id,
-      name: result[0].name,
-      translationKeys: Object.keys(result[0].translations || {})
-    } : null
-  });
 
   return result;
 }

@@ -90,13 +90,6 @@ export default function CmsPages() {
         CmsPage.filter({ store_id: storeId }),
         Product.filter({ store_id: storeId, include_all_translations: 'true' })
       ]);
-
-      console.log('📦 CmsPages: Loaded data:', {
-        pagesCount: pagesData?.length || 0,
-        productsCount: productsData?.length || 0,
-        storeId
-      });
-
       setPages(pagesData || []);
       setProducts(productsData || []);
     } catch (error) {
@@ -121,7 +114,6 @@ export default function CmsPages() {
         pageData.store_id = storeId;
       }
 
-      console.log('🔍 CmsPages: Creating page with data:', pageData);
       await CmsPage.create(pageData);
       await loadPages();
       setShowForm(false);
@@ -143,7 +135,6 @@ export default function CmsPages() {
 
   const handleUpdatePage = async (pageData) => {
     try {
-      console.log('🔍 CmsPages: Updating page', editingPage.id, 'with data:', pageData);
       await CmsPage.update(editingPage.id, pageData);
       await loadPages();
       setShowForm(false);

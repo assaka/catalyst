@@ -130,7 +130,6 @@ export default function OrderSuccess() {
           if (orderData.store_id) {
             try {
               await cartService.clearCart(orderData.store_id);
-              console.log('✅ Cart cleared after successful order');
 
               // Dispatch cart update event to refresh cart UI
               window.dispatchEvent(new CustomEvent('cartUpdated', {
@@ -263,8 +262,6 @@ export default function OrderSuccess() {
         // Save the shipping address from the order to the customer's addresses
         if (order.shipping_address && result.data?.customer?.id) {
           try {
-            console.log('📍 Attempting to save shipping address for customer:', result.data.customer.id);
-            console.log('📍 Shipping address data:', order.shipping_address);
 
             const { CustomerAddress } = await import('@/api/storefront-entities');
 
@@ -282,21 +279,12 @@ export default function OrderSuccess() {
               is_default_billing: false
             };
 
-            console.log('📍 Address data to save:', addressData);
-
             const savedAddress = await CustomerAddress.create(addressData);
-            console.log('✅ Saved order shipping address to customer account:', savedAddress);
           } catch (addressError) {
             console.error('❌ Failed to save address:', addressError);
             console.error('❌ Address error details:', addressError.response?.data || addressError.message);
             // Don't show error to user as account was created successfully
           }
-        } else {
-          console.log('⚠️ Shipping address not saved - missing data:', {
-            hasShippingAddress: !!order.shipping_address,
-            hasCustomerId: !!result.data?.customer?.id,
-            customerId: result.data?.customer?.id
-          });
         }
       }
 

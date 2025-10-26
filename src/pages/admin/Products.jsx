@@ -119,10 +119,7 @@ export default function Products() {
   useEffect(() => {
     document.title = "Products - Admin Dashboard";
     if (selectedStore) {
-      console.log('🚀 Products: useEffect triggered, loading data...');
       loadData();
-    } else {
-      console.log('⚠️ Products: No selected store, skipping data load');
     }
   }, [selectedStore]);
 

@@ -695,14 +695,6 @@ export default function Categories() {
                     </DropdownMenuItem>
                     <DropdownMenuItem
                       onClick={() => {
-                        console.log('🔍 Categories - Edit clicked on category:', {
-                          categoryId: category.id,
-                          categorySlug: category.slug,
-                          categoryName: category.name,
-                          hasTranslations: !!category.translations,
-                          translationKeys: Object.keys(category.translations || {}),
-                          translations: category.translations
-                        });
                         setSelectedCategory(category);
                         setShowCategoryForm(true);
                       }}
