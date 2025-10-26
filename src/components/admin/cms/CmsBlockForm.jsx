@@ -114,15 +114,26 @@ export default function CmsBlockForm({ block, onSubmit, onCancel }) {
       const start = textarea.selectionStart;
       const end = textarea.selectionEnd;
       const currentContent = formData.content || '';
-      
+
       // Insert HTML at cursor position or replace selection
-      const newContent = 
-        currentContent.substring(0, start) + 
-        htmlContent + 
+      const newContent =
+        currentContent.substring(0, start) +
+        htmlContent +
         currentContent.substring(end);
-      
-      setFormData(prev => ({ ...prev, content: newContent }));
-      
+
+      // Update content AND sync to English translation to mark as changed
+      setFormData(prev => ({
+        ...prev,
+        content: newContent,
+        translations: {
+          ...prev.translations,
+          en: {
+            ...prev.translations?.en,
+            content: newContent
+          }
+        }
+      }));
+
       // Set cursor position after inserted content
       setTimeout(() => {
         textarea.selectionStart = textarea.selectionEnd = start + htmlContent.length;
