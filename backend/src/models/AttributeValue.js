@@ -28,11 +28,6 @@ const AttributeValue = sequelize.define('AttributeValue', {
     type: DataTypes.JSON,
     defaultValue: {},
     comment: 'Extra data like hex colors, images, etc.'
-  },
-  translations: {
-    type: DataTypes.JSON,
-    defaultValue: {},
-    comment: 'Value translations: {"en": {"label": "Black"}, "nl": {"label": "Zwart"}}'
   }
 }, {
   tableName: 'attribute_values',

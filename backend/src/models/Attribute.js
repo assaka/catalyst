@@ -50,11 +50,6 @@ const Attribute = sequelize.define('Attribute', {
     type: DataTypes.JSON,
     defaultValue: {}
   },
-  translations: {
-    type: DataTypes.JSON,
-    defaultValue: {},
-    comment: 'Multilingual attribute labels: {"en": {"label": "Brand", "description": "..."}, "nl": {...}}'
-  },
   sort_order: {
     type: DataTypes.INTEGER,
     defaultValue: 0
