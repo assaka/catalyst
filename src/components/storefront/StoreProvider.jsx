@@ -134,9 +134,11 @@ const cachedApiCall = async (key, apiCall, ttl = CACHE_DURATION_LONG) => {
   // Always check cache first (unless it's a critical product call)
   if (apiCache.has(key) && !isCriticalProductCall) {
     const { data, timestamp } = apiCache.get(key);
-    
+    console.log(`[CACHE] Cache HIT for key: ${key}, age: ${Math.round((now - timestamp) / 1000)}s, ttl: ${Math.round(ttl / 1000)}s`);
+
     // If data is fresh, return it
     if (now - timestamp < ttl) {
+      console.log(`[CACHE] Using fresh cached data for: ${key}`);
       return Promise.resolve(data);
     }
     
@@ -161,9 +163,11 @@ const cachedApiCall = async (key, apiCall, ttl = CACHE_DURATION_LONG) => {
   }
   
   // No cached data - must fetch fresh
+  console.log(`[CACHE] Cache MISS for key: ${key} - fetching fresh data`);
   try {
     await delay(Math.random() * 3000 + 1000); // Random delay 1-4 seconds
     const result = await apiCall();
+    console.log(`[CACHE] Fetched fresh data for: ${key}, storing in cache`);
     apiCache.set(key, { data: result, timestamp: now });
     saveCacheToStorage();
     return result;
@@ -758,7 +762,9 @@ export const StoreProvider = ({ children }) => {
         // MEDIUM cache (5 minutes) - semi-static data
         // Include language in cache key to ensure proper translation switching
         cachedApiCall(`categories-${selectedStore.id}-${localStorage.getItem('catalyst_language') || 'en'}`, async () => {
+          console.log('[StoreProvider] Fetching categories for store:', selectedStore.id);
           const result = await StorefrontCategory.filter({ store_id: selectedStore.id, limit: 1000 });
+          console.log('[StoreProvider] Categories API response:', result);
           return Array.isArray(result) ? result : [];
         }, CACHE_DURATION_MEDIUM),
         
@@ -809,6 +815,8 @@ export const StoreProvider = ({ children }) => {
       setTaxes(results[0].status === 'fulfilled' ? (results[0].value || []) : []);
       
       const categoriesResult = results[1].status === 'fulfilled' ? (results[1].value || []) : [];
+      console.log('[StoreProvider] Categories loaded:', categoriesResult.length, 'items');
+      console.log('[StoreProvider] First category:', categoriesResult[0]);
       setCategories(categoriesResult);
       
       const productLabelsData = results[2].status === 'fulfilled' ? (results[2].value || []) : [];

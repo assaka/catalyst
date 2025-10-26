@@ -21,6 +21,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import PublishButton from '@/components/admin/store/PublishButton';
+import { clearSettingsCache, clearAllCache } from '@/utils/cacheUtils';
 
 
 const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms));
@@ -408,6 +409,7 @@ export default function Settings() {
 
         // Clear ALL StoreProvider cache to force reload of settings
         try {
+          clearAllCache(store.id);
           localStorage.removeItem('storeProviderCache');
           sessionStorage.removeItem('storeProviderCache');
 

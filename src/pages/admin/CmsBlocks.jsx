@@ -13,6 +13,7 @@ import { Plus, Edit, Trash2, FileText } from "lucide-react"; // Removed Eye, Cod
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import FlashMessage from "@/components/storefront/FlashMessage";
 import { useAlertTypes } from "@/hooks/useAlert";
+import { clearCmsBlocksCache } from "@/utils/cacheUtils";
 
 export default function CmsBlocks() {
   const { selectedStore, getSelectedStoreId } = useStoreSelection();
@@ -91,6 +92,8 @@ export default function CmsBlocks() {
       }
       closeForm();
       loadBlocks();
+      // Clear storefront cache for instant updates
+      if (storeId) clearCmsBlocksCache(storeId);
     } catch (error) {
       console.error("Failed to save CMS block", error);
       setFlashMessage({ type: 'error', message: 'Failed to save CMS block.' });
@@ -116,6 +119,9 @@ export default function CmsBlocks() {
         await CmsBlock.delete(blockId);
         setFlashMessage({ type: 'success', message: 'CMS Block deleted successfully!' });
         loadBlocks(); // Call loadBlocks
+        // Clear storefront cache for instant updates
+        const storeId = getSelectedStoreId();
+        if (storeId) clearCmsBlocksCache(storeId);
       } catch (error) {
         console.error("Failed to delete CMS block", error);
         setFlashMessage({ type: 'error', message: 'Failed to delete CMS block.' });
@@ -128,6 +134,9 @@ export default function CmsBlocks() {
       await CmsBlock.update(block.id, { ...block, is_active: !block.is_active });
       setFlashMessage({ type: 'success', message: `CMS Block ${block.is_active ? 'deactivated' : 'activated'} successfully!` });
       loadBlocks(); // Call loadBlocks
+      // Clear storefront cache for instant updates
+      const storeId = getSelectedStoreId();
+      if (storeId) clearCmsBlocksCache(storeId);
     } catch (error) {
       console.error("Failed to toggle block status", error);
       setFlashMessage({ type: 'error', message: 'Failed to toggle block status.' });

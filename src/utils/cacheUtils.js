@@ -30,7 +30,22 @@ export const clearStorefrontCache = (storeId, dataTypes = []) => {
       cacheKeysToClear.push(`store-slug-*`); // Clear all store cache keys
       cacheKeysToClear.push('first-store');
     }
-    
+    if (dataTypes.includes('cms-blocks')) {
+      // CMS blocks don't have dedicated cache in StoreProvider, but clear all to be safe
+      localStorage.removeItem('storeProviderCache');
+    }
+    if (dataTypes.includes('cms-pages')) {
+      localStorage.removeItem('storeProviderCache');
+    }
+    if (dataTypes.includes('products')) {
+      // Products are cached per-page, clear all product cache
+      localStorage.removeItem('storeProviderCache');
+    }
+    if (dataTypes.includes('settings')) {
+      // Store settings cache
+      cacheKeysToClear.push(`store-slug-*`);
+    }
+
     // If no specific types provided, clear common cache keys
     if (dataTypes.length === 0) {
       cacheKeysToClear = [
@@ -62,3 +77,14 @@ export const clearAttributesCache = (storeId) => clearStorefrontCache(storeId, [
 export const clearSeoTemplatesCache = (storeId) => clearStorefrontCache(storeId, ['seo-templates']);
 export const clearCookieConsentCache = (storeId) => clearStorefrontCache(storeId, ['cookie-consent']);
 export const clearStoresCache = (storeId) => clearStorefrontCache(storeId, ['stores']);
+export const clearCmsBlocksCache = (storeId) => clearStorefrontCache(storeId, ['cms-blocks']);
+export const clearCmsPagesCache = (storeId) => clearStorefrontCache(storeId, ['cms-pages']);
+export const clearProductsCache = (storeId) => clearStorefrontCache(storeId, ['products']);
+export const clearSettingsCache = (storeId) => clearStorefrontCache(storeId, ['settings']);
+
+// Clear all cache - use when unsure or multiple types changed
+export const clearAllCache = (storeId) => {
+  if (typeof window !== 'undefined' && window.clearCache) {
+    window.clearCache();
+  }
+};

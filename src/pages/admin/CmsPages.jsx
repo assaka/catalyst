@@ -29,6 +29,7 @@ import FlashMessage from "@/components/storefront/FlashMessage";
 import CmsPageForm from "@/components/admin/cms/CmsPageForm";
 import { getPageTitle } from "@/utils/translationUtils";
 import { useAlertTypes } from "@/hooks/useAlert";
+import { clearCmsPagesCache } from "@/utils/cacheUtils";
 
 export default function CmsPages() {
   const { selectedStore, getSelectedStoreId } = useStoreSelection();
@@ -118,6 +119,8 @@ export default function CmsPages() {
       await loadPages();
       setShowForm(false);
       setFlashMessage({ type: 'success', message: 'CMS Page created successfully!' });
+      // Clear storefront cache for instant updates
+      if (storeId) clearCmsPagesCache(storeId);
     } catch (error) {
       console.error("❌ Error creating CMS page:", error);
       console.error("❌ Error response data:", error.response?.data);
@@ -140,6 +143,9 @@ export default function CmsPages() {
       setShowForm(false);
       setEditingPage(null);
       setFlashMessage({ type: 'success', message: 'CMS Page updated successfully!' });
+      // Clear storefront cache for instant updates
+      const storeId = getSelectedStoreId();
+      if (storeId) clearCmsPagesCache(storeId);
     } catch (error) {
       console.error("❌ Error updating CMS page:", error);
       console.error("❌ Error response data:", error.response?.data);
@@ -171,6 +177,9 @@ export default function CmsPages() {
         await CmsPage.delete(pageId);
         await loadPages();
         setFlashMessage({ type: 'success', message: 'CMS Page deleted successfully!' });
+        // Clear storefront cache for instant updates
+        const storeId = getSelectedStoreId();
+        if (storeId) clearCmsPagesCache(storeId);
       } catch (error) {
         console.error("Error deleting CMS page:", error);
         setFlashMessage({ type: 'error', message: 'Failed to delete CMS page.' });
