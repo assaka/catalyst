@@ -314,11 +314,58 @@ function processLabel(label, quantity, settings, globalTranslations = null) {
     return fallbacks[singular] || '';
   };
 
-  // If quantity is null (infinite stock or hidden), remove all blocks containing {quantity}
+  // If quantity is null (infinite stock or hidden), remove all blocks containing {quantity} or {item}
   if (quantity === null) {
-    return processedLabel
-      .replace(/\{[^}]*\{quantity\}[^}]*\}/gi, '') // Remove nested blocks
-      .replace(/\{quantity\}/gi, '') // Remove standalone {quantity}
+    // Use a similar approach to the main loop to properly handle nested braces
+    let cleanedLabel = processedLabel;
+    let previousLabel;
+    let iterations = 0;
+    const maxIterations = 10;
+
+    do {
+      previousLabel = cleanedLabel;
+      let depth = 0;
+      let start = -1;
+      let toRemove = [];
+
+      // Find all blocks that contain {quantity} or {item}/{unit}/{piece}
+      for (let i = 0; i < cleanedLabel.length; i++) {
+        if (cleanedLabel[i] === '{') {
+          if (depth === 0) start = i;
+          depth++;
+        } else if (cleanedLabel[i] === '}') {
+          depth--;
+          if (depth === 0 && start !== -1) {
+            const content = cleanedLabel.substring(start + 1, i);
+            // If this block contains quantity-related placeholders, mark for removal
+            if (/\{quantity\}|\{item\}|\{unit\}|\{piece\}/gi.test(content)) {
+              toRemove.push({ start, end: i });
+            }
+            start = -1;
+          }
+        }
+      }
+
+      // Remove blocks in reverse order to maintain indices
+      for (let j = toRemove.length - 1; j >= 0; j--) {
+        const { start, end } = toRemove[j];
+        cleanedLabel = cleanedLabel.substring(0, start) + cleanedLabel.substring(end + 1);
+      }
+
+      // Also remove any standalone placeholders
+      cleanedLabel = cleanedLabel
+        .replace(/\{quantity\}/gi, '')
+        .replace(/\{item\}/gi, '')
+        .replace(/\{items\}/gi, '')
+        .replace(/\{unit\}/gi, '')
+        .replace(/\{units\}/gi, '')
+        .replace(/\{piece\}/gi, '')
+        .replace(/\{pieces\}/gi, '');
+
+      iterations++;
+    } while (cleanedLabel !== previousLabel && iterations < maxIterations);
+
+    return cleanedLabel
       .replace(/\s+/g, ' ')
       .replace(/,\s*$/, '')
       .trim();
