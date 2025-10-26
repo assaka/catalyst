@@ -13,11 +13,13 @@ import { Plus, Edit, Trash2, Tag } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { getAttributeValueLabel } from '@/utils/attributeUtils';
 import { useTranslation } from '@/contexts/TranslationContext';
+import FlashMessage from '@/components/storefront/FlashMessage';
 
 import { useAlertTypes } from '@/hooks/useAlert';
 export default function ProductLabels() {
 
-  const { showError, showWarning, showInfo, showSuccess, AlertComponent } = useAlertTypes();
+  const { showWarning, showInfo, showConfirm, AlertComponent } = useAlertTypes();
+  const [flashMessage, setFlashMessage] = useState(null);
 const [labels, setLabels] = useState([]);
   const [attributes, setAttributes] = useState([]);
   const { selectedStore, getSelectedStoreId } = useStoreSelection();
@@ -125,10 +127,12 @@ const [labels, setLabels] = useState([]);
     try {
       if (editingLabel) {
         await ProductLabel.update(editingLabel.id, backendData);
+        setFlashMessage({ type: 'success', message: 'Product label updated successfully!' });
       } else {
         await ProductLabel.create(backendData);
+        setFlashMessage({ type: 'success', message: 'Product label created successfully!' });
       }
-      
+
       closeForm();
       loadData();
       // Clear storefront cache for instant updates
@@ -136,6 +140,7 @@ const [labels, setLabels] = useState([]);
       if (storeId) clearLabelsCache(storeId);
     } catch (error) {
       console.error("Failed to save product label", error);
+      setFlashMessage({ type: 'error', message: 'Failed to save product label' });
     }
   };
 
@@ -156,7 +161,7 @@ const [labels, setLabels] = useState([]);
         setEditingLabel(fullLabel);
       } catch (error) {
         console.error('Failed to fetch full label:', error);
-        showError('Failed to load label details');
+        setFlashMessage({ type: 'error', message: 'Failed to load label details' });
         return;
       }
     } else {
@@ -166,15 +171,18 @@ const [labels, setLabels] = useState([]);
   };
 
   const handleDelete = async (labelId) => {
-    if (window.confirm("Are you sure you want to delete this label?")) {
+    const confirmed = await showConfirm("Are you sure you want to delete this label?", "Delete Label");
+    if (confirmed) {
       try {
         await ProductLabel.delete(labelId);
+        setFlashMessage({ type: 'success', message: 'Product label deleted successfully!' });
         loadData(); // Reload data after deletion
         // Clear storefront cache for instant updates
         const storeId = getSelectedStoreId();
         if (storeId) clearLabelsCache(storeId);
       } catch (error) {
         console.error("Failed to delete product label", error);
+        setFlashMessage({ type: 'error', message: 'Failed to delete product label' });
       }
     }
   };
@@ -228,6 +236,12 @@ const [labels, setLabels] = useState([]);
 
   return (
     <div className="min-h-screen bg-gray-50">
+      <FlashMessage
+        message={flashMessage}
+        onClose={() => setFlashMessage(null)}
+      />
+      <AlertComponent />
+
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8">
           <div>

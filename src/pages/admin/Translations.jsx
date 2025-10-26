@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, Search, Globe, Edit2, Trash2, Save, X, Wand2, Check, AlertCircle, Languages } from 'lucide-react';
+import { Plus, Search, Globe, Edit2, Trash2, Save, X, Wand2, Languages } from 'lucide-react';
 import api from '../../utils/api';
 import { useTranslation } from '../../contexts/TranslationContext';
 import { useStoreSelection } from '../../contexts/StoreSelectionContext';
@@ -16,6 +16,7 @@ import ProductLabelTranslationRow from '../../components/admin/translations/Prod
 import CookieConsentTranslationRow from '../../components/admin/translations/CookieConsentTranslationRow';
 import CustomOptionTranslationRow from '../../components/admin/translations/CustomOptionTranslationRow';
 import StockLabelTranslationRow from '../../components/admin/translations/StockLabelTranslationRow';
+import FlashMessage from '../../components/storefront/FlashMessage';
 import { Button } from '../../components/ui/button';
 import { toast } from 'sonner';
 
@@ -926,20 +927,11 @@ export default function Translations() {
         </p>
       </div>
 
-      {/* Flash Message - Fixed at top */}
-      {message && (
-        <div className={`
-          fixed top-4 right-4 p-4 rounded-lg shadow-lg text-white z-50 transition-opacity duration-300 flex items-center gap-3
-          ${message.type === 'success' ? 'bg-green-500' : ''}
-          ${message.type === 'error' ? 'bg-red-500' : ''}
-          ${message.type === 'info' ? 'bg-blue-500' : ''}
-        `}>
-          {message.type === 'success' && <Check className="w-5 h-5" />}
-          {message.type === 'error' && <AlertCircle className="w-5 h-5" />}
-          {message.type === 'info' && <AlertCircle className="w-5 h-5" />}
-          <span>{message.text}</span>
-        </div>
-      )}
+      {/* Flash Message */}
+      <FlashMessage
+        message={message ? { type: message.type, message: message.text } : null}
+        onClose={() => setMessage(null)}
+      />
 
       {/* Tabs */}
       <div className="mb-6 border-b border-gray-200">

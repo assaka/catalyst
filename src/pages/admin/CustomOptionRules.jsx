@@ -9,9 +9,13 @@ import { Badge } from '@/components/ui/badge';
 import { Switch } from '@/components/ui/switch';
 import { Plus, Edit, Trash2, Settings, Filter } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import FlashMessage from '@/components/storefront/FlashMessage';
+import { useAlertTypes } from '@/hooks/useAlert';
 
 export default function CustomOptionRules() {
   const { selectedStore, getSelectedStoreId } = useStoreSelection();
+  const { showConfirm, AlertComponent } = useAlertTypes();
+  const [flashMessage, setFlashMessage] = useState(null);
   const [rules, setRules] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
@@ -50,13 +54,16 @@ export default function CustomOptionRules() {
     try {
       if (selectedRule) {
         await CustomOptionRule.update(selectedRule.id, formData);
+        setFlashMessage({ type: 'success', message: 'Custom option rule updated successfully!' });
       } else {
         await CustomOptionRule.create(formData);
+        setFlashMessage({ type: 'success', message: 'Custom option rule created successfully!' });
       }
       closeForm();
       loadRules();
     } catch (error) {
       console.error("Failed to save rule", error);
+      setFlashMessage({ type: 'error', message: 'Failed to save custom option rule' });
     }
   };
 
@@ -66,12 +73,15 @@ export default function CustomOptionRules() {
   };
 
   const handleDelete = async (ruleId) => {
-    if (window.confirm("Are you sure you want to delete this rule?")) {
+    const confirmed = await showConfirm("Are you sure you want to delete this rule?", "Delete Rule");
+    if (confirmed) {
       try {
         await CustomOptionRule.delete(ruleId);
+        setFlashMessage({ type: 'success', message: 'Custom option rule deleted successfully!' });
         loadRules();
       } catch (error) {
         console.error("Failed to delete rule", error);
+        setFlashMessage({ type: 'error', message: 'Failed to delete custom option rule' });
       }
     }
   };
@@ -79,9 +89,11 @@ export default function CustomOptionRules() {
   const handleToggleActive = async (rule) => {
     try {
       await CustomOptionRule.update(rule.id, { ...rule, is_active: !rule.is_active });
+      setFlashMessage({ type: 'success', message: `Rule ${rule.is_active ? 'deactivated' : 'activated'} successfully!` });
       loadRules();
     } catch (error) {
       console.error("Failed to toggle rule status", error);
+      setFlashMessage({ type: 'error', message: 'Failed to toggle rule status' });
     }
   };
   
@@ -92,6 +104,12 @@ export default function CustomOptionRules() {
 
   return (
     <div className="min-h-screen bg-gray-50">
+      <FlashMessage
+        message={flashMessage}
+        onClose={() => setFlashMessage(null)}
+      />
+      <AlertComponent />
+
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8">
           <div>

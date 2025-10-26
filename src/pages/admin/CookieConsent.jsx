@@ -933,9 +933,6 @@ export default function CookieConsent() {
                           </div>
                         </div>
                       </div>
-                      <p className="text-xs text-gray-500 mt-1">
-                        Button colors - Translate text in Banner Text Translations section above
-                      </p>
                     </div>
                   </div>
                 </CardContent>

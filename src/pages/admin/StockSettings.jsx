@@ -11,6 +11,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import SaveButton from '@/components/ui/save-button';
+import FlashMessage from '@/components/storefront/FlashMessage';
 import { Languages, ArrowRight } from 'lucide-react';
 import {
   Accordion,
@@ -209,15 +210,12 @@ export default function StockSettings() {
 
   return (
     <div className="min-h-screen bg-gray-50">
+      <FlashMessage
+        message={flashMessage}
+        onClose={() => setFlashMessage(null)}
+      />
+
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        
-        {flashMessage && (
-          <div
-            className={`fixed top-4 right-4 p-4 rounded-lg shadow-lg text-white z-50 transition-opacity duration-300 ${flashMessage.type === 'error' ? 'bg-red-500' : 'bg-green-500'}`}
-          >
-            {flashMessage.message}
-          </div>
-        )}
 
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-gray-900">Stock Settings</h1>
