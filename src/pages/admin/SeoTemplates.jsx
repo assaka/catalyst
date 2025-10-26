@@ -5,12 +5,15 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { FileText, Plus, Trash2, Loader2, Info, ChevronDown, ChevronUp, Edit, X } from "lucide-react";
-import { SeoTemplate } from "@/api/entities";
+import { FileText, Plus, Trash2, Loader2, Info, ChevronDown, ChevronUp, Edit, X, ChevronsUpDown, Check } from "lucide-react";
+import { SeoTemplate, Category, AttributeSet } from "@/api/entities";
 import { useStoreSelection } from "@/contexts/StoreSelectionContext.jsx";
 import NoStoreSelected from "@/components/admin/NoStoreSelected";
 import FlashMessage from "@/components/storefront/FlashMessage";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
+import { Badge } from '@/components/ui/badge';
 import { clearSeoTemplatesCache } from "@/utils/cacheUtils";
 
 export default function SeoTemplates() {
@@ -22,6 +25,12 @@ export default function SeoTemplates() {
   const [showVariables, setShowVariables] = useState(false);
   const [editingTemplate, setEditingTemplate] = useState(null);
 
+  // Conditions data
+  const [categories, setCategories] = useState([]);
+  const [attributeSets, setAttributeSets] = useState([]);
+  const [showCategorySelect, setShowCategorySelect] = useState(false);
+  const [showAttributeSetSelect, setShowAttributeSetSelect] = useState(false);
+
   // Form state for new template
   const [formData, setFormData] = useState({
     name: '',
@@ -29,13 +38,40 @@ export default function SeoTemplates() {
     meta_title: '',
     meta_description: '',
     meta_keywords: '',
-    meta_robots: ''
+    meta_robots: '',
+    conditions: {
+      categories: [],
+      attribute_sets: []
+    }
   });
 
   useEffect(() => {
     if (selectedStore) {
       loadTemplates();
     }
+  }, [selectedStore]);
+
+  useEffect(() => {
+    const loadConditionsData = async () => {
+      const storeId = getSelectedStoreId();
+      if (!storeId) return;
+
+      try {
+        const [attributeSetsData, categoriesData] = await Promise.all([
+          AttributeSet.filter({ store_id: storeId }).catch(() => []),
+          Category.filter({ store_id: storeId }).catch(() => [])
+        ]);
+
+        setAttributeSets(Array.isArray(attributeSetsData) ? attributeSetsData : []);
+        setCategories(Array.isArray(categoriesData) ? categoriesData : []);
+      } catch (error) {
+        console.error("Error loading conditions data:", error);
+        setAttributeSets([]);
+        setCategories([]);
+      }
+    };
+
+    loadConditionsData();
   }, [selectedStore]);
 
   const loadTemplates = async () => {
@@ -64,6 +100,22 @@ export default function SeoTemplates() {
   const handleEditTemplate = (template) => {
     setEditingTemplate(template);
 
+    // Parse conditions if it's a string
+    let conditions = template.conditions || {};
+    if (typeof conditions === 'string') {
+      try {
+        conditions = JSON.parse(conditions);
+      } catch (e) {
+        conditions = {};
+      }
+    }
+
+    // Ensure conditions has all required fields
+    conditions = {
+      categories: conditions.categories || [],
+      attribute_sets: conditions.attribute_sets || []
+    };
+
     // Populate form with template data
     setFormData({
       name: template.name || '',
@@ -71,7 +123,8 @@ export default function SeoTemplates() {
       meta_title: template.template?.meta_title || template.meta_title || '',
       meta_description: template.template?.meta_description || template.meta_description || '',
       meta_keywords: template.template?.meta_keywords || template.meta_keywords || '',
-      meta_robots: template.template?.meta_robots || template.meta_robots || ''
+      meta_robots: template.template?.meta_robots || template.meta_robots || '',
+      conditions: conditions
     });
 
     // Scroll to form
@@ -86,7 +139,11 @@ export default function SeoTemplates() {
       meta_title: '',
       meta_description: '',
       meta_keywords: '',
-      meta_robots: ''
+      meta_robots: '',
+      conditions: {
+        categories: [],
+        attribute_sets: []
+      }
     });
   };
 
@@ -95,6 +152,36 @@ export default function SeoTemplates() {
       ...prev,
       [field]: value
     }));
+  };
+
+  // Conditions handlers
+  const handleConditionChange = (conditionType, value) => {
+    setFormData(prev => ({
+      ...prev,
+      conditions: {
+        ...prev.conditions,
+        [conditionType]: value
+      }
+    }));
+  };
+
+  const handleMultiSelectToggle = (condition, id) => {
+    const currentValues = formData.conditions[condition] || [];
+    const newValues = currentValues.includes(id)
+      ? currentValues.filter(item => item !== id)
+      : [...currentValues, id];
+
+    handleConditionChange(condition, newValues);
+  };
+
+  const getSelectedCategoryNames = () => {
+    if (!Array.isArray(categories)) return [];
+    return categories.filter(cat => cat && formData.conditions.categories?.includes(cat.id)).map(cat => cat.name);
+  };
+
+  const getSelectedAttributeSetNames = () => {
+    if (!Array.isArray(attributeSets)) return [];
+    return attributeSets.filter(set => set && formData.conditions.attribute_sets?.includes(set.id)).map(set => set.name);
   };
 
   const handleAddTemplate = async () => {
@@ -132,6 +219,7 @@ export default function SeoTemplates() {
           name: formData.name || editingTemplate.name,
           type: formData.type,
           template: template,
+          conditions: formData.conditions,
           store_id: storeId
         };
 
@@ -149,6 +237,7 @@ export default function SeoTemplates() {
           name: formData.name || `${formData.type} Template - ${timestamp}`,
           type: formData.type,
           template: template,
+          conditions: formData.conditions,
           store_id: storeId
         };
 
@@ -168,7 +257,11 @@ export default function SeoTemplates() {
         meta_title: '',
         meta_description: '',
         meta_keywords: '',
-        meta_robots: ''
+        meta_robots: '',
+        conditions: {
+          categories: [],
+          attribute_sets: []
+        }
       });
 
       // Reload templates
@@ -389,6 +482,142 @@ export default function SeoTemplates() {
                   <SelectItem value="none">none (Same as noindex, nofollow)</SelectItem>
                 </SelectContent>
               </Select>
+            </div>
+
+            {/* Conditions (Optional) */}
+            <div className="border-t pt-4 space-y-4">
+              <div>
+                <h3 className="text-lg font-medium mb-2">Conditions (Optional)</h3>
+                <p className="text-sm text-gray-600">
+                  Optionally specify conditions to control when this SEO template is applied. If no conditions are specified, the template will apply to all pages of the selected type.
+                </p>
+              </div>
+
+              {/* Categories */}
+              <div>
+                <Label>Categories</Label>
+                <Popover open={showCategorySelect} onOpenChange={setShowCategorySelect}>
+                  <PopoverTrigger asChild>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      role="combobox"
+                      className={`w-full justify-between ${formData.conditions.categories?.length ? '' : 'text-muted-foreground'}`}
+                    >
+                      {formData.conditions.categories?.length
+                        ? `${formData.conditions.categories.length} categories selected`
+                        : "Select categories..."
+                      }
+                      <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-full p-0">
+                    <Command>
+                      <CommandInput placeholder="Search categories..." />
+                      <CommandEmpty>No categories found.</CommandEmpty>
+                      <CommandList>
+                        <CommandGroup>
+                          {categories.map((category) => (
+                            <CommandItem
+                              key={category.id}
+                              onSelect={() => handleMultiSelectToggle('categories', category.id)}
+                            >
+                              <Check
+                                className={`mr-2 h-4 w-4 ${
+                                  formData.conditions.categories?.includes(category.id) ? "opacity-100" : "opacity-0"
+                                }`}
+                              />
+                              {category.name}
+                            </CommandItem>
+                          ))}
+                        </CommandGroup>
+                      </CommandList>
+                    </Command>
+                  </PopoverContent>
+                </Popover>
+
+                {formData.conditions.categories?.length > 0 && (
+                  <div className="flex flex-wrap gap-2 mt-2">
+                    {getSelectedCategoryNames().map((name, index) => {
+                      const categoryId = categories.find(c => c && c.name === name)?.id;
+                      return (
+                        <Badge key={index} variant="secondary" className="text-xs">
+                          {name}
+                          <X
+                            className="ml-1 h-3 w-3 cursor-pointer"
+                            onClick={() => {
+                              if (categoryId) handleMultiSelectToggle('categories', categoryId);
+                            }}
+                          />
+                        </Badge>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+
+              {/* Attribute Sets */}
+              <div>
+                <Label>Attribute Sets</Label>
+                <Popover open={showAttributeSetSelect} onOpenChange={setShowAttributeSetSelect}>
+                  <PopoverTrigger asChild>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      role="combobox"
+                      className={`w-full justify-between ${formData.conditions.attribute_sets?.length ? '' : 'text-muted-foreground'}`}
+                    >
+                      {formData.conditions.attribute_sets?.length
+                        ? `${formData.conditions.attribute_sets.length} attribute sets selected`
+                        : "Select attribute sets..."
+                      }
+                      <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-full p-0">
+                    <Command>
+                      <CommandInput placeholder="Search attribute sets..." />
+                      <CommandEmpty>No attribute sets found.</CommandEmpty>
+                      <CommandList>
+                        <CommandGroup>
+                          {attributeSets.map((set) => (
+                            <CommandItem
+                              key={set.id}
+                              onSelect={() => handleMultiSelectToggle('attribute_sets', set.id)}
+                            >
+                              <Check
+                                className={`mr-2 h-4 w-4 ${
+                                  formData.conditions.attribute_sets?.includes(set.id) ? "opacity-100" : "opacity-0"
+                                }`}
+                              />
+                              {set.name}
+                            </CommandItem>
+                          ))}
+                        </CommandGroup>
+                      </CommandList>
+                    </Command>
+                  </PopoverContent>
+                </Popover>
+
+                {formData.conditions.attribute_sets?.length > 0 && (
+                  <div className="flex flex-wrap gap-2 mt-2">
+                    {getSelectedAttributeSetNames().map((name, index) => {
+                      const setId = attributeSets.find(s => s && s.name === name)?.id;
+                      return (
+                        <Badge key={index} variant="secondary" className="text-xs">
+                          {name}
+                          <X
+                            className="ml-1 h-3 w-3 cursor-pointer"
+                            onClick={() => {
+                              if (setId) handleMultiSelectToggle('attribute_sets', setId);
+                            }}
+                          />
+                        </Badge>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
             </div>
 
             <div className="flex gap-2">
