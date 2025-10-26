@@ -129,8 +129,9 @@ router.get('/', async (req, res) => {
           where: { attribute_id: attr.id },
           order: [['sort_order', 'ASC'], ['code', 'ASC']],
           attributes: { exclude: ['translations'] }, // Exclude translations JSON column - using normalized table
-          // No limit for filterable attributes - need all values for filters
-          limit: (isPublicRequest && attr.is_filterable) ? undefined : 10
+          // No limit for filterable attributes or authenticated requests (for translations)
+          // Only limit values for public non-filterable attributes
+          limit: (isPublicRequest && !attr.is_filterable) ? 10 : undefined
         });
 
         // Get value IDs for translation lookup
