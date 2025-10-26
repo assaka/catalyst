@@ -809,13 +809,7 @@ export const StoreProvider = ({ children }) => {
       setTaxes(results[0].status === 'fulfilled' ? (results[0].value || []) : []);
       
       const categoriesResult = results[1].status === 'fulfilled' ? (results[1].value || []) : [];
-      
-      // Handle the case where API returns nested structure like {categories: [...], pagination: {...}}
-      let processedCategories = categoriesResult;
-      if (categoriesResult.length === 1 && categoriesResult[0]?.categories && Array.isArray(categoriesResult[0].categories)) {
-        processedCategories = categoriesResult[0].categories;
-      }
-      setCategories(processedCategories);
+      setCategories(categoriesResult);
       
       const productLabelsData = results[2].status === 'fulfilled' ? (results[2].value || []) : [];
       setProductLabels(productLabelsData);

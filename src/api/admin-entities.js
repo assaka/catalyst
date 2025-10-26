@@ -13,7 +13,13 @@ class AdminBaseEntity {
       const queryString = new URLSearchParams(params).toString();
       const url = queryString ? `${this.endpoint}?${queryString}` : this.endpoint;
       const response = await this.client.get(url);
-      
+
+      // Handle new structured response format {success: true, data: [...], pagination: {...}}
+      if (response && response.success && Array.isArray(response.data)) {
+        return response.data;
+      }
+
+      // Handle direct array response (backwards compatibility)
       return Array.isArray(response) ? response : [];
     } catch (error) {
       console.error(`Admin ${this.endpoint}.findAll()c error:`, error.message);

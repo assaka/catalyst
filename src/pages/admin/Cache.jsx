@@ -1,14 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { Store } from '@/api/entities';
 import { useStoreSelection } from '@/contexts/StoreSelectionContext';
-import { clearStorefrontCache } from '@/utils/cacheUtils';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@/components/ui/select';
 import { Separator } from '@/components/ui/separator';
 import SaveButton from '@/components/ui/save-button';
-import { useAlertTypes } from '@/hooks/useAlert';
+import FlashMessage from '@/components/storefront/FlashMessage';
 import { Rocket } from 'lucide-react';
 
 const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms));
@@ -36,11 +35,11 @@ const retryApiCall = async (apiCall, maxRetries = 5, baseDelay = 3000) => {
 
 export default function Cache() {
   const { selectedStore } = useStoreSelection();
-  const { showSuccess, showError, AlertComponent } = useAlertTypes();
   const [settings, setSettings] = useState(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(false);
+  const [flashMessage, setFlashMessage] = useState(null);
 
   useEffect(() => {
     if (selectedStore) {
@@ -70,7 +69,7 @@ export default function Cache() {
       setLoading(false);
     } catch (error) {
       console.error('Failed to load cache settings:', error);
-      showError('Failed to load cache settings');
+      setFlashMessage({ type: 'error', message: 'Failed to load cache settings' });
       setLoading(false);
     }
   };
@@ -81,7 +80,7 @@ export default function Cache() {
       setSaveSuccess(false);
 
       if (!selectedStore?.id) {
-        showError('No store selected');
+        setFlashMessage({ type: 'error', message: 'No store selected' });
         return;
       }
 
@@ -95,16 +94,13 @@ export default function Cache() {
         });
       });
 
-      // Clear storefront cache after settings update
-      await clearStorefrontCache();
-
       setSaveSuccess(true);
-      showSuccess('Cache settings saved successfully!');
+      setFlashMessage({ type: 'success', message: 'Cache settings saved successfully!' });
 
       setTimeout(() => setSaveSuccess(false), 2000);
     } catch (error) {
       console.error('Failed to save cache settings:', error);
-      showError('Failed to save cache settings');
+      setFlashMessage({ type: 'error', message: 'Failed to save cache settings' });
     } finally {
       setSaving(false);
     }
@@ -122,7 +118,10 @@ export default function Cache() {
 
   return (
     <div className="p-6 max-w-4xl mx-auto">
-      <AlertComponent />
+      <FlashMessage
+        message={flashMessage}
+        onClose={() => setFlashMessage(null)}
+      />
 
       <div className="mb-6">
         <h1 className="text-3xl font-bold flex items-center gap-2">
