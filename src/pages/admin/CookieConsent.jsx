@@ -687,28 +687,30 @@ export default function CookieConsent() {
                               }}
                               placeholder="Accept All"
                             />
-                            <div className="flex gap-1">
+                            <div className="flex gap-2">
                               <div className="relative">
                                 <Input
                                   type="color"
-                                  className="w-12 h-10 p-1 cursor-pointer"
-                                  value={settings.accept_button_bg_color || '#2563eb'}
-                                  onChange={(e) => setSettings({ ...settings, accept_button_bg_color: e.target.value })}
-                                  title="Background Color"
-                                />
-                              </div>
-                              <div className="relative">
-                                <Input
-                                  type="color"
-                                  className="w-12 h-10 p-1 cursor-pointer"
+                                  className="w-16 h-10 p-1 cursor-pointer"
                                   value={settings.accept_button_text_color || '#ffffff'}
                                   onChange={(e) => setSettings({ ...settings, accept_button_text_color: e.target.value })}
                                   title="Text Color"
                                 />
+                                <span className="text-xs text-gray-500 absolute -bottom-5 left-0 whitespace-nowrap">Text</span>
+                              </div>
+                              <div className="relative">
+                                <Input
+                                  type="color"
+                                  className="w-16 h-10 p-1 cursor-pointer"
+                                  value={settings.accept_button_bg_color || '#2563eb'}
+                                  onChange={(e) => setSettings({ ...settings, accept_button_bg_color: e.target.value })}
+                                  title="Background Color"
+                                />
+                                <span className="text-xs text-gray-500 absolute -bottom-5 left-0 whitespace-nowrap">Background</span>
                               </div>
                             </div>
                           </div>
-                          <p className="text-xs text-gray-500 mt-1">Button text and colors (Background & Text)</p>
+                          <p className="text-xs text-gray-500 mt-1">Button colors</p>
                         </div>
                         <div>
                           <Label htmlFor="reject_all_text">Reject Button</Label>
@@ -730,28 +732,30 @@ export default function CookieConsent() {
                               }}
                               placeholder="Reject All"
                             />
-                            <div className="flex gap-1">
+                            <div className="flex gap-2">
                               <div className="relative">
                                 <Input
                                   type="color"
-                                  className="w-12 h-10 p-1 cursor-pointer"
-                                  value={settings.reject_button_bg_color || '#ffffff'}
-                                  onChange={(e) => setSettings({ ...settings, reject_button_bg_color: e.target.value })}
-                                  title="Background Color"
-                                />
-                              </div>
-                              <div className="relative">
-                                <Input
-                                  type="color"
-                                  className="w-12 h-10 p-1 cursor-pointer"
+                                  className="w-16 h-10 p-1 cursor-pointer"
                                   value={settings.reject_button_text_color || '#374151'}
                                   onChange={(e) => setSettings({ ...settings, reject_button_text_color: e.target.value })}
                                   title="Text Color"
                                 />
+                                <span className="text-xs text-gray-500 absolute -bottom-5 left-0 whitespace-nowrap">Text</span>
+                              </div>
+                              <div className="relative">
+                                <Input
+                                  type="color"
+                                  className="w-16 h-10 p-1 cursor-pointer"
+                                  value={settings.reject_button_bg_color || '#ffffff'}
+                                  onChange={(e) => setSettings({ ...settings, reject_button_bg_color: e.target.value })}
+                                  title="Background Color"
+                                />
+                                <span className="text-xs text-gray-500 absolute -bottom-5 left-0 whitespace-nowrap">Background</span>
                               </div>
                             </div>
                           </div>
-                          <p className="text-xs text-gray-500 mt-1">Button text and colors (Background & Text)</p>
+                          <p className="text-xs text-gray-500 mt-1">Button colors</p>
                         </div>
                       </div>
 
@@ -906,29 +910,31 @@ export default function CookieConsent() {
                           }}
                           placeholder="Save Preferences"
                         />
-                        <div className="flex gap-1">
+                        <div className="flex gap-2">
                           <div className="relative">
                             <Input
                               type="color"
-                              className="w-12 h-10 p-1 cursor-pointer"
-                              value={settings.save_preferences_button_bg_color || '#16a34a'}
-                              onChange={(e) => setSettings({ ...settings, save_preferences_button_bg_color: e.target.value })}
-                              title="Background Color"
-                            />
-                          </div>
-                          <div className="relative">
-                            <Input
-                              type="color"
-                              className="w-12 h-10 p-1 cursor-pointer"
+                              className="w-16 h-10 p-1 cursor-pointer"
                               value={settings.save_preferences_button_text_color || '#ffffff'}
                               onChange={(e) => setSettings({ ...settings, save_preferences_button_text_color: e.target.value })}
                               title="Text Color"
                             />
+                            <span className="text-xs text-gray-500 absolute -bottom-5 left-0 whitespace-nowrap">Text</span>
+                          </div>
+                          <div className="relative">
+                            <Input
+                              type="color"
+                              className="w-16 h-10 p-1 cursor-pointer"
+                              value={settings.save_preferences_button_bg_color || '#16a34a'}
+                              onChange={(e) => setSettings({ ...settings, save_preferences_button_bg_color: e.target.value })}
+                              title="Background Color"
+                            />
+                            <span className="text-xs text-gray-500 absolute -bottom-5 left-0 whitespace-nowrap">Background</span>
                           </div>
                         </div>
                       </div>
                       <p className="text-xs text-gray-500 mt-1">
-                        Button text and colors (Background & Text) - Translate in Banner Text Translations section above
+                        Button colors - Translate text in Banner Text Translations section above
                       </p>
                     </div>
                   </div>
