@@ -75,45 +75,57 @@ const MediaBrowser = ({ isOpen, onClose, onInsert, allowMultiple = false, upload
         return;
       }
 
-      // When uploadFolder is 'category', only show category images
-      // Otherwise show all files for general media library
-      let requestUrl = '/storage/list';
-      let params = {};
+      // Use the same direct Supabase endpoint as FileLibrary (bypasses storage-manager)
+      const requestUrl = '/supabase/storage/list/suprshop-assets';
 
-      if (uploadFolder === 'category') {
-        params.folder = 'category';
-      }
+      console.log('📡 MediaBrowser: Fetching files...', { requestUrl });
 
-      console.log('📡 MediaBrowser: Fetching files...', { requestUrl, params });
-
-      const response = await apiClient.get(requestUrl, { params });
+      const response = await apiClient.get(requestUrl);
 
       console.log('✅ MediaBrowser: Response received', {
         success: response?.success,
-        hasData: !!response?.data,
-        filesCount: response?.data?.files?.length
+        hasFiles: !!response?.files,
+        filesCount: response?.files?.length
       });
 
-      if (response.success && response.data) {
-        const rawFiles = response.data.files || [];
-        const transformedFiles = rawFiles.map(file => ({
-          id: file.id || file.name,
-          name: file.name,
-          url: file.url,
-          size: file.metadata?.size || file.size || 0,
-          mimeType: file.metadata?.mimetype || file.mimetype || 'application/octet-stream',
-          uploadedAt: file.created_at || file.updated_at || new Date().toISOString()
-        }));
+      // Use same format as FileLibrary
+      if (response.success && response.files) {
+        const rawFiles = response.files || [];
+        const transformedFiles = rawFiles.map(file => {
+          const imageUrl = file.url || file.publicUrl || file.name;
+          return {
+            id: file.id || file.name,
+            name: file.name,
+            url: imageUrl,
+            size: file.metadata?.size || file.size || 0,
+            mimeType: file.metadata?.mimetype || file.mimeType || 'application/octet-stream',
+            uploadedAt: file.created_at || file.updated_at || new Date().toISOString()
+          };
+        });
+
         console.log(`📁 MediaBrowser: Loaded ${transformedFiles.length} files`);
-        setFiles(transformedFiles);
+
+        // Filter by folder if needed
+        if (uploadFolder === 'category') {
+          const filtered = transformedFiles.filter(f => f.name.includes('category/') || f.name.includes('categories/'));
+          setFiles(filtered);
+        } else {
+          setFiles(transformedFiles);
+        }
       } else {
         console.warn('⚠️ MediaBrowser: No files in response');
         setFiles([]);
       }
     } catch (error) {
       console.error('❌ MediaBrowser: Error loading files:', error);
-      toast.error(`Failed to load media files: ${error.message || 'Unknown error'}`);
-      setFiles([]);
+
+      // Graceful fallback for errors
+      if (error.message?.includes('404') || error.message?.includes('not found')) {
+        setFiles([]);
+      } else {
+        toast.error(`Failed to load media files: ${error.message || 'Unknown error'}`);
+        setFiles([]);
+      }
     } finally {
       console.log('🏁 MediaBrowser: loadFiles complete');
       setLoading(false);
@@ -142,7 +154,7 @@ const MediaBrowser = ({ isOpen, onClose, onInsert, allowMultiple = false, upload
     }
   }, [isOpen, selectedStore?.id]);
 
-  // Check storage connection status
+  // Check storage connection status (using same approach as FileLibrary)
   const checkStorageConnection = async () => {
     console.log('🔍 MediaBrowser: checkStorageConnection called');
     try {
@@ -151,24 +163,20 @@ const MediaBrowser = ({ isOpen, onClose, onInsert, allowMultiple = false, upload
         return;
       }
 
-      console.log('📡 MediaBrowser: Fetching storage providers...');
-      const response = await apiClient.get('/storage/providers');
+      console.log('📡 MediaBrowser: Checking Supabase storage stats...');
+      // Use same endpoint as FileLibrary for consistent behavior
+      const response = await apiClient.get('/supabase/storage/stats');
 
-      console.log('✅ MediaBrowser: Storage providers response:', response);
+      console.log('✅ MediaBrowser: Storage stats response:', response);
 
-      if (response.success && response.data) {
-        const currentProvider = response.data.current;
-        const isAvailable = response.data.providers[currentProvider?.provider]?.available;
-
-        if (isAvailable) {
-          console.log('✅ Storage connected:', currentProvider);
-          setStorageConnected(true);
-          setStorageError(null);
-        } else {
-          console.warn('⚠️ Storage not available:', currentProvider);
-          setStorageConnected(false);
-          setStorageError(`${currentProvider?.name || 'Storage provider'} is not properly configured`);
-        }
+      if (response.success) {
+        console.log('✅ Storage connected: Supabase');
+        setStorageConnected(true);
+        setStorageError(null);
+      } else {
+        console.warn('⚠️ Storage connection failed');
+        setStorageConnected(false);
+        setStorageError('Storage connection failed');
       }
     } catch (error) {
       console.error('❌ MediaBrowser: Error checking storage connection:', error);
@@ -177,7 +185,7 @@ const MediaBrowser = ({ isOpen, onClose, onInsert, allowMultiple = false, upload
     }
   };
 
-  // Handle file upload
+  // Handle file upload (using same approach as FileLibrary)
   const handleFileUpload = async (filesArray) => {
     if (!storageConnected || storageError) {
       toast.error("Media storage is not connected. Please configure storage in Media Storage settings first.", {
@@ -188,18 +196,27 @@ const MediaBrowser = ({ isOpen, onClose, onInsert, allowMultiple = false, upload
       });
       return;
     }
-    
+
     if (filesArray.length === 0) return;
 
     setUploading(true);
-    
+
     try {
       for (const file of filesArray) {
-        const response = await apiClient.uploadFile('/storage/upload', file, {
-          folder: uploadFolder,
-          public: 'true',
-          store_id: selectedStore?.id
+        console.log('📤 MediaBrowser: Uploading file:', {
+          name: file.name,
+          size: file.size,
+          type: file.type
         });
+
+        // Use same upload endpoint as FileLibrary
+        const additionalData = {
+          folder: uploadFolder || 'library',
+          public: 'true',
+          type: 'general'
+        };
+
+        const response = await apiClient.uploadFile('/supabase/storage/upload', file, additionalData);
 
         if (response.success) {
           toast.success(`${file.name} uploaded successfully`);
@@ -207,12 +224,12 @@ const MediaBrowser = ({ isOpen, onClose, onInsert, allowMultiple = false, upload
           toast.error(`Failed to upload ${file.name}`);
         }
       }
-      
+
       // Reload files to show new uploads
       await loadFiles();
     } catch (error) {
-      console.error('Upload error:', error);
-      toast.error('Failed to upload files');
+      console.error('❌ MediaBrowser: Upload error:', error);
+      toast.error(`Failed to upload files: ${error.message || 'Unknown error'}`);
     } finally {
       setUploading(false);
     }
