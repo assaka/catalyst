@@ -151,28 +151,8 @@ export function GridResizeHandle({ onResize, currentValue, maxValue = 12, minVal
           onResizeRef.current(newColSpan);
         }
 
-        // Find the main layout container for accurate column width calculation
-        const mainLayout = document.querySelector('[data-slot-id="main_layout"], [data-grid-slot-id="main_layout"]') ||
-                          document.querySelector('.grid-cols-12');
-        let columnWidth = 60; // fallback
-
-        if (mainLayout) {
-          const containerWidth = mainLayout.getBoundingClientRect().width;
-          columnWidth = containerWidth / 12; // 12-column gri
-        }
-
-        // Get slot element boundaries for detailed position debugging
-        const slotElement = handleElementRef.current?.closest('[data-slot-id], [data-grid-slot-id]');
-
-        if (slotElement && handleElementRef.current) {
-          const slotRect = slotElement.getBoundingClientRect();
-          const handleRect = handleElementRef.current.getBoundingClientRect();
-        }
-
         // Handle stays at slot's right edge naturally, no offset needed
         // The slot itself resizes, so handle moves with the slot's edge
-        const actualColumnChange = newColSpan - startValue;
-
         setMouseOffset(0);
       } else if (direction === 'vertical') {
         const deltaY = e.clientY - startY;
