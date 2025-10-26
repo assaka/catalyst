@@ -299,8 +299,8 @@ function App() {
     <QueryClientProvider client={queryClient}>
       <TranslationProvider>
         <AIProvider>
-          <StoreSelectionProvider>
-            <Router>
+          <Router>
+            <StoreSelectionProvider>
             <Routes>
           {/* Admin routes */}
           <Route path="/admin" element={<PageWrapper Component={Pages.Dashboard} pageName="Dashboard" />} />
@@ -403,9 +403,9 @@ function App() {
           {/* Catch all - show 404 page */}
           <Route path="*" element={<PageWrapper Component={Pages.NotFound} pageName="NotFound" />} />
             </Routes>
-          </Router>
-          <Toaster />
-        </StoreSelectionProvider>
+            <Toaster />
+          </StoreSelectionProvider>
+        </Router>
       </AIProvider>
     </TranslationProvider>
     <ReactQueryDevtools initialIsOpen={false} />
