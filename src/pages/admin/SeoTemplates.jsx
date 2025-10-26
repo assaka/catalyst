@@ -11,6 +11,7 @@ import { useStoreSelection } from "@/contexts/StoreSelectionContext.jsx";
 import NoStoreSelected from "@/components/admin/NoStoreSelected";
 import FlashMessage from "@/components/storefront/FlashMessage";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { clearSeoTemplatesCache } from "@/utils/cacheUtils";
 
 export default function SeoTemplates() {
   const { selectedStore, getSelectedStoreId } = useStoreSelection();
@@ -187,6 +188,9 @@ export default function SeoTemplates() {
 
       // Reload templates
       await loadTemplates();
+
+      // Clear storefront cache for instant updates
+      if (storeId) clearSeoTemplatesCache(storeId);
     } catch (error) {
       console.error('Error saving SEO template:', error);
 
@@ -215,6 +219,10 @@ export default function SeoTemplates() {
         type: 'success',
         message: 'SEO template deleted successfully'
       });
+
+      // Clear storefront cache for instant updates
+      const storeId = getSelectedStoreId();
+      if (storeId) clearSeoTemplatesCache(storeId);
     } catch (error) {
       console.error('Error deleting SEO template:', error);
       setFlashMessage({

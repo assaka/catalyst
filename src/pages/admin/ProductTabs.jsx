@@ -30,6 +30,7 @@ import FlashMessage from "@/components/storefront/FlashMessage";
 import ProductTabForm from "@/components/admin/products/ProductTabForm";
 import { useTranslation } from "@/contexts/TranslationContext";
 import { getAttributeLabel } from "@/utils/attributeUtils";
+import { clearAllCache } from "@/utils/cacheUtils";
 
 export default function ProductTabs() {
   const { selectedStore, getSelectedStoreId } = useStoreSelection();
@@ -140,7 +141,8 @@ export default function ProductTabs() {
       }
 
       await loadData(); // Reload data to reflect changes
-      clearProductTabsCache(); // Clear frontend cache so storefront shows changes immediately
+      // Clear storefront cache for instant updates
+      if (storeId) clearAllCache(storeId);
       setShowForm(false);
       setEditingTab(null);
     } catch (error) {
@@ -180,7 +182,9 @@ export default function ProductTabs() {
       try {
         await ProductTab.delete(tabId);
         await loadData(); // Reload data after deletion
-        clearProductTabsCache(); // Clear frontend cache so storefront shows changes immediately
+        // Clear storefront cache for instant updates
+        const storeId = getSelectedStoreId();
+        if (storeId) clearAllCache(storeId);
         setFlashMessage({ type: 'success', message: 'Product tab deleted successfully!' });
       } catch (error) {
         console.error("Error deleting tab:", error);
@@ -203,7 +207,8 @@ export default function ProductTabs() {
         store_id: storeId // Explicitly include store_id in the update payload
       });
       await loadData(); // Reload data after status change
-      clearProductTabsCache(); // Clear frontend cache so storefront shows changes immediately
+      // Clear storefront cache for instant updates
+      if (storeId) clearAllCache(storeId);
       setFlashMessage({
         type: 'success',
         message: `Product tab ${tab.is_active ? 'deactivated' : 'activated'} successfully!`

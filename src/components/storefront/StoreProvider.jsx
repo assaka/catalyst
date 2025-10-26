@@ -46,7 +46,7 @@ const cleanCheckoutLayout = (layout) => {
 const CACHE_DURATION_LONG = 3600000; // 1 hour - for data that rarely changes (stores, cookie consent)
 const CACHE_DURATION_MEDIUM = 300000; // 5 minutes - for semi-static data (categories, attributes)
 const CACHE_DURATION_SHORT = 60000; // 1 minute - for frequently updated data (taxes, labels, templates)
-const CACHE_VERSION = '2.1'; // Increment this to invalidate all cached data
+const CACHE_VERSION = '2.2'; // Increment this to invalidate all cached data
 const apiCache = new Map();
 
 // Load from localStorage on init

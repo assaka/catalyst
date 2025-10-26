@@ -20,6 +20,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Shield, Eye, Settings, BarChart3, Plus, Trash2, Download, Languages } from 'lucide-react';
 import SaveButton from '@/components/ui/save-button';
 import { Separator } from '@/components/ui/separator';
+import { clearCookieConsentCache } from '@/utils/cacheUtils';
 import {
   Accordion,
   AccordionContent,
@@ -400,13 +401,7 @@ export default function CookieConsent() {
 
       // Clear storefront cache so changes appear immediately
       console.log('🗑️ Clearing storefront cache for immediate updates...');
-      localStorage.removeItem('storeProviderCache');
-      localStorage.removeItem(`cookie-consent-${currentStoreId}`);
-
-      // Increment cache version to force storefront to refetch
-      const cacheVersion = parseInt(localStorage.getItem('cookieConsentCacheVersion') || '0', 10);
-      localStorage.setItem('cookieConsentCacheVersion', String(cacheVersion + 1));
-      console.log(`✅ Cache version incremented to ${cacheVersion + 1}`);
+      clearCookieConsentCache(currentStoreId);
 
       setFlashMessage({
         type: 'success',
