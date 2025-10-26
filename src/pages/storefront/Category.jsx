@@ -292,9 +292,10 @@ export default function Category() {
         return;
       }
 
-      const data = await response.json();
+      const response_data = await response.json();
+      const data = response_data.data;
 
-      if (!data.category) {
+      if (!data || !data.category) {
         showNotFound(`Category "${categorySlug}" not found`);
         setProducts([]);
         return;

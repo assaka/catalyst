@@ -347,9 +347,10 @@ export default function ProductDetail() {
         return;
       }
 
-      const data = await response.json();
+      const response_data = await response.json();
+      const data = response_data.data;
 
-      if (!data.product) {
+      if (!data || !data.product) {
         setProduct(null);
         setLoading(false);
         return;
