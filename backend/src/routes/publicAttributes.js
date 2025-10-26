@@ -95,13 +95,8 @@ router.get('/', async (req, res) => {
       await applyCacheHeaders(res, store_id);
     }
 
-    res.json({
-      success: true,
-      data: attributesWithValues,
-      total: count,
-      page: parseInt(page),
-      totalPages: Math.ceil(count / limit)
-    });
+    // Return just the array for public requests (for compatibility with StorefrontBaseEntity)
+    res.json(attributesWithValues);
   } catch (error) {
     console.error('Get attributes error:', error);
     res.status(500).json({
