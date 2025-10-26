@@ -150,8 +150,8 @@ class StorefrontApiClient {
         throw error;
       }
 
-      // Public endpoints return arrays directly
-      return Array.isArray(result) ? result : [result];
+      // Return result as-is, let entities handle unwrapping
+      return result;
     } catch (error) {
       console.error(`Storefront public API request failed: ${method} ${url}`, error);
       throw error;
