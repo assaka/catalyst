@@ -103,6 +103,21 @@ class StorageManager {
   }
 
   /**
+   * Helper to add timeout to a promise
+   * @param {Promise} promise - Promise to wrap
+   * @param {number} timeoutMs - Timeout in milliseconds
+   * @returns {Promise} Promise that rejects on timeout
+   */
+  _withTimeout(promise, timeoutMs) {
+    return Promise.race([
+      promise,
+      new Promise((_, reject) =>
+        setTimeout(() => reject(new Error('Operation timed out')), timeoutMs)
+      )
+    ]);
+  }
+
+  /**
    * Get storage provider for a specific store (store-aware)
    * Checks store configuration to determine best available provider
    * @param {string} storeId - Store identifier
@@ -113,20 +128,24 @@ class StorageManager {
     try {
       const { Store } = require('../models');
       const store = await Store.findByPk(storeId);
-      
+
       // Check for default_mediastorage_provider first, then fall back to default_database_provider
-      const defaultProvider = store?.settings?.default_mediastorage_provider || 
+      const defaultProvider = store?.settings?.default_mediastorage_provider ||
                              store?.settings?.default_database_provider;
-      
+
       if (defaultProvider) {
         console.log(`Store ${storeId} has default storage provider: ${defaultProvider}`);
-        
+
         // Check if it's Supabase and configured
         if (defaultProvider === 'supabase' && this.providers.has('supabase')) {
           try {
             const supabaseIntegration = require('./supabase-integration');
-            const connectionStatus = await supabaseIntegration.getConnectionStatus(storeId);
-            
+            // Add 3 second timeout to prevent hanging
+            const connectionStatus = await this._withTimeout(
+              supabaseIntegration.getConnectionStatus(storeId),
+              3000
+            );
+
             if (connectionStatus.connected) {
               return {
                 type: 'supabase',
@@ -142,13 +161,17 @@ class StorageManager {
     } catch (error) {
       console.log(`Could not check store default provider:`, error.message);
     }
-    
+
     // Check if Supabase is configured for this store (fallback to direct check)
     if (this.providers.has('supabase')) {
       try {
         const supabaseIntegration = require('./supabase-integration');
-        const connectionStatus = await supabaseIntegration.getConnectionStatus(storeId);
-        
+        // Add 3 second timeout to prevent hanging
+        const connectionStatus = await this._withTimeout(
+          supabaseIntegration.getConnectionStatus(storeId),
+          3000
+        );
+
         if (connectionStatus.connected) {
           return {
             type: 'supabase',
@@ -193,9 +216,14 @@ class StorageManager {
     if (providerType === 'supabase') {
       try {
         const supabaseIntegration = require('./supabase-integration');
-        const connectionStatus = await supabaseIntegration.getConnectionStatus(storeId);
+        // Add 3 second timeout to prevent hanging
+        const connectionStatus = await this._withTimeout(
+          supabaseIntegration.getConnectionStatus(storeId),
+          3000
+        );
         return connectionStatus.connected;
       } catch (error) {
+        console.log(`Timeout or error checking Supabase availability:`, error.message);
         return false;
       }
     }
