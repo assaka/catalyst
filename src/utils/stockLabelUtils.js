@@ -324,46 +324,65 @@ function processLabel(label, quantity, settings, globalTranslations = null) {
       .trim();
   }
 
-  // Process nested braces by finding outer {...} blocks first
-  // BUT skip single-level placeholders (they'll be handled later)
-  let depth = 0;
-  let start = -1;
-  const knownPlaceholders = ['quantity', 'item', 'unit', 'piece'];
+  // Recursively process nested braces until no more changes occur
+  // This handles multiple levels of nesting like {, {nog maar {quantity} {item} over}}
+  let previousLabel;
+  let iterations = 0;
+  const maxIterations = 10; // Prevent infinite loops
 
-  for (let i = 0; i < processedLabel.length; i++) {
-    if (processedLabel[i] === '{') {
-      if (depth === 0) start = i;
-      depth++;
-    } else if (processedLabel[i] === '}') {
-      depth--;
-      if (depth === 0 && start !== -1) {
-        const content = processedLabel.substring(start + 1, i);
+  do {
+    previousLabel = processedLabel;
 
-        // Check if this is a single placeholder (not a nested block)
-        const isSinglePlaceholder = knownPlaceholders.some(p => content.toLowerCase() === p);
+    // Process nested braces by finding outer {...} blocks first
+    // BUT skip single-level placeholders (they'll be handled later)
+    let depth = 0;
+    let start = -1;
+    const knownPlaceholders = ['quantity', 'item', 'unit', 'piece', 'items', 'units', 'pieces'];
 
-        // Only process if it's actually a nested block (contains inner braces)
-        if (!isSinglePlaceholder && content.includes('{')) {
-          const processed = content
-            .replace(/\{quantity\}/gi, quantity)
-            .replace(/\{item\}/gi, getPlural('item', 'items'))
-            .replace(/\{unit\}/gi, getPlural('unit', 'units'))
-            .replace(/\{piece\}/gi, getPlural('piece', 'pieces'));
+    for (let i = 0; i < processedLabel.length; i++) {
+      if (processedLabel[i] === '{') {
+        if (depth === 0) start = i;
+        depth++;
+      } else if (processedLabel[i] === '}') {
+        depth--;
+        if (depth === 0 && start !== -1) {
+          const content = processedLabel.substring(start + 1, i);
 
-          processedLabel = processedLabel.substring(0, start) + processed + processedLabel.substring(i + 1);
-          i = start + processed.length - 1;
+          // Check if this is a single placeholder (not a nested block)
+          const isSinglePlaceholder = knownPlaceholders.some(p => content.toLowerCase() === p);
+
+          // Process nested blocks (contains inner braces) OR unwrap arbitrary wrapper braces
+          if (!isSinglePlaceholder) {
+            if (content.includes('{')) {
+              // Has nested braces - process inner placeholders
+              const processed = content
+                .replace(/\{quantity\}/gi, quantity)
+                .replace(/\{item\}/gi, getPlural('item', 'items'))
+                .replace(/\{unit\}/gi, getPlural('unit', 'units'))
+                .replace(/\{piece\}/gi, getPlural('piece', 'pieces'));
+
+              processedLabel = processedLabel.substring(0, start) + processed + processedLabel.substring(i + 1);
+              i = start + processed.length - 1;
+            } else {
+              // No nested braces - unwrap arbitrary wrapper (e.g., {nog maar 3 items over})
+              processedLabel = processedLabel.substring(0, start) + content + processedLabel.substring(i + 1);
+              i = start + content.length - 1;
+            }
+          }
+          start = -1;
         }
-        start = -1;
       }
     }
-  }
 
-  // Now replace all standalone placeholders
-  processedLabel = processedLabel
-    .replace(/\{quantity\}/gi, quantity)
-    .replace(/\{item\}/gi, getPlural('item', 'items'))
-    .replace(/\{unit\}/gi, getPlural('unit', 'units'))
-    .replace(/\{piece\}/gi, getPlural('piece', 'pieces'));
+    // Now replace all standalone placeholders
+    processedLabel = processedLabel
+      .replace(/\{quantity\}/gi, quantity)
+      .replace(/\{item\}/gi, getPlural('item', 'items'))
+      .replace(/\{unit\}/gi, getPlural('unit', 'units'))
+      .replace(/\{piece\}/gi, getPlural('piece', 'pieces'));
+
+    iterations++;
+  } while (processedLabel !== previousLabel && iterations < maxIterations);
 
   return processedLabel;
 }
