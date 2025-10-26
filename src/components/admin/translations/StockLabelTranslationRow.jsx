@@ -11,7 +11,7 @@ import api from '@/utils/api';
  * Accordion row for managing stock label translations
  * Now uses the global translations table instead of stores.settings
  */
-export default function StockLabelTranslationRow({ storeId, stockSettings, onUpdate, selectedLanguages }) {
+export default function StockLabelTranslationRow({ storeId, stockSettings, onUpdate, selectedLanguages, onFlashMessage }) {
   const { availableLanguages } = useTranslation();
   const [isExpanded, setIsExpanded] = useState(false);
   const [translations, setTranslations] = useState({});
@@ -66,7 +66,11 @@ export default function StockLabelTranslationRow({ storeId, stockSettings, onUpd
       setTranslations(translationsData);
     } catch (error) {
       console.error('Error loading stock translations:', error);
-      toast.error('Failed to load translations');
+      if (onFlashMessage) {
+        onFlashMessage('Failed to load translations', 'error');
+      } else {
+        toast.error('Failed to load translations');
+      }
     } finally {
       setLoading(false);
     }
@@ -131,7 +135,11 @@ export default function StockLabelTranslationRow({ storeId, stockSettings, onUpd
       }
 
       if (labels.length === 0) {
-        toast.error('No translations to save');
+        if (onFlashMessage) {
+          onFlashMessage('No translations to save', 'error');
+        } else {
+          toast.error('No translations to save');
+        }
         setSaving(false);
         return;
       }
@@ -139,7 +147,11 @@ export default function StockLabelTranslationRow({ storeId, stockSettings, onUpd
       // Save using bulk translations API
       await api.post('/translations/ui-labels/bulk', { labels });
 
-      toast.success('Stock label translations updated successfully');
+      if (onFlashMessage) {
+        onFlashMessage('Stock label translations updated successfully', 'success');
+      } else {
+        toast.success('Stock label translations updated successfully');
+      }
       if (onUpdate) onUpdate(translations);
       setSaving(false);
       setSaveSuccess(true);
@@ -147,7 +159,11 @@ export default function StockLabelTranslationRow({ storeId, stockSettings, onUpd
     } catch (error) {
       console.error('Error saving stock label translations:', error);
       console.error('Error response:', error.response?.data);
-      toast.error(error.response?.data?.message || 'Failed to save translations');
+      if (onFlashMessage) {
+        onFlashMessage(error.response?.data?.message || 'Failed to save translations', 'error');
+      } else {
+        toast.error(error.response?.data?.message || 'Failed to save translations');
+      }
       setSaving(false);
     }
   };
@@ -156,7 +172,11 @@ export default function StockLabelTranslationRow({ storeId, stockSettings, onUpd
   const handleAITranslate = async (field, fromLang, toLang) => {
     const sourceText = translations[fromLang]?.[field];
     if (!sourceText || !sourceText.trim()) {
-      toast.error(`No ${fromLang.toUpperCase()} text found for ${field}`);
+      if (onFlashMessage) {
+        onFlashMessage(`No ${fromLang.toUpperCase()} text found for ${field}`, 'error');
+      } else {
+        toast.error(`No ${fromLang.toUpperCase()} text found for ${field}`);
+      }
       return;
     }
 
@@ -172,11 +192,19 @@ export default function StockLabelTranslationRow({ storeId, stockSettings, onUpd
 
       if (response && response.success && response.data) {
         handleTranslationChange(toLang, field, response.data.translated);
-        toast.success(`${field} translated to ${toLang.toUpperCase()}`);
+        if (onFlashMessage) {
+          onFlashMessage(`${field} translated to ${toLang.toUpperCase()}`, 'success');
+        } else {
+          toast.success(`${field} translated to ${toLang.toUpperCase()}`);
+        }
       }
     } catch (error) {
       console.error('AI translate error:', error);
-      toast.error(`Failed to translate ${field}`);
+      if (onFlashMessage) {
+        onFlashMessage(`Failed to translate ${field}`, 'error');
+      } else {
+        toast.error(`Failed to translate ${field}`);
+      }
     } finally {
       setTranslating(prev => ({ ...prev, [translatingKey]: false }));
     }

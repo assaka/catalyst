@@ -926,13 +926,13 @@ export default function Translations() {
         </p>
       </div>
 
-      {/* Message banner */}
+      {/* Flash Message - Fixed at top */}
       {message && (
         <div className={`
-          mb-6 p-4 rounded-lg flex items-center gap-3
-          ${message.type === 'success' ? 'bg-green-50 text-green-800' : ''}
-          ${message.type === 'error' ? 'bg-red-50 text-red-800' : ''}
-          ${message.type === 'info' ? 'bg-blue-50 text-blue-800' : ''}
+          fixed top-4 right-4 p-4 rounded-lg shadow-lg text-white z-50 transition-opacity duration-300 flex items-center gap-3
+          ${message.type === 'success' ? 'bg-green-500' : ''}
+          ${message.type === 'error' ? 'bg-red-500' : ''}
+          ${message.type === 'info' ? 'bg-blue-500' : ''}
         `}>
           {message.type === 'success' && <Check className="w-5 h-5" />}
           {message.type === 'error' && <AlertCircle className="w-5 h-5" />}
@@ -2218,6 +2218,7 @@ export default function Translations() {
                         onUpdate={(translations) => {
                           setStockSettings({ ...stockSettings, translations });
                         }}
+                        onFlashMessage={showMessage}
                       />
                     </div>
 
