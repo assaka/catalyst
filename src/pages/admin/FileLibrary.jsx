@@ -1,11 +1,13 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { Upload, File, Image, FileText, Film, Music, Archive, Copy, Check, Trash2, Search, Grid, List, Download, Eye, X, AlertCircle, ExternalLink, Settings } from 'lucide-react';
 import { useStoreSelection } from '@/contexts/StoreSelectionContext';
 import { toast } from 'sonner';
 import apiClient from '@/api/client';
+import SaveButton from '@/components/ui/save-button';
 
 const FileLibrary = () => {
   const { selectedStore } = useStoreSelection();
+  const fileInputRef = useRef(null);
   const [files, setFiles] = useState([]);
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
@@ -400,6 +402,7 @@ const FileLibrary = () => {
           Supports images, PDFs, documents, videos, and more
         </p>
         <input
+          ref={fileInputRef}
           type="file"
           multiple
           onChange={(e) => handleFileUpload(Array.from(e.target.files))}
@@ -407,14 +410,13 @@ const FileLibrary = () => {
           id="file-upload"
           disabled={uploading || !storageConnected || storageError}
         />
-        <label
-          htmlFor="file-upload"
-          className={`inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg cursor-pointer hover:bg-blue-700 transition-colors ${
-            (uploading || !storageConnected || storageError) ? 'opacity-50 cursor-not-allowed' : ''
-          }`}
-        >
-          {uploading ? 'Uploading...' : 'Select Files'}
-        </label>
+        <SaveButton
+          onClick={() => fileInputRef.current?.click()}
+          loading={uploading}
+          disabled={!storageConnected || storageError}
+          defaultText="Select Files"
+          loadingText="Uploading..."
+        />
       </div>
 
       {/* Toolbar */}
