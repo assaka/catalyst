@@ -366,4 +366,262 @@ router.get('/:id', async (req, res) => {
   }
 });
 
+// @route   GET /api/public/products/by-slug/:slug/full
+// @desc    Get complete product data with tabs, labels, and custom options in one request
+// @access  Public
+router.get('/by-slug/:slug/full', async (req, res) => {
+  try {
+    const { slug } = req.params;
+    const { store_id } = req.query;
+    const lang = getLanguageFromRequest(req);
+
+    if (!store_id) {
+      return res.status(400).json({
+        success: false,
+        message: 'store_id is required'
+      });
+    }
+
+    // 1. Find product by slug or SKU
+    let product = await Product.findOne({
+      where: {
+        store_id,
+        slug,
+        status: 'active',
+        visibility: 'visible'
+      },
+      attributes: { exclude: ['translations'] },
+      include: [
+        {
+          model: ProductAttributeValue,
+          as: 'attributeValues',
+          include: [
+            {
+              model: Attribute,
+              attributes: ['id', 'code', 'type']
+            },
+            {
+              model: AttributeValue,
+              as: 'value',
+              attributes: ['id', 'code', 'metadata']
+            }
+          ]
+        }
+      ]
+    });
+
+    // Try SKU if slug not found
+    if (!product) {
+      product = await Product.findOne({
+        where: {
+          store_id,
+          sku: slug,
+          status: 'active',
+          visibility: 'visible'
+        },
+        attributes: { exclude: ['translations'] },
+        include: [
+          {
+            model: ProductAttributeValue,
+            as: 'attributeValues',
+            include: [
+              {
+                model: Attribute,
+                attributes: ['id', 'code', 'type']
+              },
+              {
+                model: AttributeValue,
+                as: 'value',
+                attributes: ['id', 'code', 'metadata']
+              }
+            ]
+          }
+        ]
+      });
+    }
+
+    if (!product) {
+      return res.status(404).json({
+        success: false,
+        message: 'Product not found'
+      });
+    }
+
+    // Apply product translations
+    const productData = await applyProductTranslations(product, lang);
+
+    // Collect attribute and value IDs for translation lookup
+    const attributeIds = new Set();
+    const attributeValueIds = new Set();
+
+    if (productData.attributeValues && Array.isArray(productData.attributeValues)) {
+      productData.attributeValues.forEach(pav => {
+        if (pav.Attribute) attributeIds.add(pav.Attribute.id);
+        if (pav.value_id && pav.value) attributeValueIds.add(pav.value.id);
+      });
+    }
+
+    // Fetch attribute translations
+    const [attributeTranslations, valueTranslations] = await Promise.all([
+      attributeIds.size > 0 ? getAttributesWithTranslations({ id: Array.from(attributeIds) }) : [],
+      attributeValueIds.size > 0 ? getAttributeValuesWithTranslations({ id: Array.from(attributeValueIds) }) : []
+    ]);
+
+    // Create lookup maps
+    const attrTransMap = new Map(attributeTranslations.map(attr => [attr.id, attr.translations]));
+    const valTransMap = new Map(valueTranslations.map(val => [val.id, val.translations]));
+
+    // Format attributes with translations
+    if (productData.attributeValues && Array.isArray(productData.attributeValues)) {
+      productData.attributes = productData.attributeValues.map(pav => {
+        const attr = pav.Attribute;
+        if (!attr) return null;
+
+        const attrTranslations = attrTransMap.get(attr.id) || {};
+        const attrLabel = attrTranslations[lang]?.label || attrTranslations.en?.label || attr.code;
+
+        let value, valueLabel, metadata = null;
+
+        if (pav.value_id && pav.value) {
+          value = pav.value.code;
+          const valTranslations = valTransMap.get(pav.value.id) || {};
+          valueLabel = valTranslations[lang]?.label || valTranslations.en?.label || pav.value.code;
+          metadata = pav.value.metadata || null;
+        } else {
+          value = pav.text_value || pav.number_value || pav.date_value || pav.boolean_value;
+          valueLabel = String(value);
+        }
+
+        return {
+          id: attr.id,
+          code: attr.code,
+          label: attrLabel,
+          value: valueLabel,
+          rawValue: value,
+          type: attr.type,
+          metadata
+        };
+      }).filter(Boolean);
+    } else {
+      productData.attributes = [];
+    }
+
+    delete productData.attributeValues;
+
+    // 2. Load product tabs
+    const { getProductTabsWithTranslations } = require('../utils/productTabHelpers');
+    const productTabs = await getProductTabsWithTranslations({
+      store_id,
+      is_active: true
+    }, lang, false); // false = only current language
+
+    // 3. Load and evaluate product labels
+    const { getProductLabelsWithTranslations } = require('../utils/productLabelHelpers');
+    const allLabels = await getProductLabelsWithTranslations({
+      store_id,
+      is_active: true
+    }, lang, false);
+
+    // Evaluate labels server-side
+    const applicableLabels = allLabels.filter(label => {
+      let conditions;
+      try {
+        conditions = typeof label.conditions === 'string' ? JSON.parse(label.conditions) : label.conditions;
+      } catch (e) {
+        return false;
+      }
+
+      // Check attribute conditions
+      if (conditions?.attribute_conditions?.length > 0) {
+        for (const condition of conditions.attribute_conditions) {
+          const productAttr = productData.attributes?.find(
+            attr => attr.code === condition.attribute_code
+          );
+          if (!productAttr || productAttr.value !== condition.attribute_value) {
+            return false;
+          }
+        }
+      }
+
+      // Check price conditions
+      if (conditions?.price_conditions && Object.keys(conditions.price_conditions).length > 0) {
+        const price = parseFloat(productData.price) || 0;
+        const { min, max } = conditions.price_conditions;
+
+        if (min !== undefined && price < parseFloat(min)) return false;
+        if (max !== undefined && price > parseFloat(max)) return false;
+      }
+
+      // Check stock conditions
+      if (conditions?.stock_conditions && Object.keys(conditions.stock_conditions).length > 0) {
+        const stockQty = parseInt(productData.stock_quantity) || 0;
+        const { min, max } = conditions.stock_conditions;
+
+        if (min !== undefined && stockQty < parseInt(min)) return false;
+        if (max !== undefined && stockQty > parseInt(max)) return false;
+      }
+
+      return true;
+    });
+
+    // 4. Load custom option rules
+    const { supabase } = require('../database/connection');
+    const { data: customOptionRules } = await supabase
+      .from('custom_option_rules')
+      .select('*')
+      .eq('store_id', store_id)
+      .eq('is_active', true);
+
+    // Filter applicable custom option rules
+    const applicableCustomOptions = (customOptionRules || []).filter(rule => {
+      let conditions;
+      try {
+        conditions = typeof rule.conditions === 'string' ? JSON.parse(rule.conditions) : rule.conditions;
+      } catch (e) {
+        return false;
+      }
+
+      // Check SKU conditions
+      if (conditions?.skus?.includes(productData.sku)) return true;
+
+      // Check category conditions
+      if (conditions?.categories?.length > 0 && productData.category_ids?.length > 0) {
+        if (conditions.categories.some(catId => productData.category_ids.includes(catId))) {
+          return true;
+        }
+      }
+
+      // Check attribute conditions
+      if (conditions?.attribute_conditions?.length > 0) {
+        for (const condition of conditions.attribute_conditions) {
+          const productAttr = productData.attributes?.find(
+            attr => attr.code === condition.attribute_code
+          );
+          if (productAttr && productAttr.value === condition.attribute_value) {
+            return true;
+          }
+        }
+      }
+
+      return false;
+    });
+
+    // Return combined response
+    res.json({
+      product: productData,
+      productTabs: productTabs || [],
+      productLabels: applicableLabels || [],
+      customOptions: applicableCustomOptions || []
+    });
+
+  } catch (error) {
+    console.error('Get full product data error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Server error',
+      error: error.message
+    });
+  }
+});
+
 module.exports = router;

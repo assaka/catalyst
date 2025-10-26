@@ -149,26 +149,6 @@ export default function ProductDetail() {
     }
   }, [slug, store?.id, storeLoading, currentLanguage]);
 
-  // Re-evaluate labels when productLabels are loaded
-  useEffect(() => {
-    console.log('🏷️ productLabels changed:', {
-      hasProduct: !!product,
-      productLabelsCount: productLabels?.length,
-      productLabels: productLabels
-    });
-
-    if (product && productLabels && productLabels.length > 0) {
-      const applicableLabels = evaluateProductLabels(product, productLabels);
-
-      // Update product with new labels (backend returns translated text in base field)
-      setProduct(prevProduct => ({
-        ...prevProduct,
-        labels: applicableLabels.map(label => label.text),
-        applicableLabels: applicableLabels // Keep full label objects for styling
-      }));
-    }
-  }, [productLabels, currentLanguage]);
-
   // Load product layout configuration directly
   useEffect(() => {
     const loadProductLayoutConfig = async () => {
@@ -396,98 +376,76 @@ export default function ProductDetail() {
     try {
       setLoading(true);
 
-      console.log('🔍 ProductDetail: Loading product data', {
-        storeId: store?.id,
-        storeName: store?.name,
-        slug,
-        storeCode
-      });
-
       if (!store?.id || !slug) {
-        console.warn('❌ ProductDetail: Missing store or slug', { store: store?.id, slug });
         setProduct(null);
         setLoading(false);
         return;
       }
 
-      const cacheKey = `product-detail-${slug}-${store.id}`;
-      const currentLang = getCurrentLanguage();
-
-      // First try to find by slug (don't send status - backend handles it)
-      console.log('🔎 ProductDetail: Calling API with', { store_id: store.id, slug, lang: currentLang });
-      let products = await StorefrontProduct.filter({ store_id: store.id, slug: slug, lang: currentLang });
-      console.log('📦 ProductDetail: API returned', products?.length || 0, 'products');
-
-      // If no product found by slug, try searching by SKU as fallback
-      if (!products || products.length === 0) {
-        console.log('🔎 ProductDetail: Trying SKU fallback with', { store_id: store.id, sku: slug, lang: currentLang });
-        products = await StorefrontProduct.filter({ store_id: store.id, sku: slug, lang: currentLang });
-      }
-
-      if (products && products.length > 0) {
-        const foundProduct = products[0];
-        
-        // Critical check: verify the product matches the request
-        // Allow match by either slug OR SKU (since SKU can be used as a fallback identifier)
-        const matchesBySlug = foundProduct.slug === slug;
-        const matchesBySku = foundProduct.sku === slug;
-        
-        if (!matchesBySlug && !matchesBySku) {
-          // Show "not found" instead of wrong product
-          setProduct(null);
-          setLoading(false);
-          return;
+      // Use new optimized endpoint that returns everything in one call
+      const response = await fetch(
+        `/api/public/products/by-slug/${encodeURIComponent(slug)}/full?store_id=${store.id}`,
+        {
+          headers: {
+            'X-Language': getCurrentLanguage()
+          }
         }
-        
-        
-        // Evaluate and apply product labels based on conditions
-        const applicableLabels = evaluateProductLabels(foundProduct, productLabels);
-        const productWithLabels = {
-          ...foundProduct,
-          labels: applicableLabels.map(label => label.text),
-          applicableLabels: applicableLabels // Keep full label objects for styling
-        };
+      );
 
-        setProduct(productWithLabels);
-
-        // Track product view with enhanced analytics
-        if (typeof window !== 'undefined' && window.catalyst?.trackProductView) {
-          window.catalyst.trackProductView(foundProduct);
-        }
-
-        // Send Google Analytics 'view_item' event
-        if (window.dataLayer) {
-          window.dataLayer.push({
-            event: 'view_item',
-            ecommerce: {
-              items: [{
-                item_id: foundProduct.id,
-                item_name: getProductName(foundProduct, getCurrentLanguage()) || foundProduct.name,
-                price: safeNumber(foundProduct.price),
-                item_brand: foundProduct.brand, // Assuming product has a brand field
-                item_category: (() => {
-                  const category = categories.find(cat => cat.id === foundProduct.category_ids?.[0]);
-                  return category ? getTranslatedCategoryName(category) : '';
-                })(),
-                currency: settings?.currency_code || 'No Currency'
-              }]
-            }
-          });
-        }
-
-        // Load additional data in parallel
-        await Promise.all([
-          loadProductTabs(),
-          loadCustomOptions(foundProduct),
-          checkWishlistStatus(foundProduct.id)
-        ]);
-      } else {
-        // Global redirect handler already checked - just show 404
-        console.warn(`❌ ProductDetail: Product with slug '${slug}' not found in store ${store.id}`);
+      if (!response.ok) {
         setProduct(null);
+        setLoading(false);
+        return;
       }
+
+      const data = await response.json();
+
+      if (!data.product) {
+        setProduct(null);
+        setLoading(false);
+        return;
+      }
+
+      // Product with pre-evaluated labels from backend
+      const productWithLabels = {
+        ...data.product,
+        labels: data.productLabels?.map(label => label.text) || [],
+        applicableLabels: data.productLabels || []
+      };
+
+      setProduct(productWithLabels);
+      setProductTabs(data.productTabs || []);
+      setCustomOptions(data.customOptions || []);
+
+      // Track product view with enhanced analytics
+      if (typeof window !== 'undefined' && window.catalyst?.trackProductView) {
+        window.catalyst.trackProductView(data.product);
+      }
+
+      // Send Google Analytics 'view_item' event
+      if (window.dataLayer) {
+        window.dataLayer.push({
+          event: 'view_item',
+          ecommerce: {
+            items: [{
+              item_id: data.product.id,
+              item_name: getProductName(data.product, getCurrentLanguage()) || data.product.name,
+              price: safeNumber(data.product.price),
+              item_brand: data.product.brand,
+              item_category: (() => {
+                const category = categories.find(cat => cat.id === data.product.category_ids?.[0]);
+                return category ? getTranslatedCategoryName(category) : '';
+              })(),
+              currency: settings?.currency_code || 'No Currency'
+            }]
+          }
+        });
+      }
+
+      // Only check wishlist status separately
+      await checkWishlistStatus(data.product.id);
+
     } catch (error) {
-      console.error("❌ ProductDetail: Failed to load product:", error);
       setProduct(null);
     } finally {
       setLoading(false);
