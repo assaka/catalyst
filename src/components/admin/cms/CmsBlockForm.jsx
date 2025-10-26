@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Button } from '@/components/ui/button';
+import SaveButton from '@/components/ui/save-button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
@@ -17,6 +18,8 @@ export default function CmsBlockForm({ block, onSubmit, onCancel }) {
   const contentTextareaRef = useRef(null);
   const [showMediaBrowser, setShowMediaBrowser] = useState(false);
   const [showTranslations, setShowTranslations] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [saveSuccess, setSaveSuccess] = useState(false);
   const [formData, setFormData] = useState({
     title: '',
     identifier: '',
@@ -231,7 +234,7 @@ export default function CmsBlockForm({ block, onSubmit, onCancel }) {
     }
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
 
     // Validate that at least one placement is selected
@@ -240,28 +243,40 @@ export default function CmsBlockForm({ block, onSubmit, onCancel }) {
       return;
     }
 
-    // Prepare payload with translations
-    const payload = {
-      title: formData.title,
-      identifier: formData.identifier,
-      content: formData.content,
-      is_active: formData.is_active,
-      placement: formData.placement,
-      translations: formData.translations || {
-        en: {
-          title: formData.title,
-          content: formData.content
+    try {
+      setSaving(true);
+      setSaveSuccess(false);
+
+      // Prepare payload with translations
+      const payload = {
+        title: formData.title,
+        identifier: formData.identifier,
+        content: formData.content,
+        is_active: formData.is_active,
+        placement: formData.placement,
+        translations: formData.translations || {
+          en: {
+            title: formData.title,
+            content: formData.content
+          }
         }
-      }
-    };
+      };
 
-    console.log('🔍 CmsBlockForm: Submitting payload:', {
-      title: payload.title,
-      content: payload.content?.substring(0, 50),
-      translations: payload.translations
-    });
+      console.log('🔍 CmsBlockForm: Submitting payload:', {
+        title: payload.title,
+        content: payload.content?.substring(0, 50),
+        translations: payload.translations
+      });
 
-    onSubmit(payload);
+      await onSubmit(payload);
+
+      setSaveSuccess(true);
+      setTimeout(() => setSaveSuccess(false), 2000);
+    } catch (error) {
+      console.error('Error submitting CMS block:', error);
+    } finally {
+      setSaving(false);
+    }
   };
 
   return (
@@ -464,9 +479,14 @@ export default function CmsBlockForm({ block, onSubmit, onCancel }) {
         <Button type="button" variant="outline" onClick={onCancel}>
           Cancel
         </Button>
-        <Button type="submit">
-          {block ? 'Update' : 'Create'} Block
-        </Button>
+        <SaveButton
+          type="submit"
+          loading={saving}
+          success={saveSuccess}
+          defaultText={block ? "Update Block" : "Create Block"}
+          loadingText={block ? "Updating..." : "Creating..."}
+          successText={block ? "Updated!" : "Created!"}
+        />
       </div>
 
       {/* Media Browser Dialog */}
