@@ -10,6 +10,8 @@ import { useNotFound } from "@/utils/notFoundUtils";
 import { StorefrontProduct } from "@/api/storefront-entities";
 import { User } from "@/api/entities";
 import cartService from "@/services/cartService";
+// React Query hooks for optimized API calls
+import { useProduct, useUser } from "@/hooks/useApiQueries";
 // ProductLabel entity is no longer imported directly as its data is now provided via useStore.
 import { useStore, cachedApiCall } from "@/components/storefront/StoreProvider";
 import { formatPriceWithTax, calculateDisplayPrice, safeNumber, formatPrice, getPriceDisplay } from "@/utils/priceUtils";
@@ -86,13 +88,20 @@ export default function ProductDetail() {
   const navigate = useNavigate();
   const { showNotFound } = useNotFound();
   const { t, currentLanguage, translations } = useTranslation();
+
+  // Use React Query hooks for optimized API calls with automatic deduplication
+  const { data: user } = useUser();
+  const {
+    data: productData,
+    isLoading: productLoading,
+    error: productError
+  } = useProduct(slug, store?.id, {
+    enabled: !storeLoading && !!store?.id && !!slug
+  });
+
   const [product, setProduct] = useState(null);
-  const [loading, setLoading] = useState(true);
   const [quantity, setQuantity] = useState(1);
-
-
   const [activeImage, setActiveImage] = useState(0);
-  const [user, setUser] = useState(null);
   // customOptions and customOptionsLabel states are removed as their logic is moved to the CustomOptions component.
   const [selectedOptions, setSelectedOptions] = useState([]); // This state remains to track selected options for price and cart.
   const [flashMessage, setFlashMessage] = useState(null);
@@ -128,26 +137,51 @@ export default function ProductDetail() {
     setSelectedVariant(variant);
   };
 
-  // Load user once
+  // Update product state when productData changes from React Query
   useEffect(() => {
-    const loadUser = async () => {
-      try {
-        const userData = await User.me();
-        setUser(userData);
-      } catch (error) {
-        setUser(null);
-      }
-    };
-    loadUser();
-  }, []);
+    if (productData && productData.product) {
+      // Product with pre-evaluated labels from backend
+      const productWithLabels = {
+        ...productData.product,
+        labels: productData.productLabels?.map(label => label.text) || [],
+        applicableLabels: productData.productLabels || []
+      };
 
-  // Load product data with aggressive caching
-  // Include currentLanguage to reload when language changes
-  useEffect(() => {
-    if (!storeLoading && store?.id && slug) {
-      loadProductData();
+      setProduct(productWithLabels);
+      setProductTabs(productData.productTabs || []);
+      setCustomOptions(productData.customOptions || []);
+
+      // Track product view with enhanced analytics
+      if (typeof window !== 'undefined' && window.catalyst?.trackProductView) {
+        window.catalyst.trackProductView(productData.product);
+      }
+
+      // Send Google Analytics 'view_item' event
+      if (window.dataLayer) {
+        window.dataLayer.push({
+          event: 'view_item',
+          ecommerce: {
+            items: [{
+              item_id: productData.product.id,
+              item_name: getProductName(productData.product, getCurrentLanguage()) || productData.product.name,
+              price: safeNumber(productData.product.price),
+              item_brand: productData.product.brand,
+              item_category: (() => {
+                const category = categories.find(cat => cat.id === productData.product.category_ids?.[0]);
+                return category ? getTranslatedCategoryName(category) : '';
+              })(),
+              currency: settings?.currency_code || 'No Currency'
+            }]
+          }
+        });
+      }
+
+      // Check wishlist status
+      if (productData.product.id) {
+        checkWishlistStatus(productData.product.id);
+      }
     }
-  }, [slug, store?.id, storeLoading, currentLanguage]);
+  }, [productData, categories, settings]);
 
   // Load product layout configuration directly
   useEffect(() => {
@@ -321,86 +355,8 @@ export default function ProductDetail() {
     return applicableLabels;
   };
 
-  const loadProductData = async () => {
-    try {
-      setLoading(true);
-
-      if (!store?.id || !slug) {
-        setProduct(null);
-        setLoading(false);
-        return;
-      }
-
-      // Use new optimized endpoint that returns everything in one call
-      const response = await fetch(
-        `/api/public/products/by-slug/${encodeURIComponent(slug)}/full?store_id=${store.id}`,
-        {
-          headers: {
-            'X-Language': getCurrentLanguage()
-          }
-        }
-      );
-
-      if (!response.ok) {
-        setProduct(null);
-        setLoading(false);
-        return;
-      }
-
-      const response_data = await response.json();
-      const data = response_data.data;
-
-      if (!data || !data.product) {
-        setProduct(null);
-        setLoading(false);
-        return;
-      }
-
-      // Product with pre-evaluated labels from backend
-      const productWithLabels = {
-        ...data.product,
-        labels: data.productLabels?.map(label => label.text) || [],
-        applicableLabels: data.productLabels || []
-      };
-
-      setProduct(productWithLabels);
-      setProductTabs(data.productTabs || []);
-      setCustomOptions(data.customOptions || []);
-
-      // Track product view with enhanced analytics
-      if (typeof window !== 'undefined' && window.catalyst?.trackProductView) {
-        window.catalyst.trackProductView(data.product);
-      }
-
-      // Send Google Analytics 'view_item' event
-      if (window.dataLayer) {
-        window.dataLayer.push({
-          event: 'view_item',
-          ecommerce: {
-            items: [{
-              item_id: data.product.id,
-              item_name: getProductName(data.product, getCurrentLanguage()) || data.product.name,
-              price: safeNumber(data.product.price),
-              item_brand: data.product.brand,
-              item_category: (() => {
-                const category = categories.find(cat => cat.id === data.product.category_ids?.[0]);
-                return category ? getTranslatedCategoryName(category) : '';
-              })(),
-              currency: settings?.currency_code || 'No Currency'
-            }]
-          }
-        });
-      }
-
-      // Only check wishlist status separately
-      await checkWishlistStatus(data.product.id);
-
-    } catch (error) {
-      setProduct(null);
-    } finally {
-      setLoading(false);
-    }
-  };
+  // loadProductData function removed - now using React Query useProduct hook
+  // which provides automatic caching, deduplication, and retry logic
 
   /**
    * @deprecated
@@ -608,8 +564,6 @@ export default function ProductDetail() {
     }
 
     try {
-      setLoading(true);
-
       // Validate store context
       if (!store?.id) {
         console.error('ProductDetail: No store context available');
@@ -634,7 +588,7 @@ export default function ProductDetail() {
         selectedOptions,
         store.id
       );
-      
+
       if (result.success) {
         // Track add to cart with enhanced analytics
         if (typeof window !== 'undefined' && window.catalyst?.trackAddToCart) {
@@ -680,8 +634,6 @@ export default function ProductDetail() {
         type: 'error',
         message: 'Failed to add product to cart. Please try again.'
       });
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -742,6 +694,9 @@ export default function ProductDetail() {
     setSelectedOptions(newSelectedOptions);
   }, []); // Empty dependency array ensures this function is stable
 
+  // Combined loading state from both store and product
+  const loading = storeLoading || productLoading;
+
   if (loading) {
     return (
       <div className="max-w-6xl mx-auto px-4 py-8">
@@ -759,7 +714,7 @@ export default function ProductDetail() {
     );
   }
 
-  if (!product && !loading) {
+  if ((!product && !loading) || productError) {
     // Trigger 404 page display
     showNotFound(`Product "${slug}" not found`);
     return null;
@@ -770,7 +725,7 @@ export default function ProductDetail() {
   const productForStock = displayProduct || product;
   const trackStock = settings?.track_stock !== false; // Default to true if not explicitly false
   const isInStock = trackStock ? (productForStock?.infinite_stock || productForStock?.stock_quantity > 0) : true;
-  const canAddToCart = !loading && isInStock && quantity > 0 && (!trackStock || productForStock?.infinite_stock || productForStock?.stock_quantity >= quantity);
+  const canAddToCart = !productLoading && isInStock && quantity > 0 && (!trackStock || productForStock?.infinite_stock || productForStock?.stock_quantity >= quantity);
 
   // For configurable products without a selected variant, prevent adding to cart
   const canAddToCartFinal = product?.type === 'configurable' && !selectedVariant ? false : canAddToCart;

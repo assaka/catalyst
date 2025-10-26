@@ -6,6 +6,9 @@ import { AIProvider } from "@/contexts/AIContext"
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom'
 import Layout from '@/pages/Layout'
 import Auth from '@/pages/Auth'
+import { QueryClientProvider } from '@tanstack/react-query'
+import { ReactQueryDevtools } from '@tanstack/react-query-devtools'
+import { queryClient } from '@/config/queryClient'
 
 // Import pages - using the exports from pages/index.jsx
 import * as Pages from '@/pages'
@@ -293,10 +296,11 @@ function App() {
   }, [])
 
   return (
-    <TranslationProvider>
-      <AIProvider>
-        <StoreSelectionProvider>
-          <Router>
+    <QueryClientProvider client={queryClient}>
+      <TranslationProvider>
+        <AIProvider>
+          <StoreSelectionProvider>
+            <Router>
             <Routes>
           {/* Admin routes */}
           <Route path="/admin" element={<PageWrapper Component={Pages.Dashboard} pageName="Dashboard" />} />
@@ -404,6 +408,8 @@ function App() {
         </StoreSelectionProvider>
       </AIProvider>
     </TranslationProvider>
+    <ReactQueryDevtools initialIsOpen={false} />
+    </QueryClientProvider>
   )
 }
 

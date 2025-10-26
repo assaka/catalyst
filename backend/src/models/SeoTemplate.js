@@ -26,7 +26,7 @@ const SeoTemplate = sequelize.define('SeoTemplate', {
   },
   // Template fields - ALL template fields in single JSON column
   template: {
-    type: DataTypes.JSON,
+    type: DataTypes.JSONB,
     defaultValue: {},
     comment: 'Template fields: meta_title, meta_description, og_title, twitter_title, etc.'
   },
@@ -35,7 +35,7 @@ const SeoTemplate = sequelize.define('SeoTemplate', {
     defaultValue: 0
   },
   conditions: {
-    type: DataTypes.JSON,
+    type: DataTypes.JSONB,
     defaultValue: {
       categories: [],
       attribute_sets: []
