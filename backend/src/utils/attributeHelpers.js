@@ -9,7 +9,7 @@ const { sequelize } = require('../database/connection');
 
 /**
  * Get attributes with translations from normalized tables
- * Returns same format as before: { id, name, code, translations: {en: {label, description}, nl: {...}} }
+ * Returns same format as before: { id, name, code, translations: {en: {name, description}, nl: {...}} }
  *
  * @param {object} where - WHERE clause conditions (supports simple values and Sequelize Op.in)
  * @returns {Promise<Array>} Attributes with translations
@@ -53,7 +53,7 @@ async function getAttributesWithTranslations(where = {}) {
       COALESCE(
         json_object_agg(
           t.language_code,
-          json_build_object('label', t.label, 'description', t.description)
+          json_build_object('name', t.label, 'description', t.description)
         ) FILTER (WHERE t.language_code IS NOT NULL),
         '{}'::json
       ) as translations
@@ -194,7 +194,7 @@ async function getAttributesWithValuesForStore(storeId, options = {}) {
       COALESCE(
         json_object_agg(
           t.language_code,
-          json_build_object('label', t.label, 'description', t.description)
+          json_build_object('name', t.label, 'description', t.description)
         ) FILTER (WHERE t.language_code IS NOT NULL),
         '{}'::json
       ) as translations
@@ -227,13 +227,13 @@ async function getAttributesWithValuesForStore(storeId, options = {}) {
  * Save attribute translations to normalized table
  *
  * @param {string} attributeId - Attribute ID
- * @param {object} translations - Translations object {en: {label, description}, nl: {...}}
+ * @param {object} translations - Translations object {en: {name, description}, nl: {...}}
  */
 async function saveAttributeTranslations(attributeId, translations) {
   for (const [langCode, data] of Object.entries(translations)) {
     if (!data || typeof data !== 'object') continue;
 
-    const label = data.label || '';
+    const label = data.name || data.label || ''; // Accept 'name' (new) or 'label' (old) for backward compatibility
     const description = data.description || null;
 
     await sequelize.query(`
