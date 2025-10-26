@@ -40,12 +40,10 @@ export default function CategoryNav({ categories, styles = {}, metadata = {}, st
     const subcategoryBgHoverColor = metadata?.subcategoryBgHoverColor || '#F3F4F6';
 
     if (!store) {
-        console.warn('[CategoryNav] No store provided');
         return null;
     }
 
     if (!categories || categories.length === 0) {
-        console.warn('[CategoryNav] No categories provided:', { categories: categories?.length, store: store?.slug });
         // Don't return null - still show the Home link at least
     }
 
@@ -146,15 +144,6 @@ export default function CategoryNav({ categories, styles = {}, metadata = {}, st
     };
 
     const rootCategories = buildCategoryTree(categories);
-
-    // Debug logging
-    console.log('[CategoryNav] Input categories:', categories?.length || 0);
-    console.log('[CategoryNav] Root categories after buildTree:', rootCategories?.length || 0);
-    console.log('[CategoryNav] Store settings:', {
-        rootCategoryId: store?.settings?.rootCategoryId,
-        excludeRootFromMenu: store?.settings?.excludeRootFromMenu,
-        expandAllMenuItems: store?.settings?.expandAllMenuItems
-    });
 
     // Helper function to build the full category path from root to a specific category
     const buildCategoryPath = (targetCategory, allCategories) => {
