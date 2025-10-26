@@ -495,7 +495,7 @@ router.get('/by-slug/:slug/full', async (req, res) => {
         if (!attr) return null;
 
         const attrTranslations = attrTransMap.get(attr.id) || {};
-        const attrLabel = attrTranslations[lang]?.label || attrTranslations.en?.label || attr.code;
+        const attrLabel = attrTranslations[lang]?.name || attrTranslations.en?.name || attr.code;
 
         let value, valueLabel, metadata = null;
 
