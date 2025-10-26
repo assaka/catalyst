@@ -42,32 +42,17 @@ export default function CookieConsentBanner() {
   const [user, setUser] = useState(null);
 
   useEffect(() => {
-    console.log('🍪 CookieConsentBanner useEffect triggered', {
-      hasStore: !!store?.id,
-      storeId: store?.id,
-      hasCookieConsent: !!settings?.cookie_consent,
-      cookieConsentEnabled: settings?.cookie_consent?.enabled,
-      gdprMode: settings?.cookie_consent?.gdpr_mode,
-      autoDetect: settings?.cookie_consent?.auto_detect_country
-    });
-
     const initializeBanner = async () => {
       if (store?.id && settings?.cookie_consent) {
         // IMPORTANT: Wait for country detection to complete BEFORE checking consent
         // Get the country directly to avoid React state update timing issues
         const detectedCountry = await getUserCountry();
-        console.log('🍪 Country detected:', detectedCountry);
         setUserCountry(detectedCountry);
 
         await loadUser();
 
         // Pass the detected country directly instead of relying on state
         checkExistingConsent(detectedCountry);
-      } else {
-        console.log('🍪 Cookie consent not loaded:', {
-          storeId: store?.id,
-          settingsKeys: settings ? Object.keys(settings) : 'no settings'
-        });
       }
     };
 
@@ -97,16 +82,9 @@ export default function CookieConsentBanner() {
     const consent = localStorage.getItem('cookie_consent');
     const consentExpiry = localStorage.getItem('cookie_consent_expiry');
 
-    console.log('🍪 checkExistingConsent:', {
-      hasStoredConsent: !!consent,
-      consentExpiry: consentExpiry,
-      detectedCountry: detectedCountry
-    });
-
     if (consent && consentExpiry) {
       const expiryDate = new Date(consentExpiry);
       if (expiryDate > new Date()) {
-        console.log('🍪 Existing valid consent found, not showing banner');
         return;
       }
     }
@@ -114,10 +92,8 @@ export default function CookieConsentBanner() {
     // Show banner if should be shown
     // Pass the detected country directly to avoid state timing issues
     const shouldShow = shouldShowBanner(detectedCountry);
-    console.log('🍪 shouldShow result:', shouldShow);
 
     if (shouldShow) {
-      console.log('🍪 Setting showBanner to TRUE');
       setShowBanner(true);
 
       // Initialize selected categories
@@ -129,8 +105,6 @@ export default function CookieConsentBanner() {
         });
         setSelectedCategories(initialCategories);
       }
-    } else {
-      console.log('🍪 NOT showing banner based on shouldShowBanner check');
     }
   };
 
@@ -148,28 +122,15 @@ export default function CookieConsentBanner() {
     const cookieSettings = settings?.cookie_consent;
     const countryToCheck = detectedCountry || userCountry;
 
-    console.log('🍪 shouldShowBanner check:', {
-      hasCookieSettings: !!cookieSettings,
-      enabled: cookieSettings?.enabled,
-      gdprMode: cookieSettings?.gdpr_mode,
-      autoDetect: cookieSettings?.auto_detect_country,
-      detectedCountry: detectedCountry,
-      userCountryState: userCountry,
-      countryToCheck: countryToCheck
-    });
-
     if (!cookieSettings?.enabled) {
-      console.log('🍪 Banner NOT shown: Cookie consent is disabled');
       return false;
     }
 
     if (cookieSettings.gdpr_mode && cookieSettings.auto_detect_country) {
       const isGDPR = isGDPRCountry(countryToCheck);
-      console.log('🍪 GDPR mode active, isGDPRCountry:', isGDPR, 'for country:', countryToCheck);
       return isGDPR;
     }
 
-    console.log('🍪 Banner SHOULD show (no GDPR restrictions)');
     return true;
   };
 
@@ -240,43 +201,9 @@ export default function CookieConsentBanner() {
   const cookieSettings = settings.cookie_consent;
   const currentLang = getCurrentLanguage();
 
-  console.log('🍪 Cookie consent language:', {
-    currentLang,
-    hasTranslations: !!cookieSettings?.translations,
-    availableLanguages: cookieSettings?.translations ? Object.keys(cookieSettings.translations) : [],
-    translationsData: cookieSettings?.translations
-  });
-
-  // Debug: Log sample translation access
-  if (cookieSettings?.translations) {
-    console.log('🍪 Sample translation test:', {
-      necessary_name_en: cookieSettings.translations.en?.necessary_name,
-      necessary_name_nl: cookieSettings.translations.nl?.necessary_name,
-      banner_text_nl: cookieSettings.translations.nl?.banner_text
-    });
-  }
-
-  // Debug: Log button colors
-  console.log('🎨 Button colors:', {
-    accept_bg: cookieSettings?.accept_button_bg_color,
-    accept_text: cookieSettings?.accept_button_text_color,
-    reject_bg: cookieSettings?.reject_button_bg_color,
-    reject_text: cookieSettings?.reject_button_text_color,
-    save_bg: cookieSettings?.save_preferences_button_bg_color,
-    save_text: cookieSettings?.save_preferences_button_text_color
-  });
-
   // Helper function to get translated text from translations JSON (no fallback)
   const getTranslatedText = (field, defaultValue = '') => {
     const translations = cookieSettings?.translations;
-
-    console.log(`🍪 getTranslatedText('${field}'):`, {
-      currentLang,
-      hasTranslations: !!translations,
-      hasCurrentLang: !!(translations && translations[currentLang]),
-      hasField: !!(translations && translations[currentLang] && translations[currentLang][field]),
-      value: translations?.[currentLang]?.[field] || translations?.en?.[field] || defaultValue
-    });
 
     if (translations && translations[currentLang] && translations[currentLang][field]) {
       return translations[currentLang][field];

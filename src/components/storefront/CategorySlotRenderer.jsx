@@ -385,13 +385,6 @@ export function CategorySlotRenderer({
         max_visible_attributes: settings?.max_visible_attributes || 5
       };
 
-      // Debug: Check if ui_translations is available
-      console.log('[CategorySlotRenderer] Translation debug:', {
-        hasUiTranslations: !!settings?.ui_translations,
-        uiTranslationsKeys: settings?.ui_translations ? Object.keys(settings.ui_translations) : [],
-        settingsWithDefaultsHasUiTranslations: !!settingsWithDefaults?.ui_translations
-      });
-
       const formattedFilters = {
         price: priceFilter,
         attributes: attributeFilters,

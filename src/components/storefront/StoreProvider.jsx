@@ -57,7 +57,6 @@ const loadCacheFromStorage = () => {
 
     // Invalidate cache if version changed
     if (storedVersion !== CACHE_VERSION) {
-      console.log('🔄 Cache version changed, clearing old cache');
       localStorage.removeItem('storeProviderCache');
       localStorage.setItem('storeProviderCacheVersion', CACHE_VERSION);
       return;
@@ -203,7 +202,6 @@ export const StoreProvider = ({ children }) => {
   const location = useLocation();
 
   useEffect(() => {
-    console.log('🔄 StoreProvider: Location pathname changed:', location.pathname);
     fetchStoreData();
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [location.pathname]);
@@ -211,8 +209,6 @@ export const StoreProvider = ({ children }) => {
   // Listen for store selection changes from admin
   useEffect(() => {
     const handleStoreChange = (event) => {
-      console.log('🔄 StoreProvider: Detected store selection change:', event.detail?.store);
-      console.log('🧹 StoreProvider: Clearing caches for store change');
       // Clear cache when store changes
       apiCache.clear();
       localStorage.removeItem('storeProviderCache');
@@ -229,13 +225,10 @@ export const StoreProvider = ({ children }) => {
   // Listen for language changes
   useEffect(() => {
     const handleLanguageChange = (event) => {
-      console.log('🌍 StoreProvider: Detected language change:', event.detail?.language);
-      console.log('🧹 StoreProvider: Clearing all caches for language change');
       // Clear cache when language changes
       apiCache.clear();
       localStorage.removeItem('storeProviderCache');
       sessionStorage.removeItem('storeProviderCache');
-      console.log('🔄 StoreProvider: Refetching store data with new language');
       // Refetch store data with the new language
       fetchStoreData();
     };
@@ -351,11 +344,9 @@ export const StoreProvider = ({ children }) => {
       } else {
         // No URL slug found - check if we're in admin/editor context with a selected store
         const selectedStoreId = localStorage.getItem('selectedStoreId');
-        console.log('🔍 StoreProvider: Checking localStorage for selectedStoreId:', selectedStoreId);
         if (selectedStoreId) {
           storeCacheKey = `store-id-${selectedStoreId}`;
           storeId = selectedStoreId;
-          console.log('✅ StoreProvider: Using store ID from localStorage:', storeId);
         }
       }
 
@@ -370,9 +361,7 @@ export const StoreProvider = ({ children }) => {
         }
       } else if (storeId) {
         try {
-          console.log('🔎 StoreProvider: Fetching store by ID:', storeId);
           const result = await StorefrontStore.filter({ id: storeId });
-          console.log('📦 StoreProvider: API returned stores:', result?.map(s => ({ id: s.id, name: s.name })));
           stores = Array.isArray(result) ? result : [];
         } catch (error) {
           console.error(`StoreProvider: StorefrontStore.filter failed for id:`, error);
@@ -395,15 +384,6 @@ export const StoreProvider = ({ children }) => {
         setLoading(false);
         return;
       }
-
-      console.log('🏪 StoreProvider: Raw store data from API:', {
-        id: selectedStore.id,
-        name: selectedStore.name,
-        currency: selectedStore.currency,
-        hasCurrency: !!selectedStore.currency,
-        settingsCurrencyCode: selectedStore.settings?.currency_code,
-        allKeys: Object.keys(selectedStore)
-      });
 
       // Set store with merged settings
       // IMPORTANT: Spread store settings FIRST, then apply defaults only for missing properties
@@ -641,7 +621,6 @@ export const StoreProvider = ({ children }) => {
 
         // If version changed, clear the cookie consent cache
         if (currentCacheVersion !== lastKnownVersion) {
-          console.log(`🔄 Cookie consent cache version changed (${lastKnownVersion} → ${currentCacheVersion}), invalidating cache...`);
           apiCache.delete(`cookie-consent-${selectedStore.id}`);
           sessionStorage.setItem('lastCookieConsentVersion', currentCacheVersion);
         }
@@ -653,15 +632,6 @@ export const StoreProvider = ({ children }) => {
         
         if (cookieConsentData && cookieConsentData.length > 0) {
           const cookieSettings = cookieConsentData[0];
-
-          console.log('🎨 [StoreProvider] Cookie settings from backend:', {
-            accept_button_bg_color: cookieSettings.accept_button_bg_color,
-            accept_button_text_color: cookieSettings.accept_button_text_color,
-            reject_button_bg_color: cookieSettings.reject_button_bg_color,
-            reject_button_text_color: cookieSettings.reject_button_text_color,
-            save_preferences_button_bg_color: cookieSettings.save_preferences_button_bg_color,
-            save_preferences_button_text_color: cookieSettings.save_preferences_button_text_color
-          });
 
           // Map backend cookie settings to frontend format
           const frontendCookieSettings = {
@@ -788,21 +758,7 @@ export const StoreProvider = ({ children }) => {
         // MEDIUM cache (5 minutes) - semi-static data
         // Include language in cache key to ensure proper translation switching
         cachedApiCall(`categories-${selectedStore.id}-${localStorage.getItem('catalyst_language') || 'en'}`, async () => {
-          console.log('🔍 Frontend: Fetching categories for store:', selectedStore.id, 'language:', localStorage.getItem('catalyst_language'));
           const result = await StorefrontCategory.filter({ store_id: selectedStore.id, limit: 1000 });
-          console.log('📥 Frontend: Received categories:', result?.length || 0);
-          if (result && result.length > 0) {
-            console.log('📝 Frontend: First category:', JSON.stringify({
-              id: result[0].id,
-              name: result[0].name,
-              slug: result[0].slug,
-              has_name: !!result[0].name,
-              name_value: result[0].name,
-              name_type: typeof result[0].name
-            }, null, 2));
-          } else {
-            console.log('⚠️ Frontend: NO CATEGORIES RECEIVED FROM API');
-          }
           return Array.isArray(result) ? result : [];
         }, CACHE_DURATION_MEDIUM),
         
@@ -810,13 +766,7 @@ export const StoreProvider = ({ children }) => {
         // Include language in cache key to ensure proper translation switching
         cachedApiCall(`labels-${selectedStore.id}-${localStorage.getItem('catalyst_language') || 'en'}`, async () => {
           try {
-            console.log('🏷️ StoreProvider: Fetching product labels for store:', selectedStore.id, 'language:', localStorage.getItem('catalyst_language'));
             const result = await StorefrontProductLabel.filter({ store_id: selectedStore.id });
-            console.log('🏷️ StoreProvider: Loaded product labels:', {
-              count: result?.length,
-              sampleLabel: result?.[0],
-              language: localStorage.getItem('catalyst_language')
-            });
             const activeLabels = Array.isArray(result) ? result.filter(label => label.is_active !== false) : [];
             return activeLabels;
           } catch (error) {

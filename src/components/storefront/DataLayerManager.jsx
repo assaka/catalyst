@@ -74,8 +74,6 @@ export const trackActivity = async (activityType, data = {}) => {
     
     // Only track if we have store_id to prevent validation errors
     if (storeId) {
-      console.log('📊 Tracking activity:', activityType, activityData);
-      
       try {
         // Use direct fetch instead of CustomerActivity.create to avoid auth issues
         const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000';
@@ -103,12 +101,9 @@ export const trackActivity = async (activityType, data = {}) => {
         }
         
         const responseData = await response.json();
-        console.log('✅ Activity tracked successfully:', responseData);
-        
+
         // Additional verification
-        if (responseData.success && responseData.data && responseData.data.id) {
-          console.log('🎯 Customer activity record created with ID:', responseData.data.id);
-        } else {
+        if (!(responseData.success && responseData.data && responseData.data.id)) {
           console.warn('⚠️ Unexpected response format:', responseData);
         }
         
@@ -257,12 +252,6 @@ export default function DataLayerManager() {
         trackEvent,
         trackActivity
       };
-      
-      console.log('🔧 DataLayerManager: Catalyst tracking functions initialized', {
-        store_name: store.name,
-        store_id: store.id,
-        functions: Object.keys(window.catalyst)
-      });
     }
 
     // Initialize GTM dataLayer with basic info
@@ -284,13 +273,13 @@ export default function DataLayerManager() {
       });
     }
 
-    // Add enhanced event listener for debugging
+    // Add event listener
     const handleDataLayerPush = (e) => {
-      console.log('📊 DataLayer Event:', e.detail);
+      // Event listener for future use
     };
-    
+
     window.addEventListener('dataLayerPush', handleDataLayerPush);
-    
+
     return () => {
       window.removeEventListener('dataLayerPush', handleDataLayerPush);
     };

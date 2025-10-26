@@ -15,12 +15,6 @@ export default function CustomOptions({
     settings,
     colorTheme = {} // Allow customizable color theme
 }) {
-    console.log('🎨 CustomOptions component rendered', {
-        productId: product?.id,
-        storeId: store?.id,
-        hasOnSelectionChange: !!onSelectionChange,
-        selectedOptionsCount: selectedOptions?.length
-    });
 
     // Default color theme with ability to override
     const theme = {
@@ -42,26 +36,13 @@ export default function CustomOptions({
     const currentLang = getCurrentLanguage();
 
     useEffect(() => {
-        console.log('🔄 CustomOptions useEffect triggered', {
-            hasProduct: !!product,
-            productId: product?.id,
-            storeId: store?.id,
-            isLoading
-        });
 
         if (product && store?.id && !isLoading) {
             loadCustomOptions();
-        } else {
-            console.log('⚠️ Conditions not met for loadCustomOptions', {
-                hasProduct: !!product,
-                hasStoreId: !!store?.id,
-                isLoading
-            });
         }
     }, [product?.id, store?.id]);
 
     const loadCustomOptions = async () => {
-        console.log('🔍 loadCustomOptions called', { product: product?.id, storeId: store?.id, isLoading });
 
         if (!product || !store?.id || isLoading) {
             setLoading(false);
@@ -79,7 +60,6 @@ export default function CustomOptions({
                     store_id: store.id,
                     is_active: true
                 });
-                console.log('🔍 Fetched custom option rules:', rules.length);
             } catch (apiError) {
                 console.error('Error fetching custom option rules:', apiError);
                 setCustomOptions([]);
@@ -90,17 +70,14 @@ export default function CustomOptions({
             // Find applicable rules for this product
             // Only evaluate rules if we have a valid product with an ID
             if (!product || !product.id) {
-                console.log('❌ No product or product ID');
                 setCustomOptions([]);
                 setLoading(false);
                 return;
             }
 
             const applicableRules = rules.filter(rule => isRuleApplicable(rule, product));
-            console.log('🔍 Applicable rules:', applicableRules.length);
 
             if (applicableRules.length === 0) {
-                console.log('❌ No applicable rules found');
                 setCustomOptions([]);
                 setLoading(false);
                 return;
@@ -108,7 +85,6 @@ export default function CustomOptions({
 
             // Use the first applicable rule (you could enhance this to merge multiple rules)
             const rule = applicableRules[0];
-            console.log('🔍 Using rule:', rule.name, 'with product IDs:', rule.optional_product_ids);
 
             // Get translated display label using standardized translation utility
             const translatedLabel = getTranslatedField(rule, 'display_label', currentLang) || 'Custom Options';
@@ -116,16 +92,12 @@ export default function CustomOptions({
 
             // Load the custom option products
             if (rule.optional_product_ids && rule.optional_product_ids.length > 0) {
-                console.log('🔍 Loading', rule.optional_product_ids.length, 'custom option products');
                 try {
                     // Load products individually if $in syntax doesn't work
                     const optionProducts = [];
                     for (const productId of rule.optional_product_ids) {
-                        console.log('🔍 Fetching product ID:', productId);
-
                         // Skip if this is the current product being viewed
                         if (productId === product.id) {
-                            console.log('⏭️ Skipping current product');
                             continue;
                         }
 
@@ -134,23 +106,12 @@ export default function CustomOptions({
                                 id: productId,
                                 status: 'active'
                             });
-                            console.log('🔍 Fetched products for ID', productId, ':', products?.length || 0);
 
                             if (products && products.length > 0) {
                                 const customOptionProduct = products[0];
 
-                                console.log('🔍 Custom Option Product Data:', {
-                                    id: customOptionProduct.id,
-                                    name: customOptionProduct.name,
-                                    translations: customOptionProduct.translations,
-                                    attributes: customOptionProduct.attributes,
-                                    short_description: customOptionProduct.short_description,
-                                    is_custom_option: customOptionProduct.is_custom_option
-                                });
-
                                 // Only include if it's marked as a custom option
                                 if (!customOptionProduct.is_custom_option) {
-                                    console.log('⏭️ Skipping - not marked as custom option');
                                     continue;
                                 }
 
@@ -163,20 +124,14 @@ export default function CustomOptions({
 
                                 // Only add to optionProducts if in stock
                                 if (isInStock) {
-                                    console.log('✅ Adding product to custom options:', customOptionProduct.id);
                                     optionProducts.push(customOptionProduct);
-                                } else {
-                                    console.log('⏭️ Skipping - out of stock');
                                 }
-                            } else {
-                                console.log('⏭️ Product fetched but no data');
                             }
                         } catch (productError) {
                             console.error(`Failed to load custom option product ${productId}:`, productError);
                         }
                     }
 
-                    console.log('✅ Final custom options array:', optionProducts.length, 'products');
                     setCustomOptions(optionProducts);
                 } catch (error) {
                     console.error('Error loading custom option products:', error);

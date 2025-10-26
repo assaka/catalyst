@@ -24,42 +24,20 @@ export default function ConfigurableProductSelector({ product, store, settings, 
   const [selectedAttributes, setSelectedAttributes] = useState({});
   const [availableOptions, setAvailableOptions] = useState({});
 
-  // Debug logging
-  console.log('🔧 ConfigurableProductSelector mounted:', {
-    hasProduct: !!product,
-    productId: product?.id,
-    productType: product?.type,
-    productName: product?.name,
-    willLoadVariants: product?.id && product?.type === 'configurable'
-  });
-
   useEffect(() => {
-    console.log('🔧 ConfigurableProductSelector useEffect triggered:', {
-      productId: product?.id,
-      productType: product?.type,
-      shouldLoad: product?.id && product?.type === 'configurable'
-    });
-
     if (product?.id && product?.type === 'configurable') {
       loadVariants();
     } else {
-      console.log('❌ Not loading variants - conditions not met');
       setLoading(false);
     }
   }, [product?.id]);
 
   const loadVariants = async () => {
     try {
-      console.log('📦 Loading variants for product:', product.id);
       setLoading(true);
       const response = await apiClient.get(`/configurable-products/${product.id}/public-variants`);
 
-      console.log('📦 Variants response:', response);
-
       if (response.success && response.data) {
-        console.log('✅ Received', response.data.length, 'variants (total)');
-        console.log('📋 Variant data structure:', JSON.stringify(response.data[0], null, 2));
-
         // Filter out variants with empty attribute_values (legacy variants without proper configuration)
         const validVariants = response.data.filter(v => {
           const hasAttributeValues = v.attribute_values && Object.keys(v.attribute_values).length > 0;
@@ -69,7 +47,6 @@ export default function ConfigurableProductSelector({ product, store, settings, 
           return hasAttributeValues;
         });
 
-        console.log('✅ Setting', validVariants.length, 'valid variants (with attribute_values)');
         setVariants(validVariants);
 
         // Build available options from valid variants only
@@ -77,12 +54,9 @@ export default function ConfigurableProductSelector({ product, store, settings, 
         const configurableAttrIds = product.configurable_attributes || [];
 
         validVariants.forEach((variantRelation, index) => {
-          console.log(`🔍 Processing variant ${index}:`, variantRelation);
           const attrValues = variantRelation.attribute_values || {};
-          console.log(`  📊 Attribute values for variant ${index}:`, attrValues);
 
           Object.entries(attrValues).forEach(([attrCode, value]) => {
-            console.log(`    ➕ Adding option: ${attrCode} = ${value}`);
             if (!options[attrCode]) {
               options[attrCode] = new Set();
             }
@@ -95,8 +69,6 @@ export default function ConfigurableProductSelector({ product, store, settings, 
           options[key] = Array.from(options[key]);
         });
 
-        console.log('✅ Available options built:', options);
-        console.log('📊 Total option keys:', Object.keys(options).length);
         setAvailableOptions(options);
       } else {
         console.warn('⚠️ Response not in expected format:', response);
