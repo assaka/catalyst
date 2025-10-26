@@ -29,10 +29,7 @@ export default function SeoTemplates() {
     meta_title: '',
     meta_description: '',
     meta_keywords: '',
-    og_title: '',
-    og_description: '',
-    twitter_title: '',
-    twitter_description: ''
+    meta_robots: ''
   });
 
   useEffect(() => {
@@ -74,10 +71,7 @@ export default function SeoTemplates() {
       meta_title: template.template?.meta_title || template.meta_title || '',
       meta_description: template.template?.meta_description || template.meta_description || '',
       meta_keywords: template.template?.meta_keywords || template.meta_keywords || '',
-      og_title: template.template?.og_title || template.og_title || '',
-      og_description: template.template?.og_description || template.og_description || '',
-      twitter_title: template.template?.twitter_title || template.twitter_title || '',
-      twitter_description: template.template?.twitter_description || template.twitter_description || ''
+      meta_robots: template.template?.meta_robots || template.meta_robots || ''
     });
 
     // Scroll to form
@@ -92,10 +86,7 @@ export default function SeoTemplates() {
       meta_title: '',
       meta_description: '',
       meta_keywords: '',
-      og_title: '',
-      og_description: '',
-      twitter_title: '',
-      twitter_description: ''
+      meta_robots: ''
     });
   };
 
@@ -132,10 +123,7 @@ export default function SeoTemplates() {
         meta_title: formData.meta_title,
         meta_description: formData.meta_description,
         meta_keywords: formData.meta_keywords,
-        og_title: formData.og_title,
-        og_description: formData.og_description,
-        twitter_title: formData.twitter_title,
-        twitter_description: formData.twitter_description
+        meta_robots: formData.meta_robots
       };
 
       if (editingTemplate) {
@@ -180,10 +168,7 @@ export default function SeoTemplates() {
         meta_title: '',
         meta_description: '',
         meta_keywords: '',
-        og_title: '',
-        og_description: '',
-        twitter_title: '',
-        twitter_description: ''
+        meta_robots: ''
       });
 
       // Reload templates
@@ -388,47 +373,12 @@ export default function SeoTemplates() {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="og-title-template">OpenGraph Title (Optional)</Label>
+              <Label htmlFor="meta-robots">Meta Robots</Label>
               <Input
-                id="og-title-template"
-                value={formData.og_title}
-                onChange={(e) => handleInputChange('og_title', e.target.value)}
-                placeholder="Defaults to meta title if empty"
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="og-description-template">OpenGraph Description (Optional)</Label>
-              <Textarea
-                id="og-description-template"
-                value={formData.og_description}
-                onChange={(e) => handleInputChange('og_description', e.target.value)}
-                placeholder="Defaults to meta description if empty"
-                rows={2}
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="twitter-title-template">Twitter Card Title (Optional)</Label>
-              <Input
-                id="twitter-title-template"
-                value={formData.twitter_title}
-                onChange={(e) => handleInputChange('twitter_title', e.target.value)}
-                placeholder="Defaults to OG title if empty"
-              />
-              <p className="text-sm text-muted-foreground">
-                Separate title for Twitter cards (falls back to OG title if not set)
-              </p>
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="twitter-description-template">Twitter Card Description (Optional)</Label>
-              <Textarea
-                id="twitter-description-template"
-                value={formData.twitter_description}
-                onChange={(e) => handleInputChange('twitter_description', e.target.value)}
-                placeholder="Defaults to OG description if empty"
-                rows={2}
+                id="meta-robots"
+                value={formData.meta_robots}
+                onChange={(e) => handleInputChange('meta_robots', e.target.value)}
+                placeholder="index, follow"
               />
             </div>
 
