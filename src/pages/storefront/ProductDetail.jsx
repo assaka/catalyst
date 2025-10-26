@@ -99,6 +99,20 @@ export default function ProductDetail() {
     enabled: !storeLoading && !!store?.id && !!slug
   });
 
+  // Debug logging
+  useEffect(() => {
+    console.log('🔍 ProductDetail Debug:', {
+      slug,
+      storeId: store?.id,
+      storeLoading,
+      productLoading,
+      hasProductData: !!productData,
+      hasProduct: !!product,
+      hasError: !!productError,
+      errorMessage: productError?.message
+    });
+  }, [slug, store?.id, storeLoading, productLoading, productData, product, productError]);
+
   const [product, setProduct] = useState(null);
   const [quantity, setQuantity] = useState(1);
   const [activeImage, setActiveImage] = useState(0);
@@ -714,10 +728,29 @@ export default function ProductDetail() {
     );
   }
 
-  if ((!product && !loading) || productError) {
+  // Only show 404 if we have definitively failed (not loading and either error or no product)
+  if (!loading && !storeLoading && (productError || (!product && productData === undefined))) {
     // Trigger 404 page display
     showNotFound(`Product "${slug}" not found`);
     return null;
+  }
+
+  // Don't render anything if we don't have product data yet
+  if (!product) {
+    return (
+      <div className="max-w-6xl mx-auto px-4 py-8">
+        <div className="grid md:grid-cols-2 gap-8">
+          <Skeleton className="aspect-square" />
+          <div className="space-y-4">
+            <Skeleton className="h-8 w-3/4" />
+            <Skeleton className="h-6 w-1/2" />
+            <Skeleton className="h-4 w-full" />
+            <Skeleton className="h-4 w-full" />
+            <Skeleton className="h-12 w-full" />
+          </div>
+        </div>
+      </div>
+    );
   }
 
   // Determine stock status based on product and store settings
