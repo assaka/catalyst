@@ -493,10 +493,10 @@ export default function Category() {
           if (!Array.isArray(productAttributes)) return;
 
           const matchingAttr = productAttributes.find(pAttr => pAttr.code === attrCode);
-          if (!matchingAttr || !matchingAttr.value) return;
+          if (!matchingAttr || (!matchingAttr.rawValue && !matchingAttr.value)) return;
 
-          // Store just the value code
-          const valueCode = String(matchingAttr.value);
+          // Store just the value code (use rawValue which contains the code, not the translated value)
+          const valueCode = String(matchingAttr.rawValue || matchingAttr.value);
           if (valueCode && valueCode !== '') {
             valueSet.add(valueCode);
           }
@@ -504,8 +504,8 @@ export default function Category() {
       }
 
       // Get translated attribute label for filter header
-      const attributeLabel = attr.translations?.[currentLang]?.label ||
-                            attr.translations?.en?.label ||
+      const attributeLabel = attr.translations?.[currentLang]?.name ||
+                            attr.translations?.en?.name ||
                             attr.name ||
                             attrCode;
 
@@ -545,8 +545,8 @@ export default function Category() {
 
       // Find the attribute from filterableAttributes and use translated label
       const attr = filterableAttributes?.find(a => a.code === attributeCode);
-      const attributeLabel = attr?.translations?.[currentLang]?.label ||
-                            attr?.translations?.en?.label ||
+      const attributeLabel = attr?.translations?.[currentLang]?.name ||
+                            attr?.translations?.en?.name ||
                             attr?.name ||
                             attributeCode;
 
