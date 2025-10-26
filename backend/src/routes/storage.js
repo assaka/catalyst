@@ -171,10 +171,18 @@ router.get('/list', async (req, res) => {
     });
 
     const startTime = Date.now();
-    const result = await storageManager.listFiles(storeId, folder, {
+
+    // Add 5-second timeout to prevent hanging
+    const listPromise = storageManager.listFiles(storeId, folder, {
       limit: parseInt(limit),
       offset: parseInt(offset)
     });
+
+    const timeoutPromise = new Promise((_, reject) => {
+      setTimeout(() => reject(new Error('Storage list operation timed out after 5 seconds')), 5000);
+    });
+
+    const result = await Promise.race([listPromise, timeoutPromise]);
     const duration = Date.now() - startTime;
 
     console.log(`✅ StorageManager.listFiles completed in ${duration}ms:`, {
@@ -190,9 +198,9 @@ router.get('/list', async (req, res) => {
 
   } catch (error) {
     console.error('List images error:', error);
-    
-    // If no storage provider is configured, return empty list with info
-    if (error.message.includes('No storage provider')) {
+
+    // If timeout or no storage provider, return empty list
+    if (error.message.includes('No storage provider') || error.message.includes('timed out')) {
       return res.status(200).json({
         success: true,
         data: {
@@ -200,11 +208,13 @@ router.get('/list', async (req, res) => {
           total: 0,
           provider: null
         },
-        requiresConfiguration: true,
-        message: 'No storage provider configured. Please connect a storage provider in the integrations settings.'
+        requiresConfiguration: error.message.includes('No storage provider'),
+        message: error.message.includes('timed out')
+          ? 'Storage provider is taking too long to respond. Please check your connection.'
+          : 'No storage provider configured. Please connect a storage provider in the integrations settings.'
       });
     }
-    
+
     res.status(500).json({
       success: false,
       error: error.message
@@ -350,15 +360,48 @@ router.get('/providers', async (req, res) => {
     const providers = ['supabase', 'gcs', 's3', 'local'];
     const providerStatus = {};
 
+    // Check each provider with timeout protection
     for (const provider of providers) {
-      providerStatus[provider] = {
-        available: await storageManager.isProviderAvailable(provider, storeId),
-        name: getProviderName(provider)
-      };
+      try {
+        const checkPromise = storageManager.isProviderAvailable(provider, storeId);
+        const timeoutPromise = new Promise((resolve) => {
+          setTimeout(() => resolve(false), 2000); // 2 second timeout per provider
+        });
+
+        providerStatus[provider] = {
+          available: await Promise.race([checkPromise, timeoutPromise]),
+          name: getProviderName(provider)
+        };
+      } catch (error) {
+        console.log(`Error checking ${provider} availability:`, error.message);
+        providerStatus[provider] = {
+          available: false,
+          name: getProviderName(provider)
+        };
+      }
     }
 
-    // Get current provider
-    const current = await storageManager.getStorageProvider(storeId);
+    // Get current provider with timeout
+    let current = null;
+    try {
+      const providerPromise = storageManager.getStorageProvider(storeId);
+      const timeoutPromise = new Promise((_, reject) => {
+        setTimeout(() => reject(new Error('Timeout getting storage provider')), 3000);
+      });
+      current = await Promise.race([providerPromise, timeoutPromise]);
+    } catch (error) {
+      console.log('Could not get current provider:', error.message);
+      // Return response without current provider info
+      return res.json({
+        success: true,
+        data: {
+          current: null,
+          providers: providerStatus,
+          fallbackOrder: storageManager.fallbackOrder || [],
+          message: 'Could not determine current storage provider'
+        }
+      });
+    }
 
     res.json({
       success: true,
@@ -368,7 +411,7 @@ router.get('/providers', async (req, res) => {
           name: getProviderName(current.type)
         },
         providers: providerStatus,
-        fallbackOrder: storageManager.fallbackOrder
+        fallbackOrder: storageManager.fallbackOrder || []
       }
     });
 
