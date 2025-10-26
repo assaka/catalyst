@@ -68,8 +68,8 @@ module.exports = {
     // Insert translations with upsert logic (insert or update on conflict)
     for (const translation of commonTranslations) {
       await queryInterface.sequelize.query(`
-        INSERT INTO translations (key, language_code, value, category, type, created_at, updated_at)
-        VALUES (:key, :language_code, :value, :category, :type, NOW(), NOW())
+        INSERT INTO translations (id, key, language_code, value, category, type, created_at, updated_at)
+        VALUES (gen_random_uuid(), :key, :language_code, :value, :category, :type, NOW(), NOW())
         ON CONFLICT (key, language_code)
         DO UPDATE SET
           value = EXCLUDED.value,
