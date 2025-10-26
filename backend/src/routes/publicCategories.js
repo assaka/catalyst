@@ -121,8 +121,7 @@ router.get('/by-slug/:slug/full', async (req, res) => {
     }
 
     // Apply category translations
-    const { getCategoryWithTranslations } = require('../utils/categoryHelpers');
-    const categoryWithTranslations = await getCategoryWithTranslations(category.id, lang);
+    const categoryWithTranslations = await getCategoryById(category.id, lang);
 
     // 2. Get all products in this category
     const { Product, ProductAttributeValue, Attribute, AttributeValue } = require('../models');
