@@ -15,12 +15,12 @@ const {
 const router = express.Router();
 
 // @route   GET /api/product-tabs
-// @desc    Get product tabs for a store
-// @access  Public
-router.get('/', async (req, res) => {
+// @desc    Get product tabs for a store (authenticated)
+// @access  Private
+router.get('/', authMiddleware, async (req, res) => {
   try {
-    const { store_id } = req.query;
-    
+    const { store_id, is_active } = req.query;
+
     if (!store_id) {
       return res.status(400).json({
         success: false,
@@ -29,24 +29,22 @@ router.get('/', async (req, res) => {
     }
 
     const lang = getLanguageFromRequest(req);
-    console.log('🌍 Product Tabs: Requesting language:', lang, 'Headers:', {
+    console.log('🌍 Product Tabs (Admin): Requesting language:', lang, 'Headers:', {
       'x-language': req.headers['x-language'],
       'accept-language': req.headers['accept-language'],
       'query-lang': req.query.lang
     });
 
-    const isPublicRequest = req.originalUrl.includes('/api/public/product-tabs');
-
-    // Build where clause - public requests only get active tabs
+    // Build where clause
     const whereClause = { store_id };
-    if (isPublicRequest) {
-      whereClause.is_active = true;
+    if (is_active !== undefined) {
+      whereClause.is_active = is_active === 'true';
     }
 
-    // For public requests, return only current language. For authenticated requests, return all translations
-    const productTabs = await getProductTabsWithTranslations(whereClause, lang, !isPublicRequest); // Pass true for authenticated requests to get all translations
+    // Authenticated requests get all translations
+    const productTabs = await getProductTabsWithTranslations(whereClause, lang, true); // true = include all translations
 
-    console.log('📋 Product Tabs: Retrieved', productTabs.length, 'tabs for language:', lang);
+    console.log('📋 Product Tabs (Admin): Retrieved', productTabs.length, 'tabs for language:', lang);
     if (productTabs.length > 0) {
       console.log('📝 Sample tab:', {
         id: productTabs[0].id,
@@ -55,17 +53,11 @@ router.get('/', async (req, res) => {
       });
     }
 
-    // Return format based on request type
-    if (isPublicRequest) {
-      // Return just the array for public requests (for compatibility with StorefrontBaseEntity)
-      res.json(productTabs);
-    } else {
-      // Return wrapped response for authenticated requests
-      res.json({
-        success: true,
-        data: productTabs
-      });
-    }
+    // Return wrapped response for authenticated requests
+    res.json({
+      success: true,
+      data: productTabs
+    });
   } catch (error) {
     console.error('Get product tabs error:', error);
     res.status(500).json({
@@ -77,8 +69,8 @@ router.get('/', async (req, res) => {
 
 // @route   GET /api/product-tabs/:id
 // @desc    Get product tab by ID with all translations
-// @access  Public
-router.get('/:id', async (req, res) => {
+// @access  Private
+router.get('/:id', authMiddleware, async (req, res) => {
   try {
     const productTab = await getProductTabWithAllTranslations(req.params.id);
 

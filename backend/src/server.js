@@ -67,6 +67,11 @@ const paymentMethodRoutes = require('./routes/payment-methods');
 const cookieConsentRoutes = require('./routes/cookie-consent-settings');
 const consentLogRoutes = require('./routes/consent-logs');
 const customOptionRuleRoutes = require('./routes/custom-option-rules');
+
+// Public route modules (lightweight, no auth)
+const publicProductTabRoutes = require('./routes/publicProductTabs');
+const publicProductLabelRoutes = require('./routes/publicProductLabels');
+const publicAttributeRoutes = require('./routes/publicAttributes');
 const addressRoutes = require('./routes/addresses');
 const publicCmsBlocksRoutes = require('./routes/public-cms-blocks');
 const publicCmsPagesRoutes = require('./routes/public-cms-pages');
@@ -1511,9 +1516,9 @@ app.use('/api/public/categories', publicCategoryRoutes);
 app.use('/api/public/shipping', publicShippingRoutes);
 app.use('/api/public/tax', taxRoutes);
 app.use('/api/public/delivery', publicDeliveryRoutes);
-app.use('/api/public/attributes', attributeRoutes);
+app.use('/api/public/attributes', publicAttributeRoutes);
 app.use('/api/public/coupons', couponRoutes);
-app.use('/api/public/product-labels', productLabelRoutes);
+app.use('/api/public/product-labels', publicProductLabelRoutes);
 app.use('/api/public/attribute-sets', attributeSetRoutes);
 app.use('/api/public/seo-templates', seoTemplateRoutes);
 app.use('/api/public/seo-settings', seoSettingsRoutes);
@@ -1521,7 +1526,7 @@ app.use('/api/public/cookie-consent-settings', cookieConsentRoutes);
 // Use dedicated working route for public CMS blocks
 app.use('/api/public/cms-blocks', publicCmsBlocksRoutes);
 app.use('/api/public/cms-pages', publicCmsPagesRoutes);
-app.use('/api/public/product-tabs', productTabRoutes);
+app.use('/api/public/product-tabs', publicProductTabRoutes);
 app.use('/api/public/custom-option-rules', customOptionRuleRoutes);
 app.use('/api/public/payment-methods', publicPaymentMethodRoutes);
 // Robots.txt serving route

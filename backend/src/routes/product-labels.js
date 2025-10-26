@@ -14,26 +14,12 @@ const {
 
 const router = express.Router();
 
-// Optional auth middleware that doesn't block public requests
-const optionalAuth = (req, res, next) => {
-  // Check if this is a public request
-  if (req.originalUrl.includes('/api/public/')) {
-    // For public requests, skip authentication
-    return next();
-  }
-  // For non-public requests, require authentication
-  return authMiddleware(req, res, next);
-};
-
 // @route   GET /api/product-labels
-// @desc    Get all product labels for a store
-// @access  Public/Private
-router.get('/', optionalAuth, async (req, res) => {
+// @desc    Get all product labels for a store (authenticated)
+// @access  Private
+router.get('/', authMiddleware, async (req, res) => {
   try {
     const { store_id, is_active } = req.query;
-    
-    // Check if this is a public request
-    const isPublicRequest = req.originalUrl.includes('/api/public/product-labels');
 
     if (!store_id) {
       return res.status(400).json({
@@ -44,44 +30,27 @@ router.get('/', optionalAuth, async (req, res) => {
 
     const whereClause = { store_id };
 
-    if (isPublicRequest) {
-      // Public access - only return active labels
-      whereClause.is_active = true;
-    } else {
-      // Authenticated access - check authentication
-      if (!req.user) {
-        return res.status(401).json({
-          error: 'Access denied',
-          message: 'Authentication required'
-        });
-      }
-
-      if (is_active !== undefined) {
-        whereClause.is_active = is_active === 'true';
-      }
+    // Authenticated access - filter by is_active if provided
+    if (is_active !== undefined) {
+      whereClause.is_active = is_active === 'true';
     }
 
     const lang = getLanguageFromRequest(req);
-    console.log('🌍 Product Labels: Requesting language:', lang, 'Headers:', {
+    console.log('🌍 Product Labels (Admin): Requesting language:', lang, 'Headers:', {
       'x-language': req.headers['x-language'],
       'accept-language': req.headers['accept-language'],
       'query-lang': req.query.lang
     });
 
-    // For public requests, return only current language. For authenticated requests, return all translations
-    const labels = await getProductLabelsWithTranslations(whereClause, lang, !isPublicRequest);
-    console.log('🏷️ Product Labels: Retrieved', labels.length, 'labels for language:', lang, labels.slice(0, 2));
+    // Authenticated requests get all translations
+    const labels = await getProductLabelsWithTranslations(whereClause, lang, true); // true = include all translations
+    console.log('🏷️ Product Labels (Admin): Retrieved', labels.length, 'labels for language:', lang, labels.slice(0, 2));
 
-    if (isPublicRequest) {
-      // Return just the array for public requests (for compatibility)
-      res.json(labels);
-    } else {
-      // Return wrapped response for authenticated requests
-      res.json({
-        success: true,
-        data: { product_labels: labels }
-      });
-    }
+    // Return wrapped response for authenticated requests
+    res.json({
+      success: true,
+      data: { product_labels: labels }
+    });
   } catch (error) {
     console.error('Get product labels error:', error);
     res.status(500).json({

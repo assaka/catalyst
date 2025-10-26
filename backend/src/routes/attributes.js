@@ -16,41 +16,26 @@ const router = express.Router();
 const { authMiddleware, authorize } = require('../middleware/auth');
 
 // Basic CRUD operations for attributes
-router.get('/', async (req, res) => {
+router.get('/', authMiddleware, async (req, res) => {
   try {
     const { page = 1, limit = 100, store_id, search, attribute_set_id, exclude_assigned, is_filterable } = req.query;
     const offset = (page - 1) * limit;
 
-    // Check if this is a public request
-    const isPublicRequest = req.originalUrl.includes('/api/public/attributes');
-
     const where = {};
 
-    if (isPublicRequest) {
-      // Public access - return all attributes for specific store (no is_active field in Attribute model)
-      if (store_id) where.store_id = store_id;
+    // Authenticated access
+    if (req.user.role !== 'admin') {
+      const { getUserStoresForDropdown } = require('../utils/storeAccess');
+      const accessibleStores = await getUserStoresForDropdown(req.user.id);
+      const storeIds = accessibleStores.map(store => store.id);
+      where.store_id = { [Op.in]: storeIds };
+    }
 
-      // Filter by is_filterable if provided
-      if (is_filterable !== undefined) {
-        where.is_filterable = is_filterable === 'true' || is_filterable === true;
-      }
-    } else {
-      // Authenticated access
-      if (!req.user) {
-        return res.status(401).json({
-          error: 'Access denied',
-          message: 'Authentication required'
-        });
-      }
-      
-      if (req.user.role !== 'admin') {
-        const { getUserStoresForDropdown } = require('../utils/storeAccess');
-        const accessibleStores = await getUserStoresForDropdown(req.user.id);
-        const storeIds = accessibleStores.map(store => store.id);
-        where.store_id = { [Op.in]: storeIds };
-      }
-      
-      if (store_id) where.store_id = store_id;
+    if (store_id) where.store_id = store_id;
+
+    // Filter by is_filterable if provided
+    if (is_filterable !== undefined) {
+      where.is_filterable = is_filterable === 'true' || is_filterable === true;
     }
 
     // Add search functionality
@@ -128,10 +113,8 @@ router.get('/', async (req, res) => {
         const values = await AttributeValue.findAll({
           where: { attribute_id: attr.id },
           order: [['sort_order', 'ASC'], ['code', 'ASC']],
-          attributes: { exclude: ['translations'] }, // Exclude translations JSON column - using normalized table
-          // No limit for filterable attributes or authenticated requests (for translations)
-          // Only limit values for public non-filterable attributes
-          limit: (isPublicRequest && !attr.is_filterable) ? 10 : undefined
+          attributes: { exclude: ['translations'] } // Exclude translations JSON column - using normalized table
+          // No limit - authenticated requests get all values
         });
 
         // Get value IDs for translation lookup
@@ -155,13 +138,19 @@ router.get('/', async (req, res) => {
       return attrData;
     }));
 
-    if (isPublicRequest) {
-      // Return just the array for public requests (for compatibility)
-      res.json(attributesWithValues);
-    } else {
-      // Return wrapped response for authenticated requests
-      res.json({ success: true, data: { attributes: attributesWithValues, pagination: { current_page: parseInt(page), per_page: parseInt(limit), total: count, total_pages: Math.ceil(count / limit) } } });
-    }
+    // Return wrapped response for authenticated requests
+    res.json({
+      success: true,
+      data: {
+        attributes: attributesWithValues,
+        pagination: {
+          current_page: parseInt(page),
+          per_page: parseInt(limit),
+          total: count,
+          total_pages: Math.ceil(count / limit)
+        }
+      }
+    });
   } catch (error) {
     console.error('❌ Attributes API error:', error);
     res.status(500).json({ success: false, message: 'Server error', error: error.message });
