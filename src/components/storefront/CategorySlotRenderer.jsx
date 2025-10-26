@@ -343,7 +343,7 @@ export function CategorySlotRenderer({
 
             if (attrValue) {
               // Get translated label
-              const valueLabel = attrValue.translations?.[currentLang]?.label ||
+              const valueLabel = attrValue.translations?.[currentLanguage]?.label ||
                                attrValue.translations?.en?.label ||
                                valueCode;
 
