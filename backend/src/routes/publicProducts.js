@@ -229,8 +229,17 @@ router.get('/', async (req, res) => {
       await applyCacheHeaders(res, store_id);
     }
 
-    // Return just the array for public requests (for compatibility)
-    res.json(productsWithAttributes);
+    // Return structured response with pagination
+    res.json({
+      success: true,
+      data: productsWithAttributes,
+      pagination: {
+        page: parseInt(page),
+        limit: parseInt(limit),
+        total: count,
+        totalPages: Math.ceil(count / limit)
+      }
+    });
   } catch (error) {
     console.error('Get public products error:', error);
     res.status(500).json({
@@ -614,14 +623,17 @@ router.get('/by-slug/:slug/full', async (req, res) => {
       return false;
     });
 
-    // Return combined response with cache headers based on store settings
+    // Return structured response with cache headers based on store settings
     await applyCacheHeaders(res, store_id);
 
     res.json({
-      product: productData,
-      productTabs: productTabs || [],
-      productLabels: applicableLabels || [],
-      customOptions: applicableCustomOptions || []
+      success: true,
+      data: {
+        product: productData,
+        productTabs: productTabs || [],
+        productLabels: applicableLabels || [],
+        customOptions: applicableCustomOptions || []
+      }
     });
 
   } catch (error) {

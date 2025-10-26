@@ -39,8 +39,17 @@ router.get('/', async (req, res) => {
       await applyCacheHeaders(res, store_id);
     }
 
-    // Return just the array for public requests (for compatibility)
-    res.json(categories);
+    // Return structured response with pagination
+    res.json({
+      success: true,
+      data: categories,
+      pagination: {
+        page: parseInt(page),
+        limit: parseInt(limit),
+        total: count,
+        totalPages: Math.ceil(count / limit)
+      }
+    });
   } catch (error) {
     console.error('Get public categories error:', error);
     res.status(500).json({
@@ -191,11 +200,14 @@ router.get('/by-slug/:slug/full', async (req, res) => {
     // Apply cache headers based on store settings
     await applyCacheHeaders(res, store_id);
 
-    // Return combined response
+    // Return structured response
     res.json({
-      category: categoryWithTranslations,
-      products: productsWithAttributes,
-      total: productsWithAttributes.length
+      success: true,
+      data: {
+        category: categoryWithTranslations,
+        products: productsWithAttributes,
+        total: productsWithAttributes.length
+      }
     });
 
   } catch (error) {

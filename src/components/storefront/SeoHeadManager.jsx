@@ -277,20 +277,30 @@ export default function SeoHeadManager({ pageType, pageData, pageTitle, pageDesc
          */
 
         // All entity SEO data comes from the seo JSON field
-        const title = pageData?.seo?.meta_title ||               // Entity SEO JSON
+        // Apply template processing to ensure variables are replaced
+        let title = pageData?.seo?.meta_title ||               // Entity SEO JSON
                      templateTitle ||                            // Template (conditional or generic)
                      processedDefaultTitle ||                    // Global default
                      basicDefaultTitle;                          // Fallback
 
-        const description = pageData?.seo?.meta_description ||   // Entity SEO JSON
+        // Apply template processing to the final title (in case entity SEO has variables)
+        title = applyTemplate(title, pageData);
+
+        let description = pageData?.seo?.meta_description ||   // Entity SEO JSON
                            templateDescription ||                // Template
                            processedDefaultDescription ||        // Global default
                            basicDefaultDescription;              // Fallback
 
-        const keywords = pageData?.seo?.meta_keywords ||         // Entity SEO JSON
+        // Apply template processing to the final description
+        description = applyTemplate(description, pageData);
+
+        let keywords = pageData?.seo?.meta_keywords ||         // Entity SEO JSON
                         templateKeywords ||                      // Template
                         processedDefaultKeywords ||              // Global default
                         `${store?.name}, products, quality, shopping`;  // Fallback
+
+        // Apply template processing to the final keywords
+        keywords = applyTemplate(keywords, pageData);
 
         // Default description for structured data
         const defaultDescription = description || store?.description || 'Quality products and services';
@@ -487,10 +497,16 @@ export default function SeoHeadManager({ pageType, pageData, pageTitle, pageDesc
                      ogDefaultTitle ||                         // Global OG default
                      title;                                    // Meta title fallback
 
+            // Apply template processing to OG title
+            ogTitle = applyTemplate(ogTitle, pageData);
+
             ogDescription = pageData?.seo?.og_description ||   // Entity SEO JSON
                            templateOgDescription ||            // Template OG
                            ogDefaultDescription ||             // Global OG default
                            description;                        // Meta description fallback
+
+            // Apply template processing to OG description
+            ogDescription = applyTemplate(ogDescription, pageData);
 
             updateMetaTag('og:title', ogTitle, true);
             updateMetaTag('og:description', ogDescription, true);
@@ -534,17 +550,23 @@ export default function SeoHeadManager({ pageType, pageData, pageTitle, pageDesc
              * ====================================
              * Priority: Entity SEO JSON > Template JSON > Global Twitter Default > OG Fallback > Meta Fallback
              */
-            const twitterTitle = pageData?.seo?.twitter_title ||         // Entity SEO JSON
+            let twitterTitle = pageData?.seo?.twitter_title ||         // Entity SEO JSON
                                 templateTwitterTitle ||                   // Template Twitter
                                 twitterDefaultTitle ||                    // Global Twitter default
                                 ogTitle ||                                // OG title fallback
                                 title;                                    // Meta title fallback
 
-            const twitterDescription = pageData?.seo?.twitter_description || // Entity SEO JSON
+            // Apply template processing to Twitter title
+            twitterTitle = applyTemplate(twitterTitle, pageData);
+
+            let twitterDescription = pageData?.seo?.twitter_description || // Entity SEO JSON
                                       templateTwitterDescription ||       // Template Twitter
                                       twitterDefaultDescription ||        // Global Twitter default
                                       ogDescription ||                    // OG description fallback
                                       description;                        // Meta description fallback
+
+            // Apply template processing to Twitter description
+            twitterDescription = applyTemplate(twitterDescription, pageData);
 
             /**
              * PRIORITY CASCADE: TWITTER IMAGE

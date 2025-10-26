@@ -4,6 +4,81 @@
 
 This document outlines the performance optimizations applied to category and product APIs to improve response times and reduce database load.
 
+## 🔴 **BREAKING CHANGES - API Response Structure**
+
+All public endpoints now return **structured responses** with consistent format.
+
+### Previous Response Format
+```javascript
+// GET /api/public/categories (returned plain array)
+[
+  { id: '...', name: 'Category 1' },
+  { id: '...', name: 'Category 2' }
+]
+```
+
+### New Response Format
+```javascript
+// GET /api/public/categories
+{
+  "success": true,
+  "data": [
+    { "id": "...", "name": "Category 1" },
+    { "id": "...", "name": "Category 2" }
+  ],
+  "pagination": {
+    "page": 1,
+    "limit": 100,
+    "total": 250,
+    "totalPages": 3
+  }
+}
+
+// GET /api/public/categories/by-slug/:slug/full
+{
+  "success": true,
+  "data": {
+    "category": { ... },
+    "products": [ ... ],
+    "total": 25
+  }
+}
+
+// GET /api/public/products
+{
+  "success": true,
+  "data": [ ... ],
+  "pagination": { ... }
+}
+
+// GET /api/public/products/by-slug/:slug/full
+{
+  "success": true,
+  "data": {
+    "product": { ... },
+    "productTabs": [ ... ],
+    "productLabels": [ ... ],
+    "customOptions": [ ... ]
+  }
+}
+```
+
+### Frontend Migration Required
+
+**Old Code (Won't Work):**
+```javascript
+const categories = await fetch('/api/public/categories').then(r => r.json());
+categories.forEach(cat => console.log(cat.name));
+```
+
+**New Code:**
+```javascript
+const response = await fetch('/api/public/categories').then(r => r.json());
+const { data, pagination } = response;
+data.forEach(cat => console.log(cat.name));
+console.log(`Total: ${pagination.total}, Pages: ${pagination.totalPages}`);
+```
+
 ## 🎯 Key Improvements
 
 ### 1. SQL-Based Pagination for Categories
@@ -38,28 +113,34 @@ const { rows, count } = await getCategoriesWithTranslations(
 );
 ```
 
-### 2. Store Settings Cache
+### 2. Store Settings and Cache Configuration Cache
 **Files Created:**
 - `src/utils/storeCache.js`
 
 **Files Modified:**
+- `src/utils/cacheUtils.js` - Now uses storeCache instead of direct Store queries
 - `src/routes/publicProducts.js`
 
 **Changes:**
-- In-memory cache for store settings with 5-minute TTL
-- Avoids database query on every product request
+- In-memory cache for store settings AND cache configuration with 5-minute TTL
+- cacheUtils.js now uses this cache to avoid duplicate Store.findByPk queries
+- Avoids database query on every product/category request
 - Cache invalidation support
+- Integrated cache for both store settings and HTTP cache headers
 
 **Performance Impact:**
-- ✅ Eliminates 1 database query per product request
-- ✅ Reduces product endpoint latency by 10-30ms
+- ✅ Eliminates 1-2 database queries per request (settings + cache config)
+- ✅ Reduces endpoint latency by 20-50ms
+- ✅ cacheUtils.applyCacheHeaders() now uses cache
 
 **Usage:**
 ```javascript
-const { getStoreSettings } = require('../utils/storeCache');
+const { getStoreSettings, getCacheConfig } = require('../utils/storeCache');
 
 // Cached lookup (5-minute TTL)
 const settings = await getStoreSettings(store_id);
+const cacheConfig = await getCacheConfig(store_id);
+// Returns: { enabled: true/false, duration: 60 }
 ```
 
 ### 3. Optimized Product Queries with JOINs

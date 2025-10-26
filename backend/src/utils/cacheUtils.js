@@ -1,19 +1,14 @@
-const { Store } = require('../models');
+const { getCacheConfig } = require('./storeCache');
 
 /**
- * Apply HTTP cache headers based on store settings
+ * Apply HTTP cache headers based on store settings (uses cache)
  * @param {Response} res - Express response object
  * @param {string} store_id - Store UUID
  * @returns {Promise<void>}
  */
 const applyCacheHeaders = async (res, store_id) => {
   try {
-    const store = await Store.findByPk(store_id);
-    const cacheSettings = store?.settings?.cache || {};
-
-    // Default values
-    const enabled = cacheSettings.enabled !== false; // Default: true
-    const duration = cacheSettings.duration || 60; // Default: 60 seconds
+    const { enabled, duration } = await getCacheConfig(store_id);
 
     if (enabled && duration > 0) {
       // Apply cache with configured duration
@@ -46,21 +41,7 @@ const applyCacheHeaders = async (res, store_id) => {
  * @returns {Promise<Object>} Cache settings object
  */
 const getCacheSettings = async (store_id) => {
-  try {
-    const store = await Store.findByPk(store_id);
-    const cacheSettings = store?.settings?.cache || {};
-
-    return {
-      enabled: cacheSettings.enabled !== false,
-      duration: cacheSettings.duration || 60
-    };
-  } catch (error) {
-    console.warn('Failed to load cache settings for store:', store_id, error.message);
-    return {
-      enabled: true,
-      duration: 60
-    };
-  }
+  return await getCacheConfig(store_id);
 };
 
 module.exports = {
