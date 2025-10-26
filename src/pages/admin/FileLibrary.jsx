@@ -471,14 +471,14 @@ const FileLibrary = () => {
           )}
         </div>
       ) : viewMode === 'grid' ? (
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-4">
           {filteredFiles.map((file) => (
             <div key={file.id} className="border rounded-lg overflow-hidden hover:shadow-lg transition-shadow">
               {/* Preview */}
-              <div className="aspect-square bg-gray-100 flex items-center justify-center relative group">
+              <div className="h-24 bg-gray-100 flex items-center justify-center relative group">
                 {file.mimeType?.startsWith('image/') ? (
-                  <img 
-                    src={file.url} 
+                  <img
+                    src={file.url}
                     alt={file.name}
                     className="w-full h-full object-cover"
                     loading="lazy"
@@ -562,12 +562,12 @@ const FileLibrary = () => {
                 <tr key={file.id} className="hover:bg-gray-50">
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="flex items-center">
-                      <div className="flex-shrink-0 h-10 w-10">
+                      <div className="flex-shrink-0 h-8 w-8">
                         {file.mimeType?.startsWith('image/') ? (
-                          <img className="h-10 w-10 rounded object-cover" src={file.url} alt={file.name} />
+                          <img className="h-8 w-8 rounded object-cover" src={file.url} alt={file.name} />
                         ) : (
-                          <div className="h-10 w-10 rounded bg-gray-100 flex items-center justify-center">
-                            {React.cloneElement(getFileIcon(file.mimeType), { className: "w-5 h-5" })}
+                          <div className="h-8 w-8 rounded bg-gray-100 flex items-center justify-center">
+                            {React.cloneElement(getFileIcon(file.mimeType), { className: "w-4 h-4" })}
                           </div>
                         )}
                       </div>
