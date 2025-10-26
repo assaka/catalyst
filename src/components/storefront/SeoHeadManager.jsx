@@ -255,6 +255,7 @@ export default function SeoHeadManager({ pageType, pageData, pageTitle, pageDesc
             applyTemplate(matchingTemplate.template.meta_description, pageData) : '';
         const templateKeywords = matchingTemplate?.template?.meta_keywords ?
             applyTemplate(matchingTemplate.template.meta_keywords, pageData) : '';
+        const templateMetaRobots = matchingTemplate?.template?.meta_robots || '';
         const templateOgTitle = matchingTemplate?.template?.og_title ?
             applyTemplate(matchingTemplate.template.og_title, pageData) : '';
         const templateOgDescription = matchingTemplate?.template?.og_description ?
@@ -309,31 +310,33 @@ export default function SeoHeadManager({ pageType, pageData, pageTitle, pageDesc
         /**
          * PRIORITY CASCADE: ROBOTS TAG
          * =============================
+         * Priority: Entity SEO JSON > Template > Global Default > Fallback
          */
-        let robotsTag = pageData?.seo?.meta_robots_tag;          // Entity SEO JSON
-        
-        // If no page-specific robots tag, check robots.txt content for current page
+        let robotsTag = pageData?.seo?.meta_robots_tag ||        // Entity SEO JSON
+                       templateMetaRobots;                       // Template
+
+        // If no page-specific or template robots tag, check robots.txt content for current page
         if (!robotsTag) {
             const robotsContent = seoSettings?.robots_txt_content || '';
             const currentPath = window.location.pathname;
-            
-            
+
+
             // Check if current path matches any Disallow rules
             let shouldDisallow = false;
             if (robotsContent && robotsContent.trim()) {
                 const disallowRules = robotsContent.match(/Disallow:\s*([^\n\r]*)/g) || [];
-                
+
                 for (const rule of disallowRules) {
                     const path = rule.replace('Disallow:', '').trim();
-                    
+
                     if (path && path !== '/' && path !== '') {
                         // More precise matching logic - check if the current path contains or matches the disallow pattern
-                        const pathMatches = currentPath === path || 
+                        const pathMatches = currentPath === path ||
                                           currentPath.startsWith(path) ||
                                           currentPath.includes(path) ||
                                           (path.endsWith('/') && (currentPath.startsWith(path) || currentPath.includes(path)));
-                        
-                        
+
+
                         if (pathMatches) {
                             shouldDisallow = true;
                             break;
@@ -341,7 +344,7 @@ export default function SeoHeadManager({ pageType, pageData, pageTitle, pageDesc
                     }
                 }
             }
-            
+
 
             // Use global default meta_robots from settings
             const globalMetaRobots = seoSettings?.meta_robots || defaultMetaSettings.meta_robots || 'index, follow';
