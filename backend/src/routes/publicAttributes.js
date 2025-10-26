@@ -91,7 +91,6 @@ router.get('/', async (req, res) => {
     }));
 
     // Apply cache headers based on store settings
-    const { store_id } = req.query;
     if (store_id) {
       await applyCacheHeaders(res, store_id);
     }

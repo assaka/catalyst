@@ -87,34 +87,6 @@ router.get('/', async (req, res) => {
   }
 });
 
-// @route   GET /api/public/categories/:id
-// @desc    Get single category by ID (no authentication required)
-// @access  Public
-router.get('/:id', async (req, res) => {
-  try {
-    const lang = getLanguageFromRequest(req);
-    const category = await getCategoryById(req.params.id, lang);
-
-    if (!category || !category.is_active) {
-      return res.status(404).json({
-        success: false,
-        message: 'Category not found'
-      });
-    }
-
-    res.json({
-      success: true,
-      data: category
-    });
-  } catch (error) {
-    console.error('Get public category error:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Server error'
-    });
-  }
-});
-
 // @route   GET /api/public/categories/by-slug/:slug/full
 // @desc    Get complete category data with products in one request
 // @access  Public
@@ -270,6 +242,34 @@ router.get('/by-slug/:slug/full', async (req, res) => {
       success: false,
       message: 'Server error',
       error: error.message
+    });
+  }
+});
+
+// @route   GET /api/public/categories/:id
+// @desc    Get single category by ID (no authentication required)
+// @access  Public
+router.get('/:id', async (req, res) => {
+  try {
+    const lang = getLanguageFromRequest(req);
+    const category = await getCategoryById(req.params.id, lang);
+
+    if (!category || !category.is_active) {
+      return res.status(404).json({
+        success: false,
+        message: 'Category not found'
+      });
+    }
+
+    res.json({
+      success: true,
+      data: category
+    });
+  } catch (error) {
+    console.error('Get public category error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Server error'
     });
   }
 });
