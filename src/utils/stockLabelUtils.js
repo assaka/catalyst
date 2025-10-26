@@ -219,7 +219,7 @@ export function getStockLabel(product, settings = {}, lang = null, globalTransla
   // Handle infinite stock
   if (product.infinite_stock) {
     const label = getTranslatedLabel('in_stock_label');
-    const text = processLabel(label, null, settings); // Remove quantity blocks
+    const text = processLabel(label, null, settings, globalTranslations); // Remove quantity blocks
     const textColor = stockSettings.in_stock_text_color;
     const bgColor = stockSettings.in_stock_bg_color;
 
@@ -242,7 +242,7 @@ export function getStockLabel(product, settings = {}, lang = null, globalTransla
   const lowStockThreshold = product.low_stock_threshold || settings?.display_low_stock_threshold || 0;
   if (lowStockThreshold > 0 && product.stock_quantity <= lowStockThreshold) {
     const label = getTranslatedLabel('low_stock_label');
-    const text = processLabel(label, hideStockQuantity ? null : product.stock_quantity, settings);
+    const text = processLabel(label, hideStockQuantity ? null : product.stock_quantity, settings, globalTranslations);
     const textColor = stockSettings.low_stock_text_color;
     const bgColor = stockSettings.low_stock_bg_color;
 
@@ -251,7 +251,7 @@ export function getStockLabel(product, settings = {}, lang = null, globalTransla
 
   // Handle regular in stock
   const label = getTranslatedLabel('in_stock_label');
-  const text = processLabel(label, hideStockQuantity ? null : product.stock_quantity, settings);
+  const text = processLabel(label, hideStockQuantity ? null : product.stock_quantity, settings, globalTranslations);
   const textColor = stockSettings.in_stock_text_color;
   const bgColor = stockSettings.in_stock_bg_color;
 
@@ -266,32 +266,53 @@ export function getStockLabel(product, settings = {}, lang = null, globalTransla
  *
  * Supported placeholders:
  * - {quantity} → Actual quantity number
- * - {item} / {items} → Singular/plural
- * - {unit} / {units} → Singular/plural
- * - {piece} / {pieces} → Singular/plural
+ * - {item} → Translatable singular/plural from common.item/common.items
+ * - {unit} → Translatable singular/plural from common.unit/common.units
+ * - {piece} → Translatable singular/plural from common.piece/common.pieces
  *
  * @param {string} label - Label template with {placeholders}
  * @param {number|null} quantity - Stock quantity (null removes quantity blocks)
  * @param {Object} settings - Store settings (currently unused, reserved for future)
+ * @param {Object} globalTranslations - Global translations object from TranslationContext
  * @returns {string} Processed label text
  *
  * @example
- * processLabel("In Stock, {only {quantity} {item} left}", 3, settings)
- * // "In Stock, only 3 items left"
+ * processLabel("In Stock, {only {quantity} {item} left}", 3, settings, translations)
+ * // "In Stock, only 3 items left" (or translated equivalent)
  *
  * @example
- * processLabel("In Stock, {only {quantity} {item} left}", 1, settings)
- * // "In Stock, only 1 item left"
+ * processLabel("In Stock, {only {quantity} {item} left}", 1, settings, translations)
+ * // "In Stock, only 1 item left" (or translated equivalent)
  *
  * @example
- * processLabel("In Stock, {only {quantity} {item} left}", null, settings)
+ * processLabel("In Stock, {only {quantity} {item} left}", null, settings, translations)
  * // "In Stock"
  * @private
  */
-function processLabel(label, quantity, settings) {
+function processLabel(label, quantity, settings, globalTranslations = null) {
   if (!label) return '';
 
   let processedLabel = label;
+
+  // Helper to get translated plural forms
+  const getPlural = (singular, plural) => {
+    if (globalTranslations && globalTranslations.common) {
+      const singularText = globalTranslations.common[singular];
+      const pluralText = globalTranslations.common[plural];
+
+      if (singularText && pluralText) {
+        return quantity === 1 ? singularText : pluralText;
+      }
+    }
+
+    // Fallback to English
+    const fallbacks = {
+      'item': quantity === 1 ? 'item' : 'items',
+      'unit': quantity === 1 ? 'unit' : 'units',
+      'piece': quantity === 1 ? 'piece' : 'pieces'
+    };
+    return fallbacks[singular] || '';
+  };
 
   // If quantity is null (infinite stock or hidden), remove all blocks containing {quantity}
   if (quantity === null) {
@@ -325,9 +346,9 @@ function processLabel(label, quantity, settings) {
         if (!isSinglePlaceholder && content.includes('{')) {
           const processed = content
             .replace(/\{quantity\}/gi, quantity)
-            .replace(/\{item\}/gi, quantity === 1 ? 'item' : 'items')
-            .replace(/\{unit\}/gi, quantity === 1 ? 'unit' : 'units')
-            .replace(/\{piece\}/gi, quantity === 1 ? 'piece' : 'pieces');
+            .replace(/\{item\}/gi, getPlural('item', 'items'))
+            .replace(/\{unit\}/gi, getPlural('unit', 'units'))
+            .replace(/\{piece\}/gi, getPlural('piece', 'pieces'));
 
           processedLabel = processedLabel.substring(0, start) + processed + processedLabel.substring(i + 1);
           i = start + processed.length - 1;
@@ -340,9 +361,9 @@ function processLabel(label, quantity, settings) {
   // Now replace all standalone placeholders
   processedLabel = processedLabel
     .replace(/\{quantity\}/gi, quantity)
-    .replace(/\{item\}/gi, quantity === 1 ? 'item' : 'items')
-    .replace(/\{unit\}/gi, quantity === 1 ? 'unit' : 'units')
-    .replace(/\{piece\}/gi, quantity === 1 ? 'piece' : 'pieces');
+    .replace(/\{item\}/gi, getPlural('item', 'items'))
+    .replace(/\{unit\}/gi, getPlural('unit', 'units'))
+    .replace(/\{piece\}/gi, getPlural('piece', 'pieces'));
 
   return processedLabel;
 }

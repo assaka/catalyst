@@ -2231,9 +2231,9 @@ export default function Translations() {
                           <div className="font-medium text-gray-900 mb-2">Available Placeholders</div>
                           <div className="space-y-1 text-xs">
                             <div><code className="bg-blue-100 px-1 rounded">{'{quantity}'}</code> → Stock number (5, 20, etc.)</div>
-                            <div><code className="bg-blue-100 px-1 rounded">{'{item}'}</code> → "item" or "items" (auto-plural)</div>
-                            <div><code className="bg-blue-100 px-1 rounded">{'{unit}'}</code> → "unit" or "units" (auto-plural)</div>
-                            <div><code className="bg-blue-100 px-1 rounded">{'{piece}'}</code> → "piece" or "pieces" (auto-plural)</div>
+                            <div><code className="bg-blue-100 px-1 rounded">{'{item}'}</code> → Translatable (common.item/common.items)</div>
+                            <div><code className="bg-blue-100 px-1 rounded">{'{unit}'}</code> → Translatable (common.unit/common.units)</div>
+                            <div><code className="bg-blue-100 px-1 rounded">{'{piece}'}</code> → Translatable (common.piece/common.pieces)</div>
                           </div>
                         </div>
 
