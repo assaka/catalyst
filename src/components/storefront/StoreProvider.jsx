@@ -128,11 +128,13 @@ const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 const cachedApiCall = async (key, apiCall, ttl = CACHE_DURATION_LONG) => {
   const now = Date.now();
   
-  // Force fresh calls for critical product APIs after database reset
-  const isCriticalProductCall = key.includes('featured-products') || key.includes('products-category');
+  // Force fresh calls for critical APIs after database reset or format changes
+  const isCriticalCall = key.includes('featured-products') ||
+                         key.includes('products-category') ||
+                         key.includes('categories-'); // Force fresh category fetches due to API format change
   
-  // Always check cache first (unless it's a critical product call)
-  if (apiCache.has(key) && !isCriticalProductCall) {
+  // Always check cache first (unless it's a critical call)
+  if (apiCache.has(key) && !isCriticalCall) {
     const { data, timestamp } = apiCache.get(key);
     console.log(`[CACHE] Cache HIT for key: ${key}, age: ${Math.round((now - timestamp) / 1000)}s, ttl: ${Math.round(ttl / 1000)}s`);
 
@@ -142,8 +144,8 @@ const cachedApiCall = async (key, apiCall, ttl = CACHE_DURATION_LONG) => {
       return Promise.resolve(data);
     }
     
-    // For critical product calls, don't return stale empty data
-    if (isCriticalProductCall && Array.isArray(data) && data.length === 0) {
+    // For critical calls, don't return stale empty data
+    if (isCriticalCall && Array.isArray(data) && data.length === 0) {
       // Don't return cached empty data, force fresh call below
     } else {
       // Data is stale but exists - return it immediately and refresh in background
@@ -175,8 +177,8 @@ const cachedApiCall = async (key, apiCall, ttl = CACHE_DURATION_LONG) => {
     console.error(`StoreProvider: API call failed for ${key}:`, error);
     console.error(`StoreProvider: Full error details:`, error.message, error.stack);
     
-    // Don't cache empty results for critical API calls like products
-    if (key.includes('featured-products') || key.includes('products-category')) {
+    // Don't cache empty results for critical API calls
+    if (key.includes('featured-products') || key.includes('products-category') || key.includes('categories-')) {
       console.error(`StoreProvider: Not caching empty result for critical API: ${key}`);
       throw error; // Let the component handle the error
     }
