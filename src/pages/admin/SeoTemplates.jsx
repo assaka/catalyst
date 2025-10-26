@@ -374,12 +374,21 @@ export default function SeoTemplates() {
 
             <div className="space-y-2">
               <Label htmlFor="meta-robots">Meta Robots</Label>
-              <Input
-                id="meta-robots"
+              <Select
                 value={formData.meta_robots}
-                onChange={(e) => handleInputChange('meta_robots', e.target.value)}
-                placeholder="index, follow"
-              />
+                onValueChange={(value) => handleInputChange('meta_robots', value)}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select meta robots directive" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="index, follow">index, follow (Default - Allow indexing and crawling)</SelectItem>
+                  <SelectItem value="noindex, nofollow">noindex, nofollow (Block indexing and crawling)</SelectItem>
+                  <SelectItem value="index, nofollow">index, nofollow (Allow indexing, block crawling)</SelectItem>
+                  <SelectItem value="noindex, follow">noindex, follow (Block indexing, allow crawling)</SelectItem>
+                  <SelectItem value="none">none (Same as noindex, nofollow)</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
 
             <div className="flex gap-2">
