@@ -269,7 +269,7 @@ export const cartConfig = {
                   <!-- Collapsible Discount Details -->
                   <div class="mt-2">
                     <div class="flex items-center gap-2 cursor-pointer hover:bg-green-100 py-1 px-2 rounded -mx-2" data-discount-toggle>
-                      <span class="text-xs text-green-700 font-medium">View eligible products</span>
+                      <span class="text-xs text-green-700 font-medium">{{t "discount.view_eligible_products"}}</span>
                       <svg class="h-3 w-3 text-green-600 transition-transform duration-200" data-discount-chevron fill="none" stroke="currentColor" viewBox="0 0 24 24" style="transform: rotate(0deg);">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
                       </svg>

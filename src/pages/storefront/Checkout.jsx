@@ -1987,7 +1987,7 @@ export default function Checkout() {
                         <Accordion type="single" collapsible className="w-full">
                           <AccordionItem value="discount-details" className="border-0">
                             <AccordionTrigger className="py-1 px-0 hover:no-underline text-xs text-green-700 font-medium">
-                              View eligible products
+                              {t('discount.view_eligible_products', 'View eligible products')}
                             </AccordionTrigger>
                             <AccordionContent className="px-0 pt-2 pb-0">
                               <div className="text-sm text-green-800 space-y-1">
