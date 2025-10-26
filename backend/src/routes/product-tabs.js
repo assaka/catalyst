@@ -37,11 +37,14 @@ router.get('/', async (req, res) => {
 
     const isPublicRequest = req.originalUrl.includes('/api/public/product-tabs');
 
+    // Build where clause - public requests only get active tabs
+    const whereClause = { store_id };
+    if (isPublicRequest) {
+      whereClause.is_active = true;
+    }
+
     // For public requests, return only current language. For authenticated requests, return all translations
-    const productTabs = await getProductTabsWithTranslations({
-      store_id,
-      is_active: true
-    }, lang, !isPublicRequest); // Pass true for authenticated requests to get all translations
+    const productTabs = await getProductTabsWithTranslations(whereClause, lang, !isPublicRequest); // Pass true for authenticated requests to get all translations
 
     console.log('📋 Product Tabs: Retrieved', productTabs.length, 'tabs for language:', lang);
     if (productTabs.length > 0) {
