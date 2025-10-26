@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { FileText, Plus, Trash2, Loader2, Info, ChevronDown, ChevronUp } from "lucide-react";
+import { FileText, Plus, Trash2, Loader2, Info, ChevronDown, ChevronUp, Edit, X } from "lucide-react";
 import { SeoTemplate } from "@/api/entities";
 import { useStoreSelection } from "@/contexts/StoreSelectionContext.jsx";
 import NoStoreSelected from "@/components/admin/NoStoreSelected";
@@ -19,6 +19,7 @@ export default function SeoTemplates() {
   const [saving, setSaving] = useState(false);
   const [flashMessage, setFlashMessage] = useState(null);
   const [showVariables, setShowVariables] = useState(false);
+  const [editingTemplate, setEditingTemplate] = useState(null);
 
   // Form state for new template
   const [formData, setFormData] = useState({
@@ -62,6 +63,41 @@ export default function SeoTemplates() {
     }
   };
 
+  const handleEditTemplate = (template) => {
+    setEditingTemplate(template);
+
+    // Populate form with template data
+    setFormData({
+      name: template.name || '',
+      type: template.type || '',
+      meta_title: template.template?.meta_title || template.meta_title || '',
+      meta_description: template.template?.meta_description || template.meta_description || '',
+      meta_keywords: template.template?.meta_keywords || template.meta_keywords || '',
+      og_title: template.template?.og_title || template.og_title || '',
+      og_description: template.template?.og_description || template.og_description || '',
+      twitter_title: template.template?.twitter_title || template.twitter_title || '',
+      twitter_description: template.template?.twitter_description || template.twitter_description || ''
+    });
+
+    // Scroll to form
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const handleCancelEdit = () => {
+    setEditingTemplate(null);
+    setFormData({
+      name: '',
+      type: '',
+      meta_title: '',
+      meta_description: '',
+      meta_keywords: '',
+      og_title: '',
+      og_description: '',
+      twitter_title: '',
+      twitter_description: ''
+    });
+  };
+
   const handleInputChange = (field, value) => {
     setFormData(prev => ({
       ...prev,
@@ -90,9 +126,6 @@ export default function SeoTemplates() {
 
     setSaving(true);
     try {
-      // Generate unique name if not provided
-      const timestamp = new Date().toISOString().slice(0, 19).replace('T', ' ');
-
       // Build template JSON from form fields
       const template = {
         meta_title: formData.meta_title,
@@ -104,16 +137,42 @@ export default function SeoTemplates() {
         twitter_description: formData.twitter_description
       };
 
-      const templateData = {
-        name: formData.name || `${formData.type} Template - ${timestamp}`,
-        type: formData.type,
-        template: template,
-        store_id: storeId
-      };
+      if (editingTemplate) {
+        // Update existing template
+        const templateData = {
+          name: formData.name || editingTemplate.name,
+          type: formData.type,
+          template: template,
+          store_id: storeId
+        };
 
-      await SeoTemplate.create(templateData);
+        await SeoTemplate.update(editingTemplate.id, templateData);
 
-      // Reset form
+        setFlashMessage({
+          type: 'success',
+          message: 'SEO template updated successfully'
+        });
+      } else {
+        // Create new template
+        const timestamp = new Date().toISOString().slice(0, 19).replace('T', ' ');
+
+        const templateData = {
+          name: formData.name || `${formData.type} Template - ${timestamp}`,
+          type: formData.type,
+          template: template,
+          store_id: storeId
+        };
+
+        await SeoTemplate.create(templateData);
+
+        setFlashMessage({
+          type: 'success',
+          message: 'SEO template added successfully'
+        });
+      }
+
+      // Reset form and editing state
+      setEditingTemplate(null);
       setFormData({
         name: '',
         type: '',
@@ -128,16 +187,11 @@ export default function SeoTemplates() {
 
       // Reload templates
       await loadTemplates();
-
-      setFlashMessage({
-        type: 'success',
-        message: 'SEO template added successfully'
-      });
     } catch (error) {
-      console.error('Error adding SEO template:', error);
+      console.error('Error saving SEO template:', error);
 
       // Extract error message from response
-      const errorMessage = error.response?.data?.message || error.message || 'Failed to add SEO template';
+      const errorMessage = error.response?.data?.message || error.message || 'Failed to save SEO template';
 
       setFlashMessage({
         type: 'error',
@@ -191,7 +245,7 @@ export default function SeoTemplates() {
 
       <Card>
         <CardHeader>
-          <CardTitle>Add New Template</CardTitle>
+          <CardTitle>{editingTemplate ? 'Edit Template' : 'Add New Template'}</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
@@ -365,19 +419,36 @@ export default function SeoTemplates() {
               />
             </div>
 
-            <Button onClick={handleAddTemplate} disabled={saving}>
-              {saving ? (
-                <>
-                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                  Adding...
-                </>
-              ) : (
-                <>
-                  <Plus className="h-4 w-4 mr-2" />
-                  Add Template
-                </>
+            <div className="flex gap-2">
+              <Button onClick={handleAddTemplate} disabled={saving}>
+                {saving ? (
+                  <>
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    {editingTemplate ? 'Updating...' : 'Adding...'}
+                  </>
+                ) : (
+                  <>
+                    {editingTemplate ? (
+                      <>
+                        <Edit className="h-4 w-4 mr-2" />
+                        Update Template
+                      </>
+                    ) : (
+                      <>
+                        <Plus className="h-4 w-4 mr-2" />
+                        Add Template
+                      </>
+                    )}
+                  </>
+                )}
+              </Button>
+              {editingTemplate && (
+                <Button variant="outline" onClick={handleCancelEdit} disabled={saving}>
+                  <X className="h-4 w-4 mr-2" />
+                  Cancel
+                </Button>
               )}
-            </Button>
+            </div>
           </div>
         </CardContent>
       </Card>
@@ -416,13 +487,22 @@ export default function SeoTemplates() {
                       </p>
                     )}
                   </div>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => handleDeleteTemplate(template.id)}
-                  >
-                    <Trash2 className="h-4 w-4 text-destructive" />
-                  </Button>
+                  <div className="flex gap-2">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => handleEditTemplate(template)}
+                    >
+                      <Edit className="h-4 w-4" />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => handleDeleteTemplate(template.id)}
+                    >
+                      <Trash2 className="h-4 w-4 text-destructive" />
+                    </Button>
+                  </div>
                 </div>
               ))}
             </div>
