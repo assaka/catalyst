@@ -56,6 +56,21 @@
           "items": {
             "type": "string"
           }
+        },
+        "attribute_conditions": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "attribute_code": {
+                "type": "string"
+              },
+              "attribute_value": {
+                "type": "string"
+              }
+            }
+          },
+          "description": "Optional conditions for specific attribute values"
         }
       }
     }

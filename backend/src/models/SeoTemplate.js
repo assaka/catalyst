@@ -38,8 +38,10 @@ const SeoTemplate = sequelize.define('SeoTemplate', {
     type: DataTypes.JSONB,
     defaultValue: {
       categories: [],
-      attribute_sets: []
-    }
+      attribute_sets: [],
+      attribute_conditions: []
+    },
+    comment: 'Optional conditions: categories, attribute_sets, attribute_conditions (specific attribute values)'
   },
   is_active: {
     type: DataTypes.BOOLEAN,
