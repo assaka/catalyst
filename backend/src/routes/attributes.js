@@ -230,22 +230,36 @@ router.put('/:id', async (req, res) => {
     const attribute = await Attribute.findByPk(req.params.id, {
       include: [{ model: Store, attributes: ['id', 'name', 'user_id'] }]
     });
-    
+
     if (!attribute) return res.status(404).json({ success: false, message: 'Attribute not found' });
-    
+
     if (req.user.role !== 'admin') {
       const { checkUserStoreAccess } = require('../utils/storeAccess');
       const access = await checkUserStoreAccess(req.user.id, attribute.Store.id);
-      
+
       if (!access) {
         return res.status(403).json({ success: false, message: 'Access denied' });
       }
     }
 
-    await attribute.update(req.body);
-    res.json({ success: true, message: 'Attribute updated successfully', data: attribute });
+    // Extract translations from request body
+    const { translations, ...attributeData } = req.body;
+
+    // Update attribute fields (excluding translations)
+    await attribute.update(attributeData);
+
+    // Save translations to normalized table if provided
+    if (translations && typeof translations === 'object') {
+      await saveAttributeTranslations(req.params.id, translations);
+    }
+
+    // Fetch updated attribute with translations
+    const updatedAttribute = await getAttributeWithValues(req.params.id);
+
+    res.json({ success: true, message: 'Attribute updated successfully', data: updatedAttribute });
   } catch (error) {
-    res.status(500).json({ success: false, message: 'Server error' });
+    console.error('❌ Update attribute error:', error);
+    res.status(500).json({ success: false, message: 'Server error', error: error.message });
   }
 });
 
@@ -368,8 +382,22 @@ router.put('/:attributeId/values/:valueId', async (req, res) => {
       }
     }
 
-    await value.update(req.body);
-    res.json({ success: true, data: value });
+    // Extract translations from request body
+    const { translations, ...valueData } = req.body;
+
+    // Update value fields (excluding translations)
+    await value.update(valueData);
+
+    // Save translations to normalized table if provided
+    if (translations && typeof translations === 'object') {
+      await saveAttributeValueTranslations(req.params.valueId, translations);
+    }
+
+    // Fetch updated value with translations
+    const updatedValues = await getAttributeValuesWithTranslations({ id: req.params.valueId });
+    const updatedValue = updatedValues[0] || value;
+
+    res.json({ success: true, data: updatedValue });
   } catch (error) {
     console.error('❌ Update attribute value error:', error);
     res.status(500).json({ success: false, error: error.message });
