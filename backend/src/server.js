@@ -69,6 +69,7 @@ const consentLogRoutes = require('./routes/consent-logs');
 const customOptionRuleRoutes = require('./routes/custom-option-rules');
 
 // Public route modules (lightweight, no auth)
+const storefrontBootstrapRoutes = require('./routes/storefront-bootstrap');
 const publicProductTabRoutes = require('./routes/publicProductTabs');
 const publicProductLabelRoutes = require('./routes/publicProductLabels');
 const publicAttributeRoutes = require('./routes/publicAttributes');
@@ -1510,6 +1511,7 @@ app.use('/auth', authRoutes); // Fallback for legacy paths
 
 // Public routes for guest access
 app.use('/api/public/auth', authRoutes); // Public auth endpoints (login, register, etc.)
+app.use('/api/public/storefront/bootstrap', storefrontBootstrapRoutes); // Unified storefront initialization endpoint
 app.use('/api/public/stores', storeRoutes);
 app.use('/api/public/products', publicProductRoutes);
 app.use('/api/public/categories', publicCategoryRoutes);
