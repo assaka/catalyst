@@ -61,17 +61,17 @@ const MediaBrowser = ({ isOpen, onClose, onInsert, allowMultiple = false, upload
   const loadFiles = async () => {
     try {
       setLoading(true);
-      
+
       // When uploadFolder is 'category', only show category images
       // Otherwise show all files for general media library
       let requestUrl = '/storage/list';
       let params = {};
-      
+
       if (uploadFolder === 'category') {
         params.folder = 'category';
       }
-      
-      const response = await apiClient.get(requestUrl, params);
+
+      const response = await apiClient.get(requestUrl, { params });
       
       if (response.success && response.data) {
         const rawFiles = response.data.files || [];
