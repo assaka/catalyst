@@ -341,3 +341,63 @@ export const useCart = (sessionId, userId, options = {}) => {
     ...options
   });
 };
+
+/**
+ * Hook to fetch category by slug with products
+ */
+export const useCategory = (slug, storeId, options = {}) => {
+  const language = getCurrentLanguage();
+
+  return useQuery({
+    queryKey: [...queryKeys.category.all, 'slug', slug, storeId, language],
+    queryFn: async () => {
+      const response = await fetch(
+        `/api/public/categories/by-slug/${encodeURIComponent(slug)}/full?store_id=${storeId}`,
+        {
+          headers: {
+            'X-Language': language
+          }
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error('Category not found');
+      }
+
+      const responseData = await response.json();
+      return responseData.data;
+    },
+    enabled: !!(slug && storeId),
+    staleTime: 120000, // 2 minutes - categories change moderately
+    gcTime: 300000, // 5 minutes cache
+    retry: 2,
+    ...options
+  });
+};
+
+/**
+ * Hook to fetch slot configuration for a page type
+ */
+export const useSlotConfiguration = (storeId, pageType, options = {}) => {
+  return useQuery({
+    queryKey: queryKeys.slot.config(storeId, pageType),
+    queryFn: async () => {
+      const { default: slotConfigurationService } = await import('@/services/slotConfigurationService');
+      const response = await slotConfigurationService.getPublishedConfiguration(storeId, pageType);
+
+      if (response.success && response.data &&
+          response.data.configuration &&
+          response.data.configuration.slots &&
+          Object.keys(response.data.configuration.slots).length > 0) {
+        return response.data.configuration;
+      }
+
+      return null; // No published config
+    },
+    enabled: !!(storeId && pageType),
+    staleTime: 300000, // 5 minutes - slot configs rarely change
+    gcTime: 600000, // 10 minutes cache
+    retry: 2,
+    ...options
+  });
+};
