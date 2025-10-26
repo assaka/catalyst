@@ -4,6 +4,7 @@ const {
   getProductTabsWithTranslations,
   getProductTabWithAllTranslations
 } = require('../utils/productTabHelpers');
+const { applyCacheHeaders } = require('../utils/cacheUtils');
 const router = express.Router();
 
 // @route   GET /api/public/product-tabs
@@ -41,6 +42,9 @@ router.get('/', async (req, res) => {
         content: productTabs[0].content?.substring(0, 50) + '...'
       });
     }
+
+    // Apply cache headers based on store settings
+    await applyCacheHeaders(res, store_id);
 
     // Return just the array for public requests (for compatibility with StorefrontBaseEntity)
     res.json(productTabs);

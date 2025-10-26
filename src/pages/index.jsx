@@ -15,6 +15,7 @@ export { default as ShippingMethods } from './admin/ShippingMethods';
 export { default as PaymentMethods } from './admin/PaymentMethods';
 export { default as DeliverySettings } from './admin/DeliverySettings';
 export { default as StockSettings } from './admin/StockSettings';
+export { default as Cache } from './admin/Cache';
 export { default as CmsBlocks } from './admin/CmsBlocks';
 export { default as CmsPages } from './admin/CmsPages';
 export { default as FileLibrary } from './admin/FileLibrary';

@@ -5,6 +5,7 @@ const {
   getAttributesWithTranslations,
   getAttributeValuesWithTranslations
 } = require('../utils/attributeHelpers');
+const { applyCacheHeaders } = require('../utils/cacheUtils');
 const router = express.Router();
 
 // @route   GET /api/public/attributes
@@ -88,6 +89,12 @@ router.get('/', async (req, res) => {
 
       return attrData;
     }));
+
+    // Apply cache headers based on store settings
+    const { store_id } = req.query;
+    if (store_id) {
+      await applyCacheHeaders(res, store_id);
+    }
 
     res.json({
       success: true,

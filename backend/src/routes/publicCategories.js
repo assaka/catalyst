@@ -6,6 +6,7 @@ const {
   getCategoriesWithTranslations,
   getCategoryById
 } = require('../utils/categoryHelpers');
+const { applyCacheHeaders } = require('../utils/cacheUtils');
 const router = express.Router();
 
 // @route   GET /api/public/categories
@@ -67,6 +68,11 @@ router.get('/', async (req, res) => {
       console.log('⚠️ Categories from DB:', categories.length);
       console.log('⚠️ After filtering:', filteredCategories.length);
       console.log('⚠️ Where clause:', JSON.stringify(where, null, 2));
+    }
+
+    // Apply cache headers based on store settings
+    if (store_id) {
+      await applyCacheHeaders(res, store_id);
     }
 
     // Return just the array for public requests (for compatibility)

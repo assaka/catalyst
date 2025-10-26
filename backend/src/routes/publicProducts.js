@@ -4,6 +4,7 @@ const { Op } = require('sequelize');
 const { getLanguageFromRequest } = require('../utils/languageUtils');
 const { applyProductTranslationsToMany, applyProductTranslations } = require('../utils/productHelpers');
 const { getAttributesWithTranslations, getAttributeValuesWithTranslations } = require('../utils/attributeHelpers');
+const { applyCacheHeaders } = require('../utils/cacheUtils');
 const router = express.Router();
 
 // @route   GET /api/public/products
@@ -226,6 +227,11 @@ router.get('/', async (req, res) => {
       return productData;
     });
 
+    // Add cache headers based on store settings
+    if (store_id) {
+      await applyCacheHeaders(res, store_id);
+    }
+
     // Return just the array for public requests (for compatibility)
     res.json(productsWithAttributes);
   } catch (error) {
@@ -352,6 +358,12 @@ router.get('/:id', async (req, res) => {
 
     // Remove the raw attributeValues array
     delete productData.attributeValues;
+
+    // Add cache headers based on store settings
+    const storeId = product.store_id;
+    if (storeId) {
+      await applyCacheHeaders(res, storeId);
+    }
 
     res.json({
       success: true,
@@ -606,7 +618,9 @@ router.get('/by-slug/:slug/full', async (req, res) => {
       return false;
     });
 
-    // Return combined response
+    // Return combined response with cache headers based on store settings
+    await applyCacheHeaders(res, store_id);
+
     res.json({
       product: productData,
       productTabs: productTabs || [],

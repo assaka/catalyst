@@ -308,6 +308,7 @@ function App() {
           <Route path="/admin/product-tabs" element={<PageWrapper Component={Pages.ProductTabs} pageName="PRODUCT_TABS" />} />
           <Route path="/admin/product-labels" element={<PageWrapper Component={Pages.ProductLabels} pageName="PRODUCT_LABELS" />} />
           <Route path="/admin/stock-settings" element={<PageWrapper Component={Pages.StockSettings} pageName="STOCK_SETTINGS" />} />
+          <Route path="/admin/cache" element={<PageWrapper Component={Pages.Cache} pageName="CACHE" />} />
           <Route path="/admin/orders" element={<PageWrapper Component={Pages.Orders} pageName="ORDERS" />} />
           <Route path="/admin/customers" element={<PageWrapper Component={Pages.Customers} pageName="CUSTOMERS" />} />
           <Route path="/admin/tax" element={<PageWrapper Component={Pages.Tax} pageName="TAX" />} />

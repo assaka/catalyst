@@ -1,6 +1,7 @@
 const express = require('express');
 const { getLanguageFromRequest } = require('../utils/languageUtils');
 const { getProductLabelsWithTranslations } = require('../utils/productLabelHelpers');
+const { applyCacheHeaders } = require('../utils/cacheUtils');
 
 const router = express.Router();
 
@@ -34,6 +35,9 @@ router.get('/', async (req, res) => {
     // Public requests only get current language translations
     const labels = await getProductLabelsWithTranslations(whereClause, lang, false); // false = only current language
     console.log('🏷️ Product Labels (Public): Retrieved', labels.length, 'labels for language:', lang, labels.slice(0, 2));
+
+    // Apply cache headers based on store settings
+    await applyCacheHeaders(res, store_id);
 
     // Return just the array for public requests (for compatibility with StorefrontBaseEntity)
     res.json(labels);
