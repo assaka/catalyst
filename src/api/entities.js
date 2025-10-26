@@ -73,7 +73,6 @@ class BaseEntity {
   // Update record by ID
   async update(id, data) {
     const url = `${this.endpoint}/${id}`;
-    console.log('🔍 BaseEntity.update() - Endpoint:', this.endpoint, 'ID:', id, 'Full URL:', url);
     return await apiClient.put(url, data);;
   }
 
@@ -797,32 +796,19 @@ class CategoryService extends BaseEntity {
       if (hasToken) {
         try {
           // Try authenticated API first for admin users
-          console.log('CategoryService.findAll() - Using authenticated API:', url);
           response = await apiClient.get(url);
-          console.log('CategoryService.findAll() - Response structure:', {
-            hasSuccess: !!response?.success,
-            hasData: !!response?.data,
-            hasCategories: !!response?.data?.categories,
-            categoriesLength: response?.data?.categories?.length,
-            firstCategoryHasTranslations: response?.data?.categories?.[0]?.translations ?
-              Object.keys(response.data.categories[0].translations) : null,
-            isArray: Array.isArray(response)
-          });
 
           // Handle paginated admin response: {success: true, data: {categories: [...], pagination: {...}}}
           if (response && response.success && response.data) {
             if (Array.isArray(response.data.categories)) {
-              console.log(`CategoryService.findAll() - Returning ${response.data.categories.length} categories from admin API`);
               return response.data.categories;
             } else if (Array.isArray(response.data)) {
-              console.log(`CategoryService.findAll() - Returning ${response.data.length} categories (data is array)`);
               return response.data;
             }
           }
 
           // Handle direct array response
           const result = Array.isArray(response) ? response : [];
-          console.log(`CategoryService.findAll() - Returning ${result.length} categories (direct array)`);
           return result;
         } catch (authError) {
           // If authenticated request fails (e.g., 401), fall back to public API
@@ -835,13 +821,11 @@ class CategoryService extends BaseEntity {
         }
       } else {
         // No token, use public API
-        console.log('CategoryService.findAll() - Using public API (no token):', url);
         response = await apiClient.publicRequest('GET', url);
       }
 
       // Ensure response is always an array
       const result = Array.isArray(response) ? response : [];
-      console.log(`CategoryService.findAll() - Returning ${result.length} categories from public API`);
       return result;
     } catch (error) {
       console.error(`CategoryService.findAll() error:`, error.message, error);
@@ -874,12 +858,6 @@ class CategoryService extends BaseEntity {
       const queryString = new URLSearchParams(params).toString();
       const url = `${this.endpoint}?${queryString}`;
 
-      console.log('🔍 CategoryService.findPaginated() - Request:', {
-        url,
-        params,
-        queryString
-      });
-
       const hasToken = apiClient.getToken();
       if (!hasToken) {
         // No auth, use public API (without translations)
@@ -897,17 +875,6 @@ class CategoryService extends BaseEntity {
 
       // Use authenticated API
       const response = await apiClient.get(url);
-
-      console.log('🔍 CategoryService.findPaginated() - Response:', {
-        hasSuccess: !!response?.success,
-        categoriesCount: response?.data?.categories?.length,
-        firstCategory: response?.data?.categories?.[0] ? {
-          id: response.data.categories[0].id,
-          name: response.data.categories[0].name,
-          hasTranslations: !!response.data.categories[0].translations,
-          translationKeys: Object.keys(response.data.categories[0].translations || {})
-        } : null
-      });
 
       // Handle paginated admin response
       if (response && response.success && response.data) {
@@ -1005,30 +972,19 @@ class CmsPageService extends BaseEntity {
       const queryString = new URLSearchParams(enhancedParams).toString();
       const url = queryString ? `cms-pages?${queryString}` : 'cms-pages';
 
-      console.log('🔍 CmsPageService.filter() - Fetching CMS pages (admin) with params:', enhancedParams);
-
       const response = await apiClient.get(url);
-      console.log('CmsPageService.filter() - Response structure:', {
-        hasSuccess: !!response?.success,
-        hasData: !!response?.data,
-        hasPages: !!response?.data?.pages,
-        pagesLength: response?.data?.pages?.length
-      });
 
       // Handle paginated admin response: {success: true, data: {pages: [...], pagination: {...}}}
       if (response && response.success && response.data) {
         if (Array.isArray(response.data.pages)) {
-          console.log(`CmsPageService.filter() - Returning ${response.data.pages.length} pages from admin API`);
           return response.data.pages;
         } else if (Array.isArray(response.data)) {
-          console.log(`CmsPageService.filter() - Returning ${response.data.length} pages`);
           return response.data;
         }
       }
 
       // Handle direct array response
       const result = Array.isArray(response) ? response : [];
-      console.log(`CmsPageService.filter() - Returning ${result.length} pages`);
       return result;
     } catch (error) {
       console.error(`❌ CmsPageService.filter() error:`, error.message);
@@ -1057,30 +1013,19 @@ class CmsBlockService extends BaseEntity {
       const queryString = new URLSearchParams(enhancedParams).toString();
       const url = queryString ? `cms-blocks?${queryString}` : 'cms-blocks';
 
-      console.log('🔍 CmsBlockService.filter() - Fetching CMS blocks (admin) with params:', params);
-
       const response = await apiClient.get(url);
-      console.log('CmsBlockService.filter() - Response structure:', {
-        hasSuccess: !!response?.success,
-        hasData: !!response?.data,
-        hasBlocks: !!response?.data?.blocks,
-        blocksLength: response?.data?.blocks?.length
-      });
 
       // Handle paginated admin response: {success: true, data: {blocks: [...], pagination: {...}}}
       if (response && response.success && response.data) {
         if (Array.isArray(response.data.blocks)) {
-          console.log(`CmsBlockService.filter() - Returning ${response.data.blocks.length} blocks from admin API`);
           return response.data.blocks;
         } else if (Array.isArray(response.data)) {
-          console.log(`CmsBlockService.filter() - Returning ${response.data.length} blocks`);
           return response.data;
         }
       }
 
       // Handle direct array response
       const result = Array.isArray(response) ? response : [];
-      console.log(`CmsBlockService.filter() - Returning ${result.length} blocks`);
       return result;
     } catch (error) {
       console.error(`❌ CmsBlockService.filter() error:`, error.message);
@@ -1108,15 +1053,8 @@ class StorefrontCmsPageService extends BaseEntity {
       const queryString = new URLSearchParams(params).toString();
       const endpoint = queryString ? `cms-pages?${queryString}` : 'cms-pages';
 
-      console.log('🔍 StorefrontCmsPageService.findAll() - Fetching pages (public) with params:', params);
-
       // Use storefront API client (public route with X-Language header)
       const response = await storefrontApiClient.getPublic(endpoint);
-
-      console.log('📥 StorefrontCmsPageService.findAll() - Response:', {
-        isArray: Array.isArray(response),
-        length: response?.length
-      });
 
       // Public route returns array directly
       return Array.isArray(response) ? response : [];
@@ -1137,15 +1075,8 @@ class StorefrontCmsBlockService extends BaseEntity {
       const queryString = new URLSearchParams(params).toString();
       const endpoint = queryString ? `cms-blocks?${queryString}` : 'cms-blocks';
 
-      console.log('🔍 StorefrontCmsBlockService.findAll() - Fetching blocks (public) with params:', params);
-
       // Use storefront API client (public route with X-Language header)
       const response = await storefrontApiClient.getPublic(endpoint);
-
-      console.log('📥 StorefrontCmsBlockService.findAll() - Response:', {
-        isArray: Array.isArray(response),
-        length: response?.length
-      });
 
       // Public route returns array directly
       return Array.isArray(response) ? response : [];
@@ -1335,22 +1266,9 @@ class PaymentMethodService extends BaseEntity {
       const queryString = new URLSearchParams(params).toString();
       const url = queryString ? `payment-methods?${queryString}` : 'payment-methods';
 
-      console.log('🔍 PaymentMethodService.filter() - Fetching payment methods with params:', params);
-
       // Use public request for payment method filtering (no authentication required for storefront)
       // This will automatically send X-Language header from localStorage
       const response = await apiClient.publicRequest('GET', url);
-
-      console.log('📥 PaymentMethodService.filter() - Received payment methods:', response?.length || 0);
-      if (response && response.length > 0) {
-        console.log('📝 PaymentMethodService.filter() - First payment method:', {
-          code: response[0].code,
-          name: response[0].name,
-          has_name: !!response[0].name,
-          name_value: response[0].name,
-          name_type: typeof response[0].name
-        });
-      }
 
       // Ensure response is always an array
       const result = Array.isArray(response) ? response : [];
