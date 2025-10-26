@@ -161,30 +161,39 @@ export default function Layout({ children, currentPageName }) {
   useEffect(() => {
     const loadData = async () => {
         await loadUserAndHandleCredits(); // Combined function
-        await loadDynamicNavigation();
+
+        // Only load dynamic navigation for admin pages
+        const isStorefrontPath = location.pathname.startsWith('/public/');
+        const isCustomerPath = location.pathname.startsWith('/customerdashboard');
+        const isLandingPath = location.pathname === '/' || location.pathname === '/landing';
+
+        // Load navigation only if we're in admin area
+        if (!isStorefrontPath && !isCustomerPath && !isLandingPath) {
+          await loadDynamicNavigation();
+        }
     }
     loadData();
-    
+
     // Listen for user data ready event
     const handleUserDataReady = () => {
       loadUserAndHandleCredits();
     };
-    
+
     // Add global click detector to debug logout issues
     const globalClickHandler = (e) => {
       if (e.target.textContent?.includes('Logout') || e.target.closest('[data-testid="logout"]')) {
         // Logout click detected
       }
     };
-    
+
     document.addEventListener('click', globalClickHandler, true);
     window.addEventListener('userDataReady', handleUserDataReady);
-    
+
     return () => {
       document.removeEventListener('click', globalClickHandler, true);
       window.removeEventListener('userDataReady', handleUserDataReady);
     };
-  }, []);
+  }, [location.pathname]);
 
   const loadUserAndHandleCredits = async () => {
     try {

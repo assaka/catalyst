@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { Store } from '@/api/entities';
+import { useLocation } from 'react-router-dom';
 
 const StoreSelectionContext = createContext();
 
@@ -12,6 +13,7 @@ export const useStoreSelection = () => {
 };
 
 export const StoreSelectionProvider = ({ children }) => {
+  const location = useLocation();
   const [availableStores, setAvailableStores] = useState([]);
   const [selectedStore, setSelectedStore] = useState(() => {
     // Try to restore from localStorage immediately
@@ -24,10 +26,21 @@ export const StoreSelectionProvider = ({ children }) => {
   });
   const [loading, setLoading] = useState(true);
 
-  // Load available stores on mount
+  // Check if we're on an admin page
+  const isAdminPage = () => {
+    const path = location.pathname;
+    return path.startsWith('/admin') || path.startsWith('/editor') || path.startsWith('/plugins');
+  };
+
+  // Load available stores on mount only if on admin pages
   useEffect(() => {
-    loadStores();
-  }, []);
+    if (isAdminPage()) {
+      loadStores();
+    } else {
+      // Not on admin page, skip loading
+      setLoading(false);
+    }
+  }, [location.pathname]);
 
   // Listen for logout events and reset context
   useEffect(() => {
