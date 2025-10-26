@@ -370,6 +370,10 @@ export default function Translations() {
       const response = await api.get(`/attributes?store_id=${storeId}&limit=1000`);
 
       if (response && response.success && response.data) {
+        console.log('📊 Attributes response:', response.data.attributes?.slice(0, 2));
+        if (response.data.attributes?.length > 0) {
+          console.log('📊 First attribute translations:', response.data.attributes[0].translations);
+        }
         setProductAttributes(response.data.attributes || []);
       }
     } catch (error) {
