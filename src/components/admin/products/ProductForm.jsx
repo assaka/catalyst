@@ -704,7 +704,6 @@ export default function ProductForm({ product, categories, stores, taxes, attrib
     try {
       const payload = {
         name: formData.name,
-        slug: slugify(formData.name),
         sku: formData.sku,
         barcode: formData.barcode || null,
         description: formData.description,
@@ -737,7 +736,7 @@ export default function ProductForm({ product, categories, stores, taxes, attrib
         configurable_attributes: Array.isArray(formData.configurable_attributes) ? formData.configurable_attributes : [], // Configurable attributes
         attributes: formData.attributes || {},
         translations: formData.translations || {},
-        slug: formData.seo.url_key || "", // IMPORTANT: Update the slug field with url_key
+        slug: formData.seo.url_key || "", // Use SEO url_key as the slug
         seo: {
           meta_title: formData.seo.meta_title || "",
           meta_description: formData.seo.meta_description || "",

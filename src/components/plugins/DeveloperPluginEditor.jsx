@@ -32,10 +32,11 @@ import {
 } from 'lucide-react';
 import SaveButton from '@/components/ui/save-button';
 import CodeEditor from '@/components/editor/ai-context/CodeEditor';
-import PluginAIAssistant from './PluginAIAssistant';
+import { useAIStudio, AI_STUDIO_MODES } from '@/contexts/AIStudioContext';
 import apiClient from '@/api/client';
 
 const DeveloperPluginEditor = ({ plugin, onSave, onClose, onSwitchMode, initialContext }) => {
+  const { openAI } = useAIStudio();
   const [fileTree, setFileTree] = useState([]);
   const [selectedFile, setSelectedFile] = useState(null);
   const [fileContent, setFileContent] = useState('');
@@ -643,16 +644,31 @@ const DeveloperPluginEditor = ({ plugin, onSave, onClose, onSwitchMode, initialC
       </div>
 
       {/* AI Assistant Sidebar */}
-      <div className="w-96 bg-white rounded-lg shadow-lg overflow-hidden">
-        <PluginAIAssistant
-          mode="developer"
-          onCodeGenerated={handleAICodeGenerated}
-          currentContext={{
-            plugin,
-            currentFile: selectedFile,
-            currentCode: fileContent
-          }}
-        />
+      <div className="w-96 bg-white rounded-lg shadow-lg overflow-hidden flex flex-col">
+        <div className="p-6 flex-1 flex flex-col items-center justify-center bg-gradient-to-br from-blue-50 to-purple-50">
+          <div className="w-16 h-16 mb-4 rounded-2xl bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center shadow-lg">
+            <Sparkles className="w-8 h-8 text-white" />
+          </div>
+          <h3 className="text-lg font-semibold text-gray-900 mb-2">AI Studio</h3>
+          <p className="text-sm text-gray-600 text-center mb-6">
+            Get AI assistance for plugin development
+          </p>
+          <Button
+            onClick={() => openAI(AI_STUDIO_MODES.PLUGIN, {
+              plugin,
+              currentFile: selectedFile,
+              currentCode: fileContent,
+              mode: 'developer'
+            })}
+            className="w-full bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700"
+          >
+            <Wand2 className="w-4 h-4 mr-2" />
+            Open AI Studio
+          </Button>
+          <p className="text-xs text-gray-500 mt-4">
+            Press <kbd className="px-2 py-1 bg-white rounded text-xs border">Ctrl+K</kbd> anytime
+          </p>
+        </div>
       </div>
       </div>
 
