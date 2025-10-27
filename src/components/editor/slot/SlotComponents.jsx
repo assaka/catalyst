@@ -2150,6 +2150,74 @@ export function ResetLayoutModal({
   );
 }
 
+// DestroyLayoutModal Component
+export function DestroyLayoutModal({
+  isOpen,
+  onClose,
+  onConfirm,
+  isDestroying = false
+}) {
+  if (!isOpen) return null;
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+      <div className="bg-white rounded-lg shadow-xl p-6 w-96">
+        <div className="flex justify-between items-center mb-4">
+          <h3 className="text-lg font-semibold text-red-600">Destroy Layout</h3>
+          <Button
+            onClick={onClose}
+            variant="ghost"
+            size="sm"
+            className="h-6 w-6 p-0"
+          >
+            ×
+          </Button>
+        </div>
+
+        <div className="space-y-4">
+          <div className="flex items-center gap-3 p-3 bg-red-50 border border-red-200 rounded">
+            <div className="text-red-600">⚠️</div>
+            <div>
+              <p className="font-medium text-red-800">This action cannot be undone</p>
+              <p className="text-sm text-red-600">All current layout changes AND all version history will be permanently deleted.</p>
+              <p className="text-sm text-red-700 font-medium mt-1">A fresh default configuration will be created.</p>
+              <p className="text-sm text-amber-600 font-medium mt-1">Only affects the current page - other pages remain unchanged.</p>
+            </div>
+          </div>
+
+          <div className="flex gap-3 pt-2">
+            <Button
+              onClick={onClose}
+              variant="outline"
+              className="flex-1"
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={() => {
+                onConfirm();
+                onClose();
+              }}
+              variant="destructive"
+              className="flex-1"
+              disabled={isDestroying}
+            >
+              {isDestroying ? (
+                <>
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  Destroying...
+                </>
+              ) : (
+                'Destroy Layout'
+              )}
+            </Button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // FilePickerModalWrapper Component
 export function FilePickerModalWrapper({
   isOpen,

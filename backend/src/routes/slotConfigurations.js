@@ -521,38 +521,76 @@ router.post('/create-draft-from-published', authMiddleware, async (req, res) => 
 router.delete('/draft/:configId', authMiddleware, async (req, res) => {
   try {
     const { configId } = req.params;
-    
+
     const draft = await SlotConfiguration.findByPk(configId);
-    
+
     if (!draft) {
       return res.status(404).json({
         success: false,
         error: 'Draft not found'
       });
     }
-    
+
     if (draft.status !== 'draft') {
       return res.status(400).json({
         success: false,
         error: 'Can only delete draft configurations'
       });
     }
-    
+
     if (draft.user_id !== req.user.id) {
       return res.status(403).json({
         success: false,
         error: 'Unauthorized to delete this draft'
       });
     }
-    
+
     await draft.destroy();
-    
+
     res.json({
       success: true,
       message: 'Draft deleted successfully'
     });
   } catch (error) {
     console.error('Error deleting draft:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
+// Destroy layout - reset to default and delete all versions
+router.post('/destroy/:storeId/:pageType?', authMiddleware, async (req, res) => {
+  try {
+    const { storeId, pageType = 'cart' } = req.params;
+    const userId = req.user.id;
+
+    console.log(`🗑️ Destroying layout for store ${storeId}, page ${pageType}`);
+
+    // Delete all configurations (drafts and published versions) for this store/page
+    const deletedCount = await SlotConfiguration.destroy({
+      where: {
+        store_id: storeId,
+        page_type: pageType
+      }
+    });
+
+    console.log(`🗑️ Deleted ${deletedCount} configurations`);
+
+    // Create a fresh draft with default configuration
+    const newDraft = await SlotConfiguration.upsertDraft(userId, storeId, pageType);
+
+    console.log(`✅ Created fresh draft: ${newDraft.id}`);
+
+    res.json({
+      success: true,
+      message: `Layout destroyed successfully. Deleted ${deletedCount} versions and created fresh draft.`,
+      data: newDraft,
+      deletedCount
+    });
+  } catch (error) {
+    console.error('Error destroying layout:', error);
     res.status(500).json({
       success: false,
       error: error.message

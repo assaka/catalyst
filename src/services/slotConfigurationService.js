@@ -457,6 +457,17 @@ class SlotConfigurationService {
     }
     return 'default';
   }
+
+  // Destroy layout - reset to default and delete all versions
+  async destroyLayout(storeId, pageType = 'cart') {
+    try {
+      const response = await apiClient.post(`${API_BASE}/destroy/${storeId}/${pageType}`);
+      return response;
+    } catch (error) {
+      console.error('Error destroying layout:', error);
+      throw error;
+    }
+  }
 }
 
 export default new SlotConfigurationService();

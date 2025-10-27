@@ -12,11 +12,13 @@ import {
   History,
   Eye,
   X,
-  Undo
+  Undo,
+  Trash2
 } from 'lucide-react';
 import slotConfigurationService from '@/services/slotConfigurationService';
 import { toast } from 'sonner';
 import { formatDistanceToNow } from 'date-fns';
+import { DestroyLayoutModal } from './SlotComponents';
 
 const PublishPanel = ({
   draftConfig,
@@ -33,6 +35,8 @@ const PublishPanel = ({
   const [revertingVersionId, setRevertingVersionId] = useState(null);
   const [latestPublished, setLatestPublished] = useState(null);
   const [undoingRevert, setUndoingRevert] = useState(false);
+  const [showDestroyModal, setShowDestroyModal] = useState(false);
+  const [isDestroying, setIsDestroying] = useState(false);
 
   // Load version history
   const loadVersionHistory = async () => {
@@ -157,6 +161,34 @@ const PublishPanel = ({
       toast.error('Failed to undo revert');
     } finally {
       setUndoingRevert(false);
+    }
+  };
+
+  // Destroy layout - reset to default and delete all versions
+  const handleDestroy = async () => {
+    if (!storeId) return;
+
+    setIsDestroying(true);
+    try {
+      const response = await slotConfigurationService.destroyLayout(storeId, pageType);
+      if (response.success) {
+        toast.success(`Layout destroyed successfully. Deleted ${response.deletedCount} versions and created fresh draft.`);
+
+        // Clear version history
+        setVersionHistory([]);
+
+        // Notify parent component to reload draft
+        if (onReverted) {
+          onReverted(response.data);
+        }
+      } else {
+        toast.error(response.error || 'Failed to destroy layout');
+      }
+    } catch (error) {
+      console.error('Error destroying layout:', error);
+      toast.error('Failed to destroy layout');
+    } finally {
+      setIsDestroying(false);
     }
   };
 
@@ -342,72 +374,87 @@ const PublishPanel = ({
               <p className="text-sm text-gray-500">Loading version history...</p>
             </div>
           ) : versionHistory.length > 0 ? (
-            <div className="divide-y divide-gray-100">
-              {versionHistory.map((version, index) => {
-                const isLatest = index === 0;
-                const isReverted = version.status === 'reverted';
-                const isCurrent = draftConfig?.parent_version_id === version.id;
+            <>
+              <div className="divide-y divide-gray-100">
+                {versionHistory.map((version, index) => {
+                  const isLatest = index === 0;
+                  const isReverted = version.status === 'reverted';
+                  const isCurrent = draftConfig?.parent_version_id === version.id;
 
-                return (
-                  <div
-                    key={version.id}
-                    className={`p-3 hover:bg-gray-50 ${isReverted ? 'opacity-60' : ''}`}
-                  >
-                    <div className="flex items-start justify-between">
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2 mb-1">
-                          <span className="text-sm font-medium">
-                            Version {version.version_number}
-                          </span>
-                          {isLatest && !isReverted && (
-                            <span className="text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded">
-                              Latest
+                  return (
+                    <div
+                      key={version.id}
+                      className={`p-3 hover:bg-gray-50 ${isReverted ? 'opacity-60' : ''}`}
+                    >
+                      <div className="flex items-start justify-between">
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2 mb-1">
+                            <span className="text-sm font-medium">
+                              Version {version.version_number}
                             </span>
-                          )}
-                          {isReverted && (
-                            <span className="text-xs bg-red-100 text-red-700 px-2 py-0.5 rounded">
-                              Reverted
-                            </span>
-                          )}
-                          {isCurrent && (
-                            <span className="text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded">
-                              Current Base
-                            </span>
-                          )}
+                            {isLatest && !isReverted && (
+                              <span className="text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded">
+                                Latest
+                              </span>
+                            )}
+                            {isReverted && (
+                              <span className="text-xs bg-red-100 text-red-700 px-2 py-0.5 rounded">
+                                Reverted
+                              </span>
+                            )}
+                            {isCurrent && (
+                              <span className="text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded">
+                                Current Base
+                              </span>
+                            )}
+                          </div>
+                          <div className="text-xs text-gray-500">
+                            {version.published_at && (
+                              <div>
+                                Published {formatDistanceToNow(new Date(version.published_at), { addSuffix: true })}
+                              </div>
+                            )}
+                          </div>
                         </div>
-                        <div className="text-xs text-gray-500">
-                          {version.published_at && (
-                            <div>
-                              Published {formatDistanceToNow(new Date(version.published_at), { addSuffix: true })}
-                            </div>
-                          )}
-                        </div>
+
+                        {/* Revert button */}
+                        {!isReverted && !isLatest && (
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => handleRevert(version.id, version.version_number)}
+                            disabled={revertingVersionId === version.id}
+                            className="ml-2"
+                          >
+                            {revertingVersionId === version.id ? (
+                              <Loader2 className="w-3 h-3 animate-spin" />
+                            ) : (
+                              <>
+                                <RotateCcw className="w-3 h-3 mr-1" />
+                                Revert
+                              </>
+                            )}
+                          </Button>
+                        )}
                       </div>
-
-                      {/* Revert button */}
-                      {!isReverted && !isLatest && (
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => handleRevert(version.id, version.version_number)}
-                          disabled={revertingVersionId === version.id}
-                          className="ml-2"
-                        >
-                          {revertingVersionId === version.id ? (
-                            <Loader2 className="w-3 h-3 animate-spin" />
-                          ) : (
-                            <>
-                              <RotateCcw className="w-3 h-3 mr-1" />
-                              Revert
-                            </>
-                          )}
-                        </Button>
-                      )}
                     </div>
-                  </div>
-                );
-              })}
-            </div>
+                  );
+                })}
+              </div>
+
+              {/* Destroy Layout Button - Below versions */}
+              <div className="p-4 border-t border-gray-200 flex justify-center">
+                <Button
+                  onClick={() => setShowDestroyModal(true)}
+                  variant="outline"
+                  size="sm"
+                  className="border-red-300 text-red-700 hover:bg-red-50"
+                >
+                  <Trash2 className="w-4 h-4 mr-2" />
+                  Destroy Layout
+                </Button>
+              </div>
+            </>
           ) : (
             <div className="p-8 text-center">
               <Clock className="w-8 h-8 text-gray-300 mx-auto mb-2" />
@@ -436,6 +483,14 @@ const PublishPanel = ({
           </div>
         </div>
       )}
+
+      {/* Destroy Layout Modal */}
+      <DestroyLayoutModal
+        isOpen={showDestroyModal}
+        onClose={() => setShowDestroyModal(false)}
+        onConfirm={handleDestroy}
+        isDestroying={isDestroying}
+      />
     </div>
   );
 };
