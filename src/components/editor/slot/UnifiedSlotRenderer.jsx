@@ -652,10 +652,10 @@ export function UnifiedSlotRenderer({
             const newStyles = {
               ...updatedSlots[slot.id].styles,
               width: `${newSize.width}${newSize.widthUnit || 'px'}`,
-              // Don't save explicit height for text elements with dynamic fontSize (let it flow naturally)
-              ...(newSize.fontSize === undefined && newSize.height !== 'auto' ?
-                { height: `${newSize.height}${newSize.heightUnit || 'px'}` } :
-                {}),
+              // Save height if explicitly set (not auto)
+              ...(newSize.height !== 'auto' ? {
+                height: `${newSize.height}${newSize.heightUnit || 'px'}`
+              } : {}),
               // Save fontSize for text elements when it's being dynamically calculated
               ...(newSize.fontSize !== undefined && { fontSize: `${newSize.fontSize}px` })
             };

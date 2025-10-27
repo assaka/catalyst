@@ -431,18 +431,18 @@ const ResizeWrapper = ({
           widthUnit = '%';
         }
 
-        // Calculate font-size for text elements
-        let fontSize = undefined;
-        if (isText && widthUnit === 'px' && widthValue < 200) {
-          fontSize = Math.max(10, Math.min(16, widthValue * 0.08));
-        }
-
-        // Calculate height - set to auto for text elements with dynamic fontSize to prevent conflicts
+        // Calculate height
         let heightValue = newHeight;
         let heightUnit = 'px';
-        if (newHeight <= 30 || fontSize !== undefined) {
+        if (newHeight <= 30) {
           heightValue = 'auto';
           heightUnit = '';
+        }
+
+        // Calculate font-size for text elements (only when height is auto/natural)
+        let fontSize = undefined;
+        if (isText && widthUnit === 'px' && widthValue < 200 && heightValue === 'auto') {
+          fontSize = Math.max(10, Math.min(16, widthValue * 0.08));
         }
 
         const newSize = {
@@ -546,7 +546,10 @@ const ResizeWrapper = ({
     width: (isButton || isImageElement) ? '100%' :
            (isTextElement && size.width !== 'auto') ? `${size.width}${size.widthUnit || 'px'}` :
            'fit-content',
-    height: 'fit-content',
+    // During resize with explicit height, lock wrapper height to prevent shifts
+    height: (isResizing && size.height !== 'auto' && size.height) ?
+            `${size.height}${size.heightUnit || 'px'}` :
+            'fit-content',
     // Remove maxWidth constraint for text elements to allow free resizing beyond parent
     // Only apply maxWidth constraint for non-button and non-text elements
     ...(isButton || isTextElement ? { maxWidth: 'none', overflow: 'visible' } : { maxWidth: '100%' }),
@@ -743,8 +746,16 @@ const ResizeWrapper = ({
                 (size.width !== 'auto' && size.widthUnit !== 'auto') ?
                 { width: `${size.width}${size.widthUnit || 'px'}` } : {}),
             ...(size.height !== 'auto' && size.height && {
-              minHeight: `${size.height}${size.heightUnit || 'px'}`,
-              height: isSvgElement(children) ? `${size.height}${size.heightUnit || 'px'}` : undefined
+              // During resize, use explicit height for text elements to prevent reflow shifts
+              // Otherwise use minHeight to allow natural growth
+              ...(isResizing && isTextElement ? {
+                height: `${size.height}${size.heightUnit || 'px'}`,
+                minHeight: `${size.height}${size.heightUnit || 'px'}`
+              } : isSvgElement(children) ? {
+                height: `${size.height}${size.heightUnit || 'px'}`
+              } : {
+                minHeight: `${size.height}${size.heightUnit || 'px'}`
+              })
             }),
             boxSizing: 'border-box',
             display: children.props.style?.display || 'inline-block',
