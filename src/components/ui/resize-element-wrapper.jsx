@@ -485,6 +485,9 @@ const ResizeWrapper = ({
       });
     };
 
+    // CRITICAL: Store handle element reference for cleanup in handleMouseUp
+    const handleElement = e.currentTarget;
+
     const handleMouseUp = (upEvent) => {
       console.log('🏁 [RESIZE DEBUG] Drag completed', { frames: frameCount });
 
@@ -508,10 +511,11 @@ const ResizeWrapper = ({
         setSize(finalSize);
       }
 
-      // Release pointer capture
-      if (upEvent.pointerId !== undefined && e.currentTarget) {
+      // Release pointer capture using the stored handleElement
+      if (upEvent.pointerId !== undefined && handleElement) {
         try {
-          e.currentTarget.releasePointerCapture(upEvent.pointerId);
+          handleElement.releasePointerCapture(upEvent.pointerId);
+          console.log('🔓 [RESIZE DEBUG] Pointer released from handle element');
         } catch (err) {
           console.warn('Could not release pointer', err);
         }
@@ -519,14 +523,16 @@ const ResizeWrapper = ({
 
       setIsResizing(false);
 
-      // Remove event listeners
-      e.currentTarget.removeEventListener('pointermove', handleMouseMove);
-      e.currentTarget.removeEventListener('pointerup', handleMouseUp);
-      e.currentTarget.removeEventListener('pointercancel', handleMouseUp);
+      // CRITICAL: Remove event listeners from the stored handleElement
+      if (handleElement) {
+        handleElement.removeEventListener('pointermove', handleMouseMove);
+        handleElement.removeEventListener('pointerup', handleMouseUp);
+        handleElement.removeEventListener('pointercancel', handleMouseUp);
+        console.log('👋 [RESIZE DEBUG] Event listeners removed from handle element');
+      }
     };
 
-    // CRITICAL: Attach to handle element using pointer events, not document with mouse events
-    const handleElement = e.currentTarget;
+    // Attach event listeners to handle element
     handleElement.addEventListener('pointermove', handleMouseMove);
     handleElement.addEventListener('pointerup', handleMouseUp);
     handleElement.addEventListener('pointercancel', handleMouseUp);
