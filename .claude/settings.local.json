@@ -3,7 +3,8 @@
   "permissions": {
     "allow": [
       "Bash(node check-plugin-schema.js)",
-      "Bash(git log --oneline --grep=\"plugin\\|refactor\\|normaliz\" -i -20)"
+      "Bash(git log --oneline --grep=\"plugin\\|refactor\\|normaliz\" -i -20)",
+      "Bash(git push:*)"
     ],
     "deny": [],
     "ask": [],
