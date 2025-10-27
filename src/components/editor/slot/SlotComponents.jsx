@@ -132,11 +132,22 @@ export function GridResizeHandle({ onResize, currentValue, maxValue = 12, minVal
     }
 
     const handleMouseMove = (e) => {
-      if (!isDraggingRef.current) return;
+      console.log('🖱️ [GRID RESIZE DEBUG] MouseMove fired!', {
+        isDragging: isDraggingRef.current,
+        clientX: e.clientX,
+        clientY: e.clientY
+      });
+
+      if (!isDraggingRef.current) {
+        console.log('⚠️ [GRID RESIZE DEBUG] MouseMove - not dragging, returning');
+        return;
+      }
 
       const deltaX = e.clientX - startXRef.current;
       const deltaY = e.clientY - startYRef.current;
       const startValue = startValueRef.current;
+
+      console.log('📏 [GRID RESIZE DEBUG] MouseMove - calculating delta', { deltaX, deltaY });
 
       // Calculate and apply resize in real-time for visual feedback
       let newValue;
@@ -245,8 +256,8 @@ export function GridResizeHandle({ onResize, currentValue, maxValue = 12, minVal
       setMouseOffset(0);
       document.body.style.userSelect = '';
       document.body.style.cursor = '';
-      document.removeEventListener('mousemove', handleMouseMove);
-      document.removeEventListener('mouseup', handleMouseUp);
+      document.removeEventListener('mousemove', handleMouseMove, true);
+      document.removeEventListener('mouseup', handleMouseUp, true);
       mouseMoveHandlerRef.current = null;
       mouseUpHandlerRef.current = null;
 
@@ -260,19 +271,20 @@ export function GridResizeHandle({ onResize, currentValue, maxValue = 12, minVal
     mouseMoveHandlerRef.current = handleMouseMove;
     mouseUpHandlerRef.current = handleMouseUp;
 
-    document.addEventListener('mousemove', handleMouseMove);
-    document.addEventListener('mouseup', handleMouseUp);
+    // Use capture phase to ensure we get events before any other handlers
+    document.addEventListener('mousemove', handleMouseMove, true);
+    document.addEventListener('mouseup', handleMouseUp, true);
 
-    console.log('👂 [GRID RESIZE DEBUG] Event listeners attached (mousemove, mouseup)');
+    console.log('👂 [GRID RESIZE DEBUG] Event listeners attached (mousemove, mouseup) with capture=true');
   };
 
   useEffect(() => {
     return () => {
       if (mouseMoveHandlerRef.current) {
-        document.removeEventListener('mousemove', mouseMoveHandlerRef.current);
+        document.removeEventListener('mousemove', mouseMoveHandlerRef.current, true);
       }
       if (mouseUpHandlerRef.current) {
-        document.removeEventListener('mouseup', mouseUpHandlerRef.current);
+        document.removeEventListener('mouseup', mouseUpHandlerRef.current, true);
       }
     };
   }, []);
