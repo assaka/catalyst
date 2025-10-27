@@ -205,21 +205,22 @@ export function GridResizeHandle({ onResize, currentValue, maxValue = 12, minVal
         visualOffset = heightDelta;
       }
 
-      // Store pending update instead of applying immediately
-      pendingUpdate = {
-        newValue: direction === 'horizontal' ? newColSpan : newHeight,
-        visualOffset,
-        isHorizontal: direction === 'horizontal'
-      };
+      const finalValue = direction === 'horizontal' ? newColSpan : newHeight;
 
-      // Cancel any pending animation frame
-      if (animationFrameId) {
-        cancelAnimationFrame(animationFrameId);
-      }
+      // Apply visual offset immediately for responsive feedback
+      setMouseOffset(visualOffset);
 
-      // Schedule update for next frame using RAF for smooth performance
-      animationFrameId = requestAnimationFrame(() => {
-        if (pendingUpdate) {
+      // Only call onResize if the value actually changed
+      if (finalValue !== lastValueRef.current) {
+        lastValueRef.current = finalValue;
+
+        // Cancel any pending animation frame
+        if (animationFrameId) {
+          cancelAnimationFrame(animationFrameId);
+        }
+
+        // Use RAF to batch the actual resize callback for smooth performance
+        animationFrameId = requestAnimationFrame(() => {
           const rafStartTime = performance.now();
           const currentTime = performance.now();
 
@@ -227,36 +228,29 @@ export function GridResizeHandle({ onResize, currentValue, maxValue = 12, minVal
           const timeSinceLastUpdate = currentTime - lastFrameTime;
           const currentFPS = timeSinceLastUpdate > 0 ? Math.round(1000 / timeSinceLastUpdate) : 0;
 
-          console.log('🎨 [GRID RESIZE DEBUG] Applying update via RAF', {
+          console.log('🎨 [GRID RESIZE DEBUG] Applying resize via RAF', {
             frameCount,
-            value: pendingUpdate.newValue,
+            value: finalValue,
             fps: currentFPS,
             direction
           });
 
-          // Only call onResize if the value actually changed
-          if (pendingUpdate.newValue !== lastValueRef.current) {
-            lastValueRef.current = pendingUpdate.newValue;
-            onResizeRef.current(pendingUpdate.newValue);
-          }
-
-          setMouseOffset(pendingUpdate.visualOffset);
+          onResizeRef.current(finalValue);
 
           const rafEndTime = performance.now();
           const rafDuration = rafEndTime - rafStartTime;
           totalFrameTime += rafDuration;
 
-          console.log('⚡ [GRID RESIZE DEBUG] RAF update completed', {
+          console.log('⚡ [GRID RESIZE DEBUG] RAF resize completed', {
             rafDuration: rafDuration.toFixed(2) + 'ms',
             frameCount,
             fps: currentFPS
           });
 
           lastFrameTime = currentTime;
-          pendingUpdate = null;
           frameCount++;
-        }
-      });
+        });
+      }
 
       const moveEndTime = performance.now();
       const moveDuration = moveEndTime - moveStartTime;
