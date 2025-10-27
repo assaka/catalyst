@@ -109,6 +109,12 @@ export function GridResizeHandle({ onResize, currentValue, maxValue = 12, minVal
       currentTarget: e.currentTarget
     });
 
+    // CRITICAL: Immediately notify parent that handle is active
+    // This prevents GridColumn dragStart from firing
+    if (onHoverChange) {
+      onHoverChange(true);
+    }
+
     setIsDragging(true);
     isDraggingRef.current = true;
     handleElementRef.current = e.currentTarget;
@@ -288,22 +294,32 @@ export function GridResizeHandle({ onResize, currentValue, maxValue = 12, minVal
       draggable={false}
       onMouseDown={handleMouseDown}
       onMouseEnter={() => {
+        console.log('🔵 [GRID RESIZE DEBUG] Handle hover enter', { direction });
         setIsHovered(true);
         onHoverChange?.(true);
       }}
       onMouseLeave={() => {
+        console.log('🔵 [GRID RESIZE DEBUG] Handle hover leave', { direction });
         setIsHovered(false);
         onHoverChange?.(false);
       }}
       onDragStart={(e) => {
         // Prevent any drag operations on the handle itself
+        console.log('🚫 [GRID RESIZE DEBUG] Preventing dragstart on handle');
         e.preventDefault();
         e.stopPropagation();
+        e.stopImmediatePropagation();
         return false;
+      }}
+      onPointerDown={(e) => {
+        // Extra layer of prevention
+        console.log('👆 [GRID RESIZE DEBUG] Pointer down on handle');
+        e.stopPropagation();
       }}
       style={{
         zIndex: 9999,
         pointerEvents: 'all', // Ensure handle captures events
+        touchAction: 'none', // Prevent touch scroll during drag
         transform: isDragging
           ? (isHorizontal
               ? `translate(${mouseOffset}px, -50%)`
@@ -495,6 +511,14 @@ export function GridColumn({
   const handleDragStart = useCallback((e) => {
     if (mode !== 'edit') return;
 
+    // CRITICAL: Prevent drag if clicking on resize handle
+    if (isOverResizeHandle || isResizingSlot) {
+      console.log('🚫 [GRID RESIZE DEBUG] Preventing container drag - resize handle active');
+      e.preventDefault();
+      e.stopPropagation();
+      return false;
+    }
+
     e.stopPropagation();
     setIsDragging(true);
     e.dataTransfer.setData('text/plain', slotId);
@@ -543,7 +567,7 @@ export function GridColumn({
         document.body.removeChild(dragImage);
       }
     }, 100);
-  }, [slotId, mode]);
+  }, [slotId, mode, isOverResizeHandle, isResizingSlot, setCurrentDragInfo, slot?.parentId]);
 
   const handleDragEnd = useCallback((e) => {
     e.stopPropagation();
