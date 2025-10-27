@@ -2075,8 +2075,8 @@ const EditorSidebar = ({
               </div>
             </SectionHeader>
 
-            {/* Advanced Section */}
-            <SectionHeader title="Advanced" section="advanced">
+            {/* Border Section */}
+            <SectionHeader title="Border" section="border">
               <div className="space-y-3">
                 {/* Border Controls */}
                 <div>
