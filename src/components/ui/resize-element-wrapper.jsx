@@ -92,6 +92,7 @@ const ResizeWrapper = ({
   const [performanceStats, setPerformanceStats] = useState({ fps: 0, frameTime: 0 });
   const wrapperRef = useRef(null);
   const perfStatsRef = useRef({ frameCount: 0, lastUpdate: performance.now() });
+  const saveTimeoutRef = useRef(null);
   
   // Helper to check if element is an SVG or icon component
   const isSvgElement = (element) => {
@@ -260,6 +261,15 @@ const ResizeWrapper = ({
       observer.disconnect();
     };
   }, [disabled, isTextElement, size.width, size.height, size.heightUnit, onResize]);
+
+  // Cleanup timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (saveTimeoutRef.current) {
+        clearTimeout(saveTimeoutRef.current);
+      }
+    };
+  }, []);
 
   const handleMouseDown = useCallback((e) => {
     if (disabled) return;
@@ -432,11 +442,19 @@ const ResizeWrapper = ({
 
         console.log('✅ [RESIZE] Applying size', newSize);
 
-        // Apply update
+        // Apply update to visual immediately
         setSize(newSize);
-        if (onResize) {
-          onResize(newSize);
+
+        // Debounce save callback - only call after 1 second of no changes
+        if (saveTimeoutRef.current) {
+          clearTimeout(saveTimeoutRef.current);
         }
+        saveTimeoutRef.current = setTimeout(() => {
+          if (onResize) {
+            console.log('💾 [RESIZE] Saving after 1s delay', newSize);
+            onResize(newSize);
+          }
+        }, 1000);
 
         // Update FPS counter
         const timeSinceLastUpdate = currentTime - perfStatsRef.current.lastUpdate;
@@ -457,6 +475,18 @@ const ResizeWrapper = ({
       // Cancel any pending RAF
       if (animationFrameId) {
         cancelAnimationFrame(animationFrameId);
+      }
+
+      // Clear debounce timer and save immediately on mouse up
+      if (saveTimeoutRef.current) {
+        clearTimeout(saveTimeoutRef.current);
+        saveTimeoutRef.current = null;
+      }
+
+      // Save final size immediately on release
+      if (onResize && size) {
+        console.log('💾 [RESIZE] Saving final size on mouse up', size);
+        onResize(size);
       }
 
       // Release pointer capture
@@ -685,15 +715,13 @@ const ResizeWrapper = ({
 
           return {
             ...stylesWithoutWidth,
-            // For text elements, always use fit-content (never apply saved width)
-            // For elements with w-fit class that haven't been resized, use fit-content
-            // For other elements, apply calculated width if available
+            // Apply calculated width if available
             // Don't apply width if disabled
             ...(disabled ? {} :
-                isTextElement ? { width: 'fit-content' } :
                 hasWFitClass && size.width === 'auto' ? { width: 'fit-content' } :
                 (size.width !== 'auto' && size.widthUnit !== 'auto') ?
-                { width: `${size.width}${size.widthUnit || 'px'}` } : {}),
+                { width: `${size.width}${size.widthUnit || 'px'}` } :
+                isTextElement ? { width: 'fit-content' } : {}),
             ...(size.height !== 'auto' && size.height && {
               minHeight: `${size.height}${size.heightUnit || 'px'}`,
               height: isSvgElement(children) ? `${size.height}${size.heightUnit || 'px'}` : undefined
