@@ -2,13 +2,13 @@
 const express = require('express');
 const router = express.Router();
 const aiService = require('../services/AIService');
-const { authenticateToken } = require('../middleware/auth');
+const { authMiddleware } = require('../middleware/auth');
 
 /**
  * POST /api/ai/generate
  * Generate AI response with credit deduction
  */
-router.post('/generate', authenticateToken, async (req, res) => {
+router.post('/generate', authMiddleware, async (req, res) => {
   try {
     const {
       operationType,
@@ -77,7 +77,7 @@ router.post('/generate', authenticateToken, async (req, res) => {
  * POST /api/ai/generate/stream
  * Stream AI response with credit deduction
  */
-router.post('/generate/stream', authenticateToken, async (req, res) => {
+router.post('/generate/stream', authMiddleware, async (req, res) => {
   try {
     const {
       operationType,
@@ -144,7 +144,7 @@ router.post('/generate/stream', authenticateToken, async (req, res) => {
  * GET /api/ai/cost/:operationType
  * Get cost for an operation type
  */
-router.get('/cost/:operationType', authenticateToken, async (req, res) => {
+router.get('/cost/:operationType', authMiddleware, async (req, res) => {
   try {
     const { operationType } = req.params;
     const cost = aiService.getOperationCost(operationType);
@@ -167,7 +167,7 @@ router.get('/cost/:operationType', authenticateToken, async (req, res) => {
  * GET /api/ai/credits
  * Get user's remaining credits
  */
-router.get('/credits', authenticateToken, async (req, res) => {
+router.get('/credits', authMiddleware, async (req, res) => {
   try {
     const userId = req.user.id;
     const credits = await aiService.getRemainingCredits(userId);
@@ -189,7 +189,7 @@ router.get('/credits', authenticateToken, async (req, res) => {
  * POST /api/ai/check-credits
  * Check if user has sufficient credits for an operation
  */
-router.post('/check-credits', authenticateToken, async (req, res) => {
+router.post('/check-credits', authMiddleware, async (req, res) => {
   try {
     const { operationType } = req.body;
     const userId = req.user.id;
@@ -220,7 +220,7 @@ router.post('/check-credits', authenticateToken, async (req, res) => {
  * GET /api/ai/usage-history
  * Get user's AI usage history
  */
-router.get('/usage-history', authenticateToken, async (req, res) => {
+router.get('/usage-history', authMiddleware, async (req, res) => {
   try {
     const userId = req.user.id;
     const limit = parseInt(req.query.limit) || 50;
@@ -250,7 +250,7 @@ router.get('/usage-history', authenticateToken, async (req, res) => {
  * POST /api/ai/plugin/generate
  * Generate a plugin with RAG context
  */
-router.post('/plugin/generate', authenticateToken, async (req, res) => {
+router.post('/plugin/generate', authMiddleware, async (req, res) => {
   try {
     const { prompt, category, storeId } = req.body;
     const userId = req.user.id;
@@ -296,7 +296,7 @@ router.post('/plugin/generate', authenticateToken, async (req, res) => {
  * POST /api/ai/plugin/modify
  * Modify an existing plugin
  */
-router.post('/plugin/modify', authenticateToken, async (req, res) => {
+router.post('/plugin/modify', authMiddleware, async (req, res) => {
   try {
     const { prompt, existingCode, pluginSlug } = req.body;
     const userId = req.user.id;
@@ -341,7 +341,7 @@ router.post('/plugin/modify', authenticateToken, async (req, res) => {
  * POST /api/ai/layout/generate
  * Generate layout config
  */
-router.post('/layout/generate', authenticateToken, async (req, res) => {
+router.post('/layout/generate', authMiddleware, async (req, res) => {
   try {
     const { prompt, configType } = req.body;
     const userId = req.user.id;
@@ -386,7 +386,7 @@ router.post('/layout/generate', authenticateToken, async (req, res) => {
  * POST /api/ai/translate
  * Translate content
  */
-router.post('/translate', authenticateToken, async (req, res) => {
+router.post('/translate', authMiddleware, async (req, res) => {
   try {
     const { content, targetLanguages } = req.body;
     const userId = req.user.id;
@@ -432,7 +432,7 @@ router.post('/translate', authenticateToken, async (req, res) => {
  * Translate entities (products, categories, CMS, etc.) using natural language
  * Example: "Translate all products to French and German"
  */
-router.post('/translate-entities', authenticateToken, async (req, res) => {
+router.post('/translate-entities', authMiddleware, async (req, res) => {
   try {
     const { prompt, storeId } = req.body;
     const userId = req.user.id;
@@ -520,7 +520,7 @@ User request: ${prompt}`,
  * Conversational AI interface - determines intent and executes
  * Like Bolt, Lovable, v0 - user chats naturally
  */
-router.post('/chat', authenticateToken, async (req, res) => {
+router.post('/chat', authMiddleware, async (req, res) => {
   try {
     const { message, conversationHistory, storeId } = req.body;
     const userId = req.user.id;
@@ -681,7 +681,7 @@ Previous conversation: ${JSON.stringify(conversationHistory?.slice(-3) || [])}`,
  * POST /api/ai/code/patch
  * Generate code patch
  */
-router.post('/code/patch', authenticateToken, async (req, res) => {
+router.post('/code/patch', authMiddleware, async (req, res) => {
   try {
     const { prompt, sourceCode, filePath } = req.body;
     const userId = req.user.id;
