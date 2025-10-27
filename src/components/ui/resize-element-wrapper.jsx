@@ -93,6 +93,7 @@ const ResizeWrapper = ({
   const wrapperRef = useRef(null);
   const perfStatsRef = useRef({ frameCount: 0, lastUpdate: performance.now() });
   const saveTimeoutRef = useRef(null);
+  const latestSizeRef = useRef(size); // Track latest calculated size for mouseup
   
   // Helper to check if element is an SVG or icon component
   const isSvgElement = (element) => {
@@ -207,11 +208,13 @@ const ResizeWrapper = ({
         const newWidth = Math.round(naturalPercentage * 10) / 10;
         const newWidthUnit = '%';
 
-        setSize(prev => ({
-          ...prev,
+        const newSize = {
+          ...size,
           width: newWidth,
           widthUnit: newWidthUnit
-        }));
+        };
+        setSize(newSize);
+        latestSizeRef.current = newSize;
       }
     }
   }, [disabled, naturalSize.width, size.width, children, className, isTextElement]);
@@ -232,11 +235,13 @@ const ResizeWrapper = ({
         if (currentWidth !== 'auto' && parentRect.width > 0) {
           const maxAllowedWidth = parentRect.width - 10;
           if (currentWidth > maxAllowedWidth) {
-            setSize(prevSize => ({
-              ...prevSize,
+            const newSize = {
+              ...size,
               width: maxAllowedWidth,
               widthUnit: 'px'
-            }));
+            };
+            setSize(newSize);
+            latestSizeRef.current = newSize;
 
             if (onResize) {
               onResize({
@@ -450,6 +455,9 @@ const ResizeWrapper = ({
 
         console.log('✅ [RESIZE] Applying size', newSize);
 
+        // Store latest size in ref for immediate access during mouseup
+        latestSizeRef.current = newSize;
+
         // Apply update to visual immediately
         setSize(newSize);
 
@@ -491,10 +499,13 @@ const ResizeWrapper = ({
         saveTimeoutRef.current = null;
       }
 
-      // Save final size immediately on release
-      if (onResize && size) {
-        console.log('💾 [RESIZE] Saving final size on mouse up', size);
-        onResize(size);
+      // Save final size immediately on release using the latest calculated value from ref
+      const finalSize = latestSizeRef.current;
+      if (onResize && finalSize) {
+        console.log('💾 [RESIZE] Saving final size on mouse up', finalSize);
+        onResize(finalSize);
+        // Update state to match the saved value to prevent position shifts
+        setSize(finalSize);
       }
 
       // Release pointer capture

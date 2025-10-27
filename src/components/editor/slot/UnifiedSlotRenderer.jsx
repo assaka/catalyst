@@ -442,8 +442,8 @@ export function UnifiedSlotRenderer({
   // Config for renderCondition support
   slotConfig = null
 }) {
-  // Get translation function
-  const { t } = useTranslation();
+  // Get translation function and translations data
+  const { t, translations: contextTranslations, currentLanguage } = useTranslation();
 
   /**
    * processTranslation - Detects and translates content if it's a translation key
@@ -561,6 +561,20 @@ export function UnifiedSlotRenderer({
   // Extract full settings object - keep ui_translations for template processing
   const fullSettings = productData.settings || categoryData?.settings || cartData?.settings || loginData?.settings || accountData?.settings || {};
 
+  // Add translations from TranslationContext to settings for {{t "key"}} processing
+  // variableProcessor expects ui_translations in format: { en: { common: { my_cart: "My Cart" } } }
+  if (contextTranslations && Object.keys(contextTranslations).length > 0) {
+    if (!fullSettings.ui_translations) {
+      fullSettings.ui_translations = {};
+    }
+    // Add current language translations
+    fullSettings.ui_translations[currentLanguage] = contextTranslations;
+    // Also add as 'en' if not already present (for fallback)
+    if (currentLanguage !== 'en' && !fullSettings.ui_translations.en) {
+      fullSettings.ui_translations.en = contextTranslations;
+    }
+  }
+
   const variableContext = {
     product: productData.product || (context === 'editor' ? generateDemoData('product', {}).product : null),
     products: formattedProducts, // Use formatted products for category templates
@@ -638,7 +652,9 @@ export function UnifiedSlotRenderer({
             const newStyles = {
               ...updatedSlots[slot.id].styles,
               width: `${newSize.width}${newSize.widthUnit || 'px'}`,
-              height: newSize.height !== 'auto' ? `${newSize.height}${newSize.heightUnit || 'px'}` : 'auto'
+              height: newSize.height !== 'auto' ? `${newSize.height}${newSize.heightUnit || 'px'}` : 'auto',
+              // Save fontSize for text elements when it's being dynamically calculated
+              ...(newSize.fontSize !== undefined && { fontSize: `${newSize.fontSize}px` })
             };
 
             updatedSlots[slot.id] = {
