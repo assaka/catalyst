@@ -182,56 +182,178 @@ class AIServiceClient {
     }
   }
 
-  // Specific operation helpers
+  // ========================================
+  // SPECIALIZED OPERATION HELPERS
+  // ========================================
 
   /**
-   * Generate plugin code
+   * Generate plugin with RAG context
+   * @param {string} prompt - What the plugin should do
+   * @param {object} options - category, storeId, etc.
    */
-  async generatePlugin(prompt, metadata = {}) {
-    return this.generate('plugin-generation', prompt, {
-      systemPrompt: 'You are an expert JavaScript/React plugin developer. Generate clean, production-ready plugin code.',
-      metadata: { ...metadata, type: 'plugin' }
-    });
+  async generatePlugin(prompt, options = {}) {
+    try {
+      const response = await apiClient.post('/ai/plugin/generate', {
+        prompt,
+        category: options.category,
+        storeId: options.storeId
+      });
+
+      if (response.success) {
+        return {
+          success: true,
+          plugin: response.plugin,
+          usage: response.usage,
+          creditsDeducted: response.creditsDeducted
+        };
+      } else {
+        throw new Error(response.message || 'Plugin generation failed');
+      }
+    } catch (error) {
+      console.error('Plugin Generation Error:', error);
+
+      if (error.response?.data?.code === 'INSUFFICIENT_CREDITS') {
+        throw new Error('Insufficient credits for plugin generation');
+      }
+
+      throw error;
+    }
   }
 
   /**
    * Modify existing plugin
+   * @param {string} prompt - What to change
+   * @param {string} existingCode - Current plugin code
+   * @param {string} pluginSlug - Plugin identifier
    */
-  async modifyPlugin(prompt, existingCode, metadata = {}) {
-    return this.generate('plugin-modification', prompt, {
-      systemPrompt: `You are an expert JavaScript/React plugin developer. Modify the existing plugin code according to the user's request.\n\nExisting Code:\n${existingCode}`,
-      metadata: { ...metadata, type: 'plugin-modification' }
-    });
-  }
+  async modifyPlugin(prompt, existingCode, pluginSlug) {
+    try {
+      const response = await apiClient.post('/ai/plugin/modify', {
+        prompt,
+        existingCode,
+        pluginSlug
+      });
 
-  /**
-   * Translate content
-   */
-  async translateContent(content, targetLanguages, metadata = {}) {
-    return this.generate('translation', `Translate the following content to ${targetLanguages.join(', ')}:\n\n${content}`, {
-      systemPrompt: 'You are an expert translator. Provide accurate, culturally appropriate translations.',
-      metadata: { ...metadata, type: 'translation', targetLanguages }
-    });
+      if (response.success) {
+        return {
+          success: true,
+          plugin: response.plugin,
+          usage: response.usage,
+          creditsDeducted: response.creditsDeducted
+        };
+      } else {
+        throw new Error(response.message || 'Plugin modification failed');
+      }
+    } catch (error) {
+      console.error('Plugin Modification Error:', error);
+
+      if (error.response?.data?.code === 'INSUFFICIENT_CREDITS') {
+        throw new Error('Insufficient credits for plugin modification');
+      }
+
+      throw error;
+    }
   }
 
   /**
    * Generate layout config
+   * @param {string} prompt - What layout to generate
+   * @param {string} configType - homepage, product, category, etc.
    */
-  async generateLayout(prompt, configType, metadata = {}) {
-    return this.generate('layout-generation', prompt, {
-      systemPrompt: `You are an expert frontend developer. Generate a ${configType} layout configuration following the project's structure.`,
-      metadata: { ...metadata, type: 'layout', configType }
-    });
+  async generateLayout(prompt, configType) {
+    try {
+      const response = await apiClient.post('/ai/layout/generate', {
+        prompt,
+        configType
+      });
+
+      if (response.success) {
+        return {
+          success: true,
+          config: response.config,
+          usage: response.usage,
+          creditsDeducted: response.creditsDeducted
+        };
+      } else {
+        throw new Error(response.message || 'Layout generation failed');
+      }
+    } catch (error) {
+      console.error('Layout Generation Error:', error);
+
+      if (error.response?.data?.code === 'INSUFFICIENT_CREDITS') {
+        throw new Error('Insufficient credits for layout generation');
+      }
+
+      throw error;
+    }
+  }
+
+  /**
+   * Translate content
+   * @param {string} content - Content to translate
+   * @param {array} targetLanguages - ['fr', 'de', 'es']
+   */
+  async translateContent(content, targetLanguages) {
+    try {
+      const response = await apiClient.post('/ai/translate', {
+        content,
+        targetLanguages
+      });
+
+      if (response.success) {
+        return {
+          success: true,
+          translations: response.translations,
+          usage: response.usage,
+          creditsDeducted: response.creditsDeducted
+        };
+      } else {
+        throw new Error(response.message || 'Translation failed');
+      }
+    } catch (error) {
+      console.error('Translation Error:', error);
+
+      if (error.response?.data?.code === 'INSUFFICIENT_CREDITS') {
+        throw new Error('Insufficient credits for translation');
+      }
+
+      throw error;
+    }
   }
 
   /**
    * Generate code patch
+   * @param {string} prompt - What to change
+   * @param {string} sourceCode - Current code
+   * @param {string} filePath - File being edited
    */
-  async generateCodePatch(prompt, sourceCode, filePath, metadata = {}) {
-    return this.generate('code-patch', prompt, {
-      systemPrompt: `You are an expert code editor. Generate RFC 6902 JSON patches for safe code modifications.\n\nFile: ${filePath}\n\nSource Code:\n${sourceCode}`,
-      metadata: { ...metadata, type: 'code-patch', filePath }
-    });
+  async generateCodePatch(prompt, sourceCode, filePath) {
+    try {
+      const response = await apiClient.post('/ai/code/patch', {
+        prompt,
+        sourceCode,
+        filePath
+      });
+
+      if (response.success) {
+        return {
+          success: true,
+          patch: response.patch,
+          usage: response.usage,
+          creditsDeducted: response.creditsDeducted
+        };
+      } else {
+        throw new Error(response.message || 'Code patch generation failed');
+      }
+    } catch (error) {
+      console.error('Code Patch Error:', error);
+
+      if (error.response?.data?.code === 'INSUFFICIENT_CREDITS') {
+        throw new Error('Insufficient credits for code patch generation');
+      }
+
+      throw error;
+    }
   }
 }
 

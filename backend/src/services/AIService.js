@@ -1,10 +1,12 @@
 // backend/src/services/AIService.js
 const Anthropic = require('@anthropic-ai/sdk');
 const { sequelize } = require('../database/connection');
+const aiContextService = require('./aiContextService'); // RAG system
 
 /**
  * Centralized AI Service
  * Handles all AI model interactions, credit management, and usage tracking
+ * Integrates with RAG (Retrieval-Augmented Generation) for better context
  */
 class AIService {
   constructor() {
@@ -355,6 +357,179 @@ class AIService {
     });
 
     return results;
+  }
+
+  /**
+   * ========================================
+   * SPECIALIZED OPERATION METHODS
+   * ========================================
+   */
+
+  /**
+   * Generate plugin with RAG context
+   * Uses existing plugin architecture knowledge from database
+   */
+  async generatePlugin(userId, prompt, metadata = {}) {
+    // Fetch RAG context for plugin generation
+    const ragContext = await aiContextService.getContextForQuery({
+      mode: 'developer',
+      category: metadata.category || 'general',
+      query: prompt,
+      storeId: metadata.storeId,
+      limit: 13 // 5 docs + 3 examples + 5 patterns
+    });
+
+    const systemPrompt = `You are an expert plugin developer for the Catalyst e-commerce platform.
+
+${ragContext || '# Catalyst Plugin Architecture\n\nPlugins are JavaScript classes that extend the base Plugin class with hooks, events, and controllers.'}
+
+Generate a complete, production-ready plugin based on the user's description.
+
+RESPONSE FORMAT - Return ONLY valid JSON:
+{
+  "name": "Plugin Name",
+  "slug": "plugin-slug",
+  "description": "What the plugin does",
+  "category": "commerce|marketing|analytics|integration",
+  "version": "1.0.0",
+  "features": ["Feature 1", "Feature 2"],
+  "generatedFiles": [
+    {
+      "name": "index.js",
+      "code": "// Complete plugin code"
+    }
+  ],
+  "manifest": {
+    "name": "Plugin Name",
+    "slug": "plugin-slug",
+    "version": "1.0.0",
+    "adminNavigation": {
+      "enabled": true,
+      "label": "My Plugin",
+      "icon": "Package",
+      "route": "/admin/my-plugin"
+    }
+  },
+  "explanation": "User-friendly explanation of what this plugin does and how to use it"
+}`;
+
+    const result = await this.generate({
+      userId,
+      operationType: 'plugin-generation',
+      prompt,
+      systemPrompt,
+      maxTokens: 4096,
+      temperature: 0.7,
+      metadata
+    });
+
+    // Parse the JSON response
+    try {
+      const pluginData = JSON.parse(result.content);
+      return {
+        ...result,
+        pluginData
+      };
+    } catch (error) {
+      throw new Error('Failed to parse plugin data from AI response');
+    }
+  }
+
+  /**
+   * Modify existing plugin
+   */
+  async modifyPlugin(userId, prompt, existingCode, metadata = {}) {
+    const systemPrompt = `You are an expert plugin developer. Modify the existing plugin code according to the user's request.
+
+Existing Plugin Code:
+\`\`\`javascript
+${existingCode}
+\`\`\`
+
+Return the modified plugin in the same JSON format as plugin generation.`;
+
+    const result = await this.generate({
+      userId,
+      operationType: 'plugin-modification',
+      prompt,
+      systemPrompt,
+      maxTokens: 4096,
+      temperature: 0.7,
+      metadata
+    });
+
+    try {
+      const pluginData = JSON.parse(result.content);
+      return {
+        ...result,
+        pluginData
+      };
+    } catch (error) {
+      throw new Error('Failed to parse modified plugin data');
+    }
+  }
+
+  /**
+   * Generate layout config
+   */
+  async generateLayout(userId, prompt, configType, metadata = {}) {
+    const systemPrompt = `You are an expert frontend developer. Generate a ${configType} layout configuration.
+
+Return a JSON object representing the layout config following the project's structure.`;
+
+    return await this.generate({
+      userId,
+      operationType: 'layout-generation',
+      prompt,
+      systemPrompt,
+      maxTokens: 2048,
+      temperature: 0.7,
+      metadata: { ...metadata, configType }
+    });
+  }
+
+  /**
+   * Translate content
+   */
+  async translateContent(userId, content, targetLanguages, metadata = {}) {
+    const systemPrompt = 'You are an expert translator. Provide accurate, culturally appropriate translations.';
+    const prompt = `Translate the following content to ${targetLanguages.join(', ')}:\n\n${content}`;
+
+    return await this.generate({
+      userId,
+      operationType: 'translation',
+      prompt,
+      systemPrompt,
+      maxTokens: 2048,
+      temperature: 0.3,
+      metadata: { ...metadata, targetLanguages }
+    });
+  }
+
+  /**
+   * Generate code patch (RFC 6902)
+   */
+  async generateCodePatch(userId, prompt, sourceCode, filePath, metadata = {}) {
+    const systemPrompt = `You are an expert code editor. Generate RFC 6902 JSON patches for safe code modifications.
+
+File: ${filePath}
+
+Source Code:
+\`\`\`javascript
+${sourceCode}
+\`\`\`
+
+Generate a JSON patch that safely modifies the code according to the request.`;
+
+    return await this.generate({
+      userId,
+      operationType: 'code-patch',
+      prompt,
+      systemPrompt,
+      maxTokens: 2048,
+      temperature: 0.5,
+      metadata: { ...metadata, filePath }
+    });
   }
 }
 
