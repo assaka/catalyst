@@ -434,11 +434,18 @@ const ResizeWrapper = ({
           heightUnit = '';
         }
 
+        // Calculate font-size for text elements
+        let fontSize = undefined;
+        if (isText && widthUnit === 'px' && widthValue < 200) {
+          fontSize = Math.max(10, Math.min(16, widthValue * 0.08));
+        }
+
         const newSize = {
           width: widthValue,
           height: heightValue,
           widthUnit,
-          heightUnit
+          heightUnit,
+          ...(fontSize !== undefined && { fontSize })
         };
 
         console.log('✅ [RESIZE] Applying size', newSize);
@@ -570,9 +577,10 @@ const ResizeWrapper = ({
           }),
           boxSizing: 'border-box',
           // Use outline instead of border to avoid layout shifts
-          outline: hideBorder ? 'none' : (isHovered || isResizing ? '1px dashed rgba(59, 130, 246, 0.5)' : 'none'),
+          // Always render outline, just change color to avoid any layout changes
+          outline: hideBorder ? 'none' : (isHovered || isResizing ? '1px dashed rgba(59, 130, 246, 0.5)' : '1px dashed transparent'),
           outlineOffset: '-1px',
-          transition: isResizing ? 'none' : 'outline 0.2s ease-in-out',
+          transition: isResizing ? 'none' : 'outline-color 0.2s ease-in-out',
           position: 'relative',
           // Ensure button displays properly during resize
           display: children.props.style?.display || 'inline-block',
@@ -727,19 +735,20 @@ const ResizeWrapper = ({
             boxSizing: 'border-box',
             display: children.props.style?.display || 'inline-block',
             // Use outline instead of border to avoid layout shifts
-            outline: hideBorder ? 'none' : (isHovered || isResizing ? '1px dashed rgba(59, 130, 246, 0.5)' : 'none'),
+            // Always render outline, just change color to avoid any layout changes
+            outline: hideBorder ? 'none' : (isHovered || isResizing ? '1px dashed rgba(59, 130, 246, 0.5)' : '1px dashed transparent'),
             outlineOffset: '-1px',
             borderRadius: '4px',
-            transition: isResizing ? 'none' : 'outline 0.2s ease-in-out',
+            transition: isResizing ? 'none' : 'outline-color 0.2s ease-in-out',
             position: 'relative',
             // Allow text wrapping for text elements with responsive font sizing
             ...(isTextElement ? {
               whiteSpace: 'normal',
               wordWrap: 'break-word',
               overflowWrap: 'break-word',
-              // Scale font-size based on width (responsive text sizing)
-              ...(size.width !== 'auto' && size.widthUnit === 'px' && size.width < 200 ? {
-                fontSize: `clamp(10px, ${Math.max(10, size.width * 0.08)}px, 16px)`
+              // Apply saved font-size if available
+              ...(size.fontSize ? {
+                fontSize: `${size.fontSize}px`
               } : {})
             } : {}),
             // Performance optimizations during resize
