@@ -43,19 +43,16 @@ export function EditModeControls({ localSaveStatus, publishStatus, saveConfigura
 }
 
 // GridResizeHandle Component
-export function GridResizeHandle({ onResize, onResizeHeight, currentValue, currentHeight, maxValue = 12, minValue = 1, direction = 'horizontal', parentHovered = false, onResizeStart, onResizeEnd, onHoverChange }) {
+export function GridResizeHandle({ onResize, currentValue, maxValue = 12, minValue = 1, direction = 'horizontal', parentHovered = false, onResizeStart, onResizeEnd, onHoverChange }) {
   const [isDragging, setIsDragging] = useState(false);
   const [isHovered, setIsHovered] = useState(false);
-  const [mouseOffset, setMouseOffset] = useState({ x: 0, y: 0 }); // Track mouse position during drag
+  const [mouseOffset, setMouseOffset] = useState(0); // Track mouse position during drag
   const isDraggingRef = useRef(false);
   const startXRef = useRef(0);
   const startYRef = useRef(0);
   const startValueRef = useRef(currentValue);
-  const startHeightRef = useRef(currentHeight);
   const lastValueRef = useRef(currentValue);
-  const lastHeightRef = useRef(currentHeight);
   const onResizeRef = useRef(onResize);
-  const onResizeHeightRef = useRef(onResizeHeight);
   const onResizeStartRef = useRef(onResizeStart);
   const onResizeEndRef = useRef(onResizeEnd);
   const mouseMoveHandlerRef = useRef(null);
@@ -92,10 +89,9 @@ export function GridResizeHandle({ onResize, onResizeHeight, currentValue, curre
 
   useEffect(() => {
     onResizeRef.current = onResize;
-    onResizeHeightRef.current = onResizeHeight;
     onResizeStartRef.current = onResizeStart;
     onResizeEndRef.current = onResizeEnd;
-  }, [onResize, onResizeHeight, onResizeStart, onResizeEnd]);
+  }, [onResize, onResizeStart, onResizeEnd]);
 
   const handleMouseDown = (e) => {
     // CRITICAL: Prevent parent GridColumn drag from starting
@@ -133,13 +129,11 @@ export function GridResizeHandle({ onResize, onResizeHeight, currentValue, curre
     startXRef.current = e.clientX;
     startYRef.current = e.clientY;
     startValueRef.current = currentValue;
-    startHeightRef.current = currentHeight;
     lastValueRef.current = currentValue;
-    lastHeightRef.current = currentHeight;
 
     // Prevent text selection during drag
     document.body.style.userSelect = 'none';
-    document.body.style.cursor = direction === 'diagonal' ? 'nwse-resize' : (direction === 'horizontal' ? 'col-resize' : 'row-resize');
+    document.body.style.cursor = isHorizontal ? 'col-resize' : 'row-resize';
 
     if (onResizeStartRef.current) {
       onResizeStartRef.current();
@@ -149,8 +143,7 @@ export function GridResizeHandle({ onResize, onResizeHeight, currentValue, curre
       console.log('🖱️ [GRID RESIZE DEBUG] MouseMove fired!', {
         isDragging: isDraggingRef.current,
         clientX: e.clientX,
-        clientY: e.clientY,
-        direction
+        clientY: e.clientY
       });
 
       if (!isDraggingRef.current) {
@@ -161,55 +154,13 @@ export function GridResizeHandle({ onResize, onResizeHeight, currentValue, curre
       const deltaX = e.clientX - startXRef.current;
       const deltaY = e.clientY - startYRef.current;
       const startValue = startValueRef.current;
-      const startHeight = startHeightRef.current;
 
-      console.log('📏 [GRID RESIZE DEBUG] MouseMove - calculating delta', { deltaX, deltaY, direction });
+      console.log('📏 [GRID RESIZE DEBUG] MouseMove - calculating delta', { deltaX, deltaY });
 
       // Calculate and apply resize in real-time for visual feedback
       let newValue;
-      let newHeight;
 
-      if (direction === 'diagonal') {
-        // Resize both colSpan (horizontal) and height (vertical) simultaneously
-        const sensitivity = 20;
-        const colSpanDelta = Math.round(deltaX / sensitivity);
-
-        // Parse the current value (could be number or string)
-        const parsed = parseResponsiveColSpan(startValue);
-        const currentNumericValue = parsed.responsive || parsed.base;
-        const newNumericValue = Math.max(minValue, Math.min(maxValue, currentNumericValue + colSpanDelta));
-
-        // Build the new colSpan value
-        if (parsed.responsive) {
-          newValue = buildResponsiveColSpan(parsed.base, newNumericValue, parsed.breakpoint);
-        } else if (typeof startValue === 'string') {
-          newValue = buildResponsiveColSpan(newNumericValue, null);
-        } else {
-          newValue = newNumericValue;
-        }
-
-        // Calculate new height
-        const heightDelta = Math.round(deltaY / 2);
-        newHeight = Math.max(20, startHeight + heightDelta);
-
-        // Apply both resizes immediately for visual feedback
-        if (newValue !== lastValueRef.current) {
-          lastValueRef.current = newValue;
-          console.log('📊 [GRID RESIZE DEBUG] Live diagonal colSpan update', { newValue, colSpanDelta });
-          if (onResizeRef.current) {
-            onResizeRef.current(newValue);
-          }
-        }
-        if (newHeight !== lastHeightRef.current) {
-          lastHeightRef.current = newHeight;
-          console.log('📏 [GRID RESIZE DEBUG] Live diagonal height update', { newHeight, heightDelta });
-          if (onResizeHeightRef.current) {
-            onResizeHeightRef.current(newHeight);
-          }
-        }
-
-        setMouseOffset({ x: deltaX, y: deltaY });
-      } else if (direction === 'horizontal') {
+      if (direction === 'horizontal') {
         const sensitivity = 20;
         const colSpanDelta = Math.round(deltaX / sensitivity);
 
@@ -234,7 +185,7 @@ export function GridResizeHandle({ onResize, onResizeHeight, currentValue, curre
           onResizeRef.current(newValue);
         }
 
-        setMouseOffset({ x: 0, y: 0 });
+        setMouseOffset(0);
       } else {
         const heightDelta = Math.round(deltaY / 2);
         newValue = Math.max(20, startValue + heightDelta);
@@ -246,7 +197,7 @@ export function GridResizeHandle({ onResize, onResizeHeight, currentValue, curre
           onResizeRef.current(newValue);
         }
 
-        setMouseOffset({ x: 0, y: heightDelta });
+        setMouseOffset(heightDelta);
       }
     };
 
@@ -254,66 +205,18 @@ export function GridResizeHandle({ onResize, onResizeHeight, currentValue, curre
       const deltaX = e.clientX - startXRef.current;
       const deltaY = e.clientY - startYRef.current;
       const startValue = startValueRef.current;
-      const startHeight = startHeightRef.current;
 
       console.log('🏁 [GRID RESIZE DEBUG] Mouse up - calculating final value', {
         deltaX,
         deltaY,
         startValue,
-        startHeight,
         direction
       });
 
       // Calculate final value on release
       let finalValue;
-      let finalHeight;
 
-      if (direction === 'diagonal') {
-        // Calculate final colSpan
-        const sensitivity = 20;
-        const colSpanDelta = Math.round(deltaX / sensitivity);
-
-        // Parse the current value (could be number or string)
-        const parsed = parseResponsiveColSpan(startValue);
-        const currentNumericValue = parsed.responsive || parsed.base;
-        const newNumericValue = Math.max(minValue, Math.min(maxValue, currentNumericValue + colSpanDelta));
-
-        // Build the new colSpan value
-        if (parsed.responsive) {
-          finalValue = buildResponsiveColSpan(parsed.base, newNumericValue, parsed.breakpoint);
-        } else if (typeof startValue === 'string') {
-          finalValue = buildResponsiveColSpan(newNumericValue, null);
-        } else {
-          finalValue = newNumericValue;
-        }
-
-        // Calculate final height
-        const heightDelta = Math.round(deltaY / 2);
-        finalHeight = Math.max(20, startHeight + heightDelta);
-
-        console.log('✅ [GRID RESIZE DEBUG] Final diagonal values', {
-          colSpanDelta,
-          oldColSpan: startValue,
-          newColSpan: finalValue,
-          heightDelta,
-          oldHeight: startHeight,
-          newHeight: finalHeight
-        });
-
-        // Save both values if they changed
-        if (finalValue !== startValue) {
-          console.log('💾 [GRID RESIZE DEBUG] Saving diagonal colSpan resize', { finalValue });
-          if (onResizeRef.current) {
-            onResizeRef.current(finalValue);
-          }
-        }
-        if (finalHeight !== startHeight) {
-          console.log('💾 [GRID RESIZE DEBUG] Saving diagonal height resize', { finalHeight });
-          if (onResizeHeightRef.current) {
-            onResizeHeightRef.current(finalHeight);
-          }
-        }
-      } else if (direction === 'horizontal') {
+      if (direction === 'horizontal') {
         const sensitivity = 20;
         const colSpanDelta = Math.round(deltaX / sensitivity);
 
@@ -336,14 +239,6 @@ export function GridResizeHandle({ onResize, onResizeHeight, currentValue, curre
           oldValue: startValue,
           newValue: finalValue
         });
-
-        // Only save if value actually changed
-        if (finalValue !== startValue) {
-          console.log('💾 [GRID RESIZE DEBUG] Saving resize', { finalValue });
-          onResizeRef.current(finalValue);
-        } else {
-          console.log('⏭️ [GRID RESIZE DEBUG] No change, skipping save');
-        }
       } else {
         const heightDelta = Math.round(deltaY / 2);
         finalValue = Math.max(20, startValue + heightDelta);
@@ -353,14 +248,14 @@ export function GridResizeHandle({ onResize, onResizeHeight, currentValue, curre
           oldValue: startValue,
           newValue: finalValue
         });
+      }
 
-        // Only save if value actually changed
-        if (finalValue !== startValue) {
-          console.log('💾 [GRID RESIZE DEBUG] Saving resize', { finalValue });
-          onResizeRef.current(finalValue);
-        } else {
-          console.log('⏭️ [GRID RESIZE DEBUG] No change, skipping save');
-        }
+      // Only save if value actually changed
+      if (finalValue !== startValue) {
+        console.log('💾 [GRID RESIZE DEBUG] Saving resize', { finalValue });
+        onResizeRef.current(finalValue);
+      } else {
+        console.log('⏭️ [GRID RESIZE DEBUG] No change, skipping save');
       }
 
       // Release pointer capture
@@ -376,7 +271,7 @@ export function GridResizeHandle({ onResize, onResizeHeight, currentValue, curre
       // Cleanup - remove from capturing element
       setIsDragging(false);
       isDraggingRef.current = false;
-      setMouseOffset({ x: 0, y: 0 });
+      setMouseOffset(0);
       document.body.style.userSelect = '';
       document.body.style.cursor = '';
 
@@ -423,14 +318,11 @@ export function GridResizeHandle({ onResize, onResizeHeight, currentValue, curre
   }, []);
 
   const isHorizontal = direction === 'horizontal';
-  const isDiagonal = direction === 'diagonal';
-  const cursorClass = isDiagonal ? 'cursor-nwse-resize' : (isHorizontal ? 'cursor-col-resize' : 'cursor-row-resize');
+  const cursorClass = isHorizontal ? 'cursor-col-resize' : 'cursor-row-resize';
   // Position classes without transform (we'll apply transform inline to combine with mouseOffset)
-  const positionClass = isDiagonal
-    ? '-bottom-1 -right-1 w-4 h-4'
-    : isHorizontal
-      ? '-right-1 top-1/2 w-2 h-8'
-      : '-bottom-1 left-1/2 h-2 w-8';
+  const positionClass = isHorizontal
+    ? '-right-1 top-1/2 w-2 h-8'
+    : '-bottom-1 left-1/2 h-2 w-8';
 
   return (
     <div
@@ -464,48 +356,30 @@ export function GridResizeHandle({ onResize, onResizeHeight, currentValue, curre
         pointerEvents: 'all', // Ensure handle captures events
         touchAction: 'none', // Prevent touch scroll during drag
         transform: isDragging
-          ? (isDiagonal
-              ? `translate(0, 0)` // No offset transform for diagonal - handle stays at corner
-              : isHorizontal
-                ? `translate(${mouseOffset.x}px, -50%)`
-                : `translate(-50%, ${mouseOffset.y}px)`)
-          : (isDiagonal ? undefined : (isHorizontal ? 'translateY(-50%)' : 'translateX(-50%)')),
+          ? (isHorizontal
+              ? `translate(${mouseOffset}px, -50%)`
+              : `translate(-50%, ${mouseOffset}px)`)
+          : undefined,
         transition: isDragging ? 'none' : 'all 0.2s ease-out'
       }}
-      title={`Resize ${direction}ly ${isDiagonal ? `(${currentValue} / ${maxValue}, ${currentHeight}px)` : isHorizontal ? `(${currentValue} / ${maxValue})` : `(${currentValue}px)`}`}
+      title={`Resize ${direction}ly ${isHorizontal ? `(${currentValue} / ${maxValue})` : `(${currentValue}px)`}`}
     >
-      <div className={`w-full h-full ${isDiagonal ? 'rounded-br-md' : 'rounded-md'} flex ${isDiagonal ? 'flex-col' : isHorizontal ? 'flex-col' : 'flex-row'} items-center justify-center gap-0.5 border shadow-sm transition-colors duration-150 ${
+      <div className={`w-full h-full rounded-md flex ${isHorizontal ? 'flex-col' : 'flex-row'} items-center justify-center gap-0.5 border shadow-sm transition-colors duration-150 ${
         isDragging
           ? 'bg-blue-600 border-blue-700 shadow-lg'
           : isHovered || parentHovered
             ? 'bg-blue-500 border-blue-600 shadow-md'
             : 'bg-blue-500 border-blue-600 hover:bg-blue-600'
       }`}>
-        {isDiagonal ? (
-          // Diagonal icon (corner arrows)
-          <svg width="12" height="12" viewBox="0 0 12 12" className="text-white">
-            <path
-              d="M1,11 L11,1 M7,1 L11,1 L11,5"
-              stroke="currentColor"
-              strokeWidth="1.5"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              fill="none"
-            />
-          </svg>
-        ) : (
-          <>
-            <div className="w-1 h-1 bg-white rounded-full opacity-90"></div>
-            <div className="w-1 h-1 bg-white rounded-full opacity-90"></div>
-            <div className="w-1 h-1 bg-white rounded-full opacity-90"></div>
-          </>
-        )}
+        <div className="w-1 h-1 bg-white rounded-full opacity-90"></div>
+        <div className="w-1 h-1 bg-white rounded-full opacity-90"></div>
+        <div className="w-1 h-1 bg-white rounded-full opacity-90"></div>
       </div>
 
       {isDragging && (
-        <div className={`absolute ${isDiagonal ? '-top-6 left-1/2 -translate-x-1/2' : isHorizontal ? '-top-6 left-1/2 -translate-x-1/2' : '-left-10 top-1/2 -translate-y-1/2'}
+        <div className={`absolute ${isHorizontal ? '-top-6 left-1/2 -translate-x-1/2' : '-left-10 top-1/2 -translate-y-1/2'}
           bg-gray-900 text-white text-xs px-2 py-1 rounded shadow-lg whitespace-nowrap`}>
-          {isDiagonal ? `${currentValue} / ${maxValue} · ${currentHeight}px` : isHorizontal ? `${currentValue} / ${maxValue}` : `${currentValue}px`}
+          {isHorizontal ? `${currentValue} / ${maxValue}` : `${currentValue}px`}
         </div>
       )}
     </div>
@@ -1136,27 +1010,6 @@ export function GridColumn({
           maxValue={1000}
           minValue={40}
           direction="vertical"
-          parentHovered={isHovered}
-          onResizeStart={() => {
-            setIsResizingSlot(true);
-            onResizeStart?.();
-          }}
-          onResizeEnd={() => {
-            setIsResizingSlot(false);
-            onResizeEnd?.();
-          }}
-          onHoverChange={setIsOverResizeHandle}
-        />
-      )}
-      {showHorizontalHandle && showVerticalHandle && (isHovered || isResizingSlot) && (
-        <GridResizeHandle
-          onResize={(newColSpan) => onGridResize(slotId, newColSpan)}
-          onResizeHeight={(newHeight) => onSlotHeightResize(slotId, newHeight)}
-          currentValue={colSpan}
-          currentHeight={height || 80}
-          maxValue={12}
-          minValue={1}
-          direction="diagonal"
           parentHovered={isHovered}
           onResizeStart={() => {
             setIsResizingSlot(true);
