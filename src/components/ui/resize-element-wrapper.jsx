@@ -732,11 +732,15 @@ const ResizeWrapper = ({
             borderRadius: '4px',
             transition: isResizing ? 'none' : 'outline 0.2s ease-in-out',
             position: 'relative',
-            // Allow text wrapping for text elements
+            // Allow text wrapping for text elements with responsive font sizing
             ...(isTextElement ? {
               whiteSpace: 'normal',
               wordWrap: 'break-word',
-              overflowWrap: 'break-word'
+              overflowWrap: 'break-word',
+              // Scale font-size based on width (responsive text sizing)
+              ...(size.width !== 'auto' && size.widthUnit === 'px' && size.width < 200 ? {
+                fontSize: `clamp(10px, ${Math.max(10, size.width * 0.08)}px, 16px)`
+              } : {})
             } : {}),
             // Performance optimizations during resize
             ...(isResizing && {
