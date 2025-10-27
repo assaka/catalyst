@@ -105,9 +105,17 @@ export function GridResizeHandle({ onResize, currentValue, maxValue = 12, minVal
       currentValue,
       clientX: e.clientX,
       clientY: e.clientY,
+      pointerId: e.pointerId,
       target: e.target,
       currentTarget: e.currentTarget
     });
+
+    // CRITICAL: Capture pointer events to this element
+    // This ensures we receive all pointer events even if cursor moves off handle
+    if (e.currentTarget.setPointerCapture) {
+      e.currentTarget.setPointerCapture(e.pointerId);
+      console.log('🔒 [GRID RESIZE DEBUG] Pointer captured', { pointerId: e.pointerId });
+    }
 
     // CRITICAL: Immediately notify parent that handle is active
     // This prevents GridColumn dragStart from firing
@@ -250,14 +258,25 @@ export function GridResizeHandle({ onResize, currentValue, maxValue = 12, minVal
         console.log('⏭️ [GRID RESIZE DEBUG] No change, skipping save');
       }
 
+      // Release pointer capture
+      if (handleElementRef.current && e.pointerId !== undefined) {
+        try {
+          handleElementRef.current.releasePointerCapture(e.pointerId);
+          console.log('🔓 [GRID RESIZE DEBUG] Pointer released', { pointerId: e.pointerId });
+        } catch (err) {
+          console.log('⚠️ [GRID RESIZE DEBUG] Could not release pointer', err);
+        }
+      }
+
       // Cleanup
       setIsDragging(false);
       isDraggingRef.current = false;
       setMouseOffset(0);
       document.body.style.userSelect = '';
       document.body.style.cursor = '';
-      document.removeEventListener('mousemove', handleMouseMove, true);
-      document.removeEventListener('mouseup', handleMouseUp, true);
+      document.removeEventListener('pointermove', handleMouseMove, true);
+      document.removeEventListener('pointerup', handleMouseUp, true);
+      document.removeEventListener('pointercancel', handleMouseUp, true);
       mouseMoveHandlerRef.current = null;
       mouseUpHandlerRef.current = null;
 
@@ -271,20 +290,22 @@ export function GridResizeHandle({ onResize, currentValue, maxValue = 12, minVal
     mouseMoveHandlerRef.current = handleMouseMove;
     mouseUpHandlerRef.current = handleMouseUp;
 
-    // Use capture phase to ensure we get events before any other handlers
-    document.addEventListener('mousemove', handleMouseMove, true);
-    document.addEventListener('mouseup', handleMouseUp, true);
+    // Use POINTER events instead of mouse for better reliability
+    document.addEventListener('pointermove', handleMouseMove, true);
+    document.addEventListener('pointerup', handleMouseUp, true);
+    document.addEventListener('pointercancel', handleMouseUp, true);
 
-    console.log('👂 [GRID RESIZE DEBUG] Event listeners attached (mousemove, mouseup) with capture=true');
+    console.log('👂 [GRID RESIZE DEBUG] Event listeners attached (pointermove, pointerup, pointercancel) with capture=true');
   };
 
   useEffect(() => {
     return () => {
       if (mouseMoveHandlerRef.current) {
-        document.removeEventListener('mousemove', mouseMoveHandlerRef.current, true);
+        document.removeEventListener('pointermove', mouseMoveHandlerRef.current, true);
       }
       if (mouseUpHandlerRef.current) {
-        document.removeEventListener('mouseup', mouseUpHandlerRef.current, true);
+        document.removeEventListener('pointerup', mouseUpHandlerRef.current, true);
+        document.removeEventListener('pointercancel', mouseUpHandlerRef.current, true);
       }
     };
   }, []);
@@ -304,7 +325,7 @@ export function GridResizeHandle({ onResize, currentValue, maxValue = 12, minVal
           : 'opacity-0 hover:opacity-90'
       }`}
       draggable={false}
-      onMouseDown={handleMouseDown}
+      onPointerDown={handleMouseDown}
       onMouseEnter={() => {
         console.log('🔵 [GRID RESIZE DEBUG] Handle hover enter', { direction });
         setIsHovered(true);
@@ -322,11 +343,6 @@ export function GridResizeHandle({ onResize, currentValue, maxValue = 12, minVal
         e.stopPropagation();
         e.stopImmediatePropagation();
         return false;
-      }}
-      onPointerDown={(e) => {
-        // Extra layer of prevention
-        console.log('👆 [GRID RESIZE DEBUG] Pointer down on handle');
-        e.stopPropagation();
       }}
       style={{
         zIndex: 9999,
