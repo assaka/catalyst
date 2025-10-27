@@ -90,7 +90,9 @@ import { StoreProvider } from "@/components/storefront/StoreProvider";
 import { PriceUtilsProvider } from "@/utils/PriceUtilsProvider";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useStoreSelection } from "@/contexts/StoreSelectionContext";
-import CatalystAIStudio from "@/components/admin/CatalystAIStudio";
+import { AIStudioProvider, useAIStudio, AI_STUDIO_MODES } from "@/contexts/AIStudioContext";
+import AIStudio from "@/components/ai-studio/AIStudio";
+import { Sparkles } from "lucide-react";
 
 
 const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms));
@@ -130,10 +132,26 @@ function getIconComponent(iconName) {
   return iconMap[iconName] || Puzzle;
 }
 
-export default function Layout({ children, currentPageName }) {
+// Floating AI Button Component
+const FloatingAIButton = () => {
+  const { openAI, toggleAI } = useAIStudio();
+
+  return (
+    <button
+      onClick={toggleAI}
+      className="fixed bottom-6 right-6 z-[998] w-14 h-14 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 shadow-lg hover:shadow-xl transition-all duration-200 hover:scale-110 flex items-center justify-center group"
+      title="Open AI Studio (Ctrl+K)"
+    >
+      <Sparkles className="w-6 h-6 text-white group-hover:rotate-12 transition-transform" />
+    </button>
+  );
+};
+
+function LayoutInner({ children, currentPageName }) {
   const navigate = useNavigate();
   const location = useLocation();
   const { selectedStore } = useStoreSelection();
+  const { openAI, toggleAI } = useAIStudio();
 
   const [user, setUser] = useState(null);
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -186,14 +204,24 @@ export default function Layout({ children, currentPageName }) {
       }
     };
 
+    // Global keyboard shortcut: Ctrl+K to open AI Studio
+    const handleKeyboardShortcut = (e) => {
+      if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
+        e.preventDefault();
+        toggleAI();
+      }
+    };
+
     document.addEventListener('click', globalClickHandler, true);
+    document.addEventListener('keydown', handleKeyboardShortcut);
     window.addEventListener('userDataReady', handleUserDataReady);
 
     return () => {
       document.removeEventListener('click', globalClickHandler, true);
+      document.removeEventListener('keydown', handleKeyboardShortcut);
       window.removeEventListener('userDataReady', handleUserDataReady);
     };
-  }, [location.pathname]);
+  }, [location.pathname, toggleAI]);
 
   const loadUserAndHandleCredits = async () => {
     try {
@@ -803,12 +831,24 @@ export default function Layout({ children, currentPageName }) {
         </div>
       </div>
 
-      {/* Catalyst AI Studio - Global AI Assistant */}
-      {(isAdminPage || isEditorPage) && <CatalystAIStudio initialContext="general" />}
+      {/* AI Studio - Global AI Assistant */}
+      <AIStudio />
+
+      {/* Floating AI Button */}
+      {(isAdminPage || isEditorPage) && <FloatingAIButton />}
 
       </div>
       </PriceUtilsProvider>
     </StoreProvider>
+  );
+}
+
+// Wrap LayoutInner with AIStudioProvider
+export default function Layout(props) {
+  return (
+    <AIStudioProvider>
+      <LayoutInner {...props} />
+    </AIStudioProvider>
   );
 }
 
