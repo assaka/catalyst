@@ -360,6 +360,7 @@ function App() {
           <Route path="/admin/onboarding" element={<PageWrapper Component={Pages.Onboarding} pageName="Onboarding" />} />
           <Route path="/admin/ai-context-window" element={<PageWrapper Component={Pages.AIContextWindow} pageName="AIContextWindow" />} />
           <Route path="/admin/translations" element={<PageWrapper Component={Pages.Translations} pageName="Translations" />} />
+          <Route path="/admin/ai-studio" element={<PageWrapper Component={Pages.AIStudio} pageName="AIStudio" />} />
           <Route path="/admin/auth" element={<PageWrapper Component={Auth} pageName="Auth" />} />
 
           {/* Plugins Section - New unified AI Studio integrated */}
