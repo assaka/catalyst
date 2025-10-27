@@ -84,15 +84,7 @@ const ResizeWrapper = ({
   };
 
   const [size, setSize] = useState(() => {
-    const initialDims = getInitialDimensions();
-    console.log('🎬 [RESIZE DEBUG] Component initializing', {
-      initialDimensions: initialDims,
-      hasWFitClass,
-      childType: children?.type,
-      slotId: children?.props?.['data-slot-id'],
-      className
-    });
-    return initialDims;
+    return getInitialDimensions();
   });
   const [naturalSize, setNaturalSize] = useState({ width: null, height: null });
   const [isResizing, setIsResizing] = useState(false);
@@ -167,11 +159,7 @@ const ResizeWrapper = ({
 
     if (wrapperRef.current && !naturalSize.width && size.width === 'auto') {
       const rect = wrapperRef.current.getBoundingClientRect();
-      console.log('📐 [RESIZE DEBUG] Capturing natural dimensions', {
-        rectWidth: rect.width,
-        rectHeight: rect.height
-      });
-      
+
       // Find parent slot container
       let slotContainer = wrapperRef.current.parentElement;
       let searchDepth = 0;
@@ -197,50 +185,26 @@ const ResizeWrapper = ({
       }
       
       const parentRect = slotContainer?.getBoundingClientRect();
-      
+
       if (parentRect && parentRect.width > 0 && rect.width > 0) {
         const naturalPercentage = Math.min(100, (rect.width / parentRect.width) * 100);
-
-        // Check if element has w-fit class (should use pixels for natural sizing)
         const hasWFitClass = children?.props?.className?.includes('w-fit') || className?.includes('w-fit');
 
-        console.log('💾 [RESIZE DEBUG] Setting natural size', {
-          naturalWidth: rect.width,
-          naturalHeight: rect.height,
-          naturalPercentage
-        });
         setNaturalSize({ width: rect.width, height: rect.height });
 
-        // For w-fit elements, don't set an initial width - let them size naturally
-        // Only apply width when user manually resizes
+        // For w-fit elements, don't set an initial width
         if (hasWFitClass) {
-          console.log('🏷️ [RESIZE DEBUG] w-fit element detected, keeping width: auto', {
-            hasWFitClass
-          });
-          // Keep width as 'auto' for w-fit elements
           return;
         }
 
-        // For text elements, don't set width automatically - let them be fit-content
-        // Only set width if explicitly resized by user (will be in children.props.style.width)
+        // For text elements without explicit width, keep fit-content
         const existingWidth = children?.props?.style?.width;
         if (isTextElement && !existingWidth) {
-          console.log('📏 [RESIZE DEBUG] Text element without explicit width, keeping fit-content', {
-            slotId: children?.props?.['data-slot-id'],
-            isTextElement,
-            existingWidth
-          });
-          return; // Keep width as 'auto'
+          return;
         }
 
         const newWidth = Math.round(naturalPercentage * 10) / 10;
         const newWidthUnit = '%';
-
-        console.log('✅ [RESIZE DEBUG] Setting initial percentage-based width', {
-          newWidth,
-          newWidthUnit,
-          naturalPercentage
-        });
 
         setSize(prev => ({
           ...prev,
@@ -257,8 +221,6 @@ const ResizeWrapper = ({
       return;
     }
 
-    console.log('👁️ [RESIZE DEBUG] Setting up ResizeObserver for text element overflow prevention');
-
     const observer = new ResizeObserver((entries) => {
       for (const entry of entries) {
         const parentRect = entry.contentRect;
@@ -266,14 +228,8 @@ const ResizeWrapper = ({
 
         // If text element is wider than parent slot, shrink it to fit
         if (currentWidth !== 'auto' && parentRect.width > 0) {
-          const maxAllowedWidth = parentRect.width - 10; // 10px margin
+          const maxAllowedWidth = parentRect.width - 10;
           if (currentWidth > maxAllowedWidth) {
-            console.log('⚠️ [RESIZE DEBUG] Text element overflow detected, shrinking', {
-              currentWidth,
-              maxAllowedWidth,
-              parentWidth: parentRect.width
-            });
-
             setSize(prevSize => ({
               ...prevSize,
               width: maxAllowedWidth,
@@ -294,26 +250,13 @@ const ResizeWrapper = ({
     });
 
     // Find the slot container to observe
-    let slotContainer = wrapperRef.current.closest('[data-grid-slot-id]');
-    if (!slotContainer) {
-      slotContainer = wrapperRef.current.parentElement;
-      console.log('🔍 [RESIZE DEBUG] Using parent element for ResizeObserver (no grid slot found)');
-    } else {
-      console.log('✅ [RESIZE DEBUG] Using grid slot container for ResizeObserver');
-    }
+    let slotContainer = wrapperRef.current.closest('[data-grid-slot-id]') || wrapperRef.current.parentElement;
 
     if (slotContainer) {
       observer.observe(slotContainer);
-      console.log('👁️ [RESIZE DEBUG] ResizeObserver attached to slot container', {
-        slotId: slotContainer.getAttribute('data-grid-slot-id'),
-        className: slotContainer.className
-      });
-    } else {
-      console.log('⚠️ [RESIZE DEBUG] No slot container found, ResizeObserver not attached');
     }
 
     return () => {
-      console.log('🧹 [RESIZE DEBUG] Cleaning up ResizeObserver');
       observer.disconnect();
     };
   }, [disabled, isTextElement, size.width, size.height, size.heightUnit, onResize]);
@@ -321,57 +264,34 @@ const ResizeWrapper = ({
   const handleMouseDown = useCallback((e) => {
     if (disabled) return;
 
-    console.log('🎯 [RESIZE DEBUG] Mouse down event triggered', {
-      timestamp: performance.now(),
-      clientX: e.clientX,
-      clientY: e.clientY,
-      pointerId: e.pointerId,
-      target: e.target.className
-    });
+    console.log('🎯 [RESIZE DEBUG] Mouse down', { x: e.clientX, y: e.clientY });
 
     // CRITICAL: Capture pointer events to this element
     if (e.currentTarget.setPointerCapture) {
       e.currentTarget.setPointerCapture(e.pointerId);
-      console.log('🔒 [RESIZE DEBUG] Pointer captured', { pointerId: e.pointerId });
     }
 
     const rect = wrapperRef.current.getBoundingClientRect();
-    console.log('📏 [RESIZE DEBUG] Element dimensions', {
-      width: rect.width,
-      height: rect.height,
-      left: rect.left,
-      top: rect.top,
-      right: rect.right,
-      bottom: rect.bottom
-    });
 
     // Find the grid slot container for resize bounds
-    // Priority: look for the actual grid slot container (data-grid-slot-id)
     let slotContainer = wrapperRef.current.closest('[data-grid-slot-id]');
 
-    // Fallback to searching for other slot indicators if grid slot not found
+    // Fallback to searching for other slot indicators
     if (!slotContainer) {
-      console.log('🔍 [RESIZE DEBUG] Searching for slot container...');
       let searchElement = wrapperRef.current.parentElement;
       let searchDepth = 0;
-      const maxSearchDepth = 10; // Increased search depth for nested structures
+      const maxSearchDepth = 10;
 
       while (searchElement && searchDepth < maxSearchDepth) {
         const isSlotContainer = searchElement.hasAttribute('data-slot-id') ||
                                 searchElement.className.includes('col-span-') ||
                                 searchElement.className.includes('responsive-slot') ||
                                 searchElement.className.includes('grid-cols-') ||
-                                // Additional patterns for button containers
                                 searchElement.className.includes('grid') ||
                                 searchElement.id?.includes('slot');
 
         if (isSlotContainer) {
           slotContainer = searchElement;
-          console.log('✅ [RESIZE DEBUG] Found slot container at depth', searchDepth, {
-            className: searchElement.className,
-            id: searchElement.id,
-            tagName: searchElement.tagName
-          });
           break;
         }
 
@@ -379,21 +299,13 @@ const ResizeWrapper = ({
         searchDepth++;
 
         if (searchElement === document.body) {
-          console.log('⚠️ [RESIZE DEBUG] Reached document body without finding slot container');
           break;
         }
       }
-    } else {
-      console.log('✅ [RESIZE DEBUG] Found slot container immediately via closest()');
     }
 
     // Use slot container or fall back to immediate parent
     const parentRect = slotContainer?.getBoundingClientRect() || wrapperRef.current.parentElement?.getBoundingClientRect();
-    console.log('📦 [RESIZE DEBUG] Parent container dimensions', {
-      width: parentRect?.width,
-      height: parentRect?.height,
-      hasSlotContainer: !!slotContainer
-    });
 
     // Keep viewport calculation for non-button elements
     const viewportWidth = window.innerWidth;
@@ -410,244 +322,114 @@ const ResizeWrapper = ({
       ? responsiveContainerRect.right - 20  // Use responsive container's right edge
       : viewportWidth - sidebarWidth;
 
-    console.log('🖥️ [RESIZE DEBUG] Viewport calculations', {
-      viewportWidth,
-      sidebarWidth,
-      effectiveViewportWidth,
-      hasResponsiveContainer: !!responsiveContainer
-    });
-
     const elementLeft = rect.left;
     const maxAllowableRight = effectiveViewportWidth;
-
 
     const startX = e.clientX;
     const startY = e.clientY;
     const startWidth = rect.width;
     const startHeight = rect.height;
 
-    console.log('🎬 [RESIZE DEBUG] Starting drag operation', {
-      startX,
-      startY,
-      startWidth,
-      startHeight,
-      elementLeft,
-      maxAllowableRight
-    });
-
     setIsResizing(true);
 
     // Performance tracking
     let frameCount = 0;
     let lastFrameTime = performance.now();
-    let totalFrameTime = 0;
     let animationFrameId = null;
-    let pendingUpdate = null;
+
+    // Pre-calculate element types once (not on every mousemove)
+    const isButton = isButtonElement(children);
+    const isText = children?.type === 'span' || children?.props?.['data-slot-id']?.includes('text');
+    const hasWFit = children?.props?.className?.includes('w-fit') || className?.includes('w-fit');
+
+    console.log('🎯 [RESIZE DEBUG] Starting drag with element types:', { isButton, isText, hasWFit });
 
     const handleMouseMove = (moveEvent) => {
-      console.log('🖱️ [RESIZE DEBUG] MouseMove fired!', {
-        clientX: moveEvent.clientX,
-        clientY: moveEvent.clientY
-      });
-
-      const moveStartTime = performance.now();
-
       const deltaX = moveEvent.clientX - startX;
       const deltaY = moveEvent.clientY - startY;
 
       // Only apply sizing if there's significant movement (prevents jumping on click)
-      const hasSignificantMovement = Math.abs(deltaX) > 3 || Math.abs(deltaY) > 3;
-      if (!hasSignificantMovement) {
-        console.log('⏸️ [RESIZE DEBUG] Movement too small, skipping', { deltaX, deltaY });
+      if (Math.abs(deltaX) < 3 && Math.abs(deltaY) < 3) {
         return;
       }
 
-      console.log('📏 [RESIZE DEBUG] Applying resize', { deltaX, deltaY });
-
-      console.log('📍 [RESIZE DEBUG] Mouse move', {
-        frameCount,
-        deltaX,
-        deltaY,
-        clientX: moveEvent.clientX,
-        clientY: moveEvent.clientY,
-        movementX: moveEvent.movementX,
-        movementY: moveEvent.movementY
-      });
-
-      // Check if this is a button element that should have flexible width
-      const isButton = isButtonElement(children);
-      const isTextElement = children?.type === 'span' || children?.props?.['data-slot-id']?.includes('text');
-      const hasWFitClass = children?.props?.className?.includes('w-fit') || className?.includes('w-fit');
-
-      console.log('🏷️ [RESIZE DEBUG] Element type detection', {
-        isButton,
-        isTextElement,
-        hasWFitClass,
-        elementType: children?.type,
-        slotId: children?.props?.['data-slot-id']
-      });
-
-      // Calculate maximum allowed width considering viewport and sidebar constraints
-      const maxWidthFromViewport = maxAllowableRight - elementLeft;
-
-      let maxAllowedWidth;
-      if (isButton) {
-        // For buttons, constrain to slot container with margin for slot borders
-        maxAllowedWidth = parentRect ? parentRect.width - 10 : maxWidthFromViewport;
-      } else if (isTextElement) {
-        // For text elements, prevent overflow when slot shrinks
-        const slotConstrainedWidth = parentRect ? parentRect.width - 10 : maxWidthFromViewport;
-        // If text would overflow the slot, constrain it to slot width
-        // Otherwise allow growth up to viewport bounds
-        const currentTextWidth = startWidth + deltaX;
-        if (currentTextWidth > slotConstrainedWidth) {
-          maxAllowedWidth = slotConstrainedWidth;
-        } else {
-          maxAllowedWidth = maxWidthFromViewport;
-        }
-      } else {
-        // For non-buttons and non-text, use more restrictive bounds with margin for slot borders
-        maxAllowedWidth = parentRect ? Math.min(parentRect.width - 10, maxWidthFromViewport) : maxWidthFromViewport;
-      }
-
-      console.log('📐 [RESIZE DEBUG] Width constraints', {
-        maxWidthFromViewport,
-        maxAllowedWidth,
-        parentRectWidth: parentRect?.width
-      });
-
-      // Use smaller minimum width for text elements to allow more flexibility
-      const effectiveMinWidth = isTextElement ? 20 : minWidth;
-      const newWidth = Math.max(effectiveMinWidth, Math.min(maxAllowedWidth, startWidth + deltaX));
-      const newHeight = Math.max(minHeight, Math.min(maxHeight, startHeight + deltaY));
-
-      console.log('📊 [RESIZE DEBUG] Calculated dimensions', {
-        newWidth,
-        newHeight,
-        effectiveMinWidth,
-        minHeight,
-        maxWidth: maxAllowedWidth,
-        maxHeight
-      });
-
-      // Calculate width units based on element type and classes
-      let widthValue = newWidth;
-      let widthUnit = 'px';
-
-      // For text elements and w-fit elements, use pixel units
-      if (isTextElement || hasWFitClass) {
-        // Text elements and w-fit elements can resize freely within viewport bounds
-        const minWidth = 20;
-        widthValue = Math.max(minWidth, newWidth);
-        widthUnit = 'px';
-        console.log('🔤 [RESIZE DEBUG] Using pixel units for text/w-fit', { widthValue, widthUnit });
-      } else if (parentRect && parentRect.width > 0) {
-        // For other elements, persist percentage-based sizing during resize
-        // If element was originally using percentages, continue using percentages
-        if (size.widthUnit === '%') {
-          const widthPercentage = Math.max(1, Math.min(100, (newWidth / parentRect.width) * 100));
-          widthValue = Math.round(widthPercentage * 10) / 10; // Round to 1 decimal place
-          widthUnit = '%';
-          console.log('📊 [RESIZE DEBUG] Using percentage units', { widthValue, widthUnit, widthPercentage });
-        } else {
-          // Otherwise use pixel-based sizing
-          widthValue = newWidth;
-          widthUnit = 'px';
-          console.log('📏 [RESIZE DEBUG] Using pixel units (default)', { widthValue, widthUnit });
-        }
-      }
-
-      // Use min-height for more flexible vertical sizing
-      let heightValue = newHeight;
-      let heightUnit = 'px';
-
-      // For very small heights, use auto to allow natural content flow
-      if (newHeight <= 30) {
-        heightValue = 'auto';
-        heightUnit = '';
-        console.log('⬇️ [RESIZE DEBUG] Height too small, using auto', { newHeight });
-      }
-
-      const newSize = {
-        width: widthValue,
-        height: heightValue,
-        widthUnit,
-        heightUnit
-      };
-
-      // Store pending update instead of applying immediately
-      pendingUpdate = newSize;
-
-      // Cancel any pending animation frame
+      // Cancel any pending animation frame to avoid queueing
       if (animationFrameId) {
         cancelAnimationFrame(animationFrameId);
       }
 
-      // Schedule update for next frame using RAF for smooth performance
+      // Schedule update for next frame
       animationFrameId = requestAnimationFrame(() => {
-        if (pendingUpdate) {
-          const rafStartTime = performance.now();
-          const currentTime = performance.now();
+        const currentTime = performance.now();
 
-          // Calculate FPS
-          const timeSinceLastUpdate = currentTime - perfStatsRef.current.lastUpdate;
-          const currentFPS = timeSinceLastUpdate > 0 ? Math.round(1000 / timeSinceLastUpdate) : 0;
+        // Calculate maximum allowed width
+        const maxWidthFromViewport = maxAllowableRight - elementLeft;
+        let maxAllowedWidth;
 
-          console.log('🎨 [RESIZE DEBUG] Applying size update via RAF', {
-            frameCount,
-            size: pendingUpdate,
-            fps: currentFPS
-          });
-
-          setSize(pendingUpdate);
-
-          if (onResize) {
-            onResize(pendingUpdate);
-          }
-
-          const rafEndTime = performance.now();
-          const rafDuration = rafEndTime - rafStartTime;
-
-          // Update performance stats for display
-          setPerformanceStats({
-            fps: currentFPS,
-            frameTime: rafDuration
-          });
-
-          console.log('⚡ [RESIZE DEBUG] RAF update completed', {
-            rafDuration: rafDuration.toFixed(2) + 'ms',
-            frameCount,
-            fps: currentFPS
-          });
-
-          perfStatsRef.current.lastUpdate = currentTime;
-          perfStatsRef.current.frameCount = frameCount;
-          pendingUpdate = null;
-          frameCount++;
+        if (isButton) {
+          maxAllowedWidth = parentRect ? parentRect.width - 10 : maxWidthFromViewport;
+        } else if (isText) {
+          const slotConstrainedWidth = parentRect ? parentRect.width - 10 : maxWidthFromViewport;
+          const currentTextWidth = startWidth + deltaX;
+          maxAllowedWidth = currentTextWidth > slotConstrainedWidth ? slotConstrainedWidth : maxWidthFromViewport;
+        } else {
+          maxAllowedWidth = parentRect ? Math.min(parentRect.width - 10, maxWidthFromViewport) : maxWidthFromViewport;
         }
-      });
 
-      const moveEndTime = performance.now();
-      const moveDuration = moveEndTime - moveStartTime;
-      totalFrameTime += moveDuration;
+        // Calculate new dimensions
+        const effectiveMinWidth = isText ? 20 : minWidth;
+        const newWidth = Math.max(effectiveMinWidth, Math.min(maxAllowedWidth, startWidth + deltaX));
+        const newHeight = Math.max(minHeight, Math.min(maxHeight, startHeight + deltaY));
 
-      console.log('⏱️ [RESIZE DEBUG] MouseMove handler performance', {
-        duration: moveDuration.toFixed(2) + 'ms',
-        averageDuration: (totalFrameTime / Math.max(1, frameCount)).toFixed(2) + 'ms',
-        frameCount
+        // Calculate width units
+        let widthValue = newWidth;
+        let widthUnit = 'px';
+
+        if (isText || hasWFit) {
+          widthValue = Math.max(20, newWidth);
+          widthUnit = 'px';
+        } else if (parentRect && parentRect.width > 0 && size.widthUnit === '%') {
+          const widthPercentage = Math.max(1, Math.min(100, (newWidth / parentRect.width) * 100));
+          widthValue = Math.round(widthPercentage * 10) / 10;
+          widthUnit = '%';
+        }
+
+        // Calculate height
+        let heightValue = newHeight;
+        let heightUnit = 'px';
+        if (newHeight <= 30) {
+          heightValue = 'auto';
+          heightUnit = '';
+        }
+
+        const newSize = {
+          width: widthValue,
+          height: heightValue,
+          widthUnit,
+          heightUnit
+        };
+
+        // Apply update
+        setSize(newSize);
+        if (onResize) {
+          onResize(newSize);
+        }
+
+        // Update FPS counter
+        const timeSinceLastUpdate = currentTime - perfStatsRef.current.lastUpdate;
+        const currentFPS = timeSinceLastUpdate > 0 ? Math.round(1000 / timeSinceLastUpdate) : 0;
+        setPerformanceStats({
+          fps: currentFPS,
+          frameTime: timeSinceLastUpdate
+        });
+
+        perfStatsRef.current.lastUpdate = currentTime;
+        frameCount++;
       });
     };
 
     const handleMouseUp = (upEvent) => {
-      const totalTime = performance.now() - lastFrameTime;
-      const avgFPS = frameCount > 0 ? Math.round((frameCount / totalTime) * 1000) : 0;
-
-      console.log('🏁 [RESIZE DEBUG] Drag operation completed', {
-        totalFrames: frameCount,
-        totalTime: totalTime.toFixed(2) + 'ms',
-        averageFPS: avgFPS,
-        averageFrameTime: frameCount > 0 ? (totalFrameTime / frameCount).toFixed(2) + 'ms' : '0ms'
-      });
+      console.log('🏁 [RESIZE DEBUG] Drag completed', { frames: frameCount });
 
       // Cancel any pending RAF
       if (animationFrameId) {
@@ -658,20 +440,17 @@ const ResizeWrapper = ({
       if (upEvent.pointerId !== undefined && e.currentTarget) {
         try {
           e.currentTarget.releasePointerCapture(upEvent.pointerId);
-          console.log('🔓 [RESIZE DEBUG] Pointer released', { pointerId: upEvent.pointerId });
         } catch (err) {
-          console.log('⚠️ [RESIZE DEBUG] Could not release pointer', err);
+          console.warn('Could not release pointer', err);
         }
       }
 
       setIsResizing(false);
 
-      // Remove from handle element, not document
+      // Remove event listeners
       e.currentTarget.removeEventListener('pointermove', handleMouseMove);
       e.currentTarget.removeEventListener('pointerup', handleMouseUp);
       e.currentTarget.removeEventListener('pointercancel', handleMouseUp);
-
-      console.log('✅ [RESIZE DEBUG] Event listeners removed, resize handle ready for next operation');
     };
 
     // CRITICAL: Attach to handle element using pointer events, not document with mouse events
@@ -704,17 +483,6 @@ const ResizeWrapper = ({
     })
   };
 
-  // Only log wrapper style during resize to reduce noise
-  if (isResizing) {
-    console.log('🎨 [RESIZE DEBUG] Wrapper style computed', {
-      isButton,
-      isTextElement,
-      isImageElement,
-      isResizing,
-      width: wrapperStyle.width,
-      hasGPUAcceleration: isResizing
-    });
-  }
 
   // For button elements, apply sizing and resize functionality directly to the button
   // without creating an extra wrapper div
