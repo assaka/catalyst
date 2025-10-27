@@ -627,6 +627,8 @@ export function UnifiedSlotRenderer({
         minHeight={minHeight}
         disabled={isDisabled}
         hideBorder={selectedElementId === slot.id}
+        onResizeStart={onResizeStart}
+        onResizeEnd={onResizeEnd}
         onResize={(newSize) => {
           if (!setPageConfig || !saveConfiguration) return;
 

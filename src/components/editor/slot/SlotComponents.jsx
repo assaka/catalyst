@@ -888,7 +888,7 @@ export function GridColumn({
         e.preventDefault();
       }}
       onClick={(e) => {
-        if (mode === 'edit' && onElementClick && !isOverResizeHandle) {
+        if (mode === 'edit' && onElementClick && !isOverResizeHandle && !isResizingSlot) {
           e.stopPropagation();
 
           // Check if this slot is non-editable, if so select parent instead

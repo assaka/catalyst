@@ -34,6 +34,8 @@ const ResizeWrapper = ({
   maxWidth = Infinity,
   maxHeight = Infinity,
   onResize,
+  onResizeStart,
+  onResizeEnd,
   initialWidth,
   initialHeight,
   disabled = false,
@@ -355,6 +357,11 @@ const ResizeWrapper = ({
 
     setIsResizing(true);
 
+    // Notify parent that resize has started
+    if (onResizeStart) {
+      onResizeStart();
+    }
+
     // Performance tracking
     let frameCount = 0;
     let lastFrameTime = performance.now();
@@ -522,6 +529,11 @@ const ResizeWrapper = ({
       }
 
       setIsResizing(false);
+
+      // Notify parent that resize has ended
+      if (onResizeEnd) {
+        onResizeEnd();
+      }
 
       // CRITICAL: Remove event listeners from the stored handleElement
       if (handleElement) {
