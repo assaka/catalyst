@@ -569,8 +569,10 @@ const ResizeWrapper = ({
             height: `${size.height}${size.heightUnit || 'px'}`
           }),
           boxSizing: 'border-box',
-          border: hideBorder ? 'none' : (isHovered || isResizing ? '1px dashed rgba(59, 130, 246, 0.3)' : '1px dashed transparent'),
-          transition: isResizing ? 'none' : 'border-color 0.2s ease-in-out',
+          // Use outline instead of border to avoid layout shifts
+          outline: hideBorder ? 'none' : (isHovered || isResizing ? '1px dashed rgba(59, 130, 246, 0.5)' : 'none'),
+          outlineOffset: '-1px',
+          transition: isResizing ? 'none' : 'outline 0.2s ease-in-out',
           position: 'relative',
           // Ensure button displays properly during resize
           display: children.props.style?.display || 'inline-block',
@@ -693,11 +695,6 @@ const ResizeWrapper = ({
       onMouseLeave={(e) => {
         if (!disabled) {
           setIsHovered(false);
-          // Remove all borders on mouseout
-          if (wrapperRef.current) {
-            wrapperRef.current.style.borderColor = '';
-            wrapperRef.current.style.border = 'none';
-          }
         }
       }}
       style={wrapperStyle}
@@ -722,18 +719,25 @@ const ResizeWrapper = ({
             ...(disabled ? {} :
                 hasWFitClass && size.width === 'auto' ? { width: 'fit-content' } :
                 (size.width !== 'auto' && size.widthUnit !== 'auto') ?
-                { width: `${size.width}${size.widthUnit || 'px'}` } :
-                isTextElement ? { width: 'fit-content' } : {}),
+                { width: `${size.width}${size.widthUnit || 'px'}` } : {}),
             ...(size.height !== 'auto' && size.height && {
               minHeight: `${size.height}${size.heightUnit || 'px'}`,
               height: isSvgElement(children) ? `${size.height}${size.heightUnit || 'px'}` : undefined
             }),
             boxSizing: 'border-box',
             display: children.props.style?.display || 'inline-block',
-            border: hideBorder ? 'none' : (isHovered || isResizing ? '1px dashed rgba(59, 130, 246, 0.3)' : '1px dashed transparent'),
+            // Use outline instead of border to avoid layout shifts
+            outline: hideBorder ? 'none' : (isHovered || isResizing ? '1px dashed rgba(59, 130, 246, 0.5)' : 'none'),
+            outlineOffset: '-1px',
             borderRadius: '4px',
-            transition: isResizing ? 'none' : 'border-color 0.2s ease-in-out',
+            transition: isResizing ? 'none' : 'outline 0.2s ease-in-out',
             position: 'relative',
+            // Allow text wrapping for text elements
+            ...(isTextElement ? {
+              whiteSpace: 'normal',
+              wordWrap: 'break-word',
+              overflowWrap: 'break-word'
+            } : {}),
             // Performance optimizations during resize
             ...(isResizing && {
               willChange: 'width, height',
