@@ -345,11 +345,16 @@ const ResizeWrapper = ({
     console.log('🎯 [RESIZE DEBUG] Starting drag with element types:', { isButton, isText, hasWFit });
 
     const handleMouseMove = (moveEvent) => {
+      console.log('🖱️ [RESIZE] MouseMove', { x: moveEvent.clientX, y: moveEvent.clientY });
+
       const deltaX = moveEvent.clientX - startX;
       const deltaY = moveEvent.clientY - startY;
 
+      console.log('📏 [RESIZE] Delta', { deltaX, deltaY, startX, startY, startWidth, startHeight });
+
       // Only apply sizing if there's significant movement (prevents jumping on click)
       if (Math.abs(deltaX) < 3 && Math.abs(deltaY) < 3) {
+        console.log('⏭️ [RESIZE] Movement too small, skipping');
         return;
       }
 
@@ -381,6 +386,15 @@ const ResizeWrapper = ({
         const newWidth = Math.max(effectiveMinWidth, Math.min(maxAllowedWidth, startWidth + deltaX));
         const newHeight = Math.max(minHeight, Math.min(maxHeight, startHeight + deltaY));
 
+        console.log('📐 [RESIZE] Calculated dimensions', {
+          newWidth,
+          newHeight,
+          maxAllowedWidth,
+          effectiveMinWidth,
+          isButton,
+          isText
+        });
+
         // Calculate width units
         let widthValue = newWidth;
         let widthUnit = 'px';
@@ -408,6 +422,8 @@ const ResizeWrapper = ({
           widthUnit,
           heightUnit
         };
+
+        console.log('✅ [RESIZE] Applying size', newSize);
 
         // Apply update
         setSize(newSize);
