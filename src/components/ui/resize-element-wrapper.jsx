@@ -431,18 +431,18 @@ const ResizeWrapper = ({
           widthUnit = '%';
         }
 
-        // Calculate height
-        let heightValue = newHeight;
-        let heightUnit = 'px';
-        if (newHeight <= 30) {
-          heightValue = 'auto';
-          heightUnit = '';
-        }
-
         // Calculate font-size for text elements
         let fontSize = undefined;
         if (isText && widthUnit === 'px' && widthValue < 200) {
           fontSize = Math.max(10, Math.min(16, widthValue * 0.08));
+        }
+
+        // Calculate height - set to auto for text elements with dynamic fontSize to prevent conflicts
+        let heightValue = newHeight;
+        let heightUnit = 'px';
+        if (newHeight <= 30 || fontSize !== undefined) {
+          heightValue = 'auto';
+          heightUnit = '';
         }
 
         const newSize = {
@@ -541,8 +541,11 @@ const ResizeWrapper = ({
 
   const wrapperStyle = {
     // For buttons and images, wrapper should be full width
-    // For text elements, use inline-block with fit-content so handle positions at text edge
-    width: (isButton || isImageElement) ? '100%' : 'fit-content',
+    // For text elements with calculated size, use fixed width to prevent handle shifts
+    // Otherwise use fit-content so handle positions at text edge
+    width: (isButton || isImageElement) ? '100%' :
+           (isTextElement && size.width !== 'auto') ? `${size.width}${size.widthUnit || 'px'}` :
+           'fit-content',
     height: 'fit-content',
     // Remove maxWidth constraint for text elements to allow free resizing beyond parent
     // Only apply maxWidth constraint for non-button and non-text elements
