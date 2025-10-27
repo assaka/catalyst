@@ -217,8 +217,9 @@ const ResizeWrapper = ({
   }, [disabled, naturalSize.width, size.width, children, className, isTextElement]);
 
   // Monitor parent size changes and auto-shrink text elements to prevent overflow
+  // DISABLE during hover and resize to prevent infinite loops
   useEffect(() => {
-    if (disabled || !isTextElement || !wrapperRef.current) {
+    if (disabled || !isTextElement || !wrapperRef.current || isHovered || isResizing) {
       return;
     }
 
@@ -260,7 +261,7 @@ const ResizeWrapper = ({
     return () => {
       observer.disconnect();
     };
-  }, [disabled, isTextElement, size.width, size.height, size.heightUnit, onResize]);
+  }, [disabled, isTextElement, size.width, size.height, size.heightUnit, onResize, isHovered, isResizing]);
 
   // Cleanup timeout on unmount
   useEffect(() => {
@@ -521,13 +522,14 @@ const ResizeWrapper = ({
                         (children?.props?.className && children.props.className.includes('object-cover'));
 
   const wrapperStyle = {
-    // For buttons, text, and image elements, wrapper should be full width; for others, fit-content
-    width: (isButton || isTextElement || isImageElement) ? '100%' : 'fit-content',
+    // For buttons and images, wrapper should be full width
+    // For text elements, use inline-block with fit-content so handle positions at text edge
+    width: (isButton || isImageElement) ? '100%' : 'fit-content',
     height: 'fit-content',
     // Remove maxWidth constraint for text elements to allow free resizing beyond parent
     // Only apply maxWidth constraint for non-button and non-text elements
     ...(isButton || isTextElement ? { maxWidth: 'none', overflow: 'visible' } : { maxWidth: '100%' }),
-    display: (isButton || isTextElement || isImageElement) ? 'block' : 'inline-block',
+    display: (isButton || isImageElement) ? 'block' : 'inline-block',
     position: 'relative',
     // Performance optimizations during resize
     ...(isResizing && {
@@ -686,7 +688,7 @@ const ResizeWrapper = ({
   return (
     <div
       ref={wrapperRef}
-      className={cn("relative group", isTextElement ? "w-full" : "", className)}
+      className={cn("relative group", className)}
       onMouseEnter={() => !disabled && setIsHovered(true)}
       onMouseLeave={(e) => {
         if (!disabled) {
