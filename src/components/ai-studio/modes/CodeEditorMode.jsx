@@ -5,7 +5,8 @@ import aiService from '@/utils/aiService';
 
 /**
  * CodeEditorMode - AI-powered code editing with RFC 6902 patches
- * Extracted logic from AIContextWindow.jsx
+ * Works with plugin code and other code stored in database
+ * Generates safe modifications using AST analysis
  */
 const CodeEditorMode = ({ context }) => {
   const [prompt, setPrompt] = useState('');

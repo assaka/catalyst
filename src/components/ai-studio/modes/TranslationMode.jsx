@@ -1,61 +1,65 @@
 import React, { useState } from 'react';
-import { Languages, Send, Loader2, Check, Copy } from 'lucide-react';
+import { Languages, Send, Loader2, CheckCircle, AlertCircle } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import aiService from '@/utils/aiService';
+import apiClient from '@/api/client';
+import { useStoreSelection } from '@/contexts/StoreSelectionContext';
 
 /**
- * TranslationMode - AI-powered bulk translation
+ * TranslationMode - AI-powered entity translation
+ * Handles: Products, Categories, CMS Pages, CMS Blocks, Attributes, etc.
+ * Natural language: "translate all products to French and German"
  */
 const TranslationMode = ({ context }) => {
-  const [content, setContent] = useState('');
-  const [targetLanguages, setTargetLanguages] = useState([]);
+  const { getSelectedStoreId } = useStoreSelection();
+  const [prompt, setPrompt] = useState('');
   const [isProcessing, setIsProcessing] = useState(false);
-  const [translations, setTranslations] = useState(null);
+  const [result, setResult] = useState(null);
   const [error, setError] = useState(null);
   const [creditsUsed, setCreditsUsed] = useState(null);
 
-  const availableLanguages = [
-    { code: 'fr', name: 'French', flag: '🇫🇷' },
-    { code: 'de', name: 'German', flag: '🇩🇪' },
-    { code: 'es', name: 'Spanish', flag: '🇪🇸' },
-    { code: 'nl', name: 'Dutch', flag: '🇳🇱' },
-    { code: 'it', name: 'Italian', flag: '🇮🇹' },
-    { code: 'pt', name: 'Portuguese', flag: '🇵🇹' },
-    { code: 'pl', name: 'Polish', flag: '🇵🇱' },
-    { code: 'ja', name: 'Japanese', flag: '🇯🇵' },
-    { code: 'zh', name: 'Chinese', flag: '🇨🇳' },
-    { code: 'ar', name: 'Arabic', flag: '🇸🇦' }
+  const entityTypes = [
+    { id: 'products', label: 'Products', icon: '📦', example: 'Translate all products to French' },
+    { id: 'categories', label: 'Categories', icon: '📂', example: 'Translate categories to German and Spanish' },
+    { id: 'cms_pages', label: 'CMS Pages', icon: '📄', example: 'Translate all CMS pages to Dutch' },
+    { id: 'cms_blocks', label: 'CMS Blocks', icon: '🧱', example: 'Translate CMS blocks to Italian' },
+    { id: 'attributes', label: 'Attributes', icon: '🏷️', example: 'Translate product attributes to French' },
+    { id: 'product_tabs', label: 'Product Tabs', icon: '📑', example: 'Translate product tabs to German' }
   ];
 
-  const toggleLanguage = (code) => {
-    setTargetLanguages(prev =>
-      prev.includes(code)
-        ? prev.filter(c => c !== code)
-        : [...prev, code]
-    );
-  };
+  const examplePrompts = [
+    'Translate all products to French, German, and Spanish',
+    'Translate categories to Dutch and Italian',
+    'Translate all CMS content to French',
+    'Create blog article about winter sale and translate to all active languages',
+    'Translate product attributes to German'
+  ];
 
   const handleTranslate = async () => {
-    if (!content.trim() || targetLanguages.length === 0) return;
+    if (!prompt.trim()) return;
 
     setIsProcessing(true);
     setError(null);
-    setTranslations(null);
+    setResult(null);
 
     try {
-      const result = await aiService.translateContent(content, targetLanguages);
-      setTranslations(result.translations);
-      setCreditsUsed(result.creditsDeducted);
+      // Call AI to parse the prompt and execute translations
+      const response = await apiClient.post('/ai/translate-entities', {
+        prompt: prompt.trim(),
+        storeId: getSelectedStoreId()
+      });
+
+      if (response.success) {
+        setResult(response.data);
+        setCreditsUsed(response.creditsDeducted);
+      } else {
+        setError(response.message || 'Translation failed');
+      }
     } catch (err) {
       console.error('Translation error:', err);
-      setError(err.message || 'Failed to translate content');
+      setError(err.message || 'Failed to translate entities');
     } finally {
       setIsProcessing(false);
     }
-  };
-
-  const copyToClipboard = (text) => {
-    navigator.clipboard.writeText(text);
   };
 
   return (
@@ -65,61 +69,82 @@ const TranslationMode = ({ context }) => {
         <div className="flex items-center gap-2 mb-2">
           <Languages className="w-5 h-5 text-green-600" />
           <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
-            Bulk Translation
+            Entity Translation
           </h2>
         </div>
         <p className="text-sm text-gray-600 dark:text-gray-400">
-          Translate content across multiple languages using AI
+          Translate products, categories, CMS content, and more using natural language
         </p>
       </div>
 
       {/* Content */}
       <div className="flex-1 overflow-auto">
-        {!translations ? (
+        {!result ? (
           // Input Form
           <div className="p-4 space-y-4">
-            {/* Content Input */}
+            {/* Entity Type Guide */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
+                What can you translate?
+              </label>
+              <div className="grid grid-cols-2 gap-2 mb-4">
+                {entityTypes.map((entity) => (
+                  <div
+                    key={entity.id}
+                    className="flex items-center gap-2 p-2 border border-gray-200 dark:border-gray-700 rounded-lg bg-gray-50 dark:bg-gray-800"
+                  >
+                    <span className="text-lg">{entity.icon}</span>
+                    <span className="text-xs font-medium text-gray-700 dark:text-gray-300">
+                      {entity.label}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Natural Language Prompt */}
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                Content to translate
+                What do you want to translate?
               </label>
               <textarea
-                value={content}
-                onChange={(e) => setContent(e.target.value)}
-                placeholder="Enter the text you want to translate..."
+                value={prompt}
+                onChange={(e) => setPrompt(e.target.value)}
+                placeholder="Example: Translate all products to French, German, and Spanish..."
                 className={cn(
                   "w-full p-3 text-sm border rounded-md resize-none",
                   "focus:ring-2 focus:ring-green-500 focus:border-green-500",
                   "dark:bg-gray-800 dark:border-gray-600 dark:text-gray-100",
                   "placeholder-gray-400 dark:placeholder-gray-500"
                 )}
-                rows={6}
+                rows={4}
                 disabled={isProcessing}
               />
+              <p className="text-xs text-gray-500 dark:text-gray-500 mt-1">
+                AI will understand your request and translate the appropriate entities
+              </p>
             </div>
 
-            {/* Language Selection */}
+            {/* Example Prompts */}
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                Target Languages ({targetLanguages.length} selected)
+                Example prompts
               </label>
-              <div className="grid grid-cols-2 gap-2">
-                {availableLanguages.map((lang) => (
+              <div className="space-y-2">
+                {examplePrompts.map((example, index) => (
                   <button
-                    key={lang.code}
-                    onClick={() => toggleLanguage(lang.code)}
+                    key={index}
+                    onClick={() => setPrompt(example)}
                     className={cn(
-                      "flex items-center gap-2 p-2 border rounded-lg transition-colors text-left",
-                      targetLanguages.includes(lang.code)
-                        ? "border-green-500 bg-green-50 dark:bg-green-950"
-                        : "border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800"
+                      "w-full text-left px-3 py-2 text-xs rounded border",
+                      "bg-gray-50 hover:bg-gray-100 dark:bg-gray-800 dark:hover:bg-gray-700",
+                      "border-gray-200 dark:border-gray-600",
+                      "text-gray-700 dark:text-gray-300",
+                      "transition-colors"
                     )}
+                    disabled={isProcessing}
                   >
-                    <span className="text-xl">{lang.flag}</span>
-                    <span className="text-sm font-medium">{lang.name}</span>
-                    {targetLanguages.includes(lang.code) && (
-                      <Check className="w-4 h-4 text-green-600 ml-auto" />
-                    )}
+                    {example}
                   </button>
                 ))}
               </div>
@@ -127,7 +152,8 @@ const TranslationMode = ({ context }) => {
 
             {/* Error Display */}
             {error && (
-              <div className="p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-md">
+              <div className="p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-md flex items-start gap-2">
+                <AlertCircle className="w-4 h-4 text-red-600 mt-0.5" />
                 <p className="text-sm text-red-700 dark:text-red-400">{error}</p>
               </div>
             )}
@@ -135,7 +161,7 @@ const TranslationMode = ({ context }) => {
             {/* Translate Button */}
             <button
               onClick={handleTranslate}
-              disabled={!content.trim() || targetLanguages.length === 0 || isProcessing}
+              disabled={!prompt.trim() || isProcessing}
               className={cn(
                 "w-full py-3 px-4 rounded-md font-medium",
                 "bg-green-600 hover:bg-green-700",
@@ -153,47 +179,63 @@ const TranslationMode = ({ context }) => {
               ) : (
                 <>
                   <Send className="w-4 h-4" />
-                  Translate to {targetLanguages.length} Language{targetLanguages.length !== 1 ? 's' : ''} (20 credits)
+                  Translate (20 credits)
                 </>
               )}
             </button>
           </div>
         ) : (
-          // Show Translations
+          // Show Translation Results
           <div className="p-4 space-y-4">
-            {/* Original Content */}
-            <div className="bg-blue-50 dark:bg-blue-950 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-sm font-medium text-blue-900 dark:text-blue-100">
-                  Original (English)
-                </span>
-                <button
-                  onClick={() => copyToClipboard(content)}
-                  className="text-blue-600 hover:text-blue-700 dark:text-blue-400"
-                >
-                  <Copy className="w-4 h-4" />
-                </button>
+            {/* Success Summary */}
+            <div className="bg-green-50 dark:bg-green-950 border border-green-200 dark:border-green-800 rounded-lg p-4">
+              <div className="flex items-start gap-3">
+                <CheckCircle className="w-5 h-5 text-green-600 mt-0.5" />
+                <div className="flex-1">
+                  <h3 className="text-sm font-semibold text-green-900 dark:text-green-100 mb-1">
+                    Translation Complete
+                  </h3>
+                  <p className="text-sm text-green-800 dark:text-green-200">
+                    {result.summary || 'Entities translated successfully'}
+                  </p>
+                </div>
               </div>
-              <p className="text-sm text-blue-900 dark:text-blue-100 whitespace-pre-wrap">
-                {content}
-              </p>
             </div>
 
-            {/* Translated Content */}
-            <div className="space-y-3">
-              <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                Translations:
-              </h3>
-              <p className="text-sm text-gray-600 dark:text-gray-400 whitespace-pre-wrap">
-                {translations}
-              </p>
-            </div>
+            {/* Translation Details */}
+            {result.details && (
+              <div className="space-y-3">
+                <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                  Translation Details:
+                </h3>
+                <div className="space-y-2">
+                  {result.details.map((detail, index) => (
+                    <div
+                      key={index}
+                      className="p-3 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg"
+                    >
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm font-medium text-gray-900 dark:text-gray-100">
+                          {detail.entityType}
+                        </span>
+                        <span className="text-xs text-gray-500">
+                          {detail.count} items
+                        </span>
+                      </div>
+                      <p className="text-xs text-gray-600 dark:text-gray-400 mt-1">
+                        Translated to: {detail.languages.join(', ')}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
 
             {/* Actions */}
             <button
               onClick={() => {
-                setTranslations(null);
-                setContent('');
+                setResult(null);
+                setPrompt('');
                 setError(null);
                 setCreditsUsed(null);
               }}
@@ -208,7 +250,7 @@ const TranslationMode = ({ context }) => {
       {/* Footer */}
       <div className="p-4 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800">
         <div className="flex items-center justify-between text-xs text-gray-600 dark:text-gray-400">
-          <span>AI-powered translations</span>
+          <span>AI understands which entities to translate</span>
           {creditsUsed && (
             <span className="text-green-600 dark:text-green-400 font-medium">
               -{creditsUsed} credits used

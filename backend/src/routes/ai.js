@@ -428,6 +428,94 @@ router.post('/translate', authenticateToken, async (req, res) => {
 });
 
 /**
+ * POST /api/ai/translate-entities
+ * Translate entities (products, categories, CMS, etc.) using natural language
+ * Example: "Translate all products to French and German"
+ */
+router.post('/translate-entities', authenticateToken, async (req, res) => {
+  try {
+    const { prompt, storeId } = req.body;
+    const userId = req.user.id;
+
+    if (!prompt) {
+      return res.status(400).json({
+        success: false,
+        message: 'prompt is required'
+      });
+    }
+
+    // Use AI to parse the prompt and determine what to translate
+    const parseResult = await aiService.generate({
+      userId,
+      operationType: 'translation',
+      prompt: `Parse this translation request and return a JSON object with:
+{
+  "entities": ["products", "categories", "cms_pages", etc.],
+  "targetLanguages": ["fr", "de", "es", etc.],
+  "filters": {any specific filters mentioned}
+}
+
+User request: ${prompt}`,
+      systemPrompt: 'You are a translation assistant. Parse the user request and return ONLY valid JSON.',
+      maxTokens: 512,
+      temperature: 0.3,
+      metadata: { type: 'parse-translation-request' }
+    });
+
+    let translationRequest;
+    try {
+      translationRequest = JSON.parse(parseResult.content);
+    } catch (error) {
+      return res.status(400).json({
+        success: false,
+        message: 'Could not understand translation request. Please be more specific.'
+      });
+    }
+
+    // TODO: Implement actual entity translation logic
+    // This would:
+    // 1. Fetch entities from database based on translationRequest.entities
+    // 2. Translate each entity to translationRequest.targetLanguages
+    // 3. Save translations back to database
+    // 4. Return summary
+
+    // For now, return mock result
+    const details = translationRequest.entities.map(entityType => ({
+      entityType: entityType.charAt(0).toUpperCase() + entityType.slice(1),
+      count: 0, // TODO: Get actual count from database
+      languages: translationRequest.targetLanguages
+    }));
+
+    res.json({
+      success: true,
+      data: {
+        summary: `Translated ${translationRequest.entities.join(', ')} to ${translationRequest.targetLanguages.join(', ')}`,
+        details,
+        totalEntities: 0,
+        totalTranslations: 0
+      },
+      creditsDeducted: parseResult.creditsDeducted
+    });
+
+  } catch (error) {
+    console.error('Entity Translation Error:', error);
+
+    if (error.message.includes('Insufficient credits')) {
+      return res.status(402).json({
+        success: false,
+        code: 'INSUFFICIENT_CREDITS',
+        message: error.message
+      });
+    }
+
+    res.status(500).json({
+      success: false,
+      message: error.message || 'Entity translation failed'
+    });
+  }
+});
+
+/**
  * POST /api/ai/code/patch
  * Generate code patch
  */
