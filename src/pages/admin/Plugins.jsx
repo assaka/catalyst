@@ -4,10 +4,10 @@ import { Store } from "@/api/entities";
 import { User } from "@/api/entities";
 import apiClient from "@/api/client";
 import { formatPrice } from "@/utils/priceUtils";
-import { 
-  Puzzle, 
-  Plus, 
-  Search, 
+import {
+  Puzzle,
+  Plus,
+  Search,
   Download,
   Star,
   Settings,
@@ -17,8 +17,12 @@ import {
   Truck,
   CreditCard,
   Mail,
-  Filter
+  Filter,
+  Sparkles,
+  Edit3,
+  Package
 } from "lucide-react";
+import { useAIStudio, AI_STUDIO_MODES } from "@/contexts/AIStudioContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -43,6 +47,7 @@ import UninstallDialog from "@/components/admin/plugins/UninstallDialog";
 import PluginSettingsDialog from "@/components/admin/plugins/PluginSettingsDialog";
 
 export default function Plugins() {
+  const { openAI } = useAIStudio();
   const [plugins, setPlugins] = useState([]);
   const [marketplacePlugins, setMarketplacePlugins] = useState([]);
   const [stores, setStores] = useState([]);
@@ -256,30 +261,33 @@ export default function Plugins() {
         {/* Header */}
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900">Plugin Marketplace</h1>
-            <p className="text-gray-600 mt-1">Extend your store with powerful plugins</p>
+            <h1 className="text-3xl font-bold text-gray-900">Plugins</h1>
+            <p className="text-gray-600 mt-1">Create, discover, and manage plugins for your store</p>
           </div>
           <div className="flex gap-2">
             <Button
+              onClick={() => openAI(AI_STUDIO_MODES.PLUGIN)}
+              className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700"
+            >
+              <Sparkles className="w-4 h-4 mr-2" />
+              Create with AI
+            </Button>
+            <Button
               onClick={() => setShowGitHubInstall(true)}
               variant="outline"
-              className="border-green-200 text-green-700 hover:bg-green-50"
             >
               <Plus className="w-4 h-4 mr-2" />
               Install from GitHub
             </Button>
-            <Button
-              onClick={() => setShowPluginForm(true)}
-              className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 material-ripple material-elevation-1"
-            >
-              <Plus className="w-4 h-4 mr-2" />
-              Submit Plugin
-            </Button>
           </div>
         </div>
 
-        <Tabs defaultValue="marketplace" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-3">
+        <Tabs defaultValue="all" className="space-y-6">
+          <TabsList className="grid w-full grid-cols-4">
+            <TabsTrigger value="all" className="flex items-center gap-2">
+              <Package className="w-4 h-4" />
+              All Plugins
+            </TabsTrigger>
             <TabsTrigger value="marketplace" className="flex items-center gap-2">
               <ShoppingCart className="w-4 h-4" />
               Marketplace
@@ -288,11 +296,51 @@ export default function Plugins() {
               <Download className="w-4 h-4" />
               Installed ({plugins.filter(plugin => plugin.isInstalled).length})
             </TabsTrigger>
-            <TabsTrigger value="reports" className="flex items-center gap-2">
-              <BarChart3 className="w-4 h-4" />
-              Reports
+            <TabsTrigger value="my-plugins" className="flex items-center gap-2">
+              <Sparkles className="w-4 h-4" />
+              My Plugins ({plugins.filter(plugin => plugin.creator_id === user?.id).length})
             </TabsTrigger>
           </TabsList>
+
+          {/* All Plugins Tab */}
+          <TabsContent value="all">
+            {/* Search and Filters */}
+            <Card className="material-elevation-1 border-0 mb-6">
+              <CardContent className="p-6">
+                <div className="flex flex-col md:flex-row gap-4">
+                  <div className="flex-1 relative">
+                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+                    <Input
+                      placeholder="Search all plugins..."
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      className="pl-10"
+                    />
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Filter className="w-4 h-4 text-gray-500" />
+                    <Select value={categoryFilter} onValueChange={setCategoryFilter}>
+                      <SelectTrigger className="w-40">
+                        <SelectValue placeholder="Category" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {categories.map((category) => (
+                          <SelectItem key={category.value} value={category.value}>
+                            {category.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* All Plugins Grid */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {filteredPlugins.map((plugin) => renderPluginCard(plugin))}
+            </div>
+          </TabsContent>
 
           {/* Marketplace Tab */}
           <TabsContent value="marketplace">
@@ -527,6 +575,85 @@ export default function Plugins() {
                     className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 material-ripple"
                   >
                     Browse Marketplace
+                  </Button>
+                </CardContent>
+              </Card>
+            )}
+          </TabsContent>
+
+          {/* My Plugins Tab */}
+          <TabsContent value="my-plugins">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {plugins.filter(plugin => plugin.creator_id === user?.id).map((plugin) => {
+                const CategoryIcon = categoryIcons[plugin.category] || Settings;
+
+                return (
+                  <Card key={plugin.id} className="material-elevation-1 border-0 hover:material-elevation-2 transition-all duration-300">
+                    <CardHeader className="pb-3">
+                      <div className="flex items-start justify-between">
+                        <div className="flex items-center space-x-3">
+                          <div className="w-12 h-12 bg-gradient-to-r from-blue-500 to-purple-600 rounded-lg flex items-center justify-center">
+                            <CategoryIcon className="w-6 h-6 text-white" />
+                          </div>
+                          <div>
+                            <CardTitle className="text-lg">{plugin.name}</CardTitle>
+                            <div className="flex items-center space-x-2 mt-1">
+                              <Badge variant="outline" className="text-xs">
+                                v{plugin.version}
+                              </Badge>
+                              <Badge variant="secondary" className="text-xs">
+                                {plugin.category}
+                              </Badge>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </CardHeader>
+                    <CardContent>
+                      <p className="text-sm text-gray-600 mb-4 line-clamp-2">
+                        {plugin.description}
+                      </p>
+
+                      <div className="flex justify-between items-center">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => openAI(AI_STUDIO_MODES.PLUGIN, { plugin })}
+                        >
+                          <Edit3 className="w-4 h-4 mr-2" />
+                          Edit in AI Studio
+                        </Button>
+                        {plugin.isInstalled && (
+                          <Button
+                            onClick={() => handleUninstallPlugin(plugin)}
+                            variant="outline"
+                            size="sm"
+                            className="text-red-600 border-red-200 hover:bg-red-50"
+                          >
+                            Uninstall
+                          </Button>
+                        )}
+                      </div>
+                    </CardContent>
+                  </Card>
+                );
+              })}
+            </div>
+
+            {plugins.filter(plugin => plugin.creator_id === user?.id).length === 0 && (
+              <Card className="material-elevation-1 border-0">
+                <CardContent className="text-center py-12">
+                  <Sparkles className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+                  <h3 className="text-lg font-medium text-gray-900 mb-2">No plugins created yet</h3>
+                  <p className="text-gray-600 mb-6">
+                    Use AI to create your first plugin in minutes
+                  </p>
+                  <Button
+                    onClick={() => openAI(AI_STUDIO_MODES.PLUGIN)}
+                    className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700"
+                  >
+                    <Sparkles className="w-4 h-4 mr-2" />
+                    Create Plugin with AI
                   </Button>
                 </CardContent>
               </Card>

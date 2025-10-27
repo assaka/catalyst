@@ -1,32 +1,50 @@
 import React, { useState } from 'react';
-import { Code2, Send } from 'lucide-react';
+import { Code2, Send, Loader2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import aiService from '@/utils/aiService';
 
 /**
  * CodeEditorMode - AI-powered code editing with RFC 6902 patches
- * Will extract logic from AIContextWindow.jsx
+ * Extracted logic from AIContextWindow.jsx
  */
 const CodeEditorMode = ({ context }) => {
   const [prompt, setPrompt] = useState('');
+  const [sourceCode, setSourceCode] = useState(context?.sourceCode || '');
+  const [filePath, setFilePath] = useState(context?.filePath || '');
   const [isProcessing, setIsProcessing] = useState(false);
-
-  const sourceCode = context?.sourceCode || '';
-  const filePath = context?.filePath || '';
-
-  const handleGenerate = async () => {
-    setIsProcessing(true);
-    // TODO: Extract and implement logic from AIContextWindow.jsx
-    console.log('Generating patch:', prompt);
-    setTimeout(() => setIsProcessing(false), 2000);
-  };
+  const [generatedPatch, setGeneratedPatch] = useState(null);
+  const [error, setError] = useState(null);
+  const [creditsUsed, setCreditsUsed] = useState(null);
 
   const promptTemplates = [
     "Add a new function called {name} that {description}",
     "Remove the {element} named {name}",
     "Change the variable {oldName} to {newName}",
     "Add error handling to the {function} function",
-    "Refactor this code to use async/await"
+    "Refactor this code to use async/await",
+    "Add TypeScript types to this function",
+    "Extract this logic into a separate function",
+    "Add JSDoc comments to all functions"
   ];
+
+  const handleGenerate = async () => {
+    if (!prompt.trim() || !sourceCode.trim()) return;
+
+    setIsProcessing(true);
+    setError(null);
+    setGeneratedPatch(null);
+
+    try {
+      const result = await aiService.generateCodePatch(prompt, sourceCode, filePath || 'untitled.js');
+      setGeneratedPatch(result.patch);
+      setCreditsUsed(result.creditsDeducted);
+    } catch (err) {
+      console.error('Code patch generation error:', err);
+      setError(err.message || 'Failed to generate code patch');
+    } finally {
+      setIsProcessing(false);
+    }
+  };
 
   return (
     <div className="flex flex-col h-full">
@@ -39,18 +57,53 @@ const CodeEditorMode = ({ context }) => {
           </h2>
         </div>
         <p className="text-sm text-gray-600 dark:text-gray-400">
-          Describe code changes in natural language
+          Describe code changes in natural language - AI generates RFC 6902 patches
         </p>
-        {filePath && (
-          <p className="text-xs text-gray-500 dark:text-gray-500 mt-1 font-mono">
-            {filePath}
-          </p>
-        )}
       </div>
 
       {/* Content */}
-      <div className="flex-1 overflow-auto p-4">
-        <div className="space-y-4">
+      <div className="flex-1 overflow-auto">
+        <div className="p-4 space-y-4">
+          {/* File Path */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              File Path (optional)
+            </label>
+            <input
+              type="text"
+              value={filePath}
+              onChange={(e) => setFilePath(e.target.value)}
+              placeholder="e.g., src/components/MyComponent.jsx"
+              className={cn(
+                "w-full p-2 text-sm border rounded-md",
+                "focus:ring-2 focus:ring-orange-500 focus:border-orange-500",
+                "dark:bg-gray-800 dark:border-gray-600 dark:text-gray-100",
+                "placeholder-gray-400 dark:placeholder-gray-500"
+              )}
+              disabled={isProcessing}
+            />
+          </div>
+
+          {/* Source Code */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              Source Code
+            </label>
+            <textarea
+              value={sourceCode}
+              onChange={(e) => setSourceCode(e.target.value)}
+              placeholder="Paste your code here..."
+              className={cn(
+                "w-full p-3 text-xs font-mono border rounded-md resize-none",
+                "focus:ring-2 focus:ring-orange-500 focus:border-orange-500",
+                "dark:bg-gray-800 dark:border-gray-600 dark:text-gray-100",
+                "placeholder-gray-400 dark:placeholder-gray-500"
+              )}
+              rows={10}
+              disabled={isProcessing}
+            />
+          </div>
+
           {/* Prompt Input */}
           <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
@@ -59,14 +112,14 @@ const CodeEditorMode = ({ context }) => {
             <textarea
               value={prompt}
               onChange={(e) => setPrompt(e.target.value)}
-              placeholder="e.g., Add a new async function called fetchUserData that takes a userId parameter and returns user information..."
+              placeholder="e.g., Add a new async function called fetchUserData that takes a userId parameter..."
               className={cn(
                 "w-full p-3 text-sm border rounded-md resize-none",
                 "focus:ring-2 focus:ring-orange-500 focus:border-orange-500",
                 "dark:bg-gray-800 dark:border-gray-600 dark:text-gray-100",
                 "placeholder-gray-400 dark:placeholder-gray-500"
               )}
-              rows={6}
+              rows={4}
               disabled={isProcessing}
             />
           </div>
@@ -77,7 +130,7 @@ const CodeEditorMode = ({ context }) => {
               Quick templates
             </label>
             <div className="flex flex-wrap gap-2">
-              {promptTemplates.map((template, index) => (
+              {promptTemplates.slice(0, 4).map((template, index) => (
                 <button
                   key={index}
                   onClick={() => setPrompt(template)}
@@ -96,27 +149,17 @@ const CodeEditorMode = ({ context }) => {
             </div>
           </div>
 
-          {/* Source Code Preview (if available) */}
-          {sourceCode && (
-            <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                Current code
-              </label>
-              <div className={cn(
-                "p-3 text-xs font-mono rounded-md border overflow-auto max-h-40",
-                "bg-gray-50 dark:bg-gray-800",
-                "border-gray-200 dark:border-gray-600",
-                "text-gray-800 dark:text-gray-200"
-              )}>
-                <pre>{sourceCode.substring(0, 500)}{sourceCode.length > 500 ? '...' : ''}</pre>
-              </div>
+          {/* Error Display */}
+          {error && (
+            <div className="p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-md">
+              <p className="text-sm text-red-700 dark:text-red-400">{error}</p>
             </div>
           )}
 
           {/* Generate Button */}
           <button
             onClick={handleGenerate}
-            disabled={!prompt.trim() || isProcessing}
+            disabled={!prompt.trim() || !sourceCode.trim() || isProcessing}
             className={cn(
               "w-full py-3 px-4 rounded-md font-medium",
               "bg-orange-600 hover:bg-orange-700",
@@ -128,24 +171,49 @@ const CodeEditorMode = ({ context }) => {
           >
             {isProcessing ? (
               <>
-                <div className="animate-spin h-4 w-4 border-2 border-white border-t-transparent rounded-full" />
+                <Loader2 className="w-4 h-4 animate-spin" />
                 Generating Patch...
               </>
             ) : (
               <>
                 <Send className="w-4 h-4" />
-                Generate Patch
+                Generate Patch (25 credits)
               </>
             )}
           </button>
+
+          {/* Generated Patch */}
+          {generatedPatch && (
+            <div className="border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden">
+              <div className="bg-gray-100 dark:bg-gray-800 px-3 py-2 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between">
+                <span className="text-xs font-medium text-gray-700 dark:text-gray-300">
+                  RFC 6902 JSON Patch
+                </span>
+                <button
+                  onClick={() => navigator.clipboard.writeText(generatedPatch)}
+                  className="text-xs text-orange-600 hover:text-orange-700 dark:text-orange-400"
+                >
+                  Copy
+                </button>
+              </div>
+              <pre className="p-3 bg-gray-900 text-gray-100 text-xs overflow-x-auto max-h-64">
+                <code>{generatedPatch}</code>
+              </pre>
+            </div>
+          )}
         </div>
       </div>
 
-      {/* Footer Info */}
+      {/* Footer */}
       <div className="p-4 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800">
-        <p className="text-xs text-gray-600 dark:text-gray-400 text-center">
-          Generates RFC 6902 JSON Patches using AST analysis for safe code modifications
-        </p>
+        <div className="flex items-center justify-between text-xs text-gray-600 dark:text-gray-400">
+          <span>AST-based safe code modifications</span>
+          {creditsUsed && (
+            <span className="text-orange-600 dark:text-orange-400 font-medium">
+              -{creditsUsed} credits used
+            </span>
+          )}
+        </div>
       </div>
     </div>
   );
