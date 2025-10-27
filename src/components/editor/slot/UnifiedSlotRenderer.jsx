@@ -1102,7 +1102,7 @@ export function UnifiedSlotRenderer({
                         type === 'flex' ? 'flex flex-wrap gap-2' : '';
       }
 
-      const containerElement = (
+      return (
         <div className={containerClass} style={processedStyles}>
           <UnifiedSlotRenderer
             slots={slots}
@@ -1133,9 +1133,6 @@ export function UnifiedSlotRenderer({
           />
         </div>
       );
-
-      // Wrap container with ResizeWrapper in editor mode
-      return wrapWithResize(containerElement, slot, 50, 50);
     }
 
     // Component Element
