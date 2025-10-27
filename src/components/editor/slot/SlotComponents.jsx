@@ -130,14 +130,49 @@ export function GridResizeHandle({ onResize, currentValue, maxValue = 12, minVal
 
       const deltaX = e.clientX - startXRef.current;
       const deltaY = e.clientY - startYRef.current;
+      const startValue = startValueRef.current;
 
-      // Just update visual feedback, don't resize yet
+      // Calculate and apply resize in real-time for visual feedback
+      let newValue;
+
       if (direction === 'horizontal') {
-        // Show visual offset (optional, can be 0 for cleaner UX)
+        const sensitivity = 20;
+        const colSpanDelta = Math.round(deltaX / sensitivity);
+
+        // Parse the current value (could be number or string)
+        const parsed = parseResponsiveColSpan(startValue);
+        const currentNumericValue = parsed.responsive || parsed.base;
+        const newNumericValue = Math.max(minValue, Math.min(maxValue, currentNumericValue + colSpanDelta));
+
+        // Build the new colSpan value
+        if (parsed.responsive) {
+          newValue = buildResponsiveColSpan(parsed.base, newNumericValue, parsed.breakpoint);
+        } else if (typeof startValue === 'string') {
+          newValue = buildResponsiveColSpan(newNumericValue, null);
+        } else {
+          newValue = newNumericValue;
+        }
+
+        // Apply resize immediately for visual feedback (no save yet)
+        if (newValue !== lastValueRef.current) {
+          lastValueRef.current = newValue;
+          console.log('📊 [GRID RESIZE DEBUG] Live resize update', { newValue, colSpanDelta });
+          onResizeRef.current(newValue);
+        }
+
         setMouseOffset(0);
       } else {
-        // Show vertical offset for visual feedback
-        setMouseOffset(Math.round(deltaY / 2));
+        const heightDelta = Math.round(deltaY / 2);
+        newValue = Math.max(20, startValue + heightDelta);
+
+        // Apply resize immediately for visual feedback (no save yet)
+        if (newValue !== lastValueRef.current) {
+          lastValueRef.current = newValue;
+          console.log('📏 [GRID RESIZE DEBUG] Live height update', { newValue, heightDelta });
+          onResizeRef.current(newValue);
+        }
+
+        setMouseOffset(heightDelta);
       }
     };
 
