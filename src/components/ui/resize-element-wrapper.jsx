@@ -264,6 +264,13 @@ const ResizeWrapper = ({
   const handleMouseDown = useCallback((e) => {
     if (disabled) return;
 
+    // CRITICAL: Prevent parent drag events from firing
+    e.preventDefault();
+    e.stopPropagation();
+    if (e.nativeEvent?.stopImmediatePropagation) {
+      e.nativeEvent.stopImmediatePropagation();
+    }
+
     console.log('🎯 [RESIZE DEBUG] Mouse down', { x: e.clientX, y: e.clientY });
 
     // CRITICAL: Capture pointer events to this element
@@ -580,7 +587,13 @@ const ResizeWrapper = ({
               "flex items-center justify-center",
               isHovered || isResizing ? "opacity-100" : "opacity-0 hover:opacity-100"
             )}
+            draggable={false}
             onPointerDown={handleMouseDown}
+            onDragStart={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              return false;
+            }}
             style={{
               bottom: '-2px',
               right: '-2px',
@@ -589,7 +602,8 @@ const ResizeWrapper = ({
               background: 'rgba(239, 68, 68, 0.9)',
               borderRadius: '0 0 4px 0',
               border: '2px solid rgba(220, 38, 38, 1)',
-              boxShadow: '0 2px 4px rgba(0, 0, 0, 0.2)'
+              boxShadow: '0 2px 4px rgba(0, 0, 0, 0.2)',
+              pointerEvents: 'all'
             }}
           >
             <svg
@@ -716,7 +730,13 @@ const ResizeWrapper = ({
             "flex items-center justify-center",
             isHovered || isResizing ? "opacity-100" : "opacity-0 hover:opacity-100"
           )}
-          onMouseDown={handleMouseDown}
+          draggable={false}
+          onPointerDown={handleMouseDown}
+          onDragStart={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            return false;
+          }}
           style={{
             bottom: '-2px',
             right: '-2px',
@@ -725,7 +745,8 @@ const ResizeWrapper = ({
             background: 'rgba(239, 68, 68, 0.9)',
             borderRadius: '0 0 4px 0',
             border: '2px solid rgba(220, 38, 38, 1)',
-            boxShadow: '0 2px 4px rgba(0, 0, 0, 0.2)'
+            boxShadow: '0 2px 4px rgba(0, 0, 0, 0.2)',
+            pointerEvents: 'all'
           }}
         >
           {/* Small diagonal grip icon */}
