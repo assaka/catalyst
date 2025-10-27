@@ -161,15 +161,7 @@ const ResizeWrapper = ({
 
   // Capture natural dimensions and calculate initial percentage
   useEffect(() => {
-    console.log('🔄 [RESIZE DEBUG] Natural size useEffect triggered', {
-      disabled,
-      hasNaturalWidth: !!naturalSize.width,
-      currentWidth: size.width,
-      hasWrapperRef: !!wrapperRef.current
-    });
-
     if (disabled) {
-      console.log('⏸️ [RESIZE DEBUG] Natural size capture skipped - component disabled');
       return;
     }
 
@@ -261,18 +253,7 @@ const ResizeWrapper = ({
 
   // Monitor parent size changes and auto-shrink text elements to prevent overflow
   useEffect(() => {
-    console.log('🔄 [RESIZE DEBUG] ResizeObserver useEffect triggered', {
-      disabled,
-      isTextElement,
-      hasWrapperRef: !!wrapperRef.current
-    });
-
     if (disabled || !isTextElement || !wrapperRef.current) {
-      console.log('⏸️ [RESIZE DEBUG] ResizeObserver skipped', {
-        disabled,
-        isTextElement,
-        hasWrapperRef: !!wrapperRef.current
-      });
       return;
     }
 
@@ -282,12 +263,6 @@ const ResizeWrapper = ({
       for (const entry of entries) {
         const parentRect = entry.contentRect;
         const currentWidth = size.width;
-
-        console.log('📏 [RESIZE DEBUG] ResizeObserver fired', {
-          parentWidth: parentRect.width,
-          currentWidth,
-          isAuto: currentWidth === 'auto'
-        });
 
         // If text element is wider than parent slot, shrink it to fit
         if (currentWidth !== 'auto' && parentRect.width > 0) {
@@ -699,14 +674,17 @@ const ResizeWrapper = ({
     })
   };
 
-  console.log('🎨 [RESIZE DEBUG] Wrapper style computed', {
-    isButton,
-    isTextElement,
-    isImageElement,
-    isResizing,
-    width: wrapperStyle.width,
-    hasGPUAcceleration: isResizing
-  });
+  // Only log wrapper style during resize to reduce noise
+  if (isResizing) {
+    console.log('🎨 [RESIZE DEBUG] Wrapper style computed', {
+      isButton,
+      isTextElement,
+      isImageElement,
+      isResizing,
+      width: wrapperStyle.width,
+      hasGPUAcceleration: isResizing
+    });
+  }
 
   // For button elements, apply sizing and resize functionality directly to the button
   // without creating an extra wrapper div
