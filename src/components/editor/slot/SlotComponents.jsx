@@ -268,15 +268,19 @@ export function GridResizeHandle({ onResize, currentValue, maxValue = 12, minVal
         }
       }
 
-      // Cleanup
+      // Cleanup - remove from capturing element
       setIsDragging(false);
       isDraggingRef.current = false;
       setMouseOffset(0);
       document.body.style.userSelect = '';
       document.body.style.cursor = '';
-      document.removeEventListener('pointermove', handleMouseMove, true);
-      document.removeEventListener('pointerup', handleMouseUp, true);
-      document.removeEventListener('pointercancel', handleMouseUp, true);
+
+      if (handleElementRef.current) {
+        handleElementRef.current.removeEventListener('pointermove', handleMouseMove);
+        handleElementRef.current.removeEventListener('pointerup', handleMouseUp);
+        handleElementRef.current.removeEventListener('pointercancel', handleMouseUp);
+      }
+
       mouseMoveHandlerRef.current = null;
       mouseUpHandlerRef.current = null;
 
@@ -290,22 +294,25 @@ export function GridResizeHandle({ onResize, currentValue, maxValue = 12, minVal
     mouseMoveHandlerRef.current = handleMouseMove;
     mouseUpHandlerRef.current = handleMouseUp;
 
-    // Use POINTER events instead of mouse for better reliability
-    document.addEventListener('pointermove', handleMouseMove, true);
-    document.addEventListener('pointerup', handleMouseUp, true);
-    document.addEventListener('pointercancel', handleMouseUp, true);
+    // CRITICAL: Attach listeners to the capturing element, not document!
+    // When setPointerCapture is used, events go to the capturing element, not document
+    const handleElement = e.currentTarget;
+    handleElement.addEventListener('pointermove', handleMouseMove);
+    handleElement.addEventListener('pointerup', handleMouseUp);
+    handleElement.addEventListener('pointercancel', handleMouseUp);
 
-    console.log('👂 [GRID RESIZE DEBUG] Event listeners attached (pointermove, pointerup, pointercancel) with capture=true');
+    console.log('👂 [GRID RESIZE DEBUG] Event listeners attached to handle element (not document)');
   };
 
   useEffect(() => {
     return () => {
-      if (mouseMoveHandlerRef.current) {
-        document.removeEventListener('pointermove', mouseMoveHandlerRef.current, true);
+      // Cleanup on unmount - try to remove from handle element if it exists
+      if (handleElementRef.current && mouseMoveHandlerRef.current) {
+        handleElementRef.current.removeEventListener('pointermove', mouseMoveHandlerRef.current);
       }
-      if (mouseUpHandlerRef.current) {
-        document.removeEventListener('pointerup', mouseUpHandlerRef.current, true);
-        document.removeEventListener('pointercancel', mouseUpHandlerRef.current, true);
+      if (handleElementRef.current && mouseUpHandlerRef.current) {
+        handleElementRef.current.removeEventListener('pointerup', mouseUpHandlerRef.current);
+        handleElementRef.current.removeEventListener('pointercancel', mouseUpHandlerRef.current);
       }
     };
   }, []);
