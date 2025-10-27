@@ -405,15 +405,7 @@ const EditorSidebar = ({
       if (isHtmlElement && slotConfig) {
         // Prefer database content over DOM element content
         const htmlContent = getCleanHtmlFromDatabase(slotConfig) || getCleanHtml(selectedElement) || '';
-        console.log('🔧 EditorSidebar - Setting HTML content:', {
-          slotId,
-          isHtmlElement,
-          hasSlotConfig: !!slotConfig,
-          htmlContentFromDb: getCleanHtmlFromDatabase(slotConfig),
-          htmlContentFromDom: getCleanHtml(selectedElement),
-          finalHtmlContent: htmlContent,
-          metadata: slotConfig?.metadata
-        });
+
         setLocalHtmlContent(htmlContent);
 
         // Update HTML textarea ref value (but not if user is actively editing)
@@ -505,15 +497,6 @@ const EditorSidebar = ({
         }
         return null; // Let computed styles handle non-explicit colors
       };
-
-      console.log('📝 EditorSidebar - Setting element properties from database:', {
-        slotId,
-        storedClassName,
-        actualElementClassName,
-        cleanActualClasses,
-        effectiveClassName,
-        storedStyles: slotConfig?.styles || {}
-      });
 
       setElementProperties({
         width: selectedElement.offsetWidth || '',
