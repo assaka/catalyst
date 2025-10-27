@@ -516,6 +516,168 @@ User request: ${prompt}`,
 });
 
 /**
+ * POST /api/ai/chat
+ * Conversational AI interface - determines intent and executes
+ * Like Bolt, Lovable, v0 - user chats naturally
+ */
+router.post('/chat', authenticateToken, async (req, res) => {
+  try {
+    const { message, conversationHistory, storeId } = req.body;
+    const userId = req.user.id;
+
+    if (!message) {
+      return res.status(400).json({
+        success: false,
+        message: 'message is required'
+      });
+    }
+
+    // Determine intent from conversation
+    const intentPrompt = `Analyze this user message and determine what they want to do.
+
+User message: "${message}"
+
+Previous conversation: ${JSON.stringify(conversationHistory?.slice(-3) || [])}
+
+Determine the intent and respond with JSON:
+{
+  "intent": "plugin|translation|layout|code|chat",
+  "action": "generate|modify|chat",
+  "details": {
+    // For plugin: { description, category }
+    // For translation: { entities, languages }
+    // For layout: { configType, description }
+    // For code: { operation }
+  }
+}
+
+Return ONLY valid JSON.`;
+
+    const intentResult = await aiService.generate({
+      userId,
+      operationType: 'general',
+      prompt: intentPrompt,
+      systemPrompt: 'You are an intent classifier. Return ONLY valid JSON.',
+      maxTokens: 512,
+      temperature: 0.3,
+      metadata: { type: 'intent-detection' }
+    });
+
+    let intent;
+    try {
+      const jsonMatch = intentResult.content.match(/\{[\s\S]*\}/);
+      intent = JSON.parse(jsonMatch ? jsonMatch[0] : intentResult.content);
+    } catch (error) {
+      // Default to chat if can't parse
+      intent = { intent: 'chat', action: 'chat' };
+    }
+
+    // Execute based on intent
+    let responseData = null;
+    let creditsUsed = intentResult.creditsDeducted;
+
+    if (intent.intent === 'plugin' && intent.action === 'generate') {
+      // Generate plugin
+      const pluginResult = await aiService.generatePlugin(userId, message, {
+        category: intent.details?.category || 'general',
+        storeId
+      });
+
+      responseData = {
+        type: 'plugin',
+        plugin: pluginResult.pluginData
+      };
+      creditsUsed += pluginResult.creditsDeducted;
+
+      res.json({
+        success: true,
+        message: `I've created a plugin for you! Here's what it does:\n\n${pluginResult.pluginData.explanation || pluginResult.pluginData.description}`,
+        data: responseData,
+        creditsDeducted: creditsUsed
+      });
+
+    } else if (intent.intent === 'translation') {
+      // Handle translation request
+      res.json({
+        success: true,
+        message: `I understand you want to translate ${intent.details?.entities?.join(', ')} to ${intent.details?.languages?.join(', ')}. This feature is being implemented.`,
+        data: {
+          type: 'translation',
+          summary: 'Translation in progress',
+          details: []
+        },
+        creditsDeducted: creditsUsed
+      });
+
+    } else if (intent.intent === 'layout') {
+      // Generate layout
+      const layoutResult = await aiService.generateLayout(userId, message, intent.details?.configType || 'homepage', {
+        storeId
+      });
+
+      responseData = {
+        type: 'layout',
+        configType: intent.details?.configType || 'homepage',
+        config: layoutResult.content
+      };
+      creditsUsed += layoutResult.creditsDeducted;
+
+      res.json({
+        success: true,
+        message: `I've generated a layout configuration for your ${intent.details?.configType || 'homepage'}. You can preview it below.`,
+        data: responseData,
+        creditsDeducted: creditsUsed
+      });
+
+    } else {
+      // Just chat
+      const chatResult = await aiService.generate({
+        userId,
+        operationType: 'general',
+        prompt: message,
+        systemPrompt: `You are a helpful AI assistant for Catalyst e-commerce platform.
+
+You can help users:
+- Create plugins: "Create a wishlist plugin"
+- Translate content: "Translate all products to French"
+- Generate layouts: "Add hero section to homepage"
+- Edit code: "Add error handling to this function"
+
+Be friendly and guide them toward what they can build.
+
+Previous conversation: ${JSON.stringify(conversationHistory?.slice(-3) || [])}`,
+        maxTokens: 1024,
+        temperature: 0.7,
+        metadata: { type: 'chat' }
+      });
+
+      res.json({
+        success: true,
+        message: chatResult.content,
+        data: null,
+        creditsDeducted: creditsUsed + chatResult.creditsDeducted
+      });
+    }
+
+  } catch (error) {
+    console.error('Chat Error:', error);
+
+    if (error.message.includes('Insufficient credits')) {
+      return res.status(402).json({
+        success: false,
+        code: 'INSUFFICIENT_CREDITS',
+        message: error.message
+      });
+    }
+
+    res.status(500).json({
+      success: false,
+      message: error.message || 'Chat failed'
+    });
+  }
+});
+
+/**
  * POST /api/ai/code/patch
  * Generate code patch
  */

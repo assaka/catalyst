@@ -1,0 +1,308 @@
+import React, { useState, useRef, useEffect } from 'react';
+import { Send, Loader2, Sparkles, User, Bot, Code, Eye, Package, Download } from 'lucide-react';
+import { cn } from '@/lib/utils';
+import apiClient from '@/api/client';
+import { useStoreSelection } from '@/contexts/StoreSelectionContext';
+
+/**
+ * ChatInterface - Conversational AI for AI Studio
+ * User chats naturally, AI determines what to do (like Bolt, Lovable, v0)
+ */
+const ChatInterface = () => {
+  const { getSelectedStoreId } = useStoreSelection();
+  const [messages, setMessages] = useState([
+    {
+      role: 'assistant',
+      content: "Hi! I'm your AI assistant. I can help you:\n\n• Create and edit plugins\n• Translate products, categories, and content\n• Generate page layouts\n• Modify code\n\nWhat would you like to build today?"
+    }
+  ]);
+  const [input, setInput] = useState('');
+  const [isProcessing, setIsProcessing] = useState(false);
+  const messagesEndRef = useRef(null);
+  const inputRef = useRef(null);
+
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  };
+
+  useEffect(() => {
+    scrollToBottom();
+  }, [messages]);
+
+  const handleSend = async () => {
+    if (!input.trim() || isProcessing) return;
+
+    const userMessage = input.trim();
+    setInput('');
+
+    // Add user message to chat
+    setMessages(prev => [...prev, {
+      role: 'user',
+      content: userMessage
+    }]);
+
+    setIsProcessing(true);
+
+    try {
+      // Send to AI chat endpoint - AI determines what to do
+      const response = await apiClient.post('/ai/chat', {
+        message: userMessage,
+        conversationHistory: messages,
+        storeId: getSelectedStoreId()
+      });
+
+      if (response.success) {
+        // Add AI response with any generated content
+        setMessages(prev => [...prev, {
+          role: 'assistant',
+          content: response.message,
+          data: response.data, // Plugin, translation, layout data
+          credits: response.creditsDeducted
+        }]);
+      } else {
+        setMessages(prev => [...prev, {
+          role: 'assistant',
+          content: `Error: ${response.message || 'Something went wrong'}`,
+          error: true
+        }]);
+      }
+    } catch (error) {
+      console.error('Chat error:', error);
+      setMessages(prev => [...prev, {
+        role: 'assistant',
+        content: `Error: ${error.message || 'Failed to process your request'}`,
+        error: true
+      }]);
+    } finally {
+      setIsProcessing(false);
+      setTimeout(() => inputRef.current?.focus(), 100);
+    }
+  };
+
+  const handleKeyPress = (e) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      handleSend();
+    }
+  };
+
+  return (
+    <div className="flex flex-col h-full bg-white dark:bg-gray-900">
+      {/* Messages */}
+      <div className="flex-1 overflow-y-auto p-4 space-y-4">
+        {messages.map((message, index) => (
+          <MessageBubble key={index} message={message} />
+        ))}
+        {isProcessing && (
+          <div className="flex items-start gap-3">
+            <div className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center flex-shrink-0">
+              <Bot className="w-4 h-4 text-white" />
+            </div>
+            <div className="flex items-center gap-2 text-gray-500">
+              <Loader2 className="w-4 h-4 animate-spin" />
+              <span className="text-sm">Thinking...</span>
+            </div>
+          </div>
+        )}
+        <div ref={messagesEndRef} />
+      </div>
+
+      {/* Input */}
+      <div className="border-t border-gray-200 dark:border-gray-700 p-4 bg-gray-50 dark:bg-gray-800">
+        <div className="flex items-end gap-3">
+          <div className="flex-1">
+            <textarea
+              ref={inputRef}
+              value={input}
+              onChange={(e) => setInput(e.target.value)}
+              onKeyDown={handleKeyPress}
+              placeholder="Describe what you want to build... (Press Enter to send)"
+              className={cn(
+                "w-full p-3 text-sm border rounded-lg resize-none",
+                "focus:ring-2 focus:ring-blue-500 focus:border-blue-500",
+                "dark:bg-gray-900 dark:border-gray-600 dark:text-gray-100",
+                "placeholder-gray-400 dark:placeholder-gray-500",
+                "max-h-32"
+              )}
+              rows={1}
+              disabled={isProcessing}
+              style={{
+                minHeight: '44px',
+                height: 'auto'
+              }}
+            />
+          </div>
+          <button
+            onClick={handleSend}
+            disabled={!input.trim() || isProcessing}
+            className={cn(
+              "p-3 rounded-lg",
+              "bg-blue-600 hover:bg-blue-700",
+              "text-white",
+              "disabled:bg-gray-300 disabled:cursor-not-allowed",
+              "transition-colors flex-shrink-0"
+            )}
+          >
+            {isProcessing ? (
+              <Loader2 className="w-5 h-5 animate-spin" />
+            ) : (
+              <Send className="w-5 h-5" />
+            )}
+          </button>
+        </div>
+        <p className="text-xs text-gray-500 dark:text-gray-400 mt-2 text-center">
+          Press Enter to send • Shift+Enter for new line
+        </p>
+      </div>
+    </div>
+  );
+};
+
+/**
+ * MessageBubble - Renders individual chat messages with generated content
+ */
+const MessageBubble = ({ message }) => {
+  const [showCode, setShowCode] = useState(false);
+  const isUser = message.role === 'user';
+  const isError = message.error;
+
+  return (
+    <div className={cn("flex items-start gap-3", isUser && "flex-row-reverse")}>
+      {/* Avatar */}
+      <div className={cn(
+        "w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0",
+        isUser
+          ? "bg-gray-200 dark:bg-gray-700"
+          : "bg-gradient-to-br from-blue-500 to-purple-600"
+      )}>
+        {isUser ? (
+          <User className="w-4 h-4 text-gray-600 dark:text-gray-300" />
+        ) : (
+          <Bot className="w-4 h-4 text-white" />
+        )}
+      </div>
+
+      {/* Message Content */}
+      <div className={cn(
+        "flex-1 max-w-[80%]",
+        isUser && "flex flex-col items-end"
+      )}>
+        <div className={cn(
+          "rounded-lg p-3",
+          isUser
+            ? "bg-blue-600 text-white"
+            : isError
+            ? "bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-red-700 dark:text-red-400"
+            : "bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-gray-100"
+        )}>
+          <p className="text-sm whitespace-pre-wrap">{message.content}</p>
+
+          {/* Credits Used */}
+          {message.credits && !isUser && (
+            <p className="text-xs mt-2 opacity-70">
+              {message.credits} credits used
+            </p>
+          )}
+        </div>
+
+        {/* Generated Plugin Preview */}
+        {message.data?.type === 'plugin' && !isUser && (
+          <div className="mt-3 w-full border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden bg-white dark:bg-gray-800">
+            <div className="p-4 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900">
+              <div className="flex items-center gap-2 mb-2">
+                <Package className="w-5 h-5 text-blue-600" />
+                <h3 className="font-semibold text-gray-900 dark:text-gray-100">
+                  {message.data.plugin.name}
+                </h3>
+              </div>
+              <p className="text-sm text-gray-600 dark:text-gray-400">
+                {message.data.plugin.description}
+              </p>
+            </div>
+
+            {/* Plugin Actions */}
+            <div className="p-3 flex items-center justify-between bg-white dark:bg-gray-800">
+              <button
+                onClick={() => setShowCode(!showCode)}
+                className="flex items-center gap-2 text-sm text-blue-600 hover:text-blue-700 dark:text-blue-400"
+              >
+                {showCode ? <Eye className="w-4 h-4" /> : <Code className="w-4 h-4" />}
+                {showCode ? 'Hide' : 'View'} Code
+              </button>
+              <button
+                onClick={() => {
+                  // TODO: Install plugin
+                  alert('Install plugin coming soon!');
+                }}
+                className="flex items-center gap-2 px-3 py-1.5 bg-green-600 hover:bg-green-700 text-white text-sm rounded-md"
+              >
+                <Download className="w-4 h-4" />
+                Install
+              </button>
+            </div>
+
+            {/* Code View */}
+            {showCode && message.data.plugin.generatedFiles && (
+              <div className="border-t border-gray-200 dark:border-gray-700">
+                {message.data.plugin.generatedFiles.map((file, idx) => (
+                  <div key={idx}>
+                    <div className="px-3 py-2 bg-gray-100 dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700">
+                      <span className="text-xs font-mono text-gray-700 dark:text-gray-300">
+                        {file.name}
+                      </span>
+                    </div>
+                    <pre className="p-3 bg-gray-900 text-gray-100 text-xs overflow-x-auto">
+                      <code>{file.code}</code>
+                    </pre>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Generated Translation Results */}
+        {message.data?.type === 'translation' && !isUser && (
+          <div className="mt-3 w-full border border-green-200 dark:border-green-800 rounded-lg overflow-hidden bg-green-50 dark:bg-green-950">
+            <div className="p-3">
+              <p className="text-sm text-green-800 dark:text-green-200 font-medium mb-2">
+                ✓ {message.data.summary}
+              </p>
+              {message.data.details && message.data.details.map((detail, idx) => (
+                <p key={idx} className="text-xs text-green-700 dark:text-green-300">
+                  • {detail.entityType}: {detail.count} items → {detail.languages.join(', ')}
+                </p>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Generated Layout Preview */}
+        {message.data?.type === 'layout' && !isUser && (
+          <div className="mt-3 w-full border border-purple-200 dark:border-purple-800 rounded-lg overflow-hidden bg-white dark:bg-gray-800">
+            <div className="p-3 border-b border-purple-200 dark:border-purple-800 bg-purple-50 dark:bg-purple-950">
+              <p className="text-sm text-purple-900 dark:text-purple-100 font-medium">
+                Layout generated for {message.data.configType}
+              </p>
+            </div>
+            <div className="p-3">
+              <button
+                onClick={() => setShowCode(!showCode)}
+                className="text-sm text-purple-600 hover:text-purple-700 dark:text-purple-400 mb-2"
+              >
+                {showCode ? 'Hide' : 'View'} Configuration
+              </button>
+              {showCode && (
+                <pre className="p-3 bg-gray-900 text-gray-100 text-xs overflow-x-auto rounded">
+                  <code>{message.data.config}</code>
+                </pre>
+              )}
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
+
+export default ChatInterface;
