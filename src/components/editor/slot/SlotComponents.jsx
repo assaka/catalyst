@@ -94,15 +94,19 @@ export function GridResizeHandle({ onResize, currentValue, maxValue = 12, minVal
   }, [onResize, onResizeStart, onResizeEnd]);
 
   const handleMouseDown = (e) => {
+    // CRITICAL: Prevent parent GridColumn drag from starting
     e.preventDefault();
     e.stopPropagation();
+    e.nativeEvent?.stopImmediatePropagation?.();
 
     console.log('🎯 [GRID RESIZE DEBUG] Mouse down on blue handle', {
       timestamp: performance.now(),
       direction,
       currentValue,
       clientX: e.clientX,
-      clientY: e.clientY
+      clientY: e.clientY,
+      target: e.target,
+      currentTarget: e.currentTarget
     });
 
     setIsDragging(true);
@@ -332,6 +336,7 @@ export function GridResizeHandle({ onResize, currentValue, maxValue = 12, minVal
           ? 'opacity-100'
           : 'opacity-0 hover:opacity-90'
       }`}
+      draggable={false}
       onMouseDown={handleMouseDown}
       onMouseEnter={() => {
         setIsHovered(true);
@@ -341,8 +346,15 @@ export function GridResizeHandle({ onResize, currentValue, maxValue = 12, minVal
         setIsHovered(false);
         onHoverChange?.(false);
       }}
+      onDragStart={(e) => {
+        // Prevent any drag operations on the handle itself
+        e.preventDefault();
+        e.stopPropagation();
+        return false;
+      }}
       style={{
         zIndex: 9999,
+        pointerEvents: 'all', // Ensure handle captures events
         transform: isDragging
           ? (isHorizontal
               ? `translate(${mouseOffset}px, -50%)`
