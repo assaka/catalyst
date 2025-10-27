@@ -511,9 +511,16 @@ export function GridColumn({
   const handleDragStart = useCallback((e) => {
     if (mode !== 'edit') return;
 
-    // CRITICAL: Prevent drag if clicking on resize handle
-    if (isOverResizeHandle || isResizingSlot) {
-      console.log('🚫 [GRID RESIZE DEBUG] Preventing container drag - resize handle active');
+    // CRITICAL: Check if drag started from resize handle by examining the target
+    const target = e.target;
+    const isResizeHandle = target.closest('.cursor-col-resize, .cursor-row-resize');
+
+    if (isResizeHandle || isOverResizeHandle || isResizingSlot) {
+      console.log('🚫 [GRID RESIZE DEBUG] Preventing container drag - resize handle detected', {
+        isResizeHandle: !!isResizeHandle,
+        isOverResizeHandle,
+        isResizingSlot
+      });
       e.preventDefault();
       e.stopPropagation();
       return false;
