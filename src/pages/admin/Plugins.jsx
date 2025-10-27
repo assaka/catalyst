@@ -338,7 +338,91 @@ export default function Plugins() {
 
             {/* All Plugins Grid */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {filteredPlugins.map((plugin) => renderPluginCard(plugin))}
+              {filteredPlugins.map((plugin) => {
+                const CategoryIcon = categoryIcons[plugin.category] || Settings;
+                const installed = isPluginInstalled(plugin);
+                const enabled = isPluginEnabled(plugin);
+
+                return (
+                  <Card key={plugin.id} className="material-elevation-1 border-0 hover:material-elevation-2 transition-all duration-300">
+                    <CardHeader className="pb-3">
+                      <div className="flex items-start justify-between">
+                        <div className="flex items-center space-x-3">
+                          <div className={`w-12 h-12 ${
+                            plugin.source === 'marketplace'
+                              ? 'bg-gradient-to-r from-green-500 to-emerald-600'
+                              : plugin.sourceType === 'github'
+                              ? 'bg-gradient-to-r from-gray-700 to-gray-900'
+                              : 'bg-gradient-to-r from-blue-500 to-purple-600'
+                          } rounded-lg flex items-center justify-center`}>
+                            <CategoryIcon className="w-6 h-6 text-white" />
+                          </div>
+                          <div>
+                            <div className="flex items-center gap-2">
+                              <CardTitle className="text-lg">{plugin.name}</CardTitle>
+                              {plugin.source === 'marketplace' && (
+                                <Badge className="bg-green-100 text-green-700 text-xs">
+                                  Marketplace
+                                </Badge>
+                              )}
+                              {plugin.sourceType === 'github' && (
+                                <Badge className="bg-gray-100 text-gray-700 text-xs">
+                                  GitHub
+                                </Badge>
+                              )}
+                            </div>
+                            <p className="text-sm text-gray-500">by {plugin.creator_name}</p>
+                          </div>
+                        </div>
+                        <div className="flex flex-col gap-1">
+                          <Badge className="bg-blue-100 text-blue-700">
+                            v{plugin.version}
+                          </Badge>
+                          {enabled && (
+                            <Badge className="bg-green-100 text-green-700 text-xs">
+                              Active
+                            </Badge>
+                          )}
+                        </div>
+                      </div>
+                    </CardHeader>
+                    <CardContent>
+                      <p className="text-gray-600 text-sm mb-4 line-clamp-3">
+                        {plugin.description}
+                      </p>
+
+                      <div className="flex items-center justify-between">
+                        <div className="text-lg font-bold text-gray-900">
+                          {plugin.price === 0 ? 'Free' : formatPrice(plugin.price)}
+                        </div>
+                        <div className="flex items-center gap-2">
+                          {installed ? (
+                            <>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => handleConfigurePlugin(plugin)}
+                              >
+                                <Settings className="w-4 h-4 mr-2" />
+                                Configure
+                              </Button>
+                            </>
+                          ) : (
+                            <Button
+                              onClick={() => handleInstallPlugin(plugin)}
+                              size="sm"
+                              className="bg-green-600 hover:bg-green-700 text-white"
+                            >
+                              <Download className="w-4 h-4 mr-2" />
+                              Install
+                            </Button>
+                          )}
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                );
+              })}
             </div>
           </TabsContent>
 
