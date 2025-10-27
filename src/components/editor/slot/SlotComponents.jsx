@@ -125,171 +125,85 @@ export function GridResizeHandle({ onResize, currentValue, maxValue = 12, minVal
       onResizeStartRef.current();
     }
 
-    // Performance tracking
-    let frameCount = 0;
-    let lastFrameTime = performance.now();
-    let totalFrameTime = 0;
-    let animationFrameId = null;
-    let pendingUpdate = null;
-
     const handleMouseMove = (e) => {
-      const moveStartTime = performance.now();
+      if (!isDraggingRef.current) return;
 
-      if (!isDraggingRef.current) {
-        return;
+      const deltaX = e.clientX - startXRef.current;
+      const deltaY = e.clientY - startYRef.current;
+
+      // Just update visual feedback, don't resize yet
+      if (direction === 'horizontal') {
+        // Show visual offset (optional, can be 0 for cleaner UX)
+        setMouseOffset(0);
+      } else {
+        // Show vertical offset for visual feedback
+        setMouseOffset(Math.round(deltaY / 2));
       }
+    };
 
-      const startX = startXRef.current;
-      const startY = startYRef.current;
+    const handleMouseUp = (e) => {
+      const deltaX = e.clientX - startXRef.current;
+      const deltaY = e.clientY - startYRef.current;
       const startValue = startValueRef.current;
 
-      console.log('📍 [GRID RESIZE DEBUG] Mouse move', {
-        frameCount,
-        deltaX: e.clientX - startX,
-        deltaY: e.clientY - startY,
-        clientX: e.clientX,
-        clientY: e.clientY
+      console.log('🏁 [GRID RESIZE DEBUG] Mouse up - calculating final value', {
+        deltaX,
+        deltaY,
+        startValue,
+        direction
       });
 
-      // Calculate new values
-      let newColSpan, newHeight, visualOffset;
+      // Calculate final value on release
+      let finalValue;
 
       if (direction === 'horizontal') {
-        const deltaX = e.clientX - startX;
-        const sensitivity = 20; // Reduced sensitivity - more responsive resizing
+        const sensitivity = 20;
         const colSpanDelta = Math.round(deltaX / sensitivity);
-
-        console.log('📊 [GRID RESIZE DEBUG] Horizontal calculation', {
-          deltaX,
-          sensitivity,
-          colSpanDelta,
-          startValue
-        });
 
         // Parse the current value (could be number or string)
         const parsed = parseResponsiveColSpan(startValue);
         const currentNumericValue = parsed.responsive || parsed.base;
         const newNumericValue = Math.max(minValue, Math.min(maxValue, currentNumericValue + colSpanDelta));
 
-        console.log('📐 [GRID RESIZE DEBUG] ColSpan calculation', {
-          parsed,
-          currentNumericValue,
-          newNumericValue,
-          minValue,
-          maxValue
-        });
-
         // Build the new colSpan value
         if (parsed.responsive) {
-          // Keep responsive structure, update the responsive value
-          newColSpan = buildResponsiveColSpan(parsed.base, newNumericValue, parsed.breakpoint);
+          finalValue = buildResponsiveColSpan(parsed.base, newNumericValue, parsed.breakpoint);
         } else if (typeof startValue === 'string') {
-          // Was a string without responsive, keep as string
-          newColSpan = buildResponsiveColSpan(newNumericValue, null);
+          finalValue = buildResponsiveColSpan(newNumericValue, null);
         } else {
-          // Was a number, keep as number
-          newColSpan = newNumericValue;
+          finalValue = newNumericValue;
         }
 
-        // Handle stays at slot's right edge naturally, no offset needed
-        visualOffset = 0;
-      } else if (direction === 'vertical') {
-        const deltaY = e.clientY - startY;
-        const heightDelta = Math.round(deltaY / 2); // Reduced sensitivity for height
-        newHeight = Math.max(20, startValue + heightDelta);
+        console.log('✅ [GRID RESIZE DEBUG] Final colSpan', {
+          colSpanDelta,
+          oldValue: startValue,
+          newValue: finalValue
+        });
+      } else {
+        const heightDelta = Math.round(deltaY / 2);
+        finalValue = Math.max(20, startValue + heightDelta);
 
-        console.log('📏 [GRID RESIZE DEBUG] Vertical calculation', {
-          deltaY,
+        console.log('✅ [GRID RESIZE DEBUG] Final height', {
           heightDelta,
-          newHeight,
-          startValue
-        });
-
-        // Calculate proportional offset based on height changes for smooth tracking
-        visualOffset = heightDelta;
-      }
-
-      const finalValue = direction === 'horizontal' ? newColSpan : newHeight;
-
-      // Apply visual offset immediately for responsive feedback
-      setMouseOffset(visualOffset);
-
-      // Only call onResize if the value actually changed
-      if (finalValue !== lastValueRef.current) {
-        lastValueRef.current = finalValue;
-
-        // Cancel any pending animation frame
-        if (animationFrameId) {
-          cancelAnimationFrame(animationFrameId);
-        }
-
-        // Use RAF to batch the actual resize callback for smooth performance
-        animationFrameId = requestAnimationFrame(() => {
-          const rafStartTime = performance.now();
-          const currentTime = performance.now();
-
-          // Calculate FPS
-          const timeSinceLastUpdate = currentTime - lastFrameTime;
-          const currentFPS = timeSinceLastUpdate > 0 ? Math.round(1000 / timeSinceLastUpdate) : 0;
-
-          console.log('🎨 [GRID RESIZE DEBUG] Applying resize via RAF', {
-            frameCount,
-            value: finalValue,
-            fps: currentFPS,
-            direction
-          });
-
-          onResizeRef.current(finalValue);
-
-          const rafEndTime = performance.now();
-          const rafDuration = rafEndTime - rafStartTime;
-          totalFrameTime += rafDuration;
-
-          console.log('⚡ [GRID RESIZE DEBUG] RAF resize completed', {
-            rafDuration: rafDuration.toFixed(2) + 'ms',
-            frameCount,
-            fps: currentFPS
-          });
-
-          lastFrameTime = currentTime;
-          frameCount++;
+          oldValue: startValue,
+          newValue: finalValue
         });
       }
 
-      const moveEndTime = performance.now();
-      const moveDuration = moveEndTime - moveStartTime;
-
-      console.log('⏱️ [GRID RESIZE DEBUG] MouseMove handler performance', {
-        duration: moveDuration.toFixed(2) + 'ms',
-        frameCount
-      });
-    };
-
-    const handleMouseUp = () => {
-      const totalTime = performance.now() - lastFrameTime;
-      const avgFPS = frameCount > 0 ? Math.round((frameCount / totalTime) * 1000) : 0;
-
-      console.log('🏁 [GRID RESIZE DEBUG] Drag operation completed', {
-        totalFrames: frameCount,
-        totalTime: totalTime.toFixed(2) + 'ms',
-        averageFPS: avgFPS,
-        averageFrameTime: frameCount > 0 ? (totalFrameTime / frameCount).toFixed(2) + 'ms' : '0ms',
-        finalValue: lastValueRef.current
-      });
-
-      // Cancel any pending RAF
-      if (animationFrameId) {
-        cancelAnimationFrame(animationFrameId);
+      // Only save if value actually changed
+      if (finalValue !== startValue) {
+        console.log('💾 [GRID RESIZE DEBUG] Saving resize', { finalValue });
+        onResizeRef.current(finalValue);
+      } else {
+        console.log('⏭️ [GRID RESIZE DEBUG] No change, skipping save');
       }
 
+      // Cleanup
       setIsDragging(false);
       isDraggingRef.current = false;
-      setMouseOffset(0); // Reset visual position
-
-      // Reset body styles
+      setMouseOffset(0);
       document.body.style.userSelect = '';
       document.body.style.cursor = '';
-
       document.removeEventListener('mousemove', handleMouseMove);
       document.removeEventListener('mouseup', handleMouseUp);
       mouseMoveHandlerRef.current = null;
@@ -299,7 +213,7 @@ export function GridResizeHandle({ onResize, currentValue, maxValue = 12, minVal
         onResizeEndRef.current();
       }
 
-      console.log('✅ [GRID RESIZE DEBUG] Event listeners removed, handle ready for next operation');
+      console.log('✅ [GRID RESIZE DEBUG] Resize complete');
     };
 
     mouseMoveHandlerRef.current = handleMouseMove;
