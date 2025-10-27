@@ -172,7 +172,7 @@ const PublishPanel = ({
     try {
       const response = await slotConfigurationService.destroyLayout(storeId, pageType);
       if (response.success) {
-        toast.success(`Layout destroyed successfully. Deleted ${response.deletedCount} versions. Reloading...`);
+        toast.success(`Layout destroyed successfully. Deleted ${response.deletedCount} versions and created fresh draft.`);
 
         // Clear version history
         setVersionHistory([]);
@@ -181,18 +181,13 @@ const PublishPanel = ({
         if (onReverted) {
           onReverted(response.data);
         }
-
-        // Reload the page after a short delay to show the success message
-        setTimeout(() => {
-          window.location.reload();
-        }, 1000);
       } else {
         toast.error(response.error || 'Failed to destroy layout');
-        setIsDestroying(false);
       }
     } catch (error) {
       console.error('Error destroying layout:', error);
       toast.error('Failed to destroy layout');
+    } finally {
       setIsDestroying(false);
     }
   };
