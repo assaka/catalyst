@@ -325,8 +325,15 @@ const ResizeWrapper = ({
       timestamp: performance.now(),
       clientX: e.clientX,
       clientY: e.clientY,
+      pointerId: e.pointerId,
       target: e.target.className
     });
+
+    // CRITICAL: Capture pointer events to this element
+    if (e.currentTarget.setPointerCapture) {
+      e.currentTarget.setPointerCapture(e.pointerId);
+      console.log('🔒 [RESIZE DEBUG] Pointer captured', { pointerId: e.pointerId });
+    }
 
     const rect = wrapperRef.current.getBoundingClientRect();
     console.log('📏 [RESIZE DEBUG] Element dimensions', {
@@ -438,6 +445,11 @@ const ResizeWrapper = ({
     let pendingUpdate = null;
 
     const handleMouseMove = (moveEvent) => {
+      console.log('🖱️ [RESIZE DEBUG] MouseMove fired!', {
+        clientX: moveEvent.clientX,
+        clientY: moveEvent.clientY
+      });
+
       const moveStartTime = performance.now();
 
       const deltaX = moveEvent.clientX - startX;
@@ -449,6 +461,8 @@ const ResizeWrapper = ({
         console.log('⏸️ [RESIZE DEBUG] Movement too small, skipping', { deltaX, deltaY });
         return;
       }
+
+      console.log('📏 [RESIZE DEBUG] Applying resize', { deltaX, deltaY });
 
       console.log('📍 [RESIZE DEBUG] Mouse move', {
         frameCount,
@@ -624,7 +638,7 @@ const ResizeWrapper = ({
       });
     };
 
-    const handleMouseUp = () => {
+    const handleMouseUp = (upEvent) => {
       const totalTime = performance.now() - lastFrameTime;
       const avgFPS = frameCount > 0 ? Math.round((frameCount / totalTime) * 1000) : 0;
 
@@ -640,17 +654,33 @@ const ResizeWrapper = ({
         cancelAnimationFrame(animationFrameId);
       }
 
+      // Release pointer capture
+      if (upEvent.pointerId !== undefined && e.currentTarget) {
+        try {
+          e.currentTarget.releasePointerCapture(upEvent.pointerId);
+          console.log('🔓 [RESIZE DEBUG] Pointer released', { pointerId: upEvent.pointerId });
+        } catch (err) {
+          console.log('⚠️ [RESIZE DEBUG] Could not release pointer', err);
+        }
+      }
+
       setIsResizing(false);
-      document.removeEventListener('mousemove', handleMouseMove);
-      document.removeEventListener('mouseup', handleMouseUp);
+
+      // Remove from handle element, not document
+      e.currentTarget.removeEventListener('pointermove', handleMouseMove);
+      e.currentTarget.removeEventListener('pointerup', handleMouseUp);
+      e.currentTarget.removeEventListener('pointercancel', handleMouseUp);
 
       console.log('✅ [RESIZE DEBUG] Event listeners removed, resize handle ready for next operation');
     };
 
-    document.addEventListener('mousemove', handleMouseMove);
-    document.addEventListener('mouseup', handleMouseUp);
+    // CRITICAL: Attach to handle element using pointer events, not document with mouse events
+    const handleElement = e.currentTarget;
+    handleElement.addEventListener('pointermove', handleMouseMove);
+    handleElement.addEventListener('pointerup', handleMouseUp);
+    handleElement.addEventListener('pointercancel', handleMouseUp);
 
-    console.log('👂 [RESIZE DEBUG] Event listeners attached (mousemove, mouseup)');
+    console.log('👂 [RESIZE DEBUG] Event listeners attached to handle element (pointermove, pointerup, pointercancel)');
   }, [minWidth, minHeight, maxWidth, maxHeight, onResize, disabled, children, className, size.widthUnit]);
 
   // Check if this is an image element
@@ -766,7 +796,7 @@ const ResizeWrapper = ({
               "flex items-center justify-center",
               isHovered || isResizing ? "opacity-100" : "opacity-0 hover:opacity-100"
             )}
-            onMouseDown={handleMouseDown}
+            onPointerDown={handleMouseDown}
             style={{
               bottom: '-2px',
               right: '-2px',
