@@ -513,7 +513,9 @@ const DeveloperPluginEditor = ({
                 <div className="h-12 px-3 border-b bg-gray-50 dark:bg-gray-800 flex items-center justify-between">
                   <div className="flex-1 flex items-center gap-2">
                     <FolderTree className="w-5 h-5 text-blue-600" />
-                    <h3 className="font-semibold">Files</h3>
+                    <h3 className="font-semibold text-gray-900 dark:text-gray-100">
+                      Files
+                    </h3>
                   </div>
                   <Button
                       variant="ghost"
@@ -553,45 +555,51 @@ const DeveloperPluginEditor = ({
                 </Button>
               </div>
             )}
-                  </div>
-                </ResizablePanel>
+          </div>
+        </ResizablePanel>
 
-                <ResizableHandle />
+        <ResizableHandle />
 
-                {/* Main Editor Area - Minimizable */}
-                <ResizablePanel
-                  defaultSize={calculateEditorRelativeSize()}
-                  minSize={5}
-                  maxSize={editorMinimized ? 6 : 100}
-                  collapsible={false}
-                >
-                  <div className="h-full flex flex-col bg-white rounded-lg overflow-hidden">
-                    {!editorMinimized ? (
+        {/* Main Editor Area - Minimizable */}
+        <ResizablePanel
+          defaultSize={calculateEditorRelativeSize()}
+          minSize={5}
+          maxSize={editorMinimized ? 6 : 100}
+          collapsible={false}
+        >
+          <div className="h-full flex flex-col bg-white rounded-lg overflow-hidden">
+            {!editorMinimized ? (
+              <>
+                {/* Editor Header */}
+                <div className="h-12 px-3 border-b bg-gray-50 flex items-center justify-between">
+                    {selectedFile ? (
                       <>
-                        {/* Editor Header */}
-                        <div className="h-12 px-3 border-b bg-gray-50 flex items-center justify-between">
-                          <div className="flex items-center gap-3">
-                            <Code2 className="w-4 h-4 text-blue-600" />
-                            {selectedFile ? (
-                      <>
-                        <FileText className="w-4 h-4 text-gray-600" />
-                        <span className="font-medium">{selectedFile.name}</span>
-                        <span className="text-sm text-gray-500">{selectedFile.path}</span>
-                        {fileContent !== originalContent && (
-                          <Badge className="bg-orange-100 text-orange-700 text-xs">
-                            Modified
-                          </Badge>
-                        )}
-                        {selectedFile.eventName && (
-                          <Badge className="bg-purple-100 text-purple-700 text-xs">
-                            → {selectedFile.eventName}
-                          </Badge>
-                        )}
+                        <div className="flex items-center gap-3">
+                          <Code2 className="w-4 h-4 text-blue-600" />
+                          <FileText className="w-4 h-4 text-gray-600" />
+                          <span className="font-medium">{selectedFile.name}</span>
+                          <span className="text-sm text-gray-500">{selectedFile.path}</span>
+                          {fileContent !== originalContent && (
+                            <Badge className="bg-orange-100 text-orange-700 text-xs">
+                              Modified
+                            </Badge>
+                          )}
+                          {selectedFile.eventName && (
+                            <Badge className="bg-purple-100 text-purple-700 text-xs">
+                              → {selectedFile.eventName}
+                            </Badge>
+                          )}
+                        </div>
                       </>
                     ) : (
-                      <span className="text-gray-500">Code Editor</span>
+                        <div className="flex pt-2 gap-3">
+                          <Code2 className="w-4 h-4 text-blue-600" />
+                          <h3 className="font-semibold text-gray-900 dark:text-gray-100">
+                            Code Editor
+                          </h3>
+                        </div>
                     )}
-                  </div>
+
                   <div className="flex items-center gap-2">
                     {/* Edit Event Mapping button - only for event files */}
                     {selectedFile?.eventName && (

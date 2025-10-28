@@ -103,7 +103,7 @@ export default function AIStudio() {
                     <div className="h-12 px-3 border-b bg-gray-50 dark:bg-gray-800 flex items-center justify-between">
                       <div className="flex-1 flex items-center gap-2">
                         <Bot className="w-4 h-4 text-blue-600" />
-                        <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100">
+                        <h3 className="font-semibold text-gray-900 dark:text-gray-100">
                           AI Assistant
                         </h3>
                       </div>
