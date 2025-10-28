@@ -21,6 +21,9 @@ const ChatInterface = ({ onPluginCloned, context }) => {
   const [isProcessing, setIsProcessing] = useState(false);
   const [starterTemplates, setStarterTemplates] = useState([]);
   const [cloningTemplate, setCloningTemplate] = useState(false);
+  const [showCloneModal, setShowCloneModal] = useState(false);
+  const [templateToClone, setTemplateToClone] = useState(null);
+  const [cloneName, setCloneName] = useState('');
   const messagesEndRef = useRef(null);
   const inputRef = useRef(null);
 
@@ -42,26 +45,31 @@ const ChatInterface = ({ onPluginCloned, context }) => {
     }
   };
 
-  const handleCloneTemplate = async (template) => {
+  const handleCloneTemplate = (template) => {
+    setTemplateToClone(template);
+    setCloneName(`My ${template.name}`);
+    setShowCloneModal(true);
+  };
+
+  const confirmCloneTemplate = async () => {
+    if (!cloneName.trim()) {
+      alert('Plugin name cannot be empty');
+      return;
+    }
+
+    setShowCloneModal(false);
     setCloningTemplate(true);
+
     try {
-      // Ask user for plugin name
-      const pluginName = prompt(`Enter a name for your new plugin:`, `My ${template.name}`);
-
-      if (!pluginName) {
-        setCloningTemplate(false);
-        return;
-      }
-
       // Get current user
       const currentUser = await UserEntity.me();
 
       // Export the template plugin
-      const exportData = await apiClient.get(`plugins/${template.id}/export`);
+      const exportData = await apiClient.get(`plugins/${templateToClone.id}/export`);
 
       // Modify the package with new name and user ID
-      exportData.plugin.name = pluginName;
-      exportData.plugin.slug = pluginName.toLowerCase().replace(/\s+/g, '-');
+      exportData.plugin.name = cloneName.trim();
+      exportData.plugin.slug = cloneName.trim().toLowerCase().replace(/\s+/g, '-');
       exportData.userId = currentUser?.id;
 
       // Import as new plugin
@@ -70,7 +78,7 @@ const ChatInterface = ({ onPluginCloned, context }) => {
       // Show success message
       setMessages(prev => [...prev, {
         role: 'assistant',
-        content: `✅ Created "${pluginName}" from ${template.name} template!\n\nYour plugin is ready with all files, events, and widgets. Click "Edit" to customize it.`,
+        content: `✅ Created "${cloneName}" from ${templateToClone.name} template!\n\nYour plugin is ready with all files, events, and widgets. Opening in editor...`,
         data: result.plugin
       }]);
 
@@ -88,6 +96,8 @@ const ChatInterface = ({ onPluginCloned, context }) => {
       }]);
     } finally {
       setCloningTemplate(false);
+      setTemplateToClone(null);
+      setCloneName('');
     }
   };
 
@@ -175,7 +185,7 @@ const ChatInterface = ({ onPluginCloned, context }) => {
                 <button
                   key={template.id}
                   onClick={() => handleCloneTemplate(template)}
-                  className="flex items-start gap-3 p-3 rounded-lg border border-gray-200 hover:border-purple-300 hover:bg-purple-50 transition-colors text-left"
+                  className="flex items-start w-fit gap-3 p-3 rounded-lg border border-gray-200 hover:border-purple-300 hover:bg-purple-50 transition-colors text-left"
                 >
                   <span className="text-2xl flex-shrink-0">{template.icon}</span>
                   <div>
@@ -262,6 +272,75 @@ const ChatInterface = ({ onPluginCloned, context }) => {
           Press Enter to send • Shift+Enter for new line
         </p>
       </div>
+
+      {/* Clone Template Modal */}
+      {showCloneModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg shadow-xl p-6 w-96">
+            <h3 className="text-lg font-semibold mb-4">Clone Template Plugin</h3>
+
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Template
+                </label>
+                <div className="p-3 bg-purple-50 border border-purple-200 rounded flex items-center gap-2">
+                  <span className="text-2xl">{templateToClone?.icon}</span>
+                  <div>
+                    <div className="font-medium text-sm">{templateToClone?.name}</div>
+                    <div className="text-xs text-gray-500">{templateToClone?.description}</div>
+                  </div>
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  New Plugin Name
+                </label>
+                <input
+                  type="text"
+                  value={cloneName}
+                  onChange={(e) => setCloneName(e.target.value)}
+                  placeholder="Enter plugin name"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
+                  autoFocus
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') confirmCloneTemplate();
+                    if (e.key === 'Escape') {
+                      setShowCloneModal(false);
+                      setTemplateToClone(null);
+                      setCloneName('');
+                    }
+                  }}
+                />
+                <p className="text-xs text-gray-500 mt-1">
+                  This will create a complete copy with all files, events, and widgets
+                </p>
+              </div>
+            </div>
+
+            <div className="flex gap-2 mt-6">
+              <button
+                onClick={confirmCloneTemplate}
+                disabled={!cloneName.trim()}
+                className="flex-1 bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded disabled:bg-gray-300 disabled:cursor-not-allowed"
+              >
+                Clone Plugin
+              </button>
+              <button
+                onClick={() => {
+                  setShowCloneModal(false);
+                  setTemplateToClone(null);
+                  setCloneName('');
+                }}
+                className="flex-1 border border-gray-300 hover:bg-gray-50 px-4 py-2 rounded"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
