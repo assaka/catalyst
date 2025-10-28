@@ -37,33 +37,24 @@ export default function PluginWidgetRenderer({ widgetId, config, slotData }) {
   };
 
   const compileWidgetComponent = (code) => {
-    // SECURITY NOTE: This is a simplified example
-    // In production, use proper sandboxing (iframe, web worker, etc.)
+    // SECURITY NOTE: This evaluates user code. In production, use proper sandboxing.
     try {
       // Remove 'export default' from code
       let cleanCode = code.trim().replace(/^export\s+default\s+/, '');
 
-      // Create a safe scope
-      const scope = {
-        React,
-        useState: React.useState,
-        useEffect: React.useEffect,
-        useCallback: React.useCallback,
-        useMemo: React.useMemo,
-        useRef: React.useRef,
-        // Add other safe globals
-      };
-
-      // Compile code - wrap function declarations in parentheses
+      // Wrap function declarations in parentheses for evaluation
       if (cleanCode.startsWith('function')) {
         cleanCode = `(${cleanCode})`;
       }
 
-      const func = new Function(...Object.keys(scope), `
+      // Create the component using eval in a controlled scope
+      // This preserves JSX syntax which React will handle
+      const createComponent = new Function('React', `
+        'use strict';
         return ${cleanCode};
       `);
 
-      return func(...Object.values(scope));
+      return createComponent(React);
     } catch (error) {
       console.error('Failed to compile widget:', error);
       console.error('Widget code:', code);
