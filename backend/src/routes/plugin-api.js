@@ -1651,7 +1651,7 @@ router.get('/:pluginId/scripts', async (req, res) => {
 router.post('/:pluginId/event-listeners', async (req, res) => {
   try {
     const { pluginId } = req.params;
-    const { file_name, file_path, event_name, listener_function, priority = 10, description } = req.body;
+    const { file_name, file_path, event_name, old_event_name, listener_function, priority = 10, description } = req.body;
 
     if (!event_name || !listener_function) {
       return res.status(400).json({
@@ -1663,27 +1663,36 @@ router.post('/:pluginId/event-listeners', async (req, res) => {
     console.log(`📡 Creating/updating event: ${event_name} for plugin ${pluginId}`);
 
     // Use plugin_events table (normalized structure)
+    // If old_event_name provided, this is a remapping operation
+    const lookupEventName = old_event_name || event_name;
+
+    console.log(`  🔍 Looking for existing event: ${lookupEventName}`);
+
     // Check if event already exists for this plugin
     const existing = await sequelize.query(`
       SELECT id FROM plugin_events
       WHERE plugin_id = $1 AND event_name = $2
     `, {
-      bind: [pluginId, event_name],
+      bind: [pluginId, lookupEventName],
       type: sequelize.QueryTypes.SELECT
     });
 
     if (existing.length > 0) {
-      // Update existing event
+      // Update existing event (including event_name if remapping)
       await sequelize.query(`
         UPDATE plugin_events
-        SET listener_function = $1, priority = $2, updated_at = NOW()
-        WHERE plugin_id = $3 AND event_name = $4
+        SET event_name = $1, listener_function = $2, priority = $3, updated_at = NOW()
+        WHERE plugin_id = $4 AND event_name = $5
       `, {
-        bind: [listener_function, priority, pluginId, event_name],
+        bind: [event_name, listener_function, priority, pluginId, lookupEventName],
         type: sequelize.QueryTypes.UPDATE
       });
 
-      console.log(`✅ Updated event: ${event_name}`);
+      if (old_event_name && old_event_name !== event_name) {
+        console.log(`✅ Remapped event: ${old_event_name} → ${event_name}`);
+      } else {
+        console.log(`✅ Updated event: ${event_name}`);
+      }
     } else {
       // Insert new event
       await sequelize.query(`
