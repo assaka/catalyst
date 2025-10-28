@@ -1,16 +1,23 @@
 import React from 'react';
+import { useLocation } from 'react-router-dom';
 import { Sparkles } from 'lucide-react';
 import { useStoreSelection } from '@/contexts/StoreSelectionContext';
 import { Badge } from '@/components/ui/badge';
+import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from '@/components/ui/resizable';
 import ChatInterface from '@/components/ai-studio/ChatInterface';
+import DeveloperPluginEditor from '@/components/plugins/DeveloperPluginEditor';
 
 /**
  * AIStudio Page - Standalone page version
- * Same chat interface as the global floating version
+ * Two modes:
+ * 1. Creation mode: Chat interface for creating new things
+ * 2. Edit mode: File explorer + code editor + AI chat for editing plugins
  * Accessible at /admin/ai-studio
  */
 export default function AIStudio() {
+  const location = useLocation();
   const { selectedStore } = useStoreSelection();
+  const pluginToEdit = location.state?.plugin;
 
   return (
     <div className="h-screen flex flex-col bg-gray-50">
@@ -23,9 +30,17 @@ export default function AIStudio() {
                 <span className="text-white font-bold text-sm">AI</span>
               </div>
               AI Studio
+              {pluginToEdit && (
+                <Badge variant="outline" className="ml-2">
+                  Editing: {pluginToEdit.name}
+                </Badge>
+              )}
             </h1>
             <p className="text-gray-600 text-sm mt-1">
-              Chat with AI to create plugins, translate content, generate layouts, and more
+              {pluginToEdit
+                ? 'Edit plugin code with AI assistance, file explorer, and diff viewer'
+                : 'Chat with AI to create plugins, translate content, generate layouts, and more'
+              }
             </p>
           </div>
           {selectedStore && (
@@ -36,9 +51,46 @@ export default function AIStudio() {
         </div>
       </div>
 
-      {/* Chat Interface */}
+      {/* Content */}
       <div className="flex-1 overflow-hidden">
-        <ChatInterface />
+        {pluginToEdit ? (
+          // Plugin Edit Mode - Show AI Chat + Developer Editor
+          <ResizablePanelGroup direction="horizontal">
+            {/* AI Chat Assistant (Left) */}
+            <ResizablePanel defaultSize={30} minSize={25} maxSize={50}>
+              <div className="h-full flex flex-col border-r bg-white dark:bg-gray-900">
+                <div className="p-3 border-b bg-gray-50 dark:bg-gray-800">
+                  <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100">
+                    AI Assistant
+                  </h3>
+                  <p className="text-xs text-gray-600 dark:text-gray-400 mt-1">
+                    Ask AI to modify code, add features, or explain logic
+                  </p>
+                </div>
+                <div className="flex-1 overflow-hidden">
+                  <ChatInterface context={{ plugin: pluginToEdit }} />
+                </div>
+              </div>
+            </ResizablePanel>
+
+            <ResizableHandle />
+
+            {/* Developer Editor with File Explorer (Right) */}
+            <ResizablePanel defaultSize={70} minSize={50}>
+              <DeveloperPluginEditor
+                plugin={pluginToEdit}
+                onSave={(updated) => {
+                  console.log('Plugin saved:', updated);
+                }}
+                onClose={() => window.history.back()}
+                initialContext="editing"
+              />
+            </ResizablePanel>
+          </ResizablePanelGroup>
+        ) : (
+          // Creation Mode - Full Chat Interface
+          <ChatInterface />
+        )}
       </div>
     </div>
   );
