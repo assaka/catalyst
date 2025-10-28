@@ -22,6 +22,17 @@ export default function AIStudio() {
   const [chatMinimized, setChatMinimized] = useState(false);
   const [chatOriginalSize, setChatOriginalSize] = useState(30);
 
+  // Pass minimize states to DeveloperPluginEditor
+  const [fileTreeMinimized, setFileTreeMinimized] = useState(false);
+  const [editorMinimized, setEditorMinimized] = useState(false);
+
+  // Calculate chat size based on other panels
+  const calculateChatSize = () => {
+    if (chatMinimized) return 6;
+    if (fileTreeMinimized && editorMinimized) return 88; // Both minimized, chat takes rest
+    return chatOriginalSize;
+  };
+
   return (
     <div className="h-screen flex flex-col bg-gray-50">
       {/* Header */}
@@ -58,15 +69,15 @@ export default function AIStudio() {
       <div className="flex-1 overflow-hidden">
         {pluginToEdit ? (
           // Plugin Edit Mode - Show AI Chat + Developer Editor
-          <ResizablePanelGroup direction="horizontal" key={`chat-${chatMinimized}`}>
+          <ResizablePanelGroup direction="horizontal" key={`panels-${chatMinimized}-${fileTreeMinimized}-${editorMinimized}`}>
             {/* AI Chat Assistant (Left) - Minimizable */}
             <ResizablePanel
-              defaultSize={chatMinimized ? 8 : chatOriginalSize}
-              minSize={8}
-              maxSize={chatMinimized ? 8 : 50}
+              defaultSize={calculateChatSize()}
+              minSize={6}
+              maxSize={chatMinimized ? 6 : 50}
               collapsible={false}
               onResize={(size) => {
-                if (!chatMinimized && size > 8) {
+                if (!chatMinimized && size > 6) {
                   setChatOriginalSize(size);
                 }
               }}
@@ -114,7 +125,10 @@ export default function AIStudio() {
             <ResizableHandle />
 
             {/* Developer Editor with File Explorer (Right) */}
-            <ResizablePanel defaultSize={chatMinimized ? 95 : 70} minSize={50}>
+            <ResizablePanel
+              defaultSize={chatMinimized ? 94 : 70}
+              minSize={50}
+            >
               <DeveloperPluginEditor
                 plugin={pluginToEdit}
                 onSave={(updated) => {
@@ -123,6 +137,10 @@ export default function AIStudio() {
                 onClose={() => window.history.back()}
                 initialContext="editing"
                 chatMinimized={chatMinimized}
+                fileTreeMinimized={fileTreeMinimized}
+                setFileTreeMinimized={setFileTreeMinimized}
+                editorMinimized={editorMinimized}
+                setEditorMinimized={setEditorMinimized}
               />
             </ResizablePanel>
           </ResizablePanelGroup>

@@ -37,7 +37,18 @@ import { useAIStudio, AI_STUDIO_MODES } from '@/contexts/AIStudioContext';
 import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from '@/components/ui/resizable';
 import apiClient from '@/api/client';
 
-const DeveloperPluginEditor = ({ plugin, onSave, onClose, onSwitchMode, initialContext, chatMinimized = false }) => {
+const DeveloperPluginEditor = ({
+  plugin,
+  onSave,
+  onClose,
+  onSwitchMode,
+  initialContext,
+  chatMinimized = false,
+  fileTreeMinimized: externalFileTreeMinimized,
+  setFileTreeMinimized: externalSetFileTreeMinimized,
+  editorMinimized: externalEditorMinimized,
+  setEditorMinimized: externalSetEditorMinimized
+}) => {
   const { openAI } = useAIStudio();
   const [fileTree, setFileTree] = useState([]);
   const [selectedFile, setSelectedFile] = useState(null);
@@ -56,10 +67,15 @@ const DeveloperPluginEditor = ({ plugin, onSave, onClose, onSwitchMode, initialC
   const [eventSearchQuery, setEventSearchQuery] = useState('');
   const [showEventMappingDialog, setShowEventMappingDialog] = useState(false);
   const [editingEventName, setEditingEventName] = useState('');
-  const [fileTreeMinimized, setFileTreeMinimized] = useState(false);
-  const [editorMinimized, setEditorMinimized] = useState(false);
+
+  // Use external state if provided, otherwise use local state
+  const fileTreeMinimized = externalFileTreeMinimized ?? false;
+  const setFileTreeMinimized = externalSetFileTreeMinimized ?? (() => {});
+  const editorMinimized = externalEditorMinimized ?? false;
+  const setEditorMinimized = externalSetEditorMinimized ?? (() => {});
+
   const [fileTreeOriginalSize, setFileTreeOriginalSize] = useState(20);
-  const [editorOriginalSize, setEditorOriginalSize] = useState(80);
+  const [editorOriginalSize, setEditorOriginalSize] = useState(74);
 
   useEffect(() => {
     loadPluginFiles();
@@ -466,12 +482,12 @@ const DeveloperPluginEditor = ({ plugin, onSave, onClose, onSwitchMode, initialC
       <ResizablePanelGroup direction="horizontal" className="flex-1" key={`panels-${fileTreeMinimized}-${editorMinimized}`}>
         {/* File Tree Sidebar - Minimizable */}
         <ResizablePanel
-          defaultSize={fileTreeMinimized ? 8 : fileTreeOriginalSize}
-          minSize={8}
-          maxSize={fileTreeMinimized ? 8 : 35}
+          defaultSize={fileTreeMinimized ? 6 : fileTreeOriginalSize}
+          minSize={6}
+          maxSize={fileTreeMinimized ? 6 : 35}
           collapsible={false}
           onResize={(size) => {
-            if (!fileTreeMinimized && size > 8) {
+            if (!fileTreeMinimized && size > 6) {
               setFileTreeOriginalSize(size);
             }
           }}
@@ -529,12 +545,12 @@ const DeveloperPluginEditor = ({ plugin, onSave, onClose, onSwitchMode, initialC
 
                 {/* Main Editor Area - Minimizable */}
                 <ResizablePanel
-                  defaultSize={editorMinimized ? 8 : editorOriginalSize}
-                  minSize={8}
-                  maxSize={editorMinimized ? 8 : 100}
+                  defaultSize={editorMinimized ? 6 : editorOriginalSize}
+                  minSize={6}
+                  maxSize={editorMinimized ? 6 : 100}
                   collapsible={false}
                   onResize={(size) => {
-                    if (!editorMinimized && size > 8) {
+                    if (!editorMinimized && size > 6) {
                       setEditorOriginalSize(size);
                     }
                   }}
