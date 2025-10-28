@@ -816,47 +816,60 @@ router.put('/registry/:id/files', async (req, res) => {
       }
     }
 
-    // Parse source_code for regular files
-    const sourceCode = typeof plugin[0].source_code === 'string'
-      ? JSON.parse(plugin[0].source_code)
-      : plugin[0].source_code || [];
-
-    // Find and update the file
-    let fileFound = false;
-    const updatedFiles = sourceCode.map(file => {
-      const normalizedFilePath = normalizePath(file.name);
-      if (normalizedFilePath === normalizedRequestPath) {
-        fileFound = true;
-        return { ...file, code: content };
-      }
-      return file;
-    });
-
-    // If file not found, add it
-    if (!fileFound) {
-      updatedFiles.push({
-        name: normalizedRequestPath,
-        code: content
-      });
-    }
-
-    // Also update manifest.generatedFiles if it exists
-    const manifest = typeof plugin[0].manifest === 'string'
-      ? JSON.parse(plugin[0].manifest)
-      : plugin[0].manifest || {};
-
-    if (manifest.generatedFiles) {
-      manifest.generatedFiles = updatedFiles;
-    }
-
-    // Event files are now handled via plugin_event_listeners junction table only
-    // No automatic filename-to-event conversion
+    // Handle event files - update plugin_events table
     if (normalizedRequestPath.startsWith('events/')) {
-      console.log(`⚠️ Event files must be created via plugin_event_listeners junction table`);
-      return res.status(400).json({
-        success: false,
-        error: 'Event files must be created with event mapping. Use POST /api/plugins/:id/event-listeners instead.'
-      });
+      // Extract event name from filename (e.g., "events/cart_viewed.js" -> "cart.viewed")
+      const eventName = normalizedRequestPath
+        .replace('events/', '')
+        .replace('.js', '')
+        .replace(/_/g, '.');
+
+      console.log(`🔄 Upserting event ${eventName} in plugin_events table...`);
+
+      try {
+        // Check if event exists
+        const existing = await sequelize.query(`
+          SELECT id FROM plugin_events
+          WHERE plugin_id = $1 AND event_name = $2
+        `, {
+          bind: [id, eventName],
+          type: sequelize.QueryTypes.SELECT
+        });
+
+        if (existing.length > 0) {
+          // Update existing event
+          await sequelize.query(`
+            UPDATE plugin_events
+            SET listener_function = $1, updated_at = NOW()
+            WHERE plugin_id = $2 AND event_name = $3
+          `, {
+            bind: [content, id, eventName],
+            type: sequelize.QueryTypes.UPDATE
+          });
+          console.log(`✅ Updated event ${eventName}`);
+        } else {
+          // Insert new event
+          await sequelize.query(`
+            INSERT INTO plugin_events (plugin_id, event_name, listener_function, priority, is_enabled)
+            VALUES ($1, $2, $3, 10, true)
+          `, {
+            bind: [id, eventName, content],
+            type: sequelize.QueryTypes.INSERT
+          });
+          console.log(`✅ Created event ${eventName}`);
+        }
+
+        return res.json({
+          success: true,
+          message: 'Event file saved successfully in plugin_events table'
+        });
+      } catch (eventError) {
+        console.error(`❌ Error upserting plugin_events table:`, eventError);
+        return res.status(500).json({
+          success: false,
+          error: `Failed to save event in plugin_events table: ${eventError.message}`
+        });
+      }
     }
 
     // Special handling for hook files - update plugin_hooks table (normalized structure)
@@ -911,20 +924,63 @@ router.put('/registry/:id/files', async (req, res) => {
       }
     }
 
-    // For other files, update source_code and manifest fields
-    await sequelize.query(`
-      UPDATE plugin_registry
-      SET source_code = $1, manifest = $2, updated_at = NOW()
-      WHERE id = $3
-    `, {
-      bind: [JSON.stringify(updatedFiles), JSON.stringify(manifest), id],
-      type: sequelize.QueryTypes.UPDATE
-    });
+    // For other files (components, utils, etc.), update plugin_scripts table
+    console.log(`🔄 Upserting file ${normalizedRequestPath} in plugin_scripts table...`);
 
-    res.json({
-      success: true,
-      message: 'File updated successfully'
-    });
+    try {
+      // Check if file exists in plugin_scripts
+      const existing = await sequelize.query(`
+        SELECT id FROM plugin_scripts
+        WHERE plugin_id = $1 AND file_name = $2
+      `, {
+        bind: [id, normalizedRequestPath],
+        type: sequelize.QueryTypes.SELECT
+      });
+
+      if (existing.length > 0) {
+        // Update existing file
+        await sequelize.query(`
+          UPDATE plugin_scripts
+          SET file_content = $1, updated_at = NOW()
+          WHERE plugin_id = $2 AND file_name = $3
+        `, {
+          bind: [content, id, normalizedRequestPath],
+          type: sequelize.QueryTypes.UPDATE
+        });
+        console.log(`✅ Updated file ${normalizedRequestPath}`);
+      } else {
+        // Insert new file
+        await sequelize.query(`
+          INSERT INTO plugin_scripts (plugin_id, file_name, file_content, script_type, scope, load_priority, is_enabled)
+          VALUES ($1, $2, $3, 'js', 'frontend', 0, true)
+        `, {
+          bind: [id, normalizedRequestPath, content],
+          type: sequelize.QueryTypes.INSERT
+        });
+        console.log(`✅ Created file ${normalizedRequestPath}`);
+      }
+
+      // Update plugin_registry timestamp
+      await sequelize.query(`
+        UPDATE plugin_registry
+        SET updated_at = NOW()
+        WHERE id = $1
+      `, {
+        bind: [id],
+        type: sequelize.QueryTypes.UPDATE
+      });
+
+      res.json({
+        success: true,
+        message: 'File saved successfully in plugin_scripts table'
+      });
+    } catch (scriptError) {
+      console.error(`❌ Error upserting plugin_scripts table:`, scriptError);
+      res.status(500).json({
+        success: false,
+        error: `Failed to save file in plugin_scripts table: ${scriptError.message}`
+      });
+    }
   } catch (error) {
     console.error('Failed to update file:', error);
     res.status(500).json({
