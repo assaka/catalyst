@@ -86,11 +86,13 @@ export default function Plugins() {
         User.me()
       ]);
       
-      console.log('🔍 Debug: API responses:', { 
-        plugins: plugins, 
+      console.log('🔍 Debug: API responses:', {
+        plugins: plugins,
         pluginsCount: plugins?.length,
         marketplace: marketplacePlugins,
-        marketplaceCount: marketplacePlugins?.length 
+        marketplaceCount: marketplacePlugins?.length,
+        user: userData,
+        userId: userData?.id
       });
       
       // Transform all plugins (both installed and marketplace) for display
@@ -126,6 +128,14 @@ export default function Plugins() {
       setMarketplacePlugins(marketplacePlugins || []);
       setStores(storesData);
       setUser(userData);
+
+      // Debug My Plugins filter
+      console.log('🔍 Debug My Plugins:', {
+        userId: userData?.id,
+        pluginsWithCreatorId: allPlugins.filter(p => p.creator_id).length,
+        myPlugins: allPlugins.filter(p => p.creator_id === userData?.id).length,
+        sampleCreatorIds: allPlugins.slice(0, 3).map(p => ({ name: p.name, creator_id: p.creator_id }))
+      });
     } catch (error) {
       console.error("Error loading data:", error);
     } finally {
