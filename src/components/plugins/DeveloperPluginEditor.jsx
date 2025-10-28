@@ -456,10 +456,10 @@ const DeveloperPluginEditor = ({ plugin, onSave, onClose, onSwitchMode, initialC
   };
 
   return (
-    <div className="h-full flex flex-col bg-gray-100">
-      <div className="flex-1 flex gap-4 p-6 overflow-hidden">
+    <div className="h-full flex flex-col">
+      <div className="flex-1 flex gap-4 overflow-hidden">
       {/* File Tree Sidebar */}
-      <div className="w-64 bg-white rounded-lg shadow-lg overflow-hidden flex flex-col">
+      <div className="w-64 bg-white rounded-lg border-r-2 overflow-hidden flex flex-col">
         <div className="p-4 border-b bg-gray-50">
           <div className="flex items-center gap-2 mb-3">
             <FolderTree className="w-5 h-5 text-blue-600" />
@@ -492,7 +492,7 @@ const DeveloperPluginEditor = ({ plugin, onSave, onClose, onSwitchMode, initialC
       </div>
 
       {/* Main Editor Area */}
-      <div className="flex-1 bg-white rounded-lg shadow-lg overflow-hidden flex flex-col">
+      <div className="flex-1 rounded-lg overflow-hidden flex flex-col">
         {/* Editor Header */}
         <div className="p-3 border-b bg-gray-50 flex items-center justify-between">
           <div className="flex items-center gap-3">
