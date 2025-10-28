@@ -29,7 +29,7 @@ import {
   Upload,
   Zap,
   Sparkles,
-  Wand2
+  Wand2, Bot
 } from 'lucide-react';
 import SaveButton from '@/components/ui/save-button';
 import CodeEditor from '@/components/editor/ai-context/CodeEditor';
@@ -479,17 +479,17 @@ const DeveloperPluginEditor = ({ plugin, onSave, onClose, onSwitchMode, initialC
           <div className="h-full bg-white border-r overflow-hidden flex flex-col">
             {!fileTreeMinimized ? (
               <>
-                <div className="h-12 px-3 border-b bg-gray-50 flex items-center justify-between">
-                  <div className="flex items-center gap-2">
+                <div className="h-12 px-3 border-b bg-gray-50 dark:bg-gray-800 flex items-center justify-between">
+                  <div className="flex-1 flex items-center gap-2">
                     <FolderTree className="w-5 h-5 text-blue-600" />
                     <h3 className="font-semibold">Files</h3>
                   </div>
                   <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => setFileTreeMinimized(true)}
-                    title="Minimize file tree"
-                    className="h-6 w-6 p-0"
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setFileTreeMinimized(true)}
+                      title="Minimize file tree"
+                      className="h-6 w-6 p-0"
                   >
                     <ChevronLeft className="w-4 h-4" />
                   </Button>
@@ -507,7 +507,7 @@ const DeveloperPluginEditor = ({ plugin, onSave, onClose, onSwitchMode, initialC
                     <Plus className="w-4 h-4 mr-1" />
                     New File
                   </Button>
-                        </div>
+                </div>
               </>
             ) : (
               <div className="h-full flex items-center justify-center bg-gray-50">
@@ -563,7 +563,7 @@ const DeveloperPluginEditor = ({ plugin, onSave, onClose, onSwitchMode, initialC
                         )}
                       </>
                     ) : (
-                      <span className="text-gray-500">No file selected</span>
+                      <span className="text-gray-500">Code Editor</span>
                     )}
                   </div>
                   <div className="flex items-center gap-2">
