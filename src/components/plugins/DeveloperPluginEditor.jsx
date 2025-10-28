@@ -642,7 +642,6 @@ const DeveloperPluginEditor = ({ plugin, onSave, onClose, onSwitchMode, initialC
           </div>
         </ResizablePanel>
       </ResizablePanelGroup>
-    </div>
 
       {/* New File Dialog */}
       {showNewFileDialog && (
