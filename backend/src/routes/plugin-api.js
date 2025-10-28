@@ -721,7 +721,9 @@ router.get('/registry/:pluginId', async (req, res) => {
     // Add files from plugin_events table (as event files)
     const eventFiles = pluginEvents.map(e => ({
       name: `events/${e.name}`,
-      code: e.code
+      code: e.code,
+      event_name: e.event_name,  // Preserve event name for Edit Event button
+      priority: e.priority        // Preserve priority
     }));
     allFiles = allFiles.concat(eventFiles);
 
