@@ -466,12 +466,12 @@ const DeveloperPluginEditor = ({ plugin, onSave, onClose, onSwitchMode, initialC
       <ResizablePanelGroup direction="horizontal" className="flex-1">
         {/* File Tree Sidebar - Minimizable */}
         <ResizablePanel
-          defaultSize={fileTreeMinimized ? 5 : fileTreeOriginalSize}
-          minSize={5}
-          maxSize={fileTreeMinimized ? 5 : 35}
+          defaultSize={fileTreeMinimized ? 8 : fileTreeOriginalSize}
+          minSize={8}
+          maxSize={fileTreeMinimized ? 8 : 35}
           collapsible={false}
           onResize={(size) => {
-            if (!fileTreeMinimized && size > 5) {
+            if (!fileTreeMinimized && size > 8) {
               setFileTreeOriginalSize(size);
             }
           }}
@@ -510,7 +510,7 @@ const DeveloperPluginEditor = ({ plugin, onSave, onClose, onSwitchMode, initialC
                 </div>
               </>
             ) : (
-              <div className="h-full flex items-center justify-center bg-gray-50">
+              <div className="h-full flex pt-2 justify-center bg-gray-50">
                 <Button
                   variant="ghost"
                   size="sm"
@@ -529,12 +529,12 @@ const DeveloperPluginEditor = ({ plugin, onSave, onClose, onSwitchMode, initialC
 
                 {/* Main Editor Area - Minimizable */}
                 <ResizablePanel
-                  defaultSize={editorMinimized ? 5 : editorOriginalSize}
-                  minSize={5}
-                  maxSize={editorMinimized ? 5 : 100}
+                  defaultSize={editorMinimized ? 8 : editorOriginalSize}
+                  minSize={8}
+                  maxSize={editorMinimized ? 8 : 100}
                   collapsible={false}
                   onResize={(size) => {
-                    if (!editorMinimized && size > 5) {
+                    if (!editorMinimized && size > 8) {
                       setEditorOriginalSize(size);
                     }
                   }}

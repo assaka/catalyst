@@ -61,12 +61,12 @@ export default function AIStudio() {
           <ResizablePanelGroup direction="horizontal">
             {/* AI Chat Assistant (Left) - Minimizable */}
             <ResizablePanel
-              defaultSize={chatMinimized ? 5 : chatOriginalSize}
-              minSize={5}
-              maxSize={chatMinimized ? 5 : 50}
+              defaultSize={chatMinimized ? 8 : chatOriginalSize}
+              minSize={8}
+              maxSize={chatMinimized ? 8 : 50}
               collapsible={false}
               onResize={(size) => {
-                if (!chatMinimized && size > 5) {
+                if (!chatMinimized && size > 8) {
                   setChatOriginalSize(size);
                 }
               }}
@@ -96,7 +96,7 @@ export default function AIStudio() {
                     </div>
                   </>
                 ) : (
-                  <div className="h-full flex items-center justify-center border-r bg-gray-50 dark:bg-gray-800">
+                  <div className="h-full flex pt-2 justify-center border-r bg-gray-50 dark:bg-gray-800">
                     <Button
                       variant="ghost"
                       size="sm"
