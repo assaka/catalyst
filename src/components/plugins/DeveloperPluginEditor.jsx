@@ -21,6 +21,7 @@ import {
   Plus,
   ChevronRight,
   ChevronDown,
+  ChevronLeft,
   File,
   Folder,
   Search,
