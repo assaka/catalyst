@@ -30,21 +30,21 @@ export default function AIStudio() {
   const calculateChatSize = () => {
     if (chatMinimized) return 6;
     if (fileTreeMinimized && editorMinimized) return 88; // Scenario 7
-    if (editorMinimized) return 74; // Scenario 4
+    if (editorMinimized) return 84; // Scenario 4 (84+10+6=100)
     return 30; // Default - always 30%
   };
 
   const calculateFileTreeSize = () => {
     if (fileTreeMinimized) return 6;
-    return 20; // Always 20%
+    return 10; // Default 10%
   };
 
   const calculateEditorSize = () => {
     if (editorMinimized) return 6;
     if (chatMinimized && fileTreeMinimized) return 88; // Scenario 5
-    if (chatMinimized) return 74; // Scenario 2
-    if (fileTreeMinimized) return 64; // Scenario 3
-    return 50; // Default
+    if (chatMinimized) return 84; // Scenario 2 (6+10+84=100)
+    if (fileTreeMinimized) return 74; // Scenario 3 (30+6+64=100 → 30+6+74=110, fix: 74)
+    return 60; // Default (30+10+60=100)
   };
 
   return (
@@ -88,7 +88,7 @@ export default function AIStudio() {
             <ResizablePanel
               defaultSize={calculateChatSize()}
               minSize={6}
-              maxSize={chatMinimized ? 6 : 50}
+              maxSize={chatMinimized ? 6 : 90}
               collapsible={false}
               onResize={(size) => {
                 if (!chatMinimized && size > 6) {
