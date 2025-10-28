@@ -7,12 +7,12 @@ const { sequelize } = require('../database/connection');
 
 /**
  * GET /api/plugins
- * Get ALL plugins (installed + available) from plugins table
+ * Get ALL plugins (installed + available) from plugin_registry table
  */
 router.get('/', async (req, res) => {
   try {
     const plugins = await sequelize.query(`
-      SELECT * FROM plugins
+      SELECT * FROM plugin_registry
       ORDER BY created_at DESC
     `, {
       type: sequelize.QueryTypes.SELECT
