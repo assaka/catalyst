@@ -1000,33 +1000,41 @@ router.delete('/registry/:id', async (req, res) => {
 router.post('/registry', async (req, res) => {
   try {
     const pluginData = req.body;
-    const id = `${Date.now()}-${pluginData.name.toLowerCase().replace(/\s+/g, '-')}`;
 
-    // Build manifest and config
+    // Generate proper UUID for plugin_registry
+    const { randomUUID } = require('crypto');
+    const id = randomUUID();
+
+    // Generate slug from name
+    const slug = pluginData.name.toLowerCase().replace(/\s+/g, '-');
+
+    // Get creator_id from authenticated user (if available)
+    const creatorId = req.user?.id || null;
+
+    // Build manifest
     const manifest = {
       name: pluginData.name,
       version: pluginData.version || '1.0.0',
       generated_by_ai: pluginData.generated_by_ai || false,
+      generatedFiles: pluginData.generatedFiles || [],
       ...pluginData
     };
 
-    const config = {
-      hooks: pluginData.hooks || [],
-      events: pluginData.events || []
-    };
-
+    // Insert into plugin_registry
     await sequelize.query(`
       INSERT INTO plugin_registry (
-        id, name, version, description, author, category, status, type, framework,
-        manifest, config, source_code, created_at, updated_at
+        id, name, slug, version, description, author, category, status, type, framework,
+        manifest, creator_id, is_installed, is_enabled,
+        created_at, updated_at
       )
       VALUES (
-        $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, NOW(), NOW()
+        $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, NOW(), NOW()
       )
     `, {
       bind: [
         id,
         pluginData.name,
+        slug,
         pluginData.version || '1.0.0',
         pluginData.description,
         pluginData.author || 'Unknown',
@@ -1035,11 +1043,82 @@ router.post('/registry', async (req, res) => {
         pluginData.generated_by_ai ? 'ai-generated' : 'custom',
         'react',
         JSON.stringify(manifest),
-        JSON.stringify(config),
-        JSON.stringify(pluginData.generatedFiles || [])
+        creatorId,
+        true,  // is_installed
+        true   // is_enabled
       ],
       type: sequelize.QueryTypes.INSERT
     });
+
+    // If plugin has generated files, store them in plugin_scripts table
+    if (pluginData.generatedFiles && pluginData.generatedFiles.length > 0) {
+      for (const file of pluginData.generatedFiles) {
+        const fileName = file.name || file.filename || '';
+        const fileContent = file.code || file.content || '';
+
+        if (fileName && fileContent) {
+          await sequelize.query(`
+            INSERT INTO plugin_scripts (
+              plugin_id, file_name, file_content, script_type, scope, load_priority, is_enabled
+            )
+            VALUES ($1, $2, $3, $4, $5, $6, $7)
+          `, {
+            bind: [
+              id,
+              fileName,
+              fileContent,
+              'js',
+              'frontend',
+              0,
+              true
+            ],
+            type: sequelize.QueryTypes.INSERT
+          });
+        }
+      }
+    }
+
+    // If plugin has hooks, store them in plugin_hooks table
+    if (pluginData.hooks && pluginData.hooks.length > 0) {
+      for (const hook of pluginData.hooks) {
+        await sequelize.query(`
+          INSERT INTO plugin_hooks (
+            plugin_id, hook_name, handler_function, priority, is_enabled
+          )
+          VALUES ($1, $2, $3, $4, $5)
+        `, {
+          bind: [
+            id,
+            hook.hook_name || hook.name,
+            hook.handler_code || hook.code || hook.handler,
+            hook.priority || 10,
+            hook.enabled !== false
+          ],
+          type: sequelize.QueryTypes.INSERT
+        });
+      }
+    }
+
+    // If plugin has events, store them in plugin_events table
+    if (pluginData.events && pluginData.events.length > 0) {
+      for (const event of pluginData.events) {
+        await sequelize.query(`
+          INSERT INTO plugin_events (
+            plugin_id, event_name, listener_function, priority, is_enabled
+          )
+          VALUES ($1, $2, $3, $4, $5)
+        `, {
+          bind: [
+            id,
+            event.event_name || event.name,
+            event.listener_code || event.code || event.handler,
+            event.priority || 10,
+            event.enabled !== false
+          ],
+          type: sequelize.QueryTypes.INSERT
+        });
+      }
+    }
 
     res.json({
       success: true,
