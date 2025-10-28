@@ -33,6 +33,7 @@ import {
 import SaveButton from '@/components/ui/save-button';
 import CodeEditor from '@/components/editor/ai-context/CodeEditor';
 import { useAIStudio, AI_STUDIO_MODES } from '@/contexts/AIStudioContext';
+import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from '@/components/ui/resizable';
 import apiClient from '@/api/client';
 
 const DeveloperPluginEditor = ({ plugin, onSave, onClose, onSwitchMode, initialContext }) => {
@@ -54,6 +55,7 @@ const DeveloperPluginEditor = ({ plugin, onSave, onClose, onSwitchMode, initialC
   const [eventSearchQuery, setEventSearchQuery] = useState('');
   const [showEventMappingDialog, setShowEventMappingDialog] = useState(false);
   const [editingEventName, setEditingEventName] = useState('');
+  const [fileTreeCollapsed, setFileTreeCollapsed] = useState(false);
 
   useEffect(() => {
     loadPluginFiles();
@@ -457,14 +459,28 @@ const DeveloperPluginEditor = ({ plugin, onSave, onClose, onSwitchMode, initialC
 
   return (
     <div className="h-full flex flex-col">
-      <div className="flex-1 flex gap-4 overflow-hidden">
-      {/* File Tree Sidebar */}
-      <div className="w-64 bg-white rounded-lg border-r-2 overflow-hidden flex flex-col">
-        <div className="p-4 border-b bg-gray-50">
-          <div className="flex items-center gap-2 mb-3">
-            <FolderTree className="w-5 h-5 text-blue-600" />
-            <h3 className="font-semibold">Files</h3>
-          </div>
+      <ResizablePanelGroup direction="horizontal" className="flex-1">
+        {/* File Tree Sidebar - Resizable and Collapsible */}
+        {!fileTreeCollapsed && (
+          <>
+            <ResizablePanel defaultSize={20} minSize={15} maxSize={35}>
+              <div className="h-full bg-white border-r overflow-hidden flex flex-col">
+                <div className="p-4 border-b bg-gray-50">
+                  <div className="flex items-center justify-between mb-3">
+                    <div className="flex items-center gap-2">
+                      <FolderTree className="w-5 h-5 text-blue-600" />
+                      <h3 className="font-semibold">Files</h3>
+                    </div>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setFileTreeCollapsed(true)}
+                      title="Collapse file tree"
+                      className="h-6 w-6 p-0"
+                    >
+                      <ChevronLeft className="w-4 h-4" />
+                    </Button>
+                  </div>
           <div className="relative">
             <Search className="absolute left-2 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
             <Input
@@ -488,11 +504,31 @@ const DeveloperPluginEditor = ({ plugin, onSave, onClose, onSwitchMode, initialC
             <Plus className="w-4 h-4 mr-1" />
             New File
           </Button>
-        </div>
-      </div>
+                </div>
+              </div>
+            </ResizablePanel>
 
-      {/* Main Editor Area */}
-      <div className="flex-1 rounded-lg overflow-hidden flex flex-col">
+            <ResizableHandle />
+          </>
+        )}
+
+        {/* Main Editor Area */}
+        <ResizablePanel defaultSize={fileTreeCollapsed ? 100 : 80}>
+          <div className="h-full flex flex-col bg-white rounded-lg overflow-hidden">
+            {/* Expand file tree button (when collapsed) */}
+            {fileTreeCollapsed && (
+              <div className="absolute top-4 left-4 z-10">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setFileTreeCollapsed(false)}
+                  title="Show file tree"
+                >
+                  <ChevronRight className="w-4 h-4 mr-2" />
+                  Files
+                </Button>
+              </div>
+            )}
         {/* Editor Header */}
         <div className="p-3 border-b bg-gray-50 flex items-center justify-between">
           <div className="flex items-center gap-3">
@@ -603,8 +639,10 @@ const DeveloperPluginEditor = ({ plugin, onSave, onClose, onSwitchMode, initialC
             ))}
           </div>
         )}
-      </div>
-      </div>
+          </div>
+        </ResizablePanel>
+      </ResizablePanelGroup>
+    </div>
 
       {/* New File Dialog */}
       {showNewFileDialog && (

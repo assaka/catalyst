@@ -3,28 +3,15 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import Editor, { DiffEditor } from '@monaco-editor/react';
 import {
-  Save,
   Undo,
   Redo,
   Search,
   Code,
   Diff,
-  Eye,
   Split,
-  RotateCcw,
-  History,
   ChevronUp,
-  ChevronDown,
   ChevronLeft,
-  Plus,
-  Minus,
-  GitBranch,
-  Clock,
-  FileText,
   AlertTriangle,
-  CheckCircle,
-  Check,
-  Info,
   RefreshCw,
   Minimize2,
   Sun,
@@ -932,12 +919,6 @@ const CodeEditor = ({
     }
   };
 
-  const handleReplace = () => {
-    if (editorRef.current) {
-      editorRef.current.getAction('editor.action.startFindReplaceAction').run();
-    }
-  };
-
   // Language detection based on filename extension
   const getMonacoLanguage = () => {
     if (!fileName) return language;
@@ -962,25 +943,6 @@ const CodeEditor = ({
     };
     
     return languageMap[extension] || language || 'javascript';
-  };
-
-  const getLanguageIcon = () => {
-    switch (language) {
-      case 'javascript':
-      case 'jsx':
-        return '📄';
-      case 'typescript':
-      case 'tsx':
-        return '📘';
-      case 'css':
-        return '🎨';
-      case 'html':
-        return '🌐';
-      case 'json':
-        return '📋';
-      default:
-        return '📄';
-    }
   };
 
   const handleUndo = () => {
@@ -1060,12 +1022,6 @@ const CodeEditor = ({
           </div>
         )}
         <div className="flex items-center justify-between">
-          <div className="flex items-center space-x-2">
-            <span className="text-lg">{getLanguageIcon()}</span>
-            <span className="font-medium">{fileName || 'Untitled'}</span>
-            {isModified && !saveSuccess && <Badge variant="outline" className="text-xs">Modified</Badge>}
-            <Badge variant="secondary" className="text-xs">{language}</Badge>
-          </div>
 
           <div className="flex items-center space-x-1">
             <Button
