@@ -488,117 +488,108 @@ const DeveloperPluginEditor = ({ plugin, onSave, onClose, onSwitchMode, initialC
                       <ChevronLeft className="w-4 h-4" />
                     </Button>
                   </div>
-          <div className="relative">
-            <Search className="absolute left-2 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-            <Input
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Search files..."
-              className="pl-8 h-8 text-sm"
-            />
-          </div>
-        </div>
-        <div className="flex-1 overflow-y-auto p-2">
-          {renderFileTree(fileTree)}
-        </div>
-        <div className="p-2 border-t bg-gray-50">
-          <Button
-            size="sm"
-            className="w-full"
-            variant="outline"
-            onClick={() => setShowNewFileDialog(true)}
-          >
-            <Plus className="w-4 h-4 mr-1" />
-            New File
-          </Button>
                 </div>
-              </>
-            ) : (
-              <div className="h-full flex items-center justify-center">
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => setFileTreeMinimized(false)}
-                  title="Expand file tree"
-                  className="p-2"
-                >
-                  <div className="flex flex-col items-center gap-1">
-                    <ChevronRight className="w-4 h-4" />
-                    <span className="text-xs" style={{ writingMode: 'vertical-rl' }}>Files</span>
+                <div className="flex-1 overflow-y-auto p-2">
+                  {renderFileTree(fileTree)}
+                </div>
+                <div className="p-2 border-t bg-gray-50">
+                  <Button
+                    size="sm"
+                    className="w-full"
+                    variant="outline"
+                    onClick={() => setShowNewFileDialog(true)}
+                  >
+                    <Plus className="w-4 h-4 mr-1" />
+                    New File
+                  </Button>
+                        </div>
+                      </>
+                    ) : (
+                      <div className="h-full flex items-center justify-center">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => setFileTreeMinimized(false)}
+                          title="Expand file tree"
+                          className="p-2"
+                        >
+                          <div className="flex flex-col items-center gap-1">
+                            <ChevronRight className="w-4 h-4" />
+                            <span className="text-xs" style={{ writingMode: 'vertical-rl' }}>Files</span>
+                          </div>
+                        </Button>
+                      </div>
+                    )}
                   </div>
-                </Button>
-              </div>
-            )}
-          </div>
-        </ResizablePanel>
+                </ResizablePanel>
 
-        <ResizableHandle />
+                <ResizableHandle />
 
-        {/* Main Editor Area - Minimizable */}
-        <ResizablePanel
-          defaultSize={editorMinimized ? 5 : (fileTreeMinimized ? 95 : 80)}
-          minSize={5}
-          maxSize={editorMinimized ? 5 : 100}
-          collapsible={false}
-        >
-          <div className="h-full flex flex-col bg-white rounded-lg overflow-hidden">
-            {!editorMinimized ? (
-              <>
-                {/* Editor Header */}
-                <div className="p-3 border-b bg-gray-50 flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    {selectedFile ? (
-              <>
-                <FileText className="w-4 h-4 text-gray-600" />
-                <span className="font-medium">{selectedFile.name}</span>
-                <span className="text-sm text-gray-500">{selectedFile.path}</span>
-                {fileContent !== originalContent && (
-                  <Badge className="bg-orange-100 text-orange-700 text-xs">
-                    Modified
-                  </Badge>
-                )}
-                {selectedFile.eventName && (
-                  <Badge className="bg-purple-100 text-purple-700 text-xs">
-                    → {selectedFile.eventName}
-                  </Badge>
-                )}
-              </>
-            ) : (
-              <span className="text-gray-500">No file selected</span>
-            )}
-          </div>
-          <div className="flex items-center gap-2">
-            {/* Edit Event Mapping button - only for event files */}
-            {selectedFile?.eventName && (
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={() => {
-                  setEditingEventName(selectedFile.eventName);
-                  setShowEventMappingDialog(true);
-                }}
-                title="Edit which event this file listens to"
-              >
-                <Zap className="w-4 h-4 mr-1" />
-                Edit Event
-              </Button>
-            )}
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={runTests}
-            >
-              <Bug className="w-4 h-4 mr-1" />
-              Test
-            </Button>
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={() => setShowTerminal(!showTerminal)}
-            >
-              <Terminal className="w-4 h-4 mr-1" />
-              Terminal
-            </Button>
+                {/* Main Editor Area - Minimizable */}
+                <ResizablePanel
+                  defaultSize={editorMinimized ? 5 : (fileTreeMinimized ? 95 : 80)}
+                  minSize={5}
+                  maxSize={editorMinimized ? 5 : 100}
+                  collapsible={false}
+                >
+                  <div className="h-full flex flex-col bg-white rounded-lg overflow-hidden">
+                    {!editorMinimized ? (
+                      <>
+                        {/* Editor Header */}
+                        <div className="h-12 px-3 border-b bg-gray-50 flex items-center justify-between">
+                          <div className="flex items-center gap-3">
+                            {selectedFile ? (
+                      <>
+                        <FileText className="w-4 h-4 text-gray-600" />
+                        <span className="font-medium">{selectedFile.name}</span>
+                        <span className="text-sm text-gray-500">{selectedFile.path}</span>
+                        {fileContent !== originalContent && (
+                          <Badge className="bg-orange-100 text-orange-700 text-xs">
+                            Modified
+                          </Badge>
+                        )}
+                        {selectedFile.eventName && (
+                          <Badge className="bg-purple-100 text-purple-700 text-xs">
+                            → {selectedFile.eventName}
+                          </Badge>
+                        )}
+                      </>
+                    ) : (
+                      <span className="text-gray-500">No file selected</span>
+                    )}
+                  </div>
+                  <div className="flex items-center gap-2">
+                    {/* Edit Event Mapping button - only for event files */}
+                    {selectedFile?.eventName && (
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => {
+                          setEditingEventName(selectedFile.eventName);
+                          setShowEventMappingDialog(true);
+                        }}
+                        title="Edit which event this file listens to"
+                      >
+                        <Zap className="w-4 h-4 mr-1" />
+                        Edit Event
+                      </Button>
+                    )}
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={runTests}
+                    >
+                      <Bug className="w-4 h-4 mr-1" />
+                      Test
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => setShowTerminal(!showTerminal)}
+                    >
+                      <Terminal className="w-4 h-4 mr-1" />
+                      Terminal
+                    </Button>
                     <SaveButton
                       size="sm"
                       onClick={handleSave}
@@ -621,48 +612,48 @@ const DeveloperPluginEditor = ({ plugin, onSave, onClose, onSwitchMode, initialC
 
                 {/* Code Editor */}
                 <div className="flex-1 overflow-hidden">
-          {selectedFile ? (
-            <CodeEditor
-              value={fileContent}
-              onChange={handleCodeChange}
-              fileName={selectedFile.name}
-              originalCode={originalContent}
-              enableDiffDetection={true}
-              enableTabs={false}
-              className="h-full"
-            />
-          ) : (
-            <div className="h-full flex items-center justify-center text-gray-500">
-              <div className="text-center">
-                <Code className="w-16 h-16 mx-auto mb-4 text-gray-400" />
-                <h3 className="text-lg font-medium text-gray-900 mb-2">
-                  Select a file to edit
-                </h3>
-                <p className="text-sm">
-                  Choose a file from the tree on the left to start coding
-                </p>
-              </div>
-            </div>
-          )}
-        </div>
+                  {selectedFile ? (
+                    <CodeEditor
+                      value={fileContent}
+                      onChange={handleCodeChange}
+                      fileName={selectedFile.name}
+                      originalCode={originalContent}
+                      enableDiffDetection={true}
+                      enableTabs={false}
+                      className="h-full"
+                    />
+                  ) : (
+                    <div className="h-full flex items-center justify-center text-gray-500">
+                      <div className="text-center">
+                        <Code className="w-16 h-16 mx-auto mb-4 text-gray-400" />
+                        <h3 className="text-lg font-medium text-gray-900 mb-2">
+                          Select a file to edit
+                        </h3>
+                        <p className="text-sm">
+                          Choose a file from the tree on the left to start coding
+                        </p>
+                      </div>
+                    </div>
+                  )}
+                </div>
 
-        {/* Terminal */}
-        {showTerminal && (
-          <div className="h-48 border-t bg-gray-900 text-green-400 font-mono text-sm overflow-y-auto p-4">
-            {terminalOutput.map((output, index) => (
-              <div
-                key={index}
-                className={`mb-1 ${
-                  output.type === 'error' ? 'text-red-400' :
-                  output.type === 'success' ? 'text-green-400' :
-                  'text-gray-400'
-                }`}
-              >
-                <span className="text-gray-600">[{output.timestamp}]</span> {output.message}
-              </div>
-            ))}
-          </div>
-        )}
+                {/* Terminal */}
+                {showTerminal && (
+                  <div className="h-48 border-t bg-gray-900 text-green-400 font-mono text-sm overflow-y-auto p-4">
+                    {terminalOutput.map((output, index) => (
+                      <div
+                        key={index}
+                        className={`mb-1 ${
+                          output.type === 'error' ? 'text-red-400' :
+                          output.type === 'success' ? 'text-green-400' :
+                          'text-gray-400'
+                        }`}
+                      >
+                        <span className="text-gray-600">[{output.timestamp}]</span> {output.message}
+                      </div>
+                    ))}
+                  </div>
+                )}
               </>
             ) : (
               <div className="h-full flex items-center justify-center">
