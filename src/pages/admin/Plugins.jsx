@@ -1,5 +1,6 @@
 
 import React, { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { Store } from "@/api/entities";
 import { User } from "@/api/entities";
 import apiClient from "@/api/client";
@@ -22,7 +23,6 @@ import {
   Edit3,
   Package
 } from "lucide-react";
-import { useAIStudio, AI_STUDIO_MODES } from "@/contexts/AIStudioContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -47,7 +47,7 @@ import UninstallDialog from "@/components/admin/plugins/UninstallDialog";
 import PluginSettingsDialog from "@/components/admin/plugins/PluginSettingsDialog";
 
 export default function Plugins() {
-  const { openAI } = useAIStudio();
+  const navigate = useNavigate();
   const [plugins, setPlugins] = useState([]);
   const [marketplacePlugins, setMarketplacePlugins] = useState([]);
   const [stores, setStores] = useState([]);
@@ -266,7 +266,7 @@ export default function Plugins() {
           </div>
           <div className="flex gap-2">
             <Button
-              onClick={() => openAI(AI_STUDIO_MODES.PLUGIN)}
+              onClick={() => navigate('/admin/ai-studio')}
               className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700"
             >
               <Sparkles className="w-4 h-4 mr-2" />
@@ -702,7 +702,7 @@ export default function Plugins() {
                         <Button
                           variant="outline"
                           size="sm"
-                          onClick={() => openAI(AI_STUDIO_MODES.PLUGIN, { plugin })}
+                          onClick={() => navigate('/admin/ai-studio', { state: { plugin } })}
                         >
                           <Edit3 className="w-4 h-4 mr-2" />
                           Edit in AI Studio
@@ -733,7 +733,7 @@ export default function Plugins() {
                     Use AI to create your first plugin in minutes
                   </p>
                   <Button
-                    onClick={() => openAI(AI_STUDIO_MODES.PLUGIN)}
+                    onClick={() => navigate('/admin/ai-studio')}
                     className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700"
                   >
                     <Sparkles className="w-4 h-4 mr-2" />
