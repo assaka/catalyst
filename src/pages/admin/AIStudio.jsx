@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useLocation } from 'react-router-dom';
-import { Sparkles, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Sparkles, ChevronLeft, ChevronRight, Bot, Code2 } from 'lucide-react';
 import { useStoreSelection } from '@/contexts/StoreSelectionContext';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -20,6 +20,7 @@ export default function AIStudio() {
   const { selectedStore } = useStoreSelection();
   const pluginToEdit = location.state?.plugin;
   const [chatMinimized, setChatMinimized] = useState(false);
+  const [chatOriginalSize, setChatOriginalSize] = useState(30);
 
   return (
     <div className="h-screen flex flex-col bg-gray-50">
@@ -60,16 +61,22 @@ export default function AIStudio() {
           <ResizablePanelGroup direction="horizontal">
             {/* AI Chat Assistant (Left) - Minimizable */}
             <ResizablePanel
-              defaultSize={chatMinimized ? 5 : 30}
+              defaultSize={chatMinimized ? 5 : chatOriginalSize}
               minSize={5}
               maxSize={chatMinimized ? 5 : 50}
               collapsible={false}
+              onResize={(size) => {
+                if (!chatMinimized && size > 5) {
+                  setChatOriginalSize(size);
+                }
+              }}
             >
               <div className="h-full flex flex-col border-r bg-white dark:bg-gray-900">
                 {!chatMinimized ? (
                   <>
                     <div className="h-12 px-3 border-b bg-gray-50 dark:bg-gray-800 flex items-center justify-between">
-                      <div className="flex-1">
+                      <div className="flex-1 flex items-center gap-2">
+                        <Bot className="w-4 h-4 text-blue-600" />
                         <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100">
                           AI Assistant
                         </h3>
@@ -89,18 +96,15 @@ export default function AIStudio() {
                     </div>
                   </>
                 ) : (
-                  <div className="h-full flex items-center justify-center">
+                  <div className="h-full flex items-center justify-center border-r bg-gray-50 dark:bg-gray-800">
                     <Button
                       variant="ghost"
                       size="sm"
                       onClick={() => setChatMinimized(false)}
-                      title="Expand chat"
-                      className="writing-mode-vertical p-2"
+                      title="Expand AI chat"
+                      className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700"
                     >
-                      <div className="flex items-center gap-1" style={{ writingMode: 'vertical-rl' }}>
-                        <ChevronRight className="w-4 h-4" />
-                        <span className="text-xs">AI</span>
-                      </div>
+                      <Bot className="w-5 h-5 text-blue-600" />
                     </Button>
                   </div>
                 )}
