@@ -54,7 +54,7 @@ SELECT
   pr.installed_at
 FROM plugin_registry pr
 WHERE NOT EXISTS (
-  SELECT 1 FROM plugins p WHERE p.slug = pr.id
+  SELECT 1 FROM plugins p WHERE p.slug::text = pr.id::text
 );
 
 -- 2. Show migration results
@@ -72,7 +72,7 @@ SELECT
   'newly migrated',
   COUNT(*)
 FROM plugins
-WHERE slug IN (SELECT id FROM plugin_registry);
+WHERE slug::text IN (SELECT id::text FROM plugin_registry);
 
 -- 3. List migrated plugins
 SELECT
@@ -83,5 +83,5 @@ SELECT
   p.is_enabled,
   'Migrated from plugin_registry' as source
 FROM plugins p
-WHERE p.slug IN (SELECT id FROM plugin_registry)
+WHERE p.slug::text IN (SELECT id::text FROM plugin_registry)
 ORDER BY p.name;
