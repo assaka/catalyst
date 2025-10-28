@@ -114,110 +114,198 @@ const DeveloperPluginEditor = ({
   };
 
   const buildFileTree = (pluginData) => {
-    const tree = [
-      {
+    // Helper function to build dynamic tree from file paths
+    const buildDynamicTree = (files) => {
+      const root = {
         name: pluginData.name || 'plugin',
         type: 'folder',
         path: '/',
-        children: [
-          {
-            name: 'src',
-            type: 'folder',
-            path: '/src',
-            children: [
-              {
-                name: 'controllers',
-                type: 'folder',
-                path: '/src/controllers',
-                children: pluginData.controllers?.map(c => ({
-                  name: `${c.name}.js`,
-                  type: 'file',
-                  path: `/src/controllers/${c.name}.js`,
-                  content: c.code
-                })) || []
-              },
-              {
-                name: 'models',
-                type: 'folder',
-                path: '/src/models',
-                children: pluginData.models?.map(m => ({
-                  name: `${m.name}.js`,
-                  type: 'file',
-                  path: `/src/models/${m.name}.js`,
-                  content: m.code
-                })) || []
-              },
-              {
-                name: 'components',
-                type: 'folder',
-                path: '/src/components',
-                children: pluginData.components?.map(c => ({
-                  name: `${c.name}.jsx`,
-                  type: 'file',
-                  path: `/src/components/${c.name}.jsx`,
-                  content: c.code
-                })) || []
-              }
-            ]
-          },
-          {
-            name: 'hooks',
-            type: 'folder',
-            path: '/hooks',
-            children: pluginData.hooks?.map(h => ({
-              name: `${h.hook_name}.js`,
-              type: 'file',
-              path: `/hooks/${h.hook_name}.js`,
-              content: h.handler_code
-            })) || []
-          },
-          {
-            name: 'events',
-            type: 'folder',
-            path: '/events',
-            children: pluginData.eventListeners?.map(l => ({
-              name: l.file_name,
-              type: 'file',
-              path: l.file_path,
-              content: l.listener_code,
-              eventName: l.event_name,
-              description: l.description,
-              priority: l.priority
-            })) || []
-          },
-          {
-            name: 'admin',
-            type: 'folder',
-            path: '/admin',
-            children: pluginData.adminPages?.map(page => ({
-              name: `${page.page_key}.jsx`,
-              type: 'file',
-              path: `/admin/${page.page_key}.jsx`,
-              content: page.component_code,
-              pageName: page.page_name,
-              route: page.route,
-              description: page.description,
-              icon: page.icon,
-              category: page.category
-            })) || []
-          },
-          {
-            name: 'manifest.json',
-            type: 'file',
-            path: '/manifest.json',
-            content: JSON.stringify(pluginData.manifest || {}, null, 2)
-          },
-          {
-            name: 'README.md',
-            type: 'file',
-            path: '/README.md',
-            content: pluginData.readme || '# Plugin Documentation'
-          }
-        ]
-      }
-    ];
+        children: []
+      };
 
-    return tree;
+      // Create a map to track folder nodes
+      const folderMap = { '/': root };
+
+      files.forEach(file => {
+        const fileName = file.name || '';
+        const fileCode = file.code || '';
+
+        // Normalize path - remove leading 'src/' if present, we'll add it back in structure
+        let normalizedPath = fileName.replace(/^src\//, '');
+
+        // Ensure path starts with /
+        if (!normalizedPath.startsWith('/')) {
+          normalizedPath = '/' + normalizedPath;
+        }
+
+        // Split path into parts
+        const parts = normalizedPath.split('/').filter(p => p);
+
+        // Build folder structure
+        let currentPath = '';
+        let currentFolder = root;
+
+        // Process all parts except the last one (which is the file)
+        for (let i = 0; i < parts.length - 1; i++) {
+          currentPath += '/' + parts[i];
+
+          if (!folderMap[currentPath]) {
+            const newFolder = {
+              name: parts[i],
+              type: 'folder',
+              path: currentPath,
+              children: []
+            };
+            currentFolder.children.push(newFolder);
+            folderMap[currentPath] = newFolder;
+          }
+
+          currentFolder = folderMap[currentPath];
+        }
+
+        // Add the file to its parent folder
+        if (parts.length > 0) {
+          const fileNode = {
+            name: parts[parts.length - 1],
+            type: 'file',
+            path: normalizedPath,
+            content: fileCode
+          };
+          currentFolder.children.push(fileNode);
+        }
+      });
+
+      return root;
+    };
+
+    // Get all files from source_code or generatedFiles
+    const allFiles = pluginData.source_code || pluginData.manifest?.generatedFiles || [];
+
+    // Build dynamic tree from files
+    const tree = buildDynamicTree(allFiles);
+
+    // Add special categorized files with metadata (event listeners, hooks, admin pages)
+    // These need special handling because they have extra metadata
+
+    // Add event listeners with metadata
+    if (pluginData.eventListeners && pluginData.eventListeners.length > 0) {
+      let eventsFolder = tree.children.find(f => f.name === 'events');
+      if (!eventsFolder) {
+        eventsFolder = {
+          name: 'events',
+          type: 'folder',
+          path: '/events',
+          children: []
+        };
+        tree.children.push(eventsFolder);
+      }
+
+      // Replace or add event listener files with metadata
+      pluginData.eventListeners.forEach(listener => {
+        const existingIndex = eventsFolder.children.findIndex(f => f.path === listener.file_path);
+        const eventFile = {
+          name: listener.file_name,
+          type: 'file',
+          path: listener.file_path,
+          content: listener.listener_code,
+          eventName: listener.event_name,
+          description: listener.description,
+          priority: listener.priority
+        };
+
+        if (existingIndex >= 0) {
+          eventsFolder.children[existingIndex] = eventFile;
+        } else {
+          eventsFolder.children.push(eventFile);
+        }
+      });
+    }
+
+    // Add admin pages with metadata
+    if (pluginData.adminPages && pluginData.adminPages.length > 0) {
+      let adminFolder = tree.children.find(f => f.name === 'admin');
+      if (!adminFolder) {
+        adminFolder = {
+          name: 'admin',
+          type: 'folder',
+          path: '/admin',
+          children: []
+        };
+        tree.children.push(adminFolder);
+      }
+
+      // Replace or add admin page files with metadata
+      pluginData.adminPages.forEach(page => {
+        const pagePath = `/admin/${page.page_key}.jsx`;
+        const existingIndex = adminFolder.children.findIndex(f => f.path === pagePath);
+        const pageFile = {
+          name: `${page.page_key}.jsx`,
+          type: 'file',
+          path: pagePath,
+          content: page.component_code,
+          pageName: page.page_name,
+          route: page.route,
+          description: page.description,
+          icon: page.icon,
+          category: page.category
+        };
+
+        if (existingIndex >= 0) {
+          adminFolder.children[existingIndex] = pageFile;
+        } else {
+          adminFolder.children.push(pageFile);
+        }
+      });
+    }
+
+    // Add hooks with metadata
+    if (pluginData.hooks && pluginData.hooks.length > 0) {
+      let hooksFolder = tree.children.find(f => f.name === 'hooks');
+      if (!hooksFolder) {
+        hooksFolder = {
+          name: 'hooks',
+          type: 'folder',
+          path: '/hooks',
+          children: []
+        };
+        tree.children.push(hooksFolder);
+      }
+
+      // Replace or add hook files with metadata
+      pluginData.hooks.forEach(hook => {
+        const hookPath = `/hooks/${hook.hook_name}.js`;
+        const existingIndex = hooksFolder.children.findIndex(f => f.path === hookPath);
+        const hookFile = {
+          name: `${hook.hook_name}.js`,
+          type: 'file',
+          path: hookPath,
+          content: hook.handler_code
+        };
+
+        if (existingIndex >= 0) {
+          hooksFolder.children[existingIndex] = hookFile;
+        } else {
+          hooksFolder.children.push(hookFile);
+        }
+      });
+    }
+
+    // Add hardcoded files (manifest.json and README.md) at root level
+    tree.children.push({
+      name: 'manifest.json',
+      type: 'file',
+      path: '/manifest.json',
+      content: JSON.stringify(pluginData.manifest || {}, null, 2)
+    });
+
+    tree.children.push({
+      name: 'README.md',
+      type: 'file',
+      path: '/README.md',
+      content: pluginData.readme || '# Plugin Documentation'
+    });
+
+    return [tree];
   };
 
   const toggleFolder = (path) => {
