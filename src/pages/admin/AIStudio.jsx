@@ -142,7 +142,7 @@ export default function AIStudio() {
             {/* Developer Editor with File Explorer (Right) - Gets remaining space */}
             <ResizablePanel
               defaultSize={calculateFileTreeSize() + calculateEditorSize()}
-              minSize={12}
+              minSize={6}
             >
               <DeveloperPluginEditor
                 plugin={pluginToEdit}

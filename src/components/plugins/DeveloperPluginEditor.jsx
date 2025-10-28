@@ -503,8 +503,8 @@ const DeveloperPluginEditor = ({
         {/* File Tree Sidebar - Minimizable */}
         <ResizablePanel
           defaultSize={calculateFileTreeRelativeSize()}
-          minSize={5}
-          maxSize={fileTreeMinimized ? 6 : 50}
+          minSize={3}
+          maxSize={fileTreeMinimized ? 4 : 50}
           collapsible={false}
         >
           <div className="h-full bg-white border-r overflow-hidden flex flex-col">
@@ -563,8 +563,8 @@ const DeveloperPluginEditor = ({
         {/* Main Editor Area - Minimizable */}
         <ResizablePanel
           defaultSize={calculateEditorRelativeSize()}
-          minSize={5}
-          maxSize={editorMinimized ? 6 : 100}
+          minSize={3}
+          maxSize={editorMinimized ? 4 : 100}
           collapsible={false}
         >
           <div className="h-full flex flex-col bg-white rounded-lg overflow-hidden">
@@ -592,7 +592,7 @@ const DeveloperPluginEditor = ({
                         </div>
                       </>
                     ) : (
-                        <div className="flex pt-2 gap-3">
+                        <div className="flex items-center gap-3">
                           <Code2 className="w-4 h-4 text-blue-600" />
                           <h3 className="font-semibold text-gray-900 dark:text-gray-100">
                             Code Editor
