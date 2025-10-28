@@ -94,7 +94,13 @@ export default function Plugins() {
         user: userData,
         userId: userData?.id
       });
-      
+
+      console.log('🔍 Debug: Raw plugin creator_ids:', plugins?.map(p => ({
+        name: p.name,
+        creator_id: p.creator_id,
+        has_creator_id: !!p.creator_id
+      })));
+
       // Transform all plugins (both installed and marketplace) for display
       const allPlugins = (plugins || []).map(plugin => ({
         id: plugin.slug || plugin.name.toLowerCase().replace(/\s+/g, '-'),
@@ -238,7 +244,19 @@ export default function Plugins() {
         matchesStatus = plugin.isInstalled === true;
       } else if (tabFilter === 'my-plugins') {
         // Show plugins created by current user
-        matchesStatus = plugin.creator_id === user?.id;
+        const matches = plugin.creator_id === user?.id;
+        if (!matches && plugin.creator_id) {
+          console.log('🔍 Creator ID mismatch:', {
+            pluginName: plugin.name,
+            plugin_creator_id: plugin.creator_id,
+            plugin_creator_id_type: typeof plugin.creator_id,
+            user_id: user?.id,
+            user_id_type: typeof user?.id,
+            areEqual: plugin.creator_id === user?.id,
+            strictEqual: plugin.creator_id === user?.id
+          });
+        }
+        matchesStatus = matches;
       }
       // For 'all' tab, show everything
 

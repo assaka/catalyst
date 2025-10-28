@@ -6,6 +6,32 @@ const PluginPurchaseService = require('../services/PluginPurchaseService');
 const { sequelize } = require('../database/connection');
 
 /**
+ * GET /api/plugins
+ * Get ALL plugins (installed + available) from plugins table
+ */
+router.get('/', async (req, res) => {
+  try {
+    const plugins = await sequelize.query(`
+      SELECT * FROM plugins
+      ORDER BY created_at DESC
+    `, {
+      type: sequelize.QueryTypes.SELECT
+    });
+
+    res.json({
+      success: true,
+      plugins
+    });
+  } catch (error) {
+    console.error('Failed to get plugins:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
+/**
  * GET /api/plugins/widgets
  * Get all available plugin widgets for slot editor
  */
