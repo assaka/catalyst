@@ -1,8 +1,9 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useLocation } from 'react-router-dom';
-import { Sparkles } from 'lucide-react';
+import { Sparkles, ChevronLeft, ChevronRight } from 'lucide-react';
 import { useStoreSelection } from '@/contexts/StoreSelectionContext';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from '@/components/ui/resizable';
 import ChatInterface from '@/components/ai-studio/ChatInterface';
 import DeveloperPluginEditor from '@/components/plugins/DeveloperPluginEditor';
@@ -18,6 +19,7 @@ export default function AIStudio() {
   const location = useLocation();
   const { selectedStore } = useStoreSelection();
   const pluginToEdit = location.state?.plugin;
+  const [chatMinimized, setChatMinimized] = useState(false);
 
   return (
     <div className="h-screen flex flex-col bg-gray-50">
@@ -56,27 +58,59 @@ export default function AIStudio() {
         {pluginToEdit ? (
           // Plugin Edit Mode - Show AI Chat + Developer Editor
           <ResizablePanelGroup direction="horizontal">
-            {/* AI Chat Assistant (Left) */}
-            <ResizablePanel defaultSize={30} minSize={25} maxSize={50}>
+            {/* AI Chat Assistant (Left) - Minimizable */}
+            <ResizablePanel
+              defaultSize={chatMinimized ? 5 : 30}
+              minSize={5}
+              maxSize={chatMinimized ? 5 : 50}
+              collapsible={false}
+            >
               <div className="h-full flex flex-col border-r bg-white dark:bg-gray-900">
-                <div className="p-3 border-b bg-gray-50 dark:bg-gray-800">
-                  <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100">
-                    AI Assistant
-                  </h3>
-                  <p className="text-xs text-gray-600 dark:text-gray-400 mt-1">
-                    Ask AI to modify code, add features, or explain logic
-                  </p>
-                </div>
-                <div className="flex-1 overflow-hidden">
-                  <ChatInterface context={{ plugin: pluginToEdit }} />
-                </div>
+                {!chatMinimized ? (
+                  <>
+                    <div className="h-12 px-3 border-b bg-gray-50 dark:bg-gray-800 flex items-center justify-between">
+                      <div className="flex-1">
+                        <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100">
+                          AI Assistant
+                        </h3>
+                      </div>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => setChatMinimized(true)}
+                        title="Minimize chat"
+                        className="h-6 w-6 p-0 flex-shrink-0"
+                      >
+                        <ChevronLeft className="w-4 h-4" />
+                      </Button>
+                    </div>
+                    <div className="flex-1 overflow-hidden">
+                      <ChatInterface context={{ plugin: pluginToEdit }} />
+                    </div>
+                  </>
+                ) : (
+                  <div className="h-full flex items-center justify-center">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setChatMinimized(false)}
+                      title="Expand chat"
+                      className="writing-mode-vertical p-2"
+                    >
+                      <div className="flex items-center gap-1" style={{ writingMode: 'vertical-rl' }}>
+                        <ChevronRight className="w-4 h-4" />
+                        <span className="text-xs">AI</span>
+                      </div>
+                    </Button>
+                  </div>
+                )}
               </div>
             </ResizablePanel>
 
             <ResizableHandle />
 
             {/* Developer Editor with File Explorer (Right) */}
-            <ResizablePanel defaultSize={70} minSize={50}>
+            <ResizablePanel defaultSize={chatMinimized ? 95 : 70} minSize={50}>
               <DeveloperPluginEditor
                 plugin={pluginToEdit}
                 onSave={(updated) => {
@@ -84,6 +118,7 @@ export default function AIStudio() {
                 }}
                 onClose={() => window.history.back()}
                 initialContext="editing"
+                chatMinimized={chatMinimized}
               />
             </ResizablePanel>
           </ResizablePanelGroup>

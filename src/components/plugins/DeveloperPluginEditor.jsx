@@ -37,7 +37,7 @@ import { useAIStudio, AI_STUDIO_MODES } from '@/contexts/AIStudioContext';
 import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from '@/components/ui/resizable';
 import apiClient from '@/api/client';
 
-const DeveloperPluginEditor = ({ plugin, onSave, onClose, onSwitchMode, initialContext }) => {
+const DeveloperPluginEditor = ({ plugin, onSave, onClose, onSwitchMode, initialContext, chatMinimized = false }) => {
   const { openAI } = useAIStudio();
   const [fileTree, setFileTree] = useState([]);
   const [selectedFile, setSelectedFile] = useState(null);
@@ -56,7 +56,8 @@ const DeveloperPluginEditor = ({ plugin, onSave, onClose, onSwitchMode, initialC
   const [eventSearchQuery, setEventSearchQuery] = useState('');
   const [showEventMappingDialog, setShowEventMappingDialog] = useState(false);
   const [editingEventName, setEditingEventName] = useState('');
-  const [fileTreeCollapsed, setFileTreeCollapsed] = useState(false);
+  const [fileTreeMinimized, setFileTreeMinimized] = useState(false);
+  const [editorMinimized, setEditorMinimized] = useState(false);
 
   useEffect(() => {
     loadPluginFiles();
@@ -461,11 +462,16 @@ const DeveloperPluginEditor = ({ plugin, onSave, onClose, onSwitchMode, initialC
   return (
     <div className="h-full flex flex-col">
       <ResizablePanelGroup direction="horizontal" className="flex-1">
-        {/* File Tree Sidebar - Resizable and Collapsible */}
-        {!fileTreeCollapsed && (
-          <>
-            <ResizablePanel defaultSize={20} minSize={15} maxSize={35}>
-              <div className="h-full bg-white border-r overflow-hidden flex flex-col">
+        {/* File Tree Sidebar - Minimizable */}
+        <ResizablePanel
+          defaultSize={fileTreeMinimized ? 5 : 20}
+          minSize={5}
+          maxSize={fileTreeMinimized ? 5 : 35}
+          collapsible={false}
+        >
+          <div className="h-full bg-white border-r overflow-hidden flex flex-col">
+            {!fileTreeMinimized ? (
+              <>
                 <div className="p-4 border-b bg-gray-50">
                   <div className="flex items-center justify-between mb-3">
                     <div className="flex items-center gap-2">
@@ -475,8 +481,8 @@ const DeveloperPluginEditor = ({ plugin, onSave, onClose, onSwitchMode, initialC
                     <Button
                       variant="ghost"
                       size="sm"
-                      onClick={() => setFileTreeCollapsed(true)}
-                      title="Collapse file tree"
+                      onClick={() => setFileTreeMinimized(true)}
+                      title="Minimize file tree"
                       className="h-6 w-6 p-0"
                     >
                       <ChevronLeft className="w-4 h-4" />
@@ -506,34 +512,42 @@ const DeveloperPluginEditor = ({ plugin, onSave, onClose, onSwitchMode, initialC
             New File
           </Button>
                 </div>
-              </div>
-            </ResizablePanel>
-
-            <ResizableHandle />
-          </>
-        )}
-
-        {/* Main Editor Area */}
-        <ResizablePanel defaultSize={fileTreeCollapsed ? 100 : 80}>
-          <div className="h-full flex flex-col bg-white rounded-lg overflow-hidden">
-            {/* Expand file tree button (when collapsed) */}
-            {fileTreeCollapsed && (
-              <div className="absolute top-4 left-4 z-10">
+              </>
+            ) : (
+              <div className="h-full flex items-center justify-center">
                 <Button
-                  variant="outline"
+                  variant="ghost"
                   size="sm"
-                  onClick={() => setFileTreeCollapsed(false)}
-                  title="Show file tree"
+                  onClick={() => setFileTreeMinimized(false)}
+                  title="Expand file tree"
+                  className="p-2"
                 >
-                  <ChevronRight className="w-4 h-4 mr-2" />
-                  Files
+                  <div className="flex flex-col items-center gap-1">
+                    <ChevronRight className="w-4 h-4" />
+                    <span className="text-xs" style={{ writingMode: 'vertical-rl' }}>Files</span>
+                  </div>
                 </Button>
               </div>
             )}
-        {/* Editor Header */}
-        <div className="p-3 border-b bg-gray-50 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            {selectedFile ? (
+          </div>
+        </ResizablePanel>
+
+        <ResizableHandle />
+
+        {/* Main Editor Area - Minimizable */}
+        <ResizablePanel
+          defaultSize={editorMinimized ? 5 : (fileTreeMinimized ? 95 : 80)}
+          minSize={5}
+          maxSize={editorMinimized ? 5 : 100}
+          collapsible={false}
+        >
+          <div className="h-full flex flex-col bg-white rounded-lg overflow-hidden">
+            {!editorMinimized ? (
+              <>
+                {/* Editor Header */}
+                <div className="p-3 border-b bg-gray-50 flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    {selectedFile ? (
               <>
                 <FileText className="w-4 h-4 text-gray-600" />
                 <span className="font-medium">{selectedFile.name}</span>
@@ -585,19 +599,28 @@ const DeveloperPluginEditor = ({ plugin, onSave, onClose, onSwitchMode, initialC
               <Terminal className="w-4 h-4 mr-1" />
               Terminal
             </Button>
-            <SaveButton
-              size="sm"
-              onClick={handleSave}
-              loading={isSaving}
-              success={saveSuccess}
-              disabled={!selectedFile || fileContent === originalContent}
-              defaultText="Save"
-            />
-          </div>
-        </div>
+                    <SaveButton
+                      size="sm"
+                      onClick={handleSave}
+                      loading={isSaving}
+                      success={saveSuccess}
+                      disabled={!selectedFile || fileContent === originalContent}
+                      defaultText="Save"
+                    />
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setEditorMinimized(true)}
+                      title="Minimize editor"
+                      className="h-6 w-6 p-0"
+                    >
+                      <ChevronRight className="w-4 h-4" />
+                    </Button>
+                  </div>
+                </div>
 
-        {/* Code Editor */}
-        <div className="flex-1 overflow-hidden">
+                {/* Code Editor */}
+                <div className="flex-1 overflow-hidden">
           {selectedFile ? (
             <CodeEditor
               value={fileContent}
@@ -640,6 +663,23 @@ const DeveloperPluginEditor = ({ plugin, onSave, onClose, onSwitchMode, initialC
             ))}
           </div>
         )}
+              </>
+            ) : (
+              <div className="h-full flex items-center justify-center">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setEditorMinimized(false)}
+                  title="Expand editor"
+                  className="p-2"
+                >
+                  <div className="flex flex-col items-center gap-1">
+                    <ChevronLeft className="w-4 h-4" />
+                    <span className="text-xs" style={{ writingMode: 'vertical-rl' }}>Editor</span>
+                  </div>
+                </Button>
+              </div>
+            )}
           </div>
         </ResizablePanel>
       </ResizablePanelGroup>

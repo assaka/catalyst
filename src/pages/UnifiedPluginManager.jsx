@@ -1008,7 +1008,7 @@ const UnifiedPluginManager = () => {
                     </>
                   ) : (
                     /* No File Selected */
-                    <div className="flex-1 flex items-center justify-center">
+                    <div className="h-12 px-3 flex-1 flex items-center justify-center">
                       <div className="text-center">
                         {selectedPlugin ? (
                           <>
