@@ -26,11 +26,17 @@ export default function AIStudio() {
   const [fileTreeMinimized, setFileTreeMinimized] = useState(false);
   const [editorMinimized, setEditorMinimized] = useState(false);
 
-  // Calculate chat size based on other panels
+  // Calculate chat size based on other panels to ensure total = 100%
   const calculateChatSize = () => {
     if (chatMinimized) return 6;
-    if (fileTreeMinimized && editorMinimized) return 88; // Both minimized, chat takes rest
-    return chatOriginalSize;
+
+    // Calculate available space for chat
+    const fileTreeSize = fileTreeMinimized ? 6 : 20;
+    const editorSize = editorMinimized ? 6 : (fileTreeMinimized ? 88 : 74);
+    const availableForChat = 100 - fileTreeSize - editorSize;
+
+    // Use available space or original size (whichever fits)
+    return Math.min(availableForChat, chatOriginalSize);
   };
 
   return (

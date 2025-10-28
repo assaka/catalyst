@@ -77,6 +77,28 @@ const DeveloperPluginEditor = ({
   const [fileTreeOriginalSize, setFileTreeOriginalSize] = useState(20);
   const [editorOriginalSize, setEditorOriginalSize] = useState(74);
 
+  // Calculate sizes to ensure total = 100%
+  const calculateFileTreeSize = () => {
+    if (fileTreeMinimized) return 6;
+    return fileTreeOriginalSize;
+  };
+
+  const calculateEditorSize = () => {
+    if (editorMinimized) return 6;
+
+    // Calculate available space for editor (excluding chat from parent)
+    // Chat is handled by parent AIStudio.jsx
+    // Editor + File Tree should total to (100 - chat size)
+    const fileTreeSize = fileTreeMinimized ? 6 : 20;
+
+    // If file tree minimized, editor can expand
+    if (fileTreeMinimized) {
+      return 94 - (chatMinimized ? 6 : 30); // Assumes chat default 30%
+    }
+
+    return editorOriginalSize;
+  };
+
   useEffect(() => {
     loadPluginFiles();
   }, [plugin]);
@@ -482,7 +504,7 @@ const DeveloperPluginEditor = ({
       <ResizablePanelGroup direction="horizontal" className="flex-1" key={`panels-${fileTreeMinimized}-${editorMinimized}`}>
         {/* File Tree Sidebar - Minimizable */}
         <ResizablePanel
-          defaultSize={fileTreeMinimized ? 6 : fileTreeOriginalSize}
+          defaultSize={calculateFileTreeSize()}
           minSize={6}
           maxSize={fileTreeMinimized ? 6 : 35}
           collapsible={false}
@@ -545,7 +567,7 @@ const DeveloperPluginEditor = ({
 
                 {/* Main Editor Area - Minimizable */}
                 <ResizablePanel
-                  defaultSize={editorMinimized ? 6 : editorOriginalSize}
+                  defaultSize={calculateEditorSize()}
                   minSize={6}
                   maxSize={editorMinimized ? 6 : 100}
                   collapsible={false}
