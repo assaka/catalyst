@@ -62,7 +62,8 @@ export { default as CookieConsent } from './admin/CookieConsent';
 export { default as NavigationManager } from './admin/NavigationManager';
 
 // Editor Pages
-export { default as AIContextWindow } from './editor/AIContextWindow';
+export { default as EditorWrapper } from './editor/EditorWrapper';
+export { default as AIContextWindow } from './editor/EditorWrapper'; // Alias for backward compatibility
 export { default as HeaderSlotsEditor } from './editor/HeaderSlotsEditor';
 export { default as CartSlotsEditor } from './editor/CartSlotsEditor';
 export { default as CategorySlotsEditor } from './editor/CategorySlotsEditor';
