@@ -456,45 +456,7 @@ const DeveloperPluginEditor = ({ plugin, onSave, onClose, onSwitchMode, initialC
   };
 
   return (
-    <div className="h-screen flex flex-col bg-gray-100">
-      {/* Mode Switcher Header */}
-      <div className="bg-white border-b shadow-sm">
-        <div className="max-w-7xl mx-auto px-6 py-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <div className="flex items-center gap-2 mb-1">
-                <Code2 className="w-6 h-6 text-blue-600" />
-                <h1 className="text-2xl font-bold text-gray-900">Developer Mode</h1>
-                <Badge className="bg-blue-100 text-blue-700">Full Control</Badge>
-              </div>
-              <p className="text-sm text-gray-600">Code editor with AI assistance</p>
-            </div>
-
-            <div className="flex items-center gap-2">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => onSwitchMode?.('nocode-ai', { plugin })}
-                className="gap-2"
-              >
-                <Sparkles className="w-4 h-4" />
-                Switch to No-Code AI
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => onSwitchMode?.('guided', { plugin })}
-                className="gap-2"
-              >
-                <Wand2 className="w-4 h-4" />
-                Switch to Guided
-              </Button>
-              <Button variant="ghost" onClick={onClose}>Close</Button>
-            </div>
-          </div>
-        </div>
-      </div>
-
+    <div className="h-full flex flex-col bg-gray-100">
       <div className="flex-1 flex gap-4 p-6 overflow-hidden">
       {/* File Tree Sidebar */}
       <div className="w-64 bg-white rounded-lg shadow-lg overflow-hidden flex flex-col">
@@ -641,34 +603,6 @@ const DeveloperPluginEditor = ({ plugin, onSave, onClose, onSwitchMode, initialC
             ))}
           </div>
         )}
-      </div>
-
-      {/* AI Assistant Sidebar */}
-      <div className="w-96 bg-white rounded-lg shadow-lg overflow-hidden flex flex-col">
-        <div className="p-6 flex-1 flex flex-col items-center justify-center bg-gradient-to-br from-blue-50 to-purple-50">
-          <div className="w-16 h-16 mb-4 rounded-2xl bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center shadow-lg">
-            <Sparkles className="w-8 h-8 text-white" />
-          </div>
-          <h3 className="text-lg font-semibold text-gray-900 mb-2">AI Studio</h3>
-          <p className="text-sm text-gray-600 text-center mb-6">
-            Get AI assistance for plugin development
-          </p>
-          <Button
-            onClick={() => openAI(AI_STUDIO_MODES.PLUGIN, {
-              plugin,
-              currentFile: selectedFile,
-              currentCode: fileContent,
-              mode: 'developer'
-            })}
-            className="w-full bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700"
-          >
-            <Wand2 className="w-4 h-4 mr-2" />
-            Open AI Studio
-          </Button>
-          <p className="text-xs text-gray-500 mt-4">
-            Press <kbd className="px-2 py-1 bg-white rounded text-xs border">Ctrl+K</kbd> anytime
-          </p>
-        </div>
       </div>
       </div>
 
