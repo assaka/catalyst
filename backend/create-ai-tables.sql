@@ -5,14 +5,14 @@
 
 -- AI Usage Logs - Track all AI API calls
 CREATE TABLE IF NOT EXISTS ai_usage_logs (
-  id SERIAL PRIMARY KEY,
-  user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
   operation_type VARCHAR(50) NOT NULL,
   model_used VARCHAR(100),
   tokens_input INTEGER DEFAULT 0,
   tokens_output INTEGER DEFAULT 0,
   metadata JSONB,
-  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
 -- Create indexes for faster queries
@@ -24,12 +24,12 @@ ON ai_usage_logs(created_at DESC);
 
 -- Credit Transactions - Track credit usage
 CREATE TABLE IF NOT EXISTS credit_transactions (
-  id SERIAL PRIMARY KEY,
-  user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
   amount INTEGER NOT NULL,
   operation_type VARCHAR(50),
   metadata JSONB,
-  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
 -- Create indexes for credit transactions
