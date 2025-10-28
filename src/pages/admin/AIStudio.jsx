@@ -20,7 +20,7 @@ export default function AIStudio() {
   const { selectedStore } = useStoreSelection();
   const pluginToEdit = location.state?.plugin;
   const [chatMinimized, setChatMinimized] = useState(false);
-  const [chatOriginalSize, setChatOriginalSize] = useState(30);
+  const [chatOriginalSize, setChatOriginalSize] = useState(45);
 
   // Pass minimize states to DeveloperPluginEditor
   const [fileTreeMinimized, setFileTreeMinimized] = useState(false);
@@ -28,23 +28,24 @@ export default function AIStudio() {
 
   // Calculate sizes to always total 100%
   const calculateChatSize = () => {
-    if (chatMinimized) return 6;
-    if (fileTreeMinimized && editorMinimized) return 88; // Scenario 7
-    if (editorMinimized) return 84; // Scenario 4 (84+10+6=100)
-    return 30; // Default - always 30%
+    if (chatMinimized) return 3;
+    if (fileTreeMinimized && editorMinimized) return 94; // Scenario 7 (94+3+3=100)
+    if (editorMinimized) return 87; // Scenario 4 (87+10+3=100)
+    if (fileTreeMinimized) return 47; // Scenario 3 (47+3+50=100) - balanced split
+    return 45; // Default (45+10+45=100)
   };
 
   const calculateFileTreeSize = () => {
-    if (fileTreeMinimized) return 6;
+    if (fileTreeMinimized) return 3;
     return 10; // Default 10%
   };
 
   const calculateEditorSize = () => {
-    if (editorMinimized) return 6;
-    if (chatMinimized && fileTreeMinimized) return 88; // Scenario 5
-    if (chatMinimized) return 84; // Scenario 2 (6+10+84=100)
-    if (fileTreeMinimized) return 74; // Scenario 3 (30+6+64=100 → 30+6+74=110, fix: 74)
-    return 60; // Default (30+10+60=100)
+    if (editorMinimized) return 3;
+    if (chatMinimized && fileTreeMinimized) return 94; // Scenario 5 (3+3+94=100)
+    if (chatMinimized) return 87; // Scenario 2 (3+10+87=100)
+    if (fileTreeMinimized) return 50; // Scenario 3 (47+3+50=100) - balanced split
+    return 45; // Default (45+10+45=100)
   };
 
   return (
@@ -87,11 +88,11 @@ export default function AIStudio() {
             {/* AI Chat Assistant (Left) - Minimizable */}
             <ResizablePanel
               defaultSize={calculateChatSize()}
-              minSize={6}
-              maxSize={chatMinimized ? 6 : 90}
+              minSize={3}
+              maxSize={chatMinimized ? 3 : 90}
               collapsible={false}
               onResize={(size) => {
-                if (!chatMinimized && size > 6) {
+                if (!chatMinimized && size > 3) {
                   setChatOriginalSize(size);
                 }
               }}

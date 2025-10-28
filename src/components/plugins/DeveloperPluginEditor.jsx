@@ -82,18 +82,18 @@ const DeveloperPluginEditor = ({
 
   const calculateFileTreeRelativeSize = () => {
     if (fileTreeMinimized) {
-      // Calculate relative: if minimized to 6% of viewport, what % is that of our space?
-      return (6 / totalSpace) * 100;
+      // Calculate relative: if minimized to 3% of viewport, what % is that of our space?
+      return (3 / totalSpace) * 100;
     }
-    // File tree target (20% of viewport) as % of our space (e.g., 70%)
+    // File tree target (10% of viewport) as % of our space
     return (fileTreeTargetSize / totalSpace) * 100;
   };
 
   const calculateEditorRelativeSize = () => {
     if (editorMinimized) {
-      return (6 / totalSpace) * 100;
+      return (3 / totalSpace) * 100;
     }
-    // Editor target (50% of viewport) as % of our space
+    // Editor target (45% of viewport) as % of our space
     return (editorTargetSize / totalSpace) * 100;
   };
 
@@ -503,8 +503,8 @@ const DeveloperPluginEditor = ({
         {/* File Tree Sidebar - Minimizable */}
         <ResizablePanel
           defaultSize={calculateFileTreeRelativeSize()}
-          minSize={8}
-          maxSize={fileTreeMinimized ? 10 : 50}
+          minSize={5}
+          maxSize={fileTreeMinimized ? 6 : 50}
           collapsible={false}
         >
           <div className="h-full bg-white border-r overflow-hidden flex flex-col">
@@ -561,8 +561,8 @@ const DeveloperPluginEditor = ({
                 {/* Main Editor Area - Minimizable */}
                 <ResizablePanel
                   defaultSize={calculateEditorRelativeSize()}
-                  minSize={8}
-                  maxSize={editorMinimized ? 10 : 100}
+                  minSize={5}
+                  maxSize={editorMinimized ? 6 : 100}
                   collapsible={false}
                 >
                   <div className="h-full flex flex-col bg-white rounded-lg overflow-hidden">
