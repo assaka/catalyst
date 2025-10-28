@@ -10,6 +10,7 @@ import {
   Plus,
   Search,
   Download,
+  Upload,
   Star,
   Settings,
   Eye,
@@ -21,7 +22,8 @@ import {
   Filter,
   Sparkles,
   Edit3,
-  Package
+  Package,
+  Loader2
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";

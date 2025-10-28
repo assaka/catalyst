@@ -128,6 +128,48 @@ router.get('/widgets/:widgetId', async (req, res) => {
 });
 
 /**
+ * GET /api/plugins/starters
+ * Get starter templates for AI Studio
+ */
+router.get('/starters', async (req, res) => {
+  try {
+    console.log('🎨 Loading starter templates...');
+
+    const starters = await sequelize.query(`
+      SELECT
+        id, name, slug, version, description,
+        starter_icon, starter_description, starter_prompt, starter_order
+      FROM plugin_registry
+      WHERE is_starter_template = true AND status = 'active'
+      ORDER BY starter_order ASC, name ASC
+    `, {
+      type: sequelize.QueryTypes.SELECT
+    });
+
+    console.log(`  ✅ Found ${starters.length} starter templates`);
+
+    res.json({
+      success: true,
+      starters: starters.map(s => ({
+        id: s.id,
+        name: s.name,
+        slug: s.slug,
+        description: s.starter_description || s.description,
+        icon: s.starter_icon || '🔌',
+        prompt: s.starter_prompt || `Create a plugin like ${s.name}`,
+        order: s.starter_order || 0
+      }))
+    });
+  } catch (error) {
+    console.error('Failed to get starter templates:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
+/**
  * GET /api/plugins/marketplace
  * Get all marketplace plugins
  */

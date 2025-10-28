@@ -18,8 +18,27 @@ const ChatInterface = () => {
   ]);
   const [input, setInput] = useState('');
   const [isProcessing, setIsProcessing] = useState(false);
+  const [starterTemplates, setStarterTemplates] = useState([]);
   const messagesEndRef = useRef(null);
   const inputRef = useRef(null);
+
+  // Load starter templates from API
+  useEffect(() => {
+    loadStarterTemplates();
+  }, []);
+
+  const loadStarterTemplates = async () => {
+    try {
+      const response = await apiClient.get('/plugins/starters');
+      if (response.success && response.starters) {
+        setStarterTemplates(response.starters);
+      }
+    } catch (error) {
+      console.error('Failed to load starter templates:', error);
+      // Fallback to empty array if API fails
+      setStarterTemplates([]);
+    }
+  };
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -86,27 +105,6 @@ const ChatInterface = () => {
     }
   };
 
-  const starterTemplates = [
-    {
-      name: 'Cart Alert Plugin',
-      description: 'Shows alerts and widgets on cart page',
-      icon: '🛒',
-      prompt: 'Create a plugin like Cart Hamid that shows an alert when visiting the cart page, includes a widget with visit counter, and uses utility functions for formatting'
-    },
-    {
-      name: 'Product Badge Plugin',
-      description: 'Add custom badges to product cards',
-      icon: '🏷️',
-      prompt: 'Create a plugin that adds custom badges (New, Sale, Featured) to product cards using hooks and event listeners'
-    },
-    {
-      name: 'Analytics Tracker',
-      description: 'Track user behavior and events',
-      icon: '📊',
-      prompt: 'Create an analytics plugin that tracks cart views, product views, and purchases using the event system'
-    }
-  ];
-
   return (
     <div className="flex flex-col h-full bg-white dark:bg-gray-900">
       {/* Messages */}
@@ -116,15 +114,15 @@ const ChatInterface = () => {
         ))}
 
         {/* Starter Templates - show only when conversation just started */}
-        {messages.length === 1 && !isProcessing && (
+        {messages.length === 1 && !isProcessing && starterTemplates.length > 0 && (
           <div className="mt-6 space-y-3">
             <p className="text-sm font-medium text-gray-700 dark:text-gray-300">
               Or start with a template:
             </p>
             <div className="grid grid-cols-1 gap-2">
-              {starterTemplates.map((template, index) => (
+              {starterTemplates.map((template) => (
                 <button
-                  key={index}
+                  key={template.id}
                   onClick={() => {
                     setInput(template.prompt);
                     setTimeout(() => handleSend(), 100);
