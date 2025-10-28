@@ -213,12 +213,29 @@ export default function Plugins() {
     }
   };
 
-  const filteredPlugins = plugins.filter(plugin => {
-    const matchesSearch = plugin.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                         plugin.description.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesCategory = categoryFilter === "all" || plugin.category === categoryFilter;
-    return matchesSearch && matchesCategory && plugin.status === "approved";
-  });
+  // Different filtering for different contexts
+  const getFilteredPlugins = (tabFilter = 'all') => {
+    return plugins.filter(plugin => {
+      const matchesSearch = plugin.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                           plugin.description.toLowerCase().includes(searchQuery.toLowerCase());
+      const matchesCategory = categoryFilter === "all" || plugin.category === categoryFilter;
+
+      // Different status filters per tab
+      let matchesStatus = true;
+      if (tabFilter === 'marketplace') {
+        matchesStatus = plugin.source === 'marketplace' && plugin.status === 'approved';
+      } else if (tabFilter === 'installed') {
+        matchesStatus = plugin.isInstalled === true;
+      } else if (tabFilter === 'my-plugins') {
+        matchesStatus = plugin.creator_id === user?.id;
+      }
+      // For 'all' tab, show everything
+
+      return matchesSearch && matchesCategory && matchesStatus;
+    });
+  };
+
+  const filteredPlugins = getFilteredPlugins('all');
 
   const isPluginInstalled = (plugin) => {
     return plugin.isInstalled;
@@ -294,11 +311,11 @@ export default function Plugins() {
             </TabsTrigger>
             <TabsTrigger value="installed" className="flex items-center gap-2">
               <Download className="w-4 h-4" />
-              Installed ({plugins.filter(plugin => plugin.isInstalled).length})
+              Installed ({getFilteredPlugins('installed').length})
             </TabsTrigger>
             <TabsTrigger value="my-plugins" className="flex items-center gap-2">
               <Sparkles className="w-4 h-4" />
-              My Plugins ({plugins.filter(plugin => plugin.creator_id === user?.id).length})
+              My Plugins ({getFilteredPlugins('my-plugins').length})
             </TabsTrigger>
           </TabsList>
 
@@ -338,7 +355,7 @@ export default function Plugins() {
 
             {/* All Plugins Grid */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {filteredPlugins.map((plugin) => {
+              {getFilteredPlugins('all').map((plugin) => {
                 const CategoryIcon = categoryIcons[plugin.category] || Settings;
                 const installed = isPluginInstalled(plugin);
                 const enabled = isPluginEnabled(plugin);
@@ -435,7 +452,7 @@ export default function Plugins() {
                   <div className="flex-1 relative">
                     <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
                     <Input
-                      placeholder="Search plugins..."
+                      placeholder="Search marketplace..."
                       value={searchQuery}
                       onChange={(e) => setSearchQuery(e.target.value)}
                       className="pl-10"
@@ -462,7 +479,7 @@ export default function Plugins() {
 
             {/* Plugins Grid */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {filteredPlugins.map((plugin) => {
+              {getFilteredPlugins('marketplace').map((plugin) => {
                 const CategoryIcon = categoryIcons[plugin.category] || Settings;
                 const installed = isPluginInstalled(plugin);
                 const enabled = isPluginEnabled(plugin);
@@ -596,7 +613,7 @@ export default function Plugins() {
           {/* Installed Tab */}
           <TabsContent value="installed">
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {plugins.filter(plugin => plugin.isInstalled).map((plugin) => {
+              {getFilteredPlugins('installed').map((plugin) => {
                 const CategoryIcon = categoryIcons[plugin.category] || Settings;
                 
                 return (
@@ -646,7 +663,7 @@ export default function Plugins() {
               })}
             </div>
 
-            {plugins.filter(plugin => plugin.isInstalled).length === 0 && (
+            {getFilteredPlugins('installed').length === 0 && (
               <Card className="material-elevation-1 border-0">
                 <CardContent className="text-center py-12">
                   <Download className="w-16 h-16 text-gray-400 mx-auto mb-4" />
@@ -668,7 +685,7 @@ export default function Plugins() {
           {/* My Plugins Tab */}
           <TabsContent value="my-plugins">
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {plugins.filter(plugin => plugin.creator_id === user?.id).map((plugin) => {
+              {getFilteredPlugins('my-plugins').map((plugin) => {
                 const CategoryIcon = categoryIcons[plugin.category] || Settings;
 
                 return (
@@ -724,7 +741,7 @@ export default function Plugins() {
               })}
             </div>
 
-            {plugins.filter(plugin => plugin.creator_id === user?.id).length === 0 && (
+            {getFilteredPlugins('my-plugins').length === 0 && (
               <Card className="material-elevation-1 border-0">
                 <CardContent className="text-center py-12">
                   <Sparkles className="w-16 h-16 text-gray-400 mx-auto mb-4" />
