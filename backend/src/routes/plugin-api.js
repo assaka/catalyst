@@ -586,12 +586,93 @@ router.get('/registry/:pluginId', async (req, res) => {
       console.log(`  ⚠️ plugin_event_listeners table error:`, listenerError.message);
     }
 
+    // Load plugin_scripts from normalized table
+    let pluginScripts = [];
+    try {
+      const scriptsResult = await sequelize.query(`
+        SELECT id, script_type, scope, file_name, file_content, load_priority, is_enabled
+        FROM plugin_scripts
+        WHERE plugin_id = $1 AND is_enabled = true
+        ORDER BY file_name ASC
+      `, {
+        bind: [pluginId],
+        type: sequelize.QueryTypes.SELECT
+      });
+
+      pluginScripts = scriptsResult.map(s => ({
+        name: s.file_name,
+        code: s.file_content,
+        script_type: s.script_type,
+        scope: s.scope,
+        load_priority: s.load_priority
+      }));
+
+      console.log(`  ✅ Loaded ${pluginScripts.length} scripts from plugin_scripts table`);
+    } catch (scriptsError) {
+      console.log(`  ⚠️ plugin_scripts table error:`, scriptsError.message);
+    }
+
+    // Load plugin_events from normalized table
+    let pluginEvents = [];
+    try {
+      const eventsResult = await sequelize.query(`
+        SELECT id, event_name, listener_function, priority, is_enabled
+        FROM plugin_events
+        WHERE plugin_id = $1 AND is_enabled = true
+        ORDER BY event_name ASC, priority ASC
+      `, {
+        bind: [pluginId],
+        type: sequelize.QueryTypes.SELECT
+      });
+
+      pluginEvents = eventsResult.map(e => ({
+        name: `${e.event_name.replace(/\./g, '_')}.js`,
+        code: e.listener_function,
+        event_name: e.event_name,
+        priority: e.priority || 10
+      }));
+
+      console.log(`  ✅ Loaded ${pluginEvents.length} events from plugin_events table`);
+    } catch (eventsError) {
+      console.log(`  ⚠️ plugin_events table error:`, eventsError.message);
+    }
+
     // Parse JSON fields
     const manifest = typeof plugin[0].manifest === 'string' ? JSON.parse(plugin[0].manifest) : plugin[0].manifest;
     const sourceCode = typeof plugin[0].source_code === 'string' ? JSON.parse(plugin[0].source_code) : plugin[0].source_code;
 
-    // Extract files from manifest or source_code
-    const generatedFiles = manifest?.generatedFiles || sourceCode || [];
+    // Merge files from multiple sources:
+    // 1. manifest.generatedFiles (old format)
+    // 2. source_code JSON field (old format)
+    // 3. plugin_scripts table (new normalized format)
+    // 4. plugin_events table (new normalized format)
+    let allFiles = [];
+
+    // Add files from JSON fields
+    const jsonFiles = manifest?.generatedFiles || sourceCode || [];
+    allFiles = allFiles.concat(jsonFiles);
+
+    // Add files from plugin_scripts table
+    allFiles = allFiles.concat(pluginScripts);
+
+    // Add files from plugin_events table (as event files)
+    const eventFiles = pluginEvents.map(e => ({
+      name: `events/${e.name}`,
+      code: e.code
+    }));
+    allFiles = allFiles.concat(eventFiles);
+
+    // Remove duplicates (prefer normalized table data over JSON data)
+    const fileMap = new Map();
+    allFiles.forEach(file => {
+      const fileName = file.name || file.filename || '';
+      if (!fileMap.has(fileName) || file.script_type || file.event_name) {
+        // Prefer files from normalized tables (they have script_type or event_name)
+        fileMap.set(fileName, file);
+      }
+    });
+
+    const generatedFiles = Array.from(fileMap.values());
 
     // Organize files by type for DeveloperPluginEditor
     const controllers = [];
@@ -626,6 +707,25 @@ router.get('/registry/:pluginId', async (req, res) => {
       }
     });
 
+    // Add admin pages from plugin_admin_pages table if needed
+    let adminPages = [];
+    try {
+      const adminPagesResult = await sequelize.query(`
+        SELECT page_key, page_name, route, component_code, icon, category, description
+        FROM plugin_admin_pages
+        WHERE plugin_id = $1 AND is_enabled = true
+        ORDER BY page_key ASC
+      `, {
+        bind: [pluginId],
+        type: sequelize.QueryTypes.SELECT
+      });
+
+      adminPages = adminPagesResult;
+      console.log(`  ✅ Loaded ${adminPages.length} admin pages from plugin_admin_pages table`);
+    } catch (adminError) {
+      console.log(`  ⚠️ plugin_admin_pages table error:`, adminError.message);
+    }
+
     res.json({
       success: true,
       data: {
@@ -636,8 +736,10 @@ router.get('/registry/:pluginId', async (req, res) => {
         controllers,
         models,
         components,
+        adminPages,
         manifest,
-        readme: manifest?.readme || '# Plugin Documentation'
+        readme: manifest?.readme || '# Plugin Documentation',
+        source_code: generatedFiles // All files merged from JSON + normalized tables for FileTree
       }
     });
   } catch (error) {
