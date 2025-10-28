@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button.jsx";
+import { Badge } from "@/components/ui/badge.jsx";
 import Editor, { DiffEditor } from '@monaco-editor/react';
 import {
   Undo,
@@ -21,7 +21,7 @@ import {
 // Import new systems
 import hookSystem from '@/core/HookSystem.js';
 import eventSystem from '@/core/EventSystem.js';
-import UnifiedDiffFrontendService from '@/services/unified-diff-frontend-service';
+import UnifiedDiffFrontendService from '@/services/unified-diff-frontend-service.js';
 
 
 // RevertGutter component for split view

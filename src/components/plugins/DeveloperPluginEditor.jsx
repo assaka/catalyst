@@ -32,7 +32,7 @@ import {
   Wand2, Bot
 } from 'lucide-react';
 import SaveButton from '@/components/ui/save-button';
-import CodeEditor from '@/components/editor/ai-context/CodeEditor';
+import CodeEditor from '@/components/ai-studio/CodeEditor.jsx';
 import { useAIStudio, AI_STUDIO_MODES } from '@/contexts/AIStudioContext';
 import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from '@/components/ui/resizable';
 import apiClient from '@/api/client';

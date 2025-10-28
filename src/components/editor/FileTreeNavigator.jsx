@@ -1,12 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { Card } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { ScrollArea } from "@/components/ui/scroll-area";
-import { Badge } from "@/components/ui/badge";
-import apiClient from '@/api/client';
-import slotConfigurationService from '@/services/slotConfigurationService';
-import { useStoreSelection } from '@/contexts/StoreSelectionContext';
+import { Card } from "@/components/ui/card.jsx";
+import { Button } from "@/components/ui/button.jsx";
+import { Input } from "@/components/ui/input.jsx";
+import { ScrollArea } from "@/components/ui/scroll-area.jsx";
+import { Badge } from "@/components/ui/badge.jsx";
+import apiClient from '@/api/client.js';
+import slotConfigurationService from '@/services/slotConfigurationService.js';
+import { useStoreSelection } from '@/contexts/StoreSelectionContext.jsx';
 import { 
   Folder,
   FolderOpen,

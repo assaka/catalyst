@@ -11,7 +11,7 @@ import { Badge } from "@/components/ui/badge";
 import { ResizeWrapper } from '@/components/ui/resize-element-wrapper';
 import { SlotManager } from '@/utils/slotUtils';
 import FilePickerModal from '@/components/ui/FilePickerModal';
-import CodeEditor from '@/components/editor/ai-context/CodeEditor';
+import CodeEditor from '@/components/ai-studio/CodeEditor.jsx';
 import SaveButton from '@/components/ui/save-button';
 import { processVariables, generateDemoData } from '@/utils/variableProcessor';
 

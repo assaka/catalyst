@@ -1,7 +1,7 @@
 import React, { useState, useCallback } from 'react';
 import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from '@/components/ui/resizable';
 import { Maximize2, Minimize2 } from 'lucide-react';
-import SlotEnabledFileSelector from '@/components/editor/ai-context/SlotEnabledFileSelector';
+import SlotEnabledFileSelector from '@/components/editor/slot/SlotEnabledFileSelector.jsx';
 import HeaderSlotsEditor from '@/pages/editor/HeaderSlotsEditor';
 import CartSlotsEditor from '@/pages/editor/CartSlotsEditor';
 import CategorySlotsEditor from '@/pages/editor/CategorySlotsEditor';

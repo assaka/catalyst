@@ -1,11 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { Card } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { ScrollArea } from "@/components/ui/scroll-area";
-import apiClient from '@/api/client';
-import slotConfigurationService from '@/services/slotConfigurationService';
-import { useStoreSelection } from '@/contexts/StoreSelectionContext';
-import { slotEnabledFiles } from '@/components/editor/slot/slotEnabledFiles';
+import { Card } from "@/components/ui/card.jsx";
+import { Button } from "@/components/ui/button.jsx";
+import { ScrollArea } from "@/components/ui/scroll-area.jsx";
+import apiClient from '@/api/client.js';
+import slotConfigurationService from '@/services/slotConfigurationService.js';
+import { useStoreSelection } from '@/contexts/StoreSelectionContext.jsx';
+import { slotEnabledFiles } from '@/components/editor/slot/slotEnabledFiles.js';
 import {
   RefreshCw,
   Loader2
