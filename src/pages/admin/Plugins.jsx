@@ -106,7 +106,7 @@ export default function Plugins() {
 
       // Transform all plugins (both installed and marketplace) for display
       const allPlugins = (plugins || []).map(plugin => ({
-        id: plugin.slug || plugin.name.toLowerCase().replace(/\s+/g, '-'),
+        id: plugin.id, // Use actual UUID from database, not slug
         name: plugin.name,
         slug: plugin.slug || plugin.name.toLowerCase().replace(/\s+/g, '-'),
         description: plugin.manifest?.description || plugin.description || 'No description available',
