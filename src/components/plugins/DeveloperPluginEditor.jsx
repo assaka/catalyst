@@ -174,7 +174,11 @@ const DeveloperPluginEditor = ({
             name: parts[parts.length - 1],
             type: 'file',
             path: normalizedPath,
-            content: fileCode
+            content: fileCode,
+            // Preserve metadata from source file (eventName, priority, etc.)
+            ...(file.eventName && { eventName: file.eventName }),
+            ...(file.priority && { priority: file.priority }),
+            ...(file.description && { description: file.description })
           };
           currentFolder.children.push(fileNode);
         }
@@ -190,7 +194,12 @@ const DeveloperPluginEditor = ({
     console.log('📊 Total files to process:', allFiles.length);
 
     // Build dynamic tree from files
-    const tree = buildDynamicTree(allFiles);
+    // For event files from plugin_events table, preserve event_name metadata
+    const tree = buildDynamicTree(allFiles.map(file => ({
+      ...file,
+      eventName: file.event_name || file.eventName, // Normalize event_name → eventName
+      priority: file.priority
+    })));
 
     // Add special categorized files with metadata (event listeners, hooks, admin pages)
     // These need special handling because they have extra metadata
