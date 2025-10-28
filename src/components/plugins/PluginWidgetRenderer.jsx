@@ -40,23 +40,34 @@ export default function PluginWidgetRenderer({ widgetId, config, slotData }) {
     // SECURITY NOTE: This is a simplified example
     // In production, use proper sandboxing (iframe, web worker, etc.)
     try {
+      // Remove 'export default' from code
+      let cleanCode = code.trim().replace(/^export\s+default\s+/, '');
+
       // Create a safe scope
       const scope = {
         React,
         useState: React.useState,
         useEffect: React.useEffect,
+        useCallback: React.useCallback,
+        useMemo: React.useMemo,
+        useRef: React.useRef,
         // Add other safe globals
       };
 
-      // Compile code
+      // Compile code - wrap function declarations in parentheses
+      if (cleanCode.startsWith('function')) {
+        cleanCode = `(${cleanCode})`;
+      }
+
       const func = new Function(...Object.keys(scope), `
-        return ${code};
+        return ${cleanCode};
       `);
 
       return func(...Object.values(scope));
     } catch (error) {
       console.error('Failed to compile widget:', error);
-      throw new Error('Invalid widget code');
+      console.error('Widget code:', code);
+      throw new Error(`Invalid widget code: ${error.message}`);
     }
   };
 
