@@ -1939,7 +1939,8 @@ export function AddSlotModal({
   isOpen,
   onClose,
   onCreateSlot,
-  onShowFilePicker
+  onShowFilePicker,
+  onShowWidgetSelector
 }) {
   if (!isOpen) return null;
 
@@ -2045,18 +2046,18 @@ export function AddSlotModal({
           </Button>
 
           <Button
-            disabled
+            onClick={() => {
+              onClose();
+              onShowWidgetSelector();
+            }}
             variant="outline"
-            className="w-full justify-start text-left h-auto py-3 opacity-60 cursor-not-allowed"
+            className="w-full justify-start text-left h-auto py-3"
           >
             <div className="flex items-center">
               <span className="w-5 h-5 mr-3 text-orange-600">🧩</span>
               <div>
-                <div className="font-medium flex items-center gap-2">
-                  Widgets
-                  <Badge className="bg-orange-100 text-orange-800 text-xs">Coming Soon</Badge>
-                </div>
-                <div className="text-sm text-gray-500">Interactive components and widgets</div>
+                <div className="font-medium">Plugin Widgets</div>
+                <div className="text-sm text-gray-500">Add widgets from installed plugins</div>
               </div>
             </div>
           </Button>
@@ -2576,7 +2577,124 @@ export function ResponsiveContainer({
   );
 }
 
+// WidgetSelectorModal Component
+export function WidgetSelectorModal({
+  isOpen,
+  onClose,
+  onSelectWidget
+}) {
+  const [widgets, setWidgets] = React.useState([]);
+  const [loading, setLoading] = React.useState(true);
+  const [error, setError] = React.useState(null);
 
+  React.useEffect(() => {
+    if (isOpen) {
+      loadWidgets();
+    }
+  }, [isOpen]);
 
+  const loadWidgets = async () => {
+    try {
+      setLoading(true);
+      setError(null);
 
+      const response = await fetch('/api/plugins/widgets');
+      const result = await response.json();
+
+      if (!result.success) {
+        throw new Error(result.error || 'Failed to load widgets');
+      }
+
+      setWidgets(result.widgets || []);
+    } catch (err) {
+      console.error('Failed to load plugin widgets:', err);
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleSelectWidget = (widget) => {
+    onSelectWidget(widget);
+    onClose();
+  };
+
+  if (!isOpen) return null;
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+      <div className="bg-white rounded-lg shadow-xl p-6 w-[500px] max-h-[600px] flex flex-col">
+        <div className="flex justify-between items-center mb-4">
+          <h3 className="text-lg font-semibold">Select Plugin Widget</h3>
+          <Button
+            onClick={onClose}
+            variant="ghost"
+            size="sm"
+            className="h-6 w-6 p-0"
+          >
+            ×
+          </Button>
+        </div>
+
+        {loading && (
+          <div className="flex items-center justify-center py-8">
+            <Loader2 className="w-6 h-6 animate-spin text-gray-400" />
+            <span className="ml-2 text-gray-500">Loading widgets...</span>
+          </div>
+        )}
+
+        {error && (
+          <div className="p-4 bg-red-50 border border-red-200 rounded text-red-700">
+            <p className="font-medium">Error loading widgets</p>
+            <p className="text-sm mt-1">{error}</p>
+          </div>
+        )}
+
+        {!loading && !error && widgets.length === 0 && (
+          <div className="p-8 text-center text-gray-500">
+            <div className="text-4xl mb-2">🧩</div>
+            <p className="font-medium">No Widgets Available</p>
+            <p className="text-sm mt-1">Create plugin widgets to add them here</p>
+          </div>
+        )}
+
+        {!loading && !error && widgets.length > 0 && (
+          <div className="flex-1 overflow-y-auto space-y-2">
+            {widgets.map(widget => (
+              <Button
+                key={widget.id}
+                onClick={() => handleSelectWidget(widget)}
+                variant="outline"
+                className="w-full justify-start text-left h-auto py-3 hover:bg-purple-50 hover:border-purple-300"
+              >
+                <div className="flex items-start w-full">
+                  <span className="w-8 h-8 mr-3 text-purple-600 flex items-center justify-center bg-purple-100 rounded">
+                    🧩
+                  </span>
+                  <div className="flex-1">
+                    <div className="font-medium">{widget.name}</div>
+                    <div className="text-sm text-gray-500">{widget.description || 'No description'}</div>
+                    <div className="text-xs text-purple-600 mt-1">
+                      From: {widget.pluginName}
+                    </div>
+                  </div>
+                </div>
+              </Button>
+            ))}
+          </div>
+        )}
+
+        <div className="mt-4 pt-4 border-t">
+          <Button
+            onClick={onClose}
+            variant="outline"
+            className="w-full"
+          >
+            Cancel
+          </Button>
+        </div>
+      </div>
+    </div>
+  );
+}
 

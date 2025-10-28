@@ -39,6 +39,7 @@ import {
   HierarchicalSlotRenderer,
   EditorToolbar,
   AddSlotModal,
+  WidgetSelectorModal,
   ResetLayoutModal,
   FilePickerModalWrapper,
   EditModeControls,
@@ -122,6 +123,7 @@ const UnifiedSlotsEditor = ({
   const [currentViewport, setCurrentViewport] = useState('desktop');
   const [isResizing, setIsResizing] = useState(false);
   const [showAddSlotModal, setShowAddSlotModal] = useState(false);
+  const [showWidgetSelectorModal, setShowWidgetSelectorModal] = useState(false);
   const [showResetModal, setShowResetModal] = useState(false);
   const [showCodeModal, setShowCodeModal] = useState(false);
   const [showPublishPanel, setShowPublishPanel] = useState(false);
@@ -531,7 +533,65 @@ const UnifiedSlotsEditor = ({
           setShowAddSlotModal(false);
           // TODO: Implement file picker modal
         }}
+        onShowWidgetSelector={() => {
+          setShowAddSlotModal(false);
+          setShowWidgetSelectorModal(true);
+        }}
         pageType={pageType}
+      />
+
+      {/* Widget Selector Modal */}
+      <WidgetSelectorModal
+        isOpen={showWidgetSelectorModal}
+        onClose={() => setShowWidgetSelectorModal(false)}
+        onSelectWidget={(widget) => {
+          // Create a plugin_widget type slot with widget metadata
+          // Note: handleCreateSlot puts additionalProps in metadata
+          // We need to manually add the slot with widgetId at top level
+          setLayoutConfig(prevConfig => {
+            const newSlotId = `widget_${Date.now()}_${Math.random().toString(36).substr(2, 5)}`;
+
+            const newSlot = {
+              id: newSlotId,
+              type: 'plugin_widget',
+              widgetId: widget.id, // Top level for UnifiedSlotRenderer to read
+              content: '',
+              className: 'w-full',
+              parentClassName: '',
+              styles: {},
+              parentId: 'header_container', // Add to header by default
+              position: { col: 1, row: 1 },
+              colSpan: 12,
+              rowSpan: 1,
+              viewMode: ['emptyCart', 'withProducts'],
+              isCustom: true,
+              metadata: {
+                created: new Date().toISOString(),
+                lastModified: new Date().toISOString(),
+                hierarchical: true,
+                pluginWidget: true,
+                widgetName: widget.name,
+                widgetConfig: {}
+              }
+            };
+
+            const updatedSlots = { ...(prevConfig?.slots || {}), [newSlotId]: newSlot };
+
+            const updatedConfig = {
+              ...prevConfig,
+              slots: updatedSlots,
+              metadata: {
+                ...prevConfig.metadata,
+                lastModified: new Date().toISOString()
+              }
+            };
+
+            // Auto-save
+            saveConfiguration(updatedConfig);
+
+            return updatedConfig;
+          });
+        }}
       />
 
       {/* Reset Layout Confirmation Modal */}
