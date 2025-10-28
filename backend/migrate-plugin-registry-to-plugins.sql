@@ -33,21 +33,24 @@ SELECT
   pr.name,
   pr.id as slug, -- Use registry ID as slug
   pr.version,
-  pr.description,
-  pr.author,
-  pr.category,
-  pr.type,
+  COALESCE(pr.description, 'Migrated plugin') as description,
+  COALESCE(pr.author, 'Unknown') as author,
+  COALESCE(pr.category, 'other') as category,
+  COALESCE(pr.type, 'plugin') as type,
   'local' as source_type,
-  pr.status,
+  CASE
+    WHEN pr.status = 'active' THEN 'active'
+    ELSE 'available'
+  END as status,
   (pr.status = 'active') as is_installed,
   (pr.status = 'active') as is_enabled,
-  pr.config as config_schema, -- Map config to config_schema
-  '{}' as config_data, -- Empty config data initially
-  pr.dependencies,
-  pr.permissions,
-  pr.manifest,
-  pr.created_at,
-  pr.updated_at,
+  COALESCE(pr.manifest, '{}')::jsonb as config_schema,
+  '{}'::jsonb as config_data,
+  COALESCE(pr.dependencies, '[]')::jsonb as dependencies,
+  COALESCE(pr.permissions, '[]')::jsonb as permissions,
+  COALESCE(pr.manifest, '{}')::jsonb as manifest,
+  COALESCE(pr.created_at, NOW()),
+  COALESCE(pr.updated_at, NOW()),
   pr.installed_at
 FROM plugin_registry pr
 WHERE NOT EXISTS (
