@@ -204,6 +204,9 @@ export default function Plugins() {
       const fileContent = await file.text();
       const packageData = JSON.parse(fileContent);
 
+      // Add userId to request
+      packageData.userId = user?.id;
+
       // Call import endpoint
       const result = await apiClient.post('plugins/import', packageData);
 

@@ -999,8 +999,20 @@ router.post('/import', async (req, res) => {
     const { randomUUID } = require('crypto');
     const pluginId = randomUUID();
 
-    // Get creator_id from authenticated user
-    const creatorId = req.user?.id || null;
+    // Get creator_id from request (sent by frontend) or authenticated user
+    let creatorId = packageData.userId || req.user?.id;
+
+    // If still no creator, get first user as fallback
+    if (!creatorId) {
+      const [firstUser] = await sequelize.query(`
+        SELECT id FROM users LIMIT 1
+      `, {
+        type: sequelize.QueryTypes.SELECT
+      });
+      creatorId = firstUser?.id;
+    }
+
+    console.log(`  📋 Creator ID: ${creatorId}`);
 
     // Create plugin_registry entry
     await sequelize.query(`

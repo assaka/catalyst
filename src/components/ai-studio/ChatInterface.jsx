@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { Send, Loader2, Sparkles, User, Bot, Code, Eye, Package, Download } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import apiClient from '@/api/client';
+import { User as UserEntity } from '@/api/entities';
 import { useStoreSelection } from '@/contexts/StoreSelectionContext';
 
 /**
@@ -52,12 +53,16 @@ const ChatInterface = ({ onPluginCloned }) => {
         return;
       }
 
+      // Get current user
+      const currentUser = await UserEntity.me();
+
       // Export the template plugin
       const exportData = await apiClient.get(`plugins/${template.id}/export`);
 
-      // Modify the package with new name
+      // Modify the package with new name and user ID
       exportData.plugin.name = pluginName;
       exportData.plugin.slug = pluginName.toLowerCase().replace(/\s+/g, '-');
+      exportData.userId = currentUser?.id;
 
       // Import as new plugin
       const result = await apiClient.post('plugins/import', exportData);
