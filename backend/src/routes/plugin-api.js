@@ -796,7 +796,14 @@ router.get('/registry/:pluginId', async (req, res) => {
     console.log(`  🪝 Hooks: ${hooks.length}`);
 
     if (generatedFiles.length > 0) {
-      console.log(`  📂 File names:`, generatedFiles.map(f => f.name));
+      console.log(`  📂 Files with metadata:`);
+      generatedFiles.forEach(f => {
+        console.log(`     - ${f.name}:`, {
+          hasEventName: !!f.event_name,
+          hasPriority: !!f.priority,
+          hasScriptType: !!f.script_type
+        });
+      });
     }
 
     res.json({
