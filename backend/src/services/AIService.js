@@ -76,7 +76,17 @@ class AIService {
    */
   async deductCredits(userId, operationType, metadata = {}) {
     const cost = this.operationCosts[operationType] || this.operationCosts.general;
-    const storeId = metadata.storeId || null;
+
+    // Get store_id - use first store if not provided (credit_usage requires non-null store_id)
+    let storeId = metadata.storeId;
+    if (!storeId) {
+      const [store] = await sequelize.query(`
+        SELECT id FROM stores LIMIT 1
+      `, {
+        type: sequelize.QueryTypes.SELECT
+      });
+      storeId = store?.id || '00000000-0000-0000-0000-000000000000'; // Fallback UUID
+    }
 
     // Map operation types to usage_type values that match existing constraint
     const usageTypeMap = {
