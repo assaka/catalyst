@@ -1672,56 +1672,57 @@ router.post('/:pluginId/event-listeners', async (req, res) => {
     const { pluginId } = req.params;
     const { file_name, file_path, event_name, listener_function, priority = 10, description } = req.body;
 
-    if (!file_name || !file_path || !event_name || !listener_function) {
+    if (!event_name || !listener_function) {
       return res.status(400).json({
         success: false,
-        error: 'file_name, file_path, event_name, and listener_function are required'
+        error: 'event_name and listener_function are required'
       });
     }
 
-    console.log(`📡 Creating event listener: ${file_name} → ${event_name}`);
+    console.log(`📡 Creating/updating event: ${event_name} for plugin ${pluginId}`);
 
-    // Check if mapping already exists
+    // Use plugin_events table (normalized structure)
+    // Check if event already exists for this plugin
     const existing = await sequelize.query(`
-      SELECT id FROM plugin_event_listeners
-      WHERE plugin_id = $1 AND file_name = $2 AND event_name = $3
+      SELECT id FROM plugin_events
+      WHERE plugin_id = $1 AND event_name = $2
     `, {
-      bind: [pluginId, file_name, event_name],
+      bind: [pluginId, event_name],
       type: sequelize.QueryTypes.SELECT
     });
 
     if (existing.length > 0) {
-      // Update existing
+      // Update existing event
       await sequelize.query(`
-        UPDATE plugin_event_listeners
-        SET listener_function = $1, priority = $2, description = $3, updated_at = NOW()
-        WHERE plugin_id = $4 AND file_name = $5 AND event_name = $6
+        UPDATE plugin_events
+        SET listener_function = $1, priority = $2, updated_at = NOW()
+        WHERE plugin_id = $3 AND event_name = $4
       `, {
-        bind: [listener_function, priority, description, pluginId, file_name, event_name],
+        bind: [listener_function, priority, pluginId, event_name],
         type: sequelize.QueryTypes.UPDATE
       });
 
-      console.log(`✅ Updated event listener: ${file_name} → ${event_name}`);
+      console.log(`✅ Updated event: ${event_name}`);
     } else {
-      // Insert new
+      // Insert new event
       await sequelize.query(`
-        INSERT INTO plugin_event_listeners
-        (plugin_id, file_name, file_path, event_name, listener_function, priority, description, is_enabled, created_at, updated_at)
-        VALUES ($1, $2, $3, $4, $5, $6, $7, true, NOW(), NOW())
+        INSERT INTO plugin_events
+        (plugin_id, event_name, listener_function, priority, is_enabled, created_at, updated_at)
+        VALUES ($1, $2, $3, $4, true, NOW(), NOW())
       `, {
-        bind: [pluginId, file_name, file_path, event_name, listener_function, priority, description],
+        bind: [pluginId, event_name, listener_function, priority],
         type: sequelize.QueryTypes.INSERT
       });
 
-      console.log(`✅ Created event listener: ${file_name} → ${event_name}`);
+      console.log(`✅ Created event: ${event_name}`);
     }
 
     res.json({
       success: true,
-      message: 'Event listener saved successfully'
+      message: 'Event saved successfully'
     });
   } catch (error) {
-    console.error('❌ Failed to save event listener:', error);
+    console.error('❌ Failed to save event:', error);
     res.status(500).json({
       success: false,
       error: error.message
