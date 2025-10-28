@@ -75,27 +75,140 @@ CREATE TABLE IF NOT EXISTS plugin_marketplace (
 CREATE INDEX IF NOT EXISTS idx_plugin_marketplace_slug ON plugin_marketplace(slug);
 CREATE INDEX IF NOT EXISTS idx_plugin_marketplace_status ON plugin_marketplace(status);
 
--- 4. Verify what exists
+-- 4. Plugin Hooks (normalized)
+CREATE TABLE IF NOT EXISTS plugin_hooks (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  plugin_id UUID NOT NULL REFERENCES plugins(id) ON DELETE CASCADE,
+  hook_name VARCHAR(255) NOT NULL,
+  hook_type VARCHAR(20) NOT NULL DEFAULT 'filter',
+  handler_function TEXT NOT NULL,
+  priority INTEGER DEFAULT 10,
+  is_enabled BOOLEAN DEFAULT true,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_plugin_hooks_plugin ON plugin_hooks(plugin_id);
+CREATE INDEX IF NOT EXISTS idx_plugin_hooks_name ON plugin_hooks(hook_name);
+
+-- 5. Plugin Events (normalized)
+CREATE TABLE IF NOT EXISTS plugin_event_listeners (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  plugin_id UUID NOT NULL REFERENCES plugins(id) ON DELETE CASCADE,
+  event_name VARCHAR(255) NOT NULL,
+  listener_function TEXT NOT NULL,
+  priority INTEGER DEFAULT 10,
+  is_enabled BOOLEAN DEFAULT true,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_plugin_event_listeners_plugin ON plugin_event_listeners(plugin_id);
+CREATE INDEX IF NOT EXISTS idx_plugin_event_listeners_name ON plugin_event_listeners(event_name);
+
+-- 6. Plugin Widgets (for slot editor)
+CREATE TABLE IF NOT EXISTS plugin_widgets (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  plugin_id UUID NOT NULL REFERENCES plugins(id) ON DELETE CASCADE,
+  widget_id VARCHAR(255) NOT NULL,
+  widget_name VARCHAR(255) NOT NULL,
+  description TEXT,
+  component_code TEXT NOT NULL,
+  default_config JSONB DEFAULT '{}'::jsonb,
+  category VARCHAR(100),
+  icon VARCHAR(50),
+  preview_image TEXT,
+  is_enabled BOOLEAN DEFAULT true,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  CONSTRAINT uq_plugin_widget_id UNIQUE (plugin_id, widget_id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_plugin_widgets_plugin ON plugin_widgets(plugin_id);
+CREATE INDEX IF NOT EXISTS idx_plugin_widgets_widget_id ON plugin_widgets(widget_id);
+
+-- 7. Plugin Admin Pages (custom admin pages)
+CREATE TABLE IF NOT EXISTS plugin_admin_pages (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  plugin_id UUID NOT NULL REFERENCES plugins(id) ON DELETE CASCADE,
+  page_key VARCHAR(100) NOT NULL,
+  label VARCHAR(255) NOT NULL,
+  icon VARCHAR(50),
+  route VARCHAR(255) NOT NULL,
+  component_code TEXT NOT NULL,
+  parent_key VARCHAR(100),
+  order_position INTEGER DEFAULT 100,
+  is_visible BOOLEAN DEFAULT true,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  CONSTRAINT uq_plugin_admin_page_key UNIQUE (plugin_id, page_key)
+);
+
+CREATE INDEX IF NOT EXISTS idx_plugin_admin_pages_plugin ON plugin_admin_pages(plugin_id);
+CREATE INDEX IF NOT EXISTS idx_plugin_admin_pages_route ON plugin_admin_pages(route);
+
+-- 8. Plugin Routes (API endpoints)
+CREATE TABLE IF NOT EXISTS plugin_routes (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  plugin_id UUID NOT NULL REFERENCES plugins(id) ON DELETE CASCADE,
+  method VARCHAR(10) NOT NULL,
+  path VARCHAR(500) NOT NULL,
+  handler_function TEXT NOT NULL,
+  middleware JSONB DEFAULT '[]'::jsonb,
+  is_enabled BOOLEAN DEFAULT true,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  CONSTRAINT uq_plugin_route_path UNIQUE (plugin_id, method, path)
+);
+
+CREATE INDEX IF NOT EXISTS idx_plugin_routes_plugin ON plugin_routes(plugin_id);
+CREATE INDEX IF NOT EXISTS idx_plugin_routes_path ON plugin_routes(path);
+
+-- 9. Plugin Data (key-value storage)
+CREATE TABLE IF NOT EXISTS plugin_data (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  plugin_id UUID NOT NULL REFERENCES plugins(id) ON DELETE CASCADE,
+  data_key VARCHAR(255) NOT NULL,
+  data_value JSONB,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  CONSTRAINT uq_plugin_data_key UNIQUE (plugin_id, data_key)
+);
+
+CREATE INDEX IF NOT EXISTS idx_plugin_data_plugin ON plugin_data(plugin_id);
+CREATE INDEX IF NOT EXISTS idx_plugin_data_key ON plugin_data(data_key);
+
+-- 10. Verify all tables exist and show counts
 SELECT
   'ai_usage_logs' as table_name,
   COUNT(*) as count,
   'Track AI operations' as description
 FROM ai_usage_logs
 UNION ALL
-SELECT
-  'credit_usage',
-  COUNT(*),
-  'Track credit deductions (existing)'
+SELECT 'credit_usage', COUNT(*), 'Credit tracking (existing)'
 FROM credit_usage
 UNION ALL
-SELECT
-  'plugins',
-  COUNT(*),
-  'Your installed plugins (existing)'
+SELECT 'plugins', COUNT(*), 'Installed plugins (existing)'
 FROM plugins
 UNION ALL
-SELECT
-  'plugin_marketplace',
-  COUNT(*),
-  'Marketplace plugins'
-FROM plugin_marketplace;
+SELECT 'plugin_marketplace', COUNT(*), 'Marketplace plugins'
+FROM plugin_marketplace
+UNION ALL
+SELECT 'plugin_hooks', COUNT(*), 'Plugin hook registrations'
+FROM plugin_hooks
+UNION ALL
+SELECT 'plugin_event_listeners', COUNT(*), 'Plugin event listeners'
+FROM plugin_event_listeners
+UNION ALL
+SELECT 'plugin_widgets', COUNT(*), 'Plugin widgets for slot editor'
+FROM plugin_widgets
+UNION ALL
+SELECT 'plugin_admin_pages', COUNT(*), 'Plugin admin pages'
+FROM plugin_admin_pages
+UNION ALL
+SELECT 'plugin_routes', COUNT(*), 'Plugin API routes'
+FROM plugin_routes
+UNION ALL
+SELECT 'plugin_data', COUNT(*), 'Plugin key-value storage'
+FROM plugin_data
+ORDER BY table_name;
