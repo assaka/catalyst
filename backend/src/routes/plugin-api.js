@@ -647,33 +647,7 @@ router.get('/registry/:pluginId', async (req, res) => {
       console.log(`  ⚠️ plugin_hooks table error:`, hookError.message);
     }
 
-    // Load event listeners from junction table (file-based event listeners)
-    let eventListeners = [];
-    try {
-      const listenersResult = await sequelize.query(`
-        SELECT file_name, file_path, event_name, listener_function, priority, is_enabled, description
-        FROM plugin_event_listeners
-        WHERE plugin_id = $1 AND is_enabled = true
-        ORDER BY file_name ASC, priority ASC
-      `, {
-        bind: [pluginId],
-        type: sequelize.QueryTypes.SELECT
-      });
-
-      eventListeners = listenersResult.map(l => ({
-        file_name: l.file_name,
-        file_path: l.file_path,
-        event_name: l.event_name,
-        listener_code: l.listener_function,
-        priority: l.priority || 10,
-        enabled: l.is_enabled !== false,
-        description: l.description
-      }));
-
-      console.log(`  ✅ Loaded ${eventListeners.length} event listeners from plugin_event_listeners table`);
-    } catch (listenerError) {
-      console.log(`  ⚠️ plugin_event_listeners table error:`, listenerError.message);
-    }
+    // Note: plugin_event_listeners table has been dropped - all events now in plugin_events
 
     // Load plugin_scripts from normalized table
     let pluginScripts = [];
@@ -820,7 +794,6 @@ router.get('/registry/:pluginId', async (req, res) => {
     console.log(`  📜 Scripts from DB: ${pluginScripts.length}`);
     console.log(`  📡 Events from DB: ${pluginEvents.length}`);
     console.log(`  🪝 Hooks: ${hooks.length}`);
-    console.log(`  📋 Event Listeners: ${eventListeners.length}`);
 
     if (generatedFiles.length > 0) {
       console.log(`  📂 File names:`, generatedFiles.map(f => f.name));
@@ -832,7 +805,6 @@ router.get('/registry/:pluginId', async (req, res) => {
         ...plugin[0],
         generated_by_ai: manifest?.generated_by_ai || plugin[0].type === 'ai-generated',
         hooks: hooks,
-        eventListeners: eventListeners, // File-based event listeners via junction table
         controllers,
         models,
         components,
@@ -1730,98 +1702,8 @@ router.post('/:pluginId/event-listeners', async (req, res) => {
   }
 });
 
-/**
- * PUT /api/plugins/:pluginId/event-listeners/:fileName/event
- * Update the event name for a specific file
- */
-router.put('/:pluginId/event-listeners/:fileName/event', async (req, res) => {
-  try {
-    const { pluginId, fileName } = req.params;
-    const { old_event_name, new_event_name, priority, description } = req.body;
-
-    if (!old_event_name || !new_event_name) {
-      return res.status(400).json({
-        success: false,
-        error: 'old_event_name and new_event_name are required'
-      });
-    }
-
-    console.log(`📡 Updating event mapping: ${fileName} from ${old_event_name} → ${new_event_name}`);
-
-    // Update the event name
-    const updateFields = ['event_name = $1', 'updated_at = NOW()'];
-    const binds = [new_event_name];
-    let bindIndex = 2;
-
-    if (priority !== undefined) {
-      updateFields.push(`priority = $${bindIndex}`);
-      binds.push(priority);
-      bindIndex++;
-    }
-
-    if (description !== undefined) {
-      updateFields.push(`description = $${bindIndex}`);
-      binds.push(description);
-      bindIndex++;
-    }
-
-    binds.push(pluginId, fileName, old_event_name);
-
-    await sequelize.query(`
-      UPDATE plugin_event_listeners
-      SET ${updateFields.join(', ')}
-      WHERE plugin_id = $${bindIndex} AND file_name = $${bindIndex + 1} AND event_name = $${bindIndex + 2}
-    `, {
-      bind: binds,
-      type: sequelize.QueryTypes.UPDATE
-    });
-
-    console.log(`✅ Updated event mapping successfully`);
-
-    res.json({
-      success: true,
-      message: 'Event mapping updated successfully'
-    });
-  } catch (error) {
-    console.error('❌ Failed to update event mapping:', error);
-    res.status(500).json({
-      success: false,
-      error: error.message
-    });
-  }
-});
-
-/**
- * DELETE /api/plugins/:pluginId/event-listeners/:fileName/:eventName
- * Delete an event listener mapping
- */
-router.delete('/:pluginId/event-listeners/:fileName/:eventName', async (req, res) => {
-  try {
-    const { pluginId, fileName, eventName } = req.params;
-
-    console.log(`📡 Deleting event listener: ${fileName} → ${eventName}`);
-
-    await sequelize.query(`
-      DELETE FROM plugin_event_listeners
-      WHERE plugin_id = $1 AND file_name = $2 AND event_name = $3
-    `, {
-      bind: [pluginId, fileName, eventName],
-      type: sequelize.QueryTypes.DELETE
-    });
-
-    console.log(`✅ Deleted event listener successfully`);
-
-    res.json({
-      success: true,
-      message: 'Event listener deleted successfully'
-    });
-  } catch (error) {
-    console.error('❌ Failed to delete event listener:', error);
-    res.status(500).json({
-      success: false,
-      error: error.message
-    });
-  }
-});
+// Note: PUT and DELETE endpoints for plugin_event_listeners removed
+// Table dropped - all events now use plugin_events table
+// Event remapping handled via POST /api/plugins/:pluginId/event-listeners
 
 module.exports = router;
