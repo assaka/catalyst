@@ -24,6 +24,16 @@ export const PLUGIN_EVENTS = {
   },
 
   // Cart Events
+  'cart.viewed': {
+    description: 'Cart page loads',
+    location: 'frontend/src/pages/storefront/Cart.jsx:1051',
+    payload: { items: 'Cart items array', subtotal: 'number', discount: 'number', tax: 'number', total: 'number' }
+  },
+  'cart.itemsLoaded': {
+    description: 'Cart items loaded from API',
+    location: 'frontend/src/pages/storefront/Cart.jsx:450',
+    payload: { items: 'Cart items array', success: 'boolean' }
+  },
   'cart.add_item': {
     description: 'When item is added to cart',
     location: 'frontend/src/contexts/CartContext.jsx:addToCart',
@@ -34,10 +44,30 @@ export const PLUGIN_EVENTS = {
     location: 'frontend/src/contexts/CartContext.jsx:removeFromCart',
     payload: { productId: 'string', cart: 'Current cart' }
   },
+  'cart.itemRemoved': {
+    description: 'Item removed from cart',
+    location: 'frontend/src/pages/storefront/Cart.jsx:590',
+    payload: { itemId: 'string', cart: 'Cart object' }
+  },
   'cart.update_quantity': {
     description: 'When cart item quantity is updated',
     location: 'frontend/src/contexts/CartContext.jsx:updateQuantity',
     payload: { productId: 'string', oldQuantity: 'number', newQuantity: 'number' }
+  },
+  'cart.quantityUpdated': {
+    description: 'Item quantity changed',
+    location: 'frontend/src/pages/storefront/Cart.jsx:525',
+    payload: { itemId: 'string', newQuantity: 'number', cart: 'Cart object' }
+  },
+  'cart.checkoutStarted': {
+    description: 'User clicks checkout',
+    location: 'frontend/src/pages/storefront/Cart.jsx:1022',
+    payload: { cart: 'Cart object', total: 'number' }
+  },
+  'cart.checkoutBlocked': {
+    description: 'Checkout blocked (empty cart)',
+    location: 'frontend/src/pages/storefront/Cart.jsx',
+    payload: { reason: 'string' }
   },
   'cart.before_checkout': {
     description: 'Before checkout process starts',

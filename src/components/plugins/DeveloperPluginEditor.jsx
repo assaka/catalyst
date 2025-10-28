@@ -36,6 +36,7 @@ import CodeEditor from '@/components/ai-studio/CodeEditor.jsx';
 import { useAIStudio, AI_STUDIO_MODES } from '@/contexts/AIStudioContext';
 import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from '@/components/ui/resizable';
 import apiClient from '@/api/client';
+import EventSelector from '@/components/plugins/EventSelector';
 
 const DeveloperPluginEditor = ({
   plugin,
@@ -875,86 +876,13 @@ const DeveloperPluginEditor = ({
                   <label className="block text-sm font-medium text-gray-700 mb-1">
                     Event to Listen To *
                   </label>
-                  <Input
-                    value={eventSearchQuery}
-                    onChange={(e) => setEventSearchQuery(e.target.value)}
-                    placeholder="Search events..."
-                    className="w-full mb-2"
+                  <EventSelector
+                    searchQuery={eventSearchQuery}
+                    onSearchChange={setEventSearchQuery}
+                    selectedEvent={selectedEventName}
+                    onSelectEvent={setSelectedEventName}
+                    showConfirmation={true}
                   />
-
-                  <div className="border border-gray-300 rounded-md max-h-48 overflow-y-auto">
-                    {/* Common Cart Events */}
-                    {['cart.viewed', 'cart.itemsLoaded', 'cart.quantityUpdated', 'cart.itemRemoved', 'cart.checkoutStarted', 'cart.checkoutBlocked']
-                      .filter(event => event.toLowerCase().includes(eventSearchQuery.toLowerCase()))
-                      .map(event => (
-                        <div
-                          key={event}
-                          className={`px-3 py-2 cursor-pointer hover:bg-blue-50 ${selectedEventName === event ? 'bg-blue-100 font-medium' : ''}`}
-                          onClick={() => setSelectedEventName(event)}
-                        >
-                          <div className="text-sm font-medium text-gray-900">{event}</div>
-                          <div className="text-xs text-gray-500">
-                            {event === 'cart.viewed' && 'Cart page loads'}
-                            {event === 'cart.itemsLoaded' && 'Cart items loaded from API'}
-                            {event === 'cart.quantityUpdated' && 'Item quantity changed'}
-                            {event === 'cart.itemRemoved' && 'Item removed from cart'}
-                            {event === 'cart.checkoutStarted' && 'User clicks checkout'}
-                            {event === 'cart.checkoutBlocked' && 'Checkout blocked (empty cart)'}
-                          </div>
-                        </div>
-                      ))}
-
-                    {/* Product Events */}
-                    {['product.view', 'product.list']
-                      .filter(event => event.toLowerCase().includes(eventSearchQuery.toLowerCase()))
-                      .map(event => (
-                        <div
-                          key={event}
-                          className={`px-3 py-2 cursor-pointer hover:bg-blue-50 ${selectedEventName === event ? 'bg-blue-100 font-medium' : ''}`}
-                          onClick={() => setSelectedEventName(event)}
-                        >
-                          <div className="text-sm font-medium text-gray-900">{event}</div>
-                          <div className="text-xs text-gray-500">
-                            {event === 'product.view' && 'Product page viewed'}
-                            {event === 'product.list' && 'Product list rendered'}
-                          </div>
-                        </div>
-                      ))}
-
-                    {/* Order Events */}
-                    {['order.after_create', 'order.status_change']
-                      .filter(event => event.toLowerCase().includes(eventSearchQuery.toLowerCase()))
-                      .map(event => (
-                        <div
-                          key={event}
-                          className={`px-3 py-2 cursor-pointer hover:bg-blue-50 ${selectedEventName === event ? 'bg-blue-100 font-medium' : ''}`}
-                          onClick={() => setSelectedEventName(event)}
-                        >
-                          <div className="text-sm font-medium text-gray-900">{event}</div>
-                          <div className="text-xs text-gray-500">
-                            {event === 'order.after_create' && 'Order created'}
-                            {event === 'order.status_change' && 'Order status changed'}
-                          </div>
-                        </div>
-                      ))}
-
-                    {/* Custom Event Option */}
-                    {eventSearchQuery && !['cart.viewed', 'cart.itemsLoaded', 'cart.quantityUpdated', 'cart.itemRemoved', 'cart.checkoutStarted', 'cart.checkoutBlocked', 'product.view', 'product.list', 'order.after_create', 'order.status_change'].includes(eventSearchQuery) && (
-                      <div
-                        className={`px-3 py-2 cursor-pointer hover:bg-blue-50 border-t ${selectedEventName === eventSearchQuery ? 'bg-blue-100 font-medium' : ''}`}
-                        onClick={() => setSelectedEventName(eventSearchQuery)}
-                      >
-                        <div className="text-sm font-medium text-gray-900">✨ Use custom: {eventSearchQuery}</div>
-                        <div className="text-xs text-gray-500">Create a custom event listener</div>
-                      </div>
-                    )}
-                  </div>
-
-                  {selectedEventName && (
-                    <div className="mt-2 p-2 bg-green-50 border border-green-200 rounded text-sm text-green-800">
-                      ✓ Will listen to: <strong>{selectedEventName}</strong>
-                    </div>
-                  )}
                 </div>
               )}
             </div>
@@ -1001,86 +929,13 @@ const DeveloperPluginEditor = ({
                 <label className="block text-sm font-medium text-gray-700 mb-1">
                   Event to Listen To *
                 </label>
-                <Input
-                  value={eventSearchQuery}
-                  onChange={(e) => setEventSearchQuery(e.target.value)}
-                  placeholder="Search events..."
-                  className="w-full mb-2"
+                <EventSelector
+                  searchQuery={eventSearchQuery}
+                  onSearchChange={setEventSearchQuery}
+                  selectedEvent={editingEventName}
+                  onSelectEvent={setEditingEventName}
+                  showConfirmation={true}
                 />
-
-                <div className="border border-gray-300 rounded-md max-h-48 overflow-y-auto">
-                  {/* Common Cart Events */}
-                  {['cart.viewed', 'cart.itemsLoaded', 'cart.quantityUpdated', 'cart.itemRemoved', 'cart.checkoutStarted', 'cart.checkoutBlocked']
-                    .filter(event => event.toLowerCase().includes(eventSearchQuery.toLowerCase()))
-                    .map(event => (
-                      <div
-                        key={event}
-                        className={`px-3 py-2 cursor-pointer hover:bg-blue-50 ${editingEventName === event ? 'bg-blue-100 font-medium' : ''}`}
-                        onClick={() => setEditingEventName(event)}
-                      >
-                        <div className="text-sm font-medium text-gray-900">{event}</div>
-                        <div className="text-xs text-gray-500">
-                          {event === 'cart.viewed' && 'Cart page loads'}
-                          {event === 'cart.itemsLoaded' && 'Cart items loaded from API'}
-                          {event === 'cart.quantityUpdated' && 'Item quantity changed'}
-                          {event === 'cart.itemRemoved' && 'Item removed from cart'}
-                          {event === 'cart.checkoutStarted' && 'User clicks checkout'}
-                          {event === 'cart.checkoutBlocked' && 'Checkout blocked (empty cart)'}
-                        </div>
-                      </div>
-                    ))}
-
-                  {/* Product Events */}
-                  {['product.view', 'product.list']
-                    .filter(event => event.toLowerCase().includes(eventSearchQuery.toLowerCase()))
-                    .map(event => (
-                      <div
-                        key={event}
-                        className={`px-3 py-2 cursor-pointer hover:bg-blue-50 ${editingEventName === event ? 'bg-blue-100 font-medium' : ''}`}
-                        onClick={() => setEditingEventName(event)}
-                      >
-                        <div className="text-sm font-medium text-gray-900">{event}</div>
-                        <div className="text-xs text-gray-500">
-                          {event === 'product.view' && 'Product page viewed'}
-                          {event === 'product.list' && 'Product list rendered'}
-                        </div>
-                      </div>
-                    ))}
-
-                  {/* Order Events */}
-                  {['order.after_create', 'order.status_change']
-                    .filter(event => event.toLowerCase().includes(eventSearchQuery.toLowerCase()))
-                    .map(event => (
-                      <div
-                        key={event}
-                        className={`px-3 py-2 cursor-pointer hover:bg-blue-50 ${editingEventName === event ? 'bg-blue-100 font-medium' : ''}`}
-                        onClick={() => setEditingEventName(event)}
-                      >
-                        <div className="text-sm font-medium text-gray-900">{event}</div>
-                        <div className="text-xs text-gray-500">
-                          {event === 'order.after_create' && 'Order created'}
-                          {event === 'order.status_change' && 'Order status changed'}
-                        </div>
-                      </div>
-                    ))}
-
-                  {/* Custom Event Option */}
-                  {eventSearchQuery && !['cart.viewed', 'cart.itemsLoaded', 'cart.quantityUpdated', 'cart.itemRemoved', 'cart.checkoutStarted', 'cart.checkoutBlocked', 'product.view', 'product.list', 'order.after_create', 'order.status_change'].includes(eventSearchQuery) && (
-                    <div
-                      className={`px-3 py-2 cursor-pointer hover:bg-blue-50 border-t ${editingEventName === eventSearchQuery ? 'bg-blue-100 font-medium' : ''}`}
-                      onClick={() => setEditingEventName(eventSearchQuery)}
-                    >
-                      <div className="text-sm font-medium text-gray-900">✨ Use custom: {eventSearchQuery}</div>
-                      <div className="text-xs text-gray-500">Create a custom event listener</div>
-                    </div>
-                  )}
-                </div>
-
-                {editingEventName && (
-                  <div className="mt-2 p-2 bg-green-50 border border-green-200 rounded text-sm text-green-800">
-                    ✓ Will remap to: <strong>{editingEventName}</strong>
-                  </div>
-                )}
               </div>
             </div>
 
