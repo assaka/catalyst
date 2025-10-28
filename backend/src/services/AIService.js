@@ -76,6 +76,19 @@ class AIService {
    */
   async deductCredits(userId, operationType, metadata = {}) {
     const cost = this.operationCosts[operationType] || this.operationCosts.general;
+    const storeId = metadata.storeId || null;
+
+    // Map operation types to usage_type values that match existing constraint
+    const usageTypeMap = {
+      'plugin-generation': 'ai_plugin_generation',
+      'plugin-modification': 'ai_plugin_modification',
+      'translation': 'ai_translation',
+      'layout-generation': 'ai_layout',
+      'code-patch': 'ai_code_patch',
+      'general': 'ai_chat'
+    };
+
+    const usageType = usageTypeMap[operationType] || 'other';
 
     // Deduct credits
     await sequelize.query(`
@@ -88,20 +101,26 @@ class AIService {
       type: sequelize.QueryTypes.UPDATE
     });
 
-    // Log credit usage
+    // Log credit usage in existing credit_usage table
     await sequelize.query(`
-      INSERT INTO credit_transactions (
+      INSERT INTO credit_usage (
+        id,
         user_id,
-        amount,
-        operation_type,
+        store_id,
+        credits_used,
+        usage_type,
+        description,
         metadata,
         created_at
-      ) VALUES ($1, $2, $3, $4, NOW())
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, NOW())
     `, {
       bind: [
+        require('uuid').v4(),
         userId,
-        -cost,
-        operationType,
+        storeId,
+        cost,
+        usageType,
+        `AI Studio: ${operationType}`,
         JSON.stringify(metadata)
       ],
       type: sequelize.QueryTypes.INSERT

@@ -4,7 +4,7 @@ const { sequelize } = require('../connection');
 /**
  * Migration: Create AI tracking tables
  * - ai_usage_logs: Track all AI API calls
- * - credit_transactions: Track credit usage (if not exists)
+ * - Updates credit_usage table constraint (already exists)
  */
 
 async function up() {
@@ -13,18 +13,18 @@ async function up() {
   // Create ai_usage_logs table
   await sequelize.query(`
     CREATE TABLE IF NOT EXISTS ai_usage_logs (
-      id SERIAL PRIMARY KEY,
-      user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+      user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
       operation_type VARCHAR(50) NOT NULL,
       model_used VARCHAR(100),
       tokens_input INTEGER DEFAULT 0,
       tokens_output INTEGER DEFAULT 0,
       metadata JSONB,
-      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
     );
   `);
 
-  // Create index for faster queries
+  // Create indexes for faster queries
   await sequelize.query(`
     CREATE INDEX IF NOT EXISTS idx_ai_usage_logs_user_id
     ON ai_usage_logs(user_id);
@@ -35,28 +35,34 @@ async function up() {
     ON ai_usage_logs(created_at DESC);
   `);
 
-  // Create credit_transactions table if not exists
-  await sequelize.query(`
-    CREATE TABLE IF NOT EXISTS credit_transactions (
-      id SERIAL PRIMARY KEY,
-      user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-      amount INTEGER NOT NULL,
-      operation_type VARCHAR(50),
-      metadata JSONB,
-      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-    );
-  `);
+  // Update existing credit_usage table constraint to include AI usage types
+  try {
+    await sequelize.query(`
+      ALTER TABLE credit_usage DROP CONSTRAINT IF EXISTS credit_usage_usage_type_check;
+    `);
 
-  // Create index for credit transactions
-  await sequelize.query(`
-    CREATE INDEX IF NOT EXISTS idx_credit_transactions_user_id
-    ON credit_transactions(user_id);
-  `);
-
-  await sequelize.query(`
-    CREATE INDEX IF NOT EXISTS idx_credit_transactions_created_at
-    ON credit_transactions(created_at DESC);
-  `);
+    await sequelize.query(`
+      ALTER TABLE credit_usage ADD CONSTRAINT credit_usage_usage_type_check CHECK (
+        usage_type IN (
+          'akeneo_schedule',
+          'akeneo_manual',
+          'marketplace_export',
+          'shopify_sync',
+          'ai_description',
+          'ai_plugin_generation',
+          'ai_plugin_modification',
+          'ai_translation',
+          'ai_layout',
+          'ai_code_patch',
+          'ai_chat',
+          'other'
+        )
+      );
+    `);
+    console.log('✅ Updated credit_usage table constraint for AI usage types');
+  } catch (error) {
+    console.log('⚠️ Could not update credit_usage constraint (table may not exist yet):', error.message);
+  }
 
   console.log('✅ AI tracking tables created successfully');
 }
@@ -65,7 +71,6 @@ async function down() {
   console.log('Dropping AI tracking tables...');
 
   await sequelize.query('DROP TABLE IF EXISTS ai_usage_logs CASCADE;');
-  await sequelize.query('DROP TABLE IF EXISTS credit_transactions CASCADE;');
 
   console.log('✅ AI tracking tables dropped');
 }

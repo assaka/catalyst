@@ -27,18 +27,29 @@ CREATE TABLE IF NOT EXISTS ai_usage_logs (
 CREATE INDEX IF NOT EXISTS idx_ai_usage_logs_user_id ON ai_usage_logs(user_id);
 CREATE INDEX IF NOT EXISTS idx_ai_usage_logs_created_at ON ai_usage_logs(created_at DESC);
 
--- Credit Transactions - Track credit usage
-CREATE TABLE IF NOT EXISTS credit_transactions (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-  amount INTEGER NOT NULL,
-  operation_type VARCHAR(50),
-  metadata JSONB,
-  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
-);
+-- =====================================================
+-- Update existing credit_usage table with AI usage types
+-- =====================================================
 
-CREATE INDEX IF NOT EXISTS idx_credit_transactions_user_id ON credit_transactions(user_id);
-CREATE INDEX IF NOT EXISTS idx_credit_transactions_created_at ON credit_transactions(created_at DESC);
+-- Add new AI usage types to existing constraint
+ALTER TABLE credit_usage DROP CONSTRAINT IF EXISTS credit_usage_usage_type_check;
+
+ALTER TABLE credit_usage ADD CONSTRAINT credit_usage_usage_type_check CHECK (
+  usage_type IN (
+    'akeneo_schedule',
+    'akeneo_manual',
+    'marketplace_export',
+    'shopify_sync',
+    'ai_description',
+    'ai_plugin_generation',
+    'ai_plugin_modification',
+    'ai_translation',
+    'ai_layout',
+    'ai_code_patch',
+    'ai_chat',
+    'other'
+  )
+);
 
 -- =====================================================
 -- 2. PLUGIN MARKETPLACE TABLES
@@ -166,7 +177,7 @@ CREATE INDEX IF NOT EXISTS idx_plugins_status ON plugins(status);
 
 SELECT 'ai_usage_logs' as table_name, COUNT(*) as count FROM ai_usage_logs
 UNION ALL
-SELECT 'credit_transactions', COUNT(*) FROM credit_transactions
+SELECT 'credit_usage', COUNT(*) FROM credit_usage
 UNION ALL
 SELECT 'plugin_marketplace', COUNT(*) FROM plugin_marketplace
 UNION ALL
