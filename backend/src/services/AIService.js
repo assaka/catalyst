@@ -411,6 +411,7 @@ RESPONSE FORMAT - Return ONLY valid JSON:
   "description": "What the plugin does",
   "category": "commerce|marketing|analytics|integration",
   "version": "1.0.0",
+  "author": "Plugin Builder",
   "features": ["Feature 1", "Feature 2"],
   "generatedFiles": [
     {
@@ -418,10 +419,22 @@ RESPONSE FORMAT - Return ONLY valid JSON:
       "code": "// Complete plugin code"
     }
   ],
+  "config_schema": {
+    "fields": [
+      {
+        "name": "setting_name",
+        "type": "text|number|boolean|select",
+        "label": "Setting Label",
+        "default": "default value"
+      }
+    ]
+  },
   "manifest": {
     "name": "Plugin Name",
     "slug": "plugin-slug",
     "version": "1.0.0",
+    "hooks": ["renderHomepageHeader", "renderProductPage"],
+    "events": ["product.view", "order.created"],
     "adminNavigation": {
       "enabled": true,
       "label": "My Plugin",

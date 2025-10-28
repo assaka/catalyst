@@ -144,32 +144,48 @@ CREATE INDEX IF NOT EXISTS idx_plugin_licenses_marketplace ON plugin_licenses(ma
 CREATE INDEX IF NOT EXISTS idx_plugin_licenses_tenant ON plugin_licenses(tenant_id);
 
 -- =====================================================
--- 3. INSTALLED PLUGINS TABLE (per tenant)
+-- 3. PLUGINS TABLE (already exists - skip creation)
 -- =====================================================
 
--- Plugins - Installed plugins per store/tenant
-CREATE TABLE IF NOT EXISTS plugins (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  name VARCHAR(255) NOT NULL,
-  slug VARCHAR(255) NOT NULL,
-  version VARCHAR(50) NOT NULL,
-  description TEXT,
-  category VARCHAR(100),
-  manifest JSONB,
-  plugin_structure JSONB,
-  status VARCHAR(50) DEFAULT 'active',
-  is_enabled BOOLEAN DEFAULT true,
-  source VARCHAR(50) DEFAULT 'local',
-  source_type VARCHAR(50),
-  source_url TEXT,
-  author VARCHAR(255),
-  installed_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-  CONSTRAINT uq_plugin_slug UNIQUE (slug)
-);
+-- Note: plugins table already exists with this structure:
+-- - Uses config_schema (not plugin_structure)
+-- - Has config_data, install_path, health check fields
+-- - Has is_installed, is_enabled booleans
+-- - Status values: 'available', 'installed', 'active', etc.
+-- - Source types: 'local', 'github', 'marketplace'
+--
+-- If plugins table doesn't exist, run this:
+-- (But it should already exist based on your schema)
 
-CREATE INDEX IF NOT EXISTS idx_plugins_slug ON plugins(slug);
-CREATE INDEX IF NOT EXISTS idx_plugins_status ON plugins(status);
+-- CREATE TABLE IF NOT EXISTS plugins (
+--   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+--   name VARCHAR(255) NOT NULL,
+--   slug VARCHAR(255) NOT NULL UNIQUE,
+--   version VARCHAR(50) NOT NULL,
+--   description TEXT,
+--   author VARCHAR(255),
+--   category VARCHAR(100),
+--   type VARCHAR(50) DEFAULT 'plugin',
+--   source_type VARCHAR(50) DEFAULT 'local',
+--   source_url TEXT,
+--   install_path VARCHAR(500),
+--   status VARCHAR(50) DEFAULT 'available',
+--   is_installed BOOLEAN DEFAULT false,
+--   is_enabled BOOLEAN DEFAULT false,
+--   config_schema JSONB,
+--   config_data JSONB DEFAULT '{}'::jsonb,
+--   dependencies JSONB DEFAULT '[]'::jsonb,
+--   permissions JSONB DEFAULT '[]'::jsonb,
+--   manifest JSONB,
+--   installation_log TEXT,
+--   last_health_check TIMESTAMP WITH TIME ZONE,
+--   health_status VARCHAR(50),
+--   installed_at TIMESTAMP WITH TIME ZONE,
+--   enabled_at TIMESTAMP WITH TIME ZONE,
+--   disabled_at TIMESTAMP WITH TIME ZONE,
+--   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+--   updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+-- );
 
 -- =====================================================
 -- VERIFY TABLES CREATED
