@@ -1100,6 +1100,33 @@ export function UnifiedSlotRenderer({
       return <CmsBlockSlot slot={slot} context={context} className={processedClassName} styles={processedStyles} />;
     }
 
+    // Plugin Widget Element
+    if (type === 'plugin_widget') {
+      // Lazy load PluginWidgetRenderer to avoid circular dependencies
+      const PluginWidgetRenderer = React.lazy(() => import('@/components/plugins/PluginWidgetRenderer'));
+
+      if (context === 'editor') {
+        // Show placeholder in editor
+        return (
+          <div className={`${processedClassName} p-4 border-2 border-dashed border-purple-300 rounded bg-purple-50`} style={processedStyles}>
+            <p className="text-purple-700 text-sm font-medium">🎨 Plugin Widget: {slot.widgetId}</p>
+            <p className="text-purple-500 text-xs mt-1">Preview not available in editor</p>
+          </div>
+        );
+      }
+
+      // Render actual widget in storefront
+      return (
+        <React.Suspense fallback={<div className="p-4 text-gray-500">Loading widget...</div>}>
+          <PluginWidgetRenderer
+            widgetId={slot.widgetId}
+            config={slot.widgetConfig || {}}
+            slotData={variableContext}
+          />
+        </React.Suspense>
+      );
+    }
+
     // Container, Grid, Flex Elements
     if (type === 'container' || type === 'grid' || type === 'flex') {
       // Check if this container has any children
