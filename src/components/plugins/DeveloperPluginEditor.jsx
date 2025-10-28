@@ -47,7 +47,9 @@ const DeveloperPluginEditor = ({
   fileTreeMinimized: externalFileTreeMinimized,
   setFileTreeMinimized: externalSetFileTreeMinimized,
   editorMinimized: externalEditorMinimized,
-  setEditorMinimized: externalSetEditorMinimized
+  setEditorMinimized: externalSetEditorMinimized,
+  fileTreeTargetSize = 20, // Absolute % of total viewport
+  editorTargetSize = 50 // Absolute % of total viewport
 }) => {
   const { openAI } = useAIStudio();
   const [fileTree, setFileTree] = useState([]);
@@ -74,29 +76,25 @@ const DeveloperPluginEditor = ({
   const editorMinimized = externalEditorMinimized ?? false;
   const setEditorMinimized = externalSetEditorMinimized ?? (() => {});
 
-  const [fileTreeOriginalSize, setFileTreeOriginalSize] = useState(20);
-  const [editorOriginalSize, setEditorOriginalSize] = useState(74);
+  // Convert absolute viewport percentages to relative percentages within this component
+  // This component gets (fileTreeTargetSize + editorTargetSize) of the viewport
+  const totalSpace = fileTreeTargetSize + editorTargetSize;
 
-  // Calculate sizes to ensure total = 100%
-  const calculateFileTreeSize = () => {
-    if (fileTreeMinimized) return 6;
-    return fileTreeOriginalSize;
+  const calculateFileTreeRelativeSize = () => {
+    if (fileTreeMinimized) {
+      // Calculate relative: if minimized to 6% of viewport, what % is that of our space?
+      return (6 / totalSpace) * 100;
+    }
+    // File tree target (20% of viewport) as % of our space (e.g., 70%)
+    return (fileTreeTargetSize / totalSpace) * 100;
   };
 
-  const calculateEditorSize = () => {
-    if (editorMinimized) return 6;
-
-    // Calculate available space for editor (excluding chat from parent)
-    // Chat is handled by parent AIStudio.jsx
-    // Editor + File Tree should total to (100 - chat size)
-    const fileTreeSize = fileTreeMinimized ? 6 : 20;
-
-    // If file tree minimized, editor can expand
-    if (fileTreeMinimized) {
-      return 94 - (chatMinimized ? 6 : 30); // Assumes chat default 30%
+  const calculateEditorRelativeSize = () => {
+    if (editorMinimized) {
+      return (6 / totalSpace) * 100;
     }
-
-    return editorOriginalSize;
+    // Editor target (50% of viewport) as % of our space
+    return (editorTargetSize / totalSpace) * 100;
   };
 
   useEffect(() => {
@@ -504,15 +502,10 @@ const DeveloperPluginEditor = ({
       <ResizablePanelGroup direction="horizontal" className="flex-1" key={`panels-${fileTreeMinimized}-${editorMinimized}`}>
         {/* File Tree Sidebar - Minimizable */}
         <ResizablePanel
-          defaultSize={calculateFileTreeSize()}
-          minSize={6}
-          maxSize={fileTreeMinimized ? 6 : 35}
+          defaultSize={calculateFileTreeRelativeSize()}
+          minSize={8}
+          maxSize={fileTreeMinimized ? 10 : 50}
           collapsible={false}
-          onResize={(size) => {
-            if (!fileTreeMinimized && size > 6) {
-              setFileTreeOriginalSize(size);
-            }
-          }}
         >
           <div className="h-full bg-white border-r overflow-hidden flex flex-col">
             {!fileTreeMinimized ? (
@@ -567,15 +560,10 @@ const DeveloperPluginEditor = ({
 
                 {/* Main Editor Area - Minimizable */}
                 <ResizablePanel
-                  defaultSize={calculateEditorSize()}
-                  minSize={6}
-                  maxSize={editorMinimized ? 6 : 100}
+                  defaultSize={calculateEditorRelativeSize()}
+                  minSize={8}
+                  maxSize={editorMinimized ? 10 : 100}
                   collapsible={false}
-                  onResize={(size) => {
-                    if (!editorMinimized && size > 6) {
-                      setEditorOriginalSize(size);
-                    }
-                  }}
                 >
                   <div className="h-full flex flex-col bg-white rounded-lg overflow-hidden">
                     {!editorMinimized ? (

@@ -26,17 +26,25 @@ export default function AIStudio() {
   const [fileTreeMinimized, setFileTreeMinimized] = useState(false);
   const [editorMinimized, setEditorMinimized] = useState(false);
 
-  // Calculate chat size based on other panels to ensure total = 100%
+  // Calculate sizes to always total 100%
   const calculateChatSize = () => {
     if (chatMinimized) return 6;
+    if (fileTreeMinimized && editorMinimized) return 88; // Scenario 7
+    if (editorMinimized) return 74; // Scenario 4
+    return 30; // Default - always 30%
+  };
 
-    // Calculate available space for chat
-    const fileTreeSize = fileTreeMinimized ? 6 : 20;
-    const editorSize = editorMinimized ? 6 : (fileTreeMinimized ? 88 : 74);
-    const availableForChat = 100 - fileTreeSize - editorSize;
+  const calculateFileTreeSize = () => {
+    if (fileTreeMinimized) return 6;
+    return 20; // Always 20%
+  };
 
-    // Use available space or original size (whichever fits)
-    return Math.min(availableForChat, chatOriginalSize);
+  const calculateEditorSize = () => {
+    if (editorMinimized) return 6;
+    if (chatMinimized && fileTreeMinimized) return 88; // Scenario 5
+    if (chatMinimized) return 74; // Scenario 2
+    if (fileTreeMinimized) return 64; // Scenario 3
+    return 50; // Default
   };
 
   return (
@@ -130,10 +138,10 @@ export default function AIStudio() {
 
             <ResizableHandle />
 
-            {/* Developer Editor with File Explorer (Right) */}
+            {/* Developer Editor with File Explorer (Right) - Gets remaining space */}
             <ResizablePanel
-              defaultSize={chatMinimized ? 94 : 70}
-              minSize={50}
+              defaultSize={calculateFileTreeSize() + calculateEditorSize()}
+              minSize={12}
             >
               <DeveloperPluginEditor
                 plugin={pluginToEdit}
@@ -147,6 +155,8 @@ export default function AIStudio() {
                 setFileTreeMinimized={setFileTreeMinimized}
                 editorMinimized={editorMinimized}
                 setEditorMinimized={setEditorMinimized}
+                fileTreeTargetSize={calculateFileTreeSize()}
+                editorTargetSize={calculateEditorSize()}
               />
             </ResizablePanel>
           </ResizablePanelGroup>
