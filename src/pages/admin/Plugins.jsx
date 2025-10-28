@@ -103,10 +103,10 @@ export default function Plugins() {
         version: plugin.manifest?.version || plugin.version || '1.0.0',
         price: 0,
         category: plugin.manifest?.category || plugin.category || 'integration',
-        icon_url: plugin.source === 'marketplace' 
+        icon_url: plugin.source === 'marketplace'
           ? "https://via.placeholder.com/64x64/10B981/FFFFFF?text=" + plugin.name.charAt(0)
           : "https://via.placeholder.com/64x64/4285F4/FFFFFF?text=" + plugin.name.charAt(0),
-        creator_id: plugin.source === 'marketplace' ? "marketplace" : "system",
+        creator_id: plugin.creator_id || (plugin.source === 'marketplace' ? "marketplace" : null),
         creator_name: plugin.manifest?.author || plugin.author || "System",
         status: "approved",
         downloads: plugin.downloads || 0,
@@ -227,6 +227,7 @@ export default function Plugins() {
       } else if (tabFilter === 'installed') {
         matchesStatus = plugin.isInstalled === true;
       } else if (tabFilter === 'my-plugins') {
+        // Show plugins created by current user
         matchesStatus = plugin.creator_id === user?.id;
       }
       // For 'all' tab, show everything

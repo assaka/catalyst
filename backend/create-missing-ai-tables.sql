@@ -75,7 +75,12 @@ CREATE TABLE IF NOT EXISTS plugin_marketplace (
 CREATE INDEX IF NOT EXISTS idx_plugin_marketplace_slug ON plugin_marketplace(slug);
 CREATE INDEX IF NOT EXISTS idx_plugin_marketplace_status ON plugin_marketplace(status);
 
--- 4. Plugin Hooks (normalized)
+-- 4. Add creator_id to existing plugins table
+ALTER TABLE plugins ADD COLUMN IF NOT EXISTS creator_id UUID REFERENCES users(id) ON DELETE SET NULL;
+
+CREATE INDEX IF NOT EXISTS idx_plugins_creator ON plugins(creator_id);
+
+-- 5. Plugin Hooks (normalized)
 CREATE TABLE IF NOT EXISTS plugin_hooks (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   plugin_id UUID NOT NULL REFERENCES plugins(id) ON DELETE CASCADE,
@@ -91,7 +96,7 @@ CREATE TABLE IF NOT EXISTS plugin_hooks (
 CREATE INDEX IF NOT EXISTS idx_plugin_hooks_plugin ON plugin_hooks(plugin_id);
 CREATE INDEX IF NOT EXISTS idx_plugin_hooks_name ON plugin_hooks(hook_name);
 
--- 5. Plugin Events (normalized)
+-- 6. Plugin Events (normalized)
 CREATE TABLE IF NOT EXISTS plugin_event_listeners (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   plugin_id UUID NOT NULL REFERENCES plugins(id) ON DELETE CASCADE,
@@ -106,7 +111,7 @@ CREATE TABLE IF NOT EXISTS plugin_event_listeners (
 CREATE INDEX IF NOT EXISTS idx_plugin_event_listeners_plugin ON plugin_event_listeners(plugin_id);
 CREATE INDEX IF NOT EXISTS idx_plugin_event_listeners_name ON plugin_event_listeners(event_name);
 
--- 6. Plugin Widgets (for slot editor)
+-- 7. Plugin Widgets (for slot editor)
 CREATE TABLE IF NOT EXISTS plugin_widgets (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   plugin_id UUID NOT NULL REFERENCES plugins(id) ON DELETE CASCADE,
@@ -127,7 +132,7 @@ CREATE TABLE IF NOT EXISTS plugin_widgets (
 CREATE INDEX IF NOT EXISTS idx_plugin_widgets_plugin ON plugin_widgets(plugin_id);
 CREATE INDEX IF NOT EXISTS idx_plugin_widgets_widget_id ON plugin_widgets(widget_id);
 
--- 7. Plugin Admin Pages (custom admin pages)
+-- 8. Plugin Admin Pages (custom admin pages)
 CREATE TABLE IF NOT EXISTS plugin_admin_pages (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   plugin_id UUID NOT NULL REFERENCES plugins(id) ON DELETE CASCADE,
@@ -147,7 +152,7 @@ CREATE TABLE IF NOT EXISTS plugin_admin_pages (
 CREATE INDEX IF NOT EXISTS idx_plugin_admin_pages_plugin ON plugin_admin_pages(plugin_id);
 CREATE INDEX IF NOT EXISTS idx_plugin_admin_pages_route ON plugin_admin_pages(route);
 
--- 8. Plugin Routes (API endpoints)
+-- 9. Plugin Routes (API endpoints)
 CREATE TABLE IF NOT EXISTS plugin_routes (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   plugin_id UUID NOT NULL REFERENCES plugins(id) ON DELETE CASCADE,
@@ -164,7 +169,7 @@ CREATE TABLE IF NOT EXISTS plugin_routes (
 CREATE INDEX IF NOT EXISTS idx_plugin_routes_plugin ON plugin_routes(plugin_id);
 CREATE INDEX IF NOT EXISTS idx_plugin_routes_path ON plugin_routes(path);
 
--- 9. Plugin Data (key-value storage)
+-- 10. Plugin Data (key-value storage)
 CREATE TABLE IF NOT EXISTS plugin_data (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   plugin_id UUID NOT NULL REFERENCES plugins(id) ON DELETE CASCADE,
@@ -178,7 +183,7 @@ CREATE TABLE IF NOT EXISTS plugin_data (
 CREATE INDEX IF NOT EXISTS idx_plugin_data_plugin ON plugin_data(plugin_id);
 CREATE INDEX IF NOT EXISTS idx_plugin_data_key ON plugin_data(data_key);
 
--- 10. Verify all tables exist and show counts
+-- 11. Verify all tables exist and show counts
 SELECT
   'ai_usage_logs' as table_name,
   COUNT(*) as count,
