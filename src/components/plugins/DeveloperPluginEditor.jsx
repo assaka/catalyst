@@ -639,7 +639,7 @@ const DeveloperPluginEditor = ({
                 </div>
               </>
             ) : (
-              <div className="h-full flex pt-2 justify-center bg-gray-50">
+              <div className="h-full flex pt-2 justify-center bg-gray-50" style={{ minWidth: '60px' }}>
                 <Button
                   variant="ghost"
                   size="sm"
@@ -794,7 +794,7 @@ const DeveloperPluginEditor = ({
                 )}
               </>
             ) : (
-              <div className="h-full flex items-center justify-center bg-gray-50">
+              <div className="h-full flex items-center justify-center bg-gray-50" style={{ minWidth: '60px' }}>
                 <Button
                   variant="ghost"
                   size="sm"
