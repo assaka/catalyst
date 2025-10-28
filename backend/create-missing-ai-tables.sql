@@ -80,7 +80,62 @@ ALTER TABLE plugins ADD COLUMN IF NOT EXISTS creator_id UUID REFERENCES users(id
 
 CREATE INDEX IF NOT EXISTS idx_plugins_creator ON plugins(creator_id);
 
--- 5. Plugin Hooks (normalized)
+-- 5. Plugin Registry (legacy/alternative plugin system)
+CREATE TABLE IF NOT EXISTS plugin_registry (
+  id VARCHAR(255) PRIMARY KEY,
+  name VARCHAR(255) NOT NULL,
+  version VARCHAR(50) NOT NULL,
+  description TEXT,
+  type VARCHAR(50) DEFAULT 'custom',
+  category VARCHAR(50) DEFAULT 'utility',
+  author VARCHAR(255),
+  status VARCHAR(50) DEFAULT 'inactive',
+  security_level VARCHAR(50) DEFAULT 'sandboxed',
+  framework VARCHAR(50) DEFAULT 'react',
+  manifest JSONB DEFAULT '{}',
+  config JSONB DEFAULT '{}',
+  permissions JSONB DEFAULT '[]',
+  dependencies JSONB DEFAULT '[]',
+  tags JSONB DEFAULT '[]',
+  source_code TEXT,
+  compiled_code TEXT,
+  installed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  last_activated TIMESTAMP,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS idx_plugin_registry_status ON plugin_registry(status);
+CREATE INDEX IF NOT EXISTS idx_plugin_registry_type ON plugin_registry(type);
+
+-- Plugin Registry Related Tables
+CREATE TABLE IF NOT EXISTS plugin_scripts (
+  id SERIAL PRIMARY KEY,
+  plugin_id VARCHAR(255) REFERENCES plugin_registry(id) ON DELETE CASCADE,
+  name VARCHAR(500) NOT NULL,
+  type VARCHAR(50) DEFAULT 'module',
+  code TEXT NOT NULL,
+  exports JSONB DEFAULT '[]',
+  imports JSONB DEFAULT '[]',
+  language VARCHAR(50) DEFAULT 'javascript',
+  order_index INTEGER DEFAULT 0,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  UNIQUE(plugin_id, name)
+);
+
+CREATE TABLE IF NOT EXISTS plugin_dependencies (
+  id SERIAL PRIMARY KEY,
+  plugin_id VARCHAR(255) REFERENCES plugin_registry(id) ON DELETE CASCADE,
+  package_name VARCHAR(255) NOT NULL,
+  version VARCHAR(50) NOT NULL,
+  code TEXT NOT NULL,
+  exports JSONB DEFAULT '[]',
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  UNIQUE(plugin_id, package_name)
+);
+
+-- 6. Plugin Hooks (normalized - for UUID plugins table)
 CREATE TABLE IF NOT EXISTS plugin_hooks (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   plugin_id UUID NOT NULL REFERENCES plugins(id) ON DELETE CASCADE,
@@ -193,8 +248,11 @@ UNION ALL
 SELECT 'credit_usage', COUNT(*), 'Credit tracking (existing)'
 FROM credit_usage
 UNION ALL
-SELECT 'plugins', COUNT(*), 'Installed plugins (existing)'
+SELECT 'plugins', COUNT(*), 'Installed plugins (UUID-based, existing)'
 FROM plugins
+UNION ALL
+SELECT 'plugin_registry', COUNT(*), 'Plugin registry (VARCHAR-based)'
+FROM plugin_registry
 UNION ALL
 SELECT 'plugin_marketplace', COUNT(*), 'Marketplace plugins'
 FROM plugin_marketplace
@@ -216,4 +274,10 @@ FROM plugin_routes
 UNION ALL
 SELECT 'plugin_data', COUNT(*), 'Plugin key-value storage'
 FROM plugin_data
+UNION ALL
+SELECT 'plugin_scripts', COUNT(*), 'Plugin registry scripts'
+FROM plugin_scripts
+UNION ALL
+SELECT 'plugin_dependencies', COUNT(*), 'Plugin registry dependencies'
+FROM plugin_dependencies
 ORDER BY table_name;
