@@ -127,15 +127,21 @@ async function loadPluginFrontendScripts(pluginId) {
     const response = await fetch(`/api/plugins/${pluginId}/scripts?scope=frontend&_t=${Date.now()}`);
 
     if (!response.ok) {
+      console.warn(`  ⚠️ Failed to load scripts for ${pluginId}: ${response.status}`);
       return;
     }
 
     const result = await response.json();
 
     if (result.success && result.data && result.data.length > 0) {
-
       for (const script of result.data) {
         try {
+          // Validate script content is actually JavaScript
+          if (!script.content || script.content.trim().startsWith('<')) {
+            console.error(`  ❌ Script ${script.name} contains HTML, not JavaScript. Skipping.`);
+            continue;
+          }
+
           // Create a script tag and inject the code
           const scriptElement = document.createElement('script');
           scriptElement.type = 'module'; // Use module to support ES6 import/export
