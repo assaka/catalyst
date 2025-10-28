@@ -37,14 +37,33 @@ router.get('/', async (req, res) => {
  */
 router.get('/widgets', async (req, res) => {
   try {
-    // TODO: Get tenantId from authenticated session
-    const tenantId = req.user?.tenantId || 'default-tenant';
+    console.log('🎨 Loading all available widgets...');
 
-    const widgets = await PluginExecutor.getAvailableWidgets(tenantId);
+    // Query plugin_widgets table
+    const widgets = await sequelize.query(`
+      SELECT w.widget_id, w.widget_name, w.description, w.category, w.icon,
+             p.name as plugin_name, p.id as plugin_id
+      FROM plugin_widgets w
+      JOIN plugin_registry p ON w.plugin_id = p.id
+      WHERE w.is_enabled = true AND p.status = 'active'
+      ORDER BY w.widget_name ASC
+    `, {
+      type: sequelize.QueryTypes.SELECT
+    });
+
+    console.log(`  ✅ Found ${widgets.length} widgets`);
 
     res.json({
       success: true,
-      widgets
+      widgets: widgets.map(w => ({
+        id: w.widget_id,
+        name: w.widget_name,
+        description: w.description,
+        category: w.category || 'functional',
+        icon: w.icon || 'Box',
+        pluginName: w.plugin_name,
+        pluginId: w.plugin_id
+      }))
     });
   } catch (error) {
     console.error('Failed to get widgets:', error);
@@ -62,14 +81,42 @@ router.get('/widgets', async (req, res) => {
 router.get('/widgets/:widgetId', async (req, res) => {
   try {
     const { widgetId } = req.params;
-    // TODO: Get tenantId from authenticated session
-    const tenantId = req.user?.tenantId || 'default-tenant';
 
-    const widget = await PluginExecutor.loadWidget(widgetId, tenantId);
+    console.log(`🎨 Loading widget: ${widgetId}`);
+
+    // Query plugin_widgets table directly
+    const widgets = await sequelize.query(`
+      SELECT widget_id, widget_name, description, component_code, default_config, category, icon
+      FROM plugin_widgets
+      WHERE widget_id = $1 AND is_enabled = true
+      LIMIT 1
+    `, {
+      bind: [widgetId],
+      type: sequelize.QueryTypes.SELECT
+    });
+
+    if (widgets.length === 0) {
+      return res.status(404).json({
+        success: false,
+        error: 'Widget not found'
+      });
+    }
+
+    const widget = widgets[0];
+
+    console.log(`  ✅ Found widget: ${widget.widget_name}`);
 
     res.json({
       success: true,
-      widget
+      widget: {
+        id: widget.widget_id,
+        name: widget.widget_name,
+        description: widget.description,
+        componentCode: widget.component_code,
+        config: widget.default_config,
+        category: widget.category,
+        icon: widget.icon
+      }
     });
   } catch (error) {
     console.error('Failed to get widget:', error);
