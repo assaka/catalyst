@@ -1014,6 +1014,35 @@ router.post('/import', async (req, res) => {
 
     console.log(`  📋 Creator ID: ${creatorId}`);
 
+    // Ensure unique name and slug
+    let uniqueName = packageData.plugin.name;
+    let uniqueSlug = packageData.plugin.slug;
+    let counter = 1;
+
+    while (true) {
+      // Check if name or slug already exists
+      const [existing] = await sequelize.query(`
+        SELECT id FROM plugin_registry
+        WHERE name = $1 OR slug = $2
+        LIMIT 1
+      `, {
+        bind: [uniqueName, uniqueSlug],
+        type: sequelize.QueryTypes.SELECT
+      });
+
+      if (!existing) break; // Name and slug are unique
+
+      // Add/increment counter
+      counter++;
+      uniqueName = `${packageData.plugin.name} (${counter})`;
+      uniqueSlug = `${packageData.plugin.slug}-${counter}`;
+    }
+
+    if (counter > 1) {
+      console.log(`  📝 Made name unique: ${uniqueName}`);
+      console.log(`  📝 Made slug unique: ${uniqueSlug}`);
+    }
+
     // Create plugin_registry entry
     await sequelize.query(`
       INSERT INTO plugin_registry (
@@ -1026,8 +1055,8 @@ router.post('/import', async (req, res) => {
     `, {
       bind: [
         pluginId,
-        packageData.plugin.name,
-        packageData.plugin.slug,
+        uniqueName,
+        uniqueSlug,
         packageData.plugin.version,
         packageData.plugin.description,
         packageData.plugin.author,
@@ -1103,8 +1132,11 @@ router.post('/import', async (req, res) => {
       });
     }
 
-    // Import widgets
+    // Import widgets with unique widget_ids
     for (const widget of packageData.widgets || []) {
+      // Generate unique widget_id (append plugin UUID suffix to ensure uniqueness)
+      const uniqueWidgetId = `${widget.widgetId}-${pluginId.substring(0, 8)}`;
+
       await sequelize.query(`
         INSERT INTO plugin_widgets (
           plugin_id, widget_id, widget_name, description, component_code,
@@ -1114,7 +1146,7 @@ router.post('/import', async (req, res) => {
       `, {
         bind: [
           pluginId,
-          widget.widgetId,
+          uniqueWidgetId,
           widget.widgetName,
           widget.description,
           widget.componentCode,

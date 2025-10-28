@@ -9,7 +9,7 @@ import { useStoreSelection } from '@/contexts/StoreSelectionContext';
  * ChatInterface - Conversational AI for AI Studio
  * User chats naturally, AI determines what to do (like Bolt, Lovable, v0)
  */
-const ChatInterface = ({ onPluginCloned }) => {
+const ChatInterface = ({ onPluginCloned, context }) => {
   const { getSelectedStoreId } = useStoreSelection();
   const [messages, setMessages] = useState([
     {
@@ -164,8 +164,8 @@ const ChatInterface = ({ onPluginCloned }) => {
           <MessageBubble key={index} message={message} />
         ))}
 
-        {/* Starter Templates - show only when conversation just started */}
-        {messages.length === 1 && !isProcessing && !cloningTemplate && starterTemplates.length > 0 && (
+        {/* Starter Templates - show only when creating new plugin (not editing) */}
+        {messages.length === 1 && !isProcessing && !cloningTemplate && !context?.plugin && starterTemplates.length > 0 && (
           <div className="mt-6 space-y-3">
             <p className="text-sm font-medium text-gray-700 dark:text-gray-300">
               Or start with a template:
