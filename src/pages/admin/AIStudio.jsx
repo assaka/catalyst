@@ -30,22 +30,22 @@ export default function AIStudio() {
   const calculateChatSize = () => {
     if (chatMinimized) return 3;
     if (fileTreeMinimized && editorMinimized) return 94; // Scenario 7 (94+3+3=100)
-    if (editorMinimized) return 87; // Scenario 4 (87+10+3=100)
+    if (editorMinimized) return 82; // Scenario 4 (82+15+3=100)
     if (fileTreeMinimized) return 47; // Scenario 3 (47+3+50=100) - balanced split
-    return 45; // Default (45+10+45=100)
+    return 45; // Default (45+15+40=100)
   };
 
   const calculateFileTreeSize = () => {
     if (fileTreeMinimized) return 3;
-    return 10; // Default 10%
+    return 15; // Default 15%
   };
 
   const calculateEditorSize = () => {
     if (editorMinimized) return 3;
     if (chatMinimized && fileTreeMinimized) return 94; // Scenario 5 (3+3+94=100)
-    if (chatMinimized) return 87; // Scenario 2 (3+10+87=100)
+    if (chatMinimized) return 82; // Scenario 2 (3+15+82=100)
     if (fileTreeMinimized) return 50; // Scenario 3 (47+3+50=100) - balanced split
-    return 45; // Default (45+10+45=100)
+    return 40; // Default (45+15+40=100)
   };
 
   return (

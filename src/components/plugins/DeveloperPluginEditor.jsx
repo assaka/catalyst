@@ -105,6 +105,11 @@ const DeveloperPluginEditor = ({
     try {
       const response = await apiClient.get(`plugins/registry/${plugin.id}`);
 
+      console.log('📦 Plugin API Response:', response.data);
+      console.log('📄 Source Code Files:', response.data.source_code);
+      console.log('📋 Event Listeners:', response.data.eventListeners);
+      console.log('🪝 Hooks:', response.data.hooks);
+
       // Build file tree structure
       const files = buildFileTree(response.data);
       setFileTree(files);
@@ -180,6 +185,9 @@ const DeveloperPluginEditor = ({
 
     // Get all files from source_code or generatedFiles
     const allFiles = pluginData.source_code || pluginData.manifest?.generatedFiles || [];
+
+    console.log('🌳 Building file tree from files:', allFiles);
+    console.log('📊 Total files to process:', allFiles.length);
 
     // Build dynamic tree from files
     const tree = buildDynamicTree(allFiles);

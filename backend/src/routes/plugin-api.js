@@ -726,6 +726,17 @@ router.get('/registry/:pluginId', async (req, res) => {
       console.log(`  ⚠️ plugin_admin_pages table error:`, adminError.message);
     }
 
+    console.log(`\n📦 Sending response for ${pluginId}:`);
+    console.log(`  📄 Generated Files: ${generatedFiles.length}`);
+    console.log(`  📜 Scripts from DB: ${pluginScripts.length}`);
+    console.log(`  📡 Events from DB: ${pluginEvents.length}`);
+    console.log(`  🪝 Hooks: ${hooks.length}`);
+    console.log(`  📋 Event Listeners: ${eventListeners.length}`);
+
+    if (generatedFiles.length > 0) {
+      console.log(`  📂 File names:`, generatedFiles.map(f => f.name));
+    }
+
     res.json({
       success: true,
       data: {
