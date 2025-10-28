@@ -75,10 +75,17 @@ CREATE TABLE IF NOT EXISTS plugin_marketplace (
 CREATE INDEX IF NOT EXISTS idx_plugin_marketplace_slug ON plugin_marketplace(slug);
 CREATE INDEX IF NOT EXISTS idx_plugin_marketplace_status ON plugin_marketplace(status);
 
--- 4. Add creator_id to existing plugins table
+-- 4. Update existing plugins table with new columns
 ALTER TABLE plugins ADD COLUMN IF NOT EXISTS creator_id UUID REFERENCES users(id) ON DELETE SET NULL;
+ALTER TABLE plugins ADD COLUMN IF NOT EXISTS is_active BOOLEAN DEFAULT false;
 
 CREATE INDEX IF NOT EXISTS idx_plugins_creator ON plugins(creator_id);
+CREATE INDEX IF NOT EXISTS idx_plugins_is_active ON plugins(is_active) WHERE is_active = true;
+
+-- Add comments to clarify the three states
+COMMENT ON COLUMN plugins.is_active IS 'Creator makes plugin available in marketplace';
+COMMENT ON COLUMN plugins.is_installed IS 'Third party user installed the plugin';
+COMMENT ON COLUMN plugins.is_enabled IS 'Third party user enabled the plugin to run';
 
 -- 5. Plugin Registry (legacy/alternative plugin system)
 CREATE TABLE IF NOT EXISTS plugin_registry (

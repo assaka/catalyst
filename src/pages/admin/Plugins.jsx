@@ -72,19 +72,22 @@ export default function Plugins() {
   const loadData = async () => {
     try {
       // Load modern plugin system and marketplace
-      // Note: apiClient.request auto-unwraps the response, so we get arrays directly
-      const [plugins, marketplacePlugins, storesData, userData] = await Promise.all([
+      const [pluginsResponse, marketplaceResponse, storesData, userData] = await Promise.all([
         apiClient.request('GET', 'plugins').catch(e => {
           console.error('❌ Plugin API error:', e);
-          return [];
+          return { plugins: [] };
         }),
         apiClient.request('GET', 'plugins/marketplace').catch(e => {
           console.error('❌ Marketplace API error:', e);
-          return [];
+          return { plugins: [] };
         }),
         Store.list(),
         User.me()
       ]);
+
+      // Unwrap the response objects
+      const plugins = pluginsResponse?.plugins || pluginsResponse || [];
+      const marketplacePlugins = marketplaceResponse?.plugins || marketplaceResponse || [];
       
       console.log('🔍 Debug: API responses:', {
         plugins: plugins,
@@ -120,8 +123,9 @@ export default function Plugins() {
         downloads: plugin.downloads || 0,
         rating: plugin.rating || 0,
         reviews_count: plugin.reviews_count || 0,
-        isEnabled: Boolean(plugin.isEnabled),
-        isInstalled: Boolean(plugin.isInstalled),
+        isActive: Boolean(plugin.is_active || plugin.isActive),
+        isEnabled: Boolean(plugin.is_enabled || plugin.isEnabled),
+        isInstalled: Boolean(plugin.is_installed || plugin.isInstalled),
         availableMethods: plugin.manifest?.methods || plugin.methods || [],
         source: plugin.source || 'local',
         sourceType: plugin.manifest?.sourceType || plugin.sourceType || 'local',
@@ -236,14 +240,16 @@ export default function Plugins() {
                            plugin.description.toLowerCase().includes(searchQuery.toLowerCase());
       const matchesCategory = categoryFilter === "all" || plugin.category === categoryFilter;
 
-      // Different status filters per tab
+      // Different filters per tab using boolean flags
       let matchesStatus = true;
       if (tabFilter === 'marketplace') {
-        matchesStatus = plugin.source === 'marketplace' && plugin.status === 'approved';
+        // Marketplace plugins that are active (published by creator)
+        matchesStatus = plugin.source === 'marketplace' && plugin.isActive === true;
       } else if (tabFilter === 'installed') {
+        // Plugins installed by third party user
         matchesStatus = plugin.isInstalled === true;
       } else if (tabFilter === 'my-plugins') {
-        // Show plugins created by current user
+        // Show plugins created by current user (regardless of installed/enabled status)
         const matches = plugin.creator_id === user?.id;
         if (!matches && plugin.creator_id) {
           console.log('🔍 Creator ID mismatch:', {
