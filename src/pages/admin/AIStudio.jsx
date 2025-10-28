@@ -18,13 +18,24 @@ import DeveloperPluginEditor from '@/components/plugins/DeveloperPluginEditor';
 export default function AIStudio() {
   const location = useLocation();
   const { selectedStore } = useStoreSelection();
-  const pluginToEdit = location.state?.plugin;
+  const [pluginToEdit, setPluginToEdit] = useState(location.state?.plugin);
   const [chatMinimized, setChatMinimized] = useState(false);
   const [chatOriginalSize, setChatOriginalSize] = useState(45);
 
   // Pass minimize states to DeveloperPluginEditor
   const [fileTreeMinimized, setFileTreeMinimized] = useState(false);
   const [editorMinimized, setEditorMinimized] = useState(false);
+
+  // Handle cloned plugin from starter template
+  const handlePluginCloned = (clonedPlugin) => {
+    // Convert to format expected by DeveloperPluginEditor
+    const pluginForEditor = {
+      id: clonedPlugin.id,
+      name: clonedPlugin.name,
+      ...clonedPlugin
+    };
+    setPluginToEdit(pluginForEditor);
+  };
 
   // Calculate sizes to always total 100%
   const calculateChatSize = () => {
@@ -163,7 +174,7 @@ export default function AIStudio() {
           </ResizablePanelGroup>
         ) : (
           // Creation Mode - Full Chat Interface
-          <ChatInterface />
+          <ChatInterface onPluginCloned={handlePluginCloned} />
         )}
       </div>
     </div>

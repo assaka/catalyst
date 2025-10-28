@@ -8,7 +8,7 @@ import { useStoreSelection } from '@/contexts/StoreSelectionContext';
  * ChatInterface - Conversational AI for AI Studio
  * User chats naturally, AI determines what to do (like Bolt, Lovable, v0)
  */
-const ChatInterface = () => {
+const ChatInterface = ({ onPluginCloned }) => {
   const { getSelectedStoreId } = useStoreSelection();
   const [messages, setMessages] = useState([
     {
@@ -19,6 +19,7 @@ const ChatInterface = () => {
   const [input, setInput] = useState('');
   const [isProcessing, setIsProcessing] = useState(false);
   const [starterTemplates, setStarterTemplates] = useState([]);
+  const [cloningTemplate, setCloningTemplate] = useState(false);
   const messagesEndRef = useRef(null);
   const inputRef = useRef(null);
 
@@ -37,6 +38,51 @@ const ChatInterface = () => {
       console.error('Failed to load starter templates:', error);
       // Fallback to empty array if API fails
       setStarterTemplates([]);
+    }
+  };
+
+  const handleCloneTemplate = async (template) => {
+    setCloningTemplate(true);
+    try {
+      // Ask user for plugin name
+      const pluginName = prompt(`Enter a name for your new plugin:`, `My ${template.name}`);
+
+      if (!pluginName) {
+        setCloningTemplate(false);
+        return;
+      }
+
+      // Export the template plugin
+      const exportData = await apiClient.get(`plugins/${template.id}/export`);
+
+      // Modify the package with new name
+      exportData.plugin.name = pluginName;
+      exportData.plugin.slug = pluginName.toLowerCase().replace(/\s+/g, '-');
+
+      // Import as new plugin
+      const result = await apiClient.post('plugins/import', exportData);
+
+      // Show success message
+      setMessages(prev => [...prev, {
+        role: 'assistant',
+        content: `✅ Created "${pluginName}" from ${template.name} template!\n\nYour plugin is ready with all files, events, and widgets. Click "Edit" to customize it.`,
+        data: result.plugin
+      }]);
+
+      // Notify parent to open in editor
+      if (onPluginCloned) {
+        onPluginCloned(result.plugin);
+      }
+
+    } catch (error) {
+      console.error('Failed to clone template:', error);
+      setMessages(prev => [...prev, {
+        role: 'assistant',
+        content: `❌ Error cloning template: ${error.message}`,
+        error: true
+      }]);
+    } finally {
+      setCloningTemplate(false);
     }
   };
 
@@ -114,7 +160,7 @@ const ChatInterface = () => {
         ))}
 
         {/* Starter Templates - show only when conversation just started */}
-        {messages.length === 1 && !isProcessing && starterTemplates.length > 0 && (
+        {messages.length === 1 && !isProcessing && !cloningTemplate && starterTemplates.length > 0 && (
           <div className="mt-6 space-y-3">
             <p className="text-sm font-medium text-gray-700 dark:text-gray-300">
               Or start with a template:
@@ -123,10 +169,7 @@ const ChatInterface = () => {
               {starterTemplates.map((template) => (
                 <button
                   key={template.id}
-                  onClick={() => {
-                    setInput(template.prompt);
-                    setTimeout(() => handleSend(), 100);
-                  }}
+                  onClick={() => handleCloneTemplate(template)}
                   className="flex items-start gap-3 p-3 rounded-lg border border-gray-200 hover:border-purple-300 hover:bg-purple-50 transition-colors text-left"
                 >
                   <span className="text-2xl flex-shrink-0">{template.icon}</span>
@@ -136,6 +179,19 @@ const ChatInterface = () => {
                   </div>
                 </button>
               ))}
+            </div>
+          </div>
+        )}
+
+        {/* Cloning indicator */}
+        {cloningTemplate && (
+          <div className="flex items-start gap-3">
+            <div className="w-8 h-8 rounded-full bg-gradient-to-br from-purple-500 to-pink-600 flex items-center justify-center flex-shrink-0">
+              <Package className="w-4 h-4 text-white" />
+            </div>
+            <div className="flex items-center gap-2 text-gray-500">
+              <Loader2 className="w-4 h-4 animate-spin" />
+              <span className="text-sm">Cloning template...</span>
             </div>
           </div>
         )}
