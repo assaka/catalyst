@@ -472,7 +472,7 @@ const DeveloperPluginEditor = ({ plugin, onSave, onClose, onSwitchMode, initialC
           <div className="h-full bg-white border-r overflow-hidden flex flex-col">
             {!fileTreeMinimized ? (
               <>
-                <div className="p-4 border-b bg-gray-50">
+                <div className="h-12 px-3 border-b bg-gray-50">
                   <div className="flex items-center justify-between mb-3">
                     <div className="flex items-center gap-2">
                       <FolderTree className="w-5 h-5 text-blue-600" />
