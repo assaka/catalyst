@@ -122,7 +122,7 @@ export default function AIStudio() {
                     </div>
                   </>
                 ) : (
-                  <div className="h-full flex pt-2 justify-center border-r bg-gray-50 dark:bg-gray-800" style={{ minWidth: '60px' }}>
+                  <div className="h-full flex pt-2 justify-center border-r bg-gray-50 dark:bg-gray-800" style={{ minWidth: '50px' }}>
                     <Button
                       variant="ghost"
                       size="sm"
