@@ -86,6 +86,27 @@ const ChatInterface = () => {
     }
   };
 
+  const starterTemplates = [
+    {
+      name: 'Cart Alert Plugin',
+      description: 'Shows alerts and widgets on cart page',
+      icon: '🛒',
+      prompt: 'Create a plugin like Cart Hamid that shows an alert when visiting the cart page, includes a widget with visit counter, and uses utility functions for formatting'
+    },
+    {
+      name: 'Product Badge Plugin',
+      description: 'Add custom badges to product cards',
+      icon: '🏷️',
+      prompt: 'Create a plugin that adds custom badges (New, Sale, Featured) to product cards using hooks and event listeners'
+    },
+    {
+      name: 'Analytics Tracker',
+      description: 'Track user behavior and events',
+      icon: '📊',
+      prompt: 'Create an analytics plugin that tracks cart views, product views, and purchases using the event system'
+    }
+  ];
+
   return (
     <div className="flex flex-col h-full bg-white dark:bg-gray-900">
       {/* Messages */}
@@ -93,6 +114,34 @@ const ChatInterface = () => {
         {messages.map((message, index) => (
           <MessageBubble key={index} message={message} />
         ))}
+
+        {/* Starter Templates - show only when conversation just started */}
+        {messages.length === 1 && !isProcessing && (
+          <div className="mt-6 space-y-3">
+            <p className="text-sm font-medium text-gray-700 dark:text-gray-300">
+              Or start with a template:
+            </p>
+            <div className="grid grid-cols-1 gap-2">
+              {starterTemplates.map((template, index) => (
+                <button
+                  key={index}
+                  onClick={() => {
+                    setInput(template.prompt);
+                    setTimeout(() => handleSend(), 100);
+                  }}
+                  className="flex items-start gap-3 p-3 rounded-lg border border-gray-200 hover:border-purple-300 hover:bg-purple-50 transition-colors text-left"
+                >
+                  <span className="text-2xl flex-shrink-0">{template.icon}</span>
+                  <div>
+                    <div className="font-medium text-sm text-gray-900">{template.name}</div>
+                    <div className="text-xs text-gray-500 mt-0.5">{template.description}</div>
+                  </div>
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
         {isProcessing && (
           <div className="flex items-start gap-3">
             <div className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center flex-shrink-0">

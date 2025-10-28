@@ -57,7 +57,9 @@ export default function Plugins() {
   const [categoryFilter, setCategoryFilter] = useState("all");
   const [showPluginForm, setShowPluginForm] = useState(false);
   const [showGitHubInstall, setShowGitHubInstall] = useState(false);
+  const [showImportDialog, setShowImportDialog] = useState(false);
   const [githubUrl, setGithubUrl] = useState("");
+  const [importing, setImporting] = useState(false);
   const [installing, setInstalling] = useState(false);
   const [showUninstallDialog, setShowUninstallDialog] = useState(false);
   const [pluginToUninstall, setPluginToUninstall] = useState(null);
@@ -166,6 +168,52 @@ export default function Plugins() {
   const handleUninstallPlugin = (plugin) => {
     setPluginToUninstall(plugin);
     setShowUninstallDialog(true);
+  };
+
+  const handleDownloadPlugin = async (plugin) => {
+    try {
+      // Call export endpoint
+      const response = await apiClient.get(`plugins/${plugin.id}/export`);
+
+      // Create download
+      const blob = new Blob([JSON.stringify(response, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `${plugin.slug || plugin.name.toLowerCase().replace(/\s+/g, '-')}-plugin-package.json`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+
+      console.log('✅ Plugin package downloaded:', plugin.name);
+    } catch (error) {
+      console.error('Error downloading plugin:', error);
+      alert('Error downloading plugin: ' + error.message);
+    }
+  };
+
+  const handleImportPlugin = async (file) => {
+    if (!file) return;
+
+    setImporting(true);
+    try {
+      // Read file content
+      const fileContent = await file.text();
+      const packageData = JSON.parse(fileContent);
+
+      // Call import endpoint
+      const result = await apiClient.post('plugins/import', packageData);
+
+      alert(`Plugin imported successfully: ${result.plugin.name}`);
+      setShowImportDialog(false);
+      await loadData();
+    } catch (error) {
+      console.error('Error importing plugin:', error);
+      alert('Error importing plugin: ' + error.message);
+    } finally {
+      setImporting(false);
+    }
   };
 
   const handleConfigurePlugin = (plugin) => {
@@ -325,8 +373,17 @@ export default function Plugins() {
               Create with AI
             </Button>
             <Button
+              onClick={() => setShowImportDialog(true)}
+              variant="outline"
+            >
+              <Upload className="w-4 h-4 mr-2" />
+              Import Plugin
+            </Button>
+            <Button
               onClick={() => setShowGitHubInstall(true)}
               variant="outline"
+              disabled
+              className="opacity-50 cursor-not-allowed"
             >
               <Plus className="w-4 h-4 mr-2" />
               Install from GitHub
@@ -750,15 +807,25 @@ export default function Plugins() {
                         {plugin.description}
                       </p>
 
-                      <div className="flex justify-between items-center">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => navigate('/admin/ai-studio', { state: { plugin } })}
-                        >
-                          <Edit3 className="w-4 h-4 mr-2" />
-                          Edit in AI Studio
-                        </Button>
+                      <div className="flex justify-between items-center gap-2">
+                        <div className="flex gap-2">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => navigate('/admin/ai-studio', { state: { plugin } })}
+                          >
+                            <Edit3 className="w-4 h-4 mr-2" />
+                            Edit in AI Studio
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleDownloadPlugin(plugin)}
+                            title="Download plugin package"
+                          >
+                            <Download className="w-4 h-4" />
+                          </Button>
+                        </div>
                         {plugin.isInstalled && (
                           <Button
                             onClick={() => handleUninstallPlugin(plugin)}
@@ -828,6 +895,42 @@ export default function Plugins() {
             </Card>
           </TabsContent>
         </Tabs>
+
+        {/* Import Plugin Dialog */}
+        <Dialog open={showImportDialog} onOpenChange={setShowImportDialog}>
+          <DialogContent className="max-w-md">
+            <DialogHeader>
+              <DialogTitle>Import Plugin Package</DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4">
+              <div>
+                <label className="text-sm font-medium text-gray-700 mb-2 block">
+                  Plugin Package File (.json)
+                </label>
+                <Input
+                  type="file"
+                  accept=".json,application/json"
+                  onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    if (file) {
+                      handleImportPlugin(file);
+                    }
+                  }}
+                  disabled={importing}
+                />
+                <p className="text-xs text-gray-500 mt-2">
+                  Upload a plugin package JSON file exported from another installation
+                </p>
+              </div>
+              {importing && (
+                <div className="flex items-center gap-2 text-sm text-blue-600">
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  Importing plugin...
+                </div>
+              )}
+            </div>
+          </DialogContent>
+        </Dialog>
 
         {/* GitHub Installation Dialog */}
         <Dialog open={showGitHubInstall} onOpenChange={setShowGitHubInstall}>

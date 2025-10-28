@@ -810,6 +810,288 @@ router.get('/registry/:pluginId', async (req, res) => {
 });
 
 /**
+ * GET /api/plugins/:id/export
+ * Export plugin as downloadable package
+ */
+router.get('/:id/export', async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    console.log(`📦 Exporting plugin: ${id}`);
+
+    // Get plugin metadata
+    const plugin = await sequelize.query(`
+      SELECT * FROM plugin_registry WHERE id = $1
+    `, {
+      bind: [id],
+      type: sequelize.QueryTypes.SELECT
+    });
+
+    if (plugin.length === 0) {
+      return res.status(404).json({
+        success: false,
+        error: 'Plugin not found'
+      });
+    }
+
+    const pluginData = plugin[0];
+
+    // Get scripts
+    const scripts = await sequelize.query(`
+      SELECT file_name, file_content, script_type, scope, load_priority
+      FROM plugin_scripts
+      WHERE plugin_id = $1
+      ORDER BY file_name ASC
+    `, {
+      bind: [id],
+      type: sequelize.QueryTypes.SELECT
+    });
+
+    // Get events
+    const events = await sequelize.query(`
+      SELECT event_name, listener_function, priority
+      FROM plugin_events
+      WHERE plugin_id = $1
+      ORDER BY event_name ASC
+    `, {
+      bind: [id],
+      type: sequelize.QueryTypes.SELECT
+    });
+
+    // Get hooks
+    const hooks = await sequelize.query(`
+      SELECT hook_name, hook_type, handler_function, priority
+      FROM plugin_hooks
+      WHERE plugin_id = $1
+      ORDER BY hook_name ASC
+    `, {
+      bind: [id],
+      type: sequelize.QueryTypes.SELECT
+    });
+
+    // Get widgets
+    const widgets = await sequelize.query(`
+      SELECT widget_id, widget_name, description, component_code, default_config, category, icon
+      FROM plugin_widgets
+      WHERE plugin_id = $1
+    `, {
+      bind: [id],
+      type: sequelize.QueryTypes.SELECT
+    });
+
+    // Build package
+    const packageData = {
+      packageVersion: '1.0.0',
+      exportedAt: new Date().toISOString(),
+
+      plugin: {
+        name: pluginData.name,
+        slug: pluginData.slug,
+        version: pluginData.version,
+        description: pluginData.description,
+        author: pluginData.author,
+        category: pluginData.category,
+        type: pluginData.type,
+        framework: pluginData.framework,
+        manifest: pluginData.manifest,
+        permissions: pluginData.permissions,
+        dependencies: pluginData.dependencies,
+        tags: pluginData.tags
+      },
+
+      files: scripts.map(s => ({
+        name: s.file_name,
+        content: s.file_content,
+        type: s.script_type,
+        scope: s.scope,
+        priority: s.load_priority
+      })),
+
+      events: events.map(e => ({
+        eventName: e.event_name,
+        listenerCode: e.listener_function,
+        priority: e.priority
+      })),
+
+      hooks: hooks.map(h => ({
+        hookName: h.hook_name,
+        hookType: h.hook_type,
+        handlerCode: h.handler_function,
+        priority: h.priority
+      })),
+
+      widgets: widgets.map(w => ({
+        widgetId: w.widget_id,
+        widgetName: w.widget_name,
+        description: w.description,
+        componentCode: w.component_code,
+        defaultConfig: w.default_config,
+        category: w.category,
+        icon: w.icon
+      }))
+    };
+
+    console.log(`  ✅ Exported ${scripts.length} files, ${events.length} events, ${hooks.length} hooks, ${widgets.length} widgets`);
+
+    res.json(packageData);
+  } catch (error) {
+    console.error('Failed to export plugin:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
+/**
+ * POST /api/plugins/import
+ * Import a plugin from package file
+ */
+router.post('/import', async (req, res) => {
+  try {
+    const packageData = req.body;
+
+    console.log(`📥 Importing plugin: ${packageData.plugin.name}`);
+
+    // Generate new UUID
+    const { randomUUID } = require('crypto');
+    const pluginId = randomUUID();
+
+    // Get creator_id from authenticated user
+    const creatorId = req.user?.id || null;
+
+    // Create plugin_registry entry
+    await sequelize.query(`
+      INSERT INTO plugin_registry (
+        id, name, slug, version, description, author, category, type, framework,
+        status, creator_id, is_installed, is_enabled,
+        manifest, permissions, dependencies, tags,
+        created_at, updated_at
+      )
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, NOW(), NOW())
+    `, {
+      bind: [
+        pluginId,
+        packageData.plugin.name,
+        packageData.plugin.slug,
+        packageData.plugin.version,
+        packageData.plugin.description,
+        packageData.plugin.author,
+        packageData.plugin.category,
+        packageData.plugin.type,
+        packageData.plugin.framework || 'react',
+        'active',
+        creatorId,
+        true,
+        true,
+        JSON.stringify(packageData.plugin.manifest),
+        JSON.stringify(packageData.plugin.permissions),
+        JSON.stringify(packageData.plugin.dependencies),
+        JSON.stringify(packageData.plugin.tags)
+      ],
+      type: sequelize.QueryTypes.INSERT
+    });
+
+    // Import files
+    for (const file of packageData.files || []) {
+      await sequelize.query(`
+        INSERT INTO plugin_scripts (
+          plugin_id, file_name, file_content, script_type, scope, load_priority, is_enabled
+        )
+        VALUES ($1, $2, $3, $4, $5, $6, true)
+      `, {
+        bind: [
+          pluginId,
+          file.name,
+          file.content,
+          file.type || 'js',
+          file.scope || 'frontend',
+          file.priority || 0
+        ],
+        type: sequelize.QueryTypes.INSERT
+      });
+    }
+
+    // Import events
+    for (const event of packageData.events || []) {
+      await sequelize.query(`
+        INSERT INTO plugin_events (
+          plugin_id, event_name, listener_function, priority, is_enabled
+        )
+        VALUES ($1, $2, $3, $4, true)
+      `, {
+        bind: [
+          pluginId,
+          event.eventName,
+          event.listenerCode,
+          event.priority || 10
+        ],
+        type: sequelize.QueryTypes.INSERT
+      });
+    }
+
+    // Import hooks
+    for (const hook of packageData.hooks || []) {
+      await sequelize.query(`
+        INSERT INTO plugin_hooks (
+          plugin_id, hook_name, hook_type, handler_function, priority, is_enabled
+        )
+        VALUES ($1, $2, $3, $4, $5, true)
+      `, {
+        bind: [
+          pluginId,
+          hook.hookName,
+          hook.hookType || 'filter',
+          hook.handlerCode,
+          hook.priority || 10
+        ],
+        type: sequelize.QueryTypes.INSERT
+      });
+    }
+
+    // Import widgets
+    for (const widget of packageData.widgets || []) {
+      await sequelize.query(`
+        INSERT INTO plugin_widgets (
+          plugin_id, widget_id, widget_name, description, component_code,
+          default_config, category, icon, is_enabled
+        )
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, true)
+      `, {
+        bind: [
+          pluginId,
+          widget.widgetId,
+          widget.widgetName,
+          widget.description,
+          widget.componentCode,
+          JSON.stringify(widget.defaultConfig || {}),
+          widget.category || 'functional',
+          widget.icon || 'Box'
+        ],
+        type: sequelize.QueryTypes.INSERT
+      });
+    }
+
+    console.log(`  ✅ Imported: ${packageData.files?.length || 0} files, ${packageData.events?.length || 0} events, ${packageData.hooks?.length || 0} hooks, ${packageData.widgets?.length || 0} widgets`);
+
+    res.json({
+      success: true,
+      message: 'Plugin imported successfully',
+      plugin: {
+        id: pluginId,
+        name: packageData.plugin.name
+      }
+    });
+  } catch (error) {
+    console.error('Failed to import plugin:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
+/**
  * PUT /api/plugins/registry/:id/files
  * Update a specific file in a plugin
  */
