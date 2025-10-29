@@ -88,12 +88,12 @@ async function addExampleEvents() {
   }
 }`;
 
-    // Example 2: Alternative parameter name (eventData) for comparison
-    const eventDataExample = `export default function onCartViewedAlt(eventData) {
-  // ✅ EXAMPLE: Using 'eventData' parameter name
-  // Some developers prefer this naming convention
+    // Example 2: Arrow function format
+    const eventDataExample = `(eventData) => {
+  // ✅ EXAMPLE: Arrow function format
+  // Alternative to named functions - more concise syntax
 
-  console.log('🛒 Cart Event - EventData Parameter Example');
+  console.log('🛒 Cart Event - Arrow Function Example');
 
   // You can use any parameter name you prefer:
   // - data (simple and clean)
@@ -226,9 +226,12 @@ async function addExampleEvents() {
     console.log('\\n✅ Example events added to Cart Starter template!');
     console.log('\\n💡 When users clone this plugin, they get:');
     console.log('   1. cart_viewed.js - Main implementation');
-    console.log('   2. cart-viewed-named.js - Named function example');
-    console.log('   3. cart-viewed-eventdata.js - Alternative parameter name');
+    console.log('   2. cart-viewed-named.js - Named function (export default)');
+    console.log('   3. cart-viewed-eventdata.js - Arrow function format');
     console.log('\\n🎓 Users can learn from these examples and delete what they don\'t need!');
+    console.log('\\n📚 Shows two main function formats:');
+    console.log('   • Named: export default function onCartViewed(data) {}');
+    console.log('   • Arrow: (eventData) => {}');
 
   } catch (error) {
     console.error('❌ Error:', error.message);
