@@ -2802,12 +2802,9 @@ router.delete('/registry/:id/files', async (req, res) => {
     });
 
   } catch (error) {
-    console.error('Failed to delete file:', error);
-    console.error('Error stack:', error.stack);
     res.status(500).json({
       success: false,
-      error: error.message,
-      details: error.stack
+      error: error.message
     });
   }
 });
