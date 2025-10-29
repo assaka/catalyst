@@ -220,6 +220,11 @@ class ApiClient {
 
   // Generic request method
   async request(method, endpoint, data = null, customHeaders = {}) {
+    console.log(`📡 apiClient.request() called`);
+    console.log(`   method: ${method}`);
+    console.log(`   endpoint: ${endpoint}`);
+    console.log(`   data:`, data);
+    console.log(`   customHeaders:`, customHeaders);
 
     const startTime = performance.now();
     const debugId = apiDebugger.debugAPICall('request', {
@@ -522,10 +527,22 @@ class ApiClient {
   }
 
   async delete(endpoint, options = {}) {
+    console.log('🗑️ apiClient.delete() called');
+    console.log('   endpoint:', endpoint);
+    console.log('   options:', options);
+
     // Support both data and customHeaders
     const data = options.data || null;
     const customHeaders = options.headers || options;
-    return this.request('DELETE', endpoint, data, customHeaders);
+
+    console.log('   extracted data:', data);
+    console.log('   extracted headers:', customHeaders);
+    console.log('   calling request() with:', { method: 'DELETE', endpoint, data });
+
+    const result = await this.request('DELETE', endpoint, data, customHeaders);
+
+    console.log('✅ apiClient.delete() completed, result:', result);
+    return result;
   }
 
   // File upload

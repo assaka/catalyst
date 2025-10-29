@@ -557,7 +557,15 @@ const DeveloperPluginEditor = ({
   };
 
   const handleDeleteFile = async () => {
-    if (!selectedFile) return;
+    if (!selectedFile) {
+      console.log('❌ handleDeleteFile: No file selected');
+      return;
+    }
+
+    console.log('🗑️ handleDeleteFile called');
+    console.log('   selectedFile:', selectedFile);
+    console.log('   selectedFile.path:', selectedFile.path);
+    console.log('   plugin.id:', plugin.id);
 
     setShowDeleteConfirm(false);
     setIsDeleting(true);
@@ -566,10 +574,18 @@ const DeveloperPluginEditor = ({
     try {
       addTerminalOutput(`⏳ Deleting ${selectedFile.name}...`, 'info');
 
-      // Delete file from backend
-      await apiClient.delete(`plugins/registry/${plugin.id}/files`, {
+      const deletePayload = {
         data: { path: selectedFile.path }
-      });
+      };
+
+      console.log('📤 Sending DELETE request:');
+      console.log('   Endpoint:', `plugins/registry/${plugin.id}/files`);
+      console.log('   Payload:', deletePayload);
+
+      // Delete file from backend
+      const response = await apiClient.delete(`plugins/registry/${plugin.id}/files`, deletePayload);
+
+      console.log('✅ Delete response:', response);
 
       addTerminalOutput(`✓ Deleted ${selectedFile.name} successfully`, 'success');
 
@@ -582,9 +598,16 @@ const DeveloperPluginEditor = ({
       setIsDeleting(false);
 
     } catch (error) {
-      console.error('Error deleting file:', error);
+      console.error('❌ Error deleting file:', error);
+      console.error('   Error type:', error.constructor.name);
+      console.error('   Error message:', error.message);
+      console.error('   Error response:', error.response);
+      console.error('   Error response data:', error.response?.data);
+      console.error('   Error stack:', error.stack);
+
       setIsDeleting(false);
       addTerminalOutput(`✗ Error deleting ${selectedFile.name}: ${error.response?.data?.error || error.message}`, 'error');
+      addTerminalOutput(`  Check console for details`, 'error');
     }
   };
 
