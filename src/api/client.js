@@ -165,7 +165,7 @@ class ApiClient {
       credentials: 'include'
     };
 
-    if (data && (method === 'POST' || method === 'PUT' || method === 'PATCH')) {
+    if (data && (method === 'POST' || method === 'PUT' || method === 'PATCH' || method === 'DELETE')) {
       config.body = JSON.stringify(data);
     }
 
@@ -259,7 +259,7 @@ class ApiClient {
       credentials: 'include'
     };
 
-    if (data && (method === 'POST' || method === 'PUT' || method === 'PATCH')) {
+    if (data && (method === 'POST' || method === 'PUT' || method === 'PATCH' || method === 'DELETE')) {
       config.body = JSON.stringify(data);
     }
 

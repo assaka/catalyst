@@ -607,8 +607,9 @@ const DeveloperPluginEditor = ({
           migration_name: selectedFile.name
         });
 
-        setMigrationResult(response.data);
-        addTerminalOutput(`✓ Migration completed successfully in ${response.data.executionTime}ms`, 'success');
+        setMigrationResult(response.data || response);
+        const executionTime = response.data?.executionTime || response.executionTime;
+        addTerminalOutput(`✓ Migration completed successfully${executionTime ? ` in ${executionTime}ms` : ''}`, 'success');
 
       } else if (isEntityFile) {
         // Generate pending migration for entity (don't execute yet)
@@ -624,8 +625,9 @@ const DeveloperPluginEditor = ({
           is_update: isUpdate
         });
 
-        setMigrationResult(response.data);
-        addTerminalOutput(`✓ Migration generated: ${response.data.migrationVersion}`, 'success');
+        setMigrationResult(response.data || response);
+        const migrationVersion = response.data?.migrationVersion || response.migrationVersion;
+        addTerminalOutput(`✓ Migration generated: ${migrationVersion}`, 'success');
         addTerminalOutput(`  Status: pending (run from migrations folder)`, 'info');
 
         // Reload file tree to show new migration
