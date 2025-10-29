@@ -1018,6 +1018,39 @@ router.get('/:id/export', async (req, res) => {
       type: sequelize.QueryTypes.SELECT
     });
 
+    // Get entities
+    const entities = await sequelize.query(`
+      SELECT name, code
+      FROM plugin_entities
+      WHERE plugin_id = $1
+      ORDER BY name ASC
+    `, {
+      bind: [id],
+      type: sequelize.QueryTypes.SELECT
+    });
+
+    // Get migrations
+    const migrations = await sequelize.query(`
+      SELECT name, code
+      FROM plugin_migrations
+      WHERE plugin_id = $1
+      ORDER BY name ASC
+    `, {
+      bind: [id],
+      type: sequelize.QueryTypes.SELECT
+    });
+
+    // Get controllers
+    const controllers = await sequelize.query(`
+      SELECT name, code
+      FROM plugin_controllers
+      WHERE plugin_id = $1
+      ORDER BY name ASC
+    `, {
+      bind: [id],
+      type: sequelize.QueryTypes.SELECT
+    });
+
     // Build package
     const packageData = {
       packageVersion: '1.0.0',
@@ -1068,10 +1101,25 @@ router.get('/:id/export', async (req, res) => {
         defaultConfig: w.default_config,
         category: w.category,
         icon: w.icon
+      })),
+
+      entities: entities.map(e => ({
+        name: e.name,
+        code: e.code
+      })),
+
+      migrations: migrations.map(m => ({
+        name: m.name,
+        code: m.code
+      })),
+
+      controllers: controllers.map(c => ({
+        name: c.name,
+        code: c.code
       }))
     };
 
-    console.log(`  ✅ Exported ${scripts.length} files, ${events.length} events, ${hooks.length} hooks, ${widgets.length} widgets`);
+    console.log(`  ✅ Exported ${scripts.length} files, ${events.length} events, ${hooks.length} hooks, ${widgets.length} widgets, ${entities.length} entities, ${migrations.length} migrations, ${controllers.length} controllers`);
 
     res.json(packageData);
   } catch (error) {
@@ -1260,7 +1308,58 @@ router.post('/import', async (req, res) => {
       });
     }
 
-    console.log(`  ✅ Imported: ${packageData.files?.length || 0} files, ${packageData.events?.length || 0} events, ${packageData.hooks?.length || 0} hooks, ${packageData.widgets?.length || 0} widgets`);
+    // Import entities
+    for (const entity of packageData.entities || []) {
+      await sequelize.query(`
+        INSERT INTO plugin_entities (
+          plugin_id, name, code
+        )
+        VALUES ($1, $2, $3)
+      `, {
+        bind: [
+          pluginId,
+          entity.name,
+          entity.code
+        ],
+        type: sequelize.QueryTypes.INSERT
+      });
+    }
+
+    // Import migrations
+    for (const migration of packageData.migrations || []) {
+      await sequelize.query(`
+        INSERT INTO plugin_migrations (
+          plugin_id, name, code
+        )
+        VALUES ($1, $2, $3)
+      `, {
+        bind: [
+          pluginId,
+          migration.name,
+          migration.code
+        ],
+        type: sequelize.QueryTypes.INSERT
+      });
+    }
+
+    // Import controllers
+    for (const controller of packageData.controllers || []) {
+      await sequelize.query(`
+        INSERT INTO plugin_controllers (
+          plugin_id, name, code
+        )
+        VALUES ($1, $2, $3)
+      `, {
+        bind: [
+          pluginId,
+          controller.name,
+          controller.code
+        ],
+        type: sequelize.QueryTypes.INSERT
+      });
+    }
+
+    console.log(`  ✅ Imported: ${packageData.files?.length || 0} files, ${packageData.events?.length || 0} events, ${packageData.hooks?.length || 0} hooks, ${packageData.widgets?.length || 0} widgets, ${packageData.entities?.length || 0} entities, ${packageData.migrations?.length || 0} migrations, ${packageData.controllers?.length || 0} controllers`);
 
     res.json({
       success: true,
