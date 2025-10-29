@@ -629,14 +629,7 @@ const DeveloperPluginEditor = ({
           throw new Error('Entity must have entity_name and table_name defined');
         }
 
-        // Save entity first to ensure it's in plugin_entities table
-        addTerminalOutput(`⏳ Saving entity: ${entityName}...`, 'info');
-        await apiClient.put(`plugins/registry/${plugin.id}/files`, {
-          path: selectedFile.path,
-          content: fileContent
-        });
-        setOriginalContent(fileContent);
-
+        // Generate migration FIRST (before saving, so old schema is still in database)
         addTerminalOutput(`⏳ Generating migration for entity: ${entityName} (${tableName})...`, 'info');
 
         const response = await apiClient.post(`plugins/${plugin.id}/generate-entity-migration`, {
@@ -644,6 +637,14 @@ const DeveloperPluginEditor = ({
           table_name: tableName,
           schema_definition: entityData.schema_definition
         });
+
+        // Save entity AFTER migration is generated (so next time we can compare)
+        addTerminalOutput(`⏳ Saving updated entity schema: ${entityName}...`, 'info');
+        await apiClient.put(`plugins/registry/${plugin.id}/files`, {
+          path: selectedFile.path,
+          content: fileContent
+        });
+        setOriginalContent(fileContent);
 
         const result = response.data || response;
         setMigrationResult(result);
