@@ -81,6 +81,7 @@ const DeveloperPluginEditor = ({
   const [allMigrations, setAllMigrations] = useState([]);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [migrationWarnings, setMigrationWarnings] = useState([]);
 
   // Use external state if provided, otherwise use local state
   const fileTreeMinimized = externalFileTreeMinimized ?? false;
@@ -607,9 +608,14 @@ const DeveloperPluginEditor = ({
           migration_name: selectedFile.name
         });
 
-        setMigrationResult(response.data || response);
-        const executionTime = response.data?.executionTime || response.executionTime;
+        const result = response.data || response;
+        setMigrationResult(result);
+        const executionTime = result.executionTime;
         addTerminalOutput(`✓ Migration completed successfully${executionTime ? ` in ${executionTime}ms` : ''}`, 'success');
+
+        if (result.warnings && result.warnings.length > 0) {
+          result.warnings.forEach(w => addTerminalOutput(`  ${w}`, 'warning'));
+        }
 
       } else if (isEntityFile) {
         // Generate pending migration for entity (don't execute yet)
@@ -625,10 +631,16 @@ const DeveloperPluginEditor = ({
           is_update: isUpdate
         });
 
-        setMigrationResult(response.data || response);
-        const migrationVersion = response.data?.migrationVersion || response.migrationVersion;
+        const result = response.data || response;
+        setMigrationResult(result);
+        const migrationVersion = result.migrationVersion;
         addTerminalOutput(`✓ Migration generated: ${migrationVersion}`, 'success');
         addTerminalOutput(`  Status: pending (run from migrations folder)`, 'info');
+
+        if (result.warnings && result.warnings.length > 0) {
+          addTerminalOutput(`  ⚠️ Warnings:`, 'warning');
+          result.warnings.forEach(w => addTerminalOutput(`    ${w}`, 'warning'));
+        }
 
         // Reload file tree to show new migration
         await loadPluginFiles();
@@ -1539,11 +1551,24 @@ const DeveloperPluginEditor = ({
                 )}
               </div>
 
-              <div className="bg-yellow-50 border border-yellow-200 p-3 rounded">
-                <p className="text-xs text-yellow-800">
-                  ⚠️ This will modify your database schema. Make sure you have a backup.
-                </p>
-              </div>
+              {selectedFile?.path?.startsWith('/migrations/') && (
+                <div className="bg-yellow-50 border border-yellow-200 p-3 rounded">
+                  <p className="text-xs text-yellow-800 font-medium mb-2">
+                    ⚠️ This will modify your database schema immediately.
+                  </p>
+                  <p className="text-xs text-yellow-700">
+                    Make sure you have a backup before proceeding.
+                  </p>
+                </div>
+              )}
+
+              {!selectedFile?.path?.startsWith('/migrations/') && (
+                <div className="bg-purple-50 border border-purple-200 p-3 rounded">
+                  <p className="text-xs text-purple-800">
+                    📝 This will create a pending migration file that you can review before executing.
+                  </p>
+                </div>
+              )}
             </div>
 
             <div className="flex gap-2 mt-6">
@@ -1606,6 +1631,17 @@ const DeveloperPluginEditor = ({
                     <div className="bg-gray-50 p-3 rounded">
                       <p className="text-xs font-medium text-gray-700 mb-1">Migration Version:</p>
                       <p className="text-sm font-mono">{migrationResult.migrationVersion}</p>
+                    </div>
+                  )}
+
+                  {migrationResult.warnings && migrationResult.warnings.length > 0 && (
+                    <div className="bg-orange-50 border border-orange-200 p-3 rounded">
+                      <p className="text-xs font-medium text-orange-800 mb-2">⚠️ Warnings:</p>
+                      {migrationResult.warnings.map((warning, idx) => (
+                        <p key={idx} className="text-xs text-orange-700 mb-1">
+                          {warning}
+                        </p>
+                      ))}
                     </div>
                   )}
                 </>

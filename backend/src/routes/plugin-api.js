@@ -2124,6 +2124,25 @@ router.post('/:id/run-migration', async (req, res) => {
       });
     }
 
+    // Detect risky operations in migration SQL
+    const warnings = [];
+    const upSQL = migration.up_sql.toLowerCase();
+    if (upSQL.includes('drop column')) {
+      const dropCount = (upSQL.match(/drop column/g) || []).length;
+      warnings.push(`⚠️ DROPS ${dropCount} COLUMN(S) - Data will be permanently deleted!`);
+    }
+    if (upSQL.includes('alter column') && upSQL.includes('type')) {
+      const typeChangeCount = (upSQL.match(/alter column.*type/g) || []).length;
+      warnings.push(`⚠️ CHANGES ${typeChangeCount} COLUMN TYPE(S) - May cause data loss or conversion errors!`);
+    }
+    if (upSQL.includes('drop table')) {
+      warnings.push(`⚠️ DROPS TABLE - All data will be permanently deleted!`);
+    }
+
+    if (warnings.length > 0) {
+      console.log(`⚠️ Risky operations detected:`, warnings);
+    }
+
     // Execute migration
     await sequelize.query(migration.up_sql);
 
@@ -2142,7 +2161,8 @@ router.post('/:id/run-migration', async (req, res) => {
       success: true,
       migrationVersion: migration_version,
       description: migration.migration_description,
-      executionTime
+      executionTime,
+      warnings: warnings.length > 0 ? warnings : undefined
     });
 
   } catch (error) {
@@ -2219,11 +2239,36 @@ router.post('/:id/generate-entity-migration', async (req, res) => {
         return JSON.stringify(oldCol) !== JSON.stringify(newCol);
       });
 
-      // Generate ALTER TABLE migration
+      // Track risky operations for warnings
+      const warnings = [];
+      if (removedColumns.length > 0) {
+        warnings.push(`⚠️ DROPS ${removedColumns.length} COLUMN(S) - Data will be permanently deleted!`);
+      }
+      if (modifiedColumns.length > 0) {
+        const typeChanges = modifiedColumns.filter(col => {
+          const oldCol = oldColumns.find(c => c.name === col.name);
+          return oldCol.type !== col.type;
+        });
+        if (typeChanges.length > 0) {
+          warnings.push(`⚠️ CHANGES ${typeChanges.length} COLUMN TYPE(S) - May cause data loss or conversion errors!`);
+        }
+      }
+
+      // Generate ALTER TABLE migration (all uncommented)
       upSQL = `-- =====================================================\n`;
       upSQL += `-- ALTER TABLE migration for ${table_name}\n`;
       upSQL += `-- Generated from entity: ${entity_name}\n`;
       upSQL += `-- =====================================================\n\n`;
+
+      if (warnings.length > 0) {
+        upSQL += `-- ⚠️ WARNING: This migration contains risky operations!\n`;
+        warnings.forEach(w => {
+          upSQL += `-- ${w}\n`;
+        });
+        upSQL += `--\n-- Please review carefully before executing.\n`;
+        upSQL += `-- Consider backing up your database first.\n`;
+        upSQL += `-- =====================================================\n\n`;
+      }
 
       if (addedColumns.length === 0 && removedColumns.length === 0 && modifiedColumns.length === 0) {
         upSQL += `-- No schema changes detected\n`;
@@ -2242,35 +2287,36 @@ router.post('/:id/generate-entity-migration', async (req, res) => {
           });
         }
 
-        // Modified columns (commented out - requires manual review)
+        // Modified columns (ALL UNCOMMENTED - user will see warnings)
         if (modifiedColumns.length > 0) {
           upSQL += `-- Modified Columns (${modifiedColumns.length})\n`;
-          upSQL += `-- =====================================================\n`;
-          upSQL += `-- ⚠️ MANUAL REVIEW REQUIRED - Uncomment and adjust as needed\n\n`;
+          upSQL += `-- =====================================================\n\n`;
           modifiedColumns.forEach(col => {
             const oldCol = oldColumns.find(c => c.name === col.name);
             upSQL += `-- Column: ${col.name}\n`;
             upSQL += `--   Old: ${oldCol.type}${oldCol.nullable === false ? ' NOT NULL' : ''}${oldCol.default ? ` DEFAULT ${oldCol.default}` : ''}\n`;
-            upSQL += `--   New: ${col.type}${col.nullable === false ? ' NOT NULL' : ''}${col.default ? ` DEFAULT ${col.default}` : ''}\n`;
-            upSQL += `-- ALTER TABLE ${table_name} ALTER COLUMN ${col.name} TYPE ${col.type};\n`;
+            upSQL += `--   New: ${col.type}${col.nullable === false ? ' NOT NULL' : ''}${col.default ? ` DEFAULT ${col.default}` : ''}\n\n`;
+
+            if (oldCol.type !== col.type) {
+              upSQL += `ALTER TABLE ${table_name} ALTER COLUMN ${col.name} TYPE ${col.type};\n`;
+            }
             if (col.nullable !== oldCol.nullable) {
-              upSQL += `-- ALTER TABLE ${table_name} ALTER COLUMN ${col.name} ${col.nullable === false ? 'SET NOT NULL' : 'DROP NOT NULL'};\n`;
+              upSQL += `ALTER TABLE ${table_name} ALTER COLUMN ${col.name} ${col.nullable === false ? 'SET NOT NULL' : 'DROP NOT NULL'};\n`;
             }
             if (col.default !== oldCol.default) {
-              upSQL += `-- ALTER TABLE ${table_name} ALTER COLUMN ${col.name} ${col.default ? `SET DEFAULT ${col.default}` : 'DROP DEFAULT'};\n`;
+              upSQL += `ALTER TABLE ${table_name} ALTER COLUMN ${col.name} ${col.default ? `SET DEFAULT ${col.default}` : 'DROP DEFAULT'};\n`;
             }
             upSQL += '\n';
           });
         }
 
-        // Removed columns (commented out - requires manual review)
+        // Removed columns (UNCOMMENTED - user will see warnings)
         if (removedColumns.length > 0) {
           upSQL += `-- Removed Columns (${removedColumns.length})\n`;
-          upSQL += `-- =====================================================\n`;
-          upSQL += `-- ⚠️ MANUAL REVIEW REQUIRED - Uncomment to drop columns\n\n`;
+          upSQL += `-- =====================================================\n\n`;
           removedColumns.forEach(col => {
-            upSQL += `-- DROP COLUMN ${col.name} (was ${col.type})\n`;
-            upSQL += `-- ALTER TABLE ${table_name} DROP COLUMN IF EXISTS ${col.name};\n\n`;
+            upSQL += `-- Dropping ${col.name} (${col.type})\n`;
+            upSQL += `ALTER TABLE ${table_name} DROP COLUMN IF EXISTS ${col.name};\n\n`;
           });
         }
 
@@ -2359,6 +2405,9 @@ router.post('/:id/generate-entity-migration', async (req, res) => {
     });
 
     console.log(`✅ Created pending migration: ${migrationVersion}`);
+    if (warnings.length > 0) {
+      console.log(`⚠️ Warnings:`, warnings);
+    }
 
     res.json({
       success: true,
@@ -2366,6 +2415,7 @@ router.post('/:id/generate-entity-migration', async (req, res) => {
       entityName: entity_name,
       tableName: table_name,
       status: 'pending',
+      warnings: warnings.length > 0 ? warnings : undefined,
       message: 'Migration generated successfully. Review and run from migrations folder.'
     });
 
