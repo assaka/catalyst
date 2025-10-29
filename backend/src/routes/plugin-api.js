@@ -1106,10 +1106,10 @@ router.get('/:id/export', async (req, res) => {
 
     // Get plugin docs
     const pluginDocs = await sequelize.query(`
-      SELECT title, content, category, order_position
+      SELECT title, content, doc_type as category, display_order as order_position
       FROM plugin_docs
       WHERE plugin_id = $1
-      ORDER BY order_position ASC, title ASC
+      ORDER BY display_order ASC, title ASC
     `, {
       bind: [id],
       type: sequelize.QueryTypes.SELECT
