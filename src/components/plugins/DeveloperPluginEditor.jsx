@@ -876,9 +876,16 @@ const DeveloperPluginEditor = ({
                       size="sm"
                       onClick={() => setShowMigrationsPanel(!showMigrationsPanel)}
                       title="View migration status"
-                      className="h-6 w-6 p-0"
+                      className="h-6 w-6 p-0 relative"
                     >
-                      <Database className="w-4 h-4" />
+                      <Database className={`w-4 h-4 ${
+                        allMigrations.some(m => m.status === 'pending')
+                          ? 'text-orange-500'
+                          : 'text-gray-700'
+                      }`} />
+                      {allMigrations.some(m => m.status === 'pending') && (
+                        <span className="absolute -top-1 -right-1 w-2 h-2 bg-orange-500 rounded-full"></span>
+                      )}
                     </Button>
                     <Button
                       variant="ghost"
@@ -894,6 +901,24 @@ const DeveloperPluginEditor = ({
                 {/* Migrations Status Panel */}
                 {showMigrationsPanel && (
                   <div className="border-b bg-blue-50 p-3">
+                    {/* Run All Pending Migrations Button */}
+                    {allMigrations.some(m => m.status === 'pending') && (
+                      <div className="mb-3">
+                        <Button
+                          size="sm"
+                          className="w-full bg-orange-500 hover:bg-orange-600 text-white"
+                          onClick={() => {
+                            // TODO: Implement run all pending migrations
+                            addTerminalOutput('⏳ Running all pending migrations...', 'info');
+                            setShowTerminal(true);
+                          }}
+                        >
+                          <Play className="w-4 h-4 mr-1" />
+                          Run All Pending Migrations
+                        </Button>
+                      </div>
+                    )}
+
                     <div className="flex items-center justify-between mb-2">
                       <h4 className="text-sm font-semibold text-gray-900 flex items-center gap-1">
                         <Database className="w-4 h-4" />
