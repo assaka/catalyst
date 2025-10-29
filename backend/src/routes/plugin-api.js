@@ -1259,6 +1259,8 @@ router.get('/:id/export', async (req, res) => {
  * Import a plugin from package file
  */
 router.post('/import', async (req, res) => {
+  const transaction = await sequelize.transaction();
+
   try {
     const packageData = req.body;
 
@@ -1276,7 +1278,8 @@ router.post('/import', async (req, res) => {
       const [firstUser] = await sequelize.query(`
         SELECT id FROM users LIMIT 1
       `, {
-        type: sequelize.QueryTypes.SELECT
+        type: sequelize.QueryTypes.SELECT,
+        transaction
       });
       creatorId = firstUser?.id;
     }
@@ -1296,7 +1299,8 @@ router.post('/import', async (req, res) => {
         LIMIT 1
       `, {
         bind: [uniqueName, uniqueSlug],
-        type: sequelize.QueryTypes.SELECT
+        type: sequelize.QueryTypes.SELECT,
+        transaction
       });
 
       if (!existing) break; // Name and slug are unique
@@ -1341,7 +1345,8 @@ router.post('/import', async (req, res) => {
         JSON.stringify(packageData.plugin.dependencies),
         JSON.stringify(packageData.plugin.tags)
       ],
-      type: sequelize.QueryTypes.INSERT
+      type: sequelize.QueryTypes.INSERT,
+      transaction
     });
 
     // Import files
@@ -1360,7 +1365,8 @@ router.post('/import', async (req, res) => {
           file.scope || 'frontend',
           file.priority || 0
         ],
-        type: sequelize.QueryTypes.INSERT
+        type: sequelize.QueryTypes.INSERT,
+        transaction
       });
     }
 
@@ -1382,7 +1388,8 @@ router.post('/import', async (req, res) => {
           event.listenerCode,
           event.priority || 10
         ],
-        type: sequelize.QueryTypes.INSERT
+        type: sequelize.QueryTypes.INSERT,
+        transaction
       });
     }
 
@@ -1401,7 +1408,8 @@ router.post('/import', async (req, res) => {
           hook.handlerCode,
           hook.priority || 10
         ],
-        type: sequelize.QueryTypes.INSERT
+        type: sequelize.QueryTypes.INSERT,
+        transaction
       });
     }
 
@@ -1427,7 +1435,8 @@ router.post('/import', async (req, res) => {
           widget.category || 'functional',
           widget.icon || 'Box'
         ],
-        type: sequelize.QueryTypes.INSERT
+        type: sequelize.QueryTypes.INSERT,
+        transaction
       });
     }
 
@@ -1444,7 +1453,8 @@ router.post('/import', async (req, res) => {
           entity.name,
           entity.code
         ],
-        type: sequelize.QueryTypes.INSERT
+        type: sequelize.QueryTypes.INSERT,
+        transaction
       });
     }
 
@@ -1461,7 +1471,8 @@ router.post('/import', async (req, res) => {
           migration.name,
           migration.code
         ],
-        type: sequelize.QueryTypes.INSERT
+        type: sequelize.QueryTypes.INSERT,
+        transaction
       });
     }
 
@@ -1478,7 +1489,8 @@ router.post('/import', async (req, res) => {
           controller.name,
           controller.code
         ],
-        type: sequelize.QueryTypes.INSERT
+        type: sequelize.QueryTypes.INSERT,
+        transaction
       });
     }
 
@@ -1495,7 +1507,8 @@ router.post('/import', async (req, res) => {
           data.dataKey,
           JSON.stringify(data.dataValue)
         ],
-        type: sequelize.QueryTypes.INSERT
+        type: sequelize.QueryTypes.INSERT,
+        transaction
       });
     }
 
@@ -1513,7 +1526,8 @@ router.post('/import', async (req, res) => {
           dependency.version,
           dependency.bundledCode
         ],
-        type: sequelize.QueryTypes.INSERT
+        type: sequelize.QueryTypes.INSERT,
+        transaction
       });
     }
 
@@ -1548,7 +1562,8 @@ router.post('/import', async (req, res) => {
           format,
           doc.orderPosition || 0
         ],
-        type: sequelize.QueryTypes.INSERT
+        type: sequelize.QueryTypes.INSERT,
+        transaction
       });
     }
 
@@ -1571,7 +1586,8 @@ router.post('/import', async (req, res) => {
           page.category,
           page.orderPosition || 100
         ],
-        type: sequelize.QueryTypes.INSERT
+        type: sequelize.QueryTypes.INSERT,
+        transaction
       });
     }
 
@@ -1590,9 +1606,13 @@ router.post('/import', async (req, res) => {
           script.description,
           script.loadOrder || 100
         ],
-        type: sequelize.QueryTypes.INSERT
+        type: sequelize.QueryTypes.INSERT,
+        transaction
       });
     }
+
+    // Commit transaction
+    await transaction.commit();
 
     console.log(`  ✅ Imported: ${packageData.files?.length || 0} files, ${packageData.events?.length || 0} events, ${packageData.hooks?.length || 0} hooks, ${packageData.widgets?.length || 0} widgets, ${packageData.entities?.length || 0} entities, ${packageData.migrations?.length || 0} migrations, ${packageData.controllers?.length || 0} controllers, ${packageData.pluginData?.length || 0} data entries, ${packageData.pluginDependencies?.length || 0} dependencies, ${packageData.pluginDocs?.length || 0} docs, ${packageData.adminPages?.length || 0} admin pages, ${packageData.adminScripts?.length || 0} admin scripts`);
 
@@ -1605,6 +1625,9 @@ router.post('/import', async (req, res) => {
       }
     });
   } catch (error) {
+    // Rollback transaction on error
+    await transaction.rollback();
+
     console.error('Failed to import plugin:', error);
     res.status(500).json({
       success: false,
