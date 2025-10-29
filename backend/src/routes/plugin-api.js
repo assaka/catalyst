@@ -2078,6 +2078,22 @@ router.post('/:id/generate-entity-migration', async (req, res) => {
 
     console.log(`🔧 Generating migration for entity ${entity_name} (${table_name})`);
 
+    // Get plugin name from database
+    const pluginData = await sequelize.query(`
+      SELECT name FROM plugin_registry WHERE id = $1
+    `, {
+      bind: [id],
+      type: sequelize.QueryTypes.SELECT
+    });
+
+    if (pluginData.length === 0) {
+      return res.status(404).json({
+        success: false,
+        error: 'Plugin not found'
+      });
+    }
+
+    const pluginName = pluginData[0].name;
     const startTime = Date.now();
     const migrationVersion = new Date().toISOString().replace(/[-:T]/g, '').slice(0, 14);
 
@@ -2123,7 +2139,7 @@ router.post('/:id/generate-entity-migration', async (req, res) => {
     `, {
       bind: [
         id,
-        entity_name,
+        pluginName,
         `create_${table_name}_table.sql`,
         migrationVersion,
         `Create ${table_name} table for ${entity_name} entity`,
