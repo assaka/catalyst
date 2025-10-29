@@ -2409,16 +2409,9 @@ router.post('/:pluginId/event-listeners', async (req, res) => {
         bind: [pluginId, old_event_name],
         type: sequelize.QueryTypes.SELECT
       });
-    } else {
-      // New event - check if event_name already exists
-      existing = await sequelize.query(`
-        SELECT id, event_name FROM plugin_events
-        WHERE plugin_id = $1 AND event_name = $2
-      `, {
-        bind: [pluginId, event_name],
-        type: sequelize.QueryTypes.SELECT
-      });
     }
+    // else: New event creation - don't check for duplicates
+    // Multiple listeners can listen to the same event with different handlers/files
 
     if (existing.length > 0) {
       // Update existing event (filename, event_name, and code)
