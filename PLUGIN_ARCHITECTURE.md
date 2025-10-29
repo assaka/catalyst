@@ -18,49 +18,209 @@ Complete guide on how models, controllers, hooks, events, and widgets are implem
 | `plugin_data` | Key-value storage | JSONB | Runtime |
 | `plugin_dependencies` | npm packages | TEXT | Runtime |
 | `plugin_migrations` | Migration tracking | Metadata + SQL | Database |
+| `plugin_entities` | Database models | JSONB schema | Database |
+| `plugin_controllers` | API endpoints | TEXT (code) | Backend |
 
 ---
 
-## 1️⃣ Models (Database Entities)
+## 1️⃣ Entities (Database Models)
 
-### ❌ Not Implemented as Separate Table
+### ✅ Fully Implemented - `plugin_entities` Table
 
-**Why:** Models would need:
-- Schema definition
-- Database migrations
-- ORM integration
-- Complex to execute from TEXT
+**Schema:**
+```sql
+CREATE TABLE plugin_entities (
+  id UUID PRIMARY KEY,
+  plugin_id UUID NOT NULL,
+  entity_name VARCHAR(255) NOT NULL,       -- e.g., "HamidCart"
+  table_name VARCHAR(255) NOT NULL,        -- e.g., "hamid_cart"
+  description TEXT,
+  schema_definition JSONB NOT NULL,        -- Column definitions, indexes, constraints
+  migration_status VARCHAR(50) DEFAULT 'pending',  -- pending, migrated, failed
+  migration_version VARCHAR(50),
+  migrated_at TIMESTAMP WITH TIME ZONE,
+  create_table_sql TEXT,                   -- Auto-generated CREATE TABLE
+  drop_table_sql TEXT,                     -- Auto-generated DROP TABLE
+  model_code TEXT,                         -- Optional Sequelize model
+  is_enabled BOOLEAN DEFAULT true,
+  CONSTRAINT unique_plugin_entity UNIQUE (plugin_id, entity_name)
+);
+```
 
-**Current Approach:**
-- Plugins use existing app models (Product, Order, User, etc.)
-- Access via API endpoints or services
-- Plugin code can query via `fetch('/api/products')`
+**How It Works:**
 
-**Future Option:**
-- Store Sequelize model definitions in `plugin_models` table
-- Execute with `sequelize.define()` at runtime
-- Risky - direct database access from plugins
+#### **Defining Entities in AI Studio:**
+Users can define database entities directly in AI Studio:
+
+```json
+{
+  "entity_name": "HamidCart",
+  "table_name": "hamid_cart",
+  "schema_definition": {
+    "columns": [
+      { "name": "id", "type": "UUID", "primaryKey": true, "default": "gen_random_uuid()" },
+      { "name": "user_id", "type": "UUID", "nullable": true, "comment": "User reference" },
+      { "name": "session_id", "type": "VARCHAR(255)", "nullable": true },
+      { "name": "cart_items_count", "type": "INTEGER", "default": 0 },
+      { "name": "visited_at", "type": "TIMESTAMP", "default": "NOW()" }
+    ],
+    "indexes": [
+      { "name": "idx_hamid_cart_user", "columns": ["user_id"] },
+      { "name": "idx_hamid_cart_visited_at", "columns": ["visited_at"], "order": "DESC" }
+    ],
+    "foreignKeys": [
+      { "column": "user_id", "references": "users(id)", "onDelete": "SET NULL" }
+    ]
+  }
+}
+```
+
+#### **FileTree Representation:**
+```
+📁 entities/
+  └─ HamidCart.json [🗄️ hamid_cart] [Run Migration ▶]
+```
+
+**When user clicks "Run Migration":**
+1. Generate CREATE TABLE SQL from schema_definition
+2. Create timestamped migration file
+3. Execute migration via plugin-migration-tracker
+4. Update migration_status to 'migrated'
+5. Table is now available for queries
+
+**Workflow:**
+```
+AI Studio:
+1. User creates entity "HamidCart" in FileTree
+2. AI generates schema_definition JSON
+3. Saved to plugin_entities table (status: pending)
+4. User clicks [Run Migration ▶] button
+5. Migration executes, creates hamid_cart table
+6. Status updates to 'migrated'
+7. Controllers can now use the table
+```
+
+**Example: Cart Hamid Plugin**
+```javascript
+// Entity stored in plugin_entities
+{
+  entity_name: 'HamidCart',
+  table_name: 'hamid_cart',
+  migration_status: 'migrated',
+  schema_definition: { /* full schema */ }
+}
+
+// After migration, table exists in database:
+SELECT * FROM hamid_cart;
+```
 
 ---
 
 ## 2️⃣ Controllers (API Endpoints)
 
-### ❌ Not Implemented as Separate Table
+### ✅ Fully Implemented - `plugin_controllers` Table
 
-**Why:** Would require:
-- Express route registration at runtime
-- Middleware handling
-- Security concerns (plugins creating arbitrary endpoints)
+**Schema:**
+```sql
+CREATE TABLE plugin_controllers (
+  id UUID PRIMARY KEY,
+  plugin_id UUID NOT NULL,
+  controller_name VARCHAR(255) NOT NULL,  -- e.g., "trackVisit"
+  description TEXT,
+  method VARCHAR(10) NOT NULL,            -- GET, POST, PUT, DELETE, PATCH
+  path VARCHAR(500) NOT NULL,             -- e.g., "/track-visit"
+  handler_code TEXT NOT NULL,             -- JavaScript function code
+  request_schema JSONB,                   -- Request validation schema
+  response_schema JSONB,                  -- Response format schema
+  requires_auth BOOLEAN DEFAULT false,
+  allowed_roles JSONB,                    -- ["admin", "user"]
+  rate_limit INTEGER DEFAULT 100,
+  is_enabled BOOLEAN DEFAULT true,
+  CONSTRAINT unique_plugin_controller UNIQUE (plugin_id, method, path)
+);
+```
 
-**Current Approach:**
-- Plugins use hooks to modify existing endpoints
-- Example: `product.before_save` hook modifies product data
-- Safer than arbitrary endpoint creation
+**How It Works:**
 
-**Alternative:**
-- Use `plugin_scripts` with specific naming convention
-- Example: `api/products.js` → Registered as `/api/plugins/{id}/custom/products`
-- Sandboxed execution with limited access
+#### **Defining Controllers in AI Studio:**
+Users can define API endpoints directly in AI Studio:
+
+```javascript
+{
+  controller_name: "trackVisit",
+  method: "POST",
+  path: "/track-visit",
+  handler_code: `async function trackVisit(req, res, { sequelize }) {
+    const { user_id, session_id, cart_items_count } = req.body;
+
+    const result = await sequelize.query(\`
+      INSERT INTO hamid_cart (user_id, session_id, cart_items_count)
+      VALUES ($1, $2, $3) RETURNING *
+    \`, {
+      bind: [user_id, session_id, cart_items_count],
+      type: sequelize.QueryTypes.INSERT
+    });
+
+    return res.json({ success: true, visit: result[0][0] });
+  }`
+}
+```
+
+#### **FileTree Representation:**
+```
+📁 controllers/
+  └─ trackVisit.js [POST /track-visit]
+  └─ getVisits.js [GET /visits]
+  └─ getStats.js [GET /stats]
+```
+
+#### **URL Pattern:**
+```
+/api/plugins/{plugin-slug}/{path}
+
+Examples:
+- POST /api/plugins/cart-hamid/track-visit
+- GET  /api/plugins/cart-hamid/visits
+- GET  /api/plugins/cart-hamid/stats
+```
+
+#### **Execution Flow:**
+```javascript
+// 1. Request comes in: POST /api/plugins/cart-hamid/track-visit
+
+// 2. Backend looks up controller in plugin_controllers table
+const controller = await getController('cart-hamid', 'POST', '/track-visit');
+
+// 3. Execute handler_code with context
+const handler = new Function('req', 'res', 'context', controller.handler_code);
+await handler(req, res, { sequelize, models, plugin });
+
+// 4. Return response to client
+```
+
+**Features:**
+- ✅ Dynamic route registration
+- ✅ Full database access via sequelize
+- ✅ Request/response schema validation
+- ✅ Authentication & authorization
+- ✅ Rate limiting per endpoint
+- ✅ Execution tracking
+- ✅ 100% AI Studio driven
+
+**Example: Cart Hamid Plugin**
+```javascript
+// Controllers stored in plugin_controllers:
+[
+  { method: 'POST', path: '/track-visit', controller_name: 'trackVisit' },
+  { method: 'GET',  path: '/visits',      controller_name: 'getVisits' },
+  { method: 'GET',  path: '/stats',       controller_name: 'getStats' }
+]
+
+// Available as:
+POST /api/plugins/cart-hamid/track-visit
+GET  /api/plugins/cart-hamid/visits
+GET  /api/plugins/cart-hamid/stats
+```
 
 ---
 
@@ -806,6 +966,8 @@ your-plugin/
 | Share utilities | `plugin_scripts` | `utils/*.js` | Export to window |
 | Store settings | `plugin_data` | - | `pluginData.get/set()` |
 | Create database tables | `plugin_migrations` | `migrations/*.sql` | Migration tracker |
+| Define data models | `plugin_entities` | `entities/*.json` | AI Studio + migration |
+| Create API endpoints | `plugin_controllers` | `controllers/*.js` | Dynamic routes |
 
 ---
 
@@ -938,16 +1100,7 @@ class PluginMigrationTracker {
 
 ### Not Yet Implemented:
 
-1. **Models:**
-   - `plugin_models` table for Sequelize definitions
-   - Runtime model registration
-
-2. **Controllers:**
-   - `plugin_controllers` table for API endpoints (renamed from plugin_endpoints)
-   - Dynamic Express route registration
-   - `/api/plugins/{id}/custom/{endpoint}` pattern
-
-3. **Middleware:**
+1. **Middleware:**
    - `plugin_middleware` table
    - Express middleware registration
    - Request/response transformation
@@ -965,6 +1118,8 @@ class PluginMigrationTracker {
 - ✅ Hooks (product.price, cart.total, etc.)
 - ✅ Scripts (components, utilities, services)
 - ✅ Widgets (UI components in slots)
+- ✅ Entities (database models with JSON schema)
+- ✅ Controllers (API endpoints with dynamic routes)
 - ✅ Migrations (database schema changes with tracking)
 - ✅ Data storage (key-value via plugin_data)
 - ✅ Dependencies (npm packages)
@@ -972,4 +1127,6 @@ class PluginMigrationTracker {
 - ✅ Starter templates (instant cloning)
 - ✅ FileTree editor (all file types)
 
-**The system is production-ready for events, hooks, scripts, widgets, and migrations!** 🎉
+**The system is production-ready for events, hooks, scripts, widgets, entities, controllers, and migrations!** 🎉
+
+**100% AI Studio Driven** - Users can create entities, controllers, and migrations entirely from AI Studio!
