@@ -700,6 +700,107 @@ router.get('/registry/:pluginId', async (req, res) => {
       console.log(`  ⚠️ plugin_events table error:`, eventsError.message);
     }
 
+    // Load plugin_entities from normalized table
+    let pluginEntities = [];
+    try {
+      const entitiesResult = await sequelize.query(`
+        SELECT id, entity_name, table_name, description, schema_definition,
+               migration_status, migration_version, create_table_sql, is_enabled
+        FROM plugin_entities
+        WHERE plugin_id = $1 AND is_enabled = true
+        ORDER BY entity_name ASC
+      `, {
+        bind: [pluginId],
+        type: sequelize.QueryTypes.SELECT
+      });
+
+      pluginEntities = entitiesResult.map(e => ({
+        name: `entities/${e.entity_name}.json`,
+        code: JSON.stringify({
+          entity_name: e.entity_name,
+          table_name: e.table_name,
+          description: e.description,
+          schema_definition: e.schema_definition,
+          migration_status: e.migration_status,
+          migration_version: e.migration_version,
+          create_table_sql: e.create_table_sql
+        }, null, 2),
+        entity_name: e.entity_name,
+        table_name: e.table_name,
+        migration_status: e.migration_status
+      }));
+
+      console.log(`  ✅ Loaded ${pluginEntities.length} entities from plugin_entities table`);
+    } catch (entitiesError) {
+      console.log(`  ⚠️ plugin_entities table error:`, entitiesError.message);
+    }
+
+    // Load plugin_controllers from normalized table
+    let pluginControllers = [];
+    try {
+      const controllersResult = await sequelize.query(`
+        SELECT id, controller_name, description, method, path, handler_code,
+               requires_auth, is_enabled
+        FROM plugin_controllers
+        WHERE plugin_id = $1 AND is_enabled = true
+        ORDER BY controller_name ASC
+      `, {
+        bind: [pluginId],
+        type: sequelize.QueryTypes.SELECT
+      });
+
+      pluginControllers = controllersResult.map(c => ({
+        name: `controllers/${c.controller_name}.js`,
+        code: c.handler_code,
+        controller_name: c.controller_name,
+        method: c.method,
+        path: c.path,
+        description: c.description,
+        requires_auth: c.requires_auth
+      }));
+
+      console.log(`  ✅ Loaded ${pluginControllers.length} controllers from plugin_controllers table`);
+    } catch (controllersError) {
+      console.log(`  ⚠️ plugin_controllers table error:`, controllersError.message);
+    }
+
+    // Load plugin_migrations from normalized table
+    let pluginMigrations = [];
+    try {
+      const migrationsResult = await sequelize.query(`
+        SELECT id, migration_name, migration_version, migration_description,
+               status, up_sql, down_sql, executed_at
+        FROM plugin_migrations
+        WHERE plugin_id = $1
+        ORDER BY migration_version DESC
+      `, {
+        bind: [pluginId],
+        type: sequelize.QueryTypes.SELECT
+      });
+
+      pluginMigrations = migrationsResult.map(m => ({
+        name: `migrations/${m.migration_version}_${m.migration_name.replace(/[^a-zA-Z0-9_]/g, '_')}.sql`,
+        code: `-- Migration: ${m.migration_description}
+-- Version: ${m.migration_version}
+-- Status: ${m.status}
+-- Executed: ${m.executed_at || 'Not executed'}
+
+-- UP Migration
+${m.up_sql || '-- No up SQL'}
+
+-- DOWN Migration (Rollback)
+${m.down_sql || '-- No down SQL'}`,
+        migration_version: m.migration_version,
+        migration_description: m.migration_description,
+        migration_status: m.status,
+        executed_at: m.executed_at
+      }));
+
+      console.log(`  ✅ Loaded ${pluginMigrations.length} migrations from plugin_migrations table`);
+    } catch (migrationsError) {
+      console.log(`  ⚠️ plugin_migrations table error:`, migrationsError.message);
+    }
+
     // Parse JSON fields
     const manifest = typeof plugin[0].manifest === 'string' ? JSON.parse(plugin[0].manifest) : plugin[0].manifest;
     const sourceCode = typeof plugin[0].source_code === 'string' ? JSON.parse(plugin[0].source_code) : plugin[0].source_code;
@@ -709,6 +810,9 @@ router.get('/registry/:pluginId', async (req, res) => {
     // 2. source_code JSON field (old format)
     // 3. plugin_scripts table (new normalized format)
     // 4. plugin_events table (new normalized format)
+    // 5. plugin_entities table (new normalized format)
+    // 6. plugin_controllers table (new normalized format)
+    // 7. plugin_migrations table (new normalized format)
     let allFiles = [];
 
     // Add files from JSON fields
@@ -726,6 +830,15 @@ router.get('/registry/:pluginId', async (req, res) => {
       priority: e.priority        // Preserve priority
     }));
     allFiles = allFiles.concat(eventFiles);
+
+    // Add files from plugin_entities table
+    allFiles = allFiles.concat(pluginEntities);
+
+    // Add files from plugin_controllers table
+    allFiles = allFiles.concat(pluginControllers);
+
+    // Add files from plugin_migrations table
+    allFiles = allFiles.concat(pluginMigrations);
 
     // Remove duplicates (prefer normalized table data over JSON data)
     const fileMap = new Map();
@@ -795,6 +908,9 @@ router.get('/registry/:pluginId', async (req, res) => {
     console.log(`  📄 Generated Files: ${generatedFiles.length}`);
     console.log(`  📜 Scripts from DB: ${pluginScripts.length}`);
     console.log(`  📡 Events from DB: ${pluginEvents.length}`);
+    console.log(`  🗄️  Entities from DB: ${pluginEntities.length}`);
+    console.log(`  🎮 Controllers from DB: ${pluginControllers.length}`);
+    console.log(`  🔄 Migrations from DB: ${pluginMigrations.length}`);
     console.log(`  🪝 Hooks: ${hooks.length}`);
 
     if (generatedFiles.length > 0) {
