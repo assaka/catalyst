@@ -1448,13 +1448,21 @@ router.post('/import', async (req, res) => {
       });
     }
 
+    // Build table name mapping for migrations
+    const tableNameMap = {};
+    const uniqueSuffix = counter > 1 ? `_${counter}` : '';
+
     // Import entities with unique suffixes to avoid conflicts
     for (const entity of packageData.entities || []) {
       // Add counter suffix to entity_name and table_name if this is a clone
-      const uniqueSuffix = counter > 1 ? `_${counter}` : '';
       const uniqueEntityName = `${entity.name}${uniqueSuffix}`;
       const baseTableName = entity.tableName || entity.name.toLowerCase().replace(/\s+/g, '_');
       const uniqueTableName = `${baseTableName}${uniqueSuffix}`;
+
+      // Store mapping for migration SQL replacement
+      if (uniqueSuffix) {
+        tableNameMap[baseTableName] = uniqueTableName;
+      }
 
       await sequelize.query(`
         INSERT INTO plugin_entities (
@@ -1475,8 +1483,24 @@ router.post('/import', async (req, res) => {
       });
     }
 
-    // Import migrations
+    // Import migrations with updated table names
     for (const migration of packageData.migrations || []) {
+      let migrationSql = migration.code;
+
+      // Replace table names in SQL if this is a clone
+      if (uniqueSuffix && Object.keys(tableNameMap).length > 0) {
+        // Sort by length descending to replace longer names first (avoid partial replacements)
+        const sortedTableNames = Object.keys(tableNameMap).sort((a, b) => b.length - a.length);
+
+        for (const originalTable of sortedTableNames) {
+          const uniqueTable = tableNameMap[originalTable];
+          // Replace table name in various SQL contexts (CREATE TABLE, ALTER TABLE, DROP TABLE, INSERT INTO, etc.)
+          // Using word boundaries to avoid partial matches
+          const regex = new RegExp(`\\b${originalTable}\\b`, 'gi');
+          migrationSql = migrationSql.replace(regex, uniqueTable);
+        }
+      }
+
       await sequelize.query(`
         INSERT INTO plugin_migrations (
           plugin_id, plugin_name, migration_name, migration_version, up_sql
@@ -1488,7 +1512,7 @@ router.post('/import', async (req, res) => {
           migration.pluginName || uniqueName,
           migration.name,
           migration.migrationVersion || `v${Date.now()}`,
-          migration.code
+          migrationSql
         ],
         type: sequelize.QueryTypes.INSERT,
         transaction
