@@ -2205,6 +2205,7 @@ router.post('/:id/generate-entity-migration', async (req, res) => {
 
     // Generate SQL based on whether it's an update or new table
     let upSQL, downSQL, migrationDescription;
+    let warnings = []; // Track risky operations for warnings
 
     if (is_update) {
       // Get existing entity schema from database to compare
@@ -2239,8 +2240,7 @@ router.post('/:id/generate-entity-migration', async (req, res) => {
         return JSON.stringify(oldCol) !== JSON.stringify(newCol);
       });
 
-      // Track risky operations for warnings
-      const warnings = [];
+      // Detect risky operations for warnings
       if (removedColumns.length > 0) {
         warnings.push(`⚠️ DROPS ${removedColumns.length} COLUMN(S) - Data will be permanently deleted!`);
       }
