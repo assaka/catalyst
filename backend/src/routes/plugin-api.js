@@ -991,7 +991,7 @@ router.get('/:id/export', async (req, res) => {
       });
     }
 
-    const pluginData = plugin[0];
+    const pluginInfo = plugin[0];
 
     // Get scripts
     const scripts = await sequelize.query(`
@@ -1070,7 +1070,7 @@ router.get('/:id/export', async (req, res) => {
     });
 
     // Get plugin data (key-value storage)
-    const pluginData = await sequelize.query(`
+    const pluginDataKV = await sequelize.query(`
       SELECT data_key, data_value
       FROM plugin_data
       WHERE plugin_id = $1
