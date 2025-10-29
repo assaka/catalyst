@@ -2422,6 +2422,13 @@ router.post('/:id/generate-entity-migration', async (req, res) => {
       const oldColumns = oldSchema.columns || [];
       const newColumns = schema_definition.columns || [];
 
+      console.log(`📋 Schema comparison:`, {
+        oldColumns: oldColumns.length,
+        newColumns: newColumns.length
+      });
+      console.log(`   Old column names:`, oldColumns.map(c => c.name));
+      console.log(`   New column names:`, newColumns.map(c => c.name));
+
       // Detect changes
       const oldColumnNames = oldColumns.map(c => c.name);
       const newColumnNames = newColumns.map(c => c.name);
