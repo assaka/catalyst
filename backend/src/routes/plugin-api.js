@@ -679,7 +679,7 @@ router.get('/registry/:pluginId', async (req, res) => {
     let pluginEvents = [];
     try {
       const eventsResult = await sequelize.query(`
-        SELECT id, event_name, listener_function, priority, is_enabled
+        SELECT id, event_name, file_name, listener_function, priority, is_enabled
         FROM plugin_events
         WHERE plugin_id = $1 AND is_enabled = true
         ORDER BY event_name ASC, priority ASC
@@ -689,7 +689,7 @@ router.get('/registry/:pluginId', async (req, res) => {
       });
 
       pluginEvents = eventsResult.map(e => ({
-        name: `${e.event_name.replace(/\./g, '_')}.js`,
+        name: e.file_name || `${e.event_name.replace(/\./g, '_')}.js`,  // Use custom filename or generate
         code: e.listener_function,
         event_name: e.event_name,
         priority: e.priority || 10
@@ -872,7 +872,7 @@ router.get('/:id/export', async (req, res) => {
 
     // Get events
     const events = await sequelize.query(`
-      SELECT event_name, listener_function, priority
+      SELECT event_name, file_name, listener_function, priority
       FROM plugin_events
       WHERE plugin_id = $1
       ORDER BY event_name ASC
@@ -932,6 +932,7 @@ router.get('/:id/export', async (req, res) => {
 
       events: events.map(e => ({
         eventName: e.event_name,
+        fileName: e.file_name,  // Include custom filename
         listenerCode: e.listener_function,
         priority: e.priority
       })),
@@ -1078,15 +1079,19 @@ router.post('/import', async (req, res) => {
 
     // Import events
     for (const event of packageData.events || []) {
+      // Use custom filename if provided, otherwise generate from event name
+      const fileName = event.fileName || `${event.eventName.replace(/\./g, '_')}.js`;
+
       await sequelize.query(`
         INSERT INTO plugin_events (
-          plugin_id, event_name, listener_function, priority, is_enabled
+          plugin_id, event_name, file_name, listener_function, priority, is_enabled
         )
-        VALUES ($1, $2, $3, $4, true)
+        VALUES ($1, $2, $3, $4, $5, true)
       `, {
         bind: [
           pluginId,
           event.eventName,
+          fileName,
           event.listenerCode,
           event.priority || 10
         ],
@@ -1214,45 +1219,44 @@ router.put('/registry/:id/files', async (req, res) => {
 
     // Handle event files - update plugin_events table
     if (normalizedRequestPath.startsWith('events/')) {
-      // Extract event name from filename (e.g., "events/cart_viewed.js" -> "cart.viewed")
-      const eventName = normalizedRequestPath
-        .replace('events/', '')
-        .replace('.js', '')
-        .replace(/_/g, '.');
+      // Extract filename from path
+      const fileName = normalizedRequestPath.replace('events/', '');
 
-      console.log(`🔄 Upserting event ${eventName} in plugin_events table...`);
+      console.log(`🔄 Saving event file: ${fileName}`);
 
       try {
-        // Check if event exists
+        // Look up event by filename (supports custom filenames)
         const existing = await sequelize.query(`
-          SELECT id FROM plugin_events
-          WHERE plugin_id = $1 AND event_name = $2
+          SELECT event_name FROM plugin_events
+          WHERE plugin_id = $1 AND file_name = $2
         `, {
-          bind: [id, eventName],
+          bind: [id, fileName],
           type: sequelize.QueryTypes.SELECT
         });
 
         if (existing.length > 0) {
-          // Update existing event
+          // Update existing event by filename
+          const eventName = existing[0].event_name;
           await sequelize.query(`
             UPDATE plugin_events
             SET listener_function = $1, updated_at = NOW()
-            WHERE plugin_id = $2 AND event_name = $3
+            WHERE plugin_id = $2 AND file_name = $3
           `, {
-            bind: [content, id, eventName],
+            bind: [content, id, fileName],
             type: sequelize.QueryTypes.UPDATE
           });
-          console.log(`✅ Updated event ${eventName}`);
+          console.log(`✅ Updated event: ${eventName} (file: ${fileName})`);
         } else {
-          // Insert new event
+          // Fallback: Try to derive event name from filename for legacy files
+          const eventName = fileName.replace('.js', '').replace(/_/g, '.');
           await sequelize.query(`
-            INSERT INTO plugin_events (plugin_id, event_name, listener_function, priority, is_enabled)
-            VALUES ($1, $2, $3, 10, true)
+            INSERT INTO plugin_events (plugin_id, event_name, file_name, listener_function, priority, is_enabled)
+            VALUES ($1, $2, $3, $4, 10, true)
           `, {
-            bind: [id, eventName, content],
+            bind: [id, eventName, fileName, content],
             type: sequelize.QueryTypes.INSERT
           });
-          console.log(`✅ Created event ${eventName}`);
+          console.log(`✅ Created event: ${eventName} (file: ${fileName})`);
         }
 
         return res.json({
@@ -1660,7 +1664,10 @@ router.post('/:pluginId/event-listeners', async (req, res) => {
       });
     }
 
-    console.log(`📡 Creating/updating event: ${event_name} for plugin ${pluginId}`);
+    // Determine filename - use custom or generate from event_name
+    const fileName = file_name || `${event_name.replace(/\./g, '_')}.js`;
+
+    console.log(`📡 Creating/updating event: ${event_name} (file: ${fileName}) for plugin ${pluginId}`);
 
     // Use plugin_events table (normalized structure)
     // If old_event_name provided, this is a remapping operation
@@ -1678,33 +1685,33 @@ router.post('/:pluginId/event-listeners', async (req, res) => {
     });
 
     if (existing.length > 0) {
-      // Update existing event (including event_name if remapping)
+      // Update existing event (including event_name and filename if remapping)
       await sequelize.query(`
         UPDATE plugin_events
-        SET event_name = $1, listener_function = $2, priority = $3, updated_at = NOW()
-        WHERE plugin_id = $4 AND event_name = $5
+        SET event_name = $1, file_name = $2, listener_function = $3, priority = $4, updated_at = NOW()
+        WHERE plugin_id = $5 AND event_name = $6
       `, {
-        bind: [event_name, listener_function, priority, pluginId, lookupEventName],
+        bind: [event_name, fileName, listener_function, priority, pluginId, lookupEventName],
         type: sequelize.QueryTypes.UPDATE
       });
 
       if (old_event_name && old_event_name !== event_name) {
-        console.log(`✅ Remapped event: ${old_event_name} → ${event_name}`);
+        console.log(`✅ Remapped event: ${old_event_name} → ${event_name} (file: ${fileName})`);
       } else {
-        console.log(`✅ Updated event: ${event_name}`);
+        console.log(`✅ Updated event: ${event_name} (file: ${fileName})`);
       }
     } else {
-      // Insert new event
+      // Insert new event with custom filename
       await sequelize.query(`
         INSERT INTO plugin_events
-        (plugin_id, event_name, listener_function, priority, is_enabled, created_at, updated_at)
-        VALUES ($1, $2, $3, $4, true, NOW(), NOW())
+        (plugin_id, event_name, file_name, listener_function, priority, is_enabled, created_at, updated_at)
+        VALUES ($1, $2, $3, $4, $5, true, NOW(), NOW())
       `, {
-        bind: [pluginId, event_name, listener_function, priority],
+        bind: [pluginId, event_name, fileName, listener_function, priority],
         type: sequelize.QueryTypes.INSERT
       });
 
-      console.log(`✅ Created event: ${event_name}`);
+      console.log(`✅ Created event: ${event_name} (file: ${fileName})`);
     }
 
     res.json({
