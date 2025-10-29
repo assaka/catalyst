@@ -1696,7 +1696,39 @@ router.put('/registry/:id/files', async (req, res) => {
       }
     }
 
-    // For other files (components, utils, etc.), update plugin_scripts table
+    // Block files that belong in specialized tables
+    if (normalizedRequestPath.startsWith('controllers/')) {
+      return res.status(400).json({
+        success: false,
+        error: 'Controllers belong in plugin_controllers table, not plugin_scripts'
+      });
+    }
+    if (normalizedRequestPath.startsWith('migrations/')) {
+      return res.status(400).json({
+        success: false,
+        error: 'Migrations belong in plugin_migrations table, not plugin_scripts'
+      });
+    }
+    if (normalizedRequestPath.startsWith('hooks/')) {
+      return res.status(400).json({
+        success: false,
+        error: 'Hooks belong in plugin_hooks table, not plugin_scripts'
+      });
+    }
+    if (normalizedRequestPath.startsWith('admin/')) {
+      return res.status(400).json({
+        success: false,
+        error: 'Admin pages have special handling, not saved to plugin_scripts'
+      });
+    }
+    if (normalizedRequestPath.startsWith('models/')) {
+      return res.status(400).json({
+        success: false,
+        error: 'Models/entities belong in plugin_entities table, not plugin_scripts'
+      });
+    }
+
+    // For executable frontend files ONLY (components, utils, services, styles)
     console.log(`🔄 Upserting file ${normalizedRequestPath} in plugin_scripts table...`);
 
     try {
@@ -2321,7 +2353,6 @@ router.delete('/registry/:id/files', async (req, res) => {
     }
     // Delete from plugin_events table
     else if (normalizedPath.startsWith('events/')) {
-    if (normalizedPath.startsWith('events/')) {
       const fileName = normalizedPath.replace('events/', '');
       attemptedTable = 'plugin_events';
       console.log(`🎯 Attempting to delete from ${attemptedTable}, fileName: ${fileName}`);
