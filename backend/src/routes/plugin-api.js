@@ -1448,8 +1448,14 @@ router.post('/import', async (req, res) => {
       });
     }
 
-    // Import entities
+    // Import entities with unique suffixes to avoid conflicts
     for (const entity of packageData.entities || []) {
+      // Add counter suffix to entity_name and table_name if this is a clone
+      const uniqueSuffix = counter > 1 ? `_${counter}` : '';
+      const uniqueEntityName = `${entity.name}${uniqueSuffix}`;
+      const baseTableName = entity.tableName || entity.name.toLowerCase().replace(/\s+/g, '_');
+      const uniqueTableName = `${baseTableName}${uniqueSuffix}`;
+
       await sequelize.query(`
         INSERT INTO plugin_entities (
           plugin_id, entity_name, table_name, model_code, schema_definition, description
@@ -1458,8 +1464,8 @@ router.post('/import', async (req, res) => {
       `, {
         bind: [
           pluginId,
-          entity.name,
-          entity.tableName || entity.name.toLowerCase().replace(/\s+/g, '_'),
+          uniqueEntityName,
+          uniqueTableName,
           entity.code,
           entity.schemaDefinition || {},
           entity.description || null
