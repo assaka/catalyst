@@ -2007,6 +2007,13 @@ router.delete('/registry/:id/files', async (req, res) => {
     const { id } = req.params;
     const { path } = req.body;
 
+    if (!path) {
+      return res.status(400).json({
+        success: false,
+        error: 'File path is required'
+      });
+    }
+
     console.log(`🗑️ Deleting file: ${path} from plugin ${id}`);
 
     // Normalize paths for comparison
@@ -2021,54 +2028,83 @@ router.delete('/registry/:id/files', async (req, res) => {
       });
     }
 
+    let deleted = false;
+
     // Handle different file types based on path
 
     // Delete from plugin_events table
     if (normalizedPath.startsWith('events/')) {
       const fileName = normalizedPath.replace('events/', '');
-      await sequelize.query(`
-        DELETE FROM plugin_events
-        WHERE plugin_id = $1 AND file_name = $2
-      `, {
-        bind: [id, fileName],
-        type: sequelize.QueryTypes.DELETE
-      });
-      console.log(`✅ Deleted event file: ${fileName}`);
+      try {
+        const result = await sequelize.query(`
+          DELETE FROM plugin_events
+          WHERE plugin_id = $1 AND file_name = $2
+        `, {
+          bind: [id, fileName],
+          type: sequelize.QueryTypes.DELETE
+        });
+        console.log(`✅ Deleted event file: ${fileName}`);
+        deleted = true;
+      } catch (err) {
+        console.log(`⚠️ plugin_events table error:`, err.message);
+      }
     }
     // Delete from plugin_entities table
     else if (normalizedPath.startsWith('entities/')) {
       const fileName = normalizedPath.replace('entities/', '').replace('.json', '');
-      await sequelize.query(`
-        DELETE FROM plugin_entities
-        WHERE plugin_id = $1 AND entity_name = $2
-      `, {
-        bind: [id, fileName],
-        type: sequelize.QueryTypes.DELETE
-      });
-      console.log(`✅ Deleted entity: ${fileName}`);
+      try {
+        const result = await sequelize.query(`
+          DELETE FROM plugin_entities
+          WHERE plugin_id = $1 AND entity_name = $2
+        `, {
+          bind: [id, fileName],
+          type: sequelize.QueryTypes.DELETE
+        });
+        console.log(`✅ Deleted entity: ${fileName}`);
+        deleted = true;
+      } catch (err) {
+        console.log(`⚠️ plugin_entities table error:`, err.message);
+      }
     }
     // Delete from plugin_controllers table
     else if (normalizedPath.startsWith('controllers/')) {
       const fileName = normalizedPath.replace('controllers/', '').replace('.js', '');
-      await sequelize.query(`
-        DELETE FROM plugin_controllers
-        WHERE plugin_id = $1 AND controller_name = $2
-      `, {
-        bind: [id, fileName],
-        type: sequelize.QueryTypes.DELETE
-      });
-      console.log(`✅ Deleted controller: ${fileName}`);
+      try {
+        const result = await sequelize.query(`
+          DELETE FROM plugin_controllers
+          WHERE plugin_id = $1 AND controller_name = $2
+        `, {
+          bind: [id, fileName],
+          type: sequelize.QueryTypes.DELETE
+        });
+        console.log(`✅ Deleted controller: ${fileName}`);
+        deleted = true;
+      } catch (err) {
+        console.log(`⚠️ plugin_controllers table error:`, err.message);
+      }
     }
     // Delete from plugin_scripts table
     else {
-      await sequelize.query(`
-        DELETE FROM plugin_scripts
-        WHERE plugin_id = $1 AND file_name = $2
-      `, {
-        bind: [id, normalizedPath],
-        type: sequelize.QueryTypes.DELETE
+      try {
+        const result = await sequelize.query(`
+          DELETE FROM plugin_scripts
+          WHERE plugin_id = $1 AND file_name = $2
+        `, {
+          bind: [id, normalizedPath],
+          type: sequelize.QueryTypes.DELETE
+        });
+        console.log(`✅ Deleted script: ${normalizedPath}`);
+        deleted = true;
+      } catch (err) {
+        console.log(`⚠️ plugin_scripts table error:`, err.message);
+      }
+    }
+
+    if (!deleted) {
+      return res.status(404).json({
+        success: false,
+        error: 'File not found or could not be deleted'
       });
-      console.log(`✅ Deleted script: ${normalizedPath}`);
     }
 
     res.json({
@@ -2078,9 +2114,11 @@ router.delete('/registry/:id/files', async (req, res) => {
 
   } catch (error) {
     console.error('Failed to delete file:', error);
+    console.error('Error stack:', error.stack);
     res.status(500).json({
       success: false,
-      error: error.message
+      error: error.message,
+      details: error.stack
     });
   }
 });
