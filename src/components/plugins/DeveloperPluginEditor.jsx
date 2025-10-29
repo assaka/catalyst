@@ -70,6 +70,7 @@ const DeveloperPluginEditor = ({
   const [eventSearchQuery, setEventSearchQuery] = useState('');
   const [showEventMappingDialog, setShowEventMappingDialog] = useState(false);
   const [editingEventName, setEditingEventName] = useState('');
+  const [editingFileName, setEditingFileName] = useState('');
 
   // Use external state if provided, otherwise use local state
   const fileTreeMinimized = externalFileTreeMinimized ?? false;
@@ -523,6 +524,12 @@ const DeveloperPluginEditor = ({
       return;
     }
 
+    if (!editingFileName.trim()) {
+      addTerminalOutput('✗ File name cannot be empty', 'error');
+      setShowTerminal(true);
+      return;
+    }
+
     if (!selectedFile || !selectedFile.eventName) {
       addTerminalOutput('✗ No event file selected', 'error');
       setShowTerminal(true);
@@ -530,13 +537,23 @@ const DeveloperPluginEditor = ({
     }
 
     try {
-      addTerminalOutput(`⏳ Updating event mapping from ${selectedFile.eventName} to ${editingEventName}...`, 'info');
+      const filenameChanged = editingFileName !== selectedFile.name;
+      const eventChanged = editingEventName !== selectedFile.eventName;
+
+      if (filenameChanged && eventChanged) {
+        addTerminalOutput(`⏳ Updating filename to ${editingFileName} and event to ${editingEventName}...`, 'info');
+      } else if (filenameChanged) {
+        addTerminalOutput(`⏳ Renaming file to ${editingFileName}...`, 'info');
+      } else {
+        addTerminalOutput(`⏳ Updating event mapping to ${editingEventName}...`, 'info');
+      }
+
       setShowTerminal(true);
 
       // Create or update event listener mapping
       await apiClient.post(`plugins/${plugin.id}/event-listeners`, {
-        file_name: selectedFile.name,
-        file_path: selectedFile.path,
+        file_name: editingFileName,  // New filename
+        old_file_name: selectedFile.name,  // Old filename for lookup
         event_name: editingEventName,
         old_event_name: selectedFile.eventName,  // Send old event name for remapping
         listener_function: fileContent,
@@ -544,11 +561,19 @@ const DeveloperPluginEditor = ({
         description: `Listens to ${editingEventName}`
       });
 
-      addTerminalOutput(`✓ Event mapping updated to ${editingEventName}`, 'success');
+      if (filenameChanged && eventChanged) {
+        addTerminalOutput(`✓ Updated filename and event mapping`, 'success');
+      } else if (filenameChanged) {
+        addTerminalOutput(`✓ File renamed to ${editingFileName}`, 'success');
+      } else {
+        addTerminalOutput(`✓ Event mapping updated to ${editingEventName}`, 'success');
+      }
 
       // Close dialog and reset
       setShowEventMappingDialog(false);
       setEditingEventName('');
+      setEditingFileName('');
+      setEventSearchQuery('');
 
       // Reload file tree
       await loadPluginFiles();
@@ -715,10 +740,11 @@ const DeveloperPluginEditor = ({
                         variant="outline"
                         onClick={() => {
                           setEditingEventName(selectedFile.eventName);
+                          setEditingFileName(selectedFile.name); // Set current filename
                           setEventSearchQuery(''); // Reset search when opening
                           setShowEventMappingDialog(true);
                         }}
-                        title="Edit which event this file listens to"
+                        title="Edit filename and event mapping"
                       >
                         <Zap className="w-4 h-4 mr-1" />
                         Edit Event
@@ -916,15 +942,25 @@ const DeveloperPluginEditor = ({
       {/* Edit Event Mapping Dialog */}
       {showEventMappingDialog && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg shadow-xl p-6 w-96">
-            <h3 className="text-lg font-semibold mb-4">Edit Event Mapping</h3>
-
-            <div className="mb-4 p-3 bg-gray-50 rounded">
-              <div className="text-sm text-gray-600 mb-1">File:</div>
-              <div className="font-medium">{selectedFile?.name}</div>
-            </div>
+          <div className="bg-white rounded-lg shadow-xl p-6 w-96 max-h-[90vh] overflow-y-auto">
+            <h3 className="text-lg font-semibold mb-4">Edit Event File</h3>
 
             <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  File Name
+                </label>
+                <Input
+                  value={editingFileName}
+                  onChange={(e) => setEditingFileName(e.target.value)}
+                  placeholder="e.g., my-tracker.js"
+                  className="w-full"
+                />
+                <p className="text-xs text-gray-500 mt-1">
+                  Custom filename for this event listener
+                </p>
+              </div>
+
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
                   Event to Listen To *
@@ -951,6 +987,7 @@ const DeveloperPluginEditor = ({
                 onClick={() => {
                   setShowEventMappingDialog(false);
                   setEditingEventName('');
+                  setEditingFileName('');
                   setEventSearchQuery(''); // Reset search
                 }}
                 className="flex-1"

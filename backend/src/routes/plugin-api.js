@@ -1655,7 +1655,7 @@ router.get('/:pluginId/scripts', async (req, res) => {
 router.post('/:pluginId/event-listeners', async (req, res) => {
   try {
     const { pluginId } = req.params;
-    const { file_name, file_path, event_name, old_event_name, listener_function, priority = 10, description } = req.body;
+    const { file_name, old_file_name, file_path, event_name, old_event_name, listener_function, priority = 10, description } = req.body;
 
     if (!event_name || !listener_function) {
       return res.status(400).json({
@@ -1670,36 +1670,57 @@ router.post('/:pluginId/event-listeners', async (req, res) => {
     console.log(`📡 Creating/updating event: ${event_name} (file: ${fileName}) for plugin ${pluginId}`);
 
     // Use plugin_events table (normalized structure)
-    // If old_event_name provided, this is a remapping operation
-    const lookupEventName = old_event_name || event_name;
+    // Lookup by old_file_name or old_event_name (for editing existing events)
+    let existing = [];
 
-    console.log(`  🔍 Looking for existing event: ${lookupEventName}`);
-
-    // Check if event already exists for this plugin
-    const existing = await sequelize.query(`
-      SELECT id FROM plugin_events
-      WHERE plugin_id = $1 AND event_name = $2
-    `, {
-      bind: [pluginId, lookupEventName],
-      type: sequelize.QueryTypes.SELECT
-    });
+    if (old_file_name) {
+      // Look up by old filename (most reliable for renames)
+      console.log(`  🔍 Looking for existing event by filename: ${old_file_name}`);
+      existing = await sequelize.query(`
+        SELECT id, event_name FROM plugin_events
+        WHERE plugin_id = $1 AND file_name = $2
+      `, {
+        bind: [pluginId, old_file_name],
+        type: sequelize.QueryTypes.SELECT
+      });
+    } else if (old_event_name) {
+      // Fall back to old_event_name for backwards compatibility
+      console.log(`  🔍 Looking for existing event by event name: ${old_event_name}`);
+      existing = await sequelize.query(`
+        SELECT id, event_name FROM plugin_events
+        WHERE plugin_id = $1 AND event_name = $2
+      `, {
+        bind: [pluginId, old_event_name],
+        type: sequelize.QueryTypes.SELECT
+      });
+    } else {
+      // New event - check if event_name already exists
+      existing = await sequelize.query(`
+        SELECT id, event_name FROM plugin_events
+        WHERE plugin_id = $1 AND event_name = $2
+      `, {
+        bind: [pluginId, event_name],
+        type: sequelize.QueryTypes.SELECT
+      });
+    }
 
     if (existing.length > 0) {
-      // Update existing event (including event_name and filename if remapping)
+      // Update existing event (filename, event_name, and code)
+      const oldEventName = existing[0].event_name;
       await sequelize.query(`
         UPDATE plugin_events
         SET event_name = $1, file_name = $2, listener_function = $3, priority = $4, updated_at = NOW()
-        WHERE plugin_id = $5 AND event_name = $6
+        WHERE plugin_id = $5 AND id = $6
       `, {
-        bind: [event_name, fileName, listener_function, priority, pluginId, lookupEventName],
+        bind: [event_name, fileName, listener_function, priority, pluginId, existing[0].id],
         type: sequelize.QueryTypes.UPDATE
       });
 
-      if (old_event_name && old_event_name !== event_name) {
-        console.log(`✅ Remapped event: ${old_event_name} → ${event_name} (file: ${fileName})`);
-      } else {
-        console.log(`✅ Updated event: ${event_name} (file: ${fileName})`);
-      }
+      const changes = [];
+      if (old_file_name && old_file_name !== fileName) changes.push(`filename: ${old_file_name} → ${fileName}`);
+      if (old_event_name && oldEventName !== event_name) changes.push(`event: ${oldEventName} → ${event_name}`);
+
+      console.log(`✅ Updated event${changes.length > 0 ? ' (' + changes.join(', ') + ')' : ''}`);
     } else {
       // Insert new event with custom filename
       await sequelize.query(`
