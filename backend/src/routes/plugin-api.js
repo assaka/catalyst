@@ -801,13 +801,14 @@ ${m.down_sql || '-- No down SQL'}`,
       console.log(`  ⚠️ plugin_migrations table error:`, migrationsError.message);
     }
 
-    // Load documentation from plugin_docs table
+    // Load documentation from plugin_docs table (README only, NOT manifest)
     let pluginDocs = [];
+    let readme = '# Plugin Documentation';
     try {
       const docsResult = await sequelize.query(`
         SELECT doc_type, file_name, content, format
         FROM plugin_docs
-        WHERE plugin_id = $1 AND is_visible = true
+        WHERE plugin_id = $1 AND is_visible = true AND doc_type != 'manifest'
         ORDER BY display_order ASC, doc_type ASC
       `, {
         bind: [pluginId],
@@ -821,15 +822,19 @@ ${m.down_sql || '-- No down SQL'}`,
         format: d.format
       }));
 
+      // Get README content
+      const readmeDoc = pluginDocs.find(d => d.doc_type === 'readme');
+      if (readmeDoc) {
+        readme = readmeDoc.code;
+      }
+
       console.log(`  ✅ Loaded ${pluginDocs.length} docs from plugin_docs table`);
     } catch (docsError) {
       console.log(`  ⚠️ plugin_docs table error:`, docsError.message);
     }
 
-    // Parse manifest from plugin_docs (not from plugin_registry.manifest field)
-    const manifestDoc = pluginDocs.find(d => d.doc_type === 'manifest');
-    const manifest = manifestDoc ? JSON.parse(manifestDoc.code) : {};
-    const readme = pluginDocs.find(d => d.doc_type === 'readme')?.code || '# Plugin Documentation';
+    // Parse manifest from plugin_registry.manifest column (NOT from plugin_docs)
+    const manifest = typeof plugin[0].manifest === 'string' ? JSON.parse(plugin[0].manifest) : (plugin[0].manifest || {});
 
     // Load files from NORMALIZED TABLES ONLY (no backward compatibility)
     // Sources:
@@ -866,6 +871,14 @@ ${m.down_sql || '-- No down SQL'}`,
 
     // Add files from plugin_docs table
     allFiles = allFiles.concat(pluginDocs);
+
+    // Add manifest.json as a file (from plugin_registry.manifest column)
+    allFiles.push({
+      name: 'manifest.json',
+      code: JSON.stringify(manifest, null, 2),
+      doc_type: 'manifest',
+      format: 'json'
+    });
 
     const generatedFiles = allFiles;
 
@@ -1611,30 +1624,53 @@ router.put('/registry/:id/files', async (req, res) => {
     const normalizePath = (p) => p.replace(/^\/+/, '').replace(/^src\//, '');
     const normalizedRequestPath = normalizePath(path);
 
+    // Handle manifest.json - save to plugin_registry.manifest column
+    if (normalizedRequestPath === 'manifest.json') {
+      console.log(`🔄 Saving manifest.json to plugin_registry.manifest column`);
+
+      try {
+        const manifestData = JSON.parse(content); // Validate JSON
+
+        await sequelize.query(`
+          UPDATE plugin_registry
+          SET manifest = $1, updated_at = NOW()
+          WHERE id = $2
+        `, {
+          bind: [JSON.stringify(manifestData), id],
+          type: sequelize.QueryTypes.UPDATE
+        });
+
+        console.log(`✅ Updated manifest in plugin_registry`);
+
+        return res.json({
+          success: true,
+          message: 'Manifest saved successfully to plugin_registry.manifest'
+        });
+      } catch (error) {
+        return res.status(400).json({
+          success: false,
+          error: `Failed to save manifest: ${error.message}`
+        });
+      }
+    }
+
     // Handle documentation files - save to plugin_docs table
-    if (normalizedRequestPath === 'README.md' || normalizedRequestPath === 'manifest.json' ||
-        normalizedRequestPath === 'CHANGELOG.md' || normalizedRequestPath === 'LICENSE' ||
-        normalizedRequestPath === 'CONTRIBUTING.md') {
+    if (normalizedRequestPath === 'README.md' || normalizedRequestPath === 'CHANGELOG.md' ||
+        normalizedRequestPath === 'LICENSE' || normalizedRequestPath === 'CONTRIBUTING.md') {
 
       const docTypeMap = {
         'README.md': 'readme',
-        'manifest.json': 'manifest',
         'CHANGELOG.md': 'changelog',
         'LICENSE': 'license',
         'CONTRIBUTING.md': 'contributing'
       };
 
       const docType = docTypeMap[normalizedRequestPath];
-      const format = normalizedRequestPath.endsWith('.json') ? 'json' : 'markdown';
+      const format = 'markdown';
 
       console.log(`🔄 Saving documentation file: ${normalizedRequestPath} to plugin_docs`);
 
       try {
-        // Validate JSON if it's manifest
-        if (format === 'json') {
-          JSON.parse(content); // Validate
-        }
-
         // Check if doc exists
         const existing = await sequelize.query(`
           SELECT id FROM plugin_docs
@@ -2507,14 +2543,13 @@ router.delete('/registry/:id/files', async (req, res) => {
 
     // Handle different file types based on path
 
-    // Delete from plugin_docs table (README.md, manifest.json, etc.)
-    if (normalizedPath === 'README.md' || normalizedPath === 'manifest.json' ||
-        normalizedPath === 'CHANGELOG.md' || normalizedPath === 'LICENSE' ||
-        normalizedPath === 'CONTRIBUTING.md') {
+    // Delete documentation files from plugin_docs (README, CHANGELOG, LICENSE)
+    // NOTE: manifest.json is in plugin_registry.manifest, not plugin_docs
+    if (normalizedPath === 'README.md' || normalizedPath === 'CHANGELOG.md' ||
+        normalizedPath === 'LICENSE' || normalizedPath === 'CONTRIBUTING.md') {
 
       const docTypeMap = {
         'README.md': 'readme',
-        'manifest.json': 'manifest',
         'CHANGELOG.md': 'changelog',
         'LICENSE': 'license',
         'CONTRIBUTING.md': 'contributing'
@@ -2537,6 +2572,14 @@ router.delete('/registry/:id/files', async (req, res) => {
       } catch (err) {
         console.log(`❌ plugin_docs delete error:`, err.message);
       }
+    }
+    // Prevent deletion of manifest.json (it's in plugin_registry.manifest column)
+    else if (normalizedPath === 'manifest.json') {
+      console.log(`❌ Cannot delete manifest.json - it's stored in plugin_registry.manifest column`);
+      return res.status(400).json({
+        success: false,
+        error: 'Cannot delete manifest.json. Edit it to modify plugin metadata.'
+      });
     }
     // Delete from plugin_events table
     else if (normalizedPath.startsWith('events/')) {

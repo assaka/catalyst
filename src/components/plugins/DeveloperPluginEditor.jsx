@@ -476,20 +476,11 @@ const DeveloperPluginEditor = ({
       console.log('   ✅ Added', migrationsFolder.children.length, 'migration files');
     }
 
-    // Add hardcoded files (manifest.json and README.md) at root level
-    tree.children.push({
-      name: 'manifest.json',
-      type: 'file',
-      path: '/manifest.json',
-      content: JSON.stringify(pluginData.manifest || {}, null, 2)
-    });
+    // NO hardcoding - manifest.json and README.md come from backend via source_code array
+    // - manifest.json: Backend adds from plugin_registry.manifest column
+    // - README.md: Backend loads from plugin_docs table (doc_type='readme')
 
-    tree.children.push({
-      name: 'README.md',
-      type: 'file',
-      path: '/README.md',
-      content: pluginData.readme || '# Plugin Documentation'
-    });
+    console.log('🌳 FileTree built with', tree.children.length, 'folders/files');
 
     return [tree];
   };
