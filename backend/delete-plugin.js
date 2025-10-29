@@ -66,22 +66,52 @@ async function deletePlugin() {
 
     await new Promise(resolve => setTimeout(resolve, 3000));
 
-    // Delete the plugin (CASCADE will handle related tables)
-    await client.query(`
-      DELETE FROM plugin_registry
-      WHERE id = $1
-    `, [pluginData.id]);
+    console.log(`\n🔄 Deleting all related data...`);
 
-    console.log(`\n✅ Plugin deleted successfully!`);
-    console.log(`   All related data has been removed from:`);
-    console.log(`   - plugin_events`);
-    console.log(`   - plugin_hooks`);
-    console.log(`   - plugin_scripts`);
-    console.log(`   - plugin_entities`);
-    console.log(`   - plugin_controllers`);
-    console.log(`   - plugin_migrations`);
-    console.log(`   - plugin_docs`);
-    console.log(`   - plugin_admin_pages`);
+    // Delete all related data manually (in case CASCADE doesn't work)
+    // Child tables first, then parent table
+
+    await client.query('DELETE FROM plugin_admin_scripts WHERE plugin_id = $1', [pluginData.id]);
+    console.log('   ✓ Deleted admin scripts');
+
+    await client.query('DELETE FROM plugin_admin_pages WHERE plugin_id = $1', [pluginData.id]);
+    console.log('   ✓ Deleted admin pages');
+
+    await client.query('DELETE FROM plugin_docs WHERE plugin_id = $1', [pluginData.id]);
+    console.log('   ✓ Deleted docs');
+
+    await client.query('DELETE FROM plugin_data WHERE plugin_id = $1', [pluginData.id]);
+    console.log('   ✓ Deleted plugin data');
+
+    await client.query('DELETE FROM plugin_dependencies WHERE plugin_id = $1', [pluginData.id]);
+    console.log('   ✓ Deleted dependencies');
+
+    await client.query('DELETE FROM plugin_migrations WHERE plugin_id = $1', [pluginData.id]);
+    console.log('   ✓ Deleted migrations');
+
+    await client.query('DELETE FROM plugin_controllers WHERE plugin_id = $1', [pluginData.id]);
+    console.log('   ✓ Deleted controllers');
+
+    await client.query('DELETE FROM plugin_entities WHERE plugin_id = $1', [pluginData.id]);
+    console.log('   ✓ Deleted entities');
+
+    await client.query('DELETE FROM plugin_widgets WHERE plugin_id = $1', [pluginData.id]);
+    console.log('   ✓ Deleted widgets');
+
+    await client.query('DELETE FROM plugin_scripts WHERE plugin_id = $1', [pluginData.id]);
+    console.log('   ✓ Deleted scripts');
+
+    await client.query('DELETE FROM plugin_events WHERE plugin_id = $1', [pluginData.id]);
+    console.log('   ✓ Deleted events');
+
+    await client.query('DELETE FROM plugin_hooks WHERE plugin_id = $1', [pluginData.id]);
+    console.log('   ✓ Deleted hooks');
+
+    // Finally delete the plugin itself
+    await client.query('DELETE FROM plugin_registry WHERE id = $1', [pluginData.id]);
+    console.log('   ✓ Deleted plugin from registry');
+
+    console.log(`\n✅ Plugin "${pluginData.name}" deleted successfully!`);
 
   } catch (error) {
     console.error('❌ Error:', error.message);
