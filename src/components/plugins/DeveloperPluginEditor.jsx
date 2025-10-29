@@ -309,6 +309,138 @@ const DeveloperPluginEditor = ({
       });
     }
 
+    // Add entities folder and ensure it's visible
+    console.log('🗄️  Processing entities from source_code...');
+    const entityFiles = allFiles.filter(f => f.name && f.name.startsWith('entities/'));
+    console.log('   Found entity files:', entityFiles.length, entityFiles.map(f => f.name));
+
+    if (entityFiles.length > 0) {
+      let entitiesFolder = tree.children.find(f => f.name === 'entities');
+      if (!entitiesFolder) {
+        console.log('   Creating entities folder');
+        entitiesFolder = {
+          name: 'entities',
+          type: 'folder',
+          path: '/entities',
+          children: []
+        };
+        tree.children.push(entitiesFolder);
+      }
+
+      // Ensure entity files are in the folder with metadata
+      entityFiles.forEach(entity => {
+        const entityName = entity.name.replace('entities/', '');
+        const entityPath = `/entities/${entityName}`;
+        const existingIndex = entitiesFolder.children.findIndex(f => f.name === entityName);
+
+        const entityFile = {
+          name: entityName,
+          type: 'file',
+          path: entityPath,
+          content: entity.code,
+          entity_name: entity.entity_name,
+          table_name: entity.table_name,
+          migration_status: entity.migration_status
+        };
+
+        if (existingIndex >= 0) {
+          entitiesFolder.children[existingIndex] = entityFile;
+        } else {
+          entitiesFolder.children.push(entityFile);
+        }
+      });
+      console.log('   ✅ Added', entitiesFolder.children.length, 'entity files');
+    }
+
+    // Add controllers folder and ensure it's visible
+    console.log('🎮 Processing controllers from source_code...');
+    const controllerFiles = allFiles.filter(f => f.name && f.name.startsWith('controllers/'));
+    console.log('   Found controller files:', controllerFiles.length, controllerFiles.map(f => f.name));
+
+    if (controllerFiles.length > 0) {
+      let controllersFolder = tree.children.find(f => f.name === 'controllers');
+      if (!controllersFolder) {
+        console.log('   Creating controllers folder');
+        controllersFolder = {
+          name: 'controllers',
+          type: 'folder',
+          path: '/controllers',
+          children: []
+        };
+        tree.children.push(controllersFolder);
+      }
+
+      // Ensure controller files are in the folder with metadata
+      controllerFiles.forEach(controller => {
+        const controllerName = controller.name.replace('controllers/', '');
+        const controllerPath = `/controllers/${controllerName}`;
+        const existingIndex = controllersFolder.children.findIndex(f => f.name === controllerName);
+
+        const controllerFile = {
+          name: controllerName,
+          type: 'file',
+          path: controllerPath,
+          content: controller.code,
+          controller_name: controller.controller_name,
+          method: controller.method,
+          api_path: controller.path,
+          description: controller.description,
+          requires_auth: controller.requires_auth
+        };
+
+        if (existingIndex >= 0) {
+          controllersFolder.children[existingIndex] = controllerFile;
+        } else {
+          controllersFolder.children.push(controllerFile);
+        }
+      });
+      console.log('   ✅ Added', controllersFolder.children.length, 'controller files');
+    }
+
+    // Add migrations folder and ensure it's visible
+    console.log('🔄 Processing migrations from source_code...');
+    const migrationFiles = allFiles.filter(f => f.name && f.name.startsWith('migrations/'));
+    console.log('   Found migration files:', migrationFiles.length, migrationFiles.map(f => f.name));
+
+    if (migrationFiles.length > 0) {
+      let migrationsFolder = tree.children.find(f => f.name === 'migrations');
+      if (!migrationsFolder) {
+        console.log('   Creating migrations folder');
+        migrationsFolder = {
+          name: 'migrations',
+          type: 'folder',
+          path: '/migrations',
+          children: []
+        };
+        tree.children.push(migrationsFolder);
+      }
+
+      // Ensure migration files are in the folder with metadata
+      migrationFiles.forEach(migration => {
+        const migrationName = migration.name.replace('migrations/', '');
+        const migrationPath = `/migrations/${migrationName}`;
+        const existingIndex = migrationsFolder.children.findIndex(f => f.name === migrationName);
+
+        const migrationFile = {
+          name: migrationName,
+          type: 'file',
+          path: migrationPath,
+          content: migration.code,
+          migration_version: migration.migration_version,
+          migration_description: migration.migration_description,
+          migration_status: migration.migration_status,
+          executed_at: migration.executed_at
+        };
+
+        if (existingIndex >= 0) {
+          migrationsFolder.children[existingIndex] = migrationFile;
+        } else {
+          migrationsFolder.children.push(migrationFile);
+        }
+      });
+      console.log('   ✅ Added', migrationsFolder.children.length, 'migration files');
+    }
+
     // Add hardcoded files (manifest.json and README.md) at root level
     tree.children.push({
       name: 'manifest.json',
