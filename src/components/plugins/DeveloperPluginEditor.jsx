@@ -1138,9 +1138,8 @@ const DeveloperPluginEditor = ({
                     {/* Run Migration button - for migration files */}
                     {selectedFile?.path?.startsWith('/migrations/') && (
                       selectedFile?.migration_status === 'completed' ? (
-                        <span className="text-sm text-green-600 font-medium flex items-center gap-1">
-                          <span className="w-2 h-2 bg-green-500 rounded-full"></span>
-                          Executed Successfully
+                        <span className="text-sm text-green-600 font-medium">
+                          Already Executed
                         </span>
                       ) : (
                         <Button
