@@ -629,15 +629,20 @@ const DeveloperPluginEditor = ({
           throw new Error('Entity must have entity_name and table_name defined');
         }
 
-        addTerminalOutput(`⏳ Generating migration for entity: ${entityName} (${tableName})...`, 'info');
+        // Save entity first to ensure it's in plugin_entities table
+        addTerminalOutput(`⏳ Saving entity: ${entityName}...`, 'info');
+        await apiClient.put(`plugins/registry/${plugin.id}/files`, {
+          path: selectedFile.path,
+          content: fileContent
+        });
+        setOriginalContent(fileContent);
 
-        const isUpdate = selectedFile.migration_status === 'migrated';
+        addTerminalOutput(`⏳ Generating migration for entity: ${entityName} (${tableName})...`, 'info');
 
         const response = await apiClient.post(`plugins/${plugin.id}/generate-entity-migration`, {
           entity_name: entityName,
           table_name: tableName,
-          schema_definition: entityData.schema_definition,
-          is_update: isUpdate
+          schema_definition: entityData.schema_definition
         });
 
         const result = response.data || response;
