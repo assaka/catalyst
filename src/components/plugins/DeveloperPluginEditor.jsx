@@ -1609,7 +1609,7 @@ const DeveloperPluginEditor = ({
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div className="bg-white rounded-lg shadow-xl p-6 w-96">
             <h3 className={`text-lg font-semibold mb-4 flex items-center gap-2 ${migrationResult.success ? 'text-green-600' : 'text-red-600'}`}>
-              {migrationResult.success ? '✓' : '✗'} Migration {migrationResult.success ? 'Completed' : 'Failed'}
+              {migrationResult.success ? '✓' : '✗'} {migrationResult.status === 'pending' ? 'Migration Generated' : 'Migration Completed'}
             </h3>
 
             <div className="space-y-4">
@@ -1617,7 +1617,9 @@ const DeveloperPluginEditor = ({
                 <>
                   <div className="bg-green-50 border border-green-200 p-3 rounded">
                     <p className="text-sm text-green-800">
-                      Migration executed successfully!
+                      {migrationResult.status === 'pending'
+                        ? 'Migration file created successfully!'
+                        : 'Migration executed successfully!'}
                     </p>
                   </div>
 
@@ -1631,6 +1633,11 @@ const DeveloperPluginEditor = ({
                     <div className="bg-gray-50 p-3 rounded">
                       <p className="text-xs font-medium text-gray-700 mb-1">Migration Version:</p>
                       <p className="text-sm font-mono">{migrationResult.migrationVersion}</p>
+                      {migrationResult.status === 'pending' && (
+                        <p className="text-xs text-gray-600 mt-2">
+                          📁 Find this migration in the migrations folder to review and execute it.
+                        </p>
+                      )}
                     </div>
                   )}
 
