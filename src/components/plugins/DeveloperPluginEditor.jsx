@@ -842,7 +842,6 @@ const DeveloperPluginEditor = ({
                           <Code2 className="w-4 h-4 text-blue-600" />
                           <FileText className="w-4 h-4 text-gray-600" />
                           <span className="font-medium">{selectedFile.name}</span>
-                          <span className="text-sm text-gray-500">{selectedFile.path}</span>
                           {fileContent !== originalContent && (
                             <Badge className="bg-orange-100 text-orange-700 text-xs">
                               Modified
@@ -850,7 +849,7 @@ const DeveloperPluginEditor = ({
                           )}
                           {selectedFile.eventName && (
                             <Badge className="bg-purple-100 text-purple-700 text-xs">
-                              → {selectedFile.eventName}
+                              {selectedFile.eventName}
                             </Badge>
                           )}
                         </div>
