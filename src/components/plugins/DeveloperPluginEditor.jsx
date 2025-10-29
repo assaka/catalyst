@@ -1226,15 +1226,6 @@ const DeveloperPluginEditor = ({
                            selectedFile?.migration_status === 'migrated' ? 'Generate Update' : 'Generate Migration'}
                         </Button>
                       )}
-
-                      <SaveButton
-                        size="sm"
-                        onClick={handleSave}
-                        loading={isSaving}
-                        success={saveSuccess}
-                        disabled={!selectedFile || fileContent === originalContent}
-                        defaultText="Save"
-                      />
                     </div>
 
                     {/* Right side: Utility buttons */}
@@ -1246,7 +1237,6 @@ const DeveloperPluginEditor = ({
                         title="Run tests"
                       >
                         <Bug className="w-4 h-4 mr-1" />
-                        Test
                       </Button>
                       <Button
                         size="sm"
@@ -1255,8 +1245,15 @@ const DeveloperPluginEditor = ({
                         title="Toggle terminal"
                       >
                         <Terminal className="w-4 h-4 mr-1" />
-                        Terminal
                       </Button>
+                      <SaveButton
+                          size="sm"
+                          onClick={handleSave}
+                          loading={isSaving}
+                          success={saveSuccess}
+                          disabled={!selectedFile || fileContent === originalContent}
+                          defaultText="Save"
+                      />
                       <Button
                         variant="ghost"
                         size="sm"
