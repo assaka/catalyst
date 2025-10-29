@@ -2420,6 +2420,8 @@ router.post('/:id/generate-entity-migration', async (req, res) => {
 
       migrationDescription = `Update ${table_name} table schema for ${entity_name} entity`;
     } else {
+      console.log(`📊 Generating CREATE TABLE migration (table does not exist)`);
+
       // Generate CREATE TABLE migration
       upSQL = `CREATE TABLE IF NOT EXISTS ${table_name} (\n`;
 
