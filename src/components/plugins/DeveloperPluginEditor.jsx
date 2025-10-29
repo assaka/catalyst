@@ -619,14 +619,23 @@ const DeveloperPluginEditor = ({
 
       } else if (isEntityFile) {
         // Generate pending migration for entity (don't execute yet)
-        addTerminalOutput(`⏳ Generating migration for entity: ${selectedFile.entity_name}...`, 'info');
-
         const entityData = JSON.parse(fileContent);
+
+        // Extract names from entity data (more reliable than selectedFile metadata)
+        const entityName = entityData.entity_name || selectedFile.entity_name;
+        const tableName = entityData.table_name || selectedFile.table_name;
+
+        if (!entityName || !tableName) {
+          throw new Error('Entity must have entity_name and table_name defined');
+        }
+
+        addTerminalOutput(`⏳ Generating migration for entity: ${entityName} (${tableName})...`, 'info');
+
         const isUpdate = selectedFile.migration_status === 'migrated';
 
         const response = await apiClient.post(`plugins/${plugin.id}/generate-entity-migration`, {
-          entity_name: selectedFile.entity_name,
-          table_name: selectedFile.table_name,
+          entity_name: entityName,
+          table_name: tableName,
           schema_definition: entityData.schema_definition,
           is_update: isUpdate
         });
