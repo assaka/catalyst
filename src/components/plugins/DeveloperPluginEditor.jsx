@@ -1087,18 +1087,10 @@ const DeveloperPluginEditor = ({
                               : selectedFile.name}
                           </span>
 
-                          {/* Migration Status Badge */}
-                          {selectedFile?.migration_status && (
-                            <Badge className={
-                              selectedFile.migration_status === 'migrated'
-                                ? 'bg-green-100 text-green-700 text-xs'
-                                : selectedFile.migration_status === 'pending'
-                                ? 'bg-yellow-100 text-yellow-700 text-xs'
-                                : 'bg-red-100 text-red-700 text-xs'
-                            }>
-                              {selectedFile.migration_status === 'migrated' ? '✓ Migrated' :
-                               selectedFile.migration_status === 'pending' ? '⏳ Pending' :
-                               '✗ Failed'}
+                          {/* Migration Status Badge - only show for migrated entities */}
+                          {selectedFile?.path?.startsWith('/entities/') && selectedFile?.migration_status === 'migrated' && (
+                            <Badge className="bg-green-100 text-green-700 text-xs">
+                              ✓ Migrated
                             </Badge>
                           )}
 
@@ -1146,9 +1138,10 @@ const DeveloperPluginEditor = ({
                     {/* Run Migration button - for migration files */}
                     {selectedFile?.path?.startsWith('/migrations/') && (
                       selectedFile?.migration_status === 'completed' ? (
-                        <Badge className="bg-green-100 text-green-700 border-green-300 px-3 py-1">
-                          ✓ Already Executed
-                        </Badge>
+                        <span className="text-sm text-green-600 font-medium flex items-center gap-1">
+                          <span className="w-2 h-2 bg-green-500 rounded-full"></span>
+                          Executed Successfully
+                        </span>
                       ) : (
                         <Button
                           size="sm"
