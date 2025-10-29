@@ -139,14 +139,6 @@ const DeveloperPluginEditor = ({
 
       setAllMigrations(migrationsFromFiles);
 
-      console.log('📊 Loaded migrations:', migrationsFromFiles.length);
-      console.log('📦 Loaded entities:', entitiesFromFiles.length);
-
-      console.log('📦 Plugin API Response:', response.data);
-      console.log('📄 Source Code Files:', response.data.source_code);
-      console.log('📋 Event Listeners:', response.data.eventListeners);
-      console.log('🪝 Hooks:', response.data.hooks);
-
       // Build file tree structure
       const files = buildFileTree(response.data);
       setFileTree(files);
@@ -226,9 +218,6 @@ const DeveloperPluginEditor = ({
 
     // Get all files from source_code or generatedFiles
     const allFiles = pluginData.source_code || pluginData.manifest?.generatedFiles || [];
-
-    console.log('🌳 Building file tree from files:', allFiles);
-    console.log('📊 Total files to process:', allFiles.length);
 
     // Build dynamic tree from files
     // For event files from plugin_events table, preserve event_name metadata
@@ -345,14 +334,11 @@ const DeveloperPluginEditor = ({
     }
 
     // Add entities folder and ensure it's visible
-    console.log('🗄️  Processing entities from source_code...');
     const entityFiles = allFiles.filter(f => f.name && f.name.startsWith('entities/'));
-    console.log('   Found entity files:', entityFiles.length, entityFiles.map(f => f.name));
 
     if (entityFiles.length > 0) {
       let entitiesFolder = tree.children.find(f => f.name === 'entities');
       if (!entitiesFolder) {
-        console.log('   Creating entities folder');
         entitiesFolder = {
           name: 'entities',
           type: 'folder',
@@ -384,18 +370,14 @@ const DeveloperPluginEditor = ({
           entitiesFolder.children.push(entityFile);
         }
       });
-      console.log('   ✅ Added', entitiesFolder.children.length, 'entity files');
     }
 
     // Add controllers folder and ensure it's visible
-    console.log('🎮 Processing controllers from source_code...');
     const controllerFiles = allFiles.filter(f => f.name && f.name.startsWith('controllers/'));
-    console.log('   Found controller files:', controllerFiles.length, controllerFiles.map(f => f.name));
 
     if (controllerFiles.length > 0) {
       let controllersFolder = tree.children.find(f => f.name === 'controllers');
       if (!controllersFolder) {
-        console.log('   Creating controllers folder');
         controllersFolder = {
           name: 'controllers',
           type: 'folder',
@@ -429,18 +411,14 @@ const DeveloperPluginEditor = ({
           controllersFolder.children.push(controllerFile);
         }
       });
-      console.log('   ✅ Added', controllersFolder.children.length, 'controller files');
     }
 
     // Add migrations folder and ensure it's visible
-    console.log('🔄 Processing migrations from source_code...');
     const migrationFiles = allFiles.filter(f => f.name && f.name.startsWith('migrations/'));
-    console.log('   Found migration files:', migrationFiles.length, migrationFiles.map(f => f.name));
 
     if (migrationFiles.length > 0) {
       let migrationsFolder = tree.children.find(f => f.name === 'migrations');
       if (!migrationsFolder) {
-        console.log('   Creating migrations folder');
         migrationsFolder = {
           name: 'migrations',
           type: 'folder',
@@ -473,14 +451,11 @@ const DeveloperPluginEditor = ({
           migrationsFolder.children.push(migrationFile);
         }
       });
-      console.log('   ✅ Added', migrationsFolder.children.length, 'migration files');
     }
 
     // NO hardcoding - manifest.json and README.md come from backend via source_code array
     // - manifest.json: Backend adds from plugin_registry.manifest column
     // - README.md: Backend loads from plugin_docs table (doc_type='readme')
-
-    console.log('🌳 FileTree built with', tree.children.length, 'folders/files');
 
     return [tree];
   };
@@ -549,14 +524,8 @@ const DeveloperPluginEditor = ({
 
   const handleDeleteFile = async () => {
     if (!selectedFile) {
-      console.log('❌ handleDeleteFile: No file selected');
       return;
     }
-
-    console.log('🗑️ handleDeleteFile called');
-    console.log('   selectedFile:', selectedFile);
-    console.log('   selectedFile.path:', selectedFile.path);
-    console.log('   plugin.id:', plugin.id);
 
     setShowDeleteConfirm(false);
     setIsDeleting(true);
@@ -569,14 +538,8 @@ const DeveloperPluginEditor = ({
         data: { path: selectedFile.path }
       };
 
-      console.log('📤 Sending DELETE request:');
-      console.log('   Endpoint:', `plugins/registry/${plugin.id}/files`);
-      console.log('   Payload:', deletePayload);
-
       // Delete file from backend
       const response = await apiClient.delete(`plugins/registry/${plugin.id}/files`, deletePayload);
-
-      console.log('✅ Delete response:', response);
 
       // Check if deletion was successful
       if (response && response.success === false) {

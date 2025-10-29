@@ -2383,15 +2383,12 @@ router.post('/:pluginId/event-listeners', async (req, res) => {
     // Determine filename - use custom or generate from event_name
     const fileName = file_name || `${event_name.replace(/\./g, '_')}.js`;
 
-    console.log(`📡 Creating/updating event: ${event_name} (file: ${fileName}) for plugin ${pluginId}`);
-
     // Use plugin_events table (normalized structure)
     // Lookup by old_file_name or old_event_name (for editing existing events)
     let existing = [];
 
     if (old_file_name) {
       // Look up by old filename (most reliable for renames)
-      console.log(`  🔍 Looking for existing event by filename: ${old_file_name}`);
       existing = await sequelize.query(`
         SELECT id, event_name FROM plugin_events
         WHERE plugin_id = $1 AND file_name = $2
@@ -2401,7 +2398,6 @@ router.post('/:pluginId/event-listeners', async (req, res) => {
       });
     } else if (old_event_name) {
       // Fall back to old_event_name for backwards compatibility
-      console.log(`  🔍 Looking for existing event by event name: ${old_event_name}`);
       existing = await sequelize.query(`
         SELECT id, event_name FROM plugin_events
         WHERE plugin_id = $1 AND event_name = $2
@@ -2425,11 +2421,6 @@ router.post('/:pluginId/event-listeners', async (req, res) => {
         type: sequelize.QueryTypes.UPDATE
       });
 
-      const changes = [];
-      if (old_file_name && old_file_name !== fileName) changes.push(`filename: ${old_file_name} → ${fileName}`);
-      if (old_event_name && oldEventName !== event_name) changes.push(`event: ${oldEventName} → ${event_name}`);
-
-      console.log(`✅ Updated event${changes.length > 0 ? ' (' + changes.join(', ') + ')' : ''}`);
     } else {
       // Insert new event with custom filename
       await sequelize.query(`
@@ -2440,8 +2431,6 @@ router.post('/:pluginId/event-listeners', async (req, res) => {
         bind: [pluginId, event_name, fileName, listener_function, priority],
         type: sequelize.QueryTypes.INSERT
       });
-
-      console.log(`✅ Created event: ${event_name} (file: ${fileName})`);
     }
 
     res.json({
@@ -2612,13 +2601,9 @@ router.delete('/registry/:id/files', async (req, res) => {
       });
     }
 
-    console.log(`🗑️ Deleting file: ${path} from plugin ${id}`);
-
     // Normalize paths for comparison
     const normalizePath = (p) => p.replace(/^\/+/, '').replace(/^src\//, '');
     const normalizedPath = normalizePath(path);
-
-    console.log(`📝 Normalized path: ${normalizedPath}`);
 
     let deleted = false;
     let attemptedTable = null;
@@ -2639,25 +2624,22 @@ router.delete('/registry/:id/files', async (req, res) => {
 
       const docType = docTypeMap[normalizedPath];
       attemptedTable = 'plugin_docs';
-      console.log(`🎯 Deleting documentation file from ${attemptedTable}, docType: ${docType}`);
 
       try {
-        const result = await sequelize.query(`
+        await sequelize.query(`
           DELETE FROM plugin_docs
           WHERE plugin_id = $1 AND doc_type = $2
         `, {
           bind: [id, docType],
           type: sequelize.QueryTypes.DELETE
         });
-        console.log(`✅ Deleted doc from plugin_docs: ${docType}`);
         deleted = true;
       } catch (err) {
-        console.log(`❌ plugin_docs delete error:`, err.message);
+        // Silently fail
       }
     }
     // Prevent deletion of manifest.json (it's in plugin_registry.manifest column)
     else if (normalizedPath === 'manifest.json') {
-      console.log(`❌ Cannot delete manifest.json - it's stored in plugin_registry.manifest column`);
       return res.status(400).json({
         success: false,
         error: 'Cannot delete manifest.json. Edit it to modify plugin metadata.'
@@ -2667,7 +2649,6 @@ router.delete('/registry/:id/files', async (req, res) => {
     else if (normalizedPath.startsWith('events/')) {
       const fileName = normalizedPath.replace('events/', '');
       attemptedTable = 'plugin_events';
-      console.log(`🎯 Attempting to delete from ${attemptedTable}, fileName: ${fileName}`);
       try {
         const result = await sequelize.query(`
           DELETE FROM plugin_events
@@ -2677,23 +2658,17 @@ router.delete('/registry/:id/files', async (req, res) => {
           type: sequelize.QueryTypes.DELETE
         });
         const rowCount = result[1]?.rowCount || result[0]?.affectedRows || 0;
-        console.log(`   ${rowCount} rows affected`);
         if (rowCount > 0) {
-          console.log(`✅ Deleted event file from plugin_events: ${fileName}`);
           deleted = true;
-        } else {
-          console.log(`❌ No matching event found with file_name: ${fileName}`);
         }
       } catch (err) {
-        console.log(`❌ plugin_events delete error:`, err.message);
-        console.log(`   Error details:`, err);
+        // Silently fail
       }
     }
     // Delete from plugin_entities table
     else if (normalizedPath.startsWith('entities/')) {
       const fileName = normalizedPath.replace('entities/', '').replace('.json', '');
       attemptedTable = 'plugin_entities';
-      console.log(`🎯 Attempting to delete from ${attemptedTable}, entityName: ${fileName}`);
       try {
         const result = await sequelize.query(`
           DELETE FROM plugin_entities
@@ -2703,23 +2678,17 @@ router.delete('/registry/:id/files', async (req, res) => {
           type: sequelize.QueryTypes.DELETE
         });
         const rowCount = result[1]?.rowCount || result[0]?.affectedRows || 0;
-        console.log(`   ${rowCount} rows affected`);
         if (rowCount > 0) {
-          console.log(`✅ Deleted entity from plugin_entities: ${fileName}`);
           deleted = true;
-        } else {
-          console.log(`❌ No matching entity found with entity_name: ${fileName}`);
         }
       } catch (err) {
-        console.log(`❌ plugin_entities delete error:`, err.message);
-        console.log(`   Error details:`, err);
+        // Silently fail
       }
     }
     // Delete from plugin_controllers table
     else if (normalizedPath.startsWith('controllers/')) {
       const fileName = normalizedPath.replace('controllers/', '').replace('.js', '');
       attemptedTable = 'plugin_controllers';
-      console.log(`🎯 Attempting to delete from ${attemptedTable}, controllerName: ${fileName}`);
       try {
         const result = await sequelize.query(`
           DELETE FROM plugin_controllers
@@ -2729,35 +2698,16 @@ router.delete('/registry/:id/files', async (req, res) => {
           type: sequelize.QueryTypes.DELETE
         });
         const rowCount = result[1]?.rowCount || result[0]?.affectedRows || 0;
-        console.log(`   ${rowCount} rows affected`);
         if (rowCount > 0) {
-          console.log(`✅ Deleted controller from plugin_controllers: ${fileName}`);
           deleted = true;
-        } else {
-          console.log(`❌ No matching controller found with controller_name: ${fileName}`);
         }
       } catch (err) {
-        console.log(`❌ plugin_controllers delete error:`, err.message);
-        console.log(`   Error details:`, err);
+        // Silently fail
       }
     }
     // Delete from plugin_scripts table
     else {
       attemptedTable = 'plugin_scripts';
-      console.log(`🎯 Attempting to delete from ${attemptedTable}, fileName: ${normalizedPath}`);
-
-      // First, query what files actually exist for this plugin to help debug
-      try {
-        const existingFiles = await sequelize.query(`
-          SELECT file_name FROM plugin_scripts WHERE plugin_id = $1
-        `, {
-          bind: [id],
-          type: sequelize.QueryTypes.SELECT
-        });
-        console.log(`📋 Existing files in plugin_scripts for this plugin:`, existingFiles.map(f => f.file_name));
-      } catch (err) {
-        console.log(`⚠️ Could not query existing files:`, err.message);
-      }
 
       // Try multiple path variations to match the file
       const pathVariations = [
@@ -2772,8 +2722,6 @@ router.delete('/registry/:id/files', async (req, res) => {
       // Remove duplicates
       const uniquePathVariations = [...new Set(pathVariations)];
 
-      console.log(`   Trying path variations:`, uniquePathVariations);
-
       for (const pathVariation of uniquePathVariations) {
         try {
           const result = await sequelize.query(`
@@ -2786,45 +2734,27 @@ router.delete('/registry/:id/files', async (req, res) => {
 
           // Check if any rows were actually deleted
           const rowCount = result[1]?.rowCount || result[0]?.affectedRows || 0;
-          console.log(`   Tried path "${pathVariation}": ${rowCount} rows affected`);
 
           if (rowCount > 0) {
-            console.log(`✅ Deleted script from plugin_scripts: ${pathVariation}`);
             deleted = true;
             break;
           }
         } catch (err) {
-          console.log(`❌ plugin_scripts delete error for "${pathVariation}":`, err.message);
+          // Continue to next variation
         }
-      }
-
-      if (!deleted) {
-        console.log(`❌ No matching file found in plugin_scripts with any path variation`);
       }
     }
 
-    console.log(`📊 Delete operation result:`, {
-      deleted,
-      attemptedTable,
-      pluginId: id,
-      normalizedPath
-    });
-
     if (!deleted) {
-      console.log(`❌ File not found in any table`);
       return res.status(404).json({
         success: false,
         error: `File not found or could not be deleted. Attempted table: ${attemptedTable}`
       });
     }
 
-    console.log(`✅ File deletion successful`);
-
     // ALSO delete from JSON fields (manifest.generatedFiles and source_code)
     // This ensures files don't reappear after deletion from normalized tables
     try {
-      console.log(`🔄 Also removing from JSON fields...`);
-
       const plugin = await sequelize.query(`
         SELECT manifest, source_code FROM plugin_registry WHERE id = $1
       `, {
@@ -2838,24 +2768,18 @@ router.delete('/registry/:id/files', async (req, res) => {
 
         // Remove from manifest.generatedFiles
         if (manifest.generatedFiles && Array.isArray(manifest.generatedFiles)) {
-          const beforeCount = manifest.generatedFiles.length;
           manifest.generatedFiles = manifest.generatedFiles.filter(f => {
             const fName = f.name || f.filename || '';
             return fName !== normalizedPath && fName !== `/${normalizedPath}` && fName !== path;
           });
-          const afterCount = manifest.generatedFiles.length;
-          console.log(`   Removed ${beforeCount - afterCount} file(s) from manifest.generatedFiles`);
         }
 
         // Remove from source_code array
         if (Array.isArray(sourceCode)) {
-          const beforeCount = sourceCode.length;
           sourceCode = sourceCode.filter(f => {
             const fName = f.name || f.filename || '';
             return fName !== normalizedPath && fName !== `/${normalizedPath}` && fName !== path;
           });
-          const afterCount = sourceCode.length;
-          console.log(`   Removed ${beforeCount - afterCount} file(s) from source_code`);
         }
 
         // Update plugin_registry
@@ -2867,11 +2791,8 @@ router.delete('/registry/:id/files', async (req, res) => {
           bind: [JSON.stringify(manifest), JSON.stringify(sourceCode), id],
           type: sequelize.QueryTypes.UPDATE
         });
-
-        console.log(`✅ Removed from JSON fields as well`);
       }
     } catch (jsonError) {
-      console.log(`⚠️ Warning: Could not remove from JSON fields:`, jsonError.message);
       // Don't fail the request if JSON cleanup fails
     }
 
