@@ -1143,18 +1143,18 @@ router.get('/:id/export', async (req, res) => {
       exportedAt: new Date().toISOString(),
 
       plugin: {
-        name: pluginData.name,
-        slug: pluginData.slug,
-        version: pluginData.version,
-        description: pluginData.description,
-        author: pluginData.author,
-        category: pluginData.category,
-        type: pluginData.type,
-        framework: pluginData.framework,
-        manifest: pluginData.manifest,
-        permissions: pluginData.permissions,
-        dependencies: pluginData.dependencies,
-        tags: pluginData.tags
+        name: pluginInfo.name,
+        slug: pluginInfo.slug,
+        version: pluginInfo.version,
+        description: pluginInfo.description,
+        author: pluginInfo.author,
+        category: pluginInfo.category,
+        type: pluginInfo.type,
+        framework: pluginInfo.framework,
+        manifest: pluginInfo.manifest,
+        permissions: pluginInfo.permissions,
+        dependencies: pluginInfo.dependencies,
+        tags: pluginInfo.tags
       },
 
       files: scripts.map(s => ({
@@ -1204,7 +1204,7 @@ router.get('/:id/export', async (req, res) => {
         code: c.code
       })),
 
-      pluginData: pluginData.map(d => ({
+      pluginData: pluginDataKV.map(d => ({
         dataKey: d.data_key,
         dataValue: d.data_value
       })),
@@ -1241,7 +1241,7 @@ router.get('/:id/export', async (req, res) => {
       }))
     };
 
-    console.log(`  ✅ Exported ${scripts.length} files, ${events.length} events, ${hooks.length} hooks, ${widgets.length} widgets, ${entities.length} entities, ${migrations.length} migrations, ${controllers.length} controllers, ${pluginData.length} data entries, ${pluginDependencies.length} dependencies, ${pluginDocs.length} docs, ${adminPages.length} admin pages, ${adminScripts.length} admin scripts`);
+    console.log(`  ✅ Exported ${scripts.length} files, ${events.length} events, ${hooks.length} hooks, ${widgets.length} widgets, ${entities.length} entities, ${migrations.length} migrations, ${controllers.length} controllers, ${pluginDataKV.length} data entries, ${pluginDependencies.length} dependencies, ${pluginDocs.length} docs, ${adminPages.length} admin pages, ${adminScripts.length} admin scripts`);
 
     res.json(packageData);
   } catch (error) {
