@@ -2241,11 +2241,35 @@ router.post('/:id/generate-entity-migration', async (req, res) => {
     const pluginName = pluginData[0].name;
     const migrationVersion = new Date().toISOString().replace(/[-:T]/g, '').slice(0, 14);
 
-    // Generate SQL based on whether it's an update or new table
+    console.log(`🔍 Migration params:`, {
+      is_update,
+      entity_name,
+      table_name,
+      has_schema: !!schema_definition
+    });
+
+    // Check if table actually exists in database
+    const tableExists = await sequelize.query(`
+      SELECT EXISTS (
+        SELECT FROM information_schema.tables
+        WHERE table_schema = 'public'
+        AND table_name = $1
+      )
+    `, {
+      bind: [table_name],
+      type: sequelize.QueryTypes.SELECT
+    });
+
+    const tableExistsInDB = tableExists[0].exists;
+    console.log(`🗄️ Table '${table_name}' exists in database:`, tableExistsInDB ? 'YES' : 'NO');
+
+    // Generate SQL based on whether table exists in database
     let upSQL, downSQL, migrationDescription;
     let warnings = []; // Track risky operations for warnings
 
-    if (is_update) {
+    if (tableExistsInDB) {
+      console.log(`📊 Generating ALTER TABLE migration (table exists)`);
+
       // Get existing entity schema from database to compare
       const existingEntity = await sequelize.query(`
         SELECT schema_definition FROM plugin_entities
@@ -2255,10 +2279,13 @@ router.post('/:id/generate-entity-migration', async (req, res) => {
         type: sequelize.QueryTypes.SELECT
       });
 
+      console.log(`📦 Found existing entity:`, existingEntity.length > 0 ? 'YES' : 'NO');
+
       if (existingEntity.length === 0) {
+        console.log(`❌ Entity not found in database, cannot generate ALTER TABLE`);
         return res.status(404).json({
           success: false,
-          error: 'Entity not found. Cannot generate ALTER TABLE migration.'
+          error: 'Entity not found in database. Cannot generate ALTER TABLE migration. Use CREATE TABLE instead.'
         });
       }
 
