@@ -1051,10 +1051,10 @@ router.get('/:id/export', async (req, res) => {
 
     // Get entities
     const entities = await sequelize.query(`
-      SELECT name, code
+      SELECT entity_name as name, model_code as code
       FROM plugin_entities
       WHERE plugin_id = $1
-      ORDER BY name ASC
+      ORDER BY entity_name ASC
     `, {
       bind: [id],
       type: sequelize.QueryTypes.SELECT
@@ -1062,10 +1062,10 @@ router.get('/:id/export', async (req, res) => {
 
     // Get migrations
     const migrations = await sequelize.query(`
-      SELECT name, code
+      SELECT migration_name as name, up_sql as code
       FROM plugin_migrations
       WHERE plugin_id = $1
-      ORDER BY name ASC
+      ORDER BY migration_name ASC
     `, {
       bind: [id],
       type: sequelize.QueryTypes.SELECT
@@ -1073,10 +1073,10 @@ router.get('/:id/export', async (req, res) => {
 
     // Get controllers
     const controllers = await sequelize.query(`
-      SELECT name, code
+      SELECT controller_name as name, handler_code as code
       FROM plugin_controllers
       WHERE plugin_id = $1
-      ORDER BY name ASC
+      ORDER BY controller_name ASC
     `, {
       bind: [id],
       type: sequelize.QueryTypes.SELECT
