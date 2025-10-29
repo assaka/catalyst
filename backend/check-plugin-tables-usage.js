@@ -17,7 +17,7 @@ async function checkUsage() {
     'plugin_events',
     'plugin_dependencies',
     'plugin_data',
-    'plugin_endpoints',
+    'plugin_controllers',
     'plugin_execution_logs',
     'plugin_store_config',
     'plugin_licenses',

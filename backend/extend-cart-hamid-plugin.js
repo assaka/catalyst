@@ -1,6 +1,9 @@
 // Script to extend Cart Hamid plugin with database, model, controller, and admin page
 // Adds everything directly to plugin_registry tables
 
+// Load environment variables
+require('dotenv').config();
+
 const { sequelize } = require('./src/database/connection');
 
 const PLUGIN_ID = '109c940f-5d33-472c-b7df-c48e68c35696';

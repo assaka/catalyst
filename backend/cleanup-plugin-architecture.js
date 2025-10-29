@@ -24,7 +24,7 @@ async function cleanup() {
 
     // 1. Drop obsolete tables
     const tablesToDrop = [
-      'plugin_endpoints',
+      'plugin_controllers',
       'plugin_execution_logs',
       'plugin_store_config',
       'plugin_licenses',

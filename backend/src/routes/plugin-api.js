@@ -1752,4 +1752,134 @@ router.post('/:pluginId/event-listeners', async (req, res) => {
 // Table dropped - all events now use plugin_events table
 // Event remapping handled via POST /api/plugins/:pluginId/event-listeners
 
+/**
+ * POST /api/plugins/cart-hamid/track-visit
+ * Track a cart page visit (Cart Hamid Plugin)
+ */
+router.post('/cart-hamid/track-visit', async (req, res) => {
+  try {
+    const {
+      user_id,
+      session_id,
+      cart_items_count,
+      cart_subtotal,
+      cart_total,
+      user_agent,
+      referrer_url
+    } = req.body;
+
+    const result = await sequelize.query(`
+      INSERT INTO hamid_cart (
+        user_id, session_id, cart_items_count,
+        cart_subtotal, cart_total, user_agent,
+        ip_address, referrer_url
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+      RETURNING *
+    `, {
+      bind: [
+        user_id || null,
+        session_id || null,
+        cart_items_count || 0,
+        cart_subtotal || 0,
+        cart_total || 0,
+        user_agent || null,
+        req.ip || null,
+        referrer_url || null
+      ],
+      type: sequelize.QueryTypes.INSERT
+    });
+
+    console.log('✅ Cart visit tracked:', result[0][0].id);
+
+    res.json({
+      success: true,
+      visit: result[0][0]
+    });
+  } catch (error) {
+    console.error('Failed to track cart visit:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
+/**
+ * GET /api/plugins/cart-hamid/visits
+ * Get all cart visits with pagination (Cart Hamid Plugin)
+ */
+router.get('/cart-hamid/visits', async (req, res) => {
+  try {
+    const limit = parseInt(req.query.limit) || 50;
+    const offset = parseInt(req.query.offset) || 0;
+
+    const visits = await sequelize.query(`
+      SELECT * FROM hamid_cart
+      ORDER BY visited_at DESC
+      LIMIT $1 OFFSET $2
+    `, {
+      bind: [limit, offset],
+      type: sequelize.QueryTypes.SELECT
+    });
+
+    const countResult = await sequelize.query(`
+      SELECT COUNT(*) as total FROM hamid_cart
+    `, {
+      type: sequelize.QueryTypes.SELECT
+    });
+
+    const total = parseInt(countResult[0].total || countResult[0].count || 0);
+
+    console.log(`✅ Fetched ${visits.length} cart visits (total: ${total})`);
+
+    res.json({
+      success: true,
+      visits,
+      total,
+      limit,
+      offset
+    });
+  } catch (error) {
+    console.error('Failed to get cart visits:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
+/**
+ * GET /api/plugins/cart-hamid/stats
+ * Get cart visit statistics (Cart Hamid Plugin)
+ */
+router.get('/cart-hamid/stats', async (req, res) => {
+  try {
+    const stats = await sequelize.query(`
+      SELECT
+        COUNT(*) as total_visits,
+        COUNT(DISTINCT user_id) as unique_users,
+        COUNT(DISTINCT session_id) as unique_sessions,
+        AVG(cart_items_count) as avg_items,
+        AVG(cart_total) as avg_total,
+        MAX(visited_at) as last_visit
+      FROM hamid_cart
+    `, {
+      type: sequelize.QueryTypes.SELECT
+    });
+
+    console.log('✅ Cart visit stats retrieved');
+
+    res.json({
+      success: true,
+      ...stats[0]
+    });
+  } catch (error) {
+    console.error('Failed to get cart stats:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
 module.exports = router;
