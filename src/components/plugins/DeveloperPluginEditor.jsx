@@ -29,7 +29,9 @@ import {
   Upload,
   Zap,
   Sparkles,
-  Wand2, Bot
+  Wand2,
+  Bot,
+  Database
 } from 'lucide-react';
 import SaveButton from '@/components/ui/save-button';
 import CodeEditor from '@/components/ai-studio/CodeEditor.jsx';
@@ -74,6 +76,8 @@ const DeveloperPluginEditor = ({
   const [isRunningMigration, setIsRunningMigration] = useState(false);
   const [showMigrationConfirm, setShowMigrationConfirm] = useState(false);
   const [migrationResult, setMigrationResult] = useState(null);
+  const [showMigrationsPanel, setShowMigrationsPanel] = useState(false);
+  const [allMigrations, setAllMigrations] = useState([]);
 
   // Use external state if provided, otherwise use local state
   const fileTreeMinimized = externalFileTreeMinimized ?? false;
@@ -109,6 +113,30 @@ const DeveloperPluginEditor = ({
   const loadPluginFiles = async () => {
     try {
       const response = await apiClient.get(`plugins/registry/${plugin.id}`);
+
+      // Extract migrations for status panel
+      const migrationsFromFiles = (response.data.source_code || [])
+        .filter(f => f.name?.startsWith('migrations/'))
+        .map(m => ({
+          version: m.migration_version,
+          description: m.migration_description,
+          status: m.migration_status,
+          executed_at: m.executed_at,
+          name: m.name
+        }));
+
+      const entitiesFromFiles = (response.data.source_code || [])
+        .filter(f => f.name?.startsWith('entities/'))
+        .map(e => ({
+          entity_name: e.entity_name,
+          table_name: e.table_name,
+          migration_status: e.migration_status
+        }));
+
+      setAllMigrations(migrationsFromFiles);
+
+      console.log('📊 Loaded migrations:', migrationsFromFiles.length);
+      console.log('📦 Loaded entities:', entitiesFromFiles.length);
 
       console.log('📦 Plugin API Response:', response.data);
       console.log('📄 Source Code Files:', response.data.source_code);
@@ -839,16 +867,90 @@ const DeveloperPluginEditor = ({
                       Files
                     </h3>
                   </div>
-                  <Button
+                  <div className="flex items-center gap-1">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setShowMigrationsPanel(!showMigrationsPanel)}
+                      title="View migration status"
+                      className="h-6 w-6 p-0"
+                    >
+                      <Database className="w-4 h-4" />
+                    </Button>
+                    <Button
                       variant="ghost"
                       size="sm"
                       onClick={() => setFileTreeMinimized(true)}
                       title="Minimize file tree"
                       className="h-6 w-6 p-0"
-                  >
-                    <ChevronLeft className="w-4 h-4" />
-                  </Button>
+                    >
+                      <ChevronLeft className="w-4 h-4" />
+                    </Button>
+                  </div>
                 </div>
+                {/* Migrations Status Panel */}
+                {showMigrationsPanel && (
+                  <div className="border-b bg-blue-50 p-3">
+                    <div className="flex items-center justify-between mb-2">
+                      <h4 className="text-sm font-semibold text-gray-900 flex items-center gap-1">
+                        <Database className="w-4 h-4" />
+                        Migrations Status
+                      </h4>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => setShowMigrationsPanel(false)}
+                        className="h-5 w-5 p-0"
+                      >
+                        ×
+                      </Button>
+                    </div>
+
+                    {allMigrations.length === 0 ? (
+                      <p className="text-xs text-gray-500 italic">No migrations found</p>
+                    ) : (
+                      <div className="space-y-1">
+                        {allMigrations.map((migration, idx) => (
+                          <div
+                            key={idx}
+                            className="bg-white p-2 rounded border text-xs"
+                          >
+                            <div className="flex items-center justify-between mb-1">
+                              <span className="font-mono font-medium">{migration.version}</span>
+                              <Badge className={
+                                migration.status === 'completed'
+                                  ? 'bg-green-100 text-green-700'
+                                  : migration.status === 'pending'
+                                  ? 'bg-yellow-100 text-yellow-700'
+                                  : 'bg-red-100 text-red-700'
+                              }>
+                                {migration.status === 'completed' ? '✓' :
+                                 migration.status === 'pending' ? '⏳' : '✗'}
+                              </Badge>
+                            </div>
+                            {migration.description && (
+                              <p className="text-gray-600 text-xs truncate">
+                                {migration.description}
+                              </p>
+                            )}
+                            {migration.executed_at && (
+                              <p className="text-gray-400 text-xs mt-1">
+                                {new Date(migration.executed_at).toLocaleString()}
+                              </p>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    )}
+
+                    <div className="mt-2 pt-2 border-t">
+                      <p className="text-xs text-gray-600">
+                        <span className="font-medium">Plugin Version:</span> {plugin.version}
+                      </p>
+                    </div>
+                  </div>
+                )}
+
                 <div className="flex-1 overflow-y-auto p-2">
                   {renderFileTree(fileTree)}
                 </div>
@@ -904,6 +1006,23 @@ const DeveloperPluginEditor = ({
                               ? selectedFile.name.substring(0, 20) + '...'
                               : selectedFile.name}
                           </span>
+
+                          {/* Migration Status Badge */}
+                          {selectedFile?.migration_status && (
+                            <Badge className={
+                              selectedFile.migration_status === 'migrated'
+                                ? 'bg-green-100 text-green-700 text-xs'
+                                : selectedFile.migration_status === 'pending'
+                                ? 'bg-yellow-100 text-yellow-700 text-xs'
+                                : 'bg-red-100 text-red-700 text-xs'
+                            }>
+                              {selectedFile.migration_status === 'migrated' ? '✓ Migrated' :
+                               selectedFile.migration_status === 'pending' ? '⏳ Pending' :
+                               '✗ Failed'}
+                            </Badge>
+                          )}
+
+                          {/* Modified Badge */}
                           {fileContent !== originalContent && (
                             <Badge className="bg-orange-100 text-orange-700 text-xs">
                               Modified
@@ -959,8 +1078,8 @@ const DeveloperPluginEditor = ({
                       </Button>
                     )}
 
-                    {/* Run Migration button - for modified entity files */}
-                    {selectedFile?.path?.startsWith('/entities/') && fileContent !== originalContent && (
+                    {/* Run Migration button - for entity files (always show) */}
+                    {selectedFile?.path?.startsWith('/entities/') && (
                       <Button
                         size="sm"
                         variant="outline"
@@ -1221,7 +1340,6 @@ const DeveloperPluginEditor = ({
           </div>
         </div>
       )}
-    </div>
 
       {/* Run Migration Confirmation Dialog */}
       {showMigrationConfirm && (
