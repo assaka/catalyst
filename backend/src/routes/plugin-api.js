@@ -2236,6 +2236,62 @@ router.delete('/registry/:id/files', async (req, res) => {
     }
 
     console.log(`✅ File deletion successful`);
+
+    // ALSO delete from JSON fields (manifest.generatedFiles and source_code)
+    // This ensures files don't reappear after deletion from normalized tables
+    try {
+      console.log(`🔄 Also removing from JSON fields...`);
+
+      const plugin = await sequelize.query(`
+        SELECT manifest, source_code FROM plugin_registry WHERE id = $1
+      `, {
+        bind: [id],
+        type: sequelize.QueryTypes.SELECT
+      });
+
+      if (plugin.length > 0) {
+        let manifest = plugin[0].manifest || {};
+        let sourceCode = plugin[0].source_code || [];
+
+        // Remove from manifest.generatedFiles
+        if (manifest.generatedFiles && Array.isArray(manifest.generatedFiles)) {
+          const beforeCount = manifest.generatedFiles.length;
+          manifest.generatedFiles = manifest.generatedFiles.filter(f => {
+            const fName = f.name || f.filename || '';
+            return fName !== normalizedPath && fName !== `/${normalizedPath}` && fName !== path;
+          });
+          const afterCount = manifest.generatedFiles.length;
+          console.log(`   Removed ${beforeCount - afterCount} file(s) from manifest.generatedFiles`);
+        }
+
+        // Remove from source_code array
+        if (Array.isArray(sourceCode)) {
+          const beforeCount = sourceCode.length;
+          sourceCode = sourceCode.filter(f => {
+            const fName = f.name || f.filename || '';
+            return fName !== normalizedPath && fName !== `/${normalizedPath}` && fName !== path;
+          });
+          const afterCount = sourceCode.length;
+          console.log(`   Removed ${beforeCount - afterCount} file(s) from source_code`);
+        }
+
+        // Update plugin_registry
+        await sequelize.query(`
+          UPDATE plugin_registry
+          SET manifest = $1, source_code = $2, updated_at = NOW()
+          WHERE id = $3
+        `, {
+          bind: [JSON.stringify(manifest), JSON.stringify(sourceCode), id],
+          type: sequelize.QueryTypes.UPDATE
+        });
+
+        console.log(`✅ Removed from JSON fields as well`);
+      }
+    } catch (jsonError) {
+      console.log(`⚠️ Warning: Could not remove from JSON fields:`, jsonError.message);
+      // Don't fail the request if JSON cleanup fails
+    }
+
     res.json({
       success: true,
       message: 'File deleted successfully'
