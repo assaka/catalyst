@@ -17,6 +17,7 @@ Complete guide on how models, controllers, hooks, events, and widgets are implem
 | `plugin_widgets` | UI components | TEXT (code) | Frontend |
 | `plugin_data` | Key-value storage | JSONB | Runtime |
 | `plugin_dependencies` | npm packages | TEXT | Runtime |
+| `plugin_migrations` | Migration tracking | Metadata + SQL | Database |
 
 ---
 
@@ -804,6 +805,132 @@ your-plugin/
 | Add UI component | `plugin_widgets` | Register in table | Slot editor |
 | Share utilities | `plugin_scripts` | `utils/*.js` | Export to window |
 | Store settings | `plugin_data` | - | `pluginData.get/set()` |
+| Create database tables | `plugin_migrations` | `migrations/*.sql` | Migration tracker |
+
+---
+
+## 7️⃣ Migrations (Database Schema Changes)
+
+### ✅ Fully Implemented - `plugin_migrations` Table
+
+**Schema:**
+```sql
+CREATE TABLE plugin_migrations (
+  id UUID PRIMARY KEY,
+  plugin_id UUID NOT NULL,
+  plugin_name VARCHAR(255) NOT NULL,
+  migration_name VARCHAR(255) NOT NULL,
+  migration_version VARCHAR(50) NOT NULL,  -- e.g., "20250129_143000"
+  migration_description TEXT,
+  status VARCHAR(50) DEFAULT 'pending',    -- pending, running, completed, failed, rolled_back
+  executed_at TIMESTAMP WITH TIME ZONE,
+  completed_at TIMESTAMP WITH TIME ZONE,
+  rolled_back_at TIMESTAMP WITH TIME ZONE,
+  execution_time_ms INTEGER,
+  error_message TEXT,
+  checksum VARCHAR(64),
+  up_sql TEXT,        -- SQL to create/alter tables
+  down_sql TEXT,      -- SQL to rollback changes
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  CONSTRAINT unique_plugin_migration UNIQUE (plugin_id, migration_version)
+);
+```
+
+**How It Works:**
+
+#### **Migration File Format:**
+```sql
+-- =====================================================
+-- MIGRATION: Create hamid_cart table
+-- =====================================================
+-- Plugin: Cart Hamid (109c940f-5d33-472c-b7df-c48e68c35696)
+-- Version: 20250129_143000
+-- Description: Create hamid_cart table for tracking cart page visits
+-- =====================================================
+
+-- UP Migration
+CREATE TABLE IF NOT EXISTS hamid_cart (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id UUID,
+  session_id VARCHAR(255),
+  cart_items_count INTEGER DEFAULT 0,
+  -- ... more columns
+);
+
+CREATE INDEX IF NOT EXISTS idx_hamid_cart_user ON hamid_cart(user_id);
+
+-- =====================================================
+-- DOWN Migration (Rollback)
+-- =====================================================
+DROP TABLE IF EXISTS hamid_cart CASCADE;
+```
+
+#### **Running Migrations:**
+```bash
+# List all migrations
+node run-plugin-migration.js list
+
+# List migrations for specific plugin
+node run-plugin-migration.js list 109c940f-5d33-472c-b7df-c48e68c35696
+
+# Dry run (preview without executing)
+node run-plugin-migration.js run 20250129_143000_create_hamid_cart_table.sql --dry-run
+
+# Run migration
+node run-plugin-migration.js run 20250129_143000_create_hamid_cart_table.sql
+
+# Force re-run (if already executed)
+node run-plugin-migration.js run 20250129_143000_create_hamid_cart_table.sql --force
+
+# Rollback migration
+node run-plugin-migration.js rollback 109c940f-5d33-472c-b7df-c48e68c35696 20250129_143000
+```
+
+#### **Migration Tracking:**
+```javascript
+// backend/src/database/migrations/plugin-migration-tracker.js
+class PluginMigrationTracker {
+  async executeMigration(filename, options) {
+    // 1. Parse migration file (extract plugin_id, version, up/down SQL)
+    // 2. Check if already executed
+    // 3. Record as 'running' in plugin_migrations table
+    // 4. Execute up_sql
+    // 5. Record as 'completed' with execution time
+    // 6. On error, record as 'failed' with error message
+  }
+
+  async rollbackMigration(pluginId, version) {
+    // 1. Find completed migration
+    // 2. Execute down_sql
+    // 3. Mark as 'rolled_back'
+  }
+}
+```
+
+**Features:**
+- ✅ Timestamped versions (e.g., `20250129_143000`)
+- ✅ Up/Down migrations (rollback capability)
+- ✅ Execution tracking (status, time, errors)
+- ✅ Checksum verification
+- ✅ Dry run mode
+- ✅ Force re-run option
+- ✅ Per-plugin migration history
+- ✅ Separate from core platform migrations (`_migrations` table)
+
+**Example: Cart Hamid Plugin**
+```sql
+-- Migration creates hamid_cart table
+-- Tracked in plugin_migrations:
+{
+  plugin_id: '109c940f-5d33-472c-b7df-c48e68c35696',
+  plugin_name: 'Cart Hamid',
+  migration_version: '20250129_143000',
+  status: 'completed',
+  executed_at: '2025-01-29 14:30:00',
+  execution_time_ms: 125
+}
+```
 
 ---
 
@@ -814,10 +941,9 @@ your-plugin/
 1. **Models:**
    - `plugin_models` table for Sequelize definitions
    - Runtime model registration
-   - Database migrations per plugin
 
 2. **Controllers:**
-   - `plugin_routes` table for API endpoints
+   - `plugin_controllers` table for API endpoints (renamed from plugin_endpoints)
    - Dynamic Express route registration
    - `/api/plugins/{id}/custom/{endpoint}` pattern
 
@@ -831,11 +957,6 @@ your-plugin/
    - Cron-style scheduling
    - Background task execution
 
-5. **Database Migrations:**
-   - `plugin_migrations` table
-   - Up/down migration scripts
-   - Version tracking
-
 ---
 
 ## ✅ What's Working Now:
@@ -844,10 +965,11 @@ your-plugin/
 - ✅ Hooks (product.price, cart.total, etc.)
 - ✅ Scripts (components, utilities, services)
 - ✅ Widgets (UI components in slots)
+- ✅ Migrations (database schema changes with tracking)
 - ✅ Data storage (key-value via plugin_data)
 - ✅ Dependencies (npm packages)
 - ✅ Export/Import (JSON packages)
 - ✅ Starter templates (instant cloning)
 - ✅ FileTree editor (all file types)
 
-**The system is production-ready for events, hooks, scripts, and widgets!** 🎉
+**The system is production-ready for events, hooks, scripts, widgets, and migrations!** 🎉
