@@ -31,7 +31,8 @@ import {
   Sparkles,
   Wand2,
   Bot,
-  Database
+  Database,
+  Trash2
 } from 'lucide-react';
 import SaveButton from '@/components/ui/save-button';
 import CodeEditor from '@/components/ai-studio/CodeEditor.jsx';
@@ -78,6 +79,8 @@ const DeveloperPluginEditor = ({
   const [migrationResult, setMigrationResult] = useState(null);
   const [showMigrationsPanel, setShowMigrationsPanel] = useState(false);
   const [allMigrations, setAllMigrations] = useState([]);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   // Use external state if provided, otherwise use local state
   const fileTreeMinimized = externalFileTreeMinimized ?? false;
@@ -552,6 +555,38 @@ const DeveloperPluginEditor = ({
     }
   };
 
+  const handleDeleteFile = async () => {
+    if (!selectedFile) return;
+
+    setShowDeleteConfirm(false);
+    setIsDeleting(true);
+    setShowTerminal(true);
+
+    try {
+      addTerminalOutput(`⏳ Deleting ${selectedFile.name}...`, 'info');
+
+      // Delete file from backend
+      await apiClient.delete(`plugins/registry/${plugin.id}/files`, {
+        data: { path: selectedFile.path }
+      });
+
+      addTerminalOutput(`✓ Deleted ${selectedFile.name} successfully`, 'success');
+
+      // Clear selection and reload
+      setSelectedFile(null);
+      setFileContent('');
+      setOriginalContent('');
+      await loadPluginFiles();
+
+      setIsDeleting(false);
+
+    } catch (error) {
+      console.error('Error deleting file:', error);
+      setIsDeleting(false);
+      addTerminalOutput(`✗ Error deleting ${selectedFile.name}: ${error.response?.data?.error || error.message}`, 'error');
+    }
+  };
+
   const handleRunMigration = async () => {
     if (!selectedFile) return;
 
@@ -576,19 +611,22 @@ const DeveloperPluginEditor = ({
         addTerminalOutput(`✓ Migration completed successfully in ${response.data.executionTime}ms`, 'success');
 
       } else if (isEntityFile) {
-        // Generate and run migration for modified entity
+        // Generate pending migration for entity (don't execute yet)
         addTerminalOutput(`⏳ Generating migration for entity: ${selectedFile.entity_name}...`, 'info');
 
         const entityData = JSON.parse(fileContent);
+        const isUpdate = selectedFile.migration_status === 'migrated';
+
         const response = await apiClient.post(`plugins/${plugin.id}/generate-entity-migration`, {
           entity_name: selectedFile.entity_name,
           table_name: selectedFile.table_name,
-          schema_definition: entityData.schema_definition
+          schema_definition: entityData.schema_definition,
+          is_update: isUpdate
         });
 
         setMigrationResult(response.data);
-        addTerminalOutput(`✓ Migration generated and executed in ${response.data.executionTime}ms`, 'success');
-        addTerminalOutput(`  Migration version: ${response.data.migrationVersion}`, 'info');
+        addTerminalOutput(`✓ Migration generated: ${response.data.migrationVersion}`, 'success');
+        addTerminalOutput(`  Status: pending (run from migrations folder)`, 'info');
 
         // Reload file tree to show new migration
         await loadPluginFiles();
@@ -1112,7 +1150,7 @@ const DeveloperPluginEditor = ({
                       )
                     )}
 
-                    {/* Run Migration button - for entity files */}
+                    {/* Generate Migration button - for entity files */}
                     {selectedFile?.path?.startsWith('/entities/') && (
                       selectedFile?.migration_status === 'migrated' && fileContent === originalContent ? (
                         <Badge className="bg-green-100 text-green-700 border-green-300 px-3 py-1">
@@ -1125,19 +1163,19 @@ const DeveloperPluginEditor = ({
                           className={
                             selectedFile?.migration_status === 'migrated'
                               ? 'bg-orange-50 hover:bg-orange-100 text-orange-700 border-orange-300'
-                              : 'bg-green-50 hover:bg-green-100 text-green-700 border-green-300'
+                              : 'bg-purple-50 hover:bg-purple-100 text-purple-700 border-purple-300'
                           }
                           onClick={() => setShowMigrationConfirm(true)}
                           disabled={isRunningMigration}
                           title={
                             selectedFile?.migration_status === 'migrated'
-                              ? 'Re-run migration with updated schema'
-                              : 'Generate and run migration for this entity'
+                              ? 'Generate ALTER TABLE migration for updated schema'
+                              : 'Generate CREATE TABLE migration for this entity'
                           }
                         >
-                          <Play className="w-4 h-4 mr-1" />
-                          {isRunningMigration ? 'Migrating...' :
-                           selectedFile?.migration_status === 'migrated' ? 'Update Migration' : 'Run Migration'}
+                          <Wand2 className="w-4 h-4 mr-1" />
+                          {isRunningMigration ? 'Generating...' :
+                           selectedFile?.migration_status === 'migrated' ? 'Generate Update' : 'Generate Migration'}
                         </Button>
                       )
                     )}
@@ -1165,6 +1203,16 @@ const DeveloperPluginEditor = ({
                       disabled={!selectedFile || fileContent === originalContent}
                       defaultText="Save"
                     />
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setShowDeleteConfirm(true)}
+                      disabled={!selectedFile || isDeleting}
+                      className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                      title="Delete this file"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </Button>
                     <Button
                       variant="ghost"
                       size="sm"
@@ -1390,20 +1438,86 @@ const DeveloperPluginEditor = ({
         </div>
       )}
 
+      {/* Delete File Confirmation Dialog */}
+      {showDeleteConfirm && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg shadow-xl p-6 w-96">
+            <h3 className="text-lg font-semibold mb-4 flex items-center gap-2 text-red-600">
+              <Trash2 className="w-5 h-5" />
+              Delete File
+            </h3>
+
+            <div className="space-y-4">
+              <p className="text-sm text-gray-600">
+                Are you sure you want to delete this file?
+              </p>
+
+              <div className="bg-gray-50 p-3 rounded border">
+                <p className="text-xs font-medium text-gray-700 mb-1">File:</p>
+                <p className="text-sm font-mono break-all">{selectedFile?.name}</p>
+                {selectedFile?.path && (
+                  <>
+                    <p className="text-xs font-medium text-gray-700 mt-2 mb-1">Path:</p>
+                    <p className="text-xs font-mono text-gray-600 break-all">{selectedFile.path}</p>
+                  </>
+                )}
+              </div>
+
+              <div className="bg-red-50 border border-red-200 p-3 rounded">
+                <p className="text-xs text-red-800 font-medium">
+                  ⚠️ This action cannot be undone!
+                </p>
+                <p className="text-xs text-red-700 mt-1">
+                  The file will be permanently deleted from the plugin.
+                </p>
+              </div>
+            </div>
+
+            <div className="flex gap-2 mt-6">
+              <Button
+                onClick={() => setShowDeleteConfirm(false)}
+                variant="outline"
+                className="flex-1"
+                disabled={isDeleting}
+              >
+                Cancel
+              </Button>
+              <Button
+                onClick={handleDeleteFile}
+                className="flex-1 bg-red-600 hover:bg-red-700 text-white"
+                disabled={isDeleting}
+              >
+                <Trash2 className="w-4 h-4 mr-1" />
+                {isDeleting ? 'Deleting...' : 'Delete'}
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Run Migration Confirmation Dialog */}
       {showMigrationConfirm && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div className="bg-white rounded-lg shadow-xl p-6 w-96">
             <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
-              <Play className="w-5 h-5 text-blue-600" />
-              Run Migration
+              {selectedFile?.path?.startsWith('/migrations/') ? (
+                <>
+                  <Play className="w-5 h-5 text-blue-600" />
+                  Run Migration
+                </>
+              ) : (
+                <>
+                  <Wand2 className="w-5 h-5 text-purple-600" />
+                  Generate Migration
+                </>
+              )}
             </h3>
 
             <div className="space-y-4">
               <p className="text-sm text-gray-600">
                 {selectedFile?.path?.startsWith('/migrations/')
-                  ? `Are you sure you want to execute this migration?`
-                  : `This will generate and execute a migration for the modified entity.`}
+                  ? `Are you sure you want to execute this migration? This will modify your database schema.`
+                  : `This will generate a pending migration file. You can review and run it from the migrations folder.`}
               </p>
 
               <div className="bg-gray-50 p-3 rounded border">
@@ -1440,10 +1554,23 @@ const DeveloperPluginEditor = ({
               </Button>
               <Button
                 onClick={handleRunMigration}
-                className="flex-1 bg-blue-600 hover:bg-blue-700 text-white"
+                className={`flex-1 ${
+                  selectedFile?.path?.startsWith('/migrations/')
+                    ? 'bg-blue-600 hover:bg-blue-700'
+                    : 'bg-purple-600 hover:bg-purple-700'
+                } text-white`}
               >
-                <Play className="w-4 h-4 mr-1" />
-                Run Now
+                {selectedFile?.path?.startsWith('/migrations/') ? (
+                  <>
+                    <Play className="w-4 h-4 mr-1" />
+                    Run Now
+                  </>
+                ) : (
+                  <>
+                    <Wand2 className="w-4 h-4 mr-1" />
+                    Generate
+                  </>
+                )}
               </Button>
             </div>
           </div>

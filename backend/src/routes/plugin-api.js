@@ -1999,6 +1999,93 @@ router.get('/cart-hamid/stats', async (req, res) => {
 });
 
 /**
+ * DELETE /api/plugins/registry/:id/files
+ * Delete a specific file from a plugin
+ */
+router.delete('/registry/:id/files', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { path } = req.body;
+
+    console.log(`🗑️ Deleting file: ${path} from plugin ${id}`);
+
+    // Normalize paths for comparison
+    const normalizePath = (p) => p.replace(/^\/+/, '').replace(/^src\//, '');
+    const normalizedPath = normalizePath(path);
+
+    // Prevent deletion of critical files
+    if (normalizedPath === 'manifest.json' || normalizedPath === 'README.md') {
+      return res.status(400).json({
+        success: false,
+        error: 'Cannot delete critical files (manifest.json, README.md)'
+      });
+    }
+
+    // Handle different file types based on path
+
+    // Delete from plugin_events table
+    if (normalizedPath.startsWith('events/')) {
+      const fileName = normalizedPath.replace('events/', '');
+      await sequelize.query(`
+        DELETE FROM plugin_events
+        WHERE plugin_id = $1 AND file_name = $2
+      `, {
+        bind: [id, fileName],
+        type: sequelize.QueryTypes.DELETE
+      });
+      console.log(`✅ Deleted event file: ${fileName}`);
+    }
+    // Delete from plugin_entities table
+    else if (normalizedPath.startsWith('entities/')) {
+      const fileName = normalizedPath.replace('entities/', '').replace('.json', '');
+      await sequelize.query(`
+        DELETE FROM plugin_entities
+        WHERE plugin_id = $1 AND entity_name = $2
+      `, {
+        bind: [id, fileName],
+        type: sequelize.QueryTypes.DELETE
+      });
+      console.log(`✅ Deleted entity: ${fileName}`);
+    }
+    // Delete from plugin_controllers table
+    else if (normalizedPath.startsWith('controllers/')) {
+      const fileName = normalizedPath.replace('controllers/', '').replace('.js', '');
+      await sequelize.query(`
+        DELETE FROM plugin_controllers
+        WHERE plugin_id = $1 AND controller_name = $2
+      `, {
+        bind: [id, fileName],
+        type: sequelize.QueryTypes.DELETE
+      });
+      console.log(`✅ Deleted controller: ${fileName}`);
+    }
+    // Delete from plugin_scripts table
+    else {
+      await sequelize.query(`
+        DELETE FROM plugin_scripts
+        WHERE plugin_id = $1 AND file_name = $2
+      `, {
+        bind: [id, normalizedPath],
+        type: sequelize.QueryTypes.DELETE
+      });
+      console.log(`✅ Deleted script: ${normalizedPath}`);
+    }
+
+    res.json({
+      success: true,
+      message: 'File deleted successfully'
+    });
+
+  } catch (error) {
+    console.error('Failed to delete file:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
+/**
  * POST /api/plugins/:id/run-migration
  * Execute an existing migration for a plugin
  */
@@ -2069,14 +2156,14 @@ router.post('/:id/run-migration', async (req, res) => {
 
 /**
  * POST /api/plugins/:id/generate-entity-migration
- * Generate and execute a migration for a modified entity
+ * Generate a pending migration for an entity (CREATE or ALTER TABLE)
  */
 router.post('/:id/generate-entity-migration', async (req, res) => {
   try {
     const { id } = req.params;
-    const { entity_name, table_name, schema_definition } = req.body;
+    const { entity_name, table_name, schema_definition, is_update } = req.body;
 
-    console.log(`🔧 Generating migration for entity ${entity_name} (${table_name})`);
+    console.log(`🔧 Generating ${is_update ? 'ALTER' : 'CREATE'} migration for entity ${entity_name} (${table_name})`);
 
     // Get plugin name from database
     const pluginData = await sequelize.query(`
@@ -2094,81 +2181,85 @@ router.post('/:id/generate-entity-migration', async (req, res) => {
     }
 
     const pluginName = pluginData[0].name;
-    const startTime = Date.now();
     const migrationVersion = new Date().toISOString().replace(/[-:T]/g, '').slice(0, 14);
 
-    // Generate CREATE TABLE SQL from schema
-    let createTableSQL = `CREATE TABLE IF NOT EXISTS ${table_name} (\n`;
+    // Generate SQL based on whether it's an update or new table
+    let upSQL, downSQL, migrationDescription;
 
-    const columnDefs = schema_definition.columns.map(col => {
-      let def = `  ${col.name} ${col.type}`;
-      if (col.primaryKey) def += ' PRIMARY KEY';
-      if (col.default) def += ` DEFAULT ${col.default}`;
-      if (col.nullable === false) def += ' NOT NULL';
-      return def;
-    });
+    if (is_update) {
+      // Generate ALTER TABLE migration
+      upSQL = `-- ALTER TABLE migration for ${table_name}\n`;
+      upSQL += `-- Review and modify as needed before running\n\n`;
 
-    createTableSQL += columnDefs.join(',\n');
-    createTableSQL += '\n);\n\n';
-
-    // Add indexes
-    if (schema_definition.indexes && schema_definition.indexes.length > 0) {
-      schema_definition.indexes.forEach(idx => {
-        const columns = idx.columns.join(', ');
-        const order = idx.order ? ` ${idx.order}` : '';
-        createTableSQL += `CREATE INDEX IF NOT EXISTS ${idx.name} ON ${table_name}(${columns}${order});\n`;
+      schema_definition.columns.forEach(col => {
+        upSQL += `-- ADD COLUMN ${col.name} ${col.type};\n`;
+        upSQL += `ALTER TABLE ${table_name} ADD COLUMN IF NOT EXISTS ${col.name} ${col.type}`;
+        if (col.default) upSQL += ` DEFAULT ${col.default}`;
+        if (col.nullable === false) upSQL += ' NOT NULL';
+        upSQL += ';\n\n';
       });
-      createTableSQL += '\n';
+
+      downSQL = `-- Rollback not implemented for ALTER TABLE\n-- Manual rollback required`;
+      migrationDescription = `Update ${table_name} table schema for ${entity_name} entity`;
+    } else {
+      // Generate CREATE TABLE migration
+      upSQL = `CREATE TABLE IF NOT EXISTS ${table_name} (\n`;
+
+      const columnDefs = schema_definition.columns.map(col => {
+        let def = `  ${col.name} ${col.type}`;
+        if (col.primaryKey) def += ' PRIMARY KEY';
+        if (col.default) def += ` DEFAULT ${col.default}`;
+        if (col.nullable === false) def += ' NOT NULL';
+        return def;
+      });
+
+      upSQL += columnDefs.join(',\n');
+      upSQL += '\n);\n\n';
+
+      // Add indexes
+      if (schema_definition.indexes && schema_definition.indexes.length > 0) {
+        schema_definition.indexes.forEach(idx => {
+          const columns = idx.columns.join(', ');
+          const order = idx.order ? ` ${idx.order}` : '';
+          upSQL += `CREATE INDEX IF NOT EXISTS ${idx.name} ON ${table_name}(${columns}${order});\n`;
+        });
+        upSQL += '\n';
+      }
+
+      // Add comment
+      upSQL += `COMMENT ON TABLE ${table_name} IS 'Entity table for ${entity_name}';`;
+
+      downSQL = `DROP TABLE IF EXISTS ${table_name} CASCADE;`;
+      migrationDescription = `Create ${table_name} table for ${entity_name} entity`;
     }
 
-    // Add comment
-    createTableSQL += `COMMENT ON TABLE ${table_name} IS 'Entity table for ${entity_name}';`;
-
-    const dropTableSQL = `DROP TABLE IF EXISTS ${table_name} CASCADE;`;
-
-    // Execute migration
-    await sequelize.query(createTableSQL);
-
-    // Record migration
+    // Create PENDING migration (don't execute)
     await sequelize.query(`
       INSERT INTO plugin_migrations (
         plugin_id, plugin_name, migration_name, migration_version,
-        migration_description, status, executed_at, completed_at,
-        execution_time_ms, up_sql, down_sql
-      ) VALUES ($1, $2, $3, $4, $5, 'completed', NOW(), NOW(), $6, $7, $8)
+        migration_description, status, up_sql, down_sql
+      ) VALUES ($1, $2, $3, $4, $5, 'pending', $6, $7)
     `, {
       bind: [
         id,
         pluginName,
-        `create_${table_name}_table.sql`,
+        is_update ? `update_${table_name}_table.sql` : `create_${table_name}_table.sql`,
         migrationVersion,
-        `Create ${table_name} table for ${entity_name} entity`,
-        Date.now() - startTime,
-        createTableSQL,
-        dropTableSQL
+        migrationDescription,
+        upSQL,
+        downSQL
       ]
     });
 
-    // Update entity migration status
-    await sequelize.query(`
-      UPDATE plugin_entities
-      SET migration_status = 'migrated',
-          migration_version = $1,
-          migrated_at = NOW(),
-          updated_at = NOW()
-      WHERE plugin_id = $2 AND entity_name = $3
-    `, {
-      bind: [migrationVersion, id, entity_name]
-    });
-
-    const executionTime = Date.now() - startTime;
+    console.log(`✅ Created pending migration: ${migrationVersion}`);
 
     res.json({
       success: true,
       migrationVersion,
       entityName: entity_name,
       tableName: table_name,
-      executionTime
+      status: 'pending',
+      message: 'Migration generated successfully. Review and run from migrations folder.'
     });
 
   } catch (error) {
