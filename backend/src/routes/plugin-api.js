@@ -39,13 +39,15 @@ router.get('/widgets', async (req, res) => {
   try {
     console.log('🎨 Loading all available widgets...');
 
-    // Query plugin_widgets table
+    // Query plugin_widgets table (exclude starter templates)
     const widgets = await sequelize.query(`
       SELECT w.widget_id, w.widget_name, w.description, w.category, w.icon,
              p.name as plugin_name, p.id as plugin_id
       FROM plugin_widgets w
       JOIN plugin_registry p ON w.plugin_id = p.id
-      WHERE w.is_enabled = true AND p.status = 'active'
+      WHERE w.is_enabled = true
+        AND p.status = 'active'
+        AND (p.is_starter_template = false OR p.is_starter_template IS NULL)
       ORDER BY w.widget_name ASC
     `, {
       type: sequelize.QueryTypes.SELECT
@@ -276,13 +278,14 @@ router.get('/active', async (req, res) => {
 
     console.log('🔌 Loading active plugins from normalized tables...');
 
-    // Get active plugins from plugin_registry table
+    // Get active plugins from plugin_registry table (exclude starter templates)
     const plugins = await sequelize.query(`
       SELECT
         id, name, version, description, author, category, status, type,
         manifest, created_at, updated_at
       FROM plugin_registry
       WHERE status = 'active'
+        AND (is_starter_template = false OR is_starter_template IS NULL)
       ORDER BY created_at DESC
     `, {
       type: sequelize.QueryTypes.SELECT
