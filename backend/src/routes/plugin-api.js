@@ -1106,7 +1106,7 @@ router.get('/:id/export', async (req, res) => {
 
     // Get plugin docs
     const pluginDocs = await sequelize.query(`
-      SELECT title, content, doc_type as category, display_order as order_position
+      SELECT title, content, doc_type as category, display_order as order_position, file_name
       FROM plugin_docs
       WHERE plugin_id = $1
       ORDER BY display_order ASC, title ASC
@@ -1219,7 +1219,8 @@ router.get('/:id/export', async (req, res) => {
         title: d.title,
         content: d.content,
         category: d.category,
-        orderPosition: d.order_position
+        orderPosition: d.order_position,
+        fileName: d.file_name
       })),
 
       adminPages: adminPages.map(p => ({
@@ -1434,7 +1435,7 @@ router.post('/import', async (req, res) => {
     for (const entity of packageData.entities || []) {
       await sequelize.query(`
         INSERT INTO plugin_entities (
-          plugin_id, name, code
+          plugin_id, entity_name, model_code
         )
         VALUES ($1, $2, $3)
       `, {
@@ -1451,7 +1452,7 @@ router.post('/import', async (req, res) => {
     for (const migration of packageData.migrations || []) {
       await sequelize.query(`
         INSERT INTO plugin_migrations (
-          plugin_id, name, code
+          plugin_id, migration_name, up_sql
         )
         VALUES ($1, $2, $3)
       `, {
@@ -1468,7 +1469,7 @@ router.post('/import', async (req, res) => {
     for (const controller of packageData.controllers || []) {
       await sequelize.query(`
         INSERT INTO plugin_controllers (
-          plugin_id, name, code
+          plugin_id, controller_name, handler_code
         )
         VALUES ($1, $2, $3)
       `, {
@@ -1518,18 +1519,34 @@ router.post('/import', async (req, res) => {
 
     // Import plugin docs
     for (const doc of packageData.pluginDocs || []) {
+      // Generate file_name from doc_type if not provided
+      const docType = doc.category || 'readme'; // category is actually doc_type from export
+      const fileName = doc.fileName || (() => {
+        switch(docType) {
+          case 'readme': return 'README.md';
+          case 'manifest': return 'manifest.json';
+          case 'changelog': return 'CHANGELOG.md';
+          case 'license': return 'LICENSE';
+          case 'contributing': return 'CONTRIBUTING.md';
+          default: return `${docType}.md`;
+        }
+      })();
+      const format = docType === 'manifest' ? 'json' : 'markdown';
+
       await sequelize.query(`
         INSERT INTO plugin_docs (
-          plugin_id, title, content, category, order_position
+          plugin_id, doc_type, file_name, title, content, format, display_order
         )
-        VALUES ($1, $2, $3, $4, $5)
+        VALUES ($1, $2, $3, $4, $5, $6, $7)
       `, {
         bind: [
           pluginId,
-          doc.title,
+          docType,
+          fileName,
+          doc.title || docType.toUpperCase(),
           doc.content,
-          doc.category,
-          doc.orderPosition || 100
+          format,
+          doc.orderPosition || 0
         ],
         type: sequelize.QueryTypes.INSERT
       });
