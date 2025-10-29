@@ -1999,22 +1999,50 @@ router.put('/registry/:id/files', async (req, res) => {
       console.log(`🔄 Saving controller file: ${controllerFileName}`);
 
       try {
-        // Note: For now, just save to plugin_scripts
-        // Full controller metadata editing would require parsing the function code
-        // or having a separate UI for controller properties
-        console.log(`⚠️ Controller files saved to plugin_scripts (full controller editing not yet implemented)`);
-      } catch (err) {
-        console.log(`⚠️ Controller save error:`, err.message);
+        // Look up controller by controller_name (filename without extension)
+        const existing = await sequelize.query(`
+          SELECT controller_name, method, path FROM plugin_controllers
+          WHERE plugin_id = $1 AND controller_name = $2
+        `, {
+          bind: [id, controllerFileName],
+          type: sequelize.QueryTypes.SELECT
+        });
+
+        if (existing.length > 0) {
+          // Update existing controller handler code
+          const controller = existing[0];
+          await sequelize.query(`
+            UPDATE plugin_controllers
+            SET handler_code = $1, updated_at = NOW()
+            WHERE plugin_id = $2 AND controller_name = $3
+          `, {
+            bind: [content, id, controllerFileName],
+            type: sequelize.QueryTypes.UPDATE
+          });
+          console.log(`✅ Updated controller: ${controllerFileName} (${controller.method} ${controller.path})`);
+        } else {
+          // Controller not found - cannot create without metadata
+          console.log(`⚠️ Controller ${controllerFileName} not found in plugin_controllers table`);
+          return res.status(404).json({
+            success: false,
+            error: `Controller '${controllerFileName}' not found. Controllers must be created with metadata (method, path, etc.) before they can be edited.`
+          });
+        }
+
+        return res.json({
+          success: true,
+          message: 'Controller handler code updated successfully in plugin_controllers table'
+        });
+      } catch (controllerError) {
+        console.error(`❌ Error saving controller:`, controllerError);
+        return res.status(500).json({
+          success: false,
+          error: `Failed to save controller: ${controllerError.message}`
+        });
       }
     }
 
     // Block files that belong in specialized tables
-    if (normalizedRequestPath.startsWith('controllers/')) {
-      return res.status(400).json({
-        success: false,
-        error: 'Controllers belong in plugin_controllers table, not plugin_scripts'
-      });
-    }
     if (normalizedRequestPath.startsWith('migrations/')) {
       return res.status(400).json({
         success: false,
