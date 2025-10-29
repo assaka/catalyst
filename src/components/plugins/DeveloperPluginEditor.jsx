@@ -745,7 +745,7 @@ const DeveloperPluginEditor = ({
       let defaultContent = `// ${newFileName}\n// Created: ${new Date().toISOString()}\n\n`;
 
       if (newFileType === 'event') {
-        defaultContent = `// Event listener for: ${selectedEventName}\n// Created: ${new Date().toISOString()}\n\nfunction(eventData) {\n  // Your code here\n  console.log('${selectedEventName} fired:', eventData);\n}\n`;
+        defaultContent = `// Event listener for: ${selectedEventName}\n// Created: ${new Date().toISOString()}\n\n(eventData) => {\n  // Your code here\n  console.log('${selectedEventName} fired:', eventData);\n}\n`;
       }
 
       // For event files, create the event listener mapping in junction table

@@ -173,8 +173,17 @@ function createHandlerFromDatabaseCode(code) {
       cleanCode = cleanCode.replace(/^export\s+default\s+/, '');
     }
 
-    // If it's a function declaration, convert to expression
+    // Remove trailing semicolon if present
+    cleanCode = cleanCode.replace(/;[\s]*$/, '');
+
+    // If it's a function declaration (named or anonymous), convert to expression
     if (cleanCode.startsWith('async function') || cleanCode.startsWith('function')) {
+      cleanCode = '(' + cleanCode + ')';
+    }
+    // If it's already wrapped (like arrow functions with parens), no need to wrap again
+    else if (!cleanCode.startsWith('(')) {
+      // For arrow functions like: eventData => {...} or (eventData) => {...}
+      // Wrap them to ensure they're treated as expressions
       cleanCode = '(' + cleanCode + ')';
     }
 
