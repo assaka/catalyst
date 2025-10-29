@@ -253,7 +253,12 @@ class ApiClient {
 
     const url = this.buildUrl(endpoint);
     const headers = this.getHeaders(customHeaders);
-    
+
+    console.log(`🌐 Building fetch request:`);
+    console.log(`   URL: ${url}`);
+    console.log(`   Method: ${method}`);
+    console.log(`   Headers:`, headers);
+
     // Extract options from headers (if passed as a special header)
     const skipTransform = customHeaders['x-skip-transform'] === 'true';
     delete customHeaders['x-skip-transform'];
@@ -266,10 +271,20 @@ class ApiClient {
 
     if (data && (method === 'POST' || method === 'PUT' || method === 'PATCH' || method === 'DELETE')) {
       config.body = JSON.stringify(data);
+      console.log(`   Body:`, config.body);
     }
+
+    console.log(`🚀 Sending fetch request to: ${url}`);
+    console.log(`   Config:`, { method: config.method, hasBody: !!config.body, credentials: config.credentials });
 
     try {
       const response = await fetch(url, config);
+      console.log(`📥 Fetch response received:`, {
+        status: response.status,
+        statusText: response.statusText,
+        ok: response.ok,
+        headers: Object.fromEntries(response.headers.entries())
+      });
       
       // Handle non-JSON responses
       const contentType = response.headers.get('content-type');
