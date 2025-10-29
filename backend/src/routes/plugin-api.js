@@ -801,23 +801,47 @@ ${m.down_sql || '-- No down SQL'}`,
       console.log(`  ⚠️ plugin_migrations table error:`, migrationsError.message);
     }
 
-    // Parse JSON fields
-    const manifest = typeof plugin[0].manifest === 'string' ? JSON.parse(plugin[0].manifest) : plugin[0].manifest;
-    const sourceCode = typeof plugin[0].source_code === 'string' ? JSON.parse(plugin[0].source_code) : plugin[0].source_code;
+    // Load documentation from plugin_docs table
+    let pluginDocs = [];
+    try {
+      const docsResult = await sequelize.query(`
+        SELECT doc_type, file_name, content, format
+        FROM plugin_docs
+        WHERE plugin_id = $1 AND is_visible = true
+        ORDER BY display_order ASC, doc_type ASC
+      `, {
+        bind: [pluginId],
+        type: sequelize.QueryTypes.SELECT
+      });
 
-    // Merge files from multiple sources:
-    // 1. manifest.generatedFiles (old format)
-    // 2. source_code JSON field (old format)
-    // 3. plugin_scripts table (new normalized format)
-    // 4. plugin_events table (new normalized format)
-    // 5. plugin_entities table (new normalized format)
-    // 6. plugin_controllers table (new normalized format)
-    // 7. plugin_migrations table (new normalized format)
+      pluginDocs = docsResult.map(d => ({
+        name: d.file_name,
+        code: d.content,
+        doc_type: d.doc_type,
+        format: d.format
+      }));
+
+      console.log(`  ✅ Loaded ${pluginDocs.length} docs from plugin_docs table`);
+    } catch (docsError) {
+      console.log(`  ⚠️ plugin_docs table error:`, docsError.message);
+    }
+
+    // Parse manifest from plugin_docs (not from plugin_registry.manifest field)
+    const manifestDoc = pluginDocs.find(d => d.doc_type === 'manifest');
+    const manifest = manifestDoc ? JSON.parse(manifestDoc.code) : {};
+    const readme = pluginDocs.find(d => d.doc_type === 'readme')?.code || '# Plugin Documentation';
+
+    // Load files from NORMALIZED TABLES ONLY (no backward compatibility)
+    // Sources:
+    // 1. plugin_scripts table
+    // 2. plugin_events table
+    // 3. plugin_entities table
+    // 4. plugin_controllers table
+    // 5. plugin_migrations table
+    // 6. plugin_docs table
     let allFiles = [];
 
-    // Add files from JSON fields
-    const jsonFiles = manifest?.generatedFiles || sourceCode || [];
-    allFiles = allFiles.concat(jsonFiles);
+    console.log(`📦 Loading files from normalized tables only (no JSON backward compatibility)`);
 
     // Add files from plugin_scripts table
     allFiles = allFiles.concat(pluginScripts);
@@ -840,17 +864,10 @@ ${m.down_sql || '-- No down SQL'}`,
     // Add files from plugin_migrations table
     allFiles = allFiles.concat(pluginMigrations);
 
-    // Remove duplicates (prefer normalized table data over JSON data)
-    const fileMap = new Map();
-    allFiles.forEach(file => {
-      const fileName = file.name || file.filename || '';
-      if (!fileMap.has(fileName) || file.script_type || file.event_name) {
-        // Prefer files from normalized tables (they have script_type or event_name)
-        fileMap.set(fileName, file);
-      }
-    });
+    // Add files from plugin_docs table
+    allFiles = allFiles.concat(pluginDocs);
 
-    const generatedFiles = Array.from(fileMap.values());
+    const generatedFiles = allFiles;
 
     // Organize files by type for DeveloperPluginEditor
     const controllers = [];
@@ -911,6 +928,7 @@ ${m.down_sql || '-- No down SQL'}`,
     console.log(`  🗄️  Entities from DB: ${pluginEntities.length}`);
     console.log(`  🎮 Controllers from DB: ${pluginControllers.length}`);
     console.log(`  🔄 Migrations from DB: ${pluginMigrations.length}`);
+    console.log(`  📚 Docs from DB: ${pluginDocs.length}`);
     console.log(`  🪝 Hooks: ${hooks.length}`);
 
     if (generatedFiles.length > 0) {
@@ -935,8 +953,8 @@ ${m.down_sql || '-- No down SQL'}`,
         components,
         adminPages,
         manifest,
-        readme: manifest?.readme || '# Plugin Documentation',
-        source_code: generatedFiles // All files merged from JSON + normalized tables for FileTree
+        readme,
+        source_code: generatedFiles // All files from normalized tables only for FileTree
       }
     });
   } catch (error) {
@@ -1406,28 +1424,70 @@ router.put('/registry/:id/files', async (req, res) => {
     const normalizePath = (p) => p.replace(/^\/+/, '').replace(/^src\//, '');
     const normalizedRequestPath = normalizePath(path);
 
-    // Special handling for manifest.json - update the manifest field directly
-    if (normalizedRequestPath === 'manifest.json') {
-      try {
-        const updatedManifest = JSON.parse(content);
+    // Handle documentation files - save to plugin_docs table
+    if (normalizedRequestPath === 'README.md' || normalizedRequestPath === 'manifest.json' ||
+        normalizedRequestPath === 'CHANGELOG.md' || normalizedRequestPath === 'LICENSE' ||
+        normalizedRequestPath === 'CONTRIBUTING.md') {
 
-        await sequelize.query(`
-          UPDATE plugin_registry
-          SET manifest = $1, updated_at = NOW()
-          WHERE id = $2
+      const docTypeMap = {
+        'README.md': 'readme',
+        'manifest.json': 'manifest',
+        'CHANGELOG.md': 'changelog',
+        'LICENSE': 'license',
+        'CONTRIBUTING.md': 'contributing'
+      };
+
+      const docType = docTypeMap[normalizedRequestPath];
+      const format = normalizedRequestPath.endsWith('.json') ? 'json' : 'markdown';
+
+      console.log(`🔄 Saving documentation file: ${normalizedRequestPath} to plugin_docs`);
+
+      try {
+        // Validate JSON if it's manifest
+        if (format === 'json') {
+          JSON.parse(content); // Validate
+        }
+
+        // Check if doc exists
+        const existing = await sequelize.query(`
+          SELECT id FROM plugin_docs
+          WHERE plugin_id = $1 AND doc_type = $2
         `, {
-          bind: [JSON.stringify(updatedManifest), id],
-          type: sequelize.QueryTypes.UPDATE
+          bind: [id, docType],
+          type: sequelize.QueryTypes.SELECT
         });
+
+        if (existing.length > 0) {
+          // Update existing doc
+          await sequelize.query(`
+            UPDATE plugin_docs
+            SET content = $1, format = $2, updated_at = NOW()
+            WHERE plugin_id = $3 AND doc_type = $4
+          `, {
+            bind: [content, format, id, docType],
+            type: sequelize.QueryTypes.UPDATE
+          });
+          console.log(`✅ Updated ${docType} in plugin_docs`);
+        } else {
+          // Insert new doc
+          await sequelize.query(`
+            INSERT INTO plugin_docs (plugin_id, doc_type, file_name, content, format, is_visible)
+            VALUES ($1, $2, $3, $4, $5, true)
+          `, {
+            bind: [id, docType, normalizedRequestPath, content, format],
+            type: sequelize.QueryTypes.INSERT
+          });
+          console.log(`✅ Created ${docType} in plugin_docs`);
+        }
 
         return res.json({
           success: true,
-          message: 'Manifest updated successfully'
+          message: 'Documentation saved successfully in plugin_docs table'
         });
       } catch (error) {
         return res.status(400).json({
           success: false,
-          error: 'Invalid JSON in manifest.json: ' + error.message
+          error: `Failed to save documentation: ${error.message}`
         });
       }
     }
@@ -2223,21 +2283,44 @@ router.delete('/registry/:id/files', async (req, res) => {
 
     console.log(`📝 Normalized path: ${normalizedPath}`);
 
-    // Prevent deletion of critical files
-    if (normalizedPath === 'manifest.json' || normalizedPath === 'README.md') {
-      console.log('❌ Attempted to delete critical file');
-      return res.status(400).json({
-        success: false,
-        error: 'Cannot delete critical files (manifest.json, README.md)'
-      });
-    }
-
     let deleted = false;
     let attemptedTable = null;
 
     // Handle different file types based on path
 
+    // Delete from plugin_docs table (README.md, manifest.json, etc.)
+    if (normalizedPath === 'README.md' || normalizedPath === 'manifest.json' ||
+        normalizedPath === 'CHANGELOG.md' || normalizedPath === 'LICENSE' ||
+        normalizedPath === 'CONTRIBUTING.md') {
+
+      const docTypeMap = {
+        'README.md': 'readme',
+        'manifest.json': 'manifest',
+        'CHANGELOG.md': 'changelog',
+        'LICENSE': 'license',
+        'CONTRIBUTING.md': 'contributing'
+      };
+
+      const docType = docTypeMap[normalizedPath];
+      attemptedTable = 'plugin_docs';
+      console.log(`🎯 Deleting documentation file from ${attemptedTable}, docType: ${docType}`);
+
+      try {
+        const result = await sequelize.query(`
+          DELETE FROM plugin_docs
+          WHERE plugin_id = $1 AND doc_type = $2
+        `, {
+          bind: [id, docType],
+          type: sequelize.QueryTypes.DELETE
+        });
+        console.log(`✅ Deleted doc from plugin_docs: ${docType}`);
+        deleted = true;
+      } catch (err) {
+        console.log(`❌ plugin_docs delete error:`, err.message);
+      }
+    }
     // Delete from plugin_events table
+    else if (normalizedPath.startsWith('events/')) {
     if (normalizedPath.startsWith('events/')) {
       const fileName = normalizedPath.replace('events/', '');
       attemptedTable = 'plugin_events';
