@@ -220,11 +220,6 @@ class ApiClient {
 
   // Generic request method
   async request(method, endpoint, data = null, customHeaders = {}) {
-    console.log(`📡 apiClient.request() called`);
-    console.log(`   method: ${method}`);
-    console.log(`   endpoint: ${endpoint}`);
-    console.log(`   data:`, data);
-    console.log(`   customHeaders:`, customHeaders);
 
     const startTime = performance.now();
     const debugId = apiDebugger.debugAPICall('request', {
@@ -254,11 +249,6 @@ class ApiClient {
     const url = this.buildUrl(endpoint);
     const headers = this.getHeaders(customHeaders);
 
-    console.log(`🌐 Building fetch request:`);
-    console.log(`   URL: ${url}`);
-    console.log(`   Method: ${method}`);
-    console.log(`   Headers:`, headers);
-
     // Extract options from headers (if passed as a special header)
     const skipTransform = customHeaders['x-skip-transform'] === 'true';
     delete customHeaders['x-skip-transform'];
@@ -271,21 +261,11 @@ class ApiClient {
 
     if (data && (method === 'POST' || method === 'PUT' || method === 'PATCH' || method === 'DELETE')) {
       config.body = JSON.stringify(data);
-      console.log(`   Body:`, config.body);
     }
-
-    console.log(`🚀 Sending fetch request to: ${url}`);
-    console.log(`   Config:`, { method: config.method, hasBody: !!config.body, credentials: config.credentials });
 
     try {
       const response = await fetch(url, config);
-      console.log(`📥 Fetch response received:`, {
-        status: response.status,
-        statusText: response.statusText,
-        ok: response.ok,
-        headers: Object.fromEntries(response.headers.entries())
-      });
-      
+
       // Handle non-JSON responses
       const contentType = response.headers.get('content-type');
       if (!contentType || !contentType.includes('application/json')) {
@@ -533,7 +513,6 @@ class ApiClient {
   }
 
   async put(endpoint, data, customHeaders = {}) {
-    console.log('🔍 apiClient.put() - Endpoint:', endpoint, 'BuildUrl will create:', this.buildUrl(endpoint));
     return this.request('PUT', endpoint, data, customHeaders);
   }
 
@@ -542,21 +521,10 @@ class ApiClient {
   }
 
   async delete(endpoint, options = {}) {
-    console.log('🗑️ apiClient.delete() called');
-    console.log('   endpoint:', endpoint);
-    console.log('   options:', options);
-
     // Support both data and customHeaders
     const data = options.data || null;
     const customHeaders = options.headers || {};  // ❌ FIX: Don't fallback to options!
-
-    console.log('   extracted data:', data);
-    console.log('   extracted headers:', customHeaders);
-    console.log('   calling request() with:', { method: 'DELETE', endpoint, data });
-
     const result = await this.request('DELETE', endpoint, data, customHeaders);
-
-    console.log('✅ apiClient.delete() completed, result:', result);
     return result;
   }
 
