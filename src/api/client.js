@@ -548,7 +548,7 @@ class ApiClient {
 
     // Support both data and customHeaders
     const data = options.data || null;
-    const customHeaders = options.headers || options;
+    const customHeaders = options.headers || {};  // ❌ FIX: Don't fallback to options!
 
     console.log('   extracted data:', data);
     console.log('   extracted headers:', customHeaders);
