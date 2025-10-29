@@ -108,8 +108,19 @@ export default function Plugins() {
         has_creator_id: !!p.creator_id
       })));
 
-      // Transform all plugins (both installed and marketplace) for display
-      const allPlugins = (plugins || []).map(plugin => ({
+      // Filter out ALL starter templates (they're only for cloning, not editing)
+      const editablePlugins = (plugins || []).filter(plugin => {
+        if (plugin.is_starter_template) {
+          console.log(`🔒 Hiding starter template: ${plugin.name} (templates only for creating new plugins)`);
+          return false;
+        }
+        return true;
+      });
+
+      console.log(`📊 Filtered plugins: ${plugins.length} → ${editablePlugins.length} (hid ${plugins.length - editablePlugins.length} starter templates)`);
+
+      // Transform all editable plugins for display
+      const allPlugins = (editablePlugins || []).map(plugin => ({
         id: plugin.id, // Use actual UUID from database, not slug
         name: plugin.name,
         slug: plugin.slug || plugin.name.toLowerCase().replace(/\s+/g, '-'),
