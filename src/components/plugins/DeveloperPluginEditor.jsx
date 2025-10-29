@@ -587,7 +587,13 @@ const DeveloperPluginEditor = ({
 
       console.log('✅ Delete response:', response);
 
+      // Check if deletion was successful
+      if (response && response.success === false) {
+        throw new Error(response.error || 'Delete failed');
+      }
+
       addTerminalOutput(`✓ Deleted ${selectedFile.name} successfully`, 'success');
+      addTerminalOutput(`  Reloading file tree...`, 'info');
 
       // Clear selection and reload
       setSelectedFile(null);
@@ -595,6 +601,7 @@ const DeveloperPluginEditor = ({
       setOriginalContent('');
       await loadPluginFiles();
 
+      addTerminalOutput(`✓ File tree reloaded`, 'success');
       setIsDeleting(false);
 
     } catch (error) {
@@ -1511,14 +1518,26 @@ const DeveloperPluginEditor = ({
                 )}
               </div>
 
-              <div className="bg-red-50 border border-red-200 p-3 rounded">
-                <p className="text-xs text-red-800 font-medium">
-                  ⚠️ This action cannot be undone!
-                </p>
-                <p className="text-xs text-red-700 mt-1">
-                  The file will be permanently deleted from the plugin.
-                </p>
-              </div>
+              {/* Special warning for protected files */}
+              {(selectedFile?.name === 'README.md' || selectedFile?.name === 'manifest.json') ? (
+                <div className="bg-yellow-50 border border-yellow-200 p-3 rounded">
+                  <p className="text-xs text-yellow-800 font-medium">
+                    ⚠️ Protected File
+                  </p>
+                  <p className="text-xs text-yellow-700 mt-1">
+                    This file cannot be deleted as it's required for the plugin to function.
+                  </p>
+                </div>
+              ) : (
+                <div className="bg-red-50 border border-red-200 p-3 rounded">
+                  <p className="text-xs text-red-800 font-medium">
+                    ⚠️ This action cannot be undone!
+                  </p>
+                  <p className="text-xs text-red-700 mt-1">
+                    The file will be permanently deleted from the plugin.
+                  </p>
+                </div>
+              )}
             </div>
 
             <div className="flex gap-2 mt-6">
@@ -1533,10 +1552,10 @@ const DeveloperPluginEditor = ({
               <Button
                 onClick={handleDeleteFile}
                 className="flex-1 bg-red-600 hover:bg-red-700 text-white"
-                disabled={isDeleting}
+                disabled={isDeleting || selectedFile?.name === 'README.md' || selectedFile?.name === 'manifest.json'}
               >
                 <Trash2 className="w-4 h-4 mr-1" />
-                {isDeleting ? 'Deleting...' : 'Delete'}
+                {isDeleting ? 'Deleting...' : (selectedFile?.name === 'README.md' || selectedFile?.name === 'manifest.json') ? 'Cannot Delete' : 'Delete'}
               </Button>
             </div>
           </div>
