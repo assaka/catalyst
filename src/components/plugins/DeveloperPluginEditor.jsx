@@ -476,9 +476,16 @@ const DeveloperPluginEditor = ({
       console.log('   ✅ Added', migrationsFolder.children.length, 'migration files');
     }
 
-    // NO hardcoding - manifest.json and README.md come from backend via source_code array
-    // - manifest.json: Backend adds from plugin_registry.manifest column
-    // - README.md: Backend loads from plugin_docs table (doc_type='readme')
+    // Add manifest.json (TEMPORARY until backend deployed)
+    // Backend adds this to source_code, but deployment pending
+    tree.children.push({
+      name: 'manifest.json',
+      type: 'file',
+      path: '/manifest.json',
+      content: JSON.stringify(pluginData.manifest || {}, null, 2)
+    });
+
+    // README.md comes from plugin_docs table via source_code array (already deployed)
 
     console.log('🌳 FileTree built with', tree.children.length, 'folders/files');
 
