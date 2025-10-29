@@ -841,7 +841,11 @@ const DeveloperPluginEditor = ({
                         <div className="flex items-center gap-3">
                           <Code2 className="w-4 h-4 text-blue-600" />
                           <FileText className="w-4 h-4 text-gray-600" />
-                          <span className="font-medium">{selectedFile.name}</span>
+                          <span className="font-medium" title={selectedFile.name}>
+                            {selectedFile.name.length > 20
+                              ? selectedFile.name.substring(0, 20) + '...'
+                              : selectedFile.name}
+                          </span>
                           {fileContent !== originalContent && (
                             <Badge className="bg-orange-100 text-orange-700 text-xs">
                               Modified
