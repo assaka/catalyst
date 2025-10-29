@@ -2187,19 +2187,126 @@ router.post('/:id/generate-entity-migration', async (req, res) => {
     let upSQL, downSQL, migrationDescription;
 
     if (is_update) {
-      // Generate ALTER TABLE migration
-      upSQL = `-- ALTER TABLE migration for ${table_name}\n`;
-      upSQL += `-- Review and modify as needed before running\n\n`;
-
-      schema_definition.columns.forEach(col => {
-        upSQL += `-- ADD COLUMN ${col.name} ${col.type};\n`;
-        upSQL += `ALTER TABLE ${table_name} ADD COLUMN IF NOT EXISTS ${col.name} ${col.type}`;
-        if (col.default) upSQL += ` DEFAULT ${col.default}`;
-        if (col.nullable === false) upSQL += ' NOT NULL';
-        upSQL += ';\n\n';
+      // Get existing entity schema from database to compare
+      const existingEntity = await sequelize.query(`
+        SELECT schema_definition FROM plugin_entities
+        WHERE plugin_id = $1 AND entity_name = $2
+      `, {
+        bind: [id, entity_name],
+        type: sequelize.QueryTypes.SELECT
       });
 
-      downSQL = `-- Rollback not implemented for ALTER TABLE\n-- Manual rollback required`;
+      if (existingEntity.length === 0) {
+        return res.status(404).json({
+          success: false,
+          error: 'Entity not found. Cannot generate ALTER TABLE migration.'
+        });
+      }
+
+      const oldSchema = existingEntity[0].schema_definition;
+      const oldColumns = oldSchema.columns || [];
+      const newColumns = schema_definition.columns || [];
+
+      // Detect changes
+      const oldColumnNames = oldColumns.map(c => c.name);
+      const newColumnNames = newColumns.map(c => c.name);
+
+      const addedColumns = newColumns.filter(c => !oldColumnNames.includes(c.name));
+      const removedColumns = oldColumns.filter(c => !newColumnNames.includes(c.name));
+      const modifiedColumns = newColumns.filter(newCol => {
+        const oldCol = oldColumns.find(c => c.name === newCol.name);
+        if (!oldCol) return false;
+        return JSON.stringify(oldCol) !== JSON.stringify(newCol);
+      });
+
+      // Generate ALTER TABLE migration
+      upSQL = `-- =====================================================\n`;
+      upSQL += `-- ALTER TABLE migration for ${table_name}\n`;
+      upSQL += `-- Generated from entity: ${entity_name}\n`;
+      upSQL += `-- =====================================================\n\n`;
+
+      if (addedColumns.length === 0 && removedColumns.length === 0 && modifiedColumns.length === 0) {
+        upSQL += `-- No schema changes detected\n`;
+        upSQL += `-- This migration was generated but no changes are needed\n`;
+      } else {
+        // Add new columns
+        if (addedColumns.length > 0) {
+          upSQL += `-- Added Columns (${addedColumns.length})\n`;
+          upSQL += `-- =====================================================\n\n`;
+          addedColumns.forEach(col => {
+            upSQL += `ALTER TABLE ${table_name} ADD COLUMN IF NOT EXISTS ${col.name} ${col.type}`;
+            if (col.default) upSQL += ` DEFAULT ${col.default}`;
+            if (col.nullable === false) upSQL += ' NOT NULL';
+            if (col.comment) upSQL += `;\nCOMMENT ON COLUMN ${table_name}.${col.name} IS '${col.comment}'`;
+            upSQL += ';\n\n';
+          });
+        }
+
+        // Modified columns (commented out - requires manual review)
+        if (modifiedColumns.length > 0) {
+          upSQL += `-- Modified Columns (${modifiedColumns.length})\n`;
+          upSQL += `-- =====================================================\n`;
+          upSQL += `-- ⚠️ MANUAL REVIEW REQUIRED - Uncomment and adjust as needed\n\n`;
+          modifiedColumns.forEach(col => {
+            const oldCol = oldColumns.find(c => c.name === col.name);
+            upSQL += `-- Column: ${col.name}\n`;
+            upSQL += `--   Old: ${oldCol.type}${oldCol.nullable === false ? ' NOT NULL' : ''}${oldCol.default ? ` DEFAULT ${oldCol.default}` : ''}\n`;
+            upSQL += `--   New: ${col.type}${col.nullable === false ? ' NOT NULL' : ''}${col.default ? ` DEFAULT ${col.default}` : ''}\n`;
+            upSQL += `-- ALTER TABLE ${table_name} ALTER COLUMN ${col.name} TYPE ${col.type};\n`;
+            if (col.nullable !== oldCol.nullable) {
+              upSQL += `-- ALTER TABLE ${table_name} ALTER COLUMN ${col.name} ${col.nullable === false ? 'SET NOT NULL' : 'DROP NOT NULL'};\n`;
+            }
+            if (col.default !== oldCol.default) {
+              upSQL += `-- ALTER TABLE ${table_name} ALTER COLUMN ${col.name} ${col.default ? `SET DEFAULT ${col.default}` : 'DROP DEFAULT'};\n`;
+            }
+            upSQL += '\n';
+          });
+        }
+
+        // Removed columns (commented out - requires manual review)
+        if (removedColumns.length > 0) {
+          upSQL += `-- Removed Columns (${removedColumns.length})\n`;
+          upSQL += `-- =====================================================\n`;
+          upSQL += `-- ⚠️ MANUAL REVIEW REQUIRED - Uncomment to drop columns\n\n`;
+          removedColumns.forEach(col => {
+            upSQL += `-- DROP COLUMN ${col.name} (was ${col.type})\n`;
+            upSQL += `-- ALTER TABLE ${table_name} DROP COLUMN IF EXISTS ${col.name};\n\n`;
+          });
+        }
+
+        // New indexes
+        const oldIndexes = oldSchema.indexes || [];
+        const newIndexes = schema_definition.indexes || [];
+        const addedIndexes = newIndexes.filter(newIdx =>
+          !oldIndexes.some(oldIdx => oldIdx.name === newIdx.name)
+        );
+
+        if (addedIndexes.length > 0) {
+          upSQL += `-- New Indexes (${addedIndexes.length})\n`;
+          upSQL += `-- =====================================================\n\n`;
+          addedIndexes.forEach(idx => {
+            const columns = idx.columns.join(', ');
+            const order = idx.order ? ` ${idx.order}` : '';
+            upSQL += `CREATE INDEX IF NOT EXISTS ${idx.name} ON ${table_name}(${columns}${order});\n`;
+          });
+          upSQL += '\n';
+        }
+      }
+
+      downSQL = `-- =====================================================\n`;
+      downSQL += `-- ROLLBACK for ALTER TABLE migration\n`;
+      downSQL += `-- =====================================================\n`;
+      downSQL += `-- ⚠️ Manual rollback required for ALTER TABLE changes\n`;
+      downSQL += `-- Review the changes above and write appropriate rollback SQL\n\n`;
+
+      if (addedColumns.length > 0) {
+        downSQL += `-- Drop added columns:\n`;
+        addedColumns.forEach(col => {
+          downSQL += `-- ALTER TABLE ${table_name} DROP COLUMN IF EXISTS ${col.name};\n`;
+        });
+        downSQL += '\n';
+      }
+
       migrationDescription = `Update ${table_name} table schema for ${entity_name} entity`;
     } else {
       // Generate CREATE TABLE migration
