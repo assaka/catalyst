@@ -730,16 +730,20 @@ const DeveloperPluginEditor = ({
 
       switch (newFileType) {
         case 'controller':
-          filePath = `/src/controllers/${newFileName}`;
-          fileExtension = '.js';
-          break;
-        case 'model':
-          filePath = `/src/models/${newFileName}`;
+          filePath = `/controllers/${newFileName}`;
           fileExtension = '.js';
           break;
         case 'component':
-          filePath = `/src/components/${newFileName}`;
+          filePath = `/components/${newFileName}`;
           fileExtension = '.jsx';
+          break;
+        case 'util':
+          filePath = `/utils/${newFileName}`;
+          fileExtension = '.js';
+          break;
+        case 'service':
+          filePath = `/services/${newFileName}`;
+          fileExtension = '.js';
           break;
         case 'hook':
           filePath = `/hooks/${newFileName}`;
@@ -776,6 +780,16 @@ const DeveloperPluginEditor = ({
         // Create default controller function
         const functionName = newFileName.replace(/[^a-zA-Z0-9]/g, '');
         defaultContent = `// Controller: ${newFileName}\n// ${controllerMethod} ${controllerPath}\n// Created: ${new Date().toISOString()}\n\nasync function ${functionName}(req, res, { sequelize }) {\n  try {\n    // Your code here\n    res.json({\n      success: true,\n      message: 'Controller response',\n      data: {}\n    });\n  } catch (error) {\n    console.error('Controller error:', error);\n    res.status(500).json({\n      success: false,\n      error: error.message\n    });\n  }\n}\n`;
+      } else if (newFileType === 'component') {
+        // Create default React component
+        const componentName = newFileName.replace(/[^a-zA-Z0-9]/g, '');
+        defaultContent = `// Component: ${componentName}\n// Created: ${new Date().toISOString()}\n\nimport React from 'react';\n\nexport default function ${componentName}() {\n  return (\n    <div className="p-4">\n      <h3 className="font-semibold">Hello from ${componentName}!</h3>\n      <p>Your component content goes here.</p>\n    </div>\n  );\n}\n`;
+      } else if (newFileType === 'util') {
+        // Create default utility functions
+        defaultContent = `// Utility: ${newFileName}\n// Created: ${new Date().toISOString()}\n\n/**\n * Example utility function\n * @param {any} value - The value to process\n * @returns {any} The processed value\n */\nexport function exampleUtil(value) {\n  return value;\n}\n\n// Add more utility functions here\n`;
+      } else if (newFileType === 'service') {
+        // Create default service
+        defaultContent = `// Service: ${newFileName}\n// Created: ${new Date().toISOString()}\n\nclass ${newFileName.replace(/[^a-zA-Z0-9]/g, '')}Service {\n  constructor() {\n    // Initialize service\n  }\n\n  /**\n   * Example service method\n   */\n  async fetchData() {\n    try {\n      // Your API calls or data operations here\n      return { success: true, data: [] };\n    } catch (error) {\n      console.error('Service error:', error);\n      throw error;\n    }\n  }\n}\n\nexport default new ${newFileName.replace(/[^a-zA-Z0-9]/g, '')}Service();\n`;
       }
 
       // For event files, create the event listener mapping in junction table
@@ -803,13 +817,21 @@ const DeveloperPluginEditor = ({
 
         addTerminalOutput(`✓ Created controller ${newFileName} (${controllerMethod} ${controllerPath})`, 'success');
       } else {
-        // For non-event, non-controller files, use the old file save endpoint
+        // For component, util, service, hook, and other files, use the file save endpoint
+        // These will be saved to plugin_scripts table (for components/utils/services) or plugin_hooks table (for hooks)
         await apiClient.put(`plugins/registry/${plugin.id}/files`, {
           path: filePath,
           content: defaultContent
         });
 
-        addTerminalOutput(`✓ Created ${filePath} successfully`, 'success');
+        const fileTypeLabels = {
+          component: 'Component',
+          util: 'Utility',
+          service: 'Service',
+          hook: 'Hook'
+        };
+        const fileTypeLabel = fileTypeLabels[newFileType] || 'File';
+        addTerminalOutput(`✓ Created ${fileTypeLabel}: ${filePath}`, 'success');
       }
 
       // Close dialog and reset
@@ -1440,11 +1462,19 @@ const DeveloperPluginEditor = ({
                 <Input
                   value={newFileName}
                   onChange={(e) => setNewFileName(e.target.value)}
-                  placeholder={newFileType === 'event' ? 'e.g., analytics_tracker' : 'e.g., UserController'}
+                  placeholder={
+                    newFileType === 'event' ? 'e.g., analytics_tracker' :
+                    newFileType === 'controller' ? 'e.g., trackVisit' :
+                    newFileType === 'component' ? 'e.g., UserWidget' :
+                    newFileType === 'util' ? 'e.g., formatters' :
+                    newFileType === 'service' ? 'e.g., analytics' :
+                    newFileType === 'hook' ? 'e.g., useCartData' :
+                    'e.g., myFile'
+                  }
                   className="w-full"
                   autoFocus
                   onKeyDown={(e) => {
-                    if (e.key === 'Enter' && newFileType !== 'event') {
+                    if (e.key === 'Enter' && newFileType !== 'event' && newFileType !== 'controller') {
                       handleCreateNewFile();
                     } else if (e.key === 'Escape') {
                       setShowNewFileDialog(false);
@@ -1463,13 +1493,16 @@ const DeveloperPluginEditor = ({
                     setNewFileType(e.target.value);
                     setSelectedEventName('');
                     setEventSearchQuery('');
+                    setControllerPath('');
+                    setControllerMethod('POST');
                   }}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                 >
-                  <option value="controller">Controller (.js)</option>
-                  <option value="model">Model (.js)</option>
-                  <option value="component">Component (.jsx)</option>
-                  <option value="hook">Hook (.js)</option>
+                  <option value="controller">Controller - API Endpoint (.js)</option>
+                  <option value="component">Component - React Widget (.jsx)</option>
+                  <option value="util">Utility - Helper Functions (.js)</option>
+                  <option value="service">Service - API/Data Layer (.js)</option>
+                  <option value="hook">Hook - React Hook (.js)</option>
                   <option value="event">Event Listener (.js)</option>
                 </select>
               </div>
