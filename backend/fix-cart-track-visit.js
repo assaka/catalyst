@@ -36,9 +36,9 @@ async function fixCartTrackVisit() {
 
   // ✅ TRACK VISIT IN DATABASE - 100% Database-Driven
   // Uses dynamic controller execution from plugin_controllers table
+  // Using slug instead of hardcoded UUID - works for all cloned plugins!
   try {
-    const pluginId = 'eea24e22-7bc7-457e-8403-df53758ebf76'; // Cart Alert plugin ID
-    const response = await fetch(\`/api/plugins/\${pluginId}/exec/track-visit\`, {
+    const response = await fetch('/api/plugins/cart-hamid/exec/track-visit', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json'
