@@ -118,8 +118,6 @@ export default function Plugins() {
         return true;
       });
 
-      console.log(`📊 Filtered plugins: ${plugins.length} → ${editablePlugins.length} (hid ${plugins.length - editablePlugins.length} core starter templates)`);
-
       // Transform all editable plugins for display
       const allPlugins = (editablePlugins || []).map(plugin => ({
         id: plugin.id, // Use actual UUID from database, not slug
@@ -147,21 +145,12 @@ export default function Plugins() {
         sourceType: plugin.manifest?.sourceType || plugin.sourceType || 'local',
         sourceUrl: plugin.sourceUrl
       }));
-      
-      console.log('🔍 Debug: Transformed plugins:', allPlugins);
-      
+
       setPlugins(allPlugins);
       setMarketplacePlugins(marketplacePlugins || []);
       setStores(storesData);
       setUser(userData);
 
-      // Debug My Plugins filter
-      console.log('🔍 Debug My Plugins:', {
-        userId: userData?.id,
-        pluginsWithCreatorId: allPlugins.filter(p => p.creator_id).length,
-        myPlugins: allPlugins.filter(p => p.creator_id === userData?.id).length,
-        sampleCreatorIds: allPlugins.slice(0, 3).map(p => ({ name: p.name, creator_id: p.creator_id }))
-      });
     } catch (error) {
       console.error("Error loading data:", error);
     } finally {
@@ -200,7 +189,6 @@ export default function Plugins() {
       document.body.removeChild(a);
       URL.revokeObjectURL(url);
 
-      console.log('✅ Plugin package downloaded:', plugin.name);
     } catch (error) {
       console.error('Error downloading plugin:', error);
       alert('Error downloading plugin: ' + error.message);
@@ -290,7 +278,6 @@ export default function Plugins() {
   const handleCreatePlugin = async (pluginData) => {
     try {
       // TODO: Implement modern plugin creation API
-      console.log("Plugin creation not yet implemented for modern plugin system:", pluginData);
       alert("Plugin creation will be available in the next version");
       setShowPluginForm(false);
     } catch (error) {
@@ -316,17 +303,6 @@ export default function Plugins() {
       } else if (tabFilter === 'my-plugins') {
         // Show plugins created by current user (regardless of installed/enabled status)
         const matches = plugin.creator_id === user?.id;
-        if (!matches && plugin.creator_id) {
-          console.log('🔍 Creator ID mismatch:', {
-            pluginName: plugin.name,
-            plugin_creator_id: plugin.creator_id,
-            plugin_creator_id_type: typeof plugin.creator_id,
-            user_id: user?.id,
-            user_id_type: typeof user?.id,
-            areEqual: plugin.creator_id === user?.id,
-            strictEqual: plugin.creator_id === user?.id
-          });
-        }
         matchesStatus = matches;
       }
       // For 'all' tab, show everything

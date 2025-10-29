@@ -103,14 +103,6 @@ class UnifiedDiffFrontendService {
       
       result.push(`@@ -${oldStart},${originalLinesInHunk} +${newStart},${modifiedLinesInHunk} @@`);
       
-      console.log(`🔧 [UnifiedDiff] Hunk ${hunkIndex + 1}:`, {
-        hunkStart: hunkStart + 1,
-        hunkEnd: hunkEnd,
-        changeLines: hunk.changes.map(c => c.lineNumber),
-        originalLinesInHunk,
-        modifiedLinesInHunk
-      });
-      
       // Process each line in the hunk range
       for (let i = hunkStart; i < hunkEnd; i++) {
         const lineNumber = i + 1; // Convert to 1-indexed
@@ -152,12 +144,6 @@ class UnifiedDiffFrontendService {
     let currentHunk = null;
     const minHunkSeparation = 6; // Minimum lines between changes to create separate hunks
     
-    console.log('🔧 [UnifiedDiff] Grouping changes into hunks:', {
-      totalChanges: changes.length,
-      changeLines: changes.map(c => c.lineNumber),
-      minSeparation: minHunkSeparation
-    });
-    
     changes.forEach((change, index) => {
       const shouldStartNewHunk = !currentHunk || 
         (currentHunk.lastChangeLineNumber && 
@@ -166,15 +152,9 @@ class UnifiedDiffFrontendService {
       if (shouldStartNewHunk) {
         // Start new hunk
         if (currentHunk) {
-          console.log('🔚 [UnifiedDiff] Closing hunk:', {
-            startLine: currentHunk.startLine + 1,
-            endLine: currentHunk.lastChangeLineNumber,
-            changes: currentHunk.changes.length
-          });
           hunks.push(currentHunk);
         }
-        
-        console.log('🔜 [UnifiedDiff] Starting new hunk at line:', change.lineNumber);
+
         currentHunk = {
           startLine: change.lineNumber - 1, // 0-indexed
           lastChangeLineNumber: change.lineNumber,
@@ -199,18 +179,8 @@ class UnifiedDiffFrontendService {
     });
     
     if (currentHunk) {
-      console.log('🔚 [UnifiedDiff] Closing final hunk:', {
-        startLine: currentHunk.startLine + 1,
-        endLine: currentHunk.lastChangeLineNumber,
-        changes: currentHunk.changes.length
-      });
       hunks.push(currentHunk);
     }
-    
-    console.log('✅ [UnifiedDiff] Created hunks:', {
-      totalHunks: hunks.length,
-      hunkRanges: hunks.map(h => ({ start: h.startLine + 1, end: h.lastChangeLineNumber }))
-    });
     
     return hunks;
   }
@@ -229,15 +199,9 @@ class UnifiedDiffFrontendService {
    */
   parseUnifiedDiff(unifiedDiff) {
     if (!unifiedDiff) {
-      console.log('⚠️ [UnifiedDiff] parseUnifiedDiff: No unified diff provided');
       return [];
     }
-    
-    console.log('🔧 [UnifiedDiff] parseUnifiedDiff starting:', {
-      unifiedDiffLength: unifiedDiff.length,
-      firstLines: unifiedDiff.split('\n').slice(0, 10)
-    });
-    
+
     const changes = [];
     const lines = unifiedDiff.split('\n');
     let currentHunk = null;
@@ -275,17 +239,6 @@ class UnifiedDiffFrontendService {
         }
       }
     }
-
-    console.log('✅ [UnifiedDiff] parseUnifiedDiff completed:', {
-      changesCount: changes.length,
-      changes: changes.map(c => ({
-        oldStart: c.oldStart,
-        oldLength: c.oldLength,
-        newStart: c.newStart,
-        newLength: c.newLength,
-        changesCount: c.changes?.length || 0
-      }))
-    });
 
     return changes;
   }
@@ -394,16 +347,7 @@ class UnifiedDiffFrontendService {
     // Only consider it line-endings-only if they're identical after normalization
     // BUT different before normalization
     const isLineEndingOnly = (originalCode !== modifiedCode) && (normalizedOriginal === normalizedModified);
-    
-    if (isLineEndingOnly) {
-      console.log('🔍 [UnifiedDiff] Confirmed line-ending-only diff:', {
-        originalLength: originalCode.length,
-        modifiedLength: modifiedCode.length,
-        normalizedOriginalLength: normalizedOriginal.length,
-        normalizedModifiedLength: normalizedModified.length
-      });
-    }
-    
+
     return isLineEndingOnly;
   }
 
@@ -423,12 +367,7 @@ class UnifiedDiffFrontendService {
       
       let currentOriginalLine = 1;
       let currentModifiedLine = 1;
-      
-      console.log('🔧 [UnifiedDiff] Reconstructing from unified diff:', {
-        totalLines: lines.length,
-        firstFewLines: lines.slice(0, 10)
-      });
-      
+
       for (const line of lines) {
         if (line.startsWith('@@')) {
           // Parse hunk header: @@ -oldStart,oldLength +newStart,newLength @@
@@ -465,7 +404,6 @@ class UnifiedDiffFrontendService {
       const modifiedKeys = Object.keys(modifiedLines).map(k => parseInt(k)).filter(k => !isNaN(k));
       
       if (originalKeys.length === 0 && modifiedKeys.length === 0) {
-        console.log('⚠️ [UnifiedDiff] No lines found in diff reconstruction');
         return { success: false, error: 'No lines found in unified diff' };
       }
       

@@ -448,11 +448,6 @@ const CodeEditor = ({
 
   // Generate full file display lines with changes highlighted
   const generateFullFileDisplayLines = useCallback((parsedDiff, originalContent, modifiedContent) => {
-    console.log('✨ [CodeEditor] generateFullFileDisplayLines starting:', {
-      hasOriginal: !!originalContent,
-      hasModified: !!modifiedContent,
-      parsedDiffHunks: parsedDiff?.length || 0
-    });
 
     if (!originalContent || !modifiedContent || !parsedDiff || parsedDiff.length === 0) {
       return [];
@@ -621,20 +616,11 @@ const CodeEditor = ({
       }
     }
     
-    console.log('✅ [CodeEditor] generateFullFileDisplayLines completed:', {
-      totalLines: displayLines.length,
-      additions: displayLines.filter(line => line.type === 'addition').length,
-      deletions: displayLines.filter(line => line.type === 'deletion').length,
-      context: displayLines.filter(line => line.type === 'context').length,
-      changeRangesProcessed: changeRanges.length
-    });
-    
     return displayLines;
   }, []);
 
   // Handle line revert functionality
   const handleLineRevert = useCallback(async (lineIndex, originalLine) => {
-    console.log('🔄 [CodeEditor] Reverting line', lineIndex, 'to original:', originalLine);
 
     if (!originalCode) {
       console.warn('No original code available for revert');
@@ -649,7 +635,6 @@ const CodeEditor = ({
     // Check if this is an addition (line doesn't exist in original)
     if (originalLine === undefined || originalLine === null) {
       // This is an added line - remove it completely
-      console.log('🔄 [CodeEditor] Removing added line at index', lineIndex);
       if (lineIndex >= 0 && lineIndex < currentLines.length) {
         currentLines.splice(lineIndex, 1);
         newCode = currentLines.join('\n');
@@ -659,7 +644,6 @@ const CodeEditor = ({
       }
     } else {
       // This is a modified or deleted line - revert to original
-      console.log('🔄 [CodeEditor] Reverting line', lineIndex, 'to original:', originalLine);
 
       // Find the corresponding original line index
       // For modified lines, the line index should map correctly
@@ -673,8 +657,6 @@ const CodeEditor = ({
         return;
       }
     }
-
-    console.log('🔄 [CodeEditor] New code after revert has', newCode.split('\n').length, 'lines');
 
     // Only call onChange - let parent update value, which triggers useEffect to update localCode
     // This ensures single source of truth and prevents race conditions with diff regeneration
