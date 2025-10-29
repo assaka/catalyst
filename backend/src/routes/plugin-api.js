@@ -2479,6 +2479,89 @@ router.post('/:pluginId/event-listeners', async (req, res) => {
 // Event remapping handled via POST /api/plugins/:pluginId/event-listeners
 
 /**
+ * POST /api/plugins/:pluginId/controllers
+ * Create a new controller
+ */
+router.post('/:pluginId/controllers', async (req, res) => {
+  try {
+    const { pluginId } = req.params;
+    const { controller_name, method, path, handler_code, description, requires_auth = false } = req.body;
+
+    if (!controller_name || !method || !path || !handler_code) {
+      return res.status(400).json({
+        success: false,
+        error: 'controller_name, method, path, and handler_code are required'
+      });
+    }
+
+    // Insert new controller
+    await sequelize.query(`
+      INSERT INTO plugin_controllers
+      (plugin_id, controller_name, method, path, handler_code, description, requires_auth, is_enabled, created_at, updated_at)
+      VALUES ($1, $2, $3, $4, $5, $6, $7, true, NOW(), NOW())
+    `, {
+      bind: [pluginId, controller_name, method, path, handler_code, description || `${method} ${path}`, requires_auth],
+      type: sequelize.QueryTypes.INSERT
+    });
+
+    res.json({
+      success: true,
+      message: 'Controller created successfully'
+    });
+  } catch (error) {
+    console.error('❌ Failed to create controller:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
+/**
+ * PUT /api/plugins/:pluginId/controllers/:controllerName
+ * Update an existing controller
+ */
+router.put('/:pluginId/controllers/:controllerName', async (req, res) => {
+  try {
+    const { pluginId, controllerName } = req.params;
+    const { controller_name, old_controller_name, method, path, handler_code, description, requires_auth } = req.body;
+
+    // Use old_controller_name for lookup if provided, otherwise use controllerName from params
+    const lookupName = old_controller_name || controllerName;
+
+    // Update controller
+    await sequelize.query(`
+      UPDATE plugin_controllers
+      SET controller_name = $1, method = $2, path = $3, handler_code = $4, description = $5, requires_auth = $6, updated_at = NOW()
+      WHERE plugin_id = $7 AND controller_name = $8
+    `, {
+      bind: [
+        controller_name || lookupName,
+        method,
+        path,
+        handler_code,
+        description || `${method} ${path}`,
+        requires_auth !== undefined ? requires_auth : false,
+        pluginId,
+        lookupName
+      ],
+      type: sequelize.QueryTypes.UPDATE
+    });
+
+    res.json({
+      success: true,
+      message: 'Controller updated successfully'
+    });
+  } catch (error) {
+    console.error('❌ Failed to update controller:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
+/**
  * POST /api/plugins/cart-hamid/track-visit
  * Track a cart page visit (Cart Hamid Plugin)
  */

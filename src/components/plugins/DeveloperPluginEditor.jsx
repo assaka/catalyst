@@ -74,6 +74,12 @@ const DeveloperPluginEditor = ({
   const [showEventMappingDialog, setShowEventMappingDialog] = useState(false);
   const [editingEventName, setEditingEventName] = useState('');
   const [editingFileName, setEditingFileName] = useState('');
+  // Controller-specific state
+  const [controllerPath, setControllerPath] = useState('');
+  const [controllerMethod, setControllerMethod] = useState('POST');
+  const [showControllerMappingDialog, setShowControllerMappingDialog] = useState(false);
+  const [editingControllerPath, setEditingControllerPath] = useState('');
+  const [editingControllerMethod, setEditingControllerMethod] = useState('POST');
   const [isRunningMigration, setIsRunningMigration] = useState(false);
   const [showMigrationConfirm, setShowMigrationConfirm] = useState(false);
   const [migrationResult, setMigrationResult] = useState(null);
@@ -703,6 +709,20 @@ const DeveloperPluginEditor = ({
       return;
     }
 
+    // Validate controller path and method for controller files
+    if (newFileType === 'controller') {
+      if (!controllerPath.trim()) {
+        addTerminalOutput('✗ Controller path cannot be empty', 'error');
+        setShowTerminal(true);
+        return;
+      }
+      if (!controllerMethod) {
+        addTerminalOutput('✗ Please select an HTTP method', 'error');
+        setShowTerminal(true);
+        return;
+      }
+    }
+
     try {
       // Determine file path based on type
       let filePath = '';
@@ -752,6 +772,10 @@ const DeveloperPluginEditor = ({
           .join('');
 
         defaultContent = `// Event listener for: ${selectedEventName}\n// Created: ${new Date().toISOString()}\n\nexport default function ${functionName}(data) {\n  // Your code here\n  console.log('${selectedEventName} fired:', data);\n}\n`;
+      } else if (newFileType === 'controller') {
+        // Create default controller function
+        const functionName = newFileName.replace(/[^a-zA-Z0-9]/g, '');
+        defaultContent = `// Controller: ${newFileName}\n// ${controllerMethod} ${controllerPath}\n// Created: ${new Date().toISOString()}\n\nasync function ${functionName}(req, res, { sequelize }) {\n  try {\n    // Your code here\n    res.json({\n      success: true,\n      message: 'Controller response',\n      data: {}\n    });\n  } catch (error) {\n    console.error('Controller error:', error);\n    res.status(500).json({\n      success: false,\n      error: error.message\n    });\n  }\n}\n`;
       }
 
       // For event files, create the event listener mapping in junction table
@@ -766,8 +790,20 @@ const DeveloperPluginEditor = ({
         });
 
         addTerminalOutput(`✓ Created ${filePath} and mapped to ${selectedEventName}`, 'success');
+      } else if (newFileType === 'controller') {
+        // For controller files, create in plugin_controllers table
+        await apiClient.post(`plugins/${plugin.id}/controllers`, {
+          controller_name: newFileName.replace(/\.js$/, ''),
+          method: controllerMethod,
+          path: controllerPath,
+          handler_code: defaultContent,
+          description: `${controllerMethod} ${controllerPath}`,
+          requires_auth: false
+        });
+
+        addTerminalOutput(`✓ Created controller ${newFileName} (${controllerMethod} ${controllerPath})`, 'success');
       } else {
-        // For non-event files, use the old file save endpoint
+        // For non-event, non-controller files, use the old file save endpoint
         await apiClient.put(`plugins/registry/${plugin.id}/files`, {
           path: filePath,
           content: defaultContent
@@ -782,6 +818,8 @@ const DeveloperPluginEditor = ({
       setNewFileType('controller');
       setSelectedEventName('');
       setEventSearchQuery('');
+      setControllerPath('');
+      setControllerMethod('POST');
 
       // Reload file tree
       await loadPluginFiles();
@@ -856,6 +894,77 @@ const DeveloperPluginEditor = ({
     } catch (error) {
       console.error('Error updating event mapping:', error);
       addTerminalOutput(`✗ Error updating event mapping: ${error.response?.data?.error || error.message}`, 'error');
+    }
+  };
+
+  const handleUpdateControllerMapping = async () => {
+    if (!editingControllerPath.trim()) {
+      addTerminalOutput('✗ Controller path cannot be empty', 'error');
+      setShowTerminal(true);
+      return;
+    }
+
+    if (!editingControllerMethod) {
+      addTerminalOutput('✗ HTTP method cannot be empty', 'error');
+      setShowTerminal(true);
+      return;
+    }
+
+    if (!editingFileName.trim()) {
+      addTerminalOutput('✗ Controller name cannot be empty', 'error');
+      setShowTerminal(true);
+      return;
+    }
+
+    if (!selectedFile || !selectedFile.controller_name) {
+      addTerminalOutput('✗ No controller file selected', 'error');
+      setShowTerminal(true);
+      return;
+    }
+
+    try {
+      const nameChanged = editingFileName !== selectedFile.name;
+      const pathChanged = editingControllerPath !== selectedFile.api_path;
+      const methodChanged = editingControllerMethod !== selectedFile.method;
+
+      let changeMessages = [];
+      if (nameChanged) changeMessages.push(`name to ${editingFileName}`);
+      if (pathChanged) changeMessages.push(`path to ${editingControllerPath}`);
+      if (methodChanged) changeMessages.push(`method to ${editingControllerMethod}`);
+
+      if (changeMessages.length > 0) {
+        addTerminalOutput(`⏳ Updating controller ${changeMessages.join(', ')}...`, 'info');
+      } else {
+        addTerminalOutput(`⏳ No changes detected`, 'info');
+      }
+
+      setShowTerminal(true);
+
+      // Update controller metadata
+      await apiClient.put(`plugins/${plugin.id}/controllers/${selectedFile.controller_name}`, {
+        controller_name: editingFileName.replace(/\.js$/, ''),
+        old_controller_name: selectedFile.controller_name,
+        method: editingControllerMethod,
+        path: editingControllerPath,
+        handler_code: fileContent,
+        description: `${editingControllerMethod} ${editingControllerPath}`,
+        requires_auth: selectedFile.requires_auth || false
+      });
+
+      addTerminalOutput(`✓ Controller updated successfully`, 'success');
+
+      // Close dialog and reset
+      setShowControllerMappingDialog(false);
+      setEditingFileName('');
+      setEditingControllerPath('');
+      setEditingControllerMethod('POST');
+
+      // Reload file tree
+      await loadPluginFiles();
+
+    } catch (error) {
+      console.error('Error updating controller:', error);
+      addTerminalOutput(`✗ Error updating controller: ${error.response?.data?.error || error.message}`, 'error');
     }
   };
 
@@ -1142,6 +1251,24 @@ const DeveloperPluginEditor = ({
                         </Button>
                       )}
 
+                      {/* Edit Controller button - only for controller files */}
+                      {selectedFile?.controller_name && selectedFile?.method && selectedFile?.api_path && (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => {
+                            setEditingFileName(selectedFile.name || selectedFile.controller_name);
+                            setEditingControllerPath(selectedFile.api_path);
+                            setEditingControllerMethod(selectedFile.method);
+                            setShowControllerMappingDialog(true);
+                          }}
+                          title="Edit controller name, path, and method"
+                        >
+                          <Code className="w-4 h-4 mr-1" />
+                          Edit Controller
+                        </Button>
+                      )}
+
                       {/* Run Migration button - for migration files */}
                       {selectedFile?.path?.startsWith('/migrations/') && (
                         selectedFile?.migration_status === 'completed' ? (
@@ -1362,13 +1489,49 @@ const DeveloperPluginEditor = ({
                   />
                 </div>
               )}
+
+              {/* Controller Path and Method - Only for Controller type */}
+              {newFileType === 'controller' && (
+                <>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      HTTP Method *
+                    </label>
+                    <select
+                      value={controllerMethod}
+                      onChange={(e) => setControllerMethod(e.target.value)}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    >
+                      <option value="GET">GET</option>
+                      <option value="POST">POST</option>
+                      <option value="PUT">PUT</option>
+                      <option value="PATCH">PATCH</option>
+                      <option value="DELETE">DELETE</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      API Path *
+                    </label>
+                    <Input
+                      value={controllerPath}
+                      onChange={(e) => setControllerPath(e.target.value)}
+                      placeholder="e.g., /track-visit or /api/users/:id"
+                      className="w-full"
+                    />
+                    <p className="text-xs text-gray-500 mt-1">
+                      The endpoint path (can include route parameters like :id)
+                    </p>
+                  </div>
+                </>
+              )}
             </div>
 
             <div className="flex gap-2 mt-6">
               <Button
                 onClick={handleCreateNewFile}
                 className="flex-1"
-                disabled={newFileType === 'event' && !selectedEventName}
+                disabled={(newFileType === 'event' && !selectedEventName) || (newFileType === 'controller' && (!controllerPath.trim() || !controllerMethod))}
               >
                 Create
               </Button>
@@ -1380,6 +1543,8 @@ const DeveloperPluginEditor = ({
                   setNewFileType('controller');
                   setSelectedEventName('');
                   setEventSearchQuery('');
+                  setControllerPath('');
+                  setControllerMethod('POST');
                 }}
                 className="flex-1"
               >
@@ -1440,6 +1605,85 @@ const DeveloperPluginEditor = ({
                   setEditingEventName('');
                   setEditingFileName('');
                   setEventSearchQuery(''); // Reset search
+                }}
+                className="flex-1"
+              >
+                Cancel
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Edit Controller Mapping Dialog */}
+      {showControllerMappingDialog && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg shadow-xl p-6 w-96 max-h-[90vh] overflow-y-auto">
+            <h3 className="text-lg font-semibold mb-4">Edit Controller</h3>
+
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Controller Name
+                </label>
+                <Input
+                  value={editingFileName}
+                  onChange={(e) => setEditingFileName(e.target.value)}
+                  placeholder="e.g., trackVisit"
+                  className="w-full"
+                />
+                <p className="text-xs text-gray-500 mt-1">
+                  Name of the controller (without .js extension)
+                </p>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  HTTP Method *
+                </label>
+                <select
+                  value={editingControllerMethod}
+                  onChange={(e) => setEditingControllerMethod(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                  <option value="GET">GET</option>
+                  <option value="POST">POST</option>
+                  <option value="PUT">PUT</option>
+                  <option value="PATCH">PATCH</option>
+                  <option value="DELETE">DELETE</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  API Path *
+                </label>
+                <Input
+                  value={editingControllerPath}
+                  onChange={(e) => setEditingControllerPath(e.target.value)}
+                  placeholder="e.g., /track-visit or /api/users/:id"
+                  className="w-full"
+                />
+                <p className="text-xs text-gray-500 mt-1">
+                  The endpoint path (can include route parameters)
+                </p>
+              </div>
+            </div>
+
+            <div className="flex gap-2 mt-6">
+              <Button
+                onClick={handleUpdateControllerMapping}
+                className="flex-1"
+              >
+                Update
+              </Button>
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setShowControllerMappingDialog(false);
+                  setEditingFileName('');
+                  setEditingControllerPath('');
+                  setEditingControllerMethod('POST');
                 }}
                 className="flex-1"
               >
