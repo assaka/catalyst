@@ -521,8 +521,11 @@ class ApiClient {
     return this.request('PATCH', endpoint, data, customHeaders);
   }
 
-  async delete(endpoint, customHeaders = {}) {
-    return this.request('DELETE', endpoint, null, customHeaders);
+  async delete(endpoint, options = {}) {
+    // Support both data and customHeaders
+    const data = options.data || null;
+    const customHeaders = options.headers || options;
+    return this.request('DELETE', endpoint, data, customHeaders);
   }
 
   // File upload
