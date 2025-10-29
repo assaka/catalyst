@@ -2683,8 +2683,14 @@ router.delete('/registry/:id/files', async (req, res) => {
           bind: [id, fileName],
           type: sequelize.QueryTypes.DELETE
         });
-        console.log(`✅ Deleted event file from plugin_events: ${fileName}`);
-        deleted = true;
+        const rowCount = result[1]?.rowCount || result[0]?.affectedRows || 0;
+        console.log(`   ${rowCount} rows affected`);
+        if (rowCount > 0) {
+          console.log(`✅ Deleted event file from plugin_events: ${fileName}`);
+          deleted = true;
+        } else {
+          console.log(`❌ No matching event found with file_name: ${fileName}`);
+        }
       } catch (err) {
         console.log(`❌ plugin_events delete error:`, err.message);
         console.log(`   Error details:`, err);
@@ -2703,9 +2709,14 @@ router.delete('/registry/:id/files', async (req, res) => {
           bind: [id, fileName],
           type: sequelize.QueryTypes.DELETE
         });
-        console.log(`✅ Deleted entity from plugin_entities: ${fileName}`);
-        console.log(`   Delete result:`, result);
-        deleted = true;
+        const rowCount = result[1]?.rowCount || result[0]?.affectedRows || 0;
+        console.log(`   ${rowCount} rows affected`);
+        if (rowCount > 0) {
+          console.log(`✅ Deleted entity from plugin_entities: ${fileName}`);
+          deleted = true;
+        } else {
+          console.log(`❌ No matching entity found with entity_name: ${fileName}`);
+        }
       } catch (err) {
         console.log(`❌ plugin_entities delete error:`, err.message);
         console.log(`   Error details:`, err);
@@ -2724,8 +2735,14 @@ router.delete('/registry/:id/files', async (req, res) => {
           bind: [id, fileName],
           type: sequelize.QueryTypes.DELETE
         });
-        console.log(`✅ Deleted controller from plugin_controllers: ${fileName}`);
-        deleted = true;
+        const rowCount = result[1]?.rowCount || result[0]?.affectedRows || 0;
+        console.log(`   ${rowCount} rows affected`);
+        if (rowCount > 0) {
+          console.log(`✅ Deleted controller from plugin_controllers: ${fileName}`);
+          deleted = true;
+        } else {
+          console.log(`❌ No matching controller found with controller_name: ${fileName}`);
+        }
       } catch (err) {
         console.log(`❌ plugin_controllers delete error:`, err.message);
         console.log(`   Error details:`, err);
@@ -2735,20 +2752,43 @@ router.delete('/registry/:id/files', async (req, res) => {
     else {
       attemptedTable = 'plugin_scripts';
       console.log(`🎯 Attempting to delete from ${attemptedTable}, fileName: ${normalizedPath}`);
-      try {
-        const result = await sequelize.query(`
-          DELETE FROM plugin_scripts
-          WHERE plugin_id = $1 AND file_name = $2
-        `, {
-          bind: [id, normalizedPath],
-          type: sequelize.QueryTypes.DELETE
-        });
-        console.log(`✅ Deleted script from plugin_scripts: ${normalizedPath}`);
-        console.log(`   Delete result:`, result);
-        deleted = true;
-      } catch (err) {
-        console.log(`❌ plugin_scripts delete error:`, err.message);
-        console.log(`   Error details:`, err);
+
+      // Try multiple path variations to match the file
+      const pathVariations = [
+        normalizedPath,
+        path,
+        `/${normalizedPath}`,
+        normalizedPath.replace(/^\/+/, ''),
+      ];
+
+      console.log(`   Trying path variations:`, pathVariations);
+
+      for (const pathVariation of pathVariations) {
+        try {
+          const result = await sequelize.query(`
+            DELETE FROM plugin_scripts
+            WHERE plugin_id = $1 AND file_name = $2
+          `, {
+            bind: [id, pathVariation],
+            type: sequelize.QueryTypes.DELETE
+          });
+
+          // Check if any rows were actually deleted
+          const rowCount = result[1]?.rowCount || result[0]?.affectedRows || 0;
+          console.log(`   Tried path "${pathVariation}": ${rowCount} rows affected`);
+
+          if (rowCount > 0) {
+            console.log(`✅ Deleted script from plugin_scripts: ${pathVariation}`);
+            deleted = true;
+            break;
+          }
+        } catch (err) {
+          console.log(`❌ plugin_scripts delete error for "${pathVariation}":`, err.message);
+        }
+      }
+
+      if (!deleted) {
+        console.log(`❌ No matching file found in plugin_scripts with any path variation`);
       }
     }
 
