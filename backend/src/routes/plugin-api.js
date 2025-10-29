@@ -2101,10 +2101,15 @@ router.get('/cart-hamid/stats', async (req, res) => {
  */
 router.delete('/registry/:id/files', async (req, res) => {
   try {
+    console.log('🗑️ DELETE /registry/:id/files called');
+    console.log('   req.params:', req.params);
+    console.log('   req.body:', req.body);
+
     const { id } = req.params;
     const { path } = req.body;
 
     if (!path) {
+      console.log('❌ No path provided in request body');
       return res.status(400).json({
         success: false,
         error: 'File path is required'
@@ -2117,8 +2122,11 @@ router.delete('/registry/:id/files', async (req, res) => {
     const normalizePath = (p) => p.replace(/^\/+/, '').replace(/^src\//, '');
     const normalizedPath = normalizePath(path);
 
+    console.log(`📝 Normalized path: ${normalizedPath}`);
+
     // Prevent deletion of critical files
     if (normalizedPath === 'manifest.json' || normalizedPath === 'README.md') {
+      console.log('❌ Attempted to delete critical file');
       return res.status(400).json({
         success: false,
         error: 'Cannot delete critical files (manifest.json, README.md)'
@@ -2126,12 +2134,15 @@ router.delete('/registry/:id/files', async (req, res) => {
     }
 
     let deleted = false;
+    let attemptedTable = null;
 
     // Handle different file types based on path
 
     // Delete from plugin_events table
     if (normalizedPath.startsWith('events/')) {
       const fileName = normalizedPath.replace('events/', '');
+      attemptedTable = 'plugin_events';
+      console.log(`🎯 Attempting to delete from ${attemptedTable}, fileName: ${fileName}`);
       try {
         const result = await sequelize.query(`
           DELETE FROM plugin_events
@@ -2140,15 +2151,18 @@ router.delete('/registry/:id/files', async (req, res) => {
           bind: [id, fileName],
           type: sequelize.QueryTypes.DELETE
         });
-        console.log(`✅ Deleted event file: ${fileName}`);
+        console.log(`✅ Deleted event file from plugin_events: ${fileName}`);
         deleted = true;
       } catch (err) {
-        console.log(`⚠️ plugin_events table error:`, err.message);
+        console.log(`❌ plugin_events delete error:`, err.message);
+        console.log(`   Error details:`, err);
       }
     }
     // Delete from plugin_entities table
     else if (normalizedPath.startsWith('entities/')) {
       const fileName = normalizedPath.replace('entities/', '').replace('.json', '');
+      attemptedTable = 'plugin_entities';
+      console.log(`🎯 Attempting to delete from ${attemptedTable}, entityName: ${fileName}`);
       try {
         const result = await sequelize.query(`
           DELETE FROM plugin_entities
@@ -2157,15 +2171,19 @@ router.delete('/registry/:id/files', async (req, res) => {
           bind: [id, fileName],
           type: sequelize.QueryTypes.DELETE
         });
-        console.log(`✅ Deleted entity: ${fileName}`);
+        console.log(`✅ Deleted entity from plugin_entities: ${fileName}`);
+        console.log(`   Delete result:`, result);
         deleted = true;
       } catch (err) {
-        console.log(`⚠️ plugin_entities table error:`, err.message);
+        console.log(`❌ plugin_entities delete error:`, err.message);
+        console.log(`   Error details:`, err);
       }
     }
     // Delete from plugin_controllers table
     else if (normalizedPath.startsWith('controllers/')) {
       const fileName = normalizedPath.replace('controllers/', '').replace('.js', '');
+      attemptedTable = 'plugin_controllers';
+      console.log(`🎯 Attempting to delete from ${attemptedTable}, controllerName: ${fileName}`);
       try {
         const result = await sequelize.query(`
           DELETE FROM plugin_controllers
@@ -2174,14 +2192,17 @@ router.delete('/registry/:id/files', async (req, res) => {
           bind: [id, fileName],
           type: sequelize.QueryTypes.DELETE
         });
-        console.log(`✅ Deleted controller: ${fileName}`);
+        console.log(`✅ Deleted controller from plugin_controllers: ${fileName}`);
         deleted = true;
       } catch (err) {
-        console.log(`⚠️ plugin_controllers table error:`, err.message);
+        console.log(`❌ plugin_controllers delete error:`, err.message);
+        console.log(`   Error details:`, err);
       }
     }
     // Delete from plugin_scripts table
     else {
+      attemptedTable = 'plugin_scripts';
+      console.log(`🎯 Attempting to delete from ${attemptedTable}, fileName: ${normalizedPath}`);
       try {
         const result = await sequelize.query(`
           DELETE FROM plugin_scripts
@@ -2190,20 +2211,31 @@ router.delete('/registry/:id/files', async (req, res) => {
           bind: [id, normalizedPath],
           type: sequelize.QueryTypes.DELETE
         });
-        console.log(`✅ Deleted script: ${normalizedPath}`);
+        console.log(`✅ Deleted script from plugin_scripts: ${normalizedPath}`);
+        console.log(`   Delete result:`, result);
         deleted = true;
       } catch (err) {
-        console.log(`⚠️ plugin_scripts table error:`, err.message);
+        console.log(`❌ plugin_scripts delete error:`, err.message);
+        console.log(`   Error details:`, err);
       }
     }
 
+    console.log(`📊 Delete operation result:`, {
+      deleted,
+      attemptedTable,
+      pluginId: id,
+      normalizedPath
+    });
+
     if (!deleted) {
+      console.log(`❌ File not found in any table`);
       return res.status(404).json({
         success: false,
-        error: 'File not found or could not be deleted'
+        error: `File not found or could not be deleted. Attempted table: ${attemptedTable}`
       });
     }
 
+    console.log(`✅ File deletion successful`);
     res.json({
       success: true,
       message: 'File deleted successfully'
