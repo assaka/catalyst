@@ -866,6 +866,9 @@ const DeveloperPluginEditor = ({
                     <h3 className="font-semibold text-gray-900 dark:text-gray-100">
                       Files
                     </h3>
+                    <Badge className="bg-blue-100 text-blue-700 text-xs">
+                      v{plugin.version}
+                    </Badge>
                   </div>
                   <div className="flex items-center gap-1">
                     <Button
