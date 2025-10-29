@@ -2753,17 +2753,35 @@ router.delete('/registry/:id/files', async (req, res) => {
       attemptedTable = 'plugin_scripts';
       console.log(`🎯 Attempting to delete from ${attemptedTable}, fileName: ${normalizedPath}`);
 
+      // First, query what files actually exist for this plugin to help debug
+      try {
+        const existingFiles = await sequelize.query(`
+          SELECT file_name FROM plugin_scripts WHERE plugin_id = $1
+        `, {
+          bind: [id],
+          type: sequelize.QueryTypes.SELECT
+        });
+        console.log(`📋 Existing files in plugin_scripts for this plugin:`, existingFiles.map(f => f.file_name));
+      } catch (err) {
+        console.log(`⚠️ Could not query existing files:`, err.message);
+      }
+
       // Try multiple path variations to match the file
       const pathVariations = [
         normalizedPath,
         path,
         `/${normalizedPath}`,
         normalizedPath.replace(/^\/+/, ''),
+        path.replace(/^\/+/, ''),
+        path.replace(/^src\//, ''),
       ];
 
-      console.log(`   Trying path variations:`, pathVariations);
+      // Remove duplicates
+      const uniquePathVariations = [...new Set(pathVariations)];
 
-      for (const pathVariation of pathVariations) {
+      console.log(`   Trying path variations:`, uniquePathVariations);
+
+      for (const pathVariation of uniquePathVariations) {
         try {
           const result = await sequelize.query(`
             DELETE FROM plugin_scripts
