@@ -1051,7 +1051,7 @@ router.get('/:id/export', async (req, res) => {
 
     // Get entities
     const entities = await sequelize.query(`
-      SELECT entity_name as name, model_code as code
+      SELECT entity_name as name, table_name, model_code as code
       FROM plugin_entities
       WHERE plugin_id = $1
       ORDER BY entity_name ASC
@@ -1191,6 +1191,7 @@ router.get('/:id/export', async (req, res) => {
 
       entities: entities.map(e => ({
         name: e.name,
+        tableName: e.table_name,
         code: e.code
       })),
 
@@ -1444,13 +1445,14 @@ router.post('/import', async (req, res) => {
     for (const entity of packageData.entities || []) {
       await sequelize.query(`
         INSERT INTO plugin_entities (
-          plugin_id, entity_name, model_code
+          plugin_id, entity_name, table_name, model_code
         )
-        VALUES ($1, $2, $3)
+        VALUES ($1, $2, $3, $4)
       `, {
         bind: [
           pluginId,
           entity.name,
+          entity.tableName || entity.name.toLowerCase().replace(/\s+/g, '_'),
           entity.code
         ],
         type: sequelize.QueryTypes.INSERT,
