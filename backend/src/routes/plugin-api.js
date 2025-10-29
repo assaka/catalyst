@@ -1440,6 +1440,103 @@ router.put('/registry/:id/files', async (req, res) => {
       }
     }
 
+    // Handle entity files - update plugin_entities table
+    if (normalizedRequestPath.startsWith('entities/')) {
+      const entityFileName = normalizedRequestPath.replace('entities/', '').replace('.json', '');
+
+      console.log(`🔄 Saving entity file: ${entityFileName}`);
+
+      try {
+        // Parse entity JSON
+        const entityData = JSON.parse(content);
+        const entityName = entityData.entity_name || entityFileName;
+        const tableName = entityData.table_name;
+
+        if (!tableName) {
+          return res.status(400).json({
+            success: false,
+            error: 'Entity JSON must include table_name field'
+          });
+        }
+
+        // Check if entity exists
+        const existing = await sequelize.query(`
+          SELECT id FROM plugin_entities
+          WHERE plugin_id = $1 AND entity_name = $2
+        `, {
+          bind: [id, entityName],
+          type: sequelize.QueryTypes.SELECT
+        });
+
+        if (existing.length > 0) {
+          // Update existing entity
+          await sequelize.query(`
+            UPDATE plugin_entities
+            SET schema_definition = $1,
+                table_name = $2,
+                description = $3,
+                updated_at = NOW()
+            WHERE plugin_id = $4 AND entity_name = $5
+          `, {
+            bind: [
+              entityData.schema_definition,
+              tableName,
+              entityData.description || '',
+              id,
+              entityName
+            ],
+            type: sequelize.QueryTypes.UPDATE
+          });
+          console.log(`✅ Updated entity: ${entityName}`);
+        } else {
+          // Insert new entity
+          await sequelize.query(`
+            INSERT INTO plugin_entities (
+              plugin_id, entity_name, table_name, description,
+              schema_definition, migration_status, is_enabled
+            ) VALUES ($1, $2, $3, $4, $5, 'pending', true)
+          `, {
+            bind: [
+              id,
+              entityName,
+              tableName,
+              entityData.description || '',
+              entityData.schema_definition
+            ],
+            type: sequelize.QueryTypes.INSERT
+          });
+          console.log(`✅ Created entity: ${entityName}`);
+        }
+
+        return res.json({
+          success: true,
+          message: 'Entity saved successfully in plugin_entities table'
+        });
+      } catch (entityError) {
+        console.error(`❌ Error saving entity:`, entityError);
+        return res.status(500).json({
+          success: false,
+          error: `Failed to save entity: ${entityError.message}`
+        });
+      }
+    }
+
+    // Handle controller files - update plugin_controllers table
+    if (normalizedRequestPath.startsWith('controllers/')) {
+      const controllerFileName = normalizedRequestPath.replace('controllers/', '').replace('.js', '');
+
+      console.log(`🔄 Saving controller file: ${controllerFileName}`);
+
+      try {
+        // Note: For now, just save to plugin_scripts
+        // Full controller metadata editing would require parsing the function code
+        // or having a separate UI for controller properties
+        console.log(`⚠️ Controller files saved to plugin_scripts (full controller editing not yet implemented)`);
+      } catch (err) {
+        console.log(`⚠️ Controller save error:`, err.message);
+      }
+    }
+
     // For other files (components, utils, etc.), update plugin_scripts table
     console.log(`🔄 Upserting file ${normalizedRequestPath} in plugin_scripts table...`);
 
@@ -2419,6 +2516,7 @@ router.post('/:id/generate-entity-migration', async (req, res) => {
       }
 
       migrationDescription = `Update ${table_name} table schema for ${entity_name} entity`;
+
     } else {
       console.log(`📊 Generating CREATE TABLE migration (table does not exist)`);
 
@@ -2453,6 +2551,47 @@ router.post('/:id/generate-entity-migration', async (req, res) => {
       migrationDescription = `Create ${table_name} table for ${entity_name} entity`;
     }
 
+    // Determine migration file name
+    let migrationFileName;
+    if (tableExistsInDB) {
+      // Generate descriptive name for ALTER TABLE based on changes
+      let migrationNameParts = ['alter', table_name, 'table'];
+
+      const oldSchema = await sequelize.query(`
+        SELECT schema_definition FROM plugin_entities
+        WHERE plugin_id = $1 AND entity_name = $2
+      `, {
+        bind: [id, entity_name],
+        type: sequelize.QueryTypes.SELECT
+      });
+
+      if (oldSchema.length > 0) {
+        const oldColumns = (oldSchema[0].schema_definition.columns || []).map(c => c.name);
+        const newColumns = (schema_definition.columns || []).map(c => c.name);
+        const addedCols = newColumns.filter(c => !oldColumns.includes(c));
+        const removedCols = oldColumns.filter(c => !newColumns.includes(c));
+
+        if (addedCols.length > 0 && addedCols.length <= 3) {
+          migrationNameParts.push('add', ...addedCols);
+        } else if (addedCols.length > 3) {
+          migrationNameParts.push('add', `${addedCols.length}_columns`);
+        }
+
+        if (removedCols.length > 0 && removedCols.length <= 3) {
+          migrationNameParts.push('drop', ...removedCols);
+        } else if (removedCols.length > 3) {
+          migrationNameParts.push('drop', `${removedCols.length}_columns`);
+        }
+      }
+
+      migrationFileName = migrationNameParts.join('_') + '.sql';
+    } else {
+      // Simple name for CREATE TABLE
+      migrationFileName = `create_${table_name}_table.sql`;
+    }
+
+    console.log(`📝 Migration file name: ${migrationVersion}_${migrationFileName}`);
+
     // Create PENDING migration (don't execute)
     await sequelize.query(`
       INSERT INTO plugin_migrations (
@@ -2463,7 +2602,7 @@ router.post('/:id/generate-entity-migration', async (req, res) => {
       bind: [
         id,
         pluginName,
-        is_update ? `update_${table_name}_table.sql` : `create_${table_name}_table.sql`,
+        migrationFileName,
         migrationVersion,
         migrationDescription,
         upSQL,
