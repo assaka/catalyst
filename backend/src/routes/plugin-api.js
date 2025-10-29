@@ -854,6 +854,15 @@ ${m.down_sql || '-- No down SQL'}`,
     // Add files from plugin_scripts table
     allFiles = allFiles.concat(pluginScripts);
 
+    // Add files from plugin_hooks table (as hook files)
+    const hookFiles = hooks.map(h => ({
+      name: `hooks/${h.hook_name.replace(/\./g, '_')}.js`,
+      code: h.handler_code,
+      hook_name: h.hook_name,  // Preserve hook name for metadata
+      priority: h.priority      // Preserve priority
+    }));
+    allFiles = allFiles.concat(hookFiles);
+
     // Add files from plugin_events table (as event files)
     const eventFiles = pluginEvents.map(e => ({
       name: `events/${e.name}`,
@@ -2562,132 +2571,91 @@ router.put('/:pluginId/controllers/:controllerName', async (req, res) => {
 });
 
 /**
- * POST /api/plugins/cart-hamid/track-visit
- * Track a cart page visit (Cart Hamid Plugin)
+ * Dynamic Controller Execution - 100% Database-Driven
+ * Route: /api/plugins/:pluginId/exec/*
+ * Executes controllers from plugin_controllers table
  */
-router.post('/cart-hamid/track-visit', async (req, res) => {
+router.all('/:pluginId/exec/*', async (req, res) => {
   try {
-    const {
-      user_id,
-      session_id,
-      cart_items_count,
-      cart_subtotal,
-      cart_total,
-      user_agent,
-      referrer_url
-    } = req.body;
+    const { pluginId } = req.params;
+    const controllerPath = '/' + (req.params[0] || '');
+    const method = req.method;
 
-    const result = await sequelize.query(`
-      INSERT INTO hamid_cart (
-        user_id, session_id, cart_items_count,
-        cart_subtotal, cart_total, user_agent,
-        ip_address, referrer_url
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
-      RETURNING *
+    // Find matching controller in plugin_controllers table
+    const controllers = await sequelize.query(`
+      SELECT pc.*, pr.slug
+      FROM plugin_controllers pc
+      JOIN plugin_registry pr ON pc.plugin_id = pr.id
+      WHERE pc.plugin_id = $1 AND pc.method = $2 AND pc.path = $3 AND pc.is_enabled = true
     `, {
-      bind: [
-        user_id || null,
-        session_id || null,
-        cart_items_count || 0,
-        cart_subtotal || 0,
-        cart_total || 0,
-        user_agent || null,
-        req.ip || null,
-        referrer_url || null
-      ],
-      type: sequelize.QueryTypes.INSERT
-    });
-
-    console.log('✅ Cart visit tracked:', result[0][0].id);
-
-    res.json({
-      success: true,
-      visit: result[0][0]
-    });
-  } catch (error) {
-    console.error('Failed to track cart visit:', error);
-    res.status(500).json({
-      success: false,
-      error: error.message
-    });
-  }
-});
-
-/**
- * GET /api/plugins/cart-hamid/visits
- * Get all cart visits with pagination (Cart Hamid Plugin)
- */
-router.get('/cart-hamid/visits', async (req, res) => {
-  try {
-    const limit = parseInt(req.query.limit) || 50;
-    const offset = parseInt(req.query.offset) || 0;
-
-    const visits = await sequelize.query(`
-      SELECT * FROM hamid_cart
-      ORDER BY visited_at DESC
-      LIMIT $1 OFFSET $2
-    `, {
-      bind: [limit, offset],
+      bind: [pluginId, method, controllerPath],
       type: sequelize.QueryTypes.SELECT
     });
 
-    const countResult = await sequelize.query(`
-      SELECT COUNT(*) as total FROM hamid_cart
-    `, {
-      type: sequelize.QueryTypes.SELECT
-    });
+    if (controllers.length === 0) {
+      return res.status(404).json({
+        success: false,
+        error: `Controller not found: ${method} ${controllerPath}`,
+        pluginId
+      });
+    }
 
-    const total = parseInt(countResult[0].total || countResult[0].count || 0);
+    const controller = controllers[0];
 
-    console.log(`✅ Fetched ${visits.length} cart visits (total: ${total})`);
+    // Create execution context for the controller
+    const context = {
+      req: {
+        body: req.body,
+        query: req.query,
+        params: req.params,
+        headers: req.headers,
+        ip: req.ip,
+        user: req.user,
+        method: req.method
+      },
+      res: {
+        json: (data) => {
+          if (!res.headersSent) {
+            res.json(data);
+          }
+        },
+        status: (code) => {
+          if (!res.headersSent) {
+            res.status(code);
+          }
+          return {
+            json: (data) => {
+              if (!res.headersSent) {
+                res.json(data);
+              }
+            }
+          };
+        }
+      },
+      sequelize
+    };
 
-    res.json({
-      success: true,
-      visits,
-      total,
-      limit,
-      offset
-    });
+    // Execute the controller handler code
+    const handlerFunc = new Function('req', 'res', 'context', `
+      const { sequelize } = context;
+      return (${controller.handler_code})(req, res, { sequelize });
+    `);
+
+    await handlerFunc(context.req, context.res, context);
+
+    // If handler didn't send a response, send a default success
+    if (!res.headersSent) {
+      res.json({ success: true, message: 'Controller executed successfully' });
+    }
+
   } catch (error) {
-    console.error('Failed to get cart visits:', error);
-    res.status(500).json({
-      success: false,
-      error: error.message
-    });
-  }
-});
-
-/**
- * GET /api/plugins/cart-hamid/stats
- * Get cart visit statistics (Cart Hamid Plugin)
- */
-router.get('/cart-hamid/stats', async (req, res) => {
-  try {
-    const stats = await sequelize.query(`
-      SELECT
-        COUNT(*) as total_visits,
-        COUNT(DISTINCT user_id) as unique_users,
-        COUNT(DISTINCT session_id) as unique_sessions,
-        AVG(cart_items_count) as avg_items,
-        AVG(cart_total) as avg_total,
-        MAX(visited_at) as last_visit
-      FROM hamid_cart
-    `, {
-      type: sequelize.QueryTypes.SELECT
-    });
-
-    console.log('✅ Cart visit stats retrieved');
-
-    res.json({
-      success: true,
-      ...stats[0]
-    });
-  } catch (error) {
-    console.error('Failed to get cart stats:', error);
-    res.status(500).json({
-      success: false,
-      error: error.message
-    });
+    console.error(`❌ Dynamic controller execution error:`, error);
+    if (!res.headersSent) {
+      res.status(500).json({
+        success: false,
+        error: error.message
+      });
+    }
   }
 });
 

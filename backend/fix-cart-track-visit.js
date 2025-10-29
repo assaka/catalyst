@@ -34,9 +34,11 @@ async function fixCartTrackVisit() {
   const subtotal = data?.subtotal || 0;
   const total = data?.total || 0;
 
-  // ✅ TRACK VISIT IN DATABASE
+  // ✅ TRACK VISIT IN DATABASE - 100% Database-Driven
+  // Uses dynamic controller execution from plugin_controllers table
   try {
-    const response = await fetch('/api/plugins/cart-hamid/track-visit', {
+    const pluginId = 'eea24e22-7bc7-457e-8403-df53758ebf76'; // Cart Alert plugin ID
+    const response = await fetch(\`/api/plugins/\${pluginId}/exec/track-visit\`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json'
