@@ -1154,112 +1154,122 @@ const DeveloperPluginEditor = ({
                         </div>
                     )}
 
-                  <div className="flex items-center gap-2">
-                    {/* Edit Event Mapping button - only for event files */}
-                    {selectedFile?.eventName && (
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() => {
-                          setEditingEventName(selectedFile.eventName);
-                          setEditingFileName(selectedFile.name); // Set current filename
-                          setEventSearchQuery(''); // Reset search when opening
-                          setShowEventMappingDialog(true);
-                        }}
-                        title="Edit filename and event mapping"
-                      >
-                        <Zap className="w-4 h-4 mr-1" />
-                        Edit Event
-                      </Button>
-                    )}
-
-                    {/* Run Migration button - for migration files */}
-                    {selectedFile?.path?.startsWith('/migrations/') && (
-                      selectedFile?.migration_status === 'completed' ? (
-                        <span className="text-sm text-green-600 font-medium">
-                          Already Executed
-                        </span>
-                      ) : (
+                  <div className="flex items-center justify-between w-full">
+                    {/* Left side: Context-specific action buttons */}
+                    <div className="flex items-center gap-2">
+                      {/* Edit Event Mapping button - only for event files */}
+                      {selectedFile?.eventName && (
                         <Button
                           size="sm"
                           variant="outline"
-                          className="bg-blue-50 hover:bg-blue-100 text-blue-700 border-blue-300"
+                          onClick={() => {
+                            setEditingEventName(selectedFile.eventName);
+                            setEditingFileName(selectedFile.name); // Set current filename
+                            setEventSearchQuery(''); // Reset search when opening
+                            setShowEventMappingDialog(true);
+                          }}
+                          title="Edit filename and event mapping"
+                        >
+                          <Zap className="w-4 h-4 mr-1" />
+                          Edit Event
+                        </Button>
+                      )}
+
+                      {/* Run Migration button - for migration files */}
+                      {selectedFile?.path?.startsWith('/migrations/') && (
+                        selectedFile?.migration_status === 'completed' ? (
+                          <span className="text-sm text-green-600 font-medium">
+                            Already Executed
+                          </span>
+                        ) : (
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="bg-blue-50 hover:bg-blue-100 text-blue-700 border-blue-300"
+                            onClick={() => setShowMigrationConfirm(true)}
+                            disabled={isRunningMigration}
+                            title="Execute this migration"
+                          >
+                            <Play className="w-4 h-4 mr-1" />
+                            {isRunningMigration ? 'Running...' : 'Run Migration'}
+                          </Button>
+                        )
+                      )}
+
+                      {/* Generate Migration button - only show when entity file is modified */}
+                      {selectedFile?.path?.startsWith('/entities/') && fileContent !== originalContent && (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className={
+                            selectedFile?.migration_status === 'migrated'
+                              ? 'bg-orange-50 hover:bg-orange-100 text-orange-700 border-orange-300'
+                              : 'bg-purple-50 hover:bg-purple-100 text-purple-700 border-purple-300'
+                          }
                           onClick={() => setShowMigrationConfirm(true)}
                           disabled={isRunningMigration}
-                          title="Execute this migration"
+                          title={
+                            selectedFile?.migration_status === 'migrated'
+                              ? 'Generate ALTER TABLE migration for updated schema'
+                              : 'Generate CREATE TABLE migration for this entity'
+                          }
                         >
-                          <Play className="w-4 h-4 mr-1" />
-                          {isRunningMigration ? 'Running...' : 'Run Migration'}
+                          <Wand2 className="w-4 h-4 mr-1" />
+                          {isRunningMigration ? 'Generating...' :
+                           selectedFile?.migration_status === 'migrated' ? 'Generate Update' : 'Generate Migration'}
                         </Button>
-                      )
-                    )}
+                      )}
 
-                    {/* Generate Migration button - only show when entity file is modified */}
-                    {selectedFile?.path?.startsWith('/entities/') && fileContent !== originalContent && (
+                      <SaveButton
+                        size="sm"
+                        onClick={handleSave}
+                        loading={isSaving}
+                        success={saveSuccess}
+                        disabled={!selectedFile || fileContent === originalContent}
+                        defaultText="Save"
+                      />
+                    </div>
+
+                    {/* Right side: Utility buttons */}
+                    <div className="flex items-center gap-1">
                       <Button
                         size="sm"
                         variant="outline"
-                        className={
-                          selectedFile?.migration_status === 'migrated'
-                            ? 'bg-orange-50 hover:bg-orange-100 text-orange-700 border-orange-300'
-                            : 'bg-purple-50 hover:bg-purple-100 text-purple-700 border-purple-300'
-                        }
-                        onClick={() => setShowMigrationConfirm(true)}
-                        disabled={isRunningMigration}
-                        title={
-                          selectedFile?.migration_status === 'migrated'
-                            ? 'Generate ALTER TABLE migration for updated schema'
-                            : 'Generate CREATE TABLE migration for this entity'
-                        }
+                        onClick={runTests}
+                        title="Run tests"
                       >
-                        <Wand2 className="w-4 h-4 mr-1" />
-                        {isRunningMigration ? 'Generating...' :
-                         selectedFile?.migration_status === 'migrated' ? 'Generate Update' : 'Generate Migration'}
+                        <Bug className="w-4 h-4 mr-1" />
+                        Test
                       </Button>
-                    )}
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={runTests}
-                    >
-                      <Bug className="w-4 h-4 mr-1" />
-                      Test
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => setShowTerminal(!showTerminal)}
-                    >
-                      <Terminal className="w-4 h-4 mr-1" />
-                      Terminal
-                    </Button>
-                    <SaveButton
-                      size="sm"
-                      onClick={handleSave}
-                      loading={isSaving}
-                      success={saveSuccess}
-                      disabled={!selectedFile || fileContent === originalContent}
-                      defaultText="Save"
-                    />
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => setShowDeleteConfirm(true)}
-                      disabled={!selectedFile || isDeleting}
-                      className="text-red-600 hover:text-red-700 hover:bg-red-50"
-                      title="Delete this file"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => setEditorMinimized(true)}
-                      title="Minimize editor"
-                      className="h-6 w-6 p-0"
-                    >
-                      <ChevronRight className="w-4 h-4" />
-                    </Button>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => setShowTerminal(!showTerminal)}
+                        title="Toggle terminal"
+                      >
+                        <Terminal className="w-4 h-4 mr-1" />
+                        Terminal
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => setShowDeleteConfirm(true)}
+                        disabled={!selectedFile || isDeleting}
+                        className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                        title="Delete this file"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => setEditorMinimized(true)}
+                        title="Minimize editor"
+                        className="h-6 w-6 p-0"
+                      >
+                        <ChevronRight className="w-4 h-4" />
+                      </Button>
+                    </div>
                   </div>
                 </div>
 
