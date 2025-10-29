@@ -1069,6 +1069,61 @@ router.get('/:id/export', async (req, res) => {
       type: sequelize.QueryTypes.SELECT
     });
 
+    // Get plugin data (key-value storage)
+    const pluginData = await sequelize.query(`
+      SELECT data_key, data_value
+      FROM plugin_data
+      WHERE plugin_id = $1
+      ORDER BY data_key ASC
+    `, {
+      bind: [id],
+      type: sequelize.QueryTypes.SELECT
+    });
+
+    // Get plugin dependencies
+    const pluginDependencies = await sequelize.query(`
+      SELECT package_name, version, bundled_code
+      FROM plugin_dependencies
+      WHERE plugin_id = $1
+      ORDER BY package_name ASC
+    `, {
+      bind: [id],
+      type: sequelize.QueryTypes.SELECT
+    });
+
+    // Get plugin docs
+    const pluginDocs = await sequelize.query(`
+      SELECT title, content, category, order_position
+      FROM plugin_docs
+      WHERE plugin_id = $1
+      ORDER BY order_position ASC, title ASC
+    `, {
+      bind: [id],
+      type: sequelize.QueryTypes.SELECT
+    });
+
+    // Get admin pages
+    const adminPages = await sequelize.query(`
+      SELECT page_key, page_name, route, component_code, description, icon, category, order_position
+      FROM plugin_admin_pages
+      WHERE plugin_id = $1
+      ORDER BY order_position ASC
+    `, {
+      bind: [id],
+      type: sequelize.QueryTypes.SELECT
+    });
+
+    // Get admin scripts
+    const adminScripts = await sequelize.query(`
+      SELECT script_name, script_code, description, load_order
+      FROM plugin_admin_scripts
+      WHERE plugin_id = $1
+      ORDER BY load_order ASC
+    `, {
+      bind: [id],
+      type: sequelize.QueryTypes.SELECT
+    });
+
     // Build package
     const packageData = {
       packageVersion: '1.0.0',
@@ -1134,10 +1189,46 @@ router.get('/:id/export', async (req, res) => {
       controllers: controllers.map(c => ({
         name: c.name,
         code: c.code
+      })),
+
+      pluginData: pluginData.map(d => ({
+        dataKey: d.data_key,
+        dataValue: d.data_value
+      })),
+
+      pluginDependencies: pluginDependencies.map(d => ({
+        packageName: d.package_name,
+        version: d.version,
+        bundledCode: d.bundled_code
+      })),
+
+      pluginDocs: pluginDocs.map(d => ({
+        title: d.title,
+        content: d.content,
+        category: d.category,
+        orderPosition: d.order_position
+      })),
+
+      adminPages: adminPages.map(p => ({
+        pageKey: p.page_key,
+        pageName: p.page_name,
+        route: p.route,
+        componentCode: p.component_code,
+        description: p.description,
+        icon: p.icon,
+        category: p.category,
+        orderPosition: p.order_position
+      })),
+
+      adminScripts: adminScripts.map(s => ({
+        scriptName: s.script_name,
+        scriptCode: s.script_code,
+        description: s.description,
+        loadOrder: s.load_order
       }))
     };
 
-    console.log(`  ✅ Exported ${scripts.length} files, ${events.length} events, ${hooks.length} hooks, ${widgets.length} widgets, ${entities.length} entities, ${migrations.length} migrations, ${controllers.length} controllers`);
+    console.log(`  ✅ Exported ${scripts.length} files, ${events.length} events, ${hooks.length} hooks, ${widgets.length} widgets, ${entities.length} entities, ${migrations.length} migrations, ${controllers.length} controllers, ${pluginData.length} data entries, ${pluginDependencies.length} dependencies, ${pluginDocs.length} docs, ${adminPages.length} admin pages, ${adminScripts.length} admin scripts`);
 
     res.json(packageData);
   } catch (error) {
@@ -1377,7 +1468,103 @@ router.post('/import', async (req, res) => {
       });
     }
 
-    console.log(`  ✅ Imported: ${packageData.files?.length || 0} files, ${packageData.events?.length || 0} events, ${packageData.hooks?.length || 0} hooks, ${packageData.widgets?.length || 0} widgets, ${packageData.entities?.length || 0} entities, ${packageData.migrations?.length || 0} migrations, ${packageData.controllers?.length || 0} controllers`);
+    // Import plugin data (key-value storage)
+    for (const data of packageData.pluginData || []) {
+      await sequelize.query(`
+        INSERT INTO plugin_data (
+          plugin_id, data_key, data_value
+        )
+        VALUES ($1, $2, $3)
+      `, {
+        bind: [
+          pluginId,
+          data.dataKey,
+          JSON.stringify(data.dataValue)
+        ],
+        type: sequelize.QueryTypes.INSERT
+      });
+    }
+
+    // Import plugin dependencies
+    for (const dependency of packageData.pluginDependencies || []) {
+      await sequelize.query(`
+        INSERT INTO plugin_dependencies (
+          plugin_id, package_name, version, bundled_code
+        )
+        VALUES ($1, $2, $3, $4)
+      `, {
+        bind: [
+          pluginId,
+          dependency.packageName,
+          dependency.version,
+          dependency.bundledCode
+        ],
+        type: sequelize.QueryTypes.INSERT
+      });
+    }
+
+    // Import plugin docs
+    for (const doc of packageData.pluginDocs || []) {
+      await sequelize.query(`
+        INSERT INTO plugin_docs (
+          plugin_id, title, content, category, order_position
+        )
+        VALUES ($1, $2, $3, $4, $5)
+      `, {
+        bind: [
+          pluginId,
+          doc.title,
+          doc.content,
+          doc.category,
+          doc.orderPosition || 100
+        ],
+        type: sequelize.QueryTypes.INSERT
+      });
+    }
+
+    // Import admin pages
+    for (const page of packageData.adminPages || []) {
+      await sequelize.query(`
+        INSERT INTO plugin_admin_pages (
+          plugin_id, page_key, page_name, route, component_code, description, icon, category, order_position, is_enabled
+        )
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, true)
+      `, {
+        bind: [
+          pluginId,
+          page.pageKey,
+          page.pageName,
+          page.route,
+          page.componentCode,
+          page.description,
+          page.icon,
+          page.category,
+          page.orderPosition || 100
+        ],
+        type: sequelize.QueryTypes.INSERT
+      });
+    }
+
+    // Import admin scripts
+    for (const script of packageData.adminScripts || []) {
+      await sequelize.query(`
+        INSERT INTO plugin_admin_scripts (
+          plugin_id, script_name, script_code, description, load_order, is_enabled
+        )
+        VALUES ($1, $2, $3, $4, $5, true)
+      `, {
+        bind: [
+          pluginId,
+          script.scriptName,
+          script.scriptCode,
+          script.description,
+          script.loadOrder || 100
+        ],
+        type: sequelize.QueryTypes.INSERT
+      });
+    }
+
+    console.log(`  ✅ Imported: ${packageData.files?.length || 0} files, ${packageData.events?.length || 0} events, ${packageData.hooks?.length || 0} hooks, ${packageData.widgets?.length || 0} widgets, ${packageData.entities?.length || 0} entities, ${packageData.migrations?.length || 0} migrations, ${packageData.controllers?.length || 0} controllers, ${packageData.pluginData?.length || 0} data entries, ${packageData.pluginDependencies?.length || 0} dependencies, ${packageData.pluginDocs?.length || 0} docs, ${packageData.adminPages?.length || 0} admin pages, ${packageData.adminScripts?.length || 0} admin scripts`);
 
     res.json({
       success: true,
