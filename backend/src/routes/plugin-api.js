@@ -1051,7 +1051,7 @@ router.get('/:id/export', async (req, res) => {
 
     // Get entities
     const entities = await sequelize.query(`
-      SELECT entity_name as name, table_name, model_code as code
+      SELECT entity_name as name, table_name, model_code as code, schema_definition, description
       FROM plugin_entities
       WHERE plugin_id = $1
       ORDER BY entity_name ASC
@@ -1062,7 +1062,7 @@ router.get('/:id/export', async (req, res) => {
 
     // Get migrations
     const migrations = await sequelize.query(`
-      SELECT migration_name as name, up_sql as code
+      SELECT migration_name as name, plugin_name, migration_version, up_sql as code
       FROM plugin_migrations
       WHERE plugin_id = $1
       ORDER BY migration_name ASC
@@ -1073,7 +1073,7 @@ router.get('/:id/export', async (req, res) => {
 
     // Get controllers
     const controllers = await sequelize.query(`
-      SELECT controller_name as name, handler_code as code
+      SELECT controller_name as name, method, path, handler_code as code, description
       FROM plugin_controllers
       WHERE plugin_id = $1
       ORDER BY controller_name ASC
@@ -1192,17 +1192,24 @@ router.get('/:id/export', async (req, res) => {
       entities: entities.map(e => ({
         name: e.name,
         tableName: e.table_name,
-        code: e.code
+        code: e.code,
+        schemaDefinition: e.schema_definition,
+        description: e.description
       })),
 
       migrations: migrations.map(m => ({
         name: m.name,
+        pluginName: m.plugin_name,
+        migrationVersion: m.migration_version,
         code: m.code
       })),
 
       controllers: controllers.map(c => ({
         name: c.name,
-        code: c.code
+        method: c.method,
+        path: c.path,
+        code: c.code,
+        description: c.description
       })),
 
       pluginData: pluginDataKV.map(d => ({
@@ -1445,15 +1452,17 @@ router.post('/import', async (req, res) => {
     for (const entity of packageData.entities || []) {
       await sequelize.query(`
         INSERT INTO plugin_entities (
-          plugin_id, entity_name, table_name, model_code
+          plugin_id, entity_name, table_name, model_code, schema_definition, description
         )
-        VALUES ($1, $2, $3, $4)
+        VALUES ($1, $2, $3, $4, $5, $6)
       `, {
         bind: [
           pluginId,
           entity.name,
           entity.tableName || entity.name.toLowerCase().replace(/\s+/g, '_'),
-          entity.code
+          entity.code,
+          entity.schemaDefinition || {},
+          entity.description || null
         ],
         type: sequelize.QueryTypes.INSERT,
         transaction
@@ -1464,13 +1473,15 @@ router.post('/import', async (req, res) => {
     for (const migration of packageData.migrations || []) {
       await sequelize.query(`
         INSERT INTO plugin_migrations (
-          plugin_id, migration_name, up_sql
+          plugin_id, plugin_name, migration_name, migration_version, up_sql
         )
-        VALUES ($1, $2, $3)
+        VALUES ($1, $2, $3, $4, $5)
       `, {
         bind: [
           pluginId,
+          migration.pluginName || uniqueName,
           migration.name,
+          migration.migrationVersion || `v${Date.now()}`,
           migration.code
         ],
         type: sequelize.QueryTypes.INSERT,
@@ -1482,14 +1493,17 @@ router.post('/import', async (req, res) => {
     for (const controller of packageData.controllers || []) {
       await sequelize.query(`
         INSERT INTO plugin_controllers (
-          plugin_id, controller_name, handler_code
+          plugin_id, controller_name, method, path, handler_code, description
         )
-        VALUES ($1, $2, $3)
+        VALUES ($1, $2, $3, $4, $5, $6)
       `, {
         bind: [
           pluginId,
           controller.name,
-          controller.code
+          controller.method || 'GET',
+          controller.path || `/api/plugins/${uniqueSlug}/${controller.name}`,
+          controller.code,
+          controller.description || null
         ],
         type: sequelize.QueryTypes.INSERT,
         transaction
