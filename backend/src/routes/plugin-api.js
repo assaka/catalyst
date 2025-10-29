@@ -1998,4 +1998,170 @@ router.get('/cart-hamid/stats', async (req, res) => {
   }
 });
 
+/**
+ * POST /api/plugins/:id/run-migration
+ * Execute an existing migration for a plugin
+ */
+router.post('/:id/run-migration', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { migration_version, migration_name } = req.body;
+
+    console.log(`🔄 Running migration ${migration_version} for plugin ${id}`);
+
+    const startTime = Date.now();
+
+    // Get migration from database
+    const migrations = await sequelize.query(`
+      SELECT id, up_sql, migration_description, status
+      FROM plugin_migrations
+      WHERE plugin_id = $1 AND migration_version = $2
+    `, {
+      bind: [id, migration_version],
+      type: sequelize.QueryTypes.SELECT
+    });
+
+    if (migrations.length === 0) {
+      return res.status(404).json({
+        success: false,
+        error: 'Migration not found'
+      });
+    }
+
+    const migration = migrations[0];
+
+    if (migration.status === 'completed') {
+      return res.status(400).json({
+        success: false,
+        error: 'Migration already executed'
+      });
+    }
+
+    // Execute migration
+    await sequelize.query(migration.up_sql);
+
+    // Update status
+    await sequelize.query(`
+      UPDATE plugin_migrations
+      SET status = 'completed', completed_at = NOW(), execution_time_ms = $1
+      WHERE id = $2
+    `, {
+      bind: [Date.now() - startTime, migration.id]
+    });
+
+    const executionTime = Date.now() - startTime;
+
+    res.json({
+      success: true,
+      migrationVersion: migration_version,
+      description: migration.migration_description,
+      executionTime
+    });
+
+  } catch (error) {
+    console.error('Failed to run migration:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
+/**
+ * POST /api/plugins/:id/generate-entity-migration
+ * Generate and execute a migration for a modified entity
+ */
+router.post('/:id/generate-entity-migration', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { entity_name, table_name, schema_definition } = req.body;
+
+    console.log(`🔧 Generating migration for entity ${entity_name} (${table_name})`);
+
+    const startTime = Date.now();
+    const migrationVersion = new Date().toISOString().replace(/[-:T]/g, '').slice(0, 14);
+
+    // Generate CREATE TABLE SQL from schema
+    let createTableSQL = `CREATE TABLE IF NOT EXISTS ${table_name} (\n`;
+
+    const columnDefs = schema_definition.columns.map(col => {
+      let def = `  ${col.name} ${col.type}`;
+      if (col.primaryKey) def += ' PRIMARY KEY';
+      if (col.default) def += ` DEFAULT ${col.default}`;
+      if (col.nullable === false) def += ' NOT NULL';
+      return def;
+    });
+
+    createTableSQL += columnDefs.join(',\n');
+    createTableSQL += '\n);\n\n';
+
+    // Add indexes
+    if (schema_definition.indexes && schema_definition.indexes.length > 0) {
+      schema_definition.indexes.forEach(idx => {
+        const columns = idx.columns.join(', ');
+        const order = idx.order ? ` ${idx.order}` : '';
+        createTableSQL += `CREATE INDEX IF NOT EXISTS ${idx.name} ON ${table_name}(${columns}${order});\n`;
+      });
+      createTableSQL += '\n';
+    }
+
+    // Add comment
+    createTableSQL += `COMMENT ON TABLE ${table_name} IS 'Entity table for ${entity_name}';`;
+
+    const dropTableSQL = `DROP TABLE IF EXISTS ${table_name} CASCADE;`;
+
+    // Execute migration
+    await sequelize.query(createTableSQL);
+
+    // Record migration
+    await sequelize.query(`
+      INSERT INTO plugin_migrations (
+        plugin_id, plugin_name, migration_name, migration_version,
+        migration_description, status, executed_at, completed_at,
+        execution_time_ms, up_sql, down_sql
+      ) VALUES ($1, $2, $3, $4, $5, 'completed', NOW(), NOW(), $6, $7, $8)
+    `, {
+      bind: [
+        id,
+        entity_name,
+        `create_${table_name}_table.sql`,
+        migrationVersion,
+        `Create ${table_name} table for ${entity_name} entity`,
+        Date.now() - startTime,
+        createTableSQL,
+        dropTableSQL
+      ]
+    });
+
+    // Update entity migration status
+    await sequelize.query(`
+      UPDATE plugin_entities
+      SET migration_status = 'migrated',
+          migration_version = $1,
+          migrated_at = NOW(),
+          updated_at = NOW()
+      WHERE plugin_id = $2 AND entity_name = $3
+    `, {
+      bind: [migrationVersion, id, entity_name]
+    });
+
+    const executionTime = Date.now() - startTime;
+
+    res.json({
+      success: true,
+      migrationVersion,
+      entityName: entity_name,
+      tableName: table_name,
+      executionTime
+    });
+
+  } catch (error) {
+    console.error('Failed to generate and run migration:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
 module.exports = router;

@@ -71,6 +71,9 @@ const DeveloperPluginEditor = ({
   const [showEventMappingDialog, setShowEventMappingDialog] = useState(false);
   const [editingEventName, setEditingEventName] = useState('');
   const [editingFileName, setEditingFileName] = useState('');
+  const [isRunningMigration, setIsRunningMigration] = useState(false);
+  const [showMigrationConfirm, setShowMigrationConfirm] = useState(false);
+  const [migrationResult, setMigrationResult] = useState(null);
 
   // Use external state if provided, otherwise use local state
   const fileTreeMinimized = externalFileTreeMinimized ?? false;
@@ -521,6 +524,61 @@ const DeveloperPluginEditor = ({
     }
   };
 
+  const handleRunMigration = async () => {
+    if (!selectedFile) return;
+
+    setShowMigrationConfirm(false);
+    setIsRunningMigration(true);
+    setShowTerminal(true);
+
+    const isMigrationFile = selectedFile.path.startsWith('/migrations/');
+    const isEntityFile = selectedFile.path.startsWith('/entities/');
+
+    try {
+      if (isMigrationFile) {
+        // Run existing migration
+        addTerminalOutput(`⏳ Running migration: ${selectedFile.migration_version || selectedFile.name}...`, 'info');
+
+        const response = await apiClient.post(`plugins/${plugin.id}/run-migration`, {
+          migration_version: selectedFile.migration_version,
+          migration_name: selectedFile.name
+        });
+
+        setMigrationResult(response.data);
+        addTerminalOutput(`✓ Migration completed successfully in ${response.data.executionTime}ms`, 'success');
+
+      } else if (isEntityFile) {
+        // Generate and run migration for modified entity
+        addTerminalOutput(`⏳ Generating migration for entity: ${selectedFile.entity_name}...`, 'info');
+
+        const entityData = JSON.parse(fileContent);
+        const response = await apiClient.post(`plugins/${plugin.id}/generate-entity-migration`, {
+          entity_name: selectedFile.entity_name,
+          table_name: selectedFile.table_name,
+          schema_definition: entityData.schema_definition
+        });
+
+        setMigrationResult(response.data);
+        addTerminalOutput(`✓ Migration generated and executed in ${response.data.executionTime}ms`, 'success');
+        addTerminalOutput(`  Migration version: ${response.data.migrationVersion}`, 'info');
+
+        // Reload file tree to show new migration
+        await loadPluginFiles();
+      }
+
+      setIsRunningMigration(false);
+
+    } catch (error) {
+      console.error('Error running migration:', error);
+      setIsRunningMigration(false);
+      setMigrationResult({
+        success: false,
+        error: error.response?.data?.error || error.message
+      });
+      addTerminalOutput(`✗ Migration failed: ${error.response?.data?.error || error.message}`, 'error');
+    }
+  };
+
   const handleAICodeGenerated = (code, files) => {
     if (selectedFile) {
       // Replace current file content with AI-generated code
@@ -885,6 +943,36 @@ const DeveloperPluginEditor = ({
                         Edit Event
                       </Button>
                     )}
+
+                    {/* Run Migration button - for migration files */}
+                    {selectedFile?.path?.startsWith('/migrations/') && (
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="bg-blue-50 hover:bg-blue-100 text-blue-700 border-blue-300"
+                        onClick={() => setShowMigrationConfirm(true)}
+                        disabled={isRunningMigration}
+                        title="Execute this migration"
+                      >
+                        <Play className="w-4 h-4 mr-1" />
+                        {isRunningMigration ? 'Running...' : 'Run Migration'}
+                      </Button>
+                    )}
+
+                    {/* Run Migration button - for modified entity files */}
+                    {selectedFile?.path?.startsWith('/entities/') && fileContent !== originalContent && (
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="bg-green-50 hover:bg-green-100 text-green-700 border-green-300"
+                        onClick={() => setShowMigrationConfirm(true)}
+                        disabled={isRunningMigration}
+                        title="Generate and run migration for this entity"
+                      >
+                        <Play className="w-4 h-4 mr-1" />
+                        {isRunningMigration ? 'Migrating...' : 'Run Migration'}
+                      </Button>
+                    )}
                     <Button
                       size="sm"
                       variant="outline"
@@ -1128,6 +1216,119 @@ const DeveloperPluginEditor = ({
                 className="flex-1"
               >
                 Cancel
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+
+      {/* Run Migration Confirmation Dialog */}
+      {showMigrationConfirm && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg shadow-xl p-6 w-96">
+            <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
+              <Play className="w-5 h-5 text-blue-600" />
+              Run Migration
+            </h3>
+
+            <div className="space-y-4">
+              <p className="text-sm text-gray-600">
+                {selectedFile?.path?.startsWith('/migrations/')
+                  ? `Are you sure you want to execute this migration?`
+                  : `This will generate and execute a migration for the modified entity.`}
+              </p>
+
+              <div className="bg-gray-50 p-3 rounded border">
+                <p className="text-xs font-medium text-gray-700 mb-1">
+                  {selectedFile?.path?.startsWith('/migrations/') ? 'Migration:' : 'Entity:'}
+                </p>
+                <p className="text-sm font-mono">
+                  {selectedFile?.path?.startsWith('/migrations/')
+                    ? selectedFile.migration_version || selectedFile.name
+                    : selectedFile.entity_name || selectedFile.name}
+                </p>
+                {selectedFile?.table_name && (
+                  <>
+                    <p className="text-xs font-medium text-gray-700 mt-2 mb-1">Table:</p>
+                    <p className="text-sm font-mono">{selectedFile.table_name}</p>
+                  </>
+                )}
+              </div>
+
+              <div className="bg-yellow-50 border border-yellow-200 p-3 rounded">
+                <p className="text-xs text-yellow-800">
+                  ⚠️ This will modify your database schema. Make sure you have a backup.
+                </p>
+              </div>
+            </div>
+
+            <div className="flex gap-2 mt-6">
+              <Button
+                onClick={() => setShowMigrationConfirm(false)}
+                variant="outline"
+                className="flex-1"
+              >
+                Cancel
+              </Button>
+              <Button
+                onClick={handleRunMigration}
+                className="flex-1 bg-blue-600 hover:bg-blue-700 text-white"
+              >
+                <Play className="w-4 h-4 mr-1" />
+                Run Now
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Migration Result Dialog */}
+      {migrationResult && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg shadow-xl p-6 w-96">
+            <h3 className={`text-lg font-semibold mb-4 flex items-center gap-2 ${migrationResult.success ? 'text-green-600' : 'text-red-600'}`}>
+              {migrationResult.success ? '✓' : '✗'} Migration {migrationResult.success ? 'Completed' : 'Failed'}
+            </h3>
+
+            <div className="space-y-4">
+              {migrationResult.success ? (
+                <>
+                  <div className="bg-green-50 border border-green-200 p-3 rounded">
+                    <p className="text-sm text-green-800">
+                      Migration executed successfully!
+                    </p>
+                  </div>
+
+                  {migrationResult.executionTime && (
+                    <p className="text-xs text-gray-600">
+                      Execution time: {migrationResult.executionTime}ms
+                    </p>
+                  )}
+
+                  {migrationResult.migrationVersion && (
+                    <div className="bg-gray-50 p-3 rounded">
+                      <p className="text-xs font-medium text-gray-700 mb-1">Migration Version:</p>
+                      <p className="text-sm font-mono">{migrationResult.migrationVersion}</p>
+                    </div>
+                  )}
+                </>
+              ) : (
+                <div className="bg-red-50 border border-red-200 p-3 rounded">
+                  <p className="text-sm text-red-800 font-medium mb-2">Error:</p>
+                  <p className="text-xs text-red-700 font-mono">
+                    {migrationResult.error}
+                  </p>
+                </div>
+              )}
+            </div>
+
+            <div className="flex gap-2 mt-6">
+              <Button
+                onClick={() => setMigrationResult(null)}
+                className="flex-1"
+              >
+                Close
               </Button>
             </div>
           </div>
