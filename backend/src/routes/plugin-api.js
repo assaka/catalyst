@@ -2574,6 +2574,7 @@ router.put('/:pluginId/controllers/:controllerName', async (req, res) => {
  * Dynamic Controller Execution - 100% Database-Driven
  * Route: /api/plugins/:pluginId/exec/*
  * Executes controllers from plugin_controllers table
+ * pluginId can be either UUID or slug
  */
 router.all('/:pluginId/exec/*', async (req, res) => {
   try {
@@ -2581,12 +2582,18 @@ router.all('/:pluginId/exec/*', async (req, res) => {
     const controllerPath = '/' + (req.params[0] || '');
     const method = req.method;
 
+    // Check if pluginId is UUID or slug
+    const isUUID = pluginId.match(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i);
+
     // Find matching controller in plugin_controllers table
     const controllers = await sequelize.query(`
-      SELECT pc.*, pr.slug
+      SELECT pc.*, pr.slug, pr.id as plugin_uuid
       FROM plugin_controllers pc
       JOIN plugin_registry pr ON pc.plugin_id = pr.id
-      WHERE pc.plugin_id = $1 AND pc.method = $2 AND pc.path = $3 AND pc.is_enabled = true
+      WHERE (${isUUID ? 'pc.plugin_id = $1' : 'pr.slug = $1'})
+        AND pc.method = $2
+        AND pc.path = $3
+        AND pc.is_enabled = true
     `, {
       bind: [pluginId, method, controllerPath],
       type: sequelize.QueryTypes.SELECT
