@@ -108,16 +108,17 @@ export default function Plugins() {
         has_creator_id: !!p.creator_id
       })));
 
-      // Filter out ALL starter templates (they're only for cloning, not editing)
+      // Filter out ALL starter templates (they're ONLY for cloning, never for editing)
+      // Starter templates only appear in Create Plugin flow, not in dashboard
       const editablePlugins = (plugins || []).filter(plugin => {
         if (plugin.is_starter_template) {
-          console.log(`🔒 Hiding starter template: ${plugin.name} (templates only for creating new plugins)`);
+          console.log(`🔒 Hiding starter template: ${plugin.name} (core template - only for cloning)`);
           return false;
         }
         return true;
       });
 
-      console.log(`📊 Filtered plugins: ${plugins.length} → ${editablePlugins.length} (hid ${plugins.length - editablePlugins.length} starter templates)`);
+      console.log(`📊 Filtered plugins: ${plugins.length} → ${editablePlugins.length} (hid ${plugins.length - editablePlugins.length} core starter templates)`);
 
       // Transform all editable plugins for display
       const allPlugins = (editablePlugins || []).map(plugin => ({
