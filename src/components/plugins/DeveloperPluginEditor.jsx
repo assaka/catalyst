@@ -745,7 +745,13 @@ const DeveloperPluginEditor = ({
       let defaultContent = `// ${newFileName}\n// Created: ${new Date().toISOString()}\n\n`;
 
       if (newFileType === 'event') {
-        defaultContent = `// Event listener for: ${selectedEventName}\n// Created: ${new Date().toISOString()}\n\n(eventData) => {\n  // Your code here\n  console.log('${selectedEventName} fired:', eventData);\n}\n`;
+        // Convert event name to camelCase function name (e.g., cart.viewed -> onCartViewed)
+        const functionName = 'on' + selectedEventName
+          .split('.')
+          .map(part => part.charAt(0).toUpperCase() + part.slice(1))
+          .join('');
+
+        defaultContent = `// Event listener for: ${selectedEventName}\n// Created: ${new Date().toISOString()}\n\nexport default function ${functionName}(data) {\n  // Your code here\n  console.log('${selectedEventName} fired:', data);\n}\n`;
       }
 
       // For event files, create the event listener mapping in junction table
