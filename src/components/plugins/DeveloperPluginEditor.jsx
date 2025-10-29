@@ -1165,34 +1165,28 @@ const DeveloperPluginEditor = ({
                       )
                     )}
 
-                    {/* Generate Migration button - for entity files */}
-                    {selectedFile?.path?.startsWith('/entities/') && (
-                      selectedFile?.migration_status === 'migrated' && fileContent === originalContent ? (
-                        <Badge className="bg-green-100 text-green-700 border-green-300 px-3 py-1">
-                          ✓ Migrated
-                        </Badge>
-                      ) : (
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          className={
-                            selectedFile?.migration_status === 'migrated'
-                              ? 'bg-orange-50 hover:bg-orange-100 text-orange-700 border-orange-300'
-                              : 'bg-purple-50 hover:bg-purple-100 text-purple-700 border-purple-300'
-                          }
-                          onClick={() => setShowMigrationConfirm(true)}
-                          disabled={isRunningMigration}
-                          title={
-                            selectedFile?.migration_status === 'migrated'
-                              ? 'Generate ALTER TABLE migration for updated schema'
-                              : 'Generate CREATE TABLE migration for this entity'
-                          }
-                        >
-                          <Wand2 className="w-4 h-4 mr-1" />
-                          {isRunningMigration ? 'Generating...' :
-                           selectedFile?.migration_status === 'migrated' ? 'Generate Update' : 'Generate Migration'}
-                        </Button>
-                      )
+                    {/* Generate Migration button - only show when entity file is modified */}
+                    {selectedFile?.path?.startsWith('/entities/') && fileContent !== originalContent && (
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className={
+                          selectedFile?.migration_status === 'migrated'
+                            ? 'bg-orange-50 hover:bg-orange-100 text-orange-700 border-orange-300'
+                            : 'bg-purple-50 hover:bg-purple-100 text-purple-700 border-purple-300'
+                        }
+                        onClick={() => setShowMigrationConfirm(true)}
+                        disabled={isRunningMigration}
+                        title={
+                          selectedFile?.migration_status === 'migrated'
+                            ? 'Generate ALTER TABLE migration for updated schema'
+                            : 'Generate CREATE TABLE migration for this entity'
+                        }
+                      >
+                        <Wand2 className="w-4 h-4 mr-1" />
+                        {isRunningMigration ? 'Generating...' :
+                         selectedFile?.migration_status === 'migrated' ? 'Generate Update' : 'Generate Migration'}
+                      </Button>
                     )}
                     <Button
                       size="sm"
