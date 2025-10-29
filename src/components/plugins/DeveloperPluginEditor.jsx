@@ -1065,32 +1065,53 @@ const DeveloperPluginEditor = ({
 
                     {/* Run Migration button - for migration files */}
                     {selectedFile?.path?.startsWith('/migrations/') && (
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        className="bg-blue-50 hover:bg-blue-100 text-blue-700 border-blue-300"
-                        onClick={() => setShowMigrationConfirm(true)}
-                        disabled={isRunningMigration}
-                        title="Execute this migration"
-                      >
-                        <Play className="w-4 h-4 mr-1" />
-                        {isRunningMigration ? 'Running...' : 'Run Migration'}
-                      </Button>
+                      selectedFile?.migration_status === 'completed' ? (
+                        <Badge className="bg-green-100 text-green-700 border-green-300 px-3 py-1">
+                          ✓ Already Executed
+                        </Badge>
+                      ) : (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="bg-blue-50 hover:bg-blue-100 text-blue-700 border-blue-300"
+                          onClick={() => setShowMigrationConfirm(true)}
+                          disabled={isRunningMigration}
+                          title="Execute this migration"
+                        >
+                          <Play className="w-4 h-4 mr-1" />
+                          {isRunningMigration ? 'Running...' : 'Run Migration'}
+                        </Button>
+                      )
                     )}
 
-                    {/* Run Migration button - for entity files (always show) */}
+                    {/* Run Migration button - for entity files */}
                     {selectedFile?.path?.startsWith('/entities/') && (
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        className="bg-green-50 hover:bg-green-100 text-green-700 border-green-300"
-                        onClick={() => setShowMigrationConfirm(true)}
-                        disabled={isRunningMigration}
-                        title="Generate and run migration for this entity"
-                      >
-                        <Play className="w-4 h-4 mr-1" />
-                        {isRunningMigration ? 'Migrating...' : 'Run Migration'}
-                      </Button>
+                      selectedFile?.migration_status === 'migrated' && fileContent === originalContent ? (
+                        <Badge className="bg-green-100 text-green-700 border-green-300 px-3 py-1">
+                          ✓ Migrated
+                        </Badge>
+                      ) : (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className={
+                            selectedFile?.migration_status === 'migrated'
+                              ? 'bg-orange-50 hover:bg-orange-100 text-orange-700 border-orange-300'
+                              : 'bg-green-50 hover:bg-green-100 text-green-700 border-green-300'
+                          }
+                          onClick={() => setShowMigrationConfirm(true)}
+                          disabled={isRunningMigration}
+                          title={
+                            selectedFile?.migration_status === 'migrated'
+                              ? 'Re-run migration with updated schema'
+                              : 'Generate and run migration for this entity'
+                          }
+                        >
+                          <Play className="w-4 h-4 mr-1" />
+                          {isRunningMigration ? 'Migrating...' :
+                           selectedFile?.migration_status === 'migrated' ? 'Update Migration' : 'Run Migration'}
+                        </Button>
+                      )
                     )}
                     <Button
                       size="sm"
