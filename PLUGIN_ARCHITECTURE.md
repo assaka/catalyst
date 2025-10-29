@@ -11,15 +11,16 @@ Complete guide on how models, controllers, hooks, events, and widgets are implem
 | Table | Purpose | Storage Type | Execution Context |
 |-------|---------|--------------|-------------------|
 | `plugin_registry` | Plugin metadata | Metadata | - |
-| `plugin_scripts` | JavaScript/CSS files | TEXT (code) | Frontend/Backend/Admin |
+| `plugin_scripts` | **Executable frontend code ONLY** | TEXT (code) | Frontend |
 | `plugin_events` | Event listeners | TEXT (code) | Frontend/Backend |
 | `plugin_hooks` | Hook handlers | TEXT (code) | Frontend/Backend |
 | `plugin_widgets` | UI components | TEXT (code) | Frontend |
-| `plugin_data` | Key-value storage | JSONB | Runtime |
-| `plugin_dependencies` | npm packages | TEXT | Runtime |
-| `plugin_migrations` | Migration tracking | Metadata + SQL | Database |
-| `plugin_entities` | Database models | JSONB schema | Database |
+| `plugin_entities` | Database schemas | JSONB schema | Database |
 | `plugin_controllers` | API endpoints | TEXT (code) | Backend |
+| `plugin_migrations` | Migration SQL | TEXT (SQL) | Database |
+| `plugin_docs` | **Documentation/metadata** | TEXT | Reference |
+| `plugin_data` | Runtime key-value storage | JSONB | Runtime |
+| `plugin_dependencies` | npm packages | TEXT | Runtime |
 
 ---
 
@@ -380,7 +381,7 @@ eventSystem.emit('cart.viewed', {
 
 ---
 
-## 5️⃣ Scripts (JavaScript/CSS Files)
+## 5️⃣ Scripts (Executable Frontend Code ONLY)
 
 ### ✅ Fully Implemented - `plugin_scripts` Table
 
@@ -448,18 +449,55 @@ for (const script of scripts) {
 }
 ```
 
-**Script Types:**
-- **Components:** React widgets, UI elements
-- **Utilities:** Helper functions, formatters
-- **Services:** Business logic, API clients
-- **Styles:** CSS for custom styling
+**Allowed File Types (ONLY executable code):**
+- **Components:** React widgets, UI elements (`components/*.jsx`)
+- **Utilities:** Helper functions, formatters (`utils/*.js`)
+- **Services:** Business logic, API clients (`services/*.js`)
+- **Styles:** CSS for custom styling (`styles/*.css`)
 
-**File Types in FileTree:**
-- `components/*.jsx` → React components
-- `utils/*.js` → Utility functions
-- `services/*.js` → Services
-- `styles/*.css` → Stylesheets
-- `README.md` → Documentation
+**NOT Allowed (use specialized tables):**
+- ❌ `events/*.js` → Use `plugin_events`
+- ❌ `hooks/*.js` → Use `plugin_hooks`
+- ❌ `entities/*.json` → Use `plugin_entities`
+- ❌ `controllers/*.js` → Use `plugin_controllers`
+- ❌ `migrations/*.sql` → Use `plugin_migrations`
+- ❌ `admin/*.jsx` → Special handling
+- ❌ `README.md` → Use `plugin_docs`
+- ❌ `manifest.json` → Use `plugin_docs`
+
+---
+
+## 6️⃣ Documentation & Metadata
+
+### ✅ Fully Implemented - `plugin_docs` Table
+
+**Schema:**
+```sql
+CREATE TABLE plugin_docs (
+  id UUID PRIMARY KEY,
+  plugin_id UUID NOT NULL,
+  doc_type VARCHAR(50) NOT NULL,      -- 'readme', 'manifest', 'changelog', 'license'
+  file_name VARCHAR(255) NOT NULL,    -- 'README.md', 'manifest.json'
+  content TEXT NOT NULL,              -- File content
+  format VARCHAR(20) DEFAULT 'markdown',  -- 'markdown', 'json', 'text'
+  description TEXT,
+  is_visible BOOLEAN DEFAULT true,
+  display_order INTEGER DEFAULT 0
+);
+```
+
+**Purpose:**
+- Store documentation files (README.md, CHANGELOG.md, LICENSE)
+- Store metadata files (manifest.json)
+- Reference only - NOT executed
+- Separate from executable code
+
+**Document Types:**
+- `readme` → README.md
+- `manifest` → manifest.json
+- `changelog` → CHANGELOG.md
+- `license` → LICENSE
+- `contributing` → CONTRIBUTING.md
 
 ---
 
