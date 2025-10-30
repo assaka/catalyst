@@ -426,128 +426,67 @@ UNIFORM CODE STRUCTURE:
 7. Use template literals for HTML
 8. Escape user input to prevent XSS
 
+CRITICAL: CATALYST USES DATABASE-DRIVEN PLUGIN SYSTEM!
+
 REQUIRED DIRECTORY STRUCTURE:
 \`\`\`
 plugin-name/
-├── manifest.json          # Plugin metadata
+├── manifest.json          # Plugin metadata (saved to plugin_registry.manifest)
 ├── README.md              # Documentation
 └── src/
-    ├── index.js           # Main entry point (exports everything)
-    ├── components/        # React components (if needed)
-    │   └── AlertBox.jsx
-    ├── hooks/             # Custom React hooks (if needed)
-    │   └── useCartData.js
-    ├── events/            # Event listeners
-    │   └── onCartUpdate.js
-    ├── controllers/       # API controllers (if backend needed)
-    │   └── CartController.js
-    ├── entities/          # Database entities/models (if needed)
-    │   └── AlertConfig.js
-    ├── services/          # Business logic
+    ├── components/        # Reusable UI components (saved to plugin_scripts)
+    │   └── AlertBox.js
+    ├── services/          # Business logic modules (saved to plugin_scripts)
     │   └── AlertService.js
-    └── utils/             # Helper functions
-        └── formatters.js
+    ├── utils/             # Helper functions (saved to plugin_scripts)
+    │   └── helpers.js
+    ├── controllers/       # API controllers (saved to plugin_scripts)
+    │   └── AlertController.js
+    └── entities/          # Database models (saved to plugin_scripts)
+        └── AlertConfig.js
 \`\`\`
 
-STANDARD index.js STRUCTURE (Main Entry Point):
+IMPORTANT: NO index.js!
+- Hooks are stored as INLINE FUNCTIONS in plugin_hooks table
+- Components are standalone modules in plugin_scripts table
+- Registration is done through database tables, NOT through index.js
+
+HOW THE SYSTEM WORKS:
+1. Plugin metadata → plugin_registry.manifest (JSON)
+2. Hook functions → plugin_hooks.handler_function (inline code)
+3. Component files → plugin_scripts (one row per file)
+4. Hooks can require() components: require('./components/AlertBox')
+\`\`\`
+
+HOOK STORAGE (Stored in plugin_hooks table as INLINE FUNCTIONS):
+
+Hooks are NOT stored in files! They're stored as inline JavaScript code in plugin_hooks table.
+
+Example hook (cart.processLoadedItems):
 \`\`\`javascript
-/**
- * [Plugin Name] - Main Entry Point
- * [Description]
- *
- * @version 1.0.0
- * @author AI Generated
- */
+function(items, context) {
+  // Load component if needed
+  const AlertBox = require('./components/AlertBox');
 
-// Import components
-const AlertBox = require('./components/AlertBox');
-
-// Import services
-const AlertService = require('./services/AlertService');
-
-// Import event handlers
-const onCartUpdate = require('./events/onCartUpdate');
-
-/**
- * Plugin class - registers hooks and events
- */
-class PluginName {
-  constructor(config = {}) {
-    this.config = config;
-    this.service = new AlertService(config);
+  // Hook logic
+  if (items.length === 0) {
+    const html = AlertBox({ message: 'Your cart is empty!' });
+    // Inject HTML into page
+    const container = document.createElement('div');
+    container.innerHTML = html;
+    document.body.appendChild(container);
   }
 
-  /**
-   * Metadata for plugin registry
-   */
-  static getMetadata() {
-    return {
-      name: '[Plugin Name]',
-      slug: '[plugin-slug]',
-      version: '1.0.0',
-      description: '[Description]',
-      author: 'AI Generated',
-      category: 'commerce',
-      hooks: ['renderCart'],
-      events: ['cart.updated']
-    };
-  }
-
-  /**
-   * Install plugin - create tables, seed data
-   */
-  async install() {
-    console.log('[Plugin Name] installing...');
-    // Create database tables if needed
-    await this.service.createTables();
-    console.log('[Plugin Name] installed');
-  }
-
-  /**
-   * Enable plugin - register hooks and events
-   */
-  async enable() {
-    console.log('[Plugin Name] enabled');
-  }
-
-  /**
-   * Disable plugin - cleanup
-   */
-  async disable() {
-    console.log('[Plugin Name] disabled');
-  }
-
-  /**
-   * Hook: Render in cart page
-   */
-  renderCart(config, context) {
-    try {
-      const message = config.message || this.config.message || 'Alert!';
-      return AlertBox({ message, context });
-    } catch (error) {
-      console.error('[Plugin Name] render error:', error);
-      return '';
-    }
-  }
-
-  /**
-   * Event: Cart updated
-   */
-  onCartUpdate(eventData) {
-    try {
-      onCartUpdate(eventData, this.config);
-    } catch (error) {
-      console.error('[Plugin Name] event error:', error);
-    }
-  }
+  // IMPORTANT: Hooks MUST return the value (they're filters)
+  return items;
 }
+\`\`\`
 
-// Export plugin class
-module.exports = PluginName;
-
-// Export individual modules for testing/reuse
-module.exports.components = { AlertBox };
-module.exports.services = { AlertService };
+THIS HOOK GETS STORED IN DATABASE:
+- Table: plugin_hooks
+- Column: handler_function (the inline code above)
+- Column: hook_name ('cart.processLoadedItems')
+- Column: plugin_id (UUID reference)
 \`\`\`
 
 COMPONENT EXAMPLE (components/AlertBox.jsx):
@@ -627,24 +566,30 @@ RESPONSE FORMAT - Return ONLY valid JSON (no markdown, no explanations):
   "features": ["Cart alerts", "Custom messages", "Configurable styling"],
   "generatedFiles": [
     {
-      "name": "index.js",
-      "code": "// Main entry point - full code from index.js template above"
-    },
-    {
-      "name": "components/AlertBox.jsx",
-      "code": "// Component code from AlertBox template above"
+      "name": "components/AlertBox.js",
+      "code": "// AlertBox component - standalone module"
     },
     {
       "name": "services/AlertService.js",
-      "code": "// Service code from AlertService template above"
-    },
-    {
-      "name": "events/onCartUpdate.js",
-      "code": "// Event handler code from onCartUpdate template above"
+      "code": "// AlertService - business logic"
     },
     {
       "name": "utils/helpers.js",
-      "code": "// Utility functions (optional, only if needed)"
+      "code": "// Utility functions (only if needed)"
+    }
+  ],
+  "hooks": [
+    {
+      "name": "cart.processLoadedItems",
+      "priority": 10,
+      "code": "function(items, context) { /* Hook implementation */ return items; }"
+    }
+  ],
+  "events": [
+    {
+      "name": "cart.viewed",
+      "priority": 10,
+      "code": "function(eventData, context) { /* Event handler */ }"
     }
   ],
   "config_schema": {
@@ -661,8 +606,8 @@ RESPONSE FORMAT - Return ONLY valid JSON (no markdown, no explanations):
     "name": "Cart Alert Plugin",
     "slug": "cart-alert-plugin",
     "version": "1.0.0",
-    "hooks": ["renderCart"],
-    "events": [],
+    "hooks": ["cart.processLoadedItems"],
+    "events": ["cart.viewed"],
     "adminNavigation": {
       "enabled": false
     }
@@ -671,20 +616,21 @@ RESPONSE FORMAT - Return ONLY valid JSON (no markdown, no explanations):
 }
 
 IMPORTANT RULES:
-1. ALWAYS generate ALL files with proper directory structure
-2. ALWAYS include at least:
-   - index.js (main entry point)
+1. DO NOT create index.js - system is database-driven!
+2. ALWAYS include hooks array with inline function code
+3. ALWAYS include at least:
    - components/ (at least 1 component if UI needed)
-   - services/ (business logic)
-   - events/ (if events are used)
-3. index.js MUST import and export all modules
-4. Each file MUST be complete, working code
-5. Use proper module.exports for all files
-6. Include JSDoc comments in all files
-7. Include error handling in all methods
-8. Use template literals for HTML in components
-9. Return ONLY the JSON object, no markdown formatting
-10. File paths MUST include subdirectories (e.g., "components/AlertBox.jsx")`;
+   - services/ (business logic if complex)
+   - utils/ (helper functions only if needed)
+4. Each file in generatedFiles MUST be standalone module with module.exports
+5. Hooks are inline functions stored in hooks array, NOT in files
+6. Hooks can require('./components/AlertBox') to use components
+7. Include JSDoc comments in all files
+8. Include error handling in all hook functions
+9. Use template literals for HTML in components
+10. File paths MUST include subdirectories (e.g., "components/AlertBox.js")
+11. Hooks MUST return values (they are filters, not void functions)
+12. Components export a single function: module.exports = AlertBox;`;
 
     const result = await this.generate({
       userId,
@@ -936,10 +882,14 @@ For issues or questions, please contact the platform administrator.
         }
       }
 
-      // Save hooks to plugin_hooks table
-      const hooks = pluginData.manifest?.hooks || [];
+      // Save hooks to plugin_hooks table (from hooks array with inline code)
+      const hooks = pluginData.hooks || [];
       if (hooks && hooks.length > 0) {
-        for (const hookName of hooks) {
+        for (const hook of hooks) {
+          const hookName = hook.name || hook;
+          const hookCode = hook.code || `function(value, context) { return value; }`;
+          const priority = hook.priority || 10;
+
           await sequelize.query(`
             INSERT INTO plugin_hooks (
               plugin_id, hook_name, handler_function, priority, is_enabled
@@ -949,14 +899,42 @@ For issues or questions, please contact the platform administrator.
             bind: [
               pluginId,
               hookName,
-              `render${hookName.charAt(0).toUpperCase() + hookName.slice(1)}`,
-              10,
+              hookCode,  // Store the actual inline function code
+              priority,
               true
             ],
             type: sequelize.QueryTypes.INSERT
           });
 
           console.log(`  🪝 Registered hook: ${hookName}`);
+        }
+      }
+
+      // Save events to plugin_events table (from events array with inline code)
+      const events = pluginData.events || [];
+      if (events && events.length > 0) {
+        for (const event of events) {
+          const eventName = event.name || event;
+          const eventCode = event.code || `function(eventData, context) { console.log('Event triggered'); }`;
+          const priority = event.priority || 10;
+
+          await sequelize.query(`
+            INSERT INTO plugin_events (
+              plugin_id, event_name, handler_function, priority, is_enabled
+            )
+            VALUES ($1, $2, $3, $4, $5)
+          `, {
+            bind: [
+              pluginId,
+              eventName,
+              eventCode,  // Store the actual inline function code
+              priority,
+              true
+            ],
+            type: sequelize.QueryTypes.INSERT
+          });
+
+          console.log(`  📡 Registered event: ${eventName}`);
         }
       }
 
