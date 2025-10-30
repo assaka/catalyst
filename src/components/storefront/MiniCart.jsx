@@ -65,20 +65,24 @@ export default function MiniCart({ iconVariant = 'outline' }) {
       return;
     }
 
-    console.log(`🛍️ MiniCart: Fetching ${productIds.length} products...`);
+    console.log(`🛍️ MiniCart: Fetching ${productIds.length} products...`, productIds);
 
     try {
       const products = await StorefrontProduct.filter({ ids: productIds });
+      console.log('📦 MiniCart: Received products from API:', products);
 
       // Build product details map - ensure string keys for consistency
       const productDetails = {};
       products.forEach(product => {
         if (product && product.id) {
           // Always use string keys for consistency
-          productDetails[String(product.id)] = product;
+          const key = String(product.id);
+          productDetails[key] = product;
+          console.log(`  ➕ Mapped product ${key}: ${product.name || 'Unknown'}`);
         }
       });
       console.log(`✅ MiniCart: Successfully fetched ${Object.keys(productDetails).length} products`);
+      console.log('🗺️ MiniCart: Product map keys:', Object.keys(productDetails));
       setCartProducts(productDetails);
     } catch (error) {
       console.error('❌ MiniCart: Failed to fetch products:', error);
@@ -126,7 +130,9 @@ export default function MiniCart({ iconVariant = 'outline' }) {
 
   // Load product details when cartItems change
   useEffect(() => {
+    console.log('🔄 MiniCart: cartItems changed, count:', cartItems.length);
     if (cartItems.length > 0) {
+      console.log('🔄 MiniCart: cartItems product IDs:', cartItems.map(item => item.product_id));
       loadProductDetails(cartItems);
     } else {
       setCartProducts({});
@@ -168,12 +174,14 @@ export default function MiniCart({ iconVariant = 'outline' }) {
     };
 
     const handleCartUpdate = (event) => {
+      console.log('🔔 MiniCart: Received cartUpdated event', event.detail);
       // Simplified: only handle fresh cart data from backend
       if (event.detail?.freshCartData) {
         const items = event.detail.freshCartData.items;
 
         // Handle both undefined and array cases (empty array is valid)
         if (items !== undefined && Array.isArray(items)) {
+          console.log('✅ MiniCart: Updating cart with fresh data, items:', items.length);
           setCartItems(items);
           saveCartToLocalStorage(items);
 
@@ -185,6 +193,7 @@ export default function MiniCart({ iconVariant = 'outline' }) {
 
       // Don't refresh at all since CartService should always provide fresh data
       // Only allow explicit refresh events via 'refreshMiniCart' event
+      console.log('⚠️ MiniCart: cartUpdated event had no fresh data');
     };
 
     const handleDirectRefresh = (event) => {
@@ -391,6 +400,7 @@ export default function MiniCart({ iconVariant = 'outline' }) {
                   // Ensure consistent string key lookup
                   const productKey = String(item.product_id);
                   const product = cartProducts[productKey];
+                  console.log(`🔍 MiniCart render: Looking for product ${productKey}, found:`, product ? product.name : 'NOT FOUND');
                   if (!product) {
                     // Show placeholder for missing product instead of hiding completely
                     return (
