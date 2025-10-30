@@ -326,7 +326,12 @@ export default function MiniCart({ iconVariant = 'outline' }) {
   };
 
   const getTotalItems = () => {
-    return cartItems.reduce((total, item) => total + (item.quantity || 0), 0);
+    const total = cartItems.reduce((total, item) => {
+      console.log(`🔢 MiniCart: item.id=${item.id}, quantity=${item.quantity}`);
+      return total + (item.quantity || 0);
+    }, 0);
+    console.log(`🔢 MiniCart: Total items count: ${total}`);
+    return total;
   };
 
   const getTotalPrice = () => {
