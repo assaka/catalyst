@@ -867,7 +867,7 @@ export default function Plugins() {
                 </CardContent>
               </Card>
             )}
-          </TabsContent>
+          </div>}
 
           {/* Installed Tab */}
           <TabsContent value="installed">
