@@ -22,33 +22,36 @@ async function getUserStoresForDropdown(userId) {
           s.created_at,
           s.updated_at,
           s.is_active,
-          CASE 
+          s.published,
+          s.published_at,
+          s.user_id as owner_id,
+          CASE
             WHEN s.user_id = :userId THEN 'owner'
             ELSE (
-              SELECT st.role 
-              FROM store_teams st 
-              WHERE st.store_id = s.id 
-                AND st.user_id = :userId 
-                AND st.status = 'active' 
-                AND st.is_active = true 
+              SELECT st.role
+              FROM store_teams st
+              WHERE st.store_id = s.id
+                AND st.user_id = :userId
+                AND st.status = 'active'
+                AND st.is_active = true
                 AND st.role IN ('admin', 'editor')
               LIMIT 1
             )
           END as access_role,
           (s.user_id = :userId) as is_direct_owner
       FROM stores s
-      WHERE s.is_active = true 
+      WHERE s.is_active = true
         AND (
           -- Case 1: User owns the store
           s.user_id = :userId
           OR
           -- Case 2: User is editor/admin team member
           EXISTS (
-            SELECT 1 
-            FROM store_teams st 
-            WHERE st.store_id = s.id 
-              AND st.user_id = :userId 
-              AND st.status = 'active' 
+            SELECT 1
+            FROM store_teams st
+            WHERE st.store_id = s.id
+              AND st.user_id = :userId
+              AND st.status = 'active'
               AND st.is_active = true
               AND st.role IN ('admin', 'editor')
           )

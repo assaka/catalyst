@@ -142,23 +142,31 @@ export default function Stores() {
   };
 
   const handleTogglePublished = async (storeId, currentStatus) => {
+    const newStatus = !currentStatus;
+    console.log('🔄 Toggling store published status:', { storeId, currentStatus, newStatus });
+
     try {
       // Optimistic update: Update UI immediately
       setStores(prevStores =>
         prevStores.map(store =>
           store.id === storeId
-            ? { ...store, published: !currentStatus }
+            ? { ...store, published: newStatus }
             : store
         )
       );
 
       // Update backend
-      await Store.update(storeId, { published: !currentStatus });
+      const response = await Store.update(storeId, { published: newStatus });
+      console.log('✅ Backend update response:', response);
+
+      // Wait a moment for database to propagate
+      await new Promise(resolve => setTimeout(resolve, 500));
 
       // Reload data to confirm and get any other changes
       await loadData();
+      console.log('✅ Data reloaded successfully');
     } catch (error) {
-      console.error('Error toggling store published status:', error);
+      console.error('❌ Error toggling store published status:', error);
       alert('Failed to update store status. Please try again.');
 
       // Revert optimistic update on error
