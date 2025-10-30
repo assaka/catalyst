@@ -35,7 +35,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Checkbox } from "@/components/ui/checkbox";
 import { 
   Select, 
   SelectContent, 
@@ -81,10 +81,26 @@ export default function Plugins() {
   const [showPublishWarning, setShowPublishWarning] = useState(false);
   const [pluginToPublish, setPluginToPublish] = useState(null);
   const [publishing, setPublishing] = useState(false);
+  const [selectedTabs, setSelectedTabs] = useState(new Set(['my-plugins'])); // Default to My Plugins
 
   useEffect(() => {
     loadData();
   }, []);
+
+  const toggleTab = (tabId) => {
+    setSelectedTabs(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(tabId)) {
+        // Don't allow deselecting all tabs
+        if (newSet.size > 1) {
+          newSet.delete(tabId);
+        }
+      } else {
+        newSet.add(tabId);
+      }
+      return newSet;
+    });
+  };
 
   const loadData = async () => {
     try {
@@ -399,33 +415,42 @@ export default function Plugins() {
     }
   };
 
-  // Different filtering for different contexts
-  const getFilteredPlugins = (tabFilter = 'all') => {
+  // Filter plugins based on selected tabs
+  const getFilteredPlugins = () => {
     return plugins.filter(plugin => {
       const matchesSearch = plugin.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
                            plugin.description.toLowerCase().includes(searchQuery.toLowerCase());
       const matchesCategory = categoryFilter === "all" || plugin.category === categoryFilter;
 
-      // Different filters per tab using boolean flags
-      let matchesStatus = true;
-      if (tabFilter === 'marketplace') {
-        // Marketplace plugins that are active (published by creator)
-        matchesStatus = plugin.source === 'marketplace' && plugin.isActive === true;
-      } else if (tabFilter === 'installed') {
-        // Plugins installed by third party user
-        matchesStatus = plugin.isInstalled === true;
-      } else if (tabFilter === 'my-plugins') {
-        // Show plugins created by current user (regardless of installed/enabled status)
-        const matches = plugin.creator_id === user?.id;
-        matchesStatus = matches;
-      }
-      // For 'all' tab, show everything
+      // Check if plugin matches ANY selected tab
+      let matchesAnyTab = false;
 
-      return matchesSearch && matchesCategory && matchesStatus;
+      if (selectedTabs.has('marketplace')) {
+        // Marketplace plugins that are active (published by creator)
+        if (plugin.source === 'marketplace' && plugin.isActive === true) {
+          matchesAnyTab = true;
+        }
+      }
+
+      if (selectedTabs.has('installed')) {
+        // Plugins installed by third party user
+        if (plugin.isInstalled === true) {
+          matchesAnyTab = true;
+        }
+      }
+
+      if (selectedTabs.has('my-plugins')) {
+        // Show plugins created by current user (regardless of installed/enabled status)
+        if (plugin.creator_id === user?.id) {
+          matchesAnyTab = true;
+        }
+      }
+
+      return matchesSearch && matchesCategory && matchesAnyTab;
     });
   };
 
-  const filteredPlugins = getFilteredPlugins('all');
+  const filteredPlugins = getFilteredPlugins();
 
   const isPluginInstalled = (plugin) => {
     return plugin.isInstalled;
@@ -498,28 +523,47 @@ export default function Plugins() {
           </div>
         </div>
 
-        <Tabs defaultValue="all" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-4">
-            <TabsTrigger value="all" className="flex items-center gap-2">
-              <Package className="w-4 h-4" />
-              All Plugins
-            </TabsTrigger>
-            <TabsTrigger value="marketplace" className="flex items-center gap-2">
-              <ShoppingCart className="w-4 h-4" />
-              Marketplace
-            </TabsTrigger>
-            <TabsTrigger value="installed" className="flex items-center gap-2">
-              <Download className="w-4 h-4" />
-              Installed ({getFilteredPlugins('installed').length})
-            </TabsTrigger>
-            <TabsTrigger value="my-plugins" className="flex items-center gap-2">
-              <Sparkles className="w-4 h-4" />
-              My Plugins ({getFilteredPlugins('my-plugins').length})
-            </TabsTrigger>
-          </TabsList>
+        {/* Multi-select Tab Filters */}
+        <div className="mb-6">
+          <div className="flex items-center gap-3 p-4 bg-white rounded-lg border border-gray-200">
+            <span className="text-sm font-medium text-gray-700">Show:</span>
+            <div className="flex items-center gap-4">
+              <label className="flex items-center gap-2 cursor-pointer">
+                <Checkbox
+                  checked={selectedTabs.has('marketplace')}
+                  onCheckedChange={() => toggleTab('marketplace')}
+                />
+                <ShoppingCart className="w-4 h-4 text-gray-600" />
+                <span className="text-sm text-gray-700">Marketplace</span>
+              </label>
 
-          {/* All Plugins Tab */}
-          <TabsContent value="all">
+              <label className="flex items-center gap-2 cursor-pointer">
+                <Checkbox
+                  checked={selectedTabs.has('installed')}
+                  onCheckedChange={() => toggleTab('installed')}
+                />
+                <Download className="w-4 h-4 text-gray-600" />
+                <span className="text-sm text-gray-700">
+                  Installed ({plugins.filter(p => p.isInstalled === true).length})
+                </span>
+              </label>
+
+              <label className="flex items-center gap-2 cursor-pointer">
+                <Checkbox
+                  checked={selectedTabs.has('my-plugins')}
+                  onCheckedChange={() => toggleTab('my-plugins')}
+                />
+                <Sparkles className="w-4 h-4 text-gray-600" />
+                <span className="text-sm text-gray-700">
+                  My Plugins ({plugins.filter(p => p.creator_id === user?.id).length})
+                </span>
+              </label>
+            </div>
+          </div>
+        </div>
+
+          {/* Plugins Grid */}
+          <div>
             {/* Search and Filters */}
             <Card className="material-elevation-1 border-0 mb-6">
               <CardContent className="p-6">
@@ -552,9 +596,9 @@ export default function Plugins() {
               </CardContent>
             </Card>
 
-            {/* All Plugins Grid */}
+            {/* Plugins Grid */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {getFilteredPlugins('all').map((plugin) => {
+              {filteredPlugins.map((plugin) => {
                 const CategoryIcon = categoryIcons[plugin.category] || Settings;
                 const installed = isPluginInstalled(plugin);
                 const enabled = isPluginEnabled(plugin);
@@ -640,10 +684,24 @@ export default function Plugins() {
                 );
               })}
             </div>
-          </TabsContent>
 
-          {/* Marketplace Tab */}
-          <TabsContent value="marketplace">
+            {filteredPlugins.length === 0 && (
+              <Card className="material-elevation-1 border-0">
+                <CardContent className="text-center py-12">
+                  <Puzzle className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+                  <h3 className="text-lg font-medium text-gray-900 mb-2">No plugins found</h3>
+                  <p className="text-gray-600 mb-6">
+                    {searchQuery || categoryFilter !== "all"
+                      ? "Try adjusting your search or filters"
+                      : "Select a filter above to view plugins"}
+                  </p>
+                </CardContent>
+              </Card>
+            )}
+          </div>
+
+          {/* OLD TABS REMOVED */}
+          {false && <div value="marketplace">
             {/* Search and Filters */}
             <Card className="material-elevation-1 border-0 mb-6">
               <CardContent className="p-6">
@@ -1077,8 +1135,7 @@ export default function Plugins() {
                 </Badge>
               </CardContent>
             </Card>
-          </TabsContent>
-        </Tabs>
+          </div>}
 
         {/* Import Plugin Dialog */}
         <Dialog open={showImportDialog} onOpenChange={setShowImportDialog}>
