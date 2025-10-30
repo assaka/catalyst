@@ -70,57 +70,9 @@ const CreditTransaction = sequelize.define('CreditTransaction', {
     {
       fields: ['stripe_payment_intent_id']
     }
-  ],
-  hooks: {
-    afterCreate: async (transaction) => {
-      // Update credit balance when a completed transaction is created
-      if (transaction.status === 'completed' && transaction.credits_purchased > 0) {
-        const Credit = require('./Credit');
-        
-        // Initialize balance if it doesn't exist
-        await Credit.initializeBalance(transaction.user_id, transaction.store_id);
-        
-        // Update the balance
-        await sequelize.query(`
-          UPDATE credits 
-          SET balance = balance + :credits,
-              total_purchased = total_purchased + :credits,
-              updated_at = CURRENT_TIMESTAMP
-          WHERE user_id = :userId AND store_id = :storeId
-        `, {
-          replacements: {
-            credits: transaction.credits_purchased,
-            userId: transaction.user_id,
-            storeId: transaction.store_id
-          }
-        });
-      }
-    },
-    afterUpdate: async (transaction) => {
-      // Update credit balance when transaction status changes to completed
-      if (transaction.changed('status') && transaction.status === 'completed' && transaction.credits_purchased > 0) {
-        const Credit = require('./Credit');
-        
-        // Initialize balance if it doesn't exist
-        await Credit.initializeBalance(transaction.user_id, transaction.store_id);
-        
-        // Update the balance
-        await sequelize.query(`
-          UPDATE credits 
-          SET balance = balance + :credits,
-              total_purchased = total_purchased + :credits,
-              updated_at = CURRENT_TIMESTAMP
-          WHERE user_id = :userId AND store_id = :storeId
-        `, {
-          replacements: {
-            credits: transaction.credits_purchased,
-            userId: transaction.user_id,
-            storeId: transaction.store_id
-          }
-        });
-      }
-    }
-  }
+  ]
+  // Note: Hooks removed - credit balance updates now handled by credit-service.js
+  // which updates users.credits (single source of truth) when transactions are completed
 });
 
 // Class methods for credit transaction management
