@@ -700,16 +700,17 @@ IMPORTANT RULES:
         throw new Error('Invalid userId format');
       }
 
-      // Build manifest
+      // Build manifest for plugin_registry (minimal metadata only)
       const manifest = {
         name: pluginData.name,
+        slug: slug,
         version: pluginData.version || '1.0.0',
+        description: pluginData.description || '',
+        category: pluginData.category || 'utility',
+        author: pluginData.author || 'AI Generated',
         generated_by_ai: true,
-        generatedFiles: pluginData.generatedFiles || [],
-        hooks: pluginData.manifest?.hooks || [],
-        events: pluginData.manifest?.events || [],
         adminNavigation: pluginData.manifest?.adminNavigation || null,
-        ...pluginData
+        config_schema: pluginData.config_schema || {}
       };
 
       // Insert into plugin_registry
@@ -744,7 +745,7 @@ IMPORTANT RULES:
 
       console.log(`✅ Plugin saved to registry: ${pluginData.name} (${pluginId})`);
 
-      // Generate manifest.json content
+      // Generate clean manifest.json content (no obsolete fields)
       const manifestJson = {
         name: pluginData.name,
         slug: slug,
@@ -754,13 +755,15 @@ IMPORTANT RULES:
         category: pluginData.category || 'utility',
         type: 'ai-generated',
         framework: 'react',
-        hooks: pluginData.manifest?.hooks || [],
-        events: pluginData.manifest?.events || [],
         adminNavigation: pluginData.manifest?.adminNavigation || null,
         dependencies: pluginData.dependencies || [],
         permissions: pluginData.permissions || [],
         config_schema: pluginData.config_schema || {}
       };
+
+      // Note: hooks and events are NOT in manifest.json
+      // They are stored in plugin_hooks and plugin_events tables
+      // generatedFiles is NOT in manifest - those are in plugin_scripts table
 
       // Save manifest.json
       // Note: script_type must be 'js' or 'css', scope must be 'frontend', 'backend', or 'admin'
