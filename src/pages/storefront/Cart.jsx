@@ -435,7 +435,10 @@ export default function Cart() {
             }).filter(item => item.product); // Ensure product exists
             
             // Apply item processing hooks
+            console.log('🛒 [Cart] Calling hookSystem.apply for cart.processLoadedItems');
+            console.log('🛒 [Cart] Items before hook:', populatedCart.length);
             const processedItems = hookSystem.apply('cart.processLoadedItems', populatedCart, localCartContext);
+            console.log('🛒 [Cart] Items after hook:', processedItems.length);
 
             setCartItems(processedItems);
             setHasLoadedInitialData(true);
