@@ -304,7 +304,7 @@ export default function Plugins() {
       const isCurrentlyEnabled = plugin.isEnabled; // Check if enabled for current store
       const endpoint = isCurrentlyEnabled ? 'disable' : 'enable';
 
-      await apiClient.request('POST', `stores/${storeId}/plugins/${plugin.slug}/${endpoint}`);
+      await apiClient.request('POST', `stores/${storeId}/plugins/${plugin.id}/${endpoint}`);
       await loadData();
     } catch (error) {
       console.error("Error toggling plugin for store:", error);
