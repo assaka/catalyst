@@ -467,13 +467,28 @@ RESPONSE FORMAT - Return ONLY valid JSON:
 
     // Parse the JSON response
     try {
-      const pluginData = JSON.parse(result.content);
+      let content = result.content;
+
+      // Try to extract JSON from markdown code blocks
+      const jsonMatch = content.match(/```json\s*\n([\s\S]*?)\n```/);
+      if (jsonMatch) {
+        content = jsonMatch[1];
+      } else {
+        // Try to extract any JSON object
+        const jsonObjectMatch = content.match(/\{[\s\S]*\}/);
+        if (jsonObjectMatch) {
+          content = jsonObjectMatch[0];
+        }
+      }
+
+      const pluginData = JSON.parse(content);
       return {
         ...result,
         pluginData
       };
     } catch (error) {
-      throw new Error('Failed to parse plugin data from AI response');
+      console.error('Failed to parse AI response:', result.content);
+      throw new Error(`Failed to parse plugin data from AI response. AI returned: ${result.content.substring(0, 200)}...`);
     }
   }
 
@@ -501,13 +516,28 @@ Return the modified plugin in the same JSON format as plugin generation.`;
     });
 
     try {
-      const pluginData = JSON.parse(result.content);
+      let content = result.content;
+
+      // Try to extract JSON from markdown code blocks
+      const jsonMatch = content.match(/```json\s*\n([\s\S]*?)\n```/);
+      if (jsonMatch) {
+        content = jsonMatch[1];
+      } else {
+        // Try to extract any JSON object
+        const jsonObjectMatch = content.match(/\{[\s\S]*\}/);
+        if (jsonObjectMatch) {
+          content = jsonObjectMatch[0];
+        }
+      }
+
+      const pluginData = JSON.parse(content);
       return {
         ...result,
         pluginData
       };
     } catch (error) {
-      throw new Error('Failed to parse modified plugin data');
+      console.error('Failed to parse AI response:', result.content);
+      throw new Error(`Failed to parse modified plugin data. AI returned: ${result.content.substring(0, 200)}...`);
     }
   }
 
