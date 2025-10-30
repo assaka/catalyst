@@ -610,7 +610,14 @@ RESPONSE FORMAT - Return ONLY valid JSON (no markdown, no explanations):
     "hooks": ["cart.processLoadedItems"],
     "events": ["cart.viewed"],
     "adminNavigation": {
-      "enabled": false
+      "enabled": false,
+      "label": "Cart Alert",
+      "icon": "ShoppingCart",
+      "route": "/admin/plugins/cart-alert",
+      "order": 100,
+      "parentKey": null,
+      "category": "commerce",
+      "description": "Manage cart alert messages"
     }
   },
   "explanation": "This plugin displays customizable alert messages in the shopping cart to inform customers about special offers or important information."
@@ -636,7 +643,7 @@ CRITICAL RULES:
 14. File paths MUST include subdirectories (e.g., "components/AlertBox.js")
 15. Hooks MUST return values (they are filters, not void functions)
 16. Components export a single function: module.exports = AlertBox;
-17. If adminNavigation is needed, include full structure with category and description
+17. If adminNavigation is needed, include full structure with: enabled, label, icon, route, order, parentKey, category, description
 
 REMEMBER: generatedFiles should ONLY contain src/ directory files!
 Example generatedFiles:
@@ -747,6 +754,7 @@ Example generatedFiles:
           order: pluginData.manifest.adminNavigation.order || 100,
           route: pluginData.manifest.adminNavigation.route || `/admin/plugins/${slug}`,
           enabled: pluginData.manifest.adminNavigation.enabled !== false,
+          parentKey: pluginData.manifest.adminNavigation.parentKey || null,
           category: pluginData.manifest.adminNavigation.category || pluginData.category || 'utility',
           description: pluginData.manifest.adminNavigation.description || pluginData.description
         } : null
