@@ -25,7 +25,7 @@ async function createEmailCaptureExample() {
   const client = await pool.connect();
 
   try {
-    const pluginId = 'eea24e22-7bc7-457e-8403-df53758ebf76'; // Cart Alert
+    const pluginId = '4eb11832-5429-4146-af06-de86d319a0e5'; // Cart Alert (user's instance)
 
     console.log('📧 Creating Email Capture CRUD Example...\n');
     console.log('This demonstrates 100% database-driven plugin development:\n');
@@ -442,7 +442,7 @@ COMMENT ON TABLE cart_emails IS 'Email addresses captured from cart for marketin
 
   // Call the CREATE controller to save email
   try {
-    const response = await fetch('/api/plugins/cart-hamid/exec/emails', {
+    const response = await fetch('/api/plugins/my-cart-alert/exec/emails', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -513,7 +513,7 @@ export default function EmailCaptureManager() {
 
   const loadEmails = async () => {
     try {
-      const response = await fetch(\\\`/api/plugins/cart-hamid/exec/emails?search=\\\${search}\\\`);
+      const response = await fetch(\\\`/api/plugins/my-cart-alert/exec/emails?search=\\\${search}\\\`);
       const data = await response.json();
 
       if (data.success) {
@@ -528,7 +528,7 @@ export default function EmailCaptureManager() {
 
   const loadStats = async () => {
     try {
-      const response = await fetch('/api/plugins/cart-hamid/exec/emails/stats');
+      const response = await fetch('/api/plugins/my-cart-alert/exec/emails/stats');
       const data = await response.json();
 
       if (data.success) {
@@ -543,7 +543,7 @@ export default function EmailCaptureManager() {
     if (!confirm('Delete this email address?')) return;
 
     try {
-      const response = await fetch(\\\`/api/plugins/cart-hamid/exec/emails/\\\${id}\\\`, {
+      const response = await fetch(\\\`/api/plugins/my-cart-alert/exec/emails/\\\${id}\\\`, {
         method: 'DELETE'
       });
 
@@ -558,7 +558,7 @@ export default function EmailCaptureManager() {
 
   const handleToggleSubscribe = async (email) => {
     try {
-      const response = await fetch(\\\`/api/plugins/cart-hamid/exec/emails/\\\${email.id}\\\`, {
+      const response = await fetch(\\\`/api/plugins/my-cart-alert/exec/emails/\\\${email.id}\\\`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ subscribed: !email.subscribed })
@@ -721,7 +721,7 @@ export default function EmailCaptureManager() {
         pluginId,
         'email-capture',
         'Email Capture',
-        '/admin/plugins/cart-hamid/emails',
+        '/admin/plugins/my-cart-alert/emails',
         adminPageCode,
         'View and manage captured email addresses from cart',
         'Mail',
@@ -744,12 +744,12 @@ export default function EmailCaptureManager() {
     console.log('   • Stores: email, cart_total, subscribed, etc.');
 
     console.log('\n2️⃣ CONTROLLERS (plugin_controllers):');
-    console.log('   • POST   /api/plugins/cart-hamid/exec/emails');
-    console.log('   • GET    /api/plugins/cart-hamid/exec/emails');
-    console.log('   • GET    /api/plugins/cart-hamid/exec/emails/:id');
-    console.log('   • PUT    /api/plugins/cart-hamid/exec/emails/:id');
-    console.log('   • DELETE /api/plugins/cart-hamid/exec/emails/:id');
-    console.log('   • GET    /api/plugins/cart-hamid/exec/emails/stats');
+    console.log('   • POST   /api/plugins/my-cart-alert/exec/emails');
+    console.log('   • GET    /api/plugins/my-cart-alert/exec/emails');
+    console.log('   • GET    /api/plugins/my-cart-alert/exec/emails/:id');
+    console.log('   • PUT    /api/plugins/my-cart-alert/exec/emails/:id');
+    console.log('   • DELETE /api/plugins/my-cart-alert/exec/emails/:id');
+    console.log('   • GET    /api/plugins/my-cart-alert/exec/emails/stats');
 
     console.log('\n3️⃣ EVENT LISTENER (plugin_events):');
     console.log('   • cart-viewed-capture-email.js');
@@ -757,17 +757,17 @@ export default function EmailCaptureManager() {
     console.log('   • Extracts email and calls POST /emails');
 
     console.log('\n4️⃣ ADMIN PAGE (plugin_admin_pages):');
-    console.log('   • Route: /admin/plugins/cart-hamid/emails');
+    console.log('   • Route: /admin/plugins/my-cart-alert/emails');
     console.log('   • Shows: Email list with stats');
     console.log('   • Features: Search, Delete, Subscribe/Unsubscribe, Export CSV');
 
     console.log('\n📋 HOW IT WORKS (Complete Flow):');
     console.log('   1. User views cart → cart.viewed event fires');
     console.log('   2. Event listener extracts email from data');
-    console.log('   3. Calls POST /api/plugins/cart-hamid/exec/emails');
+    console.log('   3. Calls POST /api/plugins/my-cart-alert/exec/emails');
     console.log('   4. Controller inserts into cart_emails table');
-    console.log('   5. Admin visits /admin/plugins/cart-hamid/emails');
-    console.log('   6. Admin page fetches via GET /api/plugins/cart-hamid/exec/emails');
+    console.log('   5. Admin visits /admin/plugins/my-cart-alert/emails');
+    console.log('   6. Admin page fetches via GET /api/plugins/my-cart-alert/exec/emails');
     console.log('   7. Admin can CRUD emails via controllers');
 
     console.log('\n🚀 NEXT STEPS:');
