@@ -35,17 +35,7 @@ async function ultraSimpleCreateEmail() {
   try {
     const result = await sequelize.query(
       'INSERT INTO cart_emails (email, session_id, cart_total, cart_items_count, source, subscribed, created_at) VALUES ($1, $2, $3, $4, $5, $6, NOW()) RETURNING *',
-      {
-        bind: [
-          email,
-          session_id || null,
-          cart_total || 0,
-          cart_items_count || 0,
-          source || 'manual',
-          subscribed || false
-        ],
-        type: sequelize.QueryTypes.INSERT
-      }
+      { bind: [email, session_id || null, cart_total || 0, cart_items_count || 0, source || 'manual', subscribed || false], type: sequelize.QueryTypes.INSERT }
     );
 
     return res.json({
