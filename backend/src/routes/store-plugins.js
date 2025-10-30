@@ -38,27 +38,63 @@ router.get('/', async (req, res) => {
         error: 'Authentication required'
       });
     }
-    
+
     const storeId = req.params.store_id;
-    
+
     console.log(`🔍 Getting plugins for store: ${storeId}`);
-    
-    // Ensure plugin manager is initialized
+
+    // Get plugins from plugin_registry (new system)
+    const registryPlugins = await sequelize.query(
+      'SELECT * FROM plugin_registry ORDER BY created_at DESC',
+      {
+        type: sequelize.QueryTypes.SELECT
+      }
+    );
+
+    // Ensure plugin manager is initialized for legacy plugins
     if (!pluginManager.isInitialized) {
       await pluginManager.initialize();
     }
-    
-    // Get all available plugins (platform-wide)
-    const allPlugins = pluginManager.getAllPlugins();
-    
+
+    // Get all available plugins from old system (platform-wide)
+    const legacyPlugins = pluginManager.getAllPlugins();
+
     // Get store-specific configurations
     const storeConfigs = await PluginConfiguration.findByStore(storeId);
     const configMap = new Map(storeConfigs.map(config => [config.pluginId, config]));
-    
-    // Merge plugin info with store-specific status
-    const pluginsWithStoreStatus = allPlugins.map(plugin => {
+
+    // Transform plugin_registry plugins
+    const transformedRegistryPlugins = registryPlugins.map(plugin => {
+      const storeConfig = configMap.get(plugin.id);
+
+      return {
+        id: plugin.id,
+        name: plugin.name,
+        slug: plugin.id, // Use id as slug for routing
+        version: plugin.version,
+        description: plugin.description,
+        author: plugin.author,
+        category: plugin.category,
+        status: plugin.status,
+        manifest: plugin.manifest,
+        creator_id: plugin.creator_id,
+        is_public: plugin.is_public,
+        deprecated_at: plugin.deprecated_at,
+        deprecation_reason: plugin.deprecation_reason,
+        source: 'registry',
+        // Store-specific status
+        enabledForStore: storeConfig?.isEnabled || false,
+        configuredForStore: !!storeConfig,
+        storeConfiguration: storeConfig?.configData || {},
+        lastConfiguredAt: storeConfig?.lastConfiguredAt || null,
+        healthStatus: storeConfig?.healthStatus || 'unknown'
+      };
+    });
+
+    // Merge legacy plugin info with store-specific status
+    const transformedLegacyPlugins = legacyPlugins.map(plugin => {
       const storeConfig = configMap.get(plugin.manifest?.id || plugin.slug);
-      
+
       return {
         ...plugin,
         // Store-specific status
@@ -69,16 +105,19 @@ router.get('/', async (req, res) => {
         healthStatus: storeConfig?.healthStatus || 'unknown'
       };
     });
-    
-    console.log(`📊 Returning ${pluginsWithStoreStatus.length} plugins with store status`);
-    
+
+    // Combine both plugin sources
+    const allPluginsWithStoreStatus = [...transformedRegistryPlugins, ...transformedLegacyPlugins];
+
+    console.log(`📊 Returning ${allPluginsWithStoreStatus.length} plugins (${transformedRegistryPlugins.length} from registry, ${transformedLegacyPlugins.length} legacy) with store status`);
+
     res.json({
       success: true,
       data: {
-        plugins: pluginsWithStoreStatus,
+        plugins: allPluginsWithStoreStatus,
         storeId,
         summary: {
-          totalAvailable: allPlugins.length,
+          totalAvailable: allPluginsWithStoreStatus.length,
           enabledForStore: storeConfigs.filter(c => c.isEnabled).length,
           configuredForStore: storeConfigs.length
         }
