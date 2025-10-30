@@ -662,6 +662,7 @@ IMPORTANT:
       };
 
       // Save manifest.json
+      // Note: script_type must be 'js' or 'css', scope must be 'frontend', 'backend', or 'admin'
       await sequelize.query(`
         INSERT INTO plugin_scripts (
           plugin_id, file_name, file_content, script_type, scope, load_priority, is_enabled
@@ -672,8 +673,8 @@ IMPORTANT:
           pluginId,
           'manifest.json',
           JSON.stringify(manifestJson, null, 2),
-          'json',
-          'config',
+          'js',      // Changed from 'json' to 'js' (constraint allows only js/css)
+          'admin',   // Changed from 'config' to 'admin' (constraint allows frontend/backend/admin)
           0,
           true
         ],
@@ -724,6 +725,7 @@ For issues or questions, please contact the platform administrator.
 `;
 
       // Save README.md
+      // Note: script_type must be 'js' or 'css', scope must be 'frontend', 'backend', or 'admin'
       await sequelize.query(`
         INSERT INTO plugin_scripts (
           plugin_id, file_name, file_content, script_type, scope, load_priority, is_enabled
@@ -734,8 +736,8 @@ For issues or questions, please contact the platform administrator.
           pluginId,
           'README.md',
           readmeContent,
-          'markdown',
-          'docs',
+          'js',      // Changed from 'markdown' to 'js' (constraint allows only js/css)
+          'admin',   // Changed from 'docs' to 'admin' (constraint allows frontend/backend/admin)
           0,
           true
         ],
