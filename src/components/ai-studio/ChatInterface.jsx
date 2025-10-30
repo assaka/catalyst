@@ -24,13 +24,27 @@ const ChatInterface = ({ onPluginCloned, context }) => {
   const [showCloneModal, setShowCloneModal] = useState(false);
   const [templateToClone, setTemplateToClone] = useState(null);
   const [cloneName, setCloneName] = useState('');
+  const [pluginGenerationCost, setPluginGenerationCost] = useState(50); // Default fallback
   const messagesEndRef = useRef(null);
   const inputRef = useRef(null);
 
-  // Load starter templates from API
+  // Load starter templates and plugin cost from API
   useEffect(() => {
     loadStarterTemplates();
+    loadPluginGenerationCost();
   }, []);
+
+  const loadPluginGenerationCost = async () => {
+    try {
+      const response = await apiClient.get('service-credit-costs/key/custom_plugin_creation');
+      if (response.success && response.service) {
+        setPluginGenerationCost(response.service.cost_per_unit);
+      }
+    } catch (error) {
+      console.error('Error loading plugin generation cost:', error);
+      // Keep using default fallback value
+    }
+  };
 
   const loadStarterTemplates = async () => {
     try {
@@ -129,11 +143,11 @@ const ChatInterface = ({ onPluginCloned, context }) => {
     if (isPluginRequest) {
       setMessages(prev => [...prev, {
         role: 'assistant',
-        content: `🤖 I can generate a plugin for you!\n\n⚠️ **Cost:** 50 credits for AI generation\n\nAfter generation, you can:\n• Preview the code\n• Edit if needed\n• Save to database automatically\n\nDo you want me to generate this plugin?`,
+        content: `🤖 I can generate a plugin for you!\n\n⚠️ **Cost:** ${pluginGenerationCost} credits for AI generation\n\nAfter generation, you can:\n• Preview the code\n• Edit if needed\n• Save to database automatically\n\nDo you want me to generate this plugin?`,
         confirmAction: {
           type: 'generate-plugin',
           prompt: userMessage,
-          cost: 50
+          cost: pluginGenerationCost
         }
       }]);
       return;
@@ -527,17 +541,16 @@ const MessageBubble = ({ message, onInstallPlugin, onConfirmCreate, onGeneratePl
               </button>
               <button
                 onClick={() => {
-                  // Remove confirmAction from this message
-                  setMessages(prev => prev.map(m =>
-                    m === message ? { ...m, confirmAction: null } : m
-                  ));
-                  // Add cancellation message
-                  setMessages(prev => [...prev, {
-                    role: 'assistant',
-                    content: '❌ Cancelled. What else can I help you with?'
-                  }]);
+                  // Remove confirmAction and add cancellation message in one update for smooth visual feedback
+                  setMessages(prev => [
+                    ...prev.map(m => m === message ? { ...m, confirmAction: null } : m),
+                    {
+                      role: 'assistant',
+                      content: '❌ Cancelled. What else can I help you with?'
+                    }
+                  ]);
                 }}
-                className="flex items-center gap-2 px-4 py-2 bg-gray-200 hover:bg-gray-300 text-gray-700 text-sm rounded-md font-medium"
+                className="flex items-center gap-2 px-4 py-2 bg-red-100 hover:bg-red-200 text-red-700 dark:bg-red-900/30 dark:hover:bg-red-900/50 dark:text-red-300 text-sm rounded-md font-medium transition-all"
               >
                 ✗ Cancel
               </button>
