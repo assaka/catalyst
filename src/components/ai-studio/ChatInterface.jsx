@@ -113,6 +113,10 @@ const ChatInterface = ({ onPluginCloned, context }) => {
     if (!input.trim() || isProcessing) return;
 
     const userMessage = input.trim();
+
+    // Detect if user is asking to create/generate a plugin
+    const isPluginRequest = /create|generate|build|make|add.*plugin/i.test(userMessage);
+
     setInput('');
 
     // Add user message to chat
@@ -121,6 +125,21 @@ const ChatInterface = ({ onPluginCloned, context }) => {
       content: userMessage
     }]);
 
+    // If it's a plugin creation request, show confirmation first
+    if (isPluginRequest) {
+      setMessages(prev => [...prev, {
+        role: 'assistant',
+        content: `🤖 I can generate a plugin for you!\n\n⚠️ **Cost:** 50 credits for AI generation\n\nAfter generation, you can:\n• Preview the code\n• Edit if needed\n• Save to database (additional 50 credits)\n\nDo you want me to generate this plugin?`,
+        confirmAction: {
+          type: 'generate-plugin',
+          prompt: userMessage,
+          cost: 50
+        }
+      }]);
+      return;
+    }
+
+    // For non-plugin requests, proceed normally
     setIsProcessing(true);
 
     try {
@@ -166,11 +185,49 @@ const ChatInterface = ({ onPluginCloned, context }) => {
     }
   };
 
+  const handleGeneratePlugin = async (prompt) => {
+    setIsProcessing(true);
+
+    try {
+      // Send to AI chat endpoint for plugin generation
+      const response = await apiClient.post('/ai/chat', {
+        message: prompt,
+        conversationHistory: messages,
+        storeId: getSelectedStoreId()
+      });
+
+      if (response.success) {
+        // Add AI response with generated plugin
+        setMessages(prev => [...prev, {
+          role: 'assistant',
+          content: response.message,
+          data: response.data,
+          credits: response.creditsDeducted
+        }]);
+      } else {
+        setMessages(prev => [...prev, {
+          role: 'assistant',
+          content: `Error: ${response.message || 'Failed to generate plugin'}`,
+          error: true
+        }]);
+      }
+    } catch (error) {
+      console.error('Plugin generation error:', error);
+      setMessages(prev => [...prev, {
+        role: 'assistant',
+        content: `Error: ${error.message || 'Failed to generate plugin'}`,
+        error: true
+      }]);
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
   const handleConfirmCreate = (pluginData) => {
-    // Add confirmation message to chat
+    // Add confirmation message to chat for database save
     setMessages(prev => [...prev, {
       role: 'assistant',
-      content: `📋 Ready to create "${pluginData.name}"?\n\n⚠️ This will cost 50 credits to save the plugin to the database.\n\nYour plugin will include:\n• Components and services\n• Hooks and events\n• Full documentation\n\nDo you want to proceed?`,
+      content: `💾 Ready to save "${pluginData.name}" to database?\n\n⚠️ This will cost an additional 50 credits.\n\nYour plugin will be saved with:\n• All code files\n• Hooks and events registered\n• Full documentation\n\nDo you want to proceed?`,
       confirmAction: {
         type: 'create-plugin',
         pluginData: pluginData,
@@ -228,6 +285,7 @@ const ChatInterface = ({ onPluginCloned, context }) => {
             message={message}
             onInstallPlugin={handleInstallPlugin}
             onConfirmCreate={handleConfirmCreate}
+            onGeneratePlugin={handleGeneratePlugin}
           />
         ))}
 
@@ -405,7 +463,7 @@ const ChatInterface = ({ onPluginCloned, context }) => {
 /**
  * MessageBubble - Renders individual chat messages with generated content
  */
-const MessageBubble = ({ message, onInstallPlugin, onConfirmCreate }) => {
+const MessageBubble = ({ message, onInstallPlugin, onConfirmCreate, onGeneratePlugin }) => {
   const [showCode, setShowCode] = useState(false);
   const [isInstalling, setIsInstalling] = useState(false);
   const [showConfirmation, setShowConfirmation] = useState(false);
@@ -455,21 +513,25 @@ const MessageBubble = ({ message, onInstallPlugin, onConfirmCreate }) => {
             <div className="flex gap-2 mt-3">
               <button
                 onClick={async () => {
-                  if (message.confirmAction.type === 'create-plugin') {
+                  if (message.confirmAction.type === 'generate-plugin') {
+                    // Generate plugin via AI
+                    await onGeneratePlugin(message.confirmAction.prompt);
+                  } else if (message.confirmAction.type === 'create-plugin') {
+                    // Save plugin to database
                     await onInstallPlugin(message.confirmAction.pluginData);
                   }
                 }}
                 className="flex items-center gap-2 px-4 py-2 bg-green-600 hover:bg-green-700 text-white text-sm rounded-md font-medium"
               >
-                ✓ Yes, Create Plugin
+                ✓ Yes, Proceed
               </button>
               <button
                 onClick={() => {
                   // Add cancellation message
-                  const messagesContainer = document.querySelector('[data-messages-container]');
-                  if (messagesContainer) {
-                    // Just close the confirmation (no action needed)
-                  }
+                  setMessages(prev => [...prev, {
+                    role: 'assistant',
+                    content: '❌ Cancelled. What else can I help you with?'
+                  }]);
                 }}
                 className="flex items-center gap-2 px-4 py-2 bg-gray-200 hover:bg-gray-300 text-gray-700 text-sm rounded-md font-medium"
               >
