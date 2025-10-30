@@ -88,7 +88,14 @@ async function fixAllEmailControllers() {
 
     // Fixed getEmailById
     const getEmailByIdFixed = `async function getEmailById(req, res, { sequelize }) {
-  const id = req.params[0].replace('/emails/', '');
+  const id = req.params.id;
+
+  if (!id) {
+    return res.status(400).json({
+      success: false,
+      error: 'Email ID is required'
+    });
+  }
 
   try {
     const result = await sequelize.query(
@@ -117,8 +124,15 @@ async function fixAllEmailControllers() {
 
     // Fixed updateEmail
     const updateEmailFixed = `async function updateEmail(req, res, { sequelize }) {
-  const id = req.params[0].replace('/emails/', '');
+  const id = req.params.id;
   const { subscribed, source } = req.body;
+
+  if (!id) {
+    return res.status(400).json({
+      success: false,
+      error: 'Email ID is required'
+    });
+  }
 
   try {
     const result = await sequelize.query(
@@ -148,7 +162,14 @@ async function fixAllEmailControllers() {
 
     // Fixed deleteEmail
     const deleteEmailFixed = `async function deleteEmail(req, res, { sequelize }) {
-  const id = req.params[0].replace('/emails/', '');
+  const id = req.params.id;
+
+  if (!id) {
+    return res.status(400).json({
+      success: false,
+      error: 'Email ID is required'
+    });
+  }
 
   try {
     const result = await sequelize.query(

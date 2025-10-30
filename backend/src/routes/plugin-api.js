@@ -2588,35 +2588,65 @@ router.all('/:pluginId/exec/*', async (req, res) => {
     const isUUID = pluginId.match(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i);
 
     // Find matching controller in plugin_controllers table
+    // Get all controllers for this plugin and method to do pattern matching
     const controllers = await sequelize.query(`
       SELECT pc.*, pr.slug, pr.id as plugin_uuid
       FROM plugin_controllers pc
       JOIN plugin_registry pr ON pc.plugin_id = pr.id
       WHERE (${isUUID ? 'pc.plugin_id = $1' : 'pr.slug = $1'})
         AND pc.method = $2
-        AND pc.path = $3
         AND pc.is_enabled = true
     `, {
-      bind: [pluginId, method, controllerPath],
+      bind: [pluginId, method],
       type: sequelize.QueryTypes.SELECT
     });
 
-    if (controllers.length === 0) {
+    // Find matching controller by pattern (supports :id, :userId, etc.)
+    const matchPath = (pattern, actual) => {
+      const patternParts = pattern.split('/').filter(p => p);
+      const actualParts = actual.split('/').filter(p => p);
+
+      if (patternParts.length !== actualParts.length) return null;
+
+      const params = {};
+      for (let i = 0; i < patternParts.length; i++) {
+        if (patternParts[i].startsWith(':')) {
+          // Capture parameter
+          params[patternParts[i].substring(1)] = actualParts[i];
+        } else if (patternParts[i] !== actualParts[i]) {
+          return null;
+        }
+      }
+      return params;
+    };
+
+    let controller = null;
+    let pathParams = null;
+
+    for (const ctrl of controllers) {
+      const params = matchPath(ctrl.path, controllerPath);
+      if (params !== null) {
+        controller = ctrl;
+        pathParams = params;
+        break;
+      }
+    }
+
+    if (!controller) {
       return res.status(404).json({
         success: false,
         error: `Controller not found: ${method} ${controllerPath}`,
-        pluginId
+        pluginId,
+        availableControllers: controllers.map(c => `${c.method} ${c.path}`)
       });
     }
-
-    const controller = controllers[0];
 
     // Create execution context for the controller
     const context = {
       req: {
         body: req.body,
         query: req.query,
-        params: req.params,
+        params: { ...req.params, ...pathParams, 0: controllerPath },
         headers: req.headers,
         ip: req.ip,
         user: req.user,
