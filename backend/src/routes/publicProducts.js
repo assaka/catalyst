@@ -61,13 +61,15 @@ router.get('/', async (req, res) => {
     if (sku) where.sku = sku;
     if (id) {
       try {
-        // Handle JSON objects like {"$in":["uuid"]} or simple strings
+        // Handle JSON objects like {"$in":["uuid"]} or {"in":["uuid"]} or simple strings
         if (typeof id === 'string' && id.startsWith('{')) {
           const parsedId = JSON.parse(id);
-          
-          // Handle Sequelize operators
-          if (parsedId.$in && Array.isArray(parsedId.$in)) {
-            where.id = { [Op.in]: parsedId.$in };
+
+          // Handle Sequelize operators - support both $in and in
+          if ((parsedId.$in && Array.isArray(parsedId.$in)) ||
+              (parsedId.in && Array.isArray(parsedId.in))) {
+            const ids = parsedId.$in || parsedId.in;
+            where.id = { [Op.in]: ids };
           } else {
             where.id = parsedId;
           }
