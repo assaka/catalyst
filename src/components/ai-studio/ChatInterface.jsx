@@ -506,9 +506,17 @@ const MessageBubble = ({ message, onInstallPlugin, onConfirmCreate, onGeneratePl
               <button
                 onClick={async () => {
                   if (message.confirmAction.type === 'generate-plugin') {
+                    // Remove confirmAction from this message
+                    setMessages(prev => prev.map(m =>
+                      m === message ? { ...m, confirmAction: null } : m
+                    ));
                     // Generate plugin via AI
                     await onGeneratePlugin(message.confirmAction.prompt);
                   } else if (message.confirmAction.type === 'create-plugin') {
+                    // Remove confirmAction from this message
+                    setMessages(prev => prev.map(m =>
+                      m === message ? { ...m, confirmAction: null } : m
+                    ));
                     // Save plugin to database
                     await onInstallPlugin(message.confirmAction.pluginData);
                   }
@@ -519,6 +527,10 @@ const MessageBubble = ({ message, onInstallPlugin, onConfirmCreate, onGeneratePl
               </button>
               <button
                 onClick={() => {
+                  // Remove confirmAction from this message
+                  setMessages(prev => prev.map(m =>
+                    m === message ? { ...m, confirmAction: null } : m
+                  ));
                   // Add cancellation message
                   setMessages(prev => [...prev, {
                     role: 'assistant',
