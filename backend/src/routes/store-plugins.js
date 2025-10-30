@@ -1,5 +1,5 @@
 const express = require('express');
-const router = express.Router();
+const router = express.Router({ mergeParams: true }); // Enable access to parent route params
 const pluginManager = require('../core/PluginManager');
 const PluginConfiguration = require('../models/PluginConfiguration');
 const { authMiddleware } = require('../middleware/auth');
