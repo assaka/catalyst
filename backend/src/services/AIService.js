@@ -855,6 +855,13 @@ For issues or questions, please contact the platform administrator.
           let fileName = file.name || file.filename || 'index.js';
           const fileContent = file.code || file.content || '';
 
+          // Skip if AI generated manifest.json or README.md (we create our own)
+          const baseFileName = fileName.split('/').pop();
+          if (baseFileName === 'manifest.json' || baseFileName === 'README.md') {
+            console.log(`  ⏭️  Skipping ${baseFileName} (auto-generated)`);
+            continue;
+          }
+
           // Ensure proper directory structure
           // If file doesn't have a path prefix, add 'src/'
           if (!fileName.includes('/') && !fileName.includes('\\')) {
