@@ -42,7 +42,16 @@ const DynamicPluginAdminPage = () => {
 
       if (!plugin) {
         console.error('❌ Plugin not found in response');
-        console.error('Available plugins:', Array.isArray(plugins) ? plugins.map(p => ({ name: p.name, slug: p.slug })) : 'Not an array');
+        if (Array.isArray(plugins)) {
+          console.error('Available plugins:');
+          plugins.forEach((p, i) => {
+            console.error(`  ${i + 1}. Name: "${p.name}", Slug: "${p.slug}", ID: ${p.id}`);
+          });
+          console.error(`\nSearching for: "${pluginSlug}"`);
+          console.error('Slug matches:', plugins.map(p => p.slug === pluginSlug));
+        } else {
+          console.error('Plugins is not an array:', plugins);
+        }
         throw new Error(`Plugin not found: ${pluginSlug}`);
       }
 
