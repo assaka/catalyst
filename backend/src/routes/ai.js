@@ -347,11 +347,19 @@ router.post('/plugin/create', authMiddleware, async (req, res) => {
     });
 
   } catch (error) {
-    console.error('Plugin Creation Error:', error);
+    console.error('❌ Plugin Creation Error:', error);
+    console.error('Error stack:', error.stack);
 
+    // Return detailed error for debugging
     res.status(500).json({
       success: false,
-      message: error.message || 'Plugin creation failed'
+      message: error.message || 'Plugin creation failed',
+      error: error.message,
+      details: {
+        hasUser: !!req.user,
+        userId: req.user?.id,
+        errorType: error.name
+      }
     });
   }
 });

@@ -806,9 +806,15 @@ For issues or questions, please contact the platform administrator.
       // Return plugin ID and slug
       return { pluginId, slug };
     } catch (error) {
-      console.error('Error saving plugin to database:', error);
-      // Don't throw - plugin generation succeeded even if DB save failed
-      console.warn('⚠️ Plugin generated but not saved to database');
+      console.error('❌ Error saving plugin to database:', error);
+      console.error('Error details:', {
+        message: error.message,
+        name: error.name,
+        userId,
+        pluginName: pluginData.name
+      });
+      // Throw the error so the route handler can catch it
+      throw new Error(`Failed to save plugin to database: ${error.message}`);
     }
   }
 
