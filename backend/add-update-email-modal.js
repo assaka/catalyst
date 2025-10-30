@@ -109,10 +109,16 @@ export default function EmailCaptureManager() {
       return;
     }
 
+    if (!editingEmail.email.match(/^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/)) {
+      alert('Please enter a valid email address');
+      return;
+    }
+
     setUpdating(true);
 
     try {
       const response = await apiClient.put('plugins/my-cart-alert/exec/emails/' + editingEmail.id, {
+        email: editingEmail.email,
         subscribed: editingEmail.subscribed,
         source: editingEmail.source
       });
@@ -298,14 +304,14 @@ export default function EmailCaptureManager() {
           React.createElement('h2', { className: 'text-xl font-bold mb-4' }, '✏️ Edit Email'),
           React.createElement('div', { className: 'space-y-4' },
             React.createElement('div', null,
-              React.createElement('label', { className: 'block text-sm font-medium mb-1' }, 'Email Address'),
+              React.createElement('label', { className: 'block text-sm font-medium mb-1' }, 'Email Address *'),
               React.createElement('input', {
                 type: 'email',
                 value: editingEmail.email,
-                disabled: true,
-                className: 'w-full px-3 py-2 border rounded bg-gray-100 cursor-not-allowed'
-              }),
-              React.createElement('p', { className: 'text-xs text-gray-500 mt-1' }, 'Email address cannot be changed')
+                onChange: (e) => setEditingEmail({ ...editingEmail, email: e.target.value }),
+                className: 'w-full px-3 py-2 border rounded focus:ring-2 focus:ring-blue-500',
+                placeholder: 'user@example.com'
+              })
             ),
             React.createElement('div', null,
               React.createElement('label', { className: 'block text-sm font-medium mb-1' }, 'Source'),

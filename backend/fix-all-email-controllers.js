@@ -124,7 +124,7 @@ async function fixAllEmailControllers() {
     // Fixed updateEmail
     const updateEmailFixed = `async function updateEmail(req, res, { sequelize }) {
   const id = req.params.id;
-  const { subscribed, source } = req.body;
+  const { email, subscribed, source } = req.body;
 
   if (!id) {
     return res.status(400).json({
@@ -135,8 +135,8 @@ async function fixAllEmailControllers() {
 
   try {
     const result = await sequelize.query(
-      'UPDATE cart_emails SET subscribed = COALESCE($1, subscribed), source = COALESCE($2, source) WHERE id = $3 RETURNING *',
-      { bind: [subscribed, source, id], type: sequelize.QueryTypes.UPDATE }
+      'UPDATE cart_emails SET email = COALESCE($1, email), subscribed = COALESCE($2, subscribed), source = COALESCE($3, source) WHERE id = $4 RETURNING *',
+      { bind: [email, subscribed, source, id], type: sequelize.QueryTypes.UPDATE }
     );
 
     if (!result[1] || result[1].length === 0) {
