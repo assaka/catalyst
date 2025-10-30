@@ -299,6 +299,13 @@ router.post('/plugin/generate', authMiddleware, async (req, res) => {
 router.post('/plugin/create', authMiddleware, async (req, res) => {
   try {
     const { pluginData } = req.body;
+
+    // Debug logging
+    console.log('🔍 Plugin Create Request:');
+    console.log('  - req.user:', req.user);
+    console.log('  - req.user?.id:', req.user?.id);
+    console.log('  - pluginData.name:', pluginData?.name);
+
     const userId = req.user?.id;
 
     if (!pluginData) {
@@ -309,11 +316,19 @@ router.post('/plugin/create', authMiddleware, async (req, res) => {
     }
 
     if (!userId) {
+      console.error('❌ User not authenticated - req.user:', req.user);
       return res.status(401).json({
         success: false,
-        message: 'User not authenticated'
+        message: 'User not authenticated. Please log in.',
+        debug: {
+          hasUser: !!req.user,
+          userId: req.user?.id,
+          userKeys: req.user ? Object.keys(req.user) : []
+        }
       });
     }
+
+    console.log(`✅ Creating plugin for user: ${userId}`);
 
     // Save plugin to database using aiService instance
     const pluginId = await aiService.savePluginToDatabase(pluginData, userId);

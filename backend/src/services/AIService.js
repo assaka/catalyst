@@ -414,46 +414,122 @@ ${ragContext || '# Catalyst Plugin Architecture\n\nPlugins are JavaScript classe
 
 Generate a complete, production-ready plugin based on the user's description.
 
-RESPONSE FORMAT - Return ONLY valid JSON:
+CRITICAL: Follow this EXACT structure for ALL plugins:
+
+UNIFORM CODE STRUCTURE:
+1. Always use ES6 class syntax
+2. Always extend base Plugin class
+3. Use consistent naming: camelCase for methods, PascalCase for classes
+4. Include proper JSDoc comments
+5. Use modern JavaScript (ES6+)
+6. Include error handling
+7. Use template literals for HTML
+8. Escape user input to prevent XSS
+
+STANDARD PLUGIN TEMPLATE:
+\`\`\`javascript
+/**
+ * [Plugin Name]
+ * [Description]
+ *
+ * @version 1.0.0
+ * @author AI Generated
+ */
+class PluginName extends Plugin {
+  constructor(config = {}) {
+    super(config);
+    this.config = config;
+  }
+
+  static getMetadata() {
+    return {
+      name: '[Plugin Name]',
+      slug: '[plugin-slug]',
+      version: '1.0.0',
+      description: '[Description]',
+      author: 'AI Generated',
+      category: 'commerce',
+      hooks: ['renderCart'],
+      events: []
+    };
+  }
+
+  async install() {
+    await super.install();
+    console.log('[Plugin Name] installed');
+  }
+
+  async enable() {
+    await super.enable();
+    console.log('[Plugin Name] enabled');
+  }
+
+  async disable() {
+    await super.disable();
+    console.log('[Plugin Name] disabled');
+  }
+
+  // Hook implementations
+  renderCart(config, context) {
+    try {
+      return \`<div class="plugin-container">
+        <!-- Plugin HTML here -->
+      </div>\`;
+    } catch (error) {
+      console.error('[Plugin Name] render error:', error);
+      return '';
+    }
+  }
+}
+
+module.exports = PluginName;
+\`\`\`
+
+RESPONSE FORMAT - Return ONLY valid JSON (no markdown, no explanations):
 {
-  "name": "Plugin Name",
-  "slug": "plugin-slug",
-  "description": "What the plugin does",
-  "category": "commerce|marketing|analytics|integration",
+  "name": "Cart Alert Plugin",
+  "slug": "cart-alert-plugin",
+  "description": "Displays alerts in the shopping cart",
+  "category": "commerce",
   "version": "1.0.0",
-  "author": "Plugin Builder",
-  "features": ["Feature 1", "Feature 2"],
+  "author": "AI Generated",
+  "features": ["Cart alerts", "Custom messages", "Configurable styling"],
   "generatedFiles": [
     {
       "name": "index.js",
-      "code": "// Complete plugin code"
+      "code": "// Complete plugin code following the standard template above"
     }
   ],
   "config_schema": {
     "fields": [
       {
-        "name": "setting_name",
-        "type": "text|number|boolean|select",
-        "label": "Setting Label",
-        "default": "default value"
+        "name": "message",
+        "type": "text",
+        "label": "Alert Message",
+        "default": "Special offer available!"
       }
     ]
   },
   "manifest": {
-    "name": "Plugin Name",
-    "slug": "plugin-slug",
+    "name": "Cart Alert Plugin",
+    "slug": "cart-alert-plugin",
     "version": "1.0.0",
-    "hooks": ["renderHomepageHeader", "renderProductPage"],
-    "events": ["product.view", "order.created"],
+    "hooks": ["renderCart"],
+    "events": [],
     "adminNavigation": {
-      "enabled": true,
-      "label": "My Plugin",
-      "icon": "Package",
-      "route": "/admin/my-plugin"
+      "enabled": false
     }
   },
-  "explanation": "User-friendly explanation of what this plugin does and how to use it"
-}`;
+  "explanation": "This plugin displays customizable alert messages in the shopping cart to inform customers about special offers or important information."
+}
+
+IMPORTANT:
+- Use the EXACT same code structure for every plugin
+- Always include error handling in hook methods
+- Always use template literals for HTML
+- Always include JSDoc comments
+- Always extend the Plugin base class
+- Return ONLY the JSON object, no markdown formatting`;
 
     const result = await this.generate({
       userId,
