@@ -351,8 +351,8 @@ export default function Stores() {
                         Invited
                       </Badge>
                     )}
-                    <Badge className={store.is_active ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'}>
-                      {store.is_active ? 'Active' : 'Inactive'}
+                    <Badge className={store.published ? 'bg-green-100 text-green-800 border-green-200' : 'bg-orange-100 text-orange-800 border-orange-200'}>
+                      {store.published ? 'Running' : 'Paused'}
                     </Badge>
                   </div>
                 </div>
