@@ -8,7 +8,7 @@ async function checkCoupon() {
 
     const coupons = await sequelize.query(`
       SELECT code, discount_type, discount_value, min_purchase_amount,
-             is_active, usage_limit, times_used, valid_from, valid_until
+             is_active, valid_from, valid_until
       FROM coupons
       WHERE code = 'HAMID'
     `, {
@@ -45,8 +45,7 @@ async function checkCoupon() {
       console.log(`   Discount: ${coupon.discount_value}% off`);
       console.log(`   Active: ${coupon.is_active}`);
       console.log(`   Min purchase: $${coupon.min_purchase_amount}`);
-      console.log(`   Usage: ${coupon.times_used || 0}${coupon.usage_limit ? `/${coupon.usage_limit}` : ' (unlimited)'}`);
-      console.log(`   Valid: ${coupon.valid_from?.toISOString().split('T')[0]} to ${coupon.valid_until?.toISOString().split('T')[0]}`);
+      console.log(`   Valid: ${coupon.valid_from ? new Date(coupon.valid_from).toISOString().split('T')[0] : 'N/A'} to ${coupon.valid_until ? new Date(coupon.valid_until).toISOString().split('T')[0] : 'N/A'}`);
     }
 
   } catch (error) {
