@@ -98,8 +98,15 @@ async function loadPluginHooksAndEvents(pluginId) {
       if (plugin.hooks) {
         for (const hook of plugin.hooks) {
           if (hook.enabled) {
-            const handlerFunction = createHandlerFromDatabaseCode(hook.handler_code);
-            hookSystem.register(hook.hook_name, handlerFunction, hook.priority);
+            try {
+              const handlerFunction = createHandlerFromDatabaseCode(hook.handler_code);
+              hookSystem.register(hook.hook_name, handlerFunction, hook.priority);
+              console.log(`  ✅ Registered hook: ${hook.hook_name}`);
+            } catch (error) {
+              console.error(`  ❌ Failed to register hook ${hook.hook_name}:`, error.message);
+              console.error(`  Code preview:`, hook.handler_code?.substring(0, 100));
+              // Continue with other hooks
+            }
           }
         }
       }
@@ -108,8 +115,15 @@ async function loadPluginHooksAndEvents(pluginId) {
       if (plugin.events) {
         for (const event of plugin.events) {
           if (event.enabled) {
-            const listenerFunction = createHandlerFromDatabaseCode(event.listener_code);
-            eventSystem.on(event.event_name, listenerFunction);
+            try {
+              const listenerFunction = createHandlerFromDatabaseCode(event.listener_code);
+              eventSystem.on(event.event_name, listenerFunction);
+              console.log(`  ✅ Registered event: ${event.event_name}`);
+            } catch (error) {
+              console.error(`  ❌ Failed to register event ${event.event_name}:`, error.message);
+              console.error(`  Code preview:`, event.listener_code?.substring(0, 100));
+              // Continue with other events
+            }
           }
         }
       }
