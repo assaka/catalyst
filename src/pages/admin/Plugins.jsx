@@ -28,8 +28,8 @@ import {
   Globe,
   Trash2,
   AlertTriangle,
-  Power,
-  PowerOff
+  Pause,
+  Play
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -78,6 +78,9 @@ export default function Plugins() {
   const [pluginToDeprecate, setPluginToDeprecate] = useState(null);
   const [deprecationReason, setDeprecationReason] = useState("");
   const [deprecating, setDeprecating] = useState(false);
+  const [showPublishWarning, setShowPublishWarning] = useState(false);
+  const [pluginToPublish, setPluginToPublish] = useState(null);
+  const [publishing, setPublishing] = useState(false);
 
   useEffect(() => {
     loadData();
@@ -256,14 +259,33 @@ export default function Plugins() {
   };
 
   const handleToggleVisibility = async (plugin) => {
+    // If making public, show warning first
+    if (!plugin.isPublic) {
+      setPluginToPublish(plugin);
+      setShowPublishWarning(true);
+      return;
+    }
+
+    // If already public, cannot make private
+    alert("Public plugins cannot be made private again as other users may have installed them.");
+  };
+
+  const confirmPublish = async () => {
+    if (!pluginToPublish) return;
+
+    setPublishing(true);
     try {
-      await apiClient.request('PATCH', `plugins/${plugin.id}/visibility`, {
-        is_public: !plugin.isPublic
+      await apiClient.request('PATCH', `plugins/${pluginToPublish.id}/visibility`, {
+        is_public: true
       });
+      setShowPublishWarning(false);
+      setPluginToPublish(null);
       await loadData();
     } catch (error) {
-      console.error("Error toggling visibility:", error);
-      alert("Error updating plugin visibility: " + error.message);
+      console.error("Error publishing plugin:", error);
+      alert("Error publishing plugin: " + error.message);
+    } finally {
+      setPublishing(false);
     }
   };
 
@@ -889,7 +911,11 @@ export default function Plugins() {
                                   Public
                                 </Badge>
                               ) : (
-                                <Badge className="bg-gray-100 text-gray-700 text-xs flex items-center gap-1">
+                                <Badge
+                                  className="bg-gray-100 text-gray-700 text-xs flex items-center gap-1 cursor-pointer hover:bg-gray-200 transition-colors"
+                                  onClick={() => handleToggleVisibility(plugin)}
+                                  title="Click to publish to marketplace"
+                                >
                                   <Lock className="w-3 h-3" />
                                   Private
                                 </Badge>
@@ -916,54 +942,6 @@ export default function Plugins() {
                         </div>
                       )}
 
-                      {isOwner && !plugin.isDeprecated && (
-                        <div className="mb-4 flex items-center gap-2">
-                          <span className="text-xs text-gray-600">Visibility:</span>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => handleToggleVisibility(plugin)}
-                            className="h-7 text-xs"
-                          >
-                            {plugin.isPublic ? (
-                              <>
-                                <Lock className="w-3 h-3 mr-1" />
-                                Make Private
-                              </>
-                            ) : (
-                              <>
-                                <Globe className="w-3 h-3 mr-1" />
-                                Make Public
-                              </>
-                            )}
-                          </Button>
-                        </div>
-                      )}
-
-                      {plugin.isEnabled !== undefined && stores.length > 0 && (
-                        <div className="mb-4 flex items-center gap-2">
-                          <span className="text-xs text-gray-600">Store Status:</span>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => handleTogglePluginForStore(plugin, stores[0]?.id)}
-                            className="h-7 text-xs"
-                          >
-                            {plugin.isEnabled ? (
-                              <>
-                                <PowerOff className="w-3 h-3 mr-1" />
-                                Deactivate
-                              </>
-                            ) : (
-                              <>
-                                <Power className="w-3 h-3 mr-1" />
-                                Activate
-                              </>
-                            )}
-                          </Button>
-                        </div>
-                      )}
-
                       <div className="flex justify-between items-center gap-2">
                         <div className="flex gap-2">
                           <Button
@@ -984,42 +962,64 @@ export default function Plugins() {
                           </Button>
                         </div>
 
-                        {isOwner && !plugin.isDeprecated && (
-                          <div className="flex gap-1">
-                            {plugin.isPublic ? (
-                              <Button
-                                onClick={() => handleDeprecatePlugin(plugin)}
-                                variant="outline"
-                                size="sm"
-                                className="text-orange-600 border-orange-200 hover:bg-orange-50"
-                              >
-                                <AlertTriangle className="w-4 h-4 mr-1" />
-                                Deprecate
-                              </Button>
-                            ) : (
-                              <Button
-                                onClick={() => handleDeletePlugin(plugin)}
-                                variant="outline"
-                                size="sm"
-                                className="text-red-600 border-red-200 hover:bg-red-50"
-                              >
-                                <Trash2 className="w-4 h-4 mr-1" />
-                                Delete
-                              </Button>
-                            )}
-                          </div>
-                        )}
+                        <div className="flex gap-1 items-center">
+                          {/* Pause/Play for store activation */}
+                          {plugin.isEnabled !== undefined && stores.length > 0 && (
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleTogglePluginForStore(plugin, stores[0]?.id)}
+                              className="h-8 w-8 p-0"
+                              title={plugin.isEnabled ? "Pause for this store" : "Run for this store"}
+                            >
+                              {plugin.isEnabled ? (
+                                <Pause className="w-4 h-4 text-orange-600" />
+                              ) : (
+                                <Play className="w-4 h-4 text-green-600" />
+                              )}
+                            </Button>
+                          )}
 
-                        {!isOwner && plugin.isInstalled && (
-                          <Button
-                            onClick={() => handleUninstallPlugin(plugin)}
-                            variant="outline"
-                            size="sm"
-                            className="text-red-600 border-red-200 hover:bg-red-50"
-                          >
-                            Uninstall
-                          </Button>
-                        )}
+                          {/* Delete/Deprecate icons for owner */}
+                          {isOwner && !plugin.isDeprecated && (
+                            <>
+                              {plugin.isPublic ? (
+                                <Button
+                                  onClick={() => handleDeprecatePlugin(plugin)}
+                                  variant="ghost"
+                                  size="sm"
+                                  className="h-8 w-8 p-0"
+                                  title="Deprecate plugin"
+                                >
+                                  <AlertTriangle className="w-4 h-4 text-orange-600" />
+                                </Button>
+                              ) : (
+                                <Button
+                                  onClick={() => handleDeletePlugin(plugin)}
+                                  variant="ghost"
+                                  size="sm"
+                                  className="h-8 w-8 p-0"
+                                  title="Delete plugin"
+                                >
+                                  <Trash2 className="w-4 h-4 text-red-600" />
+                                </Button>
+                              )}
+                            </>
+                          )}
+
+                          {/* Uninstall for non-owner */}
+                          {!isOwner && plugin.isInstalled && (
+                            <Button
+                              onClick={() => handleUninstallPlugin(plugin)}
+                              variant="ghost"
+                              size="sm"
+                              className="h-8 w-8 p-0"
+                              title="Uninstall plugin"
+                            >
+                              <Trash2 className="w-4 h-4 text-red-600" />
+                            </Button>
+                          )}
+                        </div>
                       </div>
                     </CardContent>
                   </Card>
@@ -1257,6 +1257,73 @@ export default function Plugins() {
                     <>
                       <AlertTriangle className="w-4 h-4 mr-2" />
                       Deprecate Plugin
+                    </>
+                  )}
+                </Button>
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
+
+        {/* Publish Warning Dialog */}
+        <Dialog open={showPublishWarning} onOpenChange={setShowPublishWarning}>
+          <DialogContent className="max-w-md">
+            <DialogHeader>
+              <DialogTitle>Publish Plugin to Marketplace?</DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4">
+              <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3">
+                <p className="text-sm text-yellow-800 font-medium mb-2">
+                  ⚠️ Warning: This action cannot be undone!
+                </p>
+                <p className="text-sm text-yellow-800">
+                  Once you publish a plugin to the marketplace, it <strong>cannot be made private again</strong>.
+                  Other users may install and depend on it. You can only deprecate it in the future.
+                </p>
+              </div>
+
+              {pluginToPublish && (
+                <div>
+                  <p className="text-sm font-medium text-gray-700 mb-2">
+                    Plugin: <strong>{pluginToPublish.name}</strong>
+                  </p>
+                  <p className="text-sm text-gray-600">
+                    Version: {pluginToPublish.version}
+                  </p>
+                </div>
+              )}
+
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+                <p className="text-sm text-blue-800">
+                  After publishing, your plugin will be available to all users in the marketplace.
+                </p>
+              </div>
+
+              <div className="flex justify-end gap-2">
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    setShowPublishWarning(false);
+                    setPluginToPublish(null);
+                  }}
+                  disabled={publishing}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  onClick={confirmPublish}
+                  disabled={publishing}
+                  className="bg-green-600 hover:bg-green-700 text-white"
+                >
+                  {publishing ? (
+                    <>
+                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                      Publishing...
+                    </>
+                  ) : (
+                    <>
+                      <Globe className="w-4 h-4 mr-2" />
+                      Publish to Marketplace
                     </>
                   )}
                 </Button>
