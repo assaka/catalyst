@@ -201,10 +201,12 @@ export default function MiniCart({ iconVariant = 'outline' }) {
   const loadCart = async () => {
     // Prevent concurrent loadCart calls
     if (loadCartRef.current) {
+      console.log('⏳ MiniCart: Load already in progress, skipping...');
       return loadCartRef.current;
     }
 
     const refreshId = Date.now();
+    console.log(`🔄 MiniCart: Loading cart from backend (${refreshId})...`);
 
     const loadCartPromise = (async () => {
       try {
@@ -212,11 +214,12 @@ export default function MiniCart({ iconVariant = 'outline' }) {
 
         // Use simplified cart service
         const cartResult = await cartService.getCart();
+        console.log('📦 MiniCart: Cart result from backend:', cartResult);
 
         if (cartResult.success && cartResult.items) {
           // Simplified: always trust backend data
           const backendItems = cartResult.items;
-
+          console.log(`✅ MiniCart: Setting ${backendItems.length} items to state`);
 
           setCartItems(backendItems);
           setLastRefreshId(refreshId);
@@ -226,6 +229,7 @@ export default function MiniCart({ iconVariant = 'outline' }) {
 
           // Product details will be loaded by the cartItems useEffect
         } else {
+          console.log('⚠️ MiniCart: Cart result has no items, clearing cart');
           setCartItems([]);
           setCartProducts({});
           setLastRefreshId(refreshId);
