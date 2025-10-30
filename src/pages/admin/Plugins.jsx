@@ -409,8 +409,8 @@ export default function Plugins() {
       // Different filters per tab
       let matchesStatus = true;
       if (tabFilter === 'marketplace') {
-        // Show all third-party plugins that are published (is_public = true, not deprecated)
-        matchesStatus = plugin.isPublic === true && !plugin.isDeprecated;
+        // Show public third-party plugins (not owned by user, not deprecated)
+        matchesStatus = plugin.isPublic === true && !plugin.isDeprecated && plugin.creator_id !== user?.id;
       } else if (tabFilter === 'installed') {
         // Show third-party installed plugins (configured for my store but not created by me)
         matchesStatus = plugin.configuredForStore === true && plugin.creator_id !== user?.id;
