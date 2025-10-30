@@ -11,9 +11,9 @@ const aiContextService = require('./aiContextService'); // RAG system
 class AIService {
   constructor() {
     this.client = null;
-    this.defaultModel = 'claude-3-5-sonnet-20240620';
+    this.defaultModel = 'claude-3-sonnet-20240229';
     this.models = {
-      'claude-sonnet': 'claude-3-5-sonnet-20240620',
+      'claude-sonnet': 'claude-3-sonnet-20240229',
       'claude-opus': 'claude-3-opus-20240229',
       'claude-haiku': 'claude-3-haiku-20240307'
     };
