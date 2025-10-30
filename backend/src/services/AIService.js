@@ -835,8 +835,8 @@ ${pluginData.explanation || 'This plugin is ready to use.'}
 
 ## Hooks
 
-${manifest.hooks && manifest.hooks.length > 0 ?
-  manifest.hooks.map(h => `- \`${h}\``).join('\n')
+${pluginData.hooks && pluginData.hooks.length > 0 ?
+  pluginData.hooks.map(h => `- \`${h.name || h}\``).join('\n')
   : 'No hooks registered.'}
 
 ## Version
