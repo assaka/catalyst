@@ -85,22 +85,33 @@ export default function Plugins() {
 
   const loadData = async () => {
     try {
-      // Load modern plugin system and marketplace
-      const [pluginsResponse, marketplaceResponse, storesData, userData] = await Promise.all([
-        apiClient.request('GET', 'plugins').catch(e => {
-          console.error('❌ Plugin API error:', e);
-          return { plugins: [] };
-        }),
-        apiClient.request('GET', 'plugins/marketplace').catch(e => {
-          console.error('❌ Marketplace API error:', e);
-          return { plugins: [] };
-        }),
+      // Load stores and user first to get storeId
+      const [storesData, userData] = await Promise.all([
         Store.list(),
         User.me()
       ]);
 
+      const currentStoreId = storesData[0]?.id;
+
+      // Load modern plugin system with store-specific status
+      const [pluginsResponse, marketplaceResponse] = await Promise.all([
+        currentStoreId
+          ? apiClient.request('GET', `stores/${currentStoreId}/plugins`).catch(e => {
+              console.error('❌ Store Plugin API error:', e);
+              return { data: { plugins: [] } };
+            })
+          : apiClient.request('GET', 'plugins').catch(e => {
+              console.error('❌ Plugin API error:', e);
+              return { plugins: [] };
+            }),
+        apiClient.request('GET', 'plugins/marketplace').catch(e => {
+          console.error('❌ Marketplace API error:', e);
+          return { plugins: [] };
+        })
+      ]);
+
       // Unwrap the response objects
-      const plugins = pluginsResponse?.plugins || pluginsResponse || [];
+      const plugins = pluginsResponse?.data?.plugins || pluginsResponse?.plugins || pluginsResponse || [];
       const marketplacePlugins = marketplaceResponse?.plugins || marketplaceResponse || [];
       
       console.log('🔍 Debug: API responses:', {
@@ -148,7 +159,7 @@ export default function Plugins() {
         rating: plugin.rating || 0,
         reviews_count: plugin.reviews_count || 0,
         isActive: Boolean(plugin.is_active || plugin.isActive),
-        isEnabled: Boolean(plugin.is_enabled || plugin.isEnabled),
+        isEnabled: Boolean(plugin.enabledForStore || plugin.is_enabled || plugin.isEnabled),
         isInstalled: Boolean(plugin.is_installed || plugin.isInstalled),
         isPublic: Boolean(plugin.is_public),
         isDeprecated: Boolean(plugin.deprecated_at),
