@@ -308,11 +308,8 @@ router.post('/plugin/create', authMiddleware, async (req, res) => {
       });
     }
 
-    // Import AIService to use savePluginToDatabase
-    const AIService = require('../services/AIService');
-
-    // Save plugin to database
-    const pluginId = await AIService.savePluginToDatabase(pluginData, userId);
+    // Save plugin to database using aiService instance
+    const pluginId = await aiService.savePluginToDatabase(pluginData, userId);
 
     res.json({
       success: true,
