@@ -113,7 +113,7 @@ export default function EmailCaptureManager() {
                 React.createElement('div', { className: 'flex-1' },
                   React.createElement('div', { className: 'font-medium text-lg' }, email.email),
                   React.createElement('div', { className: 'text-sm text-gray-500 mt-1' },
-                    'Cart: $' + (email.cart_total || 0).toFixed(2) +
+                    'Cart: $' + parseFloat(email.cart_total || 0).toFixed(2) +
                     ' • ' + (email.cart_items_count || 0) + ' items • ' +
                     new Date(email.created_at).toLocaleDateString() +
                     (email.subscribed ? ' • ✅ Subscribed' : '')
