@@ -854,14 +854,9 @@ ${m.down_sql || '-- No down SQL'}`,
     // Add files from plugin_scripts table
     allFiles = allFiles.concat(pluginScripts);
 
-    // Add files from plugin_hooks table (as hook files)
-    const hookFiles = hooks.map(h => ({
-      name: `hooks/${h.hook_name.replace(/\./g, '_')}.js`,
-      code: h.handler_code,
-      hook_name: h.hook_name,  // Preserve hook name for metadata
-      priority: h.priority      // Preserve priority
-    }));
-    allFiles = allFiles.concat(hookFiles);
+    // NOTE: Hooks are NOT added to allFiles/source_code
+    // They are sent separately via the 'hooks' property and handled specially by the frontend
+    // Adding them here would create duplicates in the FileTree
 
     // Add files from plugin_events table (as event files)
     const eventFiles = pluginEvents.map(e => ({
@@ -966,6 +961,11 @@ ${m.down_sql || '-- No down SQL'}`,
         });
       });
     }
+
+    console.log(`  📊 Response summary:`);
+    console.log(`     - hooks: ${hooks.length} items`);
+    console.log(`     - source_code: ${generatedFiles.length} files`);
+    console.log(`     - Hook names:`, hooks.map(h => h.hook_name));
 
     res.json({
       success: true,
