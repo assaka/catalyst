@@ -428,7 +428,7 @@ export default function Cart() {
             })();
 
             const populatedCart = cartItems.map(item => {
-                const productDetails = (products || []).find(p => p.id === item.product_id);
+                const productDetails = (products || []).filter(p => p).find(p => p && p.id === item.product_id);
                 return {
                     ...item,
                     product: productDetails,
