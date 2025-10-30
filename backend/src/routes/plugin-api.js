@@ -2609,25 +2609,37 @@ router.all('/:pluginId/exec/*', async (req, res) => {
       if (patternParts.length !== actualParts.length) return null;
 
       const params = {};
+      let hasParams = false;
+
       for (let i = 0; i < patternParts.length; i++) {
         if (patternParts[i].startsWith(':')) {
           // Capture parameter
           params[patternParts[i].substring(1)] = actualParts[i];
+          hasParams = true;
         } else if (patternParts[i] !== actualParts[i]) {
           return null;
         }
       }
-      return params;
+      return { params, hasParams };
     };
+
+    // Sort controllers: exact matches first, then parameterized routes
+    const sortedControllers = [...controllers].sort((a, b) => {
+      const aHasParams = a.path.includes(':');
+      const bHasParams = b.path.includes(':');
+      if (aHasParams && !bHasParams) return 1;  // b (exact) before a (param)
+      if (!aHasParams && bHasParams) return -1; // a (exact) before b (param)
+      return 0;
+    });
 
     let controller = null;
     let pathParams = null;
 
-    for (const ctrl of controllers) {
-      const params = matchPath(ctrl.path, controllerPath);
-      if (params !== null) {
+    for (const ctrl of sortedControllers) {
+      const match = matchPath(ctrl.path, controllerPath);
+      if (match !== null) {
         controller = ctrl;
-        pathParams = params;
+        pathParams = match.params;
         break;
       }
     }
