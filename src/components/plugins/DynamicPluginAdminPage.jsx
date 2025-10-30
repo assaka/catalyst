@@ -85,39 +85,27 @@ const DynamicPluginAdminPage = () => {
 
       console.log('📝 Cleaned component code (first 200 chars):', componentCode.substring(0, 200));
 
-      // Import required UI components
-      const { Card, CardContent, CardHeader, CardTitle } = await import('@/components/ui/card');
-      const { Button } = await import('@/components/ui/button');
-      const { Input } = await import('@/components/ui/input');
-      const { Badge } = await import('@/components/ui/badge');
-      const LucideIcons = await import('lucide-react');
+      // Create component using eval
+      // Need to return the component function
+      const Component = eval(`
+        (function() {
+          const React = arguments[0];
+          const useState = arguments[1];
+          const useEffect = arguments[2];
+          const apiClient = arguments[3];
 
-      // Create component using eval (safer than new Function for complex code with escapes)
-      // Wrap in IIFE to create proper scope
-      const componentFactory = eval(`
-        (function(React, useState, useEffect, apiClient, Card, CardContent, CardHeader, CardTitle, Button, Input, Badge, Mail, Trash2, Search, Download, TrendingUp) {
           ${componentCode}
-        })
-      `);
 
-      const Component = componentFactory(
-        React,
-        useState,
-        useEffect,
-        apiClient,
-        Card,
-        CardContent,
-        CardHeader,
-        CardTitle,
-        Button,
-        Input,
-        Badge,
-        LucideIcons.Mail,
-        LucideIcons.Trash2,
-        LucideIcons.Search,
-        LucideIcons.Download,
-        LucideIcons.TrendingUp
-      );
+          // Return the component (it's the last defined function)
+          return EmailCaptureManager;
+        })
+      `)(React, useState, useEffect, apiClient);
+
+      console.log('✅ Component created:', typeof Component, Component?.name);
+
+      if (!Component || typeof Component !== 'function') {
+        throw new Error('Failed to create component - not a function');
+      }
 
       setPageComponent(() => Component);
       setLoading(false);
