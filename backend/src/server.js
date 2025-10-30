@@ -54,7 +54,7 @@ const translationRoutes = require('./routes/translations');
 const aiStudioRoutes = require('./routes/ai-studio');
 const aiPluginAssistantRoutes = require('./routes/ai-plugin-assistant');
 const aiRoutes = require('./routes/ai'); // Centralized AI service
-const diagnosticRoutes = require('./routes/diagnostic');
+// const diagnosticRoutes = require('./routes/diagnostic'); // Temporarily disabled
 const customerActivityRoutes = require('./routes/customer-activity');
 const storePluginRoutes = require('./routes/store-plugins');
 const seoSettingsRoutes = require('./routes/seo-settings');
@@ -1750,7 +1750,7 @@ app.use('/api/cart', cartRoutes);
 app.use('/api/wishlist', wishlistRoutes);
 app.use('/api/languages', languageRoutes);
 app.use('/api/translations', translationRoutes);
-app.use('/api/diagnostic', diagnosticRoutes); // Diagnostic endpoints
+// app.use('/api/diagnostic', diagnosticRoutes); // Temporarily disabled
 app.use('/api/ai', aiRoutes); // Centralized AI service (new unified system)
 app.use('/api/ai', aiStudioRoutes);
 app.use('/api/ai', aiPluginAssistantRoutes); // AI Plugin Assistant for no-code and developer modes
