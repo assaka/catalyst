@@ -293,6 +293,48 @@ router.post('/plugin/generate', authMiddleware, async (req, res) => {
 });
 
 /**
+ * POST /api/ai/plugin/create
+ * Save generated plugin to database (plugin_registry, plugin_scripts, plugin_hooks)
+ */
+router.post('/plugin/create', authMiddleware, async (req, res) => {
+  try {
+    const { pluginData } = req.body;
+    const userId = req.user.id;
+
+    if (!pluginData) {
+      return res.status(400).json({
+        success: false,
+        message: 'pluginData is required'
+      });
+    }
+
+    // Import AIService to use savePluginToDatabase
+    const AIService = require('../services/AIService');
+
+    // Save plugin to database
+    const pluginId = await AIService.savePluginToDatabase(pluginData, userId);
+
+    res.json({
+      success: true,
+      message: 'Plugin created successfully',
+      pluginId,
+      plugin: {
+        ...pluginData,
+        id: pluginId
+      }
+    });
+
+  } catch (error) {
+    console.error('Plugin Creation Error:', error);
+
+    res.status(500).json({
+      success: false,
+      message: error.message || 'Plugin creation failed'
+    });
+  }
+});
+
+/**
  * POST /api/ai/plugin/modify
  * Modify an existing plugin
  */

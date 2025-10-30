@@ -498,6 +498,7 @@ RESPONSE FORMAT - Return ONLY valid JSON:
       }
 
       const pluginData = JSON.parse(content);
+
       return {
         ...result,
         pluginData
@@ -505,6 +506,125 @@ RESPONSE FORMAT - Return ONLY valid JSON:
     } catch (error) {
       console.error('Failed to parse AI response:', result.content);
       throw new Error(`Failed to parse plugin data from AI response. AI returned: ${result.content.substring(0, 200)}...`);
+    }
+  }
+
+  /**
+   * Save generated plugin to database (call this separately when user wants to create)
+   */
+  static async savePluginToDatabase(pluginData, userId, metadata = {}) {
+    try {
+      const { randomUUID } = require('crypto');
+      const pluginId = randomUUID();
+      const slug = pluginData.slug || pluginData.name.toLowerCase().replace(/\s+/g, '-');
+
+      // Build manifest
+      const manifest = {
+        name: pluginData.name,
+        version: pluginData.version || '1.0.0',
+        generated_by_ai: true,
+        generatedFiles: pluginData.generatedFiles || [],
+        hooks: pluginData.manifest?.hooks || [],
+        events: pluginData.manifest?.events || [],
+        adminNavigation: pluginData.manifest?.adminNavigation || null,
+        ...pluginData
+      };
+
+      // Insert into plugin_registry
+      await sequelize.query(`
+        INSERT INTO plugin_registry (
+          id, name, slug, version, description, author, category, status, type, framework,
+          manifest, creator_id, is_installed, is_enabled,
+          created_at, updated_at
+        )
+        VALUES (
+          $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, NOW(), NOW()
+        )
+      `, {
+        bind: [
+          pluginId,
+          pluginData.name,
+          slug,
+          pluginData.version || '1.0.0',
+          pluginData.description || '',
+          pluginData.author || 'AI Generated',
+          pluginData.category || 'utility',
+          'active',
+          'ai-generated',
+          'react',
+          JSON.stringify(manifest),
+          userId,
+          true,  // is_installed
+          true   // is_enabled
+        ],
+        type: sequelize.QueryTypes.INSERT
+      });
+
+      console.log(`✅ Plugin saved to registry: ${pluginData.name} (${pluginId})`);
+
+      // Save generated files to plugin_scripts table
+      if (pluginData.generatedFiles && pluginData.generatedFiles.length > 0) {
+        for (const file of pluginData.generatedFiles) {
+          const fileName = file.name || file.filename || 'index.js';
+          const fileContent = file.code || file.content || '';
+
+          if (fileContent) {
+            await sequelize.query(`
+              INSERT INTO plugin_scripts (
+                plugin_id, file_name, file_content, script_type, scope, load_priority, is_enabled
+              )
+              VALUES ($1, $2, $3, $4, $5, $6, $7)
+            `, {
+              bind: [
+                pluginId,
+                fileName,
+                fileContent,
+                'js',
+                'frontend',
+                0,
+                true
+              ],
+              type: sequelize.QueryTypes.INSERT
+            });
+
+            console.log(`  📄 Saved script: ${fileName}`);
+          }
+        }
+      }
+
+      // Save hooks to plugin_hooks table
+      const hooks = pluginData.manifest?.hooks || [];
+      if (hooks && hooks.length > 0) {
+        for (const hookName of hooks) {
+          await sequelize.query(`
+            INSERT INTO plugin_hooks (
+              plugin_id, hook_name, handler_function, priority, is_enabled
+            )
+            VALUES ($1, $2, $3, $4, $5)
+          `, {
+            bind: [
+              pluginId,
+              hookName,
+              `render${hookName.charAt(0).toUpperCase() + hookName.slice(1)}`,
+              10,
+              true
+            ],
+            type: sequelize.QueryTypes.INSERT
+          });
+
+          console.log(`  🪝 Registered hook: ${hookName}`);
+        }
+      }
+
+      // Add plugin ID to the response
+      pluginData.id = pluginId;
+      pluginData.slug = slug;
+
+      return pluginId;
+    } catch (error) {
+      console.error('Error saving plugin to database:', error);
+      // Don't throw - plugin generation succeeded even if DB save failed
+      console.warn('⚠️ Plugin generated but not saved to database');
     }
   }
 
