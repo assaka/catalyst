@@ -25,11 +25,24 @@ const DynamicPluginAdminPage = () => {
 
       console.log('📄 Loading plugin admin page:', { pluginSlug, pageKey });
 
-      // Get plugin ID from slug
+      // Get plugin ID from slug - try multiple API response formats
       const pluginResponse = await apiClient.get(`plugins/registry`);
-      const plugin = pluginResponse.data?.data?.find(p => p.slug === pluginSlug);
+
+      console.log('Plugin API response:', pluginResponse);
+      console.log('Response data:', pluginResponse.data);
+
+      // Try different response structures
+      const plugins = pluginResponse.data?.data || pluginResponse.data || [];
+      console.log('Plugins array:', plugins);
+      console.log('Looking for slug:', pluginSlug);
+
+      const plugin = Array.isArray(plugins)
+        ? plugins.find(p => p.slug === pluginSlug)
+        : null;
 
       if (!plugin) {
+        console.error('❌ Plugin not found in response');
+        console.error('Available plugins:', Array.isArray(plugins) ? plugins.map(p => ({ name: p.name, slug: p.slug })) : 'Not an array');
         throw new Error(`Plugin not found: ${pluginSlug}`);
       }
 
