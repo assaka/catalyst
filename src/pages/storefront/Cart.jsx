@@ -308,23 +308,15 @@ export default function Cart() {
                 sessionId: getSessionId()
             };
 
-            console.log('🛒 [Cart] Step 1: Starting cart load...');
-
             // Apply before load hooks
-            console.log('🛒 [Cart] Step 2: Applying beforeLoadItems hook...');
             const shouldLoad = hookSystem.apply('cart.beforeLoadItems', true, localCartContext);
-            console.log('🛒 [Cart] Should load?', shouldLoad);
             if (!shouldLoad) {
-                console.log('🛒 [Cart] Load blocked by hook');
                 setLoading(false);
                 return;
             }
 
             // Emit loading event
-            console.log('🛒 [Cart] Step 3: Emitting loadingStarted event...');
             eventSystem.emit('cart.loadingStarted', localCartContext);
-
-            console.log('🛒 [Cart] Step 4: Fetching cart data...');
             const [cartResult, taxRulesData] = await Promise.allSettled([
                 // Load cart data
                 (async () => {
@@ -359,14 +351,9 @@ export default function Cart() {
                 setTaxRules(taxRulesData.value);
             }
 
-            console.log('🛒 [Cart] Step 5: Checking cart items...', cartItems.length);
-
             if (!cartItems || cartItems.length === 0) {
-                console.log('🛒 [Cart] Cart is empty - calling hook with empty array');
-
                 // Apply hook even for empty cart (important for empty cart hooks!)
-                const processedEmptyCart = hookSystem.apply('cart.processLoadedItems', [], localCartContext);
-                console.log('🛒 [Cart] Hook returned:', processedEmptyCart);
+                hookSystem.apply('cart.processLoadedItems', [], localCartContext);
 
                 setCartItems([]);
                 // Clear applied coupon when cart is empty
@@ -440,7 +427,6 @@ export default function Cart() {
                 }
             })();
 
-            console.log('🛒 [Cart] Step 5: Populating cart items with product details...');
             const populatedCart = cartItems.map(item => {
                 const productDetails = (products || []).find(p => p.id === item.product_id);
                 return {
@@ -450,13 +436,8 @@ export default function Cart() {
                 };
             }).filter(item => item.product); // Ensure product exists
 
-            console.log('🛒 [Cart] Step 6: Populated cart has', populatedCart.length, 'items');
-
             // Apply item processing hooks
-            console.log('🛒 [Cart] Step 7: Calling hookSystem.apply for cart.processLoadedItems');
-            console.log('🛒 [Cart] Items before hook:', populatedCart.length);
             const processedItems = hookSystem.apply('cart.processLoadedItems', populatedCart, localCartContext);
-            console.log('🛒 [Cart] Items after hook:', processedItems.length);
 
             setCartItems(processedItems);
             setHasLoadedInitialData(true);
