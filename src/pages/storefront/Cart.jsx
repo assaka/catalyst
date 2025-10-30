@@ -359,7 +359,15 @@ export default function Cart() {
                 setTaxRules(taxRulesData.value);
             }
 
+            console.log('🛒 [Cart] Step 5: Checking cart items...', cartItems.length);
+
             if (!cartItems || cartItems.length === 0) {
+                console.log('🛒 [Cart] Cart is empty - calling hook with empty array');
+
+                // Apply hook even for empty cart (important for empty cart hooks!)
+                const processedEmptyCart = hookSystem.apply('cart.processLoadedItems', [], localCartContext);
+                console.log('🛒 [Cart] Hook returned:', processedEmptyCart);
+
                 setCartItems([]);
                 // Clear applied coupon when cart is empty
                 if (appliedCoupon) {
