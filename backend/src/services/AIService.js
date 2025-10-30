@@ -803,11 +803,8 @@ For issues or questions, please contact the platform administrator.
         }
       }
 
-      // Add plugin ID to the response
-      pluginData.id = pluginId;
-      pluginData.slug = slug;
-
-      return pluginId;
+      // Return plugin ID and slug
+      return { pluginId, slug };
     } catch (error) {
       console.error('Error saving plugin to database:', error);
       // Don't throw - plugin generation succeeded even if DB save failed

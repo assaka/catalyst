@@ -331,15 +331,18 @@ router.post('/plugin/create', authMiddleware, async (req, res) => {
     console.log(`✅ Creating plugin for user: ${userId}`);
 
     // Save plugin to database using aiService instance
-    const pluginId = await aiService.savePluginToDatabase(pluginData, userId);
+    const result = await aiService.savePluginToDatabase(pluginData, userId);
+
+    console.log(`✅ Plugin created:`, result);
 
     res.json({
       success: true,
       message: 'Plugin created successfully',
-      pluginId,
+      pluginId: result.pluginId,
       plugin: {
         ...pluginData,
-        id: pluginId
+        id: result.pluginId,
+        slug: result.slug
       }
     });
 
