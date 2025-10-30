@@ -171,9 +171,19 @@ export default function MiniCart({ iconVariant = 'outline' }) {
 
     const handleCartUpdate = (event) => {
       console.log('🔔 MiniCart: Received cartUpdated event', event.detail);
-      // ALWAYS fetch fresh data from backend to avoid stale/cached data
-      console.log('🔄 MiniCart: Forcing fresh fetch from backend...');
-      debouncedRefresh(true); // Force immediate refresh from backend
+
+      // Use freshCartData from event to avoid race condition with backend
+      if (event.detail?.freshCartData?.items) {
+        const items = event.detail.freshCartData.items;
+        console.log(`✅ MiniCart: Using freshCartData from event, ${items.length} items`);
+        setCartItems(items);
+        saveCartToLocalStorage(items);
+        return;
+      }
+
+      // Fallback: fetch from backend if no freshCartData
+      console.log('⚠️ MiniCart: No freshCartData, fetching from backend...');
+      debouncedRefresh(true);
     };
 
     const handleDirectRefresh = (event) => {
