@@ -137,13 +137,48 @@ router.post('/:pluginSlug/enable', async (req, res) => {
       pluginId = plugin.manifest?.id || pluginSlug;
     }
 
-    // Enable plugin for this store
-    const config = await PluginConfiguration.enableForStore(
-      pluginId,
-      storeId,
-      configuration,
-      user.id
+    // Enable plugin for this store - use raw SQL to avoid UUID casting
+    const [existing] = await sequelize.query(
+      'SELECT * FROM plugin_configurations WHERE plugin_id = :pluginId AND store_id = :storeId',
+      {
+        replacements: { pluginId, storeId },
+        type: sequelize.QueryTypes.SELECT
+      }
     );
+
+    let configResult;
+    if (!existing) {
+      // Create new configuration
+      await sequelize.query(
+        `INSERT INTO plugin_configurations (id, plugin_id, store_id, is_enabled, config_data, last_configured_by, last_configured_at, enabled_at, created_at, updated_at)
+         VALUES (gen_random_uuid(), :pluginId, :storeId, true, :configData, :userId, NOW(), NOW(), NOW(), NOW())`,
+        {
+          replacements: {
+            pluginId,
+            storeId,
+            configData: JSON.stringify(configuration),
+            userId: user.id
+          },
+          type: sequelize.QueryTypes.INSERT
+        }
+      );
+      configResult = { isEnabled: true, configData: configuration, enabledAt: new Date() };
+    } else if (!existing.is_enabled) {
+      // Update existing to enabled
+      await sequelize.query(
+        `UPDATE plugin_configurations
+         SET is_enabled = true, config_data = :configData, last_configured_by = :userId,
+             last_configured_at = NOW(), enabled_at = NOW(), disabled_at = NULL, updated_at = NOW()
+         WHERE plugin_id = :pluginId AND store_id = :storeId`,
+        {
+          replacements: { pluginId, storeId, configData: JSON.stringify(configuration), userId: user.id },
+          type: sequelize.QueryTypes.UPDATE
+        }
+      );
+      configResult = { isEnabled: true, configData: configuration, enabledAt: new Date() };
+    } else {
+      configResult = existing;
+    }
 
     console.log(`✅ Plugin ${pluginSlug} enabled for store ${storeId}`);
 
@@ -153,9 +188,9 @@ router.post('/:pluginSlug/enable', async (req, res) => {
       data: {
         pluginSlug,
         storeId,
-        isEnabled: config.isEnabled,
-        configuration: config.configData,
-        enabledAt: config.enabledAt
+        isEnabled: configResult.isEnabled,
+        configuration: configResult.config_data || configResult.configData,
+        enabledAt: configResult.enabled_at || configResult.enabledAt
       }
     });
   } catch (error) {
@@ -203,17 +238,32 @@ router.post('/:pluginSlug/disable', async (req, res) => {
       pluginId = plugin.manifest?.id || pluginSlug;
     }
 
-    // Disable plugin for this store
-    const config = await PluginConfiguration.disableForStore(
-      pluginId,
-      storeId
+    // Disable plugin for this store - use raw SQL to avoid UUID casting
+    const [existing] = await sequelize.query(
+      'SELECT * FROM plugin_configurations WHERE plugin_id = :pluginId AND store_id = :storeId',
+      {
+        replacements: { pluginId, storeId },
+        type: sequelize.QueryTypes.SELECT
+      }
     );
 
-    if (!config) {
+    if (!existing) {
       return res.status(404).json({
         success: false,
         error: 'Plugin is not configured for this store'
       });
+    }
+
+    if (existing.is_enabled) {
+      await sequelize.query(
+        `UPDATE plugin_configurations
+         SET is_enabled = false, disabled_at = NOW(), updated_at = NOW()
+         WHERE plugin_id = :pluginId AND store_id = :storeId`,
+        {
+          replacements: { pluginId, storeId },
+          type: sequelize.QueryTypes.UPDATE
+        }
+      );
     }
 
     console.log(`✅ Plugin ${pluginSlug} disabled for store ${storeId}`);
@@ -224,8 +274,8 @@ router.post('/:pluginSlug/disable', async (req, res) => {
       data: {
         pluginSlug,
         storeId,
-        isEnabled: config.isEnabled,
-        disabledAt: config.disabledAt
+        isEnabled: false,
+        disabledAt: new Date()
       }
     });
   } catch (error) {
