@@ -13,7 +13,7 @@ const router = express.Router();
 // @access  Public
 router.get('/', async (req, res) => {
   try {
-    const { page = 1, limit = 100, store_id, category_id, status = 'active', search, slug, sku, id, featured } = req.query;
+    const { page = 1, limit = 100, store_id, category_id, status = 'active', search, slug, sku, id, ids, featured } = req.query;
     const offset = (page - 1) * limit;
 
     const where = {
@@ -59,7 +59,25 @@ router.get('/', async (req, res) => {
     if (featured === 'true' || featured === true) where.featured = true;
     if (slug) where.slug = slug;
     if (sku) where.sku = sku;
-    if (id) {
+    // Handle 'ids' parameter (plural) - array of IDs for batch fetching
+    if (ids) {
+      try {
+        // Parse if it's a JSON string array
+        const idsArray = typeof ids === 'string' && ids.startsWith('[')
+          ? JSON.parse(ids)
+          : Array.isArray(ids)
+            ? ids
+            : [ids]; // Single ID as array
+
+        if (idsArray.length > 0) {
+          where.id = { [Op.in]: idsArray };
+        }
+      } catch (error) {
+        console.error('Error parsing ids parameter:', error);
+      }
+    }
+    // Handle 'id' parameter (singular) - supports various formats
+    else if (id) {
       try {
         // Handle JSON objects like {"$in":["uuid"]} or {"in":["uuid"]} or simple strings
         if (typeof id === 'string' && id.startsWith('{')) {
@@ -68,8 +86,8 @@ router.get('/', async (req, res) => {
           // Handle Sequelize operators - support both $in and in
           if ((parsedId.$in && Array.isArray(parsedId.$in)) ||
               (parsedId.in && Array.isArray(parsedId.in))) {
-            const ids = parsedId.$in || parsedId.in;
-            where.id = { [Op.in]: ids };
+            const idList = parsedId.$in || parsedId.in;
+            where.id = { [Op.in]: idList };
           } else {
             where.id = parsedId;
           }
