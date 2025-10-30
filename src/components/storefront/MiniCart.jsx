@@ -90,32 +90,8 @@ export default function MiniCart({ iconVariant = 'outline' }) {
     }
   }, []); // Removed cartProducts dependency to prevent excessive calls
 
-  // Helper functions for localStorage cart persistence
-  const saveCartToLocalStorage = (items) => {
-    try {
-      localStorage.setItem('minicart_items', JSON.stringify(items));
-      localStorage.setItem('minicart_timestamp', Date.now().toString());
-    } catch (error) {
-      console.warn('Failed to save cart to localStorage:', error);
-    }
-  };
-
-  const getCartFromLocalStorage = () => {
-    try {
-      const items = localStorage.getItem('minicart_items');
-      const timestamp = localStorage.getItem('minicart_timestamp');
-      if (items && timestamp) {
-        const age = Date.now() - parseInt(timestamp);
-        // Use localStorage cart if it's less than 5 minutes old
-        if (age < 5 * 60 * 1000) {
-          return JSON.parse(items);
-        }
-      }
-    } catch (error) {
-      console.warn('Failed to get cart from localStorage:', error);
-    }
-    return null;
-  };
+  // Cart data ONLY from database - no localStorage
+  // Database is the single source of truth for critical cart data
 
   // Load cart on mount
   useEffect(() => {
@@ -177,7 +153,7 @@ export default function MiniCart({ iconVariant = 'outline' }) {
         const items = event.detail.freshCartData.items;
         console.log(`✅ MiniCart: Using freshCartData from event, ${items.length} items`);
         setCartItems(items);
-        saveCartToLocalStorage(items);
+        // NO localStorage saving - database is source of truth
         return;
       }
 
@@ -234,8 +210,7 @@ export default function MiniCart({ iconVariant = 'outline' }) {
           setCartItems(backendItems);
           setLastRefreshId(refreshId);
 
-          // Save valid cart state to localStorage
-          saveCartToLocalStorage(backendItems);
+          // NO localStorage saving - database is single source of truth
 
           // Product details will be loaded by the cartItems useEffect
         } else {
@@ -248,17 +223,8 @@ export default function MiniCart({ iconVariant = 'outline' }) {
       } catch (error) {
         console.error(`🛒 MiniCart: Error loading cart (${refreshId}):`, error);
 
-        // For network errors, try to fall back to localStorage data instead of clearing cart
-        if (error.name === 'TypeError' && error.message.includes('NetworkError')) {
-          const localCart = getCartFromLocalStorage();
-          if (localCart && localCart.length > 0) {
-            setCartItems(localCart);
-            setLastRefreshId(refreshId);
-            return; // Don't clear cart on network error if we have local data
-          }
-        }
-
-        // Only clear cart for non-network errors or when no fallback available
+        // NO localStorage fallback - if backend fails, show error to user
+        // Cart is critical data that must come from database
         setCartItems([]);
         setCartProducts({});
         setLastRefreshId(refreshId);
