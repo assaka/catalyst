@@ -366,7 +366,9 @@ For plugin generation: Return ONLY valid JSON in this EXACT format:
         "icon": "Package",
         "route": "/admin/my-plugin",
         "order": 100,
-        "parentKey": null
+        "parentKey": null,
+        "category": "custom",
+        "description": "Plugin description for admin navigation"
       }
     }
   },
@@ -381,9 +383,11 @@ For plugin generation: Return ONLY valid JSON in this EXACT format:
 
 ADMIN NAVIGATION:
 - Include adminNavigation in manifest if the plugin needs an admin page
-- Use appropriate Lucide icons (Package, ShoppingCart, Users, Settings, etc.)
+- Use appropriate Lucide icons (Package, ShoppingCart, Users, Settings, Mail, etc.)
 - Set order: 1-50 for core features, 51-100 for plugins, 100+ for utilities
-- Leave parentKey null for top-level items, or use existing keys like "products", "orders"
+- Leave parentKey null for top-level items, or use existing keys like "products", "orders", "store"
+- Set category to match the plugin's purpose (commerce, marketing, analytics, integration, custom)
+- Add a clear description to help users understand what the navigation item does
 
 IMPORTANT CODE REQUIREMENTS:
 - Use the Simple Plugin structure for basic plugins (no database)
