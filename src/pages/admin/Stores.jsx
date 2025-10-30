@@ -10,10 +10,11 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { Plus, Store as StoreIcon, Users, Settings, Trash2, Eye, Crown, UserPlus, Pause, Play, AlertCircle } from 'lucide-react';
+import { Plus, Store as StoreIcon, Users, Settings, Trash2, Eye, Crown, UserPlus, Pause, Play, AlertCircle, Calendar } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { createPageUrl } from '@/utils';
 import { getExternalStoreUrl, getStoreBaseUrl } from '@/utils/urlUtils';
+import apiClient from '@/api/client';
 
 export default function Stores() {
   const { selectStore, refreshStores } = useStoreSelection();
@@ -25,6 +26,7 @@ export default function Stores() {
   const [createError, setCreateError] = useState('');
   const [showPublishConfirm, setShowPublishConfirm] = useState(false);
   const [storeToPublish, setStoreToPublish] = useState(null);
+  const [storeUptimes, setStoreUptimes] = useState({});
   const [newStore, setNewStore] = useState({
     name: '',
     // client_email and description are kept here because UI still references them
@@ -46,6 +48,25 @@ export default function Stores() {
       // Backend API automatically filters stores by user's email from JWT token
       // No need to pass filter parameters - the backend handles this
       const userStores = await Store.findAll();
+
+      // Fetch uptime data for all stores
+      try {
+        const uptimeResponse = await apiClient.get('credits/uptime-report?days=365');
+        if (uptimeResponse && uptimeResponse.store_breakdown) {
+          // Create a map of store_id -> uptime days
+          const uptimeMap = {};
+          uptimeResponse.store_breakdown.forEach(breakdown => {
+            uptimeMap[breakdown.store_id] = {
+              days_running: breakdown.days_running,
+              total_credits: breakdown.total_credits
+            };
+          });
+          setStoreUptimes(uptimeMap);
+        }
+      } catch (uptimeError) {
+        console.error('Error loading uptime data:', uptimeError);
+        // Continue without uptime data
+      }
 
       // Store.findAll() already returns complete store data with all fields
       setStores(userStores || []);
@@ -438,6 +459,24 @@ export default function Stores() {
                     </Button>
                   </div>
                 </div>
+
+                {/* Uptime Information */}
+                {storeUptimes[store.id] && (
+                  <div className="mt-4 pt-4 border-t border-gray-200">
+                    <div className="flex items-center justify-between text-sm">
+                      <div className="flex items-center text-gray-600">
+                        <Calendar className="w-4 h-4 mr-2" />
+                        <span>Total Uptime:</span>
+                      </div>
+                      <div className="font-semibold text-gray-900">
+                        {storeUptimes[store.id].days_running} {storeUptimes[store.id].days_running === 1 ? 'day' : 'days'}
+                        <span className="text-gray-500 ml-2">
+                          ({storeUptimes[store.id].total_credits} credits)
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                )}
               </CardContent>
             </Card>
           ))}
