@@ -1137,7 +1137,7 @@ export default function Plugins() {
                 </Badge>
               </CardContent>
             </Card>
-          </div>}
+          </TabsContent>
 
         {/* Import Plugin Dialog */}
         <Dialog open={showImportDialog} onOpenChange={setShowImportDialog}>
