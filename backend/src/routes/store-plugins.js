@@ -152,6 +152,61 @@ router.post('/:pluginSlug/enable', async (req, res) => {
 });
 
 /**
+ * POST /api/stores/:store_id/plugins/:pluginSlug/disable
+ * Disable a plugin for this store
+ */
+router.post('/:pluginSlug/disable', async (req, res) => {
+  try {
+    const storeId = req.params.store_id;
+    const { user } = req;
+    const { pluginSlug } = req.params;
+
+    console.log(`🛑 Disabling plugin ${pluginSlug} for store ${storeId}`);
+
+    // Verify plugin exists
+    const plugin = pluginManager.getPlugin(pluginSlug);
+    if (!plugin) {
+      return res.status(404).json({
+        success: false,
+        error: 'Plugin not found'
+      });
+    }
+
+    // Disable plugin for this store
+    const config = await PluginConfiguration.disableForStore(
+      plugin.manifest?.id || pluginSlug,
+      storeId
+    );
+
+    if (!config) {
+      return res.status(404).json({
+        success: false,
+        error: 'Plugin is not configured for this store'
+      });
+    }
+
+    console.log(`✅ Plugin ${pluginSlug} disabled for store ${storeId}`);
+
+    res.json({
+      success: true,
+      message: `Plugin ${pluginSlug} disabled for store`,
+      data: {
+        pluginSlug,
+        storeId,
+        isEnabled: config.isEnabled,
+        disabledAt: config.disabledAt
+      }
+    });
+  } catch (error) {
+    console.error('❌ Disable plugin for store error:', error);
+    res.status(400).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
+/**
  * PUT /api/stores/:store_id/plugins/:pluginSlug/configure
  * Update plugin configuration for this store
  */

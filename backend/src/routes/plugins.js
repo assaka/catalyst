@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const pluginManager = require('../core/PluginManager');
 const { authMiddleware } = require('../middleware/auth');
+const { sequelize } = require('../database/connection');
 
 /**
  * GET /api/plugins/test
@@ -350,23 +351,23 @@ router.patch('/:id/visibility', async (req, res) => {
     const { is_public } = req.body;
     const userId = req.user.id;
 
-    const db = require('../config/database');
-
     // Verify ownership
-    const pluginResult = await db.query(
+    const [pluginResult] = await sequelize.query(
       'SELECT id, name, creator_id FROM plugin_registry WHERE id = $1',
-      [id]
+      {
+        bind: [id],
+        type: sequelize.QueryTypes.SELECT
+      }
     );
 
-    if (pluginResult.rows.length === 0) {
+    if (!pluginResult) {
       return res.status(404).json({
         success: false,
         error: 'Plugin not found'
       });
     }
 
-    const plugin = pluginResult.rows[0];
-    if (plugin.creator_id !== userId) {
+    if (pluginResult.creator_id !== userId) {
       return res.status(403).json({
         success: false,
         error: 'You do not have permission to modify this plugin'
@@ -374,9 +375,12 @@ router.patch('/:id/visibility', async (req, res) => {
     }
 
     // Update visibility
-    await db.query(
+    await sequelize.query(
       'UPDATE plugin_registry SET is_public = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2',
-      [is_public, id]
+      {
+        bind: [is_public, id],
+        type: sequelize.QueryTypes.UPDATE
+      }
     );
 
     res.json({
@@ -402,30 +406,30 @@ router.post('/:id/deprecate', async (req, res) => {
     const { reason } = req.body;
     const userId = req.user.id;
 
-    const db = require('../config/database');
-
     // Verify ownership and public status
-    const pluginResult = await db.query(
+    const [pluginResult] = await sequelize.query(
       'SELECT id, creator_id, is_public, name FROM plugin_registry WHERE id = $1',
-      [id]
+      {
+        bind: [id],
+        type: sequelize.QueryTypes.SELECT
+      }
     );
 
-    if (pluginResult.rows.length === 0) {
+    if (!pluginResult) {
       return res.status(404).json({
         success: false,
         error: 'Plugin not found'
       });
     }
 
-    const plugin = pluginResult.rows[0];
-    if (plugin.creator_id !== userId) {
+    if (pluginResult.creator_id !== userId) {
       return res.status(403).json({
         success: false,
         error: 'You do not have permission to deprecate this plugin'
       });
     }
 
-    if (!plugin.is_public) {
+    if (!pluginResult.is_public) {
       return res.status(400).json({
         success: false,
         error: 'Only public plugins can be deprecated. Use delete for private plugins.'
@@ -433,14 +437,17 @@ router.post('/:id/deprecate', async (req, res) => {
     }
 
     // Deprecate plugin
-    await db.query(
+    await sequelize.query(
       'UPDATE plugin_registry SET deprecated_at = CURRENT_TIMESTAMP, deprecation_reason = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2',
-      [reason || 'Plugin deprecated by creator', id]
+      {
+        bind: [reason || 'Plugin deprecated by creator', id],
+        type: sequelize.QueryTypes.UPDATE
+      }
     );
 
     res.json({
       success: true,
-      message: `Plugin "${plugin.name}" has been deprecated. Existing users can still use it.`
+      message: `Plugin "${pluginResult.name}" has been deprecated. Existing users can still use it.`
     });
   } catch (error) {
     res.status(500).json({
@@ -459,30 +466,30 @@ router.delete('/:id', async (req, res) => {
     const { id } = req.params;
     const userId = req.user.id;
 
-    const db = require('../config/database');
-
     // Verify ownership and private status
-    const pluginResult = await db.query(
+    const [pluginResult] = await sequelize.query(
       'SELECT id, creator_id, is_public, name FROM plugin_registry WHERE id = $1',
-      [id]
+      {
+        bind: [id],
+        type: sequelize.QueryTypes.SELECT
+      }
     );
 
-    if (pluginResult.rows.length === 0) {
+    if (!pluginResult) {
       return res.status(404).json({
         success: false,
         error: 'Plugin not found'
       });
     }
 
-    const plugin = pluginResult.rows[0];
-    if (plugin.creator_id !== userId) {
+    if (pluginResult.creator_id !== userId) {
       return res.status(403).json({
         success: false,
         error: 'You do not have permission to delete this plugin'
       });
     }
 
-    if (plugin.is_public) {
+    if (pluginResult.is_public) {
       return res.status(400).json({
         success: false,
         error: 'Public plugins cannot be deleted. Use deprecate instead to maintain compatibility for existing users.'
@@ -490,11 +497,14 @@ router.delete('/:id', async (req, res) => {
     }
 
     // Delete plugin (CASCADE will handle plugin_scripts and plugin_dependencies)
-    await db.query('DELETE FROM plugin_registry WHERE id = $1', [id]);
+    await sequelize.query('DELETE FROM plugin_registry WHERE id = $1', {
+      bind: [id],
+      type: sequelize.QueryTypes.DELETE
+    });
 
     res.json({
       success: true,
-      message: `Plugin "${plugin.name}" has been permanently deleted.`
+      message: `Plugin "${pluginResult.name}" has been permanently deleted.`
     });
   } catch (error) {
     res.status(500).json({
