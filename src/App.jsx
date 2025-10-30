@@ -282,16 +282,17 @@ function App() {
       try {
         // Load core extensions
         const extensionsToLoad = [
-          {
-            module: '/src/extensions/analytics-tracker.js',
-            enabled: true,
-            config: {
-              customEventsEnabled: true,
-              trackUserJourney: true,
-              ecommerceTracking: true,
-              debugMode: process.env.NODE_ENV === 'development'
-            }
-          }
+          // Disabled - file doesn't exist or has loading issues
+          // {
+          //   module: '/src/extensions/analytics-tracker.js',
+          //   enabled: true,
+          //   config: {
+          //     customEventsEnabled: true,
+          //     trackUserJourney: true,
+          //     ecommerceTracking: true,
+          //     debugMode: process.env.NODE_ENV === 'development'
+          //   }
+          // }
         ]
 
         // Initialize extensions (non-blocking)
