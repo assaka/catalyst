@@ -234,24 +234,28 @@ class CreditService {
    */
   async chargeDailyPublishingFee(userId, storeId) {
     const dailyCost = 1.0; // 1 credit per day
-    
+
     // Check if store is still published
     const Store = require('../models/Store');
     const store = await Store.findByPk(storeId);
-    
+
     if (!store || !store.published) {
       return {
         success: false,
         message: 'Store is not published, skipping daily charge'
       };
     }
-    
-    return await this.deduct(
+
+    // Get balance before deduction
+    const balanceBefore = await this.getBalance(userId);
+
+    // Deduct credits
+    const deductResult = await this.deduct(
       userId,
       storeId,
       dailyCost,
       'Store publishing - daily charge',
-      { 
+      {
         charge_type: 'daily',
         store_published: true,
         charge_date: new Date().toISOString()
@@ -259,6 +263,58 @@ class CreditService {
       storeId,
       'store_publishing'
     );
+
+    // Log to store_uptime table
+    try {
+      await sequelize.query(`
+        INSERT INTO store_uptime (
+          id,
+          store_id,
+          user_id,
+          charged_date,
+          credits_charged,
+          user_balance_before,
+          user_balance_after,
+          store_name,
+          metadata,
+          created_at
+        ) VALUES (
+          gen_random_uuid(),
+          $1,
+          $2,
+          CURRENT_DATE,
+          $3,
+          $4,
+          $5,
+          $6,
+          $7,
+          NOW()
+        )
+        ON CONFLICT (store_id, charged_date) DO UPDATE SET
+          credits_charged = EXCLUDED.credits_charged,
+          user_balance_after = EXCLUDED.user_balance_after,
+          metadata = EXCLUDED.metadata
+      `, {
+        bind: [
+          storeId,
+          userId,
+          dailyCost,
+          balanceBefore,
+          deductResult.remaining_balance,
+          store.name,
+          JSON.stringify({
+            charge_type: 'daily',
+            deduction_time: new Date().toISOString()
+          })
+        ],
+        type: sequelize.QueryTypes.INSERT
+      });
+    } catch (uptimeError) {
+      console.error('❌ Failed to log to store_uptime:', uptimeError);
+      // Don't fail the deduction if uptime logging fails
+    }
+
+    return deductResult;
   }
 
   /**

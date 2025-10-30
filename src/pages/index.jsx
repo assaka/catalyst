@@ -51,6 +51,7 @@ export { default as ScheduledJobs } from './admin/ScheduledJobs';
 export { default as MonitoringDashboard } from './admin/MonitoringDashboard';
 export { default as ABTesting } from './admin/ABTesting';
 export { default as Billing } from './admin/Billing';
+export { default as UptimeReport } from './admin/UptimeReport';
 export { default as TeamPage } from './admin/TeamPage';
 export { default as Onboarding } from './admin/Onboarding';
 export { default as ThemeLayout } from './admin/ThemeLayout';

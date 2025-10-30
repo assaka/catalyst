@@ -439,4 +439,102 @@ router.post('/trigger-daily-deduction', authMiddleware, async (req, res) => {
   }
 });
 
+/**
+ * Get store uptime report
+ * GET /api/credits/uptime-report
+ */
+router.get('/uptime-report', authMiddleware, async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const { days = 30, store_id } = req.query;
+    const { sequelize } = require('../database/connection');
+
+    // Build query conditions
+    let whereCondition = 'WHERE su.user_id = $1';
+    const bindings = [userId];
+
+    if (store_id) {
+      whereCondition += ' AND su.store_id = $2';
+      bindings.push(store_id);
+    }
+
+    // Get uptime records
+    const uptimeRecords = await sequelize.query(`
+      SELECT
+        su.id,
+        su.store_id,
+        su.store_name,
+        su.charged_date,
+        su.credits_charged,
+        su.user_balance_before,
+        su.user_balance_after,
+        su.created_at,
+        s.published as currently_published
+      FROM store_uptime su
+      LEFT JOIN stores s ON su.store_id = s.id
+      ${whereCondition}
+      ORDER BY su.charged_date DESC, su.created_at DESC
+      LIMIT $${bindings.length + 1}
+    `, {
+      bind: [...bindings, parseInt(days) * 10], // Fetch more records than days for safety
+      type: sequelize.QueryTypes.SELECT
+    });
+
+    // Get summary statistics
+    const [summary] = await sequelize.query(`
+      SELECT
+        COUNT(DISTINCT su.store_id) as total_stores,
+        COUNT(*) as total_days,
+        SUM(su.credits_charged) as total_credits_charged,
+        MIN(su.charged_date) as first_charge_date,
+        MAX(su.charged_date) as last_charge_date
+      FROM store_uptime su
+      ${whereCondition}
+    `, {
+      bind: bindings,
+      type: sequelize.QueryTypes.SELECT
+    });
+
+    // Get per-store summary
+    const storeBreakdown = await sequelize.query(`
+      SELECT
+        su.store_id,
+        su.store_name,
+        COUNT(*) as days_running,
+        SUM(su.credits_charged) as total_credits,
+        MIN(su.charged_date) as first_charge,
+        MAX(su.charged_date) as last_charge,
+        s.published as currently_published
+      FROM store_uptime su
+      LEFT JOIN stores s ON su.store_id = s.id
+      ${whereCondition}
+      GROUP BY su.store_id, su.store_name, s.published
+      ORDER BY total_credits DESC
+    `, {
+      bind: bindings,
+      type: sequelize.QueryTypes.SELECT
+    });
+
+    res.json({
+      success: true,
+      records: uptimeRecords,
+      summary: summary || {
+        total_stores: 0,
+        total_days: 0,
+        total_credits_charged: 0
+      },
+      store_breakdown: storeBreakdown,
+      period_days: parseInt(days)
+    });
+
+  } catch (error) {
+    console.error('Error getting uptime report:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to get uptime report',
+      error: error.message
+    });
+  }
+});
+
 module.exports = router;
