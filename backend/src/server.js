@@ -185,46 +185,36 @@ const allowedOrigins = [
 
 app.use(cors({
   origin: function (origin, callback) {
+    console.log('🌐 CORS Request from:', origin);
+
     // Allow requests with no origin (like mobile apps or curl requests)
-    if (!origin) return callback(null, true);
-    
+    if (!origin) {
+      console.log('✅ Allowing request with no origin');
+      return callback(null, true);
+    }
+
     // Check for exact match first
     if (allowedOrigins.indexOf(origin) !== -1) {
+      console.log('✅ Origin in allowed list');
       callback(null, true);
       return;
     }
-    
-    // Check for origin without trailing slash
-    const originWithoutSlash = origin.replace(/\/$/, '');
-    if (allowedOrigins.indexOf(originWithoutSlash) !== -1) {
-      callback(null, true);
-      return;
-    }
-    
-    // Check if any allowed origin matches (handling potential subdomain patterns)
-    const isAllowed = allowedOrigins.some(allowed => {
-      // Handle both with and without trailing slash
-      const allowedWithoutSlash = allowed.replace(/\/$/, '');
-      const originWithoutSlash = origin.replace(/\/$/, '');
-      return allowedWithoutSlash === originWithoutSlash;
-    });
-    
-    // Check for Vercel preview URLs pattern (catalyst-*.vercel.app)
-    const isVercelPreview = /^https:\/\/catalyst-[a-z0-9]+-hamids-projects-[a-z0-9]+\.vercel\.app$/.test(origin);
 
-    // Also check for main Vercel domain pattern
-    const isVercelDomain = /^https:\/\/catalyst-[a-z0-9-]*\.vercel\.app$/.test(origin);
+    // Simple and permissive checks
+    const isLocalhost = origin.includes('localhost') || origin.includes('127.0.0.1');
+    const isVercelApp = origin.endsWith('.vercel.app'); // Allow ALL Vercel domains
+    const isRenderApp = origin.endsWith('.onrender.com'); // Allow Render domains
 
-    // Allow any localhost for development
-    const isLocalhost = /^https?:\/\/localhost(:\d+)?$/.test(origin) || /^https?:\/\/127\.0\.0\.1(:\d+)?$/.test(origin);
+    console.log('  isLocalhost:', isLocalhost);
+    console.log('  isVercelApp:', isVercelApp);
+    console.log('  isRenderApp:', isRenderApp);
 
-    // Allow any Vercel app domain for development
-    const isAnyVercelApp = /^https:\/\/[a-z0-9-]+(\.vercel\.app)$/.test(origin);
-    
-    if (isAllowed || isVercelPreview || isVercelDomain || isLocalhost || isAnyVercelApp) {
+    if (isLocalhost || isVercelApp || isRenderApp) {
+      console.log('✅ Origin allowed');
       callback(null, true);
     } else {
-      callback(new Error('Not allowed by CORS'));
+      console.log('❌ Origin NOT allowed by CORS');
+      callback(new Error('Not allowed by CORS: ' + origin));
     }
   },
   credentials: true,
