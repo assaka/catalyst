@@ -108,9 +108,9 @@ router.post('/:pluginSlug/enable', async (req, res) => {
 
     // Check plugin_registry first (new system)
     const [registryPlugin] = await sequelize.query(
-      'SELECT id, name, status FROM plugin_registry WHERE id = $1',
+      'SELECT id, name, status FROM plugin_registry WHERE id = :pluginSlug',
       {
-        bind: [pluginSlug],
+        replacements: { pluginSlug },
         type: sequelize.QueryTypes.SELECT
       }
     );
@@ -181,9 +181,9 @@ router.post('/:pluginSlug/disable', async (req, res) => {
 
     // Check plugin_registry first (new system)
     const [registryPlugin] = await sequelize.query(
-      'SELECT id, name, status FROM plugin_registry WHERE id = $1',
+      'SELECT id, name, status FROM plugin_registry WHERE id = :pluginSlug',
       {
-        bind: [pluginSlug],
+        replacements: { pluginSlug },
         type: sequelize.QueryTypes.SELECT
       }
     );

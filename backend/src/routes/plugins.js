@@ -353,9 +353,9 @@ router.patch('/:id/visibility', async (req, res) => {
 
     // Verify ownership
     const [pluginResult] = await sequelize.query(
-      'SELECT id, name, creator_id FROM plugin_registry WHERE id = $1',
+      'SELECT id, name, creator_id FROM plugin_registry WHERE id = :id',
       {
-        bind: [id],
+        replacements: { id },
         type: sequelize.QueryTypes.SELECT
       }
     );
@@ -376,9 +376,9 @@ router.patch('/:id/visibility', async (req, res) => {
 
     // Update visibility
     await sequelize.query(
-      'UPDATE plugin_registry SET is_public = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2',
+      'UPDATE plugin_registry SET is_public = :is_public, updated_at = CURRENT_TIMESTAMP WHERE id = :id',
       {
-        bind: [is_public, id],
+        replacements: { is_public, id },
         type: sequelize.QueryTypes.UPDATE
       }
     );
@@ -408,9 +408,9 @@ router.post('/:id/deprecate', async (req, res) => {
 
     // Verify ownership and public status
     const [pluginResult] = await sequelize.query(
-      'SELECT id, creator_id, is_public, name FROM plugin_registry WHERE id = $1',
+      'SELECT id, creator_id, is_public, name FROM plugin_registry WHERE id = :id',
       {
-        bind: [id],
+        replacements: { id },
         type: sequelize.QueryTypes.SELECT
       }
     );
@@ -438,9 +438,9 @@ router.post('/:id/deprecate', async (req, res) => {
 
     // Deprecate plugin
     await sequelize.query(
-      'UPDATE plugin_registry SET deprecated_at = CURRENT_TIMESTAMP, deprecation_reason = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2',
+      'UPDATE plugin_registry SET deprecated_at = CURRENT_TIMESTAMP, deprecation_reason = :reason, updated_at = CURRENT_TIMESTAMP WHERE id = :id',
       {
-        bind: [reason || 'Plugin deprecated by creator', id],
+        replacements: { reason: reason || 'Plugin deprecated by creator', id },
         type: sequelize.QueryTypes.UPDATE
       }
     );
@@ -468,9 +468,9 @@ router.delete('/:id', async (req, res) => {
 
     // Verify ownership and private status
     const [pluginResult] = await sequelize.query(
-      'SELECT id, creator_id, is_public, name FROM plugin_registry WHERE id = $1',
+      'SELECT id, creator_id, is_public, name FROM plugin_registry WHERE id = :id',
       {
-        bind: [id],
+        replacements: { id },
         type: sequelize.QueryTypes.SELECT
       }
     );
@@ -497,8 +497,8 @@ router.delete('/:id', async (req, res) => {
     }
 
     // Delete plugin (CASCADE will handle plugin_scripts and plugin_dependencies)
-    await sequelize.query('DELETE FROM plugin_registry WHERE id = $1', {
-      bind: [id],
+    await sequelize.query('DELETE FROM plugin_registry WHERE id = :id', {
+      replacements: { id },
       type: sequelize.QueryTypes.DELETE
     });
 
