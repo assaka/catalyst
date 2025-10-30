@@ -166,6 +166,19 @@ const ChatInterface = ({ onPluginCloned, context }) => {
     }
   };
 
+  const handleConfirmCreate = (pluginData) => {
+    // Add confirmation message to chat
+    setMessages(prev => [...prev, {
+      role: 'assistant',
+      content: `📋 Ready to create "${pluginData.name}"?\n\n⚠️ This will cost 50 credits to save the plugin to the database.\n\nYour plugin will include:\n• Components and services\n• Hooks and events\n• Full documentation\n\nDo you want to proceed?`,
+      confirmAction: {
+        type: 'create-plugin',
+        pluginData: pluginData,
+        cost: 50
+      }
+    }]);
+  };
+
   const handleInstallPlugin = async (pluginData) => {
     try {
       // Call the new /api/ai/plugin/create endpoint
@@ -214,6 +227,7 @@ const ChatInterface = ({ onPluginCloned, context }) => {
             key={index}
             message={message}
             onInstallPlugin={handleInstallPlugin}
+            onConfirmCreate={handleConfirmCreate}
           />
         ))}
 
@@ -391,9 +405,10 @@ const ChatInterface = ({ onPluginCloned, context }) => {
 /**
  * MessageBubble - Renders individual chat messages with generated content
  */
-const MessageBubble = ({ message, onInstallPlugin }) => {
+const MessageBubble = ({ message, onInstallPlugin, onConfirmCreate }) => {
   const [showCode, setShowCode] = useState(false);
   const [isInstalling, setIsInstalling] = useState(false);
+  const [showConfirmation, setShowConfirmation] = useState(false);
   const isUser = message.role === 'user';
   const isError = message.error;
 
@@ -434,6 +449,34 @@ const MessageBubble = ({ message, onInstallPlugin }) => {
               {message.credits} credits used
             </p>
           )}
+
+          {/* Confirmation Actions */}
+          {message.confirmAction && !isUser && (
+            <div className="flex gap-2 mt-3">
+              <button
+                onClick={async () => {
+                  if (message.confirmAction.type === 'create-plugin') {
+                    await onInstallPlugin(message.confirmAction.pluginData);
+                  }
+                }}
+                className="flex items-center gap-2 px-4 py-2 bg-green-600 hover:bg-green-700 text-white text-sm rounded-md font-medium"
+              >
+                ✓ Yes, Create Plugin
+              </button>
+              <button
+                onClick={() => {
+                  // Add cancellation message
+                  const messagesContainer = document.querySelector('[data-messages-container]');
+                  if (messagesContainer) {
+                    // Just close the confirmation (no action needed)
+                  }
+                }}
+                className="flex items-center gap-2 px-4 py-2 bg-gray-200 hover:bg-gray-300 text-gray-700 text-sm rounded-md font-medium"
+              >
+                ✗ Cancel
+              </button>
+            </div>
+          )}
         </div>
 
         {/* Generated Plugin Preview */}
@@ -461,31 +504,15 @@ const MessageBubble = ({ message, onInstallPlugin }) => {
                 {showCode ? 'Hide' : 'View'} Code
               </button>
               <button
-                onClick={async () => {
-                  setIsInstalling(true);
-                  try {
-                    await onInstallPlugin(message.data.plugin);
-                  } catch (error) {
-                    console.error('Install failed:', error);
-                    alert('Failed to install plugin: ' + error.message);
-                  } finally {
-                    setIsInstalling(false);
-                  }
+                onClick={() => {
+                  // Show confirmation instead of creating immediately
+                  onConfirmCreate(message.data.plugin);
                 }}
                 disabled={isInstalling}
                 className="flex items-center gap-2 px-3 py-1.5 bg-green-600 hover:bg-green-700 disabled:bg-gray-400 text-white text-sm rounded-md"
               >
-                {isInstalling ? (
-                  <>
-                    <Loader2 className="w-4 h-4 animate-spin" />
-                    Creating...
-                  </>
-                ) : (
-                  <>
-                    <Download className="w-4 h-4" />
-                    Create Plugin
-                  </>
-                )}
+                <Download className="w-4 h-4" />
+                Create Plugin
               </button>
             </div>
 
