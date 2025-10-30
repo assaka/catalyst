@@ -166,12 +166,55 @@ const ChatInterface = ({ onPluginCloned, context }) => {
     }
   };
 
+  const handleInstallPlugin = async (pluginData) => {
+    try {
+      // Call the new /api/ai/plugin/create endpoint
+      const response = await apiClient.post('/ai/plugin/create', {
+        pluginData
+      });
+
+      if (response.success) {
+        // Add success message
+        setMessages(prev => [...prev, {
+          role: 'assistant',
+          content: `✅ Plugin "${pluginData.name}" created successfully!\n\nOpening in editor...`,
+        }]);
+
+        // Notify parent to open in editor
+        if (onPluginCloned) {
+          onPluginCloned({
+            ...pluginData,
+            id: response.pluginId,
+            slug: response.plugin.slug
+          });
+        }
+      } else {
+        throw new Error(response.message || 'Failed to create plugin');
+      }
+    } catch (error) {
+      console.error('Failed to create plugin:', error);
+
+      // Add error message
+      setMessages(prev => [...prev, {
+        role: 'assistant',
+        content: `❌ Error creating plugin: ${error.message}`,
+        error: true
+      }]);
+
+      throw error;
+    }
+  };
+
   return (
     <div className="flex flex-col h-full bg-white dark:bg-gray-900">
       {/* Messages */}
       <div className="flex-1 overflow-y-auto p-4 space-y-4">
         {messages.map((message, index) => (
-          <MessageBubble key={index} message={message} />
+          <MessageBubble
+            key={index}
+            message={message}
+            onInstallPlugin={handleInstallPlugin}
+          />
         ))}
 
         {/* Starter Templates - show only when creating new plugin (not editing) */}
@@ -348,8 +391,9 @@ const ChatInterface = ({ onPluginCloned, context }) => {
 /**
  * MessageBubble - Renders individual chat messages with generated content
  */
-const MessageBubble = ({ message }) => {
+const MessageBubble = ({ message, onInstallPlugin }) => {
   const [showCode, setShowCode] = useState(false);
+  const [isInstalling, setIsInstalling] = useState(false);
   const isUser = message.role === 'user';
   const isError = message.error;
 
@@ -417,14 +461,31 @@ const MessageBubble = ({ message }) => {
                 {showCode ? 'Hide' : 'View'} Code
               </button>
               <button
-                onClick={() => {
-                  // TODO: Install plugin
-                  alert('Install plugin coming soon!');
+                onClick={async () => {
+                  setIsInstalling(true);
+                  try {
+                    await onInstallPlugin(message.data.plugin);
+                  } catch (error) {
+                    console.error('Install failed:', error);
+                    alert('Failed to install plugin: ' + error.message);
+                  } finally {
+                    setIsInstalling(false);
+                  }
                 }}
-                className="flex items-center gap-2 px-3 py-1.5 bg-green-600 hover:bg-green-700 text-white text-sm rounded-md"
+                disabled={isInstalling}
+                className="flex items-center gap-2 px-3 py-1.5 bg-green-600 hover:bg-green-700 disabled:bg-gray-400 text-white text-sm rounded-md"
               >
-                <Download className="w-4 h-4" />
-                Install
+                {isInstalling ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    Creating...
+                  </>
+                ) : (
+                  <>
+                    <Download className="w-4 h-4" />
+                    Create Plugin
+                  </>
+                )}
               </button>
             </div>
 
