@@ -4,6 +4,7 @@ const pluginManager = require('../core/PluginManager');
 const PluginConfiguration = require('../models/PluginConfiguration');
 const { authMiddleware } = require('../middleware/auth');
 const { checkStoreOwnership } = require('../middleware/storeAuth');
+const { sequelize } = require('../database/connection');
 
 // All routes require authentication and store access
 // Add defensive checks for production environment issues
@@ -102,35 +103,50 @@ router.post('/:pluginSlug/enable', async (req, res) => {
     const { user } = req;
     const { pluginSlug } = req.params;
     const { configuration = {} } = req.body;
-    
+
     console.log(`🚀 Enabling plugin ${pluginSlug} for store ${storeId}`);
-    
-    // Verify plugin exists and is installed
-    const plugin = pluginManager.getPlugin(pluginSlug);
-    if (!plugin) {
-      return res.status(404).json({
-        success: false,
-        error: 'Plugin not found'
-      });
+
+    // Check plugin_registry first (new system)
+    const [registryPlugin] = await sequelize.query(
+      'SELECT id, name, status FROM plugin_registry WHERE id = $1',
+      {
+        bind: [pluginSlug],
+        type: sequelize.QueryTypes.SELECT
+      }
+    );
+
+    let pluginId = pluginSlug;
+
+    if (!registryPlugin) {
+      // Fallback to old plugin manager system
+      const plugin = pluginManager.getPlugin(pluginSlug);
+      if (!plugin) {
+        return res.status(404).json({
+          success: false,
+          error: 'Plugin not found'
+        });
+      }
+
+      if (!plugin.isInstalled) {
+        return res.status(400).json({
+          success: false,
+          error: 'Plugin must be installed before it can be enabled for a store'
+        });
+      }
+
+      pluginId = plugin.manifest?.id || pluginSlug;
     }
-    
-    if (!plugin.isInstalled) {
-      return res.status(400).json({
-        success: false,
-        error: 'Plugin must be installed before it can be enabled for a store'
-      });
-    }
-    
+
     // Enable plugin for this store
     const config = await PluginConfiguration.enableForStore(
-      plugin.manifest?.id || pluginSlug,
+      pluginId,
       storeId,
       configuration,
       user.id
     );
-    
+
     console.log(`✅ Plugin ${pluginSlug} enabled for store ${storeId}`);
-    
+
     res.json({
       success: true,
       message: `Plugin ${pluginSlug} enabled for store`,
@@ -163,18 +179,33 @@ router.post('/:pluginSlug/disable', async (req, res) => {
 
     console.log(`🛑 Disabling plugin ${pluginSlug} for store ${storeId}`);
 
-    // Verify plugin exists
-    const plugin = pluginManager.getPlugin(pluginSlug);
-    if (!plugin) {
-      return res.status(404).json({
-        success: false,
-        error: 'Plugin not found'
-      });
+    // Check plugin_registry first (new system)
+    const [registryPlugin] = await sequelize.query(
+      'SELECT id, name, status FROM plugin_registry WHERE id = $1',
+      {
+        bind: [pluginSlug],
+        type: sequelize.QueryTypes.SELECT
+      }
+    );
+
+    let pluginId = pluginSlug;
+
+    if (!registryPlugin) {
+      // Fallback to old plugin manager system
+      const plugin = pluginManager.getPlugin(pluginSlug);
+      if (!plugin) {
+        return res.status(404).json({
+          success: false,
+          error: 'Plugin not found'
+        });
+      }
+
+      pluginId = plugin.manifest?.id || pluginSlug;
     }
 
     // Disable plugin for this store
     const config = await PluginConfiguration.disableForStore(
-      plugin.manifest?.id || pluginSlug,
+      pluginId,
       storeId
     );
 
