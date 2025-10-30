@@ -351,6 +351,7 @@ router.get('/active', async (req, res) => {
       return {
         id: plugin.id,
         name: plugin.name,
+        slug: plugin.slug,
         version: plugin.version,
         description: plugin.description,
         author: plugin.author,
@@ -396,7 +397,7 @@ router.get('/registry', async (req, res) => {
     const whereClause = status === 'active' ? `WHERE status = 'active'` : '';
     const plugins = await sequelize.query(`
       SELECT
-        id, name, version, description, author, category, status, type,
+        id, name, slug, version, description, author, category, status, type,
         manifest, created_at, updated_at
       FROM plugin_registry
       ${whereClause}
@@ -458,6 +459,7 @@ router.get('/registry', async (req, res) => {
       return {
         id: plugin.id,
         name: plugin.name,
+        slug: plugin.slug,
         version: plugin.version,
         description: plugin.description,
         author: plugin.author,
