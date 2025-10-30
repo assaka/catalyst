@@ -35,7 +35,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Checkbox } from "@/components/ui/checkbox";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { 
   Select, 
   SelectContent, 
@@ -81,26 +81,10 @@ export default function Plugins() {
   const [showPublishWarning, setShowPublishWarning] = useState(false);
   const [pluginToPublish, setPluginToPublish] = useState(null);
   const [publishing, setPublishing] = useState(false);
-  const [selectedTabs, setSelectedTabs] = useState(new Set(['my-plugins'])); // Default to My Plugins
 
   useEffect(() => {
     loadData();
   }, []);
-
-  const toggleTab = (tabId) => {
-    setSelectedTabs(prev => {
-      const newSet = new Set(prev);
-      if (newSet.has(tabId)) {
-        // Don't allow deselecting all tabs
-        if (newSet.size > 1) {
-          newSet.delete(tabId);
-        }
-      } else {
-        newSet.add(tabId);
-      }
-      return newSet;
-    });
-  };
 
   const loadData = async () => {
     try {
@@ -415,42 +399,31 @@ export default function Plugins() {
     }
   };
 
-  // Filter plugins based on selected tabs
-  const getFilteredPlugins = () => {
+  // Different filtering for different contexts
+  const getFilteredPlugins = (tabFilter = 'marketplace') => {
     return plugins.filter(plugin => {
       const matchesSearch = plugin.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
                            plugin.description.toLowerCase().includes(searchQuery.toLowerCase());
       const matchesCategory = categoryFilter === "all" || plugin.category === categoryFilter;
 
-      // Check if plugin matches ANY selected tab
-      let matchesAnyTab = false;
-
-      if (selectedTabs.has('marketplace')) {
-        // Published plugins available in marketplace (is_public = true)
-        if (plugin.isPublic === true && !plugin.isDeprecated) {
-          matchesAnyTab = true;
-        }
+      // Different filters per tab
+      let matchesStatus = true;
+      if (tabFilter === 'marketplace') {
+        // Show all third-party plugins that are published (is_public = true, not deprecated)
+        matchesStatus = plugin.isPublic === true && !plugin.isDeprecated;
+      } else if (tabFilter === 'installed') {
+        // Show third-party installed plugins (configured for my store but not created by me)
+        matchesStatus = plugin.configuredForStore === true && plugin.creator_id !== user?.id;
+      } else if (tabFilter === 'my-plugins') {
+        // Show plugins created by current user
+        matchesStatus = plugin.creator_id === user?.id;
       }
 
-      if (selectedTabs.has('installed')) {
-        // Plugins I installed from others (configured for my store but not created by me)
-        if (plugin.configuredForStore === true && plugin.creator_id !== user?.id) {
-          matchesAnyTab = true;
-        }
-      }
-
-      if (selectedTabs.has('my-plugins')) {
-        // Show plugins created by current user (regardless of public/private status)
-        if (plugin.creator_id === user?.id) {
-          matchesAnyTab = true;
-        }
-      }
-
-      return matchesSearch && matchesCategory && matchesAnyTab;
+      return matchesSearch && matchesCategory && matchesStatus;
     });
   };
 
-  const filteredPlugins = getFilteredPlugins();
+  const filteredPlugins = getFilteredPlugins('marketplace');
 
   const isPluginInstalled = (plugin) => {
     return plugin.isInstalled;
@@ -523,49 +496,24 @@ export default function Plugins() {
           </div>
         </div>
 
-        {/* Multi-select Tab Filters */}
-        <div className="mb-6">
-          <div className="flex items-center gap-3 p-4 bg-white rounded-lg border border-gray-200">
-            <span className="text-sm font-medium text-gray-700">Show:</span>
-            <div className="flex items-center gap-4">
-              <label className="flex items-center gap-2 cursor-pointer">
-                <Checkbox
-                  checked={selectedTabs.has('marketplace')}
-                  onCheckedChange={() => toggleTab('marketplace')}
-                />
-                <ShoppingCart className="w-4 h-4 text-gray-600" />
-                <span className="text-sm text-gray-700">
-                  Published in Marketplace ({plugins.filter(p => p.isPublic === true && !p.isDeprecated).length})
-                </span>
-              </label>
+        <Tabs defaultValue="marketplace" className="space-y-6">
+          <TabsList className="grid w-full grid-cols-3">
+            <TabsTrigger value="marketplace" className="flex items-center gap-2">
+              <ShoppingCart className="w-4 h-4" />
+              Marketplace
+            </TabsTrigger>
+            <TabsTrigger value="installed" className="flex items-center gap-2">
+              <Download className="w-4 h-4" />
+              Installed ({getFilteredPlugins('installed').length})
+            </TabsTrigger>
+            <TabsTrigger value="my-plugins" className="flex items-center gap-2">
+              <Sparkles className="w-4 h-4" />
+              My Plugins ({getFilteredPlugins('my-plugins').length})
+            </TabsTrigger>
+          </TabsList>
 
-              <label className="flex items-center gap-2 cursor-pointer">
-                <Checkbox
-                  checked={selectedTabs.has('installed')}
-                  onCheckedChange={() => toggleTab('installed')}
-                />
-                <Download className="w-4 h-4 text-gray-600" />
-                <span className="text-sm text-gray-700">
-                  Installed ({plugins.filter(p => p.configuredForStore === true && p.creator_id !== user?.id).length})
-                </span>
-              </label>
-
-              <label className="flex items-center gap-2 cursor-pointer">
-                <Checkbox
-                  checked={selectedTabs.has('my-plugins')}
-                  onCheckedChange={() => toggleTab('my-plugins')}
-                />
-                <Sparkles className="w-4 h-4 text-gray-600" />
-                <span className="text-sm text-gray-700">
-                  My Plugins ({plugins.filter(p => p.creator_id === user?.id).length})
-                </span>
-              </label>
-            </div>
-          </div>
-        </div>
-
-          {/* Plugins Grid */}
-          <div>
+          {/* Marketplace Tab */}
+          <TabsContent value="marketplace">
             {/* Search and Filters */}
             <Card className="material-elevation-1 border-0 mb-6">
               <CardContent className="p-6">
@@ -573,7 +521,7 @@ export default function Plugins() {
                   <div className="flex-1 relative">
                     <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
                     <Input
-                      placeholder="Search all plugins..."
+                      placeholder="Search marketplace..."
                       value={searchQuery}
                       onChange={(e) => setSearchQuery(e.target.value)}
                       className="pl-10"
@@ -600,11 +548,11 @@ export default function Plugins() {
 
             {/* Plugins Grid */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {filteredPlugins.map((plugin) => {
+              {getFilteredPlugins('marketplace').map((plugin) => {
                 const CategoryIcon = categoryIcons[plugin.category] || Settings;
                 const installed = isPluginInstalled(plugin);
                 const enabled = isPluginEnabled(plugin);
-
+                
                 return (
                   <Card key={plugin.id} className="material-elevation-1 border-0 hover:material-elevation-2 transition-all duration-300 flex flex-col h-full">
                     <CardHeader className="pb-3">
@@ -649,9 +597,44 @@ export default function Plugins() {
                       </div>
                     </CardHeader>
                     <CardContent className="flex flex-col flex-grow">
-                      <p className="text-gray-600 text-sm mb-4 line-clamp-3 flex-grow">
+                      <p className="text-gray-600 text-sm mb-4 line-clamp-3">
                         {plugin.description}
                       </p>
+
+                      {plugin.availableMethods && plugin.availableMethods.length > 0 && (
+                        <div className="mb-4">
+                          <p className="text-xs text-gray-500 mb-2">Available Methods:</p>
+                          <div className="flex flex-wrap gap-1">
+                            {plugin.availableMethods.map(method => (
+                              <Badge key={method} className="bg-gray-100 text-gray-600 text-xs">
+                                {method}
+                              </Badge>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
+                      <div className="flex items-center justify-between mb-4">
+                        <div className="flex items-center space-x-4">
+                          {plugin.rating > 0 && (
+                            <div className="flex items-center">
+                              <Star className="w-4 h-4 text-yellow-400 fill-current" />
+                              <span className="text-sm text-gray-600 ml-1">
+                                {plugin.rating.toFixed(1)} ({plugin.reviews_count})
+                              </span>
+                            </div>
+                          )}
+                          <span className="text-sm text-gray-600">
+                            {plugin.downloads} downloads
+                          </span>
+                        </div>
+                        <Badge className={`${plugin.category === 'analytics' ? 'bg-green-100 text-green-700' :
+                                          plugin.category === 'shipping' ? 'bg-blue-100 text-blue-700' :
+                                          plugin.category === 'payment' ? 'bg-purple-100 text-purple-700' :
+                                          'bg-gray-100 text-gray-700'}`}>
+                          {plugin.category}
+                        </Badge>
+                      </div>
 
                       <div className="flex items-center justify-between mt-auto">
                         <div className="text-lg font-bold text-gray-900">
@@ -659,23 +642,17 @@ export default function Plugins() {
                         </div>
                         <div className="flex items-center gap-2">
                           {installed ? (
-                            <>
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={() => handleConfigurePlugin(plugin)}
-                              >
-                                <Settings className="w-4 h-4 mr-2" />
-                                Configure
-                              </Button>
-                            </>
+                            <div className="flex gap-1">
+                              <Badge className={enabled ? "bg-green-100 text-green-700" : "bg-yellow-100 text-yellow-700"}>
+                                {enabled ? "Installed & Active" : "Installed"}
+                              </Badge>
+                            </div>
                           ) : (
                             <Button
                               onClick={() => handleInstallPlugin(plugin)}
+                              className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 material-ripple"
                               size="sm"
-                              className="bg-green-600 hover:bg-green-700 text-white"
                             >
-                              <Download className="w-4 h-4 mr-2" />
                               Install
                             </Button>
                           )}
@@ -695,12 +672,283 @@ export default function Plugins() {
                   <p className="text-gray-600 mb-6">
                     {searchQuery || categoryFilter !== "all"
                       ? "Try adjusting your search or filters"
-                      : "Select a filter above to view plugins"}
+                      : "No plugins available in the marketplace yet"}
                   </p>
                 </CardContent>
               </Card>
             )}
-          </div>
+          </TabsContent>
+
+          {/* Installed Tab */}
+          <TabsContent value="installed">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {getFilteredPlugins('installed').map((plugin) => {
+                const CategoryIcon = categoryIcons[plugin.category] || Settings;
+                
+                return (
+                  <Card key={plugin.id} className="material-elevation-1 border-0 hover:material-elevation-2 transition-all duration-300 flex flex-col h-full">
+                    <CardHeader className="pb-3">
+                      <div className="flex items-start justify-between">
+                        <div className="flex items-center space-x-3">
+                          <div className="w-12 h-12 bg-gradient-to-r from-green-500 to-blue-600 rounded-lg flex items-center justify-center">
+                            <CategoryIcon className="w-6 h-6 text-white" />
+                          </div>
+                          <div>
+                            <CardTitle className="text-lg">{plugin.name}</CardTitle>
+                            <p className="text-sm text-gray-500">by {plugin.creator_name}</p>
+                          </div>
+                        </div>
+                        <Badge className={plugin.isEnabled ? "bg-green-100 text-green-700" : "bg-gray-100 text-gray-700"}>
+                          {plugin.isEnabled ? "Active" : "Inactive"}
+                        </Badge>
+                      </div>
+                    </CardHeader>
+                    <CardContent className="flex flex-col flex-grow">
+                      <p className="text-gray-600 text-sm mb-4 flex-grow">
+                        {plugin.description}
+                      </p>
+
+                      <div className="flex justify-between items-center mt-auto">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleConfigurePlugin(plugin)}
+                        >
+                          <Settings className="w-4 h-4 mr-2" />
+                          Configure
+                        </Button>
+                        <Button
+                          onClick={() => handleUninstallPlugin(plugin)}
+                          variant="outline"
+                          size="sm"
+                          className="text-red-600 border-red-200 hover:bg-red-50"
+                        >
+                          Uninstall
+                        </Button>
+                      </div>
+                    </CardContent>
+                  </Card>
+                );
+              })}
+            </div>
+
+            {getFilteredPlugins('installed').length === 0 && (
+              <Card className="material-elevation-1 border-0">
+                <CardContent className="text-center py-12">
+                  <Download className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+                  <h3 className="text-lg font-medium text-gray-900 mb-2">No plugins installed</h3>
+                  <p className="text-gray-600 mb-6">
+                    Browse the marketplace to find and install plugins for your store
+                  </p>
+                  <Button
+                    onClick={() => document.querySelector('[value="marketplace"]').click()}
+                    className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 material-ripple"
+                  >
+                    Browse Marketplace
+                  </Button>
+                </CardContent>
+              </Card>
+            )}
+          </TabsContent>
+
+          {/* My Plugins Tab */}
+          <TabsContent value="my-plugins">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {getFilteredPlugins('my-plugins').map((plugin) => {
+                const CategoryIcon = categoryIcons[plugin.category] || Settings;
+                const isOwner = plugin.creator_id === user?.id;
+
+                return (
+                  <Card key={plugin.id} className="material-elevation-1 border-0 hover:material-elevation-2 transition-all duration-300 flex flex-col h-full">
+                    <CardHeader className="pb-3">
+                      <div className="flex items-start justify-between">
+                        <div className="flex items-center space-x-3">
+                          <div className="w-12 h-12 bg-gradient-to-r from-blue-500 to-purple-600 rounded-lg flex items-center justify-center">
+                            <CategoryIcon className="w-6 h-6 text-white" />
+                          </div>
+                          <div className="flex-1">
+                            <CardTitle className="text-lg">{plugin.name}</CardTitle>
+                            <div className="flex items-center flex-wrap gap-1 mt-1">
+                              <Badge variant="outline" className="text-xs">
+                                v{plugin.version}
+                              </Badge>
+                              <Badge variant="secondary" className="text-xs">
+                                {plugin.category}
+                              </Badge>
+                              {plugin.isPublic ? (
+                                <Badge className="bg-green-100 text-green-700 text-xs flex items-center gap-1">
+                                  <Globe className="w-3 h-3" />
+                                  Public
+                                </Badge>
+                              ) : (
+                                <Badge
+                                  className="bg-gray-100 text-gray-700 text-xs flex items-center gap-1 cursor-pointer hover:bg-gray-200 transition-colors"
+                                  onClick={() => handleToggleVisibility(plugin)}
+                                  title="Click to publish to marketplace"
+                                >
+                                  <Lock className="w-3 h-3" />
+                                  Private
+                                </Badge>
+                              )}
+                              {plugin.isDeprecated && (
+                                <Badge className="bg-orange-100 text-orange-700 text-xs flex items-center gap-1">
+                                  <AlertTriangle className="w-3 h-3" />
+                                  Deprecated
+                                </Badge>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </CardHeader>
+                    <CardContent className="flex flex-col flex-grow">
+                      <p className="text-sm text-gray-600 mb-4 line-clamp-2 flex-grow">
+                        {plugin.description}
+                      </p>
+
+                      {plugin.isDeprecated && plugin.deprecationReason && (
+                        <div className="mb-4 p-2 bg-orange-50 border border-orange-200 rounded text-xs text-orange-700">
+                          <strong>Deprecation reason:</strong> {plugin.deprecationReason}
+                        </div>
+                      )}
+
+                      <div className="flex justify-between items-center gap-2 mt-auto">
+                        <div className="flex gap-2">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => navigate('/admin/ai-studio', { state: { plugin } })}
+                          >
+                            <Edit3 className="w-4 h-4 mr-2" />
+                            Edit
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleDownloadPlugin(plugin)}
+                            title="Download plugin package"
+                          >
+                            <Download className="w-4 h-4" />
+                          </Button>
+                        </div>
+
+                        <div className="flex gap-1 items-center">
+                          {/* Pause/Play for store activation */}
+                          {plugin.isEnabled !== undefined && stores.length > 0 && (
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleTogglePluginForStore(plugin, stores[0]?.id)}
+                              className="h-8 w-8 p-0"
+                              title={plugin.isEnabled ? "Pause for this store" : "Run for this store"}
+                            >
+                              {plugin.isEnabled ? (
+                                <Pause className="w-4 h-4 text-orange-600" />
+                              ) : (
+                                <Play className="w-4 h-4 text-green-600" />
+                              )}
+                            </Button>
+                          )}
+
+                          {/* Delete/Deprecate icons for owner */}
+                          {isOwner && !plugin.isDeprecated && (
+                            <>
+                              {plugin.isPublic ? (
+                                <Button
+                                  onClick={() => handleDeprecatePlugin(plugin)}
+                                  variant="ghost"
+                                  size="sm"
+                                  className="h-8 w-8 p-0"
+                                  title="Deprecate plugin"
+                                >
+                                  <AlertTriangle className="w-4 h-4 text-orange-600" />
+                                </Button>
+                              ) : (
+                                <Button
+                                  onClick={() => handleDeletePlugin(plugin)}
+                                  variant="ghost"
+                                  size="sm"
+                                  className="h-8 w-8 p-0"
+                                  title="Delete plugin"
+                                >
+                                  <Trash2 className="w-4 h-4 text-red-600" />
+                                </Button>
+                              )}
+                            </>
+                          )}
+
+                          {/* Uninstall for non-owner */}
+                          {!isOwner && plugin.isInstalled && (
+                            <Button
+                              onClick={() => handleUninstallPlugin(plugin)}
+                              variant="ghost"
+                              size="sm"
+                              className="h-8 w-8 p-0"
+                              title="Uninstall plugin"
+                            >
+                              <Trash2 className="w-4 h-4 text-red-600" />
+                            </Button>
+                          )}
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                );
+              })}
+            </div>
+
+            {getFilteredPlugins('my-plugins').length === 0 && (
+              <Card className="material-elevation-1 border-0">
+                <CardContent className="text-center py-12">
+                  <Sparkles className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+                  <h3 className="text-lg font-medium text-gray-900 mb-2">No plugins created yet</h3>
+                  <p className="text-gray-600 mb-6">
+                    Use AI to create your first plugin in minutes
+                  </p>
+                  <Button
+                    onClick={() => navigate('/admin/ai-studio')}
+                    className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700"
+                  >
+                    <Sparkles className="w-4 h-4 mr-2" />
+                    Create Plugin with AI
+                  </Button>
+                </CardContent>
+              </Card>
+            )}
+          </TabsContent>
+
+          {/* Reports Tab */}
+          <TabsContent value="reports">
+            <Card className="material-elevation-1 border-0">
+              <CardContent className="text-center py-16">
+                <BarChart3 className="w-24 h-24 text-gray-400 mx-auto mb-6" />
+                <h3 className="text-2xl font-bold text-gray-900 mb-4">Plugin Analytics & Reports</h3>
+                <p className="text-gray-600 mb-6 max-w-md mx-auto">
+                  Get detailed insights into your plugin performance, usage statistics, and optimization recommendations.
+                </p>
+                <div className="bg-gradient-to-r from-blue-50 to-purple-50 rounded-lg p-6 mb-6">
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-center">
+                    <div>
+                      <div className="text-2xl font-bold text-blue-600 mb-1">📊</div>
+                      <div className="text-sm font-medium text-gray-700">Usage Analytics</div>
+                    </div>
+                    <div>
+                      <div className="text-2xl font-bold text-purple-600 mb-1">⚡</div>
+                      <div className="text-sm font-medium text-gray-700">Performance Metrics</div>
+                    </div>
+                    <div>
+                      <div className="text-2xl font-bold text-green-600 mb-1">🎯</div>
+                      <div className="text-sm font-medium text-gray-700">Optimization Tips</div>
+                    </div>
+                  </div>
+                </div>
+                <Badge className="bg-yellow-100 text-yellow-800 px-4 py-2 text-sm font-medium">
+                  🚀 Coming Soon
+                </Badge>
+              </CardContent>
+            </Card>
+          </TabsContent>
+        </Tabs>
 
         {/* Import Plugin Dialog */}
         <Dialog open={showImportDialog} onOpenChange={setShowImportDialog}>
