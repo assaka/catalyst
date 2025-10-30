@@ -13,6 +13,9 @@ import { queryClient } from '@/config/queryClient'
 // Import pages - using the exports from pages/index.jsx
 import * as Pages from '@/pages'
 
+// Import plugin components
+import DynamicPluginAdminPage from '@/components/plugins/DynamicPluginAdminPage'
+
 // Import new hook-based systems
 import { useEffect, useState } from 'react'
 import extensionSystem from '@/core/ExtensionSystem.js'
@@ -384,7 +387,7 @@ function App() {
           <Route path="/admin/plugins" element={<PageWrapper Component={Pages.Plugins} pageName="Plugins" />} />
 
           {/* Dynamic Plugin Admin Pages - 100% database-driven from plugin_admin_pages */}
-          <Route path="/admin/plugins/:pluginSlug/:pageKey" element={<PageWrapper Component={require('./components/plugins/DynamicPluginAdminPage').default} pageName="Plugin Admin Page" />} />
+          <Route path="/admin/plugins/:pluginSlug/:pageKey" element={<PageWrapper Component={DynamicPluginAdminPage} pageName="Plugin Admin Page" />} />
           
           {/* Editor routes */}
           <Route path="/editor" element={<Navigate to="/editor/ai-context-window" replace />} />
