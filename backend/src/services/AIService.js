@@ -704,17 +704,29 @@ IMPORTANT RULES:
         throw new Error('Invalid userId format');
       }
 
-      // Build manifest for plugin_registry (minimal metadata only)
-      const manifest = {
+      // Build clean manifest matching starter template structure EXACTLY
+      const cleanManifest = {
         name: pluginData.name,
-        slug: slug,
-        version: pluginData.version || '1.0.0',
-        description: pluginData.description || '',
-        category: pluginData.category || 'utility',
+        tags: pluginData.tags || [
+          pluginData.category || 'utility',
+          'ai-generated'
+        ],
         author: pluginData.author || 'AI Generated',
-        generated_by_ai: true,
-        adminNavigation: pluginData.manifest?.adminNavigation || null,
-        config_schema: pluginData.config_schema || {}
+        version: pluginData.version || '1.0.0',
+        category: pluginData.category || 'utility',
+        homepage: pluginData.homepage || null,
+        repository: pluginData.repository || null,
+        description: pluginData.description || '',
+        permissions: pluginData.permissions || [],
+        adminNavigation: pluginData.manifest?.adminNavigation ? {
+          icon: pluginData.manifest.adminNavigation.icon || 'Package',
+          label: pluginData.manifest.adminNavigation.label || pluginData.name,
+          order: pluginData.manifest.adminNavigation.order || 100,
+          route: pluginData.manifest.adminNavigation.route || `/admin/plugins/${slug}`,
+          enabled: pluginData.manifest.adminNavigation.enabled !== false,
+          category: pluginData.manifest.adminNavigation.category || pluginData.category || 'utility',
+          description: pluginData.manifest.adminNavigation.description || pluginData.description
+        } : null
       };
 
       // Insert into plugin_registry
@@ -739,7 +751,7 @@ IMPORTANT RULES:
           'active',
           'ai-generated',
           'react',
-          JSON.stringify(manifest),
+          JSON.stringify(cleanManifest),
           userId || null,  // Ensure NULL if userId is undefined
           true,  // is_installed
           true   // is_enabled
@@ -749,34 +761,9 @@ IMPORTANT RULES:
 
       console.log(`✅ Plugin saved to registry: ${pluginData.name} (${pluginId})`);
 
-      // Generate clean manifest.json matching starter template structure
-      const manifestJson = {
-        name: pluginData.name,
-        tags: pluginData.tags || [
-          pluginData.category || 'utility',
-          'ai-generated'
-        ],
-        author: pluginData.author || 'AI Generated',
-        version: pluginData.version || '1.0.0',
-        category: pluginData.category || 'utility',
-        homepage: pluginData.homepage || null,
-        repository: pluginData.repository || null,
-        description: pluginData.description || '',
-        permissions: pluginData.permissions || [],
-        adminNavigation: pluginData.manifest?.adminNavigation ? {
-          icon: pluginData.manifest.adminNavigation.icon || 'Package',
-          label: pluginData.manifest.adminNavigation.label || pluginData.name,
-          order: pluginData.manifest.adminNavigation.order || 100,
-          route: pluginData.manifest.adminNavigation.route || `/admin/plugins/${slug}`,
-          enabled: pluginData.manifest.adminNavigation.enabled !== false,
-          category: pluginData.manifest.adminNavigation.category || pluginData.category || 'utility',
-          description: pluginData.manifest.adminNavigation.description || pluginData.description
-        } : null
-      };
-
-      // Note: hooks and events are NOT in manifest.json
-      // They are stored in plugin_hooks and plugin_events tables
-      // generatedFiles is NOT in manifest - those are in plugin_scripts table
+      // Note: cleanManifest is used for both plugin_registry.manifest AND manifest.json file
+      // This ensures consistency - same structure everywhere
+      // hooks/events/generatedFiles are NOT in manifest - they're in separate tables
 
       // Save manifest.json
       // Note: script_type must be 'js' or 'css', scope must be 'frontend', 'backend', or 'admin'
@@ -789,7 +776,7 @@ IMPORTANT RULES:
         bind: [
           pluginId,
           'manifest.json',
-          JSON.stringify(manifestJson, null, 2),
+          JSON.stringify(cleanManifest, null, 2),  // Use same cleanManifest as plugin_registry
           'js',      // Changed from 'json' to 'js' (constraint allows only js/css)
           'admin',   // Changed from 'config' to 'admin' (constraint allows frontend/backend/admin)
           0,
