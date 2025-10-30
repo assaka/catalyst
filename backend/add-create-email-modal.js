@@ -47,13 +47,13 @@ export default function EmailCaptureManager() {
   const loadData = async () => {
     try {
       const emailsRes = await apiClient.get('plugins/my-cart-alert/exec/emails');
-      if (emailsRes.data.success) {
-        setEmails(emailsRes.data.emails || []);
+      if (emailsRes && emailsRes.success) {
+        setEmails(emailsRes.emails || []);
       }
 
       const statsRes = await apiClient.get('plugins/my-cart-alert/exec/emails/stats');
-      if (statsRes.data.success) {
-        setStats(statsRes.data);
+      if (statsRes && statsRes.success) {
+        setStats(statsRes);
       }
 
       setLoading(false);
@@ -74,12 +74,12 @@ export default function EmailCaptureManager() {
     try {
       const response = await apiClient.post('plugins/my-cart-alert/exec/emails', newEmail);
 
-      if (response.data.success) {
+      if (response && response.success) {
         setShowCreateModal(false);
         setNewEmail({ email: '', cart_total: 0, cart_items_count: 0, source: 'manual', subscribed: false });
         loadData();
       } else {
-        alert('Failed to create email: ' + (response.data.error || 'Unknown error'));
+        alert('Failed to create email: ' + (response?.error || 'Unknown error'));
       }
     } catch (error) {
       alert('Error: ' + (error.response?.data?.error || error.message));
