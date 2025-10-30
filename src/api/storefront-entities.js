@@ -269,6 +269,12 @@ class StorefrontProductService extends StorefrontBaseEntity {
 
       const response = await this.client.getPublic(url);
 
+      // Handle structured response format {success: true, data: [...], pagination: {...}}
+      if (response && response.success && Array.isArray(response.data)) {
+        return response.data;
+      }
+
+      // Handle direct array response (backwards compatibility)
       return Array.isArray(response) ? response : [];
     } catch (error) {
       console.error(`❌ Storefront ${this.endpoint}.findAll() error:`, error.message);
