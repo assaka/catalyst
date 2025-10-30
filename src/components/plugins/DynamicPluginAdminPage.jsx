@@ -73,22 +73,66 @@ const DynamicPluginAdminPage = () => {
       console.log('📝 Component code length:', adminPage.component_code?.length);
 
       // Create React component from database code
-      const componentCode = adminPage.component_code;
+      let componentCode = adminPage.component_code;
+
+      // Remove import statements (we'll provide dependencies as parameters)
+      componentCode = componentCode.replace(/import\s+.*?from\s+['"].*?['"];?\s*/g, '');
+
+      // Extract the default export
+      // Pattern: export default function ComponentName() { ... }
+      // Result: function ComponentName() { ... }
+      componentCode = componentCode.replace(/export\s+default\s+/, '');
+
+      console.log('📝 Cleaned component code (first 200 chars):', componentCode.substring(0, 200));
+
+      // Import required UI components
+      const { Card, CardContent, CardHeader, CardTitle } = await import('@/components/ui/card');
+      const { Button } = await import('@/components/ui/button');
+      const { Input } = await import('@/components/ui/input');
+      const { Badge } = await import('@/components/ui/badge');
+      const LucideIcons = await import('lucide-react');
 
       // Use Function constructor to create the component
-      // The code should export default a React component
       const createComponent = new Function(
         'React',
         'useState',
         'useEffect',
         'apiClient',
+        'Card',
+        'CardContent',
+        'CardHeader',
+        'CardTitle',
+        'Button',
+        'Input',
+        'Badge',
+        'Mail',
+        'Trash2',
+        'Search',
+        'Download',
+        'TrendingUp',
         `
-        ${componentCode}
-        return (typeof exports !== 'undefined' && exports.default) || arguments[arguments.length - 1];
+        return ${componentCode};
         `
       );
 
-      const Component = createComponent(React, useState, useEffect, apiClient);
+      const Component = createComponent(
+        React,
+        useState,
+        useEffect,
+        apiClient,
+        Card,
+        CardContent,
+        CardHeader,
+        CardTitle,
+        Button,
+        Input,
+        Badge,
+        LucideIcons.Mail,
+        LucideIcons.Trash2,
+        LucideIcons.Search,
+        LucideIcons.Download,
+        LucideIcons.TrendingUp
+      );
 
       setPageComponent(() => Component);
       setLoading(false);
