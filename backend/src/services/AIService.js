@@ -563,6 +563,7 @@ RESPONSE FORMAT - Return ONLY valid JSON (no markdown, no explanations):
   "category": "commerce",
   "version": "1.0.0",
   "author": "AI Generated",
+  "tags": ["cart", "alert", "notification", "ai-generated"],
   "features": ["Cart alerts", "Custom messages", "Configurable styling"],
   "generatedFiles": [
     {
@@ -616,21 +617,24 @@ RESPONSE FORMAT - Return ONLY valid JSON (no markdown, no explanations):
 }
 
 IMPORTANT RULES:
-1. DO NOT create index.js - system is database-driven!
-2. ALWAYS include hooks array with inline function code
-3. ALWAYS include at least:
+1. DO NOT create manifest.json or README.md in generatedFiles (auto-generated)
+2. DO NOT create index.js - system is database-driven!
+3. ALWAYS include hooks array with inline function code
+4. ALWAYS include tags array with relevant keywords
+5. ALWAYS include at least:
    - components/ (at least 1 component if UI needed)
    - services/ (business logic if complex)
    - utils/ (helper functions only if needed)
-4. Each file in generatedFiles MUST be standalone module with module.exports
-5. Hooks are inline functions stored in hooks array, NOT in files
-6. Hooks can require('./components/AlertBox') to use components
-7. Include JSDoc comments in all files
-8. Include error handling in all hook functions
-9. Use template literals for HTML in components
-10. File paths MUST include subdirectories (e.g., "components/AlertBox.js")
-11. Hooks MUST return values (they are filters, not void functions)
-12. Components export a single function: module.exports = AlertBox;`;
+6. Each file in generatedFiles MUST be standalone module with module.exports
+7. Hooks are inline functions stored in hooks array, NOT in files
+8. Hooks can require('./components/AlertBox') to use components
+9. Include JSDoc comments in all files
+10. Include error handling in all hook functions
+11. Use template literals for HTML in components
+12. File paths MUST include subdirectories (e.g., "components/AlertBox.js")
+13. Hooks MUST return values (they are filters, not void functions)
+14. Components export a single function: module.exports = AlertBox;
+15. If adminNavigation is needed, include full structure with category and description`;
 
     const result = await this.generate({
       userId,
@@ -745,20 +749,29 @@ IMPORTANT RULES:
 
       console.log(`✅ Plugin saved to registry: ${pluginData.name} (${pluginId})`);
 
-      // Generate clean manifest.json content (no obsolete fields)
+      // Generate clean manifest.json matching starter template structure
       const manifestJson = {
         name: pluginData.name,
-        slug: slug,
-        version: pluginData.version || '1.0.0',
-        description: pluginData.description || '',
+        tags: pluginData.tags || [
+          pluginData.category || 'utility',
+          'ai-generated'
+        ],
         author: pluginData.author || 'AI Generated',
+        version: pluginData.version || '1.0.0',
         category: pluginData.category || 'utility',
-        type: 'ai-generated',
-        framework: 'react',
-        adminNavigation: pluginData.manifest?.adminNavigation || null,
-        dependencies: pluginData.dependencies || [],
+        homepage: pluginData.homepage || null,
+        repository: pluginData.repository || null,
+        description: pluginData.description || '',
         permissions: pluginData.permissions || [],
-        config_schema: pluginData.config_schema || {}
+        adminNavigation: pluginData.manifest?.adminNavigation ? {
+          icon: pluginData.manifest.adminNavigation.icon || 'Package',
+          label: pluginData.manifest.adminNavigation.label || pluginData.name,
+          order: pluginData.manifest.adminNavigation.order || 100,
+          route: pluginData.manifest.adminNavigation.route || `/admin/plugins/${slug}`,
+          enabled: pluginData.manifest.adminNavigation.enabled !== false,
+          category: pluginData.manifest.adminNavigation.category || pluginData.category || 'utility',
+          description: pluginData.manifest.adminNavigation.description || pluginData.description
+        } : null
       };
 
       // Note: hooks and events are NOT in manifest.json
@@ -856,9 +869,15 @@ For issues or questions, please contact the platform administrator.
           const fileContent = file.code || file.content || '';
 
           // Skip if AI generated manifest.json or README.md (we create our own)
-          const baseFileName = fileName.split('/').pop();
-          if (baseFileName === 'manifest.json' || baseFileName === 'README.md') {
-            console.log(`  ⏭️  Skipping ${baseFileName} (auto-generated)`);
+          const baseFileName = fileName.split('/').pop().toLowerCase();
+          if (baseFileName === 'manifest.json' || baseFileName === 'readme.md') {
+            console.log(`  ⏭️  Skipping ${fileName} (auto-generated)`);
+            continue;
+          }
+
+          // Skip index.js if AI generated it (we don't use index.js)
+          if (baseFileName === 'index.js' && !fileName.includes('components/')) {
+            console.log(`  ⏭️  Skipping ${fileName} (not needed in database-driven system)`);
             continue;
           }
 
