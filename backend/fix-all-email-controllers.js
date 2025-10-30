@@ -28,18 +28,17 @@ async function fixAllEmailControllers() {
   const search = req.query.search || '';
 
   try {
-    let query = 'SELECT * FROM cart_emails';
-    let countQuery = 'SELECT COUNT(*) as total FROM cart_emails';
-    const params = [];
+    let query, countQuery, params;
 
     if (search) {
-      query += ' WHERE email ILIKE $1';
-      countQuery += ' WHERE email ILIKE $1';
-      params.push('%' + search + '%');
+      query = 'SELECT * FROM cart_emails WHERE email ILIKE $1 ORDER BY created_at DESC LIMIT $2 OFFSET $3';
+      countQuery = 'SELECT COUNT(*) as total FROM cart_emails WHERE email ILIKE $1';
+      params = ['%' + search + '%', limit, offset];
+    } else {
+      query = 'SELECT * FROM cart_emails ORDER BY created_at DESC LIMIT $1 OFFSET $2';
+      countQuery = 'SELECT COUNT(*) as total FROM cart_emails';
+      params = [limit, offset];
     }
-
-    query += ' ORDER BY created_at DESC LIMIT $' + (params.length + 1) + ' OFFSET $' + (params.length + 2);
-    params.push(limit, offset);
 
     const emails = await sequelize.query(query, {
       bind: params,

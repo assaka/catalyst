@@ -46,16 +46,14 @@ export default function EmailCaptureManager() {
 
   const loadData = async () => {
     try {
-      const emailsRes = await fetch('/api/plugins/my-cart-alert/exec/emails');
-      const emailsData = await emailsRes.json();
-      if (emailsData.success) {
-        setEmails(emailsData.emails || []);
+      const emailsRes = await apiClient.get('plugins/my-cart-alert/exec/emails');
+      if (emailsRes.data.success) {
+        setEmails(emailsRes.data.emails || []);
       }
 
-      const statsRes = await fetch('/api/plugins/my-cart-alert/exec/emails/stats');
-      const statsData = await statsRes.json();
-      if (statsData.success) {
-        setStats(statsData);
+      const statsRes = await apiClient.get('plugins/my-cart-alert/exec/emails/stats');
+      if (statsRes.data.success) {
+        setStats(statsRes.data);
       }
 
       setLoading(false);
@@ -74,22 +72,17 @@ export default function EmailCaptureManager() {
     setCreating(true);
 
     try {
-      const response = await fetch('/api/plugins/my-cart-alert/exec/emails', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(newEmail)
-      });
+      const response = await apiClient.post('plugins/my-cart-alert/exec/emails', newEmail);
 
-      if (response.ok) {
+      if (response.data.success) {
         setShowCreateModal(false);
         setNewEmail({ email: '', cart_total: 0, cart_items_count: 0, source: 'manual', subscribed: false });
         loadData();
       } else {
-        const error = await response.json();
-        alert('Failed to create email: ' + error.error);
+        alert('Failed to create email: ' + (response.data.error || 'Unknown error'));
       }
     } catch (error) {
-      alert('Error: ' + error.message);
+      alert('Error: ' + (error.response?.data?.error || error.message));
     } finally {
       setCreating(false);
     }
@@ -99,7 +92,7 @@ export default function EmailCaptureManager() {
     if (!confirm('Delete this email?')) return;
 
     try {
-      await fetch('/api/plugins/my-cart-alert/exec/emails/' + id, { method: 'DELETE' });
+      await apiClient.delete('plugins/my-cart-alert/exec/emails/' + id);
       loadData();
     } catch (error) {
       console.error('Delete failed:', error);
