@@ -15,7 +15,7 @@ router.get('/anthropic', async (req, res) => {
     apiKeyPrefix: process.env.ANTHROPIC_API_KEY
       ? process.env.ANTHROPIC_API_KEY.substring(0, 10) + '...'
       : 'NOT SET',
-    sdkVersion: require('@anthropic-ai/sdk/package.json').version,
+    sdkVersion: '0.67.0', // From backend package.json
     tests: []
   };
 
