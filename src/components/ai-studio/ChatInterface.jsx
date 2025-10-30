@@ -129,7 +129,7 @@ const ChatInterface = ({ onPluginCloned, context }) => {
     if (isPluginRequest) {
       setMessages(prev => [...prev, {
         role: 'assistant',
-        content: `🤖 I can generate a plugin for you!\n\n⚠️ **Cost:** 50 credits for AI generation\n\nAfter generation, you can:\n• Preview the code\n• Edit if needed\n• Save to database (additional 50 credits)\n\nDo you want me to generate this plugin?`,
+        content: `🤖 I can generate a plugin for you!\n\n⚠️ **Cost:** 50 credits for AI generation\n\nAfter generation, you can:\n• Preview the code\n• Edit if needed\n• Save to database automatically\n\nDo you want me to generate this plugin?`,
         confirmAction: {
           type: 'generate-plugin',
           prompt: userMessage,
