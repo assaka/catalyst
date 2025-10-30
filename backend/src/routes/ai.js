@@ -299,12 +299,19 @@ router.post('/plugin/generate', authMiddleware, async (req, res) => {
 router.post('/plugin/create', authMiddleware, async (req, res) => {
   try {
     const { pluginData } = req.body;
-    const userId = req.user.id;
+    const userId = req.user?.id;
 
     if (!pluginData) {
       return res.status(400).json({
         success: false,
         message: 'pluginData is required'
+      });
+    }
+
+    if (!userId) {
+      return res.status(401).json({
+        success: false,
+        message: 'User not authenticated'
       });
     }
 

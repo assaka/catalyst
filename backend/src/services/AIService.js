@@ -518,6 +518,11 @@ RESPONSE FORMAT - Return ONLY valid JSON:
       const pluginId = randomUUID();
       const slug = pluginData.slug || pluginData.name.toLowerCase().replace(/\s+/g, '-');
 
+      // Validate userId is a proper UUID or null
+      if (userId && typeof userId !== 'string') {
+        throw new Error('Invalid userId format');
+      }
+
       // Build manifest
       const manifest = {
         name: pluginData.name,
@@ -553,7 +558,7 @@ RESPONSE FORMAT - Return ONLY valid JSON:
           'ai-generated',
           'react',
           JSON.stringify(manifest),
-          userId,
+          userId || null,  // Ensure NULL if userId is undefined
           true,  // is_installed
           true   // is_enabled
         ],
