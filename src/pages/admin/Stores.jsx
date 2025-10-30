@@ -10,7 +10,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { Plus, Store as StoreIcon, Users, Settings, Trash2, Eye, Crown, UserPlus } from 'lucide-react';
+import { Plus, Store as StoreIcon, Users, Settings, Trash2, Eye, Crown, UserPlus, Pause, Play } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { createPageUrl } from '@/utils';
 import { getExternalStoreUrl, getStoreBaseUrl } from '@/utils/urlUtils';
@@ -155,6 +155,16 @@ export default function Stores() {
     }
   };
 
+  const handleTogglePublished = async (storeId, currentStatus) => {
+    try {
+      await Store.update(storeId, { published: !currentStatus });
+      loadData();
+    } catch (error) {
+      console.error('Error toggling store published status:', error);
+      alert('Failed to update store status. Please try again.');
+    }
+  };
+
   const handleDeleteStore = async (storeId) => {
     if (window.confirm('Are you sure you want to delete this store? This action cannot be undone.')) {
       try {
@@ -171,7 +181,7 @@ export default function Stores() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="animate-pulse">
           <div className="h-8 bg-gray-200 rounded w-1/4 mb-8"></div>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
             {[1, 2, 3].map(i => (
               <div key={i} className="h-48 bg-gray-200 rounded-lg"></div>
             ))}
@@ -319,7 +329,15 @@ export default function Stores() {
             <Card key={store.id} className="hover:shadow-lg transition-shadow">
               <CardHeader>
                 <div className="flex items-center justify-between">
-                  <CardTitle className="text-lg">{store.name}</CardTitle>
+                  <div>
+                    <CardTitle className="text-lg">{store.name}</CardTitle>
+                    <p className="text-sm text-gray-500 mt-1">
+                      Created: {store.created_at ?
+                        new Date(store.created_at).toLocaleDateString() :
+                        'Unknown'
+                      }
+                    </p>
+                  </div>
                   <div className="flex gap-2">
                     {/* Check multiple ways to determine ownership */}
                     {(store.owner_email === user?.email || store.is_direct_owner || store.access_role === 'owner') ? (
@@ -342,8 +360,8 @@ export default function Stores() {
               <CardContent>
                 <div className="flex items-center justify-between">
                   <div className="flex space-x-2">
-                    <Button 
-                      size="sm" 
+                    <Button
+                      size="sm"
                       variant="outline"
                       onClick={() => {
                         const baseUrl = getStoreBaseUrl(store);
@@ -354,7 +372,7 @@ export default function Stores() {
                       <Eye className="w-4 h-4 mr-1" />
                       View
                     </Button>
-                    <Button 
+                    <Button
                       size="sm"
                       onClick={() => {
                         // Set this store as selected and navigate to settings
@@ -366,21 +384,25 @@ export default function Stores() {
                       Manage
                     </Button>
                   </div>
-                  <Button
-                    size="sm"
-                    variant="ghost"
-                    onClick={() => handleDeleteStore(store.id)}
-                    className="text-red-600 hover:text-red-700"
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </Button>
-                </div>
-
-                <div className="mt-4 text-sm text-gray-500">
-                  <p>Created: {store.created_at ? 
-                    new Date(store.created_at).toLocaleDateString() : 
-                    'Unknown'
-                  }</p>
+                  <div className="flex space-x-2">
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      onClick={() => handleTogglePublished(store.id, store.published)}
+                      className={store.published ? "text-orange-600 hover:text-orange-700" : "text-green-600 hover:text-green-700"}
+                      title={store.published ? "Pause store (stop daily charges)" : "Run store (start daily charges)"}
+                    >
+                      {store.published ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4" />}
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      onClick={() => handleDeleteStore(store.id)}
+                      className="text-red-600 hover:text-red-700"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </Button>
+                  </div>
                 </div>
               </CardContent>
             </Card>
