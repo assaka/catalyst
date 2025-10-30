@@ -1,6 +1,5 @@
 const express = require('express');
 const router = express.Router({ mergeParams: true }); // Enable access to parent route params
-const pluginManager = require('../core/PluginManager');
 const PluginConfiguration = require('../models/PluginConfiguration');
 const { authMiddleware } = require('../middleware/auth');
 const { checkStoreOwnership } = require('../middleware/storeAuth');
@@ -43,7 +42,7 @@ router.get('/', async (req, res) => {
 
     console.log(`🔍 Getting plugins for store: ${storeId}`);
 
-    // Get plugins from plugin_registry (new system)
+    // Get plugins from plugin_registry
     const registryPlugins = await sequelize.query(
       'SELECT * FROM plugin_registry ORDER BY created_at DESC',
       {
@@ -51,20 +50,12 @@ router.get('/', async (req, res) => {
       }
     );
 
-    // Ensure plugin manager is initialized for legacy plugins
-    if (!pluginManager.isInitialized) {
-      await pluginManager.initialize();
-    }
-
-    // Get all available plugins from old system (platform-wide)
-    const legacyPlugins = pluginManager.getAllPlugins();
-
     // Get store-specific configurations
     const storeConfigs = await PluginConfiguration.findByStore(storeId);
     const configMap = new Map(storeConfigs.map(config => [config.pluginId, config]));
 
-    // Transform plugin_registry plugins
-    const transformedRegistryPlugins = registryPlugins.map(plugin => {
+    // Transform plugin_registry plugins with store-specific status
+    const pluginsWithStoreStatus = registryPlugins.map(plugin => {
       const storeConfig = configMap.get(plugin.id);
 
       return {
@@ -91,33 +82,15 @@ router.get('/', async (req, res) => {
       };
     });
 
-    // Merge legacy plugin info with store-specific status
-    const transformedLegacyPlugins = legacyPlugins.map(plugin => {
-      const storeConfig = configMap.get(plugin.manifest?.id || plugin.slug);
-
-      return {
-        ...plugin,
-        // Store-specific status
-        enabledForStore: storeConfig?.isEnabled || false,
-        configuredForStore: !!storeConfig,
-        storeConfiguration: storeConfig?.configData || {},
-        lastConfiguredAt: storeConfig?.lastConfiguredAt || null,
-        healthStatus: storeConfig?.healthStatus || 'unknown'
-      };
-    });
-
-    // Combine both plugin sources
-    const allPluginsWithStoreStatus = [...transformedRegistryPlugins, ...transformedLegacyPlugins];
-
-    console.log(`📊 Returning ${allPluginsWithStoreStatus.length} plugins (${transformedRegistryPlugins.length} from registry, ${transformedLegacyPlugins.length} legacy) with store status`);
+    console.log(`📊 Returning ${pluginsWithStoreStatus.length} plugins from plugin_registry with store status`);
 
     res.json({
       success: true,
       data: {
-        plugins: allPluginsWithStoreStatus,
+        plugins: pluginsWithStoreStatus,
         storeId,
         summary: {
-          totalAvailable: allPluginsWithStoreStatus.length,
+          totalAvailable: pluginsWithStoreStatus.length,
           enabledForStore: storeConfigs.filter(c => c.isEnabled).length,
           configuredForStore: storeConfigs.length
         }
@@ -145,7 +118,7 @@ router.post('/:pluginSlug/enable', async (req, res) => {
 
     console.log(`🚀 Enabling plugin ${pluginSlug} for store ${storeId}`);
 
-    // Check plugin_registry first (new system)
+    // Check plugin_registry
     const [registryPlugin] = await sequelize.query(
       'SELECT id, name, status FROM plugin_registry WHERE id = :pluginSlug',
       {
@@ -154,27 +127,14 @@ router.post('/:pluginSlug/enable', async (req, res) => {
       }
     );
 
-    let pluginId = pluginSlug;
-
     if (!registryPlugin) {
-      // Fallback to old plugin manager system
-      const plugin = pluginManager.getPlugin(pluginSlug);
-      if (!plugin) {
-        return res.status(404).json({
-          success: false,
-          error: 'Plugin not found'
-        });
-      }
-
-      if (!plugin.isInstalled) {
-        return res.status(400).json({
-          success: false,
-          error: 'Plugin must be installed before it can be enabled for a store'
-        });
-      }
-
-      pluginId = plugin.manifest?.id || pluginSlug;
+      return res.status(404).json({
+        success: false,
+        error: 'Plugin not found in plugin_registry'
+      });
     }
+
+    const pluginId = pluginSlug;
 
     // Enable plugin for this store - use raw SQL to avoid UUID casting
     const [existing] = await sequelize.query(
@@ -253,7 +213,7 @@ router.post('/:pluginSlug/disable', async (req, res) => {
 
     console.log(`🛑 Disabling plugin ${pluginSlug} for store ${storeId}`);
 
-    // Check plugin_registry first (new system)
+    // Check plugin_registry
     const [registryPlugin] = await sequelize.query(
       'SELECT id, name, status FROM plugin_registry WHERE id = :pluginSlug',
       {
@@ -262,20 +222,14 @@ router.post('/:pluginSlug/disable', async (req, res) => {
       }
     );
 
-    let pluginId = pluginSlug;
-
     if (!registryPlugin) {
-      // Fallback to old plugin manager system
-      const plugin = pluginManager.getPlugin(pluginSlug);
-      if (!plugin) {
-        return res.status(404).json({
-          success: false,
-          error: 'Plugin not found'
-        });
-      }
-
-      pluginId = plugin.manifest?.id || pluginSlug;
+      return res.status(404).json({
+        success: false,
+        error: 'Plugin not found in plugin_registry'
+      });
     }
+
+    const pluginId = pluginSlug;
 
     // Disable plugin for this store - use raw SQL to avoid UUID casting
     const [existing] = await sequelize.query(
