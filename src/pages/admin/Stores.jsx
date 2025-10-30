@@ -10,7 +10,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { Plus, Store as StoreIcon, Users, Settings, Trash2, Eye, Crown, UserPlus, Pause, Play } from 'lucide-react';
+import { Plus, Store as StoreIcon, Users, Settings, Trash2, Eye, Crown, UserPlus, Pause, Play, AlertCircle } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { createPageUrl } from '@/utils';
 import { getExternalStoreUrl, getStoreBaseUrl } from '@/utils/urlUtils';
@@ -23,6 +23,8 @@ export default function Stores() {
   const [loading, setLoading] = useState(true);
   const [showCreateStore, setShowCreateStore] = useState(false);
   const [createError, setCreateError] = useState('');
+  const [showPublishConfirm, setShowPublishConfirm] = useState(false);
+  const [storeToPublish, setStoreToPublish] = useState(null);
   const [newStore, setNewStore] = useState({
     name: '',
     // client_email and description are kept here because UI still references them
@@ -143,6 +145,21 @@ export default function Stores() {
 
   const handleTogglePublished = async (storeId, currentStatus) => {
     const newStatus = !currentStatus;
+
+    // If publishing (paused -> running), show confirmation modal
+    if (!currentStatus) {
+      const store = stores.find(s => s.id === storeId);
+      setStoreToPublish({ id: storeId, name: store?.name });
+      setShowPublishConfirm(true);
+      return;
+    }
+
+    // If pausing (running -> paused), proceed immediately
+    await confirmTogglePublished(storeId, currentStatus);
+  };
+
+  const confirmTogglePublished = async (storeId, currentStatus) => {
+    const newStatus = !currentStatus;
     console.log('🔄 Toggling store published status:', { storeId, currentStatus, newStatus });
 
     try {
@@ -165,12 +182,20 @@ export default function Stores() {
       // Reload data to confirm and get any other changes
       await loadData();
       console.log('✅ Data reloaded successfully');
+
+      // Close confirmation modal if open
+      setShowPublishConfirm(false);
+      setStoreToPublish(null);
     } catch (error) {
       console.error('❌ Error toggling store published status:', error);
       alert('Failed to update store status. Please try again.');
 
       // Revert optimistic update on error
       await loadData();
+
+      // Close confirmation modal
+      setShowPublishConfirm(false);
+      setStoreToPublish(null);
     }
   };
 
@@ -418,6 +443,59 @@ export default function Stores() {
           ))}
         </div>
       )}
+
+      {/* Publish Confirmation Modal */}
+      <Dialog open={showPublishConfirm} onOpenChange={setShowPublishConfirm}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Start Running Store?</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+              <p className="text-sm text-blue-900 font-medium mb-2">
+                Store: {storeToPublish?.name}
+              </p>
+              <p className="text-sm text-blue-800">
+                Running this store will cost <strong>1 credit per day</strong>.
+              </p>
+            </div>
+
+            <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
+              <p className="text-sm text-amber-900 font-medium mb-2">
+                Daily Billing Information:
+              </p>
+              <ul className="text-sm text-amber-800 space-y-1 list-disc list-inside">
+                <li>1 credit will be deducted every day at midnight UTC</li>
+                <li>Your current balance: <strong>{user?.credits || 0} credits</strong></li>
+                <li>You can pause the store anytime to stop charges</li>
+              </ul>
+            </div>
+
+            <div className="flex justify-end space-x-2 pt-2">
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setShowPublishConfirm(false);
+                  setStoreToPublish(null);
+                }}
+              >
+                Cancel
+              </Button>
+              <Button
+                className="bg-green-600 hover:bg-green-700"
+                onClick={() => {
+                  if (storeToPublish) {
+                    confirmTogglePublished(storeToPublish.id, false);
+                  }
+                }}
+              >
+                <Play className="w-4 h-4 mr-2" />
+                Start Running
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
 
     </div>
   );
