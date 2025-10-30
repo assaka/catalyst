@@ -433,8 +433,8 @@ export default function Plugins() {
       }
 
       if (selectedTabs.has('installed')) {
-        // Plugins installed by third party user (not the creator)
-        if (plugin.isInstalled === true && plugin.creator_id !== user?.id) {
+        // Plugins I installed from others (configured for my store but not created by me)
+        if (plugin.configuredForStore === true && plugin.creator_id !== user?.id) {
           matchesAnyTab = true;
         }
       }
@@ -546,7 +546,7 @@ export default function Plugins() {
                 />
                 <Download className="w-4 h-4 text-gray-600" />
                 <span className="text-sm text-gray-700">
-                  Installed ({plugins.filter(p => p.isInstalled === true && p.creator_id !== user?.id).length})
+                  Installed ({plugins.filter(p => p.configuredForStore === true && p.creator_id !== user?.id).length})
                 </span>
               </label>
 
