@@ -92,30 +92,15 @@ const DynamicPluginAdminPage = () => {
       const { Badge } = await import('@/components/ui/badge');
       const LucideIcons = await import('lucide-react');
 
-      // Use Function constructor to create the component
-      const createComponent = new Function(
-        'React',
-        'useState',
-        'useEffect',
-        'apiClient',
-        'Card',
-        'CardContent',
-        'CardHeader',
-        'CardTitle',
-        'Button',
-        'Input',
-        'Badge',
-        'Mail',
-        'Trash2',
-        'Search',
-        'Download',
-        'TrendingUp',
-        `
-        return ${componentCode};
-        `
-      );
+      // Create component using eval (safer than new Function for complex code with escapes)
+      // Wrap in IIFE to create proper scope
+      const componentFactory = eval(`
+        (function(React, useState, useEffect, apiClient, Card, CardContent, CardHeader, CardTitle, Button, Input, Badge, Mail, Trash2, Search, Download, TrendingUp) {
+          ${componentCode}
+        })
+      `);
 
-      const Component = createComponent(
+      const Component = componentFactory(
         React,
         useState,
         useEffect,
