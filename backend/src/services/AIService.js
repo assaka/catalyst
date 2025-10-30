@@ -426,21 +426,60 @@ UNIFORM CODE STRUCTURE:
 7. Use template literals for HTML
 8. Escape user input to prevent XSS
 
-STANDARD PLUGIN TEMPLATE:
+REQUIRED DIRECTORY STRUCTURE:
+\`\`\`
+plugin-name/
+├── manifest.json          # Plugin metadata
+├── README.md              # Documentation
+└── src/
+    ├── index.js           # Main entry point (exports everything)
+    ├── components/        # React components (if needed)
+    │   └── AlertBox.jsx
+    ├── hooks/             # Custom React hooks (if needed)
+    │   └── useCartData.js
+    ├── events/            # Event listeners
+    │   └── onCartUpdate.js
+    ├── controllers/       # API controllers (if backend needed)
+    │   └── CartController.js
+    ├── entities/          # Database entities/models (if needed)
+    │   └── AlertConfig.js
+    ├── services/          # Business logic
+    │   └── AlertService.js
+    └── utils/             # Helper functions
+        └── formatters.js
+\`\`\`
+
+STANDARD index.js STRUCTURE (Main Entry Point):
 \`\`\`javascript
 /**
- * [Plugin Name]
+ * [Plugin Name] - Main Entry Point
  * [Description]
  *
  * @version 1.0.0
  * @author AI Generated
  */
-class PluginName extends Plugin {
+
+// Import components
+const AlertBox = require('./components/AlertBox');
+
+// Import services
+const AlertService = require('./services/AlertService');
+
+// Import event handlers
+const onCartUpdate = require('./events/onCartUpdate');
+
+/**
+ * Plugin class - registers hooks and events
+ */
+class PluginName {
   constructor(config = {}) {
-    super(config);
     this.config = config;
+    this.service = new AlertService(config);
   }
 
+  /**
+   * Metadata for plugin registry
+   */
   static getMetadata() {
     return {
       name: '[Plugin Name]',
@@ -450,39 +489,131 @@ class PluginName extends Plugin {
       author: 'AI Generated',
       category: 'commerce',
       hooks: ['renderCart'],
-      events: []
+      events: ['cart.updated']
     };
   }
 
+  /**
+   * Install plugin - create tables, seed data
+   */
   async install() {
-    await super.install();
+    console.log('[Plugin Name] installing...');
+    // Create database tables if needed
+    await this.service.createTables();
     console.log('[Plugin Name] installed');
   }
 
+  /**
+   * Enable plugin - register hooks and events
+   */
   async enable() {
-    await super.enable();
     console.log('[Plugin Name] enabled');
   }
 
+  /**
+   * Disable plugin - cleanup
+   */
   async disable() {
-    await super.disable();
     console.log('[Plugin Name] disabled');
   }
 
-  // Hook implementations
+  /**
+   * Hook: Render in cart page
+   */
   renderCart(config, context) {
     try {
-      return \`<div class="plugin-container">
-        <!-- Plugin HTML here -->
-      </div>\`;
+      const message = config.message || this.config.message || 'Alert!';
+      return AlertBox({ message, context });
     } catch (error) {
       console.error('[Plugin Name] render error:', error);
       return '';
     }
   }
+
+  /**
+   * Event: Cart updated
+   */
+  onCartUpdate(eventData) {
+    try {
+      onCartUpdate(eventData, this.config);
+    } catch (error) {
+      console.error('[Plugin Name] event error:', error);
+    }
+  }
 }
 
+// Export plugin class
 module.exports = PluginName;
+
+// Export individual modules for testing/reuse
+module.exports.components = { AlertBox };
+module.exports.services = { AlertService };
+\`\`\`
+
+COMPONENT EXAMPLE (components/AlertBox.jsx):
+\`\`\`javascript
+/**
+ * AlertBox Component
+ * Displays an alert message
+ */
+const AlertBox = ({ message, context }) => {
+  const escapeHtml = (text) => {
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+  };
+
+  return \`
+    <div class="alert-box" style="padding: 15px; background: #fff3cd; border: 1px solid #ffc107; border-radius: 4px; margin: 10px 0;">
+      <strong>⚠️ Alert:</strong>
+      <p style="margin: 5px 0 0 0;">\${escapeHtml(message)}</p>
+    </div>
+  \`;
+};
+
+module.exports = AlertBox;
+\`\`\`
+
+SERVICE EXAMPLE (services/AlertService.js):
+\`\`\`javascript
+/**
+ * AlertService
+ * Handles business logic for alerts
+ */
+class AlertService {
+  constructor(config = {}) {
+    this.config = config;
+  }
+
+  async createTables() {
+    // Create database tables if needed
+    console.log('Creating alert configuration table...');
+  }
+
+  async getAlertMessage() {
+    // Fetch from database or return default
+    return this.config.message || 'Default alert';
+  }
+}
+
+module.exports = AlertService;
+\`\`\`
+
+EVENT EXAMPLE (events/onCartUpdate.js):
+\`\`\`javascript
+/**
+ * Cart Update Event Handler
+ */
+const onCartUpdate = (eventData, config) => {
+  console.log('Cart updated:', eventData);
+  // Handle cart update logic
+  if (eventData.total > 100) {
+    // Trigger special alert for large orders
+    console.log('Large order alert triggered');
+  }
+};
+
+module.exports = onCartUpdate;
 \`\`\`
 
 RESPONSE FORMAT - Return ONLY valid JSON (no markdown, no explanations):
@@ -497,7 +628,23 @@ RESPONSE FORMAT - Return ONLY valid JSON (no markdown, no explanations):
   "generatedFiles": [
     {
       "name": "index.js",
-      "code": "// Complete plugin code following the standard template above"
+      "code": "// Main entry point - full code from index.js template above"
+    },
+    {
+      "name": "components/AlertBox.jsx",
+      "code": "// Component code from AlertBox template above"
+    },
+    {
+      "name": "services/AlertService.js",
+      "code": "// Service code from AlertService template above"
+    },
+    {
+      "name": "events/onCartUpdate.js",
+      "code": "// Event handler code from onCartUpdate template above"
+    },
+    {
+      "name": "utils/helpers.js",
+      "code": "// Utility functions (optional, only if needed)"
     }
   ],
   "config_schema": {
@@ -523,13 +670,21 @@ RESPONSE FORMAT - Return ONLY valid JSON (no markdown, no explanations):
   "explanation": "This plugin displays customizable alert messages in the shopping cart to inform customers about special offers or important information."
 }
 
-IMPORTANT:
-- Use the EXACT same code structure for every plugin
-- Always include error handling in hook methods
-- Always use template literals for HTML
-- Always include JSDoc comments
-- Always extend the Plugin base class
-- Return ONLY the JSON object, no markdown formatting`;
+IMPORTANT RULES:
+1. ALWAYS generate ALL files with proper directory structure
+2. ALWAYS include at least:
+   - index.js (main entry point)
+   - components/ (at least 1 component if UI needed)
+   - services/ (business logic)
+   - events/ (if events are used)
+3. index.js MUST import and export all modules
+4. Each file MUST be complete, working code
+5. Use proper module.exports for all files
+6. Include JSDoc comments in all files
+7. Include error handling in all methods
+8. Use template literals for HTML in components
+9. Return ONLY the JSON object, no markdown formatting
+10. File paths MUST include subdirectories (e.g., "components/AlertBox.jsx")`;
 
     const result = await this.generate({
       userId,
