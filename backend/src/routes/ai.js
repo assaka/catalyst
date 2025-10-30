@@ -330,10 +330,33 @@ router.post('/plugin/create', authMiddleware, async (req, res) => {
 
     console.log(`✅ Creating plugin for user: ${userId}`);
 
+    // Check if user has 50 credits for plugin creation
+    const creditCheck = await aiService.checkCredits(userId, 'plugin-generation');
+    if (!creditCheck.hasCredits) {
+      return res.status(402).json({
+        success: false,
+        code: 'INSUFFICIENT_CREDITS',
+        message: `Insufficient credits. Required: ${creditCheck.required}, Available: ${creditCheck.available}`,
+        required: creditCheck.required,
+        available: creditCheck.available
+      });
+    }
+
+    // Deduct 50 credits for plugin creation
+    await aiService.deductCredits(userId, 'plugin-generation', {
+      pluginName: pluginData.name,
+      action: 'create-plugin'
+    });
+
+    console.log(`💰 Deducted 50 credits for plugin creation`);
+
     // Save plugin to database using aiService instance
     const result = await aiService.savePluginToDatabase(pluginData, userId);
 
     console.log(`✅ Plugin created:`, result);
+
+    // Get remaining credits
+    const creditsRemaining = await aiService.getRemainingCredits(userId);
 
     res.json({
       success: true,
@@ -343,7 +366,9 @@ router.post('/plugin/create', authMiddleware, async (req, res) => {
         ...pluginData,
         id: result.pluginId,
         slug: result.slug
-      }
+      },
+      creditsDeducted: 50,
+      creditsRemaining
     });
 
   } catch (error) {
