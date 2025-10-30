@@ -426,21 +426,21 @@ export default function Plugins() {
       let matchesAnyTab = false;
 
       if (selectedTabs.has('marketplace')) {
-        // Marketplace plugins that are active (published by creator)
-        if (plugin.source === 'marketplace' && plugin.isActive === true) {
+        // Published plugins available in marketplace (is_public = true)
+        if (plugin.isPublic === true && !plugin.isDeprecated) {
           matchesAnyTab = true;
         }
       }
 
       if (selectedTabs.has('installed')) {
-        // Plugins installed by third party user
-        if (plugin.isInstalled === true) {
+        // Plugins installed by third party user (not the creator)
+        if (plugin.isInstalled === true && plugin.creator_id !== user?.id) {
           matchesAnyTab = true;
         }
       }
 
       if (selectedTabs.has('my-plugins')) {
-        // Show plugins created by current user (regardless of installed/enabled status)
+        // Show plugins created by current user (regardless of public/private status)
         if (plugin.creator_id === user?.id) {
           matchesAnyTab = true;
         }
@@ -534,7 +534,9 @@ export default function Plugins() {
                   onCheckedChange={() => toggleTab('marketplace')}
                 />
                 <ShoppingCart className="w-4 h-4 text-gray-600" />
-                <span className="text-sm text-gray-700">Marketplace</span>
+                <span className="text-sm text-gray-700">
+                  Published in Marketplace ({plugins.filter(p => p.isPublic === true && !p.isDeprecated).length})
+                </span>
               </label>
 
               <label className="flex items-center gap-2 cursor-pointer">
@@ -544,7 +546,7 @@ export default function Plugins() {
                 />
                 <Download className="w-4 h-4 text-gray-600" />
                 <span className="text-sm text-gray-700">
-                  Installed ({plugins.filter(p => p.isInstalled === true).length})
+                  Installed ({plugins.filter(p => p.isInstalled === true && p.creator_id !== user?.id).length})
                 </span>
               </label>
 
