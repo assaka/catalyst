@@ -16,14 +16,6 @@ router.get('/', async (req, res) => {
     const { page = 1, limit = 100, store_id, category_id, status = 'active', search, slug, sku, id, ids, featured } = req.query;
     const offset = (page - 1) * limit;
 
-    console.log('📦 Public Products API called:', {
-      id: id ? (typeof id === 'string' && id.length > 100 ? id.substring(0, 100) + '...' : id) : undefined,
-      ids: ids ? (typeof ids === 'string' && ids.length > 100 ? ids.substring(0, 100) + '...' : ids) : undefined,
-      store_id,
-      page,
-      limit
-    });
-
     const where = {
       status: 'active',  // Only show active products in public API
       visibility: 'visible'  // Only show visible products
@@ -79,7 +71,6 @@ router.get('/', async (req, res) => {
 
         if (idsArray.length > 0) {
           where.id = { [Op.in]: idsArray };
-          console.log(`✅ Using 'ids' parameter: Batch fetching ${idsArray.length} products`);
         }
       } catch (error) {
         console.error('❌ Error parsing ids parameter:', error);
@@ -97,14 +88,11 @@ router.get('/', async (req, res) => {
               (parsedId.in && Array.isArray(parsedId.in))) {
             const idList = parsedId.$in || parsedId.in;
             where.id = { [Op.in]: idList };
-            console.log(`✅ Using 'id' parameter with ${parsedId.$in ? '$in' : 'in'} operator: Batch fetching ${idList.length} products`);
           } else {
             where.id = parsedId;
-            console.log('✅ Using \'id\' parameter: Single product');
           }
         } else {
           where.id = id;
-          console.log('✅ Using \'id\' parameter: Single product (string)');
         }
       } catch (error) {
         console.error('❌ Error parsing id parameter:', error);
@@ -260,8 +248,6 @@ router.get('/', async (req, res) => {
     if (store_id) {
       await applyCacheHeaders(res, store_id);
     }
-
-    console.log(`📊 Returning ${productsWithAttributes.length} products (total: ${count})`);
 
     // Return structured response with pagination
     res.json({

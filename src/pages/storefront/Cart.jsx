@@ -373,14 +373,11 @@ export default function Cart() {
             }).filter(id => id !== null))];
 
             // Batch Product Fetching
-            console.log(`🛒 Cart: Fetching ${productIds.length} products...`);
             let products = [];
             try {
-                // Use the 'ids' parameter for efficient batch fetching
                 products = await StorefrontProduct.filter({ ids: productIds });
-                console.log(`✅ Cart: Successfully fetched ${products.length} products`);
             } catch (error) {
-                console.error('❌ Cart: Failed to fetch products:', error);
+                console.error('Cart: Failed to fetch products:', error);
                 products = [];
             }
 

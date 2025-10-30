@@ -65,24 +65,17 @@ export default function MiniCart({ iconVariant = 'outline' }) {
       return;
     }
 
-    console.log(`🛍️ MiniCart: Fetching ${productIds.length} products...`, productIds);
-
     try {
       const products = await StorefrontProduct.filter({ ids: productIds });
-      console.log('📦 MiniCart: Received products from API:', products);
 
       // Build product details map - ensure string keys for consistency
       const productDetails = {};
       products.forEach(product => {
         if (product && product.id) {
           // Always use string keys for consistency
-          const key = String(product.id);
-          productDetails[key] = product;
-          console.log(`  ➕ Mapped product ${key}: ${product.name || 'Unknown'}`);
+          productDetails[String(product.id)] = product;
         }
       });
-      console.log(`✅ MiniCart: Successfully fetched ${Object.keys(productDetails).length} products`);
-      console.log('🗺️ MiniCart: Product map keys:', Object.keys(productDetails));
       setCartProducts(productDetails);
     } catch (error) {
       console.error('❌ MiniCart: Failed to fetch products:', error);
@@ -95,16 +88,12 @@ export default function MiniCart({ iconVariant = 'outline' }) {
 
   // Load cart on mount
   useEffect(() => {
-    // Skip localStorage - always fetch fresh from backend for real-time data
-    console.log('🚀 MiniCart: Initial load - fetching fresh from backend');
     loadCart();
   }, []);
 
   // Load product details when cartItems change
   useEffect(() => {
-    console.log('🔄 MiniCart: cartItems changed, count:', cartItems.length);
     if (cartItems.length > 0) {
-      console.log('🔄 MiniCart: cartItems product IDs:', cartItems.map(item => item.product_id));
       loadProductDetails(cartItems);
     } else {
       setCartProducts({});
@@ -146,19 +135,14 @@ export default function MiniCart({ iconVariant = 'outline' }) {
     };
 
     const handleCartUpdate = (event) => {
-      console.log('🔔 MiniCart: Received cartUpdated event', event.detail);
-
       // Use freshCartData from event to avoid race condition with backend
       if (event.detail?.freshCartData?.items) {
         const items = event.detail.freshCartData.items;
-        console.log(`✅ MiniCart: Using freshCartData from event, ${items.length} items`);
         setCartItems(items);
-        // NO localStorage saving - database is source of truth
         return;
       }
 
       // Fallback: fetch from backend if no freshCartData
-      console.log('⚠️ MiniCart: No freshCartData, fetching from backend...');
       debouncedRefresh(true);
     };
 
@@ -187,44 +171,28 @@ export default function MiniCart({ iconVariant = 'outline' }) {
   const loadCart = async () => {
     // Prevent concurrent loadCart calls
     if (loadCartRef.current) {
-      console.log('⏳ MiniCart: Load already in progress, skipping...');
       return loadCartRef.current;
     }
 
     const refreshId = Date.now();
-    console.log(`🔄 MiniCart: Loading cart from backend (${refreshId})...`);
 
     const loadCartPromise = (async () => {
       try {
         setLoading(true);
 
-        // Use simplified cart service
         const cartResult = await cartService.getCart();
-        console.log('📦 MiniCart: Cart result from backend:', cartResult);
 
         if (cartResult.success && cartResult.items) {
-          // Simplified: always trust backend data
-          const backendItems = cartResult.items;
-          console.log(`✅ MiniCart: Setting ${backendItems.length} items to state`);
-
-          setCartItems(backendItems);
+          setCartItems(cartResult.items);
           setLastRefreshId(refreshId);
-
-          // NO localStorage saving - database is single source of truth
-
-          // Product details will be loaded by the cartItems useEffect
         } else {
-          console.log('⚠️ MiniCart: Cart result has no items, clearing cart');
           setCartItems([]);
           setCartProducts({});
           setLastRefreshId(refreshId);
         }
 
       } catch (error) {
-        console.error(`🛒 MiniCart: Error loading cart (${refreshId}):`, error);
-
-        // NO localStorage fallback - if backend fails, show error to user
-        // Cart is critical data that must come from database
+        console.error('MiniCart: Error loading cart:', error);
         setCartItems([]);
         setCartProducts({});
         setLastRefreshId(refreshId);
@@ -292,12 +260,7 @@ export default function MiniCart({ iconVariant = 'outline' }) {
   };
 
   const getTotalItems = () => {
-    const total = cartItems.reduce((total, item) => {
-      console.log(`🔢 MiniCart: item.id=${item.id}, quantity=${item.quantity}`);
-      return total + (item.quantity || 0);
-    }, 0);
-    console.log(`🔢 MiniCart: Total items count: ${total}`);
-    return total;
+    return cartItems.reduce((total, item) => total + (item.quantity || 0), 0);
   };
 
   const getTotalPrice = () => {
@@ -365,7 +328,6 @@ export default function MiniCart({ iconVariant = 'outline' }) {
                   // Ensure consistent string key lookup
                   const productKey = String(item.product_id);
                   const product = cartProducts[productKey];
-                  console.log(`🔍 MiniCart render: item.id=${item.id}, product_id=${productKey}, found:`, product ? product.name : 'NOT FOUND');
                   if (!product) {
                     // Show placeholder for missing product instead of hiding completely
                     return (

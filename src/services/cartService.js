@@ -180,18 +180,18 @@ class CartService {
                          Array.isArray(freshCartData?.dataValues?.items) ? freshCartData.dataValues.items : [];
 
         // Dispatch cart update event with the fresh cart data
-        const eventDetail = {
-          action: 'add_from_service',
-          timestamp: Date.now(),
-          source: 'cartService.addItem',
-          freshCartData: {
-            success: true,
-            items: cartItems,
-            cart: freshCartData
+        window.dispatchEvent(new CustomEvent('cartUpdated', {
+          detail: {
+            action: 'add_from_service',
+            timestamp: Date.now(),
+            source: 'cartService.addItem',
+            freshCartData: {
+              success: true,
+              items: cartItems,
+              cart: freshCartData
+            }
           }
-        };
-        console.log('🔔 CartService: Dispatching cartUpdated event:', eventDetail);
-        window.dispatchEvent(new CustomEvent('cartUpdated', { detail: eventDetail }));
+        }));
 
         return { success: true, cart: result.data };
       }

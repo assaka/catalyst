@@ -188,12 +188,6 @@ const ProductItemCard = ({
       }
 
       // Add to cart using cartService
-      console.log('🛒 ProductItemCard: Adding to cart:', {
-        productId: product.id,
-        productName: translatedProductName,
-        storeId: store.id
-      });
-
       const result = await cartService.addItem(
         product.id,
         1, // quantity
@@ -201,8 +195,6 @@ const ProductItemCard = ({
         [], // selectedOptions
         store.id
       );
-
-      console.log('📦 ProductItemCard: Add to cart result:', result);
 
       if (result.success !== false) {
         // Track add to cart event
