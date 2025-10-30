@@ -215,10 +215,14 @@ export const setRoleBasedAuthData = (user, token, storeSlug = null) => {
 
   } else if (user.role === 'store_owner' || user.role === 'admin') {
     localStorage.setItem('store_owner_auth_token', token);
-    localStorage.setItem('store_owner_user_data', JSON.stringify(user));
+
+    // Store user data WITHOUT credits (credits fetched live from database)
+    const { credits, ...userDataWithoutCredits } = user;
+    localStorage.setItem('store_owner_user_data', JSON.stringify(userDataWithoutCredits));
+
     localStorage.setItem('store_owner_session_id', generateSessionId());
     apiClient.setToken(token);
-    console.log('✅ Store owner session stored');
+    console.log('✅ Store owner session stored (credits excluded - fetched live)');
   }
 
   localStorage.setItem('session_created_at', new Date().toISOString());

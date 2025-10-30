@@ -521,8 +521,10 @@ window.fixUserData = async () => {
     
     if (user && user.id) {
       console.log('🔧 Storing user data in localStorage...');
-      localStorage.setItem('store_owner_user_data', JSON.stringify(user));
-      console.log('✅ User data stored successfully:', user);
+      // Store user data WITHOUT credits (credits fetched live from database)
+      const { credits, ...userDataWithoutCredits } = user;
+      localStorage.setItem('store_owner_user_data', JSON.stringify(userDataWithoutCredits));
+      console.log('✅ User data stored successfully (credits excluded)');
       console.log('🔄 Reload the page to apply changes.');
       window.location.reload();
     } else {

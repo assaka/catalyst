@@ -2,6 +2,7 @@ const Credit = require('../models/Credit');
 const CreditTransaction = require('../models/CreditTransaction');
 const CreditUsage = require('../models/CreditUsage');
 const AkeneoSchedule = require('../models/AkeneoSchedule');
+const { sequelize } = require('../database/connection');
 
 class CreditService {
   constructor() {
@@ -9,23 +10,33 @@ class CreditService {
   }
 
   /**
-   * Get credit balance for a user/store combination
+   * Get credit balance for a user (single source of truth: users.credits)
+   * Note: storeId parameter kept for backward compatibility but not used
    */
-  async getBalance(userId, storeId) {
-    return await Credit.getBalance(userId, storeId);
+  async getBalance(userId, storeId = null) {
+    const [result] = await sequelize.query(`
+      SELECT credits FROM users WHERE id = $1
+    `, {
+      bind: [userId],
+      type: sequelize.QueryTypes.SELECT
+    });
+
+    return result ? parseFloat(result.credits || 0) : 0;
   }
 
   /**
    * Check if user has enough credits for a specific operation
+   * Note: storeId parameter kept for backward compatibility but not used
    */
-  async hasEnoughCredits(userId, storeId, requiredCredits) {
-    return await Credit.hasEnoughCredits(userId, storeId, requiredCredits);
+  async hasEnoughCredits(userId, storeId = null, requiredCredits) {
+    const balance = await this.getBalance(userId);
+    return balance >= requiredCredits;
   }
 
   /**
    * Universal credit deduction method - any feature can use this
    * @param {string} userId - User ID
-   * @param {string} storeId - Store ID  
+   * @param {string} storeId - Store ID (kept for usage tracking only)
    * @param {number} amount - Amount of credits to deduct
    * @param {string} description - Description of what the credits were used for
    * @param {object} metadata - Optional metadata object with additional info
@@ -37,11 +48,22 @@ class CreditService {
     // Check if user has enough credits
     const hasCredits = await this.hasEnoughCredits(userId, storeId, amount);
     if (!hasCredits) {
-      const balance = await this.getBalance(userId, storeId);
+      const balance = await this.getBalance(userId);
       throw new Error(`Insufficient credits. Required: ${amount}, Available: ${balance}`);
     }
 
-    // Record usage with generic type
+    // Deduct from users.credits (single source of truth)
+    await sequelize.query(`
+      UPDATE users
+      SET credits = credits - $1,
+          updated_at = NOW()
+      WHERE id = $2
+    `, {
+      bind: [amount, userId],
+      type: sequelize.QueryTypes.UPDATE
+    });
+
+    // Record usage for tracking (store_id kept for analytics)
     const usage = await CreditUsage.create({
       user_id: userId,
       store_id: storeId,
@@ -60,46 +82,54 @@ class CreditService {
       success: true,
       usage_id: usage.id,
       credits_deducted: amount,
-      remaining_balance: await this.getBalance(userId, storeId),
+      remaining_balance: await this.getBalance(userId),
       description: description
     };
   }
 
   /**
    * Get comprehensive credit information for a user/store
+   * Note: Now uses users.credits as single source of truth
    */
   async getCreditInfo(userId, storeId) {
-    // Initialize credit record if it doesn't exist
-    await Credit.initializeBalance(userId, storeId);
-    
-    const credit = await Credit.findOne({
-      where: { user_id: userId, store_id: storeId }
-    });
+    // Get user's current balance from users.credits
+    const balance = await this.getBalance(userId);
 
-    if (!credit) {
-      throw new Error('Credit record not found');
-    }
-
-    // Get recent transactions
+    // Get recent transactions (purchases)
     const recentTransactions = await CreditTransaction.getUserTransactions(userId, storeId, 10);
 
     // Get recent usage
     const recentUsage = await CreditUsage.getUsageHistory(userId, storeId, 20);
 
+    // Calculate totals from transaction/usage history
+    const [totals] = await sequelize.query(`
+      SELECT
+        COALESCE(SUM(ct.credits_purchased), 0) as total_purchased,
+        COALESCE(SUM(cu.credits_used), 0) as total_used
+      FROM users u
+      LEFT JOIN credit_transactions ct ON u.id = ct.user_id
+      LEFT JOIN credit_usage cu ON u.id = cu.user_id
+      WHERE u.id = $1
+      GROUP BY u.id
+    `, {
+      bind: [userId],
+      type: sequelize.QueryTypes.SELECT
+    });
+
     // Get usage stats for current month
     const startOfMonth = new Date();
     startOfMonth.setDate(1);
     startOfMonth.setHours(0, 0, 0, 0);
-    
+
     const monthlyStats = await CreditUsage.getUsageStats(userId, storeId, startOfMonth);
 
     // Check schedules that need credits
     const scheduleInfo = await AkeneoSchedule.getSchedulesNeedingCredits(userId, storeId);
 
     return {
-      balance: parseFloat(credit.balance),
-      total_purchased: parseFloat(credit.total_purchased),
-      total_used: parseFloat(credit.total_used),
+      balance: parseFloat(balance),
+      total_purchased: totals ? parseFloat(totals.total_purchased || 0) : 0,
+      total_used: totals ? parseFloat(totals.total_used || 0) : 0,
       recent_transactions: recentTransactions,
       recent_usage: recentUsage,
       monthly_stats: monthlyStats,
@@ -245,9 +275,26 @@ class CreditService {
   }
 
   /**
-   * Mark a purchase transaction as completed
+   * Mark a purchase transaction as completed and add credits to user
    */
   async completePurchaseTransaction(transactionId, stripeChargeId = null) {
+    const transaction = await CreditTransaction.findByPk(transactionId);
+    if (!transaction) {
+      throw new Error('Transaction not found');
+    }
+
+    // Add credits to users.credits (single source of truth)
+    await sequelize.query(`
+      UPDATE users
+      SET credits = COALESCE(credits, 0) + $1,
+          updated_at = NOW()
+      WHERE id = $2
+    `, {
+      bind: [transaction.credits_purchased, transaction.user_id],
+      type: sequelize.QueryTypes.UPDATE
+    });
+
+    // Mark transaction as completed
     return await CreditTransaction.markCompleted(transactionId, stripeChargeId);
   }
 
@@ -262,6 +309,18 @@ class CreditService {
    * Award bonus credits to a user
    */
   async awardBonusCredits(userId, storeId, creditsAmount, description = null) {
+    // Add credits to users.credits (single source of truth)
+    await sequelize.query(`
+      UPDATE users
+      SET credits = COALESCE(credits, 0) + $1,
+          updated_at = NOW()
+      WHERE id = $2
+    `, {
+      bind: [creditsAmount, userId],
+      type: sequelize.QueryTypes.UPDATE
+    });
+
+    // Create bonus transaction record
     return await CreditTransaction.createBonus(userId, storeId, creditsAmount, description);
   }
 

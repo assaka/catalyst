@@ -225,25 +225,30 @@ function LayoutInner({ children, currentPageName }) {
 
   const loadUserAndHandleCredits = async () => {
     try {
-      
-      // Use token-only validation like RoleProtectedRoute to avoid User.me() calls
       const hasStoreOwnerToken = !!localStorage.getItem('store_owner_auth_token');
-      const storeOwnerUserData = localStorage.getItem('store_owner_user_data');
-      
-      if (hasStoreOwnerToken && storeOwnerUserData) {
+
+      if (hasStoreOwnerToken) {
         try {
-          const userData = JSON.parse(storeOwnerUserData);
+          // Fetch fresh user data from database (single source of truth for credits)
+          const userData = await User.me();
           setUser(userData);
-        } catch (parseError) {
-          console.error('🔍 Layout.jsx: Error parsing user data:', parseError);
-          setUser(null);
+        } catch (apiError) {
+          console.error('🔍 Layout.jsx: Error fetching user data:', apiError);
+          // Fallback to localStorage if API fails
+          const storeOwnerUserData = localStorage.getItem('store_owner_user_data');
+          if (storeOwnerUserData) {
+            const cachedUserData = JSON.parse(storeOwnerUserData);
+            setUser(cachedUserData);
+          } else {
+            setUser(null);
+          }
         }
       } else {
-        console.error('🔍 Layout.jsx: No valid store owner token or user data found');
+        console.error('🔍 Layout.jsx: No valid store owner token found');
         setUser(null);
       }
     } catch (error) {
-      console.error('🔍 Layout.jsx: Error in token validation:', error);
+      console.error('🔍 Layout.jsx: Error in user validation:', error);
       setUser(null);
     } finally {
       setIsLoading(false);
