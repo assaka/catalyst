@@ -158,7 +158,7 @@ export default function Plugins() {
         creator_id: plugin.creator_id || (plugin.source === 'marketplace' ? "marketplace" : null),
         creator_name: plugin.manifest?.author || plugin.author || "System",
         status: "approved",
-        downloads: plugin.downloads || 0,
+        installs: plugin.downloads || 0,
         rating: plugin.rating || 0,
         reviews_count: plugin.reviews_count || 0,
         isActive: Boolean(plugin.is_active || plugin.isActive),
@@ -625,7 +625,7 @@ export default function Plugins() {
                             </div>
                           )}
                           <span className="text-sm text-gray-600">
-                            {plugin.downloads} downloads
+                            {plugin.installs} installs
                           </span>
                         </div>
                         <Badge className={`${plugin.category === 'analytics' ? 'bg-green-100 text-green-700' :
