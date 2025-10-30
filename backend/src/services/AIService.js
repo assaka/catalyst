@@ -469,15 +469,31 @@ RESPONSE FORMAT - Return ONLY valid JSON:
     try {
       let content = result.content;
 
-      // Try to extract JSON from markdown code blocks
+      // Strategy 1: Try to extract JSON from markdown code blocks
       const jsonMatch = content.match(/```json\s*\n([\s\S]*?)\n```/);
       if (jsonMatch) {
         content = jsonMatch[1];
-      } else {
-        // Try to extract any JSON object
-        const jsonObjectMatch = content.match(/\{[\s\S]*\}/);
-        if (jsonObjectMatch) {
-          content = jsonObjectMatch[0];
+      }
+      // Strategy 2: Try to extract JSON object (find first { and last matching })
+      else {
+        const firstBrace = content.indexOf('{');
+        if (firstBrace !== -1) {
+          // Find the matching closing brace
+          let braceCount = 0;
+          let lastBrace = firstBrace;
+
+          for (let i = firstBrace; i < content.length; i++) {
+            if (content[i] === '{') braceCount++;
+            if (content[i] === '}') {
+              braceCount--;
+              if (braceCount === 0) {
+                lastBrace = i;
+                break;
+              }
+            }
+          }
+
+          content = content.substring(firstBrace, lastBrace + 1);
         }
       }
 
@@ -518,15 +534,31 @@ Return the modified plugin in the same JSON format as plugin generation.`;
     try {
       let content = result.content;
 
-      // Try to extract JSON from markdown code blocks
+      // Strategy 1: Try to extract JSON from markdown code blocks
       const jsonMatch = content.match(/```json\s*\n([\s\S]*?)\n```/);
       if (jsonMatch) {
         content = jsonMatch[1];
-      } else {
-        // Try to extract any JSON object
-        const jsonObjectMatch = content.match(/\{[\s\S]*\}/);
-        if (jsonObjectMatch) {
-          content = jsonObjectMatch[0];
+      }
+      // Strategy 2: Try to extract JSON object (find first { and last matching })
+      else {
+        const firstBrace = content.indexOf('{');
+        if (firstBrace !== -1) {
+          // Find the matching closing brace
+          let braceCount = 0;
+          let lastBrace = firstBrace;
+
+          for (let i = firstBrace; i < content.length; i++) {
+            if (content[i] === '{') braceCount++;
+            if (content[i] === '}') {
+              braceCount--;
+              if (braceCount === 0) {
+                lastBrace = i;
+                break;
+              }
+            }
+          }
+
+          content = content.substring(firstBrace, lastBrace + 1);
         }
       }
 
