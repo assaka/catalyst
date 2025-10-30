@@ -382,6 +382,9 @@ function App() {
           <Route path="/plugins" element={<PageWrapper Component={Pages.Plugins} pageName="Plugins" />} />
           <Route path="/plugins/*" element={<PageWrapper Component={Pages.Plugins} pageName="Plugins" />} />
           <Route path="/admin/plugins" element={<PageWrapper Component={Pages.Plugins} pageName="Plugins" />} />
+
+          {/* Dynamic Plugin Admin Pages - 100% database-driven from plugin_admin_pages */}
+          <Route path="/admin/plugins/:pluginSlug/:pageKey" element={<PageWrapper Component={require('./components/plugins/DynamicPluginAdminPage').default} pageName="Plugin Admin Page" />} />
           
           {/* Editor routes */}
           <Route path="/editor" element={<Navigate to="/editor/ai-context-window" replace />} />
