@@ -2,6 +2,7 @@ const Credit = require('../models/Credit');
 const CreditTransaction = require('../models/CreditTransaction');
 const CreditUsage = require('../models/CreditUsage');
 const AkeneoSchedule = require('../models/AkeneoSchedule');
+const ServiceCreditCost = require('../models/ServiceCreditCost');
 const { sequelize } = require('../database/connection');
 
 class CreditService {
@@ -233,7 +234,13 @@ class CreditService {
    * Record daily credit charge for published store
    */
   async chargeDailyPublishingFee(userId, storeId) {
-    const dailyCost = 1.0; // 1 credit per day
+    // Get the daily publishing cost from service_credit_costs table
+    let dailyCost = 1.0; // Fallback default
+    try {
+      dailyCost = await ServiceCreditCost.getCostByKey('store_daily_publishing');
+    } catch (error) {
+      console.warn('⚠️ Could not fetch store_daily_publishing cost, using fallback:', error.message);
+    }
 
     // Check if store is still published
     const Store = require('../models/Store');

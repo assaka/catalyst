@@ -9,10 +9,24 @@ export default function UptimeReport() {
   const [loading, setLoading] = useState(true);
   const [data, setData] = useState(null);
   const [selectedDays, setSelectedDays] = useState(30);
+  const [dailyPublishingCost, setDailyPublishingCost] = useState(1); // Default fallback
 
   useEffect(() => {
     loadUptimeReport();
+    loadPublishingCost();
   }, [selectedDays]);
+
+  const loadPublishingCost = async () => {
+    try {
+      const response = await apiClient.get('service-credit-costs/key/store_daily_publishing');
+      if (response.success && response.service) {
+        setDailyPublishingCost(response.service.cost_per_unit);
+      }
+    } catch (error) {
+      console.error('Error loading publishing cost:', error);
+      // Keep using default fallback value
+    }
+  };
 
   const loadUptimeReport = async () => {
     setLoading(true);
@@ -94,7 +108,7 @@ export default function UptimeReport() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{data?.summary?.total_credits_charged || 0}</div>
-            <p className="text-xs text-gray-500 mt-1">1 credit per store per day</p>
+            <p className="text-xs text-gray-500 mt-1">{dailyPublishingCost} credit{dailyPublishingCost !== 1 ? 's' : ''} per store per day</p>
           </CardContent>
         </Card>
       </div>

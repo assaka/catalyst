@@ -115,6 +115,8 @@ const pluginAIRoutes = require('./routes/pluginAIRoutes');
 const chatApiRoutes = require('./routes/chat-api');
 const databaseProvisioningRoutes = require('./routes/database-provisioning');
 const customDomainsRoutes = require('./routes/custom-domains');
+const creditRoutes = require('./routes/credits');
+const serviceCreditCostsRoutes = require('./routes/service-credit-costs');
 
 // Import usage tracking middleware
 const {
@@ -1794,6 +1796,8 @@ app.use('/api/cron-jobs', cronJobRoutes); // Dynamic cron job management routes
 app.use('/api/extensions', extensionsRoutes); // Modern extension system API with hook-based architecture
 app.use('/api/slot-configurations', slotConfigurationRoutes); // Slot configuration versioning API
 app.use('/api/store-routes', storeRoutesManagement); // Database-driven routing system for custom pages and route management - MUST come before broad /api middleware
+app.use('/api/credits', creditRoutes); // Credit system: balance, purchases, usage tracking
+app.use('/api/service-credit-costs', serviceCreditCostsRoutes); // Service credit costs management (admin)
 // Conditional auth middleware that excludes preview routes
 const conditionalAuthMiddleware = (req, res, next) => {
   // Skip authentication for preview routes

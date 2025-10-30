@@ -5,7 +5,7 @@ const creditService = require('../../services/credit-service');
 
 /**
  * Daily Credit Deduction Job
- * Deducts 1 credit per store per day for published stores
+ * Deducts credits per store per day for published stores (cost configured in service_credit_costs table)
  */
 class DailyCreditDeductionJob extends BaseJobHandler {
   constructor(job) {
@@ -68,13 +68,13 @@ class DailyCreditDeductionJob extends BaseJobHandler {
           );
 
           if (chargeResult.success) {
-            console.log(`✅ Successfully charged 1 credit for store: ${store.name}`);
+            console.log(`✅ Successfully charged ${chargeResult.credits_deducted || 'daily'} credit(s) for store: ${store.name}`);
             results.successful++;
             results.stores.push({
               store_id: store.id,
               store_name: store.name,
               owner_id: store.user_id,
-              credits_deducted: 1,
+              credits_deducted: chargeResult.credits_deducted || 1,
               remaining_balance: chargeResult.remaining_balance,
               status: 'success'
             });

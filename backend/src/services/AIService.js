@@ -2,6 +2,7 @@
 const Anthropic = require('@anthropic-ai/sdk');
 const { sequelize } = require('../database/connection');
 const aiContextService = require('./aiContextService'); // RAG system
+const ServiceCreditCost = require('../models/ServiceCreditCost');
 
 /**
  * Centralized AI Service
@@ -18,8 +19,18 @@ class AIService {
       'claude-haiku': 'claude-3-haiku-20240307'
     };
 
-    // Credit costs per operation type (in credits)
-    this.operationCosts = {
+    // Map operation types to service keys in service_credit_costs table
+    this.serviceKeyMap = {
+      'plugin-generation': 'custom_plugin_creation',
+      'plugin-modification': 'ai_code_patch',
+      'translation': 'ai_translation',
+      'layout-generation': 'ai_layout_generation',
+      'code-patch': 'ai_code_patch',
+      'general': 'ai_chat'
+    };
+
+    // Fallback costs if service not found in database (in credits)
+    this.fallbackCosts = {
       'plugin-generation': 50,
       'plugin-modification': 30,
       'translation': 20,
@@ -27,6 +38,26 @@ class AIService {
       'code-patch': 25,
       'general': 10
     };
+  }
+
+  /**
+   * Get cost for an operation type from the service_credit_costs table
+   */
+  async getOperationCost(operationType) {
+    const serviceKey = this.serviceKeyMap[operationType];
+
+    if (!serviceKey) {
+      console.warn(`⚠️ Unknown operation type: ${operationType}, using fallback cost`);
+      return this.fallbackCosts[operationType] || this.fallbackCosts.general;
+    }
+
+    try {
+      const cost = await ServiceCreditCost.getCostByKey(serviceKey);
+      return parseFloat(cost);
+    } catch (error) {
+      console.warn(`⚠️ Could not fetch cost for ${serviceKey}, using fallback:`, error.message);
+      return this.fallbackCosts[operationType] || this.fallbackCosts.general;
+    }
   }
 
   /**
@@ -47,7 +78,7 @@ class AIService {
    * Check if user has sufficient credits
    */
   async checkCredits(userId, operationType) {
-    const cost = this.operationCosts[operationType] || this.operationCosts.general;
+    const cost = await this.getOperationCost(operationType);
 
     const [result] = await sequelize.query(`
       SELECT credits FROM users WHERE id = $1
@@ -75,7 +106,7 @@ class AIService {
    * Deduct credits from user account
    */
   async deductCredits(userId, operationType, metadata = {}) {
-    const cost = this.operationCosts[operationType] || this.operationCosts.general;
+    const cost = await this.getOperationCost(operationType);
 
     // Get store_id - use first store if not provided (credit_usage requires non-null store_id)
     let storeId = metadata.storeId;

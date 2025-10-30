@@ -54,6 +54,7 @@ const AkeneoSchedule = require('./AkeneoSchedule');
 const Credit = require('./Credit');
 const CreditTransaction = require('./CreditTransaction');
 const CreditUsage = require('./CreditUsage');
+const ServiceCreditCost = require('./ServiceCreditCost');
 const Job = require('./Job');
 const JobHistory = require('./JobHistory');
 const StoreSupabaseConnection = require('./StoreSupabaseConnection');
@@ -407,6 +408,7 @@ module.exports = {
   Credit,
   CreditTransaction,
   CreditUsage,
+  ServiceCreditCost,
   Job,
   JobHistory,
   StoreSupabaseConnection,
