@@ -65,9 +65,11 @@ export default function MiniCart({ iconVariant = 'outline' }) {
       return;
     }
 
+    console.log(`🛍️ MiniCart: Loading product details for ${productIds.length} items...`);
 
     try {
       // Use the working batch loading strategy
+      console.log('🔄 MiniCart: Using { ids: productIds } batch strategy');
       const products = await StorefrontProduct.filter({ ids: productIds });
 
       // Build product details map - ensure string keys for consistency
@@ -78,9 +80,10 @@ export default function MiniCart({ iconVariant = 'outline' }) {
           productDetails[String(product.id)] = product;
         }
       });
+      console.log(`✅ MiniCart: Loaded ${Object.keys(productDetails).length} product details`);
       setCartProducts(productDetails);
     } catch (error) {
-      console.error('MiniCart: Error loading product details:', error);
+      console.error('❌ MiniCart: Error loading product details:', error);
       setCartProducts({});
     }
   }, []); // Removed cartProducts dependency to prevent excessive calls

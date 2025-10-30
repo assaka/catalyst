@@ -377,6 +377,7 @@ export default function Cart() {
                 if (productIds.length === 0) return [];
 
                 const startTime = performance.now();
+                console.log(`🛒 Cart: Fetching ${productIds.length} products...`);
 
                 try {
                     // Try multiple batch API patterns for maximum compatibility
@@ -394,17 +395,22 @@ export default function Cart() {
                     // Try each strategy until one works
                     for (const [index, strategy] of batchStrategies.entries()) {
                         try {
+                            console.log(`🔄 Cart: Trying batch strategy ${index + 1}...`);
                             const results = await strategy();
 
                             if (results && Array.isArray(results) && results.length > 0) {
+                                console.log(`✅ Cart: Strategy ${index + 1} succeeded - fetched ${results.length} products`);
                                 return results;
                             }
+                            console.log(`⚠️ Cart: Strategy ${index + 1} returned empty results`);
                         } catch (strategyError) {
+                            console.error(`❌ Cart: Strategy ${index + 1} failed:`, strategyError.message);
                             continue;
                         }
                     }
 
                     // Fallback: Optimized parallel individual fetches
+                    console.log('🔄 Cart: All batch strategies failed, falling back to individual fetches...');
                     const productPromises = productIds.map(async (id, index) => {
                         try {
                             // Add small staggered delay to prevent overwhelming the server
@@ -413,16 +419,17 @@ export default function Cart() {
                             const result = await StorefrontProduct.filter({ id: id });
                             return Array.isArray(result) ? result[0] : result;
                         } catch (error) {
-                            console.error(`Failed to fetch product ${id}:`, error);
+                            console.error(`❌ Cart: Failed to fetch product ${id}:`, error);
                             return null;
                         }
                     });
 
                     const productResults = await Promise.all(productPromises);
                     const validProducts = productResults.filter(product => product !== null);
+                    console.log(`✅ Cart: Individual fetches completed - ${validProducts.length}/${productIds.length} products loaded`);
                     return validProducts;
                 } catch (error) {
-                    console.error('❌ All product fetching strategies failed:', error);
+                    console.error('❌ Cart: All product fetching strategies failed:', error);
                     return [];
                 }
             })();
