@@ -696,8 +696,20 @@ Example generatedFiles:
         pluginData
       };
     } catch (error) {
-      console.error('Failed to parse AI response:', result.content);
-      throw new Error(`Failed to parse plugin data from AI response. AI returned: ${result.content.substring(0, 200)}...`);
+      console.error('❌ JSON Parse Error:', error.message);
+      console.error('📄 Full AI response:', result.content);
+      console.error('📝 Extracted content:', content);
+      console.error('🔍 Parse error at position:', error.message.match(/position (\d+)/)?.[1]);
+
+      // Log the problematic area
+      if (error.message.includes('position')) {
+        const pos = parseInt(error.message.match(/position (\d+)/)?.[1] || '0');
+        const start = Math.max(0, pos - 50);
+        const end = Math.min(content.length, pos + 50);
+        console.error('📍 Error context:', content.substring(start, end));
+      }
+
+      throw new Error(`Failed to parse plugin data: ${error.message}. Check Render logs for full response.`);
     }
   }
 
