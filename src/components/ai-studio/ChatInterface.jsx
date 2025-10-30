@@ -550,7 +550,7 @@ const MessageBubble = ({ message, onInstallPlugin, onConfirmCreate, onGeneratePl
                     }
                   ]);
                 }}
-                className="flex items-center gap-2 px-4 py-2 bg-red-100 hover:bg-red-200 text-red-700 dark:bg-red-900/30 dark:hover:bg-red-900/50 dark:text-red-300 text-sm rounded-md font-medium transition-all"
+                className="flex items-center gap-2 px-4 py-2 bg-gray-200 hover:bg-gray-300 text-gray-700 text-sm rounded-md font-medium"
               >
                 ✗ Cancel
               </button>
