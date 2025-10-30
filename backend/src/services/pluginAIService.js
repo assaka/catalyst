@@ -28,7 +28,7 @@ class PluginAIService {
     this.anthropic = new Anthropic({
       apiKey: process.env.ANTHROPIC_API_KEY
     });
-    this.model = 'claude-3-5-sonnet-20241022';
+    this.model = 'claude-3-5-sonnet-20240620';
   }
 
   /**
