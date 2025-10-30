@@ -309,14 +309,14 @@ router.get('/:name/health', async (req, res) => {
 router.post('/install-github', async (req, res) => {
   try {
     const { githubUrl, options = {} } = req.body;
-    
+
     if (!githubUrl) {
       return res.status(400).json({
         success: false,
         error: 'GitHub URL is required'
       });
     }
-    
+
     // Validate GitHub URL format
     if (!githubUrl.includes('github.com')) {
       return res.status(400).json({
@@ -324,9 +324,9 @@ router.post('/install-github', async (req, res) => {
         error: 'Invalid GitHub URL format'
       });
     }
-    
+
     const result = await pluginManager.installFromGitHub(githubUrl, options);
-    
+
     res.json({
       success: true,
       message: result.message,
@@ -334,6 +334,170 @@ router.post('/install-github', async (req, res) => {
     });
   } catch (error) {
     res.status(400).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
+/**
+ * PATCH /api/plugins/:id/visibility
+ * Update plugin public/private status
+ */
+router.patch('/:id/visibility', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { is_public } = req.body;
+    const userId = req.user.id;
+
+    const db = require('../config/database');
+
+    // Verify ownership
+    const pluginResult = await db.query(
+      'SELECT id, name, creator_id FROM plugin_registry WHERE id = $1',
+      [id]
+    );
+
+    if (pluginResult.rows.length === 0) {
+      return res.status(404).json({
+        success: false,
+        error: 'Plugin not found'
+      });
+    }
+
+    const plugin = pluginResult.rows[0];
+    if (plugin.creator_id !== userId) {
+      return res.status(403).json({
+        success: false,
+        error: 'You do not have permission to modify this plugin'
+      });
+    }
+
+    // Update visibility
+    await db.query(
+      'UPDATE plugin_registry SET is_public = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2',
+      [is_public, id]
+    );
+
+    res.json({
+      success: true,
+      message: `Plugin is now ${is_public ? 'public' : 'private'}`,
+      data: { is_public }
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
+/**
+ * POST /api/plugins/:id/deprecate
+ * Deprecate a public plugin (soft delete)
+ */
+router.post('/:id/deprecate', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { reason } = req.body;
+    const userId = req.user.id;
+
+    const db = require('../config/database');
+
+    // Verify ownership and public status
+    const pluginResult = await db.query(
+      'SELECT id, creator_id, is_public, name FROM plugin_registry WHERE id = $1',
+      [id]
+    );
+
+    if (pluginResult.rows.length === 0) {
+      return res.status(404).json({
+        success: false,
+        error: 'Plugin not found'
+      });
+    }
+
+    const plugin = pluginResult.rows[0];
+    if (plugin.creator_id !== userId) {
+      return res.status(403).json({
+        success: false,
+        error: 'You do not have permission to deprecate this plugin'
+      });
+    }
+
+    if (!plugin.is_public) {
+      return res.status(400).json({
+        success: false,
+        error: 'Only public plugins can be deprecated. Use delete for private plugins.'
+      });
+    }
+
+    // Deprecate plugin
+    await db.query(
+      'UPDATE plugin_registry SET deprecated_at = CURRENT_TIMESTAMP, deprecation_reason = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2',
+      [reason || 'Plugin deprecated by creator', id]
+    );
+
+    res.json({
+      success: true,
+      message: `Plugin "${plugin.name}" has been deprecated. Existing users can still use it.`
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
+/**
+ * DELETE /api/plugins/:id
+ * Delete a private plugin (hard delete)
+ */
+router.delete('/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const userId = req.user.id;
+
+    const db = require('../config/database');
+
+    // Verify ownership and private status
+    const pluginResult = await db.query(
+      'SELECT id, creator_id, is_public, name FROM plugin_registry WHERE id = $1',
+      [id]
+    );
+
+    if (pluginResult.rows.length === 0) {
+      return res.status(404).json({
+        success: false,
+        error: 'Plugin not found'
+      });
+    }
+
+    const plugin = pluginResult.rows[0];
+    if (plugin.creator_id !== userId) {
+      return res.status(403).json({
+        success: false,
+        error: 'You do not have permission to delete this plugin'
+      });
+    }
+
+    if (plugin.is_public) {
+      return res.status(400).json({
+        success: false,
+        error: 'Public plugins cannot be deleted. Use deprecate instead to maintain compatibility for existing users.'
+      });
+    }
+
+    // Delete plugin (CASCADE will handle plugin_scripts and plugin_dependencies)
+    await db.query('DELETE FROM plugin_registry WHERE id = $1', [id]);
+
+    res.json({
+      success: true,
+      message: `Plugin "${plugin.name}" has been permanently deleted.`
+    });
+  } catch (error) {
+    res.status(500).json({
       success: false,
       error: error.message
     });

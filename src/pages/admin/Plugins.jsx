@@ -23,7 +23,13 @@ import {
   Sparkles,
   Edit3,
   Package,
-  Loader2
+  Loader2,
+  Lock,
+  Globe,
+  Trash2,
+  AlertTriangle,
+  Power,
+  PowerOff
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -68,6 +74,10 @@ export default function Plugins() {
   const [uninstalling, setUninstalling] = useState(false);
   const [showSettingsDialog, setShowSettingsDialog] = useState(false);
   const [pluginToConfig, setPluginToConfig] = useState(null);
+  const [showDeprecateDialog, setShowDeprecateDialog] = useState(false);
+  const [pluginToDeprecate, setPluginToDeprecate] = useState(null);
+  const [deprecationReason, setDeprecationReason] = useState("");
+  const [deprecating, setDeprecating] = useState(false);
 
   useEffect(() => {
     loadData();
@@ -140,6 +150,9 @@ export default function Plugins() {
         isActive: Boolean(plugin.is_active || plugin.isActive),
         isEnabled: Boolean(plugin.is_enabled || plugin.isEnabled),
         isInstalled: Boolean(plugin.is_installed || plugin.isInstalled),
+        isPublic: Boolean(plugin.is_public),
+        isDeprecated: Boolean(plugin.deprecated_at),
+        deprecationReason: plugin.deprecation_reason,
         availableMethods: plugin.manifest?.methods || plugin.methods || [],
         source: plugin.source || 'local',
         sourceType: plugin.manifest?.sourceType || plugin.sourceType || 'local',
@@ -229,6 +242,74 @@ export default function Plugins() {
   const handleSavePluginSettings = async () => {
     // Reload plugins to reflect the changes
     await loadData();
+  };
+
+  const handleToggleVisibility = async (plugin) => {
+    try {
+      await apiClient.request('PATCH', `plugins/${plugin.id}/visibility`, {
+        is_public: !plugin.isPublic
+      });
+      await loadData();
+    } catch (error) {
+      console.error("Error toggling visibility:", error);
+      alert("Error updating plugin visibility: " + error.message);
+    }
+  };
+
+  const handleDeprecatePlugin = (plugin) => {
+    setPluginToDeprecate(plugin);
+    setDeprecationReason("");
+    setShowDeprecateDialog(true);
+  };
+
+  const confirmDeprecate = async () => {
+    if (!pluginToDeprecate) return;
+
+    setDeprecating(true);
+    try {
+      await apiClient.request('POST', `plugins/${pluginToDeprecate.id}/deprecate`, {
+        reason: deprecationReason
+      });
+
+      alert(`Plugin "${pluginToDeprecate.name}" has been deprecated. Existing users can still use it.`);
+      setShowDeprecateDialog(false);
+      setPluginToDeprecate(null);
+      setDeprecationReason("");
+      await loadData();
+    } catch (error) {
+      console.error("Error deprecating plugin:", error);
+      alert("Error deprecating plugin: " + error.message);
+    } finally {
+      setDeprecating(false);
+    }
+  };
+
+  const handleDeletePlugin = async (plugin) => {
+    if (!confirm(`Are you sure you want to permanently delete "${plugin.name}"? This action cannot be undone.`)) {
+      return;
+    }
+
+    try {
+      await apiClient.request('DELETE', `plugins/${plugin.id}`);
+      alert(`Plugin "${plugin.name}" has been permanently deleted.`);
+      await loadData();
+    } catch (error) {
+      console.error("Error deleting plugin:", error);
+      alert("Error deleting plugin: " + error.message);
+    }
+  };
+
+  const handleTogglePluginForStore = async (plugin, storeId) => {
+    try {
+      const isCurrentlyEnabled = plugin.isEnabled; // Check if enabled for current store
+      const endpoint = isCurrentlyEnabled ? 'disable' : 'enable';
+
+      await apiClient.request('POST', `stores/${storeId}/plugins/${plugin.slug}/${endpoint}`);
+      await loadData();
+    } catch (error) {
+      console.error("Error toggling plugin for store:", error);
+      alert("Error updating plugin status: " + error.message);
+    }
   };
 
   const confirmUninstall = async (pluginSlug, options) => {
@@ -772,6 +853,7 @@ export default function Plugins() {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {getFilteredPlugins('my-plugins').map((plugin) => {
                 const CategoryIcon = categoryIcons[plugin.category] || Settings;
+                const isOwner = plugin.creator_id === user?.id;
 
                 return (
                   <Card key={plugin.id} className="material-elevation-1 border-0 hover:material-elevation-2 transition-all duration-300">
@@ -781,15 +863,32 @@ export default function Plugins() {
                           <div className="w-12 h-12 bg-gradient-to-r from-blue-500 to-purple-600 rounded-lg flex items-center justify-center">
                             <CategoryIcon className="w-6 h-6 text-white" />
                           </div>
-                          <div>
+                          <div className="flex-1">
                             <CardTitle className="text-lg">{plugin.name}</CardTitle>
-                            <div className="flex items-center space-x-2 mt-1">
+                            <div className="flex items-center flex-wrap gap-1 mt-1">
                               <Badge variant="outline" className="text-xs">
                                 v{plugin.version}
                               </Badge>
                               <Badge variant="secondary" className="text-xs">
                                 {plugin.category}
                               </Badge>
+                              {plugin.isPublic ? (
+                                <Badge className="bg-green-100 text-green-700 text-xs flex items-center gap-1">
+                                  <Globe className="w-3 h-3" />
+                                  Public
+                                </Badge>
+                              ) : (
+                                <Badge className="bg-gray-100 text-gray-700 text-xs flex items-center gap-1">
+                                  <Lock className="w-3 h-3" />
+                                  Private
+                                </Badge>
+                              )}
+                              {plugin.isDeprecated && (
+                                <Badge className="bg-orange-100 text-orange-700 text-xs flex items-center gap-1">
+                                  <AlertTriangle className="w-3 h-3" />
+                                  Deprecated
+                                </Badge>
+                              )}
                             </div>
                           </div>
                         </div>
@@ -800,6 +899,60 @@ export default function Plugins() {
                         {plugin.description}
                       </p>
 
+                      {plugin.isDeprecated && plugin.deprecationReason && (
+                        <div className="mb-4 p-2 bg-orange-50 border border-orange-200 rounded text-xs text-orange-700">
+                          <strong>Deprecation reason:</strong> {plugin.deprecationReason}
+                        </div>
+                      )}
+
+                      {isOwner && !plugin.isDeprecated && (
+                        <div className="mb-4 flex items-center gap-2">
+                          <span className="text-xs text-gray-600">Visibility:</span>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleToggleVisibility(plugin)}
+                            className="h-7 text-xs"
+                          >
+                            {plugin.isPublic ? (
+                              <>
+                                <Lock className="w-3 h-3 mr-1" />
+                                Make Private
+                              </>
+                            ) : (
+                              <>
+                                <Globe className="w-3 h-3 mr-1" />
+                                Make Public
+                              </>
+                            )}
+                          </Button>
+                        </div>
+                      )}
+
+                      {plugin.isEnabled !== undefined && stores.length > 0 && (
+                        <div className="mb-4 flex items-center gap-2">
+                          <span className="text-xs text-gray-600">Store Status:</span>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleTogglePluginForStore(plugin, stores[0]?.id)}
+                            className="h-7 text-xs"
+                          >
+                            {plugin.isEnabled ? (
+                              <>
+                                <PowerOff className="w-3 h-3 mr-1" />
+                                Deactivate
+                              </>
+                            ) : (
+                              <>
+                                <Power className="w-3 h-3 mr-1" />
+                                Activate
+                              </>
+                            )}
+                          </Button>
+                        </div>
+                      )}
+
                       <div className="flex justify-between items-center gap-2">
                         <div className="flex gap-2">
                           <Button
@@ -808,7 +961,7 @@ export default function Plugins() {
                             onClick={() => navigate('/admin/ai-studio', { state: { plugin } })}
                           >
                             <Edit3 className="w-4 h-4 mr-2" />
-                            Edit in AI Studio
+                            Edit
                           </Button>
                           <Button
                             variant="outline"
@@ -819,7 +972,34 @@ export default function Plugins() {
                             <Download className="w-4 h-4" />
                           </Button>
                         </div>
-                        {plugin.isInstalled && (
+
+                        {isOwner && !plugin.isDeprecated && (
+                          <div className="flex gap-1">
+                            {plugin.isPublic ? (
+                              <Button
+                                onClick={() => handleDeprecatePlugin(plugin)}
+                                variant="outline"
+                                size="sm"
+                                className="text-orange-600 border-orange-200 hover:bg-orange-50"
+                              >
+                                <AlertTriangle className="w-4 h-4 mr-1" />
+                                Deprecate
+                              </Button>
+                            ) : (
+                              <Button
+                                onClick={() => handleDeletePlugin(plugin)}
+                                variant="outline"
+                                size="sm"
+                                className="text-red-600 border-red-200 hover:bg-red-50"
+                              >
+                                <Trash2 className="w-4 h-4 mr-1" />
+                                Delete
+                              </Button>
+                            )}
+                          </div>
+                        )}
+
+                        {!isOwner && plugin.isInstalled && (
                           <Button
                             onClick={() => handleUninstallPlugin(plugin)}
                             variant="outline"
@@ -1003,6 +1183,76 @@ export default function Plugins() {
           }}
           onSave={handleSavePluginSettings}
         />
+
+        {/* Deprecate Plugin Dialog */}
+        <Dialog open={showDeprecateDialog} onOpenChange={setShowDeprecateDialog}>
+          <DialogContent className="max-w-md">
+            <DialogHeader>
+              <DialogTitle>Deprecate Plugin</DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4">
+              <div className="bg-orange-50 border border-orange-200 rounded-lg p-3">
+                <p className="text-sm text-orange-800">
+                  Deprecating a plugin will mark it as deprecated, but existing users can still use it.
+                  This is the recommended approach for public plugins to maintain compatibility.
+                </p>
+              </div>
+
+              {pluginToDeprecate && (
+                <div>
+                  <p className="text-sm font-medium text-gray-700 mb-2">
+                    Plugin: <strong>{pluginToDeprecate.name}</strong>
+                  </p>
+                </div>
+              )}
+
+              <div>
+                <label className="text-sm font-medium text-gray-700 mb-2 block">
+                  Deprecation Reason (Optional)
+                </label>
+                <textarea
+                  className="w-full border border-gray-300 rounded-md p-2 text-sm"
+                  rows="3"
+                  placeholder="e.g., Replaced by a newer version, security issues, etc."
+                  value={deprecationReason}
+                  onChange={(e) => setDeprecationReason(e.target.value)}
+                  disabled={deprecating}
+                />
+              </div>
+
+              <div className="flex justify-end gap-2">
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    setShowDeprecateDialog(false);
+                    setPluginToDeprecate(null);
+                    setDeprecationReason("");
+                  }}
+                  disabled={deprecating}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  onClick={confirmDeprecate}
+                  disabled={deprecating}
+                  className="bg-orange-600 hover:bg-orange-700 text-white"
+                >
+                  {deprecating ? (
+                    <>
+                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                      Deprecating...
+                    </>
+                  ) : (
+                    <>
+                      <AlertTriangle className="w-4 h-4 mr-2" />
+                      Deprecate Plugin
+                    </>
+                  )}
+                </Button>
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
       </div>
     </div>
   );
