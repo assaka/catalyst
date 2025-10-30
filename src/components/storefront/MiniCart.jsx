@@ -119,12 +119,8 @@ export default function MiniCart({ iconVariant = 'outline' }) {
 
   // Load cart on mount
   useEffect(() => {
-    // Initialize from localStorage first for instant display
-    const localCart = getCartFromLocalStorage();
-    if (localCart && localCart.length > 0) {
-      setCartItems(localCart);
-      // Product details will be loaded by the cartItems useEffect
-    }
+    // Skip localStorage - always fetch fresh from backend for real-time data
+    console.log('🚀 MiniCart: Initial load - fetching fresh from backend');
     loadCart();
   }, []);
 
@@ -175,25 +171,9 @@ export default function MiniCart({ iconVariant = 'outline' }) {
 
     const handleCartUpdate = (event) => {
       console.log('🔔 MiniCart: Received cartUpdated event', event.detail);
-      // Simplified: only handle fresh cart data from backend
-      if (event.detail?.freshCartData) {
-        const items = event.detail.freshCartData.items;
-
-        // Handle both undefined and array cases (empty array is valid)
-        if (items !== undefined && Array.isArray(items)) {
-          console.log('✅ MiniCart: Updating cart with fresh data, items:', items.length);
-          setCartItems(items);
-          saveCartToLocalStorage(items);
-
-          // Product details will be loaded by the cartItems useEffect
-
-          return; // Fresh data received - no need for additional API calls
-        }
-      }
-
-      // Don't refresh at all since CartService should always provide fresh data
-      // Only allow explicit refresh events via 'refreshMiniCart' event
-      console.log('⚠️ MiniCart: cartUpdated event had no fresh data');
+      // ALWAYS fetch fresh data from backend to avoid stale/cached data
+      console.log('🔄 MiniCart: Forcing fresh fetch from backend...');
+      debouncedRefresh(true); // Force immediate refresh from backend
     };
 
     const handleDirectRefresh = (event) => {
@@ -400,7 +380,7 @@ export default function MiniCart({ iconVariant = 'outline' }) {
                   // Ensure consistent string key lookup
                   const productKey = String(item.product_id);
                   const product = cartProducts[productKey];
-                  console.log(`🔍 MiniCart render: Looking for product ${productKey}, found:`, product ? product.name : 'NOT FOUND');
+                  console.log(`🔍 MiniCart render: item.id=${item.id}, product_id=${productKey}, found:`, product ? product.name : 'NOT FOUND');
                   if (!product) {
                     // Show placeholder for missing product instead of hiding completely
                     return (
