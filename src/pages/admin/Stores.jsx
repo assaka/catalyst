@@ -44,23 +44,9 @@ export default function Stores() {
       // Backend API automatically filters stores by user's email from JWT token
       // No need to pass filter parameters - the backend handles this
       const userStores = await Store.findAll();
-      
-      // The stores from findAll might not include all fields, let's fetch complete data for each
-      const completeStores = await Promise.all(
-        (userStores || []).map(async (store) => {
-          try {
-            const fullStoreData = await Store.findById(store.id);
-            // findById returns array, get first item
-            const fullStore = Array.isArray(fullStoreData) ? fullStoreData[0] : fullStoreData;
-            return { ...store, ...fullStore }; // Merge to ensure we have all fields
-          } catch (error) {
-            console.warn(`Failed to load full data for store ${store.id}:`, error);
-            return store; // Return original if fetch fails
-          }
-        })
-      );
-      
-      setStores(completeStores);
+
+      // Store.findAll() already returns complete store data with all fields
+      setStores(userStores || []);
     } catch (error) {
       console.error('Error loading stores:', error);
       // Set empty array on error to prevent "no stores" message from showing incorrectly
