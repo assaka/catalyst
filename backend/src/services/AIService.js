@@ -963,7 +963,7 @@ For issues or questions, please contact the platform administrator.
 
           await sequelize.query(`
             INSERT INTO plugin_events (
-              plugin_id, event_name, handler_function, priority, is_enabled
+              plugin_id, event_name, listener_function, priority, is_enabled
             )
             VALUES ($1, $2, $3, $4, $5)
           `, {
