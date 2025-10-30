@@ -42,7 +42,12 @@ class StorefrontBaseEntity {
 
   // Filter records - uses public API
   async filter(params = {}) {
-    return this.findAll(params);
+    // Handle 'ids' parameter - convert array to JSON string for backend
+    const sanitizedParams = { ...params };
+    if (sanitizedParams.ids && Array.isArray(sanitizedParams.ids)) {
+      sanitizedParams.ids = JSON.stringify(sanitizedParams.ids);
+    }
+    return this.findAll(sanitizedParams);
   }
 
   // List records with optional ordering

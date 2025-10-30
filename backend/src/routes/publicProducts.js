@@ -70,12 +70,26 @@ router.get('/', async (req, res) => {
     // Handle 'ids' parameter (plural) - array of IDs for batch fetching
     if (ids) {
       try {
-        // Parse if it's a JSON string array
-        const idsArray = typeof ids === 'string' && ids.startsWith('[')
-          ? JSON.parse(ids)
-          : Array.isArray(ids)
-            ? ids
-            : [ids]; // Single ID as array
+        let idsArray;
+
+        if (typeof ids === 'string') {
+          // Check if it's a JSON array string like ["id1","id2"]
+          if (ids.startsWith('[')) {
+            idsArray = JSON.parse(ids);
+          }
+          // Check if it's a comma-separated string like "id1,id2"
+          else if (ids.includes(',')) {
+            idsArray = ids.split(',').map(id => id.trim());
+          }
+          // Single ID
+          else {
+            idsArray = [ids];
+          }
+        } else if (Array.isArray(ids)) {
+          idsArray = ids;
+        } else {
+          idsArray = [ids];
+        }
 
         if (idsArray.length > 0) {
           where.id = { [Op.in]: idsArray };
