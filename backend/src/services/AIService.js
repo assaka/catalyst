@@ -784,30 +784,28 @@ Example generatedFiles:
 
       console.log(`✅ Plugin saved to registry: ${pluginData.name} (${pluginId})`);
 
-      // Note: cleanManifest is used for both plugin_registry.manifest AND manifest.json file
-      // This ensures consistency - same structure everywhere
-      // hooks/events/generatedFiles are NOT in manifest - they're in separate tables
+      // Note: cleanManifest is stored in plugin_registry.manifest column
+      // It will also be saved to plugin_docs table for file tree display
 
-      // Save manifest.json
-      // Note: script_type must be 'js' or 'css', scope must be 'frontend', 'backend', or 'admin'
+      // Save manifest.json to plugin_docs (for file tree display)
       await sequelize.query(`
-        INSERT INTO plugin_scripts (
-          plugin_id, file_name, file_content, script_type, scope, load_priority, is_enabled
+        INSERT INTO plugin_docs (
+          plugin_id, doc_type, file_name, content, format, is_visible, display_order
         )
         VALUES ($1, $2, $3, $4, $5, $6, $7)
       `, {
         bind: [
           pluginId,
+          'manifest',
           'manifest.json',
-          JSON.stringify(cleanManifest, null, 2),  // Use same cleanManifest as plugin_registry
-          'js',      // Changed from 'json' to 'js' (constraint allows only js/css)
-          'admin',   // Changed from 'config' to 'admin' (constraint allows frontend/backend/admin)
-          0,
-          true
+          JSON.stringify(cleanManifest, null, 2),
+          'json',
+          true,
+          0
         ],
         type: sequelize.QueryTypes.INSERT
       });
-      console.log(`  📄 Saved manifest.json`);
+      console.log(`  📄 Saved manifest.json to plugin_docs`);
 
       // Generate README.md content
       const readmeContent = `# ${pluginData.name}
@@ -851,26 +849,27 @@ ${pluginData.hooks && pluginData.hooks.length > 0 ?
 For issues or questions, please contact the platform administrator.
 `;
 
-      // Save README.md
-      // Note: script_type must be 'js' or 'css', scope must be 'frontend', 'backend', or 'admin'
+      // Save README.md to plugin_docs (for file tree display)
       await sequelize.query(`
-        INSERT INTO plugin_scripts (
-          plugin_id, file_name, file_content, script_type, scope, load_priority, is_enabled
+        INSERT INTO plugin_docs (
+          plugin_id, doc_type, file_name, content, format, is_visible, display_order, title, description
         )
-        VALUES ($1, $2, $3, $4, $5, $6, $7)
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
       `, {
         bind: [
           pluginId,
+          'readme',
           'README.md',
           readmeContent,
-          'js',      // Changed from 'markdown' to 'js' (constraint allows only js/css)
-          'admin',   // Changed from 'docs' to 'admin' (constraint allows frontend/backend/admin)
-          0,
-          true
+          'markdown',
+          true,
+          1,
+          pluginData.name,
+          pluginData.description || ''
         ],
         type: sequelize.QueryTypes.INSERT
       });
-      console.log(`  📄 Saved README.md`);
+      console.log(`  📄 Saved README.md to plugin_docs`);
 
       // Save generated files to plugin_scripts table with proper directory structure
       if (pluginData.generatedFiles && pluginData.generatedFiles.length > 0) {
