@@ -202,7 +202,17 @@ router.post('/web', async (req, res) => {
       hooks: Array.isArray(hooks) ? hooks : [hooks],
       configSchema,
       createdBy: 'web-builder',
-      templateId
+      templateId,
+      adminNavigation: {
+        enabled: false,
+        label: name,
+        icon: "Package",
+        route: `/admin/plugins/${slug}`,
+        order: 100,
+        parentKey: null,
+        category: category || "custom",
+        description: description || `Manage ${name} settings`
+      }
     };
 
     // Create plugin files structure

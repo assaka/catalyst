@@ -224,16 +224,8 @@ const ChatInterface = ({ onPluginCloned, context }) => {
   };
 
   const handleConfirmCreate = (pluginData) => {
-    // Add confirmation message to chat for database save
-    setMessages(prev => [...prev, {
-      role: 'assistant',
-      content: `💾 Ready to save "${pluginData.name}" to database?\n\n⚠️ This will cost an additional 50 credits.\n\nYour plugin will be saved with:\n• All code files\n• Hooks and events registered\n• Full documentation\n\nDo you want to proceed?`,
-      confirmAction: {
-        type: 'create-plugin',
-        pluginData: pluginData,
-        cost: 50
-      }
-    }]);
+    // Directly install the plugin without confirmation
+    handleInstallPlugin(pluginData);
   };
 
   const handleInstallPlugin = async (pluginData) => {
