@@ -783,29 +783,7 @@ Example generatedFiles:
       });
 
       console.log(`✅ Plugin saved to registry: ${pluginData.name} (${pluginId})`);
-
-      // Note: cleanManifest is stored in plugin_registry.manifest column
-      // It will also be saved to plugin_docs table for file tree display
-
-      // Save manifest.json to plugin_docs (for file tree display)
-      await sequelize.query(`
-        INSERT INTO plugin_docs (
-          plugin_id, doc_type, file_name, content, format, is_visible, display_order
-        )
-        VALUES ($1, $2, $3, $4, $5, $6, $7)
-      `, {
-        bind: [
-          pluginId,
-          'manifest',
-          'manifest.json',
-          JSON.stringify(cleanManifest, null, 2),
-          'json',
-          true,
-          0
-        ],
-        type: sequelize.QueryTypes.INSERT
-      });
-      console.log(`  📄 Saved manifest.json to plugin_docs`);
+      console.log(`  📋 Manifest stored in plugin_registry.manifest column`);
 
       // Generate README.md content
       const readmeContent = `# ${pluginData.name}
