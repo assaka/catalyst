@@ -1,0 +1,132 @@
+services:
+  # Frontend Service
+  - type: web
+    name: catalyst-frontend
+    env: node
+    buildCommand: npm install && npm run build
+    startCommand: npm run preview
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: VITE_API_BASE_URL
+        value: https://catalyst-backend-fzhu.onrender.com
+      - key: VITE_API_VERSION
+        value: v1
+      - key: VITE_APP_NAME
+        value: Catalyst
+      - key: VITE_APP_DESCRIPTION
+        value: Modern E-commerce Platform
+    autoDeploy: true
+
+  # Backend Service
+  - type: web
+    name: catalyst-backend
+    env: node
+    rootDir: backend
+    buildCommand: npm install
+    startCommand: npm start
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 10000
+      # Supabase Configuration - Set these in Render Dashboard
+      - key: SUPABASE_URL
+        sync: false
+      - key: SUPABASE_ANON_KEY
+        sync: false
+      - key: SUPABASE_SERVICE_ROLE_KEY
+        sync: false
+      - key: SUPABASE_DB_URL
+        sync: false
+      - key: DATABASE_URL
+        sync: false
+      # JWT Configuration
+      - key: JWT_SECRET
+        sync: false
+      - key: JWT_EXPIRES_IN
+        value: 24h
+      # CORS Configuration
+      - key: CORS_ORIGIN
+        value: https://catalyst-frontend-[GENERATED].onrender.com
+      # Google OAuth Configuration
+      - key: GOOGLE_CLIENT_ID
+        sync: false
+      - key: GOOGLE_CLIENT_SECRET
+        sync: false
+      - key: GOOGLE_CALLBACK_URL
+        value: https://catalyst-backend-fzhu.onrender.com/api/auth/google/callback
+      # Session Configuration
+      - key: SESSION_SECRET
+        sync: false
+      # Stripe Configuration
+      - key: STRIPE_SECRET_KEY
+        sync: false
+      - key: STRIPE_WEBHOOK_SECRET
+        sync: false
+      - key: STRIPE_PUBLISHABLE_KEY
+        sync: false
+    autoDeploy: true
+
+  # Dedicated Background Job Worker Service
+  - type: worker
+    name: catalyst-background-worker
+    env: node
+    rootDir: backend
+    buildCommand: npm install
+    startCommand: node worker.cjs
+    envVars:
+      - key: NODE_ENV
+        value: production
+      # Database Configuration
+      - key: SUPABASE_URL
+        sync: false
+      - key: SUPABASE_ANON_KEY
+        sync: false
+      - key: SUPABASE_SERVICE_ROLE_KEY
+        sync: false
+      - key: SUPABASE_DB_URL
+        sync: false
+      - key: DATABASE_URL
+        sync: false
+      # JWT Configuration (needed for some job processing)
+      - key: JWT_SECRET
+        sync: false
+      # Akeneo Integration Configuration
+      - key: AKENEO_CLIENT_ID
+        sync: false
+      - key: AKENEO_CLIENT_SECRET
+        sync: false
+      - key: AKENEO_USERNAME
+        sync: false
+      - key: AKENEO_PASSWORD
+        sync: false
+      # Integration Encryption Key
+      - key: INTEGRATION_ENCRYPTION_KEY
+        sync: false
+    autoDeploy: true
+
+  # Daily Credit Deduction Cron Job (runs at midnight UTC daily)
+  - type: cron
+    name: catalyst-daily-credit-deduction
+    env: node
+    rootDir: backend
+    schedule: "0 0 * * *"  # Every day at midnight UTC
+    buildCommand: npm install
+    startCommand: node scripts/run-daily-credit-deduction.js
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: SUPABASE_URL
+        sync: false
+      - key: SUPABASE_ANON_KEY
+        sync: false
+      - key: SUPABASE_SERVICE_ROLE_KEY
+        sync: false
+      - key: SUPABASE_DB_URL
+        sync: false
+      - key: DATABASE_URL
+        sync: false
+      - key: JWT_SECRET
+        sync: false
+    autoDeploy: true

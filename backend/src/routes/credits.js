@@ -393,4 +393,50 @@ router.get('/transactions', authMiddleware, storeAuth, async (req, res) => {
   }
 });
 
+/**
+ * Manually trigger daily credit deduction (admin only)
+ * POST /api/credits/trigger-daily-deduction
+ */
+router.post('/trigger-daily-deduction', authMiddleware, async (req, res) => {
+  try {
+    // Check if user is admin
+    if (req.user.role !== 'admin') {
+      return res.status(403).json({
+        success: false,
+        message: 'Only administrators can trigger daily deductions'
+      });
+    }
+
+    console.log('📊 Manual daily credit deduction triggered by:', req.user.email);
+
+    // Import and execute the deduction script
+    const runDailyDeduction = require('../../scripts/run-daily-credit-deduction');
+
+    // Run in background to avoid timeout
+    runDailyDeduction()
+      .then(() => {
+        console.log('✅ Manual daily deduction completed');
+      })
+      .catch((error) => {
+        console.error('❌ Manual daily deduction failed:', error);
+      });
+
+    // Return immediately
+    res.json({
+      success: true,
+      message: 'Daily credit deduction started. Check server logs for results.',
+      triggered_at: new Date().toISOString(),
+      triggered_by: req.user.email
+    });
+
+  } catch (error) {
+    console.error('Error triggering daily deduction:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to trigger daily deduction',
+      error: error.message
+    });
+  }
+});
+
 module.exports = router;
