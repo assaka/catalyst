@@ -356,8 +356,8 @@ async function updateProductTabWithTranslations(id, tabData, translations = {}) 
           )
           ON CONFLICT (product_tab_id, language_code) DO UPDATE
           SET
-            name = COALESCE(EXCLUDED.name, product_tab_translations.name),
-            content = COALESCE(EXCLUDED.content, product_tab_translations.content),
+            name = EXCLUDED.name,
+            content = EXCLUDED.content,
             updated_at = NOW()
         `, {
           replacements: {

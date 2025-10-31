@@ -241,11 +241,19 @@ router.post('/:pluginId/versions', async (req, res) => {
     const pluginState = await getPluginCurrentState(pluginId);
 
     if (!pluginState) {
+      console.error(`  ❌ Plugin ${pluginId} not found in database`);
       return res.status(404).json({
         success: false,
         error: 'Plugin not found'
       });
     }
+
+    console.log(`  ✓ Plugin state loaded:`, {
+      hasRegistry: !!pluginState.registry,
+      hooks: pluginState.hooks?.length || 0,
+      events: pluginState.events?.length || 0,
+      scripts: pluginState.scripts?.length || 0
+    });
 
     // Determine version number (increment patch version)
     const newVersionNumber = incrementVersion(
@@ -754,26 +762,36 @@ async function storePatches(versionId, pluginId, patches) {
  * Create snapshot in database
  */
 async function createSnapshot(versionId, pluginId, state) {
-  await sequelize.query(`
-    INSERT INTO plugin_version_snapshots (
-      version_id, plugin_id, snapshot_data, hooks, events, scripts, widgets, controllers, entities, manifest, registry
-    ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
-  `, {
-    bind: [
-      versionId,
-      pluginId,
-      JSON.stringify(state),
-      JSON.stringify(state.hooks),
-      JSON.stringify(state.events),
-      JSON.stringify(state.scripts),
-      JSON.stringify(state.widgets),
-      JSON.stringify(state.controllers),
-      JSON.stringify(state.entities),
-      JSON.stringify(state.registry?.manifest),
-      JSON.stringify(state.registry)
-    ],
-    type: QueryTypes.INSERT
-  });
+  try {
+    // Safely extract manifest and registry data
+    const registryData = state?.registry || null;
+    const manifestData = registryData?.manifest || null;
+
+    await sequelize.query(`
+      INSERT INTO plugin_version_snapshots (
+        version_id, plugin_id, snapshot_data, hooks, events, scripts, widgets, controllers, entities, manifest, registry
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+    `, {
+      bind: [
+        versionId,
+        pluginId,
+        JSON.stringify(state || {}),
+        JSON.stringify(state?.hooks || []),
+        JSON.stringify(state?.events || []),
+        JSON.stringify(state?.scripts || []),
+        JSON.stringify(state?.widgets || []),
+        JSON.stringify(state?.controllers || []),
+        JSON.stringify(state?.entities || []),
+        JSON.stringify(manifestData),
+        JSON.stringify(registryData)
+      ],
+      type: QueryTypes.INSERT
+    });
+  } catch (error) {
+    console.error('Error creating snapshot:', error);
+    console.error('State data:', JSON.stringify(state, null, 2));
+    throw error;
+  }
 }
 
 /**
