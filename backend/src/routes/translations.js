@@ -632,6 +632,8 @@ router.get('/entity-stats', authMiddleware, async (req, res) => {
   try {
     const { store_id } = req.query;
 
+    console.log('📊 Entity stats request - store_id:', store_id, 'type:', typeof store_id);
+
     if (!store_id) {
       return res.status(400).json({
         success: false,
@@ -644,6 +646,8 @@ router.get('/entity-stats', authMiddleware, async (req, res) => {
       where: { is_active: true },
       attributes: ['code', 'name', 'native_name']
     });
+
+    console.log('📊 Active languages found:', languages.length, languages.map(l => l.code));
 
     const languageCodes = languages.map(l => l.code);
 
@@ -670,6 +674,7 @@ router.get('/entity-stats', authMiddleware, async (req, res) => {
         });
 
         const totalItems = entities.length;
+        console.log(`📊 ${entityType.type}: Found ${totalItems} entities for store ${store_id}`);
         let translatedCount = 0;
         const missingLanguages = new Set();
 
