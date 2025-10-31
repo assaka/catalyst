@@ -32,31 +32,43 @@ class TranslationService {
    * Estimate token count for text
    * Claude uses approximately 1 token per 4 characters
    * This is a rough estimate for cost calculation
+   * @param {string} text - Text to estimate tokens for
+   * @param {number} tokenRatio - Characters per token (default from metadata or 3.5)
    */
-  estimateTokens(text) {
+  estimateTokens(text, tokenRatio = 3.5) {
     if (!text || typeof text !== 'string') return 0;
-    // Rule of thumb: 1 token ≈ 4 characters for English text
-    // Add some buffer for Claude's tokenization
-    return Math.ceil(text.length / 3.5);
+    // Rule of thumb: 1 token ≈ 3.5-4 characters for English text
+    return Math.ceil(text.length / tokenRatio);
   }
 
   /**
    * Calculate translation cost based on text length
    * Uses token-based pricing from service_credit_costs table
+   * Reads min_charge and token_ratio from metadata
    */
   async calculateTranslationCost(text) {
-    const tokens = this.estimateTokens(text);
-
     try {
-      // Get per-token cost from database
-      const tokenCost = await ServiceCreditCost.getCostByKey('ai_translation_token');
-      const cost = tokens * parseFloat(tokenCost);
+      // Get token-based pricing service
+      const service = await ServiceCreditCost.findOne({
+        where: { service_key: 'ai_translation_token', is_active: true }
+      });
 
-      // Minimum charge: 0.01 credits (prevent tiny costs)
-      return Math.max(0.01, parseFloat(cost.toFixed(4)));
+      if (!service) {
+        throw new Error('ai_translation_token service not found');
+      }
+
+      const tokenCost = parseFloat(service.cost_per_unit);
+      const minCharge = service.metadata?.min_charge || 0.01;
+      const tokenRatio = service.metadata?.token_ratio || 3.5;
+
+      const tokens = this.estimateTokens(text, tokenRatio);
+      const cost = tokens * tokenCost;
+
+      // Apply minimum charge from metadata
+      return Math.max(minCharge, parseFloat(cost.toFixed(4)));
     } catch (error) {
       console.warn('Could not fetch token-based cost, using estimate:', error.message);
-      // Fallback: ~0.1 credits per 1000 characters
+      // Fallback: ~0.1 credits per 1000 characters, min 0.01
       return Math.max(0.01, Math.ceil(text.length / 1000) * 0.1);
     }
   }
