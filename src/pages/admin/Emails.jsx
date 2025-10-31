@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { EmailTemplate } from "@/api/entities";
 import { useStoreSelection } from "@/contexts/StoreSelectionContext.jsx";
 import NoStoreSelected from "@/components/admin/NoStoreSelected";
+import EmailTemplateForm from "@/components/admin/emails/EmailTemplateForm";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -63,6 +64,46 @@ export default function Emails() {
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleFormSubmit = async (formData) => {
+    const storeId = getSelectedStoreId();
+    if (!storeId) {
+      console.error("Cannot save email template: No store selected.");
+      setFlashMessage({ type: 'error', message: 'Cannot save email template: No store selected.' });
+      return;
+    }
+
+    try {
+      if (editingTemplate) {
+        await EmailTemplate.update(editingTemplate.id, formData);
+        setFlashMessage({ type: 'success', message: 'Email template updated successfully!' });
+      } else {
+        await EmailTemplate.create(formData);
+        setFlashMessage({ type: 'success', message: 'Email template created successfully!' });
+      }
+      setShowForm(false);
+      setEditingTemplate(null);
+      loadTemplates();
+    } catch (error) {
+      console.error("Failed to save email template", error);
+      setFlashMessage({ type: 'error', message: 'Failed to save email template.' });
+    }
+  };
+
+  const handleEdit = (template) => {
+    setEditingTemplate(template);
+    setShowForm(true);
+  };
+
+  const handleAdd = () => {
+    setEditingTemplate(null);
+    setShowForm(true);
+  };
+
+  const closeForm = () => {
+    setShowForm(false);
+    setEditingTemplate(null);
   };
 
   const handleToggleActive = async (template) => {
@@ -148,7 +189,7 @@ export default function Emails() {
               <Languages className="mr-2 h-4 w-4" /> Bulk Translate
             </Button>
             <Button
-              onClick={() => setShowForm(true)}
+              onClick={handleAdd}
               className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 material-ripple material-elevation-1"
               disabled={!selectedStore}
             >
@@ -212,7 +253,7 @@ export default function Emails() {
                         {template.is_active ? "Active" : "Inactive"}
                       </Badge>
                       <div className="flex space-x-2">
-                        <Button variant="outline" size="sm" onClick={() => setEditingTemplate(template)}>
+                        <Button variant="outline" size="sm" onClick={() => handleEdit(template)}>
                           <Edit className="h-4 w-4" />
                         </Button>
                         <Button variant="outline" size="sm" onClick={() => handleDelete(template.id)} className="text-red-600 hover:text-red-700">
@@ -234,7 +275,7 @@ export default function Emails() {
                 Create email templates to send automated emails for signup, orders, and more.
               </p>
               <Button
-                onClick={() => setShowForm(true)}
+                onClick={handleAdd}
                 className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 material-ripple"
                 disabled={!selectedStore}
               >
@@ -256,25 +297,19 @@ export default function Emails() {
           itemCount={templates.length}
         />
 
-        {/* TODO: Add EmailTemplateForm dialog here */}
-        {editingTemplate && (
-          <Dialog open={!!editingTemplate} onOpenChange={() => setEditingTemplate(null)}>
-            <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
-              <DialogHeader>
-                <DialogTitle>Edit Email Template</DialogTitle>
-              </DialogHeader>
-              <div className="p-4">
-                <p className="text-gray-600">
-                  Email template editor will be implemented here.
-                  Template ID: {editingTemplate.id}
-                </p>
-                <Button onClick={() => setEditingTemplate(null)} className="mt-4">
-                  Close
-                </Button>
-              </div>
-            </DialogContent>
-          </Dialog>
-        )}
+        {/* Email Template Form Dialog */}
+        <Dialog open={showForm} onOpenChange={setShowForm}>
+          <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle>{editingTemplate ? 'Edit Email Template' : 'Add New Email Template'}</DialogTitle>
+            </DialogHeader>
+            <EmailTemplateForm
+              template={editingTemplate}
+              onSubmit={handleFormSubmit}
+              onCancel={closeForm}
+            />
+          </DialogContent>
+        </Dialog>
       </div>
     </div>
   );

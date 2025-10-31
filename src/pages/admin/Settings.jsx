@@ -22,6 +22,7 @@ import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@
 import { Badge } from '@/components/ui/badge';
 import PublishButton from '@/components/admin/store/PublishButton';
 import { clearSettingsCache, clearAllCache } from '@/utils/cacheUtils';
+import BrevoSettings from '@/components/admin/settings/BrevoSettings';
 
 
 const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms));
@@ -978,60 +979,7 @@ export default function Settings() {
           </TabsContent>
           
           <TabsContent value="brevo" className="mt-6">
-            <Card className="material-elevation-1 border-0">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <KeyRound className="w-5 h-5" />
-                  Brevo Integration
-                </CardTitle>
-                <CardDescription>Connect your Brevo account to send transactional emails and marketing campaigns.</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-6">
-                <div className="flex items-center space-x-2">
-                  <Switch 
-                    id="brevo-enabled" 
-                    checked={store?.brevo_settings?.enabled || false}
-                    onCheckedChange={(checked) => handleBrevoChange('enabled', checked)}
-                  />
-                  <Label htmlFor="brevo-enabled">Enable Brevo Integration</Label>
-                </div>
-
-                {store?.brevo_settings?.enabled && (
-                  <div className="space-y-4">
-                    <div>
-                      <Label htmlFor="brevo-api-key">API Key (v3)</Label>
-                      <Input
-                        id="brevo-api-key"
-                        type="password"
-                        value={store?.brevo_settings?.api_key || ''}
-                        onChange={(e) => handleBrevoChange('api_key', e.target.value)}
-                        placeholder="xkeysib-..."
-                      />
-                       <p className="text-sm text-gray-500 mt-1">Your Brevo API v3 key. This is stored securely.</p>
-                    </div>
-                    <div>
-                      <Label htmlFor="brevo-sender-email">Default Sender Email</Label>
-                      <Input
-                        id="brevo-sender-email"
-                        type="email"
-                        value={store?.brevo_settings?.sender_email || ''}
-                        onChange={(e) => handleBrevoChange('sender_email', e.target.value)}
-                        placeholder="noreply@yourdomain.com"
-                      />
-                    </div>
-                    <div>
-                      <Label htmlFor="brevo-sender-name">Default Sender Name</Label>
-                      <Input
-                        id="brevo-sender-name"
-                        value={store?.brevo_settings?.sender_name || ''}
-                        onChange={(e) => handleBrevoChange('sender_name', e.target.value)}
-                        placeholder="Your Store Name"
-                      />
-                    </div>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
+            <BrevoSettings />
           </TabsContent>
 
           <TabsContent value="contact" className="mt-6">
