@@ -316,20 +316,27 @@ export const StoreProvider = ({ children }) => {
       
       // Get store first with ultra-aggressive caching
       const path = location.pathname;
-      
+      const hostname = window.location.hostname;
+
+      // Check if on custom domain (not platform domains)
+      const isCustomDomain = !hostname.includes('vercel.app') &&
+                            !hostname.includes('onrender.com') &&
+                            !hostname.includes('localhost') &&
+                            !hostname.includes('127.0.0.1');
+
       // Check for new public URL pattern: /public/{storeCode}/...
       const publicUrlMatch = path.match(/^\/public\/([^\/]+)/);
       const publicStoreSlug = publicUrlMatch ? publicUrlMatch[1] : null;
-      
+
       // Check for legacy store slug pattern: /:storeSlug/... (keep for backward compatibility)
       const storeSlugMatch = path.match(/^\/([^\/]+)\/(storefront|productdetail|cart|checkout|order-success)/);
       const storeSlug = storeSlugMatch ? storeSlugMatch[1] : null;
-      
+
       // Check for old pattern: /storefront/:slug (keep for backward compatibility)
       const oldStoreSlugMatch = path.match(/\/storefront\/([^\/]+)/);
       const oldStoreSlug = oldStoreSlugMatch ? oldStoreSlugMatch[1] : null;
-      
-      // Use public URL pattern first, then legacy patterns, then admin selected store, then default to first store
+
+      // Use public URL pattern first, then legacy patterns, then custom domain, then admin selected store, then default to first store
       let storeCacheKey = 'first-store';
       let storeIdentifier = null;
       let storeId = null;
@@ -343,6 +350,10 @@ export const StoreProvider = ({ children }) => {
       } else if (oldStoreSlug) {
         storeCacheKey = `store-slug-${oldStoreSlug}`;
         storeIdentifier = oldStoreSlug;
+      } else if (isCustomDomain) {
+        // Custom domain detected - use hostname as identifier
+        storeCacheKey = `store-domain-${hostname}`;
+        storeIdentifier = hostname; // Backend will resolve this via domainResolver middleware
       } else {
         // No URL slug found - check if we're in admin/editor context with a selected store
         const selectedStoreId = localStorage.getItem('selectedStoreId');

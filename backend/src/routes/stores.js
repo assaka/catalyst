@@ -317,19 +317,45 @@ router.get('/', async (req, res) => {
         where.id = id;
         console.log('🔍 Public stores API: Filtering by ID:', id);
       }
-      // Filter by slug if provided
+      // Filter by slug or custom domain
       else if (slug) {
-        where.slug = slug;
-        console.log('🔍 Public stores API: Filtering by slug:', slug);
+        // Check if slug looks like a custom domain (contains dot)
+        if (slug.includes('.')) {
+          console.log('🌐 Public stores API: Detected domain format, checking custom_domains:', slug);
+
+          // Query custom_domains table to find the store
+          const CustomDomain = require('../models/CustomDomain');
+          const domainRecord = await CustomDomain.findOne({
+            where: {
+              domain: slug,
+              is_active: true,
+              verification_status: 'verified'
+            },
+            attributes: ['store_id']
+          });
+
+          if (domainRecord) {
+            where.id = domainRecord.store_id;
+            console.log('✅ Found store via custom domain:', domainRecord.store_id);
+          } else {
+            // Domain not found or not verified - return empty result
+            console.log('⚠️ Custom domain not found or not verified:', slug);
+            return res.json([]);
+          }
+        } else {
+          // Regular slug lookup
+          where.slug = slug;
+          console.log('🔍 Public stores API: Filtering by slug:', slug);
+        }
       }
-      
+
       const { count, rows } = await Store.findAndCountAll({
         where,
         limit: parseInt(limit),
         offset: parseInt(offset),
         order: [['created_at', 'DESC']]
       });
-      
+
       // Return just the data array for public requests (for compatibility with frontend)
       return res.json(rows);
     } catch (error) {
