@@ -47,9 +47,9 @@ export default function BulkTranslateDialog({
   useEffect(() => {
     const loadTranslationCost = async () => {
       try {
-        const response = await api.get('/service-credit-costs/key/ai_translation');
-        if (response.data.success && response.data.service) {
-          setTranslationCost(response.data.service.cost_per_unit);
+        const response = await api.get('service-credit-costs/key/ai_translation');
+        if (response.success && response.service) {
+          setTranslationCost(response.service.cost_per_unit);
         }
       } catch (error) {
         console.error('Error loading translation cost:', error);

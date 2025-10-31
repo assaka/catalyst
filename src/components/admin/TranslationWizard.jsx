@@ -42,9 +42,9 @@ export default function TranslationWizard({ isOpen, onClose, storeId }) {
 
   const loadTranslationCost = async () => {
     try {
-      const response = await api.get('/api/service-credit-costs/key/ai_translation');
-      if (response.data.success && response.data.service) {
-        setTranslationCost(response.data.service.cost_per_unit);
+      const response = await api.get('service-credit-costs/key/ai_translation');
+      if (response.success && response.service) {
+        setTranslationCost(response.service.cost_per_unit);
       }
     } catch (error) {
       console.error('Error loading translation cost:', error);
@@ -54,8 +54,12 @@ export default function TranslationWizard({ isOpen, onClose, storeId }) {
 
   const loadLanguages = async () => {
     try {
-      const response = await api.get('/api/languages');
-      setLanguages(response.data.data.filter(l => l.is_active));
+      const response = await api.get('languages');
+      if (response.success && response.data && response.data.data) {
+        setLanguages(response.data.data.filter(l => l.is_active));
+      } else if (response.success && response.data) {
+        setLanguages(response.data.filter(l => l.is_active));
+      }
     } catch (error) {
       console.error('Error loading languages:', error);
       toast.error('Failed to load languages');
@@ -66,7 +70,7 @@ export default function TranslationWizard({ isOpen, onClose, storeId }) {
   const getPreview = async () => {
     setLoading(true);
     try {
-      const response = await api.post('/api/translations/preview', {
+      const response = await api.post('translations/preview', {
         store_id: storeId,
         what: config.whatToTranslate,
         fromLang: config.fromLanguage,
@@ -74,7 +78,8 @@ export default function TranslationWizard({ isOpen, onClose, storeId }) {
         specificItems: config.specificItems,
         singleField: config.singleField
       });
-      setStats(response.data.data);
+      const data = response.data || response;
+      setStats(data.data || data);
       setStep(3);
     } catch (error) {
       console.error('Error getting preview:', error);
@@ -88,7 +93,7 @@ export default function TranslationWizard({ isOpen, onClose, storeId }) {
   const executeTranslation = async () => {
     setLoading(true);
     try {
-      const response = await api.post('/api/translations/wizard-execute', {
+      const response = await api.post('translations/wizard-execute', {
         store_id: storeId,
         what: config.whatToTranslate,
         fromLang: config.fromLanguage,
@@ -96,12 +101,13 @@ export default function TranslationWizard({ isOpen, onClose, storeId }) {
         specificItems: config.specificItems,
         singleField: config.singleField
       });
-      setTranslationResult(response.data.data);
+      const data = response.data || response;
+      setTranslationResult(data.data || data);
       setStep(4);
       toast.success('Translation completed!');
     } catch (error) {
       console.error('Error executing translation:', error);
-      toast.error('Translation failed: ' + (error.response?.data?.message || error.message));
+      toast.error('Translation failed: ' + (error.message || 'Unknown error'));
     } finally {
       setLoading(false);
     }
