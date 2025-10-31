@@ -19,17 +19,31 @@ export default function MultiEntityTranslateDialog({
   const [translateToLangs, setTranslateToLangs] = useState([]);
   const [translating, setTranslating] = useState(false);
   const [results, setResults] = useState(null);
-  const [translationCost, setTranslationCost] = useState(0.1); // Default fallback
+  const [tokenCostPerUnit, setTokenCostPerUnit] = useState(0.0001); // Cost per token
+
+  // Entity-specific token estimates (average tokens per item)
+  const getEntityTokenEstimate = (entityType) => {
+    const tokenEstimates = {
+      'product': 200,            // Name + short description ~200 tokens
+      'category': 150,           // Name + description ~150 tokens
+      'attribute': 30,           // Attribute names ~30 tokens
+      'cms_page': 3000,          // Full page content ~3000 tokens
+      'cms_block': 500,          // Content blocks ~500 tokens
+      'product_tab': 400,        // Tab content ~400 tokens
+      'product_label': 10,       // Labels like "New", "Sale" ~10 tokens
+      'cookie_consent': 600      // Cookie consent text ~600 tokens
+    };
+
+    return tokenEstimates[entityType] || 200; // Default to 200
+  };
 
   // Load translation cost from API
   useEffect(() => {
     const loadTranslationCost = async () => {
       try {
-        // Use token-based pricing
         const response = await api.get('service-credit-costs/key/ai_translation_token');
         if (response.success && response.service) {
-          // For display purposes, estimate ~500 tokens per item (conservative)
-          setTranslationCost(response.service.cost_per_unit * 500);
+          setTokenCostPerUnit(response.service.cost_per_unit);
         }
       } catch (error) {
         console.error('Error loading translation cost:', error);
@@ -279,18 +293,11 @@ export default function MultiEntityTranslateDialog({
               {/* Credits Used */}
               {results.translated > 0 && (
                 <div className="bg-green-50 border border-green-200 rounded-lg p-3">
-                  <div className="flex flex-col gap-1">
-                    <div className="flex items-center justify-between text-sm">
-                      <span className="text-green-800 font-medium">💰 Credits Used:</span>
-                      <span className="text-green-900 font-bold">
-                        {results.creditsDeducted ? results.creditsDeducted.toFixed(4) : (results.translated * translationCost).toFixed(2)} credits
-                      </span>
-                    </div>
-                    {results.estimatedTokens && (
-                      <p className="text-xs text-green-700">
-                        ~{results.estimatedTokens.toLocaleString()} tokens (token-based pricing)
-                      </p>
-                    )}
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-green-800 font-medium">💰 Credits Used:</span>
+                    <span className="text-green-900 font-bold">
+                      {results.creditsDeducted ? results.creditsDeducted.toFixed(2) : '0.00'} credits
+                    </span>
                   </div>
                 </div>
               )}
@@ -336,22 +343,28 @@ export default function MultiEntityTranslateDialog({
                   to <span className="font-semibold">{translateToLangs.length}</span> language(s)
                 </div>
                 {(() => {
-                  const totalItems = entityStats
-                    .filter(stat => selectedEntities.includes(stat.type))
-                    .reduce((sum, stat) => sum + (stat.totalItems || 0), 0);
-                  const estimatedCost = totalItems * translateToLangs.length * translationCost;
+                  const selectedStats = entityStats.filter(stat => selectedEntities.includes(stat.type));
+                  const totalItems = selectedStats.reduce((sum, stat) => sum + (stat.totalItems || 0), 0);
+
+                  // Calculate cost based on entity types with flat rates
+                  let totalEstimatedCost = 0;
+
+                  selectedStats.forEach(stat => {
+                    const itemCost = getEntityCost(stat.type);
+                    totalEstimatedCost += stat.totalItems * translateToLangs.length * itemCost;
+                  });
 
                   return totalItems > 0 ? (
                     <div className="flex flex-col gap-1">
                       <div className="flex items-center gap-2 text-green-700 font-medium">
                         <span>💰</span>
-                        <span>Estimated: ~{estimatedCost.toFixed(2)} credits</span>
+                        <span>Estimated: {totalEstimatedCost.toFixed(2)} credits</span>
                       </div>
-                      <span className="text-xs text-gray-500">
-                        Approx: {totalItems} items × {translateToLangs.length} lang(s) × ~{translationCost.toFixed(2)} credits avg
+                      <span className="text-xs text-gray-600">
+                        {totalItems} items × {translateToLangs.length} lang(s)
                       </span>
-                      <span className="text-xs text-green-600 italic">
-                        * Token-based: actual cost varies by text length
+                      <span className="text-xs text-green-600">
+                        Rates: CMS pages 0.5 • CMS blocks 0.2 • Others 0.1 credits
                       </span>
                     </div>
                   ) : null;

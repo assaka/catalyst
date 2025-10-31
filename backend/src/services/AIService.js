@@ -23,7 +23,7 @@ class AIService {
     this.serviceKeyMap = {
       'plugin-generation': 'custom_plugin_creation',
       'plugin-modification': 'ai_code_patch',
-      'translation': 'ai_translation_token',
+      'translation': 'ai_translation',
       'layout-generation': 'ai_layout_generation',
       'code-patch': 'ai_code_patch',
       'general': 'ai_chat'

@@ -43,26 +43,62 @@ export default function BulkTranslateDialog({
   const [isTranslating, setIsTranslating] = useState(false);
   const [translationCost, setTranslationCost] = useState(0.1); // Default fallback
 
+  // Get flat-rate cost based on entity type
+  const getEntityCost = (entityType) => {
+    const entityCosts = {
+      'CMS Content': 0.35,       // Average of pages (0.5) and blocks (0.2)
+      'cms_page': 0.5,           // CMS pages: 0.5 credits
+      'cms_block': 0.2,          // CMS blocks: 0.2 credits
+      'cookie_consent': 0.1,     // Standard rate
+      'product': 0.1,            // Standard rate
+      'category': 0.1,           // Standard rate
+      'attribute': 0.1,          // Standard rate
+      'product_tab': 0.1,        // Standard rate
+      'product_label': 0.1,      // Standard rate
+      'UI labels': 0.1,          // Standard rate
+      'custom_option': 0.1       // Standard rate
+    };
+
+    return entityCosts[entityType] || entityCosts[entityName] || 0.1; // Default to 0.1
+  };
+
   // Load translation cost from API
   useEffect(() => {
     const loadTranslationCost = async () => {
       try {
-        // Use token-based pricing
-        const response = await api.get('service-credit-costs/key/ai_translation_token');
+        // Determine which service to use based on entity type
+        let serviceKey = 'ai_translation'; // Default
+
+        if (entityType === 'cms_page' || entityName === 'CMS Pages') {
+          serviceKey = 'ai_translation_cms_page';
+        } else if (entityType === 'cms_block' || entityName === 'CMS Blocks') {
+          serviceKey = 'ai_translation_cms_block';
+        } else if (entityName === 'CMS Content') {
+          // For mixed CMS content, use average
+          const pageResponse = await api.get('service-credit-costs/key/ai_translation_cms_page');
+          const blockResponse = await api.get('service-credit-costs/key/ai_translation_cms_block');
+          if (pageResponse.success && blockResponse.success) {
+            setTranslationCost((pageResponse.service.cost_per_unit + blockResponse.service.cost_per_unit) / 2);
+            return;
+          }
+        }
+
+        const response = await api.get(`service-credit-costs/key/${serviceKey}`);
         if (response.success && response.service) {
-          // For display purposes, estimate ~500 tokens per item (conservative)
-          setTranslationCost(response.service.cost_per_unit * 500);
+          setTranslationCost(response.service.cost_per_unit);
+        } else {
+          setTranslationCost(getEntityCost(entityType));
         }
       } catch (error) {
         console.error('Error loading translation cost:', error);
-        // Keep using default fallback value
+        setTranslationCost(getEntityCost(entityType));
       }
     };
 
     if (open) {
       loadTranslationCost();
     }
-  }, [open]);
+  }, [open, entityType, entityName]);
 
   const handleTranslate = async () => {
     if (!translateFromLang || translateToLangs.length === 0) {
@@ -195,14 +231,17 @@ export default function BulkTranslateDialog({
                   💰 Estimated Cost:
                 </span>
                 <span className="text-green-900 font-bold">
-                  ~{(itemCount * translateToLangs.length * translationCost).toFixed(2)} credits
+                  {(itemCount * translateToLangs.length * translationCost).toFixed(2)} credits
                 </span>
               </div>
               <p className="text-xs text-green-700">
-                Approximate: {itemCount} items × {translateToLangs.length} lang(s) × ~{translationCost.toFixed(2)} credits avg
+                {itemCount} {entityType} × {translateToLangs.length} lang(s) × {translationCost.toFixed(2)} credits per item
               </p>
-              <p className="text-xs text-green-600 mt-1 italic">
-                * Actual cost varies by text length (token-based pricing). Short texts cost less, long texts cost more.
+              <p className="text-xs text-gray-500 mt-1">
+                {entityName === 'CMS Content' && 'Mixed CMS content (average of pages and blocks)'}
+                {entityName === 'CMS Pages' && 'CMS pages: 0.5 credits each ($0.05)'}
+                {entityName === 'CMS Blocks' && 'CMS blocks: 0.2 credits each ($0.02)'}
+                {!entityName.includes('CMS') && 'Standard rate: 0.1 credits per item ($0.01)'}
               </p>
             </div>
           )}

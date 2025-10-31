@@ -42,8 +42,8 @@ export default function TranslationWizard({ isOpen, onClose, storeId }) {
 
   const loadTranslationCost = async () => {
     try {
-      // Use token-based pricing instead of flat rate
-      const response = await api.get('service-credit-costs/key/ai_translation_token');
+      // Use standard flat rate
+      const response = await api.get('service-credit-costs/key/ai_translation');
       if (response.success && response.service) {
         setTranslationCost(response.service.cost_per_unit);
       }
@@ -492,16 +492,25 @@ export default function TranslationWizard({ isOpen, onClose, storeId }) {
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-2 text-blue-800">
                           <span>💰</span>
-                          <span className="font-medium">Estimated Cost:</span>
+                          <span className="font-medium">Pricing:</span>
                         </div>
-                        <span className="text-blue-900 font-bold">Variable (token-based)</span>
                       </div>
-                      <p className="text-xs text-blue-700">
-                        Cost varies by text length. Short texts (e.g., "Add to Cart") cost ~0.01 credits.
-                        Long texts (e.g., CMS pages) may cost 0.5-2 credits per page.
-                      </p>
-                      <p className="text-xs text-blue-700">
-                        Rate: {translationCost} credits per token (~4 characters)
+                      <div className="grid grid-cols-2 gap-2 text-xs">
+                        <div className="flex justify-between">
+                          <span className="text-blue-700">Products, Categories, etc:</span>
+                          <span className="font-semibold">0.1 credits</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-blue-700">CMS Blocks:</span>
+                          <span className="font-semibold">0.2 credits</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-blue-700">CMS Pages:</span>
+                          <span className="font-semibold">0.5 credits</span>
+                        </div>
+                      </div>
+                      <p className="text-xs text-gray-600 mt-1 italic">
+                        Final cost = items translated × rate × languages
                       </p>
                     </div>
                   </div>
@@ -574,18 +583,11 @@ export default function TranslationWizard({ isOpen, onClose, storeId }) {
                 {/* Credits used */}
                 {translationResult.translated > 0 && (
                   <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
-                    <div className="flex flex-col gap-1">
-                      <div className="flex items-center justify-between text-sm">
-                        <span className="text-blue-800 font-medium">💰 Credits Used:</span>
-                        <span className="text-blue-900 font-bold">
-                          {translationResult.creditsDeducted?.toFixed(4) || '0.00'} credits
-                        </span>
-                      </div>
-                      {translationResult.estimatedTokens && (
-                        <p className="text-xs text-blue-700">
-                          ~{translationResult.estimatedTokens.toLocaleString()} tokens processed (token-based pricing)
-                        </p>
-                      )}
+                    <div className="flex items-center justify-between text-sm">
+                      <span className="text-blue-800 font-medium">💰 Credits Used:</span>
+                      <span className="text-blue-900 font-bold">
+                        {translationResult.creditsDeducted?.toFixed(2) || '0.00'} credits
+                      </span>
                     </div>
                   </div>
                 )}

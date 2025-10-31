@@ -88,9 +88,11 @@ INSERT INTO service_credit_costs (service_key, service_name, service_category, d
 ('plugin_monthly', 'Premium Plugin Monthly Fee', 'plugin_management', 'Monthly subscription for premium plugins', 5.0000, 'per_month', true, true, 21, '{"applies_to": "premium_plugins_only"}'),
 ('custom_plugin_creation', 'Custom Plugin Creation', 'plugin_management', 'Creating a custom plugin with AI', 50.0000, 'per_use', true, true, 22, '{"note": "AI-powered plugin generation"}'),
 
--- AI Services
-('ai_translation_token', 'AI Translation', 'ai_services', 'AI-powered content translation - token based', 0.0001, 'per_item', true, true, 30, '{"note": "Per token (approx 4 chars)", "base_rate": 0.0001, "calculation": "tokens * rate", "min_charge": 0.01, "token_ratio": 3.5}'),
-('ai_product_description', 'AI Product Description', 'ai_services', 'AI-generated product descriptions', 0.2000, 'per_item', true, true, 32, '{"note": "Per product"}'),
+-- AI Services - Translation
+('ai_translation', 'AI Translation (Standard)', 'ai_services', 'AI translation for products, categories, attributes, etc.', 0.1000, 'per_item', true, true, 30, '{"note": "Standard content: products, categories, attributes, labels, tabs", "applies_to": ["product", "category", "attribute", "product_tab", "product_label", "ui_label", "cookie_consent"]}'),
+('ai_translation_cms_block', 'AI Translation (CMS Block)', 'ai_services', 'AI translation for CMS content blocks', 0.2000, 'per_item', true, true, 31, '{"note": "CMS blocks with medium-length content", "multiplier": 2}'),
+('ai_translation_cms_page', 'AI Translation (CMS Page)', 'ai_services', 'AI translation for full CMS pages', 0.5000, 'per_item', true, true, 32, '{"note": "Full CMS pages with long-form content", "multiplier": 5}'),
+('ai_product_description', 'AI Product Description', 'ai_services', 'AI-generated product descriptions', 0.2000, 'per_item', true, true, 33, '{"note": "Per product"}'),
 ('ai_seo_optimization', 'AI SEO Optimization', 'ai_services', 'AI-powered SEO analysis and optimization', 0.5000, 'per_use', true, true, 32, '{"note": "Per page or product"}'),
 ('ai_code_patch', 'AI Code Modification', 'ai_services', 'AI-powered code editing and patching', 25.0000, 'per_use', true, true, 33, '{"note": "Per code modification"}'),
 ('ai_layout_generation', 'AI Layout Generation', 'ai_services', 'AI-generated page layouts and designs', 40.0000, 'per_use', true, true, 34, '{"note": "Per layout generation"}'),
