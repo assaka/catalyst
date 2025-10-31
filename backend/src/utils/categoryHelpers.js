@@ -289,8 +289,16 @@ async function updateCategoryWithTranslations(id, categoryData, translations = {
     }
 
     // Update translations
+    console.log(`   💾 updateCategoryWithTranslations: Saving translations for category ${id}`);
+    console.log(`   📋 Translations to save:`, JSON.stringify(translations, null, 2));
+
     for (const [langCode, data] of Object.entries(translations)) {
       if (data && Object.keys(data).length > 0) {
+        console.log(`      💾 Saving ${langCode}:`, {
+          name: data.name ? data.name.substring(0, 30) : null,
+          description: data.description ? data.description.substring(0, 50) + '...' : null
+        });
+
         await sequelize.query(`
           INSERT INTO category_translations (
             category_id, language_code, name, description,
@@ -313,6 +321,8 @@ async function updateCategoryWithTranslations(id, categoryData, translations = {
           },
           transaction
         });
+
+        console.log(`      ✅ Saved ${langCode} translation to category_translations table`);
       }
     }
 

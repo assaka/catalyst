@@ -182,9 +182,18 @@ async function updateProductTranslations(productId, translations = {}) {
   const transaction = await sequelize.transaction();
 
   try {
+    console.log(`   💾 updateProductTranslations called for product ${productId}`);
+    console.log(`   📋 Translations to save:`, JSON.stringify(translations, null, 2));
+
     // Update translations
     for (const [langCode, data] of Object.entries(translations)) {
       if (data && Object.keys(data).length > 0) {
+        console.log(`      💾 Saving ${langCode} translation:`, {
+          name: data.name ? data.name.substring(0, 30) : null,
+          description: data.description ? data.description.substring(0, 30) + '...' : null,
+          short_description: data.short_description ? data.short_description.substring(0, 30) + '...' : null
+        });
+
         await sequelize.query(`
           INSERT INTO product_translations (
             product_id, language_code, name, description, short_description,
@@ -209,6 +218,10 @@ async function updateProductTranslations(productId, translations = {}) {
           },
           transaction
         });
+
+        console.log(`      ✅ Saved ${langCode} translation to product_translations table`);
+      } else {
+        console.log(`      ⏭️  Skipping ${langCode}: No data or empty object`);
       }
     }
 
