@@ -492,20 +492,30 @@ router.post('/bulk-translate', authMiddleware, [
 
         // Get source translation and translate each field
         console.log(`🔄 Translating tab "${tabName}"...`);
+        console.log(`   Source (${fromLang}):`, JSON.stringify(tab.translations[fromLang], null, 2));
+
         const sourceTranslation = tab.translations[fromLang];
         const translatedData = {};
 
         for (const [key, value] of Object.entries(sourceTranslation)) {
           if (typeof value === 'string' && value.trim()) {
-            translatedData[key] = await translationService.aiTranslate(value, fromLang, toLang);
+            console.log(`   🤖 Calling AI to translate field "${key}": "${value.substring(0, 50)}${value.length > 50 ? '...' : ''}"`);
+            const translated = await translationService.aiTranslate(value, fromLang, toLang);
+            console.log(`   ✨ AI Response for "${key}": "${translated.substring(0, 50)}${translated.length > 50 ? '...' : ''}"`);
+            translatedData[key] = translated;
           }
         }
+
+        console.log(`   Target (${toLang}):`, JSON.stringify(translatedData, null, 2));
 
         // Save the translation using normalized tables
         const translations = tab.translations || {};
         translations[toLang] = translatedData;
 
+        console.log(`   💾 Saving to database... tab_id=${tab.id}`);
         await updateProductTabWithTranslations(tab.id, {}, translations);
+        console.log(`   ✅ Database updated successfully`);
+
         console.log(`✅ Successfully translated tab "${tabName}"`);
         results.translated++;
       } catch (error) {

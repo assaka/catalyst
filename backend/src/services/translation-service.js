@@ -271,6 +271,10 @@ Return ONLY the translated text, no explanations or notes.`;
 
     try {
       // Use Anthropic SDK (same as AIService) - makes it consistent with AI Studio
+      console.log(`      🌍 ANTHROPIC API CALL: Translating ${fromLang} → ${toLang}`);
+      console.log(`      📝 Text to translate: "${text.substring(0, 100)}${text.length > 100 ? '...' : ''}"`);
+      console.log(`      🤖 Model: claude-3-haiku-20240307`);
+
       const response = await client.messages.create({
         model: 'claude-3-haiku-20240307',
         max_tokens: 1024,
@@ -281,10 +285,16 @@ Return ONLY the translated text, no explanations or notes.`;
         }]
       });
 
+      const translatedText = response.content[0].text.trim();
+      console.log(`      ✅ ANTHROPIC API RESPONSE received`);
+      console.log(`      📤 Translated text: "${translatedText.substring(0, 100)}${translatedText.length > 100 ? '...' : ''}"`);
+      console.log(`      📊 Tokens used: input=${response.usage.input_tokens}, output=${response.usage.output_tokens}`);
+
       // Extract translated text from response
-      return response.content[0].text.trim();
+      return translatedText;
     } catch (error) {
       // SDK handles errors properly, just re-throw with context
+      console.error(`      ❌ ANTHROPIC API ERROR:`, error.message);
       throw new Error(`Anthropic translation failed: ${error.message}`);
     }
   }
