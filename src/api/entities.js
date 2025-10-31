@@ -1042,6 +1042,66 @@ class CmsBlockService extends BaseEntity {
 export const CmsPage = new CmsPageService();
 export const CmsBlock = new CmsBlockService();
 
+// EmailTemplate service - Email management with translations
+class EmailTemplateService extends BaseEntity {
+  constructor() {
+    super('email-templates');
+  }
+
+  // Filter email templates by store
+  async filter(filters = {}) {
+    try {
+      const queryString = new URLSearchParams(filters).toString();
+      const url = queryString ? `${this.endpoint}?${queryString}` : this.endpoint;
+
+      const response = await apiClient.get(url);
+
+      // Handle response structure: { success: true, data: [...] }
+      if (response && response.success && response.data) {
+        return response.data;
+      }
+
+      // Fallback to array
+      const result = Array.isArray(response) ? response : [];
+      return result;
+    } catch (error) {
+      console.error(`❌ EmailTemplateService.filter() error:`, error.message);
+      return [];
+    }
+  }
+
+  // Send test email
+  async testEmail(templateId, testEmail, languageCode = 'en') {
+    try {
+      const response = await apiClient.post(`${this.endpoint}/${templateId}/test`, {
+        test_email: testEmail,
+        language_code: languageCode
+      });
+      return response;
+    } catch (error) {
+      console.error(`❌ EmailTemplateService.testEmail() error:`, error.message);
+      throw error;
+    }
+  }
+
+  // Bulk translate email templates
+  async bulkTranslate(storeId, fromLang, toLang) {
+    try {
+      const response = await apiClient.post(`${this.endpoint}/bulk-translate`, {
+        store_id: storeId,
+        from_lang: fromLang,
+        to_lang: toLang
+      });
+      return response;
+    } catch (error) {
+      console.error(`❌ EmailTemplateService.bulkTranslate() error:`, error.message);
+      throw error;
+    }
+  }
+}
+
+export const EmailTemplate = new EmailTemplateService();
+
 // Storefront CMS entities - use public routes without authentication
 class StorefrontCmsPageService extends BaseEntity {
   constructor() {

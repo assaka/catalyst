@@ -18,6 +18,7 @@ export { default as StockSettings } from './admin/StockSettings';
 export { default as Cache } from './admin/Cache';
 export { default as CmsBlocks } from './admin/CmsBlocks';
 export { default as CmsPages } from './admin/CmsPages';
+export { default as Emails } from './admin/Emails';
 export { default as FileLibrary } from './admin/FileLibrary';
 export { default as MediaStorage } from './admin/MediaStorage';
 export { default as CustomDomains } from './admin/CustomDomains';
