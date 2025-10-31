@@ -348,6 +348,11 @@ async function updateProductTabWithTranslations(id, tabData, translations = {}) 
     // Update translations
     for (const [langCode, data] of Object.entries(translations)) {
       if (data && (data.name !== undefined || data.content !== undefined)) {
+        console.log(`   💾 Updating translation for language ${langCode}:`, {
+          name: data.name,
+          content: data.content ? data.content.substring(0, 50) + '...' : data.content
+        });
+
         await sequelize.query(`
           INSERT INTO product_tab_translations (
             product_tab_id, language_code, name, content, created_at, updated_at
@@ -363,11 +368,13 @@ async function updateProductTabWithTranslations(id, tabData, translations = {}) 
           replacements: {
             tab_id: id,
             lang_code: langCode,
-            name: data.name || null,
-            content: data.content || null
+            name: data.name !== undefined ? data.name : null,
+            content: data.content !== undefined ? data.content : null
           },
           transaction
         });
+
+        console.log(`   ✅ Translation saved for ${langCode}: name="${data.name || '(empty)'}"`);
       }
     }
 
