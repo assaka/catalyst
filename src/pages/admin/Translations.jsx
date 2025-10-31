@@ -640,11 +640,16 @@ export default function Translations() {
       }
 
       // Use api client which automatically handles authentication
+      console.log(`🌐 Frontend: Calling bulk-translate endpoint: ${endpoint}/bulk-translate`);
+      console.log(`📋 Frontend: Payload:`, { store_id: storeId, fromLang, toLang });
+
       const data = await api.post(`${endpoint}/bulk-translate`, {
         store_id: storeId,
         fromLang,
         toLang
       });
+
+      console.log(`✅ Frontend: Received response:`, data);
 
       // Reload entity stats to update progress
       await loadEntityStats();

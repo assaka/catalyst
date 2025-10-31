@@ -14,6 +14,8 @@ const {
 } = require('../utils/productTabHelpers');
 const router = express.Router();
 
+console.log('✅ product-tabs.js routes loaded - bulk-translate endpoint available');
+
 // @route   GET /api/product-tabs
 // @desc    Get product tabs for a store (authenticated)
 // @access  Private
