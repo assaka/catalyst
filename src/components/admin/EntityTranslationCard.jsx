@@ -83,7 +83,7 @@ export default function EntityTranslationCard({
 
       {/* Action Button */}
       <button
-        onClick={() => onTranslate(type, name)}
+        onClick={() => onTranslate(type, name, totalItems)}
         disabled={loading || totalItems === 0}
         className={`w-full py-2 px-4 rounded-lg font-medium text-sm transition-colors duration-200 flex items-center justify-center gap-2 ${
           isComplete
