@@ -433,6 +433,17 @@ router.post('/bulk-translate', authMiddleware, [
     const lang = getLanguageFromRequest(req);
     const tabs = await getProductTabsWithTranslations({ store_id }, lang);
 
+    console.log(`📦 Loaded ${tabs.length} tabs from database`);
+    if (tabs.length > 0) {
+      console.log(`🔍 First tab structure:`, JSON.stringify({
+        id: tabs[0].id,
+        name: tabs[0].name,
+        translations: tabs[0].translations,
+        hasTranslations: !!tabs[0].translations,
+        hasEnTranslation: !!(tabs[0].translations && tabs[0].translations[fromLang])
+      }, null, 2));
+    }
+
     if (tabs.length === 0) {
       return res.json({
         success: true,
@@ -461,6 +472,12 @@ router.post('/bulk-translate', authMiddleware, [
     for (const tab of tabs) {
       try {
         const tabName = tab.translations?.[fromLang]?.name || tab.name || `Tab ${tab.id}`;
+
+        console.log(`\n📋 Processing tab: ${tabName}`);
+        console.log(`   - Has translations object: ${!!tab.translations}`);
+        console.log(`   - Has ${fromLang} translation: ${!!(tab.translations && tab.translations[fromLang])}`);
+        console.log(`   - Translations keys:`, tab.translations ? Object.keys(tab.translations) : 'none');
+        console.log(`   - ${fromLang} translation content:`, tab.translations?.[fromLang]);
 
         // Check if source translation exists
         if (!tab.translations || !tab.translations[fromLang]) {
