@@ -38,3 +38,4 @@ monitoring-reports/
 playwright-report/
 test-automated-*.js
 backend/src/database/migrations/database.sqlite
+.env.local.backup
