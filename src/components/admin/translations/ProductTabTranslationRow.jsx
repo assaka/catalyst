@@ -73,19 +73,29 @@ export default function ProductTabTranslationRow({ tab, onUpdate, selectedLangua
   // Save translations
   const handleSave = async () => {
     try {
+      console.log('💾 Frontend: Saving product tab translations:', {
+        tabId: tab.id,
+        translations,
+        translationKeys: Object.keys(translations)
+      });
+
       setSaving(true);
       setSaveSuccess(false);
-      await api.put(`/product-tabs/${tab.id}`, {
+
+      const response = await api.put(`/product-tabs/${tab.id}`, {
         translations
       });
+
+      console.log('✅ Frontend: Save response:', response);
+
       toast.success('Product tab translations updated successfully');
       if (onUpdate) onUpdate(tab.id, translations);
       setSaving(false);
       setSaveSuccess(true);
       setTimeout(() => setSaveSuccess(false), 2000);
     } catch (error) {
-      console.error('Error saving translations:', error);
-      toast.error('Failed to save translations');
+      console.error('❌ Frontend: Error saving translations:', error);
+      toast.error(`Failed to save translations: ${error.message}`);
       setSaving(false);
     }
   };
