@@ -32,7 +32,8 @@ import {
   Wand2,
   Bot,
   Database,
-  Trash2
+  Trash2,
+  Clock
 } from 'lucide-react';
 import SaveButton from '@/components/ui/save-button';
 import CodeEditor from '@/components/ai-studio/CodeEditor.jsx';
@@ -40,6 +41,9 @@ import { useAIStudio, AI_STUDIO_MODES } from '@/contexts/AIStudioContext';
 import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from '@/components/ui/resizable';
 import apiClient from '@/api/client';
 import EventSelector from '@/components/plugins/EventSelector';
+import VersionHistoryPanel from '@/components/ai-studio/VersionHistoryPanel';
+import VersionCompareModal from '@/components/ai-studio/VersionCompareModal';
+import VersionRestoreModal from '@/components/ai-studio/VersionRestoreModal';
 
 const DeveloperPluginEditor = ({
   plugin,
@@ -88,6 +92,14 @@ const DeveloperPluginEditor = ({
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [migrationWarnings, setMigrationWarnings] = useState([]);
+
+  // Version control state
+  const [showVersionHistory, setShowVersionHistory] = useState(false);
+  const [showVersionCompare, setShowVersionCompare] = useState(false);
+  const [showVersionRestore, setShowVersionRestore] = useState(false);
+  const [compareVersions, setCompareVersions] = useState({ from: null, to: null });
+  const [restoreVersionId, setRestoreVersionId] = useState(null);
+  const [currentVersionId, setCurrentVersionId] = useState(null);
 
   // Use external state if provided, otherwise use local state
   const fileTreeMinimized = externalFileTreeMinimized ?? false;
@@ -510,6 +522,25 @@ const DeveloperPluginEditor = ({
       });
 
       setOriginalContent(fileContent);
+
+      // Auto-create version after successful save
+      try {
+        addTerminalOutput(`📝 Creating version snapshot...`, 'info');
+        const versionResponse = await apiClient.post(`plugins/${plugin.id}/versions`, {
+          commit_message: `Updated ${selectedFile.name}`,
+          created_by: null, // TODO: Add user ID from context
+          created_by_name: 'Developer'
+        });
+
+        if (versionResponse.success) {
+          addTerminalOutput(`✓ Version ${versionResponse.version.version_number} created`, 'success');
+          setCurrentVersionId(versionResponse.version.id);
+        }
+      } catch (versionError) {
+        console.warn('Failed to create version:', versionError);
+        addTerminalOutput(`⚠ Warning: Version not created`, 'warning');
+      }
+
       setIsSaving(false);
       setSaveSuccess(true);
 
@@ -526,6 +557,30 @@ const DeveloperPluginEditor = ({
       setSaveSuccess(false);
       addTerminalOutput(`✗ Error saving ${selectedFile.name}: ${error.response?.data?.error || error.message}`, 'error');
     }
+  };
+
+  // Version control handlers
+  const handleOpenVersionHistory = () => {
+    setShowVersionHistory(true);
+  };
+
+  const handleCompareVersions = (fromVersionId, toVersionId) => {
+    setCompareVersions({ from: fromVersionId, to: toVersionId });
+    setShowVersionCompare(true);
+    setShowVersionHistory(false);
+  };
+
+  const handleRestoreVersion = (versionId) => {
+    setRestoreVersionId(versionId);
+    setShowVersionRestore(true);
+    setShowVersionHistory(false);
+  };
+
+  const handleRestoreSuccess = async () => {
+    // Reload plugin files after restore
+    await loadPluginFiles();
+    addTerminalOutput(`✓ Plugin restored to previous version`, 'success');
+    setShowTerminal(true);
   };
 
   const handleDeleteFile = async () => {
@@ -1364,6 +1419,16 @@ const DeveloperPluginEditor = ({
                           defaultText="Save"
                       />
                       <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={handleOpenVersionHistory}
+                        title="Version History (Local History)"
+                        className="gap-1"
+                      >
+                        <Clock className="w-4 h-4" />
+                        <span className="text-xs">History</span>
+                      </Button>
+                      <Button
                         variant="ghost"
                         size="sm"
                         onClick={() => setShowDeleteConfirm(true)}
@@ -1959,6 +2024,38 @@ const DeveloperPluginEditor = ({
             </div>
           </div>
         </div>
+      )}
+
+      {/* Version Control Modals */}
+      {showVersionHistory && (
+        <div className="fixed inset-y-0 right-0 w-96 bg-white shadow-2xl z-50 border-l">
+          <VersionHistoryPanel
+            pluginId={plugin.id}
+            onClose={() => setShowVersionHistory(false)}
+            onCompare={handleCompareVersions}
+            onRestore={handleRestoreVersion}
+          />
+        </div>
+      )}
+
+      {showVersionCompare && (
+        <VersionCompareModal
+          pluginId={plugin.id}
+          fromVersionId={compareVersions.from}
+          toVersionId={compareVersions.to}
+          onClose={() => setShowVersionCompare(false)}
+          onRestore={handleRestoreVersion}
+        />
+      )}
+
+      {showVersionRestore && (
+        <VersionRestoreModal
+          pluginId={plugin.id}
+          versionId={restoreVersionId}
+          currentVersionId={currentVersionId}
+          onClose={() => setShowVersionRestore(false)}
+          onSuccess={handleRestoreSuccess}
+        />
       )}
     </div>
   );

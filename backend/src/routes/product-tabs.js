@@ -491,58 +491,61 @@ router.post('/bulk-translate', authMiddleware, [
           continue;
         }
 
-        // Check if target translation already exists with actual content
-        // Don't skip if translation exists but all fields are empty
-        const targetTranslation = tab.translations[toLang];
-        console.log(`   - ${toLang} translation exists: ${!!targetTranslation}`);
-        if (targetTranslation) {
+        // Field-level translation: Only translate fields that are empty in target language
+        // This allows partial translations (e.g., name empty but content exists)
+        const targetTranslation = tab.translations[toLang] || {};
+        console.log(`   - ${toLang} translation exists: ${!!tab.translations[toLang]}`);
+        if (tab.translations[toLang]) {
           console.log(`   - ${toLang} translation values:`, targetTranslation);
-          console.log(`   - ${toLang} translation field values:`, Object.values(targetTranslation));
         }
 
-        const hasTargetTranslation = targetTranslation &&
-          Object.values(targetTranslation).some(val =>
-            typeof val === 'string' && val.trim().length > 0
-          );
-
-        console.log(`   - Has meaningful ${toLang} translation: ${hasTargetTranslation}`);
-
-        if (hasTargetTranslation) {
-          console.log(`⏭️  Skipping tab "${tabName}": ${toLang} translation already exists`);
-          results.skipped++;
-          results.skippedDetails.push({
-            tabId: tab.id,
-            tabName,
-            reason: `${toLang} translation already exists`
-          });
-          continue;
-        }
-
-        console.log(`   ✅ Will translate this tab (no meaningful ${toLang} translation found)`);
-
-        // Get source translation and translate each field
-        console.log(`🔄 Translating tab "${tabName}"...`);
+        // Get source translation and check which fields need translation
+        console.log(`🔄 Checking tab "${tabName}" for fields to translate...`);
         console.log(`   Source (${fromLang}):`, JSON.stringify(tab.translations[fromLang], null, 2));
 
         const sourceTranslation = tab.translations[fromLang];
-        const translatedData = {};
+        const translatedData = { ...targetTranslation }; // Start with existing target translation
 
         console.log(`   📋 Fields to check for translation:`, Object.keys(sourceTranslation));
 
-        for (const [key, value] of Object.entries(sourceTranslation)) {
-          console.log(`   🔍 Field "${key}": value="${value}", isEmpty=${!value || !value.trim()}`);
+        let fieldsTranslated = 0;
+        let fieldsSkipped = 0;
 
-          if (typeof value === 'string' && value.trim()) {
+        for (const [key, value] of Object.entries(sourceTranslation)) {
+          const targetValue = targetTranslation[key];
+          const targetHasContent = targetValue && typeof targetValue === 'string' && targetValue.trim().length > 0;
+
+          console.log(`   🔍 Field "${key}": source="${value}", target="${targetValue || '(empty)'}", targetHasContent=${targetHasContent}`);
+
+          // Only translate if source has content AND target is empty
+          if (typeof value === 'string' && value.trim() && !targetHasContent) {
             console.log(`   🤖 Calling AI to translate field "${key}": "${value.substring(0, 50)}${value.length > 50 ? '...' : ''}"`);
             const translated = await translationService.aiTranslate(value, fromLang, toLang);
             console.log(`   ✨ AI Response for "${key}": "${translated.substring(0, 50)}${translated.length > 50 ? '...' : ''}"`);
             translatedData[key] = translated;
-          } else {
-            console.log(`   ⏭️  Skipping field "${key}" (empty or not a string)`);
-            translatedData[key] = value || ''; // Preserve empty fields
+            fieldsTranslated++;
+          } else if (targetHasContent) {
+            console.log(`   ⏭️  Skipping field "${key}" (target already has content)`);
+            fieldsSkipped++;
+          } else if (!value || !value.trim()) {
+            console.log(`   ⏭️  Skipping field "${key}" (source is empty)`);
+            translatedData[key] = targetValue || ''; // Preserve existing or set empty
+            fieldsSkipped++;
           }
         }
 
+        if (fieldsTranslated === 0) {
+          console.log(`⏭️  Skipping tab "${tabName}": All fields already translated (${fieldsSkipped} fields up to date)`);
+          results.skipped++;
+          results.skippedDetails.push({
+            tabId: tab.id,
+            tabName,
+            reason: `All ${fieldsSkipped} fields already translated`
+          });
+          continue;
+        }
+
+        console.log(`   ✅ Translated ${fieldsTranslated} field(s), skipped ${fieldsSkipped} field(s)`);
         console.log(`   Target (${toLang}) - Final structure to save:`, JSON.stringify(translatedData, null, 2));
 
         // Save the translation using normalized tables
