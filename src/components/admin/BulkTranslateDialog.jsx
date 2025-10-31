@@ -137,6 +137,9 @@ export default function BulkTranslateDialog({
       if (totalTranslated > 0) {
         toast.success(`Successfully translated ${totalTranslated} ${entityType} to ${translateToLangs.length} language(s)`);
       }
+      if (totalSkipped > 0 && totalTranslated === 0) {
+        toast.info(`All ${totalSkipped} ${entityType} were skipped (already translated or missing source language)`);
+      }
       if (totalFailed > 0) {
         console.warn('Translation errors:', allErrors);
         toast.warning(`${totalFailed} translations failed. Check console for details.`);

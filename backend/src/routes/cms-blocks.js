@@ -3,6 +3,7 @@ const { body, validationResult } = require('express-validator');
 const { CmsBlock, Store } = require('../models');
 const { Op, QueryTypes } = require('sequelize');
 const { sequelize } = require('../database/connection');
+const { authMiddleware } = require('../middleware/auth');
 const translationService = require('../services/translation-service');
 const router = express.Router();
 
@@ -646,7 +647,7 @@ router.post('/:id/translate', [
 // @route   POST /api/cms-blocks/bulk-translate
 // @desc    AI translate all CMS blocks in a store to target language
 // @access  Private
-router.post('/bulk-translate', [
+router.post('/bulk-translate', authMiddleware, [
   body('store_id').isUUID().withMessage('Store ID must be a valid UUID'),
   body('fromLang').notEmpty().withMessage('Source language is required'),
   body('toLang').notEmpty().withMessage('Target language is required')
@@ -698,36 +699,58 @@ router.post('/bulk-translate', [
       translated: 0,
       skipped: 0,
       failed: 0,
-      errors: []
+      errors: [],
+      skippedDetails: []
     };
+
+    console.log(`🌐 Starting CMS blocks translation: ${fromLang} → ${toLang} (${blocks.length} blocks)`);
 
     for (const block of blocks) {
       try {
+        const blockTitle = block.translations?.[fromLang]?.title || block.title || block.identifier;
+
         // Check if source translation exists
         if (!block.translations || !block.translations[fromLang]) {
+          console.log(`⏭️  Skipping block "${blockTitle}": No ${fromLang} translation`);
           results.skipped++;
+          results.skippedDetails.push({
+            blockId: block.id,
+            blockTitle,
+            reason: `No ${fromLang} translation found`
+          });
           continue;
         }
 
         // Check if target translation already exists
         if (block.translations[toLang]) {
+          console.log(`⏭️  Skipping block "${blockTitle}": ${toLang} translation already exists`);
           results.skipped++;
+          results.skippedDetails.push({
+            blockId: block.id,
+            blockTitle,
+            reason: `${toLang} translation already exists`
+          });
           continue;
         }
 
         // Translate the block
+        console.log(`🔄 Translating block "${blockTitle}"...`);
         await translationService.aiTranslateEntity('cms_block', block.id, fromLang, toLang);
+        console.log(`✅ Successfully translated block "${blockTitle}"`);
         results.translated++;
       } catch (error) {
-        console.error(`Error translating CMS block ${block.id}:`, error);
+        const blockTitle = block.translations?.[fromLang]?.title || block.title || block.identifier;
+        console.error(`❌ Error translating CMS block "${blockTitle}":`, error);
         results.failed++;
         results.errors.push({
           blockId: block.id,
-          blockTitle: block.translations?.[fromLang]?.title || block.title,
+          blockTitle,
           error: error.message
         });
       }
     }
+
+    console.log(`✅ CMS blocks translation complete: ${results.translated} translated, ${results.skipped} skipped, ${results.failed} failed`);
 
     res.json({
       success: true,
