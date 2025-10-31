@@ -19,40 +19,52 @@ export default function MultiEntityTranslateDialog({
   const [translateToLangs, setTranslateToLangs] = useState([]);
   const [translating, setTranslating] = useState(false);
   const [results, setResults] = useState(null);
-  const [tokenCostPerUnit, setTokenCostPerUnit] = useState(0.0001); // Cost per token
+  const [serviceCosts, setServiceCosts] = useState({
+    standard: 0.1,
+    cms_page: 0.5,
+    cms_block: 0.2
+  });
 
-  // Entity-specific token estimates (average tokens per item)
-  const getEntityTokenEstimate = (entityType) => {
-    const tokenEstimates = {
-      'product': 200,            // Name + short description ~200 tokens
-      'category': 150,           // Name + description ~150 tokens
-      'attribute': 30,           // Attribute names ~30 tokens
-      'cms_page': 3000,          // Full page content ~3000 tokens
-      'cms_block': 500,          // Content blocks ~500 tokens
-      'product_tab': 400,        // Tab content ~400 tokens
-      'product_label': 10,       // Labels like "New", "Sale" ~10 tokens
-      'cookie_consent': 600      // Cookie consent text ~600 tokens
+  // Get flat-rate cost based on entity type
+  const getEntityCost = (entityType) => {
+    const entityCosts = {
+      'product': serviceCosts.standard,
+      'category': serviceCosts.standard,
+      'attribute': serviceCosts.standard,
+      'cms_page': serviceCosts.cms_page,
+      'cms_block': serviceCosts.cms_block,
+      'product_tab': serviceCosts.standard,
+      'product_label': serviceCosts.standard,
+      'cookie_consent': serviceCosts.standard,
+      'stock_labels': serviceCosts.standard
     };
 
-    return tokenEstimates[entityType] || 200; // Default to 200
+    return entityCosts[entityType] || serviceCosts.standard;
   };
 
-  // Load translation cost from API
+  // Load translation costs from API
   useEffect(() => {
-    const loadTranslationCost = async () => {
+    const loadTranslationCosts = async () => {
       try {
-        const response = await api.get('service-credit-costs/key/ai_translation');
-        if (response.success && response.service) {
-          setTokenCostPerUnit(response.service.cost_per_unit);
-        }
+        const [standardRes, pageRes, blockRes] = await Promise.all([
+          api.get('service-credit-costs/key/ai_translation'),
+          api.get('service-credit-costs/key/ai_translation_cms_page'),
+          api.get('service-credit-costs/key/ai_translation_cms_block')
+        ]);
+
+        setServiceCosts({
+          standard: standardRes.success ? standardRes.service.cost_per_unit : 0.1,
+          cms_page: pageRes.success ? pageRes.service.cost_per_unit : 0.5,
+          cms_block: blockRes.success ? blockRes.service.cost_per_unit : 0.2
+        });
       } catch (error) {
-        console.error('Error loading translation cost:', error);
-        // Keep using default fallback value
+        console.error('Error loading translation costs:', error);
+        // Keep using default fallback values
       }
     };
 
     if (open) {
-      loadTranslationCost();
+      loadTranslationCosts();
     }
   }, [open]);
 
