@@ -261,11 +261,13 @@ class AIService {
         ...usage
       });
 
+      const cost = await this.getOperationCost(operationType);
+
       return {
         success: true,
         content,
         usage,
-        creditsDeducted: this.operationCosts[operationType] || this.operationCosts.general
+        creditsDeducted: cost
       };
 
     } catch (error) {
@@ -388,12 +390,6 @@ class AIService {
     return result?.credits || 0;
   }
 
-  /**
-   * Get operation cost
-   */
-  getOperationCost(operationType) {
-    return this.operationCosts[operationType] || this.operationCosts.general;
-  }
 
   /**
    * Get user's AI usage history
