@@ -370,7 +370,7 @@ Return ONLY the translated text, no explanations or notes.`;
   }
 
   /**
-   * Translate all fields of an entity using AI
+   * Translate all fields of an entity using AI (with field-level merging)
    */
   async aiTranslateEntity(entityType, entityId, fromLang, toLang) {
     const Model = this._getEntityModel(entityType);
@@ -381,14 +381,31 @@ Return ONLY the translated text, no explanations or notes.`;
     }
 
     const sourceTranslation = entity.translations[fromLang];
-    const translatedData = {};
+    const existingTargetTranslation = entity.translations[toLang] || {};
+    const translatedData = { ...existingTargetTranslation }; // Start with existing target translation
 
-    // Translate each field
+    console.log(`   🔄 aiTranslateEntity: ${entityType} ${entityId} (${fromLang} → ${toLang})`);
+
+    let fieldsTranslated = 0;
+
+    // Translate each field only if target is empty
     for (const [key, value] of Object.entries(sourceTranslation)) {
-      if (typeof value === 'string' && value.trim()) {
+      const targetValue = existingTargetTranslation[key];
+      const targetHasContent = targetValue && typeof targetValue === 'string' && targetValue.trim().length > 0;
+
+      if (typeof value === 'string' && value.trim() && !targetHasContent) {
+        console.log(`      📝 Translating field "${key}": "${value.substring(0, 50)}..."`);
         translatedData[key] = await this.aiTranslate(value, fromLang, toLang);
+        fieldsTranslated++;
+      } else if (targetHasContent) {
+        console.log(`      ⏭️  Field "${key}" already has content, preserving`);
+      } else {
+        console.log(`      ⏭️  Field "${key}" is empty in source`);
+        translatedData[key] = targetValue || ''; // Preserve or set empty
       }
     }
+
+    console.log(`   ✅ Translated ${fieldsTranslated} field(s) for ${entityType}`);
 
     // Save the translation
     return await this.saveEntityTranslation(entityType, entityId, toLang, translatedData);
