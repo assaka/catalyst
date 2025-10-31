@@ -512,6 +512,13 @@ router.post('/bulk-translate', authMiddleware, [
         let fieldsSkipped = 0;
 
         for (const [key, value] of Object.entries(sourceTranslation)) {
+          // For attribute tabs, completely ignore content field
+          if (tab.tab_type !== 'text' && key === 'content') {
+            console.log(`   ⏭️  Ignoring field "${key}" (attribute tab - content not used)`);
+            translatedData[key] = targetTranslation[key] || ''; // Preserve existing or set empty
+            continue;
+          }
+
           const targetValue = targetTranslation[key];
           const targetHasContent = targetValue && typeof targetValue === 'string' && targetValue.trim().length > 0;
 

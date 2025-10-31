@@ -25,7 +25,19 @@ export default function ProductTabTranslationRow({ tab, onUpdate, selectedLangua
   const getTranslationStatus = () => {
     const translatedCount = filteredLanguages.filter(lang => {
       const translation = translations[lang.code];
-      return translation && translation.name && translation.name.trim().length > 0;
+
+      // For attribute tabs: Only check name field
+      // For text tabs: Check both name and content
+      const hasName = translation && translation.name && translation.name.trim().length > 0;
+
+      if (tab.tab_type !== 'text') {
+        // Attribute tabs only need name translated
+        return hasName;
+      }
+
+      // Text tabs need both name and content
+      const hasContent = translation && translation.content && translation.content.trim().length > 0;
+      return hasName && hasContent;
     }).length;
 
     return {
@@ -42,7 +54,7 @@ export default function ProductTabTranslationRow({ tab, onUpdate, selectedLangua
     { key: 'name', label: 'Name', multiline: false }
   ];
 
-  // Only add content field for text-type tabs
+  // Only show content field for text-type tabs
   if (tab.tab_type === 'text') {
     fields.push({ key: 'content', label: 'Content', multiline: true });
   }
