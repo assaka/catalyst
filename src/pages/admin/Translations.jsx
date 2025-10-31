@@ -873,10 +873,17 @@ export default function Translations() {
     }
   }, [activeTab, selectedStore]);
 
-  // Load CMS content when switching to CMS tab
+  // Load CMS pages when switching to CMS Pages tab
   useEffect(() => {
-    if (activeTab === 'cms' && selectedStore) {
-      loadCmsContent();
+    if (activeTab === 'cms-pages' && selectedStore) {
+      loadCms();
+    }
+  }, [activeTab, selectedStore]);
+
+  // Load CMS blocks when switching to CMS Blocks tab
+  useEffect(() => {
+    if (activeTab === 'cms-blocks' && selectedStore) {
+      loadCms();
     }
   }, [activeTab, selectedStore]);
 
@@ -980,16 +987,28 @@ export default function Translations() {
             Attributes
           </button>
           <button
-            onClick={() => setActiveTab('cms')}
+            onClick={() => setActiveTab('cms-pages')}
             className={`
               px-4 py-2 font-medium border-b-2 transition-colors whitespace-nowrap
-              ${activeTab === 'cms'
+              ${activeTab === 'cms-pages'
                 ? 'border-blue-600 text-blue-600'
                 : 'border-transparent text-gray-600 hover:text-gray-900'
               }
             `}
           >
-            CMS Content
+            CMS Pages
+          </button>
+          <button
+            onClick={() => setActiveTab('cms-blocks')}
+            className={`
+              px-4 py-2 font-medium border-b-2 transition-colors whitespace-nowrap
+              ${activeTab === 'cms-blocks'
+                ? 'border-blue-600 text-blue-600'
+                : 'border-transparent text-gray-600 hover:text-gray-900'
+              }
+            `}
+          >
+            CMS Blocks
           </button>
           <button
             onClick={() => setActiveTab('various')}
@@ -1735,8 +1754,8 @@ export default function Translations() {
         </div>
       )}
 
-      {/* CMS Content Tab */}
-      {activeTab === 'cms' && (
+      {/* CMS Pages Tab */}
+      {activeTab === 'cms-pages' && (
         <div className="space-y-6">
           {!selectedStore ? (
             <div className="bg-white border border-gray-200 rounded-lg p-8 text-center text-gray-500">
@@ -1754,22 +1773,22 @@ export default function Translations() {
               <div className="bg-white border border-gray-200 rounded-lg p-6">
                 <div className="flex items-center justify-between mb-4">
                   <div>
-                    <h2 className="text-xl font-semibold text-gray-900">CMS Content Translations</h2>
+                    <h2 className="text-xl font-semibold text-gray-900">CMS Pages Translations</h2>
                     <p className="text-sm text-gray-600 mt-1">
-                      Manage translations for CMS pages and blocks across languages
+                      Manage translations for CMS pages across languages
                     </p>
                   </div>
                   <button
                     onClick={() => {
                       setSelectedEntityType('cms_page');
-                      setSelectedEntityName('CMS Content');
-                      setSelectedEntityItemCount(cmsPages.length + cmsBlocks.length);
+                      setSelectedEntityName('CMS Pages');
+                      setSelectedEntityItemCount(cmsPages.length);
                       setShowBulkTranslateDialog(true);
                     }}
                     className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 flex items-center gap-2"
                   >
                     <Languages className="w-4 h-4" />
-                    Bulk AI Translate CMS Content
+                    Bulk AI Translate CMS Pages
                   </button>
                 </div>
 
@@ -1794,141 +1813,204 @@ export default function Translations() {
                   </div>
                 </div>
 
-                {/* Filter and Search */}
-                <div className="flex gap-3">
-                  {/* Content Type Filter */}
-                  <select
-                    value={cmsContentType}
-                    onChange={(e) => setCmsContentType(e.target.value)}
-                    className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                  >
-                    <option value="all">All Content</option>
-                    <option value="pages">Pages Only ({cmsPages.length})</option>
-                    <option value="blocks">Blocks Only ({cmsBlocks.length})</option>
-                  </select>
-
-                  {/* Search Bar */}
-                  <div className="relative flex-1">
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
-                    <input
-                      type="text"
-                      placeholder="Search by title, slug, or identifier..."
-                      value={cmsSearchQuery}
-                      onChange={(e) => setCmsSearchQuery(e.target.value)}
-                      className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                    />
-                  </div>
+                {/* Search Bar */}
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                  <input
+                    type="text"
+                    placeholder="Search pages by title or slug..."
+                    value={cmsSearchQuery}
+                    onChange={(e) => setCmsSearchQuery(e.target.value)}
+                    className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  />
                 </div>
               </div>
 
-              {/* CMS Content List */}
+              {/* CMS Pages List */}
               {loadingCms ? (
                 <div className="bg-white border border-gray-200 rounded-lg p-12 text-center">
                   <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-                  <p className="text-gray-600">Loading CMS content...</p>
+                  <p className="text-gray-600">Loading CMS pages...</p>
                 </div>
-              ) : (cmsPages.length === 0 && cmsBlocks.length === 0) ? (
+              ) : cmsPages.length === 0 ? (
                 <div className="bg-white border border-gray-200 rounded-lg p-8 text-center text-gray-500">
                   <Globe className="w-12 h-12 mx-auto mb-4 text-gray-400" />
                   <h3 className="text-lg font-semibold text-gray-700 mb-2">
-                    No CMS Content Found
+                    No CMS Pages Found
                   </h3>
                   <p>
-                    Start by adding CMS pages or blocks to your store.
+                    Start by adding CMS pages to your store.
                   </p>
                 </div>
               ) : (
                 <div className="space-y-3">
-                  {/* CMS Pages */}
-                  {(cmsContentType === 'all' || cmsContentType === 'pages') &&
-                    cmsPages
-                      .filter(page => {
-                        if (!cmsSearchQuery.trim()) return true;
-                        const query = cmsSearchQuery.toLowerCase();
-                        const title = (page.translations?.en?.title || '').toLowerCase();
-                        const slug = (page.slug || '').toLowerCase();
-                        return title.includes(query) || slug.includes(query);
-                      })
-                      .map((page) => (
-                        <CmsPageTranslationRow
-                          key={page.id}
-                          page={page}
-                          selectedLanguages={selectedTranslationLanguages}
-                          onUpdate={(pageId, translations) => {
-                            setCmsPages(cmsPages.map(p =>
-                              p.id === pageId ? { ...p, translations } : p
-                            ));
-                          }}
-                        />
-                      ))}
-
-                  {/* CMS Blocks */}
-                  {(cmsContentType === 'all' || cmsContentType === 'blocks') &&
-                    cmsBlocks
-                      .filter(block => {
-                        if (!cmsSearchQuery.trim()) return true;
-                        const query = cmsSearchQuery.toLowerCase();
-                        const title = (block.translations?.en?.title || block.title || '').toLowerCase();
-                        const identifier = (block.identifier || '').toLowerCase();
-                        return title.includes(query) || identifier.includes(query);
-                      })
-                      .map((block) => (
-                        <CmsBlockTranslationRow
-                          key={block.id}
-                          block={block}
-                          selectedLanguages={selectedTranslationLanguages}
-                          onUpdate={(blockId, translations) => {
-                            setCmsBlocks(cmsBlocks.map(b =>
-                              b.id === blockId ? { ...b, translations } : b
-                            ));
-                          }}
-                        />
-                      ))}
+                  {cmsPages
+                    .filter(page => {
+                      if (!cmsSearchQuery.trim()) return true;
+                      const query = cmsSearchQuery.toLowerCase();
+                      const title = (page.translations?.en?.title || '').toLowerCase();
+                      const slug = (page.slug || '').toLowerCase();
+                      return title.includes(query) || slug.includes(query);
+                    })
+                    .map((page) => (
+                      <CmsPageTranslationRow
+                        key={page.id}
+                        page={page}
+                        selectedLanguages={selectedTranslationLanguages}
+                        onUpdate={(pageId, translations) => {
+                          setCmsPages(cmsPages.map(p =>
+                            p.id === pageId ? { ...p, translations } : p
+                          ));
+                        }}
+                      />
+                    ))}
                 </div>
               )}
 
               {/* Count Info */}
-              {(cmsPages.length > 0 || cmsBlocks.length > 0) && (
+              {cmsPages.length > 0 && (
                 <div className="text-sm text-gray-600 text-center">
-                  {cmsContentType === 'all' && (
-                    <span>
-                      Showing {cmsPages.filter(page => {
-                        if (!cmsSearchQuery.trim()) return true;
-                        const query = cmsSearchQuery.toLowerCase();
-                        const title = (page.translations?.en?.title || '').toLowerCase();
-                        const slug = (page.slug || '').toLowerCase();
-                        return title.includes(query) || slug.includes(query);
-                      }).length} pages and {cmsBlocks.filter(block => {
-                        if (!cmsSearchQuery.trim()) return true;
-                        const query = cmsSearchQuery.toLowerCase();
-                        const title = (block.translations?.en?.title || block.title || '').toLowerCase();
-                        const identifier = (block.identifier || '').toLowerCase();
-                        return title.includes(query) || identifier.includes(query);
-                      }).length} blocks
-                    </span>
-                  )}
-                  {cmsContentType === 'pages' && (
-                    <span>
-                      Showing {cmsPages.filter(page => {
-                        if (!cmsSearchQuery.trim()) return true;
-                        const query = cmsSearchQuery.toLowerCase();
-                        const title = (page.translations?.en?.title || '').toLowerCase();
-                        const slug = (page.slug || '').toLowerCase();
-                        return title.includes(query) || slug.includes(query);
-                      }).length} of {cmsPages.length} pages
-                    </span>
-                  )}
-                  {cmsContentType === 'blocks' && (
-                    <span>
-                      Showing {cmsBlocks.filter(block => {
-                        if (!cmsSearchQuery.trim()) return true;
-                        const query = cmsSearchQuery.toLowerCase();
-                        const title = (block.translations?.en?.title || block.title || '').toLowerCase();
-                        const identifier = (block.identifier || '').toLowerCase();
-                        return title.includes(query) || identifier.includes(query);
-                      }).length} of {cmsBlocks.length} blocks
-                    </span>
-                  )}
+                  <span>
+                    Showing {cmsPages.filter(page => {
+                      if (!cmsSearchQuery.trim()) return true;
+                      const query = cmsSearchQuery.toLowerCase();
+                      const title = (page.translations?.en?.title || '').toLowerCase();
+                      const slug = (page.slug || '').toLowerCase();
+                      return title.includes(query) || slug.includes(query);
+                    }).length} of {cmsPages.length} pages
+                  </span>
+                </div>
+              )}
+            </>
+          )}
+        </div>
+      )}
+
+      {/* CMS Blocks Tab */}
+      {activeTab === 'cms-blocks' && (
+        <div className="space-y-6">
+          {!selectedStore ? (
+            <div className="bg-white border border-gray-200 rounded-lg p-8 text-center text-gray-500">
+              <Globe className="w-12 h-12 mx-auto mb-4 text-gray-400" />
+              <h3 className="text-lg font-semibold text-gray-700 mb-2">
+                No Store Selected
+              </h3>
+              <p>
+                Please select a store to manage CMS block translations.
+              </p>
+            </div>
+          ) : (
+            <>
+              {/* Header and Search */}
+              <div className="bg-white border border-gray-200 rounded-lg p-6">
+                <div className="flex items-center justify-between mb-4">
+                  <div>
+                    <h2 className="text-xl font-semibold text-gray-900">CMS Blocks Translations</h2>
+                    <p className="text-sm text-gray-600 mt-1">
+                      Manage translations for CMS blocks across languages
+                    </p>
+                  </div>
+                  <button
+                    onClick={() => {
+                      setSelectedEntityType('cms_block');
+                      setSelectedEntityName('CMS Blocks');
+                      setSelectedEntityItemCount(cmsBlocks.length);
+                      setShowBulkTranslateDialog(true);
+                    }}
+                    className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 flex items-center gap-2"
+                  >
+                    <Languages className="w-4 h-4" />
+                    Bulk AI Translate CMS Blocks
+                  </button>
+                </div>
+
+                {/* Language Selection */}
+                <div className="mb-4">
+                  <div className="flex flex-wrap gap-2">
+                    {availableLanguages.map((lang) => (
+                      <label
+                        key={lang.code}
+                        className="flex items-center gap-1.5 px-2 py-1 rounded bg-gray-100 hover:bg-gray-200 cursor-pointer text-xs"
+                      >
+                        <input
+                          type="checkbox"
+                          checked={selectedTranslationLanguages.includes(lang.code)}
+                          onChange={() => handleToggleTranslationLanguage(lang.code)}
+                          className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                        />
+                        <span className="font-medium">{lang.code.toUpperCase()}</span>
+                        <span className="text-gray-600">({lang.native_name})</span>
+                      </label>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Search Bar */}
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                  <input
+                    type="text"
+                    placeholder="Search blocks by title or identifier..."
+                    value={cmsSearchQuery}
+                    onChange={(e) => setCmsSearchQuery(e.target.value)}
+                    className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  />
+                </div>
+              </div>
+
+              {/* CMS Blocks List */}
+              {loadingCms ? (
+                <div className="bg-white border border-gray-200 rounded-lg p-12 text-center">
+                  <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+                  <p className="text-gray-600">Loading CMS blocks...</p>
+                </div>
+              ) : cmsBlocks.length === 0 ? (
+                <div className="bg-white border border-gray-200 rounded-lg p-8 text-center text-gray-500">
+                  <Globe className="w-12 h-12 mx-auto mb-4 text-gray-400" />
+                  <h3 className="text-lg font-semibold text-gray-700 mb-2">
+                    No CMS Blocks Found
+                  </h3>
+                  <p>
+                    Start by adding CMS blocks to your store.
+                  </p>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {cmsBlocks
+                    .filter(block => {
+                      if (!cmsSearchQuery.trim()) return true;
+                      const query = cmsSearchQuery.toLowerCase();
+                      const title = (block.translations?.en?.title || block.title || '').toLowerCase();
+                      const identifier = (block.identifier || '').toLowerCase();
+                      return title.includes(query) || identifier.includes(query);
+                    })
+                    .map((block) => (
+                      <CmsBlockTranslationRow
+                        key={block.id}
+                        block={block}
+                        selectedLanguages={selectedTranslationLanguages}
+                        onUpdate={(blockId, translations) => {
+                          setCmsBlocks(cmsBlocks.map(b =>
+                            b.id === blockId ? { ...b, translations } : b
+                          ));
+                        }}
+                      />
+                    ))}
+                </div>
+              )}
+
+              {/* Count Info */}
+              {cmsBlocks.length > 0 && (
+                <div className="text-sm text-gray-600 text-center">
+                  <span>
+                    Showing {cmsBlocks.filter(block => {
+                      if (!cmsSearchQuery.trim()) return true;
+                      const query = cmsSearchQuery.toLowerCase();
+                      const title = (block.translations?.en?.title || block.title || '').toLowerCase();
+                      const identifier = (block.identifier || '').toLowerCase();
+                      return title.includes(query) || identifier.includes(query);
+                    }).length} of {cmsBlocks.length} blocks
+                  </span>
                 </div>
               )}
             </>
@@ -2434,7 +2516,9 @@ export default function Translations() {
             loadCategories();
           } else if (selectedEntityType === 'attribute') {
             loadAttributes();
-          } else if (selectedEntityType === 'cms_page' || selectedEntityType === 'cms_block') {
+          } else if (selectedEntityType === 'cms_page') {
+            loadCms();
+          } else if (selectedEntityType === 'cms_block') {
             loadCms();
           } else if (selectedEntityType === 'product_tab') {
             loadProductTabs();
