@@ -26,8 +26,25 @@ const { Op } = require('sequelize');
 const aiContextService = require('./aiContextService');
 const creditService = require('./credit-service');
 const ServiceCreditCost = require('../models/ServiceCreditCost');
+const Anthropic = require('@anthropic-ai/sdk');
 
 class TranslationService {
+  constructor() {
+    this.anthropicClient = null;
+  }
+
+  /**
+   * Initialize AI provider client (similar to AIService)
+   * Currently supports Anthropic, but designed for easy extension to other providers
+   */
+  initAnthropicClient() {
+    if (!this.anthropicClient && process.env.ANTHROPIC_API_KEY) {
+      this.anthropicClient = new Anthropic({
+        apiKey: process.env.ANTHROPIC_API_KEY
+      });
+    }
+    return this.anthropicClient;
+  }
   /**
    * Estimate token count for text
    * Claude uses approximately 1 token per 4 characters
@@ -252,7 +269,12 @@ class TranslationService {
    * );
    */
   async _translateWithClaude(text, fromLang, toLang, context = {}) {
-    const fetch = (await import('node-fetch')).default;
+    // Initialize Anthropic client (same pattern as AIService)
+    const client = this.initAnthropicClient();
+
+    if (!client) {
+      throw new Error('Anthropic client not available. Check ANTHROPIC_API_KEY configuration.');
+    }
 
     // ⚡ RAG: Fetch translation-specific context from database
     // This includes: best practices, glossaries, language-specific guidelines
@@ -291,14 +313,9 @@ ${text}
 
 Return ONLY the translated text, no explanations or notes.`;
 
-    const response = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-api-key': process.env.ANTHROPIC_API_KEY,
-        'anthropic-version': '2023-06-01'
-      },
-      body: JSON.stringify({
+    try {
+      // Use Anthropic SDK (same as AIService) - makes it consistent with AI Studio
+      const response = await client.messages.create({
         model: 'claude-3-haiku-20240307',
         max_tokens: 1024,
         system: systemPrompt,
@@ -306,23 +323,14 @@ Return ONLY the translated text, no explanations or notes.`;
           role: 'user',
           content: userPrompt
         }]
-      })
-    });
+      });
 
-    const data = await response.json();
-
-    // Check for API errors
-    if (!response.ok || data.error) {
-      const errorMessage = data.error?.message || `API request failed with status ${response.status}`;
-      throw new Error(`Anthropic API error: ${errorMessage}`);
+      // Extract translated text from response
+      return response.content[0].text.trim();
+    } catch (error) {
+      // SDK handles errors properly, just re-throw with context
+      throw new Error(`Anthropic translation failed: ${error.message}`);
     }
-
-    // Validate response structure
-    if (!data.content || !data.content[0] || !data.content[0].text) {
-      throw new Error('Invalid response structure from Anthropic API');
-    }
-
-    return data.content[0].text.trim();
   }
 
   async _translateWithOpenAI(text, fromLang, toLang) {
