@@ -48,6 +48,7 @@ export default function Translations() {
   const [loadingEntityStats, setLoadingEntityStats] = useState(false);
   const [selectedEntityType, setSelectedEntityType] = useState(null);
   const [selectedEntityName, setSelectedEntityName] = useState(null);
+  const [selectedEntityItemCount, setSelectedEntityItemCount] = useState(0);
 
   // Products tab states
   const [products, setProducts] = useState([]);
@@ -684,9 +685,10 @@ export default function Translations() {
   /**
    * Open translation dialog for specific entity
    */
-  const handleOpenEntityTranslation = (entityType, entityName) => {
+  const handleOpenEntityTranslation = (entityType, entityName, itemCount = 0) => {
     setSelectedEntityType(entityType);
     setSelectedEntityName(entityName);
+    setSelectedEntityItemCount(itemCount);
     setShowBulkTranslateDialog(true);
   };
 
@@ -1091,11 +1093,16 @@ export default function Translations() {
             <div className="flex gap-2 ml-auto">
               <button
                 type="button"
-                onClick={() => setShowBulkTranslateDialog(true)}
+                onClick={() => {
+                  setSelectedEntityType(null);
+                  setSelectedEntityName('UI Labels');
+                  setSelectedEntityItemCount(filteredLabels.length);
+                  setShowBulkTranslateDialog(true);
+                }}
                 className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 flex items-center gap-2"
               >
                 <Languages className="w-4 h-4" />
-                Bulk AI Translate
+                Bulk AI Translate UI Labels
               </button>
 
               <button
@@ -1397,12 +1404,13 @@ export default function Translations() {
                     onClick={() => {
                       setSelectedEntityType('product');
                       setSelectedEntityName('Products');
+                      setSelectedEntityItemCount(products.length);
                       setShowBulkTranslateDialog(true);
                     }}
                     className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 flex items-center gap-2"
                   >
                     <Languages className="w-4 h-4" />
-                    Bulk AI Translate
+                    Bulk AI Translate Products
                   </button>
                 </div>
 
@@ -1527,12 +1535,13 @@ export default function Translations() {
                     onClick={() => {
                       setSelectedEntityType('category');
                       setSelectedEntityName('Categories');
+                      setSelectedEntityItemCount(productCategories.length);
                       setShowBulkTranslateDialog(true);
                     }}
                     className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 flex items-center gap-2"
                   >
                     <Languages className="w-4 h-4" />
-                    Bulk AI Translate
+                    Bulk AI Translate Categories
                   </button>
                 </div>
 
@@ -1657,12 +1666,13 @@ export default function Translations() {
                     onClick={() => {
                       setSelectedEntityType('attribute');
                       setSelectedEntityName('Attributes');
+                      setSelectedEntityItemCount(productAttributes.length);
                       setShowBulkTranslateDialog(true);
                     }}
                     className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 flex items-center gap-2"
                   >
                     <Languages className="w-4 h-4" />
-                    Bulk AI Translate
+                    Bulk AI Translate Attributes
                   </button>
                 </div>
 
@@ -1783,6 +1793,18 @@ export default function Translations() {
                       Manage translations for CMS pages and blocks across languages
                     </p>
                   </div>
+                  <button
+                    onClick={() => {
+                      setSelectedEntityType('cms_page');
+                      setSelectedEntityName('CMS Content');
+                      setSelectedEntityItemCount(cmsPages.length + cmsBlocks.length);
+                      setShowBulkTranslateDialog(true);
+                    }}
+                    className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 flex items-center gap-2"
+                  >
+                    <Languages className="w-4 h-4" />
+                    Bulk AI Translate CMS Content
+                  </button>
                 </div>
 
                 {/* Language Selection */}
@@ -2001,6 +2023,18 @@ export default function Translations() {
                       Custom tabs shown on product detail pages
                     </p>
                   </div>
+                  <button
+                    onClick={() => {
+                      setSelectedEntityType('product_tab');
+                      setSelectedEntityName('Product Tabs');
+                      setSelectedEntityItemCount(productTabs.length);
+                      setShowBulkTranslateDialog(true);
+                    }}
+                    className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 flex items-center gap-2"
+                  >
+                    <Languages className="w-4 h-4" />
+                    Bulk AI Translate Tabs
+                  </button>
                 </div>
 
                 <div className="relative mb-4">
@@ -2057,6 +2091,18 @@ export default function Translations() {
                       Labels like "New", "Sale", "Featured" shown on products
                     </p>
                   </div>
+                  <button
+                    onClick={() => {
+                      setSelectedEntityType('product_label');
+                      setSelectedEntityName('Product Labels');
+                      setSelectedEntityItemCount(productLabels.length);
+                      setShowBulkTranslateDialog(true);
+                    }}
+                    className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 flex items-center gap-2"
+                  >
+                    <Languages className="w-4 h-4" />
+                    Bulk AI Translate Labels
+                  </button>
                 </div>
 
                 <div className="relative mb-4">
@@ -2106,11 +2152,25 @@ export default function Translations() {
 
               {/* Cookie Consent Section */}
               <div className="bg-white border border-gray-200 rounded-lg p-6">
-                <div className="mb-4">
-                  <h3 className="text-lg font-semibold text-gray-900">Cookie Consent</h3>
-                  <p className="text-sm text-gray-600 mt-1">
-                    Configure text shown in cookie consent banners
-                  </p>
+                <div className="flex items-center justify-between mb-4">
+                  <div>
+                    <h3 className="text-lg font-semibold text-gray-900">Cookie Consent</h3>
+                    <p className="text-sm text-gray-600 mt-1">
+                      Configure text shown in cookie consent banners
+                    </p>
+                  </div>
+                  <button
+                    onClick={() => {
+                      setSelectedEntityType('cookie_consent');
+                      setSelectedEntityName('Cookie Consent');
+                      setSelectedEntityItemCount(cookieConsent.length);
+                      setShowBulkTranslateDialog(true);
+                    }}
+                    className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 flex items-center gap-2"
+                  >
+                    <Languages className="w-4 h-4" />
+                    Bulk AI Translate
+                  </button>
                 </div>
 
                 {loadingCookieConsent ? (
@@ -2149,6 +2209,18 @@ export default function Translations() {
                       Custom product option rules and configurations
                     </p>
                   </div>
+                  <button
+                    onClick={() => {
+                      setSelectedEntityType('custom_option');
+                      setSelectedEntityName('Custom Options');
+                      setSelectedEntityItemCount(customOptions.length);
+                      setShowBulkTranslateDialog(true);
+                    }}
+                    className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 flex items-center gap-2"
+                  >
+                    <Languages className="w-4 h-4" />
+                    Bulk AI Translate Options
+                  </button>
                 </div>
 
                 <div className="relative mb-4">
@@ -2379,10 +2451,12 @@ export default function Translations() {
             // Reset selected entity when closing
             setSelectedEntityType(null);
             setSelectedEntityName(null);
+            setSelectedEntityItemCount(0);
           }
         }}
         entityType={selectedEntityType || "UI labels"}
         entityName={selectedEntityName || "UI Labels"}
+        itemCount={selectedEntityItemCount}
         onTranslate={selectedEntityType ? handleEntityTranslate : handleBulkTranslate}
       />
 

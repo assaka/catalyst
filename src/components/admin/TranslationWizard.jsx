@@ -55,10 +55,14 @@ export default function TranslationWizard({ isOpen, onClose, storeId }) {
   const loadLanguages = async () => {
     try {
       const response = await api.get('languages');
-      if (response.success && response.data && response.data.data) {
-        setLanguages(response.data.data.filter(l => l.is_active));
+      console.log('Languages API response:', response);
+
+      if (response.success && response.data && response.data.languages) {
+        setLanguages(response.data.languages.filter(l => l.is_active));
       } else if (response.success && response.data) {
         setLanguages(response.data.filter(l => l.is_active));
+      } else if (Array.isArray(response)) {
+        setLanguages(response.filter(l => l.is_active));
       }
     } catch (error) {
       console.error('Error loading languages:', error);
