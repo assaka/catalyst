@@ -420,9 +420,20 @@ Return ONLY the translated text, no explanations or notes.`;
       const Model = this._getEntityModel(entityType);
       entity = await Model.findByPk(entityId);
       if (!entity) throw new Error(`${entityType} not found`);
+
+      console.log(`   📦 Loaded ${entityType} from database:`, {
+        id: entity.id,
+        title: entity.title,
+        hasTranslations: !!entity.translations,
+        translationsKeys: entity.translations ? Object.keys(entity.translations) : 'null/undefined',
+        translations: entity.translations
+      });
     }
 
     if (!entity.translations || !entity.translations[fromLang]) {
+      console.error(`   ❌ Source translation not found for ${entityType} ${entityId}`);
+      console.error(`   📋 translations object:`, entity.translations);
+      console.error(`   📋 Looking for language:`, fromLang);
       throw new Error('Source translation not found');
     }
 
