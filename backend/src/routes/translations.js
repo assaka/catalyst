@@ -727,8 +727,6 @@ router.get('/entity-stats', authMiddleware, async (req, res) => {
 
     // Handle AttributeValue separately (doesn't have direct store_id)
     try {
-      const { Op } = require('sequelize');
-
       // Get all attributes for this store
       const attributes = await Attribute.findAll({
         where: { store_id },
@@ -859,7 +857,6 @@ router.post('/bulk-translate-entities', authMiddleware, async (req, res) => {
       }
     }
 
-    const { Op } = require('sequelize');
     const entityTypeMap = {
       category: { model: Category, name: 'Categories' },
       product: { model: Product, name: 'Products' },
