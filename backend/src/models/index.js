@@ -60,6 +60,11 @@ const JobHistory = require('./JobHistory');
 const StoreSupabaseConnection = require('./StoreSupabaseConnection');
 const StoreDataMigration = require('./StoreDataMigration');
 const SlotConfiguration = require('./SlotConfiguration');
+// Email system models
+const EmailTemplate = require('./EmailTemplate');
+const EmailTemplateTranslation = require('./EmailTemplateTranslation');
+const BrevoConfiguration = require('./BrevoConfiguration');
+const EmailSendLog = require('./EmailSendLog');
 
 // Define associations
 const defineAssociations = () => {
@@ -346,6 +351,21 @@ const defineAssociations = () => {
   User.hasMany(SlotConfiguration, { foreignKey: 'user_id' });
   Store.hasMany(SlotConfiguration, { foreignKey: 'store_id' });
 
+  // Email system associations
+  EmailTemplate.belongsTo(Store, { foreignKey: 'store_id', as: 'store' });
+  EmailTemplate.hasMany(EmailTemplateTranslation, { foreignKey: 'email_template_id', as: 'translationsData', onDelete: 'CASCADE' });
+  EmailTemplate.hasMany(EmailSendLog, { foreignKey: 'email_template_id', as: 'emailSendLogs' });
+  Store.hasMany(EmailTemplate, { foreignKey: 'store_id', as: 'emailTemplates' });
+
+  EmailTemplateTranslation.belongsTo(EmailTemplate, { foreignKey: 'email_template_id', as: 'emailTemplate' });
+
+  BrevoConfiguration.belongsTo(Store, { foreignKey: 'store_id', as: 'store' });
+  Store.hasOne(BrevoConfiguration, { foreignKey: 'store_id', as: 'brevoConfiguration' });
+
+  EmailSendLog.belongsTo(Store, { foreignKey: 'store_id', as: 'store' });
+  EmailSendLog.belongsTo(EmailTemplate, { foreignKey: 'email_template_id', as: 'emailTemplate' });
+  Store.hasMany(EmailSendLog, { foreignKey: 'store_id', as: 'emailSendLogs' });
+
 };
 
 // Initialize associations
@@ -414,4 +434,9 @@ module.exports = {
   StoreSupabaseConnection,
   StoreDataMigration,
   SlotConfiguration,
+  // Email system models
+  EmailTemplate,
+  EmailTemplateTranslation,
+  BrevoConfiguration,
+  EmailSendLog,
 };

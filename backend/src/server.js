@@ -118,6 +118,8 @@ const databaseProvisioningRoutes = require('./routes/database-provisioning');
 const customDomainsRoutes = require('./routes/custom-domains');
 const creditRoutes = require('./routes/credits');
 const serviceCreditCostsRoutes = require('./routes/service-credit-costs');
+const emailTemplatesRoutes = require('./routes/email-templates');
+const brevoOAuthRoutes = require('./routes/brevo-oauth');
 
 // Import usage tracking middleware
 const {
@@ -1800,6 +1802,8 @@ app.use('/api/slot-configurations', slotConfigurationRoutes); // Slot configurat
 app.use('/api/store-routes', storeRoutesManagement); // Database-driven routing system for custom pages and route management - MUST come before broad /api middleware
 app.use('/api/credits', creditRoutes); // Credit system: balance, purchases, usage tracking
 app.use('/api/service-credit-costs', serviceCreditCostsRoutes); // Service credit costs management (admin)
+app.use('/api/email-templates', emailTemplatesRoutes); // Email template management with translations
+app.use('/api/brevo', brevoOAuthRoutes); // Brevo email service OAuth and configuration
 // Conditional auth middleware that excludes preview routes
 const conditionalAuthMiddleware = (req, res, next) => {
   // Skip authentication for preview routes

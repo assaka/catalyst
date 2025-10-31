@@ -23,8 +23,11 @@ const Coupon = require('./Coupon');
 const ShippingMethod = require('./ShippingMethod');
 const PaymentMethod = require('./PaymentMethod');
 const CookieConsentSettings = require('./CookieConsentSettings');
+const EmailTemplate = require('./EmailTemplate');
+const Store = require('./Store');
 
 // Import translation models
+const EmailTemplateTranslation = require('./EmailTemplateTranslation');
 const ProductTranslation = require('./ProductTranslation');
 const CategoryTranslation = require('./CategoryTranslation');
 const CookieConsentSettingsTranslation = require('./CookieConsentSettingsTranslation');
@@ -35,6 +38,10 @@ const AttributeValueTranslation = require('./AttributeValueTranslation');
 // Import SEO models
 const ProductSeo = require('./ProductSeo');
 // Note: Other SEO models will be created similarly
+
+// Import email system models
+const BrevoConfiguration = require('./BrevoConfiguration');
+const EmailSendLog = require('./EmailSendLog');
 
 /**
  * Setup all associations
@@ -130,7 +137,70 @@ function setupAssociations() {
   // Note: CategorySeo associations would go here
   // Similar pattern for all other entities
 
-  console.log('✅ Model associations configured for normalized translations');
+  // ========================================
+  // EMAIL TEMPLATE ASSOCIATIONS
+  // ========================================
+
+  EmailTemplate.hasMany(EmailTemplateTranslation, {
+    foreignKey: 'email_template_id',
+    as: 'translationsData',
+    onDelete: 'CASCADE'
+  });
+
+  EmailTemplateTranslation.belongsTo(EmailTemplate, {
+    foreignKey: 'email_template_id',
+    as: 'emailTemplate'
+  });
+
+  EmailTemplate.belongsTo(Store, {
+    foreignKey: 'store_id',
+    as: 'store'
+  });
+
+  Store.hasMany(EmailTemplate, {
+    foreignKey: 'store_id',
+    as: 'emailTemplates'
+  });
+
+  // ========================================
+  // BREVO CONFIGURATION ASSOCIATIONS
+  // ========================================
+
+  BrevoConfiguration.belongsTo(Store, {
+    foreignKey: 'store_id',
+    as: 'store'
+  });
+
+  Store.hasOne(BrevoConfiguration, {
+    foreignKey: 'store_id',
+    as: 'brevoConfiguration'
+  });
+
+  // ========================================
+  // EMAIL SEND LOG ASSOCIATIONS
+  // ========================================
+
+  EmailSendLog.belongsTo(Store, {
+    foreignKey: 'store_id',
+    as: 'store'
+  });
+
+  EmailSendLog.belongsTo(EmailTemplate, {
+    foreignKey: 'email_template_id',
+    as: 'emailTemplate'
+  });
+
+  Store.hasMany(EmailSendLog, {
+    foreignKey: 'store_id',
+    as: 'emailSendLogs'
+  });
+
+  EmailTemplate.hasMany(EmailSendLog, {
+    foreignKey: 'email_template_id',
+    as: 'emailSendLogs'
+  });
+
+  console.log('✅ Model associations configured for normalized translations and email system');
 }
 
 module.exports = {
@@ -146,5 +216,10 @@ module.exports = {
   Attribute,
   AttributeTranslation,
   AttributeValue,
-  AttributeValueTranslation
+  AttributeValueTranslation,
+  EmailTemplate,
+  EmailTemplateTranslation,
+  BrevoConfiguration,
+  EmailSendLog,
+  Store
 };
