@@ -677,6 +677,19 @@ router.get('/entity-stats', authMiddleware, async (req, res) => {
 
         console.log(`📊 ${entityType.type}: Found ${totalItems} entities for store ${store_id}`);
 
+        if (totalItems === 0) {
+          stats.push({
+            type: entityType.type,
+            name: entityType.name,
+            icon: entityType.icon,
+            totalItems: 0,
+            translatedItems: 0,
+            completionPercentage: 0,
+            missingLanguages: []
+          });
+          continue;
+        }
+
         // Map entity types to their translation table names
         const translationTableMap = {
           category: 'category_translations',
@@ -731,15 +744,26 @@ router.get('/entity-stats', authMiddleware, async (req, res) => {
           ) = :languageCount
         `;
 
-        const [translatedEntities] = await sequelize.query(query, {
-          replacements: {
-            storeId: store_id,
-            languageCodes: languageCodes,
-            languageCount: languageCodes.length
-          }
-        });
+        console.log(`   🔍 Checking translated entities with query...`);
+        console.log(`   📋 Translation table: ${translationTable}, ID column: ${entityIdColumn}`);
 
-        const translatedCount = translatedEntities.length;
+        let translatedCount = 0;
+        try {
+          const [translatedEntities] = await sequelize.query(query, {
+            replacements: {
+              storeId: store_id,
+              languageCodes: languageCodes,
+              languageCount: languageCodes.length
+            }
+          });
+
+          translatedCount = translatedEntities.length;
+          console.log(`   ✅ Found ${translatedCount} fully translated ${entityType.type}`);
+        } catch (queryError) {
+          console.error(`   ❌ Error querying translated entities for ${entityType.type}:`, queryError.message);
+          console.error(`   📋 Query was:`, query);
+          // Continue with translatedCount = 0
+        }
 
         // Find which languages are missing across all entities (with actual content)
         const missingLanguages = [];

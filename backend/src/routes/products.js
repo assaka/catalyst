@@ -482,24 +482,28 @@ router.post('/bulk-translate', authMiddleware, authorize(['admin', 'store_owner'
           continue;
         }
 
-        // Check if target translation already exists
-        const hasTargetTranslation = product.translations[toLang] &&
-          Object.values(product.translations[toLang]).some(val =>
-            typeof val === 'string' && val.trim().length > 0
-          );
+        // Check if ALL target fields have content (aiTranslateEntity will handle field-level merging)
+        const sourceFields = Object.entries(product.translations[fromLang] || {});
+        const targetTranslation = product.translations[toLang] || {};
 
-        if (hasTargetTranslation) {
-          console.log(`⏭️  Skipping product "${productName}": ${toLang} translation already exists`);
+        const allFieldsTranslated = sourceFields.every(([key, value]) => {
+          if (!value || typeof value !== 'string' || !value.trim()) return true; // Ignore empty source fields
+          const targetValue = targetTranslation[key];
+          return targetValue && typeof targetValue === 'string' && targetValue.trim().length > 0;
+        });
+
+        if (allFieldsTranslated && sourceFields.length > 0) {
+          console.log(`⏭️  Skipping product "${productName}": All fields already translated`);
           results.skipped++;
           results.skippedDetails.push({
             productId: product.id,
             productName,
-            reason: `${toLang} translation already exists`
+            reason: `All fields already translated`
           });
           continue;
         }
 
-        // Translate the product
+        // Translate the product (field-level translation handled by aiTranslateEntity)
         console.log(`🔄 Translating product "${productName}"...`);
         await translationService.aiTranslateEntity('product', product.id, fromLang, toLang);
         console.log(`✅ Successfully translated product "${productName}"`);
