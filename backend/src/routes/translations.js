@@ -904,6 +904,71 @@ router.get('/entity-stats', authMiddleware, async (req, res) => {
       });
     }
 
+    // Handle Custom Options separately (uses JSON translations, not normalized tables)
+    try {
+      const [customOptions] = await sequelize.query(`
+        SELECT id, translations
+        FROM custom_option_rules
+        WHERE store_id = :storeId
+      `, {
+        replacements: { storeId: store_id }
+      });
+
+      const totalItems = customOptions.length;
+      let translatedCount = 0;
+      const missingLanguages = new Set();
+
+      // Check translation completeness for JSON-based translations
+      customOptions.forEach(option => {
+        const translations = option.translations || {};
+        let hasAllTranslations = true;
+
+        languageCodes.forEach(langCode => {
+          if (!translations[langCode] || Object.keys(translations[langCode]).length === 0) {
+            missingLanguages.add(langCode);
+            hasAllTranslations = false;
+          }
+        });
+
+        if (hasAllTranslations) {
+          translatedCount++;
+        }
+      });
+
+      const completionPercentage = totalItems > 0
+        ? Math.round((translatedCount / totalItems) * 100)
+        : 100;
+
+      stats.push({
+        type: 'custom_option',
+        name: 'Custom Options',
+        icon: '⚙️',
+        totalItems,
+        translatedItems: translatedCount,
+        completionPercentage,
+        missingLanguages: Array.from(missingLanguages).map(code => {
+          const lang = languages.find(l => l.code === code);
+          return {
+            code,
+            name: lang?.name || code,
+            native_name: lang?.native_name || code
+          };
+        })
+      });
+    } catch (error) {
+      console.error('Error getting stats for custom_option:', error);
+      stats.push({
+        type: 'custom_option',
+        name: 'Custom Options',
+        icon: '⚙️',
+        totalItems: 0,
+        translatedItems: 0,
+        completionPercentage: 0,
+        missingLanguages: [],
+        error: error.message
+      });
+    }
+
     res.json({
       success: true,
       data: {
