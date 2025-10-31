@@ -238,24 +238,11 @@ export default function Translations() {
    */
   const handleBulkTranslate = async (fromLang, toLang) => {
     try {
-      const token = localStorage.getItem("token");
-      const response = await fetch('/api/translations/ui-labels/bulk-translate', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify({
-          fromLang,
-          toLang
-        })
+      // Use api client which automatically handles authentication
+      const data = await api.post('translations/ui-labels/bulk-translate', {
+        fromLang,
+        toLang
       });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.message || 'Translation failed');
-      }
 
       // Reload labels if target language is the currently selected one
       if (toLang === selectedLanguage) {
@@ -638,7 +625,6 @@ export default function Translations() {
     }
 
     try {
-      const token = localStorage.getItem("token");
       const endpoint = selectedEntityType === 'category' ? 'categories' :
                        selectedEntityType === 'product' ? 'products' :
                        selectedEntityType === 'attribute' ? 'attributes' :
@@ -653,24 +639,12 @@ export default function Translations() {
         throw new Error('Invalid entity type');
       }
 
-      const response = await fetch(`/api/${endpoint}/bulk-translate`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify({
-          store_id: storeId,
-          fromLang,
-          toLang
-        })
+      // Use api client which automatically handles authentication
+      const data = await api.post(`${endpoint}/bulk-translate`, {
+        store_id: storeId,
+        fromLang,
+        toLang
       });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.message || 'Translation failed');
-      }
 
       // Reload entity stats to update progress
       await loadEntityStats();
@@ -703,26 +677,13 @@ export default function Translations() {
     }
 
     try {
-      const token = localStorage.getItem("token");
-      const response = await fetch('/api/translations/bulk-translate-entities', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify({
-          store_id: storeId,
-          entity_types: entityTypes,
-          fromLang,
-          toLang
-        })
+      // Use api client which automatically handles authentication
+      const data = await api.post('translations/bulk-translate-entities', {
+        store_id: storeId,
+        entity_types: entityTypes,
+        fromLang,
+        toLang
       });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.message || 'Translation failed');
-      }
 
       // Reload entity stats to update progress
       await loadEntityStats();
