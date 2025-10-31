@@ -446,24 +446,42 @@ router.post('/bulk-translate', authMiddleware, [
       translated: 0,
       skipped: 0,
       failed: 0,
-      errors: []
+      errors: [],
+      skippedDetails: []
     };
+
+    console.log(`🌐 Starting product tabs translation: ${fromLang} → ${toLang} (${tabs.length} tabs)`);
 
     for (const tab of tabs) {
       try {
+        const tabName = tab.translations?.[fromLang]?.name || tab.name || `Tab ${tab.id}`;
+
         // Check if source translation exists
         if (!tab.translations || !tab.translations[fromLang]) {
+          console.log(`⏭️  Skipping tab "${tabName}": No ${fromLang} translation`);
           results.skipped++;
+          results.skippedDetails.push({
+            tabId: tab.id,
+            tabName,
+            reason: `No ${fromLang} translation found`
+          });
           continue;
         }
 
         // Check if target translation already exists
         if (tab.translations[toLang]) {
+          console.log(`⏭️  Skipping tab "${tabName}": ${toLang} translation already exists`);
           results.skipped++;
+          results.skippedDetails.push({
+            tabId: tab.id,
+            tabName,
+            reason: `${toLang} translation already exists`
+          });
           continue;
         }
 
         // Get source translation and translate each field
+        console.log(`🔄 Translating tab "${tabName}"...`);
         const sourceTranslation = tab.translations[fromLang];
         const translatedData = {};
 
@@ -478,17 +496,21 @@ router.post('/bulk-translate', authMiddleware, [
         translations[toLang] = translatedData;
 
         await updateProductTabWithTranslations(tab.id, {}, translations);
+        console.log(`✅ Successfully translated tab "${tabName}"`);
         results.translated++;
       } catch (error) {
-        console.error(`Error translating product tab ${tab.id}:`, error);
+        const tabName = tab.translations?.[fromLang]?.name || tab.name || `Tab ${tab.id}`;
+        console.error(`❌ Error translating product tab "${tabName}":`, error);
         results.failed++;
         results.errors.push({
           tabId: tab.id,
-          tabName: tab.translations?.[fromLang]?.name || tab.name,
+          tabName,
           error: error.message
         });
       }
     }
+
+    console.log(`✅ Product tabs translation complete: ${results.translated} translated, ${results.skipped} skipped, ${results.failed} failed`);
 
     res.json({
       success: true,

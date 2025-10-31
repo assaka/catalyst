@@ -253,6 +253,8 @@ router.delete('/:id', authMiddleware, async (req, res) => {
     }
 
     await deleteProductLabel(req.params.id);
+    console.log(`✅ Product Labels translation complete: ${results.translated} translated, ${results.skipped} skipped, ${results.failed} failed`);
+
     res.json({
       success: true,
       message: 'Product label deleted successfully'
@@ -404,24 +406,42 @@ router.post('/bulk-translate', authMiddleware, [
       translated: 0,
       skipped: 0,
       failed: 0,
-      errors: []
+      errors: [],
+      skippedDetails: []
     };
+
+    console.log(`🌐 Starting Product Labels translation: ${fromLang} → ${toLang} (${labels.length} Product Labels)`);
 
     for (const label of labels) {
       try {
+        const labelText = label.translations?.[fromLang]?.text || label.text || `Label ${label.id}`;
+
         // Check if source translation exists
         if (!label.translations || !label.translations[fromLang]) {
+          console.log(`⏭️  Skipping label "${labelText}": No ${fromLang} translation`);
           results.skipped++;
+          results.skippedDetails.push({
+            labelId: label.id,
+            labelText,
+            reason: `No ${fromLang} translation found`
+          });
           continue;
         }
 
         // Check if target translation already exists
         if (label.translations[toLang]) {
+          console.log(`⏭️  Skipping label "${labelText}": ${toLang} translation already exists`);
           results.skipped++;
+          results.skippedDetails.push({
+            labelId: label.id,
+            labelText,
+            reason: `${toLang} translation already exists`
+          });
           continue;
         }
 
         // Get source translation and translate each field
+        console.log(`🔄 Translating label "${labelText}"...`);
         const sourceTranslation = label.translations[fromLang];
         const translatedData = {};
 
@@ -436,17 +456,21 @@ router.post('/bulk-translate', authMiddleware, [
         translations[toLang] = translatedData;
 
         await updateProductLabelWithTranslations(label.id, {}, translations);
+        console.log(`✅ Successfully translated label "${labelText}"`);
         results.translated++;
       } catch (error) {
-        console.error(`Error translating product label ${label.id}:`, error);
+        const labelText = label.translations?.[fromLang]?.text || label.text || `Label ${label.id}`;
+        console.error(`❌ Error translating product label "${labelText}":`, error);
         results.failed++;
         results.errors.push({
           labelId: label.id,
-          labelText: label.translations?.[fromLang]?.text || label.text,
+          labelText,
           error: error.message
         });
       }
     }
+
+    console.log(`✅ Product labels translation complete: ${results.translated} translated, ${results.skipped} skipped, ${results.failed} failed`);
 
     res.json({
       success: true,
