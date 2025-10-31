@@ -441,6 +441,17 @@ router.post('/bulk-translate', authMiddleware, authorize(['admin', 'store_owner'
       order: [['created_at', 'DESC']]
     });
 
+    console.log(`📦 Loaded ${products.length} products from database`);
+    if (products.length > 0) {
+      console.log(`🔍 First product structure:`, JSON.stringify({
+        id: products[0].id,
+        name: products[0].name,
+        translations: products[0].translations,
+        hasTranslations: !!products[0].translations,
+        translationKeys: products[0].translations ? Object.keys(products[0].translations) : 'none'
+      }, null, 2));
+    }
+
     if (products.length === 0) {
       return res.json({
         success: true,
@@ -469,6 +480,11 @@ router.post('/bulk-translate', authMiddleware, authorize(['admin', 'store_owner'
     for (const product of products) {
       try {
         const productName = product.translations?.[fromLang]?.name || product.name || `Product ${product.id}`;
+
+        console.log(`\n📋 Processing product: ${productName}`);
+        console.log(`   - Has translations object: ${!!product.translations}`);
+        console.log(`   - Has ${fromLang} translation: ${!!(product.translations && product.translations[fromLang])}`);
+        console.log(`   - Translations keys:`, product.translations ? Object.keys(product.translations) : 'none');
 
         // Check if source translation exists
         if (!product.translations || !product.translations[fromLang]) {
