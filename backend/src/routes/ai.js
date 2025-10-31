@@ -700,7 +700,7 @@ Return ONLY valid JSON.`;
 
     } else if (intent.intent === 'translation') {
       // Handle translation request
-      const { text, targetLanguages } = intent.details || {};
+      const { text, targetLanguages, action = 'apply', uiLabelKey } = intent.details || {};
 
       // If no target language specified, ask for it
       if (!targetLanguages || targetLanguages.length === 0) {
@@ -725,8 +725,11 @@ Return ONLY valid JSON.`;
         });
       }
 
+      // Detect if they're referring to a UI label (button, link, etc.) or just want translation
+      const isUILabel = message.match(/button|label|link|text|menu|heading|title/i);
+
       // If no text to translate, extract it from the message
-      const textToTranslate = text || message.replace(/translate|to|in|into|for|the/gi, '').trim();
+      const textToTranslate = text || message.replace(/translate|to|in|into|for|the|button|label/gi, '').trim();
 
       if (!textToTranslate) {
         return res.json({
@@ -742,6 +745,7 @@ Return ONLY valid JSON.`;
 
       // Perform the translation
       const translationService = require('../services/translation-service');
+      const Translation = require('../models/Translation');
       const results = {};
 
       for (const targetLang of targetLanguages) {
@@ -750,7 +754,7 @@ Return ONLY valid JSON.`;
             textToTranslate,
             'en',
             targetLang,
-            { type: 'button', location: 'general' }
+            { type: isUILabel ? 'button' : 'general', location: 'general' }
           );
           results[targetLang] = translated;
         } catch (error) {
@@ -759,14 +763,62 @@ Return ONLY valid JSON.`;
         }
       }
 
-      // Format the response
+      // If it's a UI label, find the translation key and offer to update it
+      if (isUILabel) {
+        // Find matching translation keys (e.g., "add to cart" might match "common.addToCart")
+        const { sequelize } = require('../database/connection');
+        const matchingKeys = await sequelize.query(`
+          SELECT DISTINCT key, value, language_code
+          FROM translations
+          WHERE LOWER(value) LIKE $1
+          ORDER BY language_code, key
+          LIMIT 10
+        `, {
+          bind: [`%${textToTranslate.toLowerCase()}%`],
+          type: sequelize.QueryTypes.SELECT
+        });
+
+        if (matchingKeys.length > 0) {
+          // Group by key
+          const keyGroups = {};
+          matchingKeys.forEach(item => {
+            if (!keyGroups[item.key]) {
+              keyGroups[item.key] = [];
+            }
+            keyGroups[item.key].push({ lang: item.language_code, value: item.value });
+          });
+
+          const translationsList = Object.entries(results)
+            .map(([lang, translation]) => `**${lang.toUpperCase()}**: ${translation}`)
+            .join('\n');
+
+          const keysInfo = Object.entries(keyGroups).map(([key, langs]) =>
+            `- \`${key}\` (currently in ${langs.map(l => l.lang).join(', ')})`
+          ).join('\n');
+
+          return res.json({
+            success: true,
+            message: `I found these UI labels in your store that match "${textToTranslate}":\n\n${keysInfo}\n\n**Suggested translations:**\n${translationsList}\n\nWould you like me to update these labels with the new translations? Reply "yes" to update, or tell me which specific key to update.`,
+            data: {
+              type: 'translation_preview',
+              original: textToTranslate,
+              translations: results,
+              matchingKeys: keyGroups,
+              action: 'update_labels'
+            },
+            creditsDeducted: creditsUsed
+          });
+        }
+      }
+
+      // Just show translations (no UI label match or not a UI element)
       const translationsList = Object.entries(results)
         .map(([lang, translation]) => `**${lang.toUpperCase()}**: ${translation}`)
         .join('\n');
 
       res.json({
         success: true,
-        message: `Here are the translations for "${textToTranslate}":\n\n${translationsList}`,
+        message: `Here are the translations for "${textToTranslate}":\n\n${translationsList}${isUILabel ? '\n\nI couldn\'t find this text in your store\'s UI labels. If you want to add it as a new label, let me know!' : ''}`,
         data: {
           type: 'translation',
           original: textToTranslate,
