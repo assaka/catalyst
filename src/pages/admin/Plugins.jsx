@@ -81,6 +81,9 @@ export default function Plugins() {
   const [showPublishWarning, setShowPublishWarning] = useState(false);
   const [pluginToPublish, setPluginToPublish] = useState(null);
   const [publishing, setPublishing] = useState(false);
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [pluginToDelete, setPluginToDelete] = useState(null);
+  const [deleting, setDeleting] = useState(false);
 
   useEffect(() => {
     loadData();
@@ -317,18 +320,25 @@ export default function Plugins() {
     }
   };
 
-  const handleDeletePlugin = async (plugin) => {
-    if (!confirm(`Are you sure you want to permanently delete "${plugin.name}"? This action cannot be undone.`)) {
-      return;
-    }
+  const handleDeletePlugin = (plugin) => {
+    setPluginToDelete(plugin);
+    setShowDeleteDialog(true);
+  };
 
+  const confirmDelete = async () => {
+    if (!pluginToDelete) return;
+
+    setDeleting(true);
     try {
-      await apiClient.request('DELETE', `plugins/${plugin.id}`);
-      alert(`Plugin "${plugin.name}" has been permanently deleted.`);
+      await apiClient.request('DELETE', `plugins/${pluginToDelete.id}`);
+      setShowDeleteDialog(false);
+      setPluginToDelete(null);
       await loadData();
     } catch (error) {
       console.error("Error deleting plugin:", error);
       alert("Error deleting plugin: " + error.message);
+    } finally {
+      setDeleting(false);
     }
   };
 
@@ -1194,6 +1204,78 @@ export default function Plugins() {
                     <>
                       <Globe className="w-4 h-4 mr-2" />
                       Publish to Marketplace
+                    </>
+                  )}
+                </Button>
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
+
+        {/* Delete Plugin Dialog */}
+        <Dialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+          <DialogContent className="max-w-md">
+            <DialogHeader>
+              <DialogTitle>Delete Plugin</DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4">
+              <div className="bg-red-50 border border-red-200 rounded-lg p-3">
+                <p className="text-sm text-red-800 font-medium mb-2">
+                  ⚠️ Warning: This action cannot be undone!
+                </p>
+                <p className="text-sm text-red-800">
+                  Permanently deleting this plugin will remove all associated data from the database, including:
+                </p>
+                <ul className="text-sm text-red-800 list-disc list-inside mt-2 space-y-1">
+                  <li>Plugin scripts and dependencies</li>
+                  <li>Documentation and migrations</li>
+                  <li>Controllers and entities</li>
+                  <li>All plugin configurations</li>
+                </ul>
+              </div>
+
+              {pluginToDelete && (
+                <div>
+                  <p className="text-sm font-medium text-gray-700 mb-2">
+                    Plugin: <strong>{pluginToDelete.name}</strong>
+                  </p>
+                  <p className="text-sm text-gray-600">
+                    Version: {pluginToDelete.version}
+                  </p>
+                </div>
+              )}
+
+              <div className="bg-gray-50 border border-gray-200 rounded-lg p-3">
+                <p className="text-sm text-gray-700">
+                  This will permanently delete the plugin and all its data. Are you absolutely sure?
+                </p>
+              </div>
+
+              <div className="flex justify-end gap-2">
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    setShowDeleteDialog(false);
+                    setPluginToDelete(null);
+                  }}
+                  disabled={deleting}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  onClick={confirmDelete}
+                  disabled={deleting}
+                  className="bg-red-600 hover:bg-red-700 text-white"
+                >
+                  {deleting ? (
+                    <>
+                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                      Deleting...
+                    </>
+                  ) : (
+                    <>
+                      <Trash2 className="w-4 h-4 mr-2" />
+                      Delete Permanently
                     </>
                   )}
                 </Button>
