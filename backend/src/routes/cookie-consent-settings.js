@@ -426,35 +426,58 @@ router.post('/bulk-translate', [
       translated: 0,
       skipped: 0,
       failed: 0,
-      errors: []
+      errors: [],
+      skippedDetails: []
     };
+
+    console.log(`🌐 Starting cookie consent settings translation: ${fromLang} → ${toLang} (${settingsRecords.length} settings)`);
 
     for (const settings of settingsRecords) {
       try {
+        const settingsName = settings.translations?.[fromLang]?.banner_title || `Settings ${settings.id}`;
+
         // Check if source translation exists
         if (!settings.translations || !settings.translations[fromLang]) {
+          console.log(`⏭️  Skipping settings "${settingsName}": No ${fromLang} translation`);
           results.skipped++;
+          results.skippedDetails.push({
+            settingsId: settings.id,
+            settingsName,
+            reason: `No ${fromLang} translation found`
+          });
           continue;
         }
 
         // Check if target translation already exists
         if (settings.translations[toLang]) {
+          console.log(`⏭️  Skipping settings "${settingsName}": ${toLang} translation already exists`);
           results.skipped++;
+          results.skippedDetails.push({
+            settingsId: settings.id,
+            settingsName,
+            reason: `${toLang} translation already exists`
+          });
           continue;
         }
 
         // Translate the settings
+        console.log(`🔄 Translating settings "${settingsName}"...`);
         await translationService.aiTranslateEntity('cookie_consent', settings.id, fromLang, toLang);
+        console.log(`✅ Successfully translated settings "${settingsName}"`);
         results.translated++;
       } catch (error) {
-        console.error(`Error translating cookie consent settings ${settings.id}:`, error);
+        const settingsName = settings.translations?.[fromLang]?.banner_title || `Settings ${settings.id}`;
+        console.error(`❌ Error translating cookie consent settings "${settingsName}":`, error);
         results.failed++;
         results.errors.push({
           settingsId: settings.id,
+          settingsName,
           error: error.message
         });
       }
     }
+
+    console.log(`✅ Cookie consent settings translation complete: ${results.translated} translated, ${results.skipped} skipped, ${results.failed} failed`);
 
     res.json({
       success: true,

@@ -417,25 +417,43 @@ router.post('/bulk-translate', authMiddleware, authorize(['admin', 'store_owner'
       translated: 0,
       skipped: 0,
       failed: 0,
-      errors: []
+      errors: [],
+      skippedDetails: []
     };
+
+    console.log(`🌐 Starting category translation: ${fromLang} → ${toLang} (${categories.length} categories)`);
 
     for (const category of categories) {
       try {
+        const categoryName = category.name || `Category ${category.id}`;
+
         // Check if source translation exists
         if (!category.name && !category.description) {
+          console.log(`⏭️  Skipping category "${categoryName}": No ${fromLang} translation`);
           results.skipped++;
+          results.skippedDetails.push({
+            categoryId: category.id,
+            categoryName,
+            reason: `No ${fromLang} translation found`
+          });
           continue;
         }
 
         // Check if target translation already exists
         const categoryWithToLang = await getCategoryById(category.id, toLang);
         if (categoryWithToLang && (categoryWithToLang.name || categoryWithToLang.description)) {
+          console.log(`⏭️  Skipping category "${categoryName}": ${toLang} translation already exists`);
           results.skipped++;
+          results.skippedDetails.push({
+            categoryId: category.id,
+            categoryName,
+            reason: `${toLang} translation already exists`
+          });
           continue;
         }
 
         // Translate each field using AI
+        console.log(`🔄 Translating category "${categoryName}"...`);
         const translatedData = {};
         if (category.name) {
           translatedData.name = await translationService.aiTranslate(category.name, fromLang, toLang);
@@ -449,17 +467,21 @@ router.post('/bulk-translate', authMiddleware, authorize(['admin', 'store_owner'
         translations[toLang] = translatedData;
 
         await updateCategoryWithTranslations(category.id, {}, translations);
+        console.log(`✅ Successfully translated category "${categoryName}"`);
         results.translated++;
       } catch (error) {
-        console.error(`Error translating category ${category.id}:`, error);
+        const categoryName = category.name || `Category ${category.id}`;
+        console.error(`❌ Error translating category "${categoryName}":`, error);
         results.failed++;
         results.errors.push({
           categoryId: category.id,
-          categoryName: category.name || 'Unknown',
+          categoryName,
           error: error.message
         });
       }
     }
+
+    console.log(`✅ Category translation complete: ${results.translated} translated, ${results.skipped} skipped, ${results.failed} failed`);
 
     res.json({
       success: true,

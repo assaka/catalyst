@@ -306,36 +306,58 @@ router.post('/bulk-translate', [
       translated: 0,
       skipped: 0,
       failed: 0,
-      errors: []
+      errors: [],
+      skippedDetails: []
     };
+
+    console.log(`🌐 Starting CMS page translation: ${fromLang} → ${toLang} (${pages.length} pages)`);
 
     for (const page of pages) {
       try {
+        const pageTitle = page.translations?.[fromLang]?.title || page.title || page.slug || `Page ${page.id}`;
+
         // Check if source translation exists
         if (!page.translations || !page.translations[fromLang]) {
+          console.log(`⏭️  Skipping page "${pageTitle}": No ${fromLang} translation`);
           results.skipped++;
+          results.skippedDetails.push({
+            pageId: page.id,
+            pageTitle,
+            reason: `No ${fromLang} translation found`
+          });
           continue;
         }
 
         // Check if target translation already exists
         if (page.translations[toLang]) {
+          console.log(`⏭️  Skipping page "${pageTitle}": ${toLang} translation already exists`);
           results.skipped++;
+          results.skippedDetails.push({
+            pageId: page.id,
+            pageTitle,
+            reason: `${toLang} translation already exists`
+          });
           continue;
         }
 
         // Translate the page
+        console.log(`🔄 Translating page "${pageTitle}"...`);
         await translationService.aiTranslateEntity('cms_page', page.id, fromLang, toLang);
+        console.log(`✅ Successfully translated page "${pageTitle}"`);
         results.translated++;
       } catch (error) {
-        console.error(`Error translating CMS page ${page.id}:`, error);
+        const pageTitle = page.translations?.[fromLang]?.title || page.title || page.slug || `Page ${page.id}`;
+        console.error(`❌ Error translating CMS page "${pageTitle}":`, error);
         results.failed++;
         results.errors.push({
           pageId: page.id,
-          pageTitle: page.translations?.[fromLang]?.title || page.slug,
+          pageTitle,
           error: error.message
         });
       }
     }
+
+    console.log(`✅ CMS page translation complete: ${results.translated} translated, ${results.skipped} skipped, ${results.failed} failed`);
 
     res.json({
       success: true,

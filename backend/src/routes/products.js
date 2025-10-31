@@ -460,36 +460,58 @@ router.post('/bulk-translate', authMiddleware, authorize(['admin', 'store_owner'
       translated: 0,
       skipped: 0,
       failed: 0,
-      errors: []
+      errors: [],
+      skippedDetails: []
     };
+
+    console.log(`🌐 Starting product translation: ${fromLang} → ${toLang} (${products.length} products)`);
 
     for (const product of products) {
       try {
+        const productName = product.translations?.[fromLang]?.name || product.name || `Product ${product.id}`;
+
         // Check if source translation exists
         if (!product.translations || !product.translations[fromLang]) {
+          console.log(`⏭️  Skipping product "${productName}": No ${fromLang} translation`);
           results.skipped++;
+          results.skippedDetails.push({
+            productId: product.id,
+            productName,
+            reason: `No ${fromLang} translation found`
+          });
           continue;
         }
 
         // Check if target translation already exists
         if (product.translations[toLang]) {
+          console.log(`⏭️  Skipping product "${productName}": ${toLang} translation already exists`);
           results.skipped++;
+          results.skippedDetails.push({
+            productId: product.id,
+            productName,
+            reason: `${toLang} translation already exists`
+          });
           continue;
         }
 
         // Translate the product
+        console.log(`🔄 Translating product "${productName}"...`);
         await translationService.aiTranslateEntity('product', product.id, fromLang, toLang);
+        console.log(`✅ Successfully translated product "${productName}"`);
         results.translated++;
       } catch (error) {
-        console.error(`Error translating product ${product.id}:`, error);
+        const productName = product.translations?.[fromLang]?.name || product.name || `Product ${product.id}`;
+        console.error(`❌ Error translating product "${productName}":`, error);
         results.failed++;
         results.errors.push({
           productId: product.id,
-          productName: product.translations?.[fromLang]?.name || 'Unknown',
+          productName,
           error: error.message
         });
       }
     }
+
+    console.log(`✅ Product translation complete: ${results.translated} translated, ${results.skipped} skipped, ${results.failed} failed`);
 
     res.json({
       success: true,

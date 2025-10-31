@@ -558,36 +558,58 @@ router.post('/bulk-translate', authMiddleware, authorize(['admin', 'store_owner'
       translated: 0,
       skipped: 0,
       failed: 0,
-      errors: []
+      errors: [],
+      skippedDetails: []
     };
+
+    console.log(`🌐 Starting attribute translation: ${fromLang} → ${toLang} (${attributes.length} attributes)`);
 
     for (const attribute of attributes) {
       try {
+        const attributeName = attribute.translations?.[fromLang]?.name || attribute.name || `Attribute ${attribute.id}`;
+
         // Check if source translation exists
         if (!attribute.translations || !attribute.translations[fromLang]) {
+          console.log(`⏭️  Skipping attribute "${attributeName}": No ${fromLang} translation`);
           results.skipped++;
+          results.skippedDetails.push({
+            attributeId: attribute.id,
+            attributeName,
+            reason: `No ${fromLang} translation found`
+          });
           continue;
         }
 
         // Check if target translation already exists
         if (attribute.translations[toLang]) {
+          console.log(`⏭️  Skipping attribute "${attributeName}": ${toLang} translation already exists`);
           results.skipped++;
+          results.skippedDetails.push({
+            attributeId: attribute.id,
+            attributeName,
+            reason: `${toLang} translation already exists`
+          });
           continue;
         }
 
         // Translate the attribute
+        console.log(`🔄 Translating attribute "${attributeName}"...`);
         await translationService.aiTranslateEntity('attribute', attribute.id, fromLang, toLang);
+        console.log(`✅ Successfully translated attribute "${attributeName}"`);
         results.translated++;
       } catch (error) {
-        console.error(`Error translating attribute ${attribute.id}:`, error);
+        const attributeName = attribute.translations?.[fromLang]?.name || attribute.name || `Attribute ${attribute.id}`;
+        console.error(`❌ Error translating attribute "${attributeName}":`, error);
         results.failed++;
         results.errors.push({
           attributeId: attribute.id,
-          attributeName: attribute.translations?.[fromLang]?.name || attribute.name,
+          attributeName,
           error: error.message
         });
       }
     }
+
+    console.log(`✅ Attribute translation complete: ${results.translated} translated, ${results.skipped} skipped, ${results.failed} failed`);
 
     res.json({
       success: true,
