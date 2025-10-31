@@ -464,13 +464,22 @@ router.post('/ui-labels/bulk-translate', authMiddleware, async (req, res) => {
       errors: []
     };
 
+    console.log(`🌐 Starting UI labels bulk translation: ${fromLang} → ${toLang}`);
+    console.log(`📊 Total labels: ${results.total}, To translate: ${keysToTranslate.length}, Already translated: ${results.skipped}`);
+
     // Translate each label
-    for (const key of keysToTranslate) {
+    for (let i = 0; i < keysToTranslate.length; i++) {
+      const key = keysToTranslate[i];
       try {
         const sourceValue = flatSourceLabels[key];
         if (!sourceValue || typeof sourceValue !== 'string') {
           results.skipped++;
           continue;
+        }
+
+        // Progress update every 10 labels
+        if (i % 10 === 0 || i === 0) {
+          console.log(`📊 Progress: ${i + 1}/${keysToTranslate.length} - Translating "${key}": "${sourceValue.substring(0, 30)}..."`);
         }
 
         // Translate using AI
@@ -484,7 +493,7 @@ router.post('/ui-labels/bulk-translate', authMiddleware, async (req, res) => {
 
         results.translated++;
       } catch (error) {
-        console.error(`Error translating UI label ${key}:`, error);
+        console.error(`❌ Error translating UI label ${key}:`, error.message);
         results.failed++;
         results.errors.push({
           key,
@@ -492,6 +501,8 @@ router.post('/ui-labels/bulk-translate', authMiddleware, async (req, res) => {
         });
       }
     }
+
+    console.log(`✅ UI labels translation complete: ${results.translated} translated, ${results.skipped} skipped, ${results.failed} failed`);
 
     res.json({
       success: true,
