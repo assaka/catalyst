@@ -449,7 +449,12 @@ router.post('/bulk-translate', [
         }
 
         // Check if target translation already exists
-        if (settings.translations[toLang]) {
+        const hasTargetTranslation = settings.translations[toLang] &&
+          Object.values(settings.translations[toLang]).some(val =>
+            typeof val === 'string' && val.trim().length > 0
+          );
+
+        if (hasTargetTranslation) {
           console.log(`⏭️  Skipping settings "${settingsName}": ${toLang} translation already exists`);
           results.skipped++;
           results.skippedDetails.push({

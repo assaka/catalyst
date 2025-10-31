@@ -329,7 +329,12 @@ router.post('/bulk-translate', [
         }
 
         // Check if target translation already exists
-        if (page.translations[toLang]) {
+        const hasTargetTranslation = page.translations[toLang] &&
+          Object.values(page.translations[toLang]).some(val =>
+            typeof val === 'string' && val.trim().length > 0
+          );
+
+        if (hasTargetTranslation) {
           console.log(`⏭️  Skipping page "${pageTitle}": ${toLang} translation already exists`);
           results.skipped++;
           results.skippedDetails.push({

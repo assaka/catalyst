@@ -642,11 +642,16 @@ Determine the intent and respond with JSON:
   "action": "generate|modify|chat",
   "details": {
     // For plugin: { description, category }
-    // For translation: { entities, languages }
+    // For translation: { text: "the text to translate", targetLanguages: ["fr", "es"], entities: ["products", "categories"] }
     // For layout: { configType, description }
     // For code: { operation }
   }
 }
+
+For translation intent:
+- Extract the text to translate (e.g., "add to cart button" → "Add to Cart")
+- Extract target language codes (e.g., "French" → "fr", "Spanish" → "es", "German" → "de", "Arabic" → "ar")
+- Common language mappings: French=fr, Spanish=es, German=de, Arabic=ar, Chinese=zh, Japanese=ja, Portuguese=pt, Italian=it, Dutch=nl, Russian=ru
 
 Return ONLY valid JSON.`;
 
@@ -695,13 +700,77 @@ Return ONLY valid JSON.`;
 
     } else if (intent.intent === 'translation') {
       // Handle translation request
+      const { text, targetLanguages } = intent.details || {};
+
+      // If no target language specified, ask for it
+      if (!targetLanguages || targetLanguages.length === 0) {
+        const clarifyResult = await aiService.generate({
+          userId,
+          operationType: 'general',
+          prompt: `The user said: "${message}"\n\nThey want to translate something but didn't specify the target language. Ask them which language(s) they want to translate to. Be friendly and suggest common languages like French (fr), Spanish (es), German (de), Arabic (ar), Chinese (zh), etc.`,
+          systemPrompt: 'You are a helpful translation assistant. Ask clarifying questions in a friendly way.',
+          maxTokens: 256,
+          temperature: 0.7,
+          metadata: { type: 'translation-clarification' }
+        });
+
+        return res.json({
+          success: true,
+          message: clarifyResult.content,
+          data: {
+            type: 'clarification',
+            needsLanguage: true
+          },
+          creditsDeducted: creditsUsed + clarifyResult.creditsDeducted
+        });
+      }
+
+      // If no text to translate, extract it from the message
+      const textToTranslate = text || message.replace(/translate|to|in|into|for|the/gi, '').trim();
+
+      if (!textToTranslate) {
+        return res.json({
+          success: true,
+          message: "I'd be happy to help translate! Could you tell me what text you'd like me to translate?",
+          data: {
+            type: 'clarification',
+            needsText: true
+          },
+          creditsDeducted: creditsUsed
+        });
+      }
+
+      // Perform the translation
+      const translationService = require('../services/translation-service');
+      const results = {};
+
+      for (const targetLang of targetLanguages) {
+        try {
+          const translated = await translationService._translateWithClaude(
+            textToTranslate,
+            'en',
+            targetLang,
+            { type: 'button', location: 'general' }
+          );
+          results[targetLang] = translated;
+        } catch (error) {
+          console.error(`Translation to ${targetLang} failed:`, error);
+          results[targetLang] = `[Translation failed: ${error.message}]`;
+        }
+      }
+
+      // Format the response
+      const translationsList = Object.entries(results)
+        .map(([lang, translation]) => `**${lang.toUpperCase()}**: ${translation}`)
+        .join('\n');
+
       res.json({
         success: true,
-        message: `I understand you want to translate ${intent.details?.entities?.join(', ')} to ${intent.details?.languages?.join(', ')}. This feature is being implemented.`,
+        message: `Here are the translations for "${textToTranslate}":\n\n${translationsList}`,
         data: {
           type: 'translation',
-          summary: 'Translation in progress',
-          details: []
+          original: textToTranslate,
+          translations: results
         },
         creditsDeducted: creditsUsed
       });

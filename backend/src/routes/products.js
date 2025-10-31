@@ -483,7 +483,12 @@ router.post('/bulk-translate', authMiddleware, authorize(['admin', 'store_owner'
         }
 
         // Check if target translation already exists
-        if (product.translations[toLang]) {
+        const hasTargetTranslation = product.translations[toLang] &&
+          Object.values(product.translations[toLang]).some(val =>
+            typeof val === 'string' && val.trim().length > 0
+          );
+
+        if (hasTargetTranslation) {
           console.log(`⏭️  Skipping product "${productName}": ${toLang} translation already exists`);
           results.skipped++;
           results.skippedDetails.push({

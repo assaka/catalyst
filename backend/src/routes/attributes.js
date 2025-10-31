@@ -581,7 +581,12 @@ router.post('/bulk-translate', authMiddleware, authorize(['admin', 'store_owner'
         }
 
         // Check if target translation already exists
-        if (attribute.translations[toLang]) {
+        const hasTargetTranslation = attribute.translations[toLang] &&
+          Object.values(attribute.translations[toLang]).some(val =>
+            typeof val === 'string' && val.trim().length > 0
+          );
+
+        if (hasTargetTranslation) {
           console.log(`⏭️  Skipping attribute "${attributeName}": ${toLang} translation already exists`);
           results.skipped++;
           results.skippedDetails.push({
@@ -784,7 +789,12 @@ router.post('/values/bulk-translate', authMiddleware, authorize(['admin', 'store
         }
 
         // Check if target translation already exists
-        if (value.translations[toLang]) {
+        const hasTargetTranslation = value.translations[toLang] &&
+          Object.values(value.translations[toLang]).some(val =>
+            typeof val === 'string' && val.trim().length > 0
+          );
+
+        if (hasTargetTranslation) {
           results.skipped++;
           continue;
         }

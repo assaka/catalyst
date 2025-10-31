@@ -441,7 +441,12 @@ router.post('/bulk-translate', authMiddleware, authorize(['admin', 'store_owner'
 
         // Check if target translation already exists
         const categoryWithToLang = await getCategoryById(category.id, toLang);
-        if (categoryWithToLang && (categoryWithToLang.name || categoryWithToLang.description)) {
+        const hasTargetTranslation = categoryWithToLang &&
+          Object.values({ name: categoryWithToLang.name, description: categoryWithToLang.description }).some(val =>
+            typeof val === 'string' && val.trim().length > 0
+          );
+
+        if (hasTargetTranslation) {
           console.log(`⏭️  Skipping category "${categoryName}": ${toLang} translation already exists`);
           results.skipped++;
           results.skippedDetails.push({
