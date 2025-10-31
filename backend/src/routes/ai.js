@@ -704,16 +704,39 @@ Return ONLY valid JSON.`;
       const { sequelize } = require('../database/connection');
       const translationService = require('../services/translation-service');
 
+      // Fetch active languages from the store
+      const activeLanguages = await sequelize.query(`
+        SELECT code, name, native_name, is_default, is_active
+        FROM languages
+        WHERE is_active = true
+        ORDER BY is_default DESC, name ASC
+      `, {
+        type: sequelize.QueryTypes.SELECT
+      });
+
+      const languageContext = activeLanguages.map(lang =>
+        `${lang.name} (${lang.code})${lang.is_default ? ' [default]' : ''}`
+      ).join(', ');
+
+      const defaultLanguage = activeLanguages.find(lang => lang.is_default)?.code || 'en';
+
       // Step 1: Let AI analyze the request and search for relevant translations
       const analysisPrompt = `The user wants to translate something in their e-commerce store.
 
 User request: "${message}"
 Previous context: ${JSON.stringify(conversationHistory?.slice(-2) || [])}
 
+STORE LANGUAGE CONTEXT:
+- Active languages: ${languageContext}
+- Default language: ${defaultLanguage}
+- Total active: ${activeLanguages.length} language(s)
+
 Analyze this request and provide:
 1. What text/label they want to translate (e.g., "Add to Cart", "Buy Now")
-2. Target language codes (e.g., ["fr", "es", "de"])
+2. Target language codes from the ACTIVE languages list above (e.g., ["fr", "es", "de"])
 3. Suggested translation keys to search for (e.g., ["add_to_cart", "addtocart", "add to cart"])
+
+IMPORTANT: Only suggest languages that are in the active languages list above!
 
 Return JSON:
 {
@@ -721,9 +744,11 @@ Return JSON:
   "targetLanguages": ["fr", "es"],
   "searchTerms": ["add_to_cart", "add to cart", "addtocart", "cart.add"],
   "needsClarification": false,
-  "clarificationQuestion": null
+  "clarificationQuestion": null,
+  "inactiveLanguageWarning": null
 }
 
+If the user requests a language that's NOT in the active list, set inactiveLanguageWarning with a helpful message.
 If you need to ask for clarification (missing language or unclear text), set needsClarification: true`;
 
       const analysisResult = await aiService.generate({
@@ -747,7 +772,20 @@ If you need to ask for clarification (missing language or unclear text), set nee
 
       creditsUsed += analysisResult.creditsDeducted;
 
-      // Step 2: If AI needs clarification, ask the user
+      // Step 2: Check for inactive language warning
+      if (analysis.inactiveLanguageWarning) {
+        return res.json({
+          success: true,
+          message: `${analysis.inactiveLanguageWarning}\n\nYour active languages are: ${languageContext}\n\nWould you like to activate a new language, or choose from the active ones?`,
+          data: {
+            type: 'language_warning',
+            activeLanguages: activeLanguages.map(l => ({ code: l.code, name: l.name }))
+          },
+          creditsDeducted: creditsUsed
+        });
+      }
+
+      // Step 3: If AI needs clarification, ask the user
       if (analysis.needsClarification) {
         return res.json({
           success: true,
