@@ -732,7 +732,7 @@ router.get('/entity-stats', authMiddleware, async (req, res) => {
           cms_page: `AND t.title IS NOT NULL AND t.title != ''`,   // CMS Pages use 'title', not 'name'
           cms_block: `AND t.title IS NOT NULL AND t.title != ''`,  // CMS Blocks use 'title', not 'name'
           product_label: `AND t.text IS NOT NULL AND t.text != ''`, // Product Labels use 'text'
-          cookie_consent: `AND t.banner_title IS NOT NULL AND t.banner_title != ''` // Cookie consent uses 'banner_title'
+          cookie_consent: `AND t.banner_text IS NOT NULL AND t.banner_text != ''` // Cookie consent uses 'banner_text'
         };
 
         const contentCheck = contentCheckMap[entityType.type] || `AND t.name IS NOT NULL AND t.name != ''`;
@@ -1024,10 +1024,18 @@ router.get('/entity-stats', authMiddleware, async (req, res) => {
       let translatedCount = 0;
       const missingLanguages = [];
 
-      // Check if translations exist for all active languages
+      // Check if translations exist for all active languages with actual content
       let hasAllTranslations = true;
       for (const langCode of languageCodes) {
-        if (!translations[langCode] || Object.keys(translations[langCode]).length === 0) {
+        const langTranslation = translations[langCode];
+
+        // Check if translation exists and has at least one non-empty field
+        const hasContent = langTranslation &&
+          Object.values(langTranslation).some(val =>
+            typeof val === 'string' && val.trim().length > 0
+          );
+
+        if (!hasContent) {
           missingLanguages.push(langCode);
           hasAllTranslations = false;
         }
