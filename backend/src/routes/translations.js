@@ -167,9 +167,8 @@ router.post('/ai-translate', authMiddleware, async (req, res) => {
       });
     }
 
-    // Calculate token-based cost
-    const translationCost = await translationService.calculateTranslationCost(text);
-    const estimatedTokens = translationService.estimateTokens(text);
+    // Standard translation cost: 0.1 credits
+    const translationCost = await translationService.getTranslationCost('standard');
 
     // Check if user has enough credits
     const hasCredits = await creditService.hasEnoughCredits(userId, storeId, translationCost);
@@ -178,10 +177,9 @@ router.post('/ai-translate', authMiddleware, async (req, res) => {
       return res.status(402).json({
         success: false,
         code: 'INSUFFICIENT_CREDITS',
-        message: `Insufficient credits. Required: ${translationCost} (~${estimatedTokens} tokens), Available: ${balance}`,
+        message: `Insufficient credits. Required: ${translationCost}, Available: ${balance}`,
         required: translationCost,
-        available: balance,
-        estimatedTokens
+        available: balance
       });
     }
 
@@ -198,8 +196,7 @@ router.post('/ai-translate', authMiddleware, async (req, res) => {
         fromLang,
         toLang,
         textLength: text.length,
-        translatedLength: translatedText.length,
-        estimatedTokens
+        translatedLength: translatedText.length
       },
       null,
       'ai_translation'
@@ -213,8 +210,7 @@ router.post('/ai-translate', authMiddleware, async (req, res) => {
         fromLang,
         toLang
       },
-      creditsDeducted: translationCost,
-      estimatedTokens
+      creditsDeducted: translationCost
     });
   } catch (error) {
     console.error('AI translate error:', error);
@@ -251,17 +247,15 @@ router.post('/ai-translate-entity', authMiddleware, async (req, res) => {
       });
     }
 
-    // Count translatable fields and calculate total text length
+    // Count translatable fields
     const sourceTranslation = entityData.translations[fromLang];
     const translatableFields = Object.values(sourceTranslation).filter(
       value => typeof value === 'string' && value.trim()
     );
     const fieldCount = translatableFields.length;
 
-    // Calculate total text length for all fields
-    const totalText = translatableFields.join(' ');
-    const totalCost = await translationService.calculateTranslationCost(totalText);
-    const estimatedTokens = translationService.estimateTokens(totalText);
+    // Get cost based on entity type (0.1 for standard, 0.2 for cms_block, 0.5 for cms_page)
+    const totalCost = await translationService.getTranslationCost(entityType);
 
     // Check if user has enough credits
     const hasCredits = await creditService.hasEnoughCredits(userId, storeId, totalCost);
@@ -270,11 +264,10 @@ router.post('/ai-translate-entity', authMiddleware, async (req, res) => {
       return res.status(402).json({
         success: false,
         code: 'INSUFFICIENT_CREDITS',
-        message: `Insufficient credits. Required: ${totalCost} (~${estimatedTokens} tokens), Available: ${balance}`,
+        message: `Insufficient credits. Required: ${totalCost}, Available: ${balance}`,
         required: totalCost,
         available: balance,
-        fieldCount,
-        estimatedTokens
+        fieldCount
       });
     }
 
@@ -297,9 +290,7 @@ router.post('/ai-translate-entity', authMiddleware, async (req, res) => {
         entityId,
         fromLang,
         toLang,
-        fieldCount,
-        estimatedTokens,
-        textLength: totalText.length
+        fieldCount
       },
       entityId,
       'ai_translation'
@@ -310,8 +301,7 @@ router.post('/ai-translate-entity', authMiddleware, async (req, res) => {
       data: entity,
       message: `${entityType} translated successfully`,
       creditsDeducted: totalCost,
-      fieldsTranslated: fieldCount,
-      estimatedTokens
+      fieldsTranslated: fieldCount
     });
   } catch (error) {
     console.error('AI translate entity error:', error);
@@ -649,7 +639,20 @@ router.get('/entity-stats', authMiddleware, async (req, res) => {
 
     console.log('📊 Active languages found:', languages.length, languages.map(l => l.code));
 
-    const languageCodes = languages.map(l => l.code);
+    // If no active languages found, use 'en' as default
+    const languageCodes = languages.length > 0
+      ? languages.map(l => l.code)
+      : ['en'];
+
+    // If no active languages, add default EN to languages array for response
+    if (languages.length === 0) {
+      languages.push({
+        code: 'en',
+        name: 'English',
+        native_name: 'English'
+      });
+      console.log('⚠️ No active languages found, using EN as default');
+    }
 
     // Define entity types to check
     const entityTypes = [
@@ -728,28 +731,30 @@ router.get('/entity-stats', authMiddleware, async (req, res) => {
 
         const translatedCount = translatedEntities.length;
 
-        // Find which languages are missing for incomplete entities
-        const missingLanguagesQuery = `
-          SELECT DISTINCT :languageCode::text as missing_lang
-          FROM unnest(ARRAY[:languageCodes]::text[]) as lang_code
-          WHERE NOT EXISTS (
-            SELECT 1
+        // Find which languages are missing across all entities
+        const missingLanguages = [];
+        for (const langCode of languageCodes) {
+          const [result] = await sequelize.query(`
+            SELECT COUNT(*) as missing_count
             FROM ${entityType.model.tableName} e
-            INNER JOIN ${translationTable} t ON t.${entityIdColumn} = e.id
             WHERE e.store_id = :storeId
-            AND t.language_code = lang_code
-          )
-        `;
+            AND NOT EXISTS (
+              SELECT 1
+              FROM ${translationTable} t
+              WHERE t.${entityIdColumn} = e.id
+              AND t.language_code = :langCode
+            )
+          `, {
+            replacements: {
+              storeId: store_id,
+              langCode: langCode
+            }
+          });
 
-        const [missingLangsResult] = await sequelize.query(missingLanguagesQuery, {
-          replacements: {
-            storeId: store_id,
-            languageCodes: languageCodes,
-            languageCode: 'language_code'
+          if (parseInt(result[0].missing_count) > 0) {
+            missingLanguages.push(langCode);
           }
-        });
-
-        const missingLanguages = missingLangsResult.map(row => row.missing_lang);
+        }
 
         const completionPercentage = totalItems > 0
           ? Math.round((translatedCount / totalItems) * 100)
@@ -839,26 +844,30 @@ router.get('/entity-stats', authMiddleware, async (req, res) => {
 
         const translatedCount = parseInt(translatedResult[0].count);
 
-        // Find missing languages
-        const [missingLangsResult] = await sequelize.query(`
-          SELECT DISTINCT :languageCode::text as missing_lang
-          FROM unnest(ARRAY[:languageCodes]::text[]) as lang_code
-          WHERE NOT EXISTS (
-            SELECT 1
+        // Find missing languages for attribute values
+        const missingLanguages = [];
+        for (const langCode of languageCodes) {
+          const [result] = await sequelize.query(`
+            SELECT COUNT(*) as missing_count
             FROM attribute_values av
-            INNER JOIN attribute_value_translations t ON t.attribute_value_id = av.id
             WHERE av.attribute_id IN (:attributeIds)
-            AND t.language_code = lang_code
-          )
-        `, {
-          replacements: {
-            attributeIds,
-            languageCodes: languageCodes,
-            languageCode: 'language_code'
-          }
-        });
+            AND NOT EXISTS (
+              SELECT 1
+              FROM attribute_value_translations t
+              WHERE t.attribute_value_id = av.id
+              AND t.language_code = :langCode
+            )
+          `, {
+            replacements: {
+              attributeIds,
+              langCode: langCode
+            }
+          });
 
-        const missingLanguages = missingLangsResult.map(row => row.missing_lang);
+          if (parseInt(result[0].missing_count) > 0) {
+            missingLanguages.push(langCode);
+          }
+        }
 
         const completionPercentage = totalItems > 0
           ? Math.round((translatedCount / totalItems) * 100)
@@ -1260,8 +1269,7 @@ router.post('/wizard-execute', authMiddleware, async (req, res) => {
       skipped: 0,
       failed: 0,
       byEntity: {},
-      errors: [],
-      totalTextLength: 0 // Track total text length for token-based pricing
+      errors: []
     };
 
     // Helper function for single field translation
@@ -1472,13 +1480,17 @@ router.post('/wizard-execute', authMiddleware, async (req, res) => {
       }
     }
 
-    // Deduct credits based on actual text translated (token-based pricing)
+    // Deduct credits based on what was translated (flat rates by entity type)
     let actualCost = 0;
-    let estimatedTokens = 0;
 
-    if (results.translated > 0 && results.totalTextLength > 0) {
-      actualCost = await translationService.calculateTranslationCost(' '.repeat(results.totalTextLength));
-      estimatedTokens = translationService.estimateTokens(' '.repeat(results.totalTextLength));
+    if (results.translated > 0) {
+      // Calculate cost based on entity types translated
+      for (const [entityType, entityData] of Object.entries(results.byEntity)) {
+        if (entityData.translated > 0) {
+          const costPerItem = await translationService.getTranslationCost(entityType);
+          actualCost += entityData.translated * costPerItem;
+        }
+      }
 
       try {
         await creditService.deduct(
@@ -1493,13 +1505,12 @@ router.post('/wizard-execute', authMiddleware, async (req, res) => {
             translationsCompleted: results.translated,
             failed: results.failed,
             skipped: results.skipped,
-            totalTextLength: results.totalTextLength,
-            estimatedTokens
+            byEntity: results.byEntity
           },
           null,
           'ai_translation'
         );
-        console.log(`✅ Deducted ${actualCost} credits for ${results.translated} translations (~${estimatedTokens} tokens)`);
+        console.log(`✅ Deducted ${actualCost} credits for ${results.translated} translations`);
       } catch (deductError) {
         console.error('Failed to deduct credits:', deductError);
         // Don't fail the entire operation if credit deduction fails
@@ -1511,8 +1522,7 @@ router.post('/wizard-execute', authMiddleware, async (req, res) => {
       success: true,
       message: `Translation completed. Translated: ${results.translated}, Skipped: ${results.skipped}, Failed: ${results.failed}`,
       data: results,
-      creditsDeducted: actualCost,
-      estimatedTokens
+      creditsDeducted: actualCost
     });
   } catch (error) {
     console.error('Wizard execute error:', error);
