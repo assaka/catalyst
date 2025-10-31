@@ -339,7 +339,7 @@ export default function Plugins() {
       await loadData();
       setFlashMessage({
         type: 'success',
-        message: `Plugin "${pluginName}" has been permanently deleted from all plugin_* tables.`
+        message: `Plugin "${pluginName}" has been permanently deleted!`
       });
     } catch (error) {
       console.error("Error deleting plugin:", error);
