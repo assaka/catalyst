@@ -371,9 +371,19 @@ Return ONLY the translated text, no explanations or notes.`;
       await saveAttributeTranslations(entityId, { [languageCode]: translationData });
       const Attribute = this._getEntityModel(entityType);
       return await Attribute.findByPk(entityId);
+    } else if (entityType === 'cms_page') {
+      const { saveCMSPageTranslations } = require('../utils/cmsHelpers');
+      await saveCMSPageTranslations(entityId, { [languageCode]: translationData });
+      const CmsPage = this._getEntityModel(entityType);
+      return await CmsPage.findByPk(entityId);
+    } else if (entityType === 'cms_block') {
+      const { saveCMSBlockTranslations } = require('../utils/cmsHelpers');
+      await saveCMSBlockTranslations(entityId, { [languageCode]: translationData });
+      const CmsBlock = this._getEntityModel(entityType);
+      return await CmsBlock.findByPk(entityId);
     }
 
-    // For entities with JSONB translations column (cms_page, cms_block)
+    // Fallback for other entity types with JSONB translations column
     const Model = this._getEntityModel(entityType);
     const entity = await Model.findByPk(entityId);
 
@@ -415,15 +425,24 @@ Return ONLY the translated text, no explanations or notes.`;
       const attributes = await getAttributesWithTranslations({ id: entityId });
       entity = attributes[0];
       if (!entity) throw new Error('Attribute not found');
+    } else if (entityType === 'cms_page') {
+      const { getCMSPagesWithAllTranslations } = require('../utils/cmsHelpers');
+      const pages = await getCMSPagesWithAllTranslations({ id: entityId });
+      entity = pages[0];
+      if (!entity) throw new Error('CMS page not found');
+    } else if (entityType === 'cms_block') {
+      const { getCMSBlocksWithAllTranslations } = require('../utils/cmsHelpers');
+      const blocks = await getCMSBlocksWithAllTranslations({ id: entityId });
+      entity = blocks[0];
+      if (!entity) throw new Error('CMS block not found');
     } else {
-      // CMS pages/blocks use JSONB translations column
+      // Fallback for any other entity types
       const Model = this._getEntityModel(entityType);
       entity = await Model.findByPk(entityId);
       if (!entity) throw new Error(`${entityType} not found`);
 
       console.log(`   📦 Loaded ${entityType} from database:`, {
         id: entity.id,
-        title: entity.title,
         hasTranslations: !!entity.translations,
         translationsKeys: entity.translations ? Object.keys(entity.translations) : 'null/undefined',
         translations: entity.translations
