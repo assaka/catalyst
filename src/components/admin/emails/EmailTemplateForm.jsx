@@ -214,7 +214,7 @@ export default function EmailTemplateForm({ template, onSubmit, onCancel }) {
               placeholder="e.g., Welcome to {{store_name}}!"
               required
             />
-            <p className="text-xs text-gray-500">Use variables like {{"{{"}}customer_name{{"}}"}} for dynamic content</p>
+            <p className="text-xs text-gray-500">Use variables like {'{{'} customer_name {'}}'}  for dynamic content</p>
           </div>
 
           <div className="flex items-center justify-between">
