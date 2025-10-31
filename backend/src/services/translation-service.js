@@ -21,7 +21,7 @@
  * See: backend/src/services/aiContextService.js for context fetching
  */
 
-const { Translation, Language, Product, Category, CmsPage, CmsBlock } = require('../models');
+const { Translation, Language, Product, Category, Attribute, CmsPage, CmsBlock } = require('../models');
 const { Op } = require('sequelize');
 const aiContextService = require('./aiContextService');
 const creditService = require('./credit-service');
@@ -361,6 +361,16 @@ Return ONLY the translated text, no explanations or notes.`;
       await updateProductTranslations(entityId, translations);
       const Product = this._getEntityModel(entityType);
       return await Product.findByPk(entityId);
+    } else if (entityType === 'category') {
+      const { updateCategoryWithTranslations } = require('../utils/categoryHelpers');
+      const entity = await this._getEntityModel(entityType).findByPk(entityId);
+      await updateCategoryWithTranslations(entityId, {}, { [languageCode]: translationData });
+      return entity;
+    } else if (entityType === 'attribute') {
+      const { saveAttributeTranslations } = require('../utils/attributeHelpers');
+      await saveAttributeTranslations(entityId, { [languageCode]: translationData });
+      const Attribute = this._getEntityModel(entityType);
+      return await Attribute.findByPk(entityId);
     }
 
     // For entities with JSONB translations column (cms_page, cms_block)
@@ -471,6 +481,7 @@ Return ONLY the translated text, no explanations or notes.`;
     const models = {
       product: Product,
       category: Category,
+      attribute: Attribute,
       cms_page: CmsPage,
       cms_block: CmsBlock
     };

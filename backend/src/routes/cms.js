@@ -281,11 +281,8 @@ router.post('/bulk-translate', [
       }
     }
 
-    // Get all pages for this store
-    const pages = await CmsPage.findAll({
-      where: { store_id },
-      order: [['sort_order', 'ASC'], ['slug', 'ASC']]
-    });
+    // Get all pages for this store with all translations
+    const pages = await getCMSPagesWithAllTranslations({ store_id });
 
     if (pages.length === 0) {
       return res.json({

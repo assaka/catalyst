@@ -245,7 +245,12 @@ async function saveAttributeTranslations(attributeId, translations) {
         description = EXCLUDED.description,
         updated_at = NOW()
     `, {
-      replacements: { attributeId, langCode, label, description },
+      replacements: {
+        attributeId,
+        langCode,
+        label: label !== undefined ? label : null,
+        description: description !== undefined ? description : null
+      },
       type: sequelize.QueryTypes.INSERT
     });
   }
@@ -273,7 +278,12 @@ async function saveAttributeValueTranslations(valueId, translations) {
         description = EXCLUDED.description,
         updated_at = NOW()
     `, {
-      replacements: { valueId, langCode, value, description },
+      replacements: {
+        valueId,
+        langCode,
+        value: value !== undefined ? value : null,
+        description: description !== undefined ? description : null
+      },
       type: sequelize.QueryTypes.INSERT
     });
   }

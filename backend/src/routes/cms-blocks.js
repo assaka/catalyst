@@ -674,11 +674,9 @@ router.post('/bulk-translate', authMiddleware, [
       }
     }
 
-    // Get all blocks for this store
-    const blocks = await CmsBlock.findAll({
-      where: { store_id },
-      order: [['sort_order', 'ASC'], ['identifier', 'ASC']]
-    });
+    // Get all blocks for this store with all translations
+    const { getCMSBlocksWithAllTranslations } = require('../utils/cmsHelpers');
+    const blocks = await getCMSBlocksWithAllTranslations({ store_id });
 
     if (blocks.length === 0) {
       return res.json({

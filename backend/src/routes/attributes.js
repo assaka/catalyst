@@ -533,11 +533,8 @@ router.post('/bulk-translate', authMiddleware, authorize(['admin', 'store_owner'
       }
     }
 
-    // Get all attributes for this store
-    const attributes = await Attribute.findAll({
-      where: { store_id },
-      order: [['sort_order', 'ASC'], ['name', 'ASC']]
-    });
+    // Get all attributes for this store with all translations
+    const attributes = await getAttributesWithTranslations({ store_id });
 
     if (attributes.length === 0) {
       return res.json({

@@ -301,15 +301,15 @@ async function updateCategoryWithTranslations(id, categoryData, translations = {
           )
           ON CONFLICT (category_id, language_code) DO UPDATE
           SET
-            name = COALESCE(EXCLUDED.name, category_translations.name),
-            description = COALESCE(EXCLUDED.description, category_translations.description),
+            name = EXCLUDED.name,
+            description = EXCLUDED.description,
             updated_at = NOW()
         `, {
           replacements: {
             category_id: id,
             lang_code: langCode,
-            name: data.name,
-            description: data.description
+            name: data.name !== undefined ? data.name : null,
+            description: data.description !== undefined ? data.description : null
           },
           transaction
         });
