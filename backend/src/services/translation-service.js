@@ -349,9 +349,21 @@ Return ONLY the translated text, no explanations or notes.`;
   }
 
   /**
-   * Save entity translation
+   * Save entity translation (uses normalized tables for most entities)
    */
   async saveEntityTranslation(entityType, entityId, languageCode, translationData) {
+    // Products, Categories, Attributes, etc. use separate translation tables
+    // Only CMS Pages/Blocks still use JSONB translations column
+
+    if (entityType === 'product') {
+      const { updateProductTranslations } = require('../utils/productHelpers');
+      const translations = { [languageCode]: translationData };
+      await updateProductTranslations(entityId, translations);
+      const Product = this._getEntityModel(entityType);
+      return await Product.findByPk(entityId);
+    }
+
+    // For entities with JSONB translations column (cms_page, cms_block)
     const Model = this._getEntityModel(entityType);
     const entity = await Model.findByPk(entityId);
 

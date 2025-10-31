@@ -195,17 +195,17 @@ async function updateProductTranslations(productId, translations = {}) {
           )
           ON CONFLICT (product_id, language_code) DO UPDATE
           SET
-            name = COALESCE(EXCLUDED.name, product_translations.name),
-            description = COALESCE(EXCLUDED.description, product_translations.description),
-            short_description = COALESCE(EXCLUDED.short_description, product_translations.short_description),
+            name = EXCLUDED.name,
+            description = EXCLUDED.description,
+            short_description = EXCLUDED.short_description,
             updated_at = NOW()
         `, {
           replacements: {
             product_id: productId,
             lang_code: langCode,
-            name: data.name,
-            description: data.description,
-            short_description: data.short_description
+            name: data.name !== undefined ? data.name : null,
+            description: data.description !== undefined ? data.description : null,
+            short_description: data.short_description !== undefined ? data.short_description : null
           },
           transaction
         });

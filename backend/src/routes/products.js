@@ -435,13 +435,18 @@ router.post('/bulk-translate', authMiddleware, authorize(['admin', 'store_owner'
       }
     }
 
-    // Get all products for this store
-    const products = await Product.findAll({
+    // Get all products for this store with ALL translations from product_translations table
+    const { applyAllProductTranslations } = require('../utils/productHelpers');
+
+    const productsRaw = await Product.findAll({
       where: { store_id },
       order: [['created_at', 'DESC']]
     });
 
-    console.log(`📦 Loaded ${products.length} products from database`);
+    // Load all translations from product_translations table
+    const products = await applyAllProductTranslations(productsRaw);
+
+    console.log(`📦 Loaded ${products.length} products from database with ALL translations`);
     if (products.length > 0) {
       console.log(`🔍 First product structure:`, JSON.stringify({
         id: products[0].id,
