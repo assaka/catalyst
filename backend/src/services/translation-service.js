@@ -24,6 +24,8 @@
 const { Translation, Language, Product, Category, CmsPage, CmsBlock } = require('../models');
 const { Op } = require('sequelize');
 const aiContextService = require('./aiContextService');
+const creditService = require('./credit-service');
+const ServiceCreditCost = require('../models/ServiceCreditCost');
 
 class TranslationService {
   /**

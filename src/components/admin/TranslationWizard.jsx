@@ -17,6 +17,7 @@ export default function TranslationWizard({ isOpen, onClose, storeId }) {
   const [step, setStep] = useState(1);
   const [loading, setLoading] = useState(false);
   const [languages, setLanguages] = useState([]);
+  const [translationCost, setTranslationCost] = useState(0.1); // Default fallback
 
   // Wizard state
   const [config, setConfig] = useState({
@@ -31,12 +32,25 @@ export default function TranslationWizard({ isOpen, onClose, storeId }) {
   const [stats, setStats] = useState(null);
   const [translationResult, setTranslationResult] = useState(null);
 
-  // Load languages on mount
+  // Load languages and translation cost on mount
   useEffect(() => {
     if (isOpen) {
       loadLanguages();
+      loadTranslationCost();
     }
   }, [isOpen]);
+
+  const loadTranslationCost = async () => {
+    try {
+      const response = await api.get('/api/service-credit-costs/key/ai_translation');
+      if (response.data.success && response.data.service) {
+        setTranslationCost(response.data.service.cost_per_unit);
+      }
+    } catch (error) {
+      console.error('Error loading translation cost:', error);
+      // Keep using default fallback value
+    }
+  };
 
   const loadLanguages = async () => {
     try {
@@ -459,6 +473,23 @@ export default function TranslationWizard({ isOpen, onClose, storeId }) {
                     </div>
                   </div>
                 )}
+
+                {/* Credit cost estimate */}
+                {stats.toTranslate > 0 && (
+                  <div className="mt-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2 text-blue-800">
+                        <span>💰</span>
+                        <span className="font-medium">
+                          Estimated cost: {(stats.toTranslate * translationCost).toFixed(2)} credits
+                        </span>
+                      </div>
+                      <div className="text-sm text-blue-600">
+                        {stats.toTranslate} translations × {translationCost} credits each
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
 
               <div className="flex justify-between">
@@ -523,6 +554,18 @@ export default function TranslationWizard({ isOpen, onClose, storeId }) {
                     <div className="text-sm text-gray-600">Failed</div>
                   </div>
                 </div>
+
+                {/* Credits used */}
+                {translationResult.translated > 0 && (
+                  <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                    <div className="flex items-center justify-between text-sm">
+                      <span className="text-blue-800 font-medium">💰 Credits Used:</span>
+                      <span className="text-blue-900 font-bold">
+                        {(translationResult.translated * translationCost).toFixed(2)} credits
+                      </span>
+                    </div>
+                  </div>
+                )}
 
                 {/* Details by entity type */}
                 {translationResult.byEntity && (

@@ -2,6 +2,8 @@ const express = require('express');
 const { Translation, Language, Product, Category, CmsPage, CmsBlock, ProductTab, ProductLabel, CookieConsentSettings, Attribute, AttributeValue } = require('../models');
 const { authMiddleware } = require('../middleware/auth');
 const translationService = require('../services/translation-service');
+const creditService = require('../services/credit-service');
+const ServiceCreditCost = require('../models/ServiceCreditCost');
 
 const router = express.Router();
 
@@ -153,7 +155,8 @@ router.delete('/ui-labels/:key/:languageCode', authMiddleware, async (req, res) 
 // @access  Private
 router.post('/ai-translate', authMiddleware, async (req, res) => {
   try {
-    const { text, fromLang = 'en', toLang } = req.body;
+    const { text, fromLang = 'en', toLang, storeId } = req.body;
+    const userId = req.user.id;
 
     if (!text || !toLang) {
       return res.status(400).json({
@@ -162,7 +165,45 @@ router.post('/ai-translate', authMiddleware, async (req, res) => {
       });
     }
 
+    // Get translation cost from service_credit_costs table
+    let translationCost = 0.1; // Fallback
+    try {
+      translationCost = await ServiceCreditCost.getCostByKey('ai_translation');
+    } catch (error) {
+      console.warn('Could not fetch ai_translation cost, using fallback:', error.message);
+    }
+
+    // Check if user has enough credits
+    const hasCredits = await creditService.hasEnoughCredits(userId, storeId, translationCost);
+    if (!hasCredits) {
+      const balance = await creditService.getBalance(userId);
+      return res.status(402).json({
+        success: false,
+        code: 'INSUFFICIENT_CREDITS',
+        message: `Insufficient credits. Required: ${translationCost}, Available: ${balance}`,
+        required: translationCost,
+        available: balance
+      });
+    }
+
+    // Perform translation
     const translatedText = await translationService.aiTranslate(text, fromLang, toLang);
+
+    // Deduct credits after successful translation
+    await creditService.deduct(
+      userId,
+      storeId,
+      translationCost,
+      `AI Translation: ${fromLang} → ${toLang}`,
+      {
+        fromLang,
+        toLang,
+        textLength: text.length,
+        translatedLength: translatedText.length
+      },
+      null,
+      'ai_translation'
+    );
 
     res.json({
       success: true,
@@ -171,13 +212,14 @@ router.post('/ai-translate', authMiddleware, async (req, res) => {
         translated: translatedText,
         fromLang,
         toLang
-      }
+      },
+      creditsDeducted: translationCost
     });
   } catch (error) {
     console.error('AI translate error:', error);
     res.status(500).json({
       success: false,
-      message: 'AI translation failed'
+      message: error.message || 'AI translation failed'
     });
   }
 });
@@ -187,7 +229,8 @@ router.post('/ai-translate', authMiddleware, async (req, res) => {
 // @access  Private
 router.post('/ai-translate-entity', authMiddleware, async (req, res) => {
   try {
-    const { entityType, entityId, fromLang = 'en', toLang } = req.body;
+    const { entityType, entityId, fromLang = 'en', toLang, storeId } = req.body;
+    const userId = req.user.id;
 
     if (!entityType || !entityId || !toLang) {
       return res.status(400).json({
@@ -196,6 +239,48 @@ router.post('/ai-translate-entity', authMiddleware, async (req, res) => {
       });
     }
 
+    // Get the entity to count translatable fields
+    const Model = translationService._getEntityModel(entityType);
+    const entityData = await Model.findByPk(entityId);
+
+    if (!entityData || !entityData.translations || !entityData.translations[fromLang]) {
+      return res.status(404).json({
+        success: false,
+        message: 'Source translation not found'
+      });
+    }
+
+    // Count translatable fields
+    const sourceTranslation = entityData.translations[fromLang];
+    const fieldCount = Object.values(sourceTranslation).filter(
+      value => typeof value === 'string' && value.trim()
+    ).length;
+
+    // Get translation cost per field
+    let translationCost = 0.1; // Fallback
+    try {
+      translationCost = await ServiceCreditCost.getCostByKey('ai_translation');
+    } catch (error) {
+      console.warn('Could not fetch ai_translation cost, using fallback:', error.message);
+    }
+
+    const totalCost = translationCost * fieldCount;
+
+    // Check if user has enough credits
+    const hasCredits = await creditService.hasEnoughCredits(userId, storeId, totalCost);
+    if (!hasCredits) {
+      const balance = await creditService.getBalance(userId);
+      return res.status(402).json({
+        success: false,
+        code: 'INSUFFICIENT_CREDITS',
+        message: `Insufficient credits. Required: ${totalCost} (${fieldCount} fields × ${translationCost}), Available: ${balance}`,
+        required: totalCost,
+        available: balance,
+        fieldCount
+      });
+    }
+
+    // Perform translation
     const entity = await translationService.aiTranslateEntity(
       entityType,
       entityId,
@@ -203,10 +288,29 @@ router.post('/ai-translate-entity', authMiddleware, async (req, res) => {
       toLang
     );
 
+    // Deduct credits after successful translation
+    await creditService.deduct(
+      userId,
+      storeId,
+      totalCost,
+      `AI Entity Translation: ${entityType} ${fromLang} → ${toLang}`,
+      {
+        entityType,
+        entityId,
+        fromLang,
+        toLang,
+        fieldCount
+      },
+      entityId,
+      'ai_translation'
+    );
+
     res.json({
       success: true,
       data: entity,
-      message: `${entityType} translated successfully`
+      message: `${entityType} translated successfully`,
+      creditsDeducted: totalCost,
+      fieldsTranslated: fieldCount
     });
   } catch (error) {
     console.error('AI translate entity error:', error);
@@ -1048,11 +1152,70 @@ router.post('/preview', authMiddleware, async (req, res) => {
 router.post('/wizard-execute', authMiddleware, async (req, res) => {
   try {
     const { store_id, what, fromLang, toLanguages, specificItems, singleField } = req.body;
+    const userId = req.user.id;
+    const storeId = store_id;
 
     if (!what || !fromLang || !toLanguages || toLanguages.length === 0) {
       return res.status(400).json({
         success: false,
         message: 'what, fromLang, and toLanguages are required'
+      });
+    }
+
+    // Get translation cost per field
+    let translationCost = 0.1; // Fallback
+    try {
+      translationCost = await ServiceCreditCost.getCostByKey('ai_translation');
+    } catch (error) {
+      console.warn('Could not fetch ai_translation cost, using fallback:', error.message);
+    }
+
+    // Estimate total translations for credit check
+    // This is a rough estimate; actual cost will be deducted based on successful translations
+    let estimatedTranslations = 0;
+    if (what === 'all' || what === 'ui-labels') {
+      const sourceLabels = await translationService.getUILabels(fromLang);
+      const flattenLabels = (obj, prefix = '') => {
+        const result = {};
+        Object.entries(obj).forEach(([key, value]) => {
+          const fullKey = prefix ? `${prefix}.${key}` : key;
+          if (typeof value === 'object' && value !== null && !Array.isArray(value)) {
+            Object.assign(result, flattenLabels(value, fullKey));
+          } else {
+            result[fullKey] = value;
+          }
+        });
+        return result;
+      };
+      const flatSourceLabels = flattenLabels(sourceLabels.labels || {});
+      estimatedTranslations += Object.keys(flatSourceLabels).length * toLanguages.length;
+    }
+
+    if (what === 'all' || what !== 'ui-labels') {
+      // Estimate entity translations (rough: 5 fields per entity on average)
+      const entityTypes = what === 'all'
+        ? ['product', 'category', 'cms_page', 'cms_block', 'product_tab', 'product_label', 'attribute', 'cookie_consent_settings']
+        : [what];
+
+      for (const type of entityTypes) {
+        const Model = translationService._getEntityModel(type);
+        const count = await Model.count(specificItems ? { where: { id: specificItems } } : {});
+        estimatedTranslations += count * toLanguages.length * (singleField ? 1 : 5);
+      }
+    }
+
+    const estimatedCost = estimatedTranslations * translationCost;
+
+    // Check if user has enough credits (rough estimate)
+    const balance = await creditService.getBalance(userId);
+    if (balance < estimatedCost) {
+      return res.status(402).json({
+        success: false,
+        code: 'INSUFFICIENT_CREDITS',
+        message: `Insufficient credits. Estimated: ${estimatedCost} (${estimatedTranslations} translations × ${translationCost}), Available: ${balance}`,
+        required: estimatedCost,
+        available: balance,
+        estimatedTranslations
       });
     }
 
@@ -1256,10 +1419,39 @@ router.post('/wizard-execute', authMiddleware, async (req, res) => {
       }
     }
 
+    // Deduct credits based on actual translations completed
+    if (results.translated > 0) {
+      const actualCost = results.translated * translationCost;
+      try {
+        await creditService.deduct(
+          userId,
+          storeId,
+          actualCost,
+          `Bulk Translation Wizard: ${what} (${fromLang} → ${toLanguages.join(', ')})`,
+          {
+            what,
+            fromLang,
+            toLanguages,
+            translationsCompleted: results.translated,
+            failed: results.failed,
+            skipped: results.skipped
+          },
+          null,
+          'ai_translation'
+        );
+        console.log(`✅ Deducted ${actualCost} credits for ${results.translated} translations`);
+      } catch (deductError) {
+        console.error('Failed to deduct credits:', deductError);
+        // Don't fail the entire operation if credit deduction fails
+        // The translations were already done
+      }
+    }
+
     res.json({
       success: true,
       message: `Translation completed. Translated: ${results.translated}, Skipped: ${results.skipped}, Failed: ${results.failed}`,
-      data: results
+      data: results,
+      creditsDeducted: results.translated > 0 ? results.translated * translationCost : 0
     });
   } catch (error) {
     console.error('Wizard execute error:', error);
