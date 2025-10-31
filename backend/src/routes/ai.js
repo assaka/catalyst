@@ -729,7 +729,16 @@ Return ONLY valid JSON.`;
       const isUILabel = message.match(/button|label|link|text|menu|heading|title/i);
 
       // If no text to translate, extract it from the message
-      const textToTranslate = text || message.replace(/translate|to|in|into|for|the|button|label/gi, '').trim();
+      // Better extraction that preserves phrases like "add to cart"
+      let textToTranslate = text;
+      if (!textToTranslate) {
+        // Remove only the command words and UI element types
+        textToTranslate = message
+          .replace(/^(translate|change|update|modify)\s+/gi, '')
+          .replace(/\s+(button|label|link|text|menu|heading|title)(\s+to|\s+in|\s+into)?/gi, '')
+          .replace(/\s+(to|in|into)\s+[a-z]+$/gi, '') // Remove language at the end
+          .trim();
+      }
 
       if (!textToTranslate) {
         return res.json({
@@ -765,16 +774,37 @@ Return ONLY valid JSON.`;
 
       // If it's a UI label, find the translation key and offer to update it
       if (isUILabel) {
-        // Find matching translation keys (e.g., "add to cart" might match "common.addToCart")
+        // Find matching translation keys (e.g., "add to cart" might match "common.addToCart" or "product.add_to_cart")
         const { sequelize } = require('../database/connection');
+
+        // Create search patterns for both value and key
+        const searchText = textToTranslate.toLowerCase();
+        const keySearchPattern = searchText
+          .replace(/\s+/g, '_') // "add to cart" → "add_to_cart"
+          .replace(/[^a-z0-9_]/g, ''); // Remove special chars
+
+        // Search by both value AND key pattern
         const matchingKeys = await sequelize.query(`
           SELECT DISTINCT key, value, language_code
           FROM translations
           WHERE LOWER(value) LIKE $1
-          ORDER BY language_code, key
+             OR LOWER(key) LIKE $2
+             OR LOWER(REPLACE(key, '_', ' ')) LIKE $1
+          ORDER BY
+            CASE
+              WHEN LOWER(value) = $3 THEN 1
+              WHEN LOWER(value) LIKE $1 THEN 2
+              WHEN LOWER(key) LIKE $2 THEN 3
+              ELSE 4
+            END,
+            language_code, key
           LIMIT 10
         `, {
-          bind: [`%${textToTranslate.toLowerCase()}%`],
+          bind: [
+            `%${searchText}%`,           // Search in value
+            `%${keySearchPattern}%`,     // Search in key
+            searchText                    // Exact match in value (for sorting)
+          ],
           type: sequelize.QueryTypes.SELECT
         });
 
