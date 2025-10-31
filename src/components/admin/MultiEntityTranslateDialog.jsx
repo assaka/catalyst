@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { X, Languages, Loader2, CheckCircle2, XCircle, AlertCircle } from 'lucide-react';
 import { toast } from 'sonner';
+import api from '@/utils/api';
 
 /**
  * Multi-Entity Translate Dialog Component
@@ -18,6 +19,26 @@ export default function MultiEntityTranslateDialog({
   const [translateToLangs, setTranslateToLangs] = useState([]);
   const [translating, setTranslating] = useState(false);
   const [results, setResults] = useState(null);
+  const [translationCost, setTranslationCost] = useState(0.1); // Default fallback
+
+  // Load translation cost from API
+  useEffect(() => {
+    const loadTranslationCost = async () => {
+      try {
+        const response = await api.get('/service-credit-costs/key/ai_translation');
+        if (response.data.success && response.data.service) {
+          setTranslationCost(response.data.service.cost_per_unit);
+        }
+      } catch (error) {
+        console.error('Error loading translation cost:', error);
+        // Keep using default fallback value
+      }
+    };
+
+    if (open) {
+      loadTranslationCost();
+    }
+  }, [open]);
 
   if (!open) return null;
 
@@ -253,6 +274,18 @@ export default function MultiEntityTranslateDialog({
                 </div>
               </div>
 
+              {/* Credits Used */}
+              {results.translated > 0 && (
+                <div className="bg-green-50 border border-green-200 rounded-lg p-3">
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-green-800 font-medium">💰 Credits Used:</span>
+                    <span className="text-green-900 font-bold">
+                      {(results.translated * translationCost).toFixed(2)} credits
+                    </span>
+                  </div>
+                </div>
+              )}
+
               {/* Per-language results */}
               <div className="space-y-2">
                 <p className="text-sm font-medium text-gray-700">By Language:</p>
@@ -286,12 +319,30 @@ export default function MultiEntityTranslateDialog({
 
         {/* Footer */}
         <div className="px-6 py-4 border-t border-gray-200 flex items-center justify-between bg-gray-50">
-          <div className="text-sm text-gray-600">
+          <div className="text-sm space-y-1">
             {selectedEntities.length > 0 && translateToLangs.length > 0 && (
-              <span>
-                Ready to translate <span className="font-semibold">{selectedEntities.length}</span> entity type(s)
-                to <span className="font-semibold">{translateToLangs.length}</span> language(s)
-              </span>
+              <>
+                <div className="text-gray-600">
+                  Ready to translate <span className="font-semibold">{selectedEntities.length}</span> entity type(s)
+                  to <span className="font-semibold">{translateToLangs.length}</span> language(s)
+                </div>
+                {(() => {
+                  const totalItems = entityStats
+                    .filter(stat => selectedEntities.includes(stat.type))
+                    .reduce((sum, stat) => sum + (stat.totalItems || 0), 0);
+                  const estimatedCost = totalItems * translateToLangs.length * translationCost;
+
+                  return totalItems > 0 ? (
+                    <div className="flex items-center gap-2 text-green-700 font-medium">
+                      <span>💰</span>
+                      <span>Estimated: {estimatedCost.toFixed(2)} credits</span>
+                      <span className="text-xs text-gray-500">
+                        ({totalItems} items × {translateToLangs.length} lang × {translationCost} credits)
+                      </span>
+                    </div>
+                  ) : null;
+                })()}
+              </>
             )}
           </div>
           <div className="flex gap-3">

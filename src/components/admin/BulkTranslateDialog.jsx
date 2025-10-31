@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -18,6 +18,7 @@ import {
 } from "@/components/ui/select";
 import { useTranslation } from "@/contexts/TranslationContext.jsx";
 import { toast } from "sonner";
+import api from "@/utils/api";
 
 /**
  * Reusable Bulk Translate Dialog Component
@@ -33,12 +34,33 @@ export default function BulkTranslateDialog({
   onOpenChange,
   entityType = 'items',
   entityName = 'Items',
-  onTranslate
+  onTranslate,
+  itemCount = 0
 }) {
   const { availableLanguages } = useTranslation();
   const [translateFromLang, setTranslateFromLang] = useState('en');
   const [translateToLangs, setTranslateToLangs] = useState([]);
   const [isTranslating, setIsTranslating] = useState(false);
+  const [translationCost, setTranslationCost] = useState(0.1); // Default fallback
+
+  // Load translation cost from API
+  useEffect(() => {
+    const loadTranslationCost = async () => {
+      try {
+        const response = await api.get('/service-credit-costs/key/ai_translation');
+        if (response.data.success && response.data.service) {
+          setTranslationCost(response.data.service.cost_per_unit);
+        }
+      } catch (error) {
+        console.error('Error loading translation cost:', error);
+        // Keep using default fallback value
+      }
+    };
+
+    if (open) {
+      loadTranslationCost();
+    }
+  }, [open]);
 
   const handleTranslate = async () => {
     if (!translateFromLang || translateToLangs.length === 0) {
@@ -162,6 +184,23 @@ export default function BulkTranslateDialog({
               )}
             </p>
           </div>
+
+          {/* Credit Cost Estimate */}
+          {translateToLangs.length > 0 && itemCount > 0 && (
+            <div className="bg-green-50 border border-green-200 rounded-lg p-3">
+              <div className="flex items-center justify-between text-sm">
+                <span className="text-green-800 font-medium">
+                  💰 Estimated Cost:
+                </span>
+                <span className="text-green-900 font-bold">
+                  {(itemCount * translateToLangs.length * translationCost).toFixed(2)} credits
+                </span>
+              </div>
+              <p className="text-xs text-green-700 mt-1">
+                {itemCount} {entityType} × {translateToLangs.length} language(s) × {translationCost} credits each
+              </p>
+            </div>
+          )}
 
           <div className="flex justify-end gap-2 pt-4">
             <Button
