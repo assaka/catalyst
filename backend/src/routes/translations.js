@@ -1,4 +1,5 @@
 const express = require('express');
+const { Op } = require('sequelize');
 const { Translation, Language, Product, Category, CmsPage, CmsBlock, ProductTab, ProductLabel, CookieConsentSettings, Attribute, AttributeValue } = require('../models');
 const { authMiddleware } = require('../middleware/auth');
 const translationService = require('../services/translation-service');
@@ -1068,66 +1069,48 @@ router.post('/preview', authMiddleware, async (req, res) => {
     for (const entityType of entityTypes) {
       if (!entityTypeMap[entityType]) continue;
 
-      const config = entityTypeMap[entityType];
-      const whereClause = store_id ? { store_id } : {};
+      try {
+        const config = entityTypeMap[entityType];
+        const whereClause = store_id ? { store_id } : {};
 
-      let entities;
-      if (entityType === 'attribute_value') {
-        if (!store_id) continue;
-        const attributes = await Attribute.findAll({
-          where: { store_id },
-          attributes: ['id']
-        });
-        const attributeIds = attributes.map(attr => attr.id);
-        entities = await AttributeValue.findAll({
-          where: { attribute_id: { [Op.in]: attributeIds } },
-          attributes: ['id', 'translations']
-        });
-      } else {
-        entities = await config.model.findAll({
-          where: whereClause,
-          attributes: ['id', 'translations']
-        });
-      }
-
-      let typeToTranslate = 0;
-      let typeAlreadyTranslated = 0;
-
-      for (const entity of entities) {
-        if (!entity.translations || !entity.translations[fromLang]) continue;
-
-        for (const toLang of toLanguages) {
-          if (singleField) {
-            // Check if single field exists and needs translation
-            if (entity.translations[fromLang][singleField]) {
-              if (!entity.translations[toLang] || !entity.translations[toLang][singleField]) {
-                typeToTranslate++;
-              } else {
-                typeAlreadyTranslated++;
-              }
-            }
-          } else {
-            // Check all fields
-            if (!entity.translations[toLang]) {
-              typeToTranslate++;
-            } else {
-              typeAlreadyTranslated++;
-            }
-          }
+        let entityCount;
+        if (entityType === 'attribute_value') {
+          if (!store_id) continue;
+          const attributes = await Attribute.findAll({
+            where: { store_id },
+            attributes: ['id']
+          });
+          const attributeIds = attributes.map(attr => attr.id);
+          entityCount = await AttributeValue.count({
+            where: { attribute_id: { [Op.in]: attributeIds } }
+          });
+        } else {
+          entityCount = await config.model.count({
+            where: whereClause
+          });
         }
+
+        // Simplified estimation: assume all items need translation to all languages
+        // Actual translation endpoint will skip already-translated items
+        const typeToTranslate = entityCount * toLanguages.length;
+        const typeAlreadyTranslated = 0; // We'll skip already translated during actual execution
+
+        stats.byEntityType[entityType] = {
+          name: config.name,
+          icon: config.icon,
+          totalItems: entityCount,
+          toTranslate: typeToTranslate,
+          alreadyTranslated: typeAlreadyTranslated
+        };
+
+        stats.totalItems += entityCount * toLanguages.length;
+        stats.toTranslate += typeToTranslate;
+        stats.alreadyTranslated += typeAlreadyTranslated;
+      } catch (entityError) {
+        console.error(`Error processing ${entityType} for preview:`, entityError.message);
+        // Skip this entity type if there's an error
+        continue;
       }
-
-      stats.byEntityType[entityType] = {
-        name: config.name,
-        icon: config.icon,
-        totalItems: entities.length,
-        toTranslate: typeToTranslate,
-        alreadyTranslated: typeAlreadyTranslated
-      };
-
-      stats.totalItems += entities.length * toLanguages.length;
-      stats.toTranslate += typeToTranslate;
-      stats.alreadyTranslated += typeAlreadyTranslated;
     }
 
     // Estimate time (rough: 1 item = 2 seconds)
