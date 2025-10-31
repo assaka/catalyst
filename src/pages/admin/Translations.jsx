@@ -2424,6 +2424,28 @@ export default function Translations() {
         entityName={selectedEntityName || "UI Labels"}
         itemCount={selectedEntityItemCount}
         onTranslate={selectedEntityType ? handleEntityTranslate : handleBulkTranslate}
+        onComplete={() => {
+          // Reload the appropriate data based on entity type
+          if (!selectedEntityType || selectedEntityType === 'ui_labels') {
+            loadUILabels();
+          } else if (selectedEntityType === 'product') {
+            loadProducts();
+          } else if (selectedEntityType === 'category') {
+            loadCategories();
+          } else if (selectedEntityType === 'attribute') {
+            loadAttributes();
+          } else if (selectedEntityType === 'cms_page' || selectedEntityType === 'cms_block') {
+            loadCms();
+          } else if (selectedEntityType === 'product_tab') {
+            loadProductTabs();
+          } else if (selectedEntityType === 'product_label') {
+            loadProductLabels();
+          } else if (selectedEntityType === 'cookie_consent') {
+            loadCookieConsent();
+          } else if (selectedEntityType === 'custom_option') {
+            loadCustomOptions();
+          }
+        }}
       />
 
       {/* Multi-Entity Translate Dialog */}

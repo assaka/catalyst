@@ -18,6 +18,7 @@ import {
 } from "@/components/ui/select";
 import { useTranslation } from "@/contexts/TranslationContext.jsx";
 import { toast } from "sonner";
+import FlashMessage from "@/components/storefront/FlashMessage";
 import api from "@/utils/api";
 
 /**
@@ -28,6 +29,7 @@ import api from "@/utils/api";
  * @param {string} entityType - Type of entity (e.g., 'categories', 'products', 'attributes')
  * @param {string} entityName - Display name for the entity (e.g., 'Categories', 'Products')
  * @param {function} onTranslate - Callback function to handle translation (receives fromLang, toLang)
+ * @param {function} onComplete - Callback after translation completes (for reloading data)
  */
 export default function BulkTranslateDialog({
   open,
@@ -35,6 +37,7 @@ export default function BulkTranslateDialog({
   entityType = 'items',
   entityName = 'Items',
   onTranslate,
+  onComplete,
   itemCount = 0
 }) {
   const { availableLanguages } = useTranslation();
@@ -42,6 +45,8 @@ export default function BulkTranslateDialog({
   const [translateToLangs, setTranslateToLangs] = useState([]);
   const [isTranslating, setIsTranslating] = useState(false);
   const [translationCost, setTranslationCost] = useState(0.1); // Default fallback
+  const [showFlash, setShowFlash] = useState(false);
+  const [flashMessage, setFlashMessage] = useState('');
 
   // Get flat-rate cost based on entity type
   const getEntityCost = (entityType) => {
@@ -135,7 +140,18 @@ export default function BulkTranslateDialog({
       }
 
       if (totalTranslated > 0) {
-        toast.success(`Successfully translated ${totalTranslated} ${entityType} to ${translateToLangs.length} language(s)`);
+        const message = `Successfully translated ${totalTranslated} ${entityType} to ${translateToLangs.length} language(s)`;
+        toast.success(message);
+
+        // Show green flash message
+        setFlashMessage(message);
+        setShowFlash(true);
+        setTimeout(() => setShowFlash(false), 3000);
+
+        // Reload data after successful translation
+        if (onComplete) {
+          onComplete();
+        }
       }
       if (totalSkipped > 0 && totalTranslated === 0) {
         toast.info(`All ${totalSkipped} ${entityType} were skipped (already translated or missing source language)`);
@@ -157,11 +173,21 @@ export default function BulkTranslateDialog({
   };
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-md max-h-[80vh] overflow-hidden flex flex-col">
-        <DialogHeader>
-          <DialogTitle>Bulk AI Translate {entityName}</DialogTitle>
-        </DialogHeader>
+    <>
+      {showFlash && (
+        <FlashMessage
+          message={flashMessage}
+          type="success"
+          duration={3000}
+          onClose={() => setShowFlash(false)}
+        />
+      )}
+
+      <Dialog open={open} onOpenChange={onOpenChange}>
+        <DialogContent className="max-w-md max-h-[80vh] overflow-hidden flex flex-col">
+          <DialogHeader>
+            <DialogTitle>Bulk AI Translate {entityName}</DialogTitle>
+          </DialogHeader>
         <div className="space-y-4 py-4 overflow-y-auto">
           <div className="space-y-2">
             <Label htmlFor="from-lang">From Language</Label>
@@ -282,5 +308,6 @@ export default function BulkTranslateDialog({
         </div>
       </DialogContent>
     </Dialog>
+    </>
   );
 }
