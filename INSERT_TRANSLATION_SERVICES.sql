@@ -1,5 +1,8 @@
 -- SQL Query to Insert Translation Services with Flat Rates
 -- Run this on your Supabase database
+--
+-- IMPORTANT: This only inserts/updates rows, does not create tables or enums
+-- Use this if service_credit_costs table already exists
 
 -- Standard translation (products, categories, attributes, labels, tabs): 0.1 credits ($0.01)
 INSERT INTO service_credit_costs (
