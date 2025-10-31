@@ -242,6 +242,24 @@ const ChatInterface = ({ onPluginCloned, context }) => {
     handleInstallPlugin(pluginData);
   };
 
+  const handleCancelConfirmation = (message) => {
+    // Remove confirmAction and add cancellation message
+    setMessages(prev => [
+      ...prev.map(m => m === message ? { ...m, confirmAction: null } : m),
+      {
+        role: 'assistant',
+        content: '❌ Cancelled. What else can I help you with?'
+      }
+    ]);
+  };
+
+  const handleRemoveConfirmAction = (message) => {
+    // Remove confirmAction from message
+    setMessages(prev => prev.map(m =>
+      m === message ? { ...m, confirmAction: null } : m
+    ));
+  };
+
   const handleInstallPlugin = async (pluginData) => {
     try {
       // Call the new /api/ai/plugin/create endpoint
@@ -292,6 +310,8 @@ const ChatInterface = ({ onPluginCloned, context }) => {
             onInstallPlugin={handleInstallPlugin}
             onConfirmCreate={handleConfirmCreate}
             onGeneratePlugin={handleGeneratePlugin}
+            onCancelConfirmation={handleCancelConfirmation}
+            onRemoveConfirmAction={handleRemoveConfirmAction}
           />
         ))}
 
@@ -469,7 +489,7 @@ const ChatInterface = ({ onPluginCloned, context }) => {
 /**
  * MessageBubble - Renders individual chat messages with generated content
  */
-const MessageBubble = ({ message, onInstallPlugin, onConfirmCreate, onGeneratePlugin }) => {
+const MessageBubble = ({ message, onInstallPlugin, onConfirmCreate, onGeneratePlugin, onCancelConfirmation, onRemoveConfirmAction }) => {
   const [showCode, setShowCode] = useState(false);
   const [isInstalling, setIsInstalling] = useState(false);
   const [showConfirmation, setShowConfirmation] = useState(false);
@@ -521,16 +541,12 @@ const MessageBubble = ({ message, onInstallPlugin, onConfirmCreate, onGeneratePl
                 onClick={async () => {
                   if (message.confirmAction.type === 'generate-plugin') {
                     // Remove confirmAction from this message
-                    setMessages(prev => prev.map(m =>
-                      m === message ? { ...m, confirmAction: null } : m
-                    ));
+                    onRemoveConfirmAction(message);
                     // Generate plugin via AI
                     await onGeneratePlugin(message.confirmAction.prompt);
                   } else if (message.confirmAction.type === 'create-plugin') {
                     // Remove confirmAction from this message
-                    setMessages(prev => prev.map(m =>
-                      m === message ? { ...m, confirmAction: null } : m
-                    ));
+                    onRemoveConfirmAction(message);
                     // Save plugin to database
                     await onInstallPlugin(message.confirmAction.pluginData);
                   }
@@ -540,16 +556,7 @@ const MessageBubble = ({ message, onInstallPlugin, onConfirmCreate, onGeneratePl
                 ✓ Yes, Proceed
               </button>
               <button
-                onClick={() => {
-                  // Remove confirmAction and add cancellation message in one update for smooth visual feedback
-                  setMessages(prev => [
-                    ...prev.map(m => m === message ? { ...m, confirmAction: null } : m),
-                    {
-                      role: 'assistant',
-                      content: '❌ Cancelled. What else can I help you with?'
-                    }
-                  ]);
-                }}
+                onClick={() => onCancelConfirmation(message)}
                 className="flex items-center gap-2 px-4 py-2 bg-gray-200 hover:bg-gray-300 text-gray-700 text-sm rounded-md font-medium"
               >
                 ✗ Cancel
