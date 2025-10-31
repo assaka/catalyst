@@ -580,19 +580,23 @@ router.post('/bulk-translate', authMiddleware, authorize(['admin', 'store_owner'
           continue;
         }
 
-        // Check if target translation already exists
-        const hasTargetTranslation = attribute.translations[toLang] &&
-          Object.values(attribute.translations[toLang]).some(val =>
-            typeof val === 'string' && val.trim().length > 0
-          );
+        // Check if ALL target fields have content (field-level check)
+        const sourceFields = Object.entries(attribute.translations[fromLang] || {});
+        const targetTranslation = attribute.translations[toLang] || {};
 
-        if (hasTargetTranslation) {
-          console.log(`⏭️  Skipping attribute "${attributeName}": ${toLang} translation already exists`);
+        const allFieldsTranslated = sourceFields.every(([key, value]) => {
+          if (!value || typeof value !== 'string' || !value.trim()) return true; // Ignore empty source fields
+          const targetValue = targetTranslation[key];
+          return targetValue && typeof targetValue === 'string' && targetValue.trim().length > 0;
+        });
+
+        if (allFieldsTranslated && sourceFields.length > 0) {
+          console.log(`⏭️  Skipping attribute "${attributeName}": All fields already translated`);
           results.skipped++;
           results.skippedDetails.push({
             attributeId: attribute.id,
             attributeName,
-            reason: `${toLang} translation already exists`
+            reason: `All fields already translated`
           });
           continue;
         }

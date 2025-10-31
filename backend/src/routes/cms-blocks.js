@@ -721,19 +721,23 @@ router.post('/bulk-translate', authMiddleware, [
           continue;
         }
 
-        // Check if target translation already exists
-        const hasTargetTranslation = block.translations[toLang] &&
-          Object.values(block.translations[toLang]).some(val =>
-            typeof val === 'string' && val.trim().length > 0
-          );
+        // Check if ALL target fields have content (field-level check)
+        const sourceFields = Object.entries(block.translations[fromLang] || {});
+        const targetTranslation = block.translations[toLang] || {};
 
-        if (hasTargetTranslation) {
-          console.log(`⏭️  Skipping block "${blockTitle}": ${toLang} translation already exists`);
+        const allFieldsTranslated = sourceFields.every(([key, value]) => {
+          if (!value || typeof value !== 'string' || !value.trim()) return true; // Ignore empty source fields
+          const targetValue = targetTranslation[key];
+          return targetValue && typeof targetValue === 'string' && targetValue.trim().length > 0;
+        });
+
+        if (allFieldsTranslated && sourceFields.length > 0) {
+          console.log(`⏭️  Skipping block "${blockTitle}": All fields already translated`);
           results.skipped++;
           results.skippedDetails.push({
             blockId: block.id,
             blockTitle,
-            reason: `${toLang} translation already exists`
+            reason: `All fields already translated`
           });
           continue;
         }

@@ -395,8 +395,8 @@ router.post('/bulk-translate', authMiddleware, authorize(['admin', 'store_owner'
       });
     }
 
-    // Get all categories for this store with fromLang translations
-    const categories = await getCategoriesWithTranslations({ store_id }, fromLang);
+    // Get all categories for this store with all translations
+    const categories = await getCategoriesWithAllTranslations({ store_id });
 
     if (categories.length === 0) {
       return res.json({
@@ -439,20 +439,23 @@ router.post('/bulk-translate', authMiddleware, authorize(['admin', 'store_owner'
           continue;
         }
 
-        // Check if target translation already exists
-        const categoryWithToLang = await getCategoryById(category.id, toLang);
-        const hasTargetTranslation = categoryWithToLang &&
-          Object.values({ name: categoryWithToLang.name, description: categoryWithToLang.description }).some(val =>
-            typeof val === 'string' && val.trim().length > 0
-          );
+        // Check if ALL target fields have content (field-level check)
+        const sourceFields = Object.entries(category.translations[fromLang] || {});
+        const targetTranslation = category.translations[toLang] || {};
 
-        if (hasTargetTranslation) {
-          console.log(`⏭️  Skipping category "${categoryName}": ${toLang} translation already exists`);
+        const allFieldsTranslated = sourceFields.every(([key, value]) => {
+          if (!value || typeof value !== 'string' || !value.trim()) return true; // Ignore empty source fields
+          const targetValue = targetTranslation[key];
+          return targetValue && typeof targetValue === 'string' && targetValue.trim().length > 0;
+        });
+
+        if (allFieldsTranslated && sourceFields.length > 0) {
+          console.log(`⏭️  Skipping category "${categoryName}": All fields already translated`);
           results.skipped++;
           results.skippedDetails.push({
             categoryId: category.id,
             categoryName,
-            reason: `${toLang} translation already exists`
+            reason: `All fields already translated`
           });
           continue;
         }
