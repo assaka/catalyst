@@ -678,6 +678,17 @@ router.post('/bulk-translate', authMiddleware, [
     const { getCMSBlocksWithAllTranslations } = require('../utils/cmsHelpers');
     const blocks = await getCMSBlocksWithAllTranslations({ store_id });
 
+    console.log(`📦 Loaded ${blocks.length} CMS blocks from database with ALL translations`);
+    if (blocks.length > 0) {
+      console.log(`🔍 First block structure:`, JSON.stringify({
+        id: blocks[0].id,
+        identifier: blocks[0].identifier,
+        translations: blocks[0].translations,
+        hasTranslations: !!blocks[0].translations,
+        translationKeys: blocks[0].translations ? Object.keys(blocks[0].translations) : 'none'
+      }, null, 2));
+    }
+
     if (blocks.length === 0) {
       return res.json({
         success: true,
@@ -706,6 +717,12 @@ router.post('/bulk-translate', authMiddleware, [
     for (const block of blocks) {
       try {
         const blockTitle = block.translations?.[fromLang]?.title || block.title || block.identifier;
+
+        console.log(`\n📋 Processing block: ${blockTitle}`);
+        console.log(`   - Has translations object: ${!!block.translations}`);
+        console.log(`   - Has ${fromLang} translation: ${!!(block.translations && block.translations[fromLang])}`);
+        console.log(`   - Translations keys:`, block.translations ? Object.keys(block.translations) : 'none');
+        console.log(`   - ${fromLang} translation:`, block.translations?.[fromLang]);
 
         // Check if source translation exists
         if (!block.translations || !block.translations[fromLang]) {
