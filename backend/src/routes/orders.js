@@ -1,9 +1,10 @@
 const express = require('express');
 const { body, validationResult } = require('express-validator');
-const { Order, OrderItem, Store, Product } = require('../models');
+const { Order, OrderItem, Store, Product, Customer } = require('../models');
 const { Op } = require('sequelize');
 const { authMiddleware } = require('../middleware/auth');
 const { validateCustomerOrderAccess } = require('../middleware/customerStoreAuth');
+const emailService = require('../services/email-service');
 const router = express.Router();
 
 // @route   GET /api/orders/test
@@ -676,6 +677,43 @@ router.post('/', [
         }
       ]
     });
+
+    // Send order success email asynchronously
+    try {
+      console.log('📧 Sending order success email for order:', completeOrder.order_number);
+
+      // Get customer information
+      let customer = null;
+      if (completeOrder.customer_id) {
+        customer = await Customer.findByPk(completeOrder.customer_id);
+      }
+
+      // If no customer record, create a guest customer object from order data
+      if (!customer) {
+        customer = {
+          first_name: completeOrder.customer_first_name || completeOrder.customer_email?.split('@')[0] || 'Customer',
+          last_name: completeOrder.customer_last_name || '',
+          email: completeOrder.customer_email
+        };
+      }
+
+      // Send email asynchronously (don't block response)
+      emailService.sendTransactionalEmail(store_id, 'order_success', {
+        recipientEmail: completeOrder.customer_email,
+        customer,
+        order: completeOrder.toJSON(),
+        store: store.toJSON(),
+        languageCode: 'en' // TODO: Get from customer preferences or order metadata
+      }).then(() => {
+        console.log('✅ Order success email sent successfully to:', completeOrder.customer_email);
+      }).catch(emailError => {
+        console.error('❌ Failed to send order success email:', emailError.message);
+        // Don't fail order creation if email fails
+      });
+    } catch (emailError) {
+      console.error('Error sending order success email:', emailError);
+      // Don't fail order creation if email fails
+    }
 
     res.status(201).json({
       success: true,

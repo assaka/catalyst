@@ -4,6 +4,8 @@ const { body, validationResult } = require('express-validator');
 const { authMiddleware } = require('../middleware/auth');
 const { checkStoreOwnership } = require('../middleware/storeAuth');
 const creditService = require('../services/credit-service');
+const emailService = require('../services/email-service');
+const { User, Customer, Store, Credit } = require('../models');
 
 // Middleware to extract storeId and add it to req
 const storeAuth = (req, res, next) => {
@@ -229,6 +231,44 @@ router.post('/complete-purchase',
         transaction_id,
         stripe_charge_id
       );
+
+      // Send credit purchase confirmation email asynchronously
+      try {
+        console.log('📧 Sending credit purchase confirmation email for transaction:', transaction.id);
+
+        // Get user and store information
+        const user = await User.findByPk(transaction.user_id);
+        const store = await Store.findByPk(transaction.store_id);
+        const creditInfo = await Credit.findOne({
+          where: { user_id: transaction.user_id, store_id: transaction.store_id }
+        });
+
+        if (user && store) {
+          // Send email asynchronously (don't block response)
+          emailService.sendTransactionalEmail(transaction.store_id, 'credit_purchase', {
+            recipientEmail: user.email,
+            customer: {
+              first_name: user.first_name,
+              last_name: user.last_name,
+              email: user.email
+            },
+            transaction: {
+              ...transaction.toJSON(),
+              balance: creditInfo?.balance || 0
+            },
+            store: store.toJSON(),
+            languageCode: 'en' // TODO: Get from user preferences
+          }).then(() => {
+            console.log('✅ Credit purchase email sent successfully to:', user.email);
+          }).catch(emailError => {
+            console.error('❌ Failed to send credit purchase email:', emailError.message);
+            // Don't fail the purchase completion if email fails
+          });
+        }
+      } catch (emailError) {
+        console.error('Error sending credit purchase email:', emailError);
+        // Don't fail the purchase completion if email fails
+      }
 
       res.json({
         success: true,

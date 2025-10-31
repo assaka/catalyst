@@ -1,8 +1,9 @@
 const express = require('express');
 const jwt = require('jsonwebtoken');
 const { body, validationResult } = require('express-validator');
-const { User, Customer, LoginAttempt } = require('../models');
+const { User, Customer, LoginAttempt, Store } = require('../models');
 const passport = require('../config/passport');
+const emailService = require('../services/email-service');
 const router = express.Router();
 
 // Helper function to determine which model to use based on role
@@ -222,12 +223,34 @@ router.post('/register', [
     // Send welcome email if requested (for customer registrations)
     if (send_welcome_email && role === 'customer') {
       try {
-        // Simple console log for now - in production this would be an actual email service
-        console.log(`Welcome email should be sent to: ${email}`);
-        console.log(`Welcome message: Hello ${first_name}, welcome to our store! Your account has been created successfully.`);
-        
-        // TODO: Implement actual email service integration here
-        // Example: await emailService.sendWelcomeEmail(user);
+        console.log(`📧 Sending welcome email to: ${email}`);
+
+        // For customers, try to find their store
+        let storeId = null;
+        if (user.store_id) {
+          storeId = user.store_id;
+        } else {
+          // Get first available store as fallback
+          const defaultStore = await Store.findOne();
+          storeId = defaultStore?.id;
+        }
+
+        if (storeId) {
+          const store = await Store.findByPk(storeId);
+
+          // Send welcome email asynchronously (don't block registration)
+          emailService.sendTransactionalEmail(storeId, 'signup', {
+            recipientEmail: email,
+            customer: user.toJSON(),
+            store: store ? store.toJSON() : null,
+            languageCode: 'en' // TODO: Get from customer preferences
+          }).then(() => {
+            console.log('✅ Welcome email sent successfully to:', email);
+          }).catch(emailError => {
+            console.error('❌ Failed to send welcome email:', emailError.message);
+            // Don't fail registration if email fails
+          });
+        }
       } catch (emailError) {
         console.error('Failed to send welcome email:', emailError);
         // Don't fail registration if email fails
@@ -329,9 +352,23 @@ router.post('/upgrade-guest', [
 
     // Send welcome email
     try {
-      console.log(`Welcome email should be sent to: ${email}`);
-      console.log(`Welcome message: Hello ${guestCustomer.first_name}, your account has been created! You can now log in to track your orders.`);
-      // TODO: Implement actual email service
+      console.log(`📧 Sending welcome email to upgraded guest: ${email}`);
+
+      // Get store for email context
+      const store = store_id ? await Store.findByPk(store_id) : null;
+
+      // Send welcome email asynchronously (don't block account upgrade)
+      emailService.sendTransactionalEmail(store_id, 'signup', {
+        recipientEmail: email,
+        customer: guestCustomer.toJSON(),
+        store: store ? store.toJSON() : null,
+        languageCode: 'en' // TODO: Get from customer preferences
+      }).then(() => {
+        console.log('✅ Welcome email sent successfully to upgraded guest:', email);
+      }).catch(emailError => {
+        console.error('❌ Failed to send welcome email to upgraded guest:', emailError.message);
+        // Don't fail account upgrade if email fails
+      });
     } catch (emailError) {
       console.error('Failed to send welcome email:', emailError);
     }
@@ -894,8 +931,23 @@ router.post('/customer/register', [
     // Send welcome email if requested
     if (send_welcome_email) {
       try {
-        console.log(`Welcome email should be sent to: ${email}`);
-        console.log(`Welcome message: Hello ${first_name}, welcome to our store! Your account has been created successfully.`);
+        console.log(`📧 Sending welcome email to: ${email}`);
+
+        // Get store for email context
+        const store = customerStoreId ? await Store.findByPk(customerStoreId) : null;
+
+        // Send welcome email asynchronously (don't block registration)
+        emailService.sendTransactionalEmail(customerStoreId, 'signup', {
+          recipientEmail: email,
+          customer: customer.toJSON(),
+          store: store ? store.toJSON() : null,
+          languageCode: 'en' // TODO: Get from customer preferences
+        }).then(() => {
+          console.log('✅ Welcome email sent successfully to:', email);
+        }).catch(emailError => {
+          console.error('❌ Failed to send welcome email:', emailError.message);
+          // Don't fail registration if email fails
+        });
       } catch (emailError) {
         console.error('Failed to send welcome email:', emailError);
       }
