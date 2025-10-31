@@ -395,10 +395,34 @@ Return ONLY the translated text, no explanations or notes.`;
    * Translate all fields of an entity using AI (with field-level merging)
    */
   async aiTranslateEntity(entityType, entityId, fromLang, toLang) {
-    const Model = this._getEntityModel(entityType);
-    const entity = await Model.findByPk(entityId);
+    // Load entity with translations from appropriate source
+    let entity;
 
-    if (!entity || !entity.translations || !entity.translations[fromLang]) {
+    if (entityType === 'product') {
+      const { applyAllProductTranslations } = require('../utils/productHelpers');
+      const Model = this._getEntityModel(entityType);
+      const productRaw = await Model.findByPk(entityId);
+      if (!productRaw) throw new Error('Product not found');
+      const [productWithTranslations] = await applyAllProductTranslations([productRaw]);
+      entity = productWithTranslations;
+    } else if (entityType === 'category') {
+      const { getCategoriesWithAllTranslations } = require('../utils/categoryHelpers');
+      const categories = await getCategoriesWithAllTranslations({ id: entityId });
+      entity = categories[0];
+      if (!entity) throw new Error('Category not found');
+    } else if (entityType === 'attribute') {
+      const { getAttributesWithTranslations } = require('../utils/attributeHelpers');
+      const attributes = await getAttributesWithTranslations({ id: entityId });
+      entity = attributes[0];
+      if (!entity) throw new Error('Attribute not found');
+    } else {
+      // CMS pages/blocks use JSONB translations column
+      const Model = this._getEntityModel(entityType);
+      entity = await Model.findByPk(entityId);
+      if (!entity) throw new Error(`${entityType} not found`);
+    }
+
+    if (!entity.translations || !entity.translations[fromLang]) {
       throw new Error('Source translation not found');
     }
 
