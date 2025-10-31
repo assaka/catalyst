@@ -699,162 +699,192 @@ Return ONLY valid JSON.`;
       });
 
     } else if (intent.intent === 'translation') {
-      // Handle translation request
-      const { text, targetLanguages, action = 'apply', uiLabelKey } = intent.details || {};
+      // AI-DRIVEN TRANSLATION HANDLER
+      // Let the AI understand the context and make decisions
+      const { sequelize } = require('../database/connection');
+      const translationService = require('../services/translation-service');
 
-      // If no target language specified, ask for it
-      if (!targetLanguages || targetLanguages.length === 0) {
-        const clarifyResult = await aiService.generate({
+      // Step 1: Let AI analyze the request and search for relevant translations
+      const analysisPrompt = `The user wants to translate something in their e-commerce store.
+
+User request: "${message}"
+Previous context: ${JSON.stringify(conversationHistory?.slice(-2) || [])}
+
+Analyze this request and provide:
+1. What text/label they want to translate (e.g., "Add to Cart", "Buy Now")
+2. Target language codes (e.g., ["fr", "es", "de"])
+3. Suggested translation keys to search for (e.g., ["add_to_cart", "addtocart", "add to cart"])
+
+Return JSON:
+{
+  "textToTranslate": "Add to Cart",
+  "targetLanguages": ["fr", "es"],
+  "searchTerms": ["add_to_cart", "add to cart", "addtocart", "cart.add"],
+  "needsClarification": false,
+  "clarificationQuestion": null
+}
+
+If you need to ask for clarification (missing language or unclear text), set needsClarification: true`;
+
+      const analysisResult = await aiService.generate({
+        userId,
+        operationType: 'general',
+        prompt: analysisPrompt,
+        systemPrompt: 'You are an AI translation assistant. Analyze user requests and extract structured information. Return ONLY valid JSON.',
+        maxTokens: 512,
+        temperature: 0.3,
+        metadata: { type: 'translation-analysis' }
+      });
+
+      let analysis;
+      try {
+        const jsonMatch = analysisResult.content.match(/\{[\s\S]*\}/);
+        analysis = JSON.parse(jsonMatch ? jsonMatch[0] : analysisResult.content);
+      } catch (error) {
+        console.error('Failed to parse analysis:', error);
+        analysis = { needsClarification: true, clarificationQuestion: "I'm not sure what you'd like to translate. Could you be more specific?" };
+      }
+
+      creditsUsed += analysisResult.creditsDeducted;
+
+      // Step 2: If AI needs clarification, ask the user
+      if (analysis.needsClarification) {
+        return res.json({
+          success: true,
+          message: analysis.clarificationQuestion || "Could you provide more details about what you'd like to translate?",
+          data: { type: 'clarification' },
+          creditsDeducted: creditsUsed
+        });
+      }
+
+      // Step 3: Search for matching translation keys using AI's search terms
+      const searchTerms = analysis.searchTerms || [analysis.textToTranslate];
+      const searchConditions = searchTerms.map((_, idx) =>
+        `(LOWER(value) LIKE $${idx * 2 + 1} OR LOWER(key) LIKE $${idx * 2 + 2})`
+      ).join(' OR ');
+
+      const searchBindings = searchTerms.flatMap(term => [
+        `%${term.toLowerCase()}%`,
+        `%${term.replace(/\s+/g, '_').toLowerCase()}%`
+      ]);
+
+      const matchingKeys = await sequelize.query(`
+        SELECT DISTINCT key, value, language_code
+        FROM translations
+        WHERE ${searchConditions}
+        ORDER BY language_code, key
+        LIMIT 20
+      `, {
+        bind: searchBindings,
+        type: sequelize.QueryTypes.SELECT
+      });
+
+      // Step 4: Let AI decide which keys are most relevant
+      if (matchingKeys.length > 0) {
+        const aiDecisionPrompt = `The user wants to translate: "${analysis.textToTranslate}"
+
+I found these translation keys in the database:
+${matchingKeys.map(k => `- ${k.key}: "${k.value}" (${k.language_code})`).join('\n')}
+
+Which keys should be updated? Return JSON:
+{
+  "relevantKeys": ["product.add_to_cart", "common.addToCart"],
+  "reasoning": "These keys match the 'add to cart' button functionality"
+}`;
+
+        const decisionResult = await aiService.generate({
           userId,
           operationType: 'general',
-          prompt: `The user said: "${message}"\n\nThey want to translate something but didn't specify the target language. Ask them which language(s) they want to translate to. Be friendly and suggest common languages like French (fr), Spanish (es), German (de), Arabic (ar), Chinese (zh), etc.`,
-          systemPrompt: 'You are a helpful translation assistant. Ask clarifying questions in a friendly way.',
+          prompt: aiDecisionPrompt,
+          systemPrompt: 'You are a translation key expert. Identify the most relevant keys. Return ONLY valid JSON.',
           maxTokens: 256,
-          temperature: 0.7,
-          metadata: { type: 'translation-clarification' }
+          temperature: 0.2,
+          metadata: { type: 'key-selection' }
         });
+
+        let decision;
+        try {
+          const jsonMatch = decisionResult.content.match(/\{[\s\S]*\}/);
+          decision = JSON.parse(jsonMatch ? jsonMatch[0] : decisionResult.content);
+        } catch (error) {
+          // Fallback: use all unique keys
+          decision = {
+            relevantKeys: [...new Set(matchingKeys.map(k => k.key))],
+            reasoning: 'Using all matching keys'
+          };
+        }
+
+        creditsUsed += decisionResult.creditsDeducted;
+
+        // Step 5: Generate translations for target languages
+        const results = {};
+        for (const targetLang of analysis.targetLanguages) {
+          try {
+            const translated = await translationService._translateWithClaude(
+              analysis.textToTranslate,
+              'en',
+              targetLang,
+              { type: 'button', location: 'general' }
+            );
+            results[targetLang] = translated;
+          } catch (error) {
+            console.error(`Translation to ${targetLang} failed:`, error);
+            results[targetLang] = `[Translation failed]`;
+          }
+        }
+
+        // Step 6: Show preview with AI's reasoning
+        const keyGroups = {};
+        decision.relevantKeys.forEach(key => {
+          const keyData = matchingKeys.filter(k => k.key === key);
+          if (keyData.length > 0) {
+            keyGroups[key] = keyData.map(k => ({ lang: k.language_code, value: k.value }));
+          }
+        });
+
+        const translationsList = Object.entries(results)
+          .map(([lang, translation]) => `**${lang.toUpperCase()}**: ${translation}`)
+          .join('\n');
+
+        const keysInfo = Object.entries(keyGroups).map(([key, langs]) =>
+          `- \`${key}\` (currently in ${langs.map(l => l.lang).join(', ')})`
+        ).join('\n');
 
         return res.json({
           success: true,
-          message: clarifyResult.content,
+          message: `I found these translation keys for "${analysis.textToTranslate}":\n\n${keysInfo}\n\n${decision.reasoning}\n\n**Suggested translations:**\n${translationsList}\n\nWould you like me to update these? Reply "yes" to proceed.`,
           data: {
-            type: 'clarification',
-            needsLanguage: true
-          },
-          creditsDeducted: creditsUsed + clarifyResult.creditsDeducted
-        });
-      }
-
-      // Detect if they're referring to a UI label (button, link, etc.) or just want translation
-      const isUILabel = message.match(/button|label|link|text|menu|heading|title/i);
-
-      // If no text to translate, extract it from the message
-      // Better extraction that preserves phrases like "add to cart"
-      let textToTranslate = text;
-      if (!textToTranslate) {
-        // Remove only the command words and UI element types
-        textToTranslate = message
-          .replace(/^(translate|change|update|modify)\s+/gi, '')
-          .replace(/\s+(button|label|link|text|menu|heading|title)(\s+to|\s+in|\s+into)?/gi, '')
-          .replace(/\s+(to|in|into)\s+[a-z]+$/gi, '') // Remove language at the end
-          .trim();
-      }
-
-      if (!textToTranslate) {
-        return res.json({
-          success: true,
-          message: "I'd be happy to help translate! Could you tell me what text you'd like me to translate?",
-          data: {
-            type: 'clarification',
-            needsText: true
+            type: 'translation_preview',
+            original: analysis.textToTranslate,
+            translations: results,
+            matchingKeys: keyGroups,
+            action: 'update_labels',
+            aiReasoning: decision.reasoning
           },
           creditsDeducted: creditsUsed
         });
       }
 
-      // Perform the translation
-      const translationService = require('../services/translation-service');
-      const Translation = require('../models/Translation');
-      const results = {};
+      // No matches found - let AI suggest next steps
+      const noMatchPrompt = `The user wants to translate "${analysis.textToTranslate}" but I couldn't find matching translation keys in the database.
 
-      for (const targetLang of targetLanguages) {
-        try {
-          const translated = await translationService._translateWithClaude(
-            textToTranslate,
-            'en',
-            targetLang,
-            { type: isUILabel ? 'button' : 'general', location: 'general' }
-          );
-          results[targetLang] = translated;
-        } catch (error) {
-          console.error(`Translation to ${targetLang} failed:`, error);
-          results[targetLang] = `[Translation failed: ${error.message}]`;
-        }
-      }
+Suggest helpful next steps. Be friendly and actionable.`;
 
-      // If it's a UI label, find the translation key and offer to update it
-      if (isUILabel) {
-        // Find matching translation keys (e.g., "add to cart" might match "common.addToCart" or "product.add_to_cart")
-        const { sequelize } = require('../database/connection');
-
-        // Create search patterns for both value and key
-        const searchText = textToTranslate.toLowerCase();
-        const keySearchPattern = searchText
-          .replace(/\s+/g, '_') // "add to cart" → "add_to_cart"
-          .replace(/[^a-z0-9_]/g, ''); // Remove special chars
-
-        // Search by both value AND key pattern
-        const matchingKeys = await sequelize.query(`
-          SELECT DISTINCT key, value, language_code
-          FROM translations
-          WHERE LOWER(value) LIKE $1
-             OR LOWER(key) LIKE $2
-             OR LOWER(REPLACE(key, '_', ' ')) LIKE $1
-          ORDER BY
-            CASE
-              WHEN LOWER(value) = $3 THEN 1
-              WHEN LOWER(value) LIKE $1 THEN 2
-              WHEN LOWER(key) LIKE $2 THEN 3
-              ELSE 4
-            END,
-            language_code, key
-          LIMIT 10
-        `, {
-          bind: [
-            `%${searchText}%`,           // Search in value
-            `%${keySearchPattern}%`,     // Search in key
-            searchText                    // Exact match in value (for sorting)
-          ],
-          type: sequelize.QueryTypes.SELECT
-        });
-
-        if (matchingKeys.length > 0) {
-          // Group by key
-          const keyGroups = {};
-          matchingKeys.forEach(item => {
-            if (!keyGroups[item.key]) {
-              keyGroups[item.key] = [];
-            }
-            keyGroups[item.key].push({ lang: item.language_code, value: item.value });
-          });
-
-          const translationsList = Object.entries(results)
-            .map(([lang, translation]) => `**${lang.toUpperCase()}**: ${translation}`)
-            .join('\n');
-
-          const keysInfo = Object.entries(keyGroups).map(([key, langs]) =>
-            `- \`${key}\` (currently in ${langs.map(l => l.lang).join(', ')})`
-          ).join('\n');
-
-          return res.json({
-            success: true,
-            message: `I found these UI labels in your store that match "${textToTranslate}":\n\n${keysInfo}\n\n**Suggested translations:**\n${translationsList}\n\nWould you like me to update these labels with the new translations? Reply "yes" to update, or tell me which specific key to update.`,
-            data: {
-              type: 'translation_preview',
-              original: textToTranslate,
-              translations: results,
-              matchingKeys: keyGroups,
-              action: 'update_labels'
-            },
-            creditsDeducted: creditsUsed
-          });
-        }
-      }
-
-      // Just show translations (no UI label match or not a UI element)
-      const translationsList = Object.entries(results)
-        .map(([lang, translation]) => `**${lang.toUpperCase()}**: ${translation}`)
-        .join('\n');
+      const suggestionResult = await aiService.generate({
+        userId,
+        operationType: 'general',
+        prompt: noMatchPrompt,
+        systemPrompt: 'You are a helpful translation assistant.',
+        maxTokens: 256,
+        temperature: 0.7,
+        metadata: { type: 'translation-suggestion' }
+      });
 
       res.json({
         success: true,
-        message: `Here are the translations for "${textToTranslate}":\n\n${translationsList}${isUILabel ? '\n\nI couldn\'t find this text in your store\'s UI labels. If you want to add it as a new label, let me know!' : ''}`,
-        data: {
-          type: 'translation',
-          original: textToTranslate,
-          translations: results
-        },
-        creditsDeducted: creditsUsed
+        message: suggestionResult.content,
+        data: { type: 'suggestion' },
+        creditsDeducted: creditsUsed + suggestionResult.creditsDeducted
       });
 
     } else if (intent.intent === 'layout') {
