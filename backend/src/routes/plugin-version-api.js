@@ -262,7 +262,7 @@ router.post('/:pluginId/versions', async (req, res) => {
     );
 
     // Determine if should create snapshot
-    const shouldSnapshot = force_snapshot ||
+    let shouldSnapshot = force_snapshot ||
       tag_name ||
       !currentVersion ||
       (currentVersion.snapshot_distance >= 9);
@@ -275,9 +275,15 @@ router.post('/:pluginId/versions', async (req, res) => {
       // Get previous plugin state
       const previousState = await reconstructPluginState(currentVersion.id);
 
-      // Calculate patches
-      patches = calculatePatches(previousState, pluginState);
-      stats = calculateStats(patches);
+      if (!previousState) {
+        console.warn(`  ⚠ Could not reconstruct previous state for version ${currentVersion.id}, forcing snapshot`);
+        // Force snapshot if we can't reconstruct previous state
+        shouldSnapshot = true;
+      } else {
+        // Calculate patches
+        patches = calculatePatches(previousState, pluginState);
+        stats = calculateStats(patches);
+      }
     }
 
     // Create version record
@@ -639,13 +645,17 @@ async function getPluginCurrentState(pluginId) {
  * Uses snapshots and patches
  */
 async function reconstructPluginState(versionId) {
-  // Get version info
-  const [version] = await sequelize.query(
-    'SELECT * FROM plugin_version_history WHERE id = $1',
-    { bind: [versionId], type: QueryTypes.SELECT }
-  );
+  try {
+    // Get version info
+    const [version] = await sequelize.query(
+      'SELECT * FROM plugin_version_history WHERE id = $1',
+      { bind: [versionId], type: QueryTypes.SELECT }
+    );
 
-  if (!version) return null;
+    if (!version) {
+      console.warn(`⚠ Version ${versionId} not found`);
+      return null;
+    }
 
   // If snapshot, return snapshot data
   if (version.version_type === 'snapshot') {
@@ -713,6 +723,11 @@ async function reconstructPluginState(versionId) {
   }
 
   return state;
+  } catch (error) {
+    console.error('❌ Error reconstructing plugin state:', error);
+    console.error('   Version ID:', versionId);
+    return null;
+  }
 }
 
 /**
@@ -721,6 +736,15 @@ async function reconstructPluginState(versionId) {
 function calculatePatches(oldState, newState) {
   const patches = [];
   const componentTypes = ['registry', 'hooks', 'events', 'scripts', 'widgets', 'controllers', 'entities'];
+
+  // Ensure states are valid objects
+  if (!oldState || !newState) {
+    console.warn('⚠ calculatePatches: Invalid state provided', {
+      hasOldState: !!oldState,
+      hasNewState: !!newState
+    });
+    return patches;
+  }
 
   for (const type of componentTypes) {
     const oldData = oldState[type] || [];
