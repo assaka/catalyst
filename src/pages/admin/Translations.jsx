@@ -876,14 +876,14 @@ export default function Translations() {
   // Load CMS pages when switching to CMS Pages tab
   useEffect(() => {
     if (activeTab === 'cms-pages' && selectedStore) {
-      loadCms();
+      loadCmsContent();
     }
   }, [activeTab, selectedStore]);
 
   // Load CMS blocks when switching to CMS Blocks tab
   useEffect(() => {
     if (activeTab === 'cms-blocks' && selectedStore) {
-      loadCms();
+      loadCmsContent();
     }
   }, [activeTab, selectedStore]);
 
