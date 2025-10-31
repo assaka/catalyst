@@ -472,8 +472,14 @@ router.post('/bulk-translate', authMiddleware, [
           continue;
         }
 
-        // Check if target translation already exists
-        if (tab.translations[toLang]) {
+        // Check if target translation already exists with actual content
+        // Don't skip if translation exists but all fields are empty
+        const hasTargetTranslation = tab.translations[toLang] &&
+          Object.values(tab.translations[toLang]).some(val =>
+            typeof val === 'string' && val.trim().length > 0
+          );
+
+        if (hasTargetTranslation) {
           console.log(`⏭️  Skipping tab "${tabName}": ${toLang} translation already exists`);
           results.skipped++;
           results.skippedDetails.push({

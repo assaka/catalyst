@@ -428,8 +428,13 @@ router.post('/bulk-translate', authMiddleware, [
           continue;
         }
 
-        // Check if target translation already exists
-        if (label.translations[toLang]) {
+        // Check if target translation already exists with actual content
+        const hasTargetTranslation = label.translations[toLang] &&
+          Object.values(label.translations[toLang]).some(val =>
+            typeof val === 'string' && val.trim().length > 0
+          );
+
+        if (hasTargetTranslation) {
           console.log(`⏭️  Skipping label "${labelText}": ${toLang} translation already exists`);
           results.skipped++;
           results.skippedDetails.push({
