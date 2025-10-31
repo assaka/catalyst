@@ -47,9 +47,11 @@ export default function BulkTranslateDialog({
   useEffect(() => {
     const loadTranslationCost = async () => {
       try {
-        const response = await api.get('service-credit-costs/key/ai_translation');
+        // Use token-based pricing
+        const response = await api.get('service-credit-costs/key/ai_translation_token');
         if (response.success && response.service) {
-          setTranslationCost(response.service.cost_per_unit);
+          // For display purposes, estimate ~500 tokens per item (conservative)
+          setTranslationCost(response.service.cost_per_unit * 500);
         }
       } catch (error) {
         console.error('Error loading translation cost:', error);
@@ -188,16 +190,19 @@ export default function BulkTranslateDialog({
           {/* Credit Cost Estimate */}
           {translateToLangs.length > 0 && itemCount > 0 && (
             <div className="bg-green-50 border border-green-200 rounded-lg p-3">
-              <div className="flex items-center justify-between text-sm">
+              <div className="flex items-center justify-between text-sm mb-1">
                 <span className="text-green-800 font-medium">
                   💰 Estimated Cost:
                 </span>
                 <span className="text-green-900 font-bold">
-                  {(itemCount * translateToLangs.length * translationCost).toFixed(2)} credits
+                  ~{(itemCount * translateToLangs.length * translationCost).toFixed(2)} credits
                 </span>
               </div>
-              <p className="text-xs text-green-700 mt-1">
-                {itemCount} {entityType} × {translateToLangs.length} language(s) × {translationCost} credits each
+              <p className="text-xs text-green-700">
+                Approximate: {itemCount} items × {translateToLangs.length} lang(s) × ~{translationCost.toFixed(2)} credits avg
+              </p>
+              <p className="text-xs text-green-600 mt-1 italic">
+                * Actual cost varies by text length (token-based pricing). Short texts cost less, long texts cost more.
               </p>
             </div>
           )}

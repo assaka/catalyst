@@ -89,8 +89,9 @@ INSERT INTO service_credit_costs (service_key, service_name, service_category, d
 ('custom_plugin_creation', 'Custom Plugin Creation', 'plugin_management', 'Creating a custom plugin with AI', 50.0000, 'per_use', true, true, 22, '{"note": "AI-powered plugin generation"}'),
 
 -- AI Services
-('ai_translation', 'AI Translation', 'ai_services', 'AI-powered content translation', 0.1000, 'per_use', true, true, 30, '{"note": "Per translation request"}'),
-('ai_product_description', 'AI Product Description', 'ai_services', 'AI-generated product descriptions', 0.2000, 'per_item', true, true, 31, '{"note": "Per product"}'),
+('ai_translation', 'AI Translation (Legacy)', 'ai_services', 'AI-powered content translation - flat rate', 0.1000, 'per_use', false, false, 30, '{"note": "Deprecated - use ai_translation_token instead", "deprecated": true}'),
+('ai_translation_token', 'AI Translation', 'ai_services', 'AI-powered content translation - token based', 0.0001, 'per_item', true, true, 31, '{"note": "Per token (approx 4 chars)", "base_rate": 0.0001, "calculation": "tokens * rate"}'),
+('ai_product_description', 'AI Product Description', 'ai_services', 'AI-generated product descriptions', 0.2000, 'per_item', true, true, 32, '{"note": "Per product"}'),
 ('ai_seo_optimization', 'AI SEO Optimization', 'ai_services', 'AI-powered SEO analysis and optimization', 0.5000, 'per_use', true, true, 32, '{"note": "Per page or product"}'),
 ('ai_code_patch', 'AI Code Modification', 'ai_services', 'AI-powered code editing and patching', 25.0000, 'per_use', true, true, 33, '{"note": "Per code modification"}'),
 ('ai_layout_generation', 'AI Layout Generation', 'ai_services', 'AI-generated page layouts and designs', 40.0000, 'per_use', true, true, 34, '{"note": "Per layout generation"}'),

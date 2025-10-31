@@ -42,7 +42,8 @@ export default function TranslationWizard({ isOpen, onClose, storeId }) {
 
   const loadTranslationCost = async () => {
     try {
-      const response = await api.get('service-credit-costs/key/ai_translation');
+      // Use token-based pricing instead of flat rate
+      const response = await api.get('service-credit-costs/key/ai_translation_token');
       if (response.success && response.service) {
         setTranslationCost(response.service.cost_per_unit);
       }
@@ -487,16 +488,21 @@ export default function TranslationWizard({ isOpen, onClose, storeId }) {
                 {/* Credit cost estimate */}
                 {stats.toTranslate > 0 && (
                   <div className="mt-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2 text-blue-800">
-                        <span>💰</span>
-                        <span className="font-medium">
-                          Estimated cost: {(stats.toTranslate * translationCost).toFixed(2)} credits
-                        </span>
+                    <div className="flex flex-col gap-2">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2 text-blue-800">
+                          <span>💰</span>
+                          <span className="font-medium">Estimated Cost:</span>
+                        </div>
+                        <span className="text-blue-900 font-bold">Variable (token-based)</span>
                       </div>
-                      <div className="text-sm text-blue-600">
-                        {stats.toTranslate} translations × {translationCost} credits each
-                      </div>
+                      <p className="text-xs text-blue-700">
+                        Cost varies by text length. Short texts (e.g., "Add to Cart") cost ~0.01 credits.
+                        Long texts (e.g., CMS pages) may cost 0.5-2 credits per page.
+                      </p>
+                      <p className="text-xs text-blue-700">
+                        Rate: {translationCost} credits per token (~4 characters)
+                      </p>
                     </div>
                   </div>
                 )}
@@ -568,11 +574,18 @@ export default function TranslationWizard({ isOpen, onClose, storeId }) {
                 {/* Credits used */}
                 {translationResult.translated > 0 && (
                   <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
-                    <div className="flex items-center justify-between text-sm">
-                      <span className="text-blue-800 font-medium">💰 Credits Used:</span>
-                      <span className="text-blue-900 font-bold">
-                        {(translationResult.translated * translationCost).toFixed(2)} credits
-                      </span>
+                    <div className="flex flex-col gap-1">
+                      <div className="flex items-center justify-between text-sm">
+                        <span className="text-blue-800 font-medium">💰 Credits Used:</span>
+                        <span className="text-blue-900 font-bold">
+                          {translationResult.creditsDeducted?.toFixed(4) || '0.00'} credits
+                        </span>
+                      </div>
+                      {translationResult.estimatedTokens && (
+                        <p className="text-xs text-blue-700">
+                          ~{translationResult.estimatedTokens.toLocaleString()} tokens processed (token-based pricing)
+                        </p>
+                      )}
                     </div>
                   </div>
                 )}

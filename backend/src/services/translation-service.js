@@ -29,6 +29,39 @@ const ServiceCreditCost = require('../models/ServiceCreditCost');
 
 class TranslationService {
   /**
+   * Estimate token count for text
+   * Claude uses approximately 1 token per 4 characters
+   * This is a rough estimate for cost calculation
+   */
+  estimateTokens(text) {
+    if (!text || typeof text !== 'string') return 0;
+    // Rule of thumb: 1 token ≈ 4 characters for English text
+    // Add some buffer for Claude's tokenization
+    return Math.ceil(text.length / 3.5);
+  }
+
+  /**
+   * Calculate translation cost based on text length
+   * Uses token-based pricing from service_credit_costs table
+   */
+  async calculateTranslationCost(text) {
+    const tokens = this.estimateTokens(text);
+
+    try {
+      // Get per-token cost from database
+      const tokenCost = await ServiceCreditCost.getCostByKey('ai_translation_token');
+      const cost = tokens * parseFloat(tokenCost);
+
+      // Minimum charge: 0.01 credits (prevent tiny costs)
+      return Math.max(0.01, parseFloat(cost.toFixed(4)));
+    } catch (error) {
+      console.warn('Could not fetch token-based cost, using estimate:', error.message);
+      // Fallback: ~0.1 credits per 1000 characters
+      return Math.max(0.01, Math.ceil(text.length / 1000) * 0.1);
+    }
+  }
+
+  /**
    * Get all UI labels for a specific language
    */
   async getUILabels(languageCode) {

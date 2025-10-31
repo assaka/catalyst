@@ -25,9 +25,11 @@ export default function MultiEntityTranslateDialog({
   useEffect(() => {
     const loadTranslationCost = async () => {
       try {
-        const response = await api.get('service-credit-costs/key/ai_translation');
+        // Use token-based pricing
+        const response = await api.get('service-credit-costs/key/ai_translation_token');
         if (response.success && response.service) {
-          setTranslationCost(response.service.cost_per_unit);
+          // For display purposes, estimate ~500 tokens per item (conservative)
+          setTranslationCost(response.service.cost_per_unit * 500);
         }
       } catch (error) {
         console.error('Error loading translation cost:', error);
@@ -277,11 +279,18 @@ export default function MultiEntityTranslateDialog({
               {/* Credits Used */}
               {results.translated > 0 && (
                 <div className="bg-green-50 border border-green-200 rounded-lg p-3">
-                  <div className="flex items-center justify-between text-sm">
-                    <span className="text-green-800 font-medium">💰 Credits Used:</span>
-                    <span className="text-green-900 font-bold">
-                      {(results.translated * translationCost).toFixed(2)} credits
-                    </span>
+                  <div className="flex flex-col gap-1">
+                    <div className="flex items-center justify-between text-sm">
+                      <span className="text-green-800 font-medium">💰 Credits Used:</span>
+                      <span className="text-green-900 font-bold">
+                        {results.creditsDeducted ? results.creditsDeducted.toFixed(4) : (results.translated * translationCost).toFixed(2)} credits
+                      </span>
+                    </div>
+                    {results.estimatedTokens && (
+                      <p className="text-xs text-green-700">
+                        ~{results.estimatedTokens.toLocaleString()} tokens (token-based pricing)
+                      </p>
+                    )}
                   </div>
                 </div>
               )}
@@ -333,11 +342,16 @@ export default function MultiEntityTranslateDialog({
                   const estimatedCost = totalItems * translateToLangs.length * translationCost;
 
                   return totalItems > 0 ? (
-                    <div className="flex items-center gap-2 text-green-700 font-medium">
-                      <span>💰</span>
-                      <span>Estimated: {estimatedCost.toFixed(2)} credits</span>
+                    <div className="flex flex-col gap-1">
+                      <div className="flex items-center gap-2 text-green-700 font-medium">
+                        <span>💰</span>
+                        <span>Estimated: ~{estimatedCost.toFixed(2)} credits</span>
+                      </div>
                       <span className="text-xs text-gray-500">
-                        ({totalItems} items × {translateToLangs.length} lang × {translationCost} credits)
+                        Approx: {totalItems} items × {translateToLangs.length} lang(s) × ~{translationCost.toFixed(2)} credits avg
+                      </span>
+                      <span className="text-xs text-green-600 italic">
+                        * Token-based: actual cost varies by text length
                       </span>
                     </div>
                   ) : null;
