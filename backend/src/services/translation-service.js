@@ -310,6 +310,18 @@ Return ONLY the translated text, no explanations or notes.`;
     });
 
     const data = await response.json();
+
+    // Check for API errors
+    if (!response.ok || data.error) {
+      const errorMessage = data.error?.message || `API request failed with status ${response.status}`;
+      throw new Error(`Anthropic API error: ${errorMessage}`);
+    }
+
+    // Validate response structure
+    if (!data.content || !data.content[0] || !data.content[0].text) {
+      throw new Error('Invalid response structure from Anthropic API');
+    }
+
     return data.content[0].text.trim();
   }
 
@@ -333,6 +345,18 @@ Return ONLY the translated text, no explanations or notes.`;
     });
 
     const data = await response.json();
+
+    // Check for API errors
+    if (!response.ok || data.error) {
+      const errorMessage = data.error?.message || `API request failed with status ${response.status}`;
+      throw new Error(`OpenAI API error: ${errorMessage}`);
+    }
+
+    // Validate response structure
+    if (!data.choices || !data.choices[0] || !data.choices[0].message || !data.choices[0].message.content) {
+      throw new Error('Invalid response structure from OpenAI API');
+    }
+
     return data.choices[0].message.content.trim();
   }
 
