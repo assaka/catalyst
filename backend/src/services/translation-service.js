@@ -431,6 +431,9 @@ Return ONLY the translated text, no explanations or notes.`;
     const translatedData = { ...existingTargetTranslation }; // Start with existing target translation
 
     console.log(`   🔄 aiTranslateEntity: ${entityType} ${entityId} (${fromLang} → ${toLang})`);
+    console.log(`   📋 Source fields (${fromLang}):`, Object.keys(sourceTranslation));
+    console.log(`   📋 Source data:`, JSON.stringify(sourceTranslation, null, 2));
+    console.log(`   📋 Existing target (${toLang}):`, JSON.stringify(existingTargetTranslation, null, 2));
 
     let fieldsTranslated = 0;
 
@@ -439,9 +442,13 @@ Return ONLY the translated text, no explanations or notes.`;
       const targetValue = existingTargetTranslation[key];
       const targetHasContent = targetValue && typeof targetValue === 'string' && targetValue.trim().length > 0;
 
+      console.log(`   🔍 Field "${key}": sourceValue="${value ? value.substring(0, 30) : '(empty)'}", targetValue="${targetValue ? targetValue.substring(0, 30) : '(empty)'}", targetHasContent=${targetHasContent}`);
+
       if (typeof value === 'string' && value.trim() && !targetHasContent) {
-        console.log(`      📝 Translating field "${key}": "${value.substring(0, 50)}..."`);
-        translatedData[key] = await this.aiTranslate(value, fromLang, toLang);
+        console.log(`      🤖 Calling AI to translate field "${key}": "${value.substring(0, 50)}..."`);
+        const translated = await this.aiTranslate(value, fromLang, toLang);
+        console.log(`      ✨ AI returned: "${translated.substring(0, 50)}..."`);
+        translatedData[key] = translated;
         fieldsTranslated++;
       } else if (targetHasContent) {
         console.log(`      ⏭️  Field "${key}" already has content, preserving`);
@@ -451,6 +458,7 @@ Return ONLY the translated text, no explanations or notes.`;
       }
     }
 
+    console.log(`   💾 Final translated data (${toLang}):`, JSON.stringify(translatedData, null, 2));
     console.log(`   ✅ Translated ${fieldsTranslated} field(s) for ${entityType}`);
 
     // Save the translation
