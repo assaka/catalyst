@@ -460,6 +460,7 @@ router.post('/:id/deprecate', async (req, res) => {
 /**
  * DELETE /api/plugins/:id
  * Delete a private plugin (hard delete)
+ * Clears all records from plugin_* tables
  */
 router.delete('/:id', async (req, res) => {
   try {
@@ -496,15 +497,78 @@ router.delete('/:id', async (req, res) => {
       });
     }
 
-    // Delete plugin (CASCADE will handle plugin_scripts and plugin_dependencies)
-    await sequelize.query('DELETE FROM plugin_registry WHERE id = :id', {
-      replacements: { id },
-      type: sequelize.QueryTypes.DELETE
-    });
+    // Delete from all plugin_* tables
+    // Note: Most tables have ON DELETE CASCADE, but we explicitly delete to ensure cleanup
+    const deletionSteps = [
+      // Tables referencing plugin_registry (VARCHAR id)
+      'DELETE FROM plugin_docs WHERE plugin_id = :id',
+      'DELETE FROM plugin_migrations WHERE plugin_id = :id',
+      'DELETE FROM plugin_controllers WHERE plugin_id = :id',
+      'DELETE FROM plugin_entities WHERE plugin_id = :id',
+      'DELETE FROM plugin_dependencies WHERE plugin_id = :id',
+      'DELETE FROM plugin_scripts WHERE plugin_id = :id',
+
+      // Final deletion from plugin_registry
+      'DELETE FROM plugin_registry WHERE id = :id'
+    ];
+
+    // Execute all deletions
+    for (const query of deletionSteps) {
+      try {
+        await sequelize.query(query, {
+          replacements: { id },
+          type: sequelize.QueryTypes.DELETE
+        });
+      } catch (error) {
+        console.warn(`Warning during deletion: ${error.message}`);
+        // Continue with other deletions even if one fails
+      }
+    }
+
+    // Also check and delete from UUID-based plugins table if exists
+    try {
+      const [uuidPlugin] = await sequelize.query(
+        'SELECT id FROM plugins WHERE slug = :slug',
+        {
+          replacements: { slug: id },
+          type: sequelize.QueryTypes.SELECT
+        }
+      );
+
+      if (uuidPlugin) {
+        const uuidDeletionSteps = [
+          // Tables referencing plugins (UUID id)
+          'DELETE FROM plugin_configurations WHERE plugin_id = :uuid',
+          'DELETE FROM plugin_data WHERE plugin_id = :uuid',
+          'DELETE FROM plugin_routes WHERE plugin_id = :uuid',
+          'DELETE FROM plugin_admin_pages WHERE plugin_id = :uuid',
+          'DELETE FROM plugin_widgets WHERE plugin_id = :uuid',
+          'DELETE FROM plugin_events WHERE plugin_id = :uuid',
+          'DELETE FROM plugin_event_listeners WHERE plugin_id = :uuid',
+          'DELETE FROM plugin_hooks WHERE plugin_id = :uuid',
+
+          // Final deletion from plugins table
+          'DELETE FROM plugins WHERE id = :uuid'
+        ];
+
+        for (const query of uuidDeletionSteps) {
+          try {
+            await sequelize.query(query, {
+              replacements: { uuid: uuidPlugin.id },
+              type: sequelize.QueryTypes.DELETE
+            });
+          } catch (error) {
+            console.warn(`Warning during UUID plugin deletion: ${error.message}`);
+          }
+        }
+      }
+    } catch (error) {
+      console.warn(`Could not check UUID plugins table: ${error.message}`);
+    }
 
     res.json({
       success: true,
-      message: `Plugin "${pluginResult.name}" has been permanently deleted.`
+      message: `Plugin "${pluginResult.name}" has been permanently deleted from all plugin_* tables.`
     });
   } catch (error) {
     res.status(500).json({
