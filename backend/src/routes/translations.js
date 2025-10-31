@@ -709,6 +709,15 @@ router.get('/entity-stats', authMiddleware, async (req, res) => {
         }
 
         // Get entities with all language translations using raw SQL for performance
+        // Check for actual content, not just row existence
+        // For product_tab: Only check name (content is optional for attribute tabs)
+        const contentCheck = entityType.type === 'product_tab'
+          ? `AND t.name IS NOT NULL AND t.name != ''`
+          : `AND (
+              (t.name IS NOT NULL AND t.name != '')
+              OR (t.title IS NOT NULL AND t.title != '')
+            )`;
+
         const query = `
           SELECT e.id
           FROM ${entityType.model.tableName} e
@@ -718,6 +727,7 @@ router.get('/entity-stats', authMiddleware, async (req, res) => {
             FROM ${translationTable} t
             WHERE t.${entityIdColumn} = e.id
             AND t.language_code IN (:languageCodes)
+            ${contentCheck}
           ) = :languageCount
         `;
 
@@ -731,7 +741,7 @@ router.get('/entity-stats', authMiddleware, async (req, res) => {
 
         const translatedCount = translatedEntities.length;
 
-        // Find which languages are missing across all entities
+        // Find which languages are missing across all entities (with actual content)
         const missingLanguages = [];
         for (const langCode of languageCodes) {
           const [result] = await sequelize.query(`
@@ -743,6 +753,7 @@ router.get('/entity-stats', authMiddleware, async (req, res) => {
               FROM ${translationTable} t
               WHERE t.${entityIdColumn} = e.id
               AND t.language_code = :langCode
+              ${contentCheck}
             )
           `, {
             replacements: {
