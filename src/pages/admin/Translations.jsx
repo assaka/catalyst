@@ -6,6 +6,7 @@ import { useStoreSelection } from '../../contexts/StoreSelectionContext';
 import BulkTranslateDialog from '../../components/admin/BulkTranslateDialog';
 import EntityTranslationCard from '../../components/admin/EntityTranslationCard';
 import MultiEntityTranslateDialog from '../../components/admin/MultiEntityTranslateDialog';
+import TranslationWizard from '../../components/admin/TranslationWizard';
 import ProductTranslationRow from '../../components/admin/translations/ProductTranslationRow';
 import CategoryTranslationRow from '../../components/admin/translations/CategoryTranslationRow';
 import AttributeTranslationRow from '../../components/admin/translations/AttributeTranslationRow';
@@ -40,6 +41,7 @@ export default function Translations() {
   const [message, setMessage] = useState(null);
   const [showBulkTranslateDialog, setShowBulkTranslateDialog] = useState(false);
   const [showMultiEntityTranslateDialog, setShowMultiEntityTranslateDialog] = useState(false);
+  const [showTranslationWizard, setShowTranslationWizard] = useState(false);
 
   // Entity translation states
   const [entityStats, setEntityStats] = useState([]);
@@ -924,11 +926,20 @@ export default function Translations() {
   return (
     <div className="max-w-7xl mx-auto px-4 py-8">
       {/* Header */}
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-900 mb-2">Translations</h1>
-        <p className="text-gray-600">
-          Manage multilingual content for your store
-        </p>
+      <div className="mb-8 flex items-start justify-between">
+        <div>
+          <h1 className="text-3xl font-bold text-gray-900 mb-2">Translations</h1>
+          <p className="text-gray-600">
+            Manage multilingual content for your store
+          </p>
+        </div>
+        <Button
+          onClick={() => setShowTranslationWizard(true)}
+          className="flex items-center gap-2 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700"
+        >
+          <Wand2 className="w-4 h-4" />
+          Translation Wizard
+        </Button>
       </div>
 
       {/* Flash Message */}
@@ -2382,6 +2393,17 @@ export default function Translations() {
         entityStats={entityStats}
         onTranslate={handleMultiEntityTranslate}
         availableLanguages={availableLanguages || []}
+      />
+
+      {/* Translation Wizard */}
+      <TranslationWizard
+        isOpen={showTranslationWizard}
+        onClose={() => {
+          setShowTranslationWizard(false);
+          // Reload data after wizard completes
+          loadEntityStats();
+        }}
+        storeId={getSelectedStoreId()}
       />
     </div>
   );
