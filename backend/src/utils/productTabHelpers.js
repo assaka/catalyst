@@ -363,8 +363,8 @@ async function updateProductTabWithTranslations(id, tabData, translations = {}) 
           replacements: {
             tab_id: id,
             lang_code: langCode,
-            name: data.name,
-            content: data.content
+            name: data.name || null,
+            content: data.content || null
           },
           transaction
         });
