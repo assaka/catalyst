@@ -429,11 +429,11 @@ router.post('/bulk-translate', authMiddleware, [
       }
     }
 
-    // Get all product tabs for this store
-    const lang = getLanguageFromRequest(req);
-    const tabs = await getProductTabsWithTranslations({ store_id }, lang);
+    // Get all product tabs for this store with ALL translations
+    // allTranslations=true returns: { translations: { en: {...}, nl: {...} } }
+    const tabs = await getProductTabsWithTranslations({ store_id }, 'en', true);
 
-    console.log(`📦 Loaded ${tabs.length} tabs from database`);
+    console.log(`📦 Loaded ${tabs.length} tabs from database with ALL translations`);
     if (tabs.length > 0) {
       console.log(`🔍 First tab structure:`, JSON.stringify({
         id: tabs[0].id,
