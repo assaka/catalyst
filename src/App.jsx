@@ -409,7 +409,28 @@ function App() {
           <Route path="/editor/product" element={<PageWrapper Component={Pages.ProductSlotsEditor} pageName="ProductSlotsEditor" />} />
           <Route path="/editor/category" element={<PageWrapper Component={Pages.CategorySlotsEditor} pageName="CategorySlotsEditor" />} />
           <Route path="/editor/cart" element={<PageWrapper Component={Pages.CartSlotsEditor} pageName="CartSlotsEditor" />} />
-          
+
+          {/* Custom Domain Routes (when accessed via custom domain like www.myshop.com) */}
+          {/* These routes match when NOT on platform domains (vercel.app, localhost, etc.) */}
+          {!window.location.hostname.includes('vercel.app') &&
+           !window.location.hostname.includes('onrender.com') &&
+           !window.location.hostname.includes('localhost') &&
+           !window.location.hostname.includes('127.0.0.1') && (
+            <>
+              <Route path="/category/*" element={<PageWrapper Component={Pages.Category} pageName="Category" />} />
+              <Route path="/product/:productSlug" element={<PageWrapper Component={Pages.ProductDetail} pageName="ProductDetail" />} />
+              <Route path="/cart" element={<PageWrapper Component={Pages.Cart} pageName="Cart" />} />
+              <Route path="/checkout" element={<PageWrapper Component={Pages.Checkout} pageName="Checkout" />} />
+              <Route path="/order-success" element={<PageWrapper Component={Pages.OrderSuccess} pageName="OrderSuccess" />} />
+              <Route path="/order-cancel" element={<PageWrapper Component={Pages.OrderCancel} pageName="OrderCancel" />} />
+              <Route path="/login" element={<PageWrapper Component={Pages.CustomerAuth} pageName="CustomerAuth" />} />
+              <Route path="/account" element={<PageWrapper Component={Pages.CustomerDashboard} pageName="CustomerDashboard" />} />
+              <Route path="/cms-page/:pageSlug" element={<PageWrapper Component={Pages.CmsPageViewer} pageName="CmsPageViewer" />} />
+              <Route path="/sitemap" element={<PageWrapper Component={Pages.SitemapPublic} pageName="SitemapPublic" />} />
+              <Route path="/robots.txt" element={<Pages.RobotsPublic />} />
+            </>
+          )}
+
           {/* Public/Storefront routes with store code and dynamic parameters */}
           <Route path="/public/:storeCode/robots.txt" element={<Pages.RobotsTxtHandler />} />
           <Route path="/public/:storeCode/category/*" element={<PageWrapper Component={Pages.Category} pageName="Category" />} />

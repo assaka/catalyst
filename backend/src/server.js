@@ -189,7 +189,7 @@ const allowedOrigins = [
 ].filter(Boolean);
 
 app.use(cors({
-  origin: function (origin, callback) {
+  origin: async function (origin, callback) {
     console.log('🌐 CORS Request from:', origin);
 
     // Allow requests with no origin (like mobile apps or curl requests)
@@ -201,8 +201,7 @@ app.use(cors({
     // Check for exact match first
     if (allowedOrigins.indexOf(origin) !== -1) {
       console.log('✅ Origin in allowed list');
-      callback(null, true);
-      return;
+      return callback(null, true);
     }
 
     // Simple and permissive checks
@@ -215,12 +214,33 @@ app.use(cors({
     console.log('  isRenderApp:', isRenderApp);
 
     if (isLocalhost || isVercelApp || isRenderApp) {
-      console.log('✅ Origin allowed');
-      callback(null, true);
-    } else {
-      console.log('❌ Origin NOT allowed by CORS');
-      callback(new Error('Not allowed by CORS: ' + origin));
+      console.log('✅ Origin allowed (platform domain)');
+      return callback(null, true);
     }
+
+    // Check if origin is a verified custom domain
+    try {
+      const { CustomDomain } = require('./models');
+      const hostname = new URL(origin).hostname;
+
+      const customDomain = await CustomDomain.findOne({
+        where: {
+          domain: hostname,
+          is_active: true,
+          verification_status: 'verified'
+        }
+      });
+
+      if (customDomain) {
+        console.log(`✅ Origin allowed (verified custom domain): ${hostname}`);
+        return callback(null, true);
+      }
+    } catch (error) {
+      console.error('Error checking custom domain:', error.message);
+    }
+
+    console.log('❌ Origin NOT allowed by CORS');
+    callback(new Error('Not allowed by CORS: ' + origin));
   },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
@@ -266,6 +286,11 @@ app.use(apiLogger); // Log all API requests
 app.use(trackApiCall); // Track API usage for billing
 app.use(trackApiError); // Track API errors
 // Note: checkUsageLimits is applied selectively on routes that need it
+
+// Custom domain resolution middleware (must be before routes)
+const domainResolver = require('./middleware/domainResolver');
+app.use(domainResolver);
+console.log('✅ Domain resolver middleware initialized');
 
 // Health check endpoint (no DB required)
 app.get('/health', (req, res) => {
