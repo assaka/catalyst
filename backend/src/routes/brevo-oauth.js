@@ -2,7 +2,7 @@ const express = require('express');
 const { body, validationResult } = require('express-validator');
 const { authMiddleware } = require('../middleware/auth');
 const { checkStoreOwnership } = require('../middleware/storeAuth');
-const brevoOAuthService = require('../services/brevo-oauth-service');
+const brevoService = require('../services/brevo-service');
 const emailService = require('../services/email-service');
 
 const router = express.Router();
@@ -11,19 +11,25 @@ const router = express.Router();
 router.use(authMiddleware);
 
 /**
- * GET /api/brevo/oauth/init
- * Initiate Brevo OAuth flow
+ * POST /api/brevo/configure
+ * Save Brevo API key configuration
  */
-router.get('/oauth/init', async (req, res) => {
+router.post('/configure', [
+  body('store_id').isUUID().withMessage('Valid store_id is required'),
+  body('api_key').notEmpty().withMessage('API key is required'),
+  body('sender_name').notEmpty().withMessage('Sender name is required'),
+  body('sender_email').isEmail().withMessage('Valid sender email is required')
+], async (req, res) => {
   try {
-    const { store_id } = req.query;
-
-    if (!store_id) {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
       return res.status(400).json({
         success: false,
-        message: 'store_id is required'
+        errors: errors.array()
       });
     }
+
+    const { store_id, api_key, sender_name, sender_email } = req.body;
 
     // Check store access
     req.params.store_id = store_id;
@@ -34,80 +40,28 @@ router.get('/oauth/init', async (req, res) => {
       });
     });
 
-    // Generate OAuth URL
-    const authUrl = brevoOAuthService.initiateOAuth(store_id);
+    // Save configuration
+    const result = await brevoService.saveConfiguration(store_id, api_key, sender_name, sender_email);
 
     res.json({
       success: true,
-      data: {
-        authUrl
-      }
+      message: 'Brevo configured successfully',
+      data: result.config
     });
   } catch (error) {
-    console.error('Brevo OAuth init error:', error);
+    console.error('Brevo configure error:', error);
     res.status(500).json({
       success: false,
-      message: 'Failed to initiate OAuth',
-      error: error.message
+      message: error.message || 'Failed to configure Brevo'
     });
   }
 });
 
 /**
- * GET /api/brevo/oauth/callback
- * Handle Brevo OAuth callback
- */
-router.get('/oauth/callback', async (req, res) => {
-  try {
-    const { code, state } = req.query;
-
-    if (!code || !state) {
-      return res.status(400).json({
-        success: false,
-        message: 'Missing OAuth parameters'
-      });
-    }
-
-    // Decode state to get store_id
-    const stateData = JSON.parse(Buffer.from(state, 'base64').toString());
-    const { storeId } = stateData;
-
-    if (!storeId) {
-      return res.status(400).json({
-        success: false,
-        message: 'Invalid state parameter'
-      });
-    }
-
-    // Check store access
-    req.params.store_id = storeId;
-    await new Promise((resolve, reject) => {
-      checkStoreOwnership(req, res, (err) => {
-        if (err) reject(err);
-        else resolve();
-      });
-    });
-
-    // Exchange code for tokens
-    const result = await brevoOAuthService.handleOAuthCallback(code, storeId);
-
-    // Redirect to settings page with success message
-    const corsOrigin = process.env.CORS_ORIGIN || 'https://catalyst-pearl.vercel.app';
-    res.redirect(`${corsOrigin}/admin/settings?tab=email&brevo_connected=true`);
-  } catch (error) {
-    console.error('Brevo OAuth callback error:', error);
-
-    // Redirect to settings page with error
-    const corsOrigin = process.env.CORS_ORIGIN || 'https://catalyst-pearl.vercel.app';
-    res.redirect(`${corsOrigin}/admin/settings?tab=email&brevo_error=${encodeURIComponent(error.message)}`);
-  }
-});
-
-/**
- * POST /api/brevo/oauth/disconnect
+ * POST /api/brevo/disconnect
  * Disconnect Brevo from store
  */
-router.post('/oauth/disconnect', [
+router.post('/disconnect', [
   body('store_id').isUUID().withMessage('Valid store_id is required')
 ], async (req, res) => {
   try {
@@ -130,7 +84,7 @@ router.post('/oauth/disconnect', [
       });
     });
 
-    await brevoOAuthService.disconnect(store_id);
+    await brevoService.disconnect(store_id);
 
     res.json({
       success: true,
@@ -147,10 +101,10 @@ router.post('/oauth/disconnect', [
 });
 
 /**
- * GET /api/brevo/oauth/status
+ * GET /api/brevo/status
  * Check Brevo connection status for a store
  */
-router.get('/oauth/status', async (req, res) => {
+router.get('/status', async (req, res) => {
   try {
     const { store_id } = req.query;
 
@@ -170,8 +124,8 @@ router.get('/oauth/status', async (req, res) => {
       });
     });
 
-    const isConfigured = await brevoOAuthService.isConfigured(store_id);
-    const config = await brevoOAuthService.getConfiguration(store_id);
+    const isConfigured = await brevoService.isConfigured(store_id);
+    const config = await brevoService.getConfiguration(store_id);
 
     res.json({
       success: true,
@@ -225,7 +179,7 @@ router.post('/test-connection', [
     });
 
     // Test connection
-    const result = await brevoOAuthService.testConnection(store_id);
+    const result = await brevoService.testConnection(store_id);
 
     // If connection is successful, optionally send a test email
     if (result.success) {

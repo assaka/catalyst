@@ -1,6 +1,6 @@
 const SibApiV3Sdk = require('@getbrevo/brevo');
 const { EmailTemplate, EmailTemplateTranslation, EmailSendLog, Store } = require('../models');
-const brevoOAuthService = require('./brevo-oauth-service');
+const brevoService = require('./brevo-service');
 const {
   renderTemplate,
   formatOrderItemsHtml,
@@ -26,7 +26,7 @@ class EmailService {
   async sendEmail(storeId, templateIdentifier, recipientEmail, variables, languageCode = 'en', attachments = []) {
     try {
       // Check if Brevo is configured
-      const isConfigured = await brevoOAuthService.isConfigured(storeId);
+      const isConfigured = await brevoService.isConfigured(storeId);
       if (!isConfigured) {
         console.warn(`Brevo not configured for store ${storeId}, email not sent`);
         // Log as pending
@@ -127,13 +127,13 @@ class EmailService {
    */
   async sendViaBrevo(storeId, recipientEmail, subject, htmlContent, attachments = []) {
     try {
-      // Get valid access token
-      const accessToken = await brevoOAuthService.getValidToken(storeId);
-      const config = await brevoOAuthService.getConfiguration(storeId);
+      // Get valid API key
+      const apiKey = await brevoService.getValidApiKey(storeId);
+      const config = await brevoService.getConfiguration(storeId);
 
       // Initialize Brevo API client
       const apiInstance = new SibApiV3Sdk.TransactionalEmailsApi();
-      apiInstance.authentications['apiKey'].apiKey = accessToken;
+      apiInstance.authentications['apiKey'].apiKey = apiKey;
 
       // Prepare email
       const sendSmtpEmail = new SibApiV3Sdk.SendSmtpEmail();

@@ -7,16 +7,24 @@ import apiClient from './client';
 
 class BrevoAPI {
   /**
-   * Initiate Brevo OAuth flow
+   * Save Brevo API key configuration
    * @param {string} storeId - Store ID
-   * @returns {Promise<Object>} OAuth URL
+   * @param {string} apiKey - Brevo API key (xkeysib-...)
+   * @param {string} senderName - Sender name
+   * @param {string} senderEmail - Sender email
+   * @returns {Promise<Object>} Configuration result
    */
-  async initiateOAuth(storeId) {
+  async saveConfiguration(storeId, apiKey, senderName, senderEmail) {
     try {
-      const response = await apiClient.get(`brevo/oauth/init?store_id=${storeId}`);
+      const response = await apiClient.post('brevo/configure', {
+        store_id: storeId,
+        api_key: apiKey,
+        sender_name: senderName,
+        sender_email: senderEmail
+      });
       return response;
     } catch (error) {
-      console.error('Brevo OAuth init error:', error);
+      console.error('Brevo configure error:', error);
       throw error;
     }
   }
@@ -28,7 +36,7 @@ class BrevoAPI {
    */
   async getConnectionStatus(storeId) {
     try {
-      const response = await apiClient.get(`brevo/oauth/status?store_id=${storeId}`);
+      const response = await apiClient.get(`brevo/status?store_id=${storeId}`);
       return response;
     } catch (error) {
       console.error('Brevo status check error:', error);
@@ -43,7 +51,7 @@ class BrevoAPI {
    */
   async disconnect(storeId) {
     try {
-      const response = await apiClient.post('brevo/oauth/disconnect', {
+      const response = await apiClient.post('brevo/disconnect', {
         store_id: storeId
       });
       return response;

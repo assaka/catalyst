@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Mail, Check, X, Send, ExternalLink, RefreshCw } from 'lucide-react';
+import { Mail, Check, X, Send, RefreshCw, ExternalLink } from 'lucide-react';
 import brevoAPI from '@/api/brevo';
 import { useStoreSelection } from '@/contexts/StoreSelectionContext.jsx';
 import FlashMessage from '@/components/storefront/FlashMessage';
@@ -14,11 +14,18 @@ export default function BrevoSettings() {
   const { getSelectedStoreId } = useStoreSelection();
   const { showConfirm, AlertComponent } = useAlertTypes();
   const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
   const [connectionStatus, setConnectionStatus] = useState(null);
   const [testEmail, setTestEmail] = useState('');
   const [testingSend, setTestingSend] = useState(false);
   const [stats, setStats] = useState(null);
   const [flashMessage, setFlashMessage] = useState(null);
+
+  // Configuration form
+  const [apiKey, setApiKey] = useState('');
+  const [senderName, setSenderName] = useState('');
+  const [senderEmail, setSenderEmail] = useState('');
+  const [showConfig, setShowConfig] = useState(false);
 
   useEffect(() => {
     loadConnectionStatus();
@@ -34,6 +41,10 @@ export default function BrevoSettings() {
       const response = await brevoAPI.getConnectionStatus(storeId);
       if (response.success) {
         setConnectionStatus(response.data);
+        if (response.data.config) {
+          setSenderName(response.data.config.sender_name || '');
+          setSenderEmail(response.data.config.sender_email || '');
+        }
       }
     } catch (error) {
       console.error('Error loading Brevo status:', error);
@@ -56,22 +67,32 @@ export default function BrevoSettings() {
     }
   };
 
-  const handleConnect = async () => {
+  const handleSaveConfiguration = async () => {
     const storeId = getSelectedStoreId();
     if (!storeId) {
       setFlashMessage({ type: 'error', message: 'No store selected' });
       return;
     }
 
+    if (!apiKey || !senderName || !senderEmail) {
+      setFlashMessage({ type: 'error', message: 'Please fill in all fields' });
+      return;
+    }
+
+    setSaving(true);
     try {
-      const response = await brevoAPI.initiateOAuth(storeId);
-      if (response.success && response.data.authUrl) {
-        // Redirect to Brevo OAuth page
-        window.location.href = response.data.authUrl;
+      const response = await brevoAPI.saveConfiguration(storeId, apiKey, senderName, senderEmail);
+      if (response.success) {
+        setFlashMessage({ type: 'success', message: 'Brevo configured successfully!' });
+        setShowConfig(false);
+        setApiKey(''); // Clear API key from form
+        loadConnectionStatus();
       }
     } catch (error) {
-      console.error('OAuth init error:', error);
-      setFlashMessage({ type: 'error', message: 'Failed to initiate Brevo connection' });
+      console.error('Save config error:', error);
+      setFlashMessage({ type: 'error', message: error.message || 'Failed to save configuration' });
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -88,6 +109,7 @@ export default function BrevoSettings() {
       try {
         await brevoAPI.disconnect(storeId);
         setFlashMessage({ type: 'success', message: 'Brevo disconnected successfully' });
+        setShowConfig(false);
         loadConnectionStatus();
       } catch (error) {
         console.error('Disconnect error:', error);
@@ -157,12 +179,18 @@ export default function BrevoSettings() {
                   <p><strong>Sender Name:</strong> {connectionStatus.config.sender_name}</p>
                   <p><strong>Sender Email:</strong> {connectionStatus.config.sender_email}</p>
                   <p className="text-xs text-green-600">
-                    Connected: {new Date(connectionStatus.config.connected_at).toLocaleDateString()}
+                    Connected: {new Date(connectionStatus.config.created_at).toLocaleDateString()}
                   </p>
                 </div>
               </div>
 
               <div className="flex gap-2">
+                <Button
+                  variant="outline"
+                  onClick={() => setShowConfig(true)}
+                >
+                  Update Configuration
+                </Button>
                 <Button
                   variant="outline"
                   onClick={handleDisconnect}
@@ -175,29 +203,108 @@ export default function BrevoSettings() {
                   onClick={loadConnectionStatus}
                 >
                   <RefreshCw className="w-4 h-4 mr-2" />
-                  Refresh Status
+                  Refresh
                 </Button>
               </div>
             </>
           ) : (
             <>
               <p className="text-gray-600">
-                Connect your Brevo account to send transactional emails (signup, orders, credits).
+                Configure your Brevo API key to send transactional emails (signup, orders, credits).
               </p>
               <Button
-                onClick={handleConnect}
+                onClick={() => setShowConfig(true)}
                 className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700"
               >
-                <ExternalLink className="w-4 h-4 mr-2" />
-                Connect to Brevo
+                <Mail className="w-4 h-4 mr-2" />
+                Configure Brevo
               </Button>
             </>
           )}
         </CardContent>
       </Card>
 
+      {/* Configuration Form */}
+      {showConfig && (
+        <Card className="border-blue-200">
+          <CardHeader>
+            <CardTitle>Brevo API Configuration</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="api-key">Brevo API Key</Label>
+              <Input
+                id="api-key"
+                type="password"
+                value={apiKey}
+                onChange={(e) => setApiKey(e.target.value)}
+                placeholder="xkeysib-..."
+                required
+              />
+              <p className="text-xs text-gray-500">
+                Get your API key from{' '}
+                <a
+                  href="https://app.brevo.com/settings/keys/api"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-blue-600 hover:underline"
+                >
+                  Brevo Settings > API Keys
+                  <ExternalLink className="w-3 h-3 inline ml-1" />
+                </a>
+              </p>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="sender-name">Sender Name</Label>
+              <Input
+                id="sender-name"
+                value={senderName}
+                onChange={(e) => setSenderName(e.target.value)}
+                placeholder="Your Store Name"
+                required
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="sender-email">Sender Email</Label>
+              <Input
+                id="sender-email"
+                type="email"
+                value={senderEmail}
+                onChange={(e) => setSenderEmail(e.target.value)}
+                placeholder="noreply@yourdomain.com"
+                required
+              />
+              <p className="text-xs text-gray-500">
+                This email must be verified in your Brevo account
+              </p>
+            </div>
+
+            <div className="flex gap-2">
+              <Button
+                onClick={handleSaveConfiguration}
+                disabled={saving || !apiKey || !senderName || !senderEmail}
+                className="bg-blue-600 hover:bg-blue-700"
+              >
+                {saving ? 'Saving...' : 'Save Configuration'}
+              </Button>
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setShowConfig(false);
+                  setApiKey('');
+                }}
+              >
+                Cancel
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       {/* Test Email */}
-      {isConnected && (
+      {isConnected && !showConfig && (
         <Card>
           <CardHeader>
             <CardTitle>Test Email Connection</CardTitle>
@@ -240,7 +347,7 @@ export default function BrevoSettings() {
       )}
 
       {/* Email Statistics */}
-      {isConnected && stats && (
+      {isConnected && stats && !showConfig && (
         <Card>
           <CardHeader>
             <CardTitle>Email Statistics (Last 30 Days)</CardTitle>
@@ -269,30 +376,41 @@ export default function BrevoSettings() {
       )}
 
       {/* Setup Instructions */}
-      {!isConnected && (
+      {!isConnected && !showConfig && (
         <Card className="border-blue-200 bg-blue-50">
           <CardHeader>
-            <CardTitle className="text-blue-900">How to Connect Brevo</CardTitle>
+            <CardTitle className="text-blue-900">How to Get Your Brevo API Key</CardTitle>
           </CardHeader>
           <CardContent className="space-y-3 text-sm text-blue-800">
             <ol className="list-decimal list-inside space-y-2">
-              <li>Click "Connect to Brevo" button above</li>
-              <li>Sign in to your Brevo account (or create one for free)</li>
-              <li>Authorize Catalyst to send emails on your behalf</li>
-              <li>You'll be redirected back with the connection confirmed</li>
+              <li>Sign in to your Brevo account at{' '}
+                <a href="https://app.brevo.com" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">
+                  app.brevo.com
+                </a>
+              </li>
+              <li>Go to Settings → API Keys (or click{' '}
+                <a href="https://app.brevo.com/settings/keys/api" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">
+                  here
+                </a>)
+              </li>
+              <li>Click "Generate a new API key"</li>
+              <li>Copy the API key (starts with "xkeysib-")</li>
+              <li>Click "Configure Brevo" above and paste your API key</li>
             </ol>
-            <p className="mt-4">
-              <strong>Don't have a Brevo account?</strong> Create one at{' '}
-              <a
-                href="https://www.brevo.com"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-blue-600 hover:underline"
-              >
-                brevo.com
-              </a>{' '}
-              (free tier available)
-            </p>
+            <div className="mt-4 p-3 bg-white border border-blue-300 rounded">
+              <p className="font-medium text-blue-900 mb-2">Don't have a Brevo account?</p>
+              <p className="mb-2">Create a free account at{' '}
+                <a
+                  href="https://www.brevo.com"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-blue-600 hover:underline font-medium"
+                >
+                  brevo.com
+                </a>
+              </p>
+              <p className="text-xs text-blue-700">Free tier includes 300 emails/day</p>
+            </div>
           </CardContent>
         </Card>
       )}
