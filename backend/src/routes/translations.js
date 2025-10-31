@@ -1039,7 +1039,8 @@ router.post('/bulk-translate-entities', authMiddleware, async (req, res) => {
       product_tab: { model: ProductTab, name: 'Product Tabs' },
       product_label: { model: ProductLabel, name: 'Product Labels' },
       cookie_consent: { model: CookieConsentSettings, name: 'Cookie Consent' },
-      attribute_value: { model: AttributeValue, name: 'Attribute Values', special: true }
+      attribute_value: { model: AttributeValue, name: 'Attribute Values', special: true },
+      custom_option: { name: 'Custom Options', special: true, useJsonTranslations: true }
     };
 
     const allResults = {
@@ -1074,6 +1075,16 @@ router.post('/bulk-translate-entities', authMiddleware, async (req, res) => {
           entities = await AttributeValue.findAll({
             where: { attribute_id: { [Op.in]: attributeIds } }
           });
+        } else if (entityConfig.special && entityType === 'custom_option') {
+          // Handle Custom Options with raw query (no model defined)
+          const [customOptions] = await sequelize.query(`
+            SELECT id, translations
+            FROM custom_option_rules
+            WHERE store_id = :storeId
+          `, {
+            replacements: { storeId: store_id }
+          });
+          entities = customOptions;
         } else {
           entities = await entityConfig.model.findAll({
             where: { store_id }
