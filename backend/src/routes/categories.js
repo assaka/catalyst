@@ -460,21 +460,9 @@ router.post('/bulk-translate', authMiddleware, authorize(['admin', 'store_owner'
           continue;
         }
 
-        // Translate each field using AI
+        // Translate the category (uses aiTranslateEntity for field-level translation)
         console.log(`🔄 Translating category "${categoryName}"...`);
-        const translatedData = {};
-        if (category.name) {
-          translatedData.name = await translationService.aiTranslate(category.name, fromLang, toLang);
-        }
-        if (category.description) {
-          translatedData.description = await translationService.aiTranslate(category.description, fromLang, toLang);
-        }
-
-        // Save the translation using normalized tables
-        const translations = {};
-        translations[toLang] = translatedData;
-
-        await updateCategoryWithTranslations(category.id, {}, translations);
+        await translationService.aiTranslateEntity('category', category.id, fromLang, toLang);
         console.log(`✅ Successfully translated category "${categoryName}"`);
         results.translated++;
       } catch (error) {
