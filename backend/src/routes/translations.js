@@ -723,13 +723,19 @@ router.get('/entity-stats', authMiddleware, async (req, res) => {
 
         // Get entities with all language translations using raw SQL for performance
         // Check for actual content, not just row existence
-        // For product_tab: Only check name (content is optional for attribute tabs)
-        const contentCheck = entityType.type === 'product_tab'
-          ? `AND t.name IS NOT NULL AND t.name != ''`
-          : `AND (
-              (t.name IS NOT NULL AND t.name != '')
-              OR (t.title IS NOT NULL AND t.title != '')
-            )`;
+        // Each entity type has different primary translation columns
+        const contentCheckMap = {
+          product_tab: `AND t.name IS NOT NULL AND t.name != ''`,
+          product: `AND t.name IS NOT NULL AND t.name != ''`,
+          category: `AND t.name IS NOT NULL AND t.name != ''`,
+          attribute: `AND t.label IS NOT NULL AND t.label != ''`,  // Attributes use 'label', not 'name'
+          cms_page: `AND t.title IS NOT NULL AND t.title != ''`,   // CMS Pages use 'title', not 'name'
+          cms_block: `AND t.title IS NOT NULL AND t.title != ''`,  // CMS Blocks use 'title', not 'name'
+          product_label: `AND t.text IS NOT NULL AND t.text != ''`, // Product Labels use 'text'
+          cookie_consent: `AND t.banner_title IS NOT NULL AND t.banner_title != ''` // Cookie consent uses 'banner_title'
+        };
+
+        const contentCheck = contentCheckMap[entityType.type] || `AND t.name IS NOT NULL AND t.name != ''`;
 
         const query = `
           SELECT e.id
