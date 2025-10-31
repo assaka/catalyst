@@ -71,25 +71,17 @@ The Catalyst email management system provides a comprehensive solution for sendi
 
 ## Setup & Configuration
 
-### 1. Environment Variables
+### 1. Brevo Account Setup
 
-Add to `backend/.env`:
+1. Create a free account at https://www.brevo.com (free tier: 300 emails/day)
+2. Go to Settings > API Keys: https://app.brevo.com/settings/keys/api
+3. Click "Generate a new API key"
+4. Copy the API key (starts with "xkeysib-...")
+5. Keep this key handy for step 6
 
-```env
-# Brevo OAuth Configuration
-BREVO_CLIENT_ID=your-brevo-client-id
-BREVO_CLIENT_SECRET=your-brevo-client-secret
-BREVO_REDIRECT_URI=https://your-domain.com/admin/settings/email
-```
+**No environment variables needed!** API keys are configured per-store in the admin UI.
 
-### 2. Brevo Account Setup
-
-1. Create a free account at https://www.brevo.com
-2. Go to Settings > API Keys
-3. Create OAuth credentials (Client ID & Client Secret)
-4. Add `https://your-domain.com/admin/settings/email` to allowed redirect URIs
-
-### 3. Database Migration
+### 2. Database Migration
 
 Run migrations to create email system tables:
 
@@ -98,7 +90,7 @@ cd backend
 node -e "require('dotenv').config(); const { execSync } = require('child_process'); execSync('psql \"' + process.env.DATABASE_URL + '\" -f src/database/migrations/create-email-system-tables.sql', {stdio: 'inherit'});"
 ```
 
-### 4. Navigation Setup
+### 3. Navigation Setup
 
 Add Emails menu item:
 
@@ -106,14 +98,27 @@ Add Emails menu item:
 node -e "require('dotenv').config(); const { execSync } = require('child_process'); execSync('psql \"' + process.env.DATABASE_URL + '\" -f src/database/migrations/add-emails-navigation.sql', {stdio: 'inherit'});"
 ```
 
-### 5. Seed Default Templates
+### 4. Seed Default Templates
 
 Create default email templates for all stores:
 
 ```bash
 cd backend
-node src/database/seeds/seed-default-email-templates.js
+node -e "require('dotenv').config(); const { execSync } = require('child_process'); execSync('psql \"' + process.env.DATABASE_URL + '\" -f seed-email-templates-quick.sql', {stdio: 'inherit'});"
 ```
+
+### 5. Configure Brevo in Admin UI
+
+1. Log in to your admin dashboard
+2. Go to **Settings > Brevo** tab
+3. Click **"Configure Brevo"**
+4. Enter your Brevo API key (xkeysib-...)
+5. Enter sender name (e.g., "Your Store Name")
+6. Enter sender email (must be verified in Brevo)
+7. Click **"Save Configuration"**
+8. Test by clicking **"Send Test Email"**
+
+**Done!** Emails will now be sent automatically on signup, credit purchases, and orders.
 
 ---
 
@@ -211,11 +216,13 @@ node src/database/seeds/seed-default-email-templates.js
 
 ### Connecting Brevo
 
-1. Go to **Settings** > **Brevo** tab
-2. Click **"Connect to Brevo"**
-3. Sign in to your Brevo account
-4. Authorize Catalyst
-5. You'll be redirected back with confirmation
+1. Get your API key from https://app.brevo.com/settings/keys/api
+2. Go to **Settings** > **Brevo** tab
+3. Click **"Configure Brevo"**
+4. Enter your API key (xkeysib-...)
+5. Enter sender name and verified email
+6. Click **"Save Configuration"**
+7. Test with **"Send Test Email"** button
 
 ### Creating Email Templates
 
@@ -294,23 +301,21 @@ node src/database/seeds/seed-default-email-templates.js
 
 ### Brevo API
 
-**GET /api/brevo/oauth/init**
-- Initiate OAuth flow
-- Query: `?store_id={uuid}`
-- Returns: `{ authUrl }`
+**POST /api/brevo/configure**
+- Save Brevo API key configuration
+- Body: `{ store_id, api_key, sender_name, sender_email }`
+- Validates API key before saving
+- Returns: `{ success, message, config }`
 
-**GET /api/brevo/oauth/callback**
-- OAuth callback handler
-- Query: `?code={code}&state={state}`
-
-**POST /api/brevo/oauth/disconnect**
+**POST /api/brevo/disconnect**
 - Disconnect Brevo
 - Body: `{ store_id }`
+- Returns: `{ success, message }`
 
-**GET /api/brevo/oauth/status**
+**GET /api/brevo/status**
 - Check connection status
 - Query: `?store_id={uuid}`
-- Returns: `{ isConfigured, config }`
+- Returns: `{ isConfigured, config: { sender_name, sender_email, is_active } }`
 
 **POST /api/brevo/test-connection**
 - Test connection with email
@@ -483,38 +488,44 @@ await emailService.sendTransactionalEmail(storeId, 'my_custom', {
 
 ## Production Deployment
 
-### Render Deployment
+### Render Backend
 
-1. Add environment variables in Render dashboard:
-   ```
-   BREVO_CLIENT_ID=...
-   BREVO_CLIENT_SECRET=...
-   BREVO_REDIRECT_URI=https://your-domain.com/admin/settings/email
-   ```
+1. **No environment variables needed** for Brevo (API keys configured per-store in admin UI)
 
 2. Migrations run automatically on deployment via `auto-migrations.js`
 
-3. Seed templates after first deployment:
+3. Seed templates using SQL (one-time setup):
    ```bash
-   # SSH into Render container or use Render shell
-   node src/database/seeds/seed-default-email-templates.js
+   # Run via Render shell or psql
+   psql $DATABASE_URL -f backend/seed-email-templates-quick.sql
    ```
+
+4. Configure Brevo API key in admin UI for each store (Settings > Brevo tab)
 
 ### Vercel Frontend
 
 No additional configuration needed. Frontend uses backend API URLs.
 
+### Per-Store Configuration
+
+Each store owner configures their own Brevo API key:
+- Go to Settings > Brevo tab
+- Enter their Brevo API key
+- Different stores can use different Brevo accounts
+- API keys are stored securely in database
+
 ### Security Considerations
 
-1. **Token Encryption**: Brevo tokens are stored in plain text in v1. For production, implement encryption:
-   ```javascript
-   // TODO: Encrypt tokens before storing
-   const encrypted = encrypt(access_token);
-   ```
+1. **API Key Storage**: Brevo API keys are stored in database `access_token` field. For enhanced security, consider:
+   - Encrypting API keys at rest
+   - Using environment variables for additional encryption keys
+   - Rotating API keys periodically
 
-2. **Rate Limiting**: Brevo has built-in rate limits. Monitor `email_send_logs` for throttling.
+2. **Sender Email Verification**: Always verify sender emails in Brevo to prevent spoofing
 
-3. **Sensitive Data**: Never include passwords or payment details in email templates.
+3. **Rate Limiting**: Brevo has built-in rate limits (free tier: 300/day). Monitor `email_send_logs` for throttling.
+
+4. **Sensitive Data**: Never include passwords, credit card numbers, or sensitive customer data in email templates.
 
 ---
 
