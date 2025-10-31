@@ -111,6 +111,7 @@ const slotConfigurationRoutes = require('./routes/slotConfigurations');
 const dynamicPluginRoutes = require('./routes/dynamic-plugins');
 const adminNavigationRoutes = require('./routes/admin-navigation');
 const pluginApiRoutes = require('./routes/plugin-api');
+const pluginVersionApiRoutes = require('./routes/plugin-version-api');
 const pluginAIRoutes = require('./routes/pluginAIRoutes');
 const chatApiRoutes = require('./routes/chat-api');
 const databaseProvisioningRoutes = require('./routes/database-provisioning');
@@ -1776,6 +1777,7 @@ app.use('/api/images', authMiddleware, imageRoutes);
 app.use('/api/cloudflare/oauth', cloudflareOAuthRoutes);
 app.use('/api/admin', adminNavigationRoutes); // Dynamic navigation API (Plugin Architecture Phase 1)
 app.use('/api/plugins', pluginApiRoutes); // Modern plugin system: widgets, marketplace, purchases (Plugin Architecture Phase 1)
+app.use('/api/plugins', pluginVersionApiRoutes); // Plugin version control: git-like versioning, snapshots, patches, rollback
 app.use('/api/plugins', pluginRoutes); // Legacy plugin routes (kept for backwards compatibility)
 app.use('/api/stores/:store_id/plugins/create', pluginCreationRoutes);
 app.use('/api/plugins', dynamicPluginRoutes.router);
