@@ -10,7 +10,7 @@ import { useStoreSelection } from '@/contexts/StoreSelectionContext.jsx';
 import FlashMessage from '@/components/storefront/FlashMessage';
 import { useAlertTypes } from '@/hooks/useAlert';
 
-export default function BrevoSettings() {
+export default function BrevoSettings({ storeEmail }) {
   const { getSelectedStoreId } = useStoreSelection();
   const { showConfirm, AlertComponent } = useAlertTypes();
   const [loading, setLoading] = useState(true);
@@ -18,6 +18,7 @@ export default function BrevoSettings() {
   const [connectionStatus, setConnectionStatus] = useState(null);
   const [testEmail, setTestEmail] = useState('');
   const [testingSend, setTestingSend] = useState(false);
+  const [testingStoreEmail, setTestingStoreEmail] = useState(false);
   const [stats, setStats] = useState(null);
   const [flashMessage, setFlashMessage] = useState(null);
 
@@ -142,6 +143,29 @@ export default function BrevoSettings() {
     }
   };
 
+  const handleTestToStoreEmail = async () => {
+    const storeId = getSelectedStoreId();
+    if (!storeId || !storeEmail) {
+      setFlashMessage({ type: 'error', message: 'Store email not configured. Please add it in the Contact tab.' });
+      return;
+    }
+
+    setTestingStoreEmail(true);
+    try {
+      const response = await brevoAPI.testConnection(storeId, storeEmail);
+      if (response.success) {
+        setFlashMessage({ type: 'success', message: `Test email sent to ${storeEmail}! Check your inbox.` });
+      } else {
+        setFlashMessage({ type: 'error', message: `Test failed: ${response.message}` });
+      }
+    } catch (error) {
+      console.error('Test to store email error:', error);
+      setFlashMessage({ type: 'error', message: 'Failed to send test email' });
+    } finally {
+      setTestingStoreEmail(false);
+    }
+  };
+
   const isConnected = connectionStatus?.isConfigured && connectionStatus?.config?.is_active;
 
   return (
@@ -184,7 +208,26 @@ export default function BrevoSettings() {
                 </div>
               </div>
 
-              <div className="flex gap-2">
+              <div className="flex gap-2 flex-wrap">
+                {storeEmail && (
+                  <Button
+                    onClick={handleTestToStoreEmail}
+                    disabled={testingStoreEmail}
+                    className="bg-green-600 hover:bg-green-700"
+                  >
+                    {testingStoreEmail ? (
+                      <>
+                        <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
+                        Sending...
+                      </>
+                    ) : (
+                      <>
+                        <Send className="w-4 h-4 mr-2" />
+                        Send Test to {storeEmail}
+                      </>
+                    )}
+                  </Button>
+                )}
                 <Button
                   variant="outline"
                   onClick={() => setShowConfig(true)}

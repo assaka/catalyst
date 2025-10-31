@@ -979,7 +979,7 @@ export default function Settings() {
           </TabsContent>
           
           <TabsContent value="brevo" className="mt-6">
-            <BrevoSettings />
+            <BrevoSettings storeEmail={store?.contact_details?.email || store?.contact_email} />
           </TabsContent>
 
           <TabsContent value="contact" className="mt-6">
