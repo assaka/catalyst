@@ -41,7 +41,7 @@ export default function MultiEntityTranslateDialog({
   useEffect(() => {
     const loadTranslationCost = async () => {
       try {
-        const response = await api.get('service-credit-costs/key/ai_translation_token');
+        const response = await api.get('service-credit-costs/key/ai_translation');
         if (response.success && response.service) {
           setTokenCostPerUnit(response.service.cost_per_unit);
         }
