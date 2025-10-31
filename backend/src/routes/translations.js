@@ -686,8 +686,20 @@ router.get('/entity-stats', authMiddleware, async (req, res) => {
           cookie_consent: 'cookie_consent_settings_translations'
         };
 
+        // Map entity types to their ID column names in translation tables
+        const entityIdColumnMap = {
+          category: 'category_id',
+          product: 'product_id',
+          attribute: 'attribute_id',
+          cms_page: 'cms_page_id',
+          cms_block: 'cms_block_id',
+          product_tab: 'product_tab_id',
+          product_label: 'product_label_id',
+          cookie_consent: 'cookie_consent_settings_id'  // Special case: doesn't follow standard pattern
+        };
+
         const translationTable = translationTableMap[entityType.type];
-        const entityIdColumn = `${entityType.type}_id`;
+        const entityIdColumn = entityIdColumnMap[entityType.type];
 
         if (!translationTable) {
           throw new Error(`No translation table mapping for ${entityType.type}`);
