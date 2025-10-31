@@ -121,7 +121,7 @@ class AIContextService {
    */
   async getRelevantDocuments({ mode, category, limit = 5 }) {
     try {
-      const [results] = await sequelize.query(`
+      const results = await sequelize.query(`
         SELECT id, type, title, content, category, tags, priority
         FROM ai_context_documents
         WHERE is_active = true
@@ -179,7 +179,7 @@ class AIContextService {
     try {
       // For now, simple category-based matching
       // TODO: Implement vector similarity search when embeddings are added
-      const [results] = await sequelize.query(`
+      const results = await sequelize.query(`
         SELECT id, name, slug, description, category, complexity, code, files, features, use_cases, tags
         FROM ai_plugin_examples
         WHERE is_active = true
@@ -250,7 +250,7 @@ class AIContextService {
     try {
       // Simple keyword matching for now
       // TODO: Implement vector similarity when embeddings ready
-      const [results] = await sequelize.query(`
+      const results = await sequelize.query(`
         SELECT id, name, pattern_type, description, code, language, framework, parameters, example_usage, tags
         FROM ai_code_patterns
         WHERE is_active = true
