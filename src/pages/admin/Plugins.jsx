@@ -53,6 +53,7 @@ import {
 import PluginForm from "@/components/admin/plugins/PluginForm";
 import UninstallDialog from "@/components/admin/plugins/UninstallDialog";
 import PluginSettingsDialog from "@/components/admin/plugins/PluginSettingsDialog";
+import FlashMessage from "@/components/storefront/FlashMessage";
 
 export default function Plugins() {
   const navigate = useNavigate();
@@ -84,6 +85,7 @@ export default function Plugins() {
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [pluginToDelete, setPluginToDelete] = useState(null);
   const [deleting, setDeleting] = useState(false);
+  const [flashMessage, setFlashMessage] = useState(null);
 
   useEffect(() => {
     loadData();
@@ -331,12 +333,20 @@ export default function Plugins() {
     setDeleting(true);
     try {
       await apiClient.request('DELETE', `plugins/${pluginToDelete.id}`);
+      const pluginName = pluginToDelete.name;
       setShowDeleteDialog(false);
       setPluginToDelete(null);
       await loadData();
+      setFlashMessage({
+        type: 'success',
+        message: `Plugin "${pluginName}" has been permanently deleted from all plugin_* tables.`
+      });
     } catch (error) {
       console.error("Error deleting plugin:", error);
-      alert("Error deleting plugin: " + error.message);
+      setFlashMessage({
+        type: 'error',
+        message: `Error deleting plugin: ${error.message}`
+      });
     } finally {
       setDeleting(false);
     }
@@ -1283,6 +1293,9 @@ export default function Plugins() {
             </div>
           </DialogContent>
         </Dialog>
+
+        {/* Flash Message */}
+        <FlashMessage message={flashMessage} onClose={() => setFlashMessage(null)} />
       </div>
     </div>
   );
