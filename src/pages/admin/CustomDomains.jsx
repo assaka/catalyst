@@ -62,29 +62,11 @@ const CustomDomains = () => {
   const [adding, setAdding] = useState(false);
   const [verifying, setVerifying] = useState(false);
 
-  // Cloudflare integration state
-  const [cloudflareConnected, setCloudflareConnected] = useState(false);
-  const [cloudflareStatus, setCloudflareStatus] = useState(null);
-  const [checkingCloudflare, setCheckingCloudflare] = useState(false);
-  const [cloudflareZones, setCloudflareZones] = useState([]);
-  const [selectedZone, setSelectedZone] = useState('');
-  const [subdomain, setSubdomain] = useState('www');
-  const [provisioning, setProvisioning] = useState(false);
-  const [setupMethod, setSetupMethod] = useState('manual'); // 'cloudflare' or 'manual'
-
   useEffect(() => {
     if (storeId && storeId !== 'undefined') {
       loadDomains();
-      checkCloudflareConnection();
     }
   }, [storeId]);
-
-  useEffect(() => {
-    if (cloudflareConnected && addDialogOpen) {
-      loadCloudflareZones();
-      setSetupMethod('cloudflare'); // Auto-select Cloudflare if connected
-    }
-  }, [cloudflareConnected, addDialogOpen]);
 
   const loadDomains = async () => {
     try {
@@ -222,88 +204,6 @@ const CustomDomains = () => {
     toast.success('Copied to clipboard!');
   };
 
-  const checkCloudflareConnection = async () => {
-    try {
-      setCheckingCloudflare(true);
-      const response = await apiClient.get('/custom-domains/cloudflare-status');
-
-      if (response.success) {
-        setCloudflareConnected(response.connected);
-        setCloudflareStatus(response);
-      }
-    } catch (error) {
-      console.error('Error checking Cloudflare connection:', error);
-      setCloudflareConnected(false);
-    } finally {
-      setCheckingCloudflare(false);
-    }
-  };
-
-  const handleConnectCloudflare = async () => {
-    try {
-      const response = await apiClient.post('/cloudflare/oauth/authorize', {
-        store_id: storeId
-      });
-
-      if (response.success) {
-        // Redirect to Cloudflare OAuth
-        window.location.href = response.auth_url;
-      }
-    } catch (error) {
-      console.error('Error initiating Cloudflare connection:', error);
-      toast.error('Failed to connect to Cloudflare. Please try again.');
-    }
-  };
-
-  const loadCloudflareZones = async () => {
-    try {
-      const response = await apiClient.get(`/cloudflare/oauth/zones/${storeId}`);
-      if (response.success) {
-        setCloudflareZones(response.zones || []);
-      }
-    } catch (error) {
-      console.error('Error loading Cloudflare zones:', error);
-      toast.error('Failed to load Cloudflare zones');
-    }
-  };
-
-  const handleCloudflareProvision = async () => {
-    if (!selectedZone) {
-      toast.error('Please select a Cloudflare zone');
-      return;
-    }
-
-    const selectedZoneData = cloudflareZones.find(z => z.id === selectedZone);
-    if (!selectedZoneData) {
-      toast.error('Invalid zone selected');
-      return;
-    }
-
-    try {
-      setProvisioning(true);
-      const response = await apiClient.post('/custom-domains/provision-cloudflare', {
-        zone_id: selectedZone,
-        domain: selectedZoneData.name,
-        subdomain: subdomain === '@' ? null : subdomain,
-        is_primary: isPrimary
-      });
-
-      if (response.success) {
-        toast.success('Domain provisioned successfully! DNS configured automatically.');
-        setAddDialogOpen(false);
-        setSelectedZone('');
-        setSubdomain('www');
-        setIsPrimary(false);
-        loadDomains();
-      }
-    } catch (error) {
-      console.error('Error provisioning domain:', error);
-      toast.error(error.response?.data?.message || 'Failed to provision domain');
-    } finally {
-      setProvisioning(false);
-    }
-  };
-
   const getStatusBadge = (domain) => {
     if (domain.verification_status === 'verified' && domain.ssl_status === 'active') {
       return <Badge className="bg-green-500"><CheckCircle className="w-3 h-3 mr-1" />Active</Badge>;
@@ -353,82 +253,10 @@ const CustomDomains = () => {
       <Alert>
         <Info className="h-4 w-4" />
         <AlertDescription>
-          Custom domains allow you to use your own domain name (e.g., shop.example.com) instead of the default subdomain.
-          SSL certificates are automatically provisioned via Let's Encrypt.
+          Custom domains allow you to use your own domain name (e.g., www.myshop.com) instead of /public/storecode URLs.
+          <strong> Costs 0.5 credits per day</strong> (charged daily via Render cron service).
         </AlertDescription>
       </Alert>
-
-      {/* Cloudflare Integration Card */}
-      <Card className={cloudflareConnected ? "border-green-200 bg-green-50" : "border-blue-200 bg-blue-50"}>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Globe className="w-5 h-5" />
-            Cloudflare Integration {cloudflareConnected && <Badge className="bg-green-500 ml-2">Connected</Badge>}
-          </CardTitle>
-          <CardDescription>
-            {cloudflareConnected
-              ? 'Your Cloudflare account is connected. You can now auto-provision domains with one click!'
-              : 'Connect your Cloudflare account to automatically configure DNS records'}
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          {checkingCloudflare ? (
-            <div className="flex items-center gap-2 text-muted-foreground">
-              <RefreshCw className="w-4 h-4 animate-spin" />
-              Checking connection...
-            </div>
-          ) : cloudflareConnected ? (
-            <div className="space-y-3">
-              <div className="flex items-center justify-between p-3 bg-white rounded-md border">
-                <div className="flex items-center gap-3">
-                  <CheckCircle className="w-5 h-5 text-green-500" />
-                  <div>
-                    <p className="font-medium">Cloudflare Connected</p>
-                    <p className="text-sm text-muted-foreground">
-                      Auto-provision domains with DNS configuration
-                    </p>
-                  </div>
-                </div>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={checkCloudflareConnection}
-                >
-                  <RefreshCw className="w-4 h-4 mr-2" />
-                  Refresh
-                </Button>
-              </div>
-              {cloudflareStatus?.expired && (
-                <Alert variant="destructive">
-                  <AlertTriangle className="h-4 w-4" />
-                  <AlertDescription>
-                    Your Cloudflare token has expired. Please reconnect your account.
-                  </AlertDescription>
-                </Alert>
-              )}
-            </div>
-          ) : (
-            <div className="space-y-3">
-              <div className="flex items-start gap-3">
-                <Info className="w-5 h-5 text-blue-500 mt-0.5" />
-                <div className="flex-1">
-                  <p className="font-medium mb-1">Why connect Cloudflare?</p>
-                  <ul className="text-sm text-muted-foreground space-y-1">
-                    <li>✓ Auto-configure DNS records (no manual setup)</li>
-                    <li>✓ Instant domain verification</li>
-                    <li>✓ Free SSL certificates</li>
-                    <li>✓ Global CDN included</li>
-                  </ul>
-                </div>
-              </div>
-              <Button onClick={handleConnectCloudflare} className="w-full">
-                <Globe className="w-4 h-4 mr-2" />
-                Connect Cloudflare Account
-              </Button>
-            </div>
-          )}
-        </CardContent>
-      </Card>
 
       {/* Domains List */}
       <Card>
@@ -553,180 +381,66 @@ const CustomDomains = () => {
 
       {/* Add Domain Dialog */}
       <Dialog open={addDialogOpen} onOpenChange={setAddDialogOpen}>
-        <DialogContent className="max-w-2xl">
+        <DialogContent>
           <DialogHeader>
             <DialogTitle>Add Custom Domain</DialogTitle>
             <DialogDescription>
-              Choose your setup method: automatic via Cloudflare or manual DNS configuration.
+              Enter your domain name. You'll configure DNS records in the next step.
             </DialogDescription>
           </DialogHeader>
 
-          <Tabs value={setupMethod} onValueChange={setSetupMethod} className="w-full">
-            <TabsList className="grid w-full grid-cols-2">
-              <TabsTrigger value="cloudflare" disabled={!cloudflareConnected}>
-                <Globe className="w-4 h-4 mr-2" />
-                Cloudflare (Auto)
-                {!cloudflareConnected && <Badge variant="outline" className="ml-2 text-xs">Not Connected</Badge>}
-              </TabsTrigger>
-              <TabsTrigger value="manual">
-                <Info className="w-4 h-4 mr-2" />
-                Manual Setup
-              </TabsTrigger>
-            </TabsList>
+          <Alert className="bg-yellow-50 border-yellow-200">
+            <AlertTriangle className="h-4 w-4 text-yellow-600" />
+            <AlertDescription className="text-yellow-800">
+              <strong>Daily Cost:</strong> 0.5 credits per day will be automatically deducted for active custom domains.
+            </AlertDescription>
+          </Alert>
 
-            {/* Cloudflare Auto-Provision Tab */}
-            <TabsContent value="cloudflare" className="space-y-4 mt-4">
-              {cloudflareZones.length === 0 ? (
-                <div className="text-center py-4 text-muted-foreground">
-                  <RefreshCw className="w-6 h-6 animate-spin mx-auto mb-2" />
-                  Loading your Cloudflare zones...
-                </div>
-              ) : (
-                <>
-                  <Alert className="bg-green-50 border-green-200">
-                    <CheckCircle className="h-4 w-4 text-green-600" />
-                    <AlertDescription className="text-green-800">
-                      DNS records will be automatically configured via Cloudflare API. No manual setup required!
-                    </AlertDescription>
-                  </Alert>
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="domain">Domain Name</Label>
+              <Input
+                id="domain"
+                placeholder="www.myshop.com"
+                value={newDomain}
+                onChange={(e) => setNewDomain(e.target.value)}
+              />
+              <p className="text-sm text-muted-foreground">
+                Enter your full domain (e.g., www.myshop.com or shop.example.com)
+              </p>
+            </div>
 
-                  <div className="space-y-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="zone">Select Cloudflare Zone</Label>
-                      <Select value={selectedZone} onValueChange={setSelectedZone}>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Choose your domain from Cloudflare" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {cloudflareZones.map((zone) => (
-                            <SelectItem key={zone.id} value={zone.id}>
-                              <div className="flex items-center gap-2">
-                                <Globe className="w-4 h-4" />
-                                {zone.name}
-                                {zone.status === 'active' && (
-                                  <Badge className="bg-green-500 text-xs">Active</Badge>
-                                )}
-                              </div>
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                      <p className="text-sm text-muted-foreground">
-                        {cloudflareZones.length} zone(s) available in your Cloudflare account
-                      </p>
-                    </div>
-
-                    <div className="space-y-2">
-                      <Label htmlFor="subdomain">Subdomain (optional)</Label>
-                      <Input
-                        id="subdomain"
-                        value={subdomain}
-                        onChange={(e) => setSubdomain(e.target.value)}
-                        placeholder="www"
-                      />
-                      <p className="text-sm text-muted-foreground">
-                        Enter "www" for www.yourdomain.com or "@" for apex domain (yourdomain.com)
-                      </p>
-                    </div>
-
-                    <div className="flex items-center space-x-2">
-                      <input
-                        type="checkbox"
-                        id="primary-cf"
-                        checked={isPrimary}
-                        onChange={(e) => setIsPrimary(e.target.checked)}
-                        className="rounded"
-                      />
-                      <Label htmlFor="primary-cf" className="cursor-pointer">
-                        Set as primary domain
-                      </Label>
-                    </div>
-
-                    {selectedZone && (
-                      <Alert>
-                        <Info className="h-4 w-4" />
-                        <AlertDescription>
-                          Will configure: <strong>{subdomain && subdomain !== '@' ? `${subdomain}.` : ''}{cloudflareZones.find(z => z.id === selectedZone)?.name}</strong>
-                        </AlertDescription>
-                      </Alert>
-                    )}
-                  </div>
-                </>
-              )}
-            </TabsContent>
-
-            {/* Manual Setup Tab */}
-            <TabsContent value="manual" className="space-y-4 mt-4">
-              <Alert>
-                <Info className="h-4 w-4" />
-                <AlertDescription>
-                  You'll need to manually configure DNS records with your domain provider after adding the domain.
-                </AlertDescription>
-              </Alert>
-
-              <div className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="domain">Domain Name</Label>
-                  <Input
-                    id="domain"
-                    placeholder="shop.example.com"
-                    value={newDomain}
-                    onChange={(e) => setNewDomain(e.target.value)}
-                  />
-                  <p className="text-sm text-muted-foreground">
-                    Enter your full domain (e.g., shop.example.com or www.example.com)
-                  </p>
-                </div>
-
-                <div className="flex items-center space-x-2">
-                  <input
-                    type="checkbox"
-                    id="primary"
-                    checked={isPrimary}
-                    onChange={(e) => setIsPrimary(e.target.checked)}
-                    className="rounded"
-                  />
-                  <Label htmlFor="primary" className="cursor-pointer">
-                    Set as primary domain
-                  </Label>
-                </div>
-              </div>
-            </TabsContent>
-          </Tabs>
+            <div className="flex items-center space-x-2">
+              <input
+                type="checkbox"
+                id="primary"
+                checked={isPrimary}
+                onChange={(e) => setIsPrimary(e.target.checked)}
+                className="rounded"
+              />
+              <Label htmlFor="primary" className="cursor-pointer">
+                Set as primary domain
+              </Label>
+            </div>
+          </div>
 
           <DialogFooter>
             <Button variant="outline" onClick={() => setAddDialogOpen(false)}>
               Cancel
             </Button>
-            {setupMethod === 'cloudflare' ? (
-              <Button onClick={handleCloudflareProvision} disabled={provisioning || !selectedZone}>
-                {provisioning ? (
-                  <>
-                    <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
-                    Provisioning...
-                  </>
-                ) : (
-                  <>
-                    <Globe className="w-4 h-4 mr-2" />
-                    Auto-Provision Domain
-                  </>
-                )}
-              </Button>
-            ) : (
-              <Button onClick={handleAddDomain} disabled={adding}>
-                {adding ? (
-                  <>
-                    <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
-                    Adding...
-                  </>
-                ) : (
-                  <>
-                    <Plus className="w-4 h-4 mr-2" />
-                    Add Domain
-                  </>
-                )}
-              </Button>
-            )}
+            <Button onClick={handleAddDomain} disabled={adding}>
+              {adding ? (
+                <>
+                  <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
+                  Adding...
+                </>
+              ) : (
+                <>
+                  <Plus className="w-4 h-4 mr-2" />
+                  Add Domain
+                </>
+              )}
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -761,25 +475,31 @@ const CustomDomains = () => {
                   <div className="border-l-4 border-blue-500 pl-4 py-2">
                     <h4 className="font-semibold">Step 1: Add CNAME Record</h4>
                     <p className="text-sm text-muted-foreground mt-1">
-                      This points your domain to our platform
+                      This points your domain to our Vercel deployment
                     </p>
                     <div className="mt-2 p-3 bg-muted rounded-md font-mono text-sm">
                       <div className="flex items-center justify-between">
                         <div>
                           <span className="text-blue-600">Type:</span> CNAME<br/>
-                          <span className="text-blue-600">Name:</span> @ (or your subdomain)<br/>
-                          <span className="text-blue-600">Value:</span> stores.catalyst.app<br/>
+                          <span className="text-blue-600">Name:</span> www (or @ for apex domain)<br/>
+                          <span className="text-blue-600">Value:</span> cname.vercel-dns.com<br/>
                           <span className="text-blue-600">TTL:</span> 3600
                         </div>
                         <Button
                           variant="ghost"
                           size="sm"
-                          onClick={() => copyToClipboard('stores.catalyst.app')}
+                          onClick={() => copyToClipboard('cname.vercel-dns.com')}
                         >
                           <Copy className="w-4 h-4" />
                         </Button>
                       </div>
                     </div>
+                    <Alert className="mt-2">
+                      <Info className="h-3 w-3" />
+                      <AlertDescription className="text-xs">
+                        <strong>Note:</strong> For apex domains (example.com), you may need to use an A record or ALIAS record instead. Check your DNS provider's documentation.
+                      </AlertDescription>
+                    </Alert>
                   </div>
 
                   <div className="border-l-4 border-green-500 pl-4 py-2">
@@ -836,14 +556,14 @@ const CustomDomains = () => {
                   <TableBody>
                     <TableRow>
                       <TableCell className="font-mono">CNAME</TableCell>
-                      <TableCell className="font-mono">@</TableCell>
-                      <TableCell className="font-mono">stores.catalyst.app</TableCell>
+                      <TableCell className="font-mono">www</TableCell>
+                      <TableCell className="font-mono">cname.vercel-dns.com</TableCell>
                       <TableCell className="font-mono">3600</TableCell>
                       <TableCell>
                         <Button
                           variant="ghost"
                           size="sm"
-                          onClick={() => copyToClipboard('stores.catalyst.app')}
+                          onClick={() => copyToClipboard('cname.vercel-dns.com')}
                         >
                           <Copy className="w-4 h-4" />
                         </Button>

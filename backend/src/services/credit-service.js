@@ -231,6 +231,77 @@ class CreditService {
   }
 
   /**
+   * Charge daily fee for custom domain
+   */
+  async chargeDailyCustomDomainFee(userId, domainId, domainName) {
+    // Get the daily custom domain cost from service_credit_costs table
+    let dailyCost = 0.5; // Fallback default (0.5 credits per day)
+    try {
+      dailyCost = await ServiceCreditCost.getCostByKey('custom_domain_daily');
+    } catch (error) {
+      console.warn('⚠️ Could not fetch custom_domain_daily cost, using fallback:', error.message);
+    }
+
+    // Check if domain is still active
+    const CustomDomain = require('../models/CustomDomain');
+    const domain = await CustomDomain.findByPk(domainId);
+
+    if (!domain || !domain.is_active || domain.verification_status !== 'verified') {
+      return {
+        success: false,
+        message: 'Domain is not active, skipping daily charge'
+      };
+    }
+
+    // Get balance before deduction
+    const balanceBefore = await this.getBalance(userId);
+
+    // Check if user has enough credits
+    if (balanceBefore < dailyCost) {
+      // Deactivate domain if insufficient credits
+      await domain.update({
+        is_active: false,
+        metadata: {
+          ...domain.metadata,
+          deactivated_reason: 'insufficient_credits',
+          deactivated_at: new Date().toISOString()
+        }
+      });
+
+      return {
+        success: false,
+        message: 'Insufficient credits - domain deactivated',
+        credits_deducted: 0,
+        remaining_balance: balanceBefore,
+        domain_deactivated: true
+      };
+    }
+
+    // Deduct credits
+    const deductResult = await this.deduct(
+      userId,
+      domain.store_id,
+      dailyCost,
+      `Custom domain - daily charge (${domainName})`,
+      {
+        charge_type: 'daily',
+        domain_id: domainId,
+        domain_name: domainName,
+        charge_date: new Date().toISOString()
+      },
+      domainId,
+      'custom_domain'
+    );
+
+    return {
+      success: true,
+      credits_deducted: dailyCost,
+      remaining_balance: deductResult.remaining_balance,
+      message: `Daily charge applied for ${domainName}`
+    };
+  }
+
+  /**
    * Record daily credit charge for published store
    */
   async chargeDailyPublishingFee(userId, storeId) {

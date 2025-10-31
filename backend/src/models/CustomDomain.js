@@ -194,15 +194,16 @@ CustomDomain.prototype.markAsVerified = async function() {
 };
 
 CustomDomain.prototype.getRequiredDNSRecords = function() {
-  const platformDomain = process.env.PLATFORM_DOMAIN || 'catalyst.app';
+  const vercelCname = 'cname.vercel-dns.com';
 
   return [
     {
       type: 'CNAME',
-      name: this.subdomain ? this.subdomain : '@',
-      value: `stores.${platformDomain}`,
+      name: this.subdomain ? this.subdomain : 'www',
+      value: vercelCname,
       ttl: 3600,
-      required: true
+      required: true,
+      purpose: 'Points your domain to Vercel hosting'
     },
     {
       type: 'TXT',
@@ -249,9 +250,8 @@ CustomDomain.beforeCreate(async (domain) => {
     domain.generateVerificationToken();
   }
 
-  // Set default CNAME target
-  const platformDomain = process.env.PLATFORM_DOMAIN || 'catalyst.app';
-  domain.cname_target = `stores.${platformDomain}`;
+  // Set default CNAME target (Vercel DNS)
+  domain.cname_target = 'cname.vercel-dns.com';
 });
 
 CustomDomain.beforeSave(async (domain) => {
