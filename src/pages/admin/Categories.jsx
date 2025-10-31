@@ -1394,8 +1394,7 @@ export default function Categories() {
                 <p className="text-sm text-blue-800">
                   {translateToLangs.length > 0 ? (
                     <>
-                      This will translate all categories from {translateFromLang} to {translateToLangs.length} selected language(s).
-                      Categories that already have translations will be skipped.
+                      This will translate all categories from {translateFromLang} to {translateToLangs.length} selected language(s). Categories that already have translations will be skipped.
                     </>
                   ) : (
                     'Please select at least one target language.'
