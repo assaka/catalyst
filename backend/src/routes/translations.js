@@ -1,5 +1,6 @@
 const express = require('express');
 const { Op } = require('sequelize');
+const { sequelize } = require('../database/connection');
 const { Translation, Language, Product, Category, CmsPage, CmsBlock, ProductTab, ProductLabel, CookieConsentSettings, Attribute, AttributeValue } = require('../models');
 const { authMiddleware } = require('../middleware/auth');
 const translationService = require('../services/translation-service');
@@ -666,33 +667,77 @@ router.get('/entity-stats', authMiddleware, async (req, res) => {
 
     for (const entityType of entityTypes) {
       try {
-        // Get all entities for this store
-        const entities = await entityType.model.findAll({
-          where: { store_id },
-          attributes: ['id', 'translations']
+        // Get total count of entities for this store
+        const totalItems = await entityType.model.count({
+          where: { store_id }
         });
 
-        const totalItems = entities.length;
         console.log(`📊 ${entityType.type}: Found ${totalItems} entities for store ${store_id}`);
-        let translatedCount = 0;
-        const missingLanguages = new Set();
 
-        // Check translation completeness
-        entities.forEach(entity => {
-          const translations = entity.translations || {};
-          let hasAllTranslations = true;
+        // Map entity types to their translation table names
+        const translationTableMap = {
+          category: 'category_translations',
+          product: 'product_translations',
+          attribute: 'attribute_translations',
+          cms_page: 'cms_page_translations',
+          cms_block: 'cms_block_translations',
+          product_tab: 'product_tab_translations',
+          product_label: 'product_label_translations',
+          cookie_consent: 'cookie_consent_settings_translations'
+        };
 
-          languageCodes.forEach(langCode => {
-            if (!translations[langCode] || Object.keys(translations[langCode]).length === 0) {
-              missingLanguages.add(langCode);
-              hasAllTranslations = false;
-            }
-          });
+        const translationTable = translationTableMap[entityType.type];
+        const entityIdColumn = `${entityType.type}_id`;
 
-          if (hasAllTranslations) {
-            translatedCount++;
+        if (!translationTable) {
+          throw new Error(`No translation table mapping for ${entityType.type}`);
+        }
+
+        // Get entities with all language translations using raw SQL for performance
+        const query = `
+          SELECT e.id
+          FROM ${entityType.model.tableName} e
+          WHERE e.store_id = :storeId
+          AND (
+            SELECT COUNT(DISTINCT t.language_code)
+            FROM ${translationTable} t
+            WHERE t.${entityIdColumn} = e.id
+            AND t.language_code IN (:languageCodes)
+          ) = :languageCount
+        `;
+
+        const [translatedEntities] = await sequelize.query(query, {
+          replacements: {
+            storeId: store_id,
+            languageCodes: languageCodes,
+            languageCount: languageCodes.length
           }
         });
+
+        const translatedCount = translatedEntities.length;
+
+        // Find which languages are missing for incomplete entities
+        const missingLanguagesQuery = `
+          SELECT DISTINCT :languageCode::text as missing_lang
+          FROM unnest(ARRAY[:languageCodes]::text[]) as lang_code
+          WHERE NOT EXISTS (
+            SELECT 1
+            FROM ${entityType.model.tableName} e
+            INNER JOIN ${translationTable} t ON t.${entityIdColumn} = e.id
+            WHERE e.store_id = :storeId
+            AND t.language_code = lang_code
+          )
+        `;
+
+        const [missingLangsResult] = await sequelize.query(missingLanguagesQuery, {
+          replacements: {
+            storeId: store_id,
+            languageCodes: languageCodes,
+            languageCode: 'language_code'
+          }
+        });
+
+        const missingLanguages = missingLangsResult.map(row => row.missing_lang);
 
         const completionPercentage = totalItems > 0
           ? Math.round((translatedCount / totalItems) * 100)
@@ -705,7 +750,7 @@ router.get('/entity-stats', authMiddleware, async (req, res) => {
           totalItems,
           translatedItems: translatedCount,
           completionPercentage,
-          missingLanguages: Array.from(missingLanguages).map(code => {
+          missingLanguages: missingLanguages.map(code => {
             const lang = languages.find(l => l.code === code);
             return {
               code,
@@ -739,53 +784,91 @@ router.get('/entity-stats', authMiddleware, async (req, res) => {
 
       const attributeIds = attributes.map(attr => attr.id);
 
-      // Get all attribute values for these attributes
-      const values = await AttributeValue.findAll({
-        where: { attribute_id: { [Op.in]: attributeIds } },
-        attributes: ['id', 'translations']
-      });
+      if (attributeIds.length === 0) {
+        stats.push({
+          type: 'attribute_value',
+          name: 'Attribute Values',
+          icon: '🔖',
+          totalItems: 0,
+          translatedItems: 0,
+          completionPercentage: 100,
+          missingLanguages: []
+        });
+      } else {
+        // Get total count of attribute values
+        const [countResult] = await sequelize.query(`
+          SELECT COUNT(*) as count
+          FROM attribute_values
+          WHERE attribute_id IN (:attributeIds)
+        `, {
+          replacements: { attributeIds }
+        });
 
-      const totalItems = values.length;
-      let translatedCount = 0;
-      const missingLanguages = new Set();
+        const totalItems = parseInt(countResult[0].count);
 
-      // Check translation completeness
-      values.forEach(value => {
-        const translations = value.translations || {};
-        let hasAllTranslations = true;
-
-        languageCodes.forEach(langCode => {
-          if (!translations[langCode] || Object.keys(translations[langCode]).length === 0) {
-            missingLanguages.add(langCode);
-            hasAllTranslations = false;
+        // Get count of attribute values with all translations
+        const [translatedResult] = await sequelize.query(`
+          SELECT COUNT(DISTINCT av.id) as count
+          FROM attribute_values av
+          WHERE av.attribute_id IN (:attributeIds)
+          AND (
+            SELECT COUNT(DISTINCT t.language_code)
+            FROM attribute_value_translations t
+            WHERE t.attribute_value_id = av.id
+            AND t.language_code IN (:languageCodes)
+          ) = :languageCount
+        `, {
+          replacements: {
+            attributeIds,
+            languageCodes: languageCodes,
+            languageCount: languageCodes.length
           }
         });
 
-        if (hasAllTranslations) {
-          translatedCount++;
-        }
-      });
+        const translatedCount = parseInt(translatedResult[0].count);
 
-      const completionPercentage = totalItems > 0
-        ? Math.round((translatedCount / totalItems) * 100)
-        : 100;
+        // Find missing languages
+        const [missingLangsResult] = await sequelize.query(`
+          SELECT DISTINCT :languageCode::text as missing_lang
+          FROM unnest(ARRAY[:languageCodes]::text[]) as lang_code
+          WHERE NOT EXISTS (
+            SELECT 1
+            FROM attribute_values av
+            INNER JOIN attribute_value_translations t ON t.attribute_value_id = av.id
+            WHERE av.attribute_id IN (:attributeIds)
+            AND t.language_code = lang_code
+          )
+        `, {
+          replacements: {
+            attributeIds,
+            languageCodes: languageCodes,
+            languageCode: 'language_code'
+          }
+        });
 
-      stats.push({
-        type: 'attribute_value',
-        name: 'Attribute Values',
-        icon: '🔖',
-        totalItems,
-        translatedItems: translatedCount,
-        completionPercentage,
-        missingLanguages: Array.from(missingLanguages).map(code => {
-          const lang = languages.find(l => l.code === code);
-          return {
-            code,
-            name: lang?.name || code,
-            native_name: lang?.native_name || code
-          };
-        })
-      });
+        const missingLanguages = missingLangsResult.map(row => row.missing_lang);
+
+        const completionPercentage = totalItems > 0
+          ? Math.round((translatedCount / totalItems) * 100)
+          : 100;
+
+        stats.push({
+          type: 'attribute_value',
+          name: 'Attribute Values',
+          icon: '🔖',
+          totalItems,
+          translatedItems: translatedCount,
+          completionPercentage,
+          missingLanguages: missingLanguages.map(code => {
+            const lang = languages.find(l => l.code === code);
+            return {
+              code,
+              name: lang?.name || code,
+              native_name: lang?.native_name || code
+            };
+          })
+        });
+      }
     } catch (error) {
       console.error('Error getting stats for attribute_value:', error);
       stats.push({
