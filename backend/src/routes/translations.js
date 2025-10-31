@@ -1,7 +1,7 @@
 const express = require('express');
 const { Op } = require('sequelize');
 const { sequelize } = require('../database/connection');
-const { Translation, Language, Product, Category, CmsPage, CmsBlock, ProductTab, ProductLabel, CookieConsentSettings, Attribute, AttributeValue } = require('../models');
+const { Translation, Language, Product, Category, CmsPage, CmsBlock, ProductTab, ProductLabel, CookieConsentSettings, Attribute, AttributeValue, Store } = require('../models');
 const { authMiddleware } = require('../middleware/auth');
 const translationService = require('../services/translation-service');
 const creditService = require('../services/credit-service');
@@ -969,6 +969,65 @@ router.get('/entity-stats', authMiddleware, async (req, res) => {
       });
     }
 
+    // Handle Stock Labels separately (stored in store.settings.stock_settings.translations)
+    try {
+      const store = await Store.findByPk(store_id, {
+        attributes: ['id', 'settings']
+      });
+
+      const stockSettings = store?.settings?.stock_settings || {};
+      const translations = stockSettings.translations || {};
+
+      // Stock labels is always 1 item (the settings themselves)
+      const totalItems = 1;
+      let translatedCount = 0;
+      const missingLanguages = [];
+
+      // Check if translations exist for all active languages
+      let hasAllTranslations = true;
+      for (const langCode of languageCodes) {
+        if (!translations[langCode] || Object.keys(translations[langCode]).length === 0) {
+          missingLanguages.push(langCode);
+          hasAllTranslations = false;
+        }
+      }
+
+      if (hasAllTranslations) {
+        translatedCount = 1;
+      }
+
+      const completionPercentage = translatedCount === 1 ? 100 : 0;
+
+      stats.push({
+        type: 'stock_labels',
+        name: 'Stock Labels',
+        icon: '📊',
+        totalItems,
+        translatedItems: translatedCount,
+        completionPercentage,
+        missingLanguages: missingLanguages.map(code => {
+          const lang = languages.find(l => l.code === code);
+          return {
+            code,
+            name: lang?.name || code,
+            native_name: lang?.native_name || code
+          };
+        })
+      });
+    } catch (error) {
+      console.error('Error getting stats for stock_labels:', error);
+      stats.push({
+        type: 'stock_labels',
+        name: 'Stock Labels',
+        icon: '📊',
+        totalItems: 1,
+        translatedItems: 0,
+        completionPercentage: 0,
+        missingLanguages: [],
+        error: error.message
+      });
+    }
+
     res.json({
       success: true,
       data: {
@@ -1040,7 +1099,8 @@ router.post('/bulk-translate-entities', authMiddleware, async (req, res) => {
       product_label: { model: ProductLabel, name: 'Product Labels' },
       cookie_consent: { model: CookieConsentSettings, name: 'Cookie Consent' },
       attribute_value: { model: AttributeValue, name: 'Attribute Values', special: true },
-      custom_option: { name: 'Custom Options', special: true, useJsonTranslations: true }
+      custom_option: { name: 'Custom Options', special: true, useJsonTranslations: true },
+      stock_labels: { name: 'Stock Labels', special: true, storeSettings: true }
     };
 
     const allResults = {
@@ -1085,6 +1145,17 @@ router.post('/bulk-translate-entities', authMiddleware, async (req, res) => {
             replacements: { storeId: store_id }
           });
           entities = customOptions;
+        } else if (entityConfig.special && entityType === 'stock_labels') {
+          // Handle Stock Labels (stored in store.settings.stock_settings)
+          const store = await Store.findByPk(store_id, {
+            attributes: ['id', 'settings']
+          });
+          const stockSettings = store?.settings?.stock_settings || {};
+          // Create a pseudo-entity with translations
+          entities = [{
+            id: 'stock_labels',
+            translations: stockSettings.translations || {}
+          }];
         } else {
           entities = await entityConfig.model.findAll({
             where: { store_id }
