@@ -629,6 +629,74 @@ router.post('/chat', authMiddleware, async (req, res) => {
       });
     }
 
+    // Check for confirmation BEFORE intent detection
+    // This prevents "yes" from being classified as a new translation intent
+    const isConfirmation = /^(yes|yeah|yep|sure|ok|okay|do it|update|apply|confirm|proceed)/i.test(message.trim());
+
+    if (isConfirmation && conversationHistory && conversationHistory.length > 0) {
+      console.log('🔍 Confirmation detected, checking conversation history...');
+      console.log('📝 History length:', conversationHistory.length);
+      console.log('📝 Last 2 messages:', JSON.stringify(conversationHistory.slice(-2), null, 2));
+
+      // Find the last assistant message with pending action
+      const lastAssistantMessage = [...conversationHistory]
+        .reverse()
+        .find(msg => msg.role === 'assistant' && msg.data?.type === 'translation_preview');
+
+      console.log('🤖 Found pending translation?', !!lastAssistantMessage);
+      console.log('🎯 Action type:', lastAssistantMessage?.data?.action);
+
+      if (lastAssistantMessage?.data?.action === 'update_labels') {
+        // User confirmed - update the translations
+        const { translations, matchingKeys, original } = lastAssistantMessage.data;
+        const { sequelize } = require('../database/connection');
+        const Translation = require('../models/Translation');
+
+        let updatedCount = 0;
+        const updates = [];
+
+        for (const [key, langData] of Object.entries(matchingKeys)) {
+          for (const targetLang of Object.keys(translations)) {
+            try {
+              // Check if translation exists
+              const existing = await Translation.findOne({
+                where: { key, language_code: targetLang }
+              });
+
+              if (existing) {
+                // Update existing
+                await existing.update({ value: translations[targetLang] });
+              } else {
+                // Create new translation
+                await Translation.create({
+                  key,
+                  language_code: targetLang,
+                  value: translations[targetLang],
+                  category: 'common',
+                  type: 'system'
+                });
+              }
+              updatedCount++;
+              updates.push(`${key} (${targetLang}): ${translations[targetLang]}`);
+            } catch (error) {
+              console.error(`Failed to update ${key} for ${targetLang}:`, error);
+            }
+          }
+        }
+
+        return res.json({
+          success: true,
+          message: `✅ Updated ${updatedCount} translation(s)!\n\n${updates.join('\n')}\n\nThe changes are now live on your store. Refresh your pages to see the updates.`,
+          data: {
+            type: 'translation_applied',
+            updatedCount,
+            updates
+          },
+          creditsDeducted: 0 // No AI call needed for confirmation
+        });
+      }
+    }
+
     // Determine intent from conversation
     const intentPrompt = `Analyze this user message and determine what they want to do.
 
@@ -946,63 +1014,6 @@ Suggest helpful next steps. Be friendly and actionable.`;
       });
 
     } else {
-      // Check if this is a confirmation for a previous action
-      const isConfirmation = /^(yes|yeah|yep|sure|ok|okay|do it|update|apply|confirm)/i.test(message.trim());
-
-      if (isConfirmation && conversationHistory && conversationHistory.length > 0) {
-        // Check if the last message had a pending action
-        const lastMessage = conversationHistory[conversationHistory.length - 1];
-        if (lastMessage?.data?.type === 'translation_preview' && lastMessage?.data?.action === 'update_labels') {
-          // User confirmed - update the translations
-          const { translations, matchingKeys, original } = lastMessage.data;
-          const { sequelize } = require('../database/connection');
-          const Translation = require('../models/Translation');
-
-          let updatedCount = 0;
-          const updates = [];
-
-          for (const [key, langData] of Object.entries(matchingKeys)) {
-            for (const targetLang of Object.keys(translations)) {
-              try {
-                // Check if translation exists
-                const existing = await Translation.findOne({
-                  where: { key, language_code: targetLang }
-                });
-
-                if (existing) {
-                  // Update existing
-                  await existing.update({ value: translations[targetLang] });
-                } else {
-                  // Create new translation
-                  await Translation.create({
-                    key,
-                    language_code: targetLang,
-                    value: translations[targetLang],
-                    category: 'common',
-                    type: 'system'
-                  });
-                }
-                updatedCount++;
-                updates.push(`${key} (${targetLang}): ${translations[targetLang]}`);
-              } catch (error) {
-                console.error(`Failed to update ${key} for ${targetLang}:`, error);
-              }
-            }
-          }
-
-          return res.json({
-            success: true,
-            message: `✅ Updated ${updatedCount} translation(s)!\n\n${updates.join('\n')}\n\nThe changes are now live on your store. Refresh your pages to see the updates.`,
-            data: {
-              type: 'translation_applied',
-              updatedCount,
-              updates
-            },
-            creditsDeducted: creditsUsed
-          });
-        }
-      }
-
       // Just chat
       const chatResult = await aiService.generate({
         userId,
