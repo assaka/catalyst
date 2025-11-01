@@ -85,13 +85,15 @@ const checkStoreAccess = async (storeId, userId, userRole) => {
 };
 
 // @route   GET /api/cms-blocks
-// @desc    Get CMS blocks
+// @desc    Get CMS blocks (always includes all translations)
 // @access  Private
 router.get('/', async (req, res) => {
   try {
-    const { page = 1, limit = 10, store_id, search, include_all_translations } = req.query;
+    const { page = 1, limit = 10, store_id, search } = req.query;
     const offset = (page - 1) * limit;
+    const { getCMSBlocksWithAllTranslations } = require('../utils/cmsHelpers');
 
+    // Build where clause
     const where = {};
 
     // Filter by store ownership and team membership
@@ -104,81 +106,40 @@ router.get('/', async (req, res) => {
 
     if (store_id) where.store_id = store_id;
 
-    // If include_all_translations is requested, use helper function
-    if (include_all_translations === 'true') {
-      const { getCMSBlocksWithAllTranslations } = require('../utils/cmsHelpers');
+    // Always use helper to get blocks with all translations (consistent with CMS pages route)
+    const blocks = await getCMSBlocksWithAllTranslations(where);
 
-      // Build where clause for helper
-      const helperWhere = {};
-      if (store_id) helperWhere.store_id = store_id;
+    console.log(`🔍 CMS Blocks route - Fetched ${blocks.length} blocks with all translations`);
 
-      const blocks = await getCMSBlocksWithAllTranslations(helperWhere);
+    // Apply search filter in memory if needed
+    let filteredBlocks = blocks;
+    if (search) {
+      const searchLower = search.toLowerCase();
+      filteredBlocks = blocks.filter(block => {
+        // Search in English translations
+        const enTitle = block.translations?.en?.title || '';
+        const enContent = block.translations?.en?.content || '';
+        const identifier = block.identifier || '';
 
-      console.log(`🔍 CMS Blocks route - Fetched ${blocks.length} blocks with all translations`);
-
-      // Apply search filter in memory if needed
-      let filteredBlocks = blocks;
-      if (search) {
-        const searchLower = search.toLowerCase();
-        filteredBlocks = blocks.filter(block => {
-          // Search in English translations
-          const enTitle = block.translations?.en?.title || '';
-          const enContent = block.translations?.en?.content || '';
-          const identifier = block.identifier || '';
-
-          return enTitle.toLowerCase().includes(searchLower) ||
-                 enContent.toLowerCase().includes(searchLower) ||
-                 identifier.toLowerCase().includes(searchLower);
-        });
-      }
-
-      // Apply pagination
-      const total = filteredBlocks.length;
-      const paginatedBlocks = filteredBlocks.slice(offset, offset + parseInt(limit));
-
-      return res.json({
-        success: true,
-        data: {
-          blocks: paginatedBlocks,
-          pagination: {
-            current_page: parseInt(page),
-            per_page: parseInt(limit),
-            total: total,
-            total_pages: Math.ceil(total / limit)
-          }
-        }
+        return enTitle.toLowerCase().includes(searchLower) ||
+               enContent.toLowerCase().includes(searchLower) ||
+               identifier.toLowerCase().includes(searchLower);
       });
     }
 
-    // Standard query without all translations
-    if (search) {
-      where[Op.or] = [
-        { title: { [Op.iLike]: `%${search}%` } },
-        { identifier: { [Op.iLike]: `%${search}%` } },
-        { content: { [Op.iLike]: `%${search}%` } }
-      ];
-    }
-
-    const { count, rows } = await CmsBlock.findAndCountAll({
-      where,
-      limit: parseInt(limit),
-      offset: parseInt(offset),
-      order: [['sort_order', 'ASC'], ['identifier', 'ASC']],
-      include: [{
-        model: Store,
-        attributes: ['id', 'name']
-      }]
-    });
+    // Apply pagination
+    const total = filteredBlocks.length;
+    const paginatedBlocks = filteredBlocks.slice(offset, offset + parseInt(limit));
 
     res.json({
       success: true,
       data: {
-        blocks: rows,
+        blocks: paginatedBlocks,
         pagination: {
           current_page: parseInt(page),
           per_page: parseInt(limit),
-          total: count,
-          total_pages: Math.ceil(count / limit)
+          total: total,
+          total_pages: Math.ceil(total / limit)
         }
       }
     });
