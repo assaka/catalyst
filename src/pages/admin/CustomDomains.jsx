@@ -253,8 +253,8 @@ const CustomDomains = () => {
       <Alert>
         <Info className="h-4 w-4" />
         <AlertDescription>
-          Custom domains allow you to use your own domain name (e.g., www.myshop.com) instead of /public/storecode URLs.
-          <strong> Costs 0.5 credits per day</strong> (charged daily via Render cron service).
+          Custom domains allow you to use your own domain name (e.g., www.myshop.com) instead of /public/storecode URLs.<br/>
+          <strong> Costs 0.5 credits per day</strong>
         </AlertDescription>
       </Alert>
 
