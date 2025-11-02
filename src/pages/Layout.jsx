@@ -704,7 +704,7 @@ function LayoutInner({ children, currentPageName }) {
             {/* Dashboard as direct menu item */}
             <Link
               to={createAdminUrl("Dashboard")}
-              className={`flex items-center space-x-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors mb-4 ${
+              className={`flex items-center space-x-3 px-3 py-1 rounded-lg text-sm font-medium transition-colors ${
                 currentPageName === 'Dashboard'
                   ? 'bg-blue-50 text-blue-700 border-r-2 border-blue-700'
                   : 'text-gray-700 hover:bg-gray-100'
@@ -719,7 +719,7 @@ function LayoutInner({ children, currentPageName }) {
             {/* Manage Navigation Meta-Tool */}
             <Link
               to="/admin/navigation-manager"
-              className={`flex items-center space-x-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors mb-4 ${
+              className={`flex items-center space-x-3 px-3 py-1 rounded-lg text-sm font-medium transition-colors mb-6 ${
                 location.pathname === '/admin/navigation-manager'
                   ? 'bg-blue-50 text-blue-700 border-r-2 border-blue-700'
                   : 'text-gray-700 hover:bg-gray-100'
