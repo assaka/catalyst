@@ -351,15 +351,15 @@ export default function EmailProviderSettings({ storeEmail, storeName }) {
                     <Button
                       variant="outline"
                       onClick={() => {
-                        setShowConfig(true);
-                        // Keep existing values when updating
-                        if (connectionStatus?.config) {
+                        setShowConfig(!showConfig);
+                        // Pre-fill when opening
+                        if (!showConfig && connectionStatus?.config) {
                           setSenderName(connectionStatus.config.sender_name || storeName || '');
                           setSenderEmail(connectionStatus.config.sender_email || storeEmail || '');
                         }
                       }}
                     >
-                      Update Configuration
+                      {showConfig ? 'Hide Configuration' : 'Update Configuration'}
                     </Button>
                     <Button
                       variant="outline"
@@ -368,6 +368,15 @@ export default function EmailProviderSettings({ storeEmail, storeName }) {
                     >
                       Disconnect
                     </Button>
+                    {!showTestSection && (
+                      <Button
+                        variant="outline"
+                        onClick={handleOpenTestSection}
+                      >
+                        <Send className="w-4 h-4 mr-2" />
+                        Test Email
+                      </Button>
+                    )}
                     <Button
                       variant="outline"
                       onClick={loadConnectionStatus}
