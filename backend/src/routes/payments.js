@@ -535,18 +535,80 @@ router.post('/create-intent', authMiddleware, async (req, res) => {
 // @desc    Get Stripe publishable key
 // @access  Public
 router.get('/publishable-key', (req, res) => {
+  const requestId = Math.random().toString(36).substring(7);
+
+  console.log('='.repeat(80));
+  console.log(`🔑 [${requestId}] GET PUBLISHABLE KEY REQUEST`);
+  console.log(`🔑 [${requestId}] Timestamp: ${new Date().toISOString()}`);
+  console.log('='.repeat(80));
+
   try {
+    // Log all Stripe-related environment variables (without exposing full keys)
+    console.log(`🔍 [${requestId}] Environment Variable Check:`);
+    console.log(`🔍 [${requestId}] All env vars starting with STRIPE or VITE_STRIPE:`,
+      Object.keys(process.env)
+        .filter(key => key.includes('STRIPE'))
+        .map(key => ({
+          name: key,
+          isSet: !!process.env[key],
+          prefix: process.env[key] ? process.env[key].substring(0, 10) + '...' : 'NOT SET',
+          length: process.env[key] ? process.env[key].length : 0
+        }))
+    );
+
     // Support both STRIPE_PUBLISHABLE_KEY and VITE_STRIPE_PUBLISHABLE_KEY for backward compatibility
     const publishableKey = process.env.STRIPE_PUBLISHABLE_KEY || process.env.VITE_STRIPE_PUBLISHABLE_KEY;
 
-    // Return null if not configured (allows graceful degradation on frontend)
-    res.json({
+    console.log(`🔍 [${requestId}] Stripe Configuration Status:`, {
+      hasSTRIPE_PUBLISHABLE_KEY: !!process.env.STRIPE_PUBLISHABLE_KEY,
+      hasVITE_STRIPE_PUBLISHABLE_KEY: !!process.env.VITE_STRIPE_PUBLISHABLE_KEY,
+      hasSTRIPE_SECRET_KEY: !!process.env.STRIPE_SECRET_KEY,
+      hasSTRIPE_WEBHOOK_SECRET: !!process.env.STRIPE_WEBHOOK_SECRET,
+      selectedKey: publishableKey ? 'Found' : 'NOT FOUND',
+      selectedKeySource: process.env.STRIPE_PUBLISHABLE_KEY ? 'STRIPE_PUBLISHABLE_KEY' :
+                        process.env.VITE_STRIPE_PUBLISHABLE_KEY ? 'VITE_STRIPE_PUBLISHABLE_KEY' :
+                        'NONE'
+    });
+
+    if (publishableKey) {
+      console.log(`✅ [${requestId}] Publishable key found:`, {
+        source: process.env.STRIPE_PUBLISHABLE_KEY ? 'STRIPE_PUBLISHABLE_KEY' : 'VITE_STRIPE_PUBLISHABLE_KEY',
+        prefix: publishableKey.substring(0, 10) + '...',
+        length: publishableKey.length,
+        startsWithPk: publishableKey.startsWith('pk_'),
+        isTestKey: publishableKey.includes('_test_'),
+        isLiveKey: publishableKey.includes('_live_')
+      });
+    } else {
+      console.warn(`⚠️ [${requestId}] NO PUBLISHABLE KEY FOUND IN ENVIRONMENT`);
+      console.warn(`⚠️ [${requestId}] Checked variables:`, {
+        STRIPE_PUBLISHABLE_KEY: process.env.STRIPE_PUBLISHABLE_KEY || 'NOT SET',
+        VITE_STRIPE_PUBLISHABLE_KEY: process.env.VITE_STRIPE_PUBLISHABLE_KEY || 'NOT SET'
+      });
+    }
+
+    const responseData = {
       data: {
         publishableKey: publishableKey || null
       }
+    };
+
+    console.log(`✅ [${requestId}] Returning response:`, {
+      hasKey: !!publishableKey,
+      keyPrefix: publishableKey ? publishableKey.substring(0, 10) + '...' : 'null'
     });
+    console.log('='.repeat(80));
+
+    // Return null if not configured (allows graceful degradation on frontend)
+    res.json(responseData);
   } catch (error) {
-    console.error('Get publishable key error:', error);
+    console.error('='.repeat(80));
+    console.error(`🔴 [${requestId}] Get publishable key error:`, {
+      message: error.message,
+      stack: error.stack
+    });
+    console.error('='.repeat(80));
+
     res.status(500).json({
       success: false,
       error: 'Failed to get publishable key'

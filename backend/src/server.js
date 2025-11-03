@@ -2006,7 +2006,45 @@ const startServer = async () => {
     console.log(`- DATABASE_URL: ${process.env.DATABASE_URL ? '✅ Set' : '❌ Missing'}`);
     console.log(`- SUPABASE_URL: ${process.env.SUPABASE_URL ? '✅ Set' : '❌ Missing'}`);
     console.log(`- JWT_SECRET: ${process.env.JWT_SECRET ? '✅ Set' : '❌ Missing'}`);
-    
+
+    console.log('\n💳 Stripe Configuration:');
+    const stripeEnvVars = Object.keys(process.env).filter(key => key.includes('STRIPE'));
+    if (stripeEnvVars.length === 0) {
+      console.log('⚠️  NO STRIPE ENVIRONMENT VARIABLES FOUND');
+    } else {
+      console.log(`Found ${stripeEnvVars.length} Stripe-related environment variable(s):`);
+      stripeEnvVars.forEach(key => {
+        const value = process.env[key];
+        const status = value ? '✅ Set' : '❌ Missing';
+        const preview = value ? `${value.substring(0, 10)}...` : 'NOT SET';
+        const length = value ? `(${value.length} chars)` : '';
+        console.log(`  - ${key}: ${status} ${preview} ${length}`);
+      });
+    }
+
+    // Specific Stripe configuration status
+    console.log('\n💳 Required Stripe Keys:');
+    console.log(`  - STRIPE_SECRET_KEY: ${process.env.STRIPE_SECRET_KEY ? '✅ Configured' : '❌ MISSING'}`);
+    console.log(`  - STRIPE_PUBLISHABLE_KEY: ${process.env.STRIPE_PUBLISHABLE_KEY ? '✅ Configured' : '❌ Missing'}`);
+    console.log(`  - VITE_STRIPE_PUBLISHABLE_KEY: ${process.env.VITE_STRIPE_PUBLISHABLE_KEY ? '✅ Configured' : '❌ Missing'}`);
+    console.log(`  - STRIPE_WEBHOOK_SECRET: ${process.env.STRIPE_WEBHOOK_SECRET ? '✅ Configured' : '❌ Missing'}`);
+
+    const hasAnyPublishableKey = process.env.STRIPE_PUBLISHABLE_KEY || process.env.VITE_STRIPE_PUBLISHABLE_KEY;
+    const isStripeConfigured = process.env.STRIPE_SECRET_KEY && hasAnyPublishableKey;
+
+    if (isStripeConfigured) {
+      console.log('✅ Stripe is CONFIGURED and ready for payments');
+    } else {
+      console.log('⚠️  Stripe is NOT fully configured - payments will not work');
+      if (!process.env.STRIPE_SECRET_KEY) {
+        console.log('   → Missing: STRIPE_SECRET_KEY');
+      }
+      if (!hasAnyPublishableKey) {
+        console.log('   → Missing: STRIPE_PUBLISHABLE_KEY or VITE_STRIPE_PUBLISHABLE_KEY');
+      }
+    }
+    console.log('');
+
     console.log('\n🔗 Attempting database connection...');
     
     // Test database connection with retry logic
