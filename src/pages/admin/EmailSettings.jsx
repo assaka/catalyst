@@ -8,8 +8,7 @@ import { useState, useEffect } from 'react';
 
 export default function EmailSettings() {
   const { selectedStore } = useStoreSelection();
-  const [storeEmail, setStoreEmail] = useState('');
-  const [storeName, setStoreName] = useState('');
+  const [fullStore, setFullStore] = useState(null);
 
   useEffect(() => {
     loadStoreData();
@@ -20,8 +19,7 @@ export default function EmailSettings() {
       try {
         const fullStoreData = await Store.findById(selectedStore.id);
         const store = Array.isArray(fullStoreData) ? fullStoreData[0] : fullStoreData;
-        setStoreEmail(store?.contact_details?.email || store?.contact_email || '');
-        setStoreName(store?.name || '');
+        setFullStore(store);
       } catch (error) {
         console.error('Error loading store data:', error);
       }
@@ -47,7 +45,10 @@ export default function EmailSettings() {
           </div>
         </div>
 
-        <EmailProviderSettings storeEmail={storeEmail} storeName={storeName} />
+        <EmailProviderSettings
+          storeEmail={fullStore?.contact_details?.email || fullStore?.contact_email || ''}
+          storeName={fullStore?.name || selectedStore?.name || ''}
+        />
       </div>
     </div>
   );
