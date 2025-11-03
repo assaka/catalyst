@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { StoreTeam, Store } from '@/api/entities';
+import { StoreTeam } from '@/api/entities';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -84,13 +84,12 @@ const DEFAULT_PERMISSIONS = {
   }
 };
 
-export default function TeamManagement({ storeId }) {
+export default function TeamManagement({ storeId, storeName }) {
   const [teamMembers, setTeamMembers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [inviteDialogOpen, setInviteDialogOpen] = useState(false);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [selectedMember, setSelectedMember] = useState(null);
-  const [storeName, setStoreName] = useState('');
   
   // Invite form state
   const [inviteForm, setInviteForm] = useState({
@@ -109,19 +108,8 @@ export default function TeamManagement({ storeId }) {
   useEffect(() => {
     if (storeId) {
       loadTeamMembers();
-      loadStoreName();
     }
   }, [storeId]);
-
-  const loadStoreName = async () => {
-    try {
-      const store = await Store.findById(storeId);
-      const storeData = Array.isArray(store) ? store[0] : store;
-      setStoreName(storeData?.name || '');
-    } catch (error) {
-      console.error('❌ TeamManagement: Error loading store name:', error);
-    }
-  };
 
   const loadTeamMembers = async () => {
     try {
