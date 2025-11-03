@@ -5,7 +5,7 @@
 The Catalyst email management system provides a comprehensive solution for sending transactional emails using Brevo. It includes:
 
 - **Multi-language email templates** with translation support
-- **Brevo OAuth integration** for secure email sending
+- **Brevo API key integration** for secure email sending
 - **Automated transactional emails** for signup, credit purchases, and orders
 - **Admin UI** for managing email templates
 - **Template variables** for dynamic content
@@ -41,9 +41,9 @@ The Catalyst email management system provides a comprehensive solution for sendi
 - Unique constraint: (email_template_id, language_code)
 
 **brevo_configurations**
-- Brevo OAuth tokens per store
-- Fields: store_id, access_token, refresh_token, token_expires_at, sender_name, sender_email
-- Tokens are automatically refreshed when expired
+- Brevo API keys per store
+- Fields: store_id, access_token (API key), sender_name, sender_email, is_active
+- API keys are validated before saving
 
 **email_send_logs**
 - Audit log of all sent emails
@@ -52,10 +52,10 @@ The Catalyst email management system provides a comprehensive solution for sendi
 
 ### Services
 
-**brevo-oauth-service.js**
-- Handles OAuth flow with Brevo
-- Manages token refresh automatically
-- Methods: initiateOAuth(), handleOAuthCallback(), refreshToken(), getValidToken()
+**brevo-service.js**
+- Handles Brevo API key authentication
+- Validates and stores API keys per store
+- Methods: saveConfiguration(), validateApiKey(), testConnection(), disconnect()
 
 **email-service.js**
 - Core email sending logic
@@ -456,15 +456,15 @@ await emailService.sendTransactionalEmail(storeId, 'my_custom', {
 - Check spam folder if you don't see the verification email
 - Verification typically takes 1-2 minutes after clicking the link
 
-### OAuth Connection Failed
+### API Key Connection Failed
 
 **Problem**: "Failed to connect to Brevo" error
 
 **Solutions**:
-1. Verify BREVO_CLIENT_ID and BREVO_CLIENT_SECRET in .env
-2. Check redirect URI matches in Brevo dashboard
-3. Ensure CORS_ORIGIN is set correctly
-4. Check backend logs for OAuth error details
+1. Verify API key is correct and starts with "xkeysib-"
+2. Check that API key has not been revoked in Brevo dashboard
+3. Ensure API key has email sending permissions
+4. Check backend logs for detailed error messages
 
 ### Variables Not Replacing
 
