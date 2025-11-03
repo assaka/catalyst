@@ -61,7 +61,7 @@ const validatePasswordStrength = (password) => {
   const hasLowerCase = /[a-z]/.test(password);
   const hasNumber = /\d/.test(password);
   const hasSpecialChar = /[!@#$%^&*(),.?":{}|<>]/.test(password);
-  
+
   if (password.length < minLength) {
     return `Password must be at least ${minLength} characters long`;
   }
@@ -78,6 +78,88 @@ const validatePasswordStrength = (password) => {
     return 'Password must contain at least one special character';
   }
   return null;
+};
+
+// Helper: Create addresses for customer or user
+const createCustomerAddresses = async (userId, firstName, lastName, phone, email, addressData, role = 'customer') => {
+  try {
+    const { Address } = require('../models');
+    const fullName = `${firstName} ${lastName}`;
+    const foreignKey = role === 'customer' ? 'customer_id' : 'user_id';
+
+    // Create shipping address
+    if (addressData.shipping_address?.street) {
+      const addr = addressData.shipping_address;
+      await Address.create({
+        [foreignKey]: userId,
+        type: 'shipping',
+        full_name: fullName,
+        street: addr.street,
+        street_2: addr.street2 || null,
+        city: addr.city,
+        state: addr.state,
+        postal_code: addr.postal_code,
+        country: addr.country || 'US',
+        phone: phone || null,
+        email: email,
+        is_default: true
+      });
+    }
+
+    // Create billing address if different
+    if (addressData.billing_address?.street) {
+      const billing = addressData.billing_address;
+      const shipping = addressData.shipping_address || {};
+
+      const isDifferent = (
+        billing.street !== shipping.street ||
+        billing.city !== shipping.city ||
+        billing.postal_code !== shipping.postal_code
+      );
+
+      if (isDifferent) {
+        await Address.create({
+          [foreignKey]: userId,
+          type: 'billing',
+          full_name: fullName,
+          street: billing.street,
+          street_2: billing.street2 || null,
+          city: billing.city,
+          state: billing.state,
+          postal_code: billing.postal_code,
+          country: billing.country || 'US',
+          phone: phone || null,
+          email: email,
+          is_default: true
+        });
+      } else {
+        await Address.update(
+          { type: 'both' },
+          { where: { [foreignKey]: userId, type: 'shipping' } }
+        );
+      }
+    }
+  } catch (error) {
+    console.error('Failed to create addresses:', error);
+  }
+};
+
+// Helper: Send welcome email
+const sendWelcomeEmail = async (storeId, email, customer) => {
+  try {
+    const store = await Store.findByPk(storeId);
+
+    emailService.sendTransactionalEmail(storeId, 'signup', {
+      recipientEmail: email,
+      customer: customer.toJSON(),
+      store: store ? store.toJSON() : null,
+      languageCode: 'en'
+    }).catch(err => {
+      console.error('Welcome email failed:', err.message);
+    });
+  } catch (error) {
+    console.error('Error sending welcome email:', error.message);
+  }
 };
 
 // @route   POST /api/auth/register
@@ -130,131 +212,12 @@ router.post('/register', [
 
     // Create addresses if provided
     if (address_data && role === 'customer') {
-      try {
-        const { Address } = require('../models');
-        const fullName = `${first_name} ${last_name}`;
-        
-        // Create shipping address if provided
-        if (address_data.shipping_address && address_data.shipping_address.street) {
-          const shippingAddr = address_data.shipping_address;
-          const addressData = {
-            type: 'shipping',
-            full_name: fullName,
-            street: shippingAddr.street,
-            street_2: shippingAddr.street2 || null,
-            city: shippingAddr.city,
-            state: shippingAddr.state,
-            postal_code: shippingAddr.postal_code,
-            country: shippingAddr.country || 'US',
-            phone: phone || null,
-            email: email,
-            is_default: true
-          };
-          
-          // Set the appropriate foreign key based on user type
-          if (role === 'customer') {
-            addressData.customer_id = user.id;
-          } else {
-            addressData.user_id = user.id;
-          }
-          
-          await Address.create(addressData);
-          console.log('Created shipping address for', role === 'customer' ? 'customer' : 'user', ':', user.id);
-        }
-        
-        // Create billing address if provided and different from shipping
-        if (address_data.billing_address && address_data.billing_address.street) {
-          const billingAddr = address_data.billing_address;
-          const shippingAddr = address_data.shipping_address || {};
-          
-          // Only create separate billing address if it's different from shipping
-          const isDifferent = (
-            billingAddr.street !== shippingAddr.street ||
-            billingAddr.city !== shippingAddr.city ||
-            billingAddr.postal_code !== shippingAddr.postal_code
-          );
-          
-          if (isDifferent) {
-            const billingAddressData = {
-              type: 'billing',
-              full_name: fullName,
-              street: billingAddr.street,
-              street_2: billingAddr.street2 || null,
-              city: billingAddr.city,
-              state: billingAddr.state,
-              postal_code: billingAddr.postal_code,
-              country: billingAddr.country || 'US',
-              phone: phone || null,
-              email: email,
-              is_default: true
-            };
-            
-            // Set the appropriate foreign key based on user type
-            if (role === 'customer') {
-              billingAddressData.customer_id = user.id;
-            } else {
-              billingAddressData.user_id = user.id;
-            }
-            
-            await Address.create(billingAddressData);
-            console.log('Created billing address for', role === 'customer' ? 'customer' : 'user', ':', user.id);
-          } else {
-            // If addresses are the same, update shipping address to be 'both'
-            const whereClause = { type: 'shipping' };
-            if (role === 'customer') {
-              whereClause.customer_id = user.id;
-            } else {
-              whereClause.user_id = user.id;
-            }
-            
-            await Address.update(
-              { type: 'both' },
-              { where: whereClause }
-            );
-            console.log('Updated shipping address to be both shipping and billing');
-          }
-        }
-      } catch (addressError) {
-        console.error('Failed to create addresses:', addressError);
-        // Don't fail registration if address creation fails
-      }
+      await createCustomerAddresses(user.id, first_name, last_name, phone, email, address_data, role);
     }
 
     // Send welcome email if requested (for customer registrations)
-    if (send_welcome_email && role === 'customer') {
-      try {
-        console.log(`📧 Sending welcome email to: ${email}`);
-
-        // For customers, try to find their store
-        let storeId = null;
-        if (user.store_id) {
-          storeId = user.store_id;
-        } else {
-          // Get first available store as fallback
-          const defaultStore = await Store.findOne();
-          storeId = defaultStore?.id;
-        }
-
-        if (storeId) {
-          const store = await Store.findByPk(storeId);
-
-          // Send welcome email asynchronously (don't block registration)
-          emailService.sendTransactionalEmail(storeId, 'signup', {
-            recipientEmail: email,
-            customer: user.toJSON(),
-            store: store ? store.toJSON() : null,
-            languageCode: 'en' // TODO: Get from customer preferences
-          }).then(() => {
-            console.log('✅ Welcome email sent successfully to:', email);
-          }).catch(emailError => {
-            console.error('❌ Failed to send welcome email:', emailError.message);
-            // Don't fail registration if email fails
-          });
-        }
-      } catch (emailError) {
-        console.error('Failed to send welcome email:', emailError);
-        // Don't fail registration if email fails
-      }
+    if (send_welcome_email && role === 'customer' && user.store_id) {
+      sendWelcomeEmail(user.store_id, email, user);
     }
 
     // Generate token
@@ -819,19 +782,9 @@ router.post('/customer/register', [
   body('last_name').trim().notEmpty().withMessage('Last name is required')
 ], async (req, res) => {
   try {
-    console.log('🔵 [CUSTOMER REGISTRATION] Starting registration process...');
-    console.log('🔵 [CUSTOMER REGISTRATION] Request body:', {
-      email: req.body.email,
-      first_name: req.body.first_name,
-      last_name: req.body.last_name,
-      has_password: !!req.body.password,
-      store_id: req.body.store_id,
-      send_welcome_email: req.body.send_welcome_email
-    });
-
+    // Validate request
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
-      console.error('❌ [CUSTOMER REGISTRATION] Validation errors:', errors.array());
       return res.status(400).json({
         success: false,
         errors: errors.array()
@@ -840,38 +793,26 @@ router.post('/customer/register', [
 
     const { email, password, first_name, last_name, phone, send_welcome_email = false, address_data, store_id } = req.body;
 
-    // Check if customer exists with same email
-    console.log('🔵 [CUSTOMER REGISTRATION] Checking for existing customer with email:', email);
+    // Check if customer exists
     const existingCustomer = await Customer.findOne({ where: { email } });
     if (existingCustomer) {
-      console.error('❌ [CUSTOMER REGISTRATION] Customer already exists:', email);
       return res.status(400).json({
         success: false,
         message: 'Customer with this email already exists'
       });
     }
-    console.log('✅ [CUSTOMER REGISTRATION] Email is available');
 
-    // Determine store_id - use provided store_id or find default store
+    // Determine store_id
     let customerStoreId = store_id;
     if (!customerStoreId) {
-      console.log('🔵 [CUSTOMER REGISTRATION] No store_id provided, looking for default store...');
-      // Get the first available store as default
-      const { Store } = require('../models');
       const defaultStore = await Store.findOne();
       if (defaultStore) {
         customerStoreId = defaultStore.id;
-        console.log('✅ [CUSTOMER REGISTRATION] Assigned customer to default store:', defaultStore.name, defaultStore.id);
-      } else {
-        console.error('❌ [CUSTOMER REGISTRATION] No stores found in database!');
       }
-    } else {
-      console.log('✅ [CUSTOMER REGISTRATION] Using provided store_id:', customerStoreId);
     }
 
     // Create customer
-    console.log('🔵 [CUSTOMER REGISTRATION] Creating customer record...');
-    const customerData = {
+    const customer = await Customer.create({
       email,
       password,
       first_name,
@@ -880,128 +821,20 @@ router.post('/customer/register', [
       role: 'customer',
       account_type: 'individual',
       store_id: customerStoreId
-    };
-    console.log('🔵 [CUSTOMER REGISTRATION] Customer data:', {
-      ...customerData,
-      password: password ? '***HIDDEN***' : null
-    });
-
-    const customer = await Customer.create(customerData);
-    console.log('✅ [CUSTOMER REGISTRATION] Customer created successfully:', {
-      id: customer.id,
-      email: customer.email,
-      store_id: customer.store_id,
-      customer_type: customer.customer_type
     });
 
     // Create addresses if provided
     if (address_data) {
-      try {
-        const { Address } = require('../models');
-        const fullName = `${first_name} ${last_name}`;
-        
-        // Create shipping address if provided
-        if (address_data.shipping_address && address_data.shipping_address.street) {
-          const shippingAddr = address_data.shipping_address;
-          await Address.create({
-            customer_id: customer.id,
-            type: 'shipping',
-            full_name: fullName,
-            street: shippingAddr.street,
-            street_2: shippingAddr.street2 || null,
-            city: shippingAddr.city,
-            state: shippingAddr.state,
-            postal_code: shippingAddr.postal_code,
-            country: shippingAddr.country || 'US',
-            phone: phone || null,
-            email: email,
-            is_default: true
-          });
-          console.log('Created shipping address for customer:', customer.id);
-        }
-        
-        // Create billing address if provided and different from shipping
-        if (address_data.billing_address && address_data.billing_address.street) {
-          const billingAddr = address_data.billing_address;
-          const shippingAddr = address_data.shipping_address || {};
-          
-          const isDifferent = (
-            billingAddr.street !== shippingAddr.street ||
-            billingAddr.city !== shippingAddr.city ||
-            billingAddr.postal_code !== shippingAddr.postal_code
-          );
-          
-          if (isDifferent) {
-            await Address.create({
-              customer_id: customer.id,
-              type: 'billing',
-              full_name: fullName,
-              street: billingAddr.street,
-              street_2: billingAddr.street2 || null,
-              city: billingAddr.city,
-              state: billingAddr.state,
-              postal_code: billingAddr.postal_code,
-              country: billingAddr.country || 'US',
-              phone: phone || null,
-              email: email,
-              is_default: true
-            });
-            console.log('Created billing address for customer:', customer.id);
-          } else {
-            await Address.update(
-              { type: 'both' },
-              { where: { customer_id: customer.id, type: 'shipping' } }
-            );
-            console.log('Updated shipping address to be both shipping and billing');
-          }
-        }
-      } catch (addressError) {
-        console.error('Failed to create addresses:', addressError);
-      }
+      await createCustomerAddresses(customer.id, first_name, last_name, phone, email, address_data);
     }
 
     // Send welcome email if requested
-    if (send_welcome_email) {
-      try {
-        console.log(`📧 Attempting to send welcome email to: ${email}`);
-
-        // Get store for email context
-        const store = customerStoreId ? await Store.findByPk(customerStoreId) : null;
-
-        if (!store) {
-          console.error('❌ Cannot send welcome email: Store not found for ID:', customerStoreId);
-        } else {
-          console.log(`📧 Store found: ${store.name} (${store.id})`);
-        }
-
-        // Send welcome email asynchronously (don't block registration)
-        emailService.sendTransactionalEmail(customerStoreId, 'signup', {
-          recipientEmail: email,
-          customer: customer.toJSON(),
-          store: store ? store.toJSON() : null,
-          languageCode: 'en' // TODO: Get from customer preferences
-        }).then((result) => {
-          if (result.success) {
-            console.log('✅ Welcome email sent successfully to:', email);
-          } else {
-            console.error('❌ Welcome email failed:', result.message || 'Unknown error');
-          }
-        }).catch(emailError => {
-          console.error('❌ Failed to send welcome email to:', email);
-          console.error('❌ Error details:', emailError.message);
-          console.error('❌ Full error:', emailError);
-          // Don't fail registration if email fails
-        });
-      } catch (emailError) {
-        console.error('❌ Error in welcome email setup:', emailError.message);
-        console.error('❌ Full error:', emailError);
-      }
+    if (send_welcome_email && customerStoreId) {
+      sendWelcomeEmail(customerStoreId, email, customer);
     }
 
     // Generate token
     const token = generateToken(customer);
-
-    console.log('✅ [CUSTOMER REGISTRATION] Registration completed successfully');
 
     res.status(201).json({
       success: true,
@@ -1014,12 +847,9 @@ router.post('/customer/register', [
       }
     });
   } catch (error) {
-    console.error('❌ [CUSTOMER REGISTRATION] Registration failed with error:', error);
-    console.error('❌ [CUSTOMER REGISTRATION] Error message:', error.message);
-    console.error('❌ [CUSTOMER REGISTRATION] Error stack:', error.stack);
-    console.error('❌ [CUSTOMER REGISTRATION] Error name:', error.name);
+    console.error('Customer registration error:', error);
 
-    // Check if it's a database error
+    // Handle specific error types
     if (error.name === 'SequelizeUniqueConstraintError') {
       return res.status(400).json({
         success: false,
@@ -1035,18 +865,9 @@ router.post('/customer/register', [
       });
     }
 
-    if (error.name === 'SequelizeDatabaseError') {
-      console.error('❌ [CUSTOMER REGISTRATION] Database error details:', error.parent);
-      return res.status(500).json({
-        success: false,
-        message: 'Database error: ' + error.message
-      });
-    }
-
     res.status(500).json({
       success: false,
-      message: 'Server error during registration. Please try again.',
-      error: process.env.NODE_ENV === 'development' ? error.message : undefined
+      message: 'Server error during registration. Please try again.'
     });
   }
 });
