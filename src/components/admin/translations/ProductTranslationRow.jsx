@@ -12,7 +12,7 @@ import api from '@/utils/api';
  * Accordion row for managing product translations
  * Follows the pattern from AttributeValueTranslations
  */
-export default function ProductTranslationRow({ product, selectedLanguages, onUpdate }) {
+export default function ProductTranslationRow({ product, selectedLanguages, onUpdate, onFlashMessage }) {
   const { availableLanguages } = useTranslation();
   const [isExpanded, setIsExpanded] = useState(false);
   const [translations, setTranslations] = useState(product.translations || {});
@@ -79,6 +79,7 @@ export default function ProductTranslationRow({ product, selectedLanguages, onUp
         translations
       });
       toast.success('Product translations updated successfully');
+      if (onFlashMessage) onFlashMessage('Product translations updated successfully', 'success');
       if (onUpdate) onUpdate(product.id, translations);
       setSaving(false);
       setSaveSuccess(true);

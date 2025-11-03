@@ -39,6 +39,8 @@ export default function Translations() {
   const [bulkTranslations, setBulkTranslations] = useState({});
   const [autoTranslate, setAutoTranslate] = useState(false);
   const [message, setMessage] = useState(null);
+  const [showFlashMessage, setShowFlashMessage] = useState(false);
+  const [flashMessageData, setFlashMessageData] = useState(null);
   const [showBulkTranslateDialog, setShowBulkTranslateDialog] = useState(false);
   const [showMultiEntityTranslateDialog, setShowMultiEntityTranslateDialog] = useState(false);
   const [showTranslationWizard, setShowTranslationWizard] = useState(false);
@@ -840,6 +842,12 @@ export default function Translations() {
     setTimeout(() => setMessage(null), 5000);
   };
 
+  const showFlash = (text, type = 'success') => {
+    setFlashMessageData({ type, message: text });
+    setShowFlashMessage(true);
+    setTimeout(() => setShowFlashMessage(false), 3000);
+  };
+
   // Load labels when language changes
   useEffect(() => {
     loadLabels(selectedLanguage);
@@ -922,6 +930,14 @@ export default function Translations() {
         message={message ? { type: message.type, message: message.text } : null}
         onClose={() => setMessage(null)}
       />
+
+      {/* Flash Message for Save Success */}
+      {showFlashMessage && (
+        <FlashMessage
+          message={flashMessageData}
+          onClose={() => setShowFlashMessage(false)}
+        />
+      )}
 
       {/* Tabs */}
       <div className="mb-6 border-b border-gray-200">
@@ -1464,6 +1480,7 @@ export default function Translations() {
                         key={product.id}
                         product={product}
                         selectedLanguages={selectedTranslationLanguages}
+                        onFlashMessage={showFlash}
                         onUpdate={(productId, translations) => {
                           // Update local state
                           setProducts(products.map(p =>
@@ -1595,6 +1612,7 @@ export default function Translations() {
                         key={category.id}
                         category={category}
                         selectedLanguages={selectedTranslationLanguages}
+                        onFlashMessage={showFlash}
                         onUpdate={(categoryId, translations) => {
                           // Update local state
                           setProductCategories(productCategories.map(c =>
@@ -1726,6 +1744,7 @@ export default function Translations() {
                         key={attribute.id}
                         attribute={attribute}
                         selectedLanguages={selectedTranslationLanguages}
+                        onFlashMessage={showFlash}
                         onUpdate={(attributeId, translations, values) => {
                           // Update local state
                           setProductAttributes(productAttributes.map(a =>
@@ -1857,6 +1876,7 @@ export default function Translations() {
                         key={page.id}
                         page={page}
                         selectedLanguages={selectedTranslationLanguages}
+                        onFlashMessage={showFlash}
                         onUpdate={(pageId, translations) => {
                           setCmsPages(cmsPages.map(p =>
                             p.id === pageId ? { ...p, translations } : p
@@ -1989,6 +2009,7 @@ export default function Translations() {
                         key={block.id}
                         block={block}
                         selectedLanguages={selectedTranslationLanguages}
+                        onFlashMessage={showFlash}
                         onUpdate={(blockId, translations) => {
                           setCmsBlocks(cmsBlocks.map(b =>
                             b.id === blockId ? { ...b, translations } : b
@@ -2119,6 +2140,7 @@ export default function Translations() {
                           key={tab.id}
                           tab={tab}
                           selectedLanguages={selectedTranslationLanguages}
+                          onFlashMessage={showFlash}
                           onUpdate={(tabId, translations) => {
                             setProductTabs(productTabs.map(t =>
                               t.id === tabId ? { ...t, translations } : t
@@ -2187,6 +2209,7 @@ export default function Translations() {
                           key={label.id}
                           label={label}
                           selectedLanguages={selectedTranslationLanguages}
+                          onFlashMessage={showFlash}
                           onUpdate={(labelId, translations) => {
                             setProductLabels(productLabels.map(l =>
                               l.id === labelId ? { ...l, translations } : l
@@ -2237,6 +2260,7 @@ export default function Translations() {
                         key={settings.id}
                         settings={settings}
                         selectedLanguages={selectedTranslationLanguages}
+                        onFlashMessage={showFlash}
                         onUpdate={(settingsId, translations) => {
                           setCookieConsent(cookieConsent.map(s =>
                             s.id === settingsId ? { ...s, translations } : s
@@ -2306,6 +2330,7 @@ export default function Translations() {
                           key={option.id}
                           rule={option}
                           selectedLanguages={selectedTranslationLanguages}
+                          onFlashMessage={showFlash}
                           onUpdate={(ruleId, translations) => {
                             setCustomOptions(customOptions.map(o =>
                               o.id === ruleId ? { ...o, translations } : o
@@ -2342,10 +2367,10 @@ export default function Translations() {
                         storeId={getSelectedStoreId()}
                         stockSettings={stockSettings}
                         selectedLanguages={selectedTranslationLanguages}
+                        onFlashMessage={showFlash}
                         onUpdate={(translations) => {
                           setStockSettings({ ...stockSettings, translations });
                         }}
-                        onFlashMessage={showMessage}
                       />
                     </div>
 

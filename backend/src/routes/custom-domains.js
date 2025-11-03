@@ -293,4 +293,142 @@ router.get('/:id/verification-instructions', authMiddleware, storeResolver(), as
   }
 });
 
+/**
+ * DEBUG: Check actual DNS records for a domain
+ * Returns what's actually configured in DNS vs what we expect
+ */
+router.get('/:id/debug-dns', authMiddleware, storeResolver(), async (req, res) => {
+  try {
+    const domain = await CustomDomain.findOne({
+      where: {
+        id: req.params.id,
+        store_id: req.storeId
+      }
+    });
+
+    if (!domain) {
+      return res.status(404).json({
+        success: false,
+        message: 'Domain not found'
+      });
+    }
+
+    const dns = require('dns').promises;
+    const debugInfo = {
+      domain: domain.domain,
+      expected_records: domain.getRequiredDNSRecords(),
+      actual_records: {},
+      verification_token: domain.verification_token
+    };
+
+    // Check CNAME record
+    try {
+      const cnames = await dns.resolveCname(domain.domain);
+      debugInfo.actual_records.cname = {
+        found: true,
+        values: cnames,
+        matches_expected: cnames.some(c => c.toLowerCase().includes('vercel'))
+      };
+    } catch (error) {
+      debugInfo.actual_records.cname = {
+        found: false,
+        error: error.code,
+        message: error.code === 'ENODATA' ? 'No CNAME record found' : error.message
+      };
+    }
+
+    // Check TXT record
+    const txtRecordName = `_catalyst-verification.${domain.domain}`;
+    try {
+      const txts = await dns.resolveTxt(txtRecordName);
+      const flatTxts = txts.flat();
+      debugInfo.actual_records.txt = {
+        found: true,
+        record_name: txtRecordName,
+        values: flatTxts,
+        matches_expected: flatTxts.some(t => t.includes(domain.verification_token))
+      };
+    } catch (error) {
+      debugInfo.actual_records.txt = {
+        found: false,
+        record_name: txtRecordName,
+        error: error.code,
+        message: error.code === 'ENODATA' ? 'No TXT record found' : error.message
+      };
+    }
+
+    // Check A records (for debugging)
+    try {
+      const aRecords = await dns.resolve4(domain.domain);
+      debugInfo.actual_records.a = {
+        found: true,
+        values: aRecords
+      };
+    } catch (error) {
+      debugInfo.actual_records.a = {
+        found: false,
+        error: error.code
+      };
+    }
+
+    // Overall status
+    debugInfo.can_verify = debugInfo.actual_records.txt?.matches_expected || false;
+    debugInfo.dns_propagated = debugInfo.actual_records.cname?.found || debugInfo.actual_records.a?.found || false;
+
+    res.json({
+      success: true,
+      debug: debugInfo,
+      recommendations: getRecommendations(debugInfo)
+    });
+  } catch (error) {
+    console.error('Error debugging DNS:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to debug DNS',
+      error: error.message
+    });
+  }
+});
+
+function getRecommendations(debugInfo) {
+  const recommendations = [];
+
+  if (!debugInfo.actual_records.cname?.found) {
+    recommendations.push({
+      type: 'error',
+      message: 'CNAME record not found. Add: CNAME www → cname.vercel-dns.com'
+    });
+  }
+
+  if (!debugInfo.actual_records.txt?.found) {
+    recommendations.push({
+      type: 'error',
+      message: `TXT record not found. Add: TXT _catalyst-verification → ${debugInfo.verification_token}`
+    });
+  }
+
+  if (debugInfo.actual_records.txt?.found && !debugInfo.actual_records.txt?.matches_expected) {
+    recommendations.push({
+      type: 'error',
+      message: 'TXT record found but value is incorrect. Check verification token.'
+    });
+  }
+
+  if (debugInfo.actual_records.cname?.found && !debugInfo.actual_records.cname?.matches_expected) {
+    recommendations.push({
+      type: 'warning',
+      message: `CNAME points to ${debugInfo.actual_records.cname.values[0]} instead of cname.vercel-dns.com`
+    });
+  }
+
+  if (recommendations.length === 0) {
+    recommendations.push({
+      type: 'success',
+      message: 'All DNS records configured correctly! Click Verify to activate.'
+    });
+  }
+
+  return recommendations;
+}
+
 module.exports = router;

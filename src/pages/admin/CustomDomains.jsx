@@ -162,6 +162,52 @@ const CustomDomains = () => {
     }
   };
 
+  const handleDebugDNS = async (domainId) => {
+    try {
+      const response = await apiClient.get(`/custom-domains/${domainId}/debug-dns`);
+
+      if (response.success) {
+        console.log('=== DNS DEBUG REPORT ===');
+        console.log('Domain:', response.debug.domain);
+        console.log('\nExpected Records:');
+        console.log(response.debug.expected_records);
+        console.log('\nActual Records:');
+        console.log(response.debug.actual_records);
+        console.log('\nRecommendations:');
+        console.log(response.recommendations);
+        console.log('=====================');
+
+        // Show recommendations as toast
+        response.recommendations.forEach(rec => {
+          if (rec.type === 'error') {
+            toast.error(rec.message, { duration: 8000 });
+          } else if (rec.type === 'warning') {
+            toast.warning(rec.message, { duration: 6000 });
+          } else {
+            toast.success(rec.message, { duration: 4000 });
+          }
+        });
+
+        // Create detailed alert
+        const details = [
+          `Domain: ${response.debug.domain}`,
+          '',
+          'DNS Records Found:',
+          `  CNAME: ${response.debug.actual_records.cname?.found ? '✓ ' + response.debug.actual_records.cname.values.join(', ') : '✗ Not found'}`,
+          `  TXT: ${response.debug.actual_records.txt?.found ? '✓ Found' : '✗ Not found'}`,
+          `  TXT Match: ${response.debug.actual_records.txt?.matches_expected ? '✓ Correct' : '✗ Incorrect or missing'}`,
+          '',
+          'Can Verify: ' + (response.debug.can_verify ? '✓ YES' : '✗ NO')
+        ].join('\n');
+
+        alert('DNS Debug Report\n\n' + details + '\n\nCheck console for full details.');
+      }
+    } catch (error) {
+      console.error('Error debugging DNS:', error);
+      toast.error('Failed to debug DNS configuration');
+    }
+  };
+
   const handleSetPrimary = async (domainId) => {
     try {
       const response = await apiClient.post(`/custom-domains/${domainId}/set-primary`);
@@ -322,6 +368,15 @@ const CustomDomains = () => {
                               onClick={() => showDNSInstructions(domain)}
                             >
                               DNS Setup
+                            </Button>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => handleDebugDNS(domain.id)}
+                              className="bg-blue-50"
+                            >
+                              <AlertTriangle className="w-3 h-3 mr-1 text-blue-600" />
+                              Debug DNS
                             </Button>
                             <Button
                               variant="outline"
