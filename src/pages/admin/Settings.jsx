@@ -20,6 +20,7 @@ import { Tabs, TabsContent } from '@/components/ui/tabs';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@/components/ui/select';
 import { clearSettingsCache, clearAllCache } from '@/utils/cacheUtils';
+import FlashMessage from '@/components/storefront/FlashMessage';
 
 
 const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms));
@@ -60,18 +61,6 @@ export default function Settings() {
       loadStore();
     }
   }, [selectedStore]);
-
-  // Effect to clear flash messages after a few seconds
-  useEffect(() => {
-    if (flashMessage) {
-      console.log('🔔 Flash message updated:', flashMessage);
-      const timer = setTimeout(() => {
-        console.log('⏰ Auto-clearing flash message');
-        setFlashMessage(null);
-      }, 5000); // Clear message after 5 seconds
-      return () => clearTimeout(timer);
-    }
-  }, [flashMessage]);
 
   const loadStore = async () => {
     try {
@@ -482,35 +471,12 @@ export default function Settings() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        
-        {flashMessage && (
-          <div
-            className={`mb-6 p-4 rounded-lg border shadow-md ${
-              flashMessage.type === 'error'
-                ? 'bg-red-50 border-red-200 text-red-800'
-                : flashMessage.type === 'warning'
-                ? 'bg-yellow-50 border-yellow-200 text-yellow-800'
-                : 'bg-green-50 border-green-200 text-green-800'
-            } transition-all duration-300 animate-in fade-in slide-in-from-top-2`}
-          >
-            <div className="flex items-center">
-              <div className="flex-1 font-medium">
-                {flashMessage.message}
-              </div>
-              <button
-                onClick={() => {
-                  console.log('🗑️ Manually closing flash message');
-                  setFlashMessage(null);
-                }}
-                className="ml-4 text-current hover:opacity-70 text-xl font-bold"
-              >
-                ×
-              </button>
-            </div>
-          </div>
-        )}
+      <FlashMessage
+        message={flashMessage}
+        onClose={() => setFlashMessage(null)}
+      />
 
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-gray-900">Store Settings</h1>
           <p className="text-gray-600 mt-1">Configure your store's basic information and preferences</p>
