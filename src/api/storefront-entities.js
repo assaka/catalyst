@@ -156,7 +156,9 @@ class CustomerAuthService {
       store_id: storeId,
       rememberMe
     });
-    const token = response.data?.token || response.token;
+
+    // Extract token from response.data (backend returns {success, data: {token, user}})
+    const token = response.data?.token;
 
     if (token) {
       // Get store slug - try currentStoreSlug first, fallback to extracting from URL
@@ -175,7 +177,8 @@ class CustomerAuthService {
       }
     }
 
-    return response.data || response;
+    // Return full response with success flag intact
+    return response;
   }
 
   async register(userData) {
