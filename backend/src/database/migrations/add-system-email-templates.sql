@@ -14,7 +14,8 @@ BEGIN
         -- 1. Signup/Welcome Email
         INSERT INTO email_templates (
             id, store_id, identifier, subject, content_type,
-            template_content, html_content, is_active, is_system, sort_order, variables
+            template_content, html_content, is_active, is_system, sort_order, variables,
+            created_at, updated_at
         ) VALUES (
             gen_random_uuid(),
             store_record.id,
@@ -47,7 +48,9 @@ BEGIN
             TRUE,
             TRUE,
             1,
-            '["customer_name", "customer_first_name", "customer_email", "store_name", "store_url", "login_url", "signup_date", "current_year"]'::jsonb
+            '["customer_name", "customer_first_name", "customer_email", "store_name", "store_url", "login_url", "signup_date", "current_year"]'::jsonb,
+            NOW(),
+            NOW()
         )
         ON CONFLICT (identifier, store_id) DO UPDATE SET
             is_system = TRUE,
@@ -57,7 +60,8 @@ BEGIN
         -- 2. Email Verification Code
         INSERT INTO email_templates (
             id, store_id, identifier, subject, content_type,
-            template_content, html_content, is_active, is_system, sort_order, variables
+            template_content, html_content, is_active, is_system, sort_order, variables,
+            created_at, updated_at
         ) VALUES (
             gen_random_uuid(),
             store_record.id,
@@ -86,7 +90,9 @@ BEGIN
             TRUE,
             TRUE,
             2,
-            '["customer_name", "customer_first_name", "verification_code", "store_name", "store_url", "current_year"]'::jsonb
+            '["customer_name", "customer_first_name", "verification_code", "store_name", "store_url", "current_year"]'::jsonb,
+            NOW(),
+            NOW()
         )
         ON CONFLICT (identifier, store_id) DO UPDATE SET
             is_system = TRUE,
@@ -96,7 +102,8 @@ BEGIN
         -- 3. Order Success Email
         INSERT INTO email_templates (
             id, store_id, identifier, subject, content_type,
-            template_content, html_content, is_active, is_system, sort_order, variables
+            template_content, html_content, is_active, is_system, sort_order, variables,
+            created_at, updated_at
         ) VALUES (
             gen_random_uuid(),
             store_record.id,
@@ -125,7 +132,9 @@ BEGIN
             TRUE,
             TRUE,
             3,
-            '["customer_name", "customer_first_name", "order_number", "order_date", "order_total", "items_html", "items_count", "shipping_address", "billing_address", "store_name", "store_url", "current_year"]'::jsonb
+            '["customer_name", "customer_first_name", "order_number", "order_date", "order_total", "items_html", "items_count", "shipping_address", "billing_address", "store_name", "store_url", "current_year"]'::jsonb,
+            NOW(),
+            NOW()
         )
         ON CONFLICT (identifier, store_id) DO UPDATE SET
             is_system = TRUE,
