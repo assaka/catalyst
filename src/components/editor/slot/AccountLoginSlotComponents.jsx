@@ -359,35 +359,206 @@ const LoginFormSlot = createSlotComponent({
  */
 const RegisterFormSlotComponent = ({ slot, context, variableContext }) => {
   const { t } = useTranslation();
-  const { settings } = useStore();
+  const navigate = useNavigate();
+  const { storeCode } = useParams();
+  const { store, settings } = useStore();
+
+  // Local state
+  const [formData, setFormData] = React.useState({
+    firstName: '',
+    lastName: '',
+    email: '',
+    password: '',
+    confirmPassword: ''
+  });
+  const [loading, setLoading] = React.useState(false);
+  const [error, setError] = React.useState('');
+  const [success, setSuccess] = React.useState('');
+  const [showPassword, setShowPassword] = React.useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = React.useState(false);
+
+  const handleInputChange = (e) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({
+      ...prev,
+      [name]: value
+    }));
+  };
+
+  const getCustomerAccountUrl = async () => {
+    if (storeCode) {
+      return createPublicUrl(storeCode, 'CUSTOMER_DASHBOARD');
+    }
+    const savedStoreCode = localStorage.getItem('customer_auth_store_code');
+    if (savedStoreCode) {
+      return createPublicUrl(savedStoreCode, 'CUSTOMER_DASHBOARD');
+    }
+    return createPublicUrl('default', 'CUSTOMER_DASHBOARD');
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setLoading(true);
+    setError('');
+    setSuccess('');
+
+    try {
+      // Password validation
+      if (formData.password !== formData.confirmPassword) {
+        setError(t('common.passwords_do_not_match', 'Passwords do not match'));
+        return;
+      }
+
+      // Ensure store is loaded
+      if (!store?.id) {
+        setError(t('common.store_info_not_available', 'Store information not available. Please refresh.'));
+        return;
+      }
+
+      // Use CustomerAuth from storefront-entities for registration
+      const response = await CustomerAuth.register({
+        email: formData.email,
+        password: formData.password,
+        first_name: formData.firstName,
+        last_name: formData.lastName,
+        role: 'customer',
+        account_type: 'individual',
+        store_id: store.id,
+        send_welcome_email: true
+      });
+
+      let actualResponse = response;
+      if (Array.isArray(response)) {
+        actualResponse = response[0];
+      }
+
+      if (actualResponse?.success) {
+        setSuccess(t('common.registration_successful', 'Registration successful! A welcome email has been sent to your email address.'));
+
+        // Token is already saved by CustomerAuth.register()
+        localStorage.removeItem('user_logged_out');
+
+        // Redirect after showing success message
+        setTimeout(async () => {
+          const accountUrl = await getCustomerAccountUrl();
+          navigate(accountUrl);
+        }, 2000);
+      } else {
+        setError(t('common.registration_failed', 'Registration failed. Please try again.'));
+      }
+    } catch (error) {
+      setError(error.message || t('common.registration_failed', 'Registration failed. Please try again.'));
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <div className={slot.className} style={slot.styles}>
-      <form className="space-y-4">
+      <form className="space-y-4" onSubmit={handleSubmit}>
+        {error && (
+          <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded">
+            {error}
+          </div>
+        )}
+        {success && (
+          <div className="bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded">
+            {success}
+          </div>
+        )}
         <div className="grid grid-cols-2 gap-4">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">{t('common.first_name', 'First Name')}</label>
-            <input type="text" required className="w-full border border-gray-300 rounded-md px-3 py-2" placeholder={t('common.first_name', 'First Name')} />
+            <input
+              type="text"
+              name="firstName"
+              value={formData.firstName}
+              onChange={handleInputChange}
+              required
+              className="w-full border border-gray-300 rounded-md px-3 py-2"
+              placeholder={t('common.first_name', 'First Name')}
+              disabled={loading}
+            />
           </div>
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">{t('common.last_name', 'Last Name')}</label>
-            <input type="text" required className="w-full border border-gray-300 rounded-md px-3 py-2" placeholder={t('common.last_name', 'Last Name')} />
+            <input
+              type="text"
+              name="lastName"
+              value={formData.lastName}
+              onChange={handleInputChange}
+              required
+              className="w-full border border-gray-300 rounded-md px-3 py-2"
+              placeholder={t('common.last_name', 'Last Name')}
+              disabled={loading}
+            />
           </div>
         </div>
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">{t('common.email_address', 'Email Address')}</label>
-          <input type="email" required className="w-full border border-gray-300 rounded-md px-3 py-2" placeholder={t('common.enter_your_email', 'Enter your email')} />
+          <input
+            type="email"
+            name="email"
+            value={formData.email}
+            onChange={handleInputChange}
+            required
+            className="w-full border border-gray-300 rounded-md px-3 py-2"
+            placeholder={t('common.enter_your_email', 'Enter your email')}
+            disabled={loading}
+          />
         </div>
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">{t('common.password', 'Password')}</label>
-          <input type="password" required className="w-full border border-gray-300 rounded-md px-3 py-2" placeholder={t('common.enter_your_password', 'Enter your password')} />
+          <div className="relative">
+            <input
+              type={showPassword ? "text" : "password"}
+              name="password"
+              value={formData.password}
+              onChange={handleInputChange}
+              required
+              className="w-full border border-gray-300 rounded-md px-3 py-2 pr-10"
+              placeholder={t('common.enter_your_password', 'Enter your password')}
+              disabled={loading}
+            />
+            <button
+              type="button"
+              onClick={() => setShowPassword(!showPassword)}
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500"
+              disabled={loading}
+            >
+              {showPassword ? '👁️' : '👁️‍🗨️'}
+            </button>
+          </div>
         </div>
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">{t('common.confirm_password', 'Confirm Password')}</label>
-          <input type="password" required className="w-full border border-gray-300 rounded-md px-3 py-2" placeholder={t('common.confirm_password', 'Confirm Password')} />
+          <div className="relative">
+            <input
+              type={showConfirmPassword ? "text" : "password"}
+              name="confirmPassword"
+              value={formData.confirmPassword}
+              onChange={handleInputChange}
+              required
+              className="w-full border border-gray-300 rounded-md px-3 py-2 pr-10"
+              placeholder={t('common.confirm_password', 'Confirm Password')}
+              disabled={loading}
+            />
+            <button
+              type="button"
+              onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500"
+              disabled={loading}
+            >
+              {showConfirmPassword ? '👁️' : '👁️‍🗨️'}
+            </button>
+          </div>
         </div>
-        <button type="submit" className="w-full bg-green-600 hover:bg-green-700 text-white font-medium py-2.5 rounded-md">
-          {t('common.create_account', 'Create My Account')}
+        <button
+          type="submit"
+          disabled={loading}
+          className="w-full bg-green-600 hover:bg-green-700 text-white font-medium py-2.5 rounded-md disabled:bg-gray-400 disabled:cursor-not-allowed"
+        >
+          {loading ? t('common.creating_account', 'Creating Account...') : t('common.create_account', 'Create My Account')}
         </button>
       </form>
     </div>

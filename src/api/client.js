@@ -141,6 +141,12 @@ class ApiClient {
     const currentLanguage = localStorage.getItem('catalyst_language') || 'en';
     headers['X-Language'] = currentLanguage;
 
+    // Add X-Store-Id header from localStorage (selected store)
+    const selectedStoreId = localStorage.getItem('selectedStoreId');
+    if (selectedStoreId && selectedStoreId !== 'undefined') {
+      headers['x-store-id'] = selectedStoreId;
+    }
+
     return headers;
   }
 

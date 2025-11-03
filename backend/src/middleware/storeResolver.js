@@ -66,61 +66,78 @@ const storeResolver = (options = {}) => {
 
     if (!stores || stores.length === 0) {
       console.log('❌ [StoreResolver] No active stores found for user ID:', req.user.id);
-      
+
       // Handle fallback store ID if provided
       if (fallbackStoreId) {
         console.log('⚠️ [StoreResolver] Using fallback store ID:', fallbackStoreId);
         req.storeId = fallbackStoreId;
-        req.store = { 
-          id: fallbackStoreId, 
+        req.store = {
+          id: fallbackStoreId,
           name: 'Fallback Store',
           slug: 'fallback-store',
-          is_active: true 
+          is_active: true
         };
         return next();
       }
-      
+
       // If not required, continue without store context
       if (!required) {
         console.log('ℹ️ [StoreResolver] No stores found but not required - continuing without store context');
         return next();
       }
-      
+
       // Required but no store found - return error (original behavior)
       // Let's also check if there are ANY stores for this user (including inactive)
       const allStores = await sequelize.query(`
-        SELECT id, name, slug, is_active, user_id 
-        FROM stores 
-        WHERE user_id = :userId 
+        SELECT id, name, slug, is_active, user_id
+        FROM stores
+        WHERE user_id = :userId
         ORDER BY created_at DESC
       `, {
         replacements: { userId: req.user.id },
         type: sequelize.QueryTypes.SELECT
       });
-      
+
       console.log('🔍 [StoreResolver] All stores (including inactive) for user:', allStores?.length || 0);
       if (allStores && allStores.length > 0) {
         console.log('🔍 [StoreResolver] Inactive stores found:', allStores);
       }
-      
+
       return res.status(403).json({
         success: false,
         error: 'No active stores found for this user'
       });
     }
 
-    // For now, use the first (most recent) store
-    // TODO: In the future, we could support multi-store users with a store selection mechanism
-    const primaryStore = stores[0];
-    
+    // Check if frontend specified a store via x-store-id header
+    const requestedStoreId = req.headers['x-store-id'] || req.query.store_id;
+
+    let selectedStore;
+    if (requestedStoreId) {
+      // Find the requested store in user's stores
+      selectedStore = stores.find(s => s.id === requestedStoreId);
+
+      if (selectedStore) {
+        console.log('✅ [StoreResolver] Using store from x-store-id header:', selectedStore.slug);
+      } else {
+        console.log('⚠️ [StoreResolver] Requested store not found in user stores, using first store');
+        selectedStore = stores[0];
+      }
+    } else {
+      // No store specified - use first (most recent) store
+      console.log('ℹ️ [StoreResolver] No x-store-id header, using first store');
+      selectedStore = stores[0];
+    }
+
     // Attach store information to request
-    req.storeId = primaryStore.id;
-    req.store = primaryStore;
-    
+    req.storeId = selectedStore.id;
+    req.store = selectedStore;
+
     console.log('✅ [StoreResolver] Store resolved:', {
       storeId: req.storeId,
-      storeName: primaryStore.name,
-      storeSlug: primaryStore.slug
+      storeName: selectedStore.name,
+      storeSlug: selectedStore.slug,
+      source: requestedStoreId ? 'x-store-id header' : 'first store'
     });
 
     next();
