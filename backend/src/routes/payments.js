@@ -410,7 +410,8 @@ router.post('/create-intent', authMiddleware, async (req, res) => {
 // @access  Public
 router.get('/publishable-key', (req, res) => {
   try {
-    const publishableKey = process.env.STRIPE_PUBLISHABLE_KEY;
+    // Support both STRIPE_PUBLISHABLE_KEY and VITE_STRIPE_PUBLISHABLE_KEY for backward compatibility
+    const publishableKey = process.env.STRIPE_PUBLISHABLE_KEY || process.env.VITE_STRIPE_PUBLISHABLE_KEY;
 
     // Return null if not configured (allows graceful degradation on frontend)
     res.json({
