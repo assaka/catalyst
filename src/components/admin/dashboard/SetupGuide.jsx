@@ -224,7 +224,7 @@ export const SetupGuide = ({ store }) => {
                         <Button
                             variant={isDomainConnected ? "secondary" : "default"}
                             size="sm"
-                            onClick={() => navigate(createPageUrl('CustomDomains'))}
+                            onClick={() => navigate(createPageUrl('custom-domains'))}
                         >
                             <Globe className="w-4 h-4 mr-1" />
                             {isDomainConnected ? 'Manage' : 'Connect'}
@@ -328,7 +328,7 @@ export const SetupGuide = ({ store }) => {
                         <Button
                             variant={emailConfigured ? "secondary" : "default"}
                             size="sm"
-                            onClick={() => navigate(createPageUrl('EmailSettings'))}
+                            onClick={() => navigate(createPageUrl('settings/email'))}
                             disabled={loadingEmail}
                         >
                             {loadingEmail ? (
