@@ -381,42 +381,44 @@ export default function EmailProviderSettings({ storeEmail, storeName }) {
                     </div>
                   </div>
 
-                  <div className="flex gap-2 flex-wrap">
-                    <Button
-                      variant="outline"
-                      onClick={() => {
-                        setShowConfig(!showConfig);
-                        // Pre-fill when opening with current config or store defaults
-                        if (!showConfig) {
-                          setSenderName(connectionStatus?.config?.sender_name || storeName || '');
-                          setSenderEmail(connectionStatus?.config?.sender_email || storeEmail || '');
-                        }
-                      }}
-                    >
-                      {showConfig ? 'Hide Configuration' : 'Update Configuration'}
-                    </Button>
-                    <Button
-                      variant="outline"
-                      onClick={handleDisconnect}
-                      className="text-red-600 hover:text-red-700"
-                    >
-                      Disconnect
-                    </Button>
-                    {!showTestSection && (
+                  <div className="flex justify-between">
+                    <div className="flex gap-2 flex-wrap">
                       <Button
                         variant="outline"
-                        onClick={handleOpenTestSection}
+                        onClick={() => {
+                          setShowConfig(!showConfig);
+                          // Pre-fill when opening with current config or store defaults
+                          if (!showConfig) {
+                            setSenderName(connectionStatus?.config?.sender_name || storeName || '');
+                            setSenderEmail(connectionStatus?.config?.sender_email || storeEmail || '');
+                          }
+                        }}
                       >
-                        <Send className="w-4 h-4 mr-2" />
-                        Test Email
+                        {showConfig ? 'Hide Configuration' : 'Update Configuration'}
                       </Button>
-                    )}
+                      {!showTestSection && (
+                        <Button
+                          variant="outline"
+                          onClick={handleOpenTestSection}
+                        >
+                          <Send className="w-4 h-4 mr-2" />
+                          Test Email
+                        </Button>
+                      )}
+                      <Button
+                        variant="outline"
+                        onClick={loadConnectionStatus}
+                      >
+                        <RefreshCw className="w-4 h-4 mr-2" />
+                        Refresh
+                      </Button>
+                    </div>
                     <Button
-                      variant="outline"
-                      onClick={loadConnectionStatus}
+                        variant="outline"
+                        onClick={handleDisconnect}
+                        className="text-red-600 hover:text-red-700"
                     >
-                      <RefreshCw className="w-4 h-4 mr-2" />
-                      Refresh
+                      Disconnect
                     </Button>
                   </div>
                 </>
