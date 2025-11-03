@@ -412,24 +412,84 @@ class CreditService {
    * Mark a purchase transaction as completed and add credits to user
    */
   async completePurchaseTransaction(transactionId, stripeChargeId = null) {
+    console.log(`💳 [CreditService] completePurchaseTransaction called for transaction: ${transactionId}`);
+    console.log(`💳 [CreditService] Stripe charge ID: ${stripeChargeId || 'NONE'}`);
+
     const transaction = await CreditTransaction.findByPk(transactionId);
+
     if (!transaction) {
+      console.error(`❌ [CreditService] Transaction not found: ${transactionId}`);
       throw new Error('Transaction not found');
     }
 
+    console.log(`✅ [CreditService] Transaction found:`, {
+      id: transaction.id,
+      user_id: transaction.user_id,
+      credits_purchased: transaction.credits_purchased,
+      amount_usd: transaction.amount_usd,
+      status: transaction.status,
+      current_status: transaction.status
+    });
+
+    // Get user's current balance before update
+    const [userBefore] = await sequelize.query(`
+      SELECT id, email, credits FROM users WHERE id = $1
+    `, {
+      bind: [transaction.user_id],
+      type: sequelize.QueryTypes.SELECT
+    });
+
+    console.log(`💰 [CreditService] User balance BEFORE adding credits:`, {
+      userId: userBefore?.id,
+      email: userBefore?.email,
+      currentCredits: userBefore?.credits || 0,
+      creditsToAdd: parseFloat(transaction.credits_purchased)
+    });
+
     // Add credits to users.credits (single source of truth)
-    await sequelize.query(`
+    console.log(`🔄 [CreditService] Updating user credits...`);
+    const updateResult = await sequelize.query(`
       UPDATE users
       SET credits = COALESCE(credits, 0) + $1,
           updated_at = NOW()
       WHERE id = $2
+      RETURNING id, email, credits
     `, {
       bind: [transaction.credits_purchased, transaction.user_id],
       type: sequelize.QueryTypes.UPDATE
     });
 
+    console.log(`✅ [CreditService] Credits updated in database:`, {
+      updateResult,
+      affectedRows: updateResult?.[1] || 'unknown'
+    });
+
+    // Verify the update
+    const [userAfter] = await sequelize.query(`
+      SELECT id, email, credits FROM users WHERE id = $1
+    `, {
+      bind: [transaction.user_id],
+      type: sequelize.QueryTypes.SELECT
+    });
+
+    console.log(`✅ [CreditService] User balance AFTER adding credits:`, {
+      userId: userAfter?.id,
+      email: userAfter?.email,
+      newCredits: userAfter?.credits,
+      difference: (parseFloat(userAfter?.credits || 0) - parseFloat(userBefore?.credits || 0))
+    });
+
     // Mark transaction as completed
-    return await CreditTransaction.markCompleted(transactionId, stripeChargeId);
+    console.log(`🔄 [CreditService] Marking transaction as completed...`);
+    const completedTransaction = await CreditTransaction.markCompleted(transactionId, stripeChargeId);
+
+    console.log(`✅ [CreditService] Transaction marked as completed:`, {
+      id: completedTransaction.id,
+      status: completedTransaction.status,
+      stripe_charge_id: completedTransaction.stripe_charge_id
+    });
+
+    return completedTransaction;
   }
 
   /**

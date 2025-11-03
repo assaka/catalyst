@@ -1326,28 +1326,85 @@ router.post('/webhook', async (req, res) => {
       break;
     case 'payment_intent.succeeded':
       const paymentIntent = event.data.object;
-      console.log('Payment intent succeeded:', paymentIntent.id);
-      console.log('Payment intent metadata:', paymentIntent.metadata);
+      const piRequestId = Math.random().toString(36).substring(7);
+
+      console.log('='.repeat(80));
+      console.log(`💳 [${piRequestId}] PAYMENT INTENT SUCCEEDED`);
+      console.log(`💳 [${piRequestId}] Payment Intent ID: ${paymentIntent.id}`);
+      console.log(`💳 [${piRequestId}] Amount: ${paymentIntent.amount / 100} ${paymentIntent.currency.toUpperCase()}`);
+      console.log(`💳 [${piRequestId}] Status: ${paymentIntent.status}`);
+      console.log('='.repeat(80));
+
+      console.log(`🔍 [${piRequestId}] Payment Intent Metadata:`, {
+        metadata: paymentIntent.metadata,
+        hasType: !!paymentIntent.metadata?.type,
+        type: paymentIntent.metadata?.type,
+        hasTransactionId: !!paymentIntent.metadata?.transaction_id,
+        transactionId: paymentIntent.metadata?.transaction_id,
+        userId: paymentIntent.metadata?.user_id,
+        creditsAmount: paymentIntent.metadata?.credits_amount
+      });
 
       // Check if this is a credit purchase
-      if (paymentIntent.metadata.type === 'credit_purchase' && paymentIntent.metadata.transaction_id) {
+      if (paymentIntent.metadata?.type === 'credit_purchase' && paymentIntent.metadata?.transaction_id) {
+        console.log(`✅ [${piRequestId}] This is a CREDIT PURCHASE - processing...`);
+        console.log(`📋 [${piRequestId}] Transaction ID: ${paymentIntent.metadata.transaction_id}`);
+        console.log(`👤 [${piRequestId}] User ID: ${paymentIntent.metadata.user_id}`);
+        console.log(`💰 [${piRequestId}] Credits: ${paymentIntent.metadata.credits_amount}`);
+
         try {
-          console.log('Processing credit purchase completion for transaction:', paymentIntent.metadata.transaction_id);
+          console.log(`🔄 [${piRequestId}] Calling creditService.completePurchaseTransaction...`);
 
           const creditService = require('../services/credit-service');
-          await creditService.completePurchaseTransaction(
+          const result = await creditService.completePurchaseTransaction(
             paymentIntent.metadata.transaction_id,
             paymentIntent.id
           );
 
-          console.log('✅ Credit purchase completed successfully');
+          console.log(`✅ [${piRequestId}] Credit purchase COMPLETED successfully!`);
+          console.log(`✅ [${piRequestId}] Transaction result:`, {
+            id: result.id,
+            status: result.status,
+            credits_purchased: result.credits_purchased,
+            user_id: result.user_id
+          });
+
+          // Verify user credits were updated
+          try {
+            const { sequelize } = require('../database/connection');
+            const [user] = await sequelize.query(`
+              SELECT id, email, credits FROM users WHERE id = $1
+            `, {
+              bind: [paymentIntent.metadata.user_id],
+              type: sequelize.QueryTypes.SELECT
+            });
+
+            console.log(`✅ [${piRequestId}] User balance after purchase:`, {
+              userId: user?.id,
+              email: user?.email,
+              credits: user?.credits
+            });
+          } catch (verifyError) {
+            console.warn(`⚠️ [${piRequestId}] Could not verify user balance:`, verifyError.message);
+          }
+
+          console.log('='.repeat(80));
         } catch (error) {
-          console.error('❌ Error completing credit purchase:', error);
+          console.error('='.repeat(80));
+          console.error(`❌ [${piRequestId}] FAILED to complete credit purchase`);
+          console.error(`❌ [${piRequestId}] Error:`, {
+            message: error.message,
+            stack: error.stack,
+            transactionId: paymentIntent.metadata.transaction_id
+          });
+          console.error('='.repeat(80));
           return res.status(500).json({ error: 'Failed to complete credit purchase' });
         }
       } else {
-        console.log('Payment succeeded, but no order creation needed for this event type');
-        console.log('Note: Orders should be created from checkout.session.completed events');
+        console.log(`ℹ️ [${piRequestId}] Not a credit purchase - payment intent succeeded but no action needed`);
+        console.log(`ℹ️ [${piRequestId}] Metadata type: ${paymentIntent.metadata?.type || 'NONE'}`);
+        console.log(`ℹ️ [${piRequestId}] Transaction ID: ${paymentIntent.metadata?.transaction_id || 'NONE'}`);
+        console.log('='.repeat(80));
       }
       break;
     case 'payment_intent.created':
