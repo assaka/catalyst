@@ -302,6 +302,125 @@ router.post('/connect-link', authMiddleware, async (req, res) => {
   }
 });
 
+// @route   POST /api/payments/create-intent
+// @desc    Create Stripe Payment Intent for credit purchases
+// @access  Private
+router.post('/create-intent', authMiddleware, async (req, res) => {
+  try {
+    const { amount, currency = 'usd', metadata = {} } = req.body;
+
+    // Validate amount
+    if (!amount || typeof amount !== 'object' || !amount.credits || !amount.amount) {
+      return res.status(400).json({
+        success: false,
+        error: 'Invalid amount format. Expected { credits, amount }'
+      });
+    }
+
+    const { credits, amount: amountUsd } = amount;
+
+    // Validate credits and amount
+    if (!credits || credits < 1) {
+      return res.status(400).json({
+        success: false,
+        error: 'Credits must be at least 1'
+      });
+    }
+
+    if (!amountUsd || amountUsd < 1) {
+      return res.status(400).json({
+        success: false,
+        error: 'Amount must be at least $1'
+      });
+    }
+
+    // Check if Stripe is configured
+    if (!process.env.STRIPE_SECRET_KEY) {
+      return res.status(400).json({
+        success: false,
+        error: 'Stripe not configured'
+      });
+    }
+
+    const userId = req.user.id;
+
+    // Create credit transaction record first
+    const creditService = require('../services/credit-service');
+    const transaction = await creditService.createPurchaseTransaction(
+      userId,
+      null, // storeId not required for credit purchases
+      amountUsd,
+      credits
+    );
+
+    // Create Stripe payment intent
+    const stripeAmount = convertToStripeAmount(amountUsd, currency);
+
+    const paymentIntent = await stripe.paymentIntents.create({
+      amount: stripeAmount,
+      currency: currency.toLowerCase(),
+      metadata: {
+        user_id: userId,
+        credits_amount: credits.toString(),
+        transaction_id: transaction.id,
+        type: 'credit_purchase',
+        ...metadata
+      },
+      description: `Credit purchase: ${credits} credits`
+    });
+
+    // Update transaction with payment intent ID
+    const CreditTransaction = require('../models/CreditTransaction');
+    await CreditTransaction.update(
+      { metadata: { ...transaction.metadata, payment_intent_id: paymentIntent.id } },
+      { where: { id: transaction.id } }
+    );
+
+    res.json({
+      data: {
+        clientSecret: paymentIntent.client_secret,
+        paymentIntentId: paymentIntent.id,
+        transactionId: transaction.id
+      }
+    });
+
+  } catch (error) {
+    console.error('Create payment intent error:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message || 'Failed to create payment intent'
+    });
+  }
+});
+
+// @route   GET /api/payments/publishable-key
+// @desc    Get Stripe publishable key
+// @access  Public
+router.get('/publishable-key', (req, res) => {
+  try {
+    const publishableKey = process.env.STRIPE_PUBLISHABLE_KEY;
+
+    if (!publishableKey) {
+      return res.status(400).json({
+        success: false,
+        error: 'Stripe publishable key not configured'
+      });
+    }
+
+    res.json({
+      data: {
+        publishableKey
+      }
+    });
+  } catch (error) {
+    console.error('Get publishable key error:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to get publishable key'
+    });
+  }
+});
+
 // @route   POST /api/payments/create-checkout
 // @desc    Create Stripe Checkout Session
 // @access  Public
@@ -1011,8 +1130,30 @@ router.post('/webhook', async (req, res) => {
       
       break;
     case 'payment_intent.succeeded':
-      console.log('Payment succeeded, but no order creation needed for this event type');
-      console.log('Note: Orders should be created from checkout.session.completed events');
+      const paymentIntent = event.data.object;
+      console.log('Payment intent succeeded:', paymentIntent.id);
+      console.log('Payment intent metadata:', paymentIntent.metadata);
+
+      // Check if this is a credit purchase
+      if (paymentIntent.metadata.type === 'credit_purchase' && paymentIntent.metadata.transaction_id) {
+        try {
+          console.log('Processing credit purchase completion for transaction:', paymentIntent.metadata.transaction_id);
+
+          const creditService = require('../services/credit-service');
+          await creditService.completePurchaseTransaction(
+            paymentIntent.metadata.transaction_id,
+            paymentIntent.id
+          );
+
+          console.log('✅ Credit purchase completed successfully');
+        } catch (error) {
+          console.error('❌ Error completing credit purchase:', error);
+          return res.status(500).json({ error: 'Failed to complete credit purchase' });
+        }
+      } else {
+        console.log('Payment succeeded, but no order creation needed for this event type');
+        console.log('Note: Orders should be created from checkout.session.completed events');
+      }
       break;
     case 'payment_intent.created':
       console.log('Payment intent created, no action needed');
