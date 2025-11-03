@@ -74,7 +74,10 @@ export default function AnalyticsSettings() {
                 
                 // Handle the case where findById returns an array
                 const storeData = Array.isArray(fullStoreData) ? fullStoreData[0] : fullStoreData;
-                
+
+                console.log('🟢 === ANALYTICS PAGE LOAD DEBUG ===');
+                console.log('🟢 Raw storeData from API:', JSON.stringify(storeData?.settings, null, 2));
+
                 setStore({
                     ...selectedStore,
                     ...storeData, // Include all data from API
@@ -90,16 +93,29 @@ export default function AnalyticsSettings() {
                         }
                     }
                 });
-                
+
                 // Load advanced GTM settings
                 const analytics = storeData?.settings?.analytics || {};
+                console.log('🟢 analytics object:', JSON.stringify(analytics, null, 2));
+                console.log('🟢 analytics.gtm_enabled value:', analytics.gtm_enabled, 'type:', typeof analytics.gtm_enabled);
+                console.log('🟢 analytics_settings.enable_google_tag_manager:', storeData?.settings?.analytics_settings?.enable_google_tag_manager);
+
+                // Fix: Use explicit checks instead of || operator which treats false as falsy
+                const gtmEnabled = analytics.gtm_enabled !== undefined
+                    ? analytics.gtm_enabled
+                    : (storeData?.settings?.analytics_settings?.enable_google_tag_manager || false);
+
+                console.log('🟢 Final gtmEnabled value:', gtmEnabled);
+
                 setGtmSettings({
                     container_id: analytics.gtm_container_id || storeData?.settings?.analytics_settings?.gtm_id || '',
-                    enabled: analytics.gtm_enabled || storeData?.settings?.analytics_settings?.enable_google_tag_manager || false,
+                    enabled: gtmEnabled,
                     auto_track_page_views: analytics.auto_track_page_views !== false,
                     auto_track_ecommerce: analytics.auto_track_ecommerce !== false,
                     custom_events: analytics.custom_events || []
                 });
+
+                console.log('🟢 === ANALYTICS PAGE LOAD DEBUG END ===');
                 
                 // Load dataLayer events
                 loadDataLayerEvents();
