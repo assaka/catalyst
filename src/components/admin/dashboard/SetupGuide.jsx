@@ -1,16 +1,19 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { CheckCircle, AlertCircle, CreditCard, RefreshCw, Settings, Unlink, Info } from 'lucide-react';
+import { CheckCircle, AlertCircle, CreditCard, RefreshCw, Settings, Unlink, Info, Mail, Globe } from 'lucide-react';
 import { createPageUrl } from '@/utils';
 import { createStripeConnectAccount, createStripeConnectLink, checkStripeConnectStatus } from '@/api/functions';
+import brevoAPI from '@/api/brevo';
 
 import { useAlertTypes } from '@/hooks/useAlert';
 export const SetupGuide = ({ store }) => {
     const { showError, showWarning, showInfo, showSuccess, AlertComponent } = useAlertTypes();
     const navigate = useNavigate();
     const [connecting, setConnecting] = useState(false);
+    const [emailConfigured, setEmailConfigured] = useState(false);
+    const [loadingEmail, setLoadingEmail] = useState(true);
 
     if (!store) {
         return null;
@@ -18,6 +21,28 @@ export const SetupGuide = ({ store }) => {
 
     const isDomainConnected = store.custom_domain && store.domain_status === 'active';
     const isStripeConnected = store.stripe_connect_onboarding_complete === true || !!store.stripe_account_id;
+
+    // Load email configuration status
+    useEffect(() => {
+        const loadEmailStatus = async () => {
+            if (!store?.id) return;
+
+            setLoadingEmail(true);
+            try {
+                const response = await brevoAPI.getConnectionStatus(store.id);
+                if (response.success) {
+                    setEmailConfigured(response.data.isConfigured || false);
+                }
+            } catch (error) {
+                console.error('Error loading email status:', error);
+                setEmailConfigured(false);
+            } finally {
+                setLoadingEmail(false);
+            }
+        };
+
+        loadEmailStatus();
+    }, [store?.id]);
 
     const handleChangeStripeAccount = async () => {
         const confirmed = window.confirm(
@@ -111,9 +136,9 @@ export const SetupGuide = ({ store }) => {
         }
     };
 
-    // Only hide the setup guide if both domain and Stripe are connected
-    // Keep showing if either is incomplete, allowing management of connected services
-    if (isDomainConnected && isStripeConnected) {
+    // Only hide the setup guide if domain, Stripe, and email are connected
+    // Keep showing if any is incomplete, allowing management of connected services
+    if (isDomainConnected && isStripeConnected && emailConfigured) {
         // Show a condensed version when everything is set up
         return (
             <Card className="mb-8 bg-green-50 border-green-200 material-elevation-1">
@@ -137,19 +162,23 @@ export const SetupGuide = ({ store }) => {
                                     Stripe Connected {store.stripe_account_id && `(${store.stripe_account_id.substring(0, 15)}...)`}
                                 </span>
                             </div>
+                            <div className="flex items-center gap-2">
+                                <CheckCircle className="w-4 h-4 text-green-600" />
+                                <span className="text-sm text-gray-700">Email Configured</span>
+                            </div>
                         </div>
                         <div className="flex gap-2">
-                            <Button 
-                                variant="outline" 
-                                size="sm" 
+                            <Button
+                                variant="outline"
+                                size="sm"
                                 onClick={() => navigate(createPageUrl('Settings'))}
                             >
                                 <Settings className="w-4 h-4 mr-1" />
                                 Settings
                             </Button>
-                            <Button 
-                                variant="outline" 
-                                size="sm" 
+                            <Button
+                                variant="outline"
+                                size="sm"
                                 onClick={handleChangeStripeAccount}
                                 disabled={connecting}
                             >
@@ -192,12 +221,13 @@ export const SetupGuide = ({ store }) => {
                                 <p className="text-sm text-gray-600">Make your store accessible at your own URL.</p>
                             </div>
                         </div>
-                        <Button 
-                            variant={isDomainConnected ? "secondary" : "default"} 
-                            size="sm" 
-                            onClick={() => navigate(createPageUrl('Settings'))}
+                        <Button
+                            variant={isDomainConnected ? "secondary" : "default"}
+                            size="sm"
+                            onClick={() => navigate(createPageUrl('CustomDomains'))}
                         >
-                            {isDomainConnected ? 'View' : 'Connect'}
+                            <Globe className="w-4 h-4 mr-1" />
+                            {isDomainConnected ? 'Manage' : 'Connect'}
                         </Button>
                     </li>
                     <li className="flex items-center justify-between">
@@ -275,6 +305,44 @@ export const SetupGuide = ({ store }) => {
                                 </Button>
                             )}
                         </div>
+                    </li>
+                    <li className="flex items-center justify-between">
+                        <div className="flex items-center">
+                            {emailConfigured ? (
+                                <CheckCircle className="w-5 h-5 text-green-600 mr-3" />
+                            ) : (
+                                <AlertCircle className="w-5 h-5 text-amber-600 mr-3" />
+                            )}
+                            <div>
+                                <p className="font-semibold text-gray-800">
+                                    {emailConfigured ? 'Email Configured' : 'Configure Email'}
+                                </p>
+                                <p className="text-sm text-gray-600">
+                                    {emailConfigured
+                                        ? 'Email provider connected and ready to send transactional emails.'
+                                        : 'Set up email service for order confirmations and customer communications.'
+                                    }
+                                </p>
+                            </div>
+                        </div>
+                        <Button
+                            variant={emailConfigured ? "secondary" : "default"}
+                            size="sm"
+                            onClick={() => navigate(createPageUrl('EmailSettings'))}
+                            disabled={loadingEmail}
+                        >
+                            {loadingEmail ? (
+                                <>
+                                    <RefreshCw className="w-4 h-4 mr-1 animate-spin" />
+                                    Loading...
+                                </>
+                            ) : (
+                                <>
+                                    <Mail className="w-4 h-4 mr-1" />
+                                    {emailConfigured ? 'Manage' : 'Configure'}
+                                </>
+                            )}
+                        </Button>
                     </li>
                 </ul>
             </CardContent>
