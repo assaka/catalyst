@@ -202,7 +202,10 @@ export default function EmailProviderSettings({ storeEmail, storeName }) {
 
   const handleOpenTestSection = () => {
     if (!storeEmail) {
-      setFlashMessage({ type: 'error', message: 'Store email not configured. Please add it in the Contact tab first.' });
+      setFlashMessage({
+        type: 'error',
+        message: 'Store email not configured. Please add it in Settings > General first.'
+      });
       return;
     }
     setTestEmail(storeEmail);
@@ -219,6 +222,31 @@ export default function EmailProviderSettings({ storeEmail, storeName }) {
     <div className="space-y-6">
       <FlashMessage message={flashMessage} onClose={() => setFlashMessage(null)} />
       <AlertComponent />
+
+      {/* Missing Store Email Warning */}
+      {!storeEmail && (
+        <Card className="border-yellow-300 bg-yellow-50">
+          <CardContent className="pt-6">
+            <div className="flex gap-3">
+              <AlertCircle className="w-5 h-5 text-yellow-600 flex-shrink-0" />
+              <div>
+                <p className="font-medium text-yellow-900 mb-1">Store Email Not Configured</p>
+                <p className="text-sm text-yellow-800 mb-3">
+                  To use the quick test feature, please add your store's contact email first.
+                </p>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => window.location.href = '/admin/settings?tab=general'}
+                  className="border-yellow-400 text-yellow-900 hover:bg-yellow-100"
+                >
+                  Go to Settings > General
+                </Button>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Email Provider Selection */}
       {!selectedProvider && (
