@@ -439,15 +439,21 @@ class CreditService {
       type: sequelize.QueryTypes.SELECT
     });
 
+    // Convert credits_purchased to integer (users.credits is INTEGER type)
+    const creditsToAdd = Math.floor(parseFloat(transaction.credits_purchased));
+
     console.log(`💰 [CreditService] User balance BEFORE adding credits:`, {
       userId: userBefore?.id,
       email: userBefore?.email,
       currentCredits: userBefore?.credits || 0,
-      creditsToAdd: parseFloat(transaction.credits_purchased)
+      rawCreditsValue: transaction.credits_purchased,
+      rawCreditsType: typeof transaction.credits_purchased,
+      parsedCreditsValue: creditsToAdd,
+      parsedCreditsType: typeof creditsToAdd
     });
 
     // Add credits to users.credits (single source of truth)
-    console.log(`🔄 [CreditService] Updating user credits...`);
+    console.log(`🔄 [CreditService] Updating user credits with ${creditsToAdd} credits...`);
     const updateResult = await sequelize.query(`
       UPDATE users
       SET credits = COALESCE(credits, 0) + $1,
@@ -455,7 +461,7 @@ class CreditService {
       WHERE id = $2
       RETURNING id, email, credits
     `, {
-      bind: [transaction.credits_purchased, transaction.user_id],
+      bind: [creditsToAdd, transaction.user_id],
       type: sequelize.QueryTypes.UPDATE
     });
 
@@ -472,11 +478,16 @@ class CreditService {
       type: sequelize.QueryTypes.SELECT
     });
 
+    const creditDifference = (parseFloat(userAfter?.credits || 0) - parseFloat(userBefore?.credits || 0));
+
     console.log(`✅ [CreditService] User balance AFTER adding credits:`, {
       userId: userAfter?.id,
       email: userAfter?.email,
-      newCredits: userAfter?.credits,
-      difference: (parseFloat(userAfter?.credits || 0) - parseFloat(userBefore?.credits || 0))
+      previousCredits: parseFloat(userBefore?.credits || 0),
+      newCredits: parseFloat(userAfter?.credits || 0),
+      creditsAdded: creditDifference,
+      expectedCreditsAdded: creditsToAdd,
+      matchesExpected: creditDifference === creditsToAdd
     });
 
     // Mark transaction as completed
