@@ -36,6 +36,8 @@ const VersionRestoreModal = ({
   const [restoring, setRestoring] = useState(false);
   const [version, setVersion] = useState(null);
   const [currentVersion, setCurrentVersion] = useState(null);
+  const [versionState, setVersionState] = useState(null);
+  const [currentState, setCurrentState] = useState(null);
   const [comparison, setComparison] = useState(null);
   const [createBackup, setCreateBackup] = useState(true);
   const [selectedComponent, setSelectedComponent] = useState(null);
@@ -70,6 +72,10 @@ const VersionRestoreModal = ({
       setVersion(versionData.version);
       setCurrentVersion(currentData.version);
       setComparison(comparisonData.comparison);
+
+      // Extract reconstructed states
+      setVersionState(versionData.version.reconstructed_state || versionData.version.snapshot?.snapshot_data || {});
+      setCurrentState(currentData.version.reconstructed_state || currentData.version.snapshot?.snapshot_data || {});
 
       // Auto-select first changed component for preview
       if (comparisonData.comparison?.summary?.length > 0) {
@@ -139,9 +145,45 @@ const VersionRestoreModal = ({
     return names[type] || type;
   };
 
-  // Get component code (simplified - would reconstruct from patches in production)
-  const getComponentCode = (component) => {
-    return JSON.stringify(component.patch_operations || [], null, 2);
+  // Get actual code from component in a state
+  const getComponentCodeFromState = (state, componentType) => {
+    if (!state) return '';
+
+    const componentData = state[componentType];
+    if (!componentData || componentData.length === 0) {
+      return '// No data';
+    }
+
+    // Format component data as readable code
+    if (componentType === 'hooks') {
+      return componentData.map((hook, i) =>
+        `// Hook ${i + 1}: ${hook.hook_name || 'unnamed'}\n` +
+        `// Type: ${hook.hook_type || 'filter'}\n` +
+        (hook.handler_function || '// No handler')
+      ).join('\n\n' + '='.repeat(50) + '\n\n');
+    } else if (componentType === 'events') {
+      return componentData.map((event, i) =>
+        `// Event ${i + 1}: ${event.event_name || 'unnamed'}\n` +
+        (event.listener_function || '// No listener')
+      ).join('\n\n' + '='.repeat(50) + '\n\n');
+    } else if (componentType === 'scripts') {
+      return componentData.map((script, i) =>
+        `// Script ${i + 1}: ${script.file_name || 'unnamed'}\n` +
+        (script.file_content || '// No content')
+      ).join('\n\n' + '='.repeat(50) + '\n\n');
+    } else if (componentType === 'widgets') {
+      return componentData.map((widget, i) =>
+        `// Widget ${i + 1}: ${widget.widget_name || 'unnamed'}\n` +
+        (widget.component_code || '// No component code')
+      ).join('\n\n' + '='.repeat(50) + '\n\n');
+    } else if (componentType === 'controllers') {
+      return componentData.map((ctrl, i) =>
+        `// Controller ${i + 1}: ${ctrl.controller_name || 'unnamed'}\n` +
+        (ctrl.handler_code || '// No handler')
+      ).join('\n\n' + '='.repeat(50) + '\n\n');
+    }
+
+    return JSON.stringify(componentData, null, 2);
   };
 
   return (
@@ -326,12 +368,12 @@ const VersionRestoreModal = ({
                   <div className="flex-1 overflow-hidden">
                     {selectedComponent ? (
                       <CodeEditor
-                        originalCode={getComponentCode(selectedComponent)}
-                        value={getComponentCode(selectedComponent)}
+                        originalCode={getComponentCodeFromState(currentState, selectedComponent.component_type)}
+                        value={getComponentCodeFromState(versionState, selectedComponent.component_type)}
                         enableDiffDetection={true}
                         readOnly={true}
-                        language="json"
-                        fileName={`${getComponentDisplayName(selectedComponent.component_type)}.json`}
+                        language="javascript"
+                        fileName={`${getComponentDisplayName(selectedComponent.component_type)}.js`}
                       />
                     ) : (
                       <div className="flex items-center justify-center h-full">

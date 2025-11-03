@@ -289,12 +289,16 @@ router.get('/:pluginId/versions/:versionId', async (req, res) => {
       });
     }
 
+    // Reconstruct full plugin state at this version
+    const reconstructedState = await reconstructPluginState(versionId);
+
     res.json({
       success: true,
       version: {
         ...version,
         patches,
-        snapshot
+        snapshot,
+        reconstructed_state: reconstructedState  // Full reconstructed state for diff viewing
       }
     });
   } catch (error) {

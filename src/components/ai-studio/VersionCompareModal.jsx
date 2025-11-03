@@ -34,6 +34,8 @@ const VersionCompareModal = ({
   const [comparison, setComparison] = useState(null);
   const [fromVersion, setFromVersion] = useState(null);
   const [toVersion, setToVersion] = useState(null);
+  const [fromState, setFromState] = useState(null);
+  const [toState, setToState] = useState(null);
   const [selectedComponent, setSelectedComponent] = useState(null);
   const [swapped, setSwapped] = useState(false);
 
@@ -49,7 +51,7 @@ const VersionCompareModal = ({
     try {
       setLoading(true);
 
-      // Load both version details
+      // Load both version details with full reconstructed state
       const [fromResponse, toResponse, comparisonResponse] = await Promise.all([
         fetch(`/api/plugins/${pluginId}/versions/${fromVersionId}`),
         fetch(`/api/plugins/${pluginId}/versions/${toVersionId}`),
@@ -68,6 +70,14 @@ const VersionCompareModal = ({
       setToVersion(toData.version);
       setComparison(comparisonData.comparison);
 
+      // Extract reconstructed states from version data
+      // For snapshots, use snapshot_data; for patches, we need to reconstruct
+      const fromReconstructed = extractStateFromVersion(fromData.version);
+      const toReconstructed = extractStateFromVersion(toData.version);
+
+      setFromState(fromReconstructed);
+      setToState(toReconstructed);
+
       // Auto-select first changed component
       if (comparisonData.comparison?.summary?.length > 0) {
         setSelectedComponent(comparisonData.comparison.summary[0]);
@@ -77,6 +87,20 @@ const VersionCompareModal = ({
     } finally {
       setLoading(false);
     }
+  };
+
+  // Extract state from version data
+  const extractStateFromVersion = (version) => {
+    // Backend now returns reconstructed_state for all versions
+    if (version.reconstructed_state) {
+      return version.reconstructed_state;
+    }
+    // Fallback to snapshot data if available
+    if (version.version_type === 'snapshot' && version.snapshot?.snapshot_data) {
+      return version.snapshot.snapshot_data;
+    }
+    // Last resort: empty state
+    return {};
   };
 
   // Swap versions
@@ -99,11 +123,58 @@ const VersionCompareModal = ({
     return names[type] || type;
   };
 
-  // Reconstruct code from patches for a component
-  const getComponentCode = (component) => {
-    // This is a simplified version - in production you'd reconstruct from patches/snapshot
-    // For now, we'll use the patch_operations to show the diff
-    return JSON.stringify(component.patch_operations || [], null, 2);
+  // Get actual code from component in a state
+  const getComponentCodeFromState = (state, componentType) => {
+    if (!state) return '';
+
+    const componentData = state[componentType];
+    if (!componentData || componentData.length === 0) {
+      return '// No data';
+    }
+
+    // Format component data as readable code
+    if (componentType === 'hooks') {
+      return componentData.map((hook, i) =>
+        `// Hook ${i + 1}: ${hook.hook_name || 'unnamed'}\n` +
+        `// Type: ${hook.hook_type || 'filter'}\n` +
+        `// Priority: ${hook.priority || 10}\n` +
+        (hook.handler_function || '// No handler')
+      ).join('\n\n' + '='.repeat(50) + '\n\n');
+    } else if (componentType === 'events') {
+      return componentData.map((event, i) =>
+        `// Event ${i + 1}: ${event.event_name || 'unnamed'}\n` +
+        `// File: ${event.file_name || 'default.js'}\n` +
+        `// Priority: ${event.priority || 10}\n` +
+        (event.listener_function || '// No listener')
+      ).join('\n\n' + '='.repeat(50) + '\n\n');
+    } else if (componentType === 'scripts') {
+      return componentData.map((script, i) =>
+        `// Script ${i + 1}: ${script.file_name || 'unnamed'}\n` +
+        `// Type: ${script.script_type || 'js'}, Scope: ${script.scope || 'frontend'}\n` +
+        (script.file_content || '// No content')
+      ).join('\n\n' + '='.repeat(50) + '\n\n');
+    } else if (componentType === 'widgets') {
+      return componentData.map((widget, i) =>
+        `// Widget ${i + 1}: ${widget.widget_name || 'unnamed'}\n` +
+        `// ID: ${widget.widget_id || 'no-id'}\n` +
+        (widget.component_code || '// No component code')
+      ).join('\n\n' + '='.repeat(50) + '\n\n');
+    } else if (componentType === 'controllers') {
+      return componentData.map((ctrl, i) =>
+        `// Controller ${i + 1}: ${ctrl.controller_name || 'unnamed'}\n` +
+        `// Method: ${ctrl.method || 'GET'}, Path: ${ctrl.path || '/api/...'}\n` +
+        (ctrl.handler_code || '// No handler')
+      ).join('\n\n' + '='.repeat(50) + '\n\n');
+    } else if (componentType === 'entities') {
+      return componentData.map((entity, i) =>
+        `// Entity ${i + 1}: ${entity.entity_name || 'unnamed'}\n` +
+        `// Table: ${entity.table_name || 'no_table'}\n` +
+        JSON.stringify(entity.schema_definition || {}, null, 2)
+      ).join('\n\n' + '='.repeat(50) + '\n\n');
+    }
+
+    // Fallback for other types
+    return JSON.stringify(componentData, null, 2);
   };
 
   // Download diff report
@@ -305,12 +376,18 @@ ${comparison.summary?.map(comp => `
               <div className="flex-1 overflow-hidden">
                 {selectedComponent ? (
                   <CodeEditor
-                    originalCode={getComponentCode(selectedComponent)}
-                    value={getComponentCode(selectedComponent)}
+                    originalCode={getComponentCodeFromState(
+                      swapped ? toState : fromState,
+                      selectedComponent.component_type
+                    )}
+                    value={getComponentCodeFromState(
+                      swapped ? fromState : toState,
+                      selectedComponent.component_type
+                    )}
                     enableDiffDetection={true}
                     readOnly={true}
-                    language="json"
-                    fileName={`${getComponentDisplayName(selectedComponent.component_type)}.json`}
+                    language="javascript"
+                    fileName={`${getComponentDisplayName(selectedComponent.component_type)}.js`}
                   />
                 ) : (
                   <div className="flex items-center justify-center h-full">
