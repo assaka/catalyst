@@ -819,8 +819,19 @@ router.post('/customer/register', [
   body('last_name').trim().notEmpty().withMessage('Last name is required')
 ], async (req, res) => {
   try {
+    console.log('🔵 [CUSTOMER REGISTRATION] Starting registration process...');
+    console.log('🔵 [CUSTOMER REGISTRATION] Request body:', {
+      email: req.body.email,
+      first_name: req.body.first_name,
+      last_name: req.body.last_name,
+      has_password: !!req.body.password,
+      store_id: req.body.store_id,
+      send_welcome_email: req.body.send_welcome_email
+    });
+
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
+      console.error('❌ [CUSTOMER REGISTRATION] Validation errors:', errors.array());
       return res.status(400).json({
         success: false,
         errors: errors.array()
@@ -830,28 +841,37 @@ router.post('/customer/register', [
     const { email, password, first_name, last_name, phone, send_welcome_email = false, address_data, store_id } = req.body;
 
     // Check if customer exists with same email
+    console.log('🔵 [CUSTOMER REGISTRATION] Checking for existing customer with email:', email);
     const existingCustomer = await Customer.findOne({ where: { email } });
     if (existingCustomer) {
+      console.error('❌ [CUSTOMER REGISTRATION] Customer already exists:', email);
       return res.status(400).json({
         success: false,
         message: 'Customer with this email already exists'
       });
     }
+    console.log('✅ [CUSTOMER REGISTRATION] Email is available');
 
     // Determine store_id - use provided store_id or find default store
     let customerStoreId = store_id;
     if (!customerStoreId) {
+      console.log('🔵 [CUSTOMER REGISTRATION] No store_id provided, looking for default store...');
       // Get the first available store as default
       const { Store } = require('../models');
       const defaultStore = await Store.findOne();
       if (defaultStore) {
         customerStoreId = defaultStore.id;
-        console.log('🏪 Assigned customer to default store:', defaultStore.name, defaultStore.id);
+        console.log('✅ [CUSTOMER REGISTRATION] Assigned customer to default store:', defaultStore.name, defaultStore.id);
+      } else {
+        console.error('❌ [CUSTOMER REGISTRATION] No stores found in database!');
       }
+    } else {
+      console.log('✅ [CUSTOMER REGISTRATION] Using provided store_id:', customerStoreId);
     }
 
     // Create customer
-    const customer = await Customer.create({
+    console.log('🔵 [CUSTOMER REGISTRATION] Creating customer record...');
+    const customerData = {
       email,
       password,
       first_name,
@@ -860,6 +880,18 @@ router.post('/customer/register', [
       role: 'customer',
       account_type: 'individual',
       store_id: customerStoreId
+    };
+    console.log('🔵 [CUSTOMER REGISTRATION] Customer data:', {
+      ...customerData,
+      password: password ? '***HIDDEN***' : null
+    });
+
+    const customer = await Customer.create(customerData);
+    console.log('✅ [CUSTOMER REGISTRATION] Customer created successfully:', {
+      id: customer.id,
+      email: customer.email,
+      store_id: customer.store_id,
+      customer_type: customer.customer_type
     });
 
     // Create addresses if provided
@@ -969,6 +1001,8 @@ router.post('/customer/register', [
     // Generate token
     const token = generateToken(customer);
 
+    console.log('✅ [CUSTOMER REGISTRATION] Registration completed successfully');
+
     res.status(201).json({
       success: true,
       message: 'Customer created successfully',
@@ -980,10 +1014,39 @@ router.post('/customer/register', [
       }
     });
   } catch (error) {
-    console.error('Customer registration error:', error);
+    console.error('❌ [CUSTOMER REGISTRATION] Registration failed with error:', error);
+    console.error('❌ [CUSTOMER REGISTRATION] Error message:', error.message);
+    console.error('❌ [CUSTOMER REGISTRATION] Error stack:', error.stack);
+    console.error('❌ [CUSTOMER REGISTRATION] Error name:', error.name);
+
+    // Check if it's a database error
+    if (error.name === 'SequelizeUniqueConstraintError') {
+      return res.status(400).json({
+        success: false,
+        message: 'A customer with this email already exists'
+      });
+    }
+
+    if (error.name === 'SequelizeValidationError') {
+      return res.status(400).json({
+        success: false,
+        message: 'Validation error: ' + error.message,
+        errors: error.errors?.map(e => ({ field: e.path, message: e.message }))
+      });
+    }
+
+    if (error.name === 'SequelizeDatabaseError') {
+      console.error('❌ [CUSTOMER REGISTRATION] Database error details:', error.parent);
+      return res.status(500).json({
+        success: false,
+        message: 'Database error: ' + error.message
+      });
+    }
+
     res.status(500).json({
       success: false,
-      message: 'Server error'
+      message: 'Server error during registration. Please try again.',
+      error: process.env.NODE_ENV === 'development' ? error.message : undefined
     });
   }
 });
