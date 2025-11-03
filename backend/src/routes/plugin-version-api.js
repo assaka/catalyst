@@ -146,6 +146,13 @@ router.get('/:pluginId/versions/compare', async (req, res) => {
     const fromState = await reconstructPluginState(from);
     const toState = await reconstructPluginState(to);
 
+    console.log(`  ✓ States reconstructed:`, {
+      fromState_keys: fromState ? Object.keys(fromState) : null,
+      toState_keys: toState ? Object.keys(toState) : null,
+      fromState_hooks_count: fromState?.hooks?.length || 0,
+      toState_hooks_count: toState?.hooks?.length || 0
+    });
+
     if (!fromState || !toState) {
       return res.status(404).json({
         success: false,
@@ -155,6 +162,13 @@ router.get('/:pluginId/versions/compare', async (req, res) => {
 
     // Calculate detailed diff
     const diff = calculateDetailedDiff(fromState, toState);
+
+    console.log(`  ✓ Diff calculated:`, {
+      files_changed: diff.files_changed,
+      lines_added: diff.lines_added,
+      lines_deleted: diff.lines_deleted,
+      summary_length: diff.summary?.length || 0
+    });
 
     // Cache the result
     await sequelize.query(`
@@ -291,6 +305,14 @@ router.get('/:pluginId/versions/:versionId', async (req, res) => {
 
     // Reconstruct full plugin state at this version
     const reconstructedState = await reconstructPluginState(versionId);
+
+    console.log(`  ✓ Version details loaded:`, {
+      version_type: version.version_type,
+      has_snapshot: !!snapshot,
+      has_patches: patches.length > 0,
+      has_reconstructed: !!reconstructedState,
+      reconstructed_keys: reconstructedState ? Object.keys(reconstructedState) : []
+    });
 
     res.json({
       success: true,
@@ -673,6 +695,14 @@ async function reconstructPluginState(versionId) {
       'SELECT * FROM plugin_version_snapshots WHERE version_id = $1',
       { bind: [versionId], type: QueryTypes.SELECT }
     );
+
+    console.log(`  🔍 Snapshot found for version ${versionId}:`, {
+      has_snapshot: !!snapshot,
+      has_snapshot_data: !!snapshot?.snapshot_data,
+      snapshot_data_type: typeof snapshot?.snapshot_data,
+      snapshot_data_keys: snapshot?.snapshot_data ? Object.keys(snapshot.snapshot_data) : []
+    });
+
     return snapshot?.snapshot_data;
   }
 

@@ -100,12 +100,17 @@ export default function Dashboard() {
       setTimeout(() => setShowWelcomeMessage(false), 10000);
     }
 
-    // Handle Stripe Connect return
+    // Handle Stripe Connect return - only run if selectedStore is available
     const handleStripeReturn = async () => {
+      if (!selectedStore?.id) {
+        // If store isn't loaded yet, don't process Stripe return
+        return;
+      }
+
       if (urlParams.has('stripe_return')) {
         try {
           // Assuming checkStripeConnectStatus returns { data: { onboardingComplete: boolean } }
-          const { data } = await checkStripeConnectStatus(selectedStore?.id); 
+          const { data } = await checkStripeConnectStatus(selectedStore.id);
           if (data.onboardingComplete) {
             setStripeSuccessMessage('Stripe account connected successfully!');
             // Re-load data to get updated store status
@@ -126,9 +131,9 @@ export default function Dashboard() {
             const currentUrl = window.location.origin + window.location.pathname;
             const returnUrl = `${currentUrl}?stripe_return=true`;
             const refreshUrl = `${currentUrl}?stripe_refresh=true`;
-            
+
             // Assuming createStripeConnectLink returns { data: { url: string } }
-            const { data } = await createStripeConnectLink(returnUrl, refreshUrl, selectedStore?.id);
+            const { data } = await createStripeConnectLink(returnUrl, refreshUrl, selectedStore.id);
             if (data.url) {
                 window.location.href = data.url;
             } else {
@@ -145,7 +150,7 @@ export default function Dashboard() {
     };
     handleStripeReturn();
 
-  }, []);
+  }, [selectedStore]);
 
 
   const loadDashboardData = async () => {

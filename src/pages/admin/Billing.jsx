@@ -8,8 +8,10 @@ import { createPaymentIntent } from '@/api/functions';
 import { getStripePublishableKey } from '@/api/functions';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { Wallet, DollarSign, CheckCircle, Clock, CreditCard, RefreshCw } from 'lucide-react';
+import { Wallet, DollarSign, CheckCircle, Clock, CreditCard, RefreshCw, Info, AlertCircle } from 'lucide-react';
 import { formatPrice } from '@/utils/priceUtils';
+import { useNavigate } from 'react-router-dom';
+import { createPageUrl } from '@/utils';
 
 const CheckoutForm = ({ selectedPackage, onSuccess, onError }) => {
   const stripe = useStripe();
@@ -88,12 +90,14 @@ const CheckoutForm = ({ selectedPackage, onSuccess, onError }) => {
 };
 
 export default function Billing() {
+  const navigate = useNavigate();
   const [user, setUser] = useState(null);
   const [transactions, setTransactions] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedPackage, setSelectedPackage] = useState(null);
   const [paymentSuccess, setPaymentSuccess] = useState(false);
   const [paymentError, setPaymentError] = useState('');
+  const [stripeConfigError, setStripeConfigError] = useState(false);
   const [stripePromise, setStripePromise] = useState(null);
 
   useEffect(() => {
@@ -103,12 +107,13 @@ export default function Billing() {
             const { data } = await getStripePublishableKey();
             if (data && data.publishableKey) {
                 setStripePromise(loadStripe(data.publishableKey));
+                setStripeConfigError(false);
             } else {
-                setPaymentError("Could not load payment provider. Please contact support.");
+                setStripeConfigError(true);
             }
         } catch (error) {
             console.error("Failed to fetch Stripe publishable key:", error);
-            setPaymentError("Could not connect to payment provider. Please try again later.");
+            setStripeConfigError(true);
         }
     };
     fetchKey();
@@ -170,9 +175,32 @@ export default function Billing() {
         </div>
       )}
 
+      {stripeConfigError && (
+        <div className="mb-6 p-4 bg-blue-50 border border-blue-300 rounded-lg">
+          <div className="flex items-start gap-3">
+            <Info className="w-5 h-5 text-blue-600 mt-0.5 flex-shrink-0" />
+            <div className="flex-1">
+              <p className="text-blue-900 font-medium">Stripe Payment Setup Required</p>
+              <p className="text-blue-700 text-sm mt-1">
+                To purchase credits and accept payments, you need to connect your Stripe account first.
+              </p>
+              <Button
+                onClick={() => navigate(createPageUrl('Dashboard'))}
+                variant="outline"
+                size="sm"
+                className="mt-3 border-blue-300 text-blue-700 hover:bg-blue-100"
+              >
+                Go to Dashboard to Connect Stripe
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {paymentError && (
-        <div className="mb-6 p-4 bg-red-100 border border-red-400 text-red-700 rounded-lg">
-          Payment failed: {paymentError}
+        <div className="mb-6 p-4 bg-red-100 border border-red-400 text-red-700 rounded-lg flex items-center gap-2">
+          <AlertCircle className="w-5 h-5 flex-shrink-0" />
+          <span>Payment failed: {paymentError}</span>
         </div>
       )}
       
