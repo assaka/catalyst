@@ -316,7 +316,7 @@ router.put('/:id', async (req, res) => {
 
 /**
  * DELETE /api/email-templates/:id
- * Delete email template
+ * Delete email template (cannot delete system templates)
  */
 router.delete('/:id', async (req, res) => {
   try {
@@ -328,6 +328,14 @@ router.delete('/:id', async (req, res) => {
       return res.status(404).json({
         success: false,
         message: 'Email template not found'
+      });
+    }
+
+    // Prevent deleting system templates
+    if (template.is_system) {
+      return res.status(400).json({
+        success: false,
+        message: 'System templates cannot be deleted. You can deactivate them instead.'
       });
     }
 

@@ -151,15 +151,20 @@ export default function Emails() {
         color: 'from-blue-500 to-purple-600',
         label: 'Welcome Email'
       },
-      'credit_purchase_email': {
-        icon: '💳',
-        color: 'from-green-500 to-emerald-600',
-        label: 'Credit Purchase'
+      'email_verification': {
+        icon: '✉️',
+        color: 'from-indigo-500 to-blue-600',
+        label: 'Email Verification'
       },
       'order_success_email': {
         icon: '📦',
         color: 'from-orange-500 to-red-600',
         label: 'Order Confirmation'
+      },
+      'credit_purchase_email': {
+        icon: '💳',
+        color: 'from-green-500 to-emerald-600',
+        label: 'Credit Purchase'
       }
     };
 
@@ -188,13 +193,6 @@ export default function Emails() {
             >
               <Languages className="mr-2 h-4 w-4" /> Bulk Translate
             </Button>
-            <Button
-              onClick={handleAdd}
-              className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 material-ripple material-elevation-1"
-              disabled={!selectedStore}
-            >
-              <Plus className="mr-2 h-4 w-4" /> Add Email Template
-            </Button>
           </div>
         </div>
 
@@ -214,9 +212,14 @@ export default function Emails() {
                         <div className={`w-12 h-12 bg-gradient-to-r ${typeInfo.color} rounded-lg flex items-center justify-center`}>
                           <span className="text-xl">{typeInfo.icon}</span>
                         </div>
-                        <div>
-                          <CardTitle className="text-lg">{typeInfo.label}</CardTitle>
-                          <p className="text-sm text-gray-500">/{template.identifier}</p>
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2">
+                            <CardTitle className="text-lg">{typeInfo.label}</CardTitle>
+                            {template.is_system && (
+                              <Badge variant="secondary" className="text-xs">System</Badge>
+                            )}
+                          </div>
+                          <p className="text-sm text-gray-500">{template.identifier}</p>
                         </div>
                       </div>
                     </div>
@@ -256,9 +259,11 @@ export default function Emails() {
                         <Button variant="outline" size="sm" onClick={() => handleEdit(template)}>
                           <Edit className="h-4 w-4" />
                         </Button>
-                        <Button variant="outline" size="sm" onClick={() => handleDelete(template.id)} className="text-red-600 hover:text-red-700">
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
+                        {!template.is_system && (
+                          <Button variant="outline" size="sm" onClick={() => handleDelete(template.id, template.is_system)} className="text-red-600 hover:text-red-700">
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        )}
                       </div>
                     </div>
                   </CardContent>
@@ -271,17 +276,9 @@ export default function Emails() {
             <CardContent className="text-center py-12">
               <Mail className="w-16 h-16 text-gray-400 mx-auto mb-4" />
               <h3 className="text-lg font-medium text-gray-900 mb-2">No email templates found</h3>
-              <p className="text-gray-600 mb-6">
-                Create email templates to send automated emails for signup, orders, and more.
+              <p className="text-gray-600">
+                System email templates will be automatically created when you run the migration.
               </p>
-              <Button
-                onClick={handleAdd}
-                className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 material-ripple"
-                disabled={!selectedStore}
-              >
-                <Plus className="w-4 h-4 mr-2" />
-                Add Email Template
-              </Button>
             </CardContent>
           </Card>
         )}

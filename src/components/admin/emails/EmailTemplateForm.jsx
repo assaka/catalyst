@@ -193,34 +193,47 @@ export default function EmailTemplateForm({ template, onSubmit, onCancel }) {
         <CardContent className="space-y-4">
           <div className="space-y-2">
             <Label htmlFor="identifier">Template Identifier</Label>
-            <Select
-              value={formData.identifier}
-              onValueChange={(value) => {
-                handleInputChange('identifier', value);
-                // Set default subject when type changes
-                if (!template) {
+            {template ? (
+              <div className="flex items-center gap-2">
+                <Input
+                  id="identifier"
+                  value={formData.identifier}
+                  disabled
+                  className="bg-gray-100 cursor-not-allowed"
+                />
+                {template.is_system && (
+                  <Badge variant="secondary">System</Badge>
+                )}
+              </div>
+            ) : (
+              <Select
+                value={formData.identifier}
+                onValueChange={(value) => {
+                  handleInputChange('identifier', value);
                   handleInputChange('subject', emailTypes[value]?.defaultSubject || '');
-                }
-              }}
-              disabled={!!template} // Don't allow changing type for existing templates
-            >
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {Object.entries(emailTypes).map(([key, type]) => (
-                  <SelectItem key={key} value={key}>
-                    <div className="flex flex-col">
-                      <span className="font-medium">{type.label}</span>
-                      <span className="text-xs text-gray-500">{key}</span>
-                    </div>
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+                }}
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {Object.entries(emailTypes).map(([key, type]) => (
+                    <SelectItem key={key} value={key}>
+                      <div className="flex flex-col">
+                        <span className="font-medium">{type.label}</span>
+                        <span className="text-xs text-gray-500">{key}</span>
+                      </div>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            )}
             <p className="text-xs text-gray-500">
-              This identifier is used by the system to find the correct template when sending automated emails.
-              {template && <span className="text-orange-600"> Cannot be changed after creation.</span>}
+              {template?.is_system
+                ? 'System template identifiers cannot be changed.'
+                : template
+                ? 'Template identifier cannot be changed after creation.'
+                : 'This identifier is used by the system to find the correct template when sending automated emails.'}
             </p>
           </div>
 
