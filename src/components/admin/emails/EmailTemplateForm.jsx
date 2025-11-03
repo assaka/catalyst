@@ -192,7 +192,7 @@ export default function EmailTemplateForm({ template, onSubmit, onCancel }) {
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="identifier">Email Type</Label>
+            <Label htmlFor="identifier">Template Identifier</Label>
             <Select
               value={formData.identifier}
               onValueChange={(value) => {
@@ -210,11 +210,18 @@ export default function EmailTemplateForm({ template, onSubmit, onCancel }) {
               <SelectContent>
                 {Object.entries(emailTypes).map(([key, type]) => (
                   <SelectItem key={key} value={key}>
-                    {type.label}
+                    <div className="flex flex-col">
+                      <span className="font-medium">{type.label}</span>
+                      <span className="text-xs text-gray-500">{key}</span>
+                    </div>
                   </SelectItem>
                 ))}
               </SelectContent>
             </Select>
+            <p className="text-xs text-gray-500">
+              This identifier is used by the system to find the correct template when sending automated emails.
+              {template && <span className="text-orange-600"> Cannot be changed after creation.</span>}
+            </p>
           </div>
 
           <div className="space-y-2">

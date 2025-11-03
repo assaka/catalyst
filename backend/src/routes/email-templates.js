@@ -147,7 +147,7 @@ router.get('/:id', async (req, res) => {
 
 /**
  * POST /api/email-templates
- * Create new email template
+ * Create new custom email template (system templates are pre-created)
  */
 router.post('/', [
   body('store_id').isUUID().withMessage('Valid store_id is required'),
@@ -166,6 +166,15 @@ router.post('/', [
 
     const { store_id, identifier, subject, content_type, template_content, html_content, is_active, sort_order, attachment_enabled, attachment_config, translations } = req.body;
 
+    // Prevent creating system template identifiers
+    const systemIdentifiers = ['signup_email', 'email_verification', 'order_success_email'];
+    if (systemIdentifiers.includes(identifier)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Cannot create template with system identifier. System templates are pre-created.'
+      });
+    }
+
     // Check store access
     req.params.store_id = store_id;
     await new Promise((resolve, reject) => {
@@ -178,7 +187,7 @@ router.post('/', [
     // Get available variables for this template type
     const variables = getVariablesForTemplate(identifier);
 
-    // Create template
+    // Create template (is_system will be false by default)
     const template = await EmailTemplate.create({
       store_id,
       identifier,
@@ -188,6 +197,7 @@ router.post('/', [
       html_content,
       variables,
       is_active: is_active !== undefined ? is_active : true,
+      is_system: false,
       sort_order: sort_order || 0,
       attachment_enabled: attachment_enabled || false,
       attachment_config: attachment_config || {}
@@ -228,7 +238,7 @@ router.post('/', [
 router.put('/:id', async (req, res) => {
   try {
     const { id } = req.params;
-    const { subject, content_type, template_content, html_content, is_active, sort_order, attachment_enabled, attachment_config, translations } = req.body;
+    const { identifier, subject, content_type, template_content, html_content, is_active, sort_order, attachment_enabled, attachment_config, translations } = req.body;
 
     const template = await EmailTemplate.findByPk(id);
 
@@ -248,8 +258,16 @@ router.put('/:id', async (req, res) => {
       });
     });
 
-    // Update template
-    await template.update({
+    // Prevent changing identifier for system templates
+    if (template.is_system && identifier && identifier !== template.identifier) {
+      return res.status(400).json({
+        success: false,
+        message: 'Cannot change identifier for system templates'
+      });
+    }
+
+    // Build update object
+    const updateData = {
       subject,
       content_type,
       template_content,
@@ -258,7 +276,15 @@ router.put('/:id', async (req, res) => {
       sort_order,
       attachment_enabled,
       attachment_config
-    });
+    };
+
+    // Only allow identifier change for non-system templates
+    if (!template.is_system && identifier) {
+      updateData.identifier = identifier;
+    }
+
+    // Update template
+    await template.update(updateData);
 
     // Update translations if provided
     if (translations && typeof translations === 'object') {

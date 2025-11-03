@@ -51,6 +51,12 @@ const EmailTemplate = sequelize.define('EmailTemplate', {
     type: DataTypes.BOOLEAN,
     defaultValue: true
   },
+  is_system: {
+    type: DataTypes.BOOLEAN,
+    defaultValue: false,
+    allowNull: false,
+    comment: 'System templates cannot be deleted and identifier cannot be changed'
+  },
   sort_order: {
     type: DataTypes.INTEGER,
     defaultValue: 0
