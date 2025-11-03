@@ -149,6 +149,7 @@ export default function CmsPageViewer() {
                     ...page,
                     breadcrumbs: buildCmsBreadcrumbs(page, storeCode, settings)
                 }}
+                pageTitle={pageTitle}
             />
             <article className="prose lg:prose-xl mx-auto bg-white p-8 rounded-lg shadow">
                 <h1>{pageTitle}</h1>

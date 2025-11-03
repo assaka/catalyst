@@ -71,6 +71,7 @@ const NotFoundPage = () => {
             meta_title: page.meta_title || '404 - Page Not Found',
             meta_description: page.meta_description || 'The page you are looking for could not be found.'
           }}
+          pageTitle={pageTitle || "404 - Page Not Found"}
         />
         <article className="prose lg:prose-xl mx-auto bg-white p-8 rounded-lg shadow">
           <h1>{pageTitle || "404 - Page Not Found"}</h1>
@@ -101,6 +102,7 @@ const NotFoundPage = () => {
           meta_description: 'The page you are looking for could not be found.',
           meta_robots_tag: 'noindex, nofollow'
         }}
+        pageTitle="404 - Page Not Found"
       />
 
       <div className="max-w-md w-full text-center">

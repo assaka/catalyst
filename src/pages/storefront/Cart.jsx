@@ -1066,9 +1066,9 @@ export default function Cart() {
     return (
         <div className="bg-gray-50 cart-page" style={{ backgroundColor: '#f9fafb' }}>
             <SeoHeadManager
-                title="Your Cart"
-                description="Review your shopping cart items before proceeding to checkout."
-                keywords="cart, shopping cart, checkout, e-commerce, online store"
+                pageType="cart"
+                pageTitle="Your Cart"
+                pageDescription="Review your shopping cart items before proceeding to checkout."
             />
             <div className="max-w-7xl mx-auto sm:px-4 sm:px-6 lg:px-8 sm:py-12">
                 {/* FlashMessage Section */}

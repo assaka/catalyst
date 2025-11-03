@@ -358,7 +358,11 @@ export default function StorefrontLayout({ children }) {
             )}
             <style>{themeStyles}</style>
             
-            <SeoHeadManager title={store?.name || 'Catalyst Commerce'} description={store?.description || 'Welcome to our store.'} />
+            <SeoHeadManager
+                pageType="storefront"
+                pageTitle={store?.name || 'Catalyst Commerce'}
+                pageDescription={store?.description || 'Welcome to our store.'}
+            />
 
             {!hideHeader && headerConfigLoaded && headerSlots ? (
                 <>
