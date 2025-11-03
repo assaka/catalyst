@@ -252,18 +252,23 @@ app.use(cors({
 
 // Body parsing middleware
 // IMPORTANT: Webhook endpoint needs raw body for signature verification
-// Apply JSON parsing conditionally - skip for webhook route
+// CRITICAL: Raw body middleware MUST come BEFORE JSON parsing middleware
+
+// Step 1: Apply raw body parser to webhook endpoint FIRST
+app.use('/api/payments/webhook', (req, res, next) => {
+  console.log('⚡ [Webhook Raw Body] Applying raw body parser for webhook');
+  express.raw({ type: 'application/json' })(req, res, next);
+});
+
+// Step 2: Apply JSON parsing to all OTHER routes (skip webhook)
 app.use((req, res, next) => {
   if (req.originalUrl === '/api/payments/webhook') {
-    console.log('⚡ Skipping JSON parsing for webhook route - using raw body');
+    console.log('⚡ [JSON Parser] Skipping JSON parsing for webhook - already has raw body');
     next();
   } else {
     express.json({ limit: '10mb' })(req, res, next);
   }
 });
-
-// Raw body for webhook only
-app.use('/api/payments/webhook', express.raw({ type: 'application/json' }));
 
 // URL encoded for all other routes
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
