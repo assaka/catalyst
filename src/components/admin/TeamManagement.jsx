@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { StoreTeam } from '@/api/entities';
+import { StoreTeam, Store } from '@/api/entities';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -90,6 +90,7 @@ export default function TeamManagement({ storeId }) {
   const [inviteDialogOpen, setInviteDialogOpen] = useState(false);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [selectedMember, setSelectedMember] = useState(null);
+  const [storeName, setStoreName] = useState('');
   
   // Invite form state
   const [inviteForm, setInviteForm] = useState({
@@ -108,8 +109,19 @@ export default function TeamManagement({ storeId }) {
   useEffect(() => {
     if (storeId) {
       loadTeamMembers();
+      loadStoreName();
     }
   }, [storeId]);
+
+  const loadStoreName = async () => {
+    try {
+      const store = await Store.findById(storeId);
+      const storeData = Array.isArray(store) ? store[0] : store;
+      setStoreName(storeData?.name || '');
+    } catch (error) {
+      console.error('❌ TeamManagement: Error loading store name:', error);
+    }
+  };
 
   const loadTeamMembers = async () => {
     try {
@@ -255,7 +267,7 @@ export default function TeamManagement({ storeId }) {
             </DialogTrigger>
             <DialogContent className="max-w-2xl">
               <DialogHeader>
-                <DialogTitle>Invite Team Member</DialogTitle>
+                <DialogTitle>Invite Team Member{storeName ? ` to ${storeName}` : ''}</DialogTitle>
               </DialogHeader>
               <div className="space-y-6">
                 <div className="grid grid-cols-2 gap-4">

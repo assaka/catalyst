@@ -655,6 +655,10 @@ function LayoutInner({ children, currentPageName }) {
                     <Users className="mr-2 h-4 w-4" />
                     <span>Team</span>
                 </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => navigate("/admin/stores")}>
+                    <StoreIcon className="mr-2 h-4 w-4" />
+                    <span>Stores</span>
+                </DropdownMenuItem>
                 <DropdownMenuItem onClick={async () => {
                     try {
                         await handleLogout();
