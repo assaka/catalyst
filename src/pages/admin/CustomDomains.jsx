@@ -643,7 +643,7 @@ const CustomDomains = () => {
 
       {/* DNS Instructions Dialog */}
       <Dialog open={dnsDialogOpen} onOpenChange={setDnsDialogOpen}>
-        <DialogContent className="max-w-3xl">
+        <DialogContent className="max-w-3xl max-h-[90vh] overflow-hidden flex flex-col">
           <DialogHeader>
             <DialogTitle>DNS Configuration for {selectedDomain?.domain}</DialogTitle>
             <DialogDescription>
@@ -651,7 +651,7 @@ const CustomDomains = () => {
             </DialogDescription>
           </DialogHeader>
 
-          <div className="space-y-4">
+          <div className="space-y-4 overflow-y-auto pr-2 flex-1">
             <Alert>
               <Info className="h-4 w-4" />
               <AlertDescription>
