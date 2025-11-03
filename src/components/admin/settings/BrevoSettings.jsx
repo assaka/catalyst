@@ -237,9 +237,9 @@ export default function BrevoSettings({ storeEmail }) {
                 <Button
                   variant="outline"
                   onClick={handleDisconnect}
-                  className="text-red-600 hover:text-red-700"
+                  className="text-red-600 hover:text-red-700 ml-auto"
                 >
-                  Disconnect Brevo
+                  Disconnect
                 </Button>
                 <Button
                   variant="outline"

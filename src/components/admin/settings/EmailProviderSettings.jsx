@@ -579,6 +579,13 @@ export default function EmailProviderSettings({ storeEmail, storeName }) {
                   <p className="text-xs text-gray-500">
                     Email is pre-filled with your store email. You can change it to test with a different address.
                   </p>
+                  <div className="bg-blue-50 border border-blue-200 rounded p-3 mt-2">
+                    <p className="text-xs text-blue-800">
+                      <strong>Important:</strong> If this email is not yet verified in your Brevo account,
+                      Brevo will send a verification email to this address. You must click the verification
+                      link in that email before you can send emails from this address.
+                    </p>
+                  </div>
                 </div>
               </CardContent>
             </Card>
