@@ -9,19 +9,21 @@ import { useState, useEffect } from 'react';
 export default function EmailSettings() {
   const { selectedStore } = useStoreSelection();
   const [storeEmail, setStoreEmail] = useState('');
+  const [storeName, setStoreName] = useState('');
 
   useEffect(() => {
-    loadStoreEmail();
+    loadStoreData();
   }, [selectedStore]);
 
-  const loadStoreEmail = async () => {
+  const loadStoreData = async () => {
     if (selectedStore?.id) {
       try {
         const fullStoreData = await Store.findById(selectedStore.id);
         const store = Array.isArray(fullStoreData) ? fullStoreData[0] : fullStoreData;
         setStoreEmail(store?.contact_details?.email || store?.contact_email || '');
+        setStoreName(store?.name || '');
       } catch (error) {
-        console.error('Error loading store email:', error);
+        console.error('Error loading store data:', error);
       }
     }
   };
@@ -45,7 +47,7 @@ export default function EmailSettings() {
           </div>
         </div>
 
-        <EmailProviderSettings storeEmail={storeEmail} />
+        <EmailProviderSettings storeEmail={storeEmail} storeName={storeName} />
       </div>
     </div>
   );

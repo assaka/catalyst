@@ -44,7 +44,7 @@ const EMAIL_PROVIDERS = {
   }
 };
 
-export default function EmailProviderSettings({ storeEmail }) {
+export default function EmailProviderSettings({ storeEmail, storeName }) {
   const { getSelectedStoreId } = useStoreSelection();
   const { showConfirm, AlertComponent } = useAlertTypes();
   const [selectedProvider, setSelectedProvider] = useState(null);
@@ -53,7 +53,7 @@ export default function EmailProviderSettings({ storeEmail }) {
   const [connectionStatus, setConnectionStatus] = useState(null);
   const [testEmail, setTestEmail] = useState('');
   const [testingSend, setTestingSend] = useState(false);
-  const [testingStoreEmail, setTestingStoreEmail] = useState(false);
+  const [showTestSection, setShowTestSection] = useState(false);
   const [stats, setStats] = useState(null);
   const [flashMessage, setFlashMessage] = useState(null);
 
@@ -114,6 +114,14 @@ export default function EmailProviderSettings({ storeEmail }) {
     }
     setSelectedProvider(providerId);
     setShowConfig(true);
+
+    // Pre-fill sender name and email from store if not already configured
+    if (!connectionStatus?.isConfigured && storeName && !senderName) {
+      setSenderName(storeName);
+    }
+    if (!connectionStatus?.isConfigured && storeEmail && !senderEmail) {
+      setSenderEmail(storeEmail);
+    }
   };
 
   const handleSaveConfiguration = async () => {
@@ -192,27 +200,17 @@ export default function EmailProviderSettings({ storeEmail }) {
     }
   };
 
-  const handleTestToStoreEmail = async () => {
-    const storeId = getSelectedStoreId();
-    if (!storeId || !storeEmail) {
-      setFlashMessage({ type: 'error', message: 'Store email not configured. Please add it in the Contact tab.' });
+  const handleOpenTestSection = () => {
+    if (!storeEmail) {
+      setFlashMessage({ type: 'error', message: 'Store email not configured. Please add it in the Contact tab first.' });
       return;
     }
-
-    setTestingStoreEmail(true);
-    try {
-      const response = await brevoAPI.testConnection(storeId, storeEmail);
-      if (response.success) {
-        setFlashMessage({ type: 'success', message: `Test email sent to ${storeEmail}! Check your inbox.` });
-      } else {
-        setFlashMessage({ type: 'error', message: `Test failed: ${response.message}` });
-      }
-    } catch (error) {
-      console.error('Test to store email error:', error);
-      setFlashMessage({ type: 'error', message: 'Failed to send test email' });
-    } finally {
-      setTestingStoreEmail(false);
-    }
+    setTestEmail(storeEmail);
+    setShowTestSection(true);
+    // Focus on the email input after a short delay
+    setTimeout(() => {
+      document.getElementById('test-email')?.focus();
+    }, 100);
   };
 
   const isBrevoConnected = connectionStatus?.isConfigured && connectionStatus?.config?.is_active;
@@ -332,35 +330,34 @@ export default function EmailProviderSettings({ storeEmail }) {
                     <div className="space-y-1 text-sm text-green-800">
                       <p><strong>Sender Name:</strong> {connectionStatus.config.sender_name}</p>
                       <p><strong>Sender Email:</strong> {connectionStatus.config.sender_email}</p>
-                      <p className="text-xs text-green-600">
-                        Connected: {new Date(connectionStatus.config.created_at).toLocaleDateString()}
-                      </p>
+                      {connectionStatus.config.created_at && (
+                        <p className="text-xs text-green-600">
+                          Connected: {new Date(connectionStatus.config.created_at).toLocaleDateString()}
+                        </p>
+                      )}
                     </div>
                   </div>
 
                   <div className="flex gap-2 flex-wrap">
                     {storeEmail && (
                       <Button
-                        onClick={handleTestToStoreEmail}
-                        disabled={testingStoreEmail}
+                        onClick={handleOpenTestSection}
                         className="bg-green-600 hover:bg-green-700"
                       >
-                        {testingStoreEmail ? (
-                          <>
-                            <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
-                            Sending...
-                          </>
-                        ) : (
-                          <>
-                            <Send className="w-4 h-4 mr-2" />
-                            Send Test to {storeEmail}
-                          </>
-                        )}
+                        <Send className="w-4 h-4 mr-2" />
+                        Send Test to {storeEmail}
                       </Button>
                     )}
                     <Button
                       variant="outline"
-                      onClick={() => setShowConfig(true)}
+                      onClick={() => {
+                        setShowConfig(true);
+                        // Keep existing values when updating
+                        if (connectionStatus?.config) {
+                          setSenderName(connectionStatus.config.sender_name || storeName || '');
+                          setSenderEmail(connectionStatus.config.sender_email || storeEmail || '');
+                        }
+                      }}
                     >
                       Update Configuration
                     </Button>
@@ -386,7 +383,12 @@ export default function EmailProviderSettings({ storeEmail }) {
                     Configure your Brevo API key to send transactional emails (signup, orders, credits).
                   </p>
                   <Button
-                    onClick={() => setShowConfig(true)}
+                    onClick={() => {
+                      setShowConfig(true);
+                      // Pre-fill with store data
+                      if (storeName && !senderName) setSenderName(storeName);
+                      if (storeEmail && !senderEmail) setSenderEmail(storeEmail);
+                    }}
                     className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700"
                   >
                     <Mail className="w-4 h-4 mr-2" />
@@ -434,9 +436,12 @@ export default function EmailProviderSettings({ storeEmail }) {
                     id="sender-name"
                     value={senderName}
                     onChange={(e) => setSenderName(e.target.value)}
-                    placeholder="Your Store Name"
+                    placeholder={storeName || "Your Store Name"}
                     required
                   />
+                  <p className="text-xs text-gray-500">
+                    Pre-filled with your store name. Change if needed.
+                  </p>
                 </div>
 
                 <div className="space-y-2">
@@ -446,9 +451,12 @@ export default function EmailProviderSettings({ storeEmail }) {
                     type="email"
                     value={senderEmail}
                     onChange={(e) => setSenderEmail(e.target.value)}
-                    placeholder="noreply@yourdomain.com"
+                    placeholder={storeEmail || "noreply@yourdomain.com"}
                     required
                   />
+                  <p className="text-xs text-gray-500">
+                    Pre-filled with your store contact email. Change if needed.
+                  </p>
                   <div className="bg-blue-50 border border-blue-200 rounded p-3 mt-2">
                     <p className="text-xs text-blue-800">
                       <strong>Important:</strong> If this email is not yet verified in your Brevo account,
@@ -480,15 +488,24 @@ export default function EmailProviderSettings({ storeEmail }) {
             </Card>
           )}
 
-          {/* Test Email */}
-          {isBrevoConnected && !showConfig && (
-            <Card>
+          {/* Test Email - Hidden by default, shown when green button clicked */}
+          {isBrevoConnected && !showConfig && showTestSection && (
+            <Card className="border-green-200">
               <CardHeader>
-                <CardTitle>Test Email Connection</CardTitle>
+                <CardTitle className="flex items-center justify-between">
+                  <span>Test Email Connection</span>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setShowTestSection(false)}
+                  >
+                    Hide
+                  </Button>
+                </CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="space-y-2">
-                  <Label htmlFor="test-email">Or Send Test to Custom Email:</Label>
+                  <Label htmlFor="test-email">Send Test Email To:</Label>
                   <div className="flex gap-2">
                     <Input
                       id="test-email"
@@ -501,6 +518,7 @@ export default function EmailProviderSettings({ storeEmail }) {
                     <Button
                       onClick={handleTestConnection}
                       disabled={!testEmail || testingSend}
+                      className="bg-green-600 hover:bg-green-700"
                     >
                       {testingSend ? (
                         <>
@@ -515,6 +533,9 @@ export default function EmailProviderSettings({ storeEmail }) {
                       )}
                     </Button>
                   </div>
+                  <p className="text-xs text-gray-500">
+                    Email is pre-filled with your store email. You can change it to test with a different address.
+                  </p>
                 </div>
               </CardContent>
             </Card>
