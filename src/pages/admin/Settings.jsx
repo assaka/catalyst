@@ -406,12 +406,6 @@ export default function Settings() {
           clearAllCache(store.id);
           localStorage.removeItem('storeProviderCache');
           sessionStorage.removeItem('storeProviderCache');
-
-          // Force reload of the page after a short delay to ensure settings are applied
-          setTimeout(() => {
-            window.location.reload();
-          }, 1500);
-
         } catch (e) {
           console.warn('Failed to clear cache from storage:', e);
         }
@@ -483,10 +477,26 @@ export default function Settings() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         
         {flashMessage && (
-          <div 
-            className={`fixed bottom-4 right-4 p-4 rounded-lg shadow-lg text-white z-50 transition-opacity duration-300 ${flashMessage.type === 'error' ? 'bg-red-500' : 'bg-green-500'}`}
+          <div
+            className={`mb-6 p-4 rounded-lg border ${
+              flashMessage.type === 'error'
+                ? 'bg-red-50 border-red-200 text-red-800'
+                : flashMessage.type === 'warning'
+                ? 'bg-yellow-50 border-yellow-200 text-yellow-800'
+                : 'bg-green-50 border-green-200 text-green-800'
+            } transition-all duration-300`}
           >
-            {flashMessage.message}
+            <div className="flex items-center">
+              <div className="flex-1">
+                {flashMessage.message}
+              </div>
+              <button
+                onClick={() => setFlashMessage(null)}
+                className="ml-4 text-current hover:opacity-70"
+              >
+                ×
+              </button>
+            </div>
           </div>
         )}
 
