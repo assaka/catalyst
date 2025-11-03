@@ -832,8 +832,13 @@ export default function SeoHeadManager({ pageType, pageData, pageTitle, pageDesc
         };
         
         cleanupGTM();
-        
-        if (analyticsSettings?.enable_google_tag_manager) {
+
+        // Validate GTM ID format (should start with GTM-)
+        const isValidGTMId = (id) => {
+            return id && typeof id === 'string' && id.match(/^GTM-[A-Z0-9]+$/);
+        };
+
+        if (analyticsSettings?.enable_google_tag_manager && isValidGTMId(analyticsSettings.gtm_id)) {
             if (analyticsSettings.gtm_script_type === 'custom' && analyticsSettings.custom_gtm_script) {
                 // Custom GTM Script (Server-Side Tagging)
                 const script = document.createElement('script');
@@ -867,6 +872,8 @@ export default function SeoHeadManager({ pageType, pageData, pageTitle, pageDesc
                 noscript.innerHTML = `<iframe src="https://www.googletagmanager.com/ns.html?id=${analyticsSettings.gtm_id}" height="0" width="0" style="display:none;visibility:hidden"></iframe>`;
                 document.body.insertBefore(noscript, document.body.firstChild);
             }
+        } else if (analyticsSettings?.enable_google_tag_manager && !isValidGTMId(analyticsSettings.gtm_id)) {
+            console.warn('⚠️ Invalid or missing GTM ID. GTM will not be loaded. Expected format: GTM-XXXXXX, got:', analyticsSettings.gtm_id);
         }
 
         // Google Ads Conversion Tracking
@@ -877,23 +884,32 @@ export default function SeoHeadManager({ pageType, pageData, pageTitle, pageDesc
         };
         
         cleanupGoogleAds();
-        
-        if (analyticsSettings?.google_ads_id) {
-            const script = document.createElement('script');
-            script.setAttribute('data-google-ads', 'head');
-            script.async = true;
-            script.src = `https://www.googletagmanager.com/gtag/js?id=${analyticsSettings.google_ads_id}`;
-            document.head.appendChild(script);
 
-            const configScript = document.createElement('script');
-            configScript.setAttribute('data-google-ads', 'config');
-            configScript.innerHTML = `
-                window.dataLayer = window.dataLayer || [];
-                function gtag(){dataLayer.push(arguments);}
-                gtag('js', new Date());
-                gtag('config', '${analyticsSettings.google_ads_id}');
-            `;
-            document.head.appendChild(configScript);
+        // Validate Google Ads ID format (should start with AW- or G-)
+        const isValidGoogleAdsId = (id) => {
+            return id && typeof id === 'string' && (id.match(/^AW-[0-9]+$/) || id.match(/^G-[A-Z0-9]+$/));
+        };
+
+        if (analyticsSettings?.google_ads_id) {
+            if (!isValidGoogleAdsId(analyticsSettings.google_ads_id)) {
+                console.warn('⚠️ Invalid Google Ads ID format. Expected format: AW-XXXXXX or G-XXXXXX, got:', analyticsSettings.google_ads_id);
+            } else {
+                const script = document.createElement('script');
+                script.setAttribute('data-google-ads', 'head');
+                script.async = true;
+                script.src = `https://www.googletagmanager.com/gtag/js?id=${analyticsSettings.google_ads_id}`;
+                document.head.appendChild(script);
+
+                const configScript = document.createElement('script');
+                configScript.setAttribute('data-google-ads', 'config');
+                configScript.innerHTML = `
+                    window.dataLayer = window.dataLayer || [];
+                    function gtag(){dataLayer.push(arguments);}
+                    gtag('js', new Date());
+                    gtag('config', '${analyticsSettings.google_ads_id}');
+                `;
+                document.head.appendChild(configScript);
+            }
         }
 
         // Cleanup function

@@ -155,6 +155,16 @@ async function loadPluginFrontendScripts(pluginId) {
             continue;
           }
 
+          // Skip Node.js backend scripts (they contain require/module.exports)
+          const scriptContent = script.content.trim();
+          if (scriptContent.includes('require(') ||
+              scriptContent.includes('module.exports') ||
+              scriptContent.includes('require.') ||
+              scriptContent.match(/const\s+\{\s*\w+\s*\}\s*=\s*require\(/)) {
+            console.warn(`  ⚠️ Skipping backend script ${script.name} (contains Node.js syntax)`);
+            continue;
+          }
+
           // Create a script tag and inject the code
           const scriptElement = document.createElement('script');
           scriptElement.type = 'module'; // Use module to support ES6 import/export
