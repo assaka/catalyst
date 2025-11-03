@@ -1508,7 +1508,7 @@ export default function Checkout() {
                   />
                   {showPhoneField && (
                     <Input
-                      placeholder={t('common.phone', 'Phone Number') + (phoneNumberRequired ? '' : ' (Optional)')}
+                      placeholder={t('common.phone', 'Phone Number') + (phoneNumberRequired ? ' *' : ' (Optional)')}
                       type="tel"
                       className={`md:col-span-2 ${shippingErrors.phone ? 'border-red-500' : ''}`}
                       required={phoneNumberRequired}
@@ -1729,7 +1729,7 @@ export default function Checkout() {
                         />
                         {showPhoneField && (
                           <Input
-                            placeholder={t('common.phone', 'Phone Number') + (phoneNumberRequired ? '' : ' (Optional)')}
+                            placeholder={t('common.phone', 'Phone Number') + (phoneNumberRequired ? ' *' : ' (Optional)')}
                             type="tel"
                             className={`md:col-span-2 ${billingErrors.phone ? 'border-red-500' : ''}`}
                             required={phoneNumberRequired}
