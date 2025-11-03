@@ -207,63 +207,64 @@ export default function BrevoSettings({ storeEmail }) {
                   </p>
                 </div>
               </div>
-
-              <div className="flex gap-2 flex-wrap">
-                {storeEmail && (
+              <div className="flex justify-between">
+                <div className="flex gap-2 flex-wrap">
+                  {storeEmail && (
+                    <Button
+                      onClick={handleTestToStoreEmail}
+                      disabled={testingStoreEmail}
+                      className="bg-green-600 hover:bg-green-700"
+                    >
+                      {testingStoreEmail ? (
+                        <>
+                          <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
+                          Sending...
+                        </>
+                      ) : (
+                        <>
+                          <Send className="w-4 h-4 mr-2" />
+                          Send Test to {storeEmail}
+                        </>
+                      )}
+                    </Button>
+                  )}
                   <Button
-                    onClick={handleTestToStoreEmail}
-                    disabled={testingStoreEmail}
-                    className="bg-green-600 hover:bg-green-700"
+                    variant="outline"
+                    onClick={() => setShowConfig(true)}
                   >
-                    {testingStoreEmail ? (
-                      <>
-                        <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
-                        Sending...
-                      </>
-                    ) : (
-                      <>
-                        <Send className="w-4 h-4 mr-2" />
-                        Send Test to {storeEmail}
-                      </>
-                    )}
+                    Update Configuration
                   </Button>
-                )}
+                  <Button
+                    variant="outline"
+                    onClick={loadConnectionStatus}
+                  >
+                    <RefreshCw className="w-4 h-4 mr-2" />
+                    Refresh
+                  </Button>
+                </div>
                 <Button
-                  variant="outline"
-                  onClick={() => setShowConfig(true)}
-                >
-                  Update Configuration
-                </Button>
-                <Button
-                  variant="outline"
-                  onClick={handleDisconnect}
-                  className="text-red-600 hover:text-red-700 ml-auto"
+                    variant="outline"
+                    onClick={handleDisconnect}
+                    className="text-red-600 hover:text-red-700 ml-auto"
                 >
                   Disconnect
                 </Button>
-                <Button
-                  variant="outline"
-                  onClick={loadConnectionStatus}
-                >
-                  <RefreshCw className="w-4 h-4 mr-2" />
-                  Refresh
-                </Button>
               </div>
-            </>
-          ) : (
-            <>
-              <p className="text-gray-600">
-                Configure your Brevo API key to send transactional emails (signup, orders, credits).
-              </p>
-              <Button
-                onClick={() => setShowConfig(true)}
-                className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700"
-              >
-                <Mail className="w-4 h-4 mr-2" />
-                Configure Brevo
-              </Button>
-            </>
-          )}
+              </>
+            ) : (
+              <>
+                <p className="text-gray-600">
+                  Configure your Brevo API key to send transactional emails (signup, orders, credits).
+                </p>
+                <Button
+                  onClick={() => setShowConfig(true)}
+                  className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700"
+                >
+                  <Mail className="w-4 h-4 mr-2" />
+                  Configure Brevo
+                </Button>
+              </>
+            )}
         </CardContent>
       </Card>
 
