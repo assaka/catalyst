@@ -64,7 +64,9 @@ export default function Settings() {
   // Effect to clear flash messages after a few seconds
   useEffect(() => {
     if (flashMessage) {
+      console.log('🔔 Flash message updated:', flashMessage);
       const timer = setTimeout(() => {
+        console.log('⏰ Auto-clearing flash message');
         setFlashMessage(null);
       }, 5000); // Clear message after 5 seconds
       return () => clearTimeout(timer);
@@ -398,8 +400,14 @@ export default function Settings() {
 
       // Update our local store state with the response data
       if (result && result.settings) {
+        console.log('✅ Setting flash message to success');
         setFlashMessage({ type: 'success', message: 'Settings saved successfully!' });
         setSaveSuccess(true);
+
+        // Auto-clear success state after 3 seconds
+        setTimeout(() => {
+          setSaveSuccess(false);
+        }, 3000);
 
         // Clear ALL StoreProvider cache to force reload of settings
         try {
@@ -478,21 +486,24 @@ export default function Settings() {
         
         {flashMessage && (
           <div
-            className={`mb-6 p-4 rounded-lg border ${
+            className={`mb-6 p-4 rounded-lg border shadow-md ${
               flashMessage.type === 'error'
                 ? 'bg-red-50 border-red-200 text-red-800'
                 : flashMessage.type === 'warning'
                 ? 'bg-yellow-50 border-yellow-200 text-yellow-800'
                 : 'bg-green-50 border-green-200 text-green-800'
-            } transition-all duration-300`}
+            } transition-all duration-300 animate-in fade-in slide-in-from-top-2`}
           >
             <div className="flex items-center">
-              <div className="flex-1">
+              <div className="flex-1 font-medium">
                 {flashMessage.message}
               </div>
               <button
-                onClick={() => setFlashMessage(null)}
-                className="ml-4 text-current hover:opacity-70"
+                onClick={() => {
+                  console.log('🗑️ Manually closing flash message');
+                  setFlashMessage(null);
+                }}
+                className="ml-4 text-current hover:opacity-70 text-xl font-bold"
               >
                 ×
               </button>
