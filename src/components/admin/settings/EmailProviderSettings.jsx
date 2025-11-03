@@ -368,11 +368,13 @@ export default function EmailProviderSettings({ storeEmail, storeName }) {
                       <p><strong>Sender Name:</strong> {connectionStatus.config.sender_name}</p>
                       <p><strong>Sender Email:</strong> {connectionStatus.config.sender_email}</p>
                       <p className="text-xs text-green-600 mt-2">
-                        Connected: {connectionStatus.config.created_at
-                          ? new Date(connectionStatus.config.created_at).toLocaleDateString('en-US', {
+                        <strong>Configured:</strong> {connectionStatus.config.updated_at || connectionStatus.config.created_at
+                          ? new Date(connectionStatus.config.updated_at || connectionStatus.config.created_at).toLocaleDateString('en-US', {
                               year: 'numeric',
                               month: 'long',
-                              day: 'numeric'
+                              day: 'numeric',
+                              hour: '2-digit',
+                              minute: '2-digit'
                             })
                           : 'Just now'}
                       </p>
