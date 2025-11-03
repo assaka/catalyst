@@ -403,15 +403,47 @@ const RegisterFormSlotComponent = ({ slot, context, variableContext }) => {
     setSuccess('');
 
     try {
-      // Password validation
+      // Client-side password validation
+      if (formData.password.length < 8) {
+        setError(t('common.password_too_short', 'Password must be at least 8 characters long'));
+        setLoading(false);
+        return;
+      }
+
+      if (!/[A-Z]/.test(formData.password)) {
+        setError(t('common.password_needs_uppercase', 'Password must contain at least one uppercase letter'));
+        setLoading(false);
+        return;
+      }
+
+      if (!/[a-z]/.test(formData.password)) {
+        setError(t('common.password_needs_lowercase', 'Password must contain at least one lowercase letter'));
+        setLoading(false);
+        return;
+      }
+
+      if (!/\d/.test(formData.password)) {
+        setError(t('common.password_needs_number', 'Password must contain at least one number'));
+        setLoading(false);
+        return;
+      }
+
+      if (!/[!@#$%^&*(),.?":{}|<>]/.test(formData.password)) {
+        setError(t('common.password_needs_special', 'Password must contain at least one special character'));
+        setLoading(false);
+        return;
+      }
+
       if (formData.password !== formData.confirmPassword) {
         setError(t('common.passwords_do_not_match', 'Passwords do not match'));
+        setLoading(false);
         return;
       }
 
       // Ensure store is loaded
       if (!store?.id) {
         setError(t('common.store_info_not_available', 'Store information not available. Please refresh.'));
+        setLoading(false);
         return;
       }
 
@@ -427,12 +459,22 @@ const RegisterFormSlotComponent = ({ slot, context, variableContext }) => {
         send_welcome_email: true
       });
 
+      console.log('📝 Registration response:', response);
+
+      // Handle different response structures
       let actualResponse = response;
       if (Array.isArray(response)) {
         actualResponse = response[0];
       }
 
-      if (actualResponse?.success) {
+      // Check for success in multiple possible locations
+      const isSuccess = actualResponse?.success ||
+                       actualResponse?.data?.success ||
+                       (actualResponse?.data?.token && actualResponse?.data?.user);
+
+      console.log('📝 Is success?', isSuccess, 'Response:', actualResponse);
+
+      if (isSuccess) {
         setSuccess(t('common.registration_successful', 'Registration successful! A welcome email has been sent to your email address.'));
 
         // Token is already saved by CustomerAuth.register()
@@ -444,10 +486,24 @@ const RegisterFormSlotComponent = ({ slot, context, variableContext }) => {
           navigate(accountUrl);
         }, 2000);
       } else {
-        setError(t('common.registration_failed', 'Registration failed. Please try again.'));
+        // Show specific error message if available
+        const errorMsg = actualResponse?.message ||
+                        actualResponse?.data?.message ||
+                        actualResponse?.error ||
+                        t('common.registration_failed', 'Registration failed. Please try again.');
+        setError(errorMsg);
       }
     } catch (error) {
-      setError(error.message || t('common.registration_failed', 'Registration failed. Please try again.'));
+      console.error('Registration error:', error);
+
+      // Handle validation errors from backend
+      if (error.response?.data?.errors) {
+        const validationErrors = error.response.data.errors;
+        const errorMessages = validationErrors.map(err => err.msg || err.message).join('. ');
+        setError(errorMessages);
+      } else {
+        setError(error.message || t('common.registration_failed', 'Registration failed. Please try again.'));
+      }
     } finally {
       setLoading(false);
     }
