@@ -2517,9 +2517,9 @@ export default function Translations() {
           } else if (selectedEntityType === 'attribute') {
             loadAttributes();
           } else if (selectedEntityType === 'cms_page') {
-            loadCms();
+            loadCmsContent();
           } else if (selectedEntityType === 'cms_block') {
-            loadCms();
+            loadCmsContent();
           } else if (selectedEntityType === 'product_tab') {
             loadProductTabs();
           } else if (selectedEntityType === 'product_label') {
