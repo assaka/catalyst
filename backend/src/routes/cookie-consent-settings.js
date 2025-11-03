@@ -467,7 +467,20 @@ router.post('/bulk-translate', authMiddleware, [
 
         // Translate the settings
         console.log(`🔄 Translating settings "${settingsName}"...`);
-        await translationService.aiTranslateEntity('cookie_consent', settings.id, fromLang, toLang);
+        const sourceTranslation = settings.translations[fromLang];
+        const translatedData = {};
+
+        for (const [key, value] of Object.entries(sourceTranslation)) {
+          if (typeof value === 'string' && value.trim()) {
+            translatedData[key] = await translationService.aiTranslate(value, fromLang, toLang);
+          }
+        }
+
+        // Save the translation using normalized tables
+        const translations = settings.translations || {};
+        translations[toLang] = translatedData;
+
+        await updateCookieConsentSettingsWithTranslations(settings.id, {}, translations);
         console.log(`✅ Successfully translated settings "${settingsName}"`);
         results.translated++;
       } catch (error) {
