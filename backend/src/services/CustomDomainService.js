@@ -34,13 +34,39 @@ class CustomDomainService {
         subdomain: options.subdomain || null,
         verification_method: options.verificationMethod || 'txt',
         is_primary: options.isPrimary || false,
-        ssl_provider: options.sslProvider || 'letsencrypt',
+        ssl_provider: 'vercel',
         dns_provider: options.dnsProvider || 'manual'
       });
 
       // Generate verification token
       domain.generateVerificationToken();
       await domain.save();
+
+      // Automatically add domain to Vercel via API (for SSL provisioning)
+      const vercelService = require('./vercel-domain-service');
+      if (vercelService.isConfigured()) {
+        try {
+          console.log(`🔧 Auto-adding domain to Vercel: ${domainName}`);
+          const vercelResult = await vercelService.addDomain(domainName);
+
+          if (vercelResult.success) {
+            console.log(`✅ Domain added to Vercel successfully`);
+
+            // Update domain metadata
+            domain.metadata = {
+              ...domain.metadata,
+              vercel_added: true,
+              vercel_added_at: new Date().toISOString()
+            };
+            await domain.save();
+          }
+        } catch (vercelError) {
+          console.warn(`⚠️ Failed to add domain to Vercel: ${vercelError.message}`);
+          // Don't fail the whole operation - domain can still be added manually to Vercel
+        }
+      } else {
+        console.warn('⚠️ Vercel API not configured - domain must be added to Vercel manually');
+      }
 
       return {
         success: true,
@@ -109,12 +135,26 @@ class CustomDomainService {
           { where: { id: domain.store_id } }
         );
 
-        // Trigger SSL certificate provisioning
-        await this.provisionSSLCertificate(domainId);
+        // Check SSL status from Vercel
+        const vercelService = require('./vercel-domain-service');
+        if (vercelService.isConfigured()) {
+          try {
+            // Give Vercel a moment to detect DNS changes
+            setTimeout(async () => {
+              const sslStatus = await vercelService.checkSSLStatus(domain.domain);
+              if (sslStatus.success && sslStatus.ssl_status) {
+                await domain.update({ ssl_status: sslStatus.ssl_status });
+                console.log(`✅ SSL status updated: ${sslStatus.ssl_status}`);
+              }
+            }, 5000);
+          } catch (error) {
+            console.warn('⚠️ Failed to check SSL status:', error.message);
+          }
+        }
 
         return {
           success: true,
-          message: 'Domain verified successfully',
+          message: 'Domain verified successfully. SSL certificate will be provisioned automatically.',
           domain: domain.toJSON()
         };
       } else {
@@ -421,6 +461,18 @@ class CustomDomainService {
 
         if (otherDomains > 0) {
           throw new Error('Cannot remove primary domain. Set another domain as primary first.');
+        }
+      }
+
+      // Remove from Vercel if configured
+      const vercelService = require('./vercel-domain-service');
+      if (vercelService.isConfigured()) {
+        try {
+          console.log(`🗑️ Removing domain from Vercel: ${domain.domain}`);
+          await vercelService.removeDomain(domain.domain);
+        } catch (vercelError) {
+          console.warn(`⚠️ Failed to remove from Vercel: ${vercelError.message}`);
+          // Continue with database removal even if Vercel removal fails
         }
       }
 

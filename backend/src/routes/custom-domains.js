@@ -231,9 +231,9 @@ router.delete('/:id', authMiddleware, storeResolver(), async (req, res) => {
 });
 
 /**
- * Provision SSL certificate
+ * Check and update SSL status from Vercel
  */
-router.post('/:id/provision-ssl', authMiddleware, storeResolver(), async (req, res) => {
+router.post('/:id/check-ssl', authMiddleware, storeResolver(), async (req, res) => {
   try {
     const domain = await CustomDomain.findOne({
       where: {
@@ -249,13 +249,39 @@ router.post('/:id/provision-ssl', authMiddleware, storeResolver(), async (req, r
       });
     }
 
-    const result = await CustomDomainService.provisionSSLCertificate(req.params.id);
-    res.json(result);
+    const vercelService = require('../services/vercel-domain-service');
+
+    if (!vercelService.isConfigured()) {
+      return res.status(503).json({
+        success: false,
+        message: 'Vercel API not configured. SSL status cannot be checked automatically.'
+      });
+    }
+
+    // Get SSL status from Vercel
+    const sslStatus = await vercelService.checkSSLStatus(domain.domain);
+
+    if (sslStatus.success) {
+      // Update domain SSL status
+      await domain.update({
+        ssl_status: sslStatus.ssl_status,
+        ssl_issued_at: sslStatus.ssl_status === 'active' ? new Date() : null
+      });
+
+      return res.json({
+        success: true,
+        ssl_status: sslStatus.ssl_status,
+        message: sslStatus.message,
+        domain: domain.toJSON()
+      });
+    } else {
+      return res.json(sslStatus);
+    }
   } catch (error) {
-    console.error('Error provisioning SSL:', error);
+    console.error('Error checking SSL status:', error);
     res.status(500).json({
       success: false,
-      message: error.message || 'Failed to provision SSL certificate'
+      message: error.message || 'Failed to check SSL status'
     });
   }
 });

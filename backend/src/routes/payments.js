@@ -307,10 +307,16 @@ router.post('/connect-link', authMiddleware, async (req, res) => {
 // @access  Private
 router.post('/create-intent', authMiddleware, async (req, res) => {
   try {
+    console.log('📝 Create payment intent request:', {
+      body: req.body,
+      userId: req.user?.id
+    });
+
     const { amount, currency = 'usd', metadata = {} } = req.body;
 
     // Validate amount
     if (!amount || typeof amount !== 'object' || !amount.credits || !amount.amount) {
+      console.error('❌ Invalid amount format:', amount);
       return res.status(400).json({
         success: false,
         error: 'Invalid amount format. Expected { credits, amount }'
@@ -321,6 +327,7 @@ router.post('/create-intent', authMiddleware, async (req, res) => {
 
     // Validate credits and amount
     if (!credits || credits < 1) {
+      console.error('❌ Invalid credits:', credits);
       return res.status(400).json({
         success: false,
         error: 'Credits must be at least 1'
@@ -328,6 +335,7 @@ router.post('/create-intent', authMiddleware, async (req, res) => {
     }
 
     if (!amountUsd || amountUsd < 1) {
+      console.error('❌ Invalid amount:', amountUsd);
       return res.status(400).json({
         success: false,
         error: 'Amount must be at least $1'
@@ -336,13 +344,15 @@ router.post('/create-intent', authMiddleware, async (req, res) => {
 
     // Check if Stripe is configured
     if (!process.env.STRIPE_SECRET_KEY) {
+      console.error('❌ Stripe not configured');
       return res.status(400).json({
         success: false,
-        error: 'Stripe not configured'
+        error: 'Stripe payment is not configured. Please contact support.'
       });
     }
 
     const userId = req.user.id;
+    console.log('👤 User ID:', userId);
 
     // Get user's first store for the transaction record
     // Credit balance is user-level, but transactions need a store reference
@@ -350,11 +360,14 @@ router.post('/create-intent', authMiddleware, async (req, res) => {
     const userStore = await StoreModel.findOne({ where: { user_id: userId } });
 
     if (!userStore) {
+      console.error('❌ No store found for user:', userId);
       return res.status(400).json({
         success: false,
         error: 'No store found for user. Please create a store first.'
       });
     }
+
+    console.log('🏪 User store:', userStore.id);
 
     // Create credit transaction record first
     const creditService = require('../services/credit-service');
@@ -365,8 +378,11 @@ router.post('/create-intent', authMiddleware, async (req, res) => {
       credits
     );
 
+    console.log('💳 Transaction created:', transaction.id);
+
     // Create Stripe payment intent
     const stripeAmount = convertToStripeAmount(amountUsd, currency);
+    console.log('💰 Creating Stripe payment intent for:', { stripeAmount, currency, credits });
 
     const paymentIntent = await stripe.paymentIntents.create({
       amount: stripeAmount,
@@ -381,12 +397,16 @@ router.post('/create-intent', authMiddleware, async (req, res) => {
       description: `Credit purchase: ${credits} credits`
     });
 
+    console.log('✅ Payment intent created:', paymentIntent.id);
+
     // Update transaction with payment intent ID
     const CreditTransaction = require('../models/CreditTransaction');
     await CreditTransaction.update(
       { metadata: { ...transaction.metadata, payment_intent_id: paymentIntent.id } },
       { where: { id: transaction.id } }
     );
+
+    console.log('✅ Returning client secret to frontend');
 
     res.json({
       data: {
@@ -397,7 +417,7 @@ router.post('/create-intent', authMiddleware, async (req, res) => {
     });
 
   } catch (error) {
-    console.error('Create payment intent error:', error);
+    console.error('❌ Create payment intent error:', error);
     res.status(500).json({
       success: false,
       error: error.message || 'Failed to create payment intent'

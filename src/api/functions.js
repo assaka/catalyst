@@ -9,10 +9,10 @@ export const createPaymentIntent = async (amount, currency = 'usd', metadata = {
       currency,
       metadata
     });
-    return response.data;
+    return { data: response.data, error: null };
   } catch (error) {
     console.error('Error creating payment intent:', error);
-    throw error;
+    return { data: null, error: error };
   }
 };
 

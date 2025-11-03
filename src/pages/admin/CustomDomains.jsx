@@ -62,6 +62,7 @@ const CustomDomains = () => {
   const [isPrimary, setIsPrimary] = useState(false);
   const [adding, setAdding] = useState(false);
   const [verifying, setVerifying] = useState(false);
+  const [checkingSSL, setCheckingSSL] = useState(false);
 
   useEffect(() => {
     if (storeId && storeId !== 'undefined') {
@@ -206,6 +207,29 @@ const CustomDomains = () => {
     } catch (error) {
       console.error('Error debugging DNS:', error);
       toast.error('Failed to debug DNS configuration');
+    }
+  };
+
+  const handleCheckSSL = async (domainId) => {
+    try {
+      setCheckingSSL(true);
+      const response = await apiClient.post(`/custom-domains/${domainId}/check-ssl`);
+
+      if (response.success) {
+        if (response.ssl_status === 'active') {
+          toast.success('SSL certificate is active!');
+        } else {
+          toast.info(`SSL status: ${response.ssl_status}. Vercel is provisioning the certificate...`);
+        }
+        loadDomains();
+      } else {
+        toast.warning(response.message || 'SSL status check failed');
+      }
+    } catch (error) {
+      console.error('Error checking SSL:', error);
+      toast.error(error.response?.data?.message || 'Failed to check SSL status');
+    } finally {
+      setCheckingSSL(false);
     }
   };
 
@@ -500,6 +524,27 @@ const CustomDomains = () => {
                               )}
                             </Button>
                           </>
+                        )}
+
+                        {domain.verification_status === 'verified' && domain.ssl_status !== 'active' && (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleCheckSSL(domain.id)}
+                            disabled={checkingSSL}
+                          >
+                            {checkingSSL ? (
+                              <>
+                                <RefreshCw className="w-3 h-3 mr-1 animate-spin" />
+                                Checking...
+                              </>
+                            ) : (
+                              <>
+                                <Shield className="w-3 h-3 mr-1" />
+                                Check SSL
+                              </>
+                            )}
+                          </Button>
                         )}
 
                         {domain.verification_status === 'verified' && !domain.is_primary && (

@@ -22,32 +22,48 @@ const CheckoutForm = ({ selectedPackage, onSuccess, onError }) => {
   const handleSubmit = async (event) => {
     event.preventDefault();
     setError(null);
-    if (!stripe || !elements) return;
+    if (!stripe || !elements) {
+      console.warn('Stripe or Elements not loaded yet');
+      return;
+    }
 
     setProcessing(true);
+    console.log('💳 Starting payment for:', selectedPackage);
 
     try {
+      console.log('📤 Calling createPaymentIntent...');
       const { data: response, error: intentError } = await createPaymentIntent({
         credits: selectedPackage.credits,
         amount: selectedPackage.price
       });
 
-      if (intentError || response.error) {
-        throw new Error(intentError?.message || response.error);
+      console.log('📥 Payment intent response:', { response, intentError });
+
+      if (intentError || response?.error) {
+        throw new Error(intentError?.message || response?.error);
       }
 
-      const { error: paymentError, paymentIntent } = await stripe.confirmCardPayment(response.clientSecret, {
+      if (!response?.data?.clientSecret) {
+        console.error('No client secret in response:', response);
+        throw new Error('Invalid payment response - missing client secret');
+      }
+
+      console.log('🔐 Confirming card payment...');
+      const { error: paymentError, paymentIntent } = await stripe.confirmCardPayment(response.data.clientSecret, {
         payment_method: {
           card: elements.getElement(CardElement),
         }
       });
 
       if (paymentError) {
+        console.error('Payment error:', paymentError);
         throw new Error(paymentError.message);
       }
 
+      console.log('✅ Payment successful:', paymentIntent.id);
       onSuccess();
     } catch (err) {
+      console.error('❌ Payment failed:', err);
       setError(err.message);
       onError(err.message);
     } finally {
