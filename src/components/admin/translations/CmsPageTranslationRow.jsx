@@ -11,7 +11,7 @@ import api from '@/utils/api';
 /**
  * Accordion row for managing CMS page translations
  */
-export default function CmsPageTranslationRow({ page, onUpdate, selectedLanguages }) {
+export default function CmsPageTranslationRow({ page, onUpdate, selectedLanguages, onFlashMessage }) {
   const { availableLanguages } = useTranslation();
   const [isExpanded, setIsExpanded] = useState(false);
   const [translations, setTranslations] = useState(page.translations || {});
@@ -66,6 +66,7 @@ export default function CmsPageTranslationRow({ page, onUpdate, selectedLanguage
         translations
       });
       toast.success('CMS page translations updated successfully');
+      if (onFlashMessage) onFlashMessage('CMS Page translations updated successfully', 'success');
       if (onUpdate) onUpdate(page.id, translations);
       setSaving(false);
       setSaveSuccess(true);

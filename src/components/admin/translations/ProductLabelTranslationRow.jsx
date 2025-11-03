@@ -10,7 +10,7 @@ import api from '@/utils/api';
 /**
  * Accordion row for managing product label translations
  */
-export default function ProductLabelTranslationRow({ label, onUpdate, selectedLanguages }) {
+export default function ProductLabelTranslationRow({ label, onUpdate, selectedLanguages, onFlashMessage }) {
   const { availableLanguages } = useTranslation();
   const [isExpanded, setIsExpanded] = useState(false);
   const [translations, setTranslations] = useState(label.translations || {});
@@ -56,6 +56,7 @@ export default function ProductLabelTranslationRow({ label, onUpdate, selectedLa
         translations
       });
       toast.success('Product label translations updated successfully');
+      if (onFlashMessage) onFlashMessage('Product Label translations updated successfully', 'success');
       if (onUpdate) onUpdate(label.id, translations);
       setSaving(false);
       setSaveSuccess(true);

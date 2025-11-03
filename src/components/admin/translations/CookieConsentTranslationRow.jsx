@@ -11,7 +11,7 @@ import api from '@/utils/api';
 /**
  * Accordion row for managing cookie consent translations
  */
-export default function CookieConsentTranslationRow({ settings, onUpdate, selectedLanguages }) {
+export default function CookieConsentTranslationRow({ settings, onUpdate, selectedLanguages, onFlashMessage }) {
   const { availableLanguages } = useTranslation();
   const [isExpanded, setIsExpanded] = useState(false);
   const [translations, setTranslations] = useState(settings.translations || {});
@@ -97,6 +97,7 @@ export default function CookieConsentTranslationRow({ settings, onUpdate, select
 
       console.log('Cookie consent save response:', response);
       toast.success('Cookie consent translations updated successfully');
+      if (onFlashMessage) onFlashMessage('Cookie Consent translations updated successfully', 'success');
       if (onUpdate) onUpdate(settings.id, translations);
       setSaving(false);
       setSaveSuccess(true);

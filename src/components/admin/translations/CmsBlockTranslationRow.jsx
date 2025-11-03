@@ -11,7 +11,7 @@ import api from '@/utils/api';
 /**
  * Accordion row for managing CMS block translations
  */
-export default function CmsBlockTranslationRow({ block, onUpdate, selectedLanguages }) {
+export default function CmsBlockTranslationRow({ block, onUpdate, selectedLanguages, onFlashMessage }) {
   const { availableLanguages } = useTranslation();
   const [isExpanded, setIsExpanded] = useState(false);
   const [translations, setTranslations] = useState(block.translations || {});
@@ -63,6 +63,7 @@ export default function CmsBlockTranslationRow({ block, onUpdate, selectedLangua
         translations
       });
       toast.success('CMS block translations updated successfully');
+      if (onFlashMessage) onFlashMessage('CMS Block translations updated successfully', 'success');
       if (onUpdate) onUpdate(block.id, translations);
       setSaving(false);
       setSaveSuccess(true);

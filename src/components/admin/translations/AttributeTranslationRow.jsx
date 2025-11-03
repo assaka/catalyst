@@ -11,7 +11,7 @@ import AttributeValueTranslations from '../attributes/AttributeValueTranslations
 /**
  * Accordion row for managing attribute translations (name + options)
  */
-export default function AttributeTranslationRow({ attribute, selectedLanguages, onUpdate }) {
+export default function AttributeTranslationRow({ attribute, selectedLanguages, onUpdate, onFlashMessage }) {
   const { availableLanguages } = useTranslation();
   const [isExpanded, setIsExpanded] = useState(false);
   const [translations, setTranslations] = useState(attribute.translations || {});
@@ -105,6 +105,7 @@ export default function AttributeTranslationRow({ attribute, selectedLanguages, 
       }
 
       toast.success('Attribute translations updated successfully');
+      if (onFlashMessage) onFlashMessage('Attribute translations updated successfully', 'success');
       if (onUpdate) onUpdate(attribute.id, translations, attributeValues);
       setSaving(false);
       setSaveSuccess(true);

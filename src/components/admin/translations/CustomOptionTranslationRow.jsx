@@ -10,7 +10,7 @@ import api from '@/utils/api';
 /**
  * Accordion row for managing custom option rule translations
  */
-export default function CustomOptionTranslationRow({ rule, onUpdate, selectedLanguages }) {
+export default function CustomOptionTranslationRow({ rule, onUpdate, selectedLanguages, onFlashMessage }) {
   const { availableLanguages } = useTranslation();
   const [isExpanded, setIsExpanded] = useState(false);
   const [translations, setTranslations] = useState(rule.translations || {});
@@ -56,6 +56,7 @@ export default function CustomOptionTranslationRow({ rule, onUpdate, selectedLan
         translations
       });
       toast.success('Custom option translations updated successfully');
+      if (onFlashMessage) onFlashMessage('Custom Option translations updated successfully', 'success');
       if (onUpdate) onUpdate(rule.id, translations);
       setSaving(false);
       setSaveSuccess(true);

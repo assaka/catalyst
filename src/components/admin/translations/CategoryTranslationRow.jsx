@@ -11,7 +11,7 @@ import api from '@/utils/api';
 /**
  * Accordion row for managing category translations
  */
-export default function CategoryTranslationRow({ category, selectedLanguages, onUpdate }) {
+export default function CategoryTranslationRow({ category, selectedLanguages, onUpdate, onFlashMessage }) {
   const { availableLanguages } = useTranslation();
   const [isExpanded, setIsExpanded] = useState(false);
   const [translations, setTranslations] = useState(category.translations || {});
@@ -87,6 +87,7 @@ export default function CategoryTranslationRow({ category, selectedLanguages, on
         translations
       });
       toast.success('Category translations updated successfully');
+      if (onFlashMessage) onFlashMessage('Category translations updated successfully', 'success');
       if (onUpdate) onUpdate(category.id, translations);
       setSaving(false);
       setSaveSuccess(true);

@@ -11,7 +11,7 @@ import api from '@/utils/api';
 /**
  * Accordion row for managing product tab translations
  */
-export default function ProductTabTranslationRow({ tab, onUpdate, selectedLanguages }) {
+export default function ProductTabTranslationRow({ tab, onUpdate, selectedLanguages, onFlashMessage }) {
   const { availableLanguages } = useTranslation();
   const [isExpanded, setIsExpanded] = useState(false);
   const [translations, setTranslations] = useState(tab.translations || {});
@@ -89,6 +89,7 @@ export default function ProductTabTranslationRow({ tab, onUpdate, selectedLangua
       console.log('✅ Frontend: Save response:', response);
 
       toast.success('Product tab translations updated successfully');
+      if (onFlashMessage) onFlashMessage('Product Tab translations updated successfully', 'success');
       if (onUpdate) onUpdate(tab.id, translations);
       setSaving(false);
       setSaveSuccess(true);
