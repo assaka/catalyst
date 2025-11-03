@@ -54,32 +54,50 @@ const VersionRestoreModal = ({
       setLoading(true);
       setError(null);
 
-      // Load version details and comparison with current
-      const [versionResponse, currentResponse, comparisonResponse] = await Promise.all([
-        fetch(`/api/plugins/${pluginId}/versions/${versionId}`),
-        fetch(`/api/plugins/${pluginId}/versions/${currentVersionId}`),
-        fetch(`/api/plugins/${pluginId}/versions/compare?from=${currentVersionId}&to=${versionId}`)
-      ]);
+      // Load version details first
+      const versionResponse = await fetch(`/api/plugins/${pluginId}/versions/${versionId}`);
 
-      if (!versionResponse.ok || !currentResponse.ok || !comparisonResponse.ok) {
+      if (!versionResponse.ok) {
         throw new Error('Failed to load version data');
       }
 
       const versionData = await versionResponse.json();
-      const currentData = await currentResponse.json();
-      const comparisonData = await comparisonResponse.json();
-
       setVersion(versionData.version);
-      setCurrentVersion(currentData.version);
-      setComparison(comparisonData.comparison);
-
-      // Extract reconstructed states
       setVersionState(versionData.version.reconstructed_state || versionData.version.snapshot?.snapshot_data || {});
-      setCurrentState(currentData.version.reconstructed_state || currentData.version.snapshot?.snapshot_data || {});
 
-      // Auto-select first changed component for preview
-      if (comparisonData.comparison?.summary?.length > 0) {
-        setSelectedComponent(comparisonData.comparison.summary[0]);
+      // Load current version (or get from API if not provided)
+      let actualCurrentVersionId = currentVersionId;
+      if (!actualCurrentVersionId) {
+        const currentResponse = await fetch(`/api/plugins/${pluginId}/versions/current`);
+        if (currentResponse.ok) {
+          const currentData = await currentResponse.json();
+          actualCurrentVersionId = currentData.version?.id;
+          setCurrentVersion(currentData.version);
+          setCurrentState(currentData.version.reconstructed_state || currentData.version.snapshot?.snapshot_data || {});
+        }
+      } else {
+        const currentResponse = await fetch(`/api/plugins/${pluginId}/versions/${actualCurrentVersionId}`);
+        if (currentResponse.ok) {
+          const currentData = await currentResponse.json();
+          setCurrentVersion(currentData.version);
+          setCurrentState(currentData.version.reconstructed_state || currentData.version.snapshot?.snapshot_data || {});
+        }
+      }
+
+      // Load comparison
+      if (actualCurrentVersionId && actualCurrentVersionId !== versionId) {
+        const comparisonResponse = await fetch(
+          `/api/plugins/${pluginId}/versions/compare?from=${actualCurrentVersionId}&to=${versionId}`
+        );
+        if (comparisonResponse.ok) {
+          const comparisonData = await comparisonResponse.json();
+          setComparison(comparisonData.comparison);
+
+          // Auto-select first changed component for preview
+          if (comparisonData.comparison?.summary?.length > 0) {
+            setSelectedComponent(comparisonData.comparison.summary[0]);
+          }
+        }
       }
     } catch (error) {
       console.error('Failed to load version data:', error);
