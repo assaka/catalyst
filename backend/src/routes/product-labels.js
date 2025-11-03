@@ -383,9 +383,9 @@ router.post('/bulk-translate', authMiddleware, [
       }
     }
 
-    // Get all product labels for this store
+    // Get all product labels for this store with ALL translations
     const lang = getLanguageFromRequest(req);
-    const labels = await getProductLabelsWithTranslations({ store_id }, lang);
+    const labels = await getProductLabelsWithTranslations({ store_id }, lang, true);
 
     if (labels.length === 0) {
       return res.json({

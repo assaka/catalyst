@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import { useSearchParams, useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { Store, Category } from '@/api/entities';
 import { User } from '@/api/entities';
 import apiClient from '@/api/client';
@@ -11,16 +11,14 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { Separator } from '@/components/ui/separator';
-import { Building2, Bell, Settings as SettingsIcon, Globe, KeyRound, Rocket } from 'lucide-react'; // Removed ReceiptText, BookOpen, Palette, Brush, ShoppingCart, Search icons
+import { Building2, Bell, Settings as SettingsIcon, Globe, KeyRound } from 'lucide-react';
 import SaveButton from '@/components/ui/save-button';
 import { CountrySelect } from "@/components/ui/country-select";
 import { TimezoneSelect } from "@/components/ui/timezone-select";
 import { MultiSelect } from "@/components/ui/multi-select";
-import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
+import { Tabs, TabsContent } from '@/components/ui/tabs';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@/components/ui/select';
-import { Badge } from '@/components/ui/badge';
-import PublishButton from '@/components/admin/store/PublishButton';
 import { clearSettingsCache, clearAllCache } from '@/utils/cacheUtils';
 
 
@@ -49,17 +47,13 @@ const retryApiCall = async (apiCall, maxRetries = 5, baseDelay = 3000) => {
 };
 
 export default function Settings() {
-  const [searchParams, setSearchParams] = useSearchParams();
   const navigate = useNavigate();
-  const currentTab = searchParams.get('tab') || 'general';
   const { selectedStore, getSelectedStoreId } = useStoreSelection();
   const [store, setStore] = useState(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(false);
-  const [flashMessage, setFlashMessage] = useState(null); // New state for flash messages
-  const [connectingDomain, setConnectingDomain] = useState(false);
-  const [savingStripe, setSavingStripe] = useState(false); // This state was in original, kept it.
+  const [flashMessage, setFlashMessage] = useState(null);
 
   useEffect(() => {
     if (selectedStore) {
@@ -466,61 +460,6 @@ export default function Settings() {
     }
   };
 
-  const handleConnectDomain = async () => {
-    if (!store?.custom_domain) {
-      setFlashMessage({ type: 'error', message: 'Please enter a custom domain first.' });
-      return;
-    }
-
-    setConnectingDomain(true);
-    try {
-      const updatedStore = {
-        ...store,
-        domain_status: 'pending'
-      };
-      
-      // Update the store with pending status
-      await retryApiCall(() => Store.update(store.id, updatedStore));
-      setStore(updatedStore); // Update local state immediately
-      
-      // Simulate domain verification process
-      setTimeout(async () => {
-        try {
-          // In a real app, this would be an API call to check domain status
-          // and possibly trigger SSL provisioning.
-          const finalStore = {
-            ...updatedStore,
-            domain_status: 'active',
-            ssl_enabled: true
-          };
-          
-          await retryApiCall(() => Store.update(store.id, finalStore));
-          setStore(finalStore); // Update local state
-          setFlashMessage({ 
-            type: 'success', 
-            message: 'Domain connected successfully! SSL certificate has been provisioned.' 
-          });
-        } catch (error) {
-          const failedStore = {
-            ...updatedStore,
-            domain_status: 'failed'
-          };
-          await retryApiCall(() => Store.update(store.id, failedStore));
-          setStore(failedStore);
-          setFlashMessage({ 
-            type: 'error', 
-            message: 'Domain connection failed. Please check your DNS settings.' 
-          });
-        }
-        setConnectingDomain(false);
-      }, 3000); // Simulate 3 seconds for verification
-      
-    } catch (error) {
-      console.error('Failed to initiate domain connection:', error);
-      setFlashMessage({ type: 'error', message: 'Failed to initiate domain connection: ' + error.message });
-      setConnectingDomain(false);
-    }
-  };
 
   if (loading) {
     return (
@@ -556,17 +495,7 @@ export default function Settings() {
           <p className="text-gray-600 mt-1">Configure your store's basic information and preferences</p>
         </div>
 
-        <Tabs value={currentTab} onValueChange={(value) => {
-          const params = new URLSearchParams(searchParams);
-          params.set('tab', value);
-          setSearchParams(params);
-        }} className="w-full">
-          <TabsList className="grid w-full grid-cols-4">
-            <TabsTrigger value="general">General</TabsTrigger>
-            <TabsTrigger value="domain">Domain</TabsTrigger>
-            <TabsTrigger value="publish">Publish</TabsTrigger>
-            <TabsTrigger value="contact">Contact</TabsTrigger>
-          </TabsList>
+        <Tabs value="general" className="w-full">
 
           <TabsContent value="general" className="mt-6">
             <Card className="material-elevation-1 border-0">
@@ -779,205 +708,7 @@ export default function Settings() {
                 </div>
               </CardContent>
             </Card>
-          </TabsContent>
-
-          <TabsContent value="domain" className="mt-6">
-            <Card className="material-elevation-1 border-0">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Globe className="w-5 h-5" />
-                  Domain Settings
-                </CardTitle>
-                <CardDescription>Connect your custom domain to your store</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-6">
-                <div className="bg-blue-50 p-4 rounded-lg">
-                  <h4 className="font-medium text-blue-900 mb-2">Default Store URL</h4>
-                  <p className="text-blue-800 font-mono">{window.location.origin}/storefront/{store?.slug || 'your-store'}</p>
-                  <p className="text-sm text-blue-700 mt-1">This is your store's default URL provided by the platform.</p>
-                </div>
-
-                <div>
-                  <Label htmlFor="custom_domain">Custom Domain</Label>
-                  <div className="flex gap-2">
-                    <Input
-                      id="custom_domain"
-                      value={store?.custom_domain || ''}
-                      onChange={(e) => setStore(prev => ({ ...prev, custom_domain: e.target.value }))}
-                      placeholder="www.yourdomain.com"
-                      className="flex-1"
-                    />
-                    <Button 
-                      onClick={handleConnectDomain}
-                      disabled={connectingDomain || !store?.custom_domain}
-                      className="whitespace-nowrap"
-                    >
-                      {connectingDomain ? (
-                        <>
-                          <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
-                          Connecting...
-                        </>
-                      ) : (
-                        <>
-                          <Globe className="w-4 h-4 mr-2" />
-                          Connect Domain
-                        </>
-                      )}
-                    </Button>
-                  </div>
-                  <p className="text-sm text-gray-500 mt-1">
-                    Enter your custom domain (e.g., www.yourdomain.com or shop.yourdomain.com)
-                  </p>
-                </div>
-
-                {store?.custom_domain && (
-                  <div className="border rounded-lg p-4">
-                    <div className="flex items-center justify-between mb-2">
-                      <h4 className="font-medium">Domain Status</h4>
-                      <Badge variant={
-                        store.domain_status === 'active' ? 'default' : 
-                        store.domain_status === 'pending' ? 'secondary' : 
-                        'destructive'
-                      }>
-                        {store.domain_status || 'not set'}
-                      </Badge>
-                    </div>
-                    
-                    {store.domain_status === 'pending' && (
-                      <div className="text-sm text-gray-600">
-                        <p className="mb-2">Please add the following DNS records to your domain:</p>
-                        <div className="bg-gray-50 p-3 rounded font-mono text-xs">
-                          <div>Type: CNAME</div>
-                          <div>Name: @ or www</div>
-                          <div>Value: {window.location.hostname}</div>
-                        </div>
-                        <p className="mt-2">After updating your DNS, click "Connect Domain" again to verify.</p>
-                      </div>
-                    )}
-                    
-                    {store.domain_status === 'active' && (
-                      <div className="text-sm text-green-600 mt-2">
-                        <p>✓ Domain connected successfully</p>
-                        {store.ssl_enabled && <p>✓ SSL certificate active</p>}
-                      </div>
-                    )}
-                    
-                    {store.domain_status === 'failed' && (
-                      <div className="text-sm text-red-600 mt-2">
-                        <p>✗ Domain connection failed</p>
-                        <p>Please check your DNS settings and try again.</p>
-                      </div>
-                    )}
-                  </div>
-                )}
-
-                <div className="bg-yellow-50 p-4 rounded-lg">
-                  <h4 className="font-medium text-yellow-900 mb-2">Important Notes</h4>
-                  <ul className="text-sm text-yellow-800 space-y-1">
-                    <li>• DNS changes can take up to 24 hours to propagate</li>
-                    <li>• SSL certificates are automatically provisioned for connected domains</li>
-                    <li>• Custom domains are available on all plans</li>
-                  </ul>
-                </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          <TabsContent value="publish" className="mt-6">
-            <div className="space-y-6">
-              <div className="bg-gradient-to-r from-purple-50 to-blue-50 rounded-lg p-6 border border-purple-200">
-                <div className="flex items-center space-x-3 mb-4">
-                  <div className="w-12 h-12 bg-gradient-to-br from-purple-500 to-blue-600 rounded-lg flex items-center justify-center">
-                    <Rocket className="w-6 h-6 text-white" />
-                  </div>
-                  <div>
-                    <h2 className="text-xl font-semibold text-gray-900">Publish Your Store</h2>
-                    <p className="text-gray-600">Deploy your store to make it publicly accessible</p>
-                  </div>
-                </div>
-                <p className="text-sm text-gray-700 mb-4">
-                  Once you publish your store, it will be deployed to Render.com and accessible to your customers. 
-                  Make sure you've configured your store settings, added products, and set up payment processing before publishing.
-                </p>
-              </div>
-
-              {/* Publish Button Component */}
-              <PublishButton 
-                storeId={store?.id} 
-                storeName={store?.name}
-              />
-
-              {/* Publishing Information */}
-              <Card className="bg-blue-50 border-blue-200">
-                <CardHeader>
-                  <CardTitle className="text-blue-900 flex items-center">
-                    <Globe className="w-5 h-5 mr-2" />
-                    What happens when you publish?
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-3 text-sm text-blue-800">
-                    <div className="flex items-start space-x-2">
-                      <div className="w-2 h-2 bg-blue-600 rounded-full mt-1.5 flex-shrink-0"></div>
-                      <p>Your store will be deployed to Render.com with automatic SSL certificate</p>
-                    </div>
-                    <div className="flex items-start space-x-2">
-                      <div className="w-2 h-2 bg-blue-600 rounded-full mt-1.5 flex-shrink-0"></div>
-                      <p>All your products, categories, and settings will be included</p>
-                    </div>
-                    <div className="flex items-start space-x-2">
-                      <div className="w-2 h-2 bg-blue-600 rounded-full mt-1.5 flex-shrink-0"></div>
-                      <p>Your store will get a unique URL: <code className="bg-blue-100 px-1 rounded">{store?.name?.toLowerCase().replace(/\s+/g, '-') || 'your-store'}.onrender.com</code></p>
-                    </div>
-                    <div className="flex items-start space-x-2">
-                      <div className="w-2 h-2 bg-blue-600 rounded-full mt-1.5 flex-shrink-0"></div>
-                      <p>You can later connect your custom domain in the Domain tab</p>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-
-              {/* Prerequisites Check */}
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center">
-                    <Bell className="w-5 h-5 mr-2" />
-                    Pre-publish Checklist
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-3">
-                    <div className="flex items-center space-x-3">
-                      <div className={`w-4 h-4 rounded-full ${store?.name ? 'bg-green-500' : 'bg-gray-300'}`}></div>
-                      <span className={store?.name ? 'text-green-700' : 'text-gray-500'}>
-                        Store name configured
-                      </span>
-                    </div>
-                    <div className="flex items-center space-x-3">
-                      <div className={`w-4 h-4 rounded-full ${store?.contact_details?.email || store?.contact_email ? 'bg-green-500' : 'bg-gray-300'}`}></div>
-                      <span className={store?.contact_details?.email || store?.contact_email ? 'text-green-700' : 'text-gray-500'}>
-                        Contact email set
-                      </span>
-                    </div>
-                    <div className="flex items-center space-x-3">
-                      <div className="w-4 h-4 rounded-full bg-blue-500"></div>
-                      <span className="text-blue-700">Products and categories (optional)</span>
-                    </div>
-                    <div className="flex items-center space-x-3">
-                      <div className="w-4 h-4 rounded-full bg-blue-500"></div>
-                      <span className="text-blue-700">Payment settings (optional)</span>
-                    </div>
-                  </div>
-                  <p className="text-sm text-gray-600 mt-4">
-                    Green items are required, blue items are optional but recommended before publishing.
-                  </p>
-                </CardContent>
-              </Card>
-            </div>
-          </TabsContent>
-          
-          <TabsContent value="contact" className="mt-6">
-            <Card className="material-elevation-1 border-0">
+            <Card className="material-elevation-1 border-0 mt-6">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <Bell className="w-5 h-5" />
@@ -989,68 +720,67 @@ export default function Settings() {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
                     <Label htmlFor="contact_email">Store Email</Label>
-                    <Input 
-                      id="contact_email" 
+                    <Input
+                      id="contact_email"
                       type="email"
-                      value={store?.contact_details?.email || ''} 
+                      value={store?.contact_details?.email || ''}
                       onChange={(e) => handleContactChange('email', e.target.value)}
                     />
                   </div>
                   <div>
                     <Label htmlFor="support_email">Support Email</Label>
-                    <Input 
-                      id="support_email" 
+                    <Input
+                      id="support_email"
                       type="email"
-                      value={store?.contact_details?.support_email || ''} 
+                      value={store?.contact_details?.support_email || ''}
                       onChange={(e) => handleContactChange('support_email', e.target.value)}
                     />
                   </div>
                   <div>
                     <Label htmlFor="contact_phone">Phone</Label>
-                    <Input 
-                      id="contact_phone" 
-                      value={store?.contact_details?.phone || ''} 
+                    <Input
+                      id="contact_phone"
+                      value={store?.contact_details?.phone || ''}
                       onChange={(e) => handleContactChange('phone', e.target.value)}
                     />
                   </div>
                   <div>
                     <Label htmlFor="contact_address">Address</Label>
-                    <Input 
-                      id="contact_address" 
-                      value={store?.contact_details?.address || ''} 
+                    <Input
+                      id="contact_address"
+                      value={store?.contact_details?.address || ''}
                       onChange={(e) => handleContactChange('address', e.target.value)}
                     />
                   </div>
                   <div>
                     <Label htmlFor="contact_city">City</Label>
-                    <Input 
-                      id="contact_city" 
-                      value={store?.contact_details?.city || ''} 
+                    <Input
+                      id="contact_city"
+                      value={store?.contact_details?.city || ''}
                       onChange={(e) => handleContactChange('city', e.target.value)}
                     />
                   </div>
                   <div>
                     <Label htmlFor="contact_state">State/Province</Label>
-                    <Input 
-                      id="contact_state" 
-                      value={store?.contact_details?.state || ''} 
+                    <Input
+                      id="contact_state"
+                      value={store?.contact_details?.state || ''}
                       onChange={(e) => handleContactChange('state', e.target.value)}
                     />
                   </div>
                   <div>
                     <Label htmlFor="contact_postal">Postal Code</Label>
-                    <Input 
-                      id="contact_postal" 
-                      value={store?.contact_details?.postal_code || ''} 
+                    <Input
+                      id="contact_postal"
+                      value={store?.contact_details?.postal_code || ''}
                       onChange={(e) => handleContactChange('postal_code', e.target.value)}
                     />
                   </div>
                   <div>
                     <Label htmlFor="contact_country">Country</Label>
-                    {/* Using CountrySelect for better UX */}
-                    <CountrySelect 
-                      id="contact_country" 
-                      value={store?.contact_details?.country || ''} 
+                    <CountrySelect
+                      id="contact_country"
+                      value={store?.contact_details?.country || ''}
                       onChange={(country) => handleContactChange('country', country)}
                     />
                   </div>

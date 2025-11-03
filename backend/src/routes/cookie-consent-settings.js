@@ -2,6 +2,7 @@ const express = require('express');
 const { body, validationResult } = require('express-validator');
 const { CookieConsentSettings, Store } = require('../models');
 const { Op } = require('sequelize');
+const { authMiddleware } = require('../middleware/auth');
 const translationService = require('../services/translation-service');
 const { getLanguageFromRequest } = require('../utils/languageUtils');
 const {
@@ -373,7 +374,7 @@ router.post('/:id/translate', [
 // @route   POST /api/cookie-consent-settings/bulk-translate
 // @desc    AI translate all cookie consent settings in a store to target language
 // @access  Private
-router.post('/bulk-translate', [
+router.post('/bulk-translate', authMiddleware, [
   body('store_id').isUUID().withMessage('Store ID must be a valid UUID'),
   body('fromLang').notEmpty().withMessage('Source language is required'),
   body('toLang').notEmpty().withMessage('Target language is required')
@@ -402,10 +403,9 @@ router.post('/bulk-translate', [
       }
     }
 
-    // Get cookie consent settings for this store
-    const settingsRecords = await CookieConsentSettings.findAll({
-      where: { store_id }
-    });
+    // Get cookie consent settings for this store with ALL translations
+    const lang = getLanguageFromRequest(req);
+    const settingsRecords = await getCookieConsentSettingsWithTranslations({ store_id }, lang);
 
     if (settingsRecords.length === 0) {
       return res.json({
