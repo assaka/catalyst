@@ -463,35 +463,48 @@ router.post('/bulk-translate', authMiddleware, [
           continue;
         }
 
-        // Check if target translation already exists
-        const hasTargetTranslation = settings.translations[toLang] &&
-          Object.values(settings.translations[toLang]).some(val =>
-            typeof val === 'string' && val.trim().length > 0
-          );
+        // Check if ALL fields are translated (field-level check like Product Labels)
+        const sourceFields = Object.entries(settings.translations[fromLang] || {});
+        const targetTranslation = settings.translations[toLang] || {};
 
-        if (hasTargetTranslation) {
-          console.log(`⏭️  Skipping settings "${settingsName}": ${toLang} translation already exists`);
+        const allFieldsTranslated = sourceFields.every(([key, value]) => {
+          if (!value || typeof value !== 'string' || !value.trim()) return true; // Ignore empty source fields
+          const targetValue = targetTranslation[key];
+          return targetValue && typeof targetValue === 'string' && targetValue.trim().length > 0;
+        });
+
+        if (allFieldsTranslated && sourceFields.length > 0) {
+          console.log(`⏭️  Skipping settings "${settingsName}": All fields already translated`);
           results.skipped++;
           results.skippedDetails.push({
             settingsId: settings.id,
             settingsName,
-            reason: `${toLang} translation already exists`
+            reason: `All fields already translated`
           });
           continue;
         }
 
-        // Translate the settings
+        console.log(`   ℹ️  Some fields need translation - proceeding`);
+
+        // Translate the settings (only empty fields)
         console.log(`🔄 Translating settings "${settingsName}"...`);
         const sourceTranslation = settings.translations[fromLang];
         console.log(`   📋 Source translation fields:`, Object.keys(sourceTranslation));
-        const translatedData = {};
+
+        // Start with existing target translation (preserve already translated fields)
+        const translatedData = { ...(targetTranslation || {}) };
 
         let fieldCount = 0;
         for (const [key, value] of Object.entries(sourceTranslation)) {
-          if (typeof value === 'string' && value.trim()) {
+          const targetValue = translatedData[key];
+          const targetHasContent = targetValue && typeof targetValue === 'string' && targetValue.trim().length > 0;
+
+          if (typeof value === 'string' && value.trim() && !targetHasContent) {
             console.log(`      🤖 Translating field "${key}": "${value.substring(0, 50)}..."`);
             translatedData[key] = await translationService.aiTranslate(value, fromLang, toLang);
             fieldCount++;
+          } else if (targetHasContent) {
+            console.log(`      ⏭️  Skipping field "${key}": already has content`);
           }
         }
 
