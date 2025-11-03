@@ -22,7 +22,7 @@ import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@
 import { Badge } from '@/components/ui/badge';
 import PublishButton from '@/components/admin/store/PublishButton';
 import { clearSettingsCache, clearAllCache } from '@/utils/cacheUtils';
-import BrevoSettings from '@/components/admin/settings/BrevoSettings';
+import EmailProviderSettings from '@/components/admin/settings/EmailProviderSettings';
 
 
 const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms));
@@ -566,7 +566,7 @@ export default function Settings() {
             <TabsTrigger value="general">General</TabsTrigger>
             <TabsTrigger value="domain">Domain</TabsTrigger>
             <TabsTrigger value="publish">Publish</TabsTrigger>
-            <TabsTrigger value="brevo">Brevo</TabsTrigger>
+            <TabsTrigger value="email">Email</TabsTrigger>
             <TabsTrigger value="contact">Contact</TabsTrigger>
           </TabsList>
 
@@ -978,8 +978,8 @@ export default function Settings() {
             </div>
           </TabsContent>
           
-          <TabsContent value="brevo" className="mt-6">
-            <BrevoSettings storeEmail={store?.contact_details?.email || store?.contact_email} />
+          <TabsContent value="email" className="mt-6">
+            <EmailProviderSettings storeEmail={store?.contact_details?.email || store?.contact_email} />
           </TabsContent>
 
           <TabsContent value="contact" className="mt-6">
