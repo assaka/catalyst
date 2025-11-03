@@ -83,7 +83,9 @@ const VersionCompareModal = ({
         fromState_keys: fromReconstructed ? Object.keys(fromReconstructed) : null,
         toState_keys: toReconstructed ? Object.keys(toReconstructed) : null,
         fromState_hooks: fromReconstructed?.hooks?.length || 0,
-        toState_hooks: toReconstructed?.hooks?.length || 0
+        toState_hooks: toReconstructed?.hooks?.length || 0,
+        fromState_hooks_data: fromReconstructed?.hooks,
+        toState_hooks_data: toReconstructed?.hooks
       });
 
       setFromState(fromReconstructed);
