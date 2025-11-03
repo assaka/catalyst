@@ -459,22 +459,8 @@ const RegisterFormSlotComponent = ({ slot, context, variableContext }) => {
         send_welcome_email: true
       });
 
-      console.log('📝 Registration response:', response);
-
-      // Handle different response structures
-      let actualResponse = response;
-      if (Array.isArray(response)) {
-        actualResponse = response[0];
-      }
-
-      // Check for success in multiple possible locations
-      const isSuccess = actualResponse?.success ||
-                       actualResponse?.data?.success ||
-                       (actualResponse?.data?.token && actualResponse?.data?.user);
-
-      console.log('📝 Is success?', isSuccess, 'Response:', actualResponse);
-
-      if (isSuccess) {
+      // Backend returns: { success: true, data: { user, token, ... } }
+      if (response.success) {
         setSuccess(t('common.registration_successful', 'Registration successful! A welcome email has been sent to your email address.'));
 
         // Token is already saved by CustomerAuth.register()
@@ -486,12 +472,8 @@ const RegisterFormSlotComponent = ({ slot, context, variableContext }) => {
           navigate(accountUrl);
         }, 2000);
       } else {
-        // Show specific error message if available
-        const errorMsg = actualResponse?.message ||
-                        actualResponse?.data?.message ||
-                        actualResponse?.error ||
-                        t('common.registration_failed', 'Registration failed. Please try again.');
-        setError(errorMsg);
+        // Show error message from backend
+        setError(response.message || t('common.registration_failed', 'Registration failed. Please try again.'));
       }
     } catch (error) {
       console.error('Registration error:', error);

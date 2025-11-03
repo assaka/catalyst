@@ -177,16 +177,51 @@ export const getStripePublishableKey = async () => {
   console.log('🔑 [getStripePublishableKey] Fetching key from backend...');
   try {
     const response = await apiClient.get('payments/publishable-key');
-    console.log('🔑 [getStripePublishableKey] Response received:', {
+    console.log('🔑 [getStripePublishableKey] Raw response:', {
       response,
+      responseType: typeof response,
       hasData: !!response?.data,
-      data: response?.data,
-      publishableKey: response?.data?.data?.publishableKey
+      dataType: typeof response?.data,
+      dataKeys: response?.data ? Object.keys(response.data) : [],
+      nestedData: response?.data?.data,
+      nestedPublishableKey: response?.data?.data?.publishableKey,
+      directPublishableKey: response?.data?.publishableKey
     });
 
-    // The backend returns { data: { publishableKey: 'pk_...' } }
-    const result = response.data || response;
-    console.log('🔑 [getStripePublishableKey] Returning:', result);
+    // Backend returns: { data: { publishableKey: 'pk_...' } }
+    // After apiClient: response = { data: { publishableKey: 'pk_...' } } OR response = { data: { data: { publishableKey: 'pk_...' } } }
+
+    let publishableKey = null;
+
+    // Try different possible response structures
+    if (response?.data?.data?.publishableKey) {
+      // Double nested: { data: { data: { publishableKey } } }
+      publishableKey = response.data.data.publishableKey;
+      console.log('🔑 [getStripePublishableKey] Found key in response.data.data.publishableKey');
+    } else if (response?.data?.publishableKey) {
+      // Single nested: { data: { publishableKey } }
+      publishableKey = response.data.publishableKey;
+      console.log('🔑 [getStripePublishableKey] Found key in response.data.publishableKey');
+    } else if (response?.publishableKey) {
+      // Direct: { publishableKey }
+      publishableKey = response.publishableKey;
+      console.log('🔑 [getStripePublishableKey] Found key in response.publishableKey');
+    }
+
+    console.log('🔑 [getStripePublishableKey] Extracted publishableKey:', publishableKey ? publishableKey.substring(0, 15) + '...' : 'NULL');
+
+    const result = {
+      data: {
+        publishableKey: publishableKey
+      }
+    };
+
+    console.log('🔑 [getStripePublishableKey] Returning:', {
+      hasData: !!result.data,
+      hasPublishableKey: !!result.data.publishableKey,
+      keyPrefix: result.data.publishableKey ? result.data.publishableKey.substring(0, 15) + '...' : 'NULL'
+    });
+
     return result;
   } catch (error) {
     console.error('🔴 [getStripePublishableKey] Error getting key:', {

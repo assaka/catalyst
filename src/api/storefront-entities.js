@@ -186,7 +186,9 @@ class CustomerAuthService {
 
     // Use the customer-specific register endpoint
     const response = await this.client.postCustomer('auth/customer/register', userData);
-    const token = response.data?.token || response.token;
+
+    // Extract token from response.data (backend returns {success, data: {token, user}})
+    const token = response.data?.token;
 
     if (token) {
       // Get store slug - try currentStoreSlug first, fallback to extracting from URL
@@ -205,7 +207,8 @@ class CustomerAuthService {
       }
     }
 
-    return response.data || response;
+    // Return full response with success flag intact
+    return response;
   }
 
   async logout() {
