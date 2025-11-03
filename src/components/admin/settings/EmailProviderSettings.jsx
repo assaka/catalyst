@@ -197,6 +197,29 @@ export default function EmailProviderSettings({ storeEmail, storeName }) {
           showConfirm={showConfirm}
         />
       )}
+
+      {/*
+       Add new probider
+       1. Create src/components/admin/settings/providers/HubSpotProvider.jsx
+       2. In EmailProviderSettings.jsx,
+      add:
+
+      {selectedProvider === 'hubspot' &&
+          (
+              <HubSpotProvider
+                  storeEmail={storeEmail}
+                  storeName={storeName}
+                  onBack={handleBackToProviders}
+
+                  onFlashMessage={setFlashMessage}
+                  getSelectedStoreId={getSelected
+                    StoreId}
+                  showConfirm={showConfirm}
+              />
+          )}
+        */}
+
+
     </div>
   );
 }
