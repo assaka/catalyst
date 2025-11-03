@@ -2509,7 +2509,7 @@ export default function Translations() {
         onComplete={() => {
           // Reload the appropriate data based on entity type
           if (!selectedEntityType || selectedEntityType === 'ui_labels') {
-            loadUILabels();
+            loadLabels(selectedLanguage);
           } else if (selectedEntityType === 'product') {
             loadProducts();
           } else if (selectedEntityType === 'category') {
