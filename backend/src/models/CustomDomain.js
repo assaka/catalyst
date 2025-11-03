@@ -291,4 +291,8 @@ CustomDomain.beforeSave(async (domain) => {
   }
 });
 
+// Note: Associations are defined in models/index.js
+// CustomDomain.belongsTo(Store, { foreignKey: 'store_id', as: 'store' })
+// Store.hasMany(CustomDomain, { foreignKey: 'store_id', as: 'customDomains' })
+
 module.exports = CustomDomain;
