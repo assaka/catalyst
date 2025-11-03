@@ -252,10 +252,20 @@ app.use(cors({
 
 // Body parsing middleware
 // IMPORTANT: Webhook endpoint needs raw body for signature verification
+// Apply JSON parsing conditionally - skip for webhook route
+app.use((req, res, next) => {
+  if (req.originalUrl === '/api/payments/webhook') {
+    console.log('⚡ Skipping JSON parsing for webhook route - using raw body');
+    next();
+  } else {
+    express.json({ limit: '10mb' })(req, res, next);
+  }
+});
+
+// Raw body for webhook only
 app.use('/api/payments/webhook', express.raw({ type: 'application/json' }));
 
-// JSON parsing for all other routes
-app.use(express.json({ limit: '10mb' }));
+// URL encoded for all other routes
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
 // Logging middleware

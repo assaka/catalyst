@@ -1229,35 +1229,91 @@ router.post('/create-checkout', async (req, res) => {
 // @desc    Handle Stripe webhooks
 // @access  Public
 router.post('/webhook', async (req, res) => {
-  console.log('=== WEBHOOK RECEIVED ===');
-  console.log('Headers:', Object.keys(req.headers));
-  console.log('Body type:', typeof req.body);
-  console.log('Body length:', req.body ? req.body.length : 'undefined');
-  console.log('Request IP:', req.ip);
-  console.log('User-Agent:', req.headers['user-agent']);
-  
+  const webhookId = Math.random().toString(36).substring(7);
+
+  console.log('='.repeat(80));
+  console.log(`🔔 [${webhookId}] WEBHOOK RECEIVED`);
+  console.log(`🔔 [${webhookId}] Timestamp: ${new Date().toISOString()}`);
+  console.log('='.repeat(80));
+
+  console.log(`📋 [${webhookId}] Request details:`, {
+    method: req.method,
+    url: req.url,
+    ip: req.ip,
+    userAgent: req.headers['user-agent']
+  });
+
+  console.log(`📋 [${webhookId}] Headers:`, {
+    allHeaders: Object.keys(req.headers),
+    contentType: req.headers['content-type'],
+    contentLength: req.headers['content-length'],
+    hasStripeSignature: !!req.headers['stripe-signature']
+  });
+
+  console.log(`📋 [${webhookId}] Body info:`, {
+    bodyType: typeof req.body,
+    isBuffer: Buffer.isBuffer(req.body),
+    isObject: typeof req.body === 'object' && !Buffer.isBuffer(req.body),
+    bodyLength: req.body ? req.body.length : 'undefined',
+    bodySample: req.body ? (Buffer.isBuffer(req.body) ? req.body.toString('utf8', 0, 100) : JSON.stringify(req.body).substring(0, 100)) : 'NONE'
+  });
+
   const sig = req.headers['stripe-signature'];
-  
+
   if (!sig) {
-    console.error('No stripe-signature header found');
+    console.error(`❌ [${webhookId}] No stripe-signature header found`);
     return res.status(400).send('No stripe-signature header');
   }
 
+  console.log(`✅ [${webhookId}] Stripe signature header present:`, sig.substring(0, 50) + '...');
+
   if (!process.env.STRIPE_WEBHOOK_SECRET) {
-    console.error('STRIPE_WEBHOOK_SECRET not configured');
+    console.error(`❌ [${webhookId}] STRIPE_WEBHOOK_SECRET not configured`);
+    console.error(`❌ [${webhookId}] Available Stripe env vars:`, Object.keys(process.env).filter(k => k.includes('STRIPE')));
     return res.status(500).send('Webhook secret not configured');
   }
-  
+
+  console.log(`✅ [${webhookId}] Webhook secret configured:`, process.env.STRIPE_WEBHOOK_SECRET.substring(0, 10) + '...');
+
   let event;
-  
+
   try {
+    console.log(`🔐 [${webhookId}] Attempting to verify webhook signature...`);
+    console.log(`🔐 [${webhookId}] Using:`, {
+      bodyType: typeof req.body,
+      bodyIsBuffer: Buffer.isBuffer(req.body),
+      signaturePresent: !!sig,
+      secretPresent: !!process.env.STRIPE_WEBHOOK_SECRET
+    });
+
     event = stripe.webhooks.constructEvent(req.body, sig, process.env.STRIPE_WEBHOOK_SECRET);
-    console.log('Webhook signature verified successfully');
+
+    console.log(`✅ [${webhookId}] Webhook signature verified successfully!`);
+    console.log(`✅ [${webhookId}] Event type: ${event.type}`);
+    console.log(`✅ [${webhookId}] Event ID: ${event.id}`);
   } catch (err) {
-    console.error('Webhook signature verification failed:', err.message);
-    console.error('Signature:', sig);
-    console.error('Body type:', typeof req.body);
-    console.error('Body sample:', req.body.toString().substring(0, 100));
+    console.error('='.repeat(80));
+    console.error(`❌ [${webhookId}] WEBHOOK SIGNATURE VERIFICATION FAILED`);
+    console.error(`❌ [${webhookId}] Error message:`, err.message);
+    console.error(`❌ [${webhookId}] Error type:`, err.type);
+    console.error(`❌ [${webhookId}] Error code:`, err.code);
+    console.error(`❌ [${webhookId}] Signature provided:`, sig.substring(0, 100) + '...');
+    console.error(`❌ [${webhookId}] Body type:`, typeof req.body);
+    console.error(`❌ [${webhookId}] Body is Buffer:`, Buffer.isBuffer(req.body));
+    console.error(`❌ [${webhookId}] Body is Object:`, typeof req.body === 'object' && !Buffer.isBuffer(req.body));
+
+    if (Buffer.isBuffer(req.body)) {
+      console.error(`❌ [${webhookId}] Body length:`, req.body.length);
+      console.error(`❌ [${webhookId}] Body sample (first 200 chars):`, req.body.toString('utf8', 0, 200));
+    } else if (typeof req.body === 'object') {
+      console.error(`❌ [${webhookId}] Body is already parsed as object (THIS IS THE PROBLEM!)`);
+      console.error(`❌ [${webhookId}] Body keys:`, Object.keys(req.body));
+      console.error(`❌ [${webhookId}] This means express.json() middleware ran before express.raw()`);
+    } else {
+      console.error(`❌ [${webhookId}] Body sample:`, String(req.body).substring(0, 200));
+    }
+
+    console.error('='.repeat(80));
     return res.status(400).send(`Webhook Error: ${err.message}`);
   }
 
