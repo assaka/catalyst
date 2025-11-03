@@ -146,6 +146,13 @@ export default function AnalyticsSettings() {
                 }
             }
         }));
+
+        // Also sync with gtmSettings state for save handler
+        if (key === 'enable_google_tag_manager') {
+            setGtmSettings(prev => ({ ...prev, enabled: value }));
+        } else if (key === 'gtm_id') {
+            setGtmSettings(prev => ({ ...prev, container_id: value }));
+        }
     };
 
     const handleSave = async () => {
