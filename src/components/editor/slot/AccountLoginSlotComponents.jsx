@@ -248,26 +248,16 @@ const LoginFormSlotComponent = ({ slot, context, variableContext }) => {
         store.id
       );
 
-      let actualResponse = response;
-      if (Array.isArray(response)) {
-        actualResponse = response[0];
-      }
-
-      const isSuccess = actualResponse?.success ||
-                       actualResponse?.status === 'success' ||
-                       actualResponse?.token ||
-                       (actualResponse && Object.keys(actualResponse).length > 0);
-
-      if (isSuccess) {
+      // Backend returns: { success: true, data: { user, token, ... } }
+      if (response.success) {
         // Token is already saved by CustomerAuth.login() with store-specific key
         // Just remove the logged out flag
         localStorage.removeItem('user_logged_out');
 
         const accountUrl = await getCustomerAccountUrl();
         navigate(accountUrl);
-        return;
       } else {
-        setError(t('common.login_failed', 'Login failed. Invalid response.'));
+        setError(response.message || t('common.login_failed', 'Login failed. Please check your credentials.'));
       }
     } catch (error) {
       setError(error.message || t('common.login_failed', 'Login failed. Please try again.'));
