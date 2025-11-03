@@ -115,12 +115,15 @@ export default function EmailProviderSettings({ storeEmail, storeName }) {
     setSelectedProvider(providerId);
     setShowConfig(true);
 
-    // Pre-fill sender name and email from store if not already configured
-    if (!connectionStatus?.isConfigured && storeName && !senderName) {
-      setSenderName(storeName);
-    }
-    if (!connectionStatus?.isConfigured && storeEmail && !senderEmail) {
-      setSenderEmail(storeEmail);
+    // Always pre-fill from Store Settings data (matches Settings > General)
+    if (!connectionStatus?.isConfigured) {
+      // First time setup - use store data
+      setSenderName(storeName || '');
+      setSenderEmail(storeEmail || '');
+    } else {
+      // Updating existing config - use current config with store data as fallback
+      setSenderName(connectionStatus.config.sender_name || storeName || '');
+      setSenderEmail(connectionStatus.config.sender_email || storeEmail || '');
     }
   };
 
@@ -189,12 +192,18 @@ export default function EmailProviderSettings({ storeEmail, storeName }) {
       if (response.success) {
         setFlashMessage({ type: 'success', message: 'Test email sent successfully! Check your inbox.' });
         setTestEmail('');
+        setShowTestSection(false);
       } else {
-        setFlashMessage({ type: 'error', message: `Test failed: ${response.message}` });
+        // Show verification info if connection failed
+        const errorMsg = response.message?.includes('connection failed') || response.message?.includes('failed')
+          ? 'Test failed: Brevo connection failed. Important: If your sender email is not yet verified in Brevo, check your inbox for a verification email and click the verification link before sending emails.'
+          : `Test failed: ${response.message}`;
+        setFlashMessage({ type: 'error', message: errorMsg });
       }
     } catch (error) {
       console.error('Test connection error:', error);
-      setFlashMessage({ type: 'error', message: 'Failed to send test email' });
+      const errorMsg = 'Failed to send test email. Important: If your sender email is not yet verified in Brevo, check your inbox for a verification email and click the verification link.';
+      setFlashMessage({ type: 'error', message: errorMsg });
     } finally {
       setTestingSend(false);
     }
@@ -367,23 +376,14 @@ export default function EmailProviderSettings({ storeEmail, storeName }) {
                   </div>
 
                   <div className="flex gap-2 flex-wrap">
-                    {storeEmail && (
-                      <Button
-                        onClick={handleOpenTestSection}
-                        className="bg-green-600 hover:bg-green-700"
-                      >
-                        <Send className="w-4 h-4 mr-2" />
-                        Send Test to {storeEmail}
-                      </Button>
-                    )}
                     <Button
                       variant="outline"
                       onClick={() => {
                         setShowConfig(!showConfig);
-                        // Pre-fill when opening
-                        if (!showConfig && connectionStatus?.config) {
-                          setSenderName(connectionStatus.config.sender_name || storeName || '');
-                          setSenderEmail(connectionStatus.config.sender_email || storeEmail || '');
+                        // Pre-fill when opening with current config or store defaults
+                        if (!showConfig) {
+                          setSenderName(connectionStatus?.config?.sender_name || storeName || '');
+                          setSenderEmail(connectionStatus?.config?.sender_email || storeEmail || '');
                         }
                       }}
                     >
@@ -422,9 +422,9 @@ export default function EmailProviderSettings({ storeEmail, storeName }) {
                   <Button
                     onClick={() => {
                       setShowConfig(true);
-                      // Pre-fill with store data
-                      if (storeName && !senderName) setSenderName(storeName);
-                      if (storeEmail && !senderEmail) setSenderEmail(storeEmail);
+                      // Pre-fill with store data from Settings > General
+                      setSenderName(storeName || '');
+                      setSenderEmail(storeEmail || '');
                     }}
                     className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700"
                   >
@@ -477,7 +477,7 @@ export default function EmailProviderSettings({ storeEmail, storeName }) {
                     required
                   />
                   <p className="text-xs text-gray-500">
-                    Pre-filled with your store name. Change if needed.
+                    Uses Store Name from Settings > General. Override to use a different name.
                   </p>
                 </div>
 
@@ -492,7 +492,7 @@ export default function EmailProviderSettings({ storeEmail, storeName }) {
                     required
                   />
                   <p className="text-xs text-gray-500">
-                    Pre-filled with your store contact email. Change if needed.
+                    Uses Store Email from Settings > General. Override to use a different email.
                   </p>
                   <div className="bg-blue-50 border border-blue-200 rounded p-3 mt-2">
                     <p className="text-xs text-blue-800">
