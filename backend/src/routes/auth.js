@@ -162,6 +162,41 @@ const sendWelcomeEmail = async (storeId, email, customer) => {
   }
 };
 
+// Helper: Send verification email with code
+const sendVerificationEmail = async (storeId, email, customer, verificationCode) => {
+  try {
+    const store = await Store.findByPk(storeId);
+
+    // Try to send via email template if exists, otherwise send simple email
+    emailService.sendEmail(storeId, 'email_verification', email, {
+      customer_name: `${customer.first_name} ${customer.last_name}`,
+      customer_first_name: customer.first_name,
+      verification_code: verificationCode,
+      store_name: store?.name || 'Our Store',
+      store_url: store?.domain || process.env.CORS_ORIGIN,
+      current_year: new Date().getFullYear()
+    }, 'en').catch(templateError => {
+      // Fallback: Send simple email with verification code
+      console.log('Email template not found, sending simple verification email');
+      emailService.sendViaBrevo(storeId, email,
+        `Verify your email - ${store?.name || 'Our Store'}`,
+        `
+          <h2>Verify Your Email</h2>
+          <p>Hi ${customer.first_name},</p>
+          <p>Thank you for registering! Please use the following verification code to complete your registration:</p>
+          <h1 style="font-size: 32px; letter-spacing: 5px; color: #4F46E5;">${verificationCode}</h1>
+          <p>This code will expire in 15 minutes.</p>
+          <p>If you didn't create an account, please ignore this email.</p>
+        `
+      ).catch(err => {
+        console.error('Verification email failed:', err.message);
+      });
+    });
+  } catch (error) {
+    console.error('Error sending verification email:', error.message);
+  }
+};
+
 // @route   POST /api/auth/register
 // @desc    Register a new user
 // @access  Public
@@ -811,7 +846,11 @@ router.post('/customer/register', [
       }
     }
 
-    // Create customer
+    // Generate 6-digit verification code
+    const verificationCode = Math.floor(100000 + Math.random() * 900000).toString();
+    const verificationExpiry = new Date(Date.now() + 15 * 60 * 1000); // 15 minutes
+
+    // Create customer with verification code
     const customer = await Customer.create({
       email,
       password,
@@ -820,7 +859,10 @@ router.post('/customer/register', [
       phone,
       role: 'customer',
       account_type: 'individual',
-      store_id: customerStoreId
+      store_id: customerStoreId,
+      email_verified: false,
+      email_verification_token: verificationCode,
+      password_reset_expires: verificationExpiry // Using this field for verification expiry
     });
 
     // Create addresses if provided
@@ -828,22 +870,23 @@ router.post('/customer/register', [
       await createCustomerAddresses(customer.id, first_name, last_name, phone, email, address_data);
     }
 
-    // Send welcome email if requested
-    if (send_welcome_email && customerStoreId) {
-      sendWelcomeEmail(customerStoreId, email, customer);
+    // Send verification email with code
+    if (customerStoreId) {
+      await sendVerificationEmail(customerStoreId, email, customer, verificationCode);
     }
 
-    // Generate token
+    // Generate token (user can login but will be blocked until verified)
     const token = generateToken(customer);
 
     res.status(201).json({
       success: true,
-      message: 'Customer created successfully',
+      message: 'Registration successful! Please check your email for a verification code.',
       data: {
         user: customer,
         token,
         sessionRole: customer.role,
-        sessionContext: 'storefront'
+        sessionContext: 'storefront',
+        requiresVerification: true
       }
     });
   } catch (error) {
@@ -1009,6 +1052,141 @@ router.post('/customer/login', [
     });
   } catch (error) {
     console.error('Customer login error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Server error'
+    });
+  }
+});
+
+// @route   POST /api/auth/verify-email
+// @desc    Verify customer email with code
+// @access  Public
+router.post('/verify-email', [
+  body('email').isEmail().normalizeEmail().withMessage('Please enter a valid email'),
+  body('code').trim().notEmpty().withMessage('Verification code is required')
+], async (req, res) => {
+  try {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({
+        success: false,
+        errors: errors.array()
+      });
+    }
+
+    const { email, code } = req.body;
+
+    // Find customer by email
+    const customer = await Customer.findOne({ where: { email } });
+
+    if (!customer) {
+      return res.status(404).json({
+        success: false,
+        message: 'Customer not found'
+      });
+    }
+
+    // Check if already verified
+    if (customer.email_verified) {
+      return res.status(400).json({
+        success: false,
+        message: 'Email is already verified'
+      });
+    }
+
+    // Check verification code
+    if (customer.email_verification_token !== code) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid verification code'
+      });
+    }
+
+    // Check if code expired (15 minutes)
+    if (customer.password_reset_expires && new Date() > customer.password_reset_expires) {
+      return res.status(400).json({
+        success: false,
+        message: 'Verification code has expired. Please request a new one.'
+      });
+    }
+
+    // Mark as verified
+    await customer.update({
+      email_verified: true,
+      email_verification_token: null,
+      password_reset_expires: null
+    });
+
+    res.json({
+      success: true,
+      message: 'Email verified successfully!'
+    });
+  } catch (error) {
+    console.error('Email verification error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Server error during verification'
+    });
+  }
+});
+
+// @route   POST /api/auth/resend-verification
+// @desc    Resend verification code
+// @access  Public
+router.post('/resend-verification', [
+  body('email').isEmail().normalizeEmail().withMessage('Please enter a valid email')
+], async (req, res) => {
+  try {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({
+        success: false,
+        errors: errors.array()
+      });
+    }
+
+    const { email } = req.body;
+
+    // Find customer by email
+    const customer = await Customer.findOne({ where: { email } });
+
+    if (!customer) {
+      return res.status(404).json({
+        success: false,
+        message: 'Customer not found'
+      });
+    }
+
+    // Check if already verified
+    if (customer.email_verified) {
+      return res.status(400).json({
+        success: false,
+        message: 'Email is already verified'
+      });
+    }
+
+    // Generate new verification code
+    const verificationCode = Math.floor(100000 + Math.random() * 900000).toString();
+    const verificationExpiry = new Date(Date.now() + 15 * 60 * 1000); // 15 minutes
+
+    // Update customer with new code
+    await customer.update({
+      email_verification_token: verificationCode,
+      password_reset_expires: verificationExpiry
+    });
+
+    // Send verification email
+    if (customer.store_id) {
+      await sendVerificationEmail(customer.store_id, email, customer, verificationCode);
+    }
+
+    res.json({
+      success: true,
+      message: 'Verification code sent! Please check your email.'
+    });
+  } catch (error) {
+    console.error('Resend verification error:', error);
     res.status(500).json({
       success: false,
       message: 'Server error'

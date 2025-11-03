@@ -1087,6 +1087,12 @@ export default function CustomerDashboard() {
           throw new Error("Not a customer or not authenticated");
         }
 
+        // Check if email is verified
+        if (!userData.email_verified) {
+          navigate(`/public/${storeCode || 'default'}/verify-email?email=${encodeURIComponent(userData.email)}`);
+          return;
+        }
+
         setUser(userData);
         setIsGuest(false);
 

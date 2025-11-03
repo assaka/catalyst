@@ -53,6 +53,18 @@ export default function EmailTemplateForm({ template, onSubmit, onCancel }) {
         { key: '{{current_year}}', desc: 'Current year' }
       ]
     },
+    email_verification: {
+      label: 'Email Verification Code',
+      defaultSubject: 'Verify your email - {{store_name}}',
+      variables: [
+        { key: '{{customer_name}}', desc: 'Full name' },
+        { key: '{{customer_first_name}}', desc: 'First name' },
+        { key: '{{verification_code}}', desc: '6-digit verification code' },
+        { key: '{{store_name}}', desc: 'Store name' },
+        { key: '{{store_url}}', desc: 'Store URL' },
+        { key: '{{current_year}}', desc: 'Current year' }
+      ]
+    },
     credit_purchase_email: {
       label: 'Credit Purchase Confirmation',
       defaultSubject: 'Credit Purchase Confirmation - {{credits_purchased}} Credits',

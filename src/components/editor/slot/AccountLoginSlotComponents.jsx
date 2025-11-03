@@ -449,18 +449,23 @@ const RegisterFormSlotComponent = ({ slot, context, variableContext }) => {
         send_welcome_email: true
       });
 
-      // Backend returns: { success: true, data: { user, token, ... } }
+      // Backend returns: { success: true, data: { user, token, requiresVerification, ... } }
       if (response.success) {
-        setSuccess(t('common.registration_successful', 'Registration successful! A welcome email has been sent to your email address.'));
-
         // Token is already saved by CustomerAuth.register()
         localStorage.removeItem('user_logged_out');
 
-        // Redirect after showing success message
-        setTimeout(async () => {
-          const accountUrl = await getCustomerAccountUrl();
-          navigate(accountUrl);
-        }, 2000);
+        // Check if email verification is required
+        if (response.data?.requiresVerification) {
+          // Redirect to verification page
+          navigate(`/public/${storeCode}/verify-email?email=${encodeURIComponent(formData.email)}`);
+        } else {
+          setSuccess(t('common.registration_successful', 'Registration successful!'));
+          // Redirect after showing success message
+          setTimeout(async () => {
+            const accountUrl = await getCustomerAccountUrl();
+            navigate(accountUrl);
+          }, 2000);
+        }
       } else {
         // Show error message from backend
         setError(response.message || t('common.registration_failed', 'Registration failed. Please try again.'));
