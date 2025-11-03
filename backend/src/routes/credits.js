@@ -394,10 +394,11 @@ router.post('/award-bonus', authMiddleware,
  * Get transaction history
  * GET /api/credits/transactions
  */
-router.get('/transactions', authMiddleware, storeAuth, async (req, res) => {
+router.get('/transactions', authMiddleware, async (req, res) => {
   try {
     const userId = req.user.id;
-    const storeId = req.storeId;
+    // Store ID is optional - can be passed in query params if needed
+    const storeId = req.query.store_id || req.headers['x-store-id'] || null;
     const limit = parseInt(req.query.limit) || 50;
 
     if (limit < 1 || limit > 200) {

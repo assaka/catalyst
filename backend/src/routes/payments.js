@@ -344,11 +344,23 @@ router.post('/create-intent', authMiddleware, async (req, res) => {
 
     const userId = req.user.id;
 
+    // Get user's first store for the transaction record
+    // Credit balance is user-level, but transactions need a store reference
+    const { Store: StoreModel } = require('../models');
+    const userStore = await StoreModel.findOne({ where: { user_id: userId } });
+
+    if (!userStore) {
+      return res.status(400).json({
+        success: false,
+        error: 'No store found for user. Please create a store first.'
+      });
+    }
+
     // Create credit transaction record first
     const creditService = require('../services/credit-service');
     const transaction = await creditService.createPurchaseTransaction(
       userId,
-      null, // storeId not required for credit purchases
+      userStore.id,
       amountUsd,
       credits
     );
@@ -400,16 +412,10 @@ router.get('/publishable-key', (req, res) => {
   try {
     const publishableKey = process.env.STRIPE_PUBLISHABLE_KEY;
 
-    if (!publishableKey) {
-      return res.status(400).json({
-        success: false,
-        error: 'Stripe publishable key not configured'
-      });
-    }
-
+    // Return null if not configured (allows graceful degradation on frontend)
     res.json({
       data: {
-        publishableKey
+        publishableKey: publishableKey || null
       }
     });
   } catch (error) {
