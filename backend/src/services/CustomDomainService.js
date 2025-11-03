@@ -77,7 +77,16 @@ class CustomDomainService {
 
       switch (domain.verification_method) {
         case 'txt':
-          verified = await this._verifyTXTRecord(domain);
+          // For TXT verification, also check if domain is pointing to us (CNAME or A)
+          const txtVerified = await this._verifyTXTRecord(domain);
+          if (txtVerified) {
+            // Also verify domain is pointing to our platform (CNAME or A record)
+            const pointsToUs = await this._verifyDomainPointsToUs(domain);
+            verified = pointsToUs;
+            verificationDetails = { txt_verified: true, points_to_platform: pointsToUs };
+          } else {
+            verificationDetails = { txt_verified: false };
+          }
           break;
         case 'cname':
           verified = await this._verifyCNAMERecord(domain);
@@ -147,23 +156,85 @@ class CustomDomainService {
   }
 
   /**
+   * Verify domain points to our platform (CNAME or A record)
+   * @private
+   */
+  static async _verifyDomainPointsToUs(domain) {
+    try {
+      // Try CNAME first
+      const cnameVerified = await this._verifyCNAMERecord(domain);
+      if (cnameVerified) {
+        console.log(`✅ Domain ${domain.domain} verified via CNAME`);
+        return true;
+      }
+
+      // Fall back to A record verification
+      const aRecordVerified = await this._verifyARecord(domain);
+      if (aRecordVerified) {
+        console.log(`✅ Domain ${domain.domain} verified via A record`);
+        return true;
+      }
+
+      console.log(`❌ Domain ${domain.domain} not pointing to our platform`);
+      return false;
+    } catch (error) {
+      console.error('Domain verification error:', error);
+      return false;
+    }
+  }
+
+  /**
    * Verify CNAME record for domain
    * @private
    */
   static async _verifyCNAMERecord(domain) {
     try {
       const cnameRecords = await dns.resolveCname(domain.domain);
-      const expectedTarget = domain.cname_target || `stores.${process.env.PLATFORM_DOMAIN || 'catalyst.app'}`;
+
+      // Accept CNAME pointing to vercel-dns.com or vercel.app
+      const validTargets = [
+        'cname.vercel-dns.com',
+        'vercel-dns.com',
+        '.vercel.app'
+      ];
 
       console.log(`Checking CNAME for ${domain.domain}:`, cnameRecords);
-      console.log(`Expected target:`, expectedTarget);
 
-      return cnameRecords.some(record =>
-        record.toLowerCase() === expectedTarget.toLowerCase() ||
-        record.toLowerCase().endsWith(`.${expectedTarget.toLowerCase()}`)
-      );
+      return cnameRecords.some(record => {
+        const recordLower = record.toLowerCase();
+        return validTargets.some(target =>
+          recordLower.includes(target.toLowerCase())
+        );
+      });
     } catch (error) {
-      console.error('CNAME verification error:', error.code);
+      console.log(`CNAME check failed for ${domain.domain}:`, error.code);
+      return false;
+    }
+  }
+
+  /**
+   * Verify A record for domain (Vercel IPs)
+   * @private
+   */
+  static async _verifyARecord(domain) {
+    try {
+      const aRecords = await dns.resolve4(domain.domain);
+
+      // Vercel's A record IPs
+      const vercelIPs = [
+        '76.76.21.21',
+        '76.76.21.22',
+        '76.76.21.93',
+        '76.76.21.142'
+      ];
+
+      console.log(`Checking A records for ${domain.domain}:`, aRecords);
+      console.log(`Valid Vercel IPs:`, vercelIPs);
+
+      // Check if at least one A record points to Vercel
+      return aRecords.some(ip => vercelIPs.includes(ip));
+    } catch (error) {
+      console.log(`A record check failed for ${domain.domain}:`, error.code);
       return false;
     }
   }
@@ -253,7 +324,13 @@ class CustomDomainService {
           if (record.type === 'CNAME') {
             const cnames = await dns.resolveCname(domain.domain);
             actualValue = cnames;
-            found = cnames.some(c => c.toLowerCase().includes(record.value.toLowerCase()));
+            found = cnames.some(c => c.toLowerCase().includes('vercel'));
+          } else if (record.type === 'A') {
+            const aRecords = await dns.resolve4(domain.domain);
+            actualValue = aRecords;
+            // Check if any A record matches Vercel IPs
+            const vercelIPs = ['76.76.21.21', '76.76.21.22', '76.76.21.93', '76.76.21.142'];
+            found = aRecords.some(ip => vercelIPs.includes(ip));
           } else if (record.type === 'TXT') {
             const txts = await dns.resolveTxt(record.name);
             actualValue = txts.flat();

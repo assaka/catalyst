@@ -680,12 +680,15 @@ router.post('/', [
 
     // Send order success email asynchronously
     try {
-      console.log('📧 Sending order success email for order:', completeOrder.order_number);
+      console.log('📧 Attempting to send order success email for order:', completeOrder.order_number);
+      console.log('📧 Store:', store?.name, '(', store_id, ')');
+      console.log('📧 Recipient:', completeOrder.customer_email);
 
       // Get customer information
       let customer = null;
       if (completeOrder.customer_id) {
         customer = await Customer.findByPk(completeOrder.customer_id);
+        console.log('📧 Customer found:', customer ? `${customer.first_name} ${customer.last_name}` : 'Not found');
       }
 
       // If no customer record, create a guest customer object from order data
@@ -695,6 +698,7 @@ router.post('/', [
           last_name: completeOrder.customer_last_name || '',
           email: completeOrder.customer_email
         };
+        console.log('📧 Using guest customer data:', customer.first_name, customer.last_name);
       }
 
       // Send email asynchronously (don't block response)
@@ -704,14 +708,21 @@ router.post('/', [
         order: completeOrder.toJSON(),
         store: store.toJSON(),
         languageCode: 'en' // TODO: Get from customer preferences or order metadata
-      }).then(() => {
-        console.log('✅ Order success email sent successfully to:', completeOrder.customer_email);
+      }).then((result) => {
+        if (result.success) {
+          console.log('✅ Order success email sent successfully to:', completeOrder.customer_email);
+        } else {
+          console.error('❌ Order success email failed:', result.message || 'Unknown error');
+        }
       }).catch(emailError => {
-        console.error('❌ Failed to send order success email:', emailError.message);
+        console.error('❌ Failed to send order success email to:', completeOrder.customer_email);
+        console.error('❌ Error details:', emailError.message);
+        console.error('❌ Full error:', emailError);
         // Don't fail order creation if email fails
       });
     } catch (emailError) {
-      console.error('Error sending order success email:', emailError);
+      console.error('❌ Error in order success email setup:', emailError.message);
+      console.error('❌ Full error:', emailError);
       // Don't fail order creation if email fails
     }
 

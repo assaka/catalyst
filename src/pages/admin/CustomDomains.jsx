@@ -622,17 +622,67 @@ const CustomDomains = () => {
               </TabsList>
 
               <TabsContent value="instructions" className="space-y-4">
+                <Alert className="bg-blue-50 border-blue-200 mb-4">
+                  <Info className="h-4 w-4 text-blue-600" />
+                  <AlertDescription className="text-blue-800">
+                    <strong>TransIP Users:</strong> Use A records instead of CNAME to avoid domain appending issues.
+                  </AlertDescription>
+                </Alert>
+
                 <div className="space-y-3">
                   <div className="border-l-4 border-blue-500 pl-4 py-2">
-                    <h4 className="font-semibold">Step 1: Add CNAME Record</h4>
+                    <h4 className="font-semibold">Step 1A: Add A Records (Recommended for TransIP)</h4>
                     <p className="text-sm text-muted-foreground mt-1">
-                      This points your domain to our Vercel deployment
+                      Add BOTH A records for best reliability
+                    </p>
+                    <div className="mt-2 space-y-2">
+                      <div className="p-3 bg-muted rounded-md font-mono text-sm">
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <span className="text-blue-600">Type:</span> A<br/>
+                            <span className="text-blue-600">Name:</span> www<br/>
+                            <span className="text-blue-600">Value:</span> 76.76.21.21<br/>
+                            <span className="text-blue-600">TTL:</span> 3600
+                          </div>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => copyToClipboard('76.76.21.21')}
+                          >
+                            <Copy className="w-4 h-4" />
+                          </Button>
+                        </div>
+                      </div>
+                      <div className="p-3 bg-muted rounded-md font-mono text-sm">
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <span className="text-blue-600">Type:</span> A<br/>
+                            <span className="text-blue-600">Name:</span> www<br/>
+                            <span className="text-blue-600">Value:</span> 76.76.21.22<br/>
+                            <span className="text-blue-600">TTL:</span> 3600
+                          </div>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => copyToClipboard('76.76.21.22')}
+                          >
+                            <Copy className="w-4 h-4" />
+                          </Button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="border-l-4 border-purple-500 pl-4 py-2">
+                    <h4 className="font-semibold">Step 1B: OR Add CNAME Record (Alternative)</h4>
+                    <p className="text-sm text-muted-foreground mt-1">
+                      Only if your DNS provider supports CNAME properly
                     </p>
                     <div className="mt-2 p-3 bg-muted rounded-md font-mono text-sm">
                       <div className="flex items-center justify-between">
                         <div>
                           <span className="text-blue-600">Type:</span> CNAME<br/>
-                          <span className="text-blue-600">Name:</span> www (or @ for apex domain)<br/>
+                          <span className="text-blue-600">Name:</span> www<br/>
                           <span className="text-blue-600">Value:</span> cname.vercel-dns.com<br/>
                           <span className="text-blue-600">TTL:</span> 3600
                         </div>
@@ -645,16 +695,10 @@ const CustomDomains = () => {
                         </Button>
                       </div>
                     </div>
-                    <Alert className="mt-2">
-                      <Info className="h-3 w-3" />
-                      <AlertDescription className="text-xs">
-                        <strong>Note:</strong> For apex domains (example.com), you may need to use an A record or ALIAS record instead. Check your DNS provider's documentation.
-                      </AlertDescription>
-                    </Alert>
                   </div>
 
                   <div className="border-l-4 border-green-500 pl-4 py-2">
-                    <h4 className="font-semibold">Step 2: Add TXT Record</h4>
+                    <h4 className="font-semibold">Step 2: Add TXT Record (Required)</h4>
                     <p className="text-sm text-muted-foreground mt-1">
                       This verifies you own the domain
                     </p>
@@ -662,7 +706,7 @@ const CustomDomains = () => {
                       <div className="flex items-center justify-between">
                         <div className="flex-1">
                           <span className="text-blue-600">Type:</span> TXT<br/>
-                          <span className="text-blue-600">Name:</span> _catalyst-verification<br/>
+                          <span className="text-blue-600">Name:</span> _catalyst-verification.www<br/>
                           <span className="text-blue-600">Value:</span> {selectedDomain?.verification_token}<br/>
                           <span className="text-blue-600">TTL:</span> 300
                         </div>
@@ -675,6 +719,12 @@ const CustomDomains = () => {
                         </Button>
                       </div>
                     </div>
+                    <Alert className="mt-2 bg-yellow-50 border-yellow-200">
+                      <AlertTriangle className="h-3 w-3 text-yellow-600" />
+                      <AlertDescription className="text-xs text-yellow-800">
+                        <strong>TransIP:</strong> Use name <code>_catalyst-verification.www</code> (or try <code>www._catalyst-verification</code> if the first doesn't work)
+                      </AlertDescription>
+                    </Alert>
                   </div>
 
                   <div className="border-l-4 border-yellow-500 pl-4 py-2">
@@ -694,49 +744,125 @@ const CustomDomains = () => {
               </TabsContent>
 
               <TabsContent value="records" className="space-y-4">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Type</TableHead>
-                      <TableHead>Name</TableHead>
-                      <TableHead>Value</TableHead>
-                      <TableHead>TTL</TableHead>
-                      <TableHead></TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    <TableRow>
-                      <TableCell className="font-mono">CNAME</TableCell>
-                      <TableCell className="font-mono">www</TableCell>
-                      <TableCell className="font-mono">cname.vercel-dns.com</TableCell>
-                      <TableCell className="font-mono">3600</TableCell>
-                      <TableCell>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => copyToClipboard('cname.vercel-dns.com')}
-                        >
-                          <Copy className="w-4 h-4" />
-                        </Button>
-                      </TableCell>
-                    </TableRow>
-                    <TableRow>
-                      <TableCell className="font-mono">TXT</TableCell>
-                      <TableCell className="font-mono">_catalyst-verification</TableCell>
-                      <TableCell className="font-mono text-xs">{selectedDomain?.verification_token}</TableCell>
-                      <TableCell className="font-mono">300</TableCell>
-                      <TableCell>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => copyToClipboard(selectedDomain?.verification_token)}
-                        >
-                          <Copy className="w-4 h-4" />
-                        </Button>
-                      </TableCell>
-                    </TableRow>
-                  </TableBody>
-                </Table>
+                <Alert className="bg-blue-50 border-blue-200">
+                  <Info className="h-4 w-4 text-blue-600" />
+                  <AlertDescription className="text-blue-800">
+                    <strong>For TransIP:</strong> Use A records (Option A). CNAME may cause issues.
+                  </AlertDescription>
+                </Alert>
+
+                <div className="space-y-4">
+                  <div>
+                    <h4 className="font-semibold mb-2">Option A: A Records (Recommended for TransIP)</h4>
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Type</TableHead>
+                          <TableHead>Name</TableHead>
+                          <TableHead>Value</TableHead>
+                          <TableHead>TTL</TableHead>
+                          <TableHead></TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        <TableRow className="bg-green-50">
+                          <TableCell className="font-mono font-bold">A</TableCell>
+                          <TableCell className="font-mono">www</TableCell>
+                          <TableCell className="font-mono">76.76.21.21</TableCell>
+                          <TableCell className="font-mono">3600</TableCell>
+                          <TableCell>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => copyToClipboard('76.76.21.21')}
+                            >
+                              <Copy className="w-4 h-4" />
+                            </Button>
+                          </TableCell>
+                        </TableRow>
+                        <TableRow className="bg-green-50">
+                          <TableCell className="font-mono font-bold">A</TableCell>
+                          <TableCell className="font-mono">www</TableCell>
+                          <TableCell className="font-mono">76.76.21.22</TableCell>
+                          <TableCell className="font-mono">3600</TableCell>
+                          <TableCell>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => copyToClipboard('76.76.21.22')}
+                            >
+                              <Copy className="w-4 h-4" />
+                            </Button>
+                          </TableCell>
+                        </TableRow>
+                      </TableBody>
+                    </Table>
+                  </div>
+
+                  <div>
+                    <h4 className="font-semibold mb-2">Option B: CNAME (Alternative)</h4>
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Type</TableHead>
+                          <TableHead>Name</TableHead>
+                          <TableHead>Value</TableHead>
+                          <TableHead>TTL</TableHead>
+                          <TableHead></TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        <TableRow>
+                          <TableCell className="font-mono">CNAME</TableCell>
+                          <TableCell className="font-mono">www</TableCell>
+                          <TableCell className="font-mono">cname.vercel-dns.com</TableCell>
+                          <TableCell className="font-mono">3600</TableCell>
+                          <TableCell>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => copyToClipboard('cname.vercel-dns.com')}
+                            >
+                              <Copy className="w-4 h-4" />
+                            </Button>
+                          </TableCell>
+                        </TableRow>
+                      </TableBody>
+                    </Table>
+                  </div>
+
+                  <div>
+                    <h4 className="font-semibold mb-2">Required: TXT Record</h4>
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Type</TableHead>
+                          <TableHead>Name</TableHead>
+                          <TableHead>Value</TableHead>
+                          <TableHead>TTL</TableHead>
+                          <TableHead></TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        <TableRow className="bg-yellow-50">
+                          <TableCell className="font-mono font-bold">TXT</TableCell>
+                          <TableCell className="font-mono">_catalyst-verification.www</TableCell>
+                          <TableCell className="font-mono text-xs">{selectedDomain?.verification_token}</TableCell>
+                          <TableCell className="font-mono">300</TableCell>
+                          <TableCell>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => copyToClipboard(selectedDomain?.verification_token)}
+                            >
+                              <Copy className="w-4 h-4" />
+                            </Button>
+                          </TableCell>
+                        </TableRow>
+                      </TableBody>
+                    </Table>
+                  </div>
+                </div>
 
                 <Alert>
                   <ExternalLink className="h-4 w-4" />
@@ -744,6 +870,9 @@ const CustomDomains = () => {
                     <div className="space-y-2">
                       <p className="font-semibold">Common DNS Providers:</p>
                       <div className="grid grid-cols-2 gap-2 text-sm">
+                        <a href="https://www.transip.nl/" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">
+                          TransIP →
+                        </a>
                         <a href="https://dash.cloudflare.com/" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">
                           Cloudflare →
                         </a>
@@ -752,9 +881,6 @@ const CustomDomains = () => {
                         </a>
                         <a href="https://dcc.godaddy.com/" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">
                           GoDaddy →
-                        </a>
-                        <a href="https://domains.google.com/" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">
-                          Google Domains →
                         </a>
                       </div>
                     </div>

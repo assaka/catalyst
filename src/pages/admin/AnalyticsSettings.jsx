@@ -83,11 +83,6 @@ export default function AnalyticsSettings() {
                     storeData = fullStoreData;
                 }
 
-                console.log('🟢 === ANALYTICS PAGE LOAD DEBUG ===');
-                console.log('🟢 Full API response:', JSON.stringify(fullStoreData, null, 2));
-                console.log('🟢 Extracted storeData:', JSON.stringify(storeData, null, 2));
-                console.log('🟢 Raw storeData.settings:', JSON.stringify(storeData?.settings, null, 2));
-
                 setStore({
                     ...selectedStore,
                     ...storeData, // Include all data from API
@@ -106,16 +101,10 @@ export default function AnalyticsSettings() {
 
                 // Load advanced GTM settings
                 const analytics = storeData?.settings?.analytics || {};
-                console.log('🟢 analytics object:', JSON.stringify(analytics, null, 2));
-                console.log('🟢 analytics.gtm_enabled value:', analytics.gtm_enabled, 'type:', typeof analytics.gtm_enabled);
-                console.log('🟢 analytics_settings.enable_google_tag_manager:', storeData?.settings?.analytics_settings?.enable_google_tag_manager);
-
                 // Fix: Use explicit checks instead of || operator which treats false as falsy
                 const gtmEnabled = analytics.gtm_enabled !== undefined
                     ? analytics.gtm_enabled
                     : (storeData?.settings?.analytics_settings?.enable_google_tag_manager || false);
-
-                console.log('🟢 Final gtmEnabled value:', gtmEnabled);
 
                 setGtmSettings({
                     container_id: analytics.gtm_container_id || storeData?.settings?.analytics_settings?.gtm_id || '',
@@ -124,8 +113,6 @@ export default function AnalyticsSettings() {
                     auto_track_ecommerce: analytics.auto_track_ecommerce !== false,
                     custom_events: analytics.custom_events || []
                 });
-
-                console.log('🟢 === ANALYTICS PAGE LOAD DEBUG END ===');
                 
                 // Load dataLayer events
                 loadDataLayerEvents();
@@ -155,7 +142,6 @@ export default function AnalyticsSettings() {
         
         return () => {
             if (intervalId) {
-                console.log('🛑 Clearing auto-refresh interval');
                 clearInterval(intervalId);
             }
         };
@@ -187,10 +173,6 @@ export default function AnalyticsSettings() {
         setSaving(true);
         setSaveSuccess(false);
         try {
-            console.log('🔵 === ANALYTICS SAVE DEBUG START ===');
-            console.log('🔵 Store ID:', storeId);
-            console.log('🔵 Current gtmSettings state:', JSON.stringify(gtmSettings, null, 2));
-            console.log('🔵 Current store.settings.analytics_settings:', JSON.stringify(store.settings.analytics_settings, null, 2));
 
             // Merge both old and new analytics settings
             const updatedSettings = {
@@ -209,12 +191,7 @@ export default function AnalyticsSettings() {
                 }
             };
 
-            console.log('🔵 Updated settings object to send:', JSON.stringify(updatedSettings, null, 2));
-            console.log('🔵 Calling Store.update...');
-
             const response = await Store.update(storeId, { settings: updatedSettings });
-
-            console.log('🔵 API Response:', JSON.stringify(response, null, 2));
 
             // Update local state to avoid reload
             setStore(prev => ({
@@ -238,11 +215,7 @@ export default function AnalyticsSettings() {
             setFlashMessage({ type: 'success', message: 'Analytics settings saved successfully!' });
             setSaveSuccess(true);
             setTimeout(() => setSaveSuccess(false), 2000);
-            console.log('🔵 === ANALYTICS SAVE DEBUG END (SUCCESS) ===');
         } catch (error) {
-            console.error("🔴 === ANALYTICS SAVE DEBUG END (ERROR) ===");
-            console.error("Failed to save settings:", error);
-            console.error("Error details:", error.message, error.status, error.data);
             setFlashMessage({ type: 'error', message: 'Failed to save settings.' });
         } finally {
             setSaving(false);

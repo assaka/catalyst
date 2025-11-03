@@ -194,20 +194,42 @@ CustomDomain.prototype.markAsVerified = async function() {
 };
 
 CustomDomain.prototype.getRequiredDNSRecords = function() {
-  const vercelCname = 'cname.vercel-dns.com';
+  const subdomain = this.subdomain || 'www';
 
   return [
+    // Option 1: CNAME (recommended, but not all DNS providers support it properly)
     {
       type: 'CNAME',
-      name: this.subdomain ? this.subdomain : 'www',
-      value: vercelCname,
+      name: subdomain,
+      value: 'cname.vercel-dns.com',
       ttl: 3600,
-      required: true,
-      purpose: 'Points your domain to Vercel hosting'
+      required: false, // Not strictly required if A records are used
+      purpose: 'Points your domain to Vercel hosting (recommended)',
+      note: 'Use CNAME if your DNS provider supports it'
+    },
+    // Option 2: A records (alternative for DNS providers like TransIP)
+    {
+      type: 'A',
+      name: subdomain,
+      value: '76.76.21.21',
+      ttl: 3600,
+      required: false, // Either CNAME OR A records are required
+      purpose: 'Points your domain to Vercel (Alternative to CNAME)',
+      note: 'Use A records if CNAME has issues with your DNS provider'
     },
     {
+      type: 'A',
+      name: subdomain,
+      value: '76.76.21.22',
+      ttl: 3600,
+      required: false,
+      purpose: 'Second Vercel IP for redundancy',
+      note: 'Add both A records for best reliability'
+    },
+    // TXT record for verification (always required)
+    {
       type: 'TXT',
-      name: `_catalyst-verification${this.subdomain ? `.${this.subdomain}` : ''}`,
+      name: `_catalyst-verification.${subdomain}`,
       value: this.verification_token,
       ttl: 300,
       required: true,

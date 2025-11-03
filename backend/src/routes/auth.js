@@ -931,10 +931,16 @@ router.post('/customer/register', [
     // Send welcome email if requested
     if (send_welcome_email) {
       try {
-        console.log(`📧 Sending welcome email to: ${email}`);
+        console.log(`📧 Attempting to send welcome email to: ${email}`);
 
         // Get store for email context
         const store = customerStoreId ? await Store.findByPk(customerStoreId) : null;
+
+        if (!store) {
+          console.error('❌ Cannot send welcome email: Store not found for ID:', customerStoreId);
+        } else {
+          console.log(`📧 Store found: ${store.name} (${store.id})`);
+        }
 
         // Send welcome email asynchronously (don't block registration)
         emailService.sendTransactionalEmail(customerStoreId, 'signup', {
@@ -942,14 +948,21 @@ router.post('/customer/register', [
           customer: customer.toJSON(),
           store: store ? store.toJSON() : null,
           languageCode: 'en' // TODO: Get from customer preferences
-        }).then(() => {
-          console.log('✅ Welcome email sent successfully to:', email);
+        }).then((result) => {
+          if (result.success) {
+            console.log('✅ Welcome email sent successfully to:', email);
+          } else {
+            console.error('❌ Welcome email failed:', result.message || 'Unknown error');
+          }
         }).catch(emailError => {
-          console.error('❌ Failed to send welcome email:', emailError.message);
+          console.error('❌ Failed to send welcome email to:', email);
+          console.error('❌ Error details:', emailError.message);
+          console.error('❌ Full error:', emailError);
           // Don't fail registration if email fails
         });
       } catch (emailError) {
-        console.error('Failed to send welcome email:', emailError);
+        console.error('❌ Error in welcome email setup:', emailError.message);
+        console.error('❌ Full error:', emailError);
       }
     }
 

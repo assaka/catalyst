@@ -25,17 +25,28 @@ class EmailService {
    */
   async sendEmail(storeId, templateIdentifier, recipientEmail, variables, languageCode = 'en', attachments = []) {
     try {
+      console.log(`📧 [EMAIL SERVICE] Attempting to send email:`, {
+        storeId,
+        templateIdentifier,
+        recipientEmail,
+        languageCode
+      });
+
       // Check if Brevo is configured
       const isConfigured = await brevoService.isConfigured(storeId);
       if (!isConfigured) {
-        console.warn(`Brevo not configured for store ${storeId}, email not sent`);
-        // Log as pending
-        await this.logEmail(storeId, null, recipientEmail, 'Email not sent', 'failed', null, 'Brevo not configured', { templateIdentifier, variables });
+        const errorMsg = `Brevo email service is not configured for store ${storeId}. Please configure Brevo in Settings > Email to enable email sending.`;
+        console.error(`❌ [EMAIL SERVICE] ${errorMsg}`);
+
+        // Log as failed
+        await this.logEmail(storeId, null, recipientEmail, 'Email not sent', 'failed', null, errorMsg, { templateIdentifier, variables });
         return {
           success: false,
-          message: 'Email service not configured'
+          message: 'Email service not configured. Please contact the store administrator to configure email settings.'
         };
       }
+
+      console.log(`✅ [EMAIL SERVICE] Brevo is configured for store ${storeId}`);
 
       // Get template
       const template = await EmailTemplate.findOne({
@@ -49,8 +60,12 @@ class EmailService {
       });
 
       if (!template) {
-        throw new Error(`Email template '${templateIdentifier}' not found for store ${storeId}`);
+        const errorMsg = `Email template '${templateIdentifier}' not found or not active for store ${storeId}. Please create and activate the template in Settings > Email Templates.`;
+        console.error(`❌ [EMAIL SERVICE] ${errorMsg}`);
+        throw new Error(errorMsg);
       }
+
+      console.log(`✅ [EMAIL SERVICE] Email template found: ${template.subject}`);
 
       // Get translation or fall back to default
       const translation = template.translationsData && template.translationsData.length > 0
@@ -92,13 +107,20 @@ class EmailService {
         { templateIdentifier, variables, languageCode }
       );
 
+      console.log(`✅ [EMAIL SERVICE] Email sent successfully:`, {
+        messageId: result.messageId,
+        recipientEmail,
+        subject: renderedSubject
+      });
+
       return {
         success: true,
         message: 'Email sent successfully',
         messageId: result.messageId
       };
     } catch (error) {
-      console.error('Email send error:', error.message);
+      console.error('❌ [EMAIL SERVICE] Email send error:', error.message);
+      console.error('❌ [EMAIL SERVICE] Full error:', error);
 
       // Log failed send
       await this.logEmail(

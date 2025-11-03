@@ -196,7 +196,8 @@ export default function CustomerAuth() {
           last_name: formData.lastName,
           role: 'customer',
           account_type: 'individual',
-          store_id: storeId // CRITICAL: Bind customer to this specific store
+          store_id: storeId, // CRITICAL: Bind customer to this specific store
+          send_welcome_email: true // Send welcome email after registration
         };
 
         const response = await AuthService.register(registerData);
@@ -211,14 +212,20 @@ export default function CustomerAuth() {
           const token = actualRegResponse.data?.token || actualRegResponse.token;
 
           if (token) {
+            // Set success message for welcome email
+            setSuccess("Registration successful! A welcome email has been sent to your email address.");
+
             // Clear logged out flag before setting token
             localStorage.removeItem('user_logged_out');
 
             localStorage.setItem('customer_auth_token', token);
             apiClient.setToken(token);
 
-            const accountUrl = await getCustomerAccountUrl();
-            navigate(accountUrl);
+            // Wait a moment to show the success message before redirecting
+            setTimeout(async () => {
+              const accountUrl = await getCustomerAccountUrl();
+              navigate(accountUrl);
+            }, 2000);
             return;
           }
         }

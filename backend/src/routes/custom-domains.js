@@ -321,59 +321,87 @@ router.get('/:id/debug-dns', authMiddleware, storeResolver(), async (req, res) =
       verification_token: domain.verification_token
     };
 
+    // Check A records
+    const vercelIPs = ['76.76.21.21', '76.76.21.22', '76.76.21.93', '76.76.21.142'];
+    try {
+      const aRecords = await dns.resolve4(domain.domain);
+      const pointsToVercel = aRecords.some(ip => vercelIPs.includes(ip));
+      debugInfo.actual_records.a = {
+        found: true,
+        values: aRecords,
+        matches_expected: pointsToVercel,
+        vercel_ips: vercelIPs,
+        note: pointsToVercel ? 'Points to Vercel ✓' : 'Does not point to Vercel'
+      };
+    } catch (error) {
+      debugInfo.actual_records.a = {
+        found: false,
+        error: error.code,
+        message: error.code === 'ENODATA' ? 'No A record found' : error.message
+      };
+    }
+
     // Check CNAME record
     try {
       const cnames = await dns.resolveCname(domain.domain);
+      const pointsToVercel = cnames.some(c => c.toLowerCase().includes('vercel'));
       debugInfo.actual_records.cname = {
         found: true,
         values: cnames,
-        matches_expected: cnames.some(c => c.toLowerCase().includes('vercel'))
+        matches_expected: pointsToVercel,
+        note: pointsToVercel ? 'Points to Vercel ✓' : 'Does not point to Vercel'
       };
     } catch (error) {
       debugInfo.actual_records.cname = {
         found: false,
         error: error.code,
-        message: error.code === 'ENODATA' ? 'No CNAME record found' : error.message
+        message: error.code === 'ENODATA' ? 'No CNAME record found (use A records instead)' : error.message
       };
     }
 
-    // Check TXT record
-    const txtRecordName = `_catalyst-verification.${domain.domain}`;
-    try {
-      const txts = await dns.resolveTxt(txtRecordName);
-      const flatTxts = txts.flat();
-      debugInfo.actual_records.txt = {
-        found: true,
-        record_name: txtRecordName,
-        values: flatTxts,
-        matches_expected: flatTxts.some(t => t.includes(domain.verification_token))
-      };
-    } catch (error) {
-      debugInfo.actual_records.txt = {
-        found: false,
-        record_name: txtRecordName,
-        error: error.code,
-        message: error.code === 'ENODATA' ? 'No TXT record found' : error.message
-      };
+    // Check TXT record - try multiple possible names
+    const txtRecordNames = [
+      `_catalyst-verification.${domain.domain}`,
+      `_catalyst-verification.www.${domain.domain}`.replace('www.www.', 'www.'),
+      domain.domain.replace('www.', '_catalyst-verification.www.')
+    ];
+
+    let txtFound = false;
+    for (const txtRecordName of txtRecordNames) {
+      try {
+        const txts = await dns.resolveTxt(txtRecordName);
+        const flatTxts = txts.flat();
+        const matches = flatTxts.some(t => t.includes(domain.verification_token));
+
+        if (matches || flatTxts.length > 0) {
+          debugInfo.actual_records.txt = {
+            found: true,
+            record_name: txtRecordName,
+            values: flatTxts,
+            matches_expected: matches,
+            note: matches ? 'Verification token matches ✓' : 'Token does not match'
+          };
+          txtFound = true;
+          break;
+        }
+      } catch (error) {
+        // Continue to next name
+      }
     }
 
-    // Check A records (for debugging)
-    try {
-      const aRecords = await dns.resolve4(domain.domain);
-      debugInfo.actual_records.a = {
-        found: true,
-        values: aRecords
-      };
-    } catch (error) {
-      debugInfo.actual_records.a = {
+    if (!txtFound) {
+      debugInfo.actual_records.txt = {
         found: false,
-        error: error.code
+        tried_names: txtRecordNames,
+        error: 'ENODATA',
+        message: 'No TXT record found. Tried multiple name formats.'
       };
     }
 
     // Overall status
-    debugInfo.can_verify = debugInfo.actual_records.txt?.matches_expected || false;
-    debugInfo.dns_propagated = debugInfo.actual_records.cname?.found || debugInfo.actual_records.a?.found || false;
+    const hasValidPointer = (debugInfo.actual_records.a?.matches_expected || debugInfo.actual_records.cname?.matches_expected);
+    debugInfo.can_verify = debugInfo.actual_records.txt?.matches_expected && hasValidPointer;
+    debugInfo.dns_propagated = hasValidPointer;
 
     res.json({
       success: true,
@@ -393,38 +421,57 @@ router.get('/:id/debug-dns', authMiddleware, storeResolver(), async (req, res) =
 function getRecommendations(debugInfo) {
   const recommendations = [];
 
-  if (!debugInfo.actual_records.cname?.found) {
+  // Check if domain points to Vercel (A or CNAME)
+  const hasA = debugInfo.actual_records.a?.found;
+  const hasCNAME = debugInfo.actual_records.cname?.found;
+  const aPointsToVercel = debugInfo.actual_records.a?.matches_expected;
+  const cnamePointsToVercel = debugInfo.actual_records.cname?.matches_expected;
+
+  if (!hasA && !hasCNAME) {
     recommendations.push({
       type: 'error',
-      message: 'CNAME record not found. Add: CNAME www → cname.vercel-dns.com'
+      message: 'No A or CNAME record found. Add A records: 76.76.21.21 and 76.76.21.22 (recommended for TransIP)'
+    });
+  } else if (hasCNAME && !cnamePointsToVercel) {
+    recommendations.push({
+      type: 'error',
+      message: `CNAME points to ${debugInfo.actual_records.cname.values[0]} (wrong target). Delete CNAME and use A records instead: 76.76.21.21 and 76.76.21.22`
+    });
+  } else if (hasA && !aPointsToVercel) {
+    recommendations.push({
+      type: 'error',
+      message: `A record points to ${debugInfo.actual_records.a.values.join(', ')} (wrong IPs). Change to Vercel IPs: 76.76.21.21 and 76.76.21.22`
+    });
+  } else if (aPointsToVercel || cnamePointsToVercel) {
+    recommendations.push({
+      type: 'success',
+      message: `✓ Domain correctly points to Vercel via ${aPointsToVercel ? 'A record' : 'CNAME'}`
     });
   }
 
+  // Check TXT record
   if (!debugInfo.actual_records.txt?.found) {
     recommendations.push({
       type: 'error',
-      message: `TXT record not found. Add: TXT _catalyst-verification → ${debugInfo.verification_token}`
+      message: `TXT record not found. Add: Type=TXT, Name=_catalyst-verification.www, Value=${debugInfo.verification_token}`
     });
-  }
-
-  if (debugInfo.actual_records.txt?.found && !debugInfo.actual_records.txt?.matches_expected) {
+  } else if (debugInfo.actual_records.txt?.found && !debugInfo.actual_records.txt?.matches_expected) {
     recommendations.push({
       type: 'error',
-      message: 'TXT record found but value is incorrect. Check verification token.'
+      message: `TXT record found but token doesn't match. Expected: ${debugInfo.verification_token}`
     });
-  }
-
-  if (debugInfo.actual_records.cname?.found && !debugInfo.actual_records.cname?.matches_expected) {
-    recommendations.push({
-      type: 'warning',
-      message: `CNAME points to ${debugInfo.actual_records.cname.values[0]} instead of cname.vercel-dns.com`
-    });
-  }
-
-  if (recommendations.length === 0) {
+  } else if (debugInfo.actual_records.txt?.matches_expected) {
     recommendations.push({
       type: 'success',
-      message: 'All DNS records configured correctly! Click Verify to activate.'
+      message: '✓ TXT verification record is correct'
+    });
+  }
+
+  // Overall verdict
+  if (debugInfo.can_verify) {
+    recommendations.push({
+      type: 'success',
+      message: '✓✓ All DNS records configured correctly! Click Verify button to activate.'
     });
   }
 
