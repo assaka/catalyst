@@ -75,12 +75,26 @@ const VersionCompareModal = ({
       const fromReconstructed = extractStateFromVersion(fromData.version);
       const toReconstructed = extractStateFromVersion(toData.version);
 
+      console.log('🔍 VersionCompareModal loaded:', {
+        fromVersion: fromData.version.version_number,
+        toVersion: toData.version.version_number,
+        comparison_files_changed: comparisonData.comparison?.files_changed,
+        comparison_summary_length: comparisonData.comparison?.summary?.length,
+        fromState_keys: fromReconstructed ? Object.keys(fromReconstructed) : null,
+        toState_keys: toReconstructed ? Object.keys(toReconstructed) : null,
+        fromState_hooks: fromReconstructed?.hooks?.length || 0,
+        toState_hooks: toReconstructed?.hooks?.length || 0
+      });
+
       setFromState(fromReconstructed);
       setToState(toReconstructed);
 
       // Auto-select first changed component
       if (comparisonData.comparison?.summary?.length > 0) {
+        console.log('📌 Auto-selecting first changed component:', comparisonData.comparison.summary[0]);
         setSelectedComponent(comparisonData.comparison.summary[0]);
+      } else {
+        console.warn('⚠️  No changed components found in comparison');
       }
     } catch (error) {
       console.error('Failed to load comparison:', error);
@@ -125,12 +139,31 @@ const VersionCompareModal = ({
 
   // Get actual code from component in a state
   const getComponentCodeFromState = (state, componentType) => {
-    if (!state) return '';
+    console.log(`📝 getComponentCodeFromState called:`, {
+      componentType,
+      hasState: !!state,
+      state_keys: state ? Object.keys(state) : null,
+      componentData_exists: !!(state?.[componentType]),
+      componentData_length: state?.[componentType]?.length || 0
+    });
+
+    if (!state) {
+      console.warn('  ⚠️  No state provided');
+      return '// No state';
+    }
 
     const componentData = state[componentType];
-    if (!componentData || componentData.length === 0) {
-      return '// No data';
+    if (!componentData) {
+      console.warn(`  ⚠️  No ${componentType} in state`);
+      return `// No ${componentType} data in this version`;
     }
+
+    if (componentData.length === 0) {
+      console.warn(`  ⚠️  ${componentType} is empty array`);
+      return `// No ${componentType} in this version`;
+    }
+
+    console.log(`  ✅ Found ${componentData.length} ${componentType} items`);
 
     // Format component data as readable code
     if (componentType === 'hooks') {
