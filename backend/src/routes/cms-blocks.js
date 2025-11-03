@@ -153,62 +153,14 @@ router.get('/', async (req, res) => {
 });
 
 // @route   GET /api/cms-blocks/:id
-// @desc    Get CMS block by ID
+// @desc    Get CMS block by ID (always includes all translations)
 // @access  Private
 router.get('/:id', async (req, res) => {
   try {
-    const { include_all_translations } = req.query;
+    const { getCMSBlockWithAllTranslations } = require('../utils/cmsHelpers');
 
-    // If include_all_translations is requested, use helper function
-    if (include_all_translations === 'true') {
-      const { getCMSBlockWithAllTranslations } = require('../utils/cmsHelpers');
-
-      const block = await getCMSBlockWithAllTranslations(req.params.id);
-
-      if (!block) {
-        return res.status(404).json({
-          success: false,
-          message: 'CMS block not found'
-        });
-      }
-
-      console.log(`🔍 CMS Block by ID - Fetched block ${req.params.id} with all translations:`, {
-        blockId: block.id,
-        identifier: block.identifier,
-        translationKeys: Object.keys(block.translations || {})
-      });
-
-      // Check ownership - fetch store separately for access check
-      const storeBlock = await CmsBlock.findByPk(req.params.id, {
-        include: [{
-          model: Store,
-          attributes: ['id', 'name', 'user_id']
-        }]
-      });
-
-      if (req.user.role !== 'admin') {
-        const hasAccess = await checkStoreAccess(storeBlock.Store.id, req.user.id, req.user.role);
-        if (!hasAccess) {
-          return res.status(403).json({
-            success: false,
-            message: 'Access denied'
-          });
-        }
-      }
-
-      return res.json({
-        success: true,
-        data: block
-      });
-    }
-
-    // Standard query without all translations
-    const block = await CmsBlock.findByPk(req.params.id, {
-      include: [{
-        model: Store,
-        attributes: ['id', 'name', 'user_id']
-      }]
-    });
+    // Always use helper to get block with all translations (consistent with list endpoint)
+    const block = await getCMSBlockWithAllTranslations(req.params.id);
 
     if (!block) {
       return res.status(404).json({
@@ -217,9 +169,22 @@ router.get('/:id', async (req, res) => {
       });
     }
 
-    // Check ownership or team membership
+    console.log(`🔍 CMS Block by ID - Fetched block ${req.params.id} with all translations:`, {
+      blockId: block.id,
+      identifier: block.identifier,
+      translationKeys: Object.keys(block.translations || {})
+    });
+
+    // Check ownership - fetch store separately for access check
+    const storeBlock = await CmsBlock.findByPk(req.params.id, {
+      include: [{
+        model: Store,
+        attributes: ['id', 'name', 'user_id']
+      }]
+    });
+
     if (req.user.role !== 'admin') {
-      const hasAccess = await checkStoreAccess(block.Store.id, req.user.id, req.user.role);
+      const hasAccess = await checkStoreAccess(storeBlock.Store.id, req.user.id, req.user.role);
       if (!hasAccess) {
         return res.status(403).json({
           success: false,
