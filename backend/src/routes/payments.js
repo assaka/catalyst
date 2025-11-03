@@ -306,17 +306,52 @@ router.post('/connect-link', authMiddleware, async (req, res) => {
 // @desc    Create Stripe Payment Intent for credit purchases
 // @access  Private
 router.post('/create-intent', authMiddleware, async (req, res) => {
+  const requestId = Math.random().toString(36).substring(7);
+  const startTime = Date.now();
+
+  console.log('='.repeat(80));
+  console.log(`🟦 [${requestId}] CREATE PAYMENT INTENT REQUEST STARTED`);
+  console.log(`🟦 [${requestId}] Timestamp: ${new Date().toISOString()}`);
+  console.log('='.repeat(80));
+
   try {
-    console.log('📝 Create payment intent request:', {
+    // Log environment configuration (without exposing secrets)
+    console.log(`🔧 [${requestId}] Environment check:`, {
+      hasStripeSecretKey: !!process.env.STRIPE_SECRET_KEY,
+      stripeKeyPrefix: process.env.STRIPE_SECRET_KEY ? process.env.STRIPE_SECRET_KEY.substring(0, 7) + '...' : 'MISSING',
+      hasPublishableKey: !!(process.env.STRIPE_PUBLISHABLE_KEY || process.env.VITE_STRIPE_PUBLISHABLE_KEY),
+      publishableKeyPrefix: (process.env.STRIPE_PUBLISHABLE_KEY || process.env.VITE_STRIPE_PUBLISHABLE_KEY)?.substring(0, 7) + '...' || 'MISSING',
+      hasWebhookSecret: !!process.env.STRIPE_WEBHOOK_SECRET,
+      nodeEnv: process.env.NODE_ENV
+    });
+
+    console.log(`📝 [${requestId}] Request details:`, {
+      method: req.method,
+      url: req.url,
+      headers: {
+        contentType: req.headers['content-type'],
+        authorization: req.headers.authorization ? 'Bearer ***' : 'MISSING'
+      },
+      bodyKeys: Object.keys(req.body),
       body: req.body,
-      userId: req.user?.id
+      userId: req.user?.id,
+      userEmail: req.user?.email
     });
 
     const { amount, currency = 'usd', metadata = {} } = req.body;
 
     // Validate amount
+    console.log(`🔍 [${requestId}] Validating request data...`);
+    console.log(`🔍 [${requestId}] Amount object:`, {
+      amount,
+      type: typeof amount,
+      isObject: typeof amount === 'object',
+      hasCredits: amount?.credits,
+      hasAmount: amount?.amount
+    });
+
     if (!amount || typeof amount !== 'object' || !amount.credits || !amount.amount) {
-      console.error('❌ Invalid amount format:', amount);
+      console.error(`❌ [${requestId}] Invalid amount format:`, amount);
       return res.status(400).json({
         success: false,
         error: 'Invalid amount format. Expected { credits, amount }'
@@ -327,7 +362,7 @@ router.post('/create-intent', authMiddleware, async (req, res) => {
 
     // Validate credits and amount
     if (!credits || credits < 1) {
-      console.error('❌ Invalid credits:', credits);
+      console.error(`❌ [${requestId}] Invalid credits:`, credits);
       return res.status(400).json({
         success: false,
         error: 'Credits must be at least 1'
@@ -335,16 +370,19 @@ router.post('/create-intent', authMiddleware, async (req, res) => {
     }
 
     if (!amountUsd || amountUsd < 1) {
-      console.error('❌ Invalid amount:', amountUsd);
+      console.error(`❌ [${requestId}] Invalid amount:`, amountUsd);
       return res.status(400).json({
         success: false,
         error: 'Amount must be at least $1'
       });
     }
 
+    console.log(`✅ [${requestId}] Validation passed:`, { credits, amountUsd, currency });
+
     // Check if Stripe is configured
     if (!process.env.STRIPE_SECRET_KEY) {
-      console.error('❌ Stripe not configured');
+      console.error(`❌ [${requestId}] Stripe secret key not configured`);
+      console.error(`❌ [${requestId}] Available env vars:`, Object.keys(process.env).filter(k => k.includes('STRIPE')));
       return res.status(400).json({
         success: false,
         error: 'Stripe payment is not configured. Please contact support.'
@@ -352,72 +390,140 @@ router.post('/create-intent', authMiddleware, async (req, res) => {
     }
 
     const userId = req.user.id;
-    console.log('👤 User ID:', userId);
+    console.log(`👤 [${requestId}] User authenticated:`, {
+      userId,
+      email: req.user.email,
+      role: req.user.role
+    });
 
     // Get user's first store for the transaction record
-    // Credit balance is user-level, but transactions need a store reference
+    console.log(`🔍 [${requestId}] Looking up user store...`);
     const { Store: StoreModel } = require('../models');
     const userStore = await StoreModel.findOne({ where: { user_id: userId } });
 
     if (!userStore) {
-      console.error('❌ No store found for user:', userId);
+      console.error(`❌ [${requestId}] No store found for user:`, userId);
       return res.status(400).json({
         success: false,
         error: 'No store found for user. Please create a store first.'
       });
     }
 
-    console.log('🏪 User store:', userStore.id);
+    console.log(`🏪 [${requestId}] User store found:`, {
+      storeId: userStore.id,
+      storeName: userStore.name,
+      storeSlug: userStore.slug
+    });
 
     // Create credit transaction record first
+    console.log(`💾 [${requestId}] Creating credit transaction record...`);
     const creditService = require('../services/credit-service');
-    const transaction = await creditService.createPurchaseTransaction(
-      userId,
-      userStore.id,
-      amountUsd,
-      credits
-    );
 
-    console.log('💳 Transaction created:', transaction.id);
+    let transaction;
+    try {
+      transaction = await creditService.createPurchaseTransaction(
+        userId,
+        userStore.id,
+        amountUsd,
+        credits
+      );
+      console.log(`💳 [${requestId}] Transaction created:`, {
+        transactionId: transaction.id,
+        status: transaction.status,
+        amount: amountUsd,
+        credits: credits
+      });
+    } catch (txError) {
+      console.error(`❌ [${requestId}] Failed to create transaction:`, {
+        error: txError.message,
+        stack: txError.stack
+      });
+      throw txError;
+    }
 
     // Create Stripe payment intent
     const stripeAmount = convertToStripeAmount(amountUsd, currency);
-    console.log('💰 Creating Stripe payment intent for:', { stripeAmount, currency, credits });
-
-    const paymentIntent = await stripe.paymentIntents.create({
-      amount: stripeAmount,
-      currency: currency.toLowerCase(),
-      metadata: {
-        user_id: userId,
-        credits_amount: credits.toString(),
-        transaction_id: transaction.id,
-        type: 'credit_purchase',
-        ...metadata
-      },
+    console.log(`💰 [${requestId}] Preparing Stripe payment intent:`, {
+      originalAmount: amountUsd,
+      stripeAmount,
+      currency,
+      credits,
       description: `Credit purchase: ${credits} credits`
     });
 
-    console.log('✅ Payment intent created:', paymentIntent.id);
+    let paymentIntent;
+    try {
+      console.log(`🔵 [${requestId}] Calling Stripe API...`);
+      paymentIntent = await stripe.paymentIntents.create({
+        amount: stripeAmount,
+        currency: currency.toLowerCase(),
+        metadata: {
+          user_id: userId,
+          credits_amount: credits.toString(),
+          transaction_id: transaction.id,
+          type: 'credit_purchase',
+          ...metadata
+        },
+        description: `Credit purchase: ${credits} credits`
+      });
+
+      console.log(`✅ [${requestId}] Stripe payment intent created:`, {
+        id: paymentIntent.id,
+        status: paymentIntent.status,
+        amount: paymentIntent.amount,
+        currency: paymentIntent.currency,
+        clientSecretPrefix: paymentIntent.client_secret.substring(0, 20) + '...'
+      });
+    } catch (stripeError) {
+      console.error(`❌ [${requestId}] Stripe API error:`, {
+        type: stripeError.type,
+        code: stripeError.code,
+        message: stripeError.message,
+        statusCode: stripeError.statusCode,
+        requestId: stripeError.requestId,
+        stack: stripeError.stack
+      });
+      throw stripeError;
+    }
 
     // Update transaction with payment intent ID
+    console.log(`💾 [${requestId}] Updating transaction with payment intent ID...`);
     const CreditTransaction = require('../models/CreditTransaction');
     await CreditTransaction.update(
       { metadata: { ...transaction.metadata, payment_intent_id: paymentIntent.id } },
       { where: { id: transaction.id } }
     );
 
-    console.log('✅ Returning client secret to frontend');
-
-    res.json({
+    const responseData = {
       data: {
         clientSecret: paymentIntent.client_secret,
         paymentIntentId: paymentIntent.id,
         transactionId: transaction.id
       }
+    };
+
+    const elapsed = Date.now() - startTime;
+    console.log(`✅ [${requestId}] SUCCESS - Returning response (${elapsed}ms):`, {
+      hasClientSecret: !!responseData.data.clientSecret,
+      paymentIntentId: responseData.data.paymentIntentId,
+      transactionId: responseData.data.transactionId
     });
+    console.log('='.repeat(80));
+
+    res.json(responseData);
 
   } catch (error) {
-    console.error('❌ Create payment intent error:', error);
+    const elapsed = Date.now() - startTime;
+    console.error('='.repeat(80));
+    console.error(`❌ [${requestId}] CREATE PAYMENT INTENT FAILED (${elapsed}ms)`);
+    console.error(`❌ [${requestId}] Error type:`, error.constructor.name);
+    console.error(`❌ [${requestId}] Error message:`, error.message);
+    console.error(`❌ [${requestId}] Error stack:`, error.stack);
+    if (error.response) {
+      console.error(`❌ [${requestId}] Error response:`, error.response);
+    }
+    console.error('='.repeat(80));
+
     res.status(500).json({
       success: false,
       error: error.message || 'Failed to create payment intent'

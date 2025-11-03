@@ -22,52 +22,135 @@ const CheckoutForm = ({ selectedPackage, onSuccess, onError }) => {
   const handleSubmit = async (event) => {
     event.preventDefault();
     setError(null);
+
+    console.log('🟦 [CheckoutForm] Form submitted at:', new Date().toISOString());
+    console.log('🟦 [CheckoutForm] Stripe loaded:', !!stripe);
+    console.log('🟦 [CheckoutForm] Elements loaded:', !!elements);
+    console.log('🟦 [CheckoutForm] Selected package:', selectedPackage);
+
     if (!stripe || !elements) {
-      console.warn('Stripe or Elements not loaded yet');
+      console.warn('🟨 [CheckoutForm] Stripe or Elements not loaded yet');
+      setError('Payment system not ready. Please wait and try again.');
       return;
     }
 
     setProcessing(true);
-    console.log('💳 Starting payment for:', selectedPackage);
+    const startTime = Date.now();
+    console.log('💳 [CheckoutForm] Payment process started');
 
     try {
-      console.log('📤 Calling createPaymentIntent...');
-      const { data: response, error: intentError } = await createPaymentIntent({
+      console.log('📤 [CheckoutForm] Step 1: Creating payment intent...');
+      console.log('📤 [CheckoutForm] Request params:', {
         credits: selectedPackage.credits,
         amount: selectedPackage.price
       });
 
-      console.log('📥 Payment intent response:', { response, intentError });
+      const intentResult = await createPaymentIntent({
+        credits: selectedPackage.credits,
+        amount: selectedPackage.price
+      });
 
-      if (intentError || response?.error) {
-        throw new Error(intentError?.message || response?.error);
+      const elapsed1 = Date.now() - startTime;
+      console.log(`📥 [CheckoutForm] Step 1 completed in ${elapsed1}ms`);
+      console.log('📥 [CheckoutForm] Intent result:', {
+        hasData: !!intentResult.data,
+        hasError: !!intentResult.error,
+        data: intentResult.data,
+        error: intentResult.error
+      });
+
+      const { data: response, error: intentError } = intentResult;
+
+      if (intentError) {
+        console.error('🔴 [CheckoutForm] Intent creation error:', {
+          message: intentError.message,
+          stack: intentError.stack,
+          fullError: intentError
+        });
+        throw new Error(`Payment setup failed: ${intentError.message}`);
       }
 
-      if (!response?.data?.clientSecret) {
-        console.error('No client secret in response:', response);
+      if (response?.error) {
+        console.error('🔴 [CheckoutForm] API returned error:', response.error);
+        throw new Error(`Payment setup failed: ${response.error}`);
+      }
+
+      if (!response) {
+        console.error('🔴 [CheckoutForm] No response data');
+        throw new Error('No response from payment service');
+      }
+
+      console.log('🔍 [CheckoutForm] Response structure:', {
+        keys: Object.keys(response),
+        hasData: !!response.data,
+        dataKeys: response.data ? Object.keys(response.data) : null
+      });
+
+      const clientSecret = response.data?.clientSecret || response.clientSecret;
+
+      if (!clientSecret) {
+        console.error('🔴 [CheckoutForm] No client secret in response:', {
+          response,
+          responseData: response.data,
+          allKeys: Object.keys(response)
+        });
         throw new Error('Invalid payment response - missing client secret');
       }
 
-      console.log('🔐 Confirming card payment...');
-      const { error: paymentError, paymentIntent } = await stripe.confirmCardPayment(response.data.clientSecret, {
+      console.log('✅ [CheckoutForm] Client secret obtained:', clientSecret.substring(0, 20) + '...');
+
+      console.log('🔐 [CheckoutForm] Step 2: Confirming card payment with Stripe...');
+      const cardElement = elements.getElement(CardElement);
+      console.log('🔐 [CheckoutForm] Card element ready:', !!cardElement);
+
+      const confirmResult = await stripe.confirmCardPayment(clientSecret, {
         payment_method: {
-          card: elements.getElement(CardElement),
+          card: cardElement,
         }
       });
 
+      const elapsed2 = Date.now() - startTime;
+      console.log(`🔐 [CheckoutForm] Step 2 completed in ${elapsed2 - elapsed1}ms (total: ${elapsed2}ms)`);
+      console.log('🔐 [CheckoutForm] Confirm result:', {
+        hasError: !!confirmResult.error,
+        hasIntent: !!confirmResult.paymentIntent,
+        error: confirmResult.error,
+        intentStatus: confirmResult.paymentIntent?.status
+      });
+
+      const { error: paymentError, paymentIntent } = confirmResult;
+
       if (paymentError) {
-        console.error('Payment error:', paymentError);
+        console.error('🔴 [CheckoutForm] Payment confirmation error:', {
+          code: paymentError.code,
+          message: paymentError.message,
+          type: paymentError.type,
+          fullError: paymentError
+        });
         throw new Error(paymentError.message);
       }
 
-      console.log('✅ Payment successful:', paymentIntent.id);
+      const totalElapsed = Date.now() - startTime;
+      console.log(`✅ [CheckoutForm] Payment successful! Total time: ${totalElapsed}ms`);
+      console.log('✅ [CheckoutForm] Payment intent:', {
+        id: paymentIntent.id,
+        status: paymentIntent.status,
+        amount: paymentIntent.amount
+      });
+
       onSuccess();
     } catch (err) {
-      console.error('❌ Payment failed:', err);
+      const elapsed = Date.now() - startTime;
+      console.error(`❌ [CheckoutForm] Payment failed after ${elapsed}ms:`, {
+        message: err.message,
+        stack: err.stack,
+        fullError: err
+      });
       setError(err.message);
       onError(err.message);
     } finally {
       setProcessing(false);
+      console.log('🏁 [CheckoutForm] Process finished, processing set to false');
     }
   };
 

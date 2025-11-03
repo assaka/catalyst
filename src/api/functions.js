@@ -3,15 +3,53 @@ import storefrontApiClient from './storefront-client';
 
 // Stripe payment functions
 export const createPaymentIntent = async (amount, currency = 'usd', metadata = {}) => {
+  console.log('🔵 [createPaymentIntent] Starting with params:', {
+    amount,
+    currency,
+    metadata,
+    timestamp: new Date().toISOString()
+  });
+
   try {
+    console.log('🔵 [createPaymentIntent] Sending POST to payments/create-intent');
+    console.log('🔵 [createPaymentIntent] Request payload:', {
+      amount,
+      currency,
+      metadata
+    });
+
     const response = await apiClient.post('payments/create-intent', {
       amount,
       currency,
       metadata
     });
+
+    console.log('🟢 [createPaymentIntent] Response received:', {
+      response,
+      hasData: !!response?.data,
+      dataKeys: response?.data ? Object.keys(response.data) : [],
+      timestamp: new Date().toISOString()
+    });
+
+    if (!response) {
+      console.error('🔴 [createPaymentIntent] No response from API');
+      return { data: null, error: new Error('No response from server') };
+    }
+
+    if (!response.data) {
+      console.error('🔴 [createPaymentIntent] Response has no data:', response);
+      return { data: null, error: new Error('Invalid response format') };
+    }
+
     return { data: response.data, error: null };
   } catch (error) {
-    console.error('Error creating payment intent:', error);
+    console.error('🔴 [createPaymentIntent] Error caught:', {
+      message: error.message,
+      stack: error.stack,
+      response: error.response,
+      status: error.status,
+      timestamp: new Date().toISOString()
+    });
     return { data: null, error: error };
   }
 };

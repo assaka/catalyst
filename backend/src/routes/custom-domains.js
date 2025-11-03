@@ -18,8 +18,49 @@ const { CustomDomain } = require('../models');
  * - POST   /:id/check-dns    - Check DNS configuration
  * - POST   /:id/set-primary  - Set as primary domain
  * - DELETE /:id              - Remove domain
- * - POST   /:id/provision-ssl - Provision SSL certificate
+ * - POST   /:id/check-ssl    - Check SSL status
+ * - GET    /:id/debug-dns    - Debug DNS configuration
  */
+
+/**
+ * DEBUG: List all custom domains (public, for debugging)
+ */
+router.get('/debug/all', async (req, res) => {
+  try {
+    const { CustomDomain, Store } = require('../models');
+
+    const domains = await CustomDomain.findAll({
+      include: [{
+        model: Store,
+        as: 'store',
+        attributes: ['id', 'slug', 'name']
+      }],
+      order: [['created_at', 'DESC']]
+    });
+
+    res.json({
+      success: true,
+      count: domains.length,
+      domains: domains.map(d => ({
+        id: d.id,
+        domain: d.domain,
+        store_id: d.store_id,
+        store_slug: d.store?.slug,
+        store_name: d.store?.name,
+        is_active: d.is_active,
+        verification_status: d.verification_status,
+        ssl_status: d.ssl_status
+      }))
+    });
+  } catch (error) {
+    console.error('Error listing all domains:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to list domains',
+      error: error.message
+    });
+  }
+});
 
 /**
  * Add a new custom domain
