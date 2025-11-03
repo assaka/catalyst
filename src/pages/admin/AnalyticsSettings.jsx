@@ -71,12 +71,22 @@ export default function AnalyticsSettings() {
                 
                 // Fetch complete store data with settings from API
                 const fullStoreData = await Store.findById(selectedStore.id);
-                
-                // Handle the case where findById returns an array
-                const storeData = Array.isArray(fullStoreData) ? fullStoreData[0] : fullStoreData;
+
+                // Handle the case where findById returns an array or wrapped response
+                let storeData;
+                if (Array.isArray(fullStoreData)) {
+                    storeData = fullStoreData[0];
+                } else if (fullStoreData?.data) {
+                    // Handle { success: true, data: {...} } format
+                    storeData = fullStoreData.data;
+                } else {
+                    storeData = fullStoreData;
+                }
 
                 console.log('🟢 === ANALYTICS PAGE LOAD DEBUG ===');
-                console.log('🟢 Raw storeData from API:', JSON.stringify(storeData?.settings, null, 2));
+                console.log('🟢 Full API response:', JSON.stringify(fullStoreData, null, 2));
+                console.log('🟢 Extracted storeData:', JSON.stringify(storeData, null, 2));
+                console.log('🟢 Raw storeData.settings:', JSON.stringify(storeData?.settings, null, 2));
 
                 setStore({
                     ...selectedStore,
