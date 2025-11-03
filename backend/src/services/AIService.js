@@ -1,17 +1,17 @@
 // backend/src/services/AIService.js
-const Anthropic = require('@anthropic-ai/sdk');
 const { sequelize } = require('../database/connection');
 const aiContextService = require('./aiContextService'); // RAG system
+const aiProvider = require('./ai-provider-service'); // Unified AI provider
 const ServiceCreditCost = require('../models/ServiceCreditCost');
 
 /**
  * Centralized AI Service
- * Handles all AI model interactions, credit management, and usage tracking
+ * Handles AI model interactions, credit management, and usage tracking
  * Integrates with RAG (Retrieval-Augmented Generation) for better context
+ * Now uses unified AIProviderService for all provider management
  */
 class AIService {
   constructor() {
-    this.client = null;
     this.defaultModel = 'claude-3-haiku-20240307';
     this.models = {
       'claude-sonnet': 'claude-3-sonnet-20240229',
@@ -58,20 +58,6 @@ class AIService {
       console.warn(`⚠️ Could not fetch cost for ${serviceKey}, using fallback:`, error.message);
       return this.fallbackCosts[operationType] || this.fallbackCosts.general;
     }
-  }
-
-  /**
-   * Initialize Anthropic client
-   */
-  initClient() {
-    if (!this.client) {
-      const apiKey = process.env.ANTHROPIC_API_KEY;
-      if (!apiKey) {
-        throw new Error('ANTHROPIC_API_KEY not configured');
-      }
-      this.client = new Anthropic({ apiKey });
-    }
-    return this.client;
   }
 
   /**
@@ -221,9 +207,6 @@ class AIService {
     }
 
     try {
-      // Initialize client
-      this.initClient();
-
       // Prepare messages
       const messages = [
         {
@@ -232,21 +215,21 @@ class AIService {
         }
       ];
 
-      // Call Claude API
-      const response = await this.client.messages.create({
-        model: model,
-        max_tokens: maxTokens,
-        temperature: temperature,
-        system: systemPrompt || undefined,
-        messages: messages
+      // Use unified AI provider service
+      const response = await aiProvider.chat(messages, {
+        provider: 'anthropic', // Can be made configurable later
+        model,
+        maxTokens,
+        temperature,
+        systemPrompt
       });
 
       // Extract response
-      const content = response.content[0].text;
+      const content = response.content;
       const usage = {
         tokensInput: response.usage.input_tokens,
         tokensOutput: response.usage.output_tokens,
-        model: model
+        model: response.model
       };
 
       // Deduct credits

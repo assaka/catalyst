@@ -20,14 +20,11 @@
  * See: backend/src/services/aiContextService.js for context fetching
  */
 
-const Anthropic = require('@anthropic-ai/sdk');
 const aiContextService = require('./aiContextService');
+const aiProvider = require('./ai-provider-service');
 
 class PluginAIService {
   constructor() {
-    this.anthropic = new Anthropic({
-      apiKey: process.env.ANTHROPIC_API_KEY
-    });
     this.model = 'claude-3-haiku-20240307';
   }
 
@@ -77,33 +74,27 @@ class PluginAIService {
 
     const systemPrompt = await this.getSystemPrompt(mode, dynamicContext);
 
-    const message = await this.anthropic.messages.create({
+    const response = await aiProvider.chat([{
+      role: 'user',
+      content: this.buildUserPrompt(mode, userPrompt, context)
+    }], {
+      provider: 'anthropic',
       model: this.model,
-      max_tokens: 4096,
+      maxTokens: 4096,
       temperature: 0.7,
-      system: systemPrompt,
-      messages: [{
-        role: 'user',
-        content: this.buildUserPrompt(mode, userPrompt, context)
-      }]
+      systemPrompt
     });
 
-    return this.parseAIResponse(message.content[0].text, mode);
+    return this.parseAIResponse(response.content, mode);
   }
 
   /**
    * Generate code suggestions for developer mode
    */
   async generateCodeSuggestion(fileName, currentCode, prompt) {
-    const message = await this.anthropic.messages.create({
-      model: this.model,
-      max_tokens: 2048,
-      temperature: 0.5,
-      system: `You are an expert JavaScript/React developer helping to improve plugin code.
-Provide clean, production-ready code following best practices.`,
-      messages: [{
-        role: 'user',
-        content: `File: ${fileName}
+    const response = await aiProvider.chat([{
+      role: 'user',
+      content: `File: ${fileName}
 
 Current code:
 \`\`\`javascript
@@ -113,31 +104,37 @@ ${currentCode}
 Request: ${prompt}
 
 Please provide the improved code.`
-      }]
+    }], {
+      provider: 'anthropic',
+      model: this.model,
+      maxTokens: 2048,
+      temperature: 0.5,
+      systemPrompt: `You are an expert JavaScript/React developer helping to improve plugin code.
+Provide clean, production-ready code following best practices.`
     });
 
-    return message.content[0].text;
+    return response.content;
   }
 
   /**
    * Answer questions about plugin development
    */
   async answerQuestion(question, pluginContext) {
-    const message = await this.anthropic.messages.create({
-      model: this.model,
-      max_tokens: 1024,
-      temperature: 0.3,
-      system: `You are a helpful plugin development assistant. Answer questions clearly and concisely.
-Focus on practical, actionable advice.`,
-      messages: [{
-        role: 'user',
-        content: `Plugin context: ${JSON.stringify(pluginContext, null, 2)}
+    const response = await aiProvider.chat([{
+      role: 'user',
+      content: `Plugin context: ${JSON.stringify(pluginContext, null, 2)}
 
 Question: ${question}`
-      }]
+    }], {
+      provider: 'anthropic',
+      model: this.model,
+      maxTokens: 1024,
+      temperature: 0.3,
+      systemPrompt: `You are a helpful plugin development assistant. Answer questions clearly and concisely.
+Focus on practical, actionable advice.`
     });
 
-    return message.content[0].text;
+    return response.content;
   }
 
   /**
@@ -575,6 +572,7 @@ Provide production-ready code with proper error handling and best practices.`;
 
     const systemPrompt = await this.getSystemPrompt(mode, dynamicContext);
 
+    // TODO: Implement streaming support in aiProvider
     const stream = await this.anthropic.messages.create({
       model: this.model,
       max_tokens: 2048,
@@ -642,6 +640,7 @@ Be conversational, friendly, and guide them naturally through the process.`;
     });
 
     // Create streaming response
+    // TODO: Implement streaming support in aiProvider
     const stream = await this.anthropic.messages.create({
       model: this.model,
       max_tokens: 2048,
@@ -687,18 +686,18 @@ Return ONLY a JSON array of 2-4 short suggestion strings, like:
 ["What features will this have?", "Will this need database storage?", "How should users access this?"]`;
 
     try {
-      const message = await this.anthropic.messages.create({
+      const response = await aiProvider.chat([{
+        role: 'user',
+        content: 'Generate suggestions for the next steps in this conversation.'
+      }], {
+        provider: 'anthropic',
         model: this.model,
-        max_tokens: 512,
+        maxTokens: 512,
         temperature: 0.8,
-        system: systemPrompt,
-        messages: [{
-          role: 'user',
-          content: 'Generate suggestions for the next steps in this conversation.'
-        }]
+        systemPrompt
       });
 
-      const responseText = message.content[0].text;
+      const responseText = response.content;
 
       // Try to parse JSON array
       const jsonMatch = responseText.match(/\[[\s\S]*?\]/);

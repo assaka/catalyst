@@ -26,24 +26,11 @@ const { Op } = require('sequelize');
 const aiContextService = require('./aiContextService');
 const creditService = require('./credit-service');
 const ServiceCreditCost = require('../models/ServiceCreditCost');
-const Anthropic = require('@anthropic-ai/sdk');
+const aiProvider = require('./ai-provider-service');
 
 class TranslationService {
   constructor() {
-    this.anthropicClient = null;
-  }
-
-  /**
-   * Initialize AI provider client (similar to AIService)
-   * Currently supports Anthropic, but designed for easy extension to other providers
-   */
-  initAnthropicClient() {
-    if (!this.anthropicClient && process.env.ANTHROPIC_API_KEY) {
-      this.anthropicClient = new Anthropic({
-        apiKey: process.env.ANTHROPIC_API_KEY
-      });
-    }
-    return this.anthropicClient;
+    // AI provider is now managed centrally by ai-provider-service
   }
 
   /**
@@ -165,23 +152,27 @@ class TranslationService {
    * AI Translation using Anthropic Claude API
    * Falls back to returning original text if API key not configured
    */
-  async aiTranslate(text, fromLang, toLang) {
-    const apiKey = process.env.ANTHROPIC_API_KEY || process.env.OPENAI_API_KEY;
+  async aiTranslate(text, fromLang, toLang, context = {}) {
+    // Check if any AI provider is available
+    const provider = aiProvider.getFirstAvailableProvider();
 
-    if (!apiKey) {
-      console.warn('No AI API key configured for translation');
+    if (!provider) {
+      console.warn('⚠️  No AI provider configured for translation');
       return text; // Return original text if no API key
     }
 
     try {
-      // Use Anthropic Claude API
-      if (process.env.ANTHROPIC_API_KEY) {
-        return await this._translateWithClaude(text, fromLang, toLang);
-      }
+      // Use the first available provider (Anthropic preferred, then OpenAI, etc.)
+      console.log(`   🤖 Using AI provider: ${provider}`);
 
-      // Use OpenAI API as fallback
-      if (process.env.OPENAI_API_KEY) {
-        return await this._translateWithOpenAI(text, fromLang, toLang);
+      if (provider === 'anthropic' || provider === 'openai') {
+        return await this._translateWithClaude(text, fromLang, toLang, context);
+      } else if (provider === 'deepseek') {
+        // Future: DeepSeek translation
+        throw new Error('DeepSeek not yet implemented');
+      } else if (provider === 'gemini') {
+        // Future: Gemini translation
+        throw new Error('Gemini not yet implemented');
       }
 
       return text;
@@ -225,13 +216,6 @@ class TranslationService {
    * );
    */
   async _translateWithClaude(text, fromLang, toLang, context = {}) {
-    // Initialize Anthropic client (same pattern as AIService)
-    const client = this.initAnthropicClient();
-
-    if (!client) {
-      throw new Error('Anthropic client not available. Check ANTHROPIC_API_KEY configuration.');
-    }
-
     // ⚡ RAG: Fetch translation-specific context from database
     // This includes: best practices, glossaries, language-specific guidelines
     // Limit to 3 documents since translations are simpler than plugin generation
@@ -242,96 +226,38 @@ class TranslationService {
       limit: 3                   // Keep it light for fast translation
     });
 
-    const { type = 'general', location = 'unknown', maxLength } = context;
-
-    // ⚡ RAG INJECTION: The ragContext is injected into the system prompt
-    // This gives the AI knowledge about translation conventions and glossaries
-    const systemPrompt = `You are a professional translator specializing in e-commerce localization.
-
-${ragContext}
-
-Guidelines:
-- Preserve HTML tags, placeholders {{variables}}, and special characters
-- Maintain the tone and formality of the original
-- Use natural, idiomatic expressions
-- Follow e-commerce terminology conventions
-- Consider cultural adaptation where appropriate`;
-
-    const userPrompt = `Translate from ${fromLang} to ${toLang}.
-
-Context:
-- Type: ${type} (button, heading, label, paragraph, description)
-- Location: ${location} (cart, checkout, product, homepage)
-${maxLength ? `- Max length: ${maxLength} characters` : ''}
-
-Text to translate:
-${text}
-
-Return ONLY the translated text, no explanations or notes.`;
+    console.log(`      📝 Text to translate: "${text.substring(0, 100)}${text.length > 100 ? '...' : ''}"`);
 
     try {
-      // Use Anthropic SDK (same as AIService) - makes it consistent with AI Studio
-      console.log(`      🌍 ANTHROPIC API CALL: Translating ${fromLang} → ${toLang}`);
-      console.log(`      📝 Text to translate: "${text.substring(0, 100)}${text.length > 100 ? '...' : ''}"`);
-      console.log(`      🤖 Model: claude-3-haiku-20240307`);
-
-      const response = await client.messages.create({
-        model: 'claude-3-haiku-20240307',
-        max_tokens: 1024,
-        system: systemPrompt,
-        messages: [{
-          role: 'user',
-          content: userPrompt
-        }]
+      // Use unified AI provider service
+      const result = await aiProvider.translate(text, fromLang, toLang, {
+        provider: 'anthropic',
+        context,
+        ragContext
       });
 
-      const translatedText = response.content[0].text.trim();
-      console.log(`      ✅ ANTHROPIC API RESPONSE received`);
-      console.log(`      📤 Translated text: "${translatedText.substring(0, 100)}${translatedText.length > 100 ? '...' : ''}"`);
-      console.log(`      📊 Tokens used: input=${response.usage.input_tokens}, output=${response.usage.output_tokens}`);
+      console.log(`      📤 Translated text: "${result.translatedText.substring(0, 100)}${result.translatedText.length > 100 ? '...' : ''}"`);
 
-      // Extract translated text from response
-      return translatedText;
+      return result.translatedText;
     } catch (error) {
-      // SDK handles errors properly, just re-throw with context
-      console.error(`      ❌ ANTHROPIC API ERROR:`, error.message);
-      throw new Error(`Anthropic translation failed: ${error.message}`);
+      console.error(`      ❌ Translation failed:`, error.message);
+      throw new Error(`Translation failed: ${error.message}`);
     }
   }
 
-  async _translateWithOpenAI(text, fromLang, toLang) {
-    const fetch = (await import('node-fetch')).default;
+  async _translateWithOpenAI(text, fromLang, toLang, context = {}) {
+    try {
+      // Use unified AI provider service
+      const result = await aiProvider.translate(text, fromLang, toLang, {
+        provider: 'openai',
+        context
+      });
 
-    const response = await fetch('https://api.openai.com/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`
-      },
-      body: JSON.stringify({
-        model: 'gpt-3.5-turbo',
-        messages: [{
-          role: 'user',
-          content: `Translate the following text from ${fromLang} to ${toLang}. Return ONLY the translated text, no explanations:\n\n${text}`
-        }],
-        temperature: 0.3
-      })
-    });
-
-    const data = await response.json();
-
-    // Check for API errors
-    if (!response.ok || data.error) {
-      const errorMessage = data.error?.message || `API request failed with status ${response.status}`;
-      throw new Error(`OpenAI API error: ${errorMessage}`);
+      return result.translatedText;
+    } catch (error) {
+      console.error(`      ❌ OpenAI translation failed:`, error.message);
+      throw new Error(`OpenAI translation failed: ${error.message}`);
     }
-
-    // Validate response structure
-    if (!data.choices || !data.choices[0] || !data.choices[0].message || !data.choices[0].message.content) {
-      throw new Error('Invalid response structure from OpenAI API');
-    }
-
-    return data.choices[0].message.content.trim();
   }
 
   /**
