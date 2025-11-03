@@ -110,13 +110,15 @@ node -e "require('dotenv').config(); const { execSync } = require('child_process
 ### 5. Configure Brevo in Admin UI
 
 1. Log in to your admin dashboard
-2. Go to **Settings > Brevo** tab
-3. Click **"Configure Brevo"**
-4. Enter your Brevo API key (xkeysib-...)
-5. Enter sender name (e.g., "Your Store Name")
-6. Enter sender email (must be verified in Brevo)
-7. Click **"Save Configuration"**
-8. Test by clicking **"Send Test Email"**
+2. Go to **Store > Email** in the sidebar menu
+3. Click on the **Brevo** provider card
+4. Click **"Configure Brevo"**
+5. Enter your Brevo API key (xkeysib-...)
+6. Enter sender name (e.g., "Your Store Name")
+7. Enter sender email (e.g., noreply@yourdomain.com)
+   - **Note:** If this email is not yet verified in Brevo, Brevo will automatically send a verification email to this address. Check your inbox and click the verification link before sending emails.
+8. Click **"Save Configuration"**
+9. Test by clicking **"Send Test to [your-store-email]"**
 
 **Done!** Emails will now be sent automatically on signup, credit purchases, and orders.
 
@@ -217,12 +219,14 @@ node -e "require('dotenv').config(); const { execSync } = require('child_process
 ### Connecting Brevo
 
 1. Get your API key from https://app.brevo.com/settings/keys/api
-2. Go to **Settings** > **Brevo** tab
-3. Click **"Configure Brevo"**
-4. Enter your API key (xkeysib-...)
-5. Enter sender name and verified email
-6. Click **"Save Configuration"**
-7. Test with **"Send Test Email"** button
+2. Go to **Store > Email** in the sidebar
+3. Click on the **Brevo** provider card
+4. Click **"Configure Brevo"**
+5. Enter your API key (xkeysib-...)
+6. Enter sender name and sender email
+7. **Important:** If the sender email is unverified, Brevo will send a verification email. Check your inbox and verify before sending emails.
+8. Click **"Save Configuration"**
+9. Test with **"Send Test to [store-email]"** button
 
 ### Creating Email Templates
 
@@ -438,11 +442,19 @@ await emailService.sendTransactionalEmail(storeId, 'my_custom', {
 **Problem**: Emails are logged as 'failed' in database
 
 **Solutions**:
-1. Check Brevo connection in Settings > Brevo tab
-2. Verify template is active (`is_active = true`)
-3. Check server logs for detailed error messages
-4. Test connection with "Send Test Email" feature
-5. Verify sender email is verified in Brevo account
+1. Check Brevo connection in Store > Email
+2. **Verify sender email**: If you entered an unverified email, Brevo sent a verification email. Check your inbox (including spam) and click the verification link.
+3. Verify template is active (`is_active = true`)
+4. Check server logs for detailed error messages
+5. Test connection with "Send Test Email" feature
+6. Ensure API key is valid and not revoked
+
+**Common Issue - Unverified Sender Email**:
+- When you save a new sender email in Brevo configuration, Brevo sends a verification email to that address
+- The email subject is usually "Please confirm your email address"
+- You must click the verification link before Brevo will send emails from that address
+- Check spam folder if you don't see the verification email
+- Verification typically takes 1-2 minutes after clicking the link
 
 ### OAuth Connection Failed
 

@@ -449,9 +449,13 @@ export default function EmailProviderSettings({ storeEmail }) {
                     placeholder="noreply@yourdomain.com"
                     required
                   />
-                  <p className="text-xs text-gray-500">
-                    This email must be verified in your Brevo account
-                  </p>
+                  <div className="bg-blue-50 border border-blue-200 rounded p-3 mt-2">
+                    <p className="text-xs text-blue-800">
+                      <strong>Important:</strong> If this email is not yet verified in your Brevo account,
+                      Brevo will send a verification email to this address. You must click the verification
+                      link in that email before you can send emails from this address.
+                    </p>
+                  </div>
                 </div>
 
                 <div className="flex gap-2">
@@ -566,7 +570,23 @@ export default function EmailProviderSettings({ storeEmail }) {
                   <li>Click "Generate a new API key"</li>
                   <li>Copy the API key (starts with "xkeysib-")</li>
                   <li>Click "Configure Brevo" above and paste your API key</li>
+                  <li>Enter sender email - <strong>Brevo will send a verification email</strong> if not already verified</li>
+                  <li>Check your inbox and verify the sender email before sending test emails</li>
                 </ol>
+
+                <div className="mt-4 p-3 bg-yellow-50 border border-yellow-300 rounded">
+                  <div className="flex gap-2">
+                    <AlertCircle className="w-4 h-4 text-yellow-700 flex-shrink-0 mt-0.5" />
+                    <div>
+                      <p className="font-medium text-yellow-900 text-sm mb-1">Sender Email Verification Required</p>
+                      <p className="text-xs text-yellow-800">
+                        When you enter a sender email, Brevo will send a verification email to that address.
+                        You must click the verification link in that email before you can send emails.
+                        Check your spam folder if you don't receive it within a few minutes.
+                      </p>
+                    </div>
+                  </div>
+                </div>
                 <div className="mt-4 p-3 bg-white border border-blue-300 rounded">
                   <p className="font-medium text-blue-900 mb-2">Don't have a Brevo account?</p>
                   <p className="mb-2">Create a free account at{' '}
