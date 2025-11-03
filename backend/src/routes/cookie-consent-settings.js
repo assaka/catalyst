@@ -407,6 +407,16 @@ router.post('/bulk-translate', authMiddleware, [
     const lang = getLanguageFromRequest(req);
     const settingsRecords = await getCookieConsentSettingsWithTranslations({ store_id }, lang);
 
+    console.log(`📦 Loaded ${settingsRecords.length} cookie consent settings from database`);
+    if (settingsRecords.length > 0) {
+      console.log(`🔍 First settings structure:`, JSON.stringify({
+        id: settingsRecords[0].id,
+        translations: settingsRecords[0].translations,
+        hasTranslations: !!settingsRecords[0].translations,
+        translationKeys: settingsRecords[0].translations ? Object.keys(settingsRecords[0].translations) : 'none'
+      }, null, 2));
+    }
+
     if (settingsRecords.length === 0) {
       return res.json({
         success: true,
@@ -434,7 +444,12 @@ router.post('/bulk-translate', authMiddleware, [
 
     for (const settings of settingsRecords) {
       try {
-        const settingsName = settings.translations?.[fromLang]?.banner_title || `Settings ${settings.id}`;
+        const settingsName = settings.translations?.[fromLang]?.banner_text || `Settings ${settings.id}`;
+
+        console.log(`\n📋 Processing settings: ${settingsName}`);
+        console.log(`   - Has translations object: ${!!settings.translations}`);
+        console.log(`   - Has ${fromLang} translation: ${!!(settings.translations && settings.translations[fromLang])}`);
+        console.log(`   - Translations keys:`, settings.translations ? Object.keys(settings.translations) : 'none');
 
         // Check if source translation exists
         if (!settings.translations || !settings.translations[fromLang]) {
@@ -468,13 +483,20 @@ router.post('/bulk-translate', authMiddleware, [
         // Translate the settings
         console.log(`🔄 Translating settings "${settingsName}"...`);
         const sourceTranslation = settings.translations[fromLang];
+        console.log(`   📋 Source translation fields:`, Object.keys(sourceTranslation));
         const translatedData = {};
 
+        let fieldCount = 0;
         for (const [key, value] of Object.entries(sourceTranslation)) {
           if (typeof value === 'string' && value.trim()) {
+            console.log(`      🤖 Translating field "${key}": "${value.substring(0, 50)}..."`);
             translatedData[key] = await translationService.aiTranslate(value, fromLang, toLang);
+            fieldCount++;
           }
         }
+
+        console.log(`   ✨ Translated ${fieldCount} fields`);
+        console.log(`   💾 Saving translations for ${toLang}...`);
 
         // Save the translation using normalized tables
         const translations = settings.translations || {};
