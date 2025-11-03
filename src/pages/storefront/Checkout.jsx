@@ -58,6 +58,7 @@ export default function Checkout() {
 
   // Check if phone field should be shown at checkout
   const showPhoneField = settings?.collect_phone_number_at_checkout;
+  const phoneNumberRequired = settings?.phone_number_required_at_checkout !== false;
   
   // Debug allowed countries
   const navigate = useNavigate();
@@ -1298,7 +1299,7 @@ export default function Checkout() {
           newShippingErrors.full_name = true;
           hasErrors = true;
         }
-        if (showPhoneField && !shippingAddress.phone) {
+        if (showPhoneField && phoneNumberRequired && !shippingAddress.phone) {
           newShippingErrors.phone = true;
           hasErrors = true;
         }
@@ -1340,7 +1341,7 @@ export default function Checkout() {
             newBillingErrors.full_name = true;
             hasErrors = true;
           }
-          if (showPhoneField && !billingAddress.phone) {
+          if (showPhoneField && phoneNumberRequired && !billingAddress.phone) {
             newBillingErrors.phone = true;
             hasErrors = true;
           }
@@ -1507,10 +1508,10 @@ export default function Checkout() {
                   />
                   {showPhoneField && (
                     <Input
-                      placeholder={t('common.phone', 'Phone Number')}
+                      placeholder={t('common.phone', 'Phone Number') + (phoneNumberRequired ? '' : ' (Optional)')}
                       type="tel"
                       className={`md:col-span-2 ${shippingErrors.phone ? 'border-red-500' : ''}`}
-                      required
+                      required={phoneNumberRequired}
                       value={shippingAddress.phone}
                       onChange={(e) => {
                         setShippingAddress(prev => ({ ...prev, phone: e.target.value }));
@@ -1728,10 +1729,10 @@ export default function Checkout() {
                         />
                         {showPhoneField && (
                           <Input
-                            placeholder={t('common.phone', 'Phone Number')}
+                            placeholder={t('common.phone', 'Phone Number') + (phoneNumberRequired ? '' : ' (Optional)')}
                             type="tel"
                             className={`md:col-span-2 ${billingErrors.phone ? 'border-red-500' : ''}`}
-                            required
+                            required={phoneNumberRequired}
                             value={billingAddress.phone}
                             onChange={(e) => {
                               setBillingAddress(prev => ({ ...prev, phone: e.target.value }));

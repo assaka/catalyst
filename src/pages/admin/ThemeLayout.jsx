@@ -1609,16 +1609,37 @@ export default function ThemeLayout() {
                                             onCheckedChange={(checked) => handleSettingsChange('require_shipping_address', checked)}
                                         />
                                     </div>
-                                    <div className="flex items-center justify-between p-3 border rounded-lg">
-                                        <div>
-                                            <Label htmlFor="collect_phone_number_at_checkout" className="font-medium">Collect Phone Number at Checkout</Label>
-                                            <p className="text-sm text-gray-500">Require customers to provide a phone number during checkout</p>
+                                    <div className="p-3 border rounded-lg space-y-3">
+                                        <div className="flex items-center justify-between">
+                                            <div>
+                                                <Label htmlFor="collect_phone_number_at_checkout" className="font-medium">Show Phone Number at Checkout</Label>
+                                                <p className="text-sm text-gray-500">Show a phone number field during checkout</p>
+                                            </div>
+                                            <Switch
+                                                id="collect_phone_number_at_checkout"
+                                                checked={store?.settings?.collect_phone_number_at_checkout !== undefined ? store.settings.collect_phone_number_at_checkout : false}
+                                                onCheckedChange={(checked) => handleSettingsChange('collect_phone_number_at_checkout', checked)}
+                                            />
                                         </div>
-                                        <Switch
-                                            id="collect_phone_number_at_checkout"
-                                            checked={store?.settings?.collect_phone_number_at_checkout !== undefined ? store.settings.collect_phone_number_at_checkout : false}
-                                            onCheckedChange={(checked) => handleSettingsChange('collect_phone_number_at_checkout', checked)}
-                                        />
+
+                                        {store?.settings?.collect_phone_number_at_checkout && (
+                                            <div className="pt-3 border-t">
+                                                <div className="flex items-center justify-between">
+                                                    <div>
+                                                        <Label htmlFor="phone_number_required_at_checkout" className="font-medium">Phone Number Required</Label>
+                                                        <p className="text-sm text-gray-500">Make the phone number field required or optional</p>
+                                                    </div>
+                                                    <Switch
+                                                        id="phone_number_required_at_checkout"
+                                                        checked={store?.settings?.phone_number_required_at_checkout !== undefined ? store.settings.phone_number_required_at_checkout : true}
+                                                        onCheckedChange={(checked) => handleSettingsChange('phone_number_required_at_checkout', checked)}
+                                                    />
+                                                </div>
+                                                <p className="text-xs text-gray-600 mt-1">
+                                                    {store?.settings?.phone_number_required_at_checkout !== false ? 'Phone number is required' : 'Phone number is optional'}
+                                                </p>
+                                            </div>
+                                        )}
                                     </div>
                                 </div>
                             </div>

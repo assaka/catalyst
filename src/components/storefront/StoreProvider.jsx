@@ -432,6 +432,12 @@ export const StoreProvider = ({ children }) => {
         require_shipping_address: selectedStore.settings?.require_shipping_address !== undefined
           ? selectedStore.settings.require_shipping_address
           : true,
+        collect_phone_number_at_checkout: selectedStore.settings?.collect_phone_number_at_checkout !== undefined
+          ? selectedStore.settings.collect_phone_number_at_checkout
+          : false,
+        phone_number_required_at_checkout: selectedStore.settings?.phone_number_required_at_checkout !== undefined
+          ? selectedStore.settings.phone_number_required_at_checkout
+          : true,
         hide_currency_category: selectedStore.settings?.hide_currency_category !== undefined
           ? selectedStore.settings.hide_currency_category
           : false,
