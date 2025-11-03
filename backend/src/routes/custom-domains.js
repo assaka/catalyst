@@ -63,6 +63,80 @@ router.get('/debug/all', async (req, res) => {
 });
 
 /**
+ * DEBUG: Update store_id for a domain (for fixing misconfigurations)
+ */
+router.post('/debug/update-store', async (req, res) => {
+  try {
+    const { domain_name, new_store_slug } = req.body;
+
+    if (!domain_name || !new_store_slug) {
+      return res.status(400).json({
+        success: false,
+        message: 'domain_name and new_store_slug are required'
+      });
+    }
+
+    const { CustomDomain, Store } = require('../models');
+
+    // Find the domain
+    const domain = await CustomDomain.findOne({
+      where: { domain: domain_name }
+    });
+
+    if (!domain) {
+      return res.status(404).json({
+        success: false,
+        message: `Domain ${domain_name} not found`
+      });
+    }
+
+    // Find the new store
+    const newStore = await Store.findOne({
+      where: { slug: new_store_slug }
+    });
+
+    if (!newStore) {
+      return res.status(404).json({
+        success: false,
+        message: `Store with slug ${new_store_slug} not found`
+      });
+    }
+
+    // Update the domain's store_id
+    const oldStoreId = domain.store_id;
+    await domain.update({ store_id: newStore.id });
+
+    console.log(`✅ Updated domain ${domain_name}: ${oldStoreId} → ${newStore.id} (${new_store_slug})`);
+
+    // Clear domain cache
+    const domainResolver = require('../middleware/domainResolver');
+    if (domainResolver.clearDomainCache) {
+      domainResolver.clearDomainCache(domain_name);
+    }
+
+    res.json({
+      success: true,
+      message: `Domain ${domain_name} now linked to store ${new_store_slug}`,
+      domain: {
+        id: domain.id,
+        domain: domain.domain,
+        old_store_id: oldStoreId,
+        new_store_id: newStore.id,
+        new_store_slug: newStore.slug,
+        new_store_name: newStore.name
+      }
+    });
+  } catch (error) {
+    console.error('Error updating domain store:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to update domain store',
+      error: error.message
+    });
+  }
+});
+
+/**
  * Add a new custom domain
  */
 router.post('/add', authMiddleware, storeResolver(), requireActiveSubscription, async (req, res) => {
