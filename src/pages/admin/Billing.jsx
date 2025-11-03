@@ -200,19 +200,47 @@ export default function Billing() {
   const [stripePromise, setStripePromise] = useState(null);
 
   useEffect(() => {
+    console.log('🟦 [Billing] Component mounted, initializing...');
     loadBillingData();
+
     const fetchKey = async () => {
+        console.log('🔑 [Billing] Fetching Stripe publishable key...');
         try {
-            const { data } = await getStripePublishableKey();
+            const result = await getStripePublishableKey();
+            console.log('🔑 [Billing] getStripePublishableKey result:', {
+              result,
+              hasData: !!result?.data,
+              publishableKey: result?.data?.publishableKey
+            });
+
+            const { data } = result;
+
             if (data && data.publishableKey) {
-                setStripePromise(loadStripe(data.publishableKey));
+                console.log('✅ [Billing] Publishable key found:', data.publishableKey.substring(0, 10) + '...');
+                console.log('🔵 [Billing] Initializing Stripe with loadStripe...');
+
+                const stripeInstance = loadStripe(data.publishableKey);
+                console.log('🔵 [Billing] loadStripe promise created:', !!stripeInstance);
+
+                setStripePromise(stripeInstance);
                 setStripeConfigError(false);
+                console.log('✅ [Billing] Stripe initialization complete');
             } else {
+                console.warn('⚠️ [Billing] No publishable key in response:', { data });
+                console.warn('⚠️ [Billing] Setting stripeConfigError to true');
                 setStripeConfigError(true);
+                // Set stripePromise to false (not null) to stop showing "Loading..."
+                setStripePromise(false);
             }
         } catch (error) {
-            console.error("Failed to fetch Stripe publishable key:", error);
+            console.error("🔴 [Billing] Failed to fetch Stripe publishable key:", {
+              message: error.message,
+              stack: error.stack,
+              fullError: error
+            });
             setStripeConfigError(true);
+            // Set stripePromise to false (not null) to stop showing "Loading..."
+            setStripePromise(false);
         }
     };
     fetchKey();
@@ -345,9 +373,21 @@ export default function Billing() {
                   <h3 className="text-lg font-semibold mb-4">
                     Complete Payment for {selectedPackage.credits} Credits
                   </h3>
-                  {stripePromise ? (
+                  {stripeConfigError ? (
+                     <div className="p-4 bg-yellow-50 border border-yellow-300 rounded-lg">
+                       <div className="flex items-start gap-3">
+                         <AlertCircle className="w-5 h-5 text-yellow-600 mt-0.5 flex-shrink-0" />
+                         <div className="flex-1">
+                           <p className="text-yellow-900 font-medium">Stripe Payment Not Configured</p>
+                           <p className="text-yellow-700 text-sm mt-1">
+                             Payment processing is not available. Please ensure Stripe is properly configured on the server.
+                           </p>
+                         </div>
+                       </div>
+                     </div>
+                  ) : stripePromise ? (
                      <Elements stripe={stripePromise}>
-                       <CheckoutForm 
+                       <CheckoutForm
                          selectedPackage={selectedPackage}
                          onSuccess={handlePaymentSuccess}
                          onError={handlePaymentError}

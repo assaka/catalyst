@@ -174,14 +174,36 @@ export const checkStripeConnectStatus = async (storeId) => {
 };
 
 export const getStripePublishableKey = async () => {
+  console.log('🔑 [getStripePublishableKey] Fetching key from backend...');
   try {
     const response = await apiClient.get('payments/publishable-key');
-    return response.data;
+    console.log('🔑 [getStripePublishableKey] Response received:', {
+      response,
+      hasData: !!response?.data,
+      data: response?.data,
+      publishableKey: response?.data?.data?.publishableKey
+    });
+
+    // The backend returns { data: { publishableKey: 'pk_...' } }
+    const result = response.data || response;
+    console.log('🔑 [getStripePublishableKey] Returning:', result);
+    return result;
   } catch (error) {
-    console.error('Error getting Stripe publishable key:', error);
-    // Return a fallback key from environment variables
+    console.error('🔴 [getStripePublishableKey] Error getting key:', {
+      message: error.message,
+      status: error.status,
+      response: error.response,
+      stack: error.stack
+    });
+
+    // Try fallback key from environment variables
+    const fallbackKey = import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY || '';
+    console.warn('🔴 [getStripePublishableKey] Using fallback key:', fallbackKey ? fallbackKey.substring(0, 10) + '...' : 'NONE');
+
     return {
-      publishable_key: import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY || ''
+      data: {
+        publishableKey: fallbackKey
+      }
     };
   }
 };
