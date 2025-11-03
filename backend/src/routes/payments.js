@@ -83,7 +83,11 @@ router.get('/connect-status', authMiddleware, async (req, res) => {
 
     // Get account status from Stripe
     const account = await stripe.accounts.retrieve(store.stripe_account_id);
-    
+
+    // Determine if onboarding is complete
+    // Onboarding is complete when details are submitted and charges are enabled
+    const onboardingComplete = account.details_submitted && account.charges_enabled;
+
     const connectStatus = {
       connected: true,
       account_id: account.id,
@@ -99,8 +103,29 @@ router.get('/connect-status', authMiddleware, async (req, res) => {
         transfers: account.capabilities?.transfers || 'inactive'
       },
       details_submitted: account.details_submitted,
+      onboardingComplete: onboardingComplete, // Add this field for frontend
       type: account.type
     };
+
+    // Update store if onboarding is complete (for caching/performance)
+    if (onboardingComplete && store.settings) {
+      try {
+        const currentSettings = store.settings || {};
+        if (!currentSettings.stripe_onboarding_complete) {
+          await store.update({
+            settings: {
+              ...currentSettings,
+              stripe_onboarding_complete: true,
+              stripe_onboarding_completed_at: new Date().toISOString()
+            }
+          });
+          console.log('Updated store settings with Stripe onboarding status');
+        }
+      } catch (updateError) {
+        console.error('Could not update store settings:', updateError.message);
+        // Don't fail the request if update fails
+      }
+    }
 
     res.json({
       success: true,

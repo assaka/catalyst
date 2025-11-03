@@ -109,18 +109,25 @@ export default function Dashboard() {
 
       if (urlParams.has('stripe_return')) {
         try {
-          // Assuming checkStripeConnectStatus returns { data: { onboardingComplete: boolean } }
+          // Check Stripe Connect status - backend returns: onboardingComplete, details_submitted, charges_enabled
           const { data } = await checkStripeConnectStatus(selectedStore.id);
+          console.log('Stripe Connect status:', data);
+
+          // Check if onboarding is complete
           if (data.onboardingComplete) {
             setStripeSuccessMessage('Stripe account connected successfully!');
             // Re-load data to get updated store status
             loadDashboardData();
+          } else if (data.connected && !data.charges_enabled) {
+            setError('Stripe account connected but not yet enabled for charges. This may take a few moments.');
+          } else if (data.connected && !data.details_submitted) {
+            setError('Stripe onboarding is not complete. Please finish the setup process.');
           } else {
             setError('Stripe connection was not completed. Please try again.');
           }
         } catch (err) {
           console.error("Error verifying Stripe connection:", err);
-          setError('Failed to verify Stripe connection status.');
+          setError('Failed to verify Stripe connection status. Please try again.');
         } finally {
           // Clean up URL params
           navigate(createPageUrl('Dashboard'), { replace: true });

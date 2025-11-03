@@ -20,7 +20,9 @@ export const SetupGuide = ({ store }) => {
     }
 
     const isDomainConnected = store.custom_domain && store.domain_status === 'active';
-    const isStripeConnected = store.stripe_connect_onboarding_complete === true || !!store.stripe_account_id;
+    // Check if Stripe is connected: either has stripe_account_id and onboarding complete flag in settings
+    const isStripeConnected = (store.settings?.stripe_onboarding_complete === true) ||
+                              (!!store.stripe_account_id && store.stripe_connect_onboarding_complete === true);
 
     // Load email configuration status
     useEffect(() => {

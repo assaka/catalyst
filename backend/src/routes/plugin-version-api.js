@@ -786,11 +786,27 @@ function calculatePatches(oldState, newState) {
     return patches;
   }
 
+  console.log('🔍 Calculating patches between states:', {
+    oldState_keys: Object.keys(oldState),
+    newState_keys: Object.keys(newState),
+    oldState_registry_type: typeof oldState.registry,
+    newState_registry_type: typeof newState.registry
+  });
+
   for (const type of componentTypes) {
-    const oldData = oldState[type] || [];
-    const newData = newState[type] || [];
+    const oldData = oldState[type] || (type === 'registry' ? null : []);
+    const newData = newState[type] || (type === 'registry' ? null : []);
+
+    console.log(`  📁 Comparing ${type}:`, {
+      old_type: typeof oldData,
+      new_type: typeof newData,
+      old_length: Array.isArray(oldData) ? oldData.length : 'not array',
+      new_length: Array.isArray(newData) ? newData.length : 'not array'
+    });
 
     const diff = jsonpatch.compare(oldData, newData);
+
+    console.log(`    Diff operations: ${diff.length}`);
 
     if (diff.length > 0) {
       patches.push({
@@ -800,6 +816,8 @@ function calculatePatches(oldState, newState) {
       });
     }
   }
+
+  console.log(`✅ Total patches created: ${patches.length}`);
 
   return patches;
 }
@@ -864,19 +882,47 @@ async function createSnapshot(versionId, pluginId, state) {
 
 /**
  * Calculate statistics from patches
+ * Counts actual lines of code changed, not patch operations
  */
 function calculateStats(patches) {
-  let files_changed = patches.length;
+  let files_changed = 0;
   let lines_added = 0;
   let lines_deleted = 0;
 
   for (const patch of patches) {
-    for (const op of patch.patch_operations || []) {
-      if (op.op === 'add') lines_added++;
-      if (op.op === 'remove') lines_deleted++;
-      if (op.op === 'replace') {
-        lines_deleted++;
-        lines_added++;
+    const ops = patch.patch_operations || [];
+    if (ops.length > 0) files_changed++;
+
+    for (const op of ops) {
+      // For code fields, count actual lines
+      if (op.path && (
+        op.path.includes('handler_function') ||
+        op.path.includes('listener_function') ||
+        op.path.includes('file_content') ||
+        op.path.includes('component_code') ||
+        op.path.includes('handler_code')
+      )) {
+        if (op.op === 'add' && op.value) {
+          const lines = String(op.value).split('\n').length;
+          lines_added += lines;
+        } else if (op.op === 'remove' && op.value) {
+          const lines = String(op.value).split('\n').length;
+          lines_deleted += lines;
+        } else if (op.op === 'replace') {
+          // For replace, count both old and new
+          const newLines = String(op.value || '').split('\n').length;
+          const oldLines = 1; // We don't have old value, estimate 1 line
+          lines_added += newLines;
+          lines_deleted += oldLines;
+        }
+      } else {
+        // For non-code fields, count as 1 line change
+        if (op.op === 'add') lines_added++;
+        if (op.op === 'remove') lines_deleted++;
+        if (op.op === 'replace') {
+          lines_deleted++;
+          lines_added++;
+        }
       }
     }
   }
