@@ -1273,18 +1273,28 @@ router.post('/webhook', async (req, res) => {
     return res.status(500).send('Webhook secret not configured');
   }
 
-  console.log(`✅ [${webhookId}] Webhook secret configured:`, process.env.STRIPE_WEBHOOK_SECRET.substring(0, 10) + '...');
+  console.log(`✅ [${webhookId}] Webhook secret configured:`, {
+    prefix: process.env.STRIPE_WEBHOOK_SECRET.substring(0, 10) + '...',
+    length: process.env.STRIPE_WEBHOOK_SECRET.length,
+    startsWithWhsec: process.env.STRIPE_WEBHOOK_SECRET.startsWith('whsec_')
+  });
 
   let event;
 
   try {
     console.log(`🔐 [${webhookId}] Attempting to verify webhook signature...`);
-    console.log(`🔐 [${webhookId}] Using:`, {
+    console.log(`🔐 [${webhookId}] Verification inputs:`, {
       bodyType: typeof req.body,
       bodyIsBuffer: Buffer.isBuffer(req.body),
+      bodyLength: req.body?.length,
       signaturePresent: !!sig,
-      secretPresent: !!process.env.STRIPE_WEBHOOK_SECRET
+      signatureFormat: sig.split(',').map(part => part.split('=')[0]),
+      secretPresent: !!process.env.STRIPE_WEBHOOK_SECRET,
+      secretFormat: process.env.STRIPE_WEBHOOK_SECRET?.startsWith('whsec_') ? 'Valid format' : 'Invalid format'
     });
+
+    console.log(`🔐 [${webhookId}] IMPORTANT: Verify this webhook secret matches your Stripe dashboard`);
+    console.log(`🔐 [${webhookId}] Secret prefix: ${process.env.STRIPE_WEBHOOK_SECRET.substring(0, 15)}...`);
 
     event = stripe.webhooks.constructEvent(req.body, sig, process.env.STRIPE_WEBHOOK_SECRET);
 
