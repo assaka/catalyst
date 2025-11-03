@@ -47,6 +47,7 @@ import {
 } from 'lucide-react';
 import apiClient from '@/api/client';
 import { toast } from 'sonner';
+import { getStoreBaseUrl, getExternalStoreUrl } from '@/utils/urlUtils';
 
 const CustomDomains = () => {
   const { selectedStore } = useStoreSelection();
@@ -250,6 +251,19 @@ const CustomDomains = () => {
     toast.success('Copied to clipboard!');
   };
 
+  const getStoreUrl = (domain) => {
+    // If domain is verified and SSL is active, show custom domain URL
+    if (domain.verification_status === 'verified' && domain.ssl_status === 'active') {
+      return `https://${domain.domain}`;
+    }
+    // Otherwise show the default platform URL with /public/storecode
+    const storeCode = selectedStore?.code || selectedStore?.slug;
+    if (!storeCode) {
+      return 'Store code not available';
+    }
+    return getExternalStoreUrl(storeCode);
+  };
+
   const getStatusBadge = (domain) => {
     if (domain.verification_status === 'verified' && domain.ssl_status === 'active') {
       return <Badge className="bg-green-500"><CheckCircle className="w-3 h-3 mr-1" />Active</Badge>;
@@ -295,6 +309,66 @@ const CustomDomains = () => {
         </Button>
       </div>
 
+      {/* Current Store URL */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-lg">Current Store URL</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="flex items-center gap-3">
+            <div className="flex-1">
+              {(() => {
+                const primaryDomain = domains.find(d => d.is_primary && d.verification_status === 'verified' && d.ssl_status === 'active');
+                const storeCode = selectedStore?.code || selectedStore?.slug;
+                const currentUrl = primaryDomain
+                  ? `https://${primaryDomain.domain}`
+                  : storeCode ? getExternalStoreUrl(storeCode) : 'Store code not available';
+
+                return (
+                  <>
+                    <a
+                      href={currentUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-blue-600 hover:underline font-mono text-lg flex items-center gap-2"
+                    >
+                      {currentUrl}
+                      <ExternalLink className="w-4 h-4" />
+                    </a>
+                    {!primaryDomain && (
+                      <p className="text-sm text-muted-foreground mt-1">
+                        Using default platform URL. Add a custom domain to use your own domain name.
+                      </p>
+                    )}
+                    {primaryDomain && (
+                      <p className="text-sm text-green-600 mt-1 flex items-center gap-1">
+                        <CheckCircle className="w-3 h-3" />
+                        Using custom domain: {primaryDomain.domain}
+                      </p>
+                    )}
+                  </>
+                );
+              })()}
+            </div>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => {
+                const primaryDomain = domains.find(d => d.is_primary && d.verification_status === 'verified' && d.ssl_status === 'active');
+                const storeCode = selectedStore?.code || selectedStore?.slug;
+                const currentUrl = primaryDomain
+                  ? `https://${primaryDomain.domain}`
+                  : storeCode ? getExternalStoreUrl(storeCode) : '';
+                copyToClipboard(currentUrl);
+              }}
+            >
+              <Copy className="w-4 h-4 mr-2" />
+              Copy URL
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+
       {/* Info Alert */}
       <Alert>
         <Info className="h-4 w-4" />
@@ -329,6 +403,7 @@ const CustomDomains = () => {
               <TableHeader>
                 <TableRow>
                   <TableHead>Domain</TableHead>
+                  <TableHead>Store URL</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead>SSL</TableHead>
                   <TableHead>Primary</TableHead>
@@ -342,6 +417,27 @@ const CustomDomains = () => {
                       <div className="flex items-center gap-2">
                         <Globe className="w-4 h-4 text-muted-foreground" />
                         {domain.domain}
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex items-center gap-2">
+                        <a
+                          href={getStoreUrl(domain)}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-blue-600 hover:underline text-sm font-mono flex items-center gap-1"
+                        >
+                          {getStoreUrl(domain)}
+                          <ExternalLink className="w-3 h-3" />
+                        </a>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => copyToClipboard(getStoreUrl(domain))}
+                          className="h-6 w-6 p-0"
+                        >
+                          <Copy className="w-3 h-3" />
+                        </Button>
                       </div>
                     </TableCell>
                     <TableCell>
