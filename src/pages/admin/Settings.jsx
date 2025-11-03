@@ -22,7 +22,6 @@ import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@
 import { Badge } from '@/components/ui/badge';
 import PublishButton from '@/components/admin/store/PublishButton';
 import { clearSettingsCache, clearAllCache } from '@/utils/cacheUtils';
-import EmailProviderSettings from '@/components/admin/settings/EmailProviderSettings';
 
 
 const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms));
@@ -562,11 +561,10 @@ export default function Settings() {
           params.set('tab', value);
           setSearchParams(params);
         }} className="w-full">
-          <TabsList className="grid w-full grid-cols-5">
+          <TabsList className="grid w-full grid-cols-4">
             <TabsTrigger value="general">General</TabsTrigger>
             <TabsTrigger value="domain">Domain</TabsTrigger>
             <TabsTrigger value="publish">Publish</TabsTrigger>
-            <TabsTrigger value="email">Email</TabsTrigger>
             <TabsTrigger value="contact">Contact</TabsTrigger>
           </TabsList>
 
@@ -978,10 +976,6 @@ export default function Settings() {
             </div>
           </TabsContent>
           
-          <TabsContent value="email" className="mt-6">
-            <EmailProviderSettings storeEmail={store?.contact_details?.email || store?.contact_email} />
-          </TabsContent>
-
           <TabsContent value="contact" className="mt-6">
             <Card className="material-elevation-1 border-0">
               <CardHeader>
