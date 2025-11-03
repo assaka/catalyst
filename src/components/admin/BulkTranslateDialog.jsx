@@ -46,7 +46,7 @@ export default function BulkTranslateDialog({
   const [isTranslating, setIsTranslating] = useState(false);
   const [translationCost, setTranslationCost] = useState(0.1); // Default fallback
   const [showFlash, setShowFlash] = useState(false);
-  const [flashMessage, setFlashMessage] = useState('');
+  const [flashMessage, setFlashMessage] = useState(null);
 
   // Get flat-rate cost based on entity type
   const getEntityCost = (entityType) => {
@@ -144,14 +144,9 @@ export default function BulkTranslateDialog({
         toast.success(message);
 
         // Show green flash message
-        setFlashMessage(message);
+        setFlashMessage({ type: 'success', message });
         setShowFlash(true);
         setTimeout(() => setShowFlash(false), 3000);
-
-        // Reload data after successful translation
-        if (onComplete) {
-          onComplete();
-        }
       }
       if (totalSkipped > 0 && totalTranslated === 0) {
         toast.info(`All ${totalSkipped} ${entityType} were skipped (already translated or missing source language)`);
@@ -164,6 +159,11 @@ export default function BulkTranslateDialog({
       // Reset and close dialog
       setTranslateToLangs([]);
       onOpenChange(false);
+
+      // Reload data after closing dialog to ensure fresh data
+      if (onComplete) {
+        setTimeout(() => onComplete(), 100);
+      }
     } catch (error) {
       console.error('Bulk translate error:', error);
       toast.error(`Failed to translate ${entityType}`);
@@ -177,8 +177,6 @@ export default function BulkTranslateDialog({
       {showFlash && (
         <FlashMessage
           message={flashMessage}
-          type="success"
-          duration={3000}
           onClose={() => setShowFlash(false)}
         />
       )}
