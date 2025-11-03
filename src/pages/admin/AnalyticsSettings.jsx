@@ -161,6 +161,11 @@ export default function AnalyticsSettings() {
         setSaving(true);
         setSaveSuccess(false);
         try {
+            console.log('🔵 === ANALYTICS SAVE DEBUG START ===');
+            console.log('🔵 Store ID:', storeId);
+            console.log('🔵 Current gtmSettings state:', JSON.stringify(gtmSettings, null, 2));
+            console.log('🔵 Current store.settings.analytics_settings:', JSON.stringify(store.settings.analytics_settings, null, 2));
+
             // Merge both old and new analytics settings
             const updatedSettings = {
                 ...store.settings,
@@ -178,7 +183,12 @@ export default function AnalyticsSettings() {
                 }
             };
 
-            await Store.update(storeId, { settings: updatedSettings });
+            console.log('🔵 Updated settings object to send:', JSON.stringify(updatedSettings, null, 2));
+            console.log('🔵 Calling Store.update...');
+
+            const response = await Store.update(storeId, { settings: updatedSettings });
+
+            console.log('🔵 API Response:', JSON.stringify(response, null, 2));
 
             // Update local state to avoid reload
             setStore(prev => ({
@@ -202,8 +212,11 @@ export default function AnalyticsSettings() {
             setFlashMessage({ type: 'success', message: 'Analytics settings saved successfully!' });
             setSaveSuccess(true);
             setTimeout(() => setSaveSuccess(false), 2000);
+            console.log('🔵 === ANALYTICS SAVE DEBUG END (SUCCESS) ===');
         } catch (error) {
+            console.error("🔴 === ANALYTICS SAVE DEBUG END (ERROR) ===");
             console.error("Failed to save settings:", error);
+            console.error("Error details:", error.message, error.status, error.data);
             setFlashMessage({ type: 'error', message: 'Failed to save settings.' });
         } finally {
             setSaving(false);
