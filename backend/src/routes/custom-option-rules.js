@@ -209,4 +209,149 @@ router.delete('/:id', async (req, res) => {
   }
 });
 
+// @route   POST /api/custom-option-rules/bulk-translate
+// @desc    AI translate all custom option rules in a store to target language
+// @access  Private
+router.post('/bulk-translate', async (req, res) => {
+  try {
+    const { store_id, fromLang, toLang } = req.body;
+
+    if (!store_id || !fromLang || !toLang) {
+      return res.status(400).json({
+        success: false,
+        message: 'store_id, fromLang, and toLang are required'
+      });
+    }
+
+    // Get all custom option rules for this store
+    const { data: rules, error } = await supabase
+      .from('custom_option_rules')
+      .select('*')
+      .eq('store_id', store_id);
+
+    if (error) {
+      console.error('Error fetching custom option rules:', error);
+      return res.status(500).json({
+        success: false,
+        message: 'Failed to fetch custom option rules'
+      });
+    }
+
+    if (!rules || rules.length === 0) {
+      return res.json({
+        success: true,
+        message: 'No custom option rules found to translate',
+        data: {
+          total: 0,
+          translated: 0,
+          skipped: 0,
+          failed: 0
+        }
+      });
+    }
+
+    const translationService = require('../services/translation-service');
+
+    // Translate each rule
+    const results = {
+      total: rules.length,
+      translated: 0,
+      skipped: 0,
+      failed: 0,
+      errors: [],
+      skippedDetails: []
+    };
+
+    console.log(`🌐 Starting Custom Option Rules translation: ${fromLang} → ${toLang} (${rules.length} rules)`);
+
+    for (const rule of rules) {
+      try {
+        const ruleName = rule.translations?.[fromLang]?.display_label || rule.display_label || rule.name || `Rule ${rule.id}`;
+
+        // Check if source translation exists
+        if (!rule.translations || !rule.translations[fromLang]) {
+          console.log(`⏭️  Skipping rule "${ruleName}": No ${fromLang} translation`);
+          results.skipped++;
+          results.skippedDetails.push({
+            ruleId: rule.id,
+            ruleName,
+            reason: `No ${fromLang} translation found`
+          });
+          continue;
+        }
+
+        // Check if target translation already exists with actual content
+        const hasTargetTranslation = rule.translations[toLang] &&
+          Object.values(rule.translations[toLang]).some(val =>
+            typeof val === 'string' && val.trim().length > 0
+          );
+
+        if (hasTargetTranslation) {
+          console.log(`⏭️  Skipping rule "${ruleName}": ${toLang} translation already exists`);
+          results.skipped++;
+          results.skippedDetails.push({
+            ruleId: rule.id,
+            ruleName,
+            reason: `${toLang} translation already exists`
+          });
+          continue;
+        }
+
+        // Get source translation and translate each field
+        console.log(`🔄 Translating rule "${ruleName}"...`);
+        const sourceTranslation = rule.translations[fromLang];
+        const translatedData = {};
+
+        for (const [key, value] of Object.entries(sourceTranslation)) {
+          if (typeof value === 'string' && value.trim()) {
+            translatedData[key] = await translationService.aiTranslate(value, fromLang, toLang);
+          }
+        }
+
+        // Save the translation
+        const translations = rule.translations || {};
+        translations[toLang] = translatedData;
+
+        const { error: updateError } = await supabase
+          .from('custom_option_rules')
+          .update({
+            translations,
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', rule.id);
+
+        if (updateError) {
+          throw updateError;
+        }
+
+        console.log(`✅ Successfully translated rule "${ruleName}"`);
+        results.translated++;
+      } catch (error) {
+        const ruleName = rule.translations?.[fromLang]?.display_label || rule.display_label || rule.name || `Rule ${rule.id}`;
+        console.error(`❌ Error translating custom option rule "${ruleName}":`, error);
+        results.failed++;
+        results.errors.push({
+          ruleId: rule.id,
+          ruleName,
+          error: error.message
+        });
+      }
+    }
+
+    console.log(`✅ Custom option rules translation complete: ${results.translated} translated, ${results.skipped} skipped, ${results.failed} failed`);
+
+    res.json({
+      success: true,
+      message: `Bulk translation completed. Translated: ${results.translated}, Skipped: ${results.skipped}, Failed: ${results.failed}`,
+      data: results
+    });
+  } catch (error) {
+    console.error('Bulk translate custom option rules error:', error);
+    res.status(500).json({
+      success: false,
+      message: error.message || 'Server error'
+    });
+  }
+});
+
 module.exports = router;

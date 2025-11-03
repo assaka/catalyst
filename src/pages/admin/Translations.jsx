@@ -635,7 +635,8 @@ export default function Translations() {
                        selectedEntityType === 'cms_block' ? 'cms-blocks' :
                        selectedEntityType === 'product_tab' ? 'product-tabs' :
                        selectedEntityType === 'product_label' ? 'product-labels' :
-                       selectedEntityType === 'cookie_consent' ? 'cookie-consent-settings' : null;
+                       selectedEntityType === 'cookie_consent' ? 'cookie-consent-settings' :
+                       selectedEntityType === 'custom_option' ? 'custom-option-rules' : null;
 
       if (!endpoint) {
         throw new Error('Invalid entity type');
