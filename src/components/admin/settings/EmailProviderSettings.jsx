@@ -367,11 +367,15 @@ export default function EmailProviderSettings({ storeEmail, storeName }) {
                     <div className="space-y-1 text-sm text-green-800">
                       <p><strong>Sender Name:</strong> {connectionStatus.config.sender_name}</p>
                       <p><strong>Sender Email:</strong> {connectionStatus.config.sender_email}</p>
-                      {connectionStatus.config.created_at && (
-                        <p className="text-xs text-green-600">
-                          Connected: {new Date(connectionStatus.config.created_at).toLocaleDateString()}
-                        </p>
-                      )}
+                      <p className="text-xs text-green-600 mt-2">
+                        Connected: {connectionStatus.config.created_at
+                          ? new Date(connectionStatus.config.created_at).toLocaleDateString('en-US', {
+                              year: 'numeric',
+                              month: 'long',
+                              day: 'numeric'
+                            })
+                          : 'Just now'}
+                      </p>
                     </div>
                   </div>
 
