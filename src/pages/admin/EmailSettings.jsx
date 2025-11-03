@@ -9,6 +9,7 @@ import { useState, useEffect } from 'react';
 export default function EmailSettings() {
   const { selectedStore } = useStoreSelection();
   const [fullStore, setFullStore] = useState(null);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     loadStoreData();
@@ -16,12 +17,26 @@ export default function EmailSettings() {
 
   const loadStoreData = async () => {
     if (selectedStore?.id) {
+      setLoading(true);
       try {
         const fullStoreData = await Store.findById(selectedStore.id);
         const store = Array.isArray(fullStoreData) ? fullStoreData[0] : fullStoreData;
-        setFullStore(store);
+
+        // Handle different API response structures
+        const storeData = store?.data || store;
+
+        console.log('📧 EmailSettings - Loaded store data:', {
+          hasContactDetails: !!storeData?.contact_details,
+          contactEmail: storeData?.contact_details?.email,
+          fallbackEmail: storeData?.contact_email,
+          storeName: storeData?.name
+        });
+
+        setFullStore(storeData);
       } catch (error) {
         console.error('Error loading store data:', error);
+      } finally {
+        setLoading(false);
       }
     }
   };
@@ -29,6 +44,23 @@ export default function EmailSettings() {
   if (!selectedStore) {
     return <NoStoreSelected />;
   }
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+      </div>
+    );
+  }
+
+  // Extract email from all possible locations
+  const storeEmail = fullStore?.contact_details?.email ||
+                     fullStore?.contact_email ||
+                     fullStore?.settings?.contact_details?.email ||
+                     '';
+  const storeName = fullStore?.name || selectedStore?.name || '';
+
+  console.log('📧 EmailSettings - Rendering with:', { storeEmail, storeName });
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -46,8 +78,8 @@ export default function EmailSettings() {
         </div>
 
         <EmailProviderSettings
-          storeEmail={fullStore?.contact_details?.email || fullStore?.contact_email || ''}
-          storeName={fullStore?.name || selectedStore?.name || ''}
+          storeEmail={storeEmail}
+          storeName={storeName}
         />
       </div>
     </div>
