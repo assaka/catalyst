@@ -104,6 +104,102 @@ router.get('/:pluginId/versions', async (req, res) => {
 });
 
 /**
+ * GET /api/plugins/:pluginId/versions/compare
+ * Compare two versions and return diff
+ * MUST BE BEFORE /:versionId route to avoid matching "compare" as a UUID
+ */
+router.get('/:pluginId/versions/compare', async (req, res) => {
+  try {
+    const { pluginId } = req.params;
+    const { from, to } = req.query;
+
+    if (!from || !to) {
+      return res.status(400).json({
+        success: false,
+        error: 'Both "from" and "to" version IDs are required'
+      });
+    }
+
+    console.log(`🔍 Comparing versions: ${from} -> ${to}`);
+
+    // Check cache first
+    const [cached] = await sequelize.query(`
+      SELECT * FROM plugin_version_comparisons
+      WHERE from_version_id = $1 AND to_version_id = $2
+        AND computed_at > NOW() - INTERVAL '1 hour'
+      LIMIT 1
+    `, {
+      bind: [from, to],
+      type: QueryTypes.SELECT
+    });
+
+    if (cached) {
+      console.log('  ✅ Using cached comparison');
+      return res.json({
+        success: true,
+        comparison: cached,
+        cached: true
+      });
+    }
+
+    // Reconstruct both states
+    const fromState = await reconstructPluginState(from);
+    const toState = await reconstructPluginState(to);
+
+    if (!fromState || !toState) {
+      return res.status(404).json({
+        success: false,
+        error: 'Could not reconstruct version states'
+      });
+    }
+
+    // Calculate detailed diff
+    const diff = calculateDetailedDiff(fromState, toState);
+
+    // Cache the result
+    await sequelize.query(`
+      INSERT INTO plugin_version_comparisons (
+        plugin_id, from_version_id, to_version_id,
+        files_changed, lines_added, lines_deleted,
+        components_added, components_modified, components_deleted,
+        diff_summary
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+      ON CONFLICT (from_version_id, to_version_id)
+      DO UPDATE SET
+        diff_summary = EXCLUDED.diff_summary,
+        computed_at = NOW()
+    `, {
+      bind: [
+        pluginId, from, to,
+        diff.files_changed, diff.lines_added, diff.lines_deleted,
+        diff.components_added, diff.components_modified, diff.components_deleted,
+        JSON.stringify(diff.summary)
+      ],
+      type: QueryTypes.INSERT
+    });
+
+    console.log(`  ✅ Comparison complete: ${diff.files_changed} files changed`);
+
+    res.json({
+      success: true,
+      comparison: diff,
+      cached: false,
+      info: {
+        snapshot_info: diff.files_changed === 0
+          ? 'These versions are identical'
+          : `${diff.files_changed} components changed. Auto-snapshots are created every 10 versions to optimize performance.`
+      }
+    });
+  } catch (error) {
+    console.error('Failed to compare versions:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
+/**
  * GET /api/plugins/:pluginId/versions/current
  * Get the current active version
  */
@@ -416,96 +512,6 @@ router.post('/:pluginId/versions/:versionId/restore', async (req, res) => {
     });
   } catch (error) {
     console.error('Failed to restore version:', error);
-    res.status(500).json({
-      success: false,
-      error: error.message
-    });
-  }
-});
-
-/**
- * GET /api/plugins/:pluginId/versions/compare
- * Compare two versions and return diff
- */
-router.get('/:pluginId/versions/compare', async (req, res) => {
-  try {
-    const { pluginId } = req.params;
-    const { from, to } = req.query;
-
-    if (!from || !to) {
-      return res.status(400).json({
-        success: false,
-        error: 'Both "from" and "to" version IDs are required'
-      });
-    }
-
-    console.log(`🔍 Comparing versions: ${from} -> ${to}`);
-
-    // Check cache first
-    const [cached] = await sequelize.query(`
-      SELECT * FROM plugin_version_comparisons
-      WHERE from_version_id = $1 AND to_version_id = $2
-        AND computed_at > NOW() - INTERVAL '1 hour'
-      LIMIT 1
-    `, {
-      bind: [from, to],
-      type: QueryTypes.SELECT
-    });
-
-    if (cached) {
-      console.log('  ✅ Using cached comparison');
-      return res.json({
-        success: true,
-        comparison: cached,
-        cached: true
-      });
-    }
-
-    // Reconstruct both states
-    const fromState = await reconstructPluginState(from);
-    const toState = await reconstructPluginState(to);
-
-    if (!fromState || !toState) {
-      return res.status(404).json({
-        success: false,
-        error: 'Could not reconstruct version states'
-      });
-    }
-
-    // Calculate detailed diff
-    const diff = calculateDetailedDiff(fromState, toState);
-
-    // Cache the result
-    await sequelize.query(`
-      INSERT INTO plugin_version_comparisons (
-        plugin_id, from_version_id, to_version_id,
-        files_changed, lines_added, lines_deleted,
-        components_added, components_modified, components_deleted,
-        diff_summary
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
-      ON CONFLICT (from_version_id, to_version_id)
-      DO UPDATE SET
-        diff_summary = EXCLUDED.diff_summary,
-        computed_at = NOW()
-    `, {
-      bind: [
-        pluginId, from, to,
-        diff.files_changed, diff.lines_added, diff.lines_deleted,
-        diff.components_added, diff.components_modified, diff.components_deleted,
-        JSON.stringify(diff.summary)
-      ],
-      type: QueryTypes.INSERT
-    });
-
-    console.log(`  ✅ Comparison complete: ${diff.files_changed} files changed`);
-
-    res.json({
-      success: true,
-      comparison: diff,
-      cached: false
-    });
-  } catch (error) {
-    console.error('Failed to compare versions:', error);
     res.status(500).json({
       success: false,
       error: error.message

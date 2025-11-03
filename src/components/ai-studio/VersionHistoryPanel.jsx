@@ -193,6 +193,12 @@ const VersionHistoryPanel = ({
           </Button>
         </div>
 
+        {/* Info banner */}
+        <div className="mb-3 p-2 bg-blue-50 border border-blue-200 rounded-md text-xs text-blue-800">
+          <p className="font-medium mb-1">💡 Auto-Versioning Enabled</p>
+          <p>Every save creates a new version. Full snapshots are created every 10 versions for performance.</p>
+        </div>
+
         {/* Search */}
         <div className="relative mb-3">
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground" />
