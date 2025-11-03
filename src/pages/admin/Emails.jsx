@@ -193,6 +193,13 @@ export default function Emails() {
             >
               <Languages className="mr-2 h-4 w-4" /> Bulk Translate
             </Button>
+            <Button
+              onClick={handleAdd}
+              className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 material-ripple material-elevation-1"
+              disabled={!selectedStore}
+            >
+              <Plus className="mr-2 h-4 w-4" /> Add Custom Template
+            </Button>
           </div>
         </div>
 
@@ -276,9 +283,17 @@ export default function Emails() {
             <CardContent className="text-center py-12">
               <Mail className="w-16 h-16 text-gray-400 mx-auto mb-4" />
               <h3 className="text-lg font-medium text-gray-900 mb-2">No email templates found</h3>
-              <p className="text-gray-600">
-                System email templates will be automatically created when you run the migration.
+              <p className="text-gray-600 mb-6">
+                System email templates should be automatically created. You can also create custom templates for plugins.
               </p>
+              <Button
+                onClick={handleAdd}
+                className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 material-ripple"
+                disabled={!selectedStore}
+              >
+                <Plus className="w-4 h-4 mr-2" />
+                Add Custom Template
+              </Button>
             </CardContent>
           </Card>
         )}

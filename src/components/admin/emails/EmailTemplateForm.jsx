@@ -19,7 +19,7 @@ export default function EmailTemplateForm({ template, onSubmit, onCancel }) {
   const [showTranslations, setShowTranslations] = useState(false);
 
   const [formData, setFormData] = useState({
-    identifier: 'signup_email',
+    identifier: '',
     subject: '',
     content_type: 'both',
     template_content: '',
@@ -206,27 +206,13 @@ export default function EmailTemplateForm({ template, onSubmit, onCancel }) {
                 )}
               </div>
             ) : (
-              <Select
+              <Input
+                id="identifier"
                 value={formData.identifier}
-                onValueChange={(value) => {
-                  handleInputChange('identifier', value);
-                  handleInputChange('subject', emailTypes[value]?.defaultSubject || '');
-                }}
-              >
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {Object.entries(emailTypes).map(([key, type]) => (
-                    <SelectItem key={key} value={key}>
-                      <div className="flex flex-col">
-                        <span className="font-medium">{type.label}</span>
-                        <span className="text-xs text-gray-500">{key}</span>
-                      </div>
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+                onChange={(e) => handleInputChange('identifier', e.target.value)}
+                placeholder="e.g., plugin_notification_email"
+                required
+              />
             )}
             <p className="text-xs text-gray-500">
               {template?.is_system
