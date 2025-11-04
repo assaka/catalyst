@@ -76,7 +76,7 @@ const Address = sequelize.define('Address', {
     }
   }
 }, {
-  tableName: 'addresses',
+  tableName: 'customer_addresses',
   hooks: {
     beforeCreate: async (address) => {
       // If this is set as default, unset all other defaults for this user/customer

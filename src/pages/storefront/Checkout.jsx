@@ -144,6 +144,20 @@ export default function Checkout() {
     console.log('🔍 User addresses count:', userAddresses.length);
   }, [user, userAddresses]);
 
+  // Prefill email address when user logs in
+  useEffect(() => {
+    if (user?.email && !shippingAddress.email) {
+      setShippingAddress(prev => ({
+        ...prev,
+        email: user.email
+      }));
+      setBillingAddress(prev => ({
+        ...prev,
+        email: user.email
+      }));
+    }
+  }, [user]);
+
   // Load persisted form data from localStorage after loading completes
   useEffect(() => {
     if (!loading && !dataRestored) {
@@ -1445,11 +1459,77 @@ export default function Checkout() {
     switch (sectionName) {
       case 'Shipping Address':
         return isSectionVisible('shipping') && (
-          <Card key="shipping-address" style={{ backgroundColor: checkoutSectionBgColor, borderColor: checkoutSectionBorderColor }}>
-            <CardHeader>
-              <CardTitle style={{ color: checkoutSectionTitleColor, fontSize: checkoutSectionTitleSize }}>{t('common.shipping_address', 'Shipping Address')}</CardTitle>
-            </CardHeader>
-            <CardContent>
+          <>
+            {/* Logged-in User Banner */}
+            {user && (
+              <div className="mb-6 bg-blue-50 border border-blue-200 rounded-lg p-4">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center space-x-3">
+                    <div className="bg-blue-100 rounded-full p-2">
+                      <UserCircle className="w-6 h-6 text-blue-600" />
+                    </div>
+                    <div>
+                      <p className="text-sm text-gray-600">{t('checkout.logged_in_as', 'Logged in as')}</p>
+                      <p className="font-semibold text-gray-900">
+                        {user.first_name && user.last_name
+                          ? `${user.first_name} ${user.last_name}`
+                          : user.email}
+                      </p>
+                      {(user.first_name || user.last_name) && (
+                        <p className="text-sm text-gray-600">{user.email}</p>
+                      )}
+                    </div>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    {userAddresses.length > 0 && (
+                      <span className="text-sm text-gray-600 mr-2">
+                        {userAddresses.length} {userAddresses.length === 1 ? 'saved address' : 'saved addresses'}
+                      </span>
+                    )}
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={handleLogout}
+                      className="text-gray-700 hover:text-gray-900"
+                    >
+                      <LogOut className="w-4 h-4 mr-2" />
+                      {t('common.logout', 'Logout')}
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Login Modal Trigger for Guest Users */}
+            {!user && (
+              <div className="mb-6 bg-gray-50 border border-gray-200 rounded-lg p-4">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center space-x-3">
+                    <div className="bg-gray-100 rounded-full p-2">
+                      <UserIcon className="w-6 h-6 text-gray-600" />
+                    </div>
+                    <div>
+                      <p className="font-medium text-gray-900">{t('checkout.guest_checkout', 'Guest Checkout')}</p>
+                      <p className="text-sm text-gray-600">{t('checkout.login_for_faster_checkout', 'Already have an account? Login for faster checkout')}</p>
+                    </div>
+                  </div>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setShowLoginModal(true)}
+                    className="text-blue-600 hover:text-blue-700 border-blue-600"
+                  >
+                    {t('common.login', 'Login')}
+                  </Button>
+                </div>
+              </div>
+            )}
+
+            <Card key="shipping-address" style={{ backgroundColor: checkoutSectionBgColor, borderColor: checkoutSectionBorderColor }}>
+              <CardHeader>
+                <CardTitle style={{ color: checkoutSectionTitleColor, fontSize: checkoutSectionTitleSize }}>{t('common.shipping_address', 'Shipping Address')}</CardTitle>
+              </CardHeader>
+              <CardContent>
               {user && userAddresses.length > 0 ? (
                 <div className="space-y-4">
                   <div className="space-y-3">
@@ -1632,6 +1712,7 @@ export default function Checkout() {
               )}
             </CardContent>
           </Card>
+          </>
         );
 
       case 'Shipping Method':
@@ -2350,72 +2431,6 @@ export default function Checkout() {
   return (
     <div className="max-w-6xl mx-auto px-4 py-6 lg:py-8">
       <h1 className="text-2xl lg:text-3xl font-bold mb-6 lg:mb-8">{t('checkout.title', 'Checkout')}</h1>
-
-      {/* Logged-in User Banner */}
-      {user && (
-        <div className="mb-6 bg-blue-50 border border-blue-200 rounded-lg p-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-3">
-              <div className="bg-blue-100 rounded-full p-2">
-                <UserCircle className="w-6 h-6 text-blue-600" />
-              </div>
-              <div>
-                <p className="text-sm text-gray-600">{t('checkout.logged_in_as', 'Logged in as')}</p>
-                <p className="font-semibold text-gray-900">
-                  {user.first_name && user.last_name
-                    ? `${user.first_name} ${user.last_name}`
-                    : user.email}
-                </p>
-                {(user.first_name || user.last_name) && (
-                  <p className="text-sm text-gray-600">{user.email}</p>
-                )}
-              </div>
-            </div>
-            <div className="flex items-center space-x-2">
-              {userAddresses.length > 0 && (
-                <span className="text-sm text-gray-600 mr-2">
-                  {userAddresses.length} {userAddresses.length === 1 ? 'saved address' : 'saved addresses'}
-                </span>
-              )}
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={handleLogout}
-                className="text-gray-700 hover:text-gray-900"
-              >
-                <LogOut className="w-4 h-4 mr-2" />
-                {t('common.logout', 'Logout')}
-              </Button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Login Modal Trigger for Guest Users */}
-      {!user && (
-        <div className="mb-6 bg-gray-50 border border-gray-200 rounded-lg p-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-3">
-              <div className="bg-gray-100 rounded-full p-2">
-                <UserIcon className="w-6 h-6 text-gray-600" />
-              </div>
-              <div>
-                <p className="font-medium text-gray-900">{t('checkout.guest_checkout', 'Guest Checkout')}</p>
-                <p className="text-sm text-gray-600">{t('checkout.login_for_faster_checkout', 'Already have an account? Login for faster checkout')}</p>
-              </div>
-            </div>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setShowLoginModal(true)}
-              className="text-blue-600 hover:text-blue-700 border-blue-600"
-            >
-              {t('common.login', 'Login')}
-            </Button>
-          </div>
-        </div>
-      )}
-
       <CmsBlockRenderer position="checkout_above_form" />
 
       {/* Step Indicator */}
