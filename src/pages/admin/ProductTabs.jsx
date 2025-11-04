@@ -286,7 +286,7 @@ export default function ProductTabs() {
         </Card>
 
         {/* Tabs Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
           {(() => {
             console.log('🎨 Rendering tabs grid. filteredTabs:', filteredTabs);
             return filteredTabs.map((tab) => {

@@ -95,7 +95,7 @@ export default function AIStudio() {
       <div className="flex-1 overflow-hidden">
         {pluginToEdit ? (
           // Plugin Edit Mode - Show AI Chat + Developer Editor
-          <ResizablePanelGroup direction="horizontal" key={`panels-${chatMinimized}-${fileTreeMinimized}-${editorMinimized}`}>
+          <ResizablePanelGroup direction="horizontal">
             {/* AI Chat Assistant (Left) - Minimizable */}
             <ResizablePanel
               defaultSize={calculateChatSize()}

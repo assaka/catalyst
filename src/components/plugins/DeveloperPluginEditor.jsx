@@ -1110,7 +1110,7 @@ const DeveloperPluginEditor = ({
 
   return (
     <div className="h-full flex flex-col">
-      <ResizablePanelGroup direction="horizontal" className="flex-1" key={`panels-${fileTreeMinimized}-${editorMinimized}`}>
+      <ResizablePanelGroup direction="horizontal" className="flex-1">
         {/* File Tree Sidebar - Minimizable */}
         <ResizablePanel
           defaultSize={calculateFileTreeRelativeSize()}

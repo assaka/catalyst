@@ -240,7 +240,7 @@ export default function CmsPages() {
           </CardContent>
         </Card>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
           {filteredPages.map((page) => ( // Mapping over filteredPages
             <Card key={page.id} className="material-elevation-1 border-0 hover:material-elevation-2 transition-all duration-300">
               <CardHeader>
