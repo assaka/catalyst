@@ -165,30 +165,55 @@ export default function Customers() {
 
     const handleToggleBlacklistFromModal = async () => {
         const customer = blacklistingCustomer || editingCustomer;
-        if (!customer) return;
+        if (!customer) {
+            console.log('❌ No customer selected');
+            return;
+        }
 
         const willBlacklist = !isBlacklisted;
+
+        console.log('🔒 Frontend: Blacklisting customer', {
+            customerId: customer.id,
+            email: customer.email,
+            willBlacklist,
+            blacklistReason
+        });
 
         setSaving(true);
         try {
             const storeId = getSelectedStoreId();
+            const url = `/api/customers/${customer.id}/blacklist?store_id=${storeId}`;
+            const payload = {
+                is_blacklisted: willBlacklist,
+                blacklist_reason: willBlacklist ? blacklistReason : null
+            };
+
+            console.log('📤 Sending blacklist request:', { url, payload });
 
             // Update customer blacklist status
-            const response = await fetch(`/api/customers/${customer.id}/blacklist?store_id=${storeId}`, {
+            const response = await fetch(url, {
                 method: 'PUT',
                 headers: {
                     'Content-Type': 'application/json',
                     'Authorization': `Bearer ${localStorage.getItem('store_owner_auth_token')}`
                 },
-                body: JSON.stringify({
-                    is_blacklisted: willBlacklist,
-                    blacklist_reason: willBlacklist ? blacklistReason : null
-                })
+                body: JSON.stringify(payload)
+            });
+
+            console.log('📥 Blacklist response:', {
+                ok: response.ok,
+                status: response.status,
+                statusText: response.statusText
             });
 
             if (!response.ok) {
-                throw new Error('Failed to update blacklist status');
+                const errorData = await response.json().catch(() => ({}));
+                console.error('❌ Blacklist failed:', errorData);
+                throw new Error(errorData.message || 'Failed to update blacklist status');
             }
+
+            const result = await response.json();
+            console.log('✅ Blacklist success:', result);
 
             // Remove email from blacklist_emails table when unblacklisting
             if (!willBlacklist && customer.email) {
