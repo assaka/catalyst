@@ -77,7 +77,7 @@ export default function Blacklist() {
         const storeId = getSelectedStoreId();
         const response = await fetch(`/api/blacklist/settings?store_id=${storeId}`, {
             headers: {
-                'Authorization': `Bearer ${localStorage.getItem('token')}`
+                'Authorization': `Bearer ${localStorage.getItem('store_owner_auth_token')}`
             }
         });
         const data = await response.json();
@@ -90,7 +90,7 @@ export default function Blacklist() {
         const storeId = getSelectedStoreId();
         const response = await fetch(`/api/blacklist/ips?store_id=${storeId}&search=${ipSearch}`, {
             headers: {
-                'Authorization': `Bearer ${localStorage.getItem('token')}`
+                'Authorization': `Bearer ${localStorage.getItem('store_owner_auth_token')}`
             }
         });
         const data = await response.json();
@@ -103,7 +103,7 @@ export default function Blacklist() {
         const storeId = getSelectedStoreId();
         const response = await fetch(`/api/blacklist/countries?store_id=${storeId}&search=${countrySearch}`, {
             headers: {
-                'Authorization': `Bearer ${localStorage.getItem('token')}`
+                'Authorization': `Bearer ${localStorage.getItem('store_owner_auth_token')}`
             }
         });
         const data = await response.json();
@@ -116,7 +116,7 @@ export default function Blacklist() {
         const storeId = getSelectedStoreId();
         const response = await fetch(`/api/blacklist/emails?store_id=${storeId}&search=${emailSearch}`, {
             headers: {
-                'Authorization': `Bearer ${localStorage.getItem('token')}`
+                'Authorization': `Bearer ${localStorage.getItem('store_owner_auth_token')}`
             }
         });
         const data = await response.json();
@@ -133,7 +133,7 @@ export default function Blacklist() {
                 method: 'PUT',
                 headers: {
                     'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${localStorage.getItem('token')}`
+                    'Authorization': `Bearer ${localStorage.getItem('store_owner_auth_token')}`
                 },
                 body: JSON.stringify(settings)
             });
@@ -164,7 +164,7 @@ export default function Blacklist() {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${localStorage.getItem('token')}`
+                    'Authorization': `Bearer ${localStorage.getItem('store_owner_auth_token')}`
                 },
                 body: JSON.stringify(newIP)
             });
@@ -194,7 +194,7 @@ export default function Blacklist() {
             const response = await fetch(`/api/blacklist/ips/${id}?store_id=${storeId}`, {
                 method: 'DELETE',
                 headers: {
-                    'Authorization': `Bearer ${localStorage.getItem('token')}`
+                    'Authorization': `Bearer ${localStorage.getItem('store_owner_auth_token')}`
                 }
             });
 
@@ -223,7 +223,7 @@ export default function Blacklist() {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${localStorage.getItem('token')}`
+                    'Authorization': `Bearer ${localStorage.getItem('store_owner_auth_token')}`
                 },
                 body: JSON.stringify(newCountry)
             });
@@ -253,7 +253,7 @@ export default function Blacklist() {
             const response = await fetch(`/api/blacklist/countries/${id}?store_id=${storeId}`, {
                 method: 'DELETE',
                 headers: {
-                    'Authorization': `Bearer ${localStorage.getItem('token')}`
+                    'Authorization': `Bearer ${localStorage.getItem('store_owner_auth_token')}`
                 }
             });
 
@@ -282,7 +282,7 @@ export default function Blacklist() {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${localStorage.getItem('token')}`
+                    'Authorization': `Bearer ${localStorage.getItem('store_owner_auth_token')}`
                 },
                 body: JSON.stringify(newEmail)
             });
@@ -312,7 +312,7 @@ export default function Blacklist() {
             const response = await fetch(`/api/blacklist/emails/${id}?store_id=${storeId}`, {
                 method: 'DELETE',
                 headers: {
-                    'Authorization': `Bearer ${localStorage.getItem('token')}`
+                    'Authorization': `Bearer ${localStorage.getItem('store_owner_auth_token')}`
                 }
             });
 

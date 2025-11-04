@@ -103,7 +103,7 @@ export default function Customers() {
                 const storeId = getSelectedStoreId();
                 const response = await fetch(`/api/blacklist/emails?store_id=${storeId}&search=${customer.email}`, {
                     headers: {
-                        'Authorization': `Bearer ${localStorage.getItem('token')}`
+                        'Authorization': `Bearer ${localStorage.getItem('store_owner_auth_token')}`
                     }
                 });
                 const data = await response.json();
@@ -151,7 +151,7 @@ export default function Customers() {
                 method: 'PUT',
                 headers: {
                     'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${localStorage.getItem('token')}`
+                    'Authorization': `Bearer ${localStorage.getItem('store_owner_auth_token')}`
                 },
                 body: JSON.stringify({
                     is_blacklisted: willBlacklist,
@@ -170,7 +170,7 @@ export default function Customers() {
                         method: 'POST',
                         headers: {
                             'Content-Type': 'application/json',
-                            'Authorization': `Bearer ${localStorage.getItem('token')}`
+                            'Authorization': `Bearer ${localStorage.getItem('store_owner_auth_token')}`
                         },
                         body: JSON.stringify({
                             email: editingCustomer.email,
@@ -190,7 +190,7 @@ export default function Customers() {
                     // Find and delete the email from blacklist_emails
                     const emailListResponse = await fetch(`/api/blacklist/emails?store_id=${storeId}&search=${editingCustomer.email}`, {
                         headers: {
-                            'Authorization': `Bearer ${localStorage.getItem('token')}`
+                            'Authorization': `Bearer ${localStorage.getItem('store_owner_auth_token')}`
                         }
                     });
 
@@ -202,7 +202,7 @@ export default function Customers() {
                             await fetch(`/api/blacklist/emails/${emailEntry.id}?store_id=${storeId}`, {
                                 method: 'DELETE',
                                 headers: {
-                                    'Authorization': `Bearer ${localStorage.getItem('token')}`
+                                    'Authorization': `Bearer ${localStorage.getItem('store_owner_auth_token')}`
                                 }
                             });
                             console.log('Email removed from blacklist_emails table');
@@ -241,7 +241,7 @@ export default function Customers() {
         try {
             const checkResponse = await fetch(`/api/blacklist/emails?store_id=${storeId}&search=${editingCustomer.email}`, {
                 headers: {
-                    'Authorization': `Bearer ${localStorage.getItem('token')}`
+                    'Authorization': `Bearer ${localStorage.getItem('store_owner_auth_token')}`
                 }
             });
 
@@ -258,7 +258,7 @@ export default function Customers() {
                 const deleteResponse = await fetch(`/api/blacklist/emails/${existingEntry.id}?store_id=${storeId}`, {
                     method: 'DELETE',
                     headers: {
-                        'Authorization': `Bearer ${localStorage.getItem('token')}`
+                        'Authorization': `Bearer ${localStorage.getItem('store_owner_auth_token')}`
                     }
                 });
 
@@ -279,7 +279,7 @@ export default function Customers() {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${localStorage.getItem('token')}`
+                        'Authorization': `Bearer ${localStorage.getItem('store_owner_auth_token')}`
                     },
                     body: JSON.stringify({
                         email: editingCustomer.email,
