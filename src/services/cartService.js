@@ -224,11 +224,23 @@ class CartService {
 
       const result = await response.json();
 
+      console.log('🔍 CartService.addItem - Backend response:', {
+        success: result.success,
+        dataStructure: result.data ? Object.keys(result.data) : 'no data',
+        itemsCount: result.data?.items?.length || result.data?.dataValues?.items?.length || 0
+      });
+
       if (result.success) {
         // Extract fresh cart data from the response
         const freshCartData = result.data;
         const cartItems = Array.isArray(freshCartData?.items) ? freshCartData.items :
                          Array.isArray(freshCartData?.dataValues?.items) ? freshCartData.dataValues.items : [];
+
+        console.log('🔍 CartService.addItem - Dispatching cartUpdated event with items:', {
+          itemsCount: cartItems.length,
+          items: cartItems,
+          freshCartData: freshCartData
+        });
 
         // Dispatch cart update event with the fresh cart data
         window.dispatchEvent(new CustomEvent('cartUpdated', {

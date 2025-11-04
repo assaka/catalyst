@@ -203,6 +203,14 @@ const ProductItemCard = ({
       const priceInfo = getPriceDisplay(product);
       const basePrice = priceInfo.displayPrice;
 
+      console.log('🛒 ProductItemCard - Adding to cart:', {
+        productId: product.id,
+        productName: product.name,
+        quantity: 1,
+        basePrice: basePrice,
+        storeId: store.id
+      });
+
       const result = await cartService.addItem(
         product.id,
         1, // quantity
@@ -210,6 +218,13 @@ const ProductItemCard = ({
         [], // selectedOptions
         store.id
       );
+
+      console.log('🛒 ProductItemCard - Add to cart result:', {
+        success: result.success,
+        cart: result.cart,
+        itemsInCart: result.cart?.items?.length || 'unknown',
+        error: result.error
+      });
 
       // CRITICAL: Use same success check as ProductDetail (result.success === true, not !== false)
       if (result.success) {

@@ -135,14 +135,24 @@ export default function MiniCart({ iconVariant = 'outline' }) {
     };
 
     const handleCartUpdate = (event) => {
+      console.log('🛒 MiniCart.handleCartUpdate - Received event:', {
+        hasFreshCartData: !!event.detail?.freshCartData,
+        itemsCount: event.detail?.freshCartData?.items?.length || 0,
+        items: event.detail?.freshCartData?.items,
+        source: event.detail?.source,
+        action: event.detail?.action
+      });
+
       // Use freshCartData from event to avoid race condition with backend
       if (event.detail?.freshCartData?.items) {
         const items = event.detail.freshCartData.items;
+        console.log('🛒 MiniCart.handleCartUpdate - Setting items from event:', items);
         setCartItems(items);
         return;
       }
 
       // Fallback: fetch from backend if no freshCartData
+      console.log('🛒 MiniCart.handleCartUpdate - No freshCartData, fetching from backend');
       debouncedRefresh(true);
     };
 
