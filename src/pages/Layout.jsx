@@ -197,6 +197,12 @@ function LayoutInner({ children, currentPageName }) {
       loadUserAndHandleCredits();
     };
 
+    // Listen for credits updated event (e.g., after credit purchase)
+    const handleCreditsUpdated = () => {
+      console.log('📢 [Layout] creditsUpdated event received - reloading user data');
+      loadUserAndHandleCredits();
+    };
+
     // Add global click detector to debug logout issues
     const globalClickHandler = (e) => {
       if (e.target.textContent?.includes('Logout') || e.target.closest('[data-testid="logout"]')) {
@@ -215,11 +221,13 @@ function LayoutInner({ children, currentPageName }) {
     document.addEventListener('click', globalClickHandler, true);
     document.addEventListener('keydown', handleKeyboardShortcut);
     window.addEventListener('userDataReady', handleUserDataReady);
+    window.addEventListener('creditsUpdated', handleCreditsUpdated);
 
     return () => {
       document.removeEventListener('click', globalClickHandler, true);
       document.removeEventListener('keydown', handleKeyboardShortcut);
       window.removeEventListener('userDataReady', handleUserDataReady);
+      window.removeEventListener('creditsUpdated', handleCreditsUpdated);
     };
   }, [location.pathname, toggleAI]);
 

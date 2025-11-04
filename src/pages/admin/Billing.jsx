@@ -268,10 +268,17 @@ export default function Billing() {
   ];
 
   const handlePaymentSuccess = () => {
+    console.log('✅ [Billing] Payment success handler called');
     setPaymentSuccess(true);
     setSelectedPackage(null);
+
     // Immediately reload data when payment succeeds
     loadBillingData();
+
+    // Dispatch event to trigger sidebar credits update
+    console.log('📢 [Billing] Dispatching creditsUpdated event to update sidebar');
+    window.dispatchEvent(new CustomEvent('creditsUpdated'));
+
     setTimeout(() => {
         setPaymentSuccess(false);
     }, 5000);

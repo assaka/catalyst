@@ -1436,6 +1436,7 @@ router.post('/webhook', async (req, res) => {
           });
 
           // Verify user credits were updated
+          let finalUserBalance = null;
           try {
             const { sequelize } = require('../database/connection');
             const [user] = await sequelize.query(`
@@ -1445,6 +1446,8 @@ router.post('/webhook', async (req, res) => {
               type: sequelize.QueryTypes.SELECT
             });
 
+            finalUserBalance = user?.credits;
+
             console.log(`✅ [${piRequestId}] User balance after purchase:`, {
               userId: user?.id,
               email: user?.email,
@@ -1452,6 +1455,53 @@ router.post('/webhook', async (req, res) => {
             });
           } catch (verifyError) {
             console.warn(`⚠️ [${piRequestId}] Could not verify user balance:`, verifyError.message);
+          }
+
+          // Send credit purchase confirmation email
+          try {
+            console.log(`📧 [${piRequestId}] Sending credit purchase confirmation email...`);
+
+            const { User: UserModel, Store: StoreModel } = require('../models');
+            const emailService = require('../services/email-service');
+
+            const user = await UserModel.findByPk(result.user_id);
+            const store = await StoreModel.findByPk(result.store_id);
+
+            if (user && store) {
+              console.log(`📧 [${piRequestId}] Email recipients:`, {
+                userEmail: user.email,
+                storeName: store.name
+              });
+
+              // Send email asynchronously (don't block webhook response)
+              emailService.sendTransactionalEmail(result.store_id, 'credit_purchase', {
+                recipientEmail: user.email,
+                customer: {
+                  first_name: user.first_name,
+                  last_name: user.last_name,
+                  email: user.email
+                },
+                transaction: {
+                  ...result.toJSON(),
+                  balance: finalUserBalance || user.credits || 0
+                },
+                store: store.toJSON(),
+                languageCode: 'en'
+              }).then(() => {
+                console.log(`✅ [${piRequestId}] Credit purchase email sent successfully to: ${user.email}`);
+              }).catch(emailError => {
+                console.error(`❌ [${piRequestId}] Failed to send credit purchase email:`, emailError.message);
+                // Don't fail the webhook if email fails
+              });
+            } else {
+              console.warn(`⚠️ [${piRequestId}] Cannot send email - user or store not found:`, {
+                hasUser: !!user,
+                hasStore: !!store
+              });
+            }
+          } catch (emailError) {
+            console.error(`❌ [${piRequestId}] Error preparing credit purchase email:`, emailError.message);
+            // Don't fail the webhook if email fails
           }
 
           console.log('='.repeat(80));
