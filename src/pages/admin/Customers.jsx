@@ -10,7 +10,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Switch } from '@/components/ui/switch';
-import { Users, Search, Download, Edit, Trash2, UserPlus, Eye, Ban } from 'lucide-react';
+import { Users, Search, Download, Edit, Trash2, UserPlus, Eye, Ban, CheckCircle, Shield } from 'lucide-react';
 import { useAlertTypes } from '@/hooks/useAlert';
 
 export default function Customers() {
@@ -27,6 +27,8 @@ export default function Customers() {
     const [isBlacklisted, setIsBlacklisted] = useState(false);
     const [blacklistReason, setBlacklistReason] = useState('');
     const [addEmailToBlacklist, setAddEmailToBlacklist] = useState(true);
+    const [isBlacklistModalOpen, setIsBlacklistModalOpen] = useState(false);
+    const [blacklistingCustomer, setBlacklistingCustomer] = useState(null);
 
     useEffect(() => {
         if (selectedStore) {
@@ -91,6 +93,34 @@ export default function Customers() {
         (customer.phone?.toLowerCase() || '').includes(searchTerm.toLowerCase())
     );
 
+    const handleOpenBlacklistModal = async (customer) => {
+        setBlacklistingCustomer(customer);
+        setIsBlacklisted(customer.is_blacklisted || false);
+        setBlacklistReason(customer.blacklist_reason || '');
+
+        // For guest customers, check if their email is in the blacklist_emails table
+        if (customer.customer_type === 'guest' && customer.email) {
+            try {
+                const storeId = getSelectedStoreId();
+                const response = await fetch(`/api/blacklist/emails?store_id=${storeId}&search=${customer.email}`, {
+                    headers: {
+                        'Authorization': `Bearer ${localStorage.getItem('store_owner_auth_token')}`
+                    }
+                });
+                const data = await response.json();
+                const emailEntry = data.data?.emails?.find(e => e.email === customer.email);
+                if (emailEntry) {
+                    setIsBlacklisted(true);
+                    setBlacklistReason(emailEntry.reason || '');
+                }
+            } catch (error) {
+                console.error('Error checking blacklist status:', error);
+            }
+        }
+
+        setIsBlacklistModalOpen(true);
+    };
+
     const handleEditCustomer = async (customer) => {
         setEditingCustomer(customer);
         setIsViewOnly(customer.customer_type === 'guest'); // View-only for guest customers
@@ -134,8 +164,9 @@ export default function Customers() {
         }
     };
 
-    const handleToggleBlacklist = async () => {
-        if (!editingCustomer) return;
+    const handleToggleBlacklistFromModal = async () => {
+        const customer = blacklistingCustomer || editingCustomer;
+        if (!customer) return;
 
         const willBlacklist = !isBlacklisted;
         if (willBlacklist && !window.confirm('Are you sure you want to blacklist this customer? They will not be able to log in or checkout.')) {
@@ -147,7 +178,7 @@ export default function Customers() {
             const storeId = getSelectedStoreId();
 
             // Update customer blacklist status
-            const response = await fetch(`/api/customers/${editingCustomer.id}/blacklist?store_id=${storeId}`, {
+            const response = await fetch(`/api/customers/${customer.id}/blacklist?store_id=${storeId}`, {
                 method: 'PUT',
                 headers: {
                     'Content-Type': 'application/json',
@@ -173,7 +204,7 @@ export default function Customers() {
                             'Authorization': `Bearer ${localStorage.getItem('store_owner_auth_token')}`
                         },
                         body: JSON.stringify({
-                            email: editingCustomer.email,
+                            email: customer.email,
                             reason: blacklistReason || 'Added from customer blacklist'
                         })
                     });
@@ -185,10 +216,10 @@ export default function Customers() {
             }
 
             // Remove email from blacklist_emails table when unblacklisting
-            if (!willBlacklist && editingCustomer.email) {
+            if (!willBlacklist && customer.email) {
                 try {
                     // Find and delete the email from blacklist_emails
-                    const emailListResponse = await fetch(`/api/blacklist/emails?store_id=${storeId}&search=${editingCustomer.email}`, {
+                    const emailListResponse = await fetch(`/api/blacklist/emails?store_id=${storeId}&search=${customer.email}`, {
                         headers: {
                             'Authorization': `Bearer ${localStorage.getItem('store_owner_auth_token')}`
                         }
@@ -196,7 +227,7 @@ export default function Customers() {
 
                     if (emailListResponse.ok) {
                         const emailData = await emailListResponse.json();
-                        const emailEntry = emailData.data?.emails?.find(e => e.email === editingCustomer.email);
+                        const emailEntry = emailData.data?.emails?.find(e => e.email === customer.email);
 
                         if (emailEntry) {
                             await fetch(`/api/blacklist/emails/${emailEntry.id}?store_id=${storeId}`, {
@@ -216,12 +247,20 @@ export default function Customers() {
             // Update local state
             setIsBlacklisted(willBlacklist);
             setCustomers(customers.map(c =>
-                c.id === editingCustomer.id
+                c.id === customer.id
                     ? { ...c, is_blacklisted: willBlacklist, blacklist_reason: willBlacklist ? blacklistReason : null }
                     : c
             ));
 
-            // Show success message briefly
+            // Show success message
+            showSuccess(willBlacklist ? 'Customer blacklisted successfully' : 'Customer removed from blacklist');
+
+            // Close modal if opened from table
+            if (blacklistingCustomer) {
+                setIsBlacklistModalOpen(false);
+                setBlacklistingCustomer(null);
+            }
+
             setSaveSuccess(true);
             setTimeout(() => setSaveSuccess(false), 2000);
         } catch (error) {
@@ -233,13 +272,14 @@ export default function Customers() {
     };
 
     const handleGuestBlacklist = async () => {
-        if (!editingCustomer || !editingCustomer.email) return;
+        const customer = blacklistingCustomer || editingCustomer;
+        if (!customer || !customer.email) return;
 
         const storeId = getSelectedStoreId();
 
         // Check if email is already blacklisted
         try {
-            const checkResponse = await fetch(`/api/blacklist/emails?store_id=${storeId}&search=${editingCustomer.email}`, {
+            const checkResponse = await fetch(`/api/blacklist/emails?store_id=${storeId}&search=${customer.email}`, {
                 headers: {
                     'Authorization': `Bearer ${localStorage.getItem('store_owner_auth_token')}`
                 }
@@ -264,7 +304,18 @@ export default function Customers() {
 
                 if (deleteResponse.ok) {
                     setIsBlacklisted(false);
+                    setCustomers(customers.map(c =>
+                        c.email === customer.email
+                            ? { ...c, is_blacklisted: false }
+                            : c
+                    ));
                     showSuccess('Email removed from blacklist');
+
+                    // Close modal if opened from table
+                    if (blacklistingCustomer) {
+                        setIsBlacklistModalOpen(false);
+                        setBlacklistingCustomer(null);
+                    }
                 } else {
                     showError('Failed to remove email from blacklist');
                 }
@@ -289,7 +340,18 @@ export default function Customers() {
 
                 if (addResponse.ok) {
                     setIsBlacklisted(true);
+                    setCustomers(customers.map(c =>
+                        c.email === customer.email
+                            ? { ...c, is_blacklisted: true }
+                            : c
+                    ));
                     showSuccess('Email added to blacklist');
+
+                    // Close modal if opened from table
+                    if (blacklistingCustomer) {
+                        setIsBlacklistModalOpen(false);
+                        setBlacklistingCustomer(null);
+                    }
                 } else {
                     const errorData = await addResponse.json();
                     console.error('Failed to add email:', errorData);
@@ -470,7 +532,8 @@ export default function Customers() {
                                                         Blacklisted
                                                     </span>
                                                 ) : (
-                                                    <span className="px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-700">
+                                                    <span className="flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-700 w-fit">
+                                                        <CheckCircle className="h-3 w-3" />
                                                         Active
                                                     </span>
                                                 )}
@@ -506,6 +569,15 @@ export default function Customers() {
                                                         title={isGuest ? 'View customer' : 'Edit customer'}
                                                     >
                                                         {isGuest ? <Eye className="h-4 w-4" /> : <Edit className="h-4 w-4" />}
+                                                    </Button>
+                                                    <Button
+                                                        size="sm"
+                                                        variant="outline"
+                                                        onClick={() => handleOpenBlacklistModal(customer)}
+                                                        className={`h-8 w-8 p-0 ${customer.is_blacklisted ? 'text-red-600 hover:text-red-700 hover:bg-red-50' : 'hover:bg-gray-50'}`}
+                                                        title={customer.is_blacklisted ? 'Manage blacklist' : 'Add to blacklist'}
+                                                    >
+                                                        <Shield className="h-4 w-4" />
                                                     </Button>
                                                     <Button
                                                         size="sm"
@@ -765,6 +837,109 @@ export default function Customers() {
                     )}
                 </DialogContent>
             </Dialog>
+
+            {/* Standalone Blacklist Modal */}
+            <Dialog open={isBlacklistModalOpen} onOpenChange={setIsBlacklistModalOpen}>
+                <DialogContent className="max-w-md">
+                    <DialogHeader>
+                        <DialogTitle className="flex items-center gap-2">
+                            <Shield className="h-5 w-5" />
+                            Blacklist Management
+                        </DialogTitle>
+                    </DialogHeader>
+                    {blacklistingCustomer && (
+                        <div className="space-y-4">
+                            <div className="p-3 bg-gray-50 rounded-lg">
+                                <p className="text-sm font-medium text-gray-700">Customer</p>
+                                <p className="text-sm text-gray-900">{blacklistingCustomer.first_name} {blacklistingCustomer.last_name}</p>
+                                <p className="text-sm text-gray-600">{blacklistingCustomer.email}</p>
+                                <span className={`inline-block mt-2 px-2 py-1 rounded-full text-xs font-medium ${
+                                    blacklistingCustomer.customer_type === 'guest'
+                                        ? 'bg-gray-100 text-gray-700'
+                                        : 'bg-blue-100 text-blue-700'
+                                }`}>
+                                    {blacklistingCustomer.customer_type === 'guest' ? 'Guest' : 'Registered'}
+                                </span>
+                            </div>
+
+                            <div className="space-y-3 p-4 border rounded-lg" style={{ backgroundColor: isBlacklisted ? '#fee2e2' : '#f0fdf4' }}>
+                                <div className="flex items-center gap-2">
+                                    {isBlacklisted ? (
+                                        <Ban className="h-5 w-5 text-red-600" />
+                                    ) : (
+                                        <CheckCircle className="h-5 w-5 text-green-600" />
+                                    )}
+                                    <h4 className="font-medium">
+                                        {isBlacklisted ? 'Currently Blacklisted' : 'Currently Active'}
+                                    </h4>
+                                </div>
+                                <p className="text-sm text-gray-600">
+                                    {isBlacklisted
+                                        ? blacklistingCustomer.customer_type === 'guest'
+                                            ? 'This email is blacklisted and cannot be used for checkout'
+                                            : 'This customer is blacklisted and cannot log in or checkout'
+                                        : blacklistingCustomer.customer_type === 'guest'
+                                            ? 'This email can be used for checkout'
+                                            : 'This customer can log in and checkout normally'}
+                                </p>
+                            </div>
+
+                            {blacklistingCustomer.customer_type === 'guest' && (
+                                <div className="p-3 bg-amber-50 border border-amber-200 rounded text-xs text-amber-700">
+                                    Note: Guest customers don't have accounts. Only their email can be blacklisted.
+                                </div>
+                            )}
+
+                            <div>
+                                <Label htmlFor="modal_blacklist_reason">Blacklist Reason (optional)</Label>
+                                <Textarea
+                                    id="modal_blacklist_reason"
+                                    value={blacklistReason}
+                                    onChange={(e) => setBlacklistReason(e.target.value)}
+                                    placeholder="Enter reason for blacklisting..."
+                                    rows={3}
+                                    disabled={saving}
+                                />
+                            </div>
+
+                            {!isBlacklisted && blacklistingCustomer.customer_type === 'registered' && (
+                                <div className="flex items-center space-x-2 p-3 bg-blue-50 border border-blue-200 rounded">
+                                    <Switch
+                                        id="modal_add_email_to_blacklist"
+                                        checked={addEmailToBlacklist}
+                                        onCheckedChange={(checked) => setAddEmailToBlacklist(checked)}
+                                        disabled={saving}
+                                    />
+                                    <Label htmlFor="modal_add_email_to_blacklist" className="text-sm cursor-pointer">
+                                        Also add email to blacklist table
+                                    </Label>
+                                </div>
+                            )}
+
+                            <div className="flex justify-end space-x-2 pt-4">
+                                <Button
+                                    type="button"
+                                    variant="outline"
+                                    onClick={() => setIsBlacklistModalOpen(false)}
+                                    disabled={saving}
+                                >
+                                    Cancel
+                                </Button>
+                                <Button
+                                    type="button"
+                                    onClick={blacklistingCustomer.customer_type === 'guest' ? handleGuestBlacklist : handleToggleBlacklistFromModal}
+                                    disabled={saving}
+                                    className={isBlacklisted ? 'bg-green-600 hover:bg-green-700' : 'bg-red-600 hover:bg-red-700'}
+                                >
+                                    <Ban className="h-4 w-4 mr-2" />
+                                    {isBlacklisted ? 'Remove from Blacklist' : 'Add to Blacklist'}
+                                </Button>
+                            </div>
+                        </div>
+                    )}
+                </DialogContent>
+            </Dialog>
+
             <AlertComponent />
         </div>
     );
