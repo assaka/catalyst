@@ -1237,8 +1237,6 @@ router.post('/create-checkout', async (req, res) => {
 
     // Create checkout session
     // For connected accounts, use Destination Charge pattern so platform receives webhooks
-    let createSessionOptions = {};
-
     if (store.stripe_account_id) {
       // Use Destination Charge: session created on platform, funds transferred to connected account
       // This way platform webhook receives the events!
@@ -1255,7 +1253,8 @@ router.post('/create-checkout', async (req, res) => {
       console.log('💰 No connected account - direct platform charge');
     }
 
-    const session = await stripe.checkout.sessions.create(sessionConfig, createSessionOptions);
+    // Create session without options object (Destination Charge uses payment_intent_data in config)
+    const session = await stripe.checkout.sessions.create(sessionConfig);
 
     console.log('Created Stripe session:', {
       id: session.id,
