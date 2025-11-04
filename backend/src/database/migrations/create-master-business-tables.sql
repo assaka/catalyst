@@ -185,98 +185,6 @@ CREATE INDEX idx_platform_admins_role ON platform_admins(role);
 CREATE INDEX idx_platform_admins_is_active ON platform_admins(is_active);
 
 -- ==========================================
--- STORE ANALYTICS TABLE
--- ==========================================
-CREATE TABLE IF NOT EXISTS store_analytics (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  store_id UUID NOT NULL REFERENCES stores(id) ON DELETE CASCADE,
-
-  -- Period
-  period_type VARCHAR(20) NOT NULL, -- 'daily', 'weekly', 'monthly'
-  period_start DATE NOT NULL,
-  period_end DATE NOT NULL,
-
-  -- Revenue
-  revenue_total DECIMAL(10,2) DEFAULT 0,
-  revenue_avg_order DECIMAL(10,2) DEFAULT 0,
-
-  -- Orders
-  orders_count INTEGER DEFAULT 0,
-  orders_conversion_rate DECIMAL(5,2) DEFAULT 0,
-
-  -- Products
-  products_best_selling JSONB DEFAULT '[]', -- [{id, name, quantity_sold, revenue}]
-  products_low_stock JSONB DEFAULT '[]',
-
-  -- Customers
-  customers_new INTEGER DEFAULT 0,
-  customers_returning INTEGER DEFAULT 0,
-  customers_lifetime_value DECIMAL(10,2) DEFAULT 0,
-
-  -- Traffic
-  traffic_sessions INTEGER DEFAULT 0,
-  traffic_page_views INTEGER DEFAULT 0,
-  traffic_bounce_rate DECIMAL(5,2) DEFAULT 0,
-
-  -- Metadata
-  metadata JSONB DEFAULT '{}',
-
-  created_at TIMESTAMP DEFAULT NOW(),
-  updated_at TIMESTAMP DEFAULT NOW(),
-
-  UNIQUE(store_id, period_type, period_start)
-);
-
-CREATE INDEX idx_store_analytics_store_id ON store_analytics(store_id);
-CREATE INDEX idx_store_analytics_period ON store_analytics(period_start DESC);
-
--- ==========================================
--- AUDIT LOGS TABLE
--- ==========================================
-CREATE TABLE IF NOT EXISTS audit_logs (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-
-  -- Actor (who did it)
-  user_id UUID REFERENCES users(id) ON DELETE SET NULL,
-  user_email VARCHAR(255),
-  user_role VARCHAR(50),
-
-  -- Target (what was affected)
-  store_id UUID REFERENCES stores(id) ON DELETE CASCADE,
-  entity_type VARCHAR(100), -- 'store', 'subscription', 'product', 'order', etc.
-  entity_id UUID,
-
-  -- Action
-  action VARCHAR(100) NOT NULL, -- 'create', 'update', 'delete', 'login', 'export', etc.
-  action_category VARCHAR(50), -- 'auth', 'billing', 'data', 'settings'
-  description TEXT,
-
-  -- Changes
-  changes_before JSONB,
-  changes_after JSONB,
-
-  -- Request context
-  ip_address VARCHAR(45),
-  user_agent TEXT,
-  request_id VARCHAR(100),
-
-  -- Status
-  status VARCHAR(20) DEFAULT 'success', -- 'success', 'failed', 'warning'
-  error_message TEXT,
-
-  -- Metadata
-  metadata JSONB DEFAULT '{}',
-
-  created_at TIMESTAMP DEFAULT NOW()
-);
-
-CREATE INDEX idx_audit_logs_user_id ON audit_logs(user_id);
-CREATE INDEX idx_audit_logs_store_id ON audit_logs(store_id);
-CREATE INDEX idx_audit_logs_entity ON audit_logs(entity_type, entity_id);
-CREATE INDEX idx_audit_logs_action ON audit_logs(action);
-CREATE INDEX idx_audit_logs_created_at ON audit_logs(created_at DESC);
-
--- ==========================================
 -- UPDATE STORES TABLE
 -- ==========================================
 -- Add new columns to existing stores table
@@ -543,8 +451,6 @@ COMMENT ON TABLE subscriptions IS 'Store subscription plans and billing cycles';
 COMMENT ON TABLE billing_transactions IS 'Payment transactions and invoices';
 COMMENT ON TABLE usage_metrics IS 'Resource usage tracking per store';
 COMMENT ON TABLE platform_admins IS 'Platform administrators with elevated permissions';
-COMMENT ON TABLE store_analytics IS 'Aggregated analytics and business intelligence';
-COMMENT ON TABLE audit_logs IS 'Audit trail for all significant actions';
 
 COMMENT ON FUNCTION exec_sql IS 'Execute arbitrary SQL - used by DatabaseProvisioningService';
 COMMENT ON FUNCTION get_monthly_usage IS 'Get aggregated usage metrics for a store for a specific month';
@@ -565,8 +471,6 @@ WHERE schemaname = 'public'
     'subscriptions',
     'billing_transactions',
     'usage_metrics',
-    'platform_admins',
-    'store_analytics',
-    'audit_logs'
+    'platform_admins'
   )
 ORDER BY tablename;
