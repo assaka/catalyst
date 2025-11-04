@@ -429,6 +429,14 @@ router.get('/transactions', authMiddleware, async (req, res) => {
     // Credit purchases are global to the user, not per store - ignore store_id
     const limit = parseInt(req.query.limit) || 50;
 
+    console.log('📋 [Transactions] Request received:', {
+      userId,
+      storeIdFromQuery: req.query.store_id,
+      storeIdFromHeader: req.headers['x-store-id'],
+      passingStoreIdToQuery: null,
+      limit
+    });
+
     if (limit < 1 || limit > 200) {
       return res.status(400).json({
         success: false,
@@ -438,6 +446,11 @@ router.get('/transactions', authMiddleware, async (req, res) => {
 
     const CreditTransaction = require('../models/CreditTransaction');
     const transactions = await CreditTransaction.getUserTransactions(userId, null, limit);
+
+    console.log('📋 [Transactions] Found transactions:', {
+      count: transactions.length,
+      transactionIds: transactions.map(t => t.id)
+    });
 
     res.json({
       success: true,
