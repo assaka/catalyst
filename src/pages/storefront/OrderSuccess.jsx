@@ -28,11 +28,12 @@ import { getProductName, getCurrentLanguage } from '@/utils/translationUtils';
 import cartService from '@/services/cartService';
 import { t } from '@/utils/translationHelper';
 import { useStore } from '@/components/storefront/StoreProvider';
+import storefrontApiClient from '@/api/storefront-client';
 
 export default function OrderSuccess() {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
-  const { settings } = useStore();
+  const { settings, store } = useStore();
   const [storeCode, setStoreCode] = useState(null);
 
   // Get session ID from URL
@@ -257,7 +258,8 @@ export default function OrderSuccess() {
 
       // Auto-login the user by storing the token
       if (result.data?.token) {
-        localStorage.setItem('customer_auth_token', result.data.token);
+        // Store token using the correct method (store-specific key)
+        storefrontApiClient.setCustomerToken(result.data.token, store?.slug);
 
         // Save the shipping address from the order to the customer's addresses
         if (order.shipping_address && result.data?.customer?.id) {

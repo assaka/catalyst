@@ -3,6 +3,7 @@ import { useNavigate, useParams } from "react-router-dom";
 import { User } from "@/api/entities";
 import { Auth as AuthService } from "@/api/entities";
 import apiClient from "@/api/client";
+import storefrontApiClient from "@/api/storefront-client";
 import { createPublicUrl } from "@/utils/urlUtils";
 import { useStore } from "@/components/storefront/StoreProvider";
 import slotConfigurationService from '@/services/slotConfigurationService';
@@ -163,9 +164,8 @@ export default function CustomerAuth() {
             // Clear logged out flag before setting token
             localStorage.removeItem('user_logged_out');
 
-            // Store token
-            localStorage.setItem('customer_auth_token', token);
-            apiClient.setToken(token);
+            // Store token using the correct method (store-specific key)
+            storefrontApiClient.setCustomerToken(token, store?.slug);
 
             // Navigate to customer account
             const accountUrl = await getCustomerAccountUrl();
@@ -218,8 +218,8 @@ export default function CustomerAuth() {
             // Clear logged out flag before setting token
             localStorage.removeItem('user_logged_out');
 
-            localStorage.setItem('customer_auth_token', token);
-            apiClient.setToken(token);
+            // Store token using the correct method (store-specific key)
+            storefrontApiClient.setCustomerToken(token, store?.slug);
 
             // Wait a moment to show the success message before redirecting
             setTimeout(async () => {

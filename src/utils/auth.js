@@ -2,6 +2,7 @@ import { Auth } from '@/api/entities';
 import { createPageUrl } from '@/utils';
 import { createAdminUrl, createPublicUrl, getCurrentUrlType, getStoreSlugFromPublicUrl } from '@/utils/urlUtils';
 import apiClient from '@/api/client';
+import storefrontApiClient from '@/api/storefront-client';
 
 /**
  * Standardized logout function that handles:
@@ -200,7 +201,8 @@ export const clearRoleBasedAuthData = (role) => {
 export const setRoleBasedAuthData = (user, token, storeSlug = null) => {
   // Store role-specific data separately to maintain both sessions
   if (user.role === 'customer') {
-    localStorage.setItem('customer_auth_token', token);
+    // Store token using the correct method (store-specific key)
+    storefrontApiClient.setCustomerToken(token, storeSlug);
     localStorage.setItem('customer_user_data', JSON.stringify(user));
     localStorage.setItem('customer_session_id', generateSessionId());
 
@@ -210,7 +212,6 @@ export const setRoleBasedAuthData = (user, token, storeSlug = null) => {
       console.log('🔒 Customer session bound to store:', storeSlug);
     }
 
-    apiClient.setToken(token);
     console.log('✅ Customer session stored');
 
   } else if (user.role === 'store_owner' || user.role === 'admin') {

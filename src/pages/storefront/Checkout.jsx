@@ -42,6 +42,7 @@ import { Auth as AuthService } from "@/api/entities";
 import { CustomerAuth } from "@/api/storefront-entities";
 import CmsBlockRenderer from "@/components/storefront/CmsBlockRenderer";
 import apiClient from "@/api/client";
+import storefrontApiClient from "@/api/storefront-client";
 import StepIndicator from "@/components/storefront/StepIndicator";
 import { formatPrice as formatPriceUtil } from '@/utils/priceUtils';
 import { getProductName, getCurrentLanguage, getShippingMethodName, getShippingMethodDescription, getPaymentMethodName, getPaymentMethodDescription, getTranslatedField } from '@/utils/translationUtils';
@@ -876,9 +877,8 @@ export default function Checkout() {
           // Clear logged out flag before setting token
           localStorage.removeItem('user_logged_out');
 
-          // Store token
-          localStorage.setItem('customer_auth_token', token);
-          apiClient.setToken(token);
+          // Store token using the correct method (store-specific key)
+          storefrontApiClient.setCustomerToken(token, store?.slug);
 
           // Reload checkout data with authenticated user
           // The cart service will automatically merge guest cart with user cart
