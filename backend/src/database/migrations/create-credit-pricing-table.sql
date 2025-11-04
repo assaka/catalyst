@@ -22,17 +22,13 @@ CREATE INDEX IF NOT EXISTS idx_credit_pricing_stripe_price_id ON credit_pricing(
 CREATE INDEX IF NOT EXISTS idx_credit_pricing_active ON credit_pricing(active);
 
 -- Insert default pricing (without Stripe Price IDs - to be configured later)
-INSERT INTO credit_pricing (credits, amount, currency, popular, display_order, metadata) VALUES
--- USD Pricing
-(100, 10.00, 'usd', false, 1, '{"description": "Starter package"}'),
-(550, 50.00, 'usd', true, 2, '{"description": "Most popular package"}'),
-(1200, 100.00, 'usd', false, 3, '{"description": "Best value package"}'),
-
--- EUR Pricing
-(100, 9.00, 'eur', false, 1, '{"description": "Starter package"}'),
-(550, 46.00, 'eur', true, 2, '{"description": "Most popular package"}'),
-(1200, 92.00, 'eur', false, 3, '{"description": "Best value package"}')
-
+INSERT INTO credit_pricing (credits, amount, currency, popular, display_order) VALUES
+(100, 10.00, 'usd', false, 1),
+(550, 50.00, 'usd', true, 2),
+(1200, 100.00, 'usd', false, 3),
+(100, 9.00, 'eur', false, 1),
+(550, 46.00, 'eur', true, 2),
+(1200, 92.00, 'eur', false, 3)
 ON CONFLICT (credits, currency) DO NOTHING;
 
 -- Trigger to update updated_at
