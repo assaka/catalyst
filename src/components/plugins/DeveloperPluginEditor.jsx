@@ -3,7 +3,7 @@
  * Full code editor with file tree viewer and AI assistance
  */
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -496,9 +496,27 @@ const DeveloperPluginEditor = ({
     setOriginalContent(file.content || '');
   };
 
-  const handleCodeChange = (newCode) => {
+  // Memoize handleCodeChange to prevent unnecessary re-renders
+  const handleCodeChange = useCallback((newCode) => {
     setFileContent(newCode);
-  };
+  }, []);
+
+  // Memoize CodeEditor to prevent unnecessary reloads when unrelated state changes
+  const memoizedCodeEditor = useMemo(() => {
+    if (!selectedFile) return null;
+
+    return (
+      <CodeEditor
+        value={fileContent}
+        onChange={handleCodeChange}
+        fileName={selectedFile.name}
+        originalCode={originalContent}
+        enableDiffDetection={true}
+        enableTabs={false}
+        className="h-full"
+      />
+    );
+  }, [fileContent, selectedFile, originalContent, handleCodeChange]);
 
   const handleSave = async () => {
     if (!selectedFile) {
@@ -1454,15 +1472,7 @@ const DeveloperPluginEditor = ({
                 {/* Code Editor */}
                 <div className="flex-1 overflow-hidden">
                   {selectedFile ? (
-                    <CodeEditor
-                      value={fileContent}
-                      onChange={handleCodeChange}
-                      fileName={selectedFile.name}
-                      originalCode={originalContent}
-                      enableDiffDetection={true}
-                      enableTabs={false}
-                      className="h-full"
-                    />
+                    memoizedCodeEditor
                   ) : (
                     <div className="h-full flex items-center justify-center text-gray-500">
                       <div className="text-center">
