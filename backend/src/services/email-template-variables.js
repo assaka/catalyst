@@ -54,6 +54,41 @@ const EMAIL_VARIABLES = {
     { key: '{{store_url}}', description: 'Store URL', example: 'https://mystore.com' },
     { key: '{{order_details_url}}', description: 'Link to view order details', example: 'https://mystore.com/order/12345' },
     { key: '{{current_year}}', description: 'Current year', example: '2025' }
+  ],
+
+  // Invoice Email Variables
+  invoice_email: [
+    { key: '{{customer_name}}', description: 'Customer full name', example: 'John Doe' },
+    { key: '{{customer_first_name}}', description: 'Customer first name', example: 'John' },
+    { key: '{{customer_email}}', description: 'Customer email address', example: 'john@example.com' },
+    { key: '{{customer_phone}}', description: 'Customer phone number', example: '+1 (555) 123-4567' },
+    { key: '{{store_name}}', description: 'Store name', example: 'My Awesome Store' },
+    { key: '{{store_address}}', description: 'Store address', example: '123 Business St, City, State 12345' },
+    { key: '{{store_phone}}', description: 'Store phone number', example: '+1 (555) 987-6543' },
+    { key: '{{store_email}}', description: 'Store email', example: 'info@mystore.com' },
+    { key: '{{invoice_number}}', description: 'Invoice number', example: 'INV-2025-001234' },
+    { key: '{{invoice_date}}', description: 'Invoice date', example: 'January 15, 2025' },
+    { key: '{{due_date}}', description: 'Payment due date', example: 'January 30, 2025' },
+    { key: '{{order_number}}', description: 'Related order number', example: 'ORD-12345' },
+    { key: '{{order_date}}', description: 'Order date', example: 'January 15, 2025' },
+    { key: '{{invoice_total}}', description: 'Total invoice amount', example: '$125.99' },
+    { key: '{{invoice_subtotal}}', description: 'Subtotal before tax', example: '$100.00' },
+    { key: '{{invoice_tax}}', description: 'Tax amount', example: '$10.00' },
+    { key: '{{invoice_shipping}}', description: 'Shipping cost', example: '$15.99' },
+    { key: '{{invoice_discount}}', description: 'Discount amount', example: '$5.00' },
+    { key: '{{items_html}}', description: 'HTML table of invoice items', example: '<table>...</table>' },
+    { key: '{{items_count}}', description: 'Number of items', example: '3' },
+    { key: '{{billing_address}}', description: 'Billing address', example: '123 Main St, City, State 12345' },
+    { key: '{{shipping_address}}', description: 'Shipping address', example: '123 Main St, City, State 12345' },
+    { key: '{{payment_method}}', description: 'Payment method', example: 'Credit Card ending in 4242' },
+    { key: '{{payment_status}}', description: 'Payment status', example: 'Paid' },
+    { key: '{{payment_date}}', description: 'Payment date', example: 'January 15, 2025' },
+    { key: '{{transaction_id}}', description: 'Transaction ID', example: 'TXN-12345' },
+    { key: '{{tax_id}}', description: 'Customer tax ID/VAT number', example: 'VAT123456789' },
+    { key: '{{notes}}', description: 'Invoice notes or terms', example: 'Thank you for your business!' },
+    { key: '{{store_url}}', description: 'Store URL', example: 'https://mystore.com' },
+    { key: '{{invoice_url}}', description: 'Link to view invoice online', example: 'https://mystore.com/invoice/12345' },
+    { key: '{{current_year}}', description: 'Current year', example: '2025' }
   ]
 };
 

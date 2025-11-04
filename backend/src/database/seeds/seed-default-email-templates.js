@@ -217,7 +217,231 @@ Transaction ID: {{transaction_id}}
         console.log('  ⏭️ Credit purchase email template already exists');
       }
 
-      // 3. Order Success Email Template
+      // 3. Invoice Email Template
+      const invoiceExists = await EmailTemplate.findOne({
+        where: { store_id: store.id, identifier: 'invoice_email' }
+      });
+
+      if (!invoiceExists) {
+        await EmailTemplate.create({
+          store_id: store.id,
+          identifier: 'invoice_email',
+          subject: 'Invoice #{{invoice_number}} from {{store_name}}',
+          content_type: 'both',
+          template_content: `
+INVOICE #{{invoice_number}}
+
+From: {{store_name}}
+{{store_address}}
+{{store_phone}} | {{store_email}}
+
+Bill To:
+{{customer_name}}
+{{billing_address}}
+{{customer_email}}
+{{customer_phone}}
+
+Invoice Details:
+- Invoice Number: {{invoice_number}}
+- Invoice Date: {{invoice_date}}
+- Due Date: {{due_date}}
+- Order Number: {{order_number}}
+- Payment Status: {{payment_status}}
+
+Items ({{items_count}}):
+{{items_html}}
+
+Summary:
+- Subtotal: {{invoice_subtotal}}
+- Shipping: {{invoice_shipping}}
+- Tax: {{invoice_tax}}
+- Discount: {{invoice_discount}}
+- TOTAL: {{invoice_total}}
+
+Payment Information:
+- Payment Method: {{payment_method}}
+- Transaction ID: {{transaction_id}}
+- Payment Date: {{payment_date}}
+
+{{notes}}
+
+View invoice online: {{invoice_url}}
+
+Thank you for your business!
+
+---
+{{store_name}} | {{store_url}}
+Invoice #{{invoice_number}} | {{invoice_date}}
+          `.trim(),
+          html_content: `
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Invoice #{{invoice_number}}</title>
+</head>
+<body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 800px; margin: 0 auto; padding: 20px; background-color: #f5f5f5;">
+  <div style="background: white; padding: 40px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1);">
+
+    <!-- Header -->
+    <div style="border-bottom: 3px solid #2c3e50; padding-bottom: 20px; margin-bottom: 30px;">
+      <table style="width: 100%;">
+        <tr>
+          <td style="vertical-align: top;">
+            <h1 style="margin: 0; color: #2c3e50; font-size: 28px;">INVOICE</h1>
+            <p style="margin: 5px 0 0 0; color: #7f8c8d; font-size: 18px;">#{{invoice_number}}</p>
+          </td>
+          <td style="text-align: right; vertical-align: top;">
+            <h2 style="margin: 0; color: #2c3e50; font-size: 24px;">{{store_name}}</h2>
+            <p style="margin: 5px 0 0 0; color: #7f8c8d; font-size: 14px; line-height: 1.5;">
+              {{store_address}}<br>
+              {{store_phone}}<br>
+              {{store_email}}
+            </p>
+          </td>
+        </tr>
+      </table>
+    </div>
+
+    <!-- Invoice Info -->
+    <div style="margin-bottom: 30px;">
+      <table style="width: 100%;">
+        <tr>
+          <td style="vertical-align: top; width: 50%;">
+            <div style="background: #ecf0f1; padding: 20px; border-radius: 8px;">
+              <h3 style="margin: 0 0 10px 0; color: #2c3e50; font-size: 16px;">Bill To:</h3>
+              <p style="margin: 0; line-height: 1.6;">
+                <strong>{{customer_name}}</strong><br>
+                {{billing_address}}<br>
+                {{customer_email}}<br>
+                {{customer_phone}}
+              </p>
+            </div>
+          </td>
+          <td style="vertical-align: top; width: 50%; padding-left: 20px;">
+            <table style="width: 100%; font-size: 14px;">
+              <tr>
+                <td style="padding: 8px 0; color: #7f8c8d;"><strong>Invoice Date:</strong></td>
+                <td style="padding: 8px 0; text-align: right;">{{invoice_date}}</td>
+              </tr>
+              <tr>
+                <td style="padding: 8px 0; color: #7f8c8d;"><strong>Due Date:</strong></td>
+                <td style="padding: 8px 0; text-align: right;">{{due_date}}</td>
+              </tr>
+              <tr>
+                <td style="padding: 8px 0; color: #7f8c8d;"><strong>Order Number:</strong></td>
+                <td style="padding: 8px 0; text-align: right;">{{order_number}}</td>
+              </tr>
+              <tr>
+                <td style="padding: 8px 0; color: #7f8c8d;"><strong>Payment Status:</strong></td>
+                <td style="padding: 8px 0; text-align: right;">
+                  <span style="background: #27ae60; color: white; padding: 4px 12px; border-radius: 12px; font-size: 12px; font-weight: bold;">{{payment_status}}</span>
+                </td>
+              </tr>
+            </table>
+          </td>
+        </tr>
+      </table>
+    </div>
+
+    <!-- Items Table -->
+    <div style="margin-bottom: 30px;">
+      <h3 style="margin: 0 0 15px 0; color: #2c3e50; font-size: 18px;">Invoice Items ({{items_count}})</h3>
+      {{items_html}}
+    </div>
+
+    <!-- Totals -->
+    <div style="margin-bottom: 30px;">
+      <table style="width: 100%; max-width: 400px; margin-left: auto;">
+        <tr>
+          <td style="padding: 10px 0; border-bottom: 1px solid #ecf0f1;"><strong>Subtotal:</strong></td>
+          <td style="padding: 10px 0; text-align: right; border-bottom: 1px solid #ecf0f1;">{{invoice_subtotal}}</td>
+        </tr>
+        <tr>
+          <td style="padding: 10px 0; border-bottom: 1px solid #ecf0f1;"><strong>Shipping:</strong></td>
+          <td style="padding: 10px 0; text-align: right; border-bottom: 1px solid #ecf0f1;">{{invoice_shipping}}</td>
+        </tr>
+        <tr>
+          <td style="padding: 10px 0; border-bottom: 1px solid #ecf0f1;"><strong>Tax:</strong></td>
+          <td style="padding: 10px 0; text-align: right; border-bottom: 1px solid #ecf0f1;">{{invoice_tax}}</td>
+        </tr>
+        <tr>
+          <td style="padding: 10px 0; border-bottom: 1px solid #ecf0f1;"><strong>Discount:</strong></td>
+          <td style="padding: 10px 0; text-align: right; border-bottom: 1px solid #ecf0f1; color: #27ae60;">-{{invoice_discount}}</td>
+        </tr>
+        <tr style="background: #2c3e50;">
+          <td style="padding: 15px 10px; color: white;"><strong style="font-size: 18px;">TOTAL:</strong></td>
+          <td style="padding: 15px 10px; text-align: right; color: white; font-size: 20px; font-weight: bold;">{{invoice_total}}</td>
+        </tr>
+      </table>
+    </div>
+
+    <!-- Payment Information -->
+    <div style="background: #ecf0f1; padding: 20px; border-radius: 8px; margin-bottom: 30px;">
+      <h3 style="margin: 0 0 15px 0; color: #2c3e50; font-size: 16px;">Payment Information</h3>
+      <table style="width: 100%; font-size: 14px;">
+        <tr>
+          <td style="padding: 5px 0; color: #7f8c8d; width: 40%;"><strong>Payment Method:</strong></td>
+          <td style="padding: 5px 0;">{{payment_method}}</td>
+        </tr>
+        <tr>
+          <td style="padding: 5px 0; color: #7f8c8d;"><strong>Transaction ID:</strong></td>
+          <td style="padding: 5px 0;">{{transaction_id}}</td>
+        </tr>
+        <tr>
+          <td style="padding: 5px 0; color: #7f8c8d;"><strong>Payment Date:</strong></td>
+          <td style="padding: 5px 0;">{{payment_date}}</td>
+        </tr>
+      </table>
+    </div>
+
+    <!-- Notes -->
+    <div style="background: #fff9e6; border-left: 4px solid #f39c12; padding: 15px; border-radius: 4px; margin-bottom: 30px;">
+      <p style="margin: 0; color: #7f8c8d; font-size: 14px; line-height: 1.6;">
+        {{notes}}
+      </p>
+    </div>
+
+    <!-- View Online Button -->
+    <div style="text-align: center; margin: 30px 0;">
+      <a href="{{invoice_url}}" style="background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%); color: white; padding: 14px 40px; text-decoration: none; border-radius: 5px; display: inline-block; font-weight: bold; font-size: 16px;">
+        View Invoice Online
+      </a>
+    </div>
+
+    <!-- Footer -->
+    <hr style="border: none; border-top: 2px solid #ecf0f1; margin: 30px 0;">
+    <div style="text-align: center;">
+      <p style="color: #7f8c8d; font-size: 12px; margin: 10px 0;">
+        Thank you for your business!<br>
+        <a href="{{store_url}}" style="color: #3498db; text-decoration: none;">{{store_name}}</a>
+      </p>
+      <p style="color: #bdc3c7; font-size: 11px; margin: 10px 0;">
+        Invoice #{{invoice_number}} | Issued: {{invoice_date}}<br>
+        © {{current_year}} {{store_name}}. All rights reserved.
+      </p>
+    </div>
+
+  </div>
+</body>
+</html>
+          `.trim(),
+          variables: getVariablesForTemplate('invoice_email'),
+          is_active: true,
+          sort_order: 4,
+          attachment_enabled: true,
+          attachment_config: {
+            generateInvoicePdf: true,
+            attachInvoiceDetails: true
+          }
+        });
+        console.log('  ✅ Created invoice_email template');
+      } else {
+        console.log('  ⏭️ Invoice email template already exists');
+      }
+
+      // 4. Order Success Email Template
       const orderExists = await EmailTemplate.findOne({
         where: { store_id: store.id, identifier: 'order_success_email' }
       });
