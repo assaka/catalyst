@@ -311,19 +311,37 @@ router.delete('/:id', authMiddleware, async (req, res) => {
 // @access  Private (Store Owner Only)
 router.put('/:id/blacklist', storeOwnerOnly, async (req, res) => {
   try {
+    console.log('🔒 Blacklist request received:', {
+      customerId: req.params.id,
+      body: req.body,
+      store_id: req.query.store_id
+    });
+
     const { is_blacklisted, blacklist_reason } = req.body;
     const customer = await Customer.findByPk(req.params.id);
 
     if (!customer) {
+      console.log('❌ Customer not found:', req.params.id);
       return res.status(404).json({
         success: false,
         message: 'Customer not found'
       });
     }
 
+    console.log('👤 Customer found:', {
+      id: customer.id,
+      email: customer.email,
+      store_id: customer.store_id,
+      current_is_blacklisted: customer.is_blacklisted
+    });
+
     // Verify customer belongs to the store
     const { store_id } = req.query;
     if (customer.store_id !== parseInt(store_id)) {
+      console.log('❌ Store ID mismatch:', {
+        customer_store_id: customer.store_id,
+        requested_store_id: parseInt(store_id)
+      });
       return res.status(403).json({
         success: false,
         message: 'Access denied. Customer belongs to a different store.'
@@ -331,10 +349,20 @@ router.put('/:id/blacklist', storeOwnerOnly, async (req, res) => {
     }
 
     // Update blacklist status
+    console.log('🔄 Updating customer blacklist status to:', is_blacklisted);
     await customer.update({
       is_blacklisted: is_blacklisted,
       blacklist_reason: is_blacklisted ? blacklist_reason : null,
       blacklisted_at: is_blacklisted ? new Date() : null
+    });
+
+    // Reload to get fresh data
+    await customer.reload();
+
+    console.log('✅ Customer updated successfully:', {
+      id: customer.id,
+      is_blacklisted: customer.is_blacklisted,
+      blacklist_reason: customer.blacklist_reason
     });
 
     res.json({
@@ -343,10 +371,11 @@ router.put('/:id/blacklist', storeOwnerOnly, async (req, res) => {
       message: is_blacklisted ? 'Customer blacklisted successfully' : 'Customer removed from blacklist successfully'
     });
   } catch (error) {
-    console.error('Blacklist customer error:', error);
+    console.error('❌ Blacklist customer error:', error);
     res.status(500).json({
       success: false,
-      message: 'Server error'
+      message: 'Server error',
+      error: error.message
     });
   }
 });
