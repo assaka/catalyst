@@ -24,8 +24,8 @@ export default function Customers() {
     const [isViewOnly, setIsViewOnly] = useState(false);
     const [saving, setSaving] = useState(false);
     const [saveSuccess, setSaveSuccess] = useState(false);
-    const [isBlocked, setIsBlocked] = useState(false);
-    const [blockedReason, setBlockedReason] = useState('');
+    const [isBlacklisted, setIsBlacklisted] = useState(false);
+    const [blacklistReason, setBlacklistReason] = useState('');
 
     useEffect(() => {
         if (selectedStore) {
@@ -93,8 +93,8 @@ export default function Customers() {
     const handleEditCustomer = (customer) => {
         setEditingCustomer(customer);
         setIsViewOnly(customer.customer_type === 'guest'); // View-only for guest customers
-        setIsBlocked(customer.is_blocked || false);
-        setBlockedReason(customer.blocked_reason || '');
+        setIsBlacklisted(customer.is_blacklisted || false);
+        setBlacklistReason(customer.blacklist_reason || '');
         setIsEditModalOpen(true);
     };
 
@@ -112,40 +112,40 @@ export default function Customers() {
         }
     };
 
-    const handleToggleBlock = async () => {
+    const handleToggleBlacklist = async () => {
         if (!editingCustomer) return;
 
-        const willBlock = !isBlocked;
-        if (willBlock && !window.confirm('Are you sure you want to block this customer? They will not be able to log in or checkout.')) {
+        const willBlacklist = !isBlacklisted;
+        if (willBlacklist && !window.confirm('Are you sure you want to blacklist this customer? They will not be able to log in or checkout.')) {
             return;
         }
 
         setSaving(true);
         try {
             const storeId = getSelectedStoreId();
-            const response = await fetch(`/api/customers/${editingCustomer.id}/block?store_id=${storeId}`, {
+            const response = await fetch(`/api/customers/${editingCustomer.id}/blacklist?store_id=${storeId}`, {
                 method: 'PUT',
                 headers: {
                     'Content-Type': 'application/json',
                     'Authorization': `Bearer ${localStorage.getItem('token')}`
                 },
                 body: JSON.stringify({
-                    is_blocked: willBlock,
-                    blocked_reason: willBlock ? blockedReason : null
+                    is_blacklisted: willBlacklist,
+                    blacklist_reason: willBlacklist ? blacklistReason : null
                 })
             });
 
             if (!response.ok) {
-                throw new Error('Failed to update block status');
+                throw new Error('Failed to update blacklist status');
             }
 
             const result = await response.json();
 
             // Update local state
-            setIsBlocked(willBlock);
+            setIsBlacklisted(willBlacklist);
             setCustomers(customers.map(c =>
                 c.id === editingCustomer.id
-                    ? { ...c, is_blocked: willBlock, blocked_reason: willBlock ? blockedReason : null }
+                    ? { ...c, is_blacklisted: willBlacklist, blacklist_reason: willBlacklist ? blacklistReason : null }
                     : c
             ));
 
@@ -153,8 +153,8 @@ export default function Customers() {
             setSaveSuccess(true);
             setTimeout(() => setSaveSuccess(false), 2000);
         } catch (error) {
-            console.error('Error toggling block status:', error);
-            showError('Failed to update block status. Please try again.');
+            console.error('Error toggling blacklist status:', error);
+            showError('Failed to update blacklist status. Please try again.');
         } finally {
             setSaving(false);
         }
@@ -320,10 +320,10 @@ export default function Customers() {
                                                 </span>
                                             </td>
                                             <td className="py-3 px-4">
-                                                {customer.is_blocked ? (
+                                                {customer.is_blacklisted ? (
                                                     <span className="flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium bg-red-100 text-red-700 w-fit">
                                                         <Ban className="h-3 w-3" />
-                                                        Blocked
+                                                        Blacklisted
                                                     </span>
                                                 ) : (
                                                     <span className="px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-700">
@@ -447,38 +447,38 @@ export default function Customers() {
                                 />
                             </div>
 
-                            {/* Blocking Section - Only for registered customers */}
+                            {/* Blacklist Section - Only for registered customers */}
                             {!isViewOnly && (
                                 <div className="space-y-3 p-4 border rounded-lg bg-gray-50">
                                     <div className="flex items-center justify-between">
                                         <div>
                                             <h4 className="font-medium">Account Status</h4>
                                             <p className="text-sm text-gray-600 mt-1">
-                                                {isBlocked
-                                                    ? 'This customer is blocked and cannot log in or checkout'
+                                                {isBlacklisted
+                                                    ? 'This customer is blacklisted and cannot log in or checkout'
                                                     : 'This customer can log in and checkout normally'}
                                             </p>
                                         </div>
                                         <div className="flex items-center gap-2">
-                                            <Label htmlFor="is_blocked" className="text-sm">
-                                                {isBlocked ? 'Blocked' : 'Active'}
+                                            <Label htmlFor="is_blacklisted" className="text-sm">
+                                                {isBlacklisted ? 'Blacklisted' : 'Active'}
                                             </Label>
                                             <Switch
-                                                id="is_blocked"
-                                                checked={isBlocked}
-                                                onCheckedChange={(checked) => setIsBlocked(checked)}
+                                                id="is_blacklisted"
+                                                checked={isBlacklisted}
+                                                onCheckedChange={(checked) => setIsBlacklisted(checked)}
                                                 disabled={saving}
                                             />
                                         </div>
                                     </div>
-                                    {isBlocked && (
+                                    {isBlacklisted && (
                                         <div>
-                                            <Label htmlFor="blocked_reason">Block Reason (optional)</Label>
+                                            <Label htmlFor="blacklist_reason">Blacklist Reason (optional)</Label>
                                             <Textarea
-                                                id="blocked_reason"
-                                                value={blockedReason}
-                                                onChange={(e) => setBlockedReason(e.target.value)}
-                                                placeholder="Enter reason for blocking this customer..."
+                                                id="blacklist_reason"
+                                                value={blacklistReason}
+                                                onChange={(e) => setBlacklistReason(e.target.value)}
+                                                placeholder="Enter reason for blacklisting this customer..."
                                                 rows={3}
                                                 disabled={saving}
                                             />
@@ -486,12 +486,12 @@ export default function Customers() {
                                     )}
                                     <Button
                                         type="button"
-                                        onClick={handleToggleBlock}
+                                        onClick={handleToggleBlacklist}
                                         disabled={saving}
-                                        className={isBlocked ? 'bg-green-600 hover:bg-green-700' : 'bg-red-600 hover:bg-red-700'}
+                                        className={isBlacklisted ? 'bg-green-600 hover:bg-green-700' : 'bg-red-600 hover:bg-red-700'}
                                     >
                                         <Ban className="h-4 w-4 mr-2" />
-                                        {isBlocked ? 'Unblock Customer' : 'Block Customer'}
+                                        {isBlacklisted ? 'Remove from Blacklist' : 'Add to Blacklist'}
                                     </Button>
                                 </div>
                             )}

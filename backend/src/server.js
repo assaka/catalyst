@@ -47,6 +47,7 @@ const shippingRoutes = require('./routes/shipping');
 const taxRoutes = require('./routes/tax');
 const deliveryRoutes = require('./routes/delivery');
 const customerRoutes = require('./routes/customers');
+const blacklistRoutes = require('./routes/blacklist');
 const cartRoutes = require('./routes/cart');
 const wishlistRoutes = require('./routes/wishlist');
 const languageRoutes = require('./routes/languages');
@@ -1782,6 +1783,7 @@ app.use('/api/delivery', authMiddleware, deliveryRoutes);
 
 // New endpoint routes
 app.use('/api/customers', customerRoutes);
+app.use('/api/blacklist', authMiddleware, blacklistRoutes);
 app.use('/api/cart', cartRoutes);
 app.use('/api/wishlist', wishlistRoutes);
 app.use('/api/languages', languageRoutes);

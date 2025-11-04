@@ -306,12 +306,12 @@ router.delete('/:id', authMiddleware, async (req, res) => {
   }
 });
 
-// @route   PUT /api/customers/:id/block
-// @desc    Block or unblock a customer
+// @route   PUT /api/customers/:id/blacklist
+// @desc    Blacklist or un-blacklist a customer
 // @access  Private (Store Owner Only)
-router.put('/:id/block', storeOwnerOnly, async (req, res) => {
+router.put('/:id/blacklist', storeOwnerOnly, async (req, res) => {
   try {
-    const { is_blocked, blocked_reason } = req.body;
+    const { is_blacklisted, blacklist_reason } = req.body;
     const customer = await Customer.findByPk(req.params.id);
 
     if (!customer) {
@@ -330,20 +330,20 @@ router.put('/:id/block', storeOwnerOnly, async (req, res) => {
       });
     }
 
-    // Update blocking status
+    // Update blacklist status
     await customer.update({
-      is_blocked: is_blocked,
-      blocked_reason: is_blocked ? blocked_reason : null,
-      blocked_at: is_blocked ? new Date() : null
+      is_blacklisted: is_blacklisted,
+      blacklist_reason: is_blacklisted ? blacklist_reason : null,
+      blacklisted_at: is_blacklisted ? new Date() : null
     });
 
     res.json({
       success: true,
       data: customer,
-      message: is_blocked ? 'Customer blocked successfully' : 'Customer unblocked successfully'
+      message: is_blacklisted ? 'Customer blacklisted successfully' : 'Customer removed from blacklist successfully'
     });
   } catch (error) {
-    console.error('Block customer error:', error);
+    console.error('Blacklist customer error:', error);
     res.status(500).json({
       success: false,
       message: 'Server error'

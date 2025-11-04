@@ -65,6 +65,11 @@ const EmailTemplate = require('./EmailTemplate');
 const EmailTemplateTranslation = require('./EmailTemplateTranslation');
 const BrevoConfiguration = require('./BrevoConfiguration');
 const EmailSendLog = require('./EmailSendLog');
+// Blacklist models
+const BlacklistIP = require('./BlacklistIP');
+const BlacklistCountry = require('./BlacklistCountry');
+const BlacklistEmail = require('./BlacklistEmail');
+const BlacklistSettings = require('./BlacklistSettings');
 
 // Define associations
 const defineAssociations = () => {
@@ -437,4 +442,9 @@ module.exports = {
   EmailTemplateTranslation,
   BrevoConfiguration,
   EmailSendLog,
+  // Blacklist models
+  BlacklistIP,
+  BlacklistCountry,
+  BlacklistEmail,
+  BlacklistSettings,
 };

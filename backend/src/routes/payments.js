@@ -1,6 +1,6 @@
 const express = require('express');
 const { authMiddleware } = require('../middleware/auth');
-const { Store, Order, OrderItem, Product, Customer } = require('../models');
+const { Store, Order, OrderItem, Product, Customer, BlacklistSettings, BlacklistIP, BlacklistEmail, BlacklistCountry } = require('../models');
 
 const router = express.Router();
 
@@ -699,20 +699,75 @@ router.post('/create-checkout', async (req, res) => {
       });
     }
 
-    // Check if customer email is blocked
-    if (customer_email) {
-      const blockedCustomer = await Customer.findOne({
-        where: {
-          email: customer_email,
-          store_id: store_id,
-          is_blocked: true
-        }
+    // Get blacklist settings
+    const blacklistSettings = await BlacklistSettings.findOne({ where: { store_id } });
+    const settings = blacklistSettings || { block_by_ip: false, block_by_email: true, block_by_country: false };
+
+    // Get IP address from request
+    const ipAddress = req.ip || req.connection.remoteAddress || req.headers['x-forwarded-for'];
+
+    // Get country from headers (if provided by reverse proxy like Cloudflare)
+    const countryCode = req.headers['cf-ipcountry'] || req.headers['x-country-code'];
+
+    // Check IP blacklist
+    if (settings.block_by_ip && ipAddress) {
+      const blacklistedIP = await BlacklistIP.findOne({
+        where: { store_id, ip_address: ipAddress }
       });
 
-      if (blockedCustomer) {
+      if (blacklistedIP) {
+        console.log(`🚫 Blacklisted IP blocked: ${ipAddress}`);
+        return res.status(403).json({
+          success: false,
+          message: 'Your request cannot be processed. Please contact support for assistance.'
+        });
+      }
+    }
+
+    // Check email blacklist
+    if (settings.block_by_email && customer_email) {
+      // Check standalone email blacklist
+      const blacklistedEmail = await BlacklistEmail.findOne({
+        where: { store_id, email: customer_email.toLowerCase() }
+      });
+
+      if (blacklistedEmail) {
+        console.log(`🚫 Blacklisted email blocked: ${customer_email}`);
         return res.status(403).json({
           success: false,
           message: 'This email address cannot be used for checkout. Please contact support for assistance.'
+        });
+      }
+
+      // Check if customer email is blacklisted (from customers table)
+      const blacklistedCustomer = await Customer.findOne({
+        where: {
+          email: customer_email,
+          store_id: store_id,
+          is_blacklisted: true
+        }
+      });
+
+      if (blacklistedCustomer) {
+        console.log(`🚫 Blacklisted customer blocked: ${customer_email}`);
+        return res.status(403).json({
+          success: false,
+          message: 'This email address cannot be used for checkout. Please contact support for assistance.'
+        });
+      }
+    }
+
+    // Check country blacklist
+    if (settings.block_by_country && countryCode) {
+      const blacklistedCountry = await BlacklistCountry.findOne({
+        where: { store_id, country_code: countryCode.toUpperCase() }
+      });
+
+      if (blacklistedCountry) {
+        console.log(`🚫 Blacklisted country blocked: ${countryCode}`);
+        return res.status(403).json({
+          success: false,
+          message: 'Orders from your location cannot be processed at this time. Please contact support for assistance.'
         });
       }
     }
