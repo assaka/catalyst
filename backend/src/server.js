@@ -1783,7 +1783,7 @@ app.use('/api/delivery', authMiddleware, deliveryRoutes);
 
 // New endpoint routes
 app.use('/api/customers', customerRoutes);
-app.use('/api/blacklist', blacklistRoutes);
+app.use('/api/blacklist', authMiddleware, blacklistRoutes);
 app.use('/api/cart', cartRoutes);
 app.use('/api/wishlist', wishlistRoutes);
 app.use('/api/languages', languageRoutes);
