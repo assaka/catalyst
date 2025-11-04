@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Auth Test</title>
+</head>
+<body>
+    <h1>Authentication Test</h1>
+    <button onclick="testAuth()">Test Auth</button>
+    <pre id="result"></pre>
+
+    <script>
+        async function testAuth() {
+            const token = localStorage.getItem('token');
+            const storeId = 'your-store-id-here'; // CHANGE THIS
+            const result = document.getElementById('result');
+
+            result.textContent = 'Testing...\n';
+
+            // Test 1: Check token
+            result.textContent += '\n1. Token Check:\n';
+            result.textContent += `   Has token: ${!!token}\n`;
+            if (token) {
+                result.textContent += `   Token length: ${token.length}\n`;
+                try {
+                    const decoded = JSON.parse(atob(token.split('.')[1]));
+                    result.textContent += `   User ID: ${decoded.id}\n`;
+                    result.textContent += `   Role: ${decoded.role}\n`;
+                    result.textContent += `   Expires: ${new Date(decoded.exp * 1000).toLocaleString()}\n`;
+                    result.textContent += `   Expired: ${Date.now() > decoded.exp * 1000}\n`;
+                } catch (e) {
+                    result.textContent += `   ERROR decoding: ${e.message}\n`;
+                }
+            }
+
+            // Test 2: Try blacklist settings
+            result.textContent += '\n2. Test GET /api/blacklist/settings:\n';
+            try {
+                const res = await fetch(`/api/blacklist/settings?store_id=${storeId}`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                result.textContent += `   Status: ${res.status}\n`;
+                const data = await res.json();
+                result.textContent += `   Response: ${JSON.stringify(data, null, 2)}\n`;
+            } catch (e) {
+                result.textContent += `   ERROR: ${e.message}\n`;
+            }
+
+            // Test 3: Try adding email
+            result.textContent += '\n3. Test POST /api/blacklist/emails:\n';
+            try {
+                const res = await fetch(`/api/blacklist/emails?store_id=${storeId}`, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        email: 'test@test.com',
+                        reason: 'Test'
+                    })
+                });
+                result.textContent += `   Status: ${res.status}\n`;
+                const data = await res.json();
+                result.textContent += `   Response: ${JSON.stringify(data, null, 2)}\n`;
+            } catch (e) {
+                result.textContent += `   ERROR: ${e.message}\n`;
+            }
+        }
+    </script>
+</body>
+</html>
