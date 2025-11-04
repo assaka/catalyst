@@ -12,7 +12,7 @@ import '@/components/editor/slot/CategorySlotComponents';
 import '@/components/editor/slot/BreadcrumbsSlotComponent';
 import { createProductUrl } from '@/utils/urlUtils';
 import { formatPrice, getPriceDisplay } from '@/utils/priceUtils';
-import { getStockLabel, getStockLabelStyle } from '@/utils/stockLabelUtils';
+import { getStockLabel, getStockLabelStyle } from '@/utils/stockUtils';
 import { getCategoryName, getProductName, getCurrentLanguage } from '@/utils/translationUtils';
 import { processVariables } from '@/utils/variableProcessor';
 import { useTranslation } from '@/contexts/TranslationContext';

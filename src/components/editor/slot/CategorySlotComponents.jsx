@@ -57,7 +57,7 @@ import { useStore } from '@/components/storefront/StoreProvider';
 import { UnifiedSlotRenderer } from './UnifiedSlotRenderer';
 import { processVariables } from '@/utils/variableProcessor';
 import { formatPrice } from '@/utils/priceUtils';
-import { getStockLabel, getStockLabelStyle } from '@/utils/stockLabelUtils';
+import { getStockLabel, getStockLabelStyle } from '@/utils/stockUtils';
 
 // Active Filters Component with processVariables
 const ActiveFilters = createSlotComponent({

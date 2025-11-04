@@ -6,7 +6,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { formatPrice } from '@/utils/priceUtils';
 import { useStore } from '@/components/storefront/StoreProvider';
-import { getStockLabel, getStockLabelStyle } from '@/utils/stockLabelUtils';
+import { getStockLabel, getStockLabelStyle } from '@/utils/stockUtils';
 import { useTranslation } from '@/contexts/TranslationContext';
 
 const MiniProductCard = ({ product }) => {

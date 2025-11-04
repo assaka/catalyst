@@ -1,14 +1,14 @@
 /**
- * stockLabelUtils.js - Centralized Stock Label Logic
+ * stockUtils.js - Centralized Stock Management & Validation
  *
  * =====================================================================
- * PURPOSE: Single source of truth for stock label text, colors, and
- * visibility across all product displays
+ * PURPOSE: Single source of truth for stock label text, colors,
+ * visibility, and stock validation across all product displays
  * =====================================================================
  *
  * ARCHITECTURE ROLE:
  *
- * Stock label utilities provide **unified stock status display** for:
+ * Stock utilities provide **unified stock status display and validation** for:
  * 1. Category product grids
  * 2. Product detail pages
  * 3. Cart items
@@ -135,7 +135,7 @@
  *
  * 4. **Process quantity placeholders**: Use processLabel() for flexible formatting
  *
- * @module stockLabelUtils
+ * @module stockUtils
  */
 
 /**
@@ -502,8 +502,90 @@ export function getStockLabelStyle(product, settings = {}, lang = null, globalTr
   };
 }
 
+/**
+ * isProductOutOfStock - Check if a product is out of stock
+ *
+ * Centralized logic for determining if a product can be purchased.
+ * Considers infinite_stock, manage_stock, allow_backorders, and stock_quantity.
+ *
+ * @param {Object} product - Product object
+ * @param {boolean} product.infinite_stock - True if product has unlimited stock
+ * @param {boolean} product.manage_stock - True if stock should be tracked
+ * @param {boolean} product.allow_backorders - True if purchases allowed when out of stock
+ * @param {number} product.stock_quantity - Current stock quantity
+ * @returns {boolean} True if product is out of stock and cannot be purchased
+ *
+ * @example
+ * isProductOutOfStock({ stock_quantity: 0, manage_stock: true, allow_backorders: false })
+ * // true - out of stock, no backorders allowed
+ *
+ * @example
+ * isProductOutOfStock({ stock_quantity: 0, manage_stock: true, allow_backorders: true })
+ * // false - out of stock but backorders allowed
+ *
+ * @example
+ * isProductOutOfStock({ infinite_stock: true })
+ * // false - never out of stock
+ */
+export function isProductOutOfStock(product) {
+  if (!product) return true;
+
+  // Infinite stock products are never out of stock
+  if (product.infinite_stock) return false;
+
+  // If not managing stock, never out of stock
+  if (!product.manage_stock) return false;
+
+  // Check if stock is depleted
+  if (product.stock_quantity <= 0) {
+    // Allow if backorders are enabled
+    return !product.allow_backorders;
+  }
+
+  return false;
+}
+
+/**
+ * getAvailableQuantity - Get maximum purchasable quantity for a product
+ *
+ * Returns Infinity for infinite stock, not managing stock, or backorders allowed.
+ * Otherwise returns actual stock quantity.
+ *
+ * @param {Object} product - Product object
+ * @param {boolean} product.infinite_stock - True if product has unlimited stock
+ * @param {boolean} product.manage_stock - True if stock should be tracked
+ * @param {boolean} product.allow_backorders - True if purchases allowed when out of stock
+ * @param {number} product.stock_quantity - Current stock quantity
+ * @returns {number} Maximum quantity available (Infinity or actual quantity)
+ *
+ * @example
+ * getAvailableQuantity({ infinite_stock: true })
+ * // Infinity
+ *
+ * @example
+ * getAvailableQuantity({ stock_quantity: 5, manage_stock: true })
+ * // 5
+ */
+export function getAvailableQuantity(product) {
+  if (!product) return 0;
+
+  // Infinite stock
+  if (product.infinite_stock) return Infinity;
+
+  // Not managing stock
+  if (!product.manage_stock) return Infinity;
+
+  // Allow backorders
+  if (product.allow_backorders) return Infinity;
+
+  // Return actual stock
+  return Math.max(0, product.stock_quantity);
+}
+
 export default {
   getStockLabel,
   getStockLabelClass,
-  getStockLabelStyle
+  getStockLabelStyle,
+  isProductOutOfStock,
+  getAvailableQuantity
 };

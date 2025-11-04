@@ -13,7 +13,7 @@ import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
 import { processVariables } from '@/utils/variableProcessor';
 import { formatPrice as formatPriceUtil, getPriceDisplay } from '@/utils/priceUtils';
-import { getStockLabel as getStockLabelUtil, getStockLabelStyle } from '@/utils/stockLabelUtils';
+import { getStockLabel as getStockLabelUtil, getStockLabelStyle } from '@/utils/stockUtils';
 import {
   ShoppingCart,
   Heart,

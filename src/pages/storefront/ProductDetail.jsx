@@ -17,7 +17,7 @@ import { useProduct, useUser } from "@/hooks/useApiQueries";
 import { useStore, cachedApiCall } from "@/components/storefront/StoreProvider";
 import { formatPriceWithTax, calculateDisplayPrice, safeNumber, formatPrice, getPriceDisplay } from "@/utils/priceUtils";
 import { getImageUrlByIndex, getPrimaryImageUrl } from "@/utils/imageUtils";
-import { getStockLabel as getStockLabelUtil, getStockLabelStyle } from "@/utils/stockLabelUtils";
+import { getStockLabel as getStockLabelUtil, getStockLabelStyle } from "@/utils/stockUtils";
 import {
   ShoppingCart, Star, ChevronLeft, ChevronRight, Minus, Plus, Heart, Download, Eye
 } from "lucide-react";

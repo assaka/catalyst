@@ -98,7 +98,7 @@
  * **Automatic Formatting**:
  * - Paths with 'price' → formatPrice() from priceUtils
  * - Paths with 'date' → new Date().toLocaleDateString()
- * - Paths with 'stock_status' → getStockLabel() from stockLabelUtils
+ * - Paths with 'stock_status' → getStockLabel() from stockUtils
  * - Arrays → join(', ')
  *
  * **Price Formatting**:
@@ -107,7 +107,7 @@
  * - Falls back to formatPrice() if not pre-formatted
  *
  * **Stock Status Formatting**:
- * - Uses centralized stockLabelUtils.getStockLabel()
+ * - Uses centralized stockUtils.getStockLabel()
  * - Respects admin settings (in_stock_label, out_of_stock_label)
  * - Returns text only (no HTML/styling)
  *
@@ -141,7 +141,7 @@
  * RELATED FILES:
  * - UnifiedSlotRenderer.jsx: Calls processVariables() for content/className/styles
  * - priceUtils.js: formatPrice() for consistent price formatting
- * - stockLabelUtils.js: getStockLabel() for stock status display
+ * - stockUtils.js: getStockLabel() for stock status display
  * - CategorySlotRenderer.jsx: Pre-formats product data before passing to variables
  * - ProductSlotRenderer.jsx: Pre-formats product data before passing to variables
  *
@@ -163,7 +163,7 @@
  */
 
 import { formatPrice } from './priceUtils';
-import { getStockLabel } from './stockLabelUtils';
+import { getStockLabel } from './stockUtils';
 
 /**
  * processVariables - Main entry point for template variable processing
@@ -882,7 +882,7 @@ function formatValue(value, path, context, pageData) {
 /**
  * formatStockStatus - Format stock status using centralized utility
  *
- * Uses stockLabelUtils.getStockLabel() for consistency with other stock displays.
+ * Uses stockUtils.getStockLabel() for consistency with other stock displays.
  * Respects admin settings (in_stock_label, out_of_stock_label, low_stock_label).
  * Supports global translations from translations table.
  *

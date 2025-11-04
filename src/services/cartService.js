@@ -141,6 +141,38 @@ class CartService {
         throw new Error('Store ID is required');
       }
 
+      // Fetch product to validate stock before adding to cart
+      try {
+        const { StorefrontProduct } = await import('@/api/storefront-entities');
+        const { isProductOutOfStock, getAvailableQuantity } = await import('@/utils/stockUtils');
+        const product = await StorefrontProduct.findById(productId);
+
+        if (product) {
+          // Check if product is out of stock
+          if (isProductOutOfStock(product)) {
+            return {
+              success: false,
+              error: 'This product is currently out of stock.',
+              outOfStock: true
+            };
+          }
+
+          // Check if requested quantity exceeds available stock
+          const availableQty = getAvailableQuantity(product);
+          if (availableQty !== Infinity && quantity > availableQty) {
+            return {
+              success: false,
+              error: `Only ${availableQty} items available in stock.`,
+              insufficientStock: true,
+              availableQuantity: availableQty
+            };
+          }
+        }
+      } catch (productError) {
+        console.warn('⚠️ Could not validate product stock:', productError.message);
+        // Continue with add to cart - let backend handle validation
+      }
+
       const sessionId = this.getSessionId();
       const user = await this.getCurrentUser();
 

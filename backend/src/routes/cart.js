@@ -1,8 +1,40 @@
 const express = require('express');
-const { Cart, SlotConfiguration } = require('../models');
+const { Cart, SlotConfiguration, Product } = require('../models');
 const { authMiddleware } = require('../middleware/auth');
 
 const router = express.Router();
+
+// Helper function to check if product is out of stock
+const isProductOutOfStock = (product) => {
+  // Infinite stock products are never out of stock
+  if (product.infinite_stock) return false;
+
+  // If not managing stock, never out of stock
+  if (!product.manage_stock) return false;
+
+  // Check if stock is depleted
+  if (product.stock_quantity <= 0) {
+    // Allow if backorders are enabled
+    return !product.allow_backorders;
+  }
+
+  return false;
+};
+
+// Helper function to get available stock quantity
+const getAvailableQuantity = (product) => {
+  // Infinite stock
+  if (product.infinite_stock) return Infinity;
+
+  // Not managing stock
+  if (!product.manage_stock) return Infinity;
+
+  // Allow backorders
+  if (product.allow_backorders) return Infinity;
+
+  // Return actual stock
+  return Math.max(0, product.stock_quantity);
+};
 
 // Debug endpoint - can be removed in production
 router.get('/debug', async (req, res) => {
@@ -185,24 +217,60 @@ router.post('/', async (req, res) => {
     // If individual item fields are provided, add as new item
     if (product_id && quantity) {
       console.log('Cart POST - Adding individual item, existing cartItems:', JSON.stringify(cartItems));
-      
+
+      // Validate product stock before adding to cart
+      const product = await Product.findByPk(product_id);
+
+      if (!product) {
+        return res.status(404).json({
+          success: false,
+          message: 'Product not found'
+        });
+      }
+
+      // Check if product is out of stock
+      if (isProductOutOfStock(product)) {
+        return res.status(400).json({
+          success: false,
+          message: 'This product is currently out of stock',
+          outOfStock: true
+        });
+      }
+
+      const requestedQty = parseInt(quantity) || 1;
+      const availableQty = getAvailableQuantity(product);
+
+      // Check if item already exists in cart
+      const existingItemIndex = cartItems.findIndex(item =>
+        item.product_id === product_id &&
+        JSON.stringify(item.selected_options) === JSON.stringify(selected_options)
+      );
+
+      // Calculate total quantity (existing + new)
+      const existingQty = existingItemIndex >= 0 ? cartItems[existingItemIndex].quantity : 0;
+      const totalQty = existingQty + requestedQty;
+
+      // Check if total quantity exceeds available stock
+      if (availableQty !== Infinity && totalQty > availableQty) {
+        return res.status(400).json({
+          success: false,
+          message: `Only ${availableQty} items available in stock. You currently have ${existingQty} in cart.`,
+          insufficientStock: true,
+          availableQuantity: availableQty,
+          currentCartQuantity: existingQty
+        });
+      }
+
       const newItem = {
         id: `item_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
         product_id,
-        quantity: parseInt(quantity) || 1,
+        quantity: requestedQty,
         price: parseFloat(price) || 0,
         selected_attributes: selected_attributes || {},
         selected_options: selected_options || []
       };
 
       console.log('Cart POST - New item to add:', JSON.stringify(newItem));
-
-      // Check if item with same product_id and options already exists
-      const existingItemIndex = cartItems.findIndex(item => 
-        item.product_id === product_id && 
-        JSON.stringify(item.selected_options) === JSON.stringify(selected_options)
-      );
-
       console.log('Cart POST - Existing item index:', existingItemIndex);
 
       if (existingItemIndex >= 0) {

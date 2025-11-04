@@ -8,7 +8,7 @@ import { formatPriceWithTax, safeNumber, getPriceDisplay } from '@/utils/priceUt
 import cartService from '@/services/cartService';
 import { ShoppingCart } from 'lucide-react';
 import { getPrimaryImageUrl } from '@/utils/imageUtils';
-import { getStockLabel, getStockLabelStyle } from '@/utils/stockLabelUtils';
+import { getStockLabel, getStockLabelStyle, isProductOutOfStock } from '@/utils/stockUtils';
 import { getProductName, getCurrentLanguage } from '@/utils/translationUtils';
 import { useTranslation } from '@/contexts/TranslationContext';
 
@@ -168,6 +168,17 @@ const ProductItemCard = ({
   const handleAddToCart = async (e) => {
     e.preventDefault(); // Prevent navigation when clicking the button
     e.stopPropagation();
+
+    // Check if product is out of stock
+    if (isProductOutOfStock(product)) {
+      window.dispatchEvent(new CustomEvent('showFlashMessage', {
+        detail: {
+          type: 'error',
+          message: t('product.out_of_stock', 'This product is currently out of stock.')
+        }
+      }));
+      return;
+    }
 
     // Prevent multiple rapid additions
     if (addingToCart) {
@@ -356,18 +367,24 @@ const ProductItemCard = ({
             {/* Add to Cart Button */}
             <Button
               onClick={isEditorMode ? (e) => handleSlotClick(e, 'product_card_add_to_cart') : handleAddToCart}
-              disabled={addingToCart && !isEditorMode}
+              disabled={(addingToCart || isProductOutOfStock(product)) && !isEditorMode}
               className={addToCartConfig.className || "w-full text-white border-0 hover:brightness-90 transition-all duration-200"}
               size="sm"
               style={{
                 backgroundColor: settings?.theme?.add_to_cart_button_color || '#3B82F6',
                 color: 'white',
+                opacity: isProductOutOfStock(product) && !isEditorMode ? 0.5 : 1,
+                cursor: isProductOutOfStock(product) && !isEditorMode ? 'not-allowed' : 'pointer',
                 ...addToCartConfig.styles
               }}
               data-slot-id={isEditorMode ? 'product_card_add_to_cart' : undefined}
             >
               <ShoppingCart className="w-4 h-4 mr-2" />
-              {addingToCart ? t('common.adding', 'Adding...') : (addToCartConfig.content || t('product.add_to_cart', 'Add to Cart'))}
+              {isProductOutOfStock(product) && !isEditorMode
+                ? t('product.out_of_stock', 'Out of Stock')
+                : addingToCart
+                ? t('common.adding', 'Adding...')
+                : (addToCartConfig.content || t('product.add_to_cart', 'Add to Cart'))}
             </Button>
 
             {/* Stock status for list view */}
