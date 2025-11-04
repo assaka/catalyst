@@ -1542,23 +1542,24 @@ router.post('/webhook', async (req, res) => {
               });
 
               // Send email asynchronously (don't block webhook response)
-              emailService.sendTransactionalEmail(result.store_id, 'credit_purchase', {
+              emailService.sendTransactionalEmail(result.store_id, 'credit_purchase_email', {
                 recipientEmail: user.email,
-                customer: {
-                  first_name: user.first_name,
-                  last_name: user.last_name,
-                  email: user.email
-                },
-                transaction: {
-                  ...result.toJSON(),
-                  balance: finalUserBalance || user.credits || 0
-                },
-                store: store.toJSON(),
-                languageCode: 'en'
+                customer_first_name: user.first_name,
+                customer_last_name: user.last_name,
+                customer_email: user.email,
+                credits_purchased: result.credits_purchased,
+                amount_usd: result.amount_usd,
+                transaction_id: result.id,
+                balance: finalUserBalance || user.credits || 0,
+                purchase_date: new Date().toLocaleString(),
+                store_name: store.name,
+                store_url: store.custom_domain || `https://yourdomain.com/public/${store.slug}`,
+                current_year: new Date().getFullYear()
               }).then(() => {
                 console.log(`✅ [${piRequestId}] Credit purchase email sent successfully to: ${user.email}`);
               }).catch(emailError => {
                 console.error(`❌ [${piRequestId}] Failed to send credit purchase email:`, emailError.message);
+                console.error(`❌ [${piRequestId}] Email error details:`, emailError);
                 // Don't fail the webhook if email fails
               });
             } else {
