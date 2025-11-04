@@ -138,6 +138,12 @@ export default function Checkout() {
     loadCheckoutData();
   }, [store?.id, storeLoading]);
 
+  // Debug: Log user state changes
+  useEffect(() => {
+    console.log('🔍 User state changed:', user ? `Logged in as ${user.email}` : 'Not logged in');
+    console.log('🔍 User addresses count:', userAddresses.length);
+  }, [user, userAddresses]);
+
   // Load persisted form data from localStorage after loading completes
   useEffect(() => {
     if (!loading && !dataRestored) {
@@ -338,11 +344,13 @@ export default function Checkout() {
           const userData = await CustomerAuth.me();
           console.log('✅ User data loaded:', userData);
           setUser(userData);
+          console.log('✅ User state set in React');
 
           // Load user addresses if logged in
           if (userData?.id) {
             try {
               const addresses = await CustomerAddress.findAll();
+              console.log('✅ Addresses loaded:', addresses?.length || 0, 'addresses');
               setUserAddresses(addresses || []);
             } catch (error) {
               console.warn('Addresses API not available:', error);
