@@ -715,15 +715,12 @@ export const categoryConfig = {
             }
 
             try {
-              // FIXED: Use cartService for uniform logic (same as ProductDetail and UnifiedSlotRenderer)
-              const { default: cartService } = await import('@/services/cartService');
-              const { getPriceDisplay } = await import('@/utils/priceUtils');
-
+              // FIXED: Use cartService from utils (passed by scriptHandler)
               // Get correct base price using utility function
-              const priceInfo = getPriceDisplay(product);
+              const priceInfo = utils.getPriceDisplay(product);
               const basePrice = priceInfo.displayPrice;
 
-              const result = await cartService.addItem(
+              const result = await utils.cartService.addItem(
                 product.id,
                 1,
                 basePrice,
@@ -906,12 +903,10 @@ export const categoryConfig = {
             }
 
             try {
-              // FIXED: Use cartService for uniform logic
-              const { default: cartService } = await import('@/services/cartService');
-
+              // FIXED: Use cartService from utils (passed by scriptHandler)
               // NOTE: Can't use getPriceDisplay here as we only have productPrice from data attributes
               // This is acceptable as the price is already pre-processed by CategorySlotRenderer
-              const result = await cartService.addItem(
+              const result = await utils.cartService.addItem(
                 productId,
                 1,
                 productPrice,

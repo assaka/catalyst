@@ -3,7 +3,8 @@
  * Manages the execution of JavaScript code attached to slots
  */
 
-import { formatPrice } from './priceUtils';
+import { formatPrice, getPriceDisplay } from './priceUtils';
+import cartService from '@/services/cartService';
 
 /**
  * Store for registered script handlers
@@ -49,6 +50,12 @@ export function executeScript(scriptCode, context) {
       formatPrice: (price, currency) => {
         return formatPrice(price);
       },
+      getPriceDisplay: (product) => {
+        return getPriceDisplay(product);
+      },
+
+      // Cart utilities
+      cartService: cartService,
 
       // Animation utilities
       animate: (keyframes, options) => {
