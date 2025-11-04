@@ -168,9 +168,6 @@ export default function Customers() {
         if (!customer) return;
 
         const willBlacklist = !isBlacklisted;
-        if (willBlacklist && !window.confirm('Are you sure you want to blacklist this customer? They will not be able to log in or checkout.')) {
-            return;
-        }
 
         setSaving(true);
         try {
@@ -268,10 +265,6 @@ export default function Customers() {
 
             if (existingEntry) {
                 // Email is already blacklisted, remove it
-                if (!window.confirm('This email is currently blacklisted. Do you want to remove it from the blacklist?')) {
-                    return;
-                }
-
                 setSaving(true);
                 const deleteResponse = await fetch(`/api/blacklist/emails/${existingEntry.id}?store_id=${storeId}`, {
                     method: 'DELETE',
@@ -299,10 +292,6 @@ export default function Customers() {
                 }
             } else {
                 // Email is not blacklisted, add it
-                if (!window.confirm('Are you sure you want to blacklist this email? They will not be able to checkout.')) {
-                    return;
-                }
-
                 setSaving(true);
                 const addResponse = await fetch(`/api/blacklist/emails?store_id=${storeId}`, {
                     method: 'POST',

@@ -323,7 +323,7 @@ router.put('/:id/blacklist', storeOwnerOnly, async (req, res) => {
 
     // Verify customer belongs to the store
     const { store_id } = req.query;
-    if (customer.store_id !== store_id) {
+    if (customer.store_id !== parseInt(store_id)) {
       return res.status(403).json({
         success: false,
         message: 'Access denied. Customer belongs to a different store.'

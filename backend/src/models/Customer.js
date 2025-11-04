@@ -104,6 +104,19 @@ const Customer = sequelize.define('Customer', {
     validate: {
       isIn: [['guest', 'registered']]
     }
+  },
+  is_blacklisted: {
+    type: DataTypes.BOOLEAN,
+    defaultValue: false,
+    allowNull: false
+  },
+  blacklist_reason: {
+    type: DataTypes.TEXT,
+    allowNull: true
+  },
+  blacklisted_at: {
+    type: DataTypes.DATE,
+    allowNull: true
   }
 }, {
   tableName: 'customers',
