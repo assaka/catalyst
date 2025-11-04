@@ -694,8 +694,126 @@ export const categoryConfig = {
           </button>
         {{/if}}
       `,
-      // NOTE: Script removed - add-to-cart is now handled by React onClick in UnifiedSlotRenderer
-      // This ensures uniform cart logic using cartService with proper success checks and pricing
+      script: `
+        const button = element.querySelector('[data-add-to-cart]');
+        if (button && productData?.product && productData?.store) {
+          const product = productData.product;
+          const store = productData.store;
+
+          // Apply theme color from settings
+          if (variableContext?.settings?.theme?.add_to_cart_button_color) {
+            button.style.backgroundColor = variableContext.settings.theme.add_to_cart_button_color;
+          }
+
+          const handleClick = async (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+
+            if (!product?.id || !store?.id) {
+              console.error('Missing product or store data');
+              return;
+            }
+
+            try {
+              // Use fetch API to call cart endpoint with centralized session ID logic
+              const baseURL = window.location.origin.includes('localhost')
+                ? 'http://localhost:10000'
+                : 'https://catalyst-backend-fzhu.onrender.com';
+
+              // Use the same session ID logic as cartService
+              let sessionId = localStorage.getItem('guest_session_id');
+              if (!sessionId) {
+                sessionId = 'guest_' + Math.random().toString(36).substring(2) + Date.now().toString(36);
+                localStorage.setItem('guest_session_id', sessionId);
+              }
+
+              // Get user info if authenticated (same as cartService)
+              let user = null;
+              try {
+                const { CustomerAuth } = await import('@/api/storefront-entities');
+                if (CustomerAuth.isAuthenticated()) {
+                  user = await CustomerAuth.me();
+                }
+              } catch (e) {}
+
+              const cartData = {
+                store_id: store.id,
+                product_id: product.id,
+                quantity: 1,
+                price: parseFloat(product.price || 0),
+                selected_options: [],
+                session_id: sessionId
+              };
+
+              // Add user_id if authenticated (but not for customers to avoid FK issues)
+              if (user?.id && user?.role !== 'customer') {
+                cartData.user_id = user.id;
+              }
+
+              const response = await fetch(baseURL + '/api/cart', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(cartData)
+              });
+
+              const result = await response.json();
+
+              if (result.success) {
+                // Extract fresh cart data from the response
+                const freshCartData = result.data;
+                const cartItems = Array.isArray(freshCartData?.items) ? freshCartData.items :
+                                 Array.isArray(freshCartData?.dataValues?.items) ? freshCartData.dataValues.items : [];
+
+                // Dispatch cart update event with fresh cart data (matches cartService pattern)
+                window.dispatchEvent(new CustomEvent('cartUpdated', {
+                  detail: {
+                    action: 'add_from_category',
+                    timestamp: Date.now(),
+                    source: 'category.addToCart',
+                    freshCartData: {
+                      success: true,
+                      items: cartItems,
+                      cart: freshCartData
+                    }
+                  }
+                }));
+
+                // Track add to cart event
+                if (window.catalyst?.trackAddToCart) {
+                  window.catalyst.trackAddToCart(product, 1);
+                }
+
+                // Show success message
+                const successMessage = variableContext?.settings?.ui_translations?.[localStorage.getItem('catalyst_language') || 'en']?.['common.added_to_cart_success']
+                  || variableContext?.settings?.ui_translations?.en?.['common.added_to_cart_success']
+                  || ' added to cart successfully!';
+                window.dispatchEvent(new CustomEvent('showFlashMessage', {
+                  detail: {
+                    type: 'success',
+                    message: product.name + successMessage
+                  }
+                }));
+              } else {
+                throw new Error(result.error || 'Failed to add to cart');
+              }
+            } catch (error) {
+              console.error('Failed to add to cart:', error);
+              const errorMessage = variableContext?.settings?.ui_translations?.[localStorage.getItem('catalyst_language') || 'en']?.['common.added_to_cart_error']
+                || variableContext?.settings?.ui_translations?.en?.['common.added_to_cart_error']
+                || 'Failed to add to cart. Please try again.';
+              window.dispatchEvent(new CustomEvent('showFlashMessage', {
+                detail: {
+                  type: 'error',
+                  message: errorMessage
+                }
+              }));
+            }
+          };
+
+          button.addEventListener('click', handleClick);
+          return () => button.removeEventListener('click', handleClick);
+        }
+      `,
       className: '',
       parentClassName: '',
       styles: {},
@@ -808,8 +926,133 @@ export const categoryConfig = {
             </div>
           {{/each}}
       `,
-      // NOTE: Script removed - add-to-cart is now handled by React onClick in UnifiedSlotRenderer
-      // This ensures uniform cart logic using cartService with proper success checks and pricing
+      script: `
+        // Handle add to cart clicks for all product cards
+        const buttons = element.querySelectorAll('[data-action="add-to-cart"]');
+        const cleanupFunctions = [];
+
+        buttons.forEach(button => {
+          const handleClick = async (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+
+            const productId = parseInt(button.getAttribute('data-product-id'));
+            const productName = button.getAttribute('data-product-name');
+            const productPrice = parseFloat(button.getAttribute('data-product-price') || 0);
+
+            // Get store from categoryData
+            const store = categoryContext?.store;
+
+            if (!productId || !store?.id) {
+              console.error('Missing product or store data');
+              return;
+            }
+
+            try {
+              // Use fetch API to call cart endpoint with centralized session ID logic
+              const baseURL = window.location.origin.includes('localhost')
+                ? 'http://localhost:10000'
+                : 'https://catalyst-backend-fzhu.onrender.com';
+
+              // Use the same session ID logic as cartService
+              let sessionId = localStorage.getItem('guest_session_id');
+              if (!sessionId) {
+                sessionId = 'guest_' + Math.random().toString(36).substring(2) + Date.now().toString(36);
+                localStorage.setItem('guest_session_id', sessionId);
+              }
+
+              // Get user info if authenticated (same as cartService)
+              let user = null;
+              try {
+                const { CustomerAuth } = await import('@/api/storefront-entities');
+                if (CustomerAuth.isAuthenticated()) {
+                  user = await CustomerAuth.me();
+                }
+              } catch (e) {}
+
+              const cartData = {
+                store_id: store.id,
+                product_id: productId,
+                quantity: 1,
+                price: productPrice,
+                selected_options: [],
+                session_id: sessionId
+              };
+
+              // Add user_id if authenticated (but not for customers to avoid FK issues)
+              if (user?.id && user?.role !== 'customer') {
+                cartData.user_id = user.id;
+              }
+
+              const response = await fetch(baseURL + '/api/cart', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(cartData)
+              });
+
+              const result = await response.json();
+
+              if (result.success) {
+                // Extract fresh cart data from the response
+                const freshCartData = result.data;
+                const cartItems = Array.isArray(freshCartData?.items) ? freshCartData.items :
+                                 Array.isArray(freshCartData?.dataValues?.items) ? freshCartData.dataValues.items : [];
+
+                // Dispatch cart update event with fresh cart data (matches cartService pattern)
+                window.dispatchEvent(new CustomEvent('cartUpdated', {
+                  detail: {
+                    action: 'add_from_category',
+                    timestamp: Date.now(),
+                    source: 'category.addToCart',
+                    freshCartData: {
+                      success: true,
+                      items: cartItems,
+                      cart: freshCartData
+                    }
+                  }
+                }));
+
+                // Track add to cart event
+                if (window.catalyst?.trackAddToCart) {
+                  window.catalyst.trackAddToCart({ id: productId, name: productName, price: productPrice }, 1);
+                }
+
+                // Show success message
+                const successMessage = variableContext?.settings?.ui_translations?.[localStorage.getItem('catalyst_language') || 'en']?.['common.added_to_cart_success']
+                  || variableContext?.settings?.ui_translations?.en?.['common.added_to_cart_success']
+                  || ' added to cart successfully!';
+                window.dispatchEvent(new CustomEvent('showFlashMessage', {
+                  detail: {
+                    type: 'success',
+                    message: productName + successMessage
+                  }
+                }));
+              } else {
+                throw new Error(result.error || 'Failed to add to cart');
+              }
+            } catch (error) {
+              console.error('Failed to add to cart:', error);
+              const errorMessage = variableContext?.settings?.ui_translations?.[localStorage.getItem('catalyst_language') || 'en']?.['common.added_to_cart_error']
+                || variableContext?.settings?.ui_translations?.en?.['common.added_to_cart_error']
+                || 'Failed to add to cart. Please try again.';
+              window.dispatchEvent(new CustomEvent('showFlashMessage', {
+                detail: {
+                  type: 'error',
+                  message: errorMessage
+                }
+              }));
+            }
+          };
+
+          button.addEventListener('click', handleClick);
+          cleanupFunctions.push(() => button.removeEventListener('click', handleClick));
+        });
+
+        // Return cleanup function
+        return () => {
+          cleanupFunctions.forEach(cleanup => cleanup());
+        };
+      `,
       className: '',
       parentClassName: '',
       styles: {},
