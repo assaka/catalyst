@@ -791,16 +791,14 @@ router.post('/create-checkout', async (req, res) => {
       const itemTotal = (parseFloat(item.price) || 0) * (parseInt(item.quantity) || 1);
       return sum + itemTotal;
     }, 0);
-    
+
     // Create separate rates for charges (similar to shipping rates)
     let taxRateId = null;
-    
-    // Determine Stripe options for Connect account
-    const stripeOptions = {};
-    if (store.stripe_account_id) {
-      stripeOptions.stripeAccount = store.stripe_account_id;
-    }
-    
+
+    // NOTE: For Destination Charges, we DON'T pass stripeAccount option
+    // Tax rates, shipping rates, coupons are created on platform account
+    // Then the checkout session uses them and transfers funds to connected account
+
     // Create tax rate if provided
     if (taxAmountNum > 0) {
       try {
@@ -818,7 +816,7 @@ router.post('/create-checkout', async (req, res) => {
             item_type: 'tax',
             tax_rate: taxPercentage
           }
-        }, stripeOptions);
+        }); // No stripeOptions - create on platform
         
         taxRateId = taxRate.id;
         console.log('✅ Created tax rate:', taxRateId);
@@ -982,13 +980,7 @@ router.post('/create-checkout', async (req, res) => {
     // Apply discount if provided
     if (applied_coupon && discount_amount > 0) {
       try {
-        // Determine Stripe options for Connect account
-        const discountStripeOptions = {};
-        if (store.stripe_account_id) {
-          discountStripeOptions.stripeAccount = store.stripe_account_id;
-        }
-
-        // Create a Stripe coupon for the discount
+        // Create a Stripe coupon for the discount (on platform account)
         const stripeCoupon = await stripe.coupons.create({
           amount_off: convertToStripeAmount(discount_amount, storeCurrency), // Convert based on currency type
           currency: storeCurrency.toLowerCase(),
@@ -998,7 +990,7 @@ router.post('/create-checkout', async (req, res) => {
             original_coupon_code: applied_coupon.code,
             original_coupon_id: applied_coupon.id?.toString() || ''
           }
-        }, discountStripeOptions);
+        }); // No stripeOptions - create on platform
 
         // Apply the coupon to the session so it's pre-applied
         sessionConfig.discounts = [{
@@ -1047,7 +1039,7 @@ router.post('/create-checkout', async (req, res) => {
       // Create the shipping rate first
       try {
 
-        const shippingRate = await stripe.shippingRates.create(shippingRateData, stripeOptions);
+        const shippingRate = await stripe.shippingRates.create(shippingRateData); // No stripeOptions - create on platform
         
         // Use the created shipping rate in the session via shipping_options
         sessionConfig.shipping_options = [{
@@ -1213,14 +1205,6 @@ router.post('/create-checkout', async (req, res) => {
     // Log shipping address collection status
     console.log('🚚 Shipping address collection enabled:', !!sessionConfig.shipping_address_collection);
 
-    // Use Connect account if available (stripeOptions already defined above)
-    if (store.stripe_account_id) {
-      stripeOptions.stripeAccount = store.stripe_account_id;
-      console.log('Creating checkout session WITH Connect account:', store.stripe_account_id);
-    } else {
-      console.log('Creating checkout session WITHOUT Connect account');
-    }
-
     // Log the session config for debugging
     console.log('Creating Stripe session with config:', {
       success_url: sessionConfig.success_url,
@@ -1252,7 +1236,26 @@ router.post('/create-checkout', async (req, res) => {
     console.log('🔍 Fee line items:', feeItems.length, feeItems.length > 0 ? feeItems[0].price_data?.product_data?.name : 'None');
 
     // Create checkout session
-    const session = await stripe.checkout.sessions.create(sessionConfig, stripeOptions);
+    // For connected accounts, use Destination Charge pattern so platform receives webhooks
+    let createSessionOptions = {};
+
+    if (store.stripe_account_id) {
+      // Use Destination Charge: session created on platform, funds transferred to connected account
+      // This way platform webhook receives the events!
+      sessionConfig.payment_intent_data = {
+        transfer_data: {
+          destination: store.stripe_account_id
+        }
+      };
+      console.log('💰 Using Destination Charge pattern - platform webhook will receive events');
+      console.log('💰 Transferring to connected account:', store.stripe_account_id);
+      // Don't pass stripeAccount option - create on platform!
+    } else {
+      // No connected account - direct platform charge
+      console.log('💰 No connected account - direct platform charge');
+    }
+
+    const session = await stripe.checkout.sessions.create(sessionConfig, createSessionOptions);
 
     console.log('Created Stripe session:', {
       id: session.id,
