@@ -521,23 +521,57 @@ export default function PaymentMethods() {
         </div>
 
         <div className="grid gap-4">
-          {paymentMethods.map(method => (
-            <Card key={method.id} className="material-elevation-1 border-0">
-              <CardContent className="p-6">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-4">
-                    <div className="w-12 h-12 bg-gray-100 rounded-lg flex items-center justify-center">
-                      {method.icon_url ? (
-                        <img src={method.icon_url} alt={method.name} className="w-8 h-8 object-contain" />
-                      ) : (
-                        method.type === 'stripe' ? (
-                          <CreditCard className="w-6 h-6 text-gray-600" />
-                        ) : (
-                          <Banknote className="w-6 h-6 text-gray-600" />
-                        )
-                      )}
-                    </div>
-                    <div>
+          {paymentMethods.map(method => {
+            // Determine icon and color based on payment method type
+            const getMethodIcon = () => {
+              if (method.icon_url) {
+                return <img src={method.icon_url} alt={method.name} className="w-8 h-8 object-contain" />;
+              }
+
+              switch (method.type) {
+                case 'stripe':
+                case 'credit_card':
+                case 'debit_card':
+                  return <CreditCard className="w-6 h-6 text-blue-600" />;
+                case 'paypal':
+                  return <CreditCard className="w-6 h-6 text-blue-500" />;
+                case 'cash_on_delivery':
+                  return <Banknote className="w-6 h-6 text-green-600" />;
+                case 'bank_transfer':
+                  return <Building2 className="w-6 h-6 text-indigo-600" />;
+                default:
+                  return <CreditCard className="w-6 h-6 text-gray-600" />;
+              }
+            };
+
+            const getIconBgColor = () => {
+              if (method.icon_url) return 'bg-gray-100';
+
+              switch (method.type) {
+                case 'stripe':
+                case 'credit_card':
+                case 'debit_card':
+                  return 'bg-blue-50';
+                case 'paypal':
+                  return 'bg-blue-50';
+                case 'cash_on_delivery':
+                  return 'bg-green-50';
+                case 'bank_transfer':
+                  return 'bg-indigo-50';
+                default:
+                  return 'bg-gray-100';
+              }
+            };
+
+            return (
+              <Card key={method.id} className="material-elevation-1 border-0">
+                <CardContent className="p-6">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-4">
+                      <div className={`w-12 h-12 ${getIconBgColor()} rounded-lg flex items-center justify-center`}>
+                        {getMethodIcon()}
+                      </div>
+                      <div>
                       <h3 className="font-semibold text-lg">{method.name}</h3>
                       <p className="text-gray-600">{method.description}</p>
                       <div className="flex items-center gap-2 mt-2">
@@ -596,10 +630,11 @@ export default function PaymentMethods() {
                       <Trash2 className="w-4 h-4" />
                     </Button>
                   </div>
-                </div>
-              </CardContent>
-            </Card>
-          ))}
+                  </div>
+                </CardContent>
+              </Card>
+            );
+          })}
           {paymentMethods.length === 0 && !loading && (
             <div className="text-center text-gray-500 py-8">
               No payment methods configured yet. Add one using the buttons above.
