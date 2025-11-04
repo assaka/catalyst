@@ -2297,7 +2297,20 @@ export default function Checkout() {
 
                 {paymentFee > 0 && (
                   <div className="flex justify-between">
-                    <span>{t('checkout.payment_fee', 'Payment Fee')}</span>
+                    <span>
+                      {t('checkout.payment_fee', 'Payment Fee')}
+                      {(() => {
+                        const selectedMethod = paymentMethods.find(m => m.code === selectedPaymentMethod);
+                        if (selectedMethod && selectedMethod.fee_type === 'percentage') {
+                          return (
+                            <span className="text-gray-500 text-sm ml-1">
+                              ({selectedMethod.fee_amount}% × {formatPrice(calculateSubtotal())})
+                            </span>
+                          );
+                        }
+                        return null;
+                      })()}
+                    </span>
                     <span>{formatPrice(paymentFee)}</span>
                   </div>
                 )}
