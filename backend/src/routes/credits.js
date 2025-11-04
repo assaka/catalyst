@@ -93,24 +93,53 @@ router.get('/check-schedule/:scheduleId', authMiddleware, storeAuth, async (req,
 });
 
 /**
- * Get credit pricing options
- * GET /api/credits/pricing
+ * Get credit pricing options for a specific currency
+ * GET /api/credits/pricing?currency=usd
  */
-router.get('/pricing', authMiddleware, (req, res) => {
+router.get('/pricing', async (req, res) => {
   try {
-    const pricing = creditService.getCreditPricing();
+    const currency = (req.query.currency || 'usd').toLowerCase();
+
+    console.log(`💰 [Credits API] Getting pricing for currency: ${currency}`);
+
+    const pricingService = require('../services/pricing-service');
+    const pricing = await pricingService.getPricingForCurrency(currency);
+
+    console.log(`✅ [Credits API] Returning ${pricing.length} pricing options for ${currency}`);
 
     res.json({
       success: true,
-      pricing,
-      currency: 'USD',
-      note: 'Prices shown are in US Dollars. Credits are used for Akeneo integration operations.'
+      data: pricing,
+      currency: currency.toUpperCase()
     });
   } catch (error) {
     console.error('Error getting credit pricing:', error);
     res.status(500).json({
       success: false,
       message: 'Failed to get credit pricing',
+      error: error.message
+    });
+  }
+});
+
+/**
+ * Get available currencies for credit purchases
+ * GET /api/credits/currencies
+ */
+router.get('/currencies', async (req, res) => {
+  try {
+    const pricingService = require('../services/pricing-service');
+    const currencies = await pricingService.getAvailableCurrencies();
+
+    res.json({
+      success: true,
+      data: currencies
+    });
+  } catch (error) {
+    console.error('Error getting currencies:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to get currencies',
       error: error.message
     });
   }

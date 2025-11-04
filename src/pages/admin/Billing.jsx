@@ -12,8 +12,9 @@ import { Wallet, DollarSign, CheckCircle, Clock, CreditCard, RefreshCw, Info, Al
 import { formatPrice } from '@/utils/priceUtils';
 import { useNavigate } from 'react-router-dom';
 import { createPageUrl } from '@/utils';
+import pricingService from '@/services/pricingService';
 
-const CheckoutForm = ({ selectedPackage, onSuccess, onError }) => {
+const CheckoutForm = ({ selectedPackage, currency, onSuccess, onError }) => {
   const stripe = useStripe();
   const elements = useElements();
   const [processing, setProcessing] = useState(false);
@@ -42,13 +43,14 @@ const CheckoutForm = ({ selectedPackage, onSuccess, onError }) => {
       console.log('📤 [CheckoutForm] Step 1: Creating payment intent...');
       console.log('📤 [CheckoutForm] Request params:', {
         credits: selectedPackage.credits,
-        amount: selectedPackage.price
+        amount: selectedPackage.price,
+        currency: currency
       });
 
       const intentResult = await createPaymentIntent({
         credits: selectedPackage.credits,
         amount: selectedPackage.price
-      });
+      }, currency);
 
       const elapsed1 = Date.now() - startTime;
       console.log(`📥 [CheckoutForm] Step 1 completed in ${elapsed1}ms`);
@@ -160,7 +162,7 @@ const CheckoutForm = ({ selectedPackage, onSuccess, onError }) => {
         <div className="flex items-start gap-2">
           <Info className="w-4 h-4 text-blue-600 mt-0.5 flex-shrink-0" />
           <p className="text-sm text-blue-900">
-            Your credit card will be charged <strong>{formatPrice(selectedPackage.price)}</strong> when you submit the payment.
+            Your credit card will be charged <strong>{currency === 'eur' ? '€' : '$'}{selectedPackage.price}</strong> when you submit the payment.
           </p>
         </div>
       </div>
@@ -207,10 +209,15 @@ export default function Billing() {
   const [paymentError, setPaymentError] = useState('');
   const [stripeConfigError, setStripeConfigError] = useState(false);
   const [stripePromise, setStripePromise] = useState(null);
+  const [selectedCurrency, setSelectedCurrency] = useState('usd');
+  const [creditOptions, setCreditOptions] = useState([]);
+  const [currencies, setCurrencies] = useState(['usd', 'eur']);
 
   useEffect(() => {
     console.log('🟦 [Billing] Component mounted, initializing...');
     loadBillingData();
+    loadCurrencies();
+    loadPricing(selectedCurrency);
 
     const fetchKey = async () => {
         console.log('🔑 [Billing] Fetching Stripe publishable key...');
@@ -270,11 +277,51 @@ export default function Billing() {
     }
   };
 
-  const creditOptions = [
-    { credits: 100, price: 10, popular: false },
-    { credits: 550, price: 50, popular: true },
-    { credits: 1200, price: 100, popular: false },
-  ];
+  // Load available currencies
+  const loadCurrencies = async () => {
+    console.log('🌍 [Billing] Loading available currencies...');
+    try {
+      const currencyList = await pricingService.getCurrencies();
+      console.log('✅ [Billing] Currencies loaded:', currencyList);
+      setCurrencies(currencyList);
+    } catch (error) {
+      console.error('❌ [Billing] Error loading currencies:', error);
+      // Keep default currencies
+    }
+  };
+
+  // Load pricing for selected currency
+  const loadPricing = async (currency) => {
+    console.log(`💰 [Billing] Loading pricing for currency: ${currency}`);
+    try {
+      const pricing = await pricingService.getPricing(currency);
+      console.log(`✅ [Billing] Pricing loaded:`, pricing);
+
+      // Transform to match existing structure (map 'amount' to 'price')
+      const transformedPricing = pricing.map(option => ({
+        ...option,
+        price: option.amount, // Backend uses 'amount', frontend expects 'price'
+        stripe_price_id: option.stripe_price_id
+      }));
+
+      setCreditOptions(transformedPricing);
+    } catch (error) {
+      console.error(`❌ [Billing] Error loading pricing:`, error);
+      // Set default pricing as fallback
+      setCreditOptions(pricingService.getDefaultPricing(currency).map(opt => ({
+        ...opt,
+        price: opt.amount
+      })));
+    }
+  };
+
+  // Reload pricing when currency changes
+  useEffect(() => {
+    if (selectedCurrency) {
+      loadPricing(selectedCurrency);
+      setSelectedPackage(null); // Reset selection when currency changes
+    }
+  }, [selectedCurrency]);
 
   const handlePaymentSuccess = () => {
     console.log('✅ [Billing] Payment success handler called');
@@ -310,8 +357,26 @@ export default function Billing() {
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-      <h1 className="text-3xl font-bold text-gray-900 mb-8">Billing & Credits</h1>
-      
+      <div className="flex items-center justify-between mb-8">
+        <h1 className="text-3xl font-bold text-gray-900">Billing & Credits</h1>
+
+        {/* Currency Selector */}
+        <div className="flex items-center gap-2">
+          <label className="text-sm font-medium text-gray-700">Currency:</label>
+          <select
+            value={selectedCurrency}
+            onChange={(e) => setSelectedCurrency(e.target.value)}
+            className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+          >
+            {currencies.map(curr => (
+              <option key={curr} value={curr}>
+                {curr.toUpperCase()} ({pricingService.getCurrencySymbol(curr)})
+              </option>
+            ))}
+          </select>
+        </div>
+      </div>
+
       {paymentSuccess && (
         <div className="mb-6 p-4 bg-green-100 border border-green-400 text-green-700 rounded-lg">
           Payment successful! Your credits have been added. The balance will update shortly.
@@ -372,9 +437,11 @@ export default function Billing() {
                       <CardTitle>{option.credits.toLocaleString()} Credits</CardTitle>
                     </CardHeader>
                     <CardContent className="text-center">
-                      <p className="text-3xl font-bold mb-4">${option.price}</p>
-                      <Button 
-                        className="w-full" 
+                      <p className="text-3xl font-bold mb-4">
+                        {pricingService.formatPrice(option.price, selectedCurrency)}
+                      </p>
+                      <Button
+                        className="w-full"
                         variant={selectedPackage?.credits === option.credits ? 'default' : 'outline'}
                       >
                         {selectedPackage?.credits === option.credits ? 'Selected' : 'Select'}
@@ -405,6 +472,7 @@ export default function Billing() {
                      <Elements stripe={stripePromise}>
                        <CheckoutForm
                          selectedPackage={selectedPackage}
+                         currency={selectedCurrency}
                          onSuccess={handlePaymentSuccess}
                          onError={handlePaymentError}
                        />
