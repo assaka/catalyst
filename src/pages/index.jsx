@@ -7,6 +7,7 @@ export { default as Products } from './admin/Products';
 export { default as Categories } from './admin/Categories';
 export { default as Attributes } from './admin/Attributes';
 export { default as Orders } from './admin/Orders';
+export { default as SalesSettings } from './admin/SalesSettings';
 export { default as Customers } from './admin/Customers';
 export { default as CustomerActivity } from './admin/CustomerActivity';
 export { default as Coupons } from './admin/Coupons';

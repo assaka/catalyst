@@ -165,6 +165,16 @@ export default function Emails() {
         icon: '💳',
         color: 'from-green-500 to-emerald-600',
         label: 'Credit Purchase'
+      },
+      'pdf_invoice': {
+        icon: '📄',
+        color: 'from-purple-500 to-pink-600',
+        label: 'PDF Invoice Template'
+      },
+      'shipment_notification': {
+        icon: '🚚',
+        color: 'from-teal-500 to-cyan-600',
+        label: 'Shipment Notification'
       }
     };
 
