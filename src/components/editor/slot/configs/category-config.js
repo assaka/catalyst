@@ -715,68 +715,25 @@ export const categoryConfig = {
             }
 
             try {
-              // Use fetch API to call cart endpoint with centralized session ID logic
-              const baseURL = window.location.origin.includes('localhost')
-                ? 'http://localhost:10000'
-                : 'https://catalyst-backend-fzhu.onrender.com';
+              // FIXED: Use cartService for uniform logic (same as ProductDetail and UnifiedSlotRenderer)
+              const { default: cartService } = await import('@/services/cartService');
+              const { getPriceDisplay } = await import('@/utils/priceUtils');
 
-              // Use the same session ID logic as cartService
-              let sessionId = localStorage.getItem('guest_session_id');
-              if (!sessionId) {
-                sessionId = 'guest_' + Math.random().toString(36).substring(2) + Date.now().toString(36);
-                localStorage.setItem('guest_session_id', sessionId);
-              }
+              // Get correct base price using utility function
+              const priceInfo = getPriceDisplay(product);
+              const basePrice = priceInfo.displayPrice;
 
-              // Get user info if authenticated (same as cartService)
-              let user = null;
-              try {
-                const { CustomerAuth } = await import('@/api/storefront-entities');
-                if (CustomerAuth.isAuthenticated()) {
-                  user = await CustomerAuth.me();
-                }
-              } catch (e) {}
+              const result = await cartService.addItem(
+                product.id,
+                1,
+                basePrice,
+                [],
+                store.id
+              );
 
-              const cartData = {
-                store_id: store.id,
-                product_id: product.id,
-                quantity: 1,
-                price: parseFloat(product.price || 0),
-                selected_options: [],
-                session_id: sessionId
-              };
-
-              // Add user_id if authenticated (but not for customers to avoid FK issues)
-              if (user?.id && user?.role !== 'customer') {
-                cartData.user_id = user.id;
-              }
-
-              const response = await fetch(baseURL + '/api/cart', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(cartData)
-              });
-
-              const result = await response.json();
-
+              // FIXED: Use correct success check (result.success === true, not !== false)
               if (result.success) {
-                // Extract fresh cart data from the response
-                const freshCartData = result.data;
-                const cartItems = Array.isArray(freshCartData?.items) ? freshCartData.items :
-                                 Array.isArray(freshCartData?.dataValues?.items) ? freshCartData.dataValues.items : [];
-
-                // Dispatch cart update event with fresh cart data (matches cartService pattern)
-                window.dispatchEvent(new CustomEvent('cartUpdated', {
-                  detail: {
-                    action: 'add_from_category',
-                    timestamp: Date.now(),
-                    source: 'category.addToCart',
-                    freshCartData: {
-                      success: true,
-                      items: cartItems,
-                      cart: freshCartData
-                    }
-                  }
-                }));
+                // NOTE: cartService.addItem() already dispatches cartUpdated event, no need to duplicate
 
                 // Track add to cart event
                 if (window.catalyst?.trackAddToCart) {
@@ -949,68 +906,22 @@ export const categoryConfig = {
             }
 
             try {
-              // Use fetch API to call cart endpoint with centralized session ID logic
-              const baseURL = window.location.origin.includes('localhost')
-                ? 'http://localhost:10000'
-                : 'https://catalyst-backend-fzhu.onrender.com';
+              // FIXED: Use cartService for uniform logic
+              const { default: cartService } = await import('@/services/cartService');
 
-              // Use the same session ID logic as cartService
-              let sessionId = localStorage.getItem('guest_session_id');
-              if (!sessionId) {
-                sessionId = 'guest_' + Math.random().toString(36).substring(2) + Date.now().toString(36);
-                localStorage.setItem('guest_session_id', sessionId);
-              }
+              // NOTE: Can't use getPriceDisplay here as we only have productPrice from data attributes
+              // This is acceptable as the price is already pre-processed by CategorySlotRenderer
+              const result = await cartService.addItem(
+                productId,
+                1,
+                productPrice,
+                [],
+                store.id
+              );
 
-              // Get user info if authenticated (same as cartService)
-              let user = null;
-              try {
-                const { CustomerAuth } = await import('@/api/storefront-entities');
-                if (CustomerAuth.isAuthenticated()) {
-                  user = await CustomerAuth.me();
-                }
-              } catch (e) {}
-
-              const cartData = {
-                store_id: store.id,
-                product_id: productId,
-                quantity: 1,
-                price: productPrice,
-                selected_options: [],
-                session_id: sessionId
-              };
-
-              // Add user_id if authenticated (but not for customers to avoid FK issues)
-              if (user?.id && user?.role !== 'customer') {
-                cartData.user_id = user.id;
-              }
-
-              const response = await fetch(baseURL + '/api/cart', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(cartData)
-              });
-
-              const result = await response.json();
-
+              // FIXED: Use correct success check (result.success === true, not !== false)
               if (result.success) {
-                // Extract fresh cart data from the response
-                const freshCartData = result.data;
-                const cartItems = Array.isArray(freshCartData?.items) ? freshCartData.items :
-                                 Array.isArray(freshCartData?.dataValues?.items) ? freshCartData.dataValues.items : [];
-
-                // Dispatch cart update event with fresh cart data (matches cartService pattern)
-                window.dispatchEvent(new CustomEvent('cartUpdated', {
-                  detail: {
-                    action: 'add_from_category',
-                    timestamp: Date.now(),
-                    source: 'category.addToCart',
-                    freshCartData: {
-                      success: true,
-                      items: cartItems,
-                      cart: freshCartData
-                    }
-                  }
-                }));
+                // NOTE: cartService.addItem() already dispatches cartUpdated event
 
                 // Track add to cart event
                 if (window.catalyst?.trackAddToCart) {
