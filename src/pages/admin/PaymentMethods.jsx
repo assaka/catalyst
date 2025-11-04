@@ -83,8 +83,8 @@ export default function PaymentMethods() {
       type: "stripe",
       payment_flow: "online",
       description: "Accept credit cards, debit cards, and more via Stripe.",
-      icon_url: "https://js.stripe.com/v3/fingerprinted/img/stripe-logo-blurple-fed4f31ce.svg",
-      icon: "stripe"
+      icon_url: "",
+      icon: "creditcard"
     },
     {
       name: "Cash on Delivery",
