@@ -446,6 +446,11 @@ router.get('/emails', storeOwnerOnly, async (req, res) => {
 // @access  Private (Store Owner Only)
 router.post('/emails', storeOwnerOnly, async (req, res) => {
   try {
+    console.log('📧 POST /api/blacklist/emails - Request received');
+    console.log('  User:', req.user?.email, 'Role:', req.user?.role);
+    console.log('  Store ID:', req.query.store_id);
+    console.log('  Email to blacklist:', req.body.email);
+
     const { store_id } = req.query;
     const { email, reason } = req.body;
 
