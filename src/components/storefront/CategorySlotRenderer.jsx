@@ -12,7 +12,7 @@ import '@/components/editor/slot/CategorySlotComponents';
 import '@/components/editor/slot/BreadcrumbsSlotComponent';
 import { createProductUrl } from '@/utils/urlUtils';
 import { formatPrice, getPriceDisplay } from '@/utils/priceUtils';
-import { getStockLabel, getStockLabelStyle } from '@/utils/stockUtils';
+import { getStockLabel, getStockLabelStyle, isProductOutOfStock } from '@/utils/stockUtils';
 import { getCategoryName, getProductName, getCurrentLanguage } from '@/utils/translationUtils';
 import { processVariables } from '@/utils/variableProcessor';
 import { useTranslation } from '@/contexts/TranslationContext';
@@ -236,8 +236,8 @@ export function CategorySlotRenderer({
         // Get translated product name
         const translatedName = getProductName(product, currentLanguage) || product.name;
 
-        // Calculate stock status
-        const isInStock = product.infinite_stock || (product.stock_quantity !== undefined && product.stock_quantity > 0);
+        // Calculate stock status using centralized function
+        const isInStock = !isProductOutOfStock(product);
 
         // Get stock label from centralized utility
         const stockLabelInfo = getStockLabel(product, settings, null, translations);

@@ -17,7 +17,7 @@ import { useProduct, useUser } from "@/hooks/useApiQueries";
 import { useStore, cachedApiCall } from "@/components/storefront/StoreProvider";
 import { formatPriceWithTax, calculateDisplayPrice, safeNumber, formatPrice, getPriceDisplay } from "@/utils/priceUtils";
 import { getImageUrlByIndex, getPrimaryImageUrl } from "@/utils/imageUtils";
-import { getStockLabel as getStockLabelUtil, getStockLabelStyle } from "@/utils/stockUtils";
+import { getStockLabel as getStockLabelUtil, getStockLabelStyle, isProductOutOfStock } from "@/utils/stockUtils";
 import {
   ShoppingCart, Star, ChevronLeft, ChevronRight, Minus, Plus, Heart, Download, Eye
 } from "lucide-react";
@@ -808,10 +808,11 @@ export default function ProductDetail() {
                 const directName = product.name;
                 const finalName = translatedName || attributeName || directName;
 
-                // Create a modified product with the correct name
+                // Create a modified product with the correct name and stock status
                 return {
                   ...product,
-                  name: finalName
+                  name: finalName,
+                  in_stock: !isProductOutOfStock(product)
                 };
               })() : (displayProduct || product),
               baseProduct: product, // Keep reference to parent for configurable products
