@@ -327,11 +327,6 @@ CREATE TRIGGER update_platform_admins_updated_at
   FOR EACH ROW
   EXECUTE FUNCTION update_updated_at_column();
 
-CREATE TRIGGER update_store_analytics_updated_at
-  BEFORE UPDATE ON store_analytics
-  FOR EACH ROW
-  EXECUTE FUNCTION update_updated_at_column();
-
 -- ==========================================
 -- ROW LEVEL SECURITY (RLS)
 -- ==========================================
@@ -341,7 +336,6 @@ ALTER TABLE subscriptions ENABLE ROW LEVEL SECURITY;
 ALTER TABLE billing_transactions ENABLE ROW LEVEL SECURITY;
 ALTER TABLE usage_metrics ENABLE ROW LEVEL SECURITY;
 ALTER TABLE platform_admins ENABLE ROW LEVEL SECURITY;
-ALTER TABLE audit_logs ENABLE ROW LEVEL SECURITY;
 
 -- RLS Policies for subscriptions
 CREATE POLICY "Store owners can view their subscriptions"
@@ -415,20 +409,6 @@ CREATE POLICY "Super admins can manage platform admins"
       WHERE user_id = auth.uid() AND role = 'super_admin' AND is_active = true
     )
   );
-
--- RLS Policies for audit_logs
-CREATE POLICY "Platform admins can view audit logs"
-  ON audit_logs FOR SELECT
-  USING (
-    EXISTS (
-      SELECT 1 FROM platform_admins
-      WHERE user_id = auth.uid() AND is_active = true
-    )
-  );
-
-CREATE POLICY "Users can view their own audit logs"
-  ON audit_logs FOR SELECT
-  USING (user_id = auth.uid());
 
 -- ==========================================
 -- INITIAL DATA
