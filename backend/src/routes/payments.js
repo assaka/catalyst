@@ -795,18 +795,20 @@ router.post('/create-checkout', async (req, res) => {
     // Create separate rates for charges (similar to shipping rates)
     let taxRateId = null;
 
-    // NOTE: For Destination Charges, we DON'T pass stripeAccount option
-    // Tax rates, shipping rates, coupons are created on platform account
-    // Then the checkout session uses them and transfers funds to connected account
+    // Determine Stripe options for Connect account
+    const stripeOptions = {};
+    if (store.stripe_account_id) {
+      stripeOptions.stripeAccount = store.stripe_account_id;
+    }
 
     // Create tax rate if provided
     if (taxAmountNum > 0) {
       try {
         console.log('💰 Creating tax rate:', taxAmountNum, 'cents:', Math.round(taxAmountNum * 100));
-        
+
         const taxPercentage = subtotal > 0 ? ((taxAmountNum / subtotal) * 100).toFixed(2) : '';
         const taxName = taxPercentage ? `Tax (${taxPercentage}%)` : 'Tax';
-        
+
         const taxRate = await stripe.taxRates.create({
           display_name: taxName,
           description: 'Sales Tax',
@@ -816,7 +818,7 @@ router.post('/create-checkout', async (req, res) => {
             item_type: 'tax',
             tax_rate: taxPercentage
           }
-        }); // No stripeOptions - create on platform
+        }, stripeOptions);
         
         taxRateId = taxRate.id;
         console.log('✅ Created tax rate:', taxRateId);
@@ -980,7 +982,7 @@ router.post('/create-checkout', async (req, res) => {
     // Apply discount if provided
     if (applied_coupon && discount_amount > 0) {
       try {
-        // Create a Stripe coupon for the discount (on platform account)
+        // Create a Stripe coupon for the discount
         const stripeCoupon = await stripe.coupons.create({
           amount_off: convertToStripeAmount(discount_amount, storeCurrency), // Convert based on currency type
           currency: storeCurrency.toLowerCase(),
@@ -990,7 +992,7 @@ router.post('/create-checkout', async (req, res) => {
             original_coupon_code: applied_coupon.code,
             original_coupon_id: applied_coupon.id?.toString() || ''
           }
-        }); // No stripeOptions - create on platform
+        }, stripeOptions);
 
         // Apply the coupon to the session so it's pre-applied
         sessionConfig.discounts = [{
@@ -1039,7 +1041,7 @@ router.post('/create-checkout', async (req, res) => {
       // Create the shipping rate first
       try {
 
-        const shippingRate = await stripe.shippingRates.create(shippingRateData); // No stripeOptions - create on platform
+        const shippingRate = await stripe.shippingRates.create(shippingRateData, stripeOptions);
         
         // Use the created shipping rate in the session via shipping_options
         sessionConfig.shipping_options = [{
@@ -1105,101 +1107,13 @@ router.post('/create-checkout', async (req, res) => {
       const postal_code = shipping_address.postal_code || shipping_address.zip || '';
       const country = shipping_address.country || 'US';
       
-      // Try to create a customer with prefilled data for better experience
-      // Note: For Connect accounts, we need to create the customer in the same account context
-      if (customer_email && customerName) {
-        try {
-          // Determine Stripe options for Connect account
-          const customerStripeOptions = {};
-          if (store.stripe_account_id) {
-            customerStripeOptions.stripeAccount = store.stripe_account_id;
-          }
-          
-          // First check if customer already exists in the appropriate account
-          const customers = await stripe.customers.list({
-            email: customer_email,
-            limit: 1
-          }, customerStripeOptions);
-          
-          let customer;
-          if (customers.data.length > 0) {
-            customer = customers.data[0];
-            console.log('Found existing customer:', customer.id);
-            
-            // Update existing customer with current address info if provided
-            if (customerName && line1) {
-              try {
-                await stripe.customers.update(customer.id, {
-                  name: customerName,
-                  address: {
-                    line1: line1,
-                    line2: line2 || undefined,
-                    city: city || undefined,
-                    state: state || undefined,
-                    postal_code: postal_code || undefined,
-                    country: country
-                  },
-                  shipping: {
-                    name: customerName,
-                    address: {
-                      line1: line1,
-                      line2: line2 || undefined,
-                      city: city || undefined,
-                      state: state || undefined,
-                      postal_code: postal_code || undefined,
-                      country: country
-                    }
-                  }
-                }, customerStripeOptions);
-                console.log('Updated existing customer with current address');
-              } catch (updateError) {
-                console.log('Could not update existing customer address:', updateError.message);
-              }
-            }
-          } else {
-            // Create new customer with address in the appropriate account
-            customer = await stripe.customers.create({
-              email: customer_email,
-              name: customerName,
-              address: line1 ? {
-                line1: line1,
-                line2: line2 || undefined,
-                city: city || undefined,
-                state: state || undefined,
-                postal_code: postal_code || undefined,
-                country: country
-              } : undefined,
-              shipping: (customerName && line1) ? {
-                name: customerName,
-                address: {
-                  line1: line1,
-                  line2: line2 || undefined,
-                  city: city || undefined,
-                  state: state || undefined,
-                  postal_code: postal_code || undefined,
-                  country: country
-                }
-              } : undefined
-            }, customerStripeOptions);
-            console.log('Created new customer:', customer.id, 'with country:', country);
-          }
-          
-          sessionConfig.customer = customer.id;
-          customerCreated = true;
-        } catch (customerError) {
-          console.log('Could not create/find customer, using email only:', customerError.message);
-        }
+      // For now, just use customer_email instead of creating customer objects
+      // This avoids customer ID conflicts between different Stripe accounts
+      // Store owners can still see customer emails in their Stripe dashboard
+      if (customer_email) {
+        sessionConfig.customer_email = customer_email;
+        console.log('📧 Using customer_email for checkout:', customer_email);
       }
-    }
-
-    // Add customer email if provided and no customer was created
-    if (customer_email && !customerCreated) {
-      sessionConfig.customer_email = customer_email;
-      console.log('📧 Set customer_email directly:', customer_email);
-    } else if (customer_email && customerCreated) {
-      console.log('📧 Customer created with email attached to customer ID:', customer_email);
-    } else if (!customer_email) {
-      console.log('⚠️ No customer_email provided');
     }
     
     // Log shipping address collection status
@@ -1235,26 +1149,15 @@ router.post('/create-checkout', async (req, res) => {
     console.log('🔍 Tax line items:', taxItems.length, taxItems.length > 0 ? taxItems[0].price_data?.product_data?.name : 'None');
     console.log('🔍 Fee line items:', feeItems.length, feeItems.length > 0 ? feeItems[0].price_data?.product_data?.name : 'None');
 
-    // Create checkout session
-    // For connected accounts, use Destination Charge pattern so platform receives webhooks
+    // Create checkout session (using stripeOptions defined above)
+    console.log('💰 Creating Stripe Checkout session...');
     if (store.stripe_account_id) {
-      // Use Destination Charge: session created on platform, funds transferred to connected account
-      // This way platform webhook receives the events!
-      sessionConfig.payment_intent_data = {
-        transfer_data: {
-          destination: store.stripe_account_id
-        }
-      };
-      console.log('💰 Using Destination Charge pattern - platform webhook will receive events');
-      console.log('💰 Transferring to connected account:', store.stripe_account_id);
-      // Don't pass stripeAccount option - create on platform!
+      console.log('💰 Using connected account (Direct Charge):', store.stripe_account_id);
     } else {
-      // No connected account - direct platform charge
-      console.log('💰 No connected account - direct platform charge');
+      console.log('💰 Using platform account (no connected account)');
     }
 
-    // Create session without options object (Destination Charge uses payment_intent_data in config)
-    const session = await stripe.checkout.sessions.create(sessionConfig);
+    const session = await stripe.checkout.sessions.create(sessionConfig, stripeOptions);
 
     console.log('Created Stripe session:', {
       id: session.id,
