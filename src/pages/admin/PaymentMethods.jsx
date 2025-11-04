@@ -17,7 +17,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
-import { Plus, Edit, Trash2, CreditCard, Banknote, CheckCircle, AlertCircle, Languages, X, ChevronsUpDown, Check } from "lucide-react";
+import { Plus, Edit, Trash2, CreditCard, Banknote, CheckCircle, AlertCircle, Languages, X, ChevronsUpDown, Check, Building2, Truck } from "lucide-react";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
 import FlashMessage from "@/components/storefront/FlashMessage";
@@ -83,7 +83,8 @@ export default function PaymentMethods() {
       type: "stripe",
       payment_flow: "online",
       description: "Accept credit cards, debit cards, and more via Stripe.",
-      icon_url: "https://js.stripe.com/v3/fingerprinted/img/stripe-logo-blurple-fed4f31ce.svg"
+      icon_url: "https://js.stripe.com/v3/fingerprinted/img/stripe-logo-blurple-fed4f31ce.svg",
+      icon: "stripe"
     },
     {
       name: "Cash on Delivery",
@@ -91,7 +92,8 @@ export default function PaymentMethods() {
       type: "cash_on_delivery",
       payment_flow: "offline",
       description: "Pay with cash upon delivery.",
-      icon_url: ""
+      icon_url: "",
+      icon: "banknote"
     },
     {
       name: "Bank Transfer",
@@ -99,7 +101,8 @@ export default function PaymentMethods() {
       type: "bank_transfer",
       payment_flow: "offline",
       description: "Pay via a manual bank transfer.",
-      icon_url: ""
+      icon_url: "",
+      icon: "building"
     }
   ];
 
@@ -465,22 +468,38 @@ export default function PaymentMethods() {
           </CardHeader>
           <CardContent>
             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
-              {quickAddMethods.map(method => (
-                <Button
-                  key={method.code}
-                  variant="outline"
-                  className="h-20 flex flex-col items-center justify-center gap-2 text-center"
-                  onClick={() => handleQuickAdd(method)}
-                  disabled={saving || !store}
-                >
-                  {method.icon_url ? (
-                    <img src={method.icon_url} alt={method.name} className="h-8 w-auto object-contain" />
-                  ) : (
-                    <Banknote className="h-6 w-6 text-gray-600" />
-                  )}
-                  <span className="text-xs">{method.name}</span>
-                </Button>
-              ))}
+              {quickAddMethods.map(method => {
+                // Render appropriate icon based on method type
+                const renderIcon = () => {
+                  if (method.icon_url) {
+                    return <img src={method.icon_url} alt={method.name} className="h-8 w-auto object-contain" />;
+                  }
+
+                  switch (method.icon) {
+                    case 'stripe':
+                      return <CreditCard className="h-6 w-6 text-blue-600" />;
+                    case 'banknote':
+                      return <Banknote className="h-6 w-6 text-green-600" />;
+                    case 'building':
+                      return <Building2 className="h-6 w-6 text-indigo-600" />;
+                    default:
+                      return <CreditCard className="h-6 w-6 text-gray-600" />;
+                  }
+                };
+
+                return (
+                  <Button
+                    key={method.code}
+                    variant="outline"
+                    className="h-20 flex flex-col items-center justify-center gap-2 text-center hover:border-blue-500 hover:bg-blue-50 transition-colors"
+                    onClick={() => handleQuickAdd(method)}
+                    disabled={saving || !store}
+                  >
+                    {renderIcon()}
+                    <span className="text-xs font-medium">{method.name}</span>
+                  </Button>
+                );
+              })}
             </div>
           </CardContent>
         </Card>
@@ -528,7 +547,7 @@ export default function PaymentMethods() {
                         <Badge variant={method.is_active ? 'default' : 'secondary'}>
                           {method.is_active ? 'Active' : 'Inactive'}
                         </Badge>
-                        <Badge variant={method.payment_flow === 'online' ? 'default' : 'outline'} className={method.payment_flow === 'online' ? 'bg-purple-100 text-purple-700 border-purple-200' : 'bg-gray-100 text-gray-700'}>
+                        <Badge variant={method.payment_flow === 'online' ? 'default' : 'outline'} className={method.payment_flow === 'online' ? 'bg-purple-100 text-purple-700 border-purple-200' : 'bg-blue-100 text-blue-700 border-blue-200'}>
                           {method.payment_flow === 'online' ? 'Online' : 'Offline'}
                         </Badge>
                         {method.type === 'stripe' && (
