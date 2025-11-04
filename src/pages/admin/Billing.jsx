@@ -24,86 +24,40 @@ const CheckoutForm = ({ selectedPackage, currency, onSuccess, onError }) => {
     event.preventDefault();
     setError(null);
 
-    console.log('🟦 [CheckoutForm] Form submitted at:', new Date().toISOString());
-    console.log('🟦 [CheckoutForm] Stripe loaded:', !!stripe);
-    console.log('🟦 [CheckoutForm] Elements loaded:', !!elements);
-    console.log('🟦 [CheckoutForm] Selected package:', selectedPackage);
-
     if (!stripe || !elements) {
-      console.warn('🟨 [CheckoutForm] Stripe or Elements not loaded yet');
       setError('Payment system not ready. Please wait and try again.');
       return;
     }
 
     setProcessing(true);
-    const startTime = Date.now();
-    console.log('💳 [CheckoutForm] Payment process started');
 
     try {
-      console.log('📤 [CheckoutForm] Step 1: Creating payment intent...');
-      console.log('📤 [CheckoutForm] Request params:', {
-        credits: selectedPackage.credits,
-        amount: selectedPackage.price,
-        currency: currency
-      });
-
       const intentResult = await createPaymentIntent({
         credits: selectedPackage.credits,
         amount: selectedPackage.price
       }, currency);
 
-      const elapsed1 = Date.now() - startTime;
-      console.log(`📥 [CheckoutForm] Step 1 completed in ${elapsed1}ms`);
-      console.log('📥 [CheckoutForm] Intent result:', {
-        hasData: !!intentResult.data,
-        hasError: !!intentResult.error,
-        data: intentResult.data,
-        error: intentResult.error
-      });
-
       const { data: response, error: intentError } = intentResult;
 
       if (intentError) {
-        console.error('🔴 [CheckoutForm] Intent creation error:', {
-          message: intentError.message,
-          stack: intentError.stack,
-          fullError: intentError
-        });
         throw new Error(`Payment setup failed: ${intentError.message}`);
       }
 
       if (response?.error) {
-        console.error('🔴 [CheckoutForm] API returned error:', response.error);
         throw new Error(`Payment setup failed: ${response.error}`);
       }
 
       if (!response) {
-        console.error('🔴 [CheckoutForm] No response data');
         throw new Error('No response from payment service');
       }
-
-      console.log('🔍 [CheckoutForm] Response structure:', {
-        keys: Object.keys(response),
-        hasData: !!response.data,
-        dataKeys: response.data ? Object.keys(response.data) : null
-      });
 
       const clientSecret = response.data?.clientSecret || response.clientSecret;
 
       if (!clientSecret) {
-        console.error('🔴 [CheckoutForm] No client secret in response:', {
-          response,
-          responseData: response.data,
-          allKeys: Object.keys(response)
-        });
         throw new Error('Invalid payment response - missing client secret');
       }
 
-      console.log('✅ [CheckoutForm] Client secret obtained:', clientSecret.substring(0, 20) + '...');
-
-      console.log('🔐 [CheckoutForm] Step 2: Confirming card payment with Stripe...');
       const cardElement = elements.getElement(CardElement);
-      console.log('🔐 [CheckoutForm] Card element ready:', !!cardElement);
 
       const confirmResult = await stripe.confirmCardPayment(clientSecret, {
         payment_method: {
@@ -111,48 +65,18 @@ const CheckoutForm = ({ selectedPackage, currency, onSuccess, onError }) => {
         }
       });
 
-      const elapsed2 = Date.now() - startTime;
-      console.log(`🔐 [CheckoutForm] Step 2 completed in ${elapsed2 - elapsed1}ms (total: ${elapsed2}ms)`);
-      console.log('🔐 [CheckoutForm] Confirm result:', {
-        hasError: !!confirmResult.error,
-        hasIntent: !!confirmResult.paymentIntent,
-        error: confirmResult.error,
-        intentStatus: confirmResult.paymentIntent?.status
-      });
-
       const { error: paymentError, paymentIntent } = confirmResult;
 
       if (paymentError) {
-        console.error('🔴 [CheckoutForm] Payment confirmation error:', {
-          code: paymentError.code,
-          message: paymentError.message,
-          type: paymentError.type,
-          fullError: paymentError
-        });
         throw new Error(paymentError.message);
       }
 
-      const totalElapsed = Date.now() - startTime;
-      console.log(`✅ [CheckoutForm] Payment successful! Total time: ${totalElapsed}ms`);
-      console.log('✅ [CheckoutForm] Payment intent:', {
-        id: paymentIntent.id,
-        status: paymentIntent.status,
-        amount: paymentIntent.amount
-      });
-
       onSuccess();
     } catch (err) {
-      const elapsed = Date.now() - startTime;
-      console.error(`❌ [CheckoutForm] Payment failed after ${elapsed}ms:`, {
-        message: err.message,
-        stack: err.stack,
-        fullError: err
-      });
       setError(err.message);
       onError(err.message);
     } finally {
       setProcessing(false);
-      console.log('🏁 [CheckoutForm] Process finished, processing set to false');
     }
   };
 
@@ -214,46 +138,26 @@ export default function Billing() {
   const [currencies, setCurrencies] = useState(['usd', 'eur']);
 
   useEffect(() => {
-    console.log('🟦 [Billing] Component mounted, initializing...');
     loadBillingData();
     loadCurrencies();
     loadPricing(selectedCurrency);
 
     const fetchKey = async () => {
-        console.log('🔑 [Billing] Fetching Stripe publishable key...');
         try {
             const result = await getStripePublishableKey();
-            console.log('🔑 [Billing] getStripePublishableKey result:', {
-              result,
-              hasData: !!result?.data,
-              publishableKey: result?.data?.publishableKey
-            });
-
             const { data } = result;
 
             if (data && data.publishableKey) {
-                console.log('✅ [Billing] Publishable key found:', data.publishableKey.substring(0, 10) + '...');
-                console.log('🔵 [Billing] Initializing Stripe with loadStripe...');
-
                 const stripeInstance = loadStripe(data.publishableKey);
-                console.log('🔵 [Billing] loadStripe promise created:', !!stripeInstance);
-
                 setStripePromise(stripeInstance);
                 setStripeConfigError(false);
-                console.log('✅ [Billing] Stripe initialization complete');
             } else {
-                console.warn('⚠️ [Billing] No publishable key in response:', { data });
-                console.warn('⚠️ [Billing] Setting stripeConfigError to true');
                 setStripeConfigError(true);
                 // Set stripePromise to false (not null) to stop showing "Loading..."
                 setStripePromise(false);
             }
         } catch (error) {
-            console.error("🔴 [Billing] Failed to fetch Stripe publishable key:", {
-              message: error.message,
-              stack: error.stack,
-              fullError: error
-            });
+            console.error("Failed to fetch Stripe publishable key:", error);
             setStripeConfigError(true);
             // Set stripePromise to false (not null) to stop showing "Loading..."
             setStripePromise(false);
@@ -268,7 +172,10 @@ export default function Billing() {
     try {
       const userData = await User.me();
       setUser(userData);
-      const transactionData = await CreditTransaction.filter({ user_id: userData.id }, "-created_date");
+      const transactionData = await CreditTransaction.filter({
+        user_id: userData.id,
+        order_by: '-created_date'
+      });
       setTransactions(transactionData);
     } catch (error) {
       console.error("Error loading billing data:", error);
@@ -279,23 +186,19 @@ export default function Billing() {
 
   // Load available currencies
   const loadCurrencies = async () => {
-    console.log('🌍 [Billing] Loading available currencies...');
     try {
       const currencyList = await pricingService.getCurrencies();
-      console.log('✅ [Billing] Currencies loaded:', currencyList);
       setCurrencies(currencyList);
     } catch (error) {
-      console.error('❌ [Billing] Error loading currencies:', error);
+      console.error('Error loading currencies:', error);
       // Keep default currencies
     }
   };
 
   // Load pricing for selected currency
   const loadPricing = async (currency) => {
-    console.log(`💰 [Billing] Loading pricing for currency: ${currency}`);
     try {
       const pricing = await pricingService.getPricing(currency);
-      console.log(`✅ [Billing] Pricing loaded:`, pricing);
 
       // Transform to match existing structure (map 'amount' to 'price')
       const transformedPricing = pricing.map(option => ({
@@ -306,7 +209,7 @@ export default function Billing() {
 
       setCreditOptions(transformedPricing);
     } catch (error) {
-      console.error(`❌ [Billing] Error loading pricing:`, error);
+      console.error('Error loading pricing:', error);
       // Set default pricing as fallback
       setCreditOptions(pricingService.getDefaultPricing(currency).map(opt => ({
         ...opt,
@@ -324,16 +227,13 @@ export default function Billing() {
   }, [selectedCurrency]);
 
   const handlePaymentSuccess = () => {
-    console.log('✅ [Billing] Payment success handler called');
     setPaymentSuccess(true);
     setSelectedPackage(null);
 
     // Immediately reload ALL billing data: balance, transactions, user data
-    console.log('🔄 [Billing] Reloading all billing data...');
     loadBillingData();
 
     // Dispatch event to trigger sidebar credits update
-    console.log('📢 [Billing] Dispatching creditsUpdated event to update sidebar');
     window.dispatchEvent(new CustomEvent('creditsUpdated'));
 
     // Show success message for 5 seconds

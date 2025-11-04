@@ -11,20 +11,11 @@ class PricingService {
    * @returns {Promise<Array>} - Array of pricing options
    */
   async getPricing(currency = 'usd') {
-    console.log(`💰 [PricingService] Fetching pricing for currency: ${currency}`);
-
     try {
       const response = await apiClient.get(`credits/pricing?currency=${currency}`);
-
-      console.log(`✅ [PricingService] Pricing fetched:`, {
-        currency,
-        optionsCount: response?.data?.length || 0,
-        options: response?.data
-      });
-
       return response?.data || [];
     } catch (error) {
-      console.error(`❌ [PricingService] Error fetching pricing:`, error);
+      console.error('Error fetching pricing:', error);
 
       // Return default pricing as fallback
       return this.getDefaultPricing(currency);
@@ -36,16 +27,11 @@ class PricingService {
    * @returns {Promise<Array>} - Array of currency codes
    */
   async getCurrencies() {
-    console.log(`🌍 [PricingService] Fetching available currencies...`);
-
     try {
       const response = await apiClient.get('credits/currencies');
-
-      console.log(`✅ [PricingService] Currencies fetched:`, response?.data);
-
       return response?.data || ['usd', 'eur'];
     } catch (error) {
-      console.error(`❌ [PricingService] Error fetching currencies:`, error);
+      console.error('Error fetching currencies:', error);
       return ['usd', 'eur'];
     }
   }

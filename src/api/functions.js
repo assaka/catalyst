@@ -3,53 +3,24 @@ import storefrontApiClient from './storefront-client';
 
 // Stripe payment functions
 export const createPaymentIntent = async (amount, currency = 'usd', metadata = {}) => {
-  console.log('🔵 [createPaymentIntent] Starting with params:', {
-    amount,
-    currency,
-    metadata,
-    timestamp: new Date().toISOString()
-  });
-
   try {
-    console.log('🔵 [createPaymentIntent] Sending POST to payments/create-intent');
-    console.log('🔵 [createPaymentIntent] Request payload:', {
-      amount,
-      currency,
-      metadata
-    });
-
     const response = await apiClient.post('payments/create-intent', {
       amount,
       currency,
       metadata
     });
 
-    console.log('🟢 [createPaymentIntent] Response received:', {
-      response,
-      hasData: !!response?.data,
-      dataKeys: response?.data ? Object.keys(response.data) : [],
-      timestamp: new Date().toISOString()
-    });
-
     if (!response) {
-      console.error('🔴 [createPaymentIntent] No response from API');
       return { data: null, error: new Error('No response from server') };
     }
 
     if (!response.data) {
-      console.error('🔴 [createPaymentIntent] Response has no data:', response);
       return { data: null, error: new Error('Invalid response format') };
     }
 
     return { data: response.data, error: null };
   } catch (error) {
-    console.error('🔴 [createPaymentIntent] Error caught:', {
-      message: error.message,
-      stack: error.stack,
-      response: error.response,
-      status: error.status,
-      timestamp: new Date().toISOString()
-    });
+    console.error('Error creating payment intent:', error);
     return { data: null, error: error };
   }
 };
@@ -174,19 +145,8 @@ export const checkStripeConnectStatus = async (storeId) => {
 };
 
 export const getStripePublishableKey = async () => {
-  console.log('🔑 [getStripePublishableKey] Fetching key from backend...');
   try {
     const response = await apiClient.get('payments/publishable-key');
-    console.log('🔑 [getStripePublishableKey] Raw response:', {
-      response,
-      responseType: typeof response,
-      hasData: !!response?.data,
-      dataType: typeof response?.data,
-      dataKeys: response?.data ? Object.keys(response.data) : [],
-      nestedData: response?.data?.data,
-      nestedPublishableKey: response?.data?.data?.publishableKey,
-      directPublishableKey: response?.data?.publishableKey
-    });
 
     // Backend returns: { data: { publishableKey: 'pk_...' } }
     // After apiClient: response = { data: { publishableKey: 'pk_...' } } OR response = { data: { data: { publishableKey: 'pk_...' } } }
@@ -197,18 +157,13 @@ export const getStripePublishableKey = async () => {
     if (response?.data?.data?.publishableKey) {
       // Double nested: { data: { data: { publishableKey } } }
       publishableKey = response.data.data.publishableKey;
-      console.log('🔑 [getStripePublishableKey] Found key in response.data.data.publishableKey');
     } else if (response?.data?.publishableKey) {
       // Single nested: { data: { publishableKey } }
       publishableKey = response.data.publishableKey;
-      console.log('🔑 [getStripePublishableKey] Found key in response.data.publishableKey');
     } else if (response?.publishableKey) {
       // Direct: { publishableKey }
       publishableKey = response.publishableKey;
-      console.log('🔑 [getStripePublishableKey] Found key in response.publishableKey');
     }
-
-    console.log('🔑 [getStripePublishableKey] Extracted publishableKey:', publishableKey ? publishableKey.substring(0, 15) + '...' : 'NULL');
 
     const result = {
       data: {
@@ -216,24 +171,12 @@ export const getStripePublishableKey = async () => {
       }
     };
 
-    console.log('🔑 [getStripePublishableKey] Returning:', {
-      hasData: !!result.data,
-      hasPublishableKey: !!result.data.publishableKey,
-      keyPrefix: result.data.publishableKey ? result.data.publishableKey.substring(0, 15) + '...' : 'NULL'
-    });
-
     return result;
   } catch (error) {
-    console.error('🔴 [getStripePublishableKey] Error getting key:', {
-      message: error.message,
-      status: error.status,
-      response: error.response,
-      stack: error.stack
-    });
+    console.error('Error getting Stripe publishable key:', error);
 
     // Try fallback key from environment variables
     const fallbackKey = import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY || '';
-    console.warn('🔴 [getStripePublishableKey] Using fallback key:', fallbackKey ? fallbackKey.substring(0, 10) + '...' : 'NONE');
 
     return {
       data: {
