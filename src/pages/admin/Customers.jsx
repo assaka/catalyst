@@ -656,43 +656,28 @@ export default function Customers() {
                             {/* Blacklist Section - For guest customers (email only) */}
                             {isViewOnly && (
                                 <div className="space-y-3 p-4 border rounded-lg bg-amber-50">
-                                    <div className="flex items-center justify-between">
-                                        <div>
-                                            <h4 className="font-medium">Email Blacklist Status</h4>
-                                            <p className="text-sm text-gray-600 mt-1">
-                                                {isBlacklisted
-                                                    ? 'This email is blacklisted and cannot be used for checkout'
-                                                    : 'This email can be used for checkout'}
-                                            </p>
-                                            <p className="text-xs text-amber-700 mt-2">
-                                                Note: Guest customers don't have accounts. Only their email can be blacklisted.
-                                            </p>
-                                        </div>
-                                        <div className="flex items-center gap-2">
-                                            <Label htmlFor="guest_blacklisted" className="text-sm">
-                                                {isBlacklisted ? 'Blacklisted' : 'Active'}
-                                            </Label>
-                                            <Switch
-                                                id="guest_blacklisted"
-                                                checked={isBlacklisted}
-                                                onCheckedChange={(checked) => setIsBlacklisted(checked)}
-                                                disabled={saving}
-                                            />
-                                        </div>
+                                    <div>
+                                        <h4 className="font-medium">Email Blacklist Status</h4>
+                                        <p className="text-sm text-gray-600 mt-1">
+                                            {isBlacklisted
+                                                ? 'This email is blacklisted and cannot be used for checkout'
+                                                : 'This email can be used for checkout'}
+                                        </p>
+                                        <p className="text-xs text-amber-700 mt-2">
+                                            Note: Guest customers don't have accounts. Only their email can be blacklisted.
+                                        </p>
                                     </div>
-                                    {isBlacklisted && (
-                                        <div>
-                                            <Label htmlFor="guest_blacklist_reason">Blacklist Reason (optional)</Label>
-                                            <Textarea
-                                                id="guest_blacklist_reason"
-                                                value={blacklistReason}
-                                                onChange={(e) => setBlacklistReason(e.target.value)}
-                                                placeholder="Enter reason for blacklisting this email..."
-                                                rows={3}
-                                                disabled={saving}
-                                            />
-                                        </div>
-                                    )}
+                                    <div>
+                                        <Label htmlFor="guest_blacklist_reason">Blacklist Reason (optional)</Label>
+                                        <Textarea
+                                            id="guest_blacklist_reason"
+                                            value={blacklistReason}
+                                            onChange={(e) => setBlacklistReason(e.target.value)}
+                                            placeholder="Enter reason for blacklisting this email..."
+                                            rows={3}
+                                            disabled={saving}
+                                        />
+                                    </div>
                                     <Button
                                         type="button"
                                         onClick={handleGuestBlacklist}
