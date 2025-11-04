@@ -4,25 +4,36 @@ const { supabase } = require('../database/connection');
 
 const authMiddleware = async (req, res, next) => {
   try {
+    console.log('🔐 AUTH MIDDLEWARE - Starting authentication');
+    console.log('   Path:', req.method, req.originalUrl);
 
     const token = req.header('Authorization')?.replace('Bearer ', '');
-    
+
     if (!token) {
+      console.log('❌ AUTH FAILED: No token provided');
       return res.status(401).json({
         error: 'Access denied',
         message: 'No token provided'
       });
     }
 
+    console.log('   Token received (first 20 chars):', token.substring(0, 20) + '...');
+
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    
+    console.log('   Token decoded successfully');
+    console.log('   User ID:', decoded.id);
+    console.log('   Role:', decoded.role);
+    console.log('   Expires:', new Date(decoded.exp * 1000).toLocaleString());
+
     let user;
-    
+
     // Determine which table to query based on role in JWT
     const isCustomer = decoded.role === 'customer';
     const tableName = isCustomer ? 'customers' : 'users';
     const ModelClass = isCustomer ? Customer : User;
-    
+
+    console.log('   Looking up user in table:', tableName);
+
     // Try Supabase first
     try {
       const { data: supabaseUser, error } = await supabase
@@ -30,18 +41,23 @@ const authMiddleware = async (req, res, next) => {
         .select('id, email, first_name, last_name, phone, avatar_url, is_active, email_verified, last_login, role, account_type, credits, created_at, updated_at, store_id')
         .eq('id', decoded.id)
         .single();
-      
+
       if (error && error.code !== 'PGRST116') {
+        console.log('   Supabase error:', error.message);
         throw error;
       }
-      
+
       user = supabaseUser;
+      if (user) console.log('   User found in Supabase:', user.email);
     } catch (supabaseError) {
+      console.log('   Supabase failed, trying Sequelize...');
       // Fallback to Sequelize with appropriate model
       user = await ModelClass.findByPk(decoded.id);
+      if (user) console.log('   User found in Sequelize:', user.email);
     }
-    
+
     if (!user) {
+      console.log('❌ AUTH FAILED: User not found in database (ID:', decoded.id, ')');
       return res.status(401).json({
         error: 'Access denied',
         message: 'Invalid token'
@@ -82,9 +98,15 @@ const authMiddleware = async (req, res, next) => {
       }
     }
 
+    console.log('✅ AUTH SUCCESS - User authenticated:', user.email);
     req.user = user;
     next();
   } catch (error) {
+    console.log('❌ AUTH FAILED - Exception:', error.message);
+    console.log('   Error name:', error.name);
+    if (error.name === 'TokenExpiredError') {
+      console.log('   Token has expired!');
+    }
     return res.status(401).json({
       error: 'Access denied',
       message: 'Invalid token'
