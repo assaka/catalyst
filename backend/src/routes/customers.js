@@ -45,11 +45,6 @@ router.get('/', storeOwnerOnly, async (req, res) => {
     const enhancedCustomers = await Promise.all(customers.rows.map(async (customer) => {
       const customerData = customer.toJSON();
 
-      // Map database column names to API field names for blacklist fields
-      customerData.is_blacklisted = customerData.is_blocked;
-      customerData.blacklist_reason = customerData.blocked_reason;
-      customerData.blacklisted_at = customerData.blocked_at;
-
       // For registered customers, fetch from addresses table
       if (customer.customer_type === 'registered') {
         const addresses = await Address.findAll({
@@ -335,25 +330,19 @@ router.put('/:id/blacklist', storeOwnerOnly, async (req, res) => {
       });
     }
 
-    // Update blacklist status (using is_blocked column name from database)
+    // Update blacklist status
     await customer.update({
-      is_blocked: is_blacklisted,
-      blocked_reason: is_blacklisted ? blacklist_reason : null,
-      blocked_at: is_blacklisted ? new Date() : null
+      is_blacklisted: is_blacklisted,
+      blacklist_reason: is_blacklisted ? blacklist_reason : null,
+      blacklisted_at: is_blacklisted ? new Date() : null
     });
 
     // Reload to get fresh data
     await customer.reload();
 
-    // Map database column names to API field names
-    const customerData = customer.toJSON();
-    customerData.is_blacklisted = customerData.is_blocked;
-    customerData.blacklist_reason = customerData.blocked_reason;
-    customerData.blacklisted_at = customerData.blocked_at;
-
     res.json({
       success: true,
-      data: customerData,
+      data: customer,
       message: is_blacklisted ? 'Customer blacklisted successfully' : 'Customer removed from blacklist successfully'
     });
   } catch (error) {
