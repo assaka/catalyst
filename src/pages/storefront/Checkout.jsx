@@ -1110,11 +1110,12 @@ export default function Checkout() {
     setIsProcessing(true);
     try {
       // Save addresses if requested by user
-      if (user && saveShippingAddress && selectedShippingAddress === 'new') {
+      // Check if user is entering a new address (either 'new' selection or no addresses at all)
+      if (user && saveShippingAddress && (!selectedShippingAddress || selectedShippingAddress === 'new')) {
         await saveAddressToAccount(shippingAddress, 'shipping');
       }
-      
-      if (user && saveBillingAddress && selectedBillingAddress === 'new' && !useShippingForBilling) {
+
+      if (user && saveBillingAddress && (!selectedBillingAddress || selectedBillingAddress === 'new') && !useShippingForBilling) {
         await saveAddressToAccount(billingAddress, 'billing');
       }
       

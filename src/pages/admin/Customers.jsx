@@ -26,6 +26,7 @@ export default function Customers() {
     const [saveSuccess, setSaveSuccess] = useState(false);
     const [isBlacklisted, setIsBlacklisted] = useState(false);
     const [blacklistReason, setBlacklistReason] = useState('');
+    const [addEmailToBlacklist, setAddEmailToBlacklist] = useState(true);
 
     useEffect(() => {
         if (selectedStore) {
@@ -123,6 +124,8 @@ export default function Customers() {
         setSaving(true);
         try {
             const storeId = getSelectedStoreId();
+
+            // Update customer blacklist status
             const response = await fetch(`/api/customers/${editingCustomer.id}/blacklist?store_id=${storeId}`, {
                 method: 'PUT',
                 headers: {
@@ -139,7 +142,55 @@ export default function Customers() {
                 throw new Error('Failed to update blacklist status');
             }
 
-            const result = await response.json();
+            // Also add email to blacklist_emails table if checkbox is checked
+            if (willBlacklist && addEmailToBlacklist && editingCustomer.email) {
+                try {
+                    await fetch(`/api/blacklist/emails?store_id=${storeId}`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${localStorage.getItem('token')}`
+                        },
+                        body: JSON.stringify({
+                            email: editingCustomer.email,
+                            reason: blacklistReason || 'Added from customer blacklist'
+                        })
+                    });
+                    console.log('Email added to blacklist_emails table');
+                } catch (emailError) {
+                    console.warn('Email might already be in blacklist:', emailError);
+                    // Don't fail the whole operation if email is already blacklisted
+                }
+            }
+
+            // Remove email from blacklist_emails table when unblacklisting
+            if (!willBlacklist && editingCustomer.email) {
+                try {
+                    // Find and delete the email from blacklist_emails
+                    const emailListResponse = await fetch(`/api/blacklist/emails?store_id=${storeId}&search=${editingCustomer.email}`, {
+                        headers: {
+                            'Authorization': `Bearer ${localStorage.getItem('token')}`
+                        }
+                    });
+
+                    if (emailListResponse.ok) {
+                        const emailData = await emailListResponse.json();
+                        const emailEntry = emailData.data?.emails?.find(e => e.email === editingCustomer.email);
+
+                        if (emailEntry) {
+                            await fetch(`/api/blacklist/emails/${emailEntry.id}?store_id=${storeId}`, {
+                                method: 'DELETE',
+                                headers: {
+                                    'Authorization': `Bearer ${localStorage.getItem('token')}`
+                                }
+                            });
+                            console.log('Email removed from blacklist_emails table');
+                        }
+                    }
+                } catch (emailError) {
+                    console.warn('Could not remove email from blacklist:', emailError);
+                }
+            }
 
             // Update local state
             setIsBlacklisted(willBlacklist);
@@ -472,17 +523,30 @@ export default function Customers() {
                                         </div>
                                     </div>
                                     {isBlacklisted && (
-                                        <div>
-                                            <Label htmlFor="blacklist_reason">Blacklist Reason (optional)</Label>
-                                            <Textarea
-                                                id="blacklist_reason"
-                                                value={blacklistReason}
-                                                onChange={(e) => setBlacklistReason(e.target.value)}
-                                                placeholder="Enter reason for blacklisting this customer..."
-                                                rows={3}
-                                                disabled={saving}
-                                            />
-                                        </div>
+                                        <>
+                                            <div>
+                                                <Label htmlFor="blacklist_reason">Blacklist Reason (optional)</Label>
+                                                <Textarea
+                                                    id="blacklist_reason"
+                                                    value={blacklistReason}
+                                                    onChange={(e) => setBlacklistReason(e.target.value)}
+                                                    placeholder="Enter reason for blacklisting this customer..."
+                                                    rows={3}
+                                                    disabled={saving}
+                                                />
+                                            </div>
+                                            <div className="flex items-center space-x-2 p-3 bg-blue-50 border border-blue-200 rounded">
+                                                <Switch
+                                                    id="add_email_to_blacklist"
+                                                    checked={addEmailToBlacklist}
+                                                    onCheckedChange={(checked) => setAddEmailToBlacklist(checked)}
+                                                    disabled={saving}
+                                                />
+                                                <Label htmlFor="add_email_to_blacklist" className="text-sm cursor-pointer">
+                                                    Also add email to blacklist table (prevents checkout from any customer with this email)
+                                                </Label>
+                                            </div>
+                                        </>
                                     )}
                                     <Button
                                         type="button"
