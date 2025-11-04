@@ -239,19 +239,6 @@ export function CategorySlotRenderer({
         // Calculate stock status using centralized function
         const isInStock = !isProductOutOfStock(product);
 
-        // Debug logging (remove after testing)
-        if (product.id) {
-          console.log('Product stock check:', {
-            id: product.id,
-            name: product.name,
-            stock_quantity: product.stock_quantity,
-            manage_stock: product.manage_stock,
-            infinite_stock: product.infinite_stock,
-            allow_backorders: product.allow_backorders,
-            isInStock: isInStock
-          });
-        }
-
         // Get stock label from centralized utility
         const stockLabelInfo = getStockLabel(product, settings, null, translations);
         const stockLabelStyle = getStockLabelStyle(product, settings, null, translations);
@@ -285,16 +272,6 @@ export function CategorySlotRenderer({
             className: label.background_color ? `bg-[${label.background_color}] text-white` : 'bg-red-600 text-white'
           })) || []
         };
-
-        // Debug: log the final formatted product
-        if (formattedProduct.id === '4df411ea-a896-4a3c-9f83-53640886b9ea') {
-          console.log('Formatted product for template:', {
-            id: formattedProduct.id,
-            name: formattedProduct.name,
-            in_stock: formattedProduct.in_stock,
-            stock_quantity: formattedProduct.stock_quantity
-          });
-        }
 
         return formattedProduct;
       });
