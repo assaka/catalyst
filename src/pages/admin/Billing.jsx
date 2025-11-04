@@ -9,7 +9,6 @@ import { getStripePublishableKey } from '@/api/functions';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Wallet, DollarSign, CheckCircle, Clock, CreditCard, RefreshCw, Info, AlertCircle } from 'lucide-react';
-import { formatPrice } from '@/utils/priceUtils';
 import { useNavigate } from 'react-router-dom';
 import { createPageUrl } from '@/utils';
 import pricingService from '@/services/pricingService';
@@ -124,7 +123,7 @@ const CheckoutForm = ({ selectedPackage, currency, storeId, onSuccess, onError }
                 <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
                 Processing...
             </>
-        ) : `Pay ${formatPrice(selectedPackage.price)}`}
+        ) : `Pay ${pricingService.formatPrice(selectedPackage.price, currency)}`}
       </Button>
     </form>
   );
