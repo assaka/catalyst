@@ -386,10 +386,10 @@ export default function OrderSuccess() {
             
             {/* Order Summary */}
             <Card>
-              <CardHeader>
+              <CardHeader>common
                 <CardTitle className="flex items-center">
                   <ShoppingBag className="w-5 h-5 mr-2 text-blue-600" />
-                  {t('order_summary', settings)}
+                  {t('common.order_summary', settings)}
                 </CardTitle>
               </CardHeader>
               <CardContent>
@@ -415,7 +415,7 @@ export default function OrderSuccess() {
                     </Badge>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-gray-600">{t('payment_method', settings)}:</span>
+                    <span className="text-gray-600">{t('checkout.payment_method', settings)}:</span>
                     <span className="font-semibold capitalize">{order.payment_method || 'Card'}</span>
                   </div>
                   {order.delivery_date && (
