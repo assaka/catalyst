@@ -274,7 +274,7 @@ router.post('/complete-purchase',
 
         if (user && store) {
           // Send email asynchronously (don't block response)
-          emailService.sendTransactionalEmail(transaction.store_id, 'credit_purchase', {
+          emailService.sendTransactionalEmail(transaction.store_id, 'credit_purchase_email', {
             recipientEmail: user.email,
             customer: {
               first_name: user.first_name,

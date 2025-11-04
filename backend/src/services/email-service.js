@@ -192,34 +192,27 @@ class EmailService {
   /**
    * Send transactional email (wrapper for common email types)
    * @param {string} storeId - Store ID
-   * @param {string} emailType - Email type (signup, credit_purchase, order_success)
+   * @param {string} templateIdentifier - Email template identifier (signup_email, credit_purchase_email, order_success_email)
    * @param {Object} data - Email data
    * @returns {Promise<Object>} Send result
    */
-  async sendTransactionalEmail(storeId, emailType, data) {
-    const templateMap = {
-      'signup': 'signup_email',
-      'credit_purchase': 'credit_purchase_email',
-      'order_success': 'order_success_email'
-    };
-
-    const templateIdentifier = templateMap[emailType];
-    if (!templateIdentifier) {
-      throw new Error(`Unknown email type: ${emailType}`);
-    }
-
-    // Build variables based on email type
+  async sendTransactionalEmail(storeId, templateIdentifier, data) {
+    // Build variables based on template identifier
     let variables = {};
 
-    switch (emailType) {
-      case 'signup':
+    switch (templateIdentifier) {
+      case 'signup_email':
         variables = this.buildSignupVariables(data);
         break;
-      case 'credit_purchase':
+      case 'credit_purchase_email':
         variables = this.buildCreditPurchaseVariables(data);
         break;
-      case 'order_success':
+      case 'order_success_email':
         variables = await this.buildOrderSuccessVariables(data);
+        break;
+      default:
+        // If no specific builder, use data as variables directly
+        variables = data;
         break;
     }
 

@@ -149,7 +149,7 @@ const sendWelcomeEmail = async (storeId, email, customer) => {
   try {
     const store = await Store.findByPk(storeId);
 
-    emailService.sendTransactionalEmail(storeId, 'signup', {
+    emailService.sendTransactionalEmail(storeId, 'signup_email', {
       recipientEmail: email,
       customer: customer.toJSON(),
       store: store ? store.toJSON() : null,
@@ -356,7 +356,7 @@ router.post('/upgrade-guest', [
       const store = store_id ? await Store.findByPk(store_id) : null;
 
       // Send welcome email asynchronously (don't block account upgrade)
-      emailService.sendTransactionalEmail(store_id, 'signup', {
+      emailService.sendTransactionalEmail(store_id, 'signup_email', {
         recipientEmail: email,
         customer: guestCustomer.toJSON(),
         store: store ? store.toJSON() : null,

@@ -702,7 +702,7 @@ router.post('/', [
       }
 
       // Send email asynchronously (don't block response)
-      emailService.sendTransactionalEmail(store_id, 'order_success', {
+      emailService.sendTransactionalEmail(store_id, 'order_success_email', {
         recipientEmail: completeOrder.customer_email,
         customer,
         order: completeOrder.toJSON(),

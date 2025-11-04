@@ -1422,7 +1422,7 @@ router.post('/webhook', async (req, res) => {
             const lastName = lastNameParts.join(' ') || '';
 
             // Send order success email asynchronously
-            emailService.sendTransactionalEmail(finalOrder.store_id, 'order_success', {
+            emailService.sendTransactionalEmail(finalOrder.store_id, 'order_success_email', {
               recipientEmail: finalOrder.customer_email,
               customer: customer || {
                 first_name: firstName,
