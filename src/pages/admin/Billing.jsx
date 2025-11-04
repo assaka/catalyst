@@ -328,13 +328,15 @@ export default function Billing() {
     setPaymentSuccess(true);
     setSelectedPackage(null);
 
-    // Immediately reload data when payment succeeds
+    // Immediately reload ALL billing data: balance, transactions, user data
+    console.log('🔄 [Billing] Reloading all billing data...');
     loadBillingData();
 
     // Dispatch event to trigger sidebar credits update
     console.log('📢 [Billing] Dispatching creditsUpdated event to update sidebar');
     window.dispatchEvent(new CustomEvent('creditsUpdated'));
 
+    // Show success message for 5 seconds
     setTimeout(() => {
         setPaymentSuccess(false);
     }, 5000);
@@ -357,25 +359,7 @@ export default function Billing() {
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-      <div className="flex items-center justify-between mb-8">
-        <h1 className="text-3xl font-bold text-gray-900">Billing & Credits</h1>
-
-        {/* Currency Selector */}
-        <div className="flex items-center gap-2">
-          <label className="text-sm font-medium text-gray-700">Currency:</label>
-          <select
-            value={selectedCurrency}
-            onChange={(e) => setSelectedCurrency(e.target.value)}
-            className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-          >
-            {currencies.map(curr => (
-              <option key={curr} value={curr}>
-                {curr.toUpperCase()} ({pricingService.getCurrencySymbol(curr)})
-              </option>
-            ))}
-          </select>
-        </div>
-      </div>
+      <h1 className="text-3xl font-bold text-gray-900 mb-8">Billing & Credits</h1>
 
       {paymentSuccess && (
         <div className="mb-6 p-4 bg-green-100 border border-green-400 text-green-700 rounded-lg">
@@ -416,10 +400,30 @@ export default function Billing() {
         <div className="lg:col-span-2">
           <Card>
             <CardHeader>
-              <CardTitle>Purchase Credits</CardTitle>
-              <CardDescription>
-                Your store uses 1 credit per day. Top up your balance to keep your store active.
-              </CardDescription>
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle>Purchase Credits</CardTitle>
+                  <CardDescription>
+                    Your store uses 1 credit per day. Top up your balance to keep your store active.
+                  </CardDescription>
+                </div>
+
+                {/* Currency Selector */}
+                <div className="flex items-center gap-2">
+                  <label className="text-sm font-medium text-gray-700">Currency:</label>
+                  <select
+                    value={selectedCurrency}
+                    onChange={(e) => setSelectedCurrency(e.target.value)}
+                    className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+                  >
+                    {currencies.map(curr => (
+                      <option key={curr} value={curr}>
+                        {curr.toUpperCase()} ({pricingService.getCurrencySymbol(curr)})
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
             </CardHeader>
             <CardContent>
               <div className="grid md:grid-cols-3 gap-6">
