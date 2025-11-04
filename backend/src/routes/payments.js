@@ -1355,17 +1355,25 @@ router.post('/webhook', async (req, res) => {
         });
 
         let finalOrder = null;
+        let statusAlreadyUpdated = false; // Track if email was already sent
 
         if (existingOrder) {
           console.log('✅ Found existing preliminary order:', existingOrder.id, existingOrder.order_number);
-          console.log('🔄 Updating order status to paid/processing...');
 
-          // Update the existing preliminary order to mark as paid and processing
-          await existingOrder.update({
-            status: 'processing',
-            payment_status: 'paid',
-            updatedAt: new Date()
-          });
+          // Check if status is already correct (preliminary order already set it)
+          statusAlreadyUpdated = existingOrder.status === 'processing' && existingOrder.payment_status === 'paid';
+
+          if (!statusAlreadyUpdated) {
+            console.log('🔄 Updating order status to paid/processing...');
+            // Update the existing preliminary order to mark as paid and processing
+            await existingOrder.update({
+              status: 'processing',
+              payment_status: 'paid',
+              updatedAt: new Date()
+            });
+          } else {
+            console.log('✅ Order status already correct (preliminary order set it)');
+          }
 
           // Verify order items exist
           const itemCount = await OrderItem.count({ where: { order_id: existingOrder.id } });
@@ -1395,10 +1403,14 @@ router.post('/webhook', async (req, res) => {
           finalOrder = order;
         }
 
-        // Send order success email
+        // Send order success email (only if status was not already updated by preliminary order)
+        // If statusAlreadyUpdated is true, email was already sent during preliminary order creation
         if (finalOrder && finalOrder.customer_email) {
-          try {
-            console.log('📧 Sending order success email to:', finalOrder.customer_email);
+          if (statusAlreadyUpdated) {
+            console.log('✅ Order success email already sent during preliminary order creation, skipping duplicate');
+          } else {
+            try {
+              console.log('📧 Sending order success email to:', finalOrder.customer_email);
 
             const emailService = require('../services/email-service');
             const { Customer } = require('../models');
@@ -1449,9 +1461,10 @@ router.post('/webhook', async (req, res) => {
               console.error(`❌ Failed to send order success email:`, emailError.message);
               // Don't fail the webhook if email fails
             });
-          } catch (emailError) {
-            console.error(`❌ Error preparing order success email:`, emailError.message);
-            // Don't fail the webhook if email fails
+            } catch (emailError) {
+              console.error(`❌ Error preparing order success email:`, emailError.message);
+              // Don't fail the webhook if email fails
+            }
           }
         } else {
           console.log('⚠️ Skipping order success email - no customer email found');
@@ -1816,8 +1829,8 @@ async function createPreliminaryOrder(session, orderData) {
     // Create the preliminary order
     const order = await Order.create({
       order_number: order_number,
-      status: 'pending', // Will be updated to 'processing' in webhook
-      payment_status: 'pending', // Will be updated to 'paid' in webhook
+      status: 'processing', // Set immediately since Stripe checkout session is confirmed
+      payment_status: 'paid', // Set immediately since Stripe checkout session is confirmed
       fulfillment_status: 'pending',
       customer_email,
       customer_id: validatedCustomerId, // Only set if customer exists in database
@@ -1868,8 +1881,69 @@ async function createPreliminaryOrder(session, orderData) {
 
     await transaction.commit();
     console.log('✅ Preliminary order and items created successfully');
+
+    // Send order success email immediately (don't wait for webhook)
+    if (order && order.customer_email) {
+      try {
+        console.log('📧 Sending order success email to:', order.customer_email);
+
+        const emailService = require('../services/email-service');
+        const { Customer } = require('../models');
+
+        // Get order with full details for email
+        const orderWithDetails = await Order.findByPk(order.id, {
+          include: [{
+            model: OrderItem,
+            as: 'OrderItems',
+            include: [{
+              model: Product,
+              attributes: ['id', 'sku']
+            }]
+          }, {
+            model: Store,
+            as: 'Store'
+          }]
+        });
+
+        // Try to get customer details
+        let customer = null;
+        if (order.customer_id) {
+          customer = await Customer.findByPk(order.customer_id);
+        }
+
+        // Extract customer name from shipping/billing address if customer not found
+        const customerName = customer
+          ? `${customer.first_name} ${customer.last_name}`
+          : (order.shipping_address?.full_name || order.shipping_address?.name || order.billing_address?.full_name || order.billing_address?.name || 'Customer');
+
+        const [firstName, ...lastNameParts] = customerName.split(' ');
+        const lastName = lastNameParts.join(' ') || '';
+
+        // Send order success email asynchronously
+        emailService.sendTransactionalEmail(order.store_id, 'order_success_email', {
+          recipientEmail: order.customer_email,
+          customer: customer || {
+            first_name: firstName,
+            last_name: lastName,
+            email: order.customer_email
+          },
+          order: orderWithDetails.toJSON(),
+          store: orderWithDetails.Store.toJSON(),
+          languageCode: 'en'
+        }).then(() => {
+          console.log(`✅ Order success email sent successfully to: ${order.customer_email}`);
+        }).catch(emailError => {
+          console.error(`❌ Failed to send order success email:`, emailError.message);
+          // Don't fail the order creation if email fails
+        });
+      } catch (emailError) {
+        console.error(`❌ Error preparing order success email:`, emailError.message);
+        // Don't fail the order creation if email fails
+      }
+    }
+
     return order;
-    
+
   } catch (error) {
     await transaction.rollback();
     console.error('❌ Error creating preliminary order:', error);
