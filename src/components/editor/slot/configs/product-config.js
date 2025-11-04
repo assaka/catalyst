@@ -778,8 +778,8 @@ export const productConfig = {
       type: 'html',
       content: `
         {{#if product.in_stock}}
-          <button class="w-full h-12 text-lg bg-yellow-500 hover:bg-yellow-600 text-white px-6 py-3 rounded font-medium disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap" data-add-to-cart>
-            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-5 h-5 mr-2 inline">
+          <button class="w-full h-12 text-lg bg-yellow-500 hover:bg-yellow-600 text-white px-6 py-3 rounded font-medium disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap flex items-center justify-center gap-2" data-add-to-cart>
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-5 h-5">
               <circle cx="8" cy="21" r="1"></circle>
               <circle cx="19" cy="21" r="1"></circle>
               <path d="m2.05 2.05h2l2.66 12.42a2 2 0 0 0 2 1.58h9.78a2 2 0 0 0 1.95-1.57l1.65-7.43h-15.44"></path>
@@ -787,7 +787,10 @@ export const productConfig = {
             {{t "product.add_to_cart"}}
           </button>
         {{else}}
-          <button class="w-full h-12 text-lg bg-gray-400 text-white px-6 py-3 rounded font-medium cursor-not-allowed whitespace-nowrap" disabled>
+          <button class="w-full h-12 text-lg bg-gray-400 text-white px-6 py-3 rounded font-medium cursor-not-allowed whitespace-nowrap flex items-center justify-center gap-2" disabled>
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636"></path>
+            </svg>
             {{t "common.out_of_stock"}}
           </button>
         {{/if}}
