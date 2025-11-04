@@ -26,7 +26,6 @@ export default function Customers() {
     const [saveSuccess, setSaveSuccess] = useState(false);
     const [isBlacklisted, setIsBlacklisted] = useState(false);
     const [blacklistReason, setBlacklistReason] = useState('');
-    const [addEmailToBlacklist, setAddEmailToBlacklist] = useState(true);
     const [isBlacklistModalOpen, setIsBlacklistModalOpen] = useState(false);
     const [blacklistingCustomer, setBlacklistingCustomer] = useState(null);
 
@@ -192,27 +191,6 @@ export default function Customers() {
 
             if (!response.ok) {
                 throw new Error('Failed to update blacklist status');
-            }
-
-            // Also add email to blacklist_emails table if checkbox is checked
-            if (willBlacklist && addEmailToBlacklist && editingCustomer.email) {
-                try {
-                    await fetch(`/api/blacklist/emails?store_id=${storeId}`, {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                            'Authorization': `Bearer ${localStorage.getItem('store_owner_auth_token')}`
-                        },
-                        body: JSON.stringify({
-                            email: customer.email,
-                            reason: blacklistReason || 'Added from customer blacklist'
-                        })
-                    });
-                    console.log('Email added to blacklist_emails table');
-                } catch (emailError) {
-                    console.warn('Email might already be in blacklist:', emailError);
-                    // Don't fail the whole operation if email is already blacklisted
-                }
             }
 
             // Remove email from blacklist_emails table when unblacklisting
@@ -684,22 +662,11 @@ export default function Customers() {
                                                     disabled={saving}
                                                 />
                                             </div>
-                                            <div className="flex items-center space-x-2 p-3 bg-blue-50 border border-blue-200 rounded">
-                                                <Switch
-                                                    id="add_email_to_blacklist"
-                                                    checked={addEmailToBlacklist}
-                                                    onCheckedChange={(checked) => setAddEmailToBlacklist(checked)}
-                                                    disabled={saving}
-                                                />
-                                                <Label htmlFor="add_email_to_blacklist" className="text-sm cursor-pointer">
-                                                    Also add email to blacklist table (prevents checkout from any customer with this email)
-                                                </Label>
-                                            </div>
                                         </>
                                     )}
                                     <Button
                                         type="button"
-                                        onClick={handleToggleBlacklist}
+                                        onClick={handleToggleBlacklistFromModal}
                                         disabled={saving}
                                         className={isBlacklisted ? 'bg-green-600 hover:bg-green-700' : 'bg-red-600 hover:bg-red-700'}
                                     >
@@ -885,20 +852,6 @@ export default function Customers() {
                                     disabled={saving}
                                 />
                             </div>
-
-                            {!isBlacklisted && blacklistingCustomer.customer_type === 'registered' && (
-                                <div className="flex items-center space-x-2 p-3 bg-blue-50 border border-blue-200 rounded">
-                                    <Switch
-                                        id="modal_add_email_to_blacklist"
-                                        checked={addEmailToBlacklist}
-                                        onCheckedChange={(checked) => setAddEmailToBlacklist(checked)}
-                                        disabled={saving}
-                                    />
-                                    <Label htmlFor="modal_add_email_to_blacklist" className="text-sm cursor-pointer">
-                                        Also add email to blacklist table
-                                    </Label>
-                                </div>
-                            )}
 
                             <div className="flex justify-end space-x-2 pt-4">
                                 <Button
