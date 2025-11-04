@@ -181,7 +181,8 @@ export default function MiniCart({ iconVariant = 'outline' }) {
         setLoading(true);
 
         // CRITICAL: Pass store.id to filter cart by store (fixes multi-store issue)
-        const cartResult = await cartService.getCart(false, store?.id);
+        // CRITICAL: Always bust cache (true) to get fresh data from database
+        const cartResult = await cartService.getCart(true, store?.id);
 
         if (cartResult.success && cartResult.items) {
           setCartItems(cartResult.items);

@@ -321,7 +321,8 @@ export default function Cart() {
                 // Load cart data
                 (async () => {
                     // CRITICAL: Pass store.id to filter cart by store (fixes multi-store issue)
-                    const result = await cartService.getCart(false, store?.id);
+                    // CRITICAL: Always bust cache (true) to get fresh data from database
+                    const result = await cartService.getCart(true, store?.id);
                     return result;
                 })(),
 
