@@ -61,15 +61,24 @@ export default function Customers() {
 
             // Debug: Log customer data to see what we're receiving
             console.log('📦 Customers loaded:', customerData?.length);
-            const testCustomer = customerData?.find(c => c.email === 'haha@test.nl');
-            if (testCustomer) {
-                console.log('🔍 haha@test.nl customer data:', {
-                    email: testCustomer.email,
-                    customer_type: testCustomer.customer_type,
-                    has_password_field: 'password' in testCustomer,
-                    address_data: testCustomer.address_data
+
+            // Check if any customers have blacklist data
+            const blacklistedCustomers = customerData?.filter(c => c.is_blacklisted) || [];
+            if (blacklistedCustomers.length > 0) {
+                console.log('🚫 Blacklisted customers found:', blacklistedCustomers.length);
+                console.log('🔍 First blacklisted customer:', {
+                    email: blacklistedCustomers[0].email,
+                    is_blacklisted: blacklistedCustomers[0].is_blacklisted,
+                    blacklist_reason: blacklistedCustomers[0].blacklist_reason
                 });
             }
+
+            // Log all customers to verify is_blacklisted field
+            console.log('👥 All customers with blacklist status:', customerData?.map(c => ({
+                email: c.email,
+                customer_type: c.customer_type,
+                is_blacklisted: c.is_blacklisted
+            })));
 
             setCustomers(customerData || []);
         } catch (error) {
@@ -215,6 +224,15 @@ export default function Customers() {
             const result = await response.json();
             console.log('✅ Blacklist success:', result);
 
+            // Use the updated customer data from backend response
+            const updatedCustomer = result.data;
+            console.log('📝 Updated customer data from backend:', {
+                id: updatedCustomer.id,
+                email: updatedCustomer.email,
+                is_blacklisted: updatedCustomer.is_blacklisted,
+                blacklist_reason: updatedCustomer.blacklist_reason
+            });
+
             // Remove email from blacklist_emails table when unblacklisting
             if (!willBlacklist && customer.email) {
                 try {
@@ -244,13 +262,15 @@ export default function Customers() {
                 }
             }
 
-            // Update local state
-            setIsBlacklisted(willBlacklist);
+            // Update local state with backend data (source of truth)
+            setIsBlacklisted(updatedCustomer.is_blacklisted);
             setCustomers(customers.map(c =>
                 c.id === customer.id
-                    ? { ...c, is_blacklisted: willBlacklist, blacklist_reason: willBlacklist ? blacklistReason : null }
+                    ? { ...c, ...updatedCustomer }
                     : c
             ));
+
+            console.log('🔄 Local state updated');
 
             // Show success message
             showSuccess(willBlacklist ? 'Customer blacklisted successfully' : 'Customer removed from blacklist');
