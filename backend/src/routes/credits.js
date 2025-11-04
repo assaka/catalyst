@@ -442,13 +442,13 @@ router.get('/transactions', authMiddleware, async (req, res) => {
 
     res.json({
       success: true,
-      transactions: transactions.map(tx => ({
+      data: transactions.map(tx => ({
         id: tx.id,
         transaction_type: tx.transaction_type,
         amount_usd: parseFloat(tx.amount_usd),
         credits_purchased: parseFloat(tx.credits_purchased),
         status: tx.status,
-        created_at: tx.createdAt,
+        created_date: tx.createdAt,
         metadata: tx.metadata
       })),
       total: transactions.length
