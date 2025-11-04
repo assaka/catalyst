@@ -59,23 +59,10 @@ async function getProductLabelsWithTranslations(where = {}, lang = 'en', allTran
       ORDER BY pl.sort_order ASC, pl.priority DESC, pl.name ASC
     `;
 
-    console.log('🔍 SQL Query for product labels (all translations):', query.replace(/\s+/g, ' '));
-
     const results = await sequelize.query(query, {
       replacements: {},
       type: sequelize.QueryTypes.SELECT
     });
-
-    console.log('✅ Query returned', results.length, 'labels with all translations');
-    if (results.length > 0) {
-      console.log('📝 Sample label:', {
-        id: results[0].id,
-        name: results[0].name,
-        text: results[0].text,
-        translations: results[0].translations,
-        translationKeys: Object.keys(results[0].translations || {})
-      });
-    }
 
     return results;
   }

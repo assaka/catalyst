@@ -1,7 +1,5 @@
 const BaseJobHandler = require('./BaseJobHandler');
-const Store = require('../../models/Store');
-const User = require('../../models/User');
-const CustomDomain = require('../../models/CustomDomain');
+const { Store, User, CustomDomain } = require('../../models');
 const creditService = require('../../services/credit-service');
 
 /**
@@ -109,12 +107,7 @@ class DailyCreditDeductionJob extends BaseJobHandler {
         where: {
           is_active: true,
           verification_status: 'verified'
-        },
-        include: [{
-          model: Store,
-          as: 'store',
-          attributes: ['id', 'name', 'user_id']
-        }]
+        }
       });
 
       console.log(`📊 Found ${activeCustomDomains.length} active custom domains`);
@@ -133,14 +126,24 @@ class DailyCreditDeductionJob extends BaseJobHandler {
         try {
           console.log(`💰 Charging for custom domain: ${domain.domain}`);
 
-          if (!domain.store) {
-            console.warn(`⚠️ Store not found for domain ${domain.domain}`);
+          // Get store separately to avoid association issues
+          const store = await Store.findByPk(domain.store_id, {
+            attributes: ['id', 'name', 'slug', 'user_id']
+          });
+
+          if (!store) {
+            console.warn(`⚠️ Store not found for domain ${domain.domain} (store_id: ${domain.store_id})`);
             domainResults.failed++;
+            domainResults.errors.push({
+              domain_id: domain.id,
+              domain_name: domain.domain,
+              error: 'Store not found'
+            });
             continue;
           }
 
           const chargeResult = await creditService.chargeDailyCustomDomainFee(
-            domain.store.user_id,
+            store.user_id,
             domain.id,
             domain.domain
           );
@@ -152,8 +155,9 @@ class DailyCreditDeductionJob extends BaseJobHandler {
               domain_id: domain.id,
               domain_name: domain.domain,
               store_id: domain.store_id,
-              store_name: domain.store.name,
-              owner_id: domain.store.user_id,
+              store_name: store.name,
+              store_slug: store.slug,
+              owner_id: store.user_id,
               credits_deducted: chargeResult.credits_deducted,
               remaining_balance: chargeResult.remaining_balance,
               status: 'success'
@@ -164,6 +168,7 @@ class DailyCreditDeductionJob extends BaseJobHandler {
             domainResults.errors.push({
               domain_id: domain.id,
               domain_name: domain.domain,
+              store_name: store.name,
               error: chargeResult.message,
               domain_deactivated: chargeResult.domain_deactivated || false
             });

@@ -9,9 +9,6 @@ class AdminNavigationService {
    */
   async getNavigationForTenant(tenantId) {
     try {
-      console.log('[NAV-SERVICE] ========================================');
-      console.log('[NAV-SERVICE] getNavigationForTenant START');
-      console.log('[NAV-SERVICE] Tenant ID:', tenantId);
 
       // 1. Get tenant's installed & active plugins from BOTH tables
       const installedPlugins = await sequelize.query(`
@@ -21,7 +18,6 @@ class AdminNavigationService {
       `, { type: sequelize.QueryTypes.SELECT });
 
       const pluginIds = installedPlugins.map(p => p.id);
-      console.log('[NAV-SERVICE] Step 1: Found', installedPlugins.length, 'installed file-based plugins');
 
       // 2a. Get active file-based plugins with adminNavigation from manifest
       const fileBasedPlugins = await sequelize.query(`
@@ -34,11 +30,6 @@ class AdminNavigationService {
           AND is_enabled = true
           AND manifest->>'adminNavigation' IS NOT NULL
       `, { type: sequelize.QueryTypes.SELECT });
-
-      console.log('[NAV-SERVICE] Step 2a: File-based plugins with adminNavigation:', fileBasedPlugins.length);
-      fileBasedPlugins.forEach(p => {
-        console.log('[NAV-SERVICE]   -', p.name, ':', p.admin_nav);
-      });
 
       // Parse adminNavigation from file-based plugins
       const fileBasedNavItems = fileBasedPlugins
@@ -79,11 +70,6 @@ class AdminNavigationService {
           AND manifest->>'adminNavigation' IS NOT NULL
       `, { type: sequelize.QueryTypes.SELECT });
 
-      console.log('[NAV-SERVICE] Step 2b: Registry plugins with adminNavigation:', registryPlugins.length);
-      registryPlugins.forEach(p => {
-        console.log('[NAV-SERVICE]   -', p.name, ':', p.admin_nav);
-      });
-
       // Parse adminNavigation from registry plugins
       const registryNavItems = registryPlugins
         .filter(p => p.admin_nav)
@@ -112,9 +98,6 @@ class AdminNavigationService {
         })
         .filter(Boolean);
 
-      console.log('[NAV-SERVICE] Created', fileBasedNavItems.length, 'file-based nav items');
-      console.log('[NAV-SERVICE] Created', registryNavItems.length, 'registry nav items');
-
       // 3. Get navigation items from master registry
       // Include: Core items + items from tenant's installed plugins
       const navQuery = pluginIds.length > 0
@@ -136,34 +119,20 @@ class AdminNavigationService {
 
       // 4. Merge ALL plugin nav items with master registry
       const allNavItems = [...navItems, ...fileBasedNavItems, ...registryNavItems];
-      console.log('[NAV-SERVICE] Step 4: Merged total items:', allNavItems.length);
-      console.log('[NAV-SERVICE]   - Core items:', navItems.length);
-      console.log('[NAV-SERVICE]   - File-based plugin items:', fileBasedNavItems.length);
-      console.log('[NAV-SERVICE]   - Registry plugin items:', registryNavItems.length);
 
       // 5. Get tenant's customizations
       const tenantConfig = await sequelize.query(`
         SELECT * FROM admin_navigation_config
-      `, { type: sequelize.QueryTypes.SELECT });
-      console.log('[NAV-SERVICE] Step 5: Tenant customizations:', tenantConfig.length);
+      `, { type: sequelize.QueryTypes.SELECT })
 
       // 6. Merge and apply customizations
       const merged = this.mergeNavigation(
         allNavItems,
         tenantConfig
       );
-      console.log('[NAV-SERVICE] Step 6: After mergeNavigation:', merged.length, 'items');
-
-      const pluginItems = merged.filter(item => item.key && item.key.startsWith('plugin-'));
-      console.log('[NAV-SERVICE] Plugin items in merged array:', pluginItems.length);
-      pluginItems.forEach(item => {
-        console.log('[NAV-SERVICE]   -', item.label, '(key:', item.key, ', parentKey:', item.parentKey, ')');
-      });
 
       // 7. Build hierarchical tree
       const tree = this.buildNavigationTree(merged);
-      console.log('[NAV-SERVICE] Step 7: Final tree has', tree.length, 'top-level items');
-      console.log('[NAV-SERVICE] ======================================== END');
 
       return tree;
 
@@ -342,7 +311,6 @@ class AdminNavigationService {
       });
     }
 
-    console.log('✅ Core navigation seeded');
   }
 }
 

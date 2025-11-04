@@ -132,7 +132,8 @@ ServiceCreditCost.getCostByKey = async function(serviceKey) {
     throw new Error(`Service cost not found for key: ${serviceKey}`);
   }
 
-  return service.cost_per_unit;
+  // Convert DECIMAL to number (Sequelize returns DECIMAL as string)
+  return parseFloat(service.cost_per_unit);
 };
 
 /**

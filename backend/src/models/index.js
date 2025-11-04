@@ -1,6 +1,7 @@
 const User = require('./User');
 const Store = require('./Store');
 const Product = require('./Product');
+const ProductTranslation = require('./ProductTranslation');
 const ProductVariant = require('./ProductVariant');
 const Category = require('./Category');
 const Attribute = require('./Attribute');
@@ -95,6 +96,10 @@ const defineAssociations = () => {
   Product.belongsTo(Store, { foreignKey: 'store_id' });
   Product.belongsTo(AttributeSet, { foreignKey: 'attribute_set_id' });
   Product.hasMany(OrderItem, { foreignKey: 'product_id' });
+  Product.hasMany(ProductTranslation, { as: 'translations', foreignKey: 'product_id' });
+
+  // ProductTranslation associations
+  ProductTranslation.belongsTo(Product, { foreignKey: 'product_id' });
 
   // Configurable product associations
   Product.belongsTo(Product, { as: 'parentProduct', foreignKey: 'parent_id' });
@@ -375,6 +380,7 @@ module.exports = {
   User,
   Store,
   Product,
+  ProductTranslation,
   ProductVariant,
   Category,
   Attribute,

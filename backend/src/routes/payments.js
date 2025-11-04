@@ -1342,42 +1342,110 @@ router.post('/webhook', async (req, res) => {
         const existingOrder = await Order.findOne({
           where: { payment_reference: session.id }
         });
-        
+
+        let finalOrder = null;
+
         if (existingOrder) {
           console.log('✅ Found existing preliminary order:', existingOrder.id, existingOrder.order_number);
           console.log('🔄 Updating order status to paid/processing...');
-          
+
           // Update the existing preliminary order to mark as paid and processing
           await existingOrder.update({
             status: 'processing',
             payment_status: 'paid',
             updatedAt: new Date()
           });
-          
+
           // Verify order items exist
           const itemCount = await OrderItem.count({ where: { order_id: existingOrder.id } });
           console.log('✅ Verified:', itemCount, 'OrderItems already exist for order', existingOrder.id);
-          
+
           if (itemCount === 0) {
             console.error('⚠️ WARNING: Preliminary order exists but no OrderItems found! Creating them now...');
             // Fallback: create order items from session if they don't exist
             await createOrderFromCheckoutSession(session);
           }
+
+          finalOrder = existingOrder;
         } else {
           console.log('⚠️ No preliminary order found, creating new order from session...');
           // Fallback: create order from checkout session (original behavior)
           const order = await createOrderFromCheckoutSession(session);
           console.log('Order created successfully with ID:', order.id, 'Order Number:', order.order_number);
-          
+
           // Verify order items were created
           const itemCount = await OrderItem.count({ where: { order_id: order.id } });
           console.log('✅ Verified:', itemCount, 'OrderItems created for order', order.id);
-          
+
           if (itemCount === 0) {
             console.error('⚠️ WARNING: Order created but no OrderItems found!');
           }
+
+          finalOrder = order;
         }
-        
+
+        // Send order success email
+        if (finalOrder && finalOrder.customer_email) {
+          try {
+            console.log('📧 Sending order success email to:', finalOrder.customer_email);
+
+            const emailService = require('../services/email-service');
+            const { Customer } = require('../models');
+
+            // Get order with full details for email
+            const orderWithDetails = await Order.findByPk(finalOrder.id, {
+              include: [{
+                model: OrderItem,
+                as: 'OrderItems',
+                include: [{
+                  model: Product,
+                  attributes: ['id', 'sku']
+                }]
+              }, {
+                model: Store,
+                as: 'Store'
+              }]
+            });
+
+            // Try to get customer details
+            let customer = null;
+            if (finalOrder.customer_id) {
+              customer = await Customer.findByPk(finalOrder.customer_id);
+            }
+
+            // Extract customer name from shipping/billing address if customer not found
+            const customerName = customer
+              ? `${customer.first_name} ${customer.last_name}`
+              : (finalOrder.shipping_address?.full_name || finalOrder.shipping_address?.name || finalOrder.billing_address?.full_name || finalOrder.billing_address?.name || 'Customer');
+
+            const [firstName, ...lastNameParts] = customerName.split(' ');
+            const lastName = lastNameParts.join(' ') || '';
+
+            // Send order success email asynchronously
+            emailService.sendTransactionalEmail(finalOrder.store_id, 'order_success', {
+              recipientEmail: finalOrder.customer_email,
+              customer: customer || {
+                first_name: firstName,
+                last_name: lastName,
+                email: finalOrder.customer_email
+              },
+              order: orderWithDetails.toJSON(),
+              store: orderWithDetails.Store.toJSON(),
+              languageCode: 'en'
+            }).then(() => {
+              console.log(`✅ Order success email sent successfully to: ${finalOrder.customer_email}`);
+            }).catch(emailError => {
+              console.error(`❌ Failed to send order success email:`, emailError.message);
+              // Don't fail the webhook if email fails
+            });
+          } catch (emailError) {
+            console.error(`❌ Error preparing order success email:`, emailError.message);
+            // Don't fail the webhook if email fails
+          }
+        } else {
+          console.log('⚠️ Skipping order success email - no customer email found');
+        }
+
       } catch (error) {
         console.error('Error processing order from checkout session:', error);
         console.error('Error details:', {

@@ -256,7 +256,6 @@ app.use(cors({
 
 // Step 1: Apply raw body parser to webhook endpoint FIRST
 app.use((req, res, next) => {
-  console.log('⚡ [Body Parser Check] URL:', req.originalUrl, 'Path:', req.path);
 
   if (req.originalUrl === '/api/payments/webhook' || req.path === '/webhook') {
     console.log('⚡ [Webhook Raw Body] Applying raw body parser for webhook');
@@ -1704,16 +1703,22 @@ app.get('/api/orders/by-payment-reference/:payment_reference', async (req, res) 
     // Try to add associations gradually
     let orderWithDetails = order;
     try {
-      const { Store, OrderItem, Product } = require('./models');
-      
+      const { Store, OrderItem, Product, ProductTranslation } = require('./models');
+
       console.log('Looking for order items with order_id:', order.id);
-      
+
       // Get order items separately
       const orderItems = await OrderItem.findAll({
         where: { order_id: order.id },
-        include: [{ 
-          model: Product, 
-          attributes: ['id', 'name', 'sku'],
+        include: [{
+          model: Product,
+          attributes: ['id', 'sku'],
+          include: [{
+            model: ProductTranslation,
+            as: 'translations',
+            attributes: ['name', 'language_code'],
+            required: false
+          }],
           required: false
         }]
       });

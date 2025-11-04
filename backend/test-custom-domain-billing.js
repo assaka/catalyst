@@ -3,7 +3,9 @@
  * Tests the DailyCreditDeductionJob with custom domains
  */
 
-const { CustomDomain, Store, User } = require('./src/models');
+// Ensure models are loaded and associations are initialized
+const models = require('./src/models');
+const { CustomDomain, Store, User } = models;
 const creditService = require('./src/services/credit-service');
 const { sequelize } = require('./src/database/connection');
 
