@@ -156,8 +156,17 @@ const CheckoutForm = ({ selectedPackage, onSuccess, onError }) => {
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
+      <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg mb-4">
+        <div className="flex items-start gap-2">
+          <Info className="w-4 h-4 text-blue-600 mt-0.5 flex-shrink-0" />
+          <p className="text-sm text-blue-900">
+            Your credit card will be charged <strong>{formatPrice(selectedPackage.price)}</strong> when you submit the payment.
+          </p>
+        </div>
+      </div>
+
       <div className="p-4 border rounded-lg bg-white">
-        <CardElement 
+        <CardElement
           options={{
             style: {
               base: {
