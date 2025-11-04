@@ -291,12 +291,14 @@ export default function Customers() {
                     setIsBlacklisted(true);
                     showSuccess('Email added to blacklist');
                 } else {
-                    showError('Failed to add email to blacklist');
+                    const errorData = await addResponse.json();
+                    console.error('Failed to add email:', errorData);
+                    showError(errorData.message || 'Failed to add email to blacklist');
                 }
             }
         } catch (error) {
             console.error('Error managing guest blacklist:', error);
-            showError('Failed to update blacklist. Please try again.');
+            showError(error.message || 'Failed to update blacklist. Please try again.');
         } finally {
             setSaving(false);
         }
