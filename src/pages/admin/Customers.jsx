@@ -286,7 +286,7 @@ export default function Customers() {
             });
 
             const checkData = await checkResponse.json();
-            const existingEntry = checkData.data?.emails?.find(e => e.email === editingCustomer.email);
+            const existingEntry = checkData.data?.emails?.find(e => e.email === customer.email);
 
             if (existingEntry) {
                 // Email is already blacklisted, remove it
@@ -333,7 +333,7 @@ export default function Customers() {
                         'Authorization': `Bearer ${localStorage.getItem('store_owner_auth_token')}`
                     },
                     body: JSON.stringify({
-                        email: editingCustomer.email,
+                        email: customer.email,
                         reason: blacklistReason || 'Guest customer blacklisted'
                     })
                 });
