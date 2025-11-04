@@ -65,9 +65,6 @@ class CartService {
 
       fullUrl = `${this.endpoint}?${params.toString()}`;
 
-      console.log('🔍 CartService.getCart - Request URL:', fullUrl);
-      console.log('🔍 CartService.getCart - bustCache:', bustCache, 'storeId:', storeId);
-
       let response;
       try {
         // Build headers object without undefined values to avoid CORS issues
@@ -79,8 +76,6 @@ class CartService {
         if (bustCache) {
           headers['Pragma'] = 'no-cache';
         }
-
-        console.log('🔍 CartService.getCart - Headers:', headers);
 
         response = await fetch(fullUrl, {
           cache: bustCache ? 'no-store' : 'default',
@@ -107,18 +102,10 @@ class CartService {
 
       const result = await response.json();
 
-      console.log('🔍 CartService.getCart - API Response:', {
-        success: result.success,
-        data: result.data,
-        itemsCount: result.data?.items?.length || result.data?.dataValues?.items?.length || 0
-      });
-
       if (result.success && result.data) {
         // Handle both direct data.items and data.dataValues.items structures
         const cartData = result.data.dataValues || result.data;
         const items = Array.isArray(cartData.items) ? cartData.items : [];
-
-        console.log('🔍 CartService.getCart - Returning items:', items);
 
         return {
           success: true,
@@ -126,7 +113,6 @@ class CartService {
           items: items
         };
       }
-      console.log('🔍 CartService.getCart - No success or no data, returning empty');
       return { success: false, cart: null, items: [] };
     } catch (error) {
       console.error('🛒 CartService.getCart error:', {
@@ -224,23 +210,11 @@ class CartService {
 
       const result = await response.json();
 
-      console.log('🔍 CartService.addItem - Backend response:', {
-        success: result.success,
-        dataStructure: result.data ? Object.keys(result.data) : 'no data',
-        itemsCount: result.data?.items?.length || result.data?.dataValues?.items?.length || 0
-      });
-
       if (result.success) {
         // Extract fresh cart data from the response
         const freshCartData = result.data;
         const cartItems = Array.isArray(freshCartData?.items) ? freshCartData.items :
                          Array.isArray(freshCartData?.dataValues?.items) ? freshCartData.dataValues.items : [];
-
-        console.log('🔍 CartService.addItem - Dispatching cartUpdated event with items:', {
-          itemsCount: cartItems.length,
-          items: cartItems,
-          freshCartData: freshCartData
-        });
 
         // Dispatch cart update event with the fresh cart data
         window.dispatchEvent(new CustomEvent('cartUpdated', {

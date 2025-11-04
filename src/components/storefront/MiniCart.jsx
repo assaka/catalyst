@@ -135,24 +135,14 @@ export default function MiniCart({ iconVariant = 'outline' }) {
     };
 
     const handleCartUpdate = (event) => {
-      console.log('🛒 MiniCart.handleCartUpdate - Received event:', {
-        hasFreshCartData: !!event.detail?.freshCartData,
-        itemsCount: event.detail?.freshCartData?.items?.length || 0,
-        items: event.detail?.freshCartData?.items,
-        source: event.detail?.source,
-        action: event.detail?.action
-      });
-
       // Use freshCartData from event to avoid race condition with backend
       if (event.detail?.freshCartData?.items) {
         const items = event.detail.freshCartData.items;
-        console.log('🛒 MiniCart.handleCartUpdate - Setting items from event:', items);
         setCartItems(items);
         return;
       }
 
       // Fallback: fetch from backend if no freshCartData
-      console.log('🛒 MiniCart.handleCartUpdate - No freshCartData, fetching from backend');
       debouncedRefresh(true);
     };
 
@@ -190,25 +180,14 @@ export default function MiniCart({ iconVariant = 'outline' }) {
       try {
         setLoading(true);
 
-        console.log('🛒 MiniCart.loadCart - Starting with store.id:', store?.id);
-
         // CRITICAL: Pass store.id to filter cart by store (fixes multi-store issue)
         // CRITICAL: Always bust cache (true) to get fresh data from database
         const cartResult = await cartService.getCart(true, store?.id);
 
-        console.log('🛒 MiniCart.loadCart - Result:', {
-          success: cartResult.success,
-          itemsCount: cartResult.items?.length || 0,
-          items: cartResult.items,
-          cart: cartResult.cart
-        });
-
         if (cartResult.success && cartResult.items) {
-          console.log('🛒 MiniCart.loadCart - Setting items:', cartResult.items);
           setCartItems(cartResult.items);
           setLastRefreshId(refreshId);
         } else {
-          console.log('🛒 MiniCart.loadCart - No items, clearing cart');
           setCartItems([]);
           setCartProducts({});
           setLastRefreshId(refreshId);
