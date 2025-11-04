@@ -59,27 +59,6 @@ export default function Customers() {
             setLoading(true);
             const customerData = await Customer.filter({ store_id: storeId }, '-last_order_date');
 
-            // Debug: Log customer data to see what we're receiving
-            console.log('📦 Customers loaded:', customerData?.length);
-
-            // Check if any customers have blacklist data
-            const blacklistedCustomers = customerData?.filter(c => c.is_blacklisted) || [];
-            if (blacklistedCustomers.length > 0) {
-                console.log('🚫 Blacklisted customers found:', blacklistedCustomers.length);
-                console.log('🔍 First blacklisted customer:', {
-                    email: blacklistedCustomers[0].email,
-                    is_blacklisted: blacklistedCustomers[0].is_blacklisted,
-                    blacklist_reason: blacklistedCustomers[0].blacklist_reason
-                });
-            }
-
-            // Log all customers to verify is_blacklisted field
-            console.log('👥 All customers with blacklist status:', customerData?.map(c => ({
-                email: c.email,
-                customer_type: c.customer_type,
-                is_blacklisted: c.is_blacklisted
-            })));
-
             setCustomers(customerData || []);
         } catch (error) {
             console.error("❌ Error loading customers:", error);
@@ -174,64 +153,33 @@ export default function Customers() {
 
     const handleToggleBlacklistFromModal = async () => {
         const customer = blacklistingCustomer || editingCustomer;
-        if (!customer) {
-            console.log('❌ No customer selected');
-            return;
-        }
+        if (!customer) return;
 
         const willBlacklist = !isBlacklisted;
-
-        console.log('🔒 Frontend: Blacklisting customer', {
-            customerId: customer.id,
-            email: customer.email,
-            willBlacklist,
-            blacklistReason
-        });
 
         setSaving(true);
         try {
             const storeId = getSelectedStoreId();
-            const url = `/api/customers/${customer.id}/blacklist?store_id=${storeId}`;
-            const payload = {
-                is_blacklisted: willBlacklist,
-                blacklist_reason: willBlacklist ? blacklistReason : null
-            };
-
-            console.log('📤 Sending blacklist request:', { url, payload });
 
             // Update customer blacklist status
-            const response = await fetch(url, {
+            const response = await fetch(`/api/customers/${customer.id}/blacklist?store_id=${storeId}`, {
                 method: 'PUT',
                 headers: {
                     'Content-Type': 'application/json',
                     'Authorization': `Bearer ${localStorage.getItem('store_owner_auth_token')}`
                 },
-                body: JSON.stringify(payload)
-            });
-
-            console.log('📥 Blacklist response:', {
-                ok: response.ok,
-                status: response.status,
-                statusText: response.statusText
+                body: JSON.stringify({
+                    is_blacklisted: willBlacklist,
+                    blacklist_reason: willBlacklist ? blacklistReason : null
+                })
             });
 
             if (!response.ok) {
-                const errorData = await response.json().catch(() => ({}));
-                console.error('❌ Blacklist failed:', errorData);
-                throw new Error(errorData.message || 'Failed to update blacklist status');
+                throw new Error('Failed to update blacklist status');
             }
 
             const result = await response.json();
-            console.log('✅ Blacklist success:', result);
-
-            // Use the updated customer data from backend response
             const updatedCustomer = result.data;
-            console.log('📝 Updated customer data from backend:', {
-                id: updatedCustomer.id,
-                email: updatedCustomer.email,
-                is_blacklisted: updatedCustomer.is_blacklisted,
-                blacklist_reason: updatedCustomer.blacklist_reason
-            });
 
             // Remove email from blacklist_emails table when unblacklisting
             if (!willBlacklist && customer.email) {
@@ -269,8 +217,6 @@ export default function Customers() {
                     ? { ...c, ...updatedCustomer }
                     : c
             ));
-
-            console.log('🔄 Local state updated');
 
             // Show success message
             showSuccess(willBlacklist ? 'Customer blacklisted successfully' : 'Customer removed from blacklist');

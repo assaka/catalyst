@@ -45,17 +45,6 @@ router.get('/', storeOwnerOnly, async (req, res) => {
     const enhancedCustomers = await Promise.all(customers.rows.map(async (customer) => {
       const customerData = customer.toJSON();
 
-      // Log first customer to check blacklist fields
-      if (customer.email === 'hello@sprtags.io') {
-        console.log('🔍 Customer hello@sprtags.io data:', {
-          id: customer.id,
-          email: customer.email,
-          is_blacklisted: customer.is_blacklisted,
-          is_blacklisted_in_json: customerData.is_blacklisted,
-          blacklist_reason: customer.blacklist_reason
-        });
-      }
-
       // For registered customers, fetch from addresses table
       if (customer.customer_type === 'registered') {
         const addresses = await Address.findAll({
@@ -322,37 +311,19 @@ router.delete('/:id', authMiddleware, async (req, res) => {
 // @access  Private (Store Owner Only)
 router.put('/:id/blacklist', storeOwnerOnly, async (req, res) => {
   try {
-    console.log('🔒 Blacklist request received:', {
-      customerId: req.params.id,
-      body: req.body,
-      store_id: req.query.store_id
-    });
-
     const { is_blacklisted, blacklist_reason } = req.body;
     const customer = await Customer.findByPk(req.params.id);
 
     if (!customer) {
-      console.log('❌ Customer not found:', req.params.id);
       return res.status(404).json({
         success: false,
         message: 'Customer not found'
       });
     }
 
-    console.log('👤 Customer found:', {
-      id: customer.id,
-      email: customer.email,
-      store_id: customer.store_id,
-      current_is_blacklisted: customer.is_blacklisted
-    });
-
     // Verify customer belongs to the store
     const { store_id } = req.query;
     if (customer.store_id !== parseInt(store_id)) {
-      console.log('❌ Store ID mismatch:', {
-        customer_store_id: customer.store_id,
-        requested_store_id: parseInt(store_id)
-      });
       return res.status(403).json({
         success: false,
         message: 'Access denied. Customer belongs to a different store.'
@@ -360,7 +331,6 @@ router.put('/:id/blacklist', storeOwnerOnly, async (req, res) => {
     }
 
     // Update blacklist status
-    console.log('🔄 Updating customer blacklist status to:', is_blacklisted);
     await customer.update({
       is_blacklisted: is_blacklisted,
       blacklist_reason: is_blacklisted ? blacklist_reason : null,
@@ -370,23 +340,16 @@ router.put('/:id/blacklist', storeOwnerOnly, async (req, res) => {
     // Reload to get fresh data
     await customer.reload();
 
-    console.log('✅ Customer updated successfully:', {
-      id: customer.id,
-      is_blacklisted: customer.is_blacklisted,
-      blacklist_reason: customer.blacklist_reason
-    });
-
     res.json({
       success: true,
       data: customer,
       message: is_blacklisted ? 'Customer blacklisted successfully' : 'Customer removed from blacklist successfully'
     });
   } catch (error) {
-    console.error('❌ Blacklist customer error:', error);
+    console.error('Blacklist customer error:', error);
     res.status(500).json({
       success: false,
-      message: 'Server error',
-      error: error.message
+      message: 'Server error'
     });
   }
 });
