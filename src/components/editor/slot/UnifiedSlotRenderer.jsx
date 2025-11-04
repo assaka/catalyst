@@ -937,15 +937,21 @@ export function UnifiedSlotRenderer({
             }
 
             try {
+              // CRITICAL: Get the correct base price using utility function (same as ProductItemCard)
+              const { getPriceDisplay } = await import('@/utils/priceUtils');
+              const priceInfo = getPriceDisplay(product);
+              const basePrice = priceInfo.displayPrice;
+
               const result = await cartService.addItem(
                 product.id,
                 1,
-                product.price || 0,
+                basePrice,
                 [],
                 store.id
               );
 
-              if (result.success !== false) {
+              // CRITICAL: Use same success check as ProductItemCard (result.success === true, not !== false)
+              if (result.success) {
                 // Track add to cart event
                 if (typeof window !== 'undefined' && window.catalyst?.trackAddToCart) {
                   window.catalyst.trackAddToCart(product, 1);
