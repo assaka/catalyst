@@ -61,14 +61,11 @@ async function domainResolver(req, res, next) {
     // Check cache first
     const cached = domainCache.get(hostname);
     if (cached && (Date.now() - cached.timestamp) < CACHE_TTL) {
-      // Use cached mapping
       req.customDomain = true;
       req.storeId = cached.storeId;
       req.storeSlug = cached.storeSlug;
       req.storeName = cached.storeName;
       req.resolvedFromDomain = true;
-
-      console.log(`🔍 [Domain Resolver] Using cached mapping: ${hostname} -> ${cached.storeSlug}`);
       return next();
     }
 
@@ -95,17 +92,13 @@ async function domainResolver(req, res, next) {
         timestamp: Date.now()
       };
 
-      // Cache the mapping
       domainCache.set(hostname, mapping);
 
-      // Attach to request
       req.customDomain = true;
       req.storeId = mapping.storeId;
       req.storeSlug = mapping.storeSlug;
       req.storeName = mapping.storeName;
       req.resolvedFromDomain = true;
-
-      console.log(`✅ [Domain Resolver] Mapped: ${hostname} -> ${mapping.storeSlug} (${mapping.storeId})`);
 
       // Track domain access (non-blocking)
       setImmediate(async () => {
@@ -113,16 +106,13 @@ async function domainResolver(req, res, next) {
           await domainRecord.increment('access_count');
           await domainRecord.update({ last_accessed_at: new Date() });
         } catch (error) {
-          console.error('Error tracking domain access:', error);
+          // Silent fail - access tracking is not critical
         }
       });
-    } else {
-      console.log(`⚠️ [Domain Resolver] No verified domain found for: ${hostname}`);
     }
 
     next();
   } catch (error) {
-    console.error('❌ [Domain Resolver] Error:', error);
     // Don't block the request on errors - just continue
     next();
   }

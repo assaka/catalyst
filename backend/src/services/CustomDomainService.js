@@ -46,13 +46,8 @@ class CustomDomainService {
       const vercelService = require('./vercel-domain-service');
       if (vercelService.isConfigured()) {
         try {
-          console.log(`🔧 Auto-adding domain to Vercel: ${domainName}`);
           const vercelResult = await vercelService.addDomain(domainName);
-
           if (vercelResult.success) {
-            console.log(`✅ Domain added to Vercel successfully`);
-
-            // Update domain metadata
             domain.metadata = {
               ...domain.metadata,
               vercel_added: true,
@@ -61,11 +56,8 @@ class CustomDomainService {
             await domain.save();
           }
         } catch (vercelError) {
-          console.warn(`⚠️ Failed to add domain to Vercel: ${vercelError.message}`);
-          // Don't fail the whole operation - domain can still be added manually to Vercel
+          // Silent fail - domain can be added to Vercel manually
         }
-      } else {
-        console.warn('⚠️ Vercel API not configured - domain must be added to Vercel manually');
       }
 
       return {
@@ -138,18 +130,16 @@ class CustomDomainService {
         // Check SSL status from Vercel
         const vercelService = require('./vercel-domain-service');
         if (vercelService.isConfigured()) {
-          try {
-            // Give Vercel a moment to detect DNS changes
-            setTimeout(async () => {
+          setTimeout(async () => {
+            try {
               const sslStatus = await vercelService.checkSSLStatus(domain.domain);
               if (sslStatus.success && sslStatus.ssl_status) {
                 await domain.update({ ssl_status: sslStatus.ssl_status });
-                console.log(`✅ SSL status updated: ${sslStatus.ssl_status}`);
               }
-            }, 5000);
-          } catch (error) {
-            console.warn('⚠️ Failed to check SSL status:', error.message);
-          }
+            } catch (error) {
+              // Silent fail
+            }
+          }, 5000);
         }
 
         return {
@@ -181,16 +171,10 @@ class CustomDomainService {
   static async _verifyTXTRecord(domain) {
     try {
       const recordName = domain.verification_record_name || `_catalyst-verification.${domain.domain}`;
-
       const txtRecords = await dns.resolveTxt(recordName);
       const flatRecords = txtRecords.flat();
-
-      console.log(`Checking TXT record for ${recordName}:`, flatRecords);
-      console.log(`Expected token:`, domain.verification_token);
-
       return flatRecords.some(record => record.includes(domain.verification_token));
     } catch (error) {
-      console.error('TXT verification error:', error.code);
       return false;
     }
   }
@@ -201,24 +185,14 @@ class CustomDomainService {
    */
   static async _verifyDomainPointsToUs(domain) {
     try {
-      // Try CNAME first
       const cnameVerified = await this._verifyCNAMERecord(domain);
-      if (cnameVerified) {
-        console.log(`✅ Domain ${domain.domain} verified via CNAME`);
-        return true;
-      }
+      if (cnameVerified) return true;
 
-      // Fall back to A record verification
       const aRecordVerified = await this._verifyARecord(domain);
-      if (aRecordVerified) {
-        console.log(`✅ Domain ${domain.domain} verified via A record`);
-        return true;
-      }
+      if (aRecordVerified) return true;
 
-      console.log(`❌ Domain ${domain.domain} not pointing to our platform`);
       return false;
     } catch (error) {
-      console.error('Domain verification error:', error);
       return false;
     }
   }
@@ -230,24 +204,12 @@ class CustomDomainService {
   static async _verifyCNAMERecord(domain) {
     try {
       const cnameRecords = await dns.resolveCname(domain.domain);
-
-      // Accept CNAME pointing to vercel-dns.com or vercel.app
-      const validTargets = [
-        'cname.vercel-dns.com',
-        'vercel-dns.com',
-        '.vercel.app'
-      ];
-
-      console.log(`Checking CNAME for ${domain.domain}:`, cnameRecords);
-
+      const validTargets = ['cname.vercel-dns.com', 'vercel-dns.com', '.vercel.app'];
       return cnameRecords.some(record => {
         const recordLower = record.toLowerCase();
-        return validTargets.some(target =>
-          recordLower.includes(target.toLowerCase())
-        );
+        return validTargets.some(target => recordLower.includes(target.toLowerCase()));
       });
     } catch (error) {
-      console.log(`CNAME check failed for ${domain.domain}:`, error.code);
       return false;
     }
   }
@@ -259,22 +221,9 @@ class CustomDomainService {
   static async _verifyARecord(domain) {
     try {
       const aRecords = await dns.resolve4(domain.domain);
-
-      // Vercel's A record IPs
-      const vercelIPs = [
-        '76.76.21.21',
-        '76.76.21.22',
-        '76.76.21.93',
-        '76.76.21.142'
-      ];
-
-      console.log(`Checking A records for ${domain.domain}:`, aRecords);
-      console.log(`Valid Vercel IPs:`, vercelIPs);
-
-      // Check if at least one A record points to Vercel
+      const vercelIPs = ['76.76.21.21', '76.76.21.22', '76.76.21.93', '76.76.21.142'];
       return aRecords.some(ip => vercelIPs.includes(ip));
     } catch (error) {
-      console.log(`A record check failed for ${domain.domain}:`, error.code);
       return false;
     }
   }
@@ -319,23 +268,10 @@ class CustomDomainService {
       domain.ssl_status = 'pending';
       await domain.save();
 
-      // TODO: Integrate with Let's Encrypt or Cloudflare SSL
-      // For now, we'll mark as pending and require manual SSL setup
-
-      console.log(`SSL certificate provisioning started for: ${domain.domain}`);
-
-      // Simulated SSL provisioning (replace with actual implementation)
-      // Options:
-      // 1. Cloudflare API (if using Cloudflare)
-      // 2. Let's Encrypt ACME protocol
-      // 3. AWS Certificate Manager
-      // 4. Custom certificate upload
-
       return {
         success: true,
         message: 'SSL certificate provisioning initiated',
-        status: 'pending',
-        note: 'SSL certificates are typically issued within 5-15 minutes'
+        status: 'pending'
       };
     } catch (error) {
       console.error('SSL provisioning error:', error);
@@ -450,7 +386,6 @@ class CustomDomainService {
         throw new Error('Domain not found');
       }
 
-      // Don't allow removing primary domain if there are other domains
       if (domain.is_primary) {
         const otherDomains = await CustomDomain.count({
           where: {
@@ -468,17 +403,14 @@ class CustomDomainService {
       const vercelService = require('./vercel-domain-service');
       if (vercelService.isConfigured()) {
         try {
-          console.log(`🗑️ Removing domain from Vercel: ${domain.domain}`);
           await vercelService.removeDomain(domain.domain);
         } catch (vercelError) {
-          console.warn(`⚠️ Failed to remove from Vercel: ${vercelError.message}`);
-          // Continue with database removal even if Vercel removal fails
+          // Silent fail
         }
       }
 
       await domain.destroy();
 
-      // Update store if this was the active domain
       await Store.update(
         {
           custom_domain: null,
@@ -490,7 +422,6 @@ class CustomDomainService {
 
       return { success: true, message: 'Domain removed successfully' };
     } catch (error) {
-      console.error('Error removing domain:', error);
       throw error;
     }
   }

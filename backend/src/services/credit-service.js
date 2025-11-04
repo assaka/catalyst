@@ -237,12 +237,11 @@ class CreditService {
    * Charge daily fee for custom domain
    */
   async chargeDailyCustomDomainFee(userId, domainId, domainName) {
-    // Get the daily custom domain cost from service_credit_costs table
-    let dailyCost = 0.5; // Fallback default (0.5 credits per day)
+    let dailyCost = 0.5;
     try {
       dailyCost = await ServiceCreditCost.getCostByKey('custom_domain');
     } catch (error) {
-      console.warn('⚠️ Could not fetch custom_domain cost, using fallback:', error.message);
+      // Use fallback
     }
 
     // Check if domain is still active
@@ -311,12 +310,11 @@ class CreditService {
    * Record daily credit charge for published store
    */
   async chargeDailyPublishingFee(userId, storeId) {
-    // Get the daily publishing cost from service_credit_costs table
-    let dailyCost = 1.0; // Fallback default
+    let dailyCost = 1.0;
     try {
       dailyCost = await ServiceCreditCost.getCostByKey('store_daily_publishing');
     } catch (error) {
-      console.warn('⚠️ Could not fetch store_daily_publishing cost, using fallback:', error.message);
+      // Use fallback
     }
 
     // Check if store is still published
@@ -399,8 +397,7 @@ class CreditService {
         type: sequelize.QueryTypes.INSERT
       });
     } catch (uptimeError) {
-      console.error('❌ Failed to log to store_uptime:', uptimeError);
-      // Don't fail the deduction if uptime logging fails
+      // Silent fail - uptime logging is not critical
     }
 
     return deductResult;

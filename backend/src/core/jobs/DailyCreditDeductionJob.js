@@ -14,14 +14,10 @@ class DailyCreditDeductionJob extends BaseJobHandler {
   }
 
   async execute() {
-    console.log('🏪 Starting daily credit deduction for all published stores...');
-    
     try {
-      // Get all published stores
       const publishedStores = await Store.findPublishedStores();
-      
+
       if (publishedStores.length === 0) {
-        console.log('ℹ️ No published stores found, skipping credit deduction');
         return {
           success: true,
           message: 'No published stores found',
@@ -31,8 +27,6 @@ class DailyCreditDeductionJob extends BaseJobHandler {
           timestamp: new Date().toISOString()
         };
       }
-
-      console.log(`📊 Found ${publishedStores.length} published stores`);
       
       const results = {
         processed: 0,
@@ -42,17 +36,12 @@ class DailyCreditDeductionJob extends BaseJobHandler {
         errors: []
       };
 
-      // Process each published store
       for (const store of publishedStores) {
         results.processed++;
-        
+
         try {
-          console.log(`💰 Processing daily charge for store: ${store.name} (${store.id})`);
-          
-          // Get the store owner
           const owner = await User.findByPk(store.user_id);
           if (!owner) {
-            console.warn(`⚠️ Store owner not found for store ${store.name} (${store.id})`);
             results.failed++;
             results.errors.push({
               store_id: store.id,
@@ -62,14 +51,9 @@ class DailyCreditDeductionJob extends BaseJobHandler {
             continue;
           }
 
-          // Charge daily publishing fee
-          const chargeResult = await creditService.chargeDailyPublishingFee(
-            store.user_id,
-            store.id
-          );
+          const chargeResult = await creditService.chargeDailyPublishingFee(store.user_id, store.id);
 
           if (chargeResult.success) {
-            console.log(`✅ Successfully charged ${chargeResult.credits_deducted || 'daily'} credit(s) for store: ${store.name}`);
             results.successful++;
             results.stores.push({
               store_id: store.id,
@@ -80,7 +64,6 @@ class DailyCreditDeductionJob extends BaseJobHandler {
               status: 'success'
             });
           } else {
-            console.warn(`⚠️ Failed to charge store ${store.name}: ${chargeResult.message}`);
             results.failed++;
             results.errors.push({
               store_id: store.id,
@@ -88,9 +71,7 @@ class DailyCreditDeductionJob extends BaseJobHandler {
               error: chargeResult.message || 'Unknown error'
             });
           }
-
         } catch (storeError) {
-          console.error(`❌ Error processing store ${store.name} (${store.id}):`, storeError.message);
           results.failed++;
           results.errors.push({
             store_id: store.id,
@@ -101,16 +82,12 @@ class DailyCreditDeductionJob extends BaseJobHandler {
       }
 
       // Process custom domains
-      console.log('\n🌐 Processing custom domain charges...');
-
       const activeCustomDomains = await CustomDomain.findAll({
         where: {
           is_active: true,
           verification_status: 'verified'
         }
       });
-
-      console.log(`📊 Found ${activeCustomDomains.length} active custom domains`);
 
       const domainResults = {
         processed: 0,
@@ -124,15 +101,11 @@ class DailyCreditDeductionJob extends BaseJobHandler {
         domainResults.processed++;
 
         try {
-          console.log(`💰 Charging for custom domain: ${domain.domain}`);
-
-          // Get store separately to avoid association issues
           const store = await Store.findByPk(domain.store_id, {
             attributes: ['id', 'name', 'slug', 'user_id']
           });
 
           if (!store) {
-            console.warn(`⚠️ Store not found for domain ${domain.domain} (store_id: ${domain.store_id})`);
             domainResults.failed++;
             domainResults.errors.push({
               domain_id: domain.id,
@@ -149,7 +122,6 @@ class DailyCreditDeductionJob extends BaseJobHandler {
           );
 
           if (chargeResult.success) {
-            console.log(`✅ Successfully charged ${chargeResult.credits_deducted} credit(s) for domain: ${domain.domain}`);
             domainResults.successful++;
             domainResults.domains.push({
               domain_id: domain.id,
@@ -163,7 +135,6 @@ class DailyCreditDeductionJob extends BaseJobHandler {
               status: 'success'
             });
           } else {
-            console.warn(`⚠️ Failed to charge domain ${domain.domain}: ${chargeResult.message}`);
             domainResults.failed++;
             domainResults.errors.push({
               domain_id: domain.id,
@@ -173,9 +144,7 @@ class DailyCreditDeductionJob extends BaseJobHandler {
               domain_deactivated: chargeResult.domain_deactivated || false
             });
           }
-
         } catch (domainError) {
-          console.error(`❌ Error processing domain ${domain.domain}:`, domainError.message);
           domainResults.failed++;
           domainResults.errors.push({
             domain_id: domain.id,
@@ -185,26 +154,18 @@ class DailyCreditDeductionJob extends BaseJobHandler {
         }
       }
 
-      // Log summary
-      console.log(`\n📈 Daily credit deduction completed:`);
-      console.log(`   Stores Processed: ${results.processed}, Successful: ${results.successful}, Failed: ${results.failed}`);
-      console.log(`   Domains Processed: ${domainResults.processed}, Successful: ${domainResults.successful}, Failed: ${domainResults.failed}`);
-
-      // If all charges failed, consider this a job failure
       if (results.failed > 0 && results.successful === 0 && domainResults.successful === 0) {
         throw new Error(`All charges failed: ${results.failed} stores + ${domainResults.failed} domains`);
       }
 
       return {
         success: true,
-        message: `Daily credit deduction completed: ${results.successful}/${results.processed} stores, ${domainResults.successful}/${domainResults.processed} domains`,
+        message: `Completed: ${results.successful}/${results.processed} stores, ${domainResults.successful}/${domainResults.processed} domains`,
         stores: results,
         custom_domains: domainResults,
         timestamp: new Date().toISOString()
       };
-
     } catch (error) {
-      console.error('❌ Daily credit deduction job failed:', error.message);
       throw error;
     }
   }
