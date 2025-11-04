@@ -38,7 +38,7 @@ class CartService {
   }
 
   // Get cart - simplified to always use session_id approach with aggressive cache busting
-  async getCart(bustCache = false) {
+  async getCart(bustCache = false, storeId = null) {
     const sessionId = this.getSessionId();
     let fullUrl = '';
 
@@ -51,6 +51,11 @@ class CartService {
       // Add user_id if authenticated to enable cart merging
       if (user?.id) {
         params.append('user_id', user.id);
+      }
+
+      // CRITICAL: Add store_id to filter cart by store (fixes multi-store cart issue)
+      if (storeId) {
+        params.append('store_id', storeId);
       }
 
       // Add cache busting for fresh data requests

@@ -60,11 +60,11 @@ router.get('/debug', async (req, res) => {
 });
 
 // @route   GET /api/cart
-// @desc    Get cart by session_id or user_id
+// @desc    Get cart by session_id or user_id, optionally filtered by store_id
 // @access  Public
 router.get('/', async (req, res) => {
   try {
-    const { session_id, user_id } = req.query;
+    const { session_id, user_id, store_id } = req.query;
 
     if (!session_id && !user_id) {
       return res.status(400).json({
@@ -73,25 +73,39 @@ router.get('/', async (req, res) => {
       });
     }
 
-    let cart;
+    // Build where clause
+    const whereClause = {};
+
     if (user_id) {
-      cart = await Cart.findOne({ where: { user_id } });
+      whereClause.user_id = user_id;
     } else {
-      cart = await Cart.findOne({ where: { session_id } });
+      whereClause.session_id = session_id;
     }
-    
+
+    // CRITICAL: Filter by store_id if provided (fixes multi-store cart issue)
+    if (store_id) {
+      whereClause.store_id = store_id;
+    }
+
+    let cart = await Cart.findOne({ where: whereClause });
+
     // If no cart found but both session_id and user_id were provided,
     // try finding by either field (for cases where cart was created with one but accessed with both)
     if (!cart && session_id && user_id) {
       const { Op } = require('sequelize');
-      cart = await Cart.findOne({ 
-        where: { 
-          [Op.or]: [
-            { session_id: session_id },
-            { user_id: user_id }
-          ]
-        }
-      });
+      const fallbackWhere = {
+        [Op.or]: [
+          { session_id: session_id },
+          { user_id: user_id }
+        ]
+      };
+
+      // Still filter by store_id in fallback query
+      if (store_id) {
+        fallbackWhere.store_id = store_id;
+      }
+
+      cart = await Cart.findOne({ where: fallbackWhere });
     }
 
     if (!cart) {
@@ -197,14 +211,20 @@ router.post('/', async (req, res) => {
       });
     }
 
-    let cart;
+    // Build where clause to find existing cart - CRITICAL: include store_id
+    const whereClause = {};
     if (user_id) {
-      console.log('Cart POST - Looking for cart by user_id:', user_id);
-      cart = await Cart.findOne({ where: { user_id } });
+      console.log('Cart POST - Looking for cart by user_id:', user_id, 'and store_id:', store_id);
+      whereClause.user_id = user_id;
     } else {
-      console.log('Cart POST - Looking for cart by session_id:', session_id);
-      cart = await Cart.findOne({ where: { session_id } });
+      console.log('Cart POST - Looking for cart by session_id:', session_id, 'and store_id:', store_id);
+      whereClause.session_id = session_id;
     }
+
+    // CRITICAL: Always filter by store_id to prevent mixing carts from different stores
+    whereClause.store_id = store_id;
+
+    let cart = await Cart.findOne({ where: whereClause });
     console.log('Cart POST - Found existing cart:', cart ? cart.id : 'none');
 
     let cartItems = [];

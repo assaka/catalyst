@@ -320,7 +320,8 @@ export default function Cart() {
             const [cartResult, taxRulesData] = await Promise.allSettled([
                 // Load cart data
                 (async () => {
-                    const result = await cartService.getCart();
+                    // CRITICAL: Pass store.id to filter cart by store (fixes multi-store issue)
+                    const result = await cartService.getCart(false, store?.id);
                     return result;
                 })(),
 

@@ -438,7 +438,8 @@ export default function Checkout() {
       if (!sessionId) return;
 
       // Use simplified cart service (session-based approach)
-      const cartResult = await cartService.getCart();
+      // CRITICAL: Pass store.id to filter cart by store (fixes multi-store issue)
+      const cartResult = await cartService.getCart(false, store?.id);
       
       let cartItems = [];
       if (cartResult.success && cartResult.items) {
