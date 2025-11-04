@@ -49,6 +49,7 @@ export default function PaymentMethods() {
     name: '',
     code: '',
     type: 'credit_card',
+    payment_flow: 'offline',
     is_active: true,
     description: '',
     icon_url: '',
@@ -80,6 +81,7 @@ export default function PaymentMethods() {
       name: "Stripe (Online Payments)",
       code: "stripe",
       type: "stripe",
+      payment_flow: "online",
       description: "Accept credit cards, debit cards, and more via Stripe.",
       icon_url: "https://js.stripe.com/v3/fingerprinted/img/stripe-logo-blurple-fed4f31ce.svg"
     },
@@ -87,6 +89,7 @@ export default function PaymentMethods() {
       name: "Cash on Delivery",
       code: "cod",
       type: "cash_on_delivery",
+      payment_flow: "offline",
       description: "Pay with cash upon delivery.",
       icon_url: ""
     },
@@ -94,6 +97,7 @@ export default function PaymentMethods() {
       name: "Bank Transfer",
       code: "bank_transfer",
       type: "bank_transfer",
+      payment_flow: "offline",
       description: "Pay via a manual bank transfer.",
       icon_url: ""
     }
@@ -233,6 +237,7 @@ export default function PaymentMethods() {
       name: method.name,
       code: method.code,
       type: method.type || 'other',
+      payment_flow: method.payment_flow || 'offline',
       is_active: method.is_active,
       description: method.description || '',
       icon_url: method.icon_url || '',
@@ -267,6 +272,7 @@ export default function PaymentMethods() {
       name: '',
       code: '',
       type: 'credit_card',
+      payment_flow: 'offline',
       is_active: true,
       description: '',
       icon_url: '',
@@ -522,6 +528,9 @@ export default function PaymentMethods() {
                         <Badge variant={method.is_active ? 'default' : 'secondary'}>
                           {method.is_active ? 'Active' : 'Inactive'}
                         </Badge>
+                        <Badge variant={method.payment_flow === 'online' ? 'default' : 'outline'} className={method.payment_flow === 'online' ? 'bg-purple-100 text-purple-700 border-purple-200' : 'bg-gray-100 text-gray-700'}>
+                          {method.payment_flow === 'online' ? 'Online' : 'Offline'}
+                        </Badge>
                         {method.type === 'stripe' && (
                           <Badge 
                             variant={store?.stripe_connect_onboarding_complete ? "default" : "outline"}
@@ -655,22 +664,40 @@ export default function PaymentMethods() {
                   </div>
                 )}
 
-                <div>
-                  <Label htmlFor="type">Payment Type</Label>
-                  <Select value={formData.type} onValueChange={(value) => setFormData({ ...formData, type: value })}>
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="credit_card">Credit Card</SelectItem>
-                      <SelectItem value="debit_card">Debit Card</SelectItem>
-                      <SelectItem value="paypal">PayPal</SelectItem>
-                      <SelectItem value="stripe">Stripe</SelectItem>
-                      <SelectItem value="bank_transfer">Bank Transfer</SelectItem>
-                      <SelectItem value="cash_on_delivery">Cash on Delivery</SelectItem>
-                      <SelectItem value="other">Other</SelectItem>
-                    </SelectContent>
-                  </Select>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <Label htmlFor="type">Payment Type</Label>
+                    <Select value={formData.type} onValueChange={(value) => setFormData({ ...formData, type: value })}>
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="credit_card">Credit Card</SelectItem>
+                        <SelectItem value="debit_card">Debit Card</SelectItem>
+                        <SelectItem value="paypal">PayPal</SelectItem>
+                        <SelectItem value="stripe">Stripe</SelectItem>
+                        <SelectItem value="bank_transfer">Bank Transfer</SelectItem>
+                        <SelectItem value="cash_on_delivery">Cash on Delivery</SelectItem>
+                        <SelectItem value="other">Other</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div>
+                    <Label htmlFor="payment_flow">Payment Flow</Label>
+                    <Select value={formData.payment_flow} onValueChange={(value) => setFormData({ ...formData, payment_flow: value })}>
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="online">Online (requires webhook confirmation)</SelectItem>
+                        <SelectItem value="offline">Offline (immediate confirmation)</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <p className="text-xs text-gray-500 mt-1">
+                      Online: Stripe, PayPal (wait for webhook). Offline: Bank transfer, Cash on delivery (immediate).
+                    </p>
+                  </div>
                 </div>
 
                 {!showTranslations && (

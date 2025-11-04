@@ -20,6 +20,12 @@ const PaymentMethod = sequelize.define('PaymentMethod', {
     allowNull: false,
     defaultValue: 'credit_card'
   },
+  payment_flow: {
+    type: DataTypes.ENUM('online', 'offline'),
+    allowNull: false,
+    defaultValue: 'offline',
+    comment: 'Payment flow type: online (requires webhook confirmation) or offline (immediate confirmation)'
+  },
   is_active: {
     type: DataTypes.BOOLEAN,
     defaultValue: true

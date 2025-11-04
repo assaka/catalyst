@@ -1359,20 +1359,23 @@ router.post('/webhook', async (req, res) => {
 
         if (existingOrder) {
           console.log('✅ Found existing preliminary order:', existingOrder.id, existingOrder.order_number);
+          console.log('🔍 Current order status:', existingOrder.status, 'payment_status:', existingOrder.payment_status);
 
-          // Check if status is already correct (preliminary order already set it)
-          statusAlreadyUpdated = existingOrder.status === 'processing' && existingOrder.payment_status === 'paid';
+          // Check if this is an online payment that needs to be updated to paid
+          const isOnlinePayment = existingOrder.status === 'pending' && existingOrder.payment_status === 'pending';
 
-          if (!statusAlreadyUpdated) {
-            console.log('🔄 Updating order status to paid/processing...');
+          if (isOnlinePayment) {
+            console.log('🔄 Online payment confirmed - updating order status to paid/processing...');
             // Update the existing preliminary order to mark as paid and processing
             await existingOrder.update({
               status: 'processing',
               payment_status: 'paid',
               updatedAt: new Date()
             });
+            statusAlreadyUpdated = false; // Send email since this is first confirmation
           } else {
-            console.log('✅ Order status already correct (preliminary order set it)');
+            console.log('✅ Order status already correct (offline payment or already updated)');
+            statusAlreadyUpdated = true; // Don't send email again
           }
 
           // Verify order items exist
@@ -1758,6 +1761,26 @@ async function createPreliminaryOrder(session, orderData) {
   console.log('🔍 Received shipping_address:', JSON.stringify(shipping_address, null, 2));
   console.log('🔍 Received billing_address:', JSON.stringify(billing_address, null, 2));
 
+  // Lookup payment method to check payment_flow (online vs offline)
+  let paymentFlow = 'online'; // default to online for Stripe
+  let paymentMethodRecord = null;
+  if (selected_payment_method) {
+    try {
+      const PaymentMethod = require('../models/PaymentMethod');
+      paymentMethodRecord = await PaymentMethod.findOne({
+        where: { code: selected_payment_method, store_id: store_id }
+      });
+      if (paymentMethodRecord) {
+        paymentFlow = paymentMethodRecord.payment_flow || 'online';
+        console.log(`🔍 Payment method "${selected_payment_method}" has flow: ${paymentFlow}`);
+      }
+    } catch (error) {
+      console.warn('⚠️ Could not lookup payment method, defaulting to online flow:', error.message);
+    }
+  } else {
+    console.log('🔍 No payment method specified, defaulting to online flow for Stripe');
+  }
+
   // Validate customer_id BEFORE starting transaction - ensure it exists AND matches the email
   let validatedCustomerId = null;
   if (customer_id) {
@@ -1826,11 +1849,19 @@ async function createPreliminaryOrder(session, orderData) {
     console.log('💾 Final shipping address for order:', JSON.stringify(finalShippingAddress, null, 2));
     console.log('💾 Final billing address for order:', JSON.stringify(finalBillingAddress, null, 2));
 
+    // Determine order status based on payment_flow
+    // Online payments (Stripe, PayPal): pending until webhook confirms
+    // Offline payments (Bank Transfer, COD): immediately confirmed
+    const orderStatus = paymentFlow === 'offline' ? 'processing' : 'pending';
+    const paymentStatus = paymentFlow === 'offline' ? 'paid' : 'pending';
+
+    console.log(`💾 Order status will be: ${orderStatus}, payment status: ${paymentStatus} (payment flow: ${paymentFlow})`);
+
     // Create the preliminary order
     const order = await Order.create({
       order_number: order_number,
-      status: 'processing', // Set immediately since Stripe checkout session is confirmed
-      payment_status: 'paid', // Set immediately since Stripe checkout session is confirmed
+      status: orderStatus,
+      payment_status: paymentStatus,
       fulfillment_status: 'pending',
       customer_email,
       customer_id: validatedCustomerId, // Only set if customer exists in database
@@ -1882,8 +1913,9 @@ async function createPreliminaryOrder(session, orderData) {
     await transaction.commit();
     console.log('✅ Preliminary order and items created successfully');
 
-    // Send order success email immediately (don't wait for webhook)
-    if (order && order.customer_email) {
+    // Send order success email immediately ONLY for offline payments
+    // For online payments, webhook will send the email after payment confirmation
+    if (order && order.customer_email && paymentFlow === 'offline') {
       try {
         console.log('📧 Sending order success email to:', order.customer_email);
 
@@ -1919,7 +1951,7 @@ async function createPreliminaryOrder(session, orderData) {
         const [firstName, ...lastNameParts] = customerName.split(' ');
         const lastName = lastNameParts.join(' ') || '';
 
-        // Send order success email asynchronously
+        // Send order success email asynchronously for offline payments only
         emailService.sendTransactionalEmail(order.store_id, 'order_success_email', {
           recipientEmail: order.customer_email,
           customer: customer || {
@@ -1931,7 +1963,7 @@ async function createPreliminaryOrder(session, orderData) {
           store: orderWithDetails.Store.toJSON(),
           languageCode: 'en'
         }).then(() => {
-          console.log(`✅ Order success email sent successfully to: ${order.customer_email}`);
+          console.log(`✅ Order success email sent successfully to: ${order.customer_email} (offline payment)`);
         }).catch(emailError => {
           console.error(`❌ Failed to send order success email:`, emailError.message);
           // Don't fail the order creation if email fails
@@ -1940,6 +1972,8 @@ async function createPreliminaryOrder(session, orderData) {
         console.error(`❌ Error preparing order success email:`, emailError.message);
         // Don't fail the order creation if email fails
       }
+    } else if (order && order.customer_email && paymentFlow === 'online') {
+      console.log(`📧 Skipping email for online payment - will be sent after webhook confirmation`);
     }
 
     return order;
