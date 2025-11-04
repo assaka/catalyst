@@ -79,6 +79,7 @@ class BackgroundJobManager extends EventEmitter {
     this.registerJobType('system:backup', require('./jobs/SystemBackupJob'));
     this.registerJobType('system:daily_credit_deduction', require('./jobs/DailyCreditDeductionJob'));
     this.registerJobType('system:dynamic_cron', require('./jobs/DynamicCronJob'));
+    this.registerJobType('system:finalize_pending_orders', require('./jobs/FinalizePendingOrdersJob'));
   }
 
   /**
@@ -396,8 +397,14 @@ class BackgroundJobManager extends EventEmitter {
     // Basic patterns: 'daily', 'weekly', 'hourly', etc.
     // In production, use a proper cron parser like node-cron
     const now = new Date();
-    
+
     switch (cronExpression) {
+      case 'every_5_minutes':
+        return new Date(now.getTime() + 5 * 60 * 1000);
+      case 'every_10_minutes':
+        return new Date(now.getTime() + 10 * 60 * 1000);
+      case 'every_15_minutes':
+        return new Date(now.getTime() + 15 * 60 * 1000);
       case 'hourly':
         return new Date(now.getTime() + 60 * 60 * 1000);
       case 'daily':
@@ -516,6 +523,28 @@ class BackgroundJobManager extends EventEmitter {
         console.log('✅ Scheduled daily credit deduction job');
       } else {
         console.log('ℹ️ Daily credit deduction job already scheduled');
+      }
+
+      // Check if pending orders finalization job is already scheduled
+      const existingFinalizationJob = await Job.findOne({
+        where: {
+          type: 'system:finalize_pending_orders',
+          status: 'pending'
+        }
+      });
+
+      if (!existingFinalizationJob) {
+        // Schedule pending orders finalization job (every 10 minutes)
+        await this.scheduleRecurringJob({
+          type: 'system:finalize_pending_orders',
+          payload: {},
+          priority: 'high', // High priority for customer-facing functionality
+          maxRetries: 3
+        }, 'every_10_minutes');
+
+        console.log('✅ Scheduled pending orders finalization job (every 10 minutes)');
+      } else {
+        console.log('ℹ️ Pending orders finalization job already scheduled');
       }
 
       // Start the cron scheduler for database-driven jobs
