@@ -144,20 +144,6 @@ export default function Checkout() {
     console.log('🔍 User addresses count:', userAddresses.length);
   }, [user, userAddresses]);
 
-  // Prefill email address when user logs in
-  useEffect(() => {
-    if (user?.email && !shippingAddress.email) {
-      setShippingAddress(prev => ({
-        ...prev,
-        email: user.email
-      }));
-      setBillingAddress(prev => ({
-        ...prev,
-        email: user.email
-      }));
-    }
-  }, [user]);
-
   // Load persisted form data from localStorage after loading completes
   useEffect(() => {
     if (!loading && !dataRestored) {
@@ -166,14 +152,36 @@ export default function Checkout() {
         if (persistedData) {
           const data = JSON.parse(persistedData);
 
-          // Restore shipping address
+          // Restore shipping address, but preserve email if user is logged in
           if (data.shippingAddress) {
-            setShippingAddress(data.shippingAddress);
+            const restoredAddress = { ...data.shippingAddress };
+            // If user is logged in, use their email instead of persisted one
+            if (user?.email) {
+              restoredAddress.email = user.email;
+            }
+            setShippingAddress(restoredAddress);
+          } else if (user?.email) {
+            // No persisted data but user is logged in - prefill email
+            setShippingAddress(prev => ({
+              ...prev,
+              email: user.email
+            }));
           }
 
-          // Restore billing address
+          // Restore billing address, but preserve email if user is logged in
           if (data.billingAddress) {
-            setBillingAddress(data.billingAddress);
+            const restoredAddress = { ...data.billingAddress };
+            // If user is logged in, use their email instead of persisted one
+            if (user?.email) {
+              restoredAddress.email = user.email;
+            }
+            setBillingAddress(restoredAddress);
+          } else if (user?.email) {
+            // No persisted data but user is logged in - prefill email
+            setBillingAddress(prev => ({
+              ...prev,
+              email: user.email
+            }));
           }
 
           // Restore selected addresses
@@ -1694,7 +1702,7 @@ export default function Checkout() {
                     className={shippingErrors.country ? 'border-red-500' : ''}
                   />
 
-                  {user && selectedShippingAddress === 'new' && (
+                  {user && (
                     <div className="md:col-span-2 flex items-center space-x-2 mt-3">
                       <input
                         type="checkbox"
@@ -1916,7 +1924,7 @@ export default function Checkout() {
                           className={billingErrors.country ? 'border-red-500' : ''}
                         />
 
-                        {user && selectedBillingAddress === 'new' && (
+                        {user && (
                           <div className="md:col-span-2 flex items-center space-x-2 mt-3">
                             <input
                               type="checkbox"
