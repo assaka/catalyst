@@ -15,7 +15,7 @@ import { useAlertTypes } from '@/hooks/useAlert';
 
 export default function Customers() {
     const { selectedStore, getSelectedStoreId } = useStoreSelection();
-    const { showError, AlertComponent } = useAlertTypes();
+    const { showError, showSuccess, AlertComponent } = useAlertTypes();
     const [customers, setCustomers] = useState([]);
     const [loading, setLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
