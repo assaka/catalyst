@@ -256,7 +256,7 @@ export function CategorySlotRenderer({
         const stockLabelInfo = getStockLabel(product, settings, null, translations);
         const stockLabelStyle = getStockLabelStyle(product, settings, null, translations);
 
-        return {
+        const formattedProduct = {
           ...product,
           // Add translated name
           name: translatedName,
@@ -285,6 +285,18 @@ export function CategorySlotRenderer({
             className: label.background_color ? `bg-[${label.background_color}] text-white` : 'bg-red-600 text-white'
           })) || []
         };
+
+        // Debug: log the final formatted product
+        if (formattedProduct.id === '4df411ea-a896-4a3c-9f83-53640886b9ea') {
+          console.log('Formatted product for template:', {
+            id: formattedProduct.id,
+            name: formattedProduct.name,
+            in_stock: formattedProduct.in_stock,
+            stock_quantity: formattedProduct.stock_quantity
+          });
+        }
+
+        return formattedProduct;
       });
 
       // Prepare filters data for LayeredNavigation template
