@@ -199,15 +199,20 @@ const ProductItemCard = ({
       }
 
       // Add to cart using cartService
+      // CRITICAL: Get the correct base price using utility function (same as ProductDetail)
+      const priceInfo = getPriceDisplay(product);
+      const basePrice = priceInfo.displayPrice;
+
       const result = await cartService.addItem(
         product.id,
         1, // quantity
-        product.price || 0,
+        basePrice,
         [], // selectedOptions
         store.id
       );
 
-      if (result.success !== false) {
+      // CRITICAL: Use same success check as ProductDetail (result.success === true, not !== false)
+      if (result.success) {
         // Track add to cart event
         if (typeof window !== 'undefined' && window.catalyst?.trackAddToCart) {
           window.catalyst.trackAddToCart(product, 1);
