@@ -152,43 +152,6 @@ CREATE INDEX idx_usage_metrics_date ON usage_metrics(metric_date DESC);
 CREATE INDEX idx_usage_metrics_store_date ON usage_metrics(store_id, metric_date DESC);
 
 -- ==========================================
--- API USAGE LOGS TABLE
--- ==========================================
-CREATE TABLE IF NOT EXISTS api_usage_logs (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  store_id UUID REFERENCES stores(id) ON DELETE CASCADE,
-
-  -- Request details
-  endpoint VARCHAR(255) NOT NULL,
-  method VARCHAR(10) NOT NULL,
-  path VARCHAR(500),
-  query_params JSONB,
-
-  -- Response details
-  status_code INTEGER,
-  response_time_ms INTEGER,
-  response_size_bytes INTEGER,
-
-  -- Client details
-  ip_address VARCHAR(45),
-  user_agent TEXT,
-  api_key_id UUID,
-  user_id UUID REFERENCES users(id) ON DELETE SET NULL,
-
-  -- Error tracking
-  error_message TEXT,
-  error_stack TEXT,
-
-  -- Timestamp
-  created_at TIMESTAMP DEFAULT NOW()
-);
-
-CREATE INDEX idx_api_usage_logs_store_id ON api_usage_logs(store_id);
-CREATE INDEX idx_api_usage_logs_created_at ON api_usage_logs(created_at DESC);
-CREATE INDEX idx_api_usage_logs_endpoint ON api_usage_logs(endpoint);
-CREATE INDEX idx_api_usage_logs_status_code ON api_usage_logs(status_code);
-
--- ==========================================
 -- PLATFORM ADMINS TABLE
 -- ==========================================
 CREATE TABLE IF NOT EXISTS platform_admins (
@@ -579,7 +542,6 @@ ON CONFLICT (id) DO NOTHING;
 COMMENT ON TABLE subscriptions IS 'Store subscription plans and billing cycles';
 COMMENT ON TABLE billing_transactions IS 'Payment transactions and invoices';
 COMMENT ON TABLE usage_metrics IS 'Resource usage tracking per store';
-COMMENT ON TABLE api_usage_logs IS 'API request logs for monitoring and debugging';
 COMMENT ON TABLE platform_admins IS 'Platform administrators with elevated permissions';
 COMMENT ON TABLE store_analytics IS 'Aggregated analytics and business intelligence';
 COMMENT ON TABLE audit_logs IS 'Audit trail for all significant actions';
@@ -603,7 +565,6 @@ WHERE schemaname = 'public'
     'subscriptions',
     'billing_transactions',
     'usage_metrics',
-    'api_usage_logs',
     'platform_admins',
     'store_analytics',
     'audit_logs'

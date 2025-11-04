@@ -47,7 +47,6 @@ const MediaAsset = require('./MediaAsset');
 const Subscription = require('./Subscription');
 const BillingTransaction = require('./BillingTransaction');
 const UsageMetric = require('./UsageMetric');
-const ApiUsageLog = require('./ApiUsageLog');
 const PlatformAdmin = require('./PlatformAdmin');
 const CustomDomain = require('./CustomDomain');
 const AkeneoCustomMapping = require('./AkeneoCustomMapping');
@@ -300,12 +299,6 @@ const defineAssociations = () => {
   UsageMetric.belongsTo(Store, { foreignKey: 'store_id', as: 'store' });
   Store.hasMany(UsageMetric, { foreignKey: 'store_id', as: 'usageMetrics' });
 
-  // ApiUsageLog associations
-  ApiUsageLog.belongsTo(Store, { foreignKey: 'store_id', as: 'store' });
-  ApiUsageLog.belongsTo(User, { foreignKey: 'user_id', as: 'user' });
-  Store.hasMany(ApiUsageLog, { foreignKey: 'store_id', as: 'apiLogs' });
-  User.hasMany(ApiUsageLog, { foreignKey: 'user_id', as: 'apiLogs' });
-
   // PlatformAdmin associations
   PlatformAdmin.belongsTo(User, { foreignKey: 'user_id', as: 'user' });
   User.hasOne(PlatformAdmin, { foreignKey: 'user_id', as: 'platformAdmin' });
@@ -426,7 +419,6 @@ module.exports = {
   Subscription,
   BillingTransaction,
   UsageMetric,
-  ApiUsageLog,
   PlatformAdmin,
   CustomDomain,
   AkeneoCustomMapping,

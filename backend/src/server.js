@@ -123,7 +123,6 @@ const brevoOAuthRoutes = require('./routes/brevo-oauth');
 
 // Import usage tracking middleware
 const {
-  apiLogger,
   trackApiCall,
   trackApiError,
   checkUsageLimits
@@ -293,7 +292,6 @@ app.use(passport.session());
 app.use('/uploads', express.static('uploads'));
 
 // Usage tracking middleware (must be after body parsers, before routes)
-app.use(apiLogger); // Log all API requests
 app.use(trackApiCall); // Track API usage for billing
 app.use(trackApiError); // Track API errors
 // Note: checkUsageLimits is applied selectively on routes that need it

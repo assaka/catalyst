@@ -1,39 +1,10 @@
-const { ApiUsageLog, UsageMetric } = require('../models');
+const { UsageMetric } = require('../models');
 
 /**
  * Usage Tracking Middleware
  *
- * Tracks API usage, response times, and resource metrics
- * for monitoring and billing purposes
+ * Tracks API usage and resource metrics for billing purposes
  */
-
-/**
- * Log API requests and response times
- */
-const apiLogger = (req, res, next) => {
-  const startTime = Date.now();
-
-  // Store original send function
-  const originalSend = res.send;
-
-  // Override send function to capture response
-  res.send = function(data) {
-    // Calculate response time
-    const responseTime = Date.now() - startTime;
-
-    // Log asynchronously (don't block the response)
-    setImmediate(() => {
-      ApiUsageLog.logRequest(req, res, responseTime).catch(error => {
-        console.error('Failed to log API usage:', error);
-      });
-    });
-
-    // Call original send
-    return originalSend.call(this, data);
-  };
-
-  next();
-};
 
 /**
  * Track resource creation (products, categories, orders, etc.)
@@ -350,7 +321,6 @@ const checkUsageLimits = async (req, res, next) => {
 };
 
 module.exports = {
-  apiLogger,
   trackResourceCreation,
   trackResourceUpdate,
   trackResourceDeletion,

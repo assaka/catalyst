@@ -138,20 +138,6 @@ export default function ProductDetail() {
     setSelectedVariant(variant);
   };
 
-  // Debug logging (after all state declarations)
-  useEffect(() => {
-    console.log('🔍 ProductDetail Debug:', {
-      slug,
-      storeId: store?.id,
-      storeLoading,
-      productLoading,
-      hasProductData: !!productData,
-      hasProduct: !!product,
-      hasError: !!productError,
-      errorMessage: productError?.message
-    });
-  }, [slug, store?.id, storeLoading, productLoading, productData, product, productError]);
-
   // Update product state when productData changes from React Query
   useEffect(() => {
     if (productData && productData.product) {
