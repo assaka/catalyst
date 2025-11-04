@@ -426,8 +426,7 @@ router.post('/award-bonus', authMiddleware,
 router.get('/transactions', authMiddleware, async (req, res) => {
   try {
     const userId = req.user.id;
-    // Store ID is optional - can be passed in query params if needed
-    const storeId = req.query.store_id || req.headers['x-store-id'] || null;
+    // Credit purchases are global to the user, not per store - ignore store_id
     const limit = parseInt(req.query.limit) || 50;
 
     if (limit < 1 || limit > 200) {
@@ -438,7 +437,7 @@ router.get('/transactions', authMiddleware, async (req, res) => {
     }
 
     const CreditTransaction = require('../models/CreditTransaction');
-    const transactions = await CreditTransaction.getUserTransactions(userId, storeId, limit);
+    const transactions = await CreditTransaction.getUserTransactions(userId, null, limit);
 
     res.json({
       success: true,

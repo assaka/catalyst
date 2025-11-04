@@ -13,8 +13,9 @@ import { formatPrice } from '@/utils/priceUtils';
 import { useNavigate } from 'react-router-dom';
 import { createPageUrl } from '@/utils';
 import pricingService from '@/services/pricingService';
+import { useStoreSelection } from '@/contexts/StoreSelectionContext.jsx';
 
-const CheckoutForm = ({ selectedPackage, currency, onSuccess, onError }) => {
+const CheckoutForm = ({ selectedPackage, currency, storeId, onSuccess, onError }) => {
   const stripe = useStripe();
   const elements = useElements();
   const [processing, setProcessing] = useState(false);
@@ -29,12 +30,18 @@ const CheckoutForm = ({ selectedPackage, currency, onSuccess, onError }) => {
       return;
     }
 
+    if (!storeId) {
+      setError('Please select a store first.');
+      return;
+    }
+
     setProcessing(true);
 
     try {
       const intentResult = await createPaymentIntent({
         credits: selectedPackage.credits,
-        amount: selectedPackage.price
+        amount: selectedPackage.price,
+        store_id: storeId
       }, currency);
 
       const { data: response, error: intentError } = intentResult;
@@ -125,6 +132,7 @@ const CheckoutForm = ({ selectedPackage, currency, onSuccess, onError }) => {
 
 export default function Billing() {
   const navigate = useNavigate();
+  const { selectedStore } = useStoreSelection();
   const [user, setUser] = useState(null);
   const [transactions, setTransactions] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -172,10 +180,8 @@ export default function Billing() {
     try {
       const userData = await User.me();
       setUser(userData);
-      const transactionData = await CreditTransaction.filter({
-        user_id: userData.id,
-        order_by: '-created_date'
-      });
+      // Credit transactions are global - backend filters by authenticated user
+      const transactionData = await CreditTransaction.findAll();
       setTransactions(transactionData);
     } catch (error) {
       console.error("Error loading billing data:", error);
@@ -377,6 +383,7 @@ export default function Billing() {
                        <CheckoutForm
                          selectedPackage={selectedPackage}
                          currency={selectedCurrency}
+                         storeId={selectedStore?.id}
                          onSuccess={handlePaymentSuccess}
                          onError={handlePaymentError}
                        />

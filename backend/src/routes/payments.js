@@ -396,20 +396,31 @@ router.post('/create-intent', authMiddleware, async (req, res) => {
       role: req.user.role
     });
 
-    // Get user's first store for the transaction record
-    console.log(`🔍 [${requestId}] Looking up user store...`);
-    const { Store: StoreModel } = require('../models');
-    const userStore = await StoreModel.findOne({ where: { user_id: userId } });
+    // Get store_id from request (required)
+    const storeId = metadata.store_id || req.body.store_id || req.headers['x-store-id'];
 
-    if (!userStore) {
-      console.error(`❌ [${requestId}] No store found for user:`, userId);
+    if (!storeId) {
+      console.error(`❌ [${requestId}] No store_id provided in request`);
       return res.status(400).json({
         success: false,
-        error: 'No store found for user. Please create a store first.'
+        error: 'store_id is required for credit purchase'
       });
     }
 
-    console.log(`🏪 [${requestId}] User store found:`, {
+    // Verify the store exists and belongs to the user
+    console.log(`🔍 [${requestId}] Looking up store:`, storeId);
+    const { Store: StoreModel } = require('../models');
+    const userStore = await StoreModel.findOne({ where: { id: storeId, user_id: userId } });
+
+    if (!userStore) {
+      console.error(`❌ [${requestId}] Store not found or doesn't belong to user:`, { storeId, userId });
+      return res.status(403).json({
+        success: false,
+        error: 'Store not found or you do not have permission to purchase credits for this store'
+      });
+    }
+
+    console.log(`🏪 [${requestId}] User store verified:`, {
       storeId: userStore.id,
       storeName: userStore.name,
       storeSlug: userStore.slug
