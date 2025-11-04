@@ -180,14 +180,25 @@ export default function MiniCart({ iconVariant = 'outline' }) {
       try {
         setLoading(true);
 
+        console.log('🛒 MiniCart.loadCart - Starting with store.id:', store?.id);
+
         // CRITICAL: Pass store.id to filter cart by store (fixes multi-store issue)
         // CRITICAL: Always bust cache (true) to get fresh data from database
         const cartResult = await cartService.getCart(true, store?.id);
 
+        console.log('🛒 MiniCart.loadCart - Result:', {
+          success: cartResult.success,
+          itemsCount: cartResult.items?.length || 0,
+          items: cartResult.items,
+          cart: cartResult.cart
+        });
+
         if (cartResult.success && cartResult.items) {
+          console.log('🛒 MiniCart.loadCart - Setting items:', cartResult.items);
           setCartItems(cartResult.items);
           setLastRefreshId(refreshId);
         } else {
+          console.log('🛒 MiniCart.loadCart - No items, clearing cart');
           setCartItems([]);
           setCartProducts({});
           setLastRefreshId(refreshId);
