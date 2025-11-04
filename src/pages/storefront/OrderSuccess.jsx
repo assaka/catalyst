@@ -386,7 +386,7 @@ export default function OrderSuccess() {
             
             {/* Order Summary */}
             <Card>
-              <CardHeader>common
+              <CardHeader>
                 <CardTitle className="flex items-center">
                   <ShoppingBag className="w-5 h-5 mr-2 text-blue-600" />
                   {t('common.order_summary', settings)}
