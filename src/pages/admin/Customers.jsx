@@ -9,7 +9,8 @@ import SaveButton from '@/components/ui/save-button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { Users, Search, Download, Edit, Trash2, UserPlus, Eye } from 'lucide-react';
+import { Switch } from '@/components/ui/switch';
+import { Users, Search, Download, Edit, Trash2, UserPlus, Eye, Ban } from 'lucide-react';
 import { useAlertTypes } from '@/hooks/useAlert';
 
 export default function Customers() {
@@ -23,6 +24,8 @@ export default function Customers() {
     const [isViewOnly, setIsViewOnly] = useState(false);
     const [saving, setSaving] = useState(false);
     const [saveSuccess, setSaveSuccess] = useState(false);
+    const [isBlocked, setIsBlocked] = useState(false);
+    const [blockedReason, setBlockedReason] = useState('');
 
     useEffect(() => {
         if (selectedStore) {
@@ -90,6 +93,8 @@ export default function Customers() {
     const handleEditCustomer = (customer) => {
         setEditingCustomer(customer);
         setIsViewOnly(customer.customer_type === 'guest'); // View-only for guest customers
+        setIsBlocked(customer.is_blocked || false);
+        setBlockedReason(customer.blocked_reason || '');
         setIsEditModalOpen(true);
     };
 
@@ -104,6 +109,54 @@ export default function Customers() {
         } catch (error) {
             console.error('Error deleting customer:', error);
             showError('Failed to delete customer. Please try again.');
+        }
+    };
+
+    const handleToggleBlock = async () => {
+        if (!editingCustomer) return;
+
+        const willBlock = !isBlocked;
+        if (willBlock && !window.confirm('Are you sure you want to block this customer? They will not be able to log in or checkout.')) {
+            return;
+        }
+
+        setSaving(true);
+        try {
+            const storeId = getSelectedStoreId();
+            const response = await fetch(`/api/customers/${editingCustomer.id}/block?store_id=${storeId}`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${localStorage.getItem('token')}`
+                },
+                body: JSON.stringify({
+                    is_blocked: willBlock,
+                    blocked_reason: willBlock ? blockedReason : null
+                })
+            });
+
+            if (!response.ok) {
+                throw new Error('Failed to update block status');
+            }
+
+            const result = await response.json();
+
+            // Update local state
+            setIsBlocked(willBlock);
+            setCustomers(customers.map(c =>
+                c.id === editingCustomer.id
+                    ? { ...c, is_blocked: willBlock, blocked_reason: willBlock ? blockedReason : null }
+                    : c
+            ));
+
+            // Show success message briefly
+            setSaveSuccess(true);
+            setTimeout(() => setSaveSuccess(false), 2000);
+        } catch (error) {
+            console.error('Error toggling block status:', error);
+            showError('Failed to update block status. Please try again.');
+        } finally {
+            setSaving(false);
         }
     };
 
@@ -242,6 +295,7 @@ export default function Customers() {
                                     <th className="text-left py-3 px-4 font-medium">Name</th>
                                     <th className="text-left py-3 px-4 font-medium">Email</th>
                                     <th className="text-left py-3 px-4 font-medium">Type</th>
+                                    <th className="text-left py-3 px-4 font-medium">Status</th>
                                     <th className="text-left py-3 px-4 font-medium">Address</th>
                                     <th className="text-left py-3 px-4 font-medium">Total Orders</th>
                                     <th className="text-left py-3 px-4 font-medium">Total Spent</th>
@@ -264,6 +318,18 @@ export default function Customers() {
                                                 }`}>
                                                     {isGuest ? 'Guest' : 'Registered'}
                                                 </span>
+                                            </td>
+                                            <td className="py-3 px-4">
+                                                {customer.is_blocked ? (
+                                                    <span className="flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium bg-red-100 text-red-700 w-fit">
+                                                        <Ban className="h-3 w-3" />
+                                                        Blocked
+                                                    </span>
+                                                ) : (
+                                                    <span className="px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-700">
+                                                        Active
+                                                    </span>
+                                                )}
                                             </td>
                                             <td className="py-3 px-4">
                                                 {(() => {
@@ -380,6 +446,55 @@ export default function Customers() {
                                     disabled={isViewOnly}
                                 />
                             </div>
+
+                            {/* Blocking Section - Only for registered customers */}
+                            {!isViewOnly && (
+                                <div className="space-y-3 p-4 border rounded-lg bg-gray-50">
+                                    <div className="flex items-center justify-between">
+                                        <div>
+                                            <h4 className="font-medium">Account Status</h4>
+                                            <p className="text-sm text-gray-600 mt-1">
+                                                {isBlocked
+                                                    ? 'This customer is blocked and cannot log in or checkout'
+                                                    : 'This customer can log in and checkout normally'}
+                                            </p>
+                                        </div>
+                                        <div className="flex items-center gap-2">
+                                            <Label htmlFor="is_blocked" className="text-sm">
+                                                {isBlocked ? 'Blocked' : 'Active'}
+                                            </Label>
+                                            <Switch
+                                                id="is_blocked"
+                                                checked={isBlocked}
+                                                onCheckedChange={(checked) => setIsBlocked(checked)}
+                                                disabled={saving}
+                                            />
+                                        </div>
+                                    </div>
+                                    {isBlocked && (
+                                        <div>
+                                            <Label htmlFor="blocked_reason">Block Reason (optional)</Label>
+                                            <Textarea
+                                                id="blocked_reason"
+                                                value={blockedReason}
+                                                onChange={(e) => setBlockedReason(e.target.value)}
+                                                placeholder="Enter reason for blocking this customer..."
+                                                rows={3}
+                                                disabled={saving}
+                                            />
+                                        </div>
+                                    )}
+                                    <Button
+                                        type="button"
+                                        onClick={handleToggleBlock}
+                                        disabled={saving}
+                                        className={isBlocked ? 'bg-green-600 hover:bg-green-700' : 'bg-red-600 hover:bg-red-700'}
+                                    >
+                                        <Ban className="h-4 w-4 mr-2" />
+                                        {isBlocked ? 'Unblock Customer' : 'Block Customer'}
+                                    </Button>
+                                </div>
+                            )}
 
                             <div className="space-y-3">
                                 <h4 className="font-medium">Address Information{isViewOnly && ' (from last order)'}</h4>

@@ -600,6 +600,14 @@ router.post('/login', [
       });
     }
 
+    // Check if customer is blocked
+    if (authenticatedUser.role === 'customer' && authenticatedUser.is_blocked) {
+      return res.status(403).json({
+        success: false,
+        message: 'Your account has been disabled. Please contact support for assistance.'
+      });
+    }
+
     // Use the authenticated user
     const user = authenticatedUser;
 

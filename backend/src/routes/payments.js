@@ -1,6 +1,6 @@
 const express = require('express');
 const { authMiddleware } = require('../middleware/auth');
-const { Store, Order, OrderItem, Product } = require('../models');
+const { Store, Order, OrderItem, Product, Customer } = require('../models');
 
 const router = express.Router();
 
@@ -697,6 +697,24 @@ router.post('/create-checkout', async (req, res) => {
         success: false,
         message: 'Store not found'
       });
+    }
+
+    // Check if customer email is blocked
+    if (customer_email) {
+      const blockedCustomer = await Customer.findOne({
+        where: {
+          email: customer_email,
+          store_id: store_id,
+          is_blocked: true
+        }
+      });
+
+      if (blockedCustomer) {
+        return res.status(403).json({
+          success: false,
+          message: 'This email address cannot be used for checkout. Please contact support for assistance.'
+        });
+      }
     }
 
     // Get store currency

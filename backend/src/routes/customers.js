@@ -306,4 +306,49 @@ router.delete('/:id', authMiddleware, async (req, res) => {
   }
 });
 
+// @route   PUT /api/customers/:id/block
+// @desc    Block or unblock a customer
+// @access  Private (Store Owner Only)
+router.put('/:id/block', storeOwnerOnly, async (req, res) => {
+  try {
+    const { is_blocked, blocked_reason } = req.body;
+    const customer = await Customer.findByPk(req.params.id);
+
+    if (!customer) {
+      return res.status(404).json({
+        success: false,
+        message: 'Customer not found'
+      });
+    }
+
+    // Verify customer belongs to the store
+    const { store_id } = req.query;
+    if (customer.store_id !== store_id) {
+      return res.status(403).json({
+        success: false,
+        message: 'Access denied. Customer belongs to a different store.'
+      });
+    }
+
+    // Update blocking status
+    await customer.update({
+      is_blocked: is_blocked,
+      blocked_reason: is_blocked ? blocked_reason : null,
+      blocked_at: is_blocked ? new Date() : null
+    });
+
+    res.json({
+      success: true,
+      data: customer,
+      message: is_blocked ? 'Customer blocked successfully' : 'Customer unblocked successfully'
+    });
+  } catch (error) {
+    console.error('Block customer error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Server error'
+    });
+  }
+});
+
 module.exports = router;
