@@ -45,6 +45,17 @@ router.get('/', storeOwnerOnly, async (req, res) => {
     const enhancedCustomers = await Promise.all(customers.rows.map(async (customer) => {
       const customerData = customer.toJSON();
 
+      // Log first customer to check blacklist fields
+      if (customer.email === 'hello@sprtags.io') {
+        console.log('🔍 Customer hello@sprtags.io data:', {
+          id: customer.id,
+          email: customer.email,
+          is_blacklisted: customer.is_blacklisted,
+          is_blacklisted_in_json: customerData.is_blacklisted,
+          blacklist_reason: customer.blacklist_reason
+        });
+      }
+
       // For registered customers, fetch from addresses table
       if (customer.customer_type === 'registered') {
         const addresses = await Address.findAll({
