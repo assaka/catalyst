@@ -37,7 +37,7 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion";
-import { Tag, CalendarIcon, EyeIcon, EyeOffIcon, User, LogOut, UserCircle } from "lucide-react";
+import { Tag, CalendarIcon, EyeIcon, EyeOffIcon, User as UserIcon, LogOut, UserCircle } from "lucide-react";
 import { Auth as AuthService } from "@/api/entities";
 import { CustomerAuth } from "@/api/storefront-entities";
 import CmsBlockRenderer from "@/components/storefront/CmsBlockRenderer";
@@ -2397,7 +2397,7 @@ export default function Checkout() {
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-3">
               <div className="bg-gray-100 rounded-full p-2">
-                <User className="w-6 h-6 text-gray-600" />
+                <UserIcon className="w-6 h-6 text-gray-600" />
               </div>
               <div>
                 <p className="font-medium text-gray-900">{t('checkout.guest_checkout', 'Guest Checkout')}</p>
