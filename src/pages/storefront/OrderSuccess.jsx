@@ -127,6 +127,31 @@ export default function OrderSuccess() {
             setStoreCode(orderData.Store.code);
           }
 
+          // Finalize order (update status, send email) - for connected account flow
+          // This is called here since connected accounts don't use platform webhooks
+          try {
+            console.log('🎯 Calling finalize-order endpoint for session:', sessionId);
+            const finalizeResponse = await fetch(`${apiUrl}/api/orders/finalize-order`, {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json'
+              },
+              body: JSON.stringify({
+                session_id: sessionId
+              })
+            });
+            const finalizeResult = await finalizeResponse.json();
+
+            if (finalizeResult.success) {
+              console.log('✅ Order finalized successfully:', finalizeResult.message);
+            } else {
+              console.warn('⚠️ Order finalization response:', finalizeResult.message);
+            }
+          } catch (finalizeError) {
+            console.error('❌ Failed to finalize order:', finalizeError);
+            // Don't show error to user - order was still created
+          }
+
           // Clear the cart after successful order
           if (orderData.store_id) {
             try {

@@ -7,6 +7,9 @@ const { validateCustomerOrderAccess } = require('../middleware/customerStoreAuth
 const emailService = require('../services/email-service');
 const router = express.Router();
 
+// Initialize Stripe
+const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
+
 // @route   GET /api/orders/test
 // @desc    Test endpoint to verify deployment
 // @access  Public (no auth required)
@@ -106,6 +109,173 @@ router.get('/by-payment-reference/:paymentReference', async (req, res) => {
   }
 });
 
+// @route   POST /api/orders/finalize-order
+// @desc    Finalize order after successful Stripe payment (for connected accounts)
+// @access  Public (called from OrderSuccess page)
+router.post('/finalize-order', async (req, res) => {
+  try {
+    const { session_id, save_shipping_address, save_billing_address } = req.body;
+
+    if (!session_id) {
+      return res.status(400).json({
+        success: false,
+        message: 'session_id is required'
+      });
+    }
+
+    console.log('🎯 Finalizing order for session:', session_id);
+
+    // Find the order by payment reference
+    const order = await Order.findOne({
+      where: {
+        [Op.or]: [
+          { payment_reference: session_id },
+          { stripe_session_id: session_id },
+          { stripe_payment_intent_id: session_id }
+        ]
+      }
+    });
+
+    if (!order) {
+      console.error('❌ Order not found for session:', session_id);
+      return res.status(404).json({
+        success: false,
+        message: 'Order not found'
+      });
+    }
+
+    console.log('✅ Found order:', order.id, 'Current status:', order.status, 'Payment status:', order.payment_status);
+
+    // Check if already finalized
+    if (order.status === 'processing' && order.payment_status === 'paid') {
+      console.log('✅ Order already finalized, skipping duplicate processing');
+      return res.json({
+        success: true,
+        message: 'Order already finalized',
+        data: { order_id: order.id, already_finalized: true }
+      });
+    }
+
+    // Get the store for the connected account
+    const store = await Store.findByPk(order.store_id);
+    if (!store) {
+      return res.status(404).json({
+        success: false,
+        message: 'Store not found'
+      });
+    }
+
+    // Verify payment with Stripe (use connected account if available)
+    const stripeOptions = {};
+    if (store.stripe_account_id) {
+      stripeOptions.stripeAccount = store.stripe_account_id;
+    }
+
+    let session;
+    try {
+      session = await stripe.checkout.sessions.retrieve(session_id, stripeOptions);
+      console.log('✅ Retrieved Stripe session:', session.id, 'Payment status:', session.payment_status);
+    } catch (stripeError) {
+      console.error('❌ Failed to retrieve Stripe session:', stripeError.message);
+      return res.status(400).json({
+        success: false,
+        message: 'Failed to verify payment with Stripe'
+      });
+    }
+
+    // Verify payment was successful
+    if (session.payment_status !== 'paid') {
+      console.log('⚠️ Payment not complete yet, status:', session.payment_status);
+      return res.json({
+        success: false,
+        message: 'Payment not yet completed',
+        data: { payment_status: session.payment_status }
+      });
+    }
+
+    // Update order status
+    console.log('🔄 Updating order status to processing/paid...');
+    await order.update({
+      status: 'processing',
+      payment_status: 'paid',
+      updatedAt: new Date()
+    });
+
+    console.log('✅ Order status updated successfully');
+
+    // Send confirmation email
+    try {
+      console.log('📧 Sending order confirmation email to:', order.customer_email);
+
+      const orderWithDetails = await Order.findByPk(order.id, {
+        include: [{
+          model: OrderItem,
+          as: 'OrderItems',
+          include: [{
+            model: Product,
+            attributes: ['id', 'sku']
+          }]
+        }, {
+          model: Store,
+          as: 'Store'
+        }]
+      });
+
+      // Try to get customer details
+      let customer = null;
+      if (order.customer_id) {
+        customer = await Customer.findByPk(order.customer_id);
+      }
+
+      // Extract customer name from shipping/billing address if customer not found
+      const customerName = customer
+        ? `${customer.first_name} ${customer.last_name}`
+        : (order.shipping_address?.full_name || order.shipping_address?.name || order.billing_address?.full_name || order.billing_address?.name || 'Customer');
+
+      const [firstName, ...lastNameParts] = customerName.split(' ');
+      const lastName = lastNameParts.join(' ') || '';
+
+      // Send order success email
+      await emailService.sendTransactionalEmail(order.store_id, 'order_success_email', {
+        recipientEmail: order.customer_email,
+        customer: customer || {
+          first_name: firstName,
+          last_name: lastName,
+          email: order.customer_email
+        },
+        order: orderWithDetails.toJSON(),
+        store: orderWithDetails.Store
+      });
+
+      console.log('✅ Order confirmation email sent successfully');
+    } catch (emailError) {
+      console.error('❌ Failed to send confirmation email:', emailError);
+      // Don't fail the request if email fails
+    }
+
+    // TODO: Save addresses if requested (requires passing customer_id and address data)
+    // This would need to be added to the request body
+
+    res.json({
+      success: true,
+      message: 'Order finalized successfully',
+      data: {
+        order_id: order.id,
+        order_number: order.order_number,
+        status: order.status,
+        payment_status: order.payment_status
+      }
+    });
+
+  } catch (error) {
+    console.error('❌ Error finalizing order:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to finalize order',
+      error: error.message
+    });
+  }
+});
 
 // Database diagnostic endpoint
 router.get('/db-diagnostic/:sessionId', async (req, res) => {
