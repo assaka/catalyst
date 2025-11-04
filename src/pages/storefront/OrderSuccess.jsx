@@ -130,8 +130,13 @@ export default function OrderSuccess() {
           // Finalize order (update status, send email) - for connected account flow
           // This is called here since connected accounts don't use platform webhooks
           try {
-            console.log('🎯 Calling finalize-order endpoint for session:', sessionId);
-            const finalizeResponse = await fetch(`${apiUrl}/api/orders/finalize-order`, {
+            const finalizeUrl = `${apiUrl}/api/orders/finalize-order`;
+            console.log('🎯 FINALIZATION START');
+            console.log('🎯 API URL:', apiUrl);
+            console.log('🎯 Finalize endpoint:', finalizeUrl);
+            console.log('🎯 Session ID:', sessionId);
+
+            const finalizeResponse = await fetch(finalizeUrl, {
               method: 'POST',
               headers: {
                 'Content-Type': 'application/json'
@@ -140,15 +145,24 @@ export default function OrderSuccess() {
                 session_id: sessionId
               })
             });
+
+            console.log('🎯 Response status:', finalizeResponse.status);
+            console.log('🎯 Response ok:', finalizeResponse.ok);
+
             const finalizeResult = await finalizeResponse.json();
+            console.log('🎯 Response data:', finalizeResult);
 
             if (finalizeResult.success) {
               console.log('✅ Order finalized successfully:', finalizeResult.message);
             } else {
-              console.warn('⚠️ Order finalization response:', finalizeResult.message);
+              console.warn('⚠️ Order finalization failed:', finalizeResult.message);
             }
           } catch (finalizeError) {
-            console.error('❌ Failed to finalize order:', finalizeError);
+            console.error('❌ FINALIZATION ERROR:', finalizeError);
+            console.error('❌ Error details:', {
+              message: finalizeError.message,
+              stack: finalizeError.stack
+            });
             // Don't show error to user - order was still created
           }
 
