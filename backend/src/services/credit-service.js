@@ -46,21 +46,24 @@ class CreditService {
    * @returns {object} - Deduction result with remaining balance
    */
   async deduct(userId, storeId, amount, description, metadata = {}, referenceId = null, referenceType = null) {
+    // Ensure amount is a number
+    const creditAmount = parseFloat(amount);
+
     // Check if user has enough credits
-    const hasCredits = await this.hasEnoughCredits(userId, storeId, amount);
+    const hasCredits = await this.hasEnoughCredits(userId, storeId, creditAmount);
     if (!hasCredits) {
       const balance = await this.getBalance(userId);
-      throw new Error(`Insufficient credits. Required: ${amount}, Available: ${balance}`);
+      throw new Error(`Insufficient credits. Required: ${creditAmount}, Available: ${balance}`);
     }
 
     // Deduct from users.credits (single source of truth)
     await sequelize.query(`
       UPDATE users
-      SET credits = credits - $1,
+      SET credits = credits - $1::numeric,
           updated_at = NOW()
       WHERE id = $2
     `, {
-      bind: [amount, userId],
+      bind: [creditAmount, userId],
       type: sequelize.QueryTypes.UPDATE
     });
 
@@ -68,7 +71,7 @@ class CreditService {
     const usage = await CreditUsage.create({
       user_id: userId,
       store_id: storeId,
-      credits_used: amount,
+      credits_used: creditAmount,
       usage_type: 'other', // Generic type - description tells the real story
       reference_id: referenceId,
       reference_type: referenceType,
@@ -82,7 +85,7 @@ class CreditService {
     return {
       success: true,
       usage_id: usage.id,
-      credits_deducted: amount,
+      credits_deducted: creditAmount,
       remaining_balance: await this.getBalance(userId),
       description: description
     };
@@ -237,9 +240,9 @@ class CreditService {
     // Get the daily custom domain cost from service_credit_costs table
     let dailyCost = 0.5; // Fallback default (0.5 credits per day)
     try {
-      dailyCost = await ServiceCreditCost.getCostByKey('custom_domain_daily');
+      dailyCost = await ServiceCreditCost.getCostByKey('custom_domain');
     } catch (error) {
-      console.warn('⚠️ Could not fetch custom_domain_daily cost, using fallback:', error.message);
+      console.warn('⚠️ Could not fetch custom_domain cost, using fallback:', error.message);
     }
 
     // Check if domain is still active
@@ -277,11 +280,14 @@ class CreditService {
       };
     }
 
+    // Ensure dailyCost is a number (not string)
+    const costAmount = parseFloat(dailyCost);
+
     // Deduct credits
     const deductResult = await this.deduct(
       userId,
       domain.store_id,
-      dailyCost,
+      costAmount,
       `Custom domain - daily charge (${domainName})`,
       {
         charge_type: 'daily',
@@ -295,7 +301,7 @@ class CreditService {
 
     return {
       success: true,
-      credits_deducted: dailyCost,
+      credits_deducted: costAmount,
       remaining_balance: deductResult.remaining_balance,
       message: `Daily charge applied for ${domainName}`
     };
@@ -342,6 +348,11 @@ class CreditService {
       'store_publishing'
     );
 
+    // Ensure all numeric values are converted
+    const dailyCostNum = parseFloat(dailyCost);
+    const balanceBeforeNum = parseFloat(balanceBefore);
+    const balanceAfterNum = parseFloat(deductResult.remaining_balance);
+
     // Log to store_uptime table
     try {
       await sequelize.query(`
@@ -361,9 +372,9 @@ class CreditService {
           $1,
           $2,
           CURRENT_DATE,
-          $3,
-          $4,
-          $5,
+          $3::numeric,
+          $4::numeric,
+          $5::numeric,
           $6,
           $7,
           NOW()
@@ -376,9 +387,9 @@ class CreditService {
         bind: [
           storeId,
           userId,
-          dailyCost,
-          balanceBefore,
-          deductResult.remaining_balance,
+          dailyCostNum,
+          balanceBeforeNum,
+          balanceAfterNum,
           store.name,
           JSON.stringify({
             charge_type: 'daily',
