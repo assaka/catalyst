@@ -310,12 +310,33 @@ export default function Checkout() {
   const loadCheckoutData = async () => {
     try {
       setLoading(true);
-      
+
       // Load user - use CustomerAuth for customer checkout
       try {
+        // Debug: Check authentication state
+        console.log('🔍 Checkout Debug - Store slug:', store?.slug);
+        console.log('🔍 Checkout Debug - Token key:', `customer_auth_token_${store?.slug}`);
+        console.log('🔍 Checkout Debug - Token value:', localStorage.getItem(`customer_auth_token_${store?.slug}`));
+        console.log('🔍 Checkout Debug - Old token (generic):', localStorage.getItem('customer_auth_token'));
+        console.log('🔍 Checkout Debug - isAuthenticated():', CustomerAuth.isAuthenticated());
+
+        // Migration: Move old token to new store-specific key if needed
+        const oldToken = localStorage.getItem('customer_auth_token');
+        const newTokenKey = `customer_auth_token_${store?.slug}`;
+        const newToken = localStorage.getItem(newTokenKey);
+
+        if (oldToken && !newToken && store?.slug) {
+          console.log('🔄 Migrating old token to new store-specific key...');
+          storefrontApiClient.setCustomerToken(oldToken, store.slug);
+          localStorage.removeItem('customer_auth_token'); // Clean up old key
+          console.log('✅ Token migrated successfully');
+        }
+
         // Check if customer is logged in
         if (CustomerAuth.isAuthenticated()) {
+          console.log('✅ Customer is authenticated, fetching user data...');
           const userData = await CustomerAuth.me();
+          console.log('✅ User data loaded:', userData);
           setUser(userData);
 
           // Load user addresses if logged in
@@ -329,10 +350,12 @@ export default function Checkout() {
             }
           }
         } else {
+          console.log('❌ Customer is NOT authenticated');
           setUser(null);
           setUserAddresses([]);
         }
       } catch (error) {
+        console.error('❌ Error loading user:', error);
         setUser(null);
         setUserAddresses([]);
       }
