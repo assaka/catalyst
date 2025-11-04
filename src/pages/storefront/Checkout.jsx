@@ -335,6 +335,13 @@ export default function Checkout() {
     // Tax will be recalculated automatically through getTotalAmount since it calls calculateTax
   }, [shippingAddress.country, selectedShippingAddress]);
 
+  // Calculate payment fee when payment method or cart changes
+  useEffect(() => {
+    if (selectedPaymentMethod && cartItems.length > 0 && paymentMethods.length > 0) {
+      calculatePaymentFee(selectedPaymentMethod);
+    }
+  }, [selectedPaymentMethod, cartItems, paymentMethods]);
+
   const loadCheckoutData = async () => {
     try {
       setLoading(true);
@@ -409,10 +416,9 @@ export default function Checkout() {
       setDeliverySettings(deliveryData && deliveryData.length > 0 ? deliveryData[0] : null);
       setTaxRules(taxData || []);
 
-      // Set default selections
+      // Set default selections (fee calculation happens in useEffect)
       if (paymentData?.length > 0) {
         setSelectedPaymentMethod(paymentData[0].code);
-        calculatePaymentFeeWithData(paymentData[0].code, paymentData);
       }
       if (shippingData?.length > 0) {
         setSelectedShippingMethod(shippingData[0].name);
@@ -463,11 +469,8 @@ export default function Checkout() {
         if (appliedCoupon) {
           validateAppliedCoupon(appliedCoupon, cartItems, productDetails);
         }
-        
-        // Recalculate payment fee when cart contents change
-        if (selectedPaymentMethod) {
-          calculatePaymentFee(selectedPaymentMethod);
-        }
+
+        // Note: Payment fee recalculation is handled by useEffect that watches cartItems
       } else if (appliedCoupon) {
         // Clear coupon if cart is empty
         couponService.removeAppliedCoupon();
