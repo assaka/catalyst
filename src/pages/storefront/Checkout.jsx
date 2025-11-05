@@ -18,7 +18,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { useAlertTypes } from "@/hooks/useAlert";
+import { toast } from "sonner";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { CountrySelect } from "@/components/ui/country-select";
@@ -51,7 +51,6 @@ import { useTranslation } from '@/contexts/TranslationContext';
 export default function Checkout() {
   const { t, getEntityTranslation, currentLanguage } = useTranslation();
   const { store, settings, loading: storeLoading, selectedCountry, setSelectedCountry } = useStore();
-  const { showError, showSuccess, AlertComponent } = useAlertTypes();
 
   // Get currency symbol from settings
   // Currency symbol comes from StoreProvider which derives it from store.currency → getCurrencySymbol()
@@ -944,7 +943,7 @@ export default function Checkout() {
           await loadCheckoutData();
 
           // Show success message
-          showSuccess(t('checkout.login_success', 'Successfully logged in! Your cart has been updated.'), t('common.success', 'Success'));
+          toast.success(t('checkout.login_success', 'Successfully logged in! Your cart has been updated.'));
         }
       } else {
         setLoginError('Invalid email or password');
@@ -974,10 +973,10 @@ export default function Checkout() {
       await loadCheckoutData();
 
       // Show success message
-      showSuccess(t('checkout.logout_success', 'Successfully logged out. You can continue as a guest.'), t('common.success', 'Success'));
+      toast.success(t('checkout.logout_success', 'Successfully logged out. You can continue as a guest.'));
     } catch (error) {
       console.error('Logout failed:', error);
-      showError(t('checkout.logout_error', 'Failed to log out. Please try again.'), t('common.error', 'Error'));
+      toast.error(t('checkout.logout_error', 'Failed to log out. Please try again.'));
     }
   };
 
@@ -1215,7 +1214,7 @@ export default function Checkout() {
       console.error('Checkout failed:', error);
       // Extract error message from backend response
       const errorMessage = error.response?.data?.message || error.message || 'Checkout failed. Please try again.';
-      showError(errorMessage);
+      toast.error(errorMessage);
     } finally {
       setIsProcessing(false);
     }
@@ -2544,7 +2543,6 @@ export default function Checkout() {
 
       </div>
       <CmsBlockRenderer position="checkout_below_form" />
-      <AlertComponent />
 
       {/* Login Modal for Guest Checkout */}
       <Dialog open={showLoginModal} onOpenChange={setShowLoginModal}>
