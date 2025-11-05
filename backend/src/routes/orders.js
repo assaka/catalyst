@@ -1063,7 +1063,7 @@ router.post('/:id/resend-confirmation', authMiddleware, async (req, res) => {
     }
 
     // Send order confirmation email
-    await emailService.sendTransactionalEmail(order.store_id, 'order_confirmation', {
+    await emailService.sendTransactionalEmail(order.store_id, 'order_success_email', {
       recipientEmail: order.customer_email,
       customer: customer || { first_name: firstName, last_name: lastName, email: order.customer_email },
       order: order.toJSON(),
