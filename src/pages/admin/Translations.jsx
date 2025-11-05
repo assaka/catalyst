@@ -813,17 +813,8 @@ export default function Translations() {
         showMessage(`Successfully added translations in ${translationsToSave.length} languages`, 'success');
       }
 
-      // Add to local state for current language
-      const currentLangTranslation = translationsToSave.find(t => t.language_code === selectedLanguage);
-      if (currentLangTranslation) {
-        const newLabelEntry = {
-          key: fullKey,
-          value: currentLangTranslation.value,
-          category,
-          type: 'custom'
-        };
-        setLabels([...labels, newLabelEntry]);
-      }
+      // Reload the list from server to ensure fresh data
+      await loadLabels(selectedLanguage);
 
       // Clear form
       setBulkTranslations({});
