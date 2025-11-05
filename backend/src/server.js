@@ -1829,31 +1829,71 @@ publicOrderRouter.post('/finalize-order', async (req, res) => {
       });
     }
 
-    // Verify payment with Stripe (use connected account if available)
-    const stripeOptions = {};
-    if (store.stripe_account_id) {
-      stripeOptions.stripeAccount = store.stripe_account_id;
-    }
+    // Determine payment provider from order metadata or default to Stripe
+    const paymentProvider = order.payment_method || 'stripe';
+    console.log('💳 Payment provider:', paymentProvider);
 
-    let session;
-    try {
-      session = await stripe.checkout.sessions.retrieve(session_id, stripeOptions);
-      console.log('✅ Retrieved Stripe session:', session.id, 'Payment status:', session.payment_status);
-    } catch (stripeError) {
-      console.error('❌ Failed to retrieve Stripe session:', stripeError.message);
-      return res.status(400).json({
+    // Verify payment based on provider
+    let paymentVerified = false;
+
+    if (paymentProvider === 'stripe' || paymentProvider.includes('card') || paymentProvider.includes('credit')) {
+      // Stripe payment verification
+      const stripeOptions = {};
+      if (store.stripe_account_id) {
+        stripeOptions.stripeAccount = store.stripe_account_id;
+      }
+
+      try {
+        const session = await stripe.checkout.sessions.retrieve(session_id, stripeOptions);
+        console.log('✅ Retrieved Stripe session:', session.id, 'Payment status:', session.payment_status);
+
+        if (session.payment_status === 'paid') {
+          paymentVerified = true;
+        } else {
+          console.log('⚠️ Stripe payment not complete yet, status:', session.payment_status);
+          return res.json({
+            success: false,
+            message: 'Payment not yet completed',
+            data: { payment_status: session.payment_status, provider: 'stripe' }
+          });
+        }
+      } catch (stripeError) {
+        console.error('❌ Failed to retrieve Stripe session:', stripeError.message);
+        return res.status(400).json({
+          success: false,
+          message: 'Failed to verify payment with Stripe',
+          error: stripeError.message
+        });
+      }
+    } else if (paymentProvider === 'adyen') {
+      // TODO: Implement Adyen payment verification
+      // const adyenPayment = await adyenClient.verifyPayment(session_id);
+      // if (adyenPayment.status === 'Authorised') paymentVerified = true;
+      console.log('⚠️ Adyen verification not yet implemented');
+      return res.status(501).json({
         success: false,
-        message: 'Failed to verify payment with Stripe'
+        message: 'Adyen payment verification not yet implemented'
       });
+    } else if (paymentProvider === 'mollie') {
+      // TODO: Implement Mollie payment verification
+      // const molliePayment = await mollieClient.payments.get(session_id);
+      // if (molliePayment.status === 'paid') paymentVerified = true;
+      console.log('⚠️ Mollie verification not yet implemented');
+      return res.status(501).json({
+        success: false,
+        message: 'Mollie payment verification not yet implemented'
+      });
+    } else {
+      // Unknown provider - assume verified for offline payments
+      console.log('⚠️ Unknown payment provider, assuming offline payment');
+      paymentVerified = true;
     }
 
-    // Verify payment was successful
-    if (session.payment_status !== 'paid') {
-      console.log('⚠️ Payment not complete yet, status:', session.payment_status);
+    if (!paymentVerified) {
+      console.log('❌ Payment verification failed');
       return res.json({
         success: false,
-        message: 'Payment not yet completed',
-        data: { payment_status: session.payment_status }
+        message: 'Payment verification failed'
       });
     }
 

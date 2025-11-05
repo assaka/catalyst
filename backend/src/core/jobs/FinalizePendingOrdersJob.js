@@ -61,30 +61,53 @@ class FinalizePendingOrdersJob extends BaseJobHandler {
           continue;
         }
 
-        // Build Stripe options for connected account
-        const stripeOptions = {};
-        if (store.stripe_account_id) {
-          stripeOptions.stripeAccount = store.stripe_account_id;
-        }
+        // Determine payment provider
+        const paymentProvider = order.payment_method || 'stripe';
+        console.log(`💳 Payment provider for order ${order.order_number}:`, paymentProvider);
 
-        // Verify payment status with Stripe
-        let session;
-        try {
-          session = await stripe.checkout.sessions.retrieve(
-            order.payment_reference,
-            stripeOptions
-          );
-        } catch (stripeError) {
-          // Session might not exist or be on different account
-          console.warn(`⚠️ Could not retrieve Stripe session for order ${order.order_number}:`, stripeError.message);
-          failedCount++;
+        // Verify payment based on provider
+        let paymentVerified = false;
+
+        if (paymentProvider === 'stripe' || paymentProvider.includes('card') || paymentProvider.includes('credit')) {
+          // Stripe verification
+          const stripeOptions = {};
+          if (store.stripe_account_id) {
+            stripeOptions.stripeAccount = store.stripe_account_id;
+          }
+
+          try {
+            const session = await stripe.checkout.sessions.retrieve(
+              order.payment_reference,
+              stripeOptions
+            );
+            console.log(`✅ Retrieved Stripe session ${session.id} - Payment status: ${session.payment_status}`);
+
+            if (session.payment_status === 'paid') {
+              paymentVerified = true;
+            } else {
+              console.log(`⏳ Order ${order.order_number} - Stripe payment status: ${session.payment_status}`);
+            }
+          } catch (stripeError) {
+            console.warn(`⚠️ Could not retrieve Stripe session for order ${order.order_number}:`, stripeError.message);
+            failedCount++;
+            continue;
+          }
+        } else if (paymentProvider === 'adyen') {
+          // TODO: Implement Adyen verification
+          console.log(`⚠️ Adyen verification not yet implemented for order ${order.order_number}`);
+          continue;
+        } else if (paymentProvider === 'mollie') {
+          // TODO: Implement Mollie verification
+          console.log(`⚠️ Mollie verification not yet implemented for order ${order.order_number}`);
+          continue;
+        } else {
+          // Unknown provider - skip verification (might be offline payment)
+          console.log(`⚠️ Unknown provider "${paymentProvider}" for order ${order.order_number}, skipping`);
           continue;
         }
 
-        console.log(`✅ Retrieved session ${session.id} - Payment status: ${session.payment_status}`);
-
-        // Check if payment was completed
-        if (session.payment_status === 'paid') {
+        // Check if payment was verified
+        if (paymentVerified) {
           console.log(`🔄 Payment confirmed for order ${order.order_number} - finalizing...`);
 
           // Update order status
@@ -144,11 +167,9 @@ class FinalizePendingOrdersJob extends BaseJobHandler {
             console.error(`❌ Failed to send email for order ${order.order_number}:`, emailError.message);
             // Don't fail the job if email fails
           }
-
-        } else if (session.payment_status === 'unpaid') {
-          console.log(`⏳ Order ${order.order_number} still unpaid - keeping as pending`);
         } else {
-          console.log(`⚠️ Order ${order.order_number} has unexpected payment status: ${session.payment_status}`);
+          // Payment not verified - already logged in provider-specific blocks above
+          console.log(`⏳ Order ${order.order_number} payment not yet verified - keeping as pending`);
         }
 
         processedCount++;
