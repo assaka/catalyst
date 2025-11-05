@@ -1025,6 +1025,14 @@ router.post('/customer/login', [
       });
     }
 
+    // Check if customer is blacklisted
+    if (customer.is_blacklisted) {
+      return res.status(403).json({
+        success: false,
+        message: 'This email address cannot be used for checkout. Please contact support for assistance.'
+      });
+    }
+
     // Verify customer has a store assigned
     if (!customer.store_id) {
       console.log('⚠️ Customer has no store assigned:', customer.id);
