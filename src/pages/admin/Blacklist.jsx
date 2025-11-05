@@ -324,12 +324,9 @@ export default function Blacklist() {
         try {
             const storeId = getSelectedStoreId();
 
-            // Get the email address before deleting
-            const emailEntry = emails.find(e => e.id === id);
-            const emailAddress = emailEntry?.email;
-
-            const response = await fetch(`/api/blacklist/emails/${id}?store_id=${storeId}`, {
-                method: 'DELETE',
+            // Use the new endpoint that handles both email deletion and customer updates
+            const response = await fetch(`/api/blacklist/emails/${id}/false?store_id=${storeId}`, {
+                method: 'PUT',
                 headers: {
                     'Authorization': `Bearer ${localStorage.getItem('store_owner_auth_token')}`
                 }
@@ -337,32 +334,10 @@ export default function Blacklist() {
 
             const data = await response.json();
             if (data.success) {
-                // Update customer is_blacklisted status to false for this email
-                if (emailAddress) {
-                    try {
-                        console.log('Updating customer blacklist status for email:', emailAddress);
-                        const updateResponse = await fetch(`/api/customers/update-blacklist-by-email?store_id=${storeId}`, {
-                            method: 'PUT',
-                            headers: {
-                                'Content-Type': 'application/json',
-                                'Authorization': `Bearer ${localStorage.getItem('store_owner_auth_token')}`
-                            },
-                            body: JSON.stringify({
-                                email: emailAddress,
-                                is_blacklisted: false
-                            })
-                        });
-                        const updateData = await updateResponse.json();
-                        console.log('Update response:', updateData);
-                        if (!updateData.success) {
-                            console.error('Failed to update customer blacklist status:', updateData.message);
-                        }
-                    } catch (updateError) {
-                        console.error('Could not update customer blacklist status:', updateError);
-                    }
-                }
-
-                setFlashMessage({ type: 'success', message: 'Email removed from blacklist' });
+                setFlashMessage({
+                    type: 'success',
+                    message: `Email removed from blacklist. ${data.data.updated_customers} customer(s) updated.`
+                });
                 loadEmails();
             } else {
                 showError(data.message || 'Failed to remove email');
