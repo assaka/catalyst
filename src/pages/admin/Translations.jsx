@@ -19,6 +19,7 @@ import CustomOptionTranslationRow from '../../components/admin/translations/Cust
 import StockLabelTranslationRow from '../../components/admin/translations/StockLabelTranslationRow';
 import FlashMessage from '../../components/storefront/FlashMessage';
 import { Button } from '../../components/ui/button';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '../../components/ui/dialog';
 import { toast } from 'sonner';
 
 export default function Translations() {
@@ -44,6 +45,8 @@ export default function Translations() {
   const [showBulkTranslateDialog, setShowBulkTranslateDialog] = useState(false);
   const [showMultiEntityTranslateDialog, setShowMultiEntityTranslateDialog] = useState(false);
   const [showTranslationWizard, setShowTranslationWizard] = useState(false);
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [labelToDelete, setLabelToDelete] = useState(null);
 
   // Entity translation states
   const [entityStats, setEntityStats] = useState([]);
@@ -218,17 +221,25 @@ export default function Translations() {
   };
 
   /**
-   * Delete label translation
+   * Delete label translation - opens confirmation modal
    */
-  const deleteLabel = async (key) => {
-    if (!confirm('Are you sure you want to delete this translation?')) {
-      return;
-    }
+  const deleteLabel = (key) => {
+    setLabelToDelete(key);
+    setIsDeleteModalOpen(true);
+  };
+
+  /**
+   * Confirm and execute label deletion
+   */
+  const confirmDeleteLabel = async () => {
+    if (!labelToDelete) return;
 
     try {
-      await api.delete(`/translations/ui-labels/${encodeURIComponent(key)}/${selectedLanguage}`);
+      await api.delete(`/translations/ui-labels/${encodeURIComponent(labelToDelete)}/${selectedLanguage}`);
       showMessage('Translation deleted successfully', 'success');
       await loadLabels(selectedLanguage);
+      setIsDeleteModalOpen(false);
+      setLabelToDelete(null);
     } catch (error) {
       console.error('Failed to delete label:', error);
       showMessage('Failed to delete translation', 'error');
@@ -2577,6 +2588,40 @@ export default function Translations() {
         }}
         storeId={getSelectedStoreId()}
       />
+
+      {/* Delete Confirmation Dialog */}
+      <Dialog open={isDeleteModalOpen} onOpenChange={setIsDeleteModalOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Delete Translation</DialogTitle>
+            <DialogDescription>
+              Are you sure you want to delete this translation? This action cannot be undone.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="py-4">
+            <p className="text-sm text-gray-600">
+              Translation key: <span className="font-mono font-semibold">{labelToDelete}</span>
+            </p>
+          </div>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => {
+                setIsDeleteModalOpen(false);
+                setLabelToDelete(null);
+              }}
+            >
+              Cancel
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={confirmDeleteLabel}
+            >
+              Delete
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
