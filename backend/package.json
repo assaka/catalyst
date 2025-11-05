@@ -18,6 +18,7 @@
     "migrate:payment-fee": "node run-payment-fee-migration-simple.js",
     "migrate:conditions": "node src/database/migrations/run-conditions-migration.js",
     "migrate:stock": "node src/database/migrations/run-stock-settings-migration.js",
+    "migrate:sales": "node src/database/run-sales-migration.js",
     "init:customizations": "node src/database/init-customizations-db.js",
     "seed": "node src/database/seed.js",
     "test": "jest",

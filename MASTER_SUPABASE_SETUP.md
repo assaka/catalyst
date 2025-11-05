@@ -85,7 +85,6 @@ import_statistics
 -- Plugin system
 plugins
 plugin_configurations
-store_plugins
 
 -- Credits & jobs
 credits
@@ -292,7 +291,6 @@ ORDER BY tablename;
 - shipping_methods
 - shopify_oauth_tokens
 - stores
-- store_plugins
 - store_teams
 - store_invitations
 - supabase_oauth_tokens

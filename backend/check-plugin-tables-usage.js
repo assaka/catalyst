@@ -24,8 +24,7 @@ async function checkUsage() {
     'plugin_marketplace',
     'plugin_versions',
     'plugin_widgets',
-    'plugins',
-    'store_plugins'
+    'plugins'
   ];
 
   console.log('📊 Checking plugin table usage...\n');

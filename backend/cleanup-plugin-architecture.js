@@ -31,8 +31,7 @@ async function cleanup() {
       'plugin_marketplace',
       'plugin_versions',
       'plugin_widgets',
-      'plugins',
-      'store_plugins'
+      'plugins'
     ];
 
     console.log('📦 Dropping obsolete tables...');

@@ -91,7 +91,6 @@ const MIGRATION_TYPES = {
     tables: [
       'integration_configs',
       'plugin_configurations',
-      'store_plugins',
       'shopify_oauth_tokens',
       'supabase_oauth_tokens',
       'supabase_project_keys'

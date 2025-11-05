@@ -72,27 +72,6 @@ CREATE TABLE IF NOT EXISTS route_redirects (
     UNIQUE (store_id, from_path)
 );
 
--- 3. ROUTE_ACCESS_LOG TABLE
--- Optional: Track route access for analytics
-CREATE TABLE IF NOT EXISTS route_access_log (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    store_id UUID NOT NULL,
-    route_id UUID,
-    accessed_path VARCHAR(500) NOT NULL,
-    user_id UUID,
-    session_id VARCHAR(255),
-    ip_address INET,
-    user_agent TEXT,
-    referer TEXT,
-    response_status INTEGER,
-    response_time_ms INTEGER,
-    accessed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    
-    FOREIGN KEY (store_id) REFERENCES stores(id) ON DELETE CASCADE,
-    FOREIGN KEY (route_id) REFERENCES store_routes(id) ON DELETE SET NULL,
-    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL
-);
-
 -- Create indexes for performance
 CREATE INDEX IF NOT EXISTS idx_store_routes_store_id ON store_routes(store_id);
 CREATE INDEX IF NOT EXISTS idx_store_routes_path ON store_routes(store_id, route_path);
@@ -102,9 +81,6 @@ CREATE INDEX IF NOT EXISTS idx_store_routes_navigation ON store_routes(store_id,
 
 CREATE INDEX IF NOT EXISTS idx_route_redirects_store_from ON route_redirects(store_id, from_path);
 CREATE INDEX IF NOT EXISTS idx_route_redirects_active ON route_redirects(is_active);
-
-CREATE INDEX IF NOT EXISTS idx_route_access_log_store_time ON route_access_log(store_id, accessed_at);
-CREATE INDEX IF NOT EXISTS idx_route_access_log_route ON route_access_log(route_id);
 
 -- Create updated_at triggers
 CREATE OR REPLACE FUNCTION update_updated_at_column()

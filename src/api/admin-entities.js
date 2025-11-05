@@ -216,7 +216,6 @@ export const AdminTaxType = new AdminBaseEntity('tax-types');
 export const AdminService = new AdminBaseEntity('services');
 export const AdminCustomOptionRule = new AdminBaseEntity('custom-option-rules');
 export const AdminPlugin = new AdminBaseEntity('plugins');
-export const AdminStorePlugin = new AdminBaseEntity('store-plugins');
 export const AdminLanguage = new AdminBaseEntity('languages');
 export const AdminSeoTemplate = new AdminBaseEntity('seo-templates');
 export const AdminSeoSetting = new AdminBaseEntity('seo-settings');

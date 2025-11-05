@@ -23,7 +23,6 @@ const Wishlist = require('./Wishlist');
 const Language = require('./Language');
 const Translation = require('./Translation');
 const CustomerActivity = require('./CustomerActivity');
-const StorePlugin = require('./StorePlugin');
 const SeoSettings = require('./SeoSettings');
 const SeoTemplate = require('./SeoTemplate');
 const Redirect = require('./Redirect');
@@ -200,10 +199,6 @@ const defineAssociations = () => {
   CustomerActivity.belongsTo(User, { foreignKey: 'user_id' });
   CustomerActivity.belongsTo(Product, { foreignKey: 'product_id' });
   Store.hasMany(CustomerActivity, { foreignKey: 'store_id' });
-
-  // StorePlugin associations
-  StorePlugin.belongsTo(Store, { foreignKey: 'store_id' });
-  Store.hasMany(StorePlugin, { foreignKey: 'store_id' });
 
   // SeoSettings associations
   SeoSettings.belongsTo(Store, { foreignKey: 'store_id' });
@@ -401,7 +396,6 @@ module.exports = {
   Language,
   Translation,
   CustomerActivity,
-  StorePlugin,
   SeoSettings,
   SeoTemplate,
   Redirect,

@@ -1230,28 +1230,6 @@ class CustomOptionRuleEntity extends BaseEntity {
 
 export const CustomOptionRule = new CustomOptionRuleEntity();
 export const Plugin = new BaseEntity('plugins');
-class StorePluginEntity extends BaseEntity {
-  constructor() {
-    super('store-plugins');
-  }
-
-  // Public method to get active plugins without authentication
-  async getPublic(params = {}) {
-    const queryString = new URLSearchParams(params).toString();
-    const url = queryString ? `${this.endpoint}/public?${queryString}` : `${this.endpoint}/public`;
-    
-    try {
-      const response = await apiClient.get(url);
-      const plugins = response?.data?.store_plugins || response?.store_plugins || response || [];
-      return Array.isArray(plugins) ? plugins : [];
-    } catch (error) {
-      console.error(`Failed to load public store plugins:`, error.message);
-      return [];
-    }
-  }
-}
-
-export const StorePlugin = new StorePluginEntity();
 
 // Team Management Service
 class StoreTeamService extends BaseEntity {

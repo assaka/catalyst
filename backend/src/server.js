@@ -58,7 +58,6 @@ const aiRoutes = require('./routes/ai'); // Centralized AI service
 const migrationsRoutes = require('./routes/migrations');
 // const diagnosticRoutes = require('./routes/diagnostic'); // Temporarily disabled
 const customerActivityRoutes = require('./routes/customer-activity');
-const storePluginRoutes = require('./routes/store-plugins');
 const seoSettingsRoutes = require('./routes/seo-settings');
 const seoTemplateRoutes = require('./routes/seo-templates');
 const redirectRoutes = require('./routes/redirects');
@@ -717,9 +716,9 @@ app.post('/debug/migrate', async (req, res) => {
     console.log('🔄 Running database migration...');
     
     // Import all models to ensure they're synced
-    const { 
+    const {
       User, Store, Product, Category, Order, OrderItem, Coupon, CmsPage, Tax, ShippingMethod, DeliverySettings,
-      Customer, Cart, Wishlist, Language, CustomerActivity, StorePlugin, SeoSettings, SeoTemplate, ProductLabel,
+      Customer, Cart, Wishlist, Language, CustomerActivity, SeoSettings, SeoTemplate, ProductLabel,
       ConsentLog
     } = require('./models');
     
@@ -2025,7 +2024,6 @@ app.use('/api/ai', aiStudioRoutes);
 app.use('/api/ai', aiPluginAssistantRoutes); // AI Plugin Assistant for no-code and developer modes
 app.use('/api/plugins/ai', pluginAIRoutes); // Claude API integration for plugin generation
 app.use('/api/customer-activity', customerActivityRoutes);
-app.use('/api/stores/:store_id/plugins', storePluginRoutes);
 app.use('/api/seo-settings', seoSettingsRoutes);
 app.use('/api/seo-templates', seoTemplateRoutes);
 app.use('/api/redirects', redirectRoutes);

@@ -11,7 +11,7 @@ This directory contains the complete database migration scripts for the Catalyst
 ## Migration Script Features
 
 ### ✅ Complete Schema
-The migration script creates **17 tables** with full relationships:
+The migration script creates **16 tables** with full relationships:
 
 1. **users** - User accounts and authentication
 2. **stores** - Online stores
@@ -27,9 +27,8 @@ The migration script creates **17 tables** with full relationships:
 12. **taxes** - Tax configurations
 13. **shipping_methods** - Shipping options
 14. **delivery_settings** - Delivery preferences
-15. **store_plugins** - Store plugins
-16. **credit_transactions** - Credit system
-17. **login_attempts** - Security logging
+15. **credit_transactions** - Credit system
+16. **login_attempts** - Security logging
 
 ### ✅ Advanced Features
 - **UUID Primary Keys** - Using PostgreSQL UUID extension
@@ -145,5 +144,5 @@ For issues or questions:
 
 **Last Updated**: 2025-01-16
 **Compatible With**: PostgreSQL 13+, Supabase
-**Tables Created**: 17
+**Tables Created**: 16
 **Demo Data**: Included
