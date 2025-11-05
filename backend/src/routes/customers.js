@@ -7,16 +7,6 @@ const { Op } = require('sequelize');
 
 const router = express.Router();
 
-// Test endpoint to verify deployment
-router.get('/test-deployment', (req, res) => {
-  res.json({
-    deployed: true,
-    timestamp: new Date().toISOString(),
-    message: 'Backend code is deployed with blacklist fix',
-    commit: '28a5eb8d'
-  });
-});
-
 // @route   GET /api/customers
 // @desc    Get all customers for a store
 // @access  Private
