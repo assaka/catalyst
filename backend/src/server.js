@@ -96,12 +96,10 @@ const productImageRoutes = require('./routes/product-images');
 const categoryImageRoutes = require('./routes/category-images');
 const fileManagerRoutes = require('./routes/file-manager');
 const sourceFilesRoutes = require('./routes/source-files');
-const storeDataMigrationRoutes = require('./routes/store-data-migration');
 const storeProvisioningRoutes = require('./routes/store-provisioning');
 const domainsRoutes = require('./routes/domains');
 const storeDatabaseRoutes = require('./routes/store-database');
 const storeMediaStorageRoutes = require('./routes/store-mediastorage');
-const storeRoutesManagement = require('./routes/store-routes');
 const heatmapRoutes = require('./routes/heatmap');
 const backgroundJobRoutes = require('./routes/background-jobs');
 const cronJobRoutes = require('./routes/cron-jobs');
@@ -2060,7 +2058,6 @@ app.use('/api/stores/:store_id/products', productImageRoutes);
 app.use('/api/stores/:store_id/categories', categoryImageRoutes);
 app.use('/api/file-manager', fileManagerRoutes);
 app.use('/api/source-files', sourceFilesRoutes);
-app.use('/api/stores/:store_id/data-migration', storeDataMigrationRoutes);
 app.use('/api/store-provisioning', storeProvisioningRoutes);
 app.use('/api/stores/:store_id/domains', domainsRoutes);
 app.use('/api/stores', domainSettingsRoutes); // Domain settings for Store -> Settings -> Domain
@@ -2069,7 +2066,6 @@ app.use('/api/background-jobs', backgroundJobRoutes); // Background job manageme
 app.use('/api/cron-jobs', cronJobRoutes); // Dynamic cron job management routes
 app.use('/api/extensions', extensionsRoutes); // Modern extension system API with hook-based architecture
 app.use('/api/slot-configurations', slotConfigurationRoutes); // Slot configuration versioning API
-app.use('/api/store-routes', storeRoutesManagement); // Database-driven routing system for custom pages and route management - MUST come before broad /api middleware
 app.use('/api/credits', creditRoutes); // Credit system: balance, purchases, usage tracking
 app.use('/api/service-credit-costs', serviceCreditCostsRoutes); // Service credit costs management (admin)
 app.use('/api/email-templates', emailTemplatesRoutes); // Email template management with translations
@@ -2120,46 +2116,18 @@ app.get('/preview/:storeId', async (req, res) => {
     const actualStoreSlug = storeSlug || store.slug || 'store';
     console.log(`🏪 Store slug: ${actualStoreSlug}`);
     
-    // Use provided page name or extract from file path
-    const pageName = providedPageName || fileName.split('/').pop()?.replace(/\.(jsx?|tsx?)$/, '') || '';
-    console.log(`🔍 Page name: ${pageName} ${providedPageName ? '(provided)' : '(extracted)'}`);
-    
-    // Use store routes to find the actual route for this page
-    const StoreRoute = require('./models/StoreRoute');
-    const routeResolution = await StoreRoute.resolveByPageName(storeId, pageName);
-    
-    if (!routeResolution.found) {
-      return res.status(404).json({ 
-        error: 'Route not found', 
-        pageName,
-        message: `No route mapping found for page "${pageName}"` 
-      });
-    }
-    
-    const route = routeResolution.route;
-    console.log(`✅ Found route: ${route.route_name} -> ${route.route_path}`);
+    // Simple preview redirect without routing system
+    console.log(`🔌 Preview requested for file: ${fileName}`);
 
-    // If no patches requested, redirect to original frontend
-    if (patches !== 'true') {
-      const publicStoreBaseUrl = process.env.PUBLIC_STORE_BASE_URL || 'https://catalyst-pearl.vercel.app';
-      const routePath = route.route_path.startsWith('/') ? route.route_path.substring(1) : route.route_path;
-      const publicUrl = `${publicStoreBaseUrl}/public/${actualStoreSlug}/${routePath}?_t=${Date.now()}`;
-      console.log(`🎯 No patches - redirecting to: ${publicUrl}`);
-      return res.redirect(302, publicUrl);
-    }
-
-    // Use the new extension system for preview
-    console.log(`🔌 Using extension system for preview of ${fileName}...`);
-    
     // Get current published version for this store
     const currentVersionResult = await extensionService.getCurrentVersion(storeId);
     const hasExtensions = currentVersionResult.success && currentVersionResult.version;
-    
+
     console.log(`📦 Extension status - Store: ${storeId}, Has Extensions: ${hasExtensions}`);
 
-    // Redirect to main application with extension system enabled
+    // Redirect to main application
     const publicStoreBaseUrl = process.env.PUBLIC_STORE_BASE_URL || 'https://catalyst-pearl.vercel.app';
-    const routePath = route.route_path.startsWith('/') ? route.route_path.substring(1) : route.route_path;
+    const routePath = '';
     
     // Add extension system parameters instead of patches
     const queryParams = new URLSearchParams({

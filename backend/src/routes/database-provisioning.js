@@ -4,7 +4,7 @@ const { authMiddleware } = require('../middleware/auth');
 const { checkStoreOwnership } = require('../middleware/storeAuth');
 const DatabaseProvisioningService = require('../services/database/DatabaseProvisioningService');
 const ConnectionManager = require('../services/database/ConnectionManager');
-const { Store, Subscription, UsageMetric, BillingTransaction } = require('../models');
+const { Store, Subscription, UsageMetric } = require('../models');
 const { Op } = require('sequelize');
 
 /**
@@ -211,40 +211,6 @@ router.get('/usage', authMiddleware, checkStoreOwnership, async (req, res) => {
       period: { start, end },
       totals,
       daily_metrics: metrics
-    });
-  } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: error.message
-    });
-  }
-});
-
-/**
- * Get billing history
- */
-router.get('/billing/history', authMiddleware, checkStoreOwnership, async (req, res) => {
-  try {
-    const transactions = await BillingTransaction.findAll({
-      where: { store_id: req.storeId },
-      order: [['created_at', 'DESC']],
-      limit: 50
-    });
-
-    res.json({
-      success: true,
-      transactions: transactions.map(t => ({
-        id: t.id,
-        amount: t.amount,
-        currency: t.currency,
-        status: t.status,
-        payment_method: t.payment_method,
-        description: t.description,
-        invoice_number: t.invoice_number,
-        invoice_url: t.invoice_url,
-        processed_at: t.processed_at,
-        created_at: t.created_at
-      }))
     });
   } catch (error) {
     res.status(500).json({

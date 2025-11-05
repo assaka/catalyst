@@ -172,7 +172,7 @@ export default function Orders() {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
+          'Authorization': `Bearer ${localStorage.getItem('store_owner_auth_token')}`
         }
       });
 
@@ -196,7 +196,7 @@ export default function Orders() {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
+          'Authorization': `Bearer ${localStorage.getItem('store_owner_auth_token')}`
         },
         body: JSON.stringify({ withPdf: true })
       });
@@ -221,7 +221,7 @@ export default function Orders() {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
+          'Authorization': `Bearer ${localStorage.getItem('store_owner_auth_token')}`
         },
         body: JSON.stringify({})
       });

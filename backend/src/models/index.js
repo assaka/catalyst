@@ -44,7 +44,6 @@ const ShopifyOAuthToken = require('./ShopifyOAuthToken');
 const MediaAsset = require('./MediaAsset');
 // Master database models (business management)
 const Subscription = require('./Subscription');
-const BillingTransaction = require('./BillingTransaction');
 const UsageMetric = require('./UsageMetric');
 const PlatformAdmin = require('./PlatformAdmin');
 const CustomDomain = require('./CustomDomain');
@@ -56,8 +55,6 @@ const CreditUsage = require('./CreditUsage');
 const ServiceCreditCost = require('./ServiceCreditCost');
 const Job = require('./Job');
 const JobHistory = require('./JobHistory');
-const StoreSupabaseConnection = require('./StoreSupabaseConnection');
-const StoreDataMigration = require('./StoreDataMigration');
 const SlotConfiguration = require('./SlotConfiguration');
 // Email system models
 const EmailTemplate = require('./EmailTemplate');
@@ -290,12 +287,6 @@ const defineAssociations = () => {
   Subscription.belongsTo(Store, { foreignKey: 'store_id', as: 'store' });
   Store.hasMany(Subscription, { foreignKey: 'store_id', as: 'subscriptions' });
 
-  // BillingTransaction associations
-  BillingTransaction.belongsTo(Store, { foreignKey: 'store_id', as: 'store' });
-  BillingTransaction.belongsTo(Subscription, { foreignKey: 'subscription_id', as: 'subscription' });
-  Store.hasMany(BillingTransaction, { foreignKey: 'store_id', as: 'transactions' });
-  Subscription.hasMany(BillingTransaction, { foreignKey: 'subscription_id', as: 'transactions' });
-
   // UsageMetric associations
   UsageMetric.belongsTo(Store, { foreignKey: 'store_id', as: 'store' });
   Store.hasMany(UsageMetric, { foreignKey: 'store_id', as: 'usageMetrics' });
@@ -337,12 +328,6 @@ const defineAssociations = () => {
   // AkeneoSchedule associations
   AkeneoSchedule.belongsTo(Store, { foreignKey: 'store_id' });
   Store.hasMany(AkeneoSchedule, { foreignKey: 'store_id' });
-
-  StoreSupabaseConnection.belongsTo(Store, { foreignKey: 'store_id' });
-  Store.hasMany(StoreSupabaseConnection, { foreignKey: 'store_id' });
-
-  StoreDataMigration.belongsTo(Store, { foreignKey: 'store_id' });
-  Store.hasMany(StoreDataMigration, { foreignKey: 'store_id' });
 
   // Phoenix Slot System associations
   SlotConfiguration.belongsTo(User, { foreignKey: 'user_id' });
@@ -417,7 +402,6 @@ module.exports = {
   MediaAsset,
   // Master database models
   Subscription,
-  BillingTransaction,
   UsageMetric,
   PlatformAdmin,
   CustomDomain,
@@ -429,8 +413,6 @@ module.exports = {
   ServiceCreditCost,
   Job,
   JobHistory,
-  StoreSupabaseConnection,
-  StoreDataMigration,
   SlotConfiguration,
   // Email system models
   EmailTemplate,
