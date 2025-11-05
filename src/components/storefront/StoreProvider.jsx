@@ -251,10 +251,15 @@ export const StoreProvider = ({ children }) => {
           localStorage.removeItem('storeProviderCache');
           sessionStorage.removeItem('storeProviderCache');
 
-          // Force reload the page after a short delay to see the messages
-          setTimeout(() => {
-            window.location.reload();
-          }, 1000);
+          // Only reload if we're NOT on an admin page
+          // Admin pages handle their own state updates and don't need a reload
+          const isAdminPage = window.location.pathname.includes('/admin/');
+          if (!isAdminPage) {
+            // Force reload the page after a short delay to see the messages
+            setTimeout(() => {
+              window.location.reload();
+            }, 1000);
+          }
         }
       };
 
@@ -280,8 +285,12 @@ export const StoreProvider = ({ children }) => {
             console.warn('Failed to clear localStorage cache:', e);
           }
 
-          // Force hard reload to bypass any browser cache
-          window.location.reload(true);
+          // Only reload if we're NOT on an admin page
+          const isAdminPage = window.location.pathname.includes('/admin/');
+          if (!isAdminPage) {
+            // Force hard reload to bypass any browser cache
+            window.location.reload(true);
+          }
         }
       };
 
