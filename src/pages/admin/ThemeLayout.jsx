@@ -839,10 +839,8 @@ export default function ThemeLayout() {
             } catch (e) {
                 console.error('Cache clearing failed:', e);
             }
-            
+
             setFlashMessage({ type: 'success', message: 'Settings saved successfully! Visit a category page to see changes.' });
-            setSaveSuccess(true);
-            setTimeout(() => setSaveSuccess(false), 2000);
 
         } catch (error) {
             setFlashMessage({ type: 'error', message: `Failed to save settings: ${error.response?.data?.message || error.message}` });
