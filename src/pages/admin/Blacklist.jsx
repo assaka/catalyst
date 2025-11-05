@@ -14,7 +14,7 @@ import { useAlertTypes } from '@/hooks/useAlert';
 
 export default function Blacklist() {
     const { selectedStore, getSelectedStoreId } = useStoreSelection();
-    const { showError, showSuccess, showConfirm, AlertComponent } = useAlertTypes();
+    const { showError, showSuccess, AlertComponent } = useAlertTypes();
     const [loading, setLoading] = useState(true);
     const [activeTab, setActiveTab] = useState('ips');
 
@@ -185,14 +185,6 @@ export default function Blacklist() {
     };
 
     const handleDeleteIP = async (id) => {
-        const confirmed = await showConfirm(
-            'Are you sure you want to remove this IP from the blacklist?',
-            'Remove IP from Blacklist'
-        );
-        if (!confirmed) {
-            return;
-        }
-
         try {
             const storeId = getSelectedStoreId();
             const response = await fetch(`/api/blacklist/ips/${id}?store_id=${storeId}`, {
@@ -248,14 +240,6 @@ export default function Blacklist() {
     };
 
     const handleDeleteCountry = async (id) => {
-        const confirmed = await showConfirm(
-            'Are you sure you want to remove this country from the blacklist?',
-            'Remove Country from Blacklist'
-        );
-        if (!confirmed) {
-            return;
-        }
-
         try {
             const storeId = getSelectedStoreId();
             const response = await fetch(`/api/blacklist/countries/${id}?store_id=${storeId}`, {
