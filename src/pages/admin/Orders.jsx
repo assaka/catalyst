@@ -238,22 +238,18 @@ export default function Orders() {
     }
   };
 
-  const shouldShowCreateInvoice = (order) => {
-    // Show create invoice button if:
-    // 1. Payment method is offline (bank transfer, cash, etc.), OR
-    // 2. Auto-generate invoice is disabled in store settings
-    const paymentMethod = order.payment_method?.toLowerCase() || '';
-    const isOfflinePayment = ['bank_transfer', 'cash', 'check', 'wire'].some(method =>
-      paymentMethod.includes(method)
-    );
-    const autoInvoiceEnabled = selectedStore?.settings?.sales_settings?.auto_invoice_enabled;
-    return isOfflinePayment || !autoInvoiceEnabled;
+  const getInvoiceButtonText = (order) => {
+    // Always show the invoice button
+    // The button text changes based on whether an invoice was already sent
+    // This will be enhanced later to check if invoice exists in sales_invoices table
+    return 'Send Invoice';
   };
 
-  const shouldShowCreateShipment = (order) => {
-    // Show create shipment button if auto-ship is disabled
-    const autoShipEnabled = selectedStore?.settings?.sales_settings?.auto_ship_enabled;
-    return !autoShipEnabled;
+  const getShipmentButtonText = (order) => {
+    // Always show the shipment button
+    // The button text changes based on whether a shipment was already sent
+    // This will be enhanced later to check if shipment exists in sales_shipments table
+    return 'Send Shipment';
   };
 
   if (loading) {
@@ -616,41 +612,37 @@ export default function Orders() {
                                             : 'Resend Order'}
                                         </Button>
 
-                                        {/* Invoice Button - Conditional */}
-                                        {shouldShowCreateInvoice(order) && (
-                                          <Button
-                                            variant="outline"
-                                            size="sm"
-                                            onClick={() => handleSendInvoice(order.id)}
-                                            disabled={actionLoading[`send-invoice-${order.id}`]}
-                                            className={actionSuccess[`send-invoice-${order.id}`] ? 'bg-green-50 border-green-500' : ''}
-                                          >
-                                            <FileText className="w-4 h-4 mr-2" />
-                                            {actionLoading[`send-invoice-${order.id}`]
-                                              ? 'Sending...'
-                                              : actionSuccess[`send-invoice-${order.id}`]
-                                              ? 'Sent!'
-                                              : 'Send Invoice'}
-                                          </Button>
-                                        )}
+                                        {/* Invoice Button - Always visible */}
+                                        <Button
+                                          variant="outline"
+                                          size="sm"
+                                          onClick={() => handleSendInvoice(order.id)}
+                                          disabled={actionLoading[`send-invoice-${order.id}`]}
+                                          className={actionSuccess[`send-invoice-${order.id}`] ? 'bg-green-50 border-green-500' : ''}
+                                        >
+                                          <FileText className="w-4 h-4 mr-2" />
+                                          {actionLoading[`send-invoice-${order.id}`]
+                                            ? 'Sending...'
+                                            : actionSuccess[`send-invoice-${order.id}`]
+                                            ? 'Sent!'
+                                            : getInvoiceButtonText(order)}
+                                        </Button>
 
-                                        {/* Shipment Button - Conditional */}
-                                        {shouldShowCreateShipment(order) && (
-                                          <Button
-                                            variant="outline"
-                                            size="sm"
-                                            onClick={() => handleSendShipment(order.id)}
-                                            disabled={actionLoading[`send-shipment-${order.id}`]}
-                                            className={actionSuccess[`send-shipment-${order.id}`] ? 'bg-green-50 border-green-500' : ''}
-                                          >
-                                            <Truck className="w-4 h-4 mr-2" />
-                                            {actionLoading[`send-shipment-${order.id}`]
-                                              ? 'Sending...'
-                                              : actionSuccess[`send-shipment-${order.id}`]
-                                              ? 'Sent!'
-                                              : 'Send Shipment'}
-                                          </Button>
-                                        )}
+                                        {/* Shipment Button - Always visible */}
+                                        <Button
+                                          variant="outline"
+                                          size="sm"
+                                          onClick={() => handleSendShipment(order.id)}
+                                          disabled={actionLoading[`send-shipment-${order.id}`]}
+                                          className={actionSuccess[`send-shipment-${order.id}`] ? 'bg-green-50 border-green-500' : ''}
+                                        >
+                                          <Truck className="w-4 h-4 mr-2" />
+                                          {actionLoading[`send-shipment-${order.id}`]
+                                            ? 'Sending...'
+                                            : actionSuccess[`send-shipment-${order.id}`]
+                                            ? 'Sent!'
+                                            : getShipmentButtonText(order)}
+                                        </Button>
                                       </div>
                                     </div>
                                   </div>

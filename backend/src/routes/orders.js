@@ -293,6 +293,21 @@ router.post('/finalize-order', async (req, res) => {
           });
 
           console.log('✅ Invoice email sent successfully');
+
+          // Create invoice record to track that invoice was sent
+          try {
+            await Invoice.create({
+              order_id: order.id,
+              store_id: order.store_id,
+              customer_email: order.customer_email,
+              pdf_generated: salesSettings.auto_invoice_pdf_enabled || false,
+              email_status: 'sent'
+            });
+            console.log('✅ Invoice record created');
+          } catch (invoiceCreateError) {
+            console.error('❌ Failed to create invoice record:', invoiceCreateError);
+            // Don't fail if invoice record creation fails
+          }
         } catch (invoiceError) {
           console.error('❌ Failed to send invoice email:', invoiceError);
           // Don't fail the request if invoice email fails
