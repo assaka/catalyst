@@ -717,9 +717,12 @@ router.post('/create-checkout', async (req, res) => {
 
       if (blacklistedIP) {
         console.log(`🚫 Blacklisted IP blocked: ${ipAddress}`);
+        const { getTranslation } = require('../utils/translationHelper');
+        const language = req.headers['x-language'] || 'en';
+        const message = await getTranslation('error.blacklist.ip', language);
         return res.status(403).json({
           success: false,
-          message: 'Your request cannot be processed. Please contact support for assistance.'
+          message
         });
       }
     }
@@ -733,9 +736,12 @@ router.post('/create-checkout', async (req, res) => {
 
       if (blacklistedEmail) {
         console.log(`🚫 Blacklisted email blocked: ${customer_email}`);
+        const { getTranslation } = require('../utils/translationHelper');
+        const language = req.headers['x-language'] || 'en';
+        const message = await getTranslation('error.blacklist.email', language);
         return res.status(403).json({
           success: false,
-          message: 'This email address cannot be used for checkout. Please contact support for assistance.'
+          message
         });
       }
 
@@ -750,9 +756,12 @@ router.post('/create-checkout', async (req, res) => {
 
       if (blacklistedCustomer) {
         console.log(`🚫 Blacklisted customer blocked: ${customer_email}`);
+        const { getTranslation } = require('../utils/translationHelper');
+        const language = req.headers['x-language'] || 'en';
+        const message = await getTranslation('error.blacklist.email', language);
         return res.status(403).json({
           success: false,
-          message: 'This email address cannot be used for checkout. Please contact support for assistance.'
+          message
         });
       }
     }
@@ -765,9 +774,12 @@ router.post('/create-checkout', async (req, res) => {
 
       if (blacklistedCountry) {
         console.log(`🚫 Blacklisted country blocked: ${countryCode}`);
+        const { getTranslation } = require('../utils/translationHelper');
+        const language = req.headers['x-language'] || 'en';
+        const message = await getTranslation('error.blacklist.country', language);
         return res.status(403).json({
           success: false,
-          message: 'Orders from your location cannot be processed at this time. Please contact support for assistance.'
+          message
         });
       }
     }
