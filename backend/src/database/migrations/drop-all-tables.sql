@@ -6,7 +6,7 @@ DROP TRIGGER IF EXISTS update_users_updated_at ON users;
 DROP TRIGGER IF EXISTS update_stores_updated_at ON stores;
 DROP TRIGGER IF EXISTS update_products_updated_at ON products;
 DROP TRIGGER IF EXISTS update_categories_updated_at ON categories;
-DROP TRIGGER IF EXISTS update_orders_updated_at ON orders;
+DROP TRIGGER IF EXISTS update_sales_orders_updated_at ON sales_orders;
 DROP TRIGGER IF EXISTS update_sales_order_items_updated_at ON sales_order_items;
 DROP TRIGGER IF EXISTS update_coupons_updated_at ON coupons;
 DROP TRIGGER IF EXISTS update_cms_pages_updated_at ON cms_pages;
@@ -16,7 +16,6 @@ DROP TRIGGER IF EXISTS update_taxes_updated_at ON taxes;
 DROP TRIGGER IF EXISTS update_attributes_updated_at ON attributes;
 DROP TRIGGER IF EXISTS update_attribute_sets_updated_at ON attribute_sets;
 DROP TRIGGER IF EXISTS update_customers_updated_at ON customers;
-DROP TRIGGER IF EXISTS update_store_plugins_updated_at ON store_plugins;
 DROP TRIGGER IF EXISTS update_login_attempts_updated_at ON login_attempts;
 DROP TRIGGER IF EXISTS update_credit_transactions_updated_at ON credit_transactions;
 
@@ -25,7 +24,6 @@ DROP FUNCTION IF EXISTS update_updated_at_column();
 
 -- Drop all tables in reverse dependency order
 DROP TABLE IF EXISTS credit_transactions CASCADE;
-DROP TABLE IF EXISTS store_plugins CASCADE;
 DROP TABLE IF EXISTS customers CASCADE;
 DROP TABLE IF EXISTS login_attempts CASCADE;
 DROP TABLE IF EXISTS taxes CASCADE;
@@ -34,7 +32,7 @@ DROP TABLE IF EXISTS delivery_settings CASCADE;
 DROP TABLE IF EXISTS cms_pages CASCADE;
 DROP TABLE IF EXISTS coupons CASCADE;
 DROP TABLE IF EXISTS sales_order_items CASCADE;
-DROP TABLE IF EXISTS orders CASCADE;
+DROP TABLE IF EXISTS sales_orders CASCADE;
 DROP TABLE IF EXISTS products CASCADE;
 DROP TABLE IF EXISTS categories CASCADE;
 DROP TABLE IF EXISTS attributes CASCADE;
