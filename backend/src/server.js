@@ -90,7 +90,7 @@ const imageRoutes = require('./routes/images');
 const cloudflareOAuthRoutes = require('./routes/cloudflare-oauth');
 const domainSettingsRoutes = require('./routes/domain-settings');
 const pluginRoutes = require('./routes/plugins');
-const { storePluginRouter } = require('./routes/plugins');
+const storePluginRoutes = require('./routes/store-plugins');
 const pluginCreationRoutes = require('./routes/plugin-creation');
 const storageRoutes = require('./routes/storage');
 const productImageRoutes = require('./routes/product-images');
@@ -2050,7 +2050,7 @@ app.use('/api/admin', adminNavigationRoutes); // Dynamic navigation API (Plugin 
 app.use('/api/plugins', pluginApiRoutes); // Modern plugin system: widgets, marketplace, purchases (Plugin Architecture Phase 1)
 app.use('/api/plugins', pluginVersionApiRoutes); // Plugin version control: git-like versioning, snapshots, patches, rollback
 app.use('/api/plugins', pluginRoutes); // Legacy plugin routes (kept for backwards compatibility)
-app.use('/api/stores/:store_id/plugins', storePluginRouter); // Store-specific plugin routes
+app.use('/api/stores/:store_id/plugins', storePluginRoutes); // Store-specific plugin routes (enable/disable/configure)
 app.use('/api/stores/:store_id/plugins/create', pluginCreationRoutes);
 app.use('/api/plugins', dynamicPluginRoutes.router);
 app.use('/api/chat', chatApiRoutes); // Customer service chat plugin API
