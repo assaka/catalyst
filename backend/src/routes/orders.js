@@ -248,6 +248,54 @@ router.post('/finalize-order', async (req, res) => {
       });
 
       console.log('✅ Order confirmation email sent successfully');
+
+      // Check if auto-invoice is enabled in sales settings
+      const salesSettings = store.settings?.sales_settings || {};
+      if (salesSettings.auto_invoice_enabled) {
+        console.log('📧 Auto-invoice enabled, sending invoice email...');
+
+        try {
+          // Check if PDF attachment should be included
+          let attachments = [];
+          if (salesSettings.auto_invoice_pdf_enabled) {
+            console.log('📄 Generating PDF invoice...');
+            const pdfService = require('../services/pdf-service');
+
+            // Generate invoice PDF
+            const invoicePdf = await pdfService.generateInvoicePDF(
+              orderWithDetails,
+              orderWithDetails.Store,
+              orderWithDetails.OrderItems
+            );
+
+            attachments = [{
+              filename: pdfService.getInvoiceFilename(orderWithDetails),
+              content: invoicePdf.toString('base64'),
+              contentType: 'application/pdf'
+            }];
+
+            console.log('✅ PDF invoice generated successfully');
+          }
+
+          // Send invoice email
+          await emailService.sendTransactionalEmail(order.store_id, 'invoice_email', {
+            recipientEmail: order.customer_email,
+            customer: customer || {
+              first_name: firstName,
+              last_name: lastName,
+              email: order.customer_email
+            },
+            order: orderWithDetails.toJSON(),
+            store: orderWithDetails.Store,
+            attachments: attachments
+          });
+
+          console.log('✅ Invoice email sent successfully');
+        } catch (invoiceError) {
+          console.error('❌ Failed to send invoice email:', invoiceError);
+          // Don't fail the request if invoice email fails
+        }
+      }
     } catch (emailError) {
       console.error('❌ Failed to send confirmation email:', emailError);
       // Don't fail the request if email fails

@@ -215,6 +215,12 @@ class EmailService {
       case 'order_success_email':
         variables = await this.buildOrderSuccessVariables(data);
         break;
+      case 'invoice_email':
+        variables = await this.buildOrderSuccessVariables(data);
+        break;
+      case 'shipment_email':
+        variables = await this.buildOrderSuccessVariables(data);
+        break;
       default:
         // If no specific builder, use data as variables directly
         variables = data;
