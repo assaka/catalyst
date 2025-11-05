@@ -1795,11 +1795,7 @@ publicOrderRouter.post('/finalize-order', async (req, res) => {
     // Find the order by payment reference
     const order = await Order.findOne({
       where: {
-        [Op.or]: [
-          { payment_reference: session_id },
-          { stripe_session_id: session_id },
-          { stripe_payment_intent_id: session_id }
-        ]
+        payment_reference: session_id
       }
     });
 

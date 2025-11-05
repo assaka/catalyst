@@ -30,7 +30,7 @@ class FinalizePendingOrdersJob extends BaseJobHandler {
       where: {
         status: 'pending',
         payment_status: 'pending',
-        created_at: {
+        createdAt: {
           [Op.lt]: twoMinutesAgo // Only check orders older than 2 minutes
         },
         payment_reference: {
