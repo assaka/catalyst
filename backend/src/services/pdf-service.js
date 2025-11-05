@@ -1,0 +1,376 @@
+const htmlPdf = require('html-pdf-node');
+const path = require('path');
+
+/**
+ * PDF Generation Service
+ * Generates PDFs from HTML templates for invoices, shipments, etc.
+ */
+
+class PDFService {
+  constructor() {
+    this.options = {
+      format: 'A4',
+      printBackground: true,
+      margin: {
+        top: '20px',
+        right: '20px',
+        bottom: '20px',
+        left: '20px'
+      }
+    };
+  }
+
+  /**
+   * Generate PDF header HTML
+   */
+  generatePDFHeader(store, type = 'invoice') {
+    const logoUrl = store.logo_url || '';
+    const storeName = store.name || '';
+
+    return `
+      <div style="text-align: center; padding: 20px; border-bottom: 3px solid #4f46e5; margin-bottom: 30px;">
+        ${logoUrl ? `<img src="${logoUrl}" alt="${storeName}" style="max-width: 150px; max-height: 80px; margin-bottom: 10px;">` : ''}
+        <h1 style="color: #333; font-size: 28px; margin: 10px 0;">${storeName}</h1>
+        <p style="color: #666; font-size: 14px; margin: 5px 0;">
+          ${store.address_line1 || ''} ${store.address_line2 || ''}<br>
+          ${store.city || ''}, ${store.state || ''} ${store.postal_code || ''}<br>
+          ${store.contact_email || ''} | ${store.contact_phone || ''}
+        </p>
+      </div>
+    `;
+  }
+
+  /**
+   * Generate PDF footer HTML
+   */
+  generatePDFFooter(store) {
+    const currentYear = new Date().getFullYear();
+
+    return `
+      <div style="margin-top: 50px; padding-top: 20px; border-top: 2px solid #e5e7eb; text-align: center; color: #9ca3af; font-size: 12px;">
+        <p style="margin: 5px 0;">Thank you for your business!</p>
+        <p style="margin: 5px 0;">
+          ${store.name || ''} | ${store.website_url || store.contact_email || ''}
+        </p>
+        <p style="margin: 5px 0;">© ${currentYear} ${store.name || ''}. All rights reserved.</p>
+      </div>
+    `;
+  }
+
+  /**
+   * Generate Invoice PDF
+   */
+  async generateInvoicePDF(order, store, orderItems) {
+    const header = this.generatePDFHeader(store, 'invoice');
+    const footer = this.generatePDFFooter(store);
+
+    // Format billing and shipping addresses
+    const formatAddress = (addr) => {
+      if (!addr) return 'N/A';
+      return `
+        ${addr.full_name || addr.name || ''}<br>
+        ${addr.address_line1 || addr.address || ''}<br>
+        ${addr.address_line2 ? addr.address_line2 + '<br>' : ''}
+        ${addr.city || ''}, ${addr.state || ''} ${addr.postal_code || addr.zip || ''}<br>
+        ${addr.country || ''}
+      `;
+    };
+
+    // Generate items table
+    const itemsHTML = orderItems.map(item => `
+      <tr>
+        <td style="padding: 10px; border-bottom: 1px solid #e5e7eb;">${item.product_name || 'Product'}</td>
+        <td style="padding: 10px; border-bottom: 1px solid #e5e7eb; text-align: center;">${item.quantity || 1}</td>
+        <td style="padding: 10px; border-bottom: 1px solid #e5e7eb; text-align: right;">$${(item.price || 0).toFixed(2)}</td>
+        <td style="padding: 10px; border-bottom: 1px solid #e5e7eb; text-align: right;">$${((item.price || 0) * (item.quantity || 1)).toFixed(2)}</td>
+      </tr>
+    `).join('');
+
+    const html = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="UTF-8">
+        <style>
+          body {
+            font-family: 'Helvetica', 'Arial', sans-serif;
+            color: #333;
+            line-height: 1.6;
+            margin: 0;
+            padding: 20px;
+          }
+          .container {
+            max-width: 800px;
+            margin: 0 auto;
+          }
+          table {
+            width: 100%;
+            border-collapse: collapse;
+          }
+          .info-section {
+            background-color: #f9fafb;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 20px 0;
+          }
+          .total-section {
+            background-color: #eff6ff;
+            padding: 20px;
+            border-radius: 8px;
+            margin-top: 20px;
+          }
+        </style>
+      </head>
+      <body>
+        <div class="container">
+          ${header}
+
+          <div style="text-align: right; margin-bottom: 30px;">
+            <h2 style="color: #4f46e5; margin: 0;">INVOICE</h2>
+            <p style="font-size: 14px; color: #666; margin: 5px 0;">
+              <strong>Invoice #:</strong> ${order.order_number || 'N/A'}<br>
+              <strong>Date:</strong> ${new Date(order.created_at).toLocaleDateString()}<br>
+              <strong>Order #:</strong> ${order.order_number || 'N/A'}
+            </p>
+          </div>
+
+          <div style="display: flex; justify-content: space-between; margin-bottom: 30px;">
+            <div style="width: 48%;" class="info-section">
+              <h3 style="color: #4f46e5; margin-top: 0;">Bill To:</h3>
+              <p style="margin: 0; font-size: 14px;">
+                ${formatAddress(order.billing_address)}
+              </p>
+            </div>
+            <div style="width: 48%;" class="info-section">
+              <h3 style="color: #10b981; margin-top: 0;">Ship To:</h3>
+              <p style="margin: 0; font-size: 14px;">
+                ${formatAddress(order.shipping_address)}
+              </p>
+            </div>
+          </div>
+
+          <h3 style="color: #333; margin-bottom: 15px;">Order Items</h3>
+          <table>
+            <thead>
+              <tr style="background-color: #f3f4f6;">
+                <th style="padding: 12px; text-align: left; border-bottom: 2px solid #e5e7eb;">Item</th>
+                <th style="padding: 12px; text-align: center; border-bottom: 2px solid #e5e7eb;">Qty</th>
+                <th style="padding: 12px; text-align: right; border-bottom: 2px solid #e5e7eb;">Price</th>
+                <th style="padding: 12px; text-align: right; border-bottom: 2px solid #e5e7eb;">Total</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${itemsHTML}
+            </tbody>
+          </table>
+
+          <div class="total-section">
+            <table>
+              <tr>
+                <td style="padding: 5px 0; font-size: 14px;">Subtotal:</td>
+                <td style="padding: 5px 0; text-align: right; font-size: 14px;">$${(order.subtotal || 0).toFixed(2)}</td>
+              </tr>
+              <tr>
+                <td style="padding: 5px 0; font-size: 14px;">Shipping:</td>
+                <td style="padding: 5px 0; text-align: right; font-size: 14px;">$${(order.shipping_amount || 0).toFixed(2)}</td>
+              </tr>
+              <tr>
+                <td style="padding: 5px 0; font-size: 14px;">Tax:</td>
+                <td style="padding: 5px 0; text-align: right; font-size: 14px;">$${(order.tax_amount || 0).toFixed(2)}</td>
+              </tr>
+              ${order.discount_amount && parseFloat(order.discount_amount) > 0 ? `
+              <tr>
+                <td style="padding: 5px 0; font-size: 14px; color: #10b981;">Discount:</td>
+                <td style="padding: 5px 0; text-align: right; font-size: 14px; color: #10b981;">-$${(order.discount_amount || 0).toFixed(2)}</td>
+              </tr>
+              ` : ''}
+              <tr style="border-top: 2px solid #4f46e5;">
+                <td style="padding: 10px 0 0 0; font-size: 18px; font-weight: bold;">Total:</td>
+                <td style="padding: 10px 0 0 0; text-align: right; font-size: 18px; font-weight: bold; color: #4f46e5;">$${(order.total_amount || 0).toFixed(2)}</td>
+              </tr>
+            </table>
+          </div>
+
+          ${order.payment_method ? `
+          <div style="margin-top: 20px; padding: 15px; background-color: #f0fdf4; border-left: 4px solid #10b981; border-radius: 4px;">
+            <p style="margin: 0; font-size: 14px;">
+              <strong>Payment Method:</strong> ${order.payment_method}<br>
+              ${order.payment_status ? `<strong>Payment Status:</strong> ${order.payment_status.charAt(0).toUpperCase() + order.payment_status.slice(1)}` : ''}
+            </p>
+          </div>
+          ` : ''}
+
+          ${order.notes ? `
+          <div style="margin-top: 20px; padding: 15px; background-color: #fef3c7; border-radius: 4px;">
+            <p style="margin: 0; font-size: 14px;">
+              <strong>Order Notes:</strong><br>
+              ${order.notes}
+            </p>
+          </div>
+          ` : ''}
+
+          ${footer}
+        </div>
+      </body>
+      </html>
+    `;
+
+    const file = { content: html };
+    const pdfBuffer = await htmlPdf.generatePdf(file, this.options);
+    return pdfBuffer;
+  }
+
+  /**
+   * Generate Shipment PDF
+   */
+  async generateShipmentPDF(order, store, orderItems) {
+    const header = this.generatePDFHeader(store, 'shipment');
+    const footer = this.generatePDFFooter(store);
+
+    // Format shipping address
+    const formatAddress = (addr) => {
+      if (!addr) return 'N/A';
+      return `
+        ${addr.full_name || addr.name || ''}<br>
+        ${addr.address_line1 || addr.address || ''}<br>
+        ${addr.address_line2 ? addr.address_line2 + '<br>' : ''}
+        ${addr.city || ''}, ${addr.state || ''} ${addr.postal_code || addr.zip || ''}<br>
+        ${addr.country || ''}
+        ${addr.phone ? '<br>Phone: ' + addr.phone : ''}
+      `;
+    };
+
+    // Generate items table
+    const itemsHTML = orderItems.map(item => `
+      <tr>
+        <td style="padding: 10px; border-bottom: 1px solid #e5e7eb;">${item.product_name || 'Product'}</td>
+        <td style="padding: 10px; border-bottom: 1px solid #e5e7eb; text-align: center;">${item.quantity || 1}</td>
+        <td style="padding: 10px; border-bottom: 1px solid #e5e7eb;">${item.sku || 'N/A'}</td>
+      </tr>
+    `).join('');
+
+    const html = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="UTF-8">
+        <style>
+          body {
+            font-family: 'Helvetica', 'Arial', sans-serif;
+            color: #333;
+            line-height: 1.6;
+            margin: 0;
+            padding: 20px;
+          }
+          .container {
+            max-width: 800px;
+            margin: 0 auto;
+          }
+          table {
+            width: 100%;
+            border-collapse: collapse;
+          }
+          .info-section {
+            background-color: #f0fdf4;
+            padding: 20px;
+            border-radius: 8px;
+            margin: 20px 0;
+            border-left: 4px solid #10b981;
+          }
+          .tracking-section {
+            background-color: #eff6ff;
+            padding: 20px;
+            border-radius: 8px;
+            margin: 20px 0;
+            text-align: center;
+            border: 2px solid #3b82f6;
+          }
+        </style>
+      </head>
+      <body>
+        <div class="container">
+          ${header}
+
+          <div style="text-align: right; margin-bottom: 30px;">
+            <h2 style="color: #10b981; margin: 0;">SHIPMENT NOTICE</h2>
+            <p style="font-size: 14px; color: #666; margin: 5px 0;">
+              <strong>Order #:</strong> ${order.order_number || 'N/A'}<br>
+              <strong>Ship Date:</strong> ${order.shipped_at ? new Date(order.shipped_at).toLocaleDateString() : new Date().toLocaleDateString()}
+            </p>
+          </div>
+
+          ${order.tracking_number ? `
+          <div class="tracking-section">
+            <h3 style="color: #3b82f6; margin-top: 0;">Tracking Information</h3>
+            <p style="font-size: 24px; font-weight: bold; margin: 15px 0; font-family: monospace; letter-spacing: 2px;">
+              ${order.tracking_number}
+            </p>
+            <p style="font-size: 14px; color: #666;">
+              <strong>Shipping Method:</strong> ${order.shipping_method || 'Standard Shipping'}
+            </p>
+          </div>
+          ` : ''}
+
+          <div class="info-section">
+            <h3 style="color: #10b981; margin-top: 0;">Shipping Address</h3>
+            <p style="margin: 0; font-size: 16px;">
+              ${formatAddress(order.shipping_address)}
+            </p>
+          </div>
+
+          ${order.delivery_instructions ? `
+          <div style="padding: 15px; background-color: #fef3c7; border-radius: 8px; margin: 20px 0;">
+            <h4 style="margin-top: 0; color: #92400e;">Delivery Instructions</h4>
+            <p style="margin: 0; font-size: 14px;">
+              ${order.delivery_instructions}
+            </p>
+          </div>
+          ` : ''}
+
+          <h3 style="color: #333; margin-bottom: 15px; margin-top: 30px;">Package Contents</h3>
+          <table>
+            <thead>
+              <tr style="background-color: #f3f4f6;">
+                <th style="padding: 12px; text-align: left; border-bottom: 2px solid #e5e7eb;">Item</th>
+                <th style="padding: 12px; text-align: center; border-bottom: 2px solid #e5e7eb;">Qty</th>
+                <th style="padding: 12px; text-align: left; border-bottom: 2px solid #e5e7eb;">SKU</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${itemsHTML}
+            </tbody>
+          </table>
+
+          <div style="margin-top: 30px; padding: 20px; background-color: #f0fdf4; border-radius: 8px; text-align: center;">
+            <p style="font-size: 16px; color: #065f46; margin: 0; font-weight: bold;">
+              Total Items: ${orderItems.reduce((sum, item) => sum + (item.quantity || 0), 0)}
+            </p>
+          </div>
+
+          ${footer}
+        </div>
+      </body>
+      </html>
+    `;
+
+    const file = { content: html };
+    const pdfBuffer = await htmlPdf.generatePdf(file, this.options);
+    return pdfBuffer;
+  }
+
+  /**
+   * Get PDF filename for invoice
+   */
+  getInvoiceFilename(order) {
+    return `invoice-${order.order_number}.pdf`;
+  }
+
+  /**
+   * Get PDF filename for shipment
+   */
+  getShipmentFilename(order) {
+    return `shipment-${order.order_number}.pdf`;
+  }
+}
+
+module.exports = new PDFService();
