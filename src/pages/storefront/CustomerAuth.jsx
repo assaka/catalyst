@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { CustomerAuth } from "@/api/storefront-entities";
+import { CustomerAuth as CustomerAuthAPI } from "@/api/storefront-entities";
 import storefrontApiClient from "@/api/storefront-client";
 import { createPublicUrl } from "@/utils/urlUtils";
 import { useStore } from "@/components/storefront/StoreProvider";
@@ -85,8 +85,8 @@ export default function CustomerAuth() {
   const checkAuthStatus = async () => {
     try {
       // Check if customer is authenticated using the proper API
-      if (CustomerAuth.isAuthenticated()) {
-        const userData = await CustomerAuth.me();
+      if (CustomerAuthAPI.isAuthenticated()) {
+        const userData = await CustomerAuthAPI.me();
         if (userData && userData.role === 'customer') {
           // User is already authenticated, redirect to dashboard
           const accountUrl = await getCustomerAccountUrl();
@@ -136,20 +136,20 @@ export default function CustomerAuth() {
           return;
         }
 
-        // CustomerAuth.login automatically stores the token with store context
-        const response = await CustomerAuth.login(
+        // CustomerAuthAPI.login automatically stores the token with store context
+        const response = await CustomerAuthAPI.login(
           formData.email,
           formData.password,
           formData.rememberMe,
           storeId // Pass store_id to validate customer belongs to this store
         );
 
-        // CustomerAuth returns { success: true, data: { token, user } }
+        // CustomerAuthAPI returns { success: true, data: { token, user } }
         if (response.success) {
           // Clear logged out flag
           localStorage.removeItem('user_logged_out');
 
-          // Token is already stored by CustomerAuth.login()
+          // Token is already stored by CustomerAuthAPI.login()
           // Navigate to customer account
           const accountUrl = await getCustomerAccountUrl();
           navigate(accountUrl);
@@ -182,10 +182,10 @@ export default function CustomerAuth() {
           send_welcome_email: true // Send welcome email after registration
         };
 
-        // CustomerAuth.register automatically stores the token with store context
-        const response = await CustomerAuth.register(registerData);
+        // CustomerAuthAPI.register automatically stores the token with store context
+        const response = await CustomerAuthAPI.register(registerData);
 
-        // CustomerAuth returns { success: true, data: { token, user } }
+        // CustomerAuthAPI returns { success: true, data: { token, user } }
         if (response.success) {
           // Set success message for welcome email
           setSuccess("Registration successful! A welcome email has been sent to your email address.");
@@ -193,7 +193,7 @@ export default function CustomerAuth() {
           // Clear logged out flag
           localStorage.removeItem('user_logged_out');
 
-          // Token is already stored by CustomerAuth.register()
+          // Token is already stored by CustomerAuthAPI.register()
           // Wait a moment to show the success message before redirecting
           setTimeout(async () => {
             const accountUrl = await getCustomerAccountUrl();
