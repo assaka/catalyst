@@ -738,7 +738,7 @@ router.post('/create-checkout', async (req, res) => {
         console.log(`🚫 Blacklisted email blocked: ${customer_email}`);
         const { getTranslation } = require('../utils/translationHelper');
         const language = req.headers['x-language'] || 'en';
-        const message = await getTranslation('error.blacklist.email', language);
+        const message = await getTranslation('error.blacklist.checkout', language);
         return res.status(403).json({
           success: false,
           message
@@ -758,7 +758,7 @@ router.post('/create-checkout', async (req, res) => {
         console.log(`🚫 Blacklisted customer blocked: ${customer_email}`);
         const { getTranslation } = require('../utils/translationHelper');
         const language = req.headers['x-language'] || 'en';
-        const message = await getTranslation('error.blacklist.email', language);
+        const message = await getTranslation('error.blacklist.checkout', language);
         return res.status(403).json({
           success: false,
           message
