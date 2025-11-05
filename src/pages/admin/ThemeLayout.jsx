@@ -156,6 +156,7 @@ export default function ThemeLayout() {
 
     const loadStepTranslations = async () => {
         try {
+            console.log('🔍 Loading checkout step translations...');
             const checkoutKeys = ['checkout.step_2step_1', 'checkout.step_2step_2',
                                  'checkout.step_3step_1', 'checkout.step_3step_2', 'checkout.step_3step_3'];
 
@@ -167,30 +168,45 @@ export default function ThemeLayout() {
             for (const lang of languages) {
                 try {
                     const langResponse = await api.get(`/translations/ui-labels?lang=${lang}`);
+                    console.log(`📥 Response for ${lang}:`, langResponse);
+
                     if (langResponse && langResponse.data && langResponse.data.labels) {
                         const labels = langResponse.data.labels;
+                        console.log(`📋 Labels for ${lang}:`, labels);
+
                         const langTranslations = {};
 
-                        // Extract checkout step translations
+                        // Extract checkout step translations - handle nested structure
                         checkoutKeys.forEach(key => {
                             const shortKey = key.replace('checkout.', '');
-                            if (labels[key]) {
-                                langTranslations[shortKey] = labels[key];
+                            // Handle both flat and nested structures
+                            let value = labels[key];
+
+                            // If labels is nested like { checkout: { step_2step_1: 'value' } }
+                            if (!value && labels.checkout) {
+                                value = labels.checkout[shortKey];
+                            }
+
+                            if (value) {
+                                langTranslations[shortKey] = value;
+                                console.log(`  ✓ Found ${shortKey} = "${value}"`);
                             }
                         });
 
                         if (Object.keys(langTranslations).length > 0) {
                             allTranslations[lang] = langTranslations;
+                            console.log(`✅ Loaded ${Object.keys(langTranslations).length} translations for ${lang}`);
                         }
                     }
                 } catch (err) {
-                    console.log(`No translations for ${lang}`);
+                    console.log(`⚠️  No translations for ${lang}:`, err.message);
                 }
             }
 
+            console.log('📦 All translations loaded:', allTranslations);
             setStepTranslations(allTranslations);
         } catch (error) {
-            console.error('Error loading step translations:', error);
+            console.error('❌ Error loading step translations:', error);
         }
     };
 
