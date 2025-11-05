@@ -198,33 +198,42 @@ export default function ThemeLayout() {
     useEffect(() => {
         if (!store?.settings) return;
 
-        // When store settings change, update English translations to match
+        // When store settings change, update English translations to match (only if different)
         const updatedTranslations = { ...stepTranslations };
 
         if (!updatedTranslations.en) {
             updatedTranslations.en = {};
         }
 
+        let hasChanges = false;
+
         // Sync 2-step names
-        if (store.settings.checkout_2step_step1_name) {
+        if (store.settings.checkout_2step_step1_name && store.settings.checkout_2step_step1_name !== updatedTranslations.en.step_2step_1) {
             updatedTranslations.en.step_2step_1 = store.settings.checkout_2step_step1_name;
+            hasChanges = true;
         }
-        if (store.settings.checkout_2step_step2_name) {
+        if (store.settings.checkout_2step_step2_name && store.settings.checkout_2step_step2_name !== updatedTranslations.en.step_2step_2) {
             updatedTranslations.en.step_2step_2 = store.settings.checkout_2step_step2_name;
+            hasChanges = true;
         }
 
         // Sync 3-step names
-        if (store.settings.checkout_3step_step1_name) {
+        if (store.settings.checkout_3step_step1_name && store.settings.checkout_3step_step1_name !== updatedTranslations.en.step_3step_1) {
             updatedTranslations.en.step_3step_1 = store.settings.checkout_3step_step1_name;
+            hasChanges = true;
         }
-        if (store.settings.checkout_3step_step2_name) {
+        if (store.settings.checkout_3step_step2_name && store.settings.checkout_3step_step2_name !== updatedTranslations.en.step_3step_2) {
             updatedTranslations.en.step_3step_2 = store.settings.checkout_3step_step2_name;
+            hasChanges = true;
         }
-        if (store.settings.checkout_3step_step3_name) {
+        if (store.settings.checkout_3step_step3_name && store.settings.checkout_3step_step3_name !== updatedTranslations.en.step_3step_3) {
             updatedTranslations.en.step_3step_3 = store.settings.checkout_3step_step3_name;
+            hasChanges = true;
         }
 
-        setStepTranslations(updatedTranslations);
+        if (hasChanges) {
+            setStepTranslations(updatedTranslations);
+        }
     }, [store?.settings?.checkout_2step_step1_name, store?.settings?.checkout_2step_step2_name,
         store?.settings?.checkout_3step_step1_name, store?.settings?.checkout_3step_step2_name,
         store?.settings?.checkout_3step_step3_name]);
@@ -272,23 +281,36 @@ export default function ThemeLayout() {
     const loadStore = async () => {
         try {
             const storeId = getSelectedStoreId();
-            
+
             // Use selectedStore.id as fallback if getSelectedStoreId() fails
             const actualStoreId = (storeId && storeId !== 'undefined') ? storeId : selectedStore?.id;
-            
+
             if (!actualStoreId || actualStoreId === 'undefined') {
                 setLoading(false);
                 return;
             }
-            
+
             // The selectedStore from context doesn't have settings, so we need to fetch the full store data
             const fullStoreResponse = await Store.findById(actualStoreId);
-            
+
             // Store.findById returns an array, so we need to get the first item
             const fullStoreResponse_normalized = Array.isArray(fullStoreResponse) ? fullStoreResponse[0] : fullStoreResponse;
 
             // Handle nested data structure - settings are in data.settings, not settings
             const fullStore = fullStoreResponse_normalized?.data || fullStoreResponse_normalized;
+
+            // Initialize step translations with defaults from database or store settings
+            const initialTranslations = { ...stepTranslations };
+            if (!initialTranslations.en) {
+                initialTranslations.en = {
+                    step_2step_1: fullStore?.settings?.checkout_2step_step1_name || 'Information',
+                    step_2step_2: fullStore?.settings?.checkout_2step_step2_name || 'Payment',
+                    step_3step_1: fullStore?.settings?.checkout_3step_step1_name || 'Information',
+                    step_3step_2: fullStore?.settings?.checkout_3step_step2_name || 'Shipping',
+                    step_3step_3: fullStore?.settings?.checkout_3step_step3_name || 'Payment'
+                };
+                setStepTranslations(initialTranslations);
+            }
 
             // Handle database response structure
 
