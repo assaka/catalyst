@@ -37,7 +37,7 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion";
-import { Tag, CalendarIcon, EyeIcon, EyeOffIcon, User as UserIcon, LogOut, UserCircle } from "lucide-react";
+import { Tag, CalendarIcon, Eye, EyeOff, EyeIcon, EyeOffIcon, User as UserIcon, LogOut, UserCircle } from "lucide-react";
 import { Auth as AuthService } from "@/api/entities";
 import { CustomerAuth } from "@/api/storefront-entities";
 import CmsBlockRenderer from "@/components/storefront/CmsBlockRenderer";
@@ -2536,6 +2536,122 @@ export default function Checkout() {
       </div>
       <CmsBlockRenderer position="checkout_below_form" />
       <AlertComponent />
+
+      {/* Login Modal for Guest Checkout */}
+      <Dialog open={showLoginModal} onOpenChange={setShowLoginModal}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>{t('common.login', 'Login')}</DialogTitle>
+            <DialogDescription>
+              {t('checkout.login_to_continue', 'Login to your account for faster checkout')}
+            </DialogDescription>
+          </DialogHeader>
+
+          <form onSubmit={handleLoginSubmit} className="space-y-4">
+            {loginError && (
+              <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded">
+                {loginError}
+              </div>
+            )}
+
+            <div>
+              <Label htmlFor="login-email">{t('common.email', 'Email')}</Label>
+              <Input
+                id="login-email"
+                type="email"
+                value={loginFormData.email}
+                onChange={(e) => setLoginFormData({ ...loginFormData, email: e.target.value })}
+                required
+                disabled={loginLoading}
+                className="mt-1"
+              />
+            </div>
+
+            <div>
+              <Label htmlFor="login-password">{t('common.password', 'Password')}</Label>
+              <div className="relative">
+                <Input
+                  id="login-password"
+                  type={showPassword ? 'text' : 'password'}
+                  value={loginFormData.password}
+                  onChange={(e) => setLoginFormData({ ...loginFormData, password: e.target.value })}
+                  required
+                  disabled={loginLoading}
+                  className="mt-1 pr-10"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700"
+                  tabIndex={-1}
+                >
+                  {showPassword ? (
+                    <EyeOff className="w-4 h-4" />
+                  ) : (
+                    <Eye className="w-4 h-4" />
+                  )}
+                </button>
+              </div>
+            </div>
+
+            <div className="flex items-center justify-between">
+              <label className="flex items-center space-x-2 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={loginFormData.rememberMe}
+                  onChange={(e) => setLoginFormData({ ...loginFormData, rememberMe: e.target.checked })}
+                  className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                />
+                <span className="text-sm text-gray-700">{t('common.remember_me', 'Remember me')}</span>
+              </label>
+
+              <button
+                type="button"
+                onClick={() => {
+                  setShowLoginModal(false);
+                  navigate(createPublicUrl(store?.slug, 'CUSTOMER_FORGOT_PASSWORD'));
+                }}
+                className="text-sm text-blue-600 hover:text-blue-700"
+              >
+                {t('common.forgot_password', 'Forgot password?')}
+              </button>
+            </div>
+
+            <div className="flex gap-3 pt-4">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setShowLoginModal(false)}
+                disabled={loginLoading}
+                className="flex-1"
+              >
+                {t('common.cancel', 'Cancel')}
+              </Button>
+              <Button
+                type="submit"
+                disabled={loginLoading}
+                className="flex-1"
+              >
+                {loginLoading ? t('common.logging_in', 'Logging in...') : t('common.login', 'Login')}
+              </Button>
+            </div>
+
+            <div className="text-center text-sm text-gray-600">
+              {t('checkout.dont_have_account', "Don't have an account?")}{' '}
+              <button
+                type="button"
+                onClick={() => {
+                  setShowLoginModal(false);
+                  navigate(createPublicUrl(store?.slug, 'CUSTOMER_REGISTER'));
+                }}
+                className="text-blue-600 hover:text-blue-700 font-medium"
+              >
+                {t('common.register', 'Register')}
+              </button>
+            </div>
+          </form>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
