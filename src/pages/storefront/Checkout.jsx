@@ -2549,7 +2549,7 @@ export default function Checkout() {
             </DialogDescription>
           </DialogHeader>
 
-          <form onSubmit={handleLoginSubmit} className="space-y-4">
+          <form onSubmit={handleLogin} className="space-y-4">
             {loginError && (
               <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded">
                 {loginError}
