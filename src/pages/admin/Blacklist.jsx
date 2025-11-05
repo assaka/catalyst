@@ -11,10 +11,11 @@ import { Switch } from '@/components/ui/switch';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Shield, Search, Plus, Trash2, Globe, Mail, MonitorSmartphone } from 'lucide-react';
 import { useAlertTypes } from '@/hooks/useAlert';
+import { toast } from 'sonner';
 
 export default function Blacklist() {
     const { selectedStore, getSelectedStoreId } = useStoreSelection();
-    const { showError, showSuccess, AlertComponent } = useAlertTypes();
+    const { showError, showSuccess, showConfirm, AlertComponent } = useAlertTypes();
     const [loading, setLoading] = useState(true);
     const [activeTab, setActiveTab] = useState('ips');
 
@@ -140,7 +141,7 @@ export default function Blacklist() {
 
             const data = await response.json();
             if (data.success) {
-                showSuccess('Blacklist settings updated successfully');
+                toast.success('Blacklist settings updated successfully');
             } else {
                 showError(data.message || 'Failed to update settings');
             }
@@ -171,7 +172,7 @@ export default function Blacklist() {
 
             const data = await response.json();
             if (data.success) {
-                showSuccess('IP address blacklisted successfully');
+                toast.success('IP address blacklisted successfully');
                 setIsAddIPModalOpen(false);
                 setNewIP({ ip_address: '', reason: '' });
                 loadIPs();
@@ -185,6 +186,14 @@ export default function Blacklist() {
     };
 
     const handleDeleteIP = async (id) => {
+        const confirmed = await showConfirm(
+            'Are you sure you want to remove this IP from the blacklist?',
+            'Remove IP from Blacklist'
+        );
+        if (!confirmed) {
+            return;
+        }
+
         try {
             const storeId = getSelectedStoreId();
             const response = await fetch(`/api/blacklist/ips/${id}?store_id=${storeId}`, {
@@ -196,7 +205,7 @@ export default function Blacklist() {
 
             const data = await response.json();
             if (data.success) {
-                showSuccess('IP removed from blacklist');
+                toast.success('IP removed from blacklist');
                 loadIPs();
             } else {
                 showError(data.message || 'Failed to remove IP');
@@ -226,7 +235,7 @@ export default function Blacklist() {
 
             const data = await response.json();
             if (data.success) {
-                showSuccess('Country blacklisted successfully');
+                toast.success('Country blacklisted successfully');
                 setIsAddCountryModalOpen(false);
                 setNewCountry({ country_code: '', country_name: '', reason: '' });
                 loadCountries();
@@ -240,6 +249,14 @@ export default function Blacklist() {
     };
 
     const handleDeleteCountry = async (id) => {
+        const confirmed = await showConfirm(
+            'Are you sure you want to remove this country from the blacklist?',
+            'Remove Country from Blacklist'
+        );
+        if (!confirmed) {
+            return;
+        }
+
         try {
             const storeId = getSelectedStoreId();
             const response = await fetch(`/api/blacklist/countries/${id}?store_id=${storeId}`, {
@@ -251,7 +268,7 @@ export default function Blacklist() {
 
             const data = await response.json();
             if (data.success) {
-                showSuccess('Country removed from blacklist');
+                toast.success('Country removed from blacklist');
                 loadCountries();
             } else {
                 showError(data.message || 'Failed to remove country');
@@ -281,7 +298,7 @@ export default function Blacklist() {
 
             const data = await response.json();
             if (data.success) {
-                showSuccess('Email blacklisted successfully');
+                toast.success('Email blacklisted successfully');
                 setIsAddEmailModalOpen(false);
                 setNewEmail({ email: '', reason: '' });
                 loadEmails();
@@ -295,6 +312,14 @@ export default function Blacklist() {
     };
 
     const handleDeleteEmail = async (id) => {
+        const confirmed = await showConfirm(
+            'Are you sure you want to remove this email from the blacklist?',
+            'Remove Email from Blacklist'
+        );
+        if (!confirmed) {
+            return;
+        }
+
         try {
             const storeId = getSelectedStoreId();
             const response = await fetch(`/api/blacklist/emails/${id}?store_id=${storeId}`, {
@@ -306,7 +331,7 @@ export default function Blacklist() {
 
             const data = await response.json();
             if (data.success) {
-                showSuccess('Email removed from blacklist');
+                toast.success('Email removed from blacklist');
                 loadEmails();
             } else {
                 showError(data.message || 'Failed to remove email');
