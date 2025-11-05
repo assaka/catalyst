@@ -51,7 +51,7 @@ import { useTranslation } from '@/contexts/TranslationContext';
 export default function Checkout() {
   const { t, getEntityTranslation, currentLanguage } = useTranslation();
   const { store, settings, loading: storeLoading, selectedCountry, setSelectedCountry } = useStore();
-  const { showError, AlertComponent } = useAlertTypes();
+  const { showError, showSuccess, AlertComponent } = useAlertTypes();
 
   // Get currency symbol from settings
   // Currency symbol comes from StoreProvider which derives it from store.currency → getCurrencySymbol()
@@ -942,6 +942,9 @@ export default function Checkout() {
           // The cart service will automatically merge guest cart with user cart
           setShowLoginModal(false);
           await loadCheckoutData();
+
+          // Show success message
+          showSuccess(t('checkout.login_success', 'Successfully logged in! Your cart has been updated.'), t('common.success', 'Success'));
         }
       } else {
         setLoginError('Invalid email or password');
@@ -969,8 +972,12 @@ export default function Checkout() {
       setUserAddresses([]);
       // Reload to refresh cart and state
       await loadCheckoutData();
+
+      // Show success message
+      showSuccess(t('checkout.logout_success', 'Successfully logged out. You can continue as a guest.'), t('common.success', 'Success'));
     } catch (error) {
       console.error('Logout failed:', error);
+      showError(t('checkout.logout_error', 'Failed to log out. Please try again.'), t('common.error', 'Error'));
     }
   };
 
