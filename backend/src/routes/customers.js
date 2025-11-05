@@ -350,6 +350,43 @@ router.put('/:id/blacklist', storeOwnerOnly, async (req, res) => {
       blacklisted_at: is_blacklisted ? new Date() : null
     });
 
+    // Also add/remove email from blacklist_emails table
+    const { BlacklistEmail } = require('../models');
+
+    if (is_blacklisted && customer.email) {
+      // Add email to blacklist
+      try {
+        await BlacklistEmail.findOrCreate({
+          where: {
+            store_id: store_id,
+            email: customer.email.toLowerCase()
+          },
+          defaults: {
+            store_id: store_id,
+            email: customer.email.toLowerCase(),
+            reason: blacklist_reason || 'Customer blacklisted',
+            created_by: req.user?.id
+          }
+        });
+        console.log('✅ Email added to blacklist_emails table');
+      } catch (emailError) {
+        console.warn('Could not add email to blacklist:', emailError);
+      }
+    } else if (!is_blacklisted && customer.email) {
+      // Remove email from blacklist
+      try {
+        await BlacklistEmail.destroy({
+          where: {
+            store_id: store_id,
+            email: customer.email.toLowerCase()
+          }
+        });
+        console.log('✅ Email removed from blacklist_emails table');
+      } catch (emailError) {
+        console.warn('Could not remove email from blacklist:', emailError);
+      }
+    }
+
     // Reload to get fresh data
     await customer.reload();
     console.log('After update:', { id: customer.id, is_blacklisted: customer.is_blacklisted });
