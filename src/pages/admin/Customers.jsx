@@ -12,13 +12,14 @@ import { Textarea } from '@/components/ui/textarea';
 import { Switch } from '@/components/ui/switch';
 import { Users, Search, Download, Edit, Trash2, UserPlus, Eye, Ban, CheckCircle, Shield } from 'lucide-react';
 import { useAlertTypes } from '@/hooks/useAlert';
-import { toast } from 'sonner';
+import FlashMessage from '@/components/storefront/FlashMessage';
 
 export default function Customers() {
     const { selectedStore, getSelectedStoreId } = useStoreSelection();
     const { showError, showSuccess, showConfirm, AlertComponent } = useAlertTypes();
     const [customers, setCustomers] = useState([]);
     const [loading, setLoading] = useState(true);
+    const [flashMessage, setFlashMessage] = useState(null);
     const [searchTerm, setSearchTerm] = useState('');
     const [editingCustomer, setEditingCustomer] = useState(null);
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
@@ -150,7 +151,7 @@ export default function Customers() {
         try {
             await Customer.delete(customerId);
             setCustomers(customers.filter(c => c.id !== customerId));
-            toast.success('Customer deleted successfully');
+            setFlashMessage({ type: 'success', message: 'Customer deleted successfully' });
         } catch (error) {
             console.error('Error deleting customer:', error);
             showError('Failed to delete customer. Please try again.');
@@ -225,7 +226,10 @@ export default function Customers() {
             ));
 
             // Show success message
-            toast.success(willBlacklist ? 'Customer blacklisted successfully' : 'Customer removed from blacklist');
+            setFlashMessage({
+                type: 'success',
+                message: willBlacklist ? 'Customer blacklisted successfully' : 'Customer removed from blacklist'
+            });
 
             // Close modal if opened from table
             if (blacklistingCustomer) {
@@ -277,7 +281,7 @@ export default function Customers() {
                             ? { ...c, is_blacklisted: false }
                             : c
                     ));
-                    toast.success('Email removed from blacklist');
+                    setFlashMessage({ type: 'success', message: 'Email removed from blacklist' });
 
                     // Close modal if opened from table
                     if (blacklistingCustomer) {
@@ -309,7 +313,7 @@ export default function Customers() {
                             ? { ...c, is_blacklisted: true }
                             : c
                     ));
-                    toast.success('Email added to blacklist');
+                    setFlashMessage({ type: 'success', message: 'Email added to blacklist' });
 
                     // Close modal if opened from table
                     if (blacklistingCustomer) {
@@ -864,6 +868,7 @@ export default function Customers() {
             </Dialog>
 
             <AlertComponent />
+            <FlashMessage message={flashMessage} onClose={() => setFlashMessage(null)} />
         </div>
     );
 }

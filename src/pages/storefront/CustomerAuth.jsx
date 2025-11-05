@@ -232,7 +232,9 @@ export default function CustomerAuth() {
       }
     } catch (error) {
       console.error('Auth error:', error);
-      setError(error.message || `${isLogin ? 'Login' : 'Registration'} failed`);
+      // Use backend error message if available
+      const errorMessage = error.response?.data?.message || error.data?.message || error.message || `${isLogin ? 'Login' : 'Registration'} failed`;
+      setError(errorMessage);
     } finally {
       setAuthLoading(false);
     }

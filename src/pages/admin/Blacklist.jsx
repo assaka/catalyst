@@ -11,13 +11,14 @@ import { Switch } from '@/components/ui/switch';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Shield, Search, Plus, Trash2, Globe, Mail, MonitorSmartphone } from 'lucide-react';
 import { useAlertTypes } from '@/hooks/useAlert';
-import { toast } from 'sonner';
+import FlashMessage from '@/components/storefront/FlashMessage';
 
 export default function Blacklist() {
     const { selectedStore, getSelectedStoreId } = useStoreSelection();
     const { showError, showSuccess, showConfirm, AlertComponent } = useAlertTypes();
     const [loading, setLoading] = useState(true);
     const [activeTab, setActiveTab] = useState('ips');
+    const [flashMessage, setFlashMessage] = useState(null);
 
     // Settings state
     const [settings, setSettings] = useState({
@@ -141,7 +142,7 @@ export default function Blacklist() {
 
             const data = await response.json();
             if (data.success) {
-                toast.success('Blacklist settings updated successfully');
+                setFlashMessage({ type: 'success', message: 'Blacklist settings updated successfully' });
             } else {
                 showError(data.message || 'Failed to update settings');
             }
@@ -172,7 +173,7 @@ export default function Blacklist() {
 
             const data = await response.json();
             if (data.success) {
-                toast.success('IP address blacklisted successfully');
+                setFlashMessage({ type: 'success', message: 'IP address blacklisted successfully' });
                 setIsAddIPModalOpen(false);
                 setNewIP({ ip_address: '', reason: '' });
                 loadIPs();
@@ -205,7 +206,7 @@ export default function Blacklist() {
 
             const data = await response.json();
             if (data.success) {
-                toast.success('IP removed from blacklist');
+                setFlashMessage({ type: 'success', message: 'IP removed from blacklist' });
                 loadIPs();
             } else {
                 showError(data.message || 'Failed to remove IP');
@@ -235,7 +236,7 @@ export default function Blacklist() {
 
             const data = await response.json();
             if (data.success) {
-                toast.success('Country blacklisted successfully');
+                setFlashMessage({ type: 'success', message: 'Country blacklisted successfully' });
                 setIsAddCountryModalOpen(false);
                 setNewCountry({ country_code: '', country_name: '', reason: '' });
                 loadCountries();
@@ -268,7 +269,7 @@ export default function Blacklist() {
 
             const data = await response.json();
             if (data.success) {
-                toast.success('Country removed from blacklist');
+                setFlashMessage({ type: 'success', message: 'Country removed from blacklist' });
                 loadCountries();
             } else {
                 showError(data.message || 'Failed to remove country');
@@ -298,7 +299,7 @@ export default function Blacklist() {
 
             const data = await response.json();
             if (data.success) {
-                toast.success('Email blacklisted successfully');
+                setFlashMessage({ type: 'success', message: 'Email blacklisted successfully' });
                 setIsAddEmailModalOpen(false);
                 setNewEmail({ email: '', reason: '' });
                 loadEmails();
@@ -331,7 +332,7 @@ export default function Blacklist() {
 
             const data = await response.json();
             if (data.success) {
-                toast.success('Email removed from blacklist');
+                setFlashMessage({ type: 'success', message: 'Email removed from blacklist' });
                 loadEmails();
             } else {
                 showError(data.message || 'Failed to remove email');
@@ -745,6 +746,7 @@ export default function Blacklist() {
             </Dialog>
 
             <AlertComponent />
+            <FlashMessage message={flashMessage} onClose={() => setFlashMessage(null)} />
         </div>
     );
 }
