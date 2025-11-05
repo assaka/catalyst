@@ -1129,17 +1129,25 @@ router.post('/:id/send-invoice', authMiddleware, async (req, res) => {
 
     // Prepare attachments if PDF is requested
     let attachments = [];
+    let pdfGeneratedSuccessfully = false;
     if (withPdf) {
-      const pdfService = require('../services/pdf-service');
-      const invoicePdf = await pdfService.generateInvoicePDF(order, order.Store, order.OrderItems);
-      attachments = [{
-        filename: pdfService.getInvoiceFilename(order),
-        content: invoicePdf.toString('base64'),
-        contentType: 'application/pdf'
-      }];
+      try {
+        const pdfService = require('../services/pdf-service');
+        const invoicePdf = await pdfService.generateInvoicePDF(order, order.Store, order.OrderItems);
+        attachments = [{
+          filename: pdfService.getInvoiceFilename(order),
+          content: invoicePdf.toString('base64'),
+          contentType: 'application/pdf'
+        }];
+        pdfGeneratedSuccessfully = true;
+        console.log('✅ Invoice PDF generated successfully');
+      } catch (pdfError) {
+        console.error('❌ PDF generation failed, sending invoice without PDF:', pdfError.message);
+        // Continue without PDF - invoice email can still be sent
+      }
     }
 
-    // Send invoice email
+    // Send invoice email (with or without PDF attachment)
     await emailService.sendTransactionalEmail(order.store_id, 'invoice_email', {
       recipientEmail: order.customer_email,
       customer: customer || { first_name: firstName, last_name: lastName, email: order.customer_email },
@@ -1152,7 +1160,7 @@ router.post('/:id/send-invoice', authMiddleware, async (req, res) => {
     if (invoice) {
       await invoice.update({
         sent_at: new Date(),
-        pdf_generated: withPdf,
+        pdf_generated: pdfGeneratedSuccessfully,
         email_status: 'sent'
       });
     } else {
@@ -1160,7 +1168,7 @@ router.post('/:id/send-invoice', authMiddleware, async (req, res) => {
         order_id: id,
         store_id: order.store_id,
         customer_email: order.customer_email,
-        pdf_generated: withPdf,
+        pdf_generated: pdfGeneratedSuccessfully,
         email_status: 'sent'
       });
     }
@@ -1229,7 +1237,7 @@ router.post('/:id/send-shipment', authMiddleware, async (req, res) => {
     let shipment = await Shipment.findOne({ where: { order_id: id } });
 
     // Send shipment notification email
-    await emailService.sendTransactionalEmail(order.store_id, 'shipment_notification', {
+    await emailService.sendTransactionalEmail(order.store_id, 'shipment_email', {
       recipientEmail: order.customer_email,
       customer: customer || { first_name: firstName, last_name: lastName, email: order.customer_email },
       order: order.toJSON(),
