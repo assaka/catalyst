@@ -1,9 +1,12 @@
 const htmlPdf = require('html-pdf-node');
 const path = require('path');
+const { PdfTemplate, EmailTemplate } = require('../models');
 
 /**
  * PDF Generation Service
  * Generates PDFs from HTML templates for invoices, shipments, etc.
+ * Supports {{email_header}} and {{email_footer}} placeholders for reusable layouts
+ * (same templates used for both emails and PDFs for consistency)
  */
 
 class PDFService {
@@ -17,6 +20,168 @@ class PDFService {
         bottom: '20px',
         left: '20px'
       }
+    };
+  }
+
+  /**
+   * Process email_header and email_footer placeholders in PDF templates
+   * Uses the same email header/footer templates for consistent branding
+   * @param {string} storeId - Store ID
+   * @param {string} content - PDF HTML content with placeholders
+   * @returns {Promise<string>} Content with header/footer replaced
+   */
+  async processHeaderFooter(storeId, content) {
+    let processedContent = content;
+
+    try {
+      // Get header template if needed (from email_templates table)
+      if (content.includes('{{email_header}}')) {
+        const headerTemplate = await EmailTemplate.findOne({
+          where: { store_id: storeId, identifier: 'email_header', is_active: true }
+        });
+
+        if (headerTemplate) {
+          processedContent = processedContent.replace('{{email_header}}', headerTemplate.html_content || '');
+        } else {
+          // If no header template found, just remove the placeholder
+          processedContent = processedContent.replace('{{email_header}}', '');
+        }
+      }
+
+      // Get footer template if needed (from email_templates table)
+      if (content.includes('{{email_footer}}')) {
+        const footerTemplate = await EmailTemplate.findOne({
+          where: { store_id: storeId, identifier: 'email_footer', is_active: true }
+        });
+
+        if (footerTemplate) {
+          processedContent = processedContent.replace('{{email_footer}}', footerTemplate.html_content || '');
+        } else {
+          // If no footer template found, just remove the placeholder
+          processedContent = processedContent.replace('{{email_footer}}', '');
+        }
+      }
+
+      return processedContent;
+    } catch (error) {
+      console.error('Error processing header/footer in PDF:', error);
+      // Return content as-is if processing fails
+      return content;
+    }
+  }
+
+  /**
+   * Simple template rendering (replaces {{variable}} with values)
+   * @param {string} template - Template string with {{placeholders}}
+   * @param {Object} variables - Key-value pairs for replacement
+   * @returns {string} Rendered template
+   */
+  renderTemplate(template, variables) {
+    let rendered = template;
+    for (const [key, value] of Object.entries(variables)) {
+      const regex = new RegExp(`{{${key}}}`, 'g');
+      rendered = rendered.replace(regex, value || '');
+    }
+    return rendered;
+  }
+
+  /**
+   * Prepare variables for invoice PDF
+   */
+  prepareInvoiceVariables(order, store, orderItems) {
+    const formatAddress = (addr) => {
+      if (!addr) return 'N/A';
+      return `
+        ${addr.full_name || addr.name || ''}<br>
+        ${addr.address_line1 || addr.address || ''}<br>
+        ${addr.address_line2 ? addr.address_line2 + '<br>' : ''}
+        ${addr.city || ''}, ${addr.state || ''} ${addr.postal_code || addr.zip || ''}<br>
+        ${addr.country || ''}
+      `.trim();
+    };
+
+    const itemsRows = orderItems.map(item => `
+      <tr>
+        <td style="padding: 10px; border-bottom: 1px solid #e5e7eb;">${item.product_name || 'Product'}</td>
+        <td style="padding: 10px; border-bottom: 1px solid #e5e7eb; text-align: center;">${item.quantity || 1}</td>
+        <td style="padding: 10px; border-bottom: 1px solid #e5e7eb; text-align: right;">$${(item.price || 0).toFixed(2)}</td>
+        <td style="padding: 10px; border-bottom: 1px solid #e5e7eb; text-align: right;">$${((item.price || 0) * (item.quantity || 1)).toFixed(2)}</td>
+      </tr>
+    `).join('');
+
+    return {
+      invoice_number: order.order_number || 'N/A',
+      invoice_date: new Date(order.created_at).toLocaleDateString(),
+      order_number: order.order_number || 'N/A',
+      customer_name: `${order.billing_address?.full_name || order.billing_address?.name || 'Customer'}`,
+      billing_address: formatAddress(order.billing_address),
+      shipping_address: formatAddress(order.shipping_address),
+      items_table_rows: itemsRows,
+      order_subtotal: (order.subtotal || 0).toFixed(2),
+      order_shipping: (order.shipping_amount || 0).toFixed(2),
+      order_tax: (order.tax_amount || 0).toFixed(2),
+      order_discount: (order.discount_amount || 0).toFixed(2),
+      order_total: (order.total_amount || 0).toFixed(2),
+      payment_method: order.payment_method || 'N/A',
+      payment_status: order.payment_status ? order.payment_status.charAt(0).toUpperCase() + order.payment_status.slice(1) : 'N/A',
+      store_name: store.name || '',
+      store_logo_url: store.logo_url || '',
+      store_address: store.address_line1 || '',
+      store_city: store.city || '',
+      store_state: store.state || '',
+      store_postal_code: store.postal_code || '',
+      store_email: store.contact_email || '',
+      store_phone: store.contact_phone || '',
+      store_website: store.website_url || '',
+      current_year: new Date().getFullYear()
+    };
+  }
+
+  /**
+   * Prepare variables for shipment PDF
+   */
+  prepareShipmentVariables(order, store, orderItems) {
+    const formatAddress = (addr) => {
+      if (!addr) return 'N/A';
+      return `
+        ${addr.full_name || addr.name || ''}<br>
+        ${addr.address_line1 || addr.address || ''}<br>
+        ${addr.address_line2 ? addr.address_line2 + '<br>' : ''}
+        ${addr.city || ''}, ${addr.state || ''} ${addr.postal_code || addr.zip || ''}<br>
+        ${addr.country || ''}
+        ${addr.phone ? '<br>Phone: ' + addr.phone : ''}
+      `.trim();
+    };
+
+    const itemsRows = orderItems.map(item => `
+      <tr>
+        <td style="padding: 10px; border-bottom: 1px solid #e5e7eb;">${item.product_name || 'Product'}</td>
+        <td style="padding: 10px; border-bottom: 1px solid #e5e7eb; text-align: center;">${item.quantity || 1}</td>
+        <td style="padding: 10px; border-bottom: 1px solid #e5e7eb;">${item.sku || 'N/A'}</td>
+      </tr>
+    `).join('');
+
+    return {
+      order_number: order.order_number || 'N/A',
+      ship_date: order.shipped_at ? new Date(order.shipped_at).toLocaleDateString() : new Date().toLocaleDateString(),
+      tracking_number: order.tracking_number || 'N/A',
+      tracking_url: order.tracking_url || '#',
+      shipping_method: order.shipping_method || 'Standard Shipping',
+      estimated_delivery_date: order.delivery_date ? new Date(order.delivery_date).toLocaleDateString() : 'TBD',
+      delivery_instructions: order.delivery_instructions || '',
+      shipping_address: formatAddress(order.shipping_address),
+      items_table_rows: itemsRows,
+      items_count: orderItems.reduce((sum, item) => sum + (item.quantity || 0), 0),
+      store_name: store.name || '',
+      store_logo_url: store.logo_url || '',
+      store_address: store.address_line1 || '',
+      store_city: store.city || '',
+      store_state: store.state || '',
+      store_postal_code: store.postal_code || '',
+      store_email: store.contact_email || '',
+      store_phone: store.contact_phone || '',
+      store_website: store.website_url || '',
+      current_year: new Date().getFullYear()
     };
   }
 
@@ -58,9 +223,54 @@ class PDFService {
   }
 
   /**
-   * Generate Invoice PDF
+   * Generate Invoice PDF from database template
+   * Uses {{email_header}} and {{email_footer}} for consistent branding with emails
    */
   async generateInvoicePDF(order, store, orderItems) {
+    try {
+      // Get invoice PDF template from database
+      const pdfTemplate = await PdfTemplate.findOne({
+        where: { store_id: store.id, identifier: 'invoice_pdf', is_active: true }
+      });
+
+      if (!pdfTemplate) {
+        console.warn('No invoice PDF template found, using legacy method');
+        return this.generateInvoicePDFLegacy(order, store, orderItems);
+      }
+
+      // Get template HTML
+      let html = pdfTemplate.html_template;
+
+      // Process {{email_header}} and {{email_footer}} placeholders
+      html = await this.processHeaderFooter(store.id, html);
+
+      // Prepare variables
+      const variables = this.prepareInvoiceVariables(order, store, orderItems);
+
+      // Render template with variables
+      html = this.renderTemplate(html, variables);
+
+      // Generate PDF with template settings
+      const options = {
+        ...this.options,
+        format: pdfTemplate.settings?.page_size || 'A4',
+        landscape: pdfTemplate.settings?.orientation === 'landscape',
+        margin: pdfTemplate.settings?.margins || this.options.margin
+      };
+
+      const file = { content: html };
+      return await htmlPdf.generatePdf(file, options);
+    } catch (error) {
+      console.error('Error generating invoice PDF from template:', error);
+      console.warn('Falling back to legacy method');
+      return this.generateInvoicePDFLegacy(order, store, orderItems);
+    }
+  }
+
+  /**
+   * Legacy fallback - Generate Invoice PDF without database template
+   */
+  async generateInvoicePDFLegacy(order, store, orderItems) {
     const header = this.generatePDFHeader(store, 'invoice');
     const footer = this.generatePDFFooter(store);
 
@@ -223,7 +433,55 @@ class PDFService {
   /**
    * Generate Shipment PDF
    */
+  /**
+   * Generate Shipment PDF from database template
+   * Uses {{email_header}} and {{email_footer}} for consistent branding with emails
+   */
   async generateShipmentPDF(order, store, orderItems) {
+    try {
+      // Get shipment PDF template from database
+      const pdfTemplate = await PdfTemplate.findOne({
+        where: { store_id: store.id, identifier: 'shipment_pdf', is_active: true }
+      });
+
+      if (!pdfTemplate) {
+        console.warn('No shipment PDF template found, using legacy method');
+        return this.generateShipmentPDFLegacy(order, store, orderItems);
+      }
+
+      // Get template HTML
+      let html = pdfTemplate.html_template;
+
+      // Process {{email_header}} and {{email_footer}} placeholders
+      html = await this.processHeaderFooter(store.id, html);
+
+      // Prepare variables
+      const variables = this.prepareShipmentVariables(order, store, orderItems);
+
+      // Render template with variables
+      html = this.renderTemplate(html, variables);
+
+      // Generate PDF with template settings
+      const options = {
+        ...this.options,
+        format: pdfTemplate.settings?.page_size || 'A4',
+        landscape: pdfTemplate.settings?.orientation === 'landscape',
+        margin: pdfTemplate.settings?.margins || this.options.margin
+      };
+
+      const file = { content: html };
+      return await htmlPdf.generatePdf(file, options);
+    } catch (error) {
+      console.error('Error generating shipment PDF from template:', error);
+      console.warn('Falling back to legacy method');
+      return this.generateShipmentPDFLegacy(order, store, orderItems);
+    }
+  }
+
+  /**
+   * Legacy fallback - Generate Shipment PDF without database template
+   */
+  async generateShipmentPDFLegacy(order, store, orderItems) {
     const header = this.generatePDFHeader(store, 'shipment');
     const footer = this.generatePDFFooter(store);
 

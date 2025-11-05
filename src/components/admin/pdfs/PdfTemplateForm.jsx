@@ -369,42 +369,62 @@ export default function PdfTemplateForm({ template, onSubmit, onCancel }) {
       )}
 
       {/* PDF Template Tips */}
-      <Card className="border-amber-200 bg-amber-50">
+      <Card className="border-blue-200 bg-blue-50">
         <CardHeader>
-          <CardTitle className="text-amber-900 flex items-center gap-2">
+          <CardTitle className="text-blue-900 flex items-center gap-2">
             <FileText className="w-5 h-5" />
-            PDF Template Tips
+            Using Header & Footer in PDFs
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-3 text-sm">
-          <div className="bg-white p-3 rounded-lg border border-amber-200">
-            <h4 className="font-semibold text-amber-900 mb-2">✏️ Editing PDF Layouts</h4>
-            <ul className="list-disc list-inside space-y-1 text-gray-700">
-              <li>Use <strong>inline CSS</strong> for all styling</li>
-              <li>Include complete HTML structure (&lt;html&gt;, &lt;head&gt;, &lt;body&gt;)</li>
-              <li>Use <code className="text-xs bg-gray-100 px-1 rounded">{'{{variables}}'}</code> for dynamic content</li>
-              <li>Test with different data to ensure proper layout</li>
-            </ul>
+          <div className="bg-white p-4 rounded-lg border border-blue-200">
+            <h4 className="font-semibold text-blue-900 mb-2">📄 Shared Header & Footer</h4>
+            <p className="text-gray-700 mb-2">PDF templates use the <strong>same header and footer</strong> as emails for consistent branding!</p>
+            <div className="space-y-2">
+              <div className="flex items-start gap-2">
+                <code className="px-2 py-1 bg-blue-100 text-blue-800 rounded text-xs font-mono">{'{{email_header}}'}</code>
+                <span className="text-gray-600">- Adds store branding (same as emails)</span>
+              </div>
+              <div className="flex items-start gap-2">
+                <code className="px-2 py-1 bg-blue-100 text-blue-800 rounded text-xs font-mono">{'{{email_footer}}'}</code>
+                <span className="text-gray-600">- Adds footer with contact info (same as emails)</span>
+              </div>
+            </div>
+            <p className="text-xs text-gray-600 mt-3 italic">
+              💡 Tip: Edit email_header and email_footer templates to update both emails AND PDFs!
+            </p>
+          </div>
+
+          <div className="bg-white p-3 rounded-lg border border-blue-200">
+            <h4 className="font-semibold text-blue-900 mb-2">✏️ PDF Template Structure</h4>
+            <div className="p-3 bg-gray-50 rounded border border-gray-200">
+              <pre className="text-xs text-gray-700 overflow-x-auto">
+{`<!DOCTYPE html>
+<html>
+<head>
+  <style>/* Your CSS */</style>
+</head>
+<body>
+  {{email_header}}
+
+  <!-- Your PDF content with variables -->
+  <div>{{invoice_number}}</div>
+
+  {{email_footer}}
+</body>
+</html>`}
+              </pre>
+            </div>
           </div>
 
           <div className="bg-white p-3 rounded-lg border border-amber-200">
             <h4 className="font-semibold text-amber-900 mb-2">🎨 Styling Best Practices</h4>
-            <ul className="list-disc list-inside space-y-1 text-gray-700">
-              <li>Avoid external CSS files (not supported)</li>
-              <li>Use simple layouts (complex layouts may not render correctly)</li>
-              <li>Use <code className="text-xs bg-gray-100 px-1 rounded">px</code>, <code className="text-xs bg-gray-100 px-1 rounded">pt</code>, or <code className="text-xs bg-gray-100 px-1 rounded">%</code> for sizing</li>
+            <ul className="list-disc list-inside space-y-1 text-gray-700 text-xs">
+              <li>Use <strong>inline CSS</strong> for all styling</li>
+              <li>Include complete HTML structure</li>
+              <li>Use simple layouts (complex ones may not render correctly)</li>
               <li>Keep fonts system-standard (Arial, Helvetica, Times)</li>
             </ul>
-          </div>
-
-          <div className="bg-white p-3 rounded-lg border border-amber-200">
-            <h4 className="font-semibold text-amber-900 mb-2">📚 Documentation</h4>
-            <p className="text-gray-700">
-              For detailed customization guide, see:<br />
-              <code className="text-xs bg-gray-100 px-1 rounded">
-                backend/src/services/PDF_CUSTOMIZATION_GUIDE.md
-              </code>
-            </p>
           </div>
         </CardContent>
       </Card>

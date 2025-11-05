@@ -33,7 +33,7 @@ DECLARE
     invoice_html TEXT;
     shipment_html TEXT;
 BEGIN
-    -- Define invoice template HTML
+    -- Define invoice template HTML (uses email_header and email_footer for consistency)
     invoice_html := '<!DOCTYPE html>
 <html>
 <head>
@@ -60,36 +60,11 @@ BEGIN
       border-radius: 8px;
       margin-top: 20px;
     }
-    .header {
-      text-align: center;
-      padding: 20px;
-      border-bottom: 3px solid #4f46e5;
-      margin-bottom: 30px;
-    }
-    .footer {
-      margin-top: 50px;
-      padding-top: 20px;
-      border-top: 2px solid #e5e7eb;
-      text-align: center;
-      color: #9ca3af;
-      font-size: 12px;
-    }
   </style>
 </head>
 <body>
   <div class="container">
-    <!-- Header -->
-    <div class="header">
-      {{#if store_logo_url}}
-      <img src="{{store_logo_url}}" alt="{{store_name}}" style="max-width: 150px; max-height: 80px; margin-bottom: 10px;">
-      {{/if}}
-      <h1 style="color: #333; font-size: 28px; margin: 10px 0;">{{store_name}}</h1>
-      <p style="color: #666; font-size: 14px; margin: 5px 0;">
-        {{store_address}}<br>
-        {{store_city}}, {{store_state}} {{store_postal_code}}<br>
-        {{store_email}} | {{store_phone}}
-      </p>
-    </div>
+    {{email_header}}
 
     <!-- Invoice Details -->
     <div style="text-align: right; margin-bottom: 30px;">
@@ -166,17 +141,12 @@ BEGIN
     </div>
     {{/if}}
 
-    <!-- Footer -->
-    <div class="footer">
-      <p style="margin: 5px 0;">Thank you for your business!</p>
-      <p style="margin: 5px 0;">{{store_name}} | {{store_website}}</p>
-      <p style="margin: 5px 0;">© {{current_year}} {{store_name}}. All rights reserved.</p>
-    </div>
+    {{email_footer}}
   </div>
 </body>
 </html>';
 
-    -- Define shipment template HTML
+    -- Define shipment template HTML (uses email_header and email_footer for consistency)
     shipment_html := '<!DOCTYPE html>
 <html>
 <head>
@@ -191,12 +161,6 @@ BEGIN
     }
     .container { max-width: 800px; margin: 0 auto; }
     table { width: 100%; border-collapse: collapse; }
-    .header {
-      text-align: center;
-      padding: 20px;
-      border-bottom: 3px solid #10b981;
-      margin-bottom: 30px;
-    }
     .tracking-section {
       background-color: #eff6ff;
       padding: 20px;
@@ -212,30 +176,11 @@ BEGIN
       margin: 20px 0;
       border-left: 4px solid #10b981;
     }
-    .footer {
-      margin-top: 50px;
-      padding-top: 20px;
-      border-top: 2px solid #e5e7eb;
-      text-align: center;
-      color: #9ca3af;
-      font-size: 12px;
-    }
   </style>
 </head>
 <body>
   <div class="container">
-    <!-- Header -->
-    <div class="header">
-      {{#if store_logo_url}}
-      <img src="{{store_logo_url}}" alt="{{store_name}}" style="max-width: 150px; max-height: 80px; margin-bottom: 10px;">
-      {{/if}}
-      <h1 style="color: #333; font-size: 28px; margin: 10px 0;">{{store_name}}</h1>
-      <p style="color: #666; font-size: 14px; margin: 5px 0;">
-        {{store_address}}<br>
-        {{store_city}}, {{store_state}} {{store_postal_code}}<br>
-        {{store_email}} | {{store_phone}}
-      </p>
-    </div>
+    {{email_header}}
 
     <!-- Shipment Notice -->
     <div style="text-align: right; margin-bottom: 30px;">
@@ -293,12 +238,7 @@ BEGIN
       </p>
     </div>
 
-    <!-- Footer -->
-    <div class="footer">
-      <p style="margin: 5px 0;">Thank you for your business!</p>
-      <p style="margin: 5px 0;">{{store_name}} | {{store_website}}</p>
-      <p style="margin: 5px 0;">© {{current_year}} {{store_name}}. All rights reserved.</p>
-    </div>
+    {{email_footer}}
   </div>
 </body>
 </html>';

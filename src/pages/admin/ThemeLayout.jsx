@@ -877,7 +877,6 @@ export default function ThemeLayout() {
                     </div>
                 )}
 
-                <form onSubmit={(e) => { e.preventDefault(); return false; }} onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); } }}>
                 <div className="space-y-8">
                     <Card className="material-elevation-1 border-0">
                         <CardHeader>
@@ -2494,7 +2493,6 @@ export default function ThemeLayout() {
                         defaultText="Save All Settings"
                     />
                 </div>
-                </form>
             </div>
         </div>
     );
