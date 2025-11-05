@@ -844,7 +844,7 @@ export default function Customers() {
                                 </Button>
                                 <Button
                                     type="button"
-                                    onClick={blacklistingCustomer.customer_type === 'guest' ? handleGuestBlacklist : handleToggleBlacklistFromModal}
+                                    onClick={handleToggleBlacklistFromModal}
                                     disabled={saving}
                                     className={isBlacklisted ? 'bg-green-600 hover:bg-green-700' : 'bg-red-600 hover:bg-red-700'}
                                 >
