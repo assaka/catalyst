@@ -315,18 +315,28 @@ export default function ThemeLayout() {
             // Handle nested data structure - settings are in data.settings, not settings
             const fullStore = fullStoreResponse_normalized?.data || fullStoreResponse_normalized;
 
-            // Initialize step translations with defaults from database or store settings
-            const initialTranslations = { ...stepTranslations };
-            if (!initialTranslations.en) {
-                initialTranslations.en = {
-                    step_2step_1: fullStore?.settings?.checkout_2step_step1_name || 'Information',
-                    step_2step_2: fullStore?.settings?.checkout_2step_step2_name || 'Payment',
-                    step_3step_1: fullStore?.settings?.checkout_3step_step1_name || 'Information',
-                    step_3step_2: fullStore?.settings?.checkout_3step_step2_name || 'Shipping',
-                    step_3step_3: fullStore?.settings?.checkout_3step_step3_name || 'Payment'
-                };
-                setStepTranslations(initialTranslations);
-            }
+            // Initialize step translations with defaults from store settings if not already loaded
+            setTimeout(() => {
+                setStepTranslations(prev => {
+                    // If translations already loaded from API, don't override
+                    if (prev && Object.keys(prev).length > 0 && prev.en && Object.keys(prev.en).length > 0) {
+                        console.log('✓ Translations already loaded from API, skipping initialization');
+                        return prev;
+                    }
+
+                    // Initialize with defaults from store settings
+                    console.log('🔧 Initializing translations with store settings defaults');
+                    return {
+                        en: {
+                            step_2step_1: fullStore?.settings?.checkout_2step_step1_name || 'Information',
+                            step_2step_2: fullStore?.settings?.checkout_2step_step2_name || 'Payment',
+                            step_3step_1: fullStore?.settings?.checkout_3step_step1_name || 'Information',
+                            step_3step_2: fullStore?.settings?.checkout_3step_step2_name || 'Shipping',
+                            step_3step_3: fullStore?.settings?.checkout_3step_step3_name || 'Payment'
+                        }
+                    };
+                });
+            }, 500); // Small delay to let API load first
 
             // Handle database response structure
 
