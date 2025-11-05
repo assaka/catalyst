@@ -1316,6 +1316,11 @@ export default function Checkout() {
 
   // Define step configurations based on step count
   const getStepConfig = () => {
+    // Get translations for current language, fallback to English
+    const stepTranslations = settings?.checkout_step_translations?.[currentLanguage] ||
+                            settings?.checkout_step_translations?.en ||
+                            {};
+
     if (stepsCount === 1) {
       return {
         steps: ['Checkout'],
@@ -1324,8 +1329,8 @@ export default function Checkout() {
     } else if (stepsCount === 2) {
       return {
         steps: [
-          settings?.checkout_2step_step1_name || 'Information',
-          settings?.checkout_2step_step2_name || 'Payment'
+          stepTranslations.step_2step_1 || settings?.checkout_2step_step1_name || 'Information',
+          stepTranslations.step_2step_2 || settings?.checkout_2step_step2_name || 'Payment'
         ],
         sections: [
           ['account', 'shipping', 'delivery', 'billing'],
@@ -1335,9 +1340,9 @@ export default function Checkout() {
     } else {
       return {
         steps: [
-          settings?.checkout_3step_step1_name || 'Information',
-          settings?.checkout_3step_step2_name || 'Shipping',
-          settings?.checkout_3step_step3_name || 'Payment'
+          stepTranslations.step_3step_1 || settings?.checkout_3step_step1_name || 'Information',
+          stepTranslations.step_3step_2 || settings?.checkout_3step_step2_name || 'Shipping',
+          stepTranslations.step_3step_3 || settings?.checkout_3step_step3_name || 'Payment'
         ],
         sections: [
           ['account', 'shipping', 'billing'],
