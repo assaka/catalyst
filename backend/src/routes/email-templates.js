@@ -206,13 +206,16 @@ router.post('/', [
     // Create translations if provided
     if (translations && typeof translations === 'object') {
       for (const [lang_code, trans_data] of Object.entries(translations)) {
-        await EmailTemplateTranslation.create({
-          email_template_id: template.id,
-          language_code: lang_code,
-          subject: trans_data.subject,
-          template_content: trans_data.template_content,
-          html_content: trans_data.html_content
-        });
+        // Only save translations that have at least a subject
+        if (trans_data && trans_data.subject && trans_data.subject.trim()) {
+          await EmailTemplateTranslation.create({
+            email_template_id: template.id,
+            language_code: lang_code,
+            subject: trans_data.subject,
+            template_content: trans_data.template_content || null,
+            html_content: trans_data.html_content || null
+          });
+        }
       }
     }
 
@@ -289,13 +292,24 @@ router.put('/:id', async (req, res) => {
     // Update translations if provided
     if (translations && typeof translations === 'object') {
       for (const [lang_code, trans_data] of Object.entries(translations)) {
-        await EmailTemplateTranslation.upsert({
-          email_template_id: template.id,
-          language_code: lang_code,
-          subject: trans_data.subject,
-          template_content: trans_data.template_content,
-          html_content: trans_data.html_content
-        });
+        // Only save translations that have at least a subject
+        if (trans_data && trans_data.subject && trans_data.subject.trim()) {
+          await EmailTemplateTranslation.upsert({
+            email_template_id: template.id,
+            language_code: lang_code,
+            subject: trans_data.subject,
+            template_content: trans_data.template_content || null,
+            html_content: trans_data.html_content || null
+          });
+        } else {
+          // If translation is empty, delete it if it exists
+          await EmailTemplateTranslation.destroy({
+            where: {
+              email_template_id: template.id,
+              language_code: lang_code
+            }
+          });
+        }
       }
     }
 
