@@ -5,7 +5,7 @@ import { OrderItem } from "@/api/entities";
 import { User } from "@/api/entities";
 import { useStoreSelection } from "@/contexts/StoreSelectionContext.jsx";
 import NoStoreSelected from "@/components/admin/NoStoreSelected";
-import { formatPrice } from "@/utils/priceUtils";
+import { formatPrice, _setStoreContext } from "@/utils/priceUtils";
 import {
   Search,
   ChevronDown,
@@ -53,6 +53,8 @@ export default function Orders() {
 
   useEffect(() => {
     if (selectedStore) {
+      // Set store context for price formatting
+      _setStoreContext(selectedStore);
       loadOrders();
     }
   }, [selectedStore]);
@@ -61,6 +63,8 @@ export default function Orders() {
   useEffect(() => {
     const handleStoreChange = () => {
       if (selectedStore) {
+        // Update store context when store changes
+        _setStoreContext(selectedStore);
         loadOrders();
       }
     };
