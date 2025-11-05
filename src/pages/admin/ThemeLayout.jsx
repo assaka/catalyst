@@ -14,6 +14,7 @@ import { Separator } from '@/components/ui/separator';
 import { Palette, Eye, Navigation, ShoppingBag, Filter, Home, CreditCard, GripVertical, Languages } from 'lucide-react';
 import SaveButton from '@/components/ui/save-button';
 import TranslationFields from '@/components/admin/TranslationFields';
+import FlashMessage from '@/components/storefront/FlashMessage';
 import api from '@/utils/api';
 import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors, useDroppable } from '@dnd-kit/core';
 import { arrayMove, SortableContext, sortableKeyboardCoordinates, useSortable, verticalListSortingStrategy } from '@dnd-kit/sortable';
@@ -438,13 +439,6 @@ export default function ThemeLayout() {
         }
     };
 
-    useEffect(() => {
-        if (flashMessage) {
-            const timer = setTimeout(() => setFlashMessage(null), 5000);
-            return () => clearTimeout(timer);
-        }
-    }, [flashMessage]);
-
     const handleSettingsChange = (key, value) => {
         setStore(prev => ({
             ...prev,
@@ -863,11 +857,7 @@ export default function ThemeLayout() {
 
     return (
         <div className="min-h-screen bg-gray-50 p-8">
-            {flashMessage && (
-                <div className={`fixed top-4 left-1/2 transform -translate-x-1/2 z-50 p-4 rounded-lg text-white shadow-lg ${flashMessage.type === 'error' ? 'bg-red-500' : 'bg-green-500'}`}>
-                    {flashMessage.message}
-                </div>
-            )}
+            <FlashMessage message={flashMessage} onClose={() => setFlashMessage(null)} />
 
             <div className="max-w-7xl mx-auto">
                 <div className="mb-8">

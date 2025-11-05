@@ -23,19 +23,21 @@ class FinalizePendingOrdersJob extends BaseJobHandler {
       return { success: false, message: 'Stripe not configured' };
     }
 
-    // Find orders that are pending for more than 2 minutes
-    const twoMinutesAgo = new Date(Date.now() - 2 * 60 * 1000);
+    // Find orders that are pending for more than 3 minutes AND email not sent
+    // This means instant finalization didn't work, so job needs to handle it
+    const threeMinutesAgo = new Date(Date.now() - 3 * 60 * 1000);
 
     const pendingOrders = await Order.findAll({
       where: {
         status: 'pending',
         payment_status: 'pending',
         createdAt: {
-          [Op.lt]: twoMinutesAgo // Only check orders older than 2 minutes
+          [Op.lt]: threeMinutesAgo // Only check orders older than 3 minutes
         },
         payment_reference: {
-          [Op.ne]: null // Must have a Stripe session ID
-        }
+          [Op.ne]: null // Must have a payment session ID
+        },
+        confirmation_email_sent_at: null // Only if email NOT already sent
       },
       include: [{
         model: Store,
@@ -120,8 +122,19 @@ class FinalizePendingOrdersJob extends BaseJobHandler {
           finalizedCount++;
           console.log(`✅ Order ${order.order_number} finalized successfully`);
 
-          // Send confirmation email (only if not already sent)
-          if (!order.confirmation_email_sent_at) {
+          // Send confirmation email (atomic check-and-set to prevent race condition)
+          const [emailAffectedRows] = await Order.update(
+            { confirmation_email_sent_at: new Date() },
+            {
+              where: {
+                id: order.id,
+                confirmation_email_sent_at: null
+              }
+            }
+          );
+
+          if (emailAffectedRows > 0) {
+            // We successfully claimed email sending
             try {
               const orderWithDetails = await Order.findByPk(order.id, {
                 include: [{
@@ -163,16 +176,14 @@ class FinalizePendingOrdersJob extends BaseJobHandler {
                 store: orderWithDetails.Store
               });
 
-              // Mark email as sent
-              await order.update({ confirmation_email_sent_at: new Date() });
-
               console.log(`📧 Sent confirmation email to ${order.customer_email}`);
             } catch (emailError) {
               console.error(`❌ Failed to send email for order ${order.order_number}:`, emailError.message);
-              // Don't fail the job if email fails
+              // Rollback flag if email failed
+              await order.update({ confirmation_email_sent_at: null });
             }
           } else {
-            console.log(`✅ Confirmation email already sent for order ${order.order_number} at ${order.confirmation_email_sent_at}`);
+            console.log(`✅ Confirmation email already sent by another process for order ${order.order_number}`);
           }
         } else {
           // Payment not verified - already logged in provider-specific blocks above
