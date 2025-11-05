@@ -320,11 +320,9 @@ router.delete('/:id', authMiddleware, async (req, res) => {
 // @desc    Blacklist or un-blacklist a customer
 // @access  Private (Store Owner Only)
 router.put('/:id/blacklist', storeOwnerOnly, async (req, res) => {
-  console.log('=== BLACKLIST ENDPOINT HIT ===', { id: req.params.id, body: req.body });
   try {
     const { is_blacklisted, blacklist_reason } = req.body;
     const customer = await Customer.findByPk(req.params.id);
-    console.log('Customer found:', { id: customer?.id, current_is_blacklisted: customer?.is_blacklisted });
 
     if (!customer) {
       return res.status(404).json({
@@ -343,7 +341,6 @@ router.put('/:id/blacklist', storeOwnerOnly, async (req, res) => {
     }
 
     // Update blacklist status
-    console.log('Updating customer with:', { is_blacklisted, blacklist_reason });
     await customer.update({
       is_blacklisted: is_blacklisted,
       blacklist_reason: is_blacklisted ? blacklist_reason : null,
@@ -368,9 +365,8 @@ router.put('/:id/blacklist', storeOwnerOnly, async (req, res) => {
             created_by: req.user?.id
           }
         });
-        console.log('✅ Email added to blacklist_emails table');
       } catch (emailError) {
-        console.warn('Could not add email to blacklist:', emailError);
+        // Email might already exist, ignore
       }
     } else if (!is_blacklisted && customer.email) {
       // Remove email from blacklist
@@ -381,15 +377,13 @@ router.put('/:id/blacklist', storeOwnerOnly, async (req, res) => {
             email: customer.email.toLowerCase()
           }
         });
-        console.log('✅ Email removed from blacklist_emails table');
       } catch (emailError) {
-        console.warn('Could not remove email from blacklist:', emailError);
+        // Ignore error if email doesn't exist
       }
     }
 
     // Reload to get fresh data
     await customer.reload();
-    console.log('After update:', { id: customer.id, is_blacklisted: customer.is_blacklisted });
 
     res.json({
       success: true,
@@ -398,6 +392,57 @@ router.put('/:id/blacklist', storeOwnerOnly, async (req, res) => {
     });
   } catch (error) {
     console.error('Blacklist customer error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Server error'
+    });
+  }
+});
+
+// @route   PUT /api/customers/update-blacklist-by-email
+// @desc    Update blacklist status for all customers with a specific email
+// @access  Private (Store Owner Only)
+router.put('/update-blacklist-by-email', storeOwnerOnly, async (req, res) => {
+  try {
+    const { store_id } = req.query;
+    const { email, is_blacklisted } = req.body;
+
+    if (!store_id) {
+      return res.status(400).json({
+        success: false,
+        message: 'store_id is required'
+      });
+    }
+
+    if (!email) {
+      return res.status(400).json({
+        success: false,
+        message: 'email is required'
+      });
+    }
+
+    // Update all customers with this email in this store
+    const [updatedCount] = await Customer.update(
+      {
+        is_blacklisted: is_blacklisted,
+        blacklist_reason: is_blacklisted ? 'Email blacklisted' : null,
+        blacklisted_at: is_blacklisted ? new Date() : null
+      },
+      {
+        where: {
+          store_id: store_id,
+          email: email.toLowerCase()
+        }
+      }
+    );
+
+    res.json({
+      success: true,
+      data: { updated_count: updatedCount },
+      message: `Updated ${updatedCount} customer(s) with email ${email}`
+    });
+  } catch (error) {
+    console.error('Update customer blacklist by email error:', error);
     res.status(500).json({
       success: false,
       message: 'Server error'

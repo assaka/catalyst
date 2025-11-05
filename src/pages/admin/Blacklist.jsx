@@ -323,6 +323,11 @@ export default function Blacklist() {
 
         try {
             const storeId = getSelectedStoreId();
+
+            // Get the email address before deleting
+            const emailEntry = emails.find(e => e.id === id);
+            const emailAddress = emailEntry?.email;
+
             const response = await fetch(`/api/blacklist/emails/${id}?store_id=${storeId}`, {
                 method: 'DELETE',
                 headers: {
@@ -332,6 +337,25 @@ export default function Blacklist() {
 
             const data = await response.json();
             if (data.success) {
+                // Update customer is_blacklisted status to false for this email
+                if (emailAddress) {
+                    try {
+                        await fetch(`/api/customers/update-blacklist-by-email?store_id=${storeId}`, {
+                            method: 'PUT',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'Authorization': `Bearer ${localStorage.getItem('store_owner_auth_token')}`
+                            },
+                            body: JSON.stringify({
+                                email: emailAddress,
+                                is_blacklisted: false
+                            })
+                        });
+                    } catch (updateError) {
+                        console.warn('Could not update customer blacklist status:', updateError);
+                    }
+                }
+
                 setFlashMessage({ type: 'success', message: 'Email removed from blacklist' });
                 loadEmails();
             } else {
