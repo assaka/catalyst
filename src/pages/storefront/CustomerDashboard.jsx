@@ -1077,28 +1077,43 @@ export default function CustomerDashboard() {
     const checkAuthStatus = async () => {
       // Wait for store to be loaded before checking authentication
       if (storeLoading || !store) {
+        console.log('⏳ CustomerDashboard: Waiting for store to load...', { storeLoading, store: !!store });
         return;
       }
 
+      console.log('🔍 CustomerDashboard: Starting auth check', { storeSlug: store?.slug });
       setLoading(true);
       try {
         // Check if customer token exists
-        if (!CustomerAuth.isAuthenticated()) {
+        const isAuth = CustomerAuth.isAuthenticated();
+        console.log('🔑 CustomerDashboard: isAuthenticated =', isAuth);
+
+        if (!isAuth) {
           throw new Error("Not authenticated");
         }
 
+        console.log('📞 CustomerDashboard: Calling CustomerAuth.me()...');
         const userData = await retryApiCall(() => CustomerAuth.me());
+        console.log('👤 CustomerDashboard: User data received:', {
+          id: userData?.id,
+          email: userData?.email,
+          role: userData?.role,
+          email_verified: userData?.email_verified
+        });
+
         if (!userData || !userData.id || userData.role !== 'customer') {
           throw new Error("Not a customer or not authenticated");
         }
 
         // Check if email is verified
         if (!userData.email_verified) {
+          console.log('📧 CustomerDashboard: Email not verified, redirecting...');
           const storeCode = store?.slug || 'default';
           navigate(`/public/${storeCode}/verify-email?email=${encodeURIComponent(userData.email)}`);
           return;
         }
 
+        console.log('✅ CustomerDashboard: Auth successful, loading user data...');
         setUser(userData);
         setIsGuest(false);
 
@@ -1110,6 +1125,8 @@ export default function CustomerDashboard() {
         ]);
 
       } catch (error) {
+        console.error('❌ CustomerDashboard: Auth check failed:', error.message);
+        console.error('❌ Full error:', error);
         setUser(null);
         setIsGuest(true);
         // Clear any user-specific data from previous sessions if error occurs
