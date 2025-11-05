@@ -12,6 +12,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Switch } from '@/components/ui/switch';
 import { Users, Search, Download, Edit, Trash2, UserPlus, Eye, Ban, CheckCircle, Shield } from 'lucide-react';
 import { useAlertTypes } from '@/hooks/useAlert';
+import { toast } from 'sonner';
 
 export default function Customers() {
     const { selectedStore, getSelectedStoreId } = useStoreSelection();
@@ -149,7 +150,7 @@ export default function Customers() {
         try {
             await Customer.delete(customerId);
             setCustomers(customers.filter(c => c.id !== customerId));
-            showSuccess('Customer deleted successfully');
+            toast.success('Customer deleted successfully');
         } catch (error) {
             console.error('Error deleting customer:', error);
             showError('Failed to delete customer. Please try again.');
@@ -224,7 +225,7 @@ export default function Customers() {
             ));
 
             // Show success message
-            showSuccess(willBlacklist ? 'Customer blacklisted successfully' : 'Customer removed from blacklist');
+            toast.success(willBlacklist ? 'Customer blacklisted successfully' : 'Customer removed from blacklist');
 
             // Close modal if opened from table
             if (blacklistingCustomer) {
@@ -276,7 +277,7 @@ export default function Customers() {
                             ? { ...c, is_blacklisted: false }
                             : c
                     ));
-                    showSuccess('Email removed from blacklist');
+                    toast.success('Email removed from blacklist');
 
                     // Close modal if opened from table
                     if (blacklistingCustomer) {
@@ -308,7 +309,7 @@ export default function Customers() {
                             ? { ...c, is_blacklisted: true }
                             : c
                     ));
-                    showSuccess('Email added to blacklist');
+                    toast.success('Email added to blacklist');
 
                     // Close modal if opened from table
                     if (blacklistingCustomer) {
