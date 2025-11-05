@@ -136,16 +136,14 @@ const defaultTranslations = [
   { key: 'admin.languages', value: 'Languages', category: 'admin' },
 
   // Blacklist / Security errors
-  { key: 'error.blacklist.login', value: 'Your account has been disabled. Please contact support for assistance.', category: 'error' },
-  { key: 'error.blacklist.checkout', value: 'This email address cannot be used for checkout. Please contact support for assistance.', category: 'error' },
+  { key: 'error.blacklist.login', value: 'This email address cannot be used for checkout. Please contact support for assistance.', category: 'error' },
   { key: 'error.blacklist.ip', value: 'Your request cannot be processed. Please contact support for assistance.', category: 'error' },
   { key: 'error.blacklist.country', value: 'Orders from your location cannot be processed at this time. Please contact support for assistance.', category: 'error' },
 ];
 
 // Dutch translations
 const dutchTranslations = [
-  { key: 'error.blacklist.login', value: 'Uw account is uitgeschakeld. Neem contact op met ondersteuning voor hulp.', category: 'error' },
-  { key: 'error.blacklist.checkout', value: 'Dit e-mailadres kan niet worden gebruikt voor het afrekenen. Neem contact op met ondersteuning voor hulp.', category: 'error' },
+  { key: 'error.blacklist.login', value: 'Dit e-mailadres kan niet worden gebruikt voor het afrekenen. Neem contact op met ondersteuning voor hulp.', category: 'error' },
   { key: 'error.blacklist.ip', value: 'Uw verzoek kan niet worden verwerkt. Neem contact op met ondersteuning voor hulp.', category: 'error' },
   { key: 'error.blacklist.country', value: 'Bestellingen vanuit uw locatie kunnen momenteel niet worden verwerkt. Neem contact op met ondersteuning voor hulp.', category: 'error' },
 ];
