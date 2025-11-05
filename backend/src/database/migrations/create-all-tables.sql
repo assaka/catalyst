@@ -15,7 +15,7 @@ CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 -- DROP TABLE IF EXISTS delivery_settings CASCADE;
 -- DROP TABLE IF EXISTS cms_pages CASCADE;
 -- DROP TABLE IF EXISTS coupons CASCADE;
--- DROP TABLE IF EXISTS order_items CASCADE;
+-- DROP TABLE IF EXISTS sales_order_items CASCADE;
 -- DROP TABLE IF EXISTS orders CASCADE;
 -- DROP TABLE IF EXISTS products CASCADE;
 -- DROP TABLE IF EXISTS categories CASCADE;
@@ -217,8 +217,8 @@ CREATE TABLE IF NOT EXISTS orders (
     FOREIGN KEY (store_id) REFERENCES stores(id) ON DELETE CASCADE
 );
 
--- 8. ORDER_ITEMS TABLE
-CREATE TABLE IF NOT EXISTS order_items (
+-- 8. SALES_ORDER_ITEMS TABLE
+CREATE TABLE IF NOT EXISTS sales_order_items (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     quantity INTEGER NOT NULL DEFAULT 1,
     unit_price DECIMAL(10,2) NOT NULL,
@@ -231,7 +231,7 @@ CREATE TABLE IF NOT EXISTS order_items (
     product_id UUID NOT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (order_id) REFERENCES orders(id) ON DELETE CASCADE,
+    FOREIGN KEY (order_id) REFERENCES sales_orders(id) ON DELETE CASCADE,
     FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE CASCADE
 );
 
@@ -438,8 +438,8 @@ CREATE INDEX IF NOT EXISTS idx_orders_status ON orders(status);
 CREATE INDEX IF NOT EXISTS idx_orders_created_at ON orders(created_at);
 
 -- Order items indexes
-CREATE INDEX IF NOT EXISTS idx_order_items_order_id ON order_items(order_id);
-CREATE INDEX IF NOT EXISTS idx_order_items_product_id ON order_items(product_id);
+CREATE INDEX IF NOT EXISTS idx_sales_order_items_order_id ON sales_order_items(order_id);
+CREATE INDEX IF NOT EXISTS idx_sales_order_items_product_id ON sales_order_items(product_id);
 
 -- Coupons indexes
 CREATE INDEX IF NOT EXISTS idx_coupons_code ON coupons(code);
@@ -506,7 +506,7 @@ CREATE TRIGGER update_stores_updated_at BEFORE UPDATE ON stores FOR EACH ROW EXE
 CREATE TRIGGER update_products_updated_at BEFORE UPDATE ON products FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 CREATE TRIGGER update_categories_updated_at BEFORE UPDATE ON categories FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 CREATE TRIGGER update_orders_updated_at BEFORE UPDATE ON orders FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
-CREATE TRIGGER update_order_items_updated_at BEFORE UPDATE ON order_items FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+CREATE TRIGGER update_sales_order_items_updated_at BEFORE UPDATE ON sales_order_items FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 CREATE TRIGGER update_coupons_updated_at BEFORE UPDATE ON coupons FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 CREATE TRIGGER update_cms_pages_updated_at BEFORE UPDATE ON cms_pages FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 CREATE TRIGGER update_delivery_settings_updated_at BEFORE UPDATE ON delivery_settings FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();

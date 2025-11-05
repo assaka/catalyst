@@ -64,7 +64,7 @@ const OrderItem = sequelize.define('OrderItem', {
     }
   }
 }, {
-  tableName: 'order_items',
+  tableName: 'sales_order_items',
   hooks: {
     afterCreate: async (orderItem) => {
       // Reduce product stock when an order item is created

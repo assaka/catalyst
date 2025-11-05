@@ -51,7 +51,7 @@ router.get('/by-payment-reference/:paymentReference', async (req, res) => {
         p.sku as product_db_sku
       FROM sales_orders o
       LEFT JOIN stores s ON o.store_id = s.id
-      LEFT JOIN order_items oi ON o.id = oi.order_id
+      LEFT JOIN sales_order_items oi ON o.id = oi.order_id
       LEFT JOIN products p ON oi.product_id = p.id
       WHERE o.payment_reference = :ref OR o.stripe_payment_intent_id = :ref OR o.stripe_session_id = :ref
       ORDER BY oi.created_at ASC
@@ -352,7 +352,7 @@ router.get('/db-diagnostic/:sessionId', async (req, res) => {
       const orderId = orderResult[0].id;
       orderItemsResult = await sequelize.query(
         `SELECT id, order_id, product_id, product_name, quantity, unit_price, total_price, created_at
-         FROM order_items 
+         FROM sales_order_items
          WHERE order_id = :orderId`,
         {
           replacements: { orderId },
@@ -407,7 +407,7 @@ router.get('/test-direct/:orderId', async (req, res) => {
     );
     
     const itemsResult = await sequelize.query(
-      'SELECT * FROM order_items WHERE order_id = :orderId',
+      'SELECT * FROM sales_order_items WHERE order_id = :orderId',
       {
         replacements: { orderId },
         type: QueryTypes.SELECT
