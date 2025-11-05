@@ -256,6 +256,17 @@ export default function Orders() {
     }
   };
 
+  const safeFormatPrice = (value) => {
+    // Safe wrapper for formatPrice that handles missing store context
+    try {
+      return formatPrice(value);
+    } catch (error) {
+      // Fallback if store context not ready
+      const num = parseFloat(value) || 0;
+      return `$${num.toFixed(2)}`;
+    }
+  };
+
   const getInvoiceButtonText = (order) => {
     // Always show the invoice button
     // The button text changes based on whether an invoice was already sent
@@ -360,7 +371,7 @@ export default function Orders() {
                     <div>
                       <p className="text-sm font-medium text-gray-600">Total Revenue</p>
                       <p className="text-2xl font-bold text-green-600">
-                        {formatPrice(orders.reduce((sum, order) => sum + (order.total_amount || 0), 0))}
+                        {safeFormatPrice(orders.reduce((sum, order) => sum + (order.total_amount || 0), 0))}
                       </p>
                     </div>
                     <DollarSign className="w-8 h-8 text-green-600" />
@@ -416,7 +427,7 @@ export default function Orders() {
                                   </div>
                                 </TableCell>
                                 <TableCell className="font-medium">
-                                  {formatPrice(order.total_amount)}
+                                  {safeFormatPrice(order.total_amount)}
                                 </TableCell>
                                 <TableCell>
                                   <Badge className={getStatusBadge(order.status)}>
@@ -459,7 +470,7 @@ export default function Orders() {
                                                             <div key={optIndex} className="flex justify-between items-center">
                                                               <span>• {option.name}: {option.value}</span>
                                                               {parseFloat(option.price || 0) > 0 && (
-                                                                <span className="text-green-600 font-medium">(+{formatPrice(option.price)})</span>
+                                                                <span className="text-green-600 font-medium">(+{safeFormatPrice(option.price)})</span>
                                                               )}
                                                             </div>
                                                           ))}
@@ -484,8 +495,8 @@ export default function Orders() {
                                                         if (item.original_price && parseFloat(item.original_price) !== unitPrice) {
                                                           return (
                                                             <>
-                                                              <p className="text-sm text-gray-500 line-through">{formatPrice(item.original_price)}</p>
-                                                              <p className="text-red-600 font-medium">{formatPrice(unitPrice)}</p>
+                                                              <p className="text-sm text-gray-500 line-through">{safeFormatPrice(item.original_price)}</p>
+                                                              <p className="text-red-600 font-medium">{safeFormatPrice(unitPrice)}</p>
                                                             </>
                                                           );
                                                         }
@@ -494,19 +505,19 @@ export default function Orders() {
                                                         if (selectedOptions.length > 0 && optionsPrice > 0) {
                                                           return (
                                                             <div className="space-y-1">
-                                                              <div className="text-sm font-medium">{formatPrice(baseUnitPrice)}</div>
-                                                              <div className="text-xs text-gray-500">Options: +{formatPrice(optionsPrice)}</div>
-                                                              <div className="text-xs font-medium border-t pt-1">Total: {formatPrice(unitPrice)}</div>
+                                                              <div className="text-sm font-medium">{safeFormatPrice(baseUnitPrice)}</div>
+                                                              <div className="text-xs text-gray-500">Options: +{safeFormatPrice(optionsPrice)}</div>
+                                                              <div className="text-xs font-medium border-t pt-1">Total: {safeFormatPrice(unitPrice)}</div>
                                                             </div>
                                                           );
                                                         }
                                                         
                                                         // Default: show unit price only
-                                                        return <p className="font-medium">{formatPrice(unitPrice)}</p>;
+                                                        return <p className="font-medium">{safeFormatPrice(unitPrice)}</p>;
                                                       })()}
                                                     </div>
                                                   </TableCell>
-                                                  <TableCell className="text-right font-medium">{formatPrice(item.total_price || ((item.unit_price || item.price) * item.quantity))}</TableCell>
+                                                  <TableCell className="text-right font-medium">{safeFormatPrice(item.total_price || ((item.unit_price || item.price) * item.quantity))}</TableCell>
                                                 </TableRow>
                                               ))}
                                             </TableBody>
@@ -528,26 +539,26 @@ export default function Orders() {
                                         <div className="space-y-2 text-sm">
                                           <div className="flex justify-between">
                                             <span className="text-gray-600">Subtotal:</span>
-                                            <span>{formatPrice(order.subtotal)}</span>
+                                            <span>{safeFormatPrice(order.subtotal)}</span>
                                           </div>
                                           <div className="flex justify-between">
                                             <span className="text-gray-600">Shipping:</span>
-                                            <span>{formatPrice(order.shipping_cost || order.shipping_amount)}</span>
+                                            <span>{safeFormatPrice(order.shipping_cost || order.shipping_amount)}</span>
                                           </div>
                                           <div className="flex justify-between">
                                             <span className="text-gray-600">Tax:</span>
-                                            <span>{formatPrice(order.tax_amount)}</span>
+                                            <span>{safeFormatPrice(order.tax_amount)}</span>
                                           </div>
                                           {order.discount_amount > 0 && (
                                             <div className="flex justify-between text-green-600">
                                               <span>Discount:</span>
-                                              <span>-{formatPrice(order.discount_amount)}</span>
+                                              <span>-{safeFormatPrice(order.discount_amount)}</span>
                                             </div>
                                           )}
                                           <Separator />
                                           <div className="flex justify-between font-semibold">
                                             <span>Total:</span>
-                                            <span>{formatPrice(order.total_amount)}</span>
+                                            <span>{safeFormatPrice(order.total_amount)}</span>
                                           </div>
                                         </div>
                                         
