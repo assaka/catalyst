@@ -29,6 +29,7 @@ export const URL_CONFIG = {
     CUSTOMER_REGISTER: 'register',
     CUSTOMER_FORGOT_PASSWORD: 'forgot-password',
     CUSTOMER_DASHBOARD: 'dashboard',
+    ACCOUNT: 'account',
     MY_ACCOUNT: 'my-account',
     CUSTOMER_ORDERS: 'orders',
     MY_ORDERS: 'my-orders',

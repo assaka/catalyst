@@ -530,7 +530,7 @@ export default function StorefrontLayout({ children }) {
                                                         {user.role === 'customer' ? (
                                                             <>
                                                                 <DropdownMenuItem onClick={() => {
-                                                                    navigate(createPublicUrl(store.slug, 'CUSTOMER_DASHBOARD'));
+                                                                    navigate(createPublicUrl(store.slug, 'ACCOUNT'));
                                                                 }}>
                                                                     <Settings className="mr-2 h-4 w-4" />
                                                                     <span>My Account</span>

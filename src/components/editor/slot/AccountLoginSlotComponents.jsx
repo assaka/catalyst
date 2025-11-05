@@ -218,13 +218,13 @@ const LoginFormSlotComponent = ({ slot, context, variableContext }) => {
 
   const getCustomerAccountUrl = async () => {
     if (storeCode) {
-      return createPublicUrl(storeCode, 'CUSTOMER_DASHBOARD');
+      return createPublicUrl(storeCode, 'ACCOUNT');
     }
     const savedStoreCode = localStorage.getItem('customer_auth_store_code');
     if (savedStoreCode) {
-      return createPublicUrl(savedStoreCode, 'CUSTOMER_DASHBOARD');
+      return createPublicUrl(savedStoreCode, 'ACCOUNT');
     }
-    return createPublicUrl('default', 'CUSTOMER_DASHBOARD');
+    return createPublicUrl('default', 'ACCOUNT');
   };
 
   const handleSubmit = async (e) => {
@@ -377,13 +377,13 @@ const RegisterFormSlotComponent = ({ slot, context, variableContext }) => {
 
   const getCustomerAccountUrl = async () => {
     if (storeCode) {
-      return createPublicUrl(storeCode, 'CUSTOMER_DASHBOARD');
+      return createPublicUrl(storeCode, 'ACCOUNT');
     }
     const savedStoreCode = localStorage.getItem('customer_auth_store_code');
     if (savedStoreCode) {
-      return createPublicUrl(savedStoreCode, 'CUSTOMER_DASHBOARD');
+      return createPublicUrl(savedStoreCode, 'ACCOUNT');
     }
-    return createPublicUrl('default', 'CUSTOMER_DASHBOARD');
+    return createPublicUrl('default', 'ACCOUNT');
   };
 
   const handleSubmit = async (e) => {

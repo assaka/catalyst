@@ -359,7 +359,7 @@ export function HeaderSlotRenderer({
                   </DropdownMenuLabel>
                   <DropdownMenuSeparator />
                   <DropdownMenuItem onClick={() => {
-                    navigate?.(createPublicUrl(store?.slug, 'CUSTOMER_DASHBOARD'));
+                    navigate?.(createPublicUrl(store?.slug, 'ACCOUNT'));
                   }}>
                     <Settings className="mr-2 h-4 w-4" />
                     <span>{t('common.my_account', 'My Account')}</span>

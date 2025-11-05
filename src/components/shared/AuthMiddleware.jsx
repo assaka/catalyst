@@ -963,14 +963,14 @@ export default function AuthMiddleware({ role = 'store_owner' }) {
     // First try to get from localStorage
     const savedStoreCode = localStorage.getItem('customer_auth_store_code');
     if (savedStoreCode) {
-      return createPublicUrl(savedStoreCode, 'CUSTOMER_DASHBOARD');
+      return createPublicUrl(savedStoreCode, 'ACCOUNT');
     }
     
     // Try to get from current URL (new and legacy)
     const currentStoreSlug = getStoreSlugFromPublicUrl(window.location.pathname) || 
                              getStoreSlugFromUrl(window.location.pathname);
     if (currentStoreSlug) {
-      return createPublicUrl(currentStoreSlug, 'CUSTOMER_DASHBOARD');
+      return createPublicUrl(currentStoreSlug, 'ACCOUNT');
     }
     
     // Try to fetch the first available store
@@ -979,14 +979,14 @@ export default function AuthMiddleware({ role = 'store_owner' }) {
       const stores = await Store.findAll();
       if (stores && stores.length > 0) {
         const firstStore = stores[0];
-        return createPublicUrl(firstStore.slug, 'CUSTOMER_DASHBOARD');
+        return createPublicUrl(firstStore.slug, 'ACCOUNT');
       }
     } catch (error) {
       console.error('Failed to fetch stores:', error);
     }
     
     // Default fallback to new URL structure
-    return createPublicUrl('default', 'CUSTOMER_DASHBOARD');
+    return createPublicUrl('default', 'ACCOUNT');
   };
 
   const handleAuth = async (formData, isLogin) => {
