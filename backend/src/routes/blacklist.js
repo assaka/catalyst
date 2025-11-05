@@ -496,8 +496,77 @@ router.post('/emails', storeOwnerOnly, async (req, res) => {
   }
 });
 
+// @route   PUT /api/blacklist/emails/:id/:state
+// @desc    Update blacklist status for an email and all customers with that email
+// @access  Private (Store Owner Only)
+router.put('/emails/:id/:state', storeOwnerOnly, async (req, res) => {
+  try {
+    const { store_id } = req.query;
+    const { id, state } = req.params;
+    const is_blacklisted = state === 'true';
+
+    const blacklistEntry = await BlacklistEmail.findByPk(id);
+
+    if (!blacklistEntry) {
+      return res.status(404).json({
+        success: false,
+        message: 'Blacklist entry not found'
+      });
+    }
+
+    // Verify it belongs to the correct store
+    if (blacklistEntry.store_id !== store_id) {
+      return res.status(403).json({
+        success: false,
+        message: 'Access denied'
+      });
+    }
+
+    const email = blacklistEntry.email;
+
+    // Update all customers with this email
+    const { Customer } = require('../models');
+    const [updatedCount] = await Customer.update(
+      {
+        is_blacklisted: is_blacklisted,
+        blacklist_reason: is_blacklisted ? 'Email blacklisted' : null,
+        blacklisted_at: is_blacklisted ? new Date() : null
+      },
+      {
+        where: {
+          store_id: store_id,
+          email: email.toLowerCase()
+        }
+      }
+    );
+
+    // Delete the blacklist entry if setting to not blacklisted
+    if (!is_blacklisted) {
+      await blacklistEntry.destroy();
+    }
+
+    res.json({
+      success: true,
+      data: {
+        updated_customers: updatedCount,
+        email: email,
+        is_blacklisted: is_blacklisted
+      },
+      message: is_blacklisted
+        ? `Email blacklisted and ${updatedCount} customer(s) updated`
+        : `Email removed from blacklist and ${updatedCount} customer(s) updated`
+    });
+  } catch (error) {
+    console.error('Update blacklist email status error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Server error'
+    });
+  }
+});
+
 // @route   DELETE /api/blacklist/emails/:id
-// @desc    Remove email from blacklist
+// @desc    Remove email from blacklist (legacy - use PUT /emails/:id/:state instead)
 // @access  Private (Store Owner Only)
 router.delete('/emails/:id', storeOwnerOnly, async (req, res) => {
   try {
@@ -518,6 +587,24 @@ router.delete('/emails/:id', storeOwnerOnly, async (req, res) => {
         message: 'Access denied'
       });
     }
+
+    const email = blacklistEntry.email;
+
+    // Update all customers with this email to not blacklisted
+    const { Customer } = require('../models');
+    await Customer.update(
+      {
+        is_blacklisted: false,
+        blacklist_reason: null,
+        blacklisted_at: null
+      },
+      {
+        where: {
+          store_id: store_id,
+          email: email.toLowerCase()
+        }
+      }
+    );
 
     await blacklistEntry.destroy();
     res.json({

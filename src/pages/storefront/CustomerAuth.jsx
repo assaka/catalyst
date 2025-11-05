@@ -1,8 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { User } from "@/api/entities";
-import { Auth as AuthService } from "@/api/entities";
-import apiClient from "@/api/client";
+import { CustomerAuth } from "@/api/storefront-entities";
 import storefrontApiClient from "@/api/storefront-client";
 import { createPublicUrl } from "@/utils/urlUtils";
 import { useStore } from "@/components/storefront/StoreProvider";
@@ -86,9 +84,9 @@ export default function CustomerAuth() {
 
   const checkAuthStatus = async () => {
     try {
-      const customerToken = localStorage.getItem('customer_auth_token');
-      if (customerToken) {
-        const userData = await User.me();
+      // Check if customer is authenticated using the proper API
+      if (CustomerAuth.isAuthenticated()) {
+        const userData = await CustomerAuth.me();
         if (userData && userData.role === 'customer') {
           // User is already authenticated, redirect to dashboard
           const accountUrl = await getCustomerAccountUrl();
@@ -138,40 +136,24 @@ export default function CustomerAuth() {
           return;
         }
 
-        const response = await AuthService.login(
+        // CustomerAuth.login automatically stores the token with store context
+        const response = await CustomerAuth.login(
           formData.email,
           formData.password,
           formData.rememberMe,
-          'customer',
           storeId // Pass store_id to validate customer belongs to this store
         );
 
-        // Handle both array and object responses
-        let actualResponse = response;
-        if (Array.isArray(response)) {
-          actualResponse = response[0];
-        }
+        // CustomerAuth returns { success: true, data: { token, user } }
+        if (response.success) {
+          // Clear logged out flag
+          localStorage.removeItem('user_logged_out');
 
-        const isSuccess = actualResponse?.success ||
-                         actualResponse?.status === 'success' ||
-                         actualResponse?.token ||
-                         (actualResponse && Object.keys(actualResponse).length > 0);
-
-        if (isSuccess) {
-          const token = actualResponse.data?.token || actualResponse.token;
-
-          if (token) {
-            // Clear logged out flag before setting token
-            localStorage.removeItem('user_logged_out');
-
-            // Store token using the correct method (store-specific key)
-            storefrontApiClient.setCustomerToken(token, store?.slug);
-
-            // Navigate to customer account
-            const accountUrl = await getCustomerAccountUrl();
-            navigate(accountUrl);
-            return;
-          }
+          // Token is already stored by CustomerAuth.login()
+          // Navigate to customer account
+          const accountUrl = await getCustomerAccountUrl();
+          navigate(accountUrl);
+          return;
         }
       } else {
         // Registration
@@ -200,34 +182,24 @@ export default function CustomerAuth() {
           send_welcome_email: true // Send welcome email after registration
         };
 
-        const response = await AuthService.register(registerData);
+        // CustomerAuth.register automatically stores the token with store context
+        const response = await CustomerAuth.register(registerData);
 
-        // Handle both array and object responses for registration
-        let actualRegResponse = response;
-        if (Array.isArray(response)) {
-          actualRegResponse = response[0];
-        }
+        // CustomerAuth returns { success: true, data: { token, user } }
+        if (response.success) {
+          // Set success message for welcome email
+          setSuccess("Registration successful! A welcome email has been sent to your email address.");
 
-        if (actualRegResponse?.success) {
-          const token = actualRegResponse.data?.token || actualRegResponse.token;
+          // Clear logged out flag
+          localStorage.removeItem('user_logged_out');
 
-          if (token) {
-            // Set success message for welcome email
-            setSuccess("Registration successful! A welcome email has been sent to your email address.");
-
-            // Clear logged out flag before setting token
-            localStorage.removeItem('user_logged_out');
-
-            // Store token using the correct method (store-specific key)
-            storefrontApiClient.setCustomerToken(token, store?.slug);
-
-            // Wait a moment to show the success message before redirecting
-            setTimeout(async () => {
-              const accountUrl = await getCustomerAccountUrl();
-              navigate(accountUrl);
-            }, 2000);
-            return;
-          }
+          // Token is already stored by CustomerAuth.register()
+          // Wait a moment to show the success message before redirecting
+          setTimeout(async () => {
+            const accountUrl = await getCustomerAccountUrl();
+            navigate(accountUrl);
+          }, 2000);
+          return;
         }
       }
     } catch (error) {
