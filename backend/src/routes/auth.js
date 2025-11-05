@@ -602,9 +602,12 @@ router.post('/login', [
 
     // Check if customer is blacklisted
     if (authenticatedUser.role === 'customer' && authenticatedUser.is_blacklisted) {
+      const { getTranslation } = require('../utils/translationHelper');
+      const language = req.headers['x-language'] || 'en';
+      const message = await getTranslation('error.blacklist.email', language);
       return res.status(403).json({
         success: false,
-        message: 'This email address cannot be used for checkout. Please contact support for assistance.'
+        message
       });
     }
 
@@ -1027,9 +1030,12 @@ router.post('/customer/login', [
 
     // Check if customer is blacklisted
     if (customer.is_blacklisted) {
+      const { getTranslation } = require('../utils/translationHelper');
+      const language = req.headers['x-language'] || 'en';
+      const message = await getTranslation('error.blacklist.email', language);
       return res.status(403).json({
         success: false,
-        message: 'This email address cannot be used for checkout. Please contact support for assistance.'
+        message
       });
     }
 
