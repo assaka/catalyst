@@ -1522,18 +1522,12 @@ export default function Checkout() {
                     </div>
                   </div>
                   <div className="flex items-center space-x-2">
-                    {userAddresses.length > 0 && (
-                      <span className="text-sm text-gray-600 mr-2">
-                        {userAddresses.length} {userAddresses.length === 1 ? 'saved address' : 'saved addresses'}
-                      </span>
-                    )}
                     <Button
                       variant="outline"
                       size="sm"
                       onClick={handleLogout}
                       className="text-gray-700 hover:text-gray-900"
                     >
-                      <LogOut className="w-4 h-4 mr-2" />
                       {t('common.logout', 'Logout')}
                     </Button>
                   </div>
