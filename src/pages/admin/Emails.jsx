@@ -3,19 +3,23 @@ import { EmailTemplate } from "@/api/entities";
 import { useStoreSelection } from "@/contexts/StoreSelectionContext.jsx";
 import NoStoreSelected from "@/components/admin/NoStoreSelected";
 import EmailTemplateForm from "@/components/admin/emails/EmailTemplateForm";
+import PdfTemplateForm from "@/components/admin/pdfs/PdfTemplateForm";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
-import { Plus, Edit, Trash2, Mail, Send, Languages } from "lucide-react";
+import { Plus, Edit, Trash2, Mail, Send, Languages, FileText } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import FlashMessage from "@/components/storefront/FlashMessage";
 import { useAlertTypes } from "@/hooks/useAlert";
 import BulkTranslateDialog from "@/components/admin/BulkTranslateDialog";
+import api from "@/utils/api";
 
 export default function Emails() {
   const { selectedStore, getSelectedStoreId } = useStoreSelection();
   const { showConfirm, AlertComponent } = useAlertTypes();
+
+  // Email templates state
   const [templates, setTemplates] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
@@ -23,9 +27,19 @@ export default function Emails() {
   const [flashMessage, setFlashMessage] = useState(null);
   const [showBulkTranslate, setShowBulkTranslate] = useState(false);
 
+  // PDF templates state
+  const [pdfTemplates, setPdfTemplates] = useState([]);
+  const [loadingPdf, setLoadingPdf] = useState(true);
+  const [showPdfForm, setShowPdfForm] = useState(false);
+  const [editingPdfTemplate, setEditingPdfTemplate] = useState(null);
+
+  // Tab state
+  const [activeTab, setActiveTab] = useState('emails');
+
   useEffect(() => {
     if (selectedStore) {
       loadTemplates();
+      loadPdfTemplates();
     }
   }, [selectedStore]);
 
@@ -34,6 +48,7 @@ export default function Emails() {
     const handleStoreChange = () => {
       if (selectedStore) {
         loadTemplates();
+        loadPdfTemplates();
       }
     };
 
@@ -63,6 +78,30 @@ export default function Emails() {
       setTemplates([]);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const loadPdfTemplates = async () => {
+    const storeId = getSelectedStoreId();
+    if (!storeId) {
+      setPdfTemplates([]);
+      setLoadingPdf(false);
+      return;
+    }
+
+    setLoadingPdf(true);
+    try {
+      const response = await api.get(`/pdf-templates?store_id=${storeId}`);
+      console.log('📄 PDF Templates - Loaded:', {
+        count: response?.data?.length,
+        templates: response?.data
+      });
+      setPdfTemplates(response?.data || []);
+    } catch (error) {
+      console.error("Error loading PDF templates:", error);
+      setPdfTemplates([]);
+    } finally {
+      setLoadingPdf(false);
     }
   };
 
@@ -144,6 +183,41 @@ export default function Emails() {
     }
   };
 
+  // PDF Template Handlers
+  const handlePdfFormSubmit = async (formData) => {
+    try {
+      await api.put(`/pdf-templates/${editingPdfTemplate.id}`, formData);
+      setFlashMessage({ type: 'success', message: 'PDF template updated successfully!' });
+      setShowPdfForm(false);
+      setEditingPdfTemplate(null);
+      loadPdfTemplates();
+    } catch (error) {
+      console.error("Failed to save PDF template", error);
+      setFlashMessage({ type: 'error', message: 'Failed to save PDF template.' });
+    }
+  };
+
+  const handleEditPdf = (template) => {
+    setEditingPdfTemplate(template);
+    setShowPdfForm(true);
+  };
+
+  const closePdfForm = () => {
+    setShowPdfForm(false);
+    setEditingPdfTemplate(null);
+  };
+
+  const handleTogglePdfActive = async (template) => {
+    try {
+      await api.put(`/pdf-templates/${template.id}`, { is_active: !template.is_active });
+      setFlashMessage({ type: 'success', message: `PDF template ${template.is_active ? 'deactivated' : 'activated'} successfully!` });
+      loadPdfTemplates();
+    } catch (error) {
+      console.error("Failed to toggle PDF template status", error);
+      setFlashMessage({ type: 'error', message: 'Failed to toggle PDF template status.' });
+    }
+  };
+
   const getEmailTypeInfo = (identifier) => {
     const types = {
       'signup_email': {
@@ -192,28 +266,61 @@ export default function Emails() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900">Email Templates</h1>
-            <p className="text-gray-600 mt-1">Manage transactional email templates for your store</p>
+            <h1 className="text-3xl font-bold text-gray-900">Email & PDF Templates</h1>
+            <p className="text-gray-600 mt-1">Manage email and PDF templates for your store</p>
           </div>
           <div className="flex gap-2">
-            <Button
-              onClick={() => setShowBulkTranslate(true)}
-              variant="outline"
-              disabled={!selectedStore || templates.length === 0}
-            >
-              <Languages className="mr-2 h-4 w-4" /> Bulk Translate
-            </Button>
-            <Button
-              onClick={handleAdd}
-              className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 material-ripple material-elevation-1"
-              disabled={!selectedStore}
-            >
-              <Plus className="mr-2 h-4 w-4" /> Add Custom Template
-            </Button>
+            {activeTab === 'emails' ? (
+              <>
+                <Button
+                  onClick={() => setShowBulkTranslate(true)}
+                  variant="outline"
+                  disabled={!selectedStore || templates.length === 0}
+                >
+                  <Languages className="mr-2 h-4 w-4" /> Bulk Translate
+                </Button>
+                <Button
+                  onClick={handleAdd}
+                  className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 material-ripple material-elevation-1"
+                  disabled={!selectedStore}
+                >
+                  <Plus className="mr-2 h-4 w-4" /> Add Custom Template
+                </Button>
+              </>
+            ) : null}
           </div>
         </div>
 
-        {loading ? (
+        {/* Tabs */}
+        <div className="mb-6 border-b border-gray-200">
+          <div className="flex gap-4">
+            <button
+              onClick={() => setActiveTab('emails')}
+              className={`px-4 py-2 font-medium border-b-2 transition-colors ${
+                activeTab === 'emails'
+                  ? 'border-blue-600 text-blue-600'
+                  : 'border-transparent text-gray-600 hover:text-gray-900'
+              }`}
+            >
+              <Mail className="w-4 h-4 inline-block mr-2" />
+              Email Templates
+            </button>
+            <button
+              onClick={() => setActiveTab('pdfs')}
+              className={`px-4 py-2 font-medium border-b-2 transition-colors ${
+                activeTab === 'pdfs'
+                  ? 'border-blue-600 text-blue-600'
+                  : 'border-transparent text-gray-600 hover:text-gray-900'
+              }`}
+            >
+              <FileText className="w-4 h-4 inline-block mr-2" />
+              PDF Templates
+            </button>
+          </div>
+        </div>
+
+        {/* Email Templates Tab */}
+        {activeTab === 'emails' && (loading ? (
           <div className="flex items-center justify-center h-64">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
           </div>
@@ -306,7 +413,84 @@ export default function Emails() {
               </Button>
             </CardContent>
           </Card>
-        )}
+        ))}
+
+        {/* PDF Templates Tab */}
+        {activeTab === 'pdfs' && (loadingPdf ? (
+          <div className="flex items-center justify-center h-64">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+          </div>
+        ) : pdfTemplates.length > 0 ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {pdfTemplates.map(template => (
+              <Card key={template.id} className="material-elevation-1 border-0 hover:material-elevation-2 transition-all duration-300">
+                <CardHeader className="pb-3">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center space-x-3">
+                      <div className={`w-12 h-12 bg-gradient-to-r ${
+                        template.template_type === 'invoice' ? 'from-purple-500 to-pink-600' : 'from-teal-500 to-cyan-600'
+                      } rounded-lg flex items-center justify-center`}>
+                        <span className="text-xl">
+                          {template.template_type === 'invoice' ? '📄' : '📦'}
+                        </span>
+                      </div>
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2">
+                          <CardTitle className="text-lg">{template.name}</CardTitle>
+                          {template.is_system && (
+                            <Badge variant="secondary" className="text-xs">System</Badge>
+                          )}
+                        </div>
+                        <p className="text-sm text-gray-500">{template.identifier}</p>
+                      </div>
+                    </div>
+                  </div>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm font-medium">Active</span>
+                    <Switch
+                      checked={template.is_active}
+                      onCheckedChange={() => handleTogglePdfActive(template)}
+                    />
+                  </div>
+
+                  <div className="text-sm text-gray-600">
+                    <div className="flex justify-between mb-1">
+                      <span>Page Size:</span>
+                      <span className="font-medium">{template.settings?.page_size || 'A4'}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span>Orientation:</span>
+                      <span className="font-medium capitalize">{template.settings?.orientation || 'portrait'}</span>
+                    </div>
+                  </div>
+
+                  <div className="flex gap-2 pt-2">
+                    <Button
+                      onClick={() => handleEditPdf(template)}
+                      variant="outline"
+                      size="sm"
+                      className="flex-1"
+                    >
+                      <Edit className="w-4 h-4 mr-2" /> Edit Template
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        ) : (
+          <Card className="material-elevation-1 border-0">
+            <CardContent className="text-center py-12">
+              <FileText className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+              <h3 className="text-lg font-medium text-gray-900 mb-2">No PDF templates found</h3>
+              <p className="text-gray-600 mb-6">
+                System PDF templates should be automatically created during migration.
+              </p>
+            </CardContent>
+          </Card>
+        ))}
 
         {/* Bulk Translate Dialog */}
         <BulkTranslateDialog
@@ -329,6 +513,20 @@ export default function Emails() {
               template={editingTemplate}
               onSubmit={handleFormSubmit}
               onCancel={closeForm}
+            />
+          </DialogContent>
+        </Dialog>
+
+        {/* PDF Template Form Dialog */}
+        <Dialog open={showPdfForm} onOpenChange={setShowPdfForm}>
+          <DialogContent className="max-w-5xl max-h-[90vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle>Edit PDF Template: {editingPdfTemplate?.name}</DialogTitle>
+            </DialogHeader>
+            <PdfTemplateForm
+              template={editingPdfTemplate}
+              onSubmit={handlePdfFormSubmit}
+              onCancel={closePdfForm}
             />
           </DialogContent>
         </Dialog>
