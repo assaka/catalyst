@@ -13,6 +13,8 @@ import { Switch } from '@/components/ui/switch';
 import { Separator } from '@/components/ui/separator';
 import { Palette, Eye, Navigation, ShoppingBag, Filter, Home, CreditCard, GripVertical, Languages } from 'lucide-react';
 import SaveButton from '@/components/ui/save-button';
+import TranslationFields from '@/components/admin/TranslationFields';
+import api from '@/utils/api';
 import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors, useDroppable } from '@dnd-kit/core';
 import { arrayMove, SortableContext, sortableKeyboardCoordinates, useSortable, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
@@ -116,6 +118,8 @@ export default function ThemeLayout() {
     const [saveSuccess, setSaveSuccess] = useState(false);
     const [flashMessage, setFlashMessage] = useState(null);
     const [deliverySettings, setDeliverySettings] = useState(null);
+    const [showStepTranslations, setShowStepTranslations] = useState(false);
+    const [stepTranslations, setStepTranslations] = useState({});
 
     // Drag and drop sensors
     const sensors = useSensors(
@@ -141,6 +145,7 @@ export default function ThemeLayout() {
     useEffect(() => {
         if (selectedStore) {
             loadStore();
+            loadStepTranslations();
         }
     }, [selectedStore]);
 
@@ -148,6 +153,59 @@ export default function ThemeLayout() {
     useEffect(() => {
         // Trigger re-render when product_grid settings change
     }, [store?.settings?.product_grid]);
+
+    const loadStepTranslations = async () => {
+        try {
+            // Load all checkout step translations for all languages
+            const response = await api.get('/translations/ui-labels?category=checkout');
+
+            if (response && response.data && response.data.labels) {
+                // Transform flat structure to nested by language
+                // response.data.labels is like: { 'checkout.step_2step_1': 'value', ... }
+                // We need: { en: { step_2step_1: 'value', ... }, nl: { step_2step_1: 'value', ... } }
+
+                // Get all unique languages from the checkout translations
+                const checkoutKeys = ['checkout.step_2step_1', 'checkout.step_2step_2',
+                                     'checkout.step_3step_1', 'checkout.step_3step_2', 'checkout.step_3step_3'];
+
+                // We need to make a request per language to get all translations
+                // For now, let's structure it properly - the API returns translations for one language at a time
+                const allTranslations = {};
+
+                // Make requests for common languages (we can get available languages from context if needed)
+                const languages = ['en', 'nl', 'fr', 'de', 'es']; // Common languages
+
+                for (const lang of languages) {
+                    try {
+                        const langResponse = await api.get(`/translations/ui-labels?lang=${lang}`);
+                        if (langResponse && langResponse.data && langResponse.data.labels) {
+                            const labels = langResponse.data.labels;
+                            const langTranslations = {};
+
+                            // Extract checkout step translations
+                            checkoutKeys.forEach(key => {
+                                const shortKey = key.replace('checkout.', '');
+                                if (labels[key]) {
+                                    langTranslations[shortKey] = labels[key];
+                                }
+                            });
+
+                            if (Object.keys(langTranslations).length > 0) {
+                                allTranslations[lang] = langTranslations;
+                            }
+                        }
+                    } catch (err) {
+                        // Language might not exist, skip
+                        console.log(`No translations for ${lang}`);
+                    }
+                }
+
+                setStepTranslations(allTranslations);
+            }
+        } catch (error) {
+            console.error('Error loading step translations:', error);
+        }
+    };
 
     const loadStore = async () => {
         try {
@@ -606,6 +664,29 @@ export default function ThemeLayout() {
         setSaveSuccess(false);
 
         try {
+            // Save checkout step translations to translations table
+            if (stepTranslations && Object.keys(stepTranslations).length > 0) {
+                console.log('💾 Saving checkout step translations...');
+
+                for (const [lang, translations] of Object.entries(stepTranslations)) {
+                    for (const [key, value] of Object.entries(translations)) {
+                        const fullKey = `checkout.${key}`;
+                        try {
+                            await api.post('/translations/ui-labels', {
+                                key: fullKey,
+                                language_code: lang,
+                                value: value,
+                                category: 'checkout',
+                                type: 'system'
+                            });
+                        } catch (err) {
+                            console.error(`Error saving translation ${fullKey} for ${lang}:`, err);
+                        }
+                    }
+                }
+                console.log('✅ Checkout step translations saved');
+            }
+
             // Use the same approach as Tax.jsx and ShippingMethods.jsx
             const result = await retryApiCall(async () => {
                 const { Store } = await import('@/api/entities');
@@ -1917,59 +1998,59 @@ export default function ThemeLayout() {
                                         )}
 
                                         {/* Step Name Translations */}
-                                        <div className="mt-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
-                                            <div className="flex items-start justify-between gap-4">
-                                                <div className="flex-1">
-                                                    <div className="flex items-center gap-2 mb-2">
-                                                        <Languages className="w-5 h-5 text-blue-600" />
-                                                        <h4 className="font-medium text-gray-900">Manage Step Name Translations</h4>
-                                                    </div>
-                                                    <p className="text-sm text-gray-600 mb-3">
-                                                        Translate checkout step names into multiple languages for your international customers.
-                                                    </p>
-                                                    <div className="space-y-2 text-xs text-gray-600 font-mono bg-white p-3 rounded border border-blue-100">
-                                                        <p className="font-semibold text-gray-700 mb-1">Translation Keys:</p>
-                                                        {store.settings?.checkout_steps_count === 2 && (
-                                                            <>
-                                                                <div className="flex items-center gap-2">
-                                                                    <span className="w-2 h-2 bg-blue-500 rounded-full"></span>
-                                                                    <code>checkout.step_2step_1</code> - Step 1 Name
-                                                                </div>
-                                                                <div className="flex items-center gap-2">
-                                                                    <span className="w-2 h-2 bg-blue-500 rounded-full"></span>
-                                                                    <code>checkout.step_2step_2</code> - Step 2 Name
-                                                                </div>
-                                                            </>
-                                                        )}
-                                                        {store.settings?.checkout_steps_count === 3 && (
-                                                            <>
-                                                                <div className="flex items-center gap-2">
-                                                                    <span className="w-2 h-2 bg-blue-500 rounded-full"></span>
-                                                                    <code>checkout.step_3step_1</code> - Step 1 Name
-                                                                </div>
-                                                                <div className="flex items-center gap-2">
-                                                                    <span className="w-2 h-2 bg-blue-500 rounded-full"></span>
-                                                                    <code>checkout.step_3step_2</code> - Step 2 Name
-                                                                </div>
-                                                                <div className="flex items-center gap-2">
-                                                                    <span className="w-2 h-2 bg-blue-500 rounded-full"></span>
-                                                                    <code>checkout.step_3step_3</code> - Step 3 Name
-                                                                </div>
-                                                            </>
-                                                        )}
-                                                    </div>
-                                                </div>
-                                                <Link to="/admin/translations?tab=ui-labels&category=checkout">
-                                                    <Button
+                                        <div className="mt-4">
+                                            <div className="flex items-center justify-between mb-2">
+                                                <Label className="text-sm font-medium">Step Name Translations</Label>
+                                                <div className="flex gap-2">
+                                                    <button
                                                         type="button"
-                                                        variant="default"
-                                                        className="flex items-center gap-2 whitespace-nowrap"
+                                                        onClick={() => setShowStepTranslations(!showStepTranslations)}
+                                                        className="text-sm text-blue-600 hover:text-blue-700 font-medium flex items-center gap-1"
                                                     >
                                                         <Languages className="w-4 h-4" />
-                                                        Manage Translations
-                                                    </Button>
-                                                </Link>
+                                                        {showStepTranslations ? 'Hide' : 'Manage'} Translations
+                                                    </button>
+                                                    <Link to="/admin/translations?tab=ui-labels&category=checkout">
+                                                        <Button
+                                                            type="button"
+                                                            variant="outline"
+                                                            size="sm"
+                                                            className="flex items-center gap-1"
+                                                        >
+                                                            <Languages className="w-3 h-3" />
+                                                            Edit in UI Labels
+                                                        </Button>
+                                                    </Link>
+                                                </div>
                                             </div>
+                                            <p className="text-xs text-gray-500 mb-3">
+                                                Translate checkout step names into multiple languages
+                                            </p>
+
+                                            {showStepTranslations && (
+                                                <div className="mt-4 border-2 border-blue-200 bg-blue-50 rounded-lg p-4">
+                                                    <div className="flex items-center gap-2 mb-4">
+                                                        <Languages className="w-5 h-5 text-blue-600" />
+                                                        <h3 className="text-base font-semibold text-blue-900">Step Name Translations</h3>
+                                                    </div>
+                                                    <TranslationFields
+                                                        translations={stepTranslations}
+                                                        onChange={(newTranslations) => {
+                                                            setStepTranslations(newTranslations);
+                                                        }}
+                                                        fields={
+                                                            store.settings?.checkout_steps_count === 2 ? [
+                                                                { name: 'step_2step_1', label: 'Step 1 Name', type: 'text', required: true, placeholder: 'Information' },
+                                                                { name: 'step_2step_2', label: 'Step 2 Name', type: 'text', required: true, placeholder: 'Payment' }
+                                                            ] : [
+                                                                { name: 'step_3step_1', label: 'Step 1 Name', type: 'text', required: true, placeholder: 'Information' },
+                                                                { name: 'step_3step_2', label: 'Step 2 Name', type: 'text', required: true, placeholder: 'Shipping' },
+                                                                { name: 'step_3step_3', label: 'Step 3 Name', type: 'text', required: true, placeholder: 'Payment' }
+                                                            ]
+                                                        }
+                                                    />
+                                                </div>
+                                            )}
                                         </div>
                                     </div>
                                 )}
