@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
 import { Store } from '@/api/entities';
 import { User } from '@/api/entities';
 import { DeliverySettings as DeliverySettingsEntity } from '@/api/entities';
@@ -10,7 +11,7 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
 import { Separator } from '@/components/ui/separator';
-import { Palette, Eye, Navigation, ShoppingBag, Filter, Home, CreditCard, GripVertical } from 'lucide-react';
+import { Palette, Eye, Navigation, ShoppingBag, Filter, Home, CreditCard, GripVertical, Languages } from 'lucide-react';
 import SaveButton from '@/components/ui/save-button';
 import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors, useDroppable } from '@dnd-kit/core';
 import { arrayMove, SortableContext, sortableKeyboardCoordinates, useSortable, verticalListSortingStrategy } from '@dnd-kit/sortable';
@@ -1914,6 +1915,62 @@ export default function ThemeLayout() {
                                                 </div>
                                             </div>
                                         )}
+
+                                        {/* Manage Translations Section */}
+                                        <div className="mt-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                                            <div className="flex items-start justify-between gap-4">
+                                                <div className="flex-1">
+                                                    <div className="flex items-center gap-2 mb-2">
+                                                        <Languages className="w-5 h-5 text-blue-600" />
+                                                        <h4 className="font-medium text-gray-900">Manage Step Name Translations</h4>
+                                                    </div>
+                                                    <p className="text-sm text-gray-600 mb-3">
+                                                        Translate checkout step names into multiple languages for your international customers.
+                                                    </p>
+                                                    <div className="space-y-2 text-xs text-gray-600 font-mono bg-white p-3 rounded border border-blue-100">
+                                                        <p className="font-semibold text-gray-700 mb-1">Translation Keys:</p>
+                                                        {store.settings?.checkout_steps_count === 2 && (
+                                                            <>
+                                                                <div className="flex items-center gap-2">
+                                                                    <span className="w-2 h-2 bg-blue-500 rounded-full"></span>
+                                                                    <code>checkout.step_2step_1</code> - Step 1 Name
+                                                                </div>
+                                                                <div className="flex items-center gap-2">
+                                                                    <span className="w-2 h-2 bg-blue-500 rounded-full"></span>
+                                                                    <code>checkout.step_2step_2</code> - Step 2 Name
+                                                                </div>
+                                                            </>
+                                                        )}
+                                                        {store.settings?.checkout_steps_count === 3 && (
+                                                            <>
+                                                                <div className="flex items-center gap-2">
+                                                                    <span className="w-2 h-2 bg-blue-500 rounded-full"></span>
+                                                                    <code>checkout.step_3step_1</code> - Step 1 Name
+                                                                </div>
+                                                                <div className="flex items-center gap-2">
+                                                                    <span className="w-2 h-2 bg-blue-500 rounded-full"></span>
+                                                                    <code>checkout.step_3step_2</code> - Step 2 Name
+                                                                </div>
+                                                                <div className="flex items-center gap-2">
+                                                                    <span className="w-2 h-2 bg-blue-500 rounded-full"></span>
+                                                                    <code>checkout.step_3step_3</code> - Step 3 Name
+                                                                </div>
+                                                            </>
+                                                        )}
+                                                    </div>
+                                                </div>
+                                                <Link to="/admin/translations?tab=ui-labels&category=checkout">
+                                                    <Button
+                                                        type="button"
+                                                        variant="default"
+                                                        className="flex items-center gap-2 whitespace-nowrap"
+                                                    >
+                                                        <Languages className="w-4 h-4" />
+                                                        Manage Translations
+                                                    </Button>
+                                                </Link>
+                                            </div>
+                                        </div>
                                     </div>
                                 )}
                             </div>
