@@ -820,15 +820,6 @@ export default function Translations() {
       setBulkTranslations({});
       setShowBulkAddForm(false);
       setAutoTranslate(false);
-
-      // Clear translation cache
-      try {
-        const channel = new BroadcastChannel('translations_update');
-        channel.postMessage({ type: 'clear_translations_cache' });
-        channel.close();
-      } catch (e) {
-        console.warn('BroadcastChannel not supported:', e);
-      }
     } catch (error) {
       console.error('Failed to add bulk translations:', error);
       showMessage('Failed to add translations', 'error');
