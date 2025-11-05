@@ -156,56 +156,118 @@ export default function ThemeLayout() {
 
     const loadStepTranslations = async () => {
         try {
-            // Load all checkout step translations for all languages
-            const response = await api.get('/translations/ui-labels?category=checkout');
+            const checkoutKeys = ['checkout.step_2step_1', 'checkout.step_2step_2',
+                                 'checkout.step_3step_1', 'checkout.step_3step_2', 'checkout.step_3step_3'];
 
-            if (response && response.data && response.data.labels) {
-                // Transform flat structure to nested by language
-                // response.data.labels is like: { 'checkout.step_2step_1': 'value', ... }
-                // We need: { en: { step_2step_1: 'value', ... }, nl: { step_2step_1: 'value', ... } }
+            const allTranslations = {};
 
-                // Get all unique languages from the checkout translations
-                const checkoutKeys = ['checkout.step_2step_1', 'checkout.step_2step_2',
-                                     'checkout.step_3step_1', 'checkout.step_3step_2', 'checkout.step_3step_3'];
+            // Make requests for common languages
+            const languages = ['en', 'nl', 'fr', 'de', 'es'];
 
-                // We need to make a request per language to get all translations
-                // For now, let's structure it properly - the API returns translations for one language at a time
-                const allTranslations = {};
+            for (const lang of languages) {
+                try {
+                    const langResponse = await api.get(`/translations/ui-labels?lang=${lang}`);
+                    if (langResponse && langResponse.data && langResponse.data.labels) {
+                        const labels = langResponse.data.labels;
+                        const langTranslations = {};
 
-                // Make requests for common languages (we can get available languages from context if needed)
-                const languages = ['en', 'nl', 'fr', 'de', 'es']; // Common languages
-
-                for (const lang of languages) {
-                    try {
-                        const langResponse = await api.get(`/translations/ui-labels?lang=${lang}`);
-                        if (langResponse && langResponse.data && langResponse.data.labels) {
-                            const labels = langResponse.data.labels;
-                            const langTranslations = {};
-
-                            // Extract checkout step translations
-                            checkoutKeys.forEach(key => {
-                                const shortKey = key.replace('checkout.', '');
-                                if (labels[key]) {
-                                    langTranslations[shortKey] = labels[key];
-                                }
-                            });
-
-                            if (Object.keys(langTranslations).length > 0) {
-                                allTranslations[lang] = langTranslations;
+                        // Extract checkout step translations
+                        checkoutKeys.forEach(key => {
+                            const shortKey = key.replace('checkout.', '');
+                            if (labels[key]) {
+                                langTranslations[shortKey] = labels[key];
                             }
-                        }
-                    } catch (err) {
-                        // Language might not exist, skip
-                        console.log(`No translations for ${lang}`);
-                    }
-                }
+                        });
 
-                setStepTranslations(allTranslations);
+                        if (Object.keys(langTranslations).length > 0) {
+                            allTranslations[lang] = langTranslations;
+                        }
+                    }
+                } catch (err) {
+                    console.log(`No translations for ${lang}`);
+                }
             }
+
+            setStepTranslations(allTranslations);
         } catch (error) {
             console.error('Error loading step translations:', error);
         }
     };
+
+    // Sync default step names with English translations (bi-directional)
+    useEffect(() => {
+        if (!store?.settings) return;
+
+        // When store settings change, update English translations to match
+        const updatedTranslations = { ...stepTranslations };
+
+        if (!updatedTranslations.en) {
+            updatedTranslations.en = {};
+        }
+
+        // Sync 2-step names
+        if (store.settings.checkout_2step_step1_name) {
+            updatedTranslations.en.step_2step_1 = store.settings.checkout_2step_step1_name;
+        }
+        if (store.settings.checkout_2step_step2_name) {
+            updatedTranslations.en.step_2step_2 = store.settings.checkout_2step_step2_name;
+        }
+
+        // Sync 3-step names
+        if (store.settings.checkout_3step_step1_name) {
+            updatedTranslations.en.step_3step_1 = store.settings.checkout_3step_step1_name;
+        }
+        if (store.settings.checkout_3step_step2_name) {
+            updatedTranslations.en.step_3step_2 = store.settings.checkout_3step_step2_name;
+        }
+        if (store.settings.checkout_3step_step3_name) {
+            updatedTranslations.en.step_3step_3 = store.settings.checkout_3step_step3_name;
+        }
+
+        setStepTranslations(updatedTranslations);
+    }, [store?.settings?.checkout_2step_step1_name, store?.settings?.checkout_2step_step2_name,
+        store?.settings?.checkout_3step_step1_name, store?.settings?.checkout_3step_step2_name,
+        store?.settings?.checkout_3step_step3_name]);
+
+    // Sync English translations back to default step names (reverse direction)
+    useEffect(() => {
+        if (!stepTranslations?.en || !store) return;
+
+        const updates = {};
+        let hasChanges = false;
+
+        // Sync English translations back to settings
+        if (stepTranslations.en.step_2step_1 && stepTranslations.en.step_2step_1 !== store.settings?.checkout_2step_step1_name) {
+            updates.checkout_2step_step1_name = stepTranslations.en.step_2step_1;
+            hasChanges = true;
+        }
+        if (stepTranslations.en.step_2step_2 && stepTranslations.en.step_2step_2 !== store.settings?.checkout_2step_step2_name) {
+            updates.checkout_2step_step2_name = stepTranslations.en.step_2step_2;
+            hasChanges = true;
+        }
+        if (stepTranslations.en.step_3step_1 && stepTranslations.en.step_3step_1 !== store.settings?.checkout_3step_step1_name) {
+            updates.checkout_3step_step1_name = stepTranslations.en.step_3step_1;
+            hasChanges = true;
+        }
+        if (stepTranslations.en.step_3step_2 && stepTranslations.en.step_3step_2 !== store.settings?.checkout_3step_step2_name) {
+            updates.checkout_3step_step2_name = stepTranslations.en.step_3step_2;
+            hasChanges = true;
+        }
+        if (stepTranslations.en.step_3step_3 && stepTranslations.en.step_3step_3 !== store.settings?.checkout_3step_step3_name) {
+            updates.checkout_3step_step3_name = stepTranslations.en.step_3step_3;
+            hasChanges = true;
+        }
+
+        if (hasChanges) {
+            setStore(prev => ({
+                ...prev,
+                settings: {
+                    ...prev.settings,
+                    ...updates
+                }
+            }));
+        }
+    }, [stepTranslations?.en]);
 
     const loadStore = async () => {
         try {

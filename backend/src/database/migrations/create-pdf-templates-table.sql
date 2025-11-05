@@ -7,16 +7,20 @@ CREATE TABLE IF NOT EXISTS pdf_templates (
     name VARCHAR(255) NOT NULL,
     template_type VARCHAR(50) NOT NULL CHECK (template_type IN ('invoice', 'shipment', 'packing_slip', 'receipt')),
     html_template TEXT NOT NULL,
-    default_html_template TEXT NOT NULL COMMENT 'Original default template for restore functionality',
+    default_html_template TEXT NOT NULL,
     is_active BOOLEAN DEFAULT TRUE,
     is_system BOOLEAN DEFAULT FALSE,
     variables JSONB DEFAULT '[]'::jsonb,
-    settings JSONB DEFAULT '{}'::jsonb COMMENT 'PDF-specific settings: page_size, margins, orientation, etc.',
+    settings JSONB DEFAULT '{}'::jsonb,
     sort_order INTEGER DEFAULT 0,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     UNIQUE(identifier, store_id)
 );
+
+-- Add comments after table creation
+COMMENT ON COLUMN pdf_templates.default_html_template IS 'Original default template for restore functionality';
+COMMENT ON COLUMN pdf_templates.settings IS 'PDF-specific settings: page_size, margins, orientation, etc.';
 
 CREATE INDEX idx_pdf_templates_store_id ON pdf_templates(store_id);
 CREATE INDEX idx_pdf_templates_identifier ON pdf_templates(identifier);
