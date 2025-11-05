@@ -14,7 +14,7 @@ import { useAlertTypes } from '@/hooks/useAlert';
 
 export default function Blacklist() {
     const { selectedStore, getSelectedStoreId } = useStoreSelection();
-    const { showError, showSuccess, AlertComponent } = useAlertTypes();
+    const { showError, showSuccess, showConfirm, AlertComponent } = useAlertTypes();
     const [loading, setLoading] = useState(true);
     const [activeTab, setActiveTab] = useState('ips');
 
@@ -185,7 +185,11 @@ export default function Blacklist() {
     };
 
     const handleDeleteIP = async (id) => {
-        if (!window.confirm('Are you sure you want to remove this IP from the blacklist?')) {
+        const confirmed = await showConfirm(
+            'Are you sure you want to remove this IP from the blacklist?',
+            'Remove IP from Blacklist'
+        );
+        if (!confirmed) {
             return;
         }
 
@@ -244,7 +248,11 @@ export default function Blacklist() {
     };
 
     const handleDeleteCountry = async (id) => {
-        if (!window.confirm('Are you sure you want to remove this country from the blacklist?')) {
+        const confirmed = await showConfirm(
+            'Are you sure you want to remove this country from the blacklist?',
+            'Remove Country from Blacklist'
+        );
+        if (!confirmed) {
             return;
         }
 
@@ -303,7 +311,11 @@ export default function Blacklist() {
     };
 
     const handleDeleteEmail = async (id) => {
-        if (!window.confirm('Are you sure you want to remove this email from the blacklist?')) {
+        const confirmed = await showConfirm(
+            'Are you sure you want to remove this email from the blacklist?',
+            'Remove Email from Blacklist'
+        );
+        if (!confirmed) {
             return;
         }
 
