@@ -15,7 +15,7 @@ import { useAlertTypes } from '@/hooks/useAlert';
 
 export default function Customers() {
     const { selectedStore, getSelectedStoreId } = useStoreSelection();
-    const { showError, showSuccess, AlertComponent } = useAlertTypes();
+    const { showError, showSuccess, showConfirm, AlertComponent } = useAlertTypes();
     const [customers, setCustomers] = useState([]);
     const [loading, setLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
@@ -138,13 +138,18 @@ export default function Customers() {
     };
 
     const handleDeleteCustomer = async (customerId) => {
-        if (!confirm('Are you sure you want to delete this customer? This action cannot be undone.')) {
+        const confirmed = await showConfirm(
+            'Are you sure you want to delete this customer? This action cannot be undone.',
+            'Delete Customer'
+        );
+        if (!confirmed) {
             return;
         }
 
         try {
             await Customer.delete(customerId);
             setCustomers(customers.filter(c => c.id !== customerId));
+            showSuccess('Customer deleted successfully');
         } catch (error) {
             console.error('Error deleting customer:', error);
             showError('Failed to delete customer. Please try again.');
