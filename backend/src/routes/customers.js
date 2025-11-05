@@ -7,6 +7,8 @@ const { Op } = require('sequelize');
 
 const router = express.Router();
 
+console.log('📋 Loading customers router - route order check v2');
+
 // @route   GET /api/customers
 // @desc    Get all customers for a store
 // @access  Private
@@ -311,6 +313,7 @@ router.delete('/:id', authMiddleware, async (req, res) => {
 // @access  Private (Store Owner Only)
 // NOTE: This must come BEFORE /:id/blacklist to avoid route conflict
 router.put('/update-blacklist-by-email', storeOwnerOnly, async (req, res) => {
+  console.log('🔵 CORRECT ROUTE HIT - update-blacklist-by-email endpoint v2');
   try {
     const { store_id } = req.query;
     const { email, is_blacklisted } = req.body;
@@ -362,6 +365,7 @@ router.put('/update-blacklist-by-email', storeOwnerOnly, async (req, res) => {
 // @desc    Blacklist or un-blacklist a customer
 // @access  Private (Store Owner Only)
 router.put('/:id/blacklist', storeOwnerOnly, async (req, res) => {
+  console.log('🔴 WRONG ROUTE HIT - /:id/blacklist with id:', req.params.id);
   try {
     const { is_blacklisted, blacklist_reason } = req.body;
     const customer = await Customer.findByPk(req.params.id);
