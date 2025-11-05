@@ -740,7 +740,7 @@ const GuestWelcome = ({ onLogin, store, settings }) => (
 export default function CustomerDashboard() {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
-  const { store, settings, taxes, selectedCountry } = useStore();
+  const { store, settings, taxes, selectedCountry, loading: storeLoading } = useStore();
   const { showError, AlertComponent } = useAlertTypes();
   const [user, setUser] = useState(null);
   const [isGuest, setIsGuest] = useState(false);
@@ -1075,6 +1075,11 @@ export default function CustomerDashboard() {
   // New checkAuthStatus function to handle guest/authenticated user logic
   useEffect(() => {
     const checkAuthStatus = async () => {
+      // Wait for store to be loaded before checking authentication
+      if (storeLoading || !store) {
+        return;
+      }
+
       setLoading(true);
       try {
         // Check if customer token exists
@@ -1089,7 +1094,8 @@ export default function CustomerDashboard() {
 
         // Check if email is verified
         if (!userData.email_verified) {
-          navigate(`/public/${storeCode || 'default'}/verify-email?email=${encodeURIComponent(userData.email)}`);
+          const storeCode = store?.slug || 'default';
+          navigate(`/public/${storeCode}/verify-email?email=${encodeURIComponent(userData.email)}`);
           return;
         }
 
@@ -1116,7 +1122,7 @@ export default function CustomerDashboard() {
     };
 
     checkAuthStatus();
-  }, []);
+  }, [storeLoading, store]);
 
   // Effect for setting active tab from URL search params
   useEffect(() => {
@@ -1189,7 +1195,7 @@ export default function CustomerDashboard() {
     navigate(createPublicUrl(store?.slug, 'CUSTOMER_AUTH'));
   };
 
-  if (loading) {
+  if (loading || storeLoading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
