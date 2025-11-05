@@ -290,7 +290,7 @@ class EmailService {
       customer_email: customer.email || order.customer_email,
       store_name: store?.name || 'Our Store',
       order_number: order.order_number,
-      order_date: new Date(order.created_at).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }),
+      order_date: new Date(order.createdAt || order.created_at).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }),
       order_total: `$${parseFloat(order.total_amount).toFixed(2)}`,
       order_subtotal: `$${parseFloat(order.subtotal_amount || order.total_amount).toFixed(2)}`,
       order_tax: `$${parseFloat(order.tax_amount || 0).toFixed(2)}`,

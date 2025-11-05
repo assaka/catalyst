@@ -118,10 +118,30 @@ BEGIN
               <div style="background-color: #f9fafb; padding: 20px; border-radius: 8px; margin: 20px 0;">
                 <p style="margin: 5px 0;"><strong>Order Number:</strong> {{order_number}}</p>
                 <p style="margin: 5px 0;"><strong>Order Date:</strong> {{order_date}}</p>
-                <p style="margin: 5px 0;"><strong>Total Amount:</strong> {{order_total}}</p>
               </div>
               <h3>Order Items:</h3>
               {{items_html}}
+              <div style="background-color: #f9fafb; padding: 20px; border-radius: 8px; margin: 20px 0;">
+                <h3 style="margin-top: 0;">Order Summary</h3>
+                <table style="width: 100%; border-collapse: collapse;">
+                  <tr>
+                    <td style="padding: 8px 0; border-bottom: 1px solid #e5e7eb;">Subtotal</td>
+                    <td style="padding: 8px 0; border-bottom: 1px solid #e5e7eb; text-align: right;">{{order_subtotal}}</td>
+                  </tr>
+                  <tr>
+                    <td style="padding: 8px 0; border-bottom: 1px solid #e5e7eb;">Shipping</td>
+                    <td style="padding: 8px 0; border-bottom: 1px solid #e5e7eb; text-align: right;">{{order_shipping}}</td>
+                  </tr>
+                  <tr>
+                    <td style="padding: 8px 0; border-bottom: 1px solid #e5e7eb;">Tax</td>
+                    <td style="padding: 8px 0; border-bottom: 1px solid #e5e7eb; text-align: right;">{{order_tax}}</td>
+                  </tr>
+                  <tr>
+                    <td style="padding: 12px 0 0 0; font-size: 18px; font-weight: bold;">Total</td>
+                    <td style="padding: 12px 0 0 0; font-size: 18px; font-weight: bold; text-align: right;">{{order_total}}</td>
+                  </tr>
+                </table>
+              </div>
               <hr style="margin: 30px 0; border: none; border-top: 1px solid #e5e7eb;">
               <p style="color: #999; font-size: 12px;">
                 Best regards,<br>
@@ -132,7 +152,7 @@ BEGIN
             TRUE,
             TRUE,
             3,
-            '["customer_name", "customer_first_name", "order_number", "order_date", "order_total", "items_html", "items_count", "shipping_address", "billing_address", "store_name", "store_url", "current_year"]'::jsonb,
+            '["customer_name", "customer_first_name", "order_number", "order_date", "order_total", "order_subtotal", "order_tax", "order_shipping", "items_html", "items_count", "shipping_address", "billing_address", "store_name", "store_url", "current_year"]'::jsonb,
             NOW(),
             NOW()
         )

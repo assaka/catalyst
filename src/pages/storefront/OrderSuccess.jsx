@@ -154,6 +154,16 @@ export default function OrderSuccess() {
 
             if (finalizeResult.success) {
               console.log('✅ Order finalized successfully:', finalizeResult.message);
+
+              // Update local order state with new status from finalization
+              if (finalizeResult.data) {
+                setOrder(prev => ({
+                  ...prev,
+                  status: finalizeResult.data.status || 'processing',
+                  payment_status: finalizeResult.data.payment_status || 'paid'
+                }));
+                console.log('✅ Order state updated to:', finalizeResult.data.status, '/', finalizeResult.data.payment_status);
+              }
             } else {
               console.warn('⚠️ Order finalization failed:', finalizeResult.message);
             }
