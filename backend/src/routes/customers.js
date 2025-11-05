@@ -310,9 +310,11 @@ router.delete('/:id', authMiddleware, async (req, res) => {
 // @desc    Blacklist or un-blacklist a customer
 // @access  Private (Store Owner Only)
 router.put('/:id/blacklist', storeOwnerOnly, async (req, res) => {
+  console.log('=== BLACKLIST ENDPOINT HIT ===', { id: req.params.id, body: req.body });
   try {
     const { is_blacklisted, blacklist_reason } = req.body;
     const customer = await Customer.findByPk(req.params.id);
+    console.log('Customer found:', { id: customer?.id, current_is_blacklisted: customer?.is_blacklisted });
 
     if (!customer) {
       return res.status(404).json({
@@ -331,6 +333,7 @@ router.put('/:id/blacklist', storeOwnerOnly, async (req, res) => {
     }
 
     // Update blacklist status
+    console.log('Updating customer with:', { is_blacklisted, blacklist_reason });
     await customer.update({
       is_blacklisted: is_blacklisted,
       blacklist_reason: is_blacklisted ? blacklist_reason : null,
@@ -339,6 +342,7 @@ router.put('/:id/blacklist', storeOwnerOnly, async (req, res) => {
 
     // Reload to get fresh data
     await customer.reload();
+    console.log('After update:', { id: customer.id, is_blacklisted: customer.is_blacklisted });
 
     res.json({
       success: true,
