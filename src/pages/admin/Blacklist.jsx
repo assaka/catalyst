@@ -311,14 +311,6 @@ export default function Blacklist() {
     };
 
     const handleDeleteEmail = async (id) => {
-        const confirmed = await showConfirm(
-            'Are you sure you want to remove this email from the blacklist?',
-            'Remove Email from Blacklist'
-        );
-        if (!confirmed) {
-            return;
-        }
-
         try {
             const storeId = getSelectedStoreId();
             const response = await fetch(`/api/blacklist/emails/${id}?store_id=${storeId}`, {
