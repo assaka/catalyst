@@ -10,7 +10,6 @@ BEGIN
         INSERT INTO email_templates (
             id, store_id, identifier, subject, content_type,
             template_content, html_content, is_active, is_system, sort_order, variables,
-            attachment_enabled, attachment_config,
             created_at, updated_at
         ) VALUES (
             gen_random_uuid(),
@@ -86,8 +85,6 @@ BEGIN
             TRUE,
             10,
             '["invoice_number", "invoice_date", "order_number", "customer_name", "customer_first_name", "customer_email", "order_date", "order_total", "order_subtotal", "order_tax", "order_shipping", "items_html", "items_count", "billing_address", "shipping_address", "store_name", "store_url", "current_year", "email_header", "email_footer"]'::jsonb,
-            FALSE,
-            '{}'::jsonb,
             NOW(),
             NOW()
         )
@@ -101,7 +98,6 @@ BEGIN
         INSERT INTO email_templates (
             id, store_id, identifier, subject, content_type,
             template_content, html_content, is_active, is_system, sort_order, variables,
-            attachment_enabled, attachment_config,
             created_at, updated_at
         ) VALUES (
             gen_random_uuid(),
@@ -165,8 +161,6 @@ BEGIN
             TRUE,
             11,
             '["order_number", "tracking_number", "tracking_url", "shipping_method", "estimated_delivery_date", "delivery_instructions", "customer_name", "customer_first_name", "customer_email", "items_html", "items_count", "shipping_address", "store_name", "store_url", "current_year", "email_header", "email_footer"]'::jsonb,
-            FALSE,
-            '{}'::jsonb,
             NOW(),
             NOW()
         )
@@ -252,6 +246,6 @@ BEGIN
     END LOOP;
 END $$;
 
--- Add comments
-COMMENT ON COLUMN email_templates.attachment_enabled IS 'Whether to enable PDF attachments for this email template';
-COMMENT ON COLUMN email_templates.attachment_config IS 'Configuration for PDF attachments (type, filename pattern, etc.)';
+-- Add helpful comments
+COMMENT ON TABLE email_templates IS 'Email templates for transactional emails. Use {{email_header}} and {{email_footer}} for branded header/footer.';
+

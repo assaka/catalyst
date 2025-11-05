@@ -326,22 +326,58 @@ export default function EmailTemplateForm({ template, onSubmit, onCancel }) {
         </CardContent>
       </Card>
 
-      {/* Attachment Settings */}
-      <Card>
+      {/* Email Header & Footer Usage */}
+      <Card className="border-blue-200 bg-blue-50">
         <CardHeader>
-          <CardTitle>Attachment Settings</CardTitle>
+          <CardTitle className="text-blue-900 flex items-center gap-2">
+            <Mail className="w-5 h-5" />
+            Using Email Header & Footer
+          </CardTitle>
         </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <Label htmlFor="attachment_enabled">Enable Attachments</Label>
-              <p className="text-xs text-gray-500">Attach files like PDF invoices to emails</p>
+        <CardContent className="space-y-3 text-sm">
+          <div className="bg-white p-4 rounded-lg border border-blue-200">
+            <h4 className="font-semibold text-blue-900 mb-2">📧 Email Templates</h4>
+            <p className="text-gray-700 mb-2">Use these placeholders in your email content to include header and footer:</p>
+            <div className="space-y-2">
+              <div className="flex items-start gap-2">
+                <code className="px-2 py-1 bg-blue-100 text-blue-800 rounded text-xs font-mono">{'{{email_header}}'}</code>
+                <span className="text-gray-600">- Adds branded header with store logo and name</span>
+              </div>
+              <div className="flex items-start gap-2">
+                <code className="px-2 py-1 bg-blue-100 text-blue-800 rounded text-xs font-mono">{'{{email_footer}}'}</code>
+                <span className="text-gray-600">- Adds footer with contact info and links</span>
+              </div>
             </div>
-            <Switch
-              id="attachment_enabled"
-              checked={formData.attachment_enabled}
-              onCheckedChange={(checked) => handleInputChange('attachment_enabled', checked)}
-            />
+            <div className="mt-3 p-3 bg-gray-50 rounded border border-gray-200">
+              <p className="text-xs text-gray-600 mb-1">Example:</p>
+              <pre className="text-xs text-gray-700 overflow-x-auto">
+{`{{email_header}}
+<div style="padding: 20px;">
+  <p>Hi {{customer_first_name}},</p>
+  <p>Your content here...</p>
+</div>
+{{email_footer}}`}
+              </pre>
+            </div>
+          </div>
+
+          <div className="bg-white p-4 rounded-lg border border-blue-200">
+            <h4 className="font-semibold text-blue-900 mb-2">📄 Customizing Header & Footer</h4>
+            <p className="text-gray-700 mb-2">To customize the email header and footer templates:</p>
+            <ol className="list-decimal list-inside space-y-1 text-gray-600">
+              <li>Go to <strong>Content → Emails</strong></li>
+              <li>Find templates: <code className="text-xs bg-gray-100 px-1 rounded">email_header</code> and <code className="text-xs bg-gray-100 px-1 rounded">email_footer</code></li>
+              <li>Edit the HTML to match your brand</li>
+              <li>Changes apply to all emails using these placeholders</li>
+            </ol>
+          </div>
+
+          <div className="bg-white p-4 rounded-lg border border-blue-200">
+            <h4 className="font-semibold text-blue-900 mb-2">⚙️ PDF Attachments</h4>
+            <p className="text-gray-700">
+              PDF attachments (invoices, shipments) are configured in <strong>Sales → Settings</strong>.
+              Enable "Include PDF" options for invoice or shipment emails to automatically attach generated PDFs.
+            </p>
           </div>
         </CardContent>
       </Card>
