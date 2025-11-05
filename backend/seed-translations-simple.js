@@ -121,11 +121,6 @@ const defaultTranslations = [
   { key: 'message.invalid_email', value: 'Invalid email address', category: 'common' },
   { key: 'message.password_mismatch', value: 'Passwords do not match', category: 'common' },
 
-  // Blacklist / Security errors
-  { key: 'error.blacklist.email', value: 'This email address cannot be used for checkout. Please contact support for assistance.', category: 'error' },
-  { key: 'error.blacklist.ip', value: 'Your request cannot be processed. Please contact support for assistance.', category: 'error' },
-  { key: 'error.blacklist.country', value: 'Orders from your location cannot be processed at this time. Please contact support for assistance.', category: 'error' },
-
   // Admin
   { key: 'admin.manage', value: 'Manage', category: 'admin' },
   { key: 'admin.create', value: 'Create', category: 'admin' },
@@ -139,6 +134,18 @@ const defaultTranslations = [
   { key: 'admin.analytics', value: 'Analytics', category: 'admin' },
   { key: 'admin.translations', value: 'Translations', category: 'admin' },
   { key: 'admin.languages', value: 'Languages', category: 'admin' },
+
+  // Blacklist / Security errors
+  { key: 'error.blacklist.email', value: 'This email address cannot be used for checkout. Please contact support for assistance.', category: 'error' },
+  { key: 'error.blacklist.ip', value: 'Your request cannot be processed. Please contact support for assistance.', category: 'error' },
+  { key: 'error.blacklist.country', value: 'Orders from your location cannot be processed at this time. Please contact support for assistance.', category: 'error' },
+];
+
+// Dutch translations
+const dutchTranslations = [
+  { key: 'error.blacklist.email', value: 'Dit e-mailadres kan niet worden gebruikt voor het afrekenen. Neem contact op met ondersteuning voor hulp.', category: 'error' },
+  { key: 'error.blacklist.ip', value: 'Uw verzoek kan niet worden verwerkt. Neem contact op met ondersteuning voor hulp.', category: 'error' },
+  { key: 'error.blacklist.country', value: 'Bestellingen vanuit uw locatie kunnen momenteel niet worden verwerkt. Neem contact op met ondersteuning voor hulp.', category: 'error' },
 ];
 
 async function seedTranslations() {
@@ -168,11 +175,32 @@ async function seedTranslations() {
       }
     }
 
-    console.log(`\n✅ Seeded ${inserted} translations!\n`);
+    console.log(`\n✅ Seeded ${inserted} English translations!\n`);
+
+    // Insert Dutch translations
+    console.log(`📝 Inserting ${dutchTranslations.length} Dutch translations...`);
+    let insertedDutch = 0;
+    for (const t of dutchTranslations) {
+      await sequelize.query(`
+        INSERT INTO translations (id, key, language_code, value, category, created_at, updated_at)
+        VALUES (gen_random_uuid(), :key, 'nl', :value, :category, NOW(), NOW())
+        ON CONFLICT (key, language_code) DO UPDATE
+        SET value = EXCLUDED.value,
+            category = EXCLUDED.category,
+            updated_at = NOW()
+      `, {
+        replacements: { key: t.key, value: t.value, category: t.category }
+      });
+      insertedDutch++;
+    }
+
+    console.log(`✅ Seeded ${insertedDutch} Dutch translations!\n`);
 
     // Verify
-    const [count] = await sequelize.query("SELECT COUNT(*) as count FROM translations WHERE language_code = 'en'");
-    console.log(`📊 Total English translations in database: ${count[0].count}\n`);
+    const [countEn] = await sequelize.query("SELECT COUNT(*) as count FROM translations WHERE language_code = 'en'");
+    const [countNl] = await sequelize.query("SELECT COUNT(*) as count FROM translations WHERE language_code = 'nl'");
+    console.log(`📊 Total English translations in database: ${countEn[0].count}`);
+    console.log(`📊 Total Dutch translations in database: ${countNl[0].count}\n`);
 
     await sequelize.close();
     process.exit(0);
