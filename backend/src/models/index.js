@@ -63,6 +63,7 @@ const SlotConfiguration = require('./SlotConfiguration');
 // Email system models
 const EmailTemplate = require('./EmailTemplate');
 const EmailTemplateTranslation = require('./EmailTemplateTranslation');
+const PdfTemplate = require('./PdfTemplate');
 const BrevoConfiguration = require('./BrevoConfiguration');
 const EmailSendLog = require('./EmailSendLog');
 // Blacklist models
@@ -440,6 +441,7 @@ module.exports = {
   // Email system models
   EmailTemplate,
   EmailTemplateTranslation,
+  PdfTemplate,
   BrevoConfiguration,
   EmailSendLog,
   // Blacklist models

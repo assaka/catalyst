@@ -546,4 +546,65 @@ router.post('/bulk-translate', [
   }
 });
 
+/**
+ * POST /api/email-templates/:id/restore-default
+ * Restore system template to default content
+ */
+router.post('/:id/restore-default', async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const template = await EmailTemplate.findByPk(id);
+
+    if (!template) {
+      return res.status(404).json({
+        success: false,
+        message: 'Email template not found'
+      });
+    }
+
+    // Only system templates can be restored
+    if (!template.is_system) {
+      return res.status(400).json({
+        success: false,
+        message: 'Only system templates can be restored to default'
+      });
+    }
+
+    // Check store access
+    req.params.store_id = template.store_id;
+    await new Promise((resolve, reject) => {
+      checkStoreOwnership(req, res, (err) => {
+        if (err) reject(err);
+        else resolve();
+      });
+    });
+
+    // Restore to default content
+    await template.update({
+      subject: template.default_subject || template.subject,
+      template_content: template.default_template_content || template.template_content,
+      html_content: template.default_html_content || template.html_content
+    });
+
+    // Also delete all translations to restore them to default
+    await EmailTemplateTranslation.destroy({
+      where: { email_template_id: template.id }
+    });
+
+    res.json({
+      success: true,
+      message: 'Email template restored to default successfully',
+      data: template
+    });
+  } catch (error) {
+    console.error('Restore template error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Server error',
+      error: error.message
+    });
+  }
+});
+
 module.exports = router;

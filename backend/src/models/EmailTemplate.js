@@ -42,6 +42,22 @@ const EmailTemplate = sequelize.define('EmailTemplate', {
     allowNull: true,
     comment: 'Full HTML content for advanced users'
   },
+  // Default content for restore functionality
+  default_subject: {
+    type: DataTypes.STRING(255),
+    allowNull: true,
+    comment: 'Original default subject for restore functionality'
+  },
+  default_template_content: {
+    type: DataTypes.TEXT,
+    allowNull: true,
+    comment: 'Original default template content for restore functionality'
+  },
+  default_html_content: {
+    type: DataTypes.TEXT,
+    allowNull: true,
+    comment: 'Original default HTML content for restore functionality'
+  },
   variables: {
     type: DataTypes.JSON,
     defaultValue: [],

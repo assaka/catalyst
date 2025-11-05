@@ -8,9 +8,11 @@ import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
-import { Mail, Send, Copy, Eye } from 'lucide-react';
+import { Mail, Send, Copy, Eye, RotateCcw } from 'lucide-react';
 import TranslationFields from '@/components/admin/TranslationFields';
 import { useStoreSelection } from '@/contexts/StoreSelectionContext.jsx';
+import { toast } from 'sonner';
+import api from '@/utils/api';
 
 export default function EmailTemplateForm({ template, onSubmit, onCancel }) {
   const { getSelectedStoreId } = useStoreSelection();
@@ -157,7 +159,53 @@ export default function EmailTemplateForm({ template, onSubmit, onCancel }) {
 
   const copyVariable = (variable) => {
     navigator.clipboard.writeText(variable);
-    // Could add a toast notification here
+    toast.success('Variable copied to clipboard');
+  };
+
+  const handleRestoreDefault = async () => {
+    if (!template || !template.is_system) return;
+
+    if (!confirm('Are you sure you want to restore this template to default? All customizations and translations will be lost.')) {
+      return;
+    }
+
+    try {
+      setSaving(true);
+      const response = await api.post(`/email-templates/${template.id}/restore-default`);
+
+      if (response && response.success) {
+        toast.success('Template restored to default successfully');
+        // Reload the template data
+        const updated = await api.get(`/email-templates/${template.id}`);
+        if (updated && updated.success && updated.data) {
+          const translations = updated.data.translations || {
+            en: {
+              subject: updated.data.subject || '',
+              template_content: updated.data.template_content || '',
+              html_content: updated.data.html_content || ''
+            }
+          };
+
+          setFormData({
+            identifier: updated.data.identifier,
+            subject: translations.en?.subject || updated.data.subject || '',
+            content_type: updated.data.content_type || 'both',
+            template_content: translations.en?.template_content || updated.data.template_content || '',
+            html_content: translations.en?.html_content || updated.data.html_content || '',
+            is_active: updated.data.is_active !== false,
+            sort_order: updated.data.sort_order || 0,
+            attachment_enabled: updated.data.attachment_enabled || false,
+            attachment_config: updated.data.attachment_config || {},
+            translations
+          });
+        }
+      }
+    } catch (error) {
+      console.error('Restore error:', error);
+      toast.error('Failed to restore template');
+    } finally {
+      setSaving(false);
+    }
   };
 
   const handleSubmit = async (e) => {
@@ -407,17 +455,33 @@ export default function EmailTemplateForm({ template, onSubmit, onCancel }) {
       </Card>
 
       {/* Form Actions */}
-      <div className="flex justify-end gap-3 pt-4 border-t">
-        <Button type="button" variant="outline" onClick={onCancel} disabled={saving}>
-          Cancel
-        </Button>
-        <SaveButton
-          saving={saving}
-          saveSuccess={saveSuccess}
-          type="submit"
-        >
-          {template ? 'Update Template' : 'Create Template'}
-        </SaveButton>
+      <div className="flex justify-between items-center pt-4 border-t">
+        <div>
+          {template?.is_system && (
+            <Button
+              type="button"
+              variant="outline"
+              onClick={handleRestoreDefault}
+              disabled={saving}
+              className="flex items-center gap-2 text-orange-600 border-orange-300 hover:bg-orange-50"
+            >
+              <RotateCcw className="w-4 h-4" />
+              Restore to Default
+            </Button>
+          )}
+        </div>
+        <div className="flex gap-3">
+          <Button type="button" variant="outline" onClick={onCancel} disabled={saving}>
+            Cancel
+          </Button>
+          <SaveButton
+            saving={saving}
+            saveSuccess={saveSuccess}
+            type="submit"
+          >
+            {template ? 'Update Template' : 'Create Template'}
+          </SaveButton>
+        </div>
       </div>
     </form>
   );

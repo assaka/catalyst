@@ -82,6 +82,11 @@ class EmailService {
         content = translation?.template_content || template.template_content;
       }
 
+      // Process email_header and email_footer placeholders
+      if (content && (content.includes('{{email_header}}') || content.includes('{{email_footer}}'))) {
+        content = await this.processHeaderFooter(storeId, content, languageCode);
+      }
+
       // Render template with variables
       const renderedSubject = renderTemplate(subject, variables);
       const renderedContent = renderTemplate(content, variables);
@@ -307,6 +312,70 @@ class EmailService {
       order_details_url: `${store?.domain || process.env.CORS_ORIGIN}/order/${order.id}`,
       current_year: new Date().getFullYear()
     };
+  }
+
+  /**
+   * Process email_header and email_footer placeholders
+   * Replaces {{email_header}} and {{email_footer}} with actual template content
+   * @param {string} storeId - Store ID
+   * @param {string} content - Email content with placeholders
+   * @param {string} languageCode - Language code for translations
+   * @returns {Promise<string>} Content with header/footer replaced
+   */
+  async processHeaderFooter(storeId, content, languageCode = 'en') {
+    let processedContent = content;
+
+    try {
+      // Get header template if needed
+      if (content.includes('{{email_header}}')) {
+        const headerTemplate = await EmailTemplate.findOne({
+          where: { store_id: storeId, identifier: 'email_header', is_active: true },
+          include: [{
+            model: EmailTemplateTranslation,
+            as: 'translationsData',
+            where: { language_code: languageCode },
+            required: false
+          }]
+        });
+
+        if (headerTemplate) {
+          const headerTranslation = headerTemplate.translationsData?.[0];
+          const headerHtml = headerTranslation?.html_content || headerTemplate.html_content || '';
+          processedContent = processedContent.replace('{{email_header}}', headerHtml);
+        } else {
+          // If no header template found, just remove the placeholder
+          processedContent = processedContent.replace('{{email_header}}', '');
+        }
+      }
+
+      // Get footer template if needed
+      if (content.includes('{{email_footer}}')) {
+        const footerTemplate = await EmailTemplate.findOne({
+          where: { store_id: storeId, identifier: 'email_footer', is_active: true },
+          include: [{
+            model: EmailTemplateTranslation,
+            as: 'translationsData',
+            where: { language_code: languageCode },
+            required: false
+          }]
+        });
+
+        if (footerTemplate) {
+          const footerTranslation = footerTemplate.translationsData?.[0];
+          const footerHtml = footerTranslation?.html_content || footerTemplate.html_content || '';
+          processedContent = processedContent.replace('{{email_footer}}', footerHtml);
+        } else {
+          // If no footer template found, just remove the placeholder
+          processedContent = processedContent.replace('{{email_footer}}', '');
+        }
+      }
+
+      return processedContent;
+    } catch (error) {
+      console.error('Error processing header/footer:', error);
+      // Return content as-is if processing fails
+      return content;
+    }
   }
 
   /**
