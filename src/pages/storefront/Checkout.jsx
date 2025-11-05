@@ -18,7 +18,6 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { toast } from "sonner";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { CountrySelect } from "@/components/ui/country-select";
@@ -943,7 +942,12 @@ export default function Checkout() {
           await loadCheckoutData();
 
           // Show success message
-          toast.success(t('checkout.login_success', 'Successfully logged in! Your cart has been updated.'));
+          window.dispatchEvent(new CustomEvent('showFlashMessage', {
+            detail: {
+              type: 'success',
+              message: t('checkout.login_success', 'Successfully logged in! Your cart has been updated.')
+            }
+          }));
         }
       } else {
         setLoginError('Invalid email or password');
@@ -973,10 +977,20 @@ export default function Checkout() {
       await loadCheckoutData();
 
       // Show success message
-      toast.success(t('checkout.logout_success', 'Successfully logged out. You can continue as a guest.'));
+      window.dispatchEvent(new CustomEvent('showFlashMessage', {
+        detail: {
+          type: 'success',
+          message: t('checkout.logout_success', 'Successfully logged out. You can continue as a guest.')
+        }
+      }));
     } catch (error) {
       console.error('Logout failed:', error);
-      toast.error(t('checkout.logout_error', 'Failed to log out. Please try again.'));
+      window.dispatchEvent(new CustomEvent('showFlashMessage', {
+        detail: {
+          type: 'error',
+          message: t('checkout.logout_error', 'Failed to log out. Please try again.')
+        }
+      }));
     }
   };
 
@@ -1214,7 +1228,12 @@ export default function Checkout() {
       console.error('Checkout failed:', error);
       // Extract error message from backend response
       const errorMessage = error.response?.data?.message || error.message || 'Checkout failed. Please try again.';
-      toast.error(errorMessage);
+      window.dispatchEvent(new CustomEvent('showFlashMessage', {
+        detail: {
+          type: 'error',
+          message: errorMessage
+        }
+      }));
     } finally {
       setIsProcessing(false);
     }

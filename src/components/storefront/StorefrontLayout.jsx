@@ -31,7 +31,6 @@ import { HeaderSlotRenderer } from './HeaderSlotRenderer';
 import { useHeaderConfig } from '@/hooks/useHeaderConfig';
 import LanguageSelector from '@/components/shared/LanguageSelector';
 import { useTranslation } from '@/contexts/TranslationContext';
-import { Toaster } from '@/components/ui/sonner';
 
 const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 
@@ -731,8 +730,6 @@ export default function StorefrontLayout({ children }) {
             {settings?.cookie_consent?.enabled && (
                 <CookieConsentBanner />
             )}
-
-            <Toaster richColors position="top-right" />
             </div>
         </SeoSettingsProvider>
     );
