@@ -296,7 +296,11 @@ router.post('/finalize-order', async (req, res) => {
 
           // Create invoice record to track that invoice was sent
           try {
+            // Generate invoice number (in case hook doesn't fire)
+            const invoiceNumber = 'INV-' + Date.now() + '-' + Math.random().toString(36).substr(2, 9).toUpperCase();
+
             await Invoice.create({
+              invoice_number: invoiceNumber,
               order_id: order.id,
               store_id: order.store_id,
               customer_email: order.customer_email,
@@ -1164,7 +1168,11 @@ router.post('/:id/send-invoice', authMiddleware, async (req, res) => {
         email_status: 'sent'
       });
     } else {
+      // Generate invoice number (in case hook doesn't fire)
+      const invoiceNumber = 'INV-' + Date.now() + '-' + Math.random().toString(36).substr(2, 9).toUpperCase();
+
       invoice = await Invoice.create({
+        invoice_number: invoiceNumber,
         order_id: id,
         store_id: order.store_id,
         customer_email: order.customer_email,
@@ -1259,7 +1267,11 @@ router.post('/:id/send-shipment', authMiddleware, async (req, res) => {
         email_status: 'sent'
       });
     } else {
+      // Generate shipment number (in case hook doesn't fire)
+      const shipmentNumber = 'SHIP-' + Date.now() + '-' + Math.random().toString(36).substr(2, 9).toUpperCase();
+
       shipment = await Shipment.create({
+        shipment_number: shipmentNumber,
         order_id: id,
         store_id: order.store_id,
         customer_email: order.customer_email,

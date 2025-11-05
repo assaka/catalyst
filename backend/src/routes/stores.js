@@ -1046,48 +1046,4 @@ router.put('/:id/settings', authorize(['admin', 'store_owner']), async (req, res
   }
 });
 
-// @route   GET /api/stores/:store_id/plugins
-// @desc    Get all plugins for a specific store
-// @access  Authenticated
-router.get('/:store_id/plugins', async (req, res) => {
-  try {
-    const { store_id } = req.params;
-    console.log(`📦 Fetching plugins for store: ${store_id}`);
-
-    // Query plugin_registry for all plugins
-    const pluginsQuery = `
-      SELECT
-        pr.*,
-        pc.is_enabled as store_enabled,
-        pc.config_data as store_config
-      FROM plugin_registry pr
-      LEFT JOIN plugin_configurations pc
-        ON pr.id = pc.plugin_id AND pc.store_id = $1
-      WHERE pr.deprecated_at IS NULL
-      ORDER BY pr.created_at DESC
-    `;
-
-    const plugins = await sequelize.query(pluginsQuery, {
-      bind: [store_id],
-      type: sequelize.QueryTypes.SELECT
-    });
-
-    console.log(`✅ Found ${plugins.length} plugins for store ${store_id}`);
-
-    res.json({
-      success: true,
-      data: {
-        plugins: plugins
-      }
-    });
-  } catch (error) {
-    console.error('❌ Error fetching store plugins:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Failed to fetch store plugins',
-      error: error.message
-    });
-  }
-});
-
 module.exports = router;
