@@ -840,7 +840,7 @@ export default function ThemeLayout() {
                 console.error('Cache clearing failed:', e);
             }
 
-            setFlashMessage({ type: 'success', message: 'Settings saved successfully! Visit a category page to see changes.' });
+            setFlashMessage({ type: 'success', message: 'Settings saved successfully!' });
 
         } catch (error) {
             setFlashMessage({ type: 'error', message: `Failed to save settings: ${error.response?.data?.message || error.message}` });
@@ -863,17 +863,17 @@ export default function ThemeLayout() {
 
     return (
         <div className="min-h-screen bg-gray-50 p-8">
+            {flashMessage && (
+                <div className={`fixed top-4 left-1/2 transform -translate-x-1/2 z-50 p-4 rounded-lg text-white shadow-lg ${flashMessage.type === 'error' ? 'bg-red-500' : 'bg-green-500'}`}>
+                    {flashMessage.message}
+                </div>
+            )}
+
             <div className="max-w-7xl mx-auto">
                 <div className="mb-8">
                     <h1 className="text-3xl font-bold text-gray-900">Theme & Layout</h1>
                     <p className="text-gray-600 mt-1">Customize the look, feel, and layout of your storefront.</p>
                 </div>
-
-                {flashMessage && (
-                    <div className={`mb-4 p-4 rounded-lg text-white ${flashMessage.type === 'error' ? 'bg-red-500' : 'bg-green-500'}`}>
-                        {flashMessage.message}
-                    </div>
-                )}
 
                 <div className="space-y-8" onKeyDown={(e) => { if (e.key === 'Enter' && e.target.tagName !== 'TEXTAREA') { e.preventDefault(); } }}>
                     <Card className="material-elevation-1 border-0">

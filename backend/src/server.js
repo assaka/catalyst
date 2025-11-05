@@ -1908,8 +1908,20 @@ publicOrderRouter.post('/finalize-order', async (req, res) => {
 
     console.log('✅ Order status updated successfully');
 
-    // Send confirmation email (only if not already sent)
-    if (!order.confirmation_email_sent_at) {
+    // Send confirmation email (atomic check-and-set to prevent race condition)
+    // Use UPDATE with WHERE to atomically claim email sending rights
+    const [affectedRows] = await Order.update(
+      { confirmation_email_sent_at: new Date() },
+      {
+        where: {
+          id: order.id,
+          confirmation_email_sent_at: null // Only update if still null
+        }
+      }
+    );
+
+    if (affectedRows > 0) {
+      // We successfully claimed the email sending (atomic operation)
       try {
         console.log('📧 Sending order confirmation email to:', order.customer_email);
         const emailService = require('./services/email-service');
@@ -1954,15 +1966,14 @@ publicOrderRouter.post('/finalize-order', async (req, res) => {
           store: orderWithDetails.Store
         });
 
-        // Mark email as sent
-        await order.update({ confirmation_email_sent_at: new Date() });
-
         console.log('✅ Order confirmation email sent successfully');
       } catch (emailError) {
         console.error('❌ Failed to send confirmation email:', emailError);
+        // Rollback the flag if email failed
+        await order.update({ confirmation_email_sent_at: null });
       }
     } else {
-      console.log('✅ Order confirmation email already sent at:', order.confirmation_email_sent_at);
+      console.log('✅ Order confirmation email already sent by another process');
     }
 
     res.json({
