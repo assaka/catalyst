@@ -32,8 +32,8 @@ export const useRoleProtection = (shouldApply = true) => {
           '/admin/product-tabs', '/admin/product-labels', '/admin/custom-option-rules', '/admin/shipping-methods', 
           '/admin/google-tag-manager', '/admin/delivery-settings', '/admin/theme-layout', '/admin/marketplace-export', 
           '/admin/image-manager', '/admin/customers', '/admin/stock-settings', 
-          '/admin/analytics', '/admin/payment-methods', '/admin/seo-tools', 
-          '/onboarding', '/billing', '/client-dashboard', '/admin/stores', 
+          '/admin/analytics', '/admin/payment-methods', '/admin/seo-tools',
+          '/onboarding', '/billing', '/admin/stores',
           '/admin/customer-activity', '/admin/cookie-consent'
         ];
         
@@ -81,8 +81,8 @@ export const useRoleProtection = (shouldApply = true) => {
           '/admin/product-tabs', '/admin/product-labels', '/admin/custom-option-rules', '/admin/shipping-methods', 
           '/admin/google-tag-manager', '/admin/delivery-settings', '/admin/theme-layout', '/admin/marketplace-export', 
           '/admin/image-manager', '/admin/customers', '/admin/stock-settings', 
-          '/admin/analytics', '/admin/payment-methods', '/admin/seo-tools', 
-          '/onboarding', '/billing', '/client-dashboard', '/admin/stores', 
+          '/admin/analytics', '/admin/payment-methods', '/admin/seo-tools',
+          '/onboarding', '/billing', '/admin/stores',
           '/admin/customer-activity', '/admin/cookie-consent'
         ];
         const isDashboardContext = dashboardPages.some(page => currentPath.startsWith(page));

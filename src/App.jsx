@@ -457,7 +457,6 @@ function App() {
           <Route path="/public/:storeCode/verify-email" element={<PageWrapper Component={Pages.EmailVerification} pageName="EmailVerification" />} />
           <Route path="/public/:storeCode/account" element={<PageWrapper Component={Pages.CustomerDashboard} pageName="CustomerDashboard" />} />
           <Route path="/public/:storeCode/customer-dashboard" element={<PageWrapper Component={Pages.CustomerDashboard} pageName="CustomerDashboard" />} />
-          <Route path="/public/:storeCode/client-dashboard" element={<PageWrapper Component={Pages.ClientDashboard} pageName="ClientDashboard" />} />
           <Route path="/public/:storeCode/cms-page/:pageSlug" element={<PageWrapper Component={Pages.CmsPageViewer} pageName="CmsPageViewer" />} />
           <Route path="/public/:storeCode/sitemap" element={<PageWrapper Component={Pages.SitemapPublic} pageName="SitemapPublic" />} />
           <Route path="/public/:storeCode" element={<PageWrapper Component={Pages.Storefront} pageName="Storefront" />} />

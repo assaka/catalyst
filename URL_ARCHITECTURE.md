@@ -120,7 +120,6 @@ Some routes don't require prefixes as they're system-level:
 /landing                 - Marketing landing page
 /onboarding             - System onboarding
 /billing                - Billing management
-/client-dashboard       - Client management portal
 ```
 
 ## SEO-Friendly Features
