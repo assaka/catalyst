@@ -53,8 +53,15 @@ export default function Orders() {
 
   useEffect(() => {
     if (selectedStore) {
-      // Set store context for price formatting
-      _setStoreContext(selectedStore);
+      // Set store context for price formatting with fallback currency symbol
+      const storeWithDefaults = {
+        ...selectedStore,
+        settings: {
+          ...selectedStore.settings,
+          currency_symbol: selectedStore.settings?.currency_symbol || '$'
+        }
+      };
+      _setStoreContext(storeWithDefaults);
       loadOrders();
     }
   }, [selectedStore]);
@@ -63,8 +70,15 @@ export default function Orders() {
   useEffect(() => {
     const handleStoreChange = () => {
       if (selectedStore) {
-        // Update store context when store changes
-        _setStoreContext(selectedStore);
+        // Update store context when store changes with fallback currency symbol
+        const storeWithDefaults = {
+          ...selectedStore,
+          settings: {
+            ...selectedStore.settings,
+            currency_symbol: selectedStore.settings?.currency_symbol || '$'
+          }
+        };
+        _setStoreContext(storeWithDefaults);
         loadOrders();
       }
     };
