@@ -1206,7 +1206,9 @@ export default function Checkout() {
       }
     } catch (error) {
       console.error('Checkout failed:', error);
-      showError('Checkout failed. Please try again.');
+      // Extract error message from backend response
+      const errorMessage = error.response?.data?.message || error.message || 'Checkout failed. Please try again.';
+      showError(errorMessage);
     } finally {
       setIsProcessing(false);
     }
