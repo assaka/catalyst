@@ -877,7 +877,7 @@ export default function ThemeLayout() {
                     </div>
                 )}
 
-                <div className="space-y-8">
+                <div className="space-y-8" onKeyDown={(e) => { if (e.key === 'Enter' && e.target.tagName !== 'TEXTAREA') { e.preventDefault(); } }}>
                     <Card className="material-elevation-1 border-0">
                         <CardHeader>
                             <CardTitle className="flex items-center gap-2"><Palette className="w-5 h-5" /> Theme Settings</CardTitle>
