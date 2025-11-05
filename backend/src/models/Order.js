@@ -160,7 +160,7 @@ const Order = sequelize.define('Order', {
     allowNull: true
   }
 }, {
-  tableName: 'orders',
+  tableName: 'sales_orders',
   hooks: {
     beforeCreate: (order) => {
       if (!order.order_number) {

@@ -1,6 +1,8 @@
 const express = require('express');
 const { body, validationResult } = require('express-validator');
 const { Order, OrderItem, Store, Product, Customer } = require('../models');
+const Invoice = require('../models/Invoice');
+const Shipment = require('../models/Shipment');
 const { Op } = require('sequelize');
 const { authMiddleware } = require('../middleware/auth');
 const { validateCustomerOrderAccess } = require('../middleware/customerStoreAuth');
@@ -47,7 +49,7 @@ router.get('/by-payment-reference/:paymentReference', async (req, res) => {
         oi.selected_options,
         p.name as product_db_name,
         p.sku as product_db_sku
-      FROM orders o
+      FROM sales_orders o
       LEFT JOIN stores s ON o.store_id = s.id
       LEFT JOIN order_items oi ON o.id = oi.order_id
       LEFT JOIN products p ON oi.product_id = p.id
@@ -334,10 +336,10 @@ router.get('/db-diagnostic/:sessionId', async (req, res) => {
     
     // Direct SQL queries to check database state
     const orderResult = await sequelize.query(
-      `SELECT id, order_number, customer_email, total_amount, store_id, created_at 
-       FROM orders 
-       WHERE payment_reference = :sessionId 
-          OR stripe_payment_intent_id = :sessionId 
+      `SELECT id, order_number, customer_email, total_amount, store_id, created_at
+       FROM sales_orders
+       WHERE payment_reference = :sessionId
+          OR stripe_payment_intent_id = :sessionId
           OR stripe_session_id = :sessionId`,
       {
         replacements: { sessionId },
@@ -397,7 +399,7 @@ router.get('/test-direct/:orderId', async (req, res) => {
     
     // Direct SQL queries
     const orderResult = await sequelize.query(
-      'SELECT * FROM orders WHERE id = :orderId',
+      'SELECT * FROM sales_orders WHERE id = :orderId',
       {
         replacements: { orderId },
         type: QueryTypes.SELECT
@@ -1002,6 +1004,271 @@ router.put('/:id', async (req, res) => {
     res.status(500).json({
       success: false,
       message: 'Server error'
+    });
+  }
+});
+
+// @route   POST /api/orders/:id/resend-confirmation
+// @desc    Resend order confirmation email
+// @access  Private (admin)
+router.post('/:id/resend-confirmation', authMiddleware, async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    // Load order with all details
+    const order = await Order.findByPk(id, {
+      include: [
+        {
+          model: OrderItem,
+          as: 'OrderItems',
+          include: [{ model: Product, as: 'Product' }]
+        },
+        { model: Store, as: 'Store' }
+      ]
+    });
+
+    if (!order) {
+      return res.status(404).json({
+        success: false,
+        message: 'Order not found'
+      });
+    }
+
+    // Get customer details
+    const customer = order.customer_id ? await Customer.findByPk(order.customer_id) : null;
+
+    // Parse customer name from billing address
+    let firstName = 'Customer';
+    let lastName = '';
+    const fullName = order.billing_address?.full_name || order.billing_address?.name || '';
+    if (fullName && fullName.trim()) {
+      const nameParts = fullName.trim().split(' ');
+      firstName = nameParts[0];
+      lastName = nameParts.slice(1).join(' ');
+    }
+
+    // Send order confirmation email
+    await emailService.sendTransactionalEmail(order.store_id, 'order_confirmation', {
+      recipientEmail: order.customer_email,
+      customer: customer || { first_name: firstName, last_name: lastName, email: order.customer_email },
+      order: order.toJSON(),
+      store: order.Store
+    });
+
+    res.json({
+      success: true,
+      message: 'Order confirmation email resent successfully'
+    });
+  } catch (error) {
+    console.error('Resend order confirmation error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to resend order confirmation',
+      error: process.env.NODE_ENV === 'development' ? error.message : undefined
+    });
+  }
+});
+
+// @route   POST /api/orders/:id/send-invoice
+// @desc    Send or resend invoice email
+// @access  Private (admin)
+router.post('/:id/send-invoice', authMiddleware, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { withPdf = true } = req.body;
+
+    // Load order with all details
+    const order = await Order.findByPk(id, {
+      include: [
+        {
+          model: OrderItem,
+          as: 'OrderItems',
+          include: [{ model: Product, as: 'Product' }]
+        },
+        { model: Store, as: 'Store' }
+      ]
+    });
+
+    if (!order) {
+      return res.status(404).json({
+        success: false,
+        message: 'Order not found'
+      });
+    }
+
+    // Get customer details
+    const customer = order.customer_id ? await Customer.findByPk(order.customer_id) : null;
+
+    // Parse customer name from billing address
+    let firstName = 'Customer';
+    let lastName = '';
+    const fullName = order.billing_address?.full_name || order.billing_address?.name || '';
+    if (fullName && fullName.trim()) {
+      const nameParts = fullName.trim().split(' ');
+      firstName = nameParts[0];
+      lastName = nameParts.slice(1).join(' ');
+    }
+
+    // Check if invoice already exists
+    let invoice = await Invoice.findOne({ where: { order_id: id } });
+
+    // Prepare attachments if PDF is requested
+    let attachments = [];
+    if (withPdf) {
+      const pdfService = require('../services/pdf-service');
+      const invoicePdf = await pdfService.generateInvoicePDF(order, order.Store, order.OrderItems);
+      attachments = [{
+        filename: pdfService.getInvoiceFilename(order),
+        content: invoicePdf.toString('base64'),
+        contentType: 'application/pdf'
+      }];
+    }
+
+    // Send invoice email
+    await emailService.sendTransactionalEmail(order.store_id, 'invoice_email', {
+      recipientEmail: order.customer_email,
+      customer: customer || { first_name: firstName, last_name: lastName, email: order.customer_email },
+      order: order.toJSON(),
+      store: order.Store,
+      attachments: attachments
+    });
+
+    // Create or update invoice record
+    if (invoice) {
+      await invoice.update({
+        sent_at: new Date(),
+        pdf_generated: withPdf,
+        email_status: 'sent'
+      });
+    } else {
+      invoice = await Invoice.create({
+        order_id: id,
+        store_id: order.store_id,
+        customer_email: order.customer_email,
+        pdf_generated: withPdf,
+        email_status: 'sent'
+      });
+    }
+
+    res.json({
+      success: true,
+      message: 'Invoice email sent successfully',
+      data: { invoice_id: invoice.id }
+    });
+  } catch (error) {
+    console.error('Send invoice error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to send invoice',
+      error: process.env.NODE_ENV === 'development' ? error.message : undefined
+    });
+  }
+});
+
+// @route   POST /api/orders/:id/send-shipment
+// @desc    Send or resend shipment notification email
+// @access  Private (admin)
+router.post('/:id/send-shipment', authMiddleware, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { trackingNumber, trackingUrl, carrier, estimatedDeliveryDate } = req.body;
+
+    // Load order with all details
+    const order = await Order.findByPk(id, {
+      include: [
+        {
+          model: OrderItem,
+          as: 'OrderItems',
+          include: [{ model: Product, as: 'Product' }]
+        },
+        { model: Store, as: 'Store' }
+      ]
+    });
+
+    if (!order) {
+      return res.status(404).json({
+        success: false,
+        message: 'Order not found'
+      });
+    }
+
+    // Get customer details
+    const customer = order.customer_id ? await Customer.findByPk(order.customer_id) : null;
+
+    // Parse customer name from billing address
+    let firstName = 'Customer';
+    let lastName = '';
+    const fullName = order.billing_address?.full_name || order.billing_address?.name || '';
+    if (fullName && fullName.trim()) {
+      const nameParts = fullName.trim().split(' ');
+      firstName = nameParts[0];
+      lastName = nameParts.slice(1).join(' ');
+    }
+
+    // Update order tracking info if provided
+    if (trackingNumber) {
+      await order.update({ tracking_number: trackingNumber });
+    }
+
+    // Check if shipment already exists
+    let shipment = await Shipment.findOne({ where: { order_id: id } });
+
+    // Send shipment notification email
+    await emailService.sendTransactionalEmail(order.store_id, 'shipment_notification', {
+      recipientEmail: order.customer_email,
+      customer: customer || { first_name: firstName, last_name: lastName, email: order.customer_email },
+      order: order.toJSON(),
+      store: order.Store,
+      tracking_number: trackingNumber || order.tracking_number,
+      tracking_url: trackingUrl,
+      carrier: carrier,
+      estimated_delivery_date: estimatedDeliveryDate
+    });
+
+    // Create or update shipment record
+    if (shipment) {
+      await shipment.update({
+        sent_at: new Date(),
+        tracking_number: trackingNumber || shipment.tracking_number,
+        tracking_url: trackingUrl || shipment.tracking_url,
+        carrier: carrier || shipment.carrier,
+        estimated_delivery_date: estimatedDeliveryDate || shipment.estimated_delivery_date,
+        email_status: 'sent'
+      });
+    } else {
+      shipment = await Shipment.create({
+        order_id: id,
+        store_id: order.store_id,
+        customer_email: order.customer_email,
+        tracking_number: trackingNumber || order.tracking_number,
+        tracking_url: trackingUrl,
+        carrier: carrier,
+        shipping_method: order.shipping_method,
+        estimated_delivery_date: estimatedDeliveryDate,
+        email_status: 'sent'
+      });
+    }
+
+    // Update order status to shipped if not already
+    if (order.status !== 'shipped' && order.status !== 'delivered') {
+      await order.update({
+        status: 'shipped',
+        fulfillment_status: 'shipped',
+        shipped_at: new Date()
+      });
+    }
+
+    res.json({
+      success: true,
+      message: 'Shipment notification sent successfully',
+      data: { shipment_id: shipment.id }
+    });
+  } catch (error) {
+    console.error('Send shipment error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to send shipment notification',
+      error: process.env.NODE_ENV === 'development' ? error.message : undefined
     });
   }
 });

@@ -15,7 +15,10 @@ import {
   MapPin,
   Plus,
   Calendar,
-  DollarSign
+  DollarSign,
+  Mail,
+  FileText,
+  Truck
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -45,6 +48,8 @@ export default function Orders() {
   const [searchQuery, setSearchQuery] = useState("");
   const [openOrderId, setOpenOrderId] = useState(null);
   const [error, setError] = useState(null);
+  const [actionLoading, setActionLoading] = useState({});
+  const [actionSuccess, setActionSuccess] = useState({});
 
   useEffect(() => {
     if (selectedStore) {
@@ -157,6 +162,98 @@ export default function Orders() {
       month: 'short',
       day: 'numeric'
     });
+  };
+
+  const handleResendOrder = async (orderId) => {
+    const key = `resend-order-${orderId}`;
+    setActionLoading(prev => ({ ...prev, [key]: true }));
+    try {
+      const response = await fetch(`/api/orders/${orderId}/resend-confirmation`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        }
+      });
+
+      if (!response.ok) throw new Error('Failed to resend order confirmation');
+
+      setActionSuccess(prev => ({ ...prev, [key]: true }));
+      setTimeout(() => setActionSuccess(prev => ({ ...prev, [key]: false })), 3000);
+    } catch (error) {
+      console.error('Error resending order:', error);
+      alert('Failed to resend order confirmation');
+    } finally {
+      setActionLoading(prev => ({ ...prev, [key]: false }));
+    }
+  };
+
+  const handleSendInvoice = async (orderId) => {
+    const key = `send-invoice-${orderId}`;
+    setActionLoading(prev => ({ ...prev, [key]: true }));
+    try {
+      const response = await fetch(`/api/orders/${orderId}/send-invoice`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        },
+        body: JSON.stringify({ withPdf: true })
+      });
+
+      if (!response.ok) throw new Error('Failed to send invoice');
+
+      setActionSuccess(prev => ({ ...prev, [key]: true }));
+      setTimeout(() => setActionSuccess(prev => ({ ...prev, [key]: false })), 3000);
+    } catch (error) {
+      console.error('Error sending invoice:', error);
+      alert('Failed to send invoice');
+    } finally {
+      setActionLoading(prev => ({ ...prev, [key]: false }));
+    }
+  };
+
+  const handleSendShipment = async (orderId) => {
+    const key = `send-shipment-${orderId}`;
+    setActionLoading(prev => ({ ...prev, [key]: true }));
+    try {
+      const response = await fetch(`/api/orders/${orderId}/send-shipment`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        },
+        body: JSON.stringify({})
+      });
+
+      if (!response.ok) throw new Error('Failed to send shipment notification');
+
+      setActionSuccess(prev => ({ ...prev, [key]: true }));
+      setTimeout(() => setActionSuccess(prev => ({ ...prev, [key]: false })), 3000);
+    } catch (error) {
+      console.error('Error sending shipment:', error);
+      alert('Failed to send shipment notification');
+    } finally {
+      setActionLoading(prev => ({ ...prev, [key]: false }));
+    }
+  };
+
+  const shouldShowCreateInvoice = (order) => {
+    // Show create invoice button if:
+    // 1. Payment method is offline (bank transfer, cash, etc.), OR
+    // 2. Auto-generate invoice is disabled in store settings
+    const paymentMethod = order.payment_method?.toLowerCase() || '';
+    const isOfflinePayment = ['bank_transfer', 'cash', 'check', 'wire'].some(method =>
+      paymentMethod.includes(method)
+    );
+    const autoInvoiceEnabled = selectedStore?.settings?.sales_settings?.auto_invoice_enabled;
+    return isOfflinePayment || !autoInvoiceEnabled;
+  };
+
+  const shouldShowCreateShipment = (order) => {
+    // Show create shipment button if auto-ship is disabled
+    const autoShipEnabled = selectedStore?.settings?.sales_settings?.auto_ship_enabled;
+    return !autoShipEnabled;
   };
 
   if (loading) {
@@ -495,6 +592,64 @@ export default function Orders() {
                                               <p>{order.billing_address.country}</p>
                                             </div>
                                           </div>
+                                        )}
+                                      </div>
+                                    </div>
+
+                                    {/* Action Buttons */}
+                                    <div className="mt-6 pt-6 border-t">
+                                      <h4 className="font-semibold text-gray-900 mb-3">Actions</h4>
+                                      <div className="flex flex-wrap gap-2">
+                                        {/* Resend Order Button - Always visible */}
+                                        <Button
+                                          variant="outline"
+                                          size="sm"
+                                          onClick={() => handleResendOrder(order.id)}
+                                          disabled={actionLoading[`resend-order-${order.id}`]}
+                                          className={actionSuccess[`resend-order-${order.id}`] ? 'bg-green-50 border-green-500' : ''}
+                                        >
+                                          <Mail className="w-4 h-4 mr-2" />
+                                          {actionLoading[`resend-order-${order.id}`]
+                                            ? 'Sending...'
+                                            : actionSuccess[`resend-order-${order.id}`]
+                                            ? 'Sent!'
+                                            : 'Resend Order'}
+                                        </Button>
+
+                                        {/* Invoice Button - Conditional */}
+                                        {shouldShowCreateInvoice(order) && (
+                                          <Button
+                                            variant="outline"
+                                            size="sm"
+                                            onClick={() => handleSendInvoice(order.id)}
+                                            disabled={actionLoading[`send-invoice-${order.id}`]}
+                                            className={actionSuccess[`send-invoice-${order.id}`] ? 'bg-green-50 border-green-500' : ''}
+                                          >
+                                            <FileText className="w-4 h-4 mr-2" />
+                                            {actionLoading[`send-invoice-${order.id}`]
+                                              ? 'Sending...'
+                                              : actionSuccess[`send-invoice-${order.id}`]
+                                              ? 'Sent!'
+                                              : 'Send Invoice'}
+                                          </Button>
+                                        )}
+
+                                        {/* Shipment Button - Conditional */}
+                                        {shouldShowCreateShipment(order) && (
+                                          <Button
+                                            variant="outline"
+                                            size="sm"
+                                            onClick={() => handleSendShipment(order.id)}
+                                            disabled={actionLoading[`send-shipment-${order.id}`]}
+                                            className={actionSuccess[`send-shipment-${order.id}`] ? 'bg-green-50 border-green-500' : ''}
+                                          >
+                                            <Truck className="w-4 h-4 mr-2" />
+                                            {actionLoading[`send-shipment-${order.id}`]
+                                              ? 'Sending...'
+                                              : actionSuccess[`send-shipment-${order.id}`]
+                                              ? 'Sent!'
+                                              : 'Send Shipment'}
+                                          </Button>
                                         )}
                                       </div>
                                     </div>

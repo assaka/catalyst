@@ -51,7 +51,7 @@ const OrderItem = sequelize.define('OrderItem', {
     type: DataTypes.UUID,
     allowNull: false,
     references: {
-      model: 'orders',
+      model: 'sales_orders',
       key: 'id'
     }
   },
