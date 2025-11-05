@@ -870,13 +870,14 @@ export default function ThemeLayout() {
                     <h1 className="text-3xl font-bold text-gray-900">Theme & Layout</h1>
                     <p className="text-gray-600 mt-1">Customize the look, feel, and layout of your storefront.</p>
                 </div>
-                
+
                 {flashMessage && (
                     <div className={`mb-4 p-4 rounded-lg text-white ${flashMessage.type === 'error' ? 'bg-red-500' : 'bg-green-500'}`}>
                         {flashMessage.message}
                     </div>
                 )}
 
+                <form onSubmit={(e) => { e.preventDefault(); return false; }} onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); } }}>
                 <div className="space-y-8">
                     <Card className="material-elevation-1 border-0">
                         <CardHeader>
@@ -2493,6 +2494,7 @@ export default function ThemeLayout() {
                         defaultText="Save All Settings"
                     />
                 </div>
+                </form>
             </div>
         </div>
     );
