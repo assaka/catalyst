@@ -2481,10 +2481,12 @@ export default function ThemeLayout() {
 
                 <div className="flex justify-end mt-8">
                     <SaveButton
+                        type="button"
                         onClick={(e) => {
                             e.preventDefault();
                             e.stopPropagation();
                             handleSave();
+                            return false;
                         }}
                         loading={saving}
                         success={saveSuccess}
