@@ -15,11 +15,9 @@ class StorefrontApiClient {
 
   // Set the current store context
   setStoreContext(storeSlug) {
-    console.log('🏪 setStoreContext() called with slug:', storeSlug);
     this.currentStoreSlug = storeSlug;
     // Load the token for this store
     this.customerToken = this.getCustomerToken();
-    console.log('🏪 Store context set. Customer token loaded:', !!this.customerToken);
   }
 
   // Get or create a guest session ID
@@ -67,14 +65,11 @@ class StorefrontApiClient {
   getCustomerToken() {
     const slug = this.currentStoreSlug;
     if (!slug) {
-      console.warn('⚠️ getCustomerToken() called but currentStoreSlug is not set!');
       return null;
     }
 
     const tokenKey = `customer_auth_token_${slug}`;
-    const token = localStorage.getItem(tokenKey);
-    console.log('🔍 getCustomerToken() - slug:', slug, 'tokenKey:', tokenKey, 'hasToken:', !!token);
-    return token;
+    return localStorage.getItem(tokenKey);
   }
 
   // Build public URL

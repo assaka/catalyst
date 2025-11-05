@@ -136,12 +136,6 @@ export default function Checkout() {
     loadCheckoutData();
   }, [store?.id, storeLoading]);
 
-  // Debug: Log user state changes
-  useEffect(() => {
-    console.log('🔍 User state changed:', user ? `Logged in as ${user.email}` : 'Not logged in');
-    console.log('🔍 User addresses count:', userAddresses.length);
-  }, [user, userAddresses]);
-
   // Load persisted form data from localStorage after loading completes
   useEffect(() => {
     if (!loading && !dataRestored) {
@@ -346,38 +340,25 @@ export default function Checkout() {
 
       // Load user - use CustomerAuth for customer checkout
       try {
-        // Debug: Check authentication state
-        console.log('🔍 Checkout Debug - Store slug:', store?.slug);
-        console.log('🔍 Checkout Debug - Token key:', `customer_auth_token_${store?.slug}`);
-        console.log('🔍 Checkout Debug - Token value:', localStorage.getItem(`customer_auth_token_${store?.slug}`));
-        console.log('🔍 Checkout Debug - Old token (generic):', localStorage.getItem('customer_auth_token'));
-        console.log('🔍 Checkout Debug - isAuthenticated():', CustomerAuth.isAuthenticated());
-
         // Migration: Move old token to new store-specific key if needed
         const oldToken = localStorage.getItem('customer_auth_token');
         const newTokenKey = `customer_auth_token_${store?.slug}`;
         const newToken = localStorage.getItem(newTokenKey);
 
         if (oldToken && !newToken && store?.slug) {
-          console.log('🔄 Migrating old token to new store-specific key...');
           storefrontApiClient.setCustomerToken(oldToken, store.slug);
-          localStorage.removeItem('customer_auth_token'); // Clean up old key
-          console.log('✅ Token migrated successfully');
+          localStorage.removeItem('customer_auth_token');
         }
 
         // Check if customer is logged in
         if (CustomerAuth.isAuthenticated()) {
-          console.log('✅ Customer is authenticated, fetching user data...');
           const userData = await CustomerAuth.me();
-          console.log('✅ User data loaded:', userData);
           setUser(userData);
-          console.log('✅ User state set in React');
 
           // Load user addresses if logged in
           if (userData?.id) {
             try {
               const addresses = await CustomerAddress.findAll();
-              console.log('✅ Addresses loaded:', addresses?.length || 0, 'addresses');
               setUserAddresses(addresses || []);
             } catch (error) {
               console.warn('Addresses API not available:', error);
@@ -385,12 +366,11 @@ export default function Checkout() {
             }
           }
         } else {
-          console.log('❌ Customer is NOT authenticated');
           setUser(null);
           setUserAddresses([]);
         }
       } catch (error) {
-        console.error('❌ Error loading user:', error);
+        console.error('Error loading user:', error);
         setUser(null);
         setUserAddresses([]);
       }

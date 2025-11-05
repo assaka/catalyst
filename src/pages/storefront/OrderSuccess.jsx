@@ -128,14 +128,8 @@ export default function OrderSuccess() {
           }
 
           // Finalize order (update status, send email) - for connected account flow
-          // This is called here since connected accounts don't use platform webhooks
           try {
             const finalizeUrl = `${apiUrl}/api/orders/finalize-order`;
-            console.log('🎯 FINALIZATION START');
-            console.log('🎯 API URL:', apiUrl);
-            console.log('🎯 Finalize endpoint:', finalizeUrl);
-            console.log('🎯 Session ID:', sessionId);
-
             const finalizeResponse = await fetch(finalizeUrl, {
               method: 'POST',
               headers: {
@@ -146,33 +140,18 @@ export default function OrderSuccess() {
               })
             });
 
-            console.log('🎯 Response status:', finalizeResponse.status);
-            console.log('🎯 Response ok:', finalizeResponse.ok);
-
             const finalizeResult = await finalizeResponse.json();
-            console.log('🎯 Response data:', finalizeResult);
 
-            if (finalizeResult.success) {
-              console.log('✅ Order finalized successfully:', finalizeResult.message);
-
+            if (finalizeResult.success && finalizeResult.data) {
               // Update local order state with new status from finalization
-              if (finalizeResult.data) {
-                setOrder(prev => ({
-                  ...prev,
-                  status: finalizeResult.data.status || 'processing',
-                  payment_status: finalizeResult.data.payment_status || 'paid'
-                }));
-                console.log('✅ Order state updated to:', finalizeResult.data.status, '/', finalizeResult.data.payment_status);
-              }
-            } else {
-              console.warn('⚠️ Order finalization failed:', finalizeResult.message);
+              setOrder(prev => ({
+                ...prev,
+                status: finalizeResult.data.status || 'processing',
+                payment_status: finalizeResult.data.payment_status || 'paid'
+              }));
             }
           } catch (finalizeError) {
-            console.error('❌ FINALIZATION ERROR:', finalizeError);
-            console.error('❌ Error details:', {
-              message: finalizeError.message,
-              stack: finalizeError.stack
-            });
+            console.error('Failed to finalize order:', finalizeError.message);
             // Don't show error to user - order was still created
           }
 
