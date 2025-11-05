@@ -156,7 +156,6 @@ export default function ThemeLayout() {
 
     const loadStepTranslations = async () => {
         try {
-            console.log('🔍 Loading checkout step translations...');
             const checkoutKeys = ['checkout.step_2step_1', 'checkout.step_2step_2',
                                  'checkout.step_3step_1', 'checkout.step_3step_2', 'checkout.step_3step_3'];
 
@@ -168,12 +167,9 @@ export default function ThemeLayout() {
             for (const lang of languages) {
                 try {
                     const langResponse = await api.get(`/translations/ui-labels?lang=${lang}`);
-                    console.log(`📥 Response for ${lang}:`, langResponse);
 
                     if (langResponse && langResponse.data && langResponse.data.labels) {
                         const labels = langResponse.data.labels;
-                        console.log(`📋 Labels for ${lang}:`, labels);
-
                         const langTranslations = {};
 
                         // Extract checkout step translations - handle nested structure
@@ -189,24 +185,21 @@ export default function ThemeLayout() {
 
                             if (value) {
                                 langTranslations[shortKey] = value;
-                                console.log(`  ✓ Found ${shortKey} = "${value}"`);
                             }
                         });
 
                         if (Object.keys(langTranslations).length > 0) {
                             allTranslations[lang] = langTranslations;
-                            console.log(`✅ Loaded ${Object.keys(langTranslations).length} translations for ${lang}`);
                         }
                     }
                 } catch (err) {
-                    console.log(`⚠️  No translations for ${lang}:`, err.message);
+                    // Language might not exist, skip silently
                 }
             }
 
-            console.log('📦 All translations loaded:', allTranslations);
             setStepTranslations(allTranslations);
         } catch (error) {
-            console.error('❌ Error loading step translations:', error);
+            console.error('Error loading step translations:', error);
         }
     };
 
@@ -320,12 +313,10 @@ export default function ThemeLayout() {
                 setStepTranslations(prev => {
                     // If translations already loaded from API, don't override
                     if (prev && Object.keys(prev).length > 0 && prev.en && Object.keys(prev.en).length > 0) {
-                        console.log('✓ Translations already loaded from API, skipping initialization');
                         return prev;
                     }
 
                     // Initialize with defaults from store settings
-                    console.log('🔧 Initializing translations with store settings defaults');
                     return {
                         en: {
                             step_2step_1: fullStore?.settings?.checkout_2step_step1_name || 'Information',
@@ -776,8 +767,6 @@ export default function ThemeLayout() {
         try {
             // Save checkout step translations to translations table
             if (stepTranslations && Object.keys(stepTranslations).length > 0) {
-                console.log('💾 Saving checkout step translations...');
-
                 for (const [lang, translations] of Object.entries(stepTranslations)) {
                     for (const [key, value] of Object.entries(translations)) {
                         const fullKey = `checkout.${key}`;
@@ -794,14 +783,12 @@ export default function ThemeLayout() {
                         }
                     }
                 }
-                console.log('✅ Checkout step translations saved');
             }
 
             // Use the same approach as Tax.jsx and ShippingMethods.jsx
             const result = await retryApiCall(async () => {
                 const { Store } = await import('@/api/entities');
                 const apiResult = await Store.update(store.id, { settings: store.settings });
-                console.log('💾 ThemeLayout - Save result:', apiResult);
                 return apiResult;
             });
 
