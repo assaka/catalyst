@@ -9,6 +9,16 @@ const { PdfTemplate, EmailTemplate } = require('../models');
  * (same templates used for both emails and PDFs for consistency)
  */
 
+/**
+ * Helper function to safely convert values to numbers for toFixed
+ * Handles Sequelize Decimals, strings, and other types
+ */
+const safeNumber = (value) => {
+  if (value === null || value === undefined) return 0;
+  const num = parseFloat(value);
+  return isNaN(num) ? 0 : num;
+};
+
 class PDFService {
   constructor() {
     this.options = {
@@ -104,8 +114,8 @@ class PDFService {
       <tr>
         <td style="padding: 10px; border-bottom: 1px solid #e5e7eb;">${item.product_name || 'Product'}</td>
         <td style="padding: 10px; border-bottom: 1px solid #e5e7eb; text-align: center;">${item.quantity || 1}</td>
-        <td style="padding: 10px; border-bottom: 1px solid #e5e7eb; text-align: right;">$${(item.price || 0).toFixed(2)}</td>
-        <td style="padding: 10px; border-bottom: 1px solid #e5e7eb; text-align: right;">$${((item.price || 0) * (item.quantity || 1)).toFixed(2)}</td>
+        <td style="padding: 10px; border-bottom: 1px solid #e5e7eb; text-align: right;">$${safeNumber(item.price).toFixed(2)}</td>
+        <td style="padding: 10px; border-bottom: 1px solid #e5e7eb; text-align: right;">$${safeNumber(safeNumber(item.price) * (item.quantity || 1)).toFixed(2)}</td>
       </tr>
     `).join('');
 
@@ -117,11 +127,11 @@ class PDFService {
       billing_address: formatAddress(order.billing_address),
       shipping_address: formatAddress(order.shipping_address),
       items_table_rows: itemsRows,
-      order_subtotal: (order.subtotal || 0).toFixed(2),
-      order_shipping: (order.shipping_amount || 0).toFixed(2),
-      order_tax: (order.tax_amount || 0).toFixed(2),
-      order_discount: (order.discount_amount || 0).toFixed(2),
-      order_total: (order.total_amount || 0).toFixed(2),
+      order_subtotal: safeNumber(order.subtotal).toFixed(2),
+      order_shipping: safeNumber(order.shipping_amount).toFixed(2),
+      order_tax: safeNumber(order.tax_amount).toFixed(2),
+      order_discount: safeNumber(order.discount_amount).toFixed(2),
+      order_total: safeNumber(order.total_amount).toFixed(2),
       payment_method: order.payment_method || 'N/A',
       payment_status: order.payment_status ? order.payment_status.charAt(0).toUpperCase() + order.payment_status.slice(1) : 'N/A',
       store_name: store.name || '',
@@ -291,8 +301,8 @@ class PDFService {
       <tr>
         <td style="padding: 10px; border-bottom: 1px solid #e5e7eb;">${item.product_name || 'Product'}</td>
         <td style="padding: 10px; border-bottom: 1px solid #e5e7eb; text-align: center;">${item.quantity || 1}</td>
-        <td style="padding: 10px; border-bottom: 1px solid #e5e7eb; text-align: right;">$${(item.price || 0).toFixed(2)}</td>
-        <td style="padding: 10px; border-bottom: 1px solid #e5e7eb; text-align: right;">$${((item.price || 0) * (item.quantity || 1)).toFixed(2)}</td>
+        <td style="padding: 10px; border-bottom: 1px solid #e5e7eb; text-align: right;">$${safeNumber(item.price).toFixed(2)}</td>
+        <td style="padding: 10px; border-bottom: 1px solid #e5e7eb; text-align: right;">$${safeNumber(safeNumber(item.price) * (item.quantity || 1)).toFixed(2)}</td>
       </tr>
     `).join('');
 
@@ -378,25 +388,25 @@ class PDFService {
             <table>
               <tr>
                 <td style="padding: 5px 0; font-size: 14px;">Subtotal:</td>
-                <td style="padding: 5px 0; text-align: right; font-size: 14px;">$${(order.subtotal || 0).toFixed(2)}</td>
+                <td style="padding: 5px 0; text-align: right; font-size: 14px;">$${safeNumber(order.subtotal).toFixed(2)}</td>
               </tr>
               <tr>
                 <td style="padding: 5px 0; font-size: 14px;">Shipping:</td>
-                <td style="padding: 5px 0; text-align: right; font-size: 14px;">$${(order.shipping_amount || 0).toFixed(2)}</td>
+                <td style="padding: 5px 0; text-align: right; font-size: 14px;">$${safeNumber(order.shipping_amount).toFixed(2)}</td>
               </tr>
               <tr>
                 <td style="padding: 5px 0; font-size: 14px;">Tax:</td>
-                <td style="padding: 5px 0; text-align: right; font-size: 14px;">$${(order.tax_amount || 0).toFixed(2)}</td>
+                <td style="padding: 5px 0; text-align: right; font-size: 14px;">$${safeNumber(order.tax_amount).toFixed(2)}</td>
               </tr>
               ${order.discount_amount && parseFloat(order.discount_amount) > 0 ? `
               <tr>
                 <td style="padding: 5px 0; font-size: 14px; color: #10b981;">Discount:</td>
-                <td style="padding: 5px 0; text-align: right; font-size: 14px; color: #10b981;">-$${(order.discount_amount || 0).toFixed(2)}</td>
+                <td style="padding: 5px 0; text-align: right; font-size: 14px; color: #10b981;">-$${safeNumber(order.discount_amount).toFixed(2)}</td>
               </tr>
               ` : ''}
               <tr style="border-top: 2px solid #4f46e5;">
                 <td style="padding: 10px 0 0 0; font-size: 18px; font-weight: bold;">Total:</td>
-                <td style="padding: 10px 0 0 0; text-align: right; font-size: 18px; font-weight: bold; color: #4f46e5;">$${(order.total_amount || 0).toFixed(2)}</td>
+                <td style="padding: 10px 0 0 0; text-align: right; font-size: 18px; font-weight: bold; color: #4f46e5;">$${safeNumber(order.total_amount).toFixed(2)}</td>
               </tr>
             </table>
           </div>
