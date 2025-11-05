@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
 import { Store } from '@/api/entities';
 import { User } from '@/api/entities';
 import { DeliverySettings as DeliverySettingsEntity } from '@/api/entities';
@@ -12,7 +13,6 @@ import { Switch } from '@/components/ui/switch';
 import { Separator } from '@/components/ui/separator';
 import { Palette, Eye, Navigation, ShoppingBag, Filter, Home, CreditCard, GripVertical, Languages } from 'lucide-react';
 import SaveButton from '@/components/ui/save-button';
-import TranslationFields from '@/components/admin/TranslationFields';
 import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors, useDroppable } from '@dnd-kit/core';
 import { arrayMove, SortableContext, sortableKeyboardCoordinates, useSortable, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
@@ -116,7 +116,6 @@ export default function ThemeLayout() {
     const [saveSuccess, setSaveSuccess] = useState(false);
     const [flashMessage, setFlashMessage] = useState(null);
     const [deliverySettings, setDeliverySettings] = useState(null);
-    const [showStepTranslations, setShowStepTranslations] = useState(false);
 
     // Drag and drop sensors
     const sensors = useSensors(
@@ -198,16 +197,6 @@ export default function ThemeLayout() {
                 checkout_3step_step1_name: fullStore?.settings?.checkout_3step_step1_name || 'Information',
                 checkout_3step_step2_name: fullStore?.settings?.checkout_3step_step2_name || 'Shipping',
                 checkout_3step_step3_name: fullStore?.settings?.checkout_3step_step3_name || 'Payment',
-                // Checkout step translations
-                checkout_step_translations: fullStore?.settings?.checkout_step_translations || {
-                    en: {
-                        step_2step_1: 'Information',
-                        step_2step_2: 'Payment',
-                        step_3step_1: 'Information',
-                        step_3step_2: 'Shipping',
-                        step_3step_3: 'Payment'
-                    }
-                },
                 checkout_step_indicator_active_color: fullStore?.settings?.checkout_step_indicator_active_color || '#007bff',
                 checkout_step_indicator_inactive_color: fullStore?.settings?.checkout_step_indicator_inactive_color || '#D1D5DB',
                 checkout_step_indicator_completed_color: fullStore?.settings?.checkout_step_indicator_completed_color || '#10B981',
@@ -1928,46 +1917,59 @@ export default function ThemeLayout() {
                                         )}
 
                                         {/* Step Name Translations */}
-                                        <div className="mt-4">
-                                            <div className="flex items-center justify-between mb-2">
-                                                <Label className="text-sm font-medium">Step Name Translations</Label>
-                                                <button
-                                                    type="button"
-                                                    onClick={() => setShowStepTranslations(!showStepTranslations)}
-                                                    className="text-sm text-blue-600 hover:text-blue-700 font-medium flex items-center gap-1"
-                                                >
-                                                    <Languages className="w-4 h-4" />
-                                                    {showStepTranslations ? 'Hide' : 'Manage'} Translations
-                                                </button>
-                                            </div>
-                                            <p className="text-xs text-gray-500 mb-3">
-                                                Translate checkout step names into multiple languages
-                                            </p>
-
-                                            {showStepTranslations && (
-                                                <div className="mt-4 border-2 border-blue-200 bg-blue-50 rounded-lg p-4">
-                                                    <div className="flex items-center gap-2 mb-4">
+                                        <div className="mt-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                                            <div className="flex items-start justify-between gap-4">
+                                                <div className="flex-1">
+                                                    <div className="flex items-center gap-2 mb-2">
                                                         <Languages className="w-5 h-5 text-blue-600" />
-                                                        <h3 className="text-base font-semibold text-blue-900">Step Name Translations</h3>
+                                                        <h4 className="font-medium text-gray-900">Manage Step Name Translations</h4>
                                                     </div>
-                                                    <TranslationFields
-                                                        translations={store.settings?.checkout_step_translations || {}}
-                                                        onChange={(newTranslations) => {
-                                                            handleSettingsChange('checkout_step_translations', newTranslations);
-                                                        }}
-                                                        fields={
-                                                            store.settings?.checkout_steps_count === 2 ? [
-                                                                { name: 'step_2step_1', label: 'Step 1 Name', type: 'text', required: true, placeholder: 'Information' },
-                                                                { name: 'step_2step_2', label: 'Step 2 Name', type: 'text', required: true, placeholder: 'Payment' }
-                                                            ] : [
-                                                                { name: 'step_3step_1', label: 'Step 1 Name', type: 'text', required: true, placeholder: 'Information' },
-                                                                { name: 'step_3step_2', label: 'Step 2 Name', type: 'text', required: true, placeholder: 'Shipping' },
-                                                                { name: 'step_3step_3', label: 'Step 3 Name', type: 'text', required: true, placeholder: 'Payment' }
-                                                            ]
-                                                        }
-                                                    />
+                                                    <p className="text-sm text-gray-600 mb-3">
+                                                        Translate checkout step names into multiple languages for your international customers.
+                                                    </p>
+                                                    <div className="space-y-2 text-xs text-gray-600 font-mono bg-white p-3 rounded border border-blue-100">
+                                                        <p className="font-semibold text-gray-700 mb-1">Translation Keys:</p>
+                                                        {store.settings?.checkout_steps_count === 2 && (
+                                                            <>
+                                                                <div className="flex items-center gap-2">
+                                                                    <span className="w-2 h-2 bg-blue-500 rounded-full"></span>
+                                                                    <code>checkout.step_2step_1</code> - Step 1 Name
+                                                                </div>
+                                                                <div className="flex items-center gap-2">
+                                                                    <span className="w-2 h-2 bg-blue-500 rounded-full"></span>
+                                                                    <code>checkout.step_2step_2</code> - Step 2 Name
+                                                                </div>
+                                                            </>
+                                                        )}
+                                                        {store.settings?.checkout_steps_count === 3 && (
+                                                            <>
+                                                                <div className="flex items-center gap-2">
+                                                                    <span className="w-2 h-2 bg-blue-500 rounded-full"></span>
+                                                                    <code>checkout.step_3step_1</code> - Step 1 Name
+                                                                </div>
+                                                                <div className="flex items-center gap-2">
+                                                                    <span className="w-2 h-2 bg-blue-500 rounded-full"></span>
+                                                                    <code>checkout.step_3step_2</code> - Step 2 Name
+                                                                </div>
+                                                                <div className="flex items-center gap-2">
+                                                                    <span className="w-2 h-2 bg-blue-500 rounded-full"></span>
+                                                                    <code>checkout.step_3step_3</code> - Step 3 Name
+                                                                </div>
+                                                            </>
+                                                        )}
+                                                    </div>
                                                 </div>
-                                            )}
+                                                <Link to="/admin/translations?tab=ui-labels&category=checkout">
+                                                    <Button
+                                                        type="button"
+                                                        variant="default"
+                                                        className="flex items-center gap-2 whitespace-nowrap"
+                                                    >
+                                                        <Languages className="w-4 h-4" />
+                                                        Manage Translations
+                                                    </Button>
+                                                </Link>
+                                            </div>
                                         </div>
                                     </div>
                                 )}
