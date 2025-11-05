@@ -60,6 +60,7 @@ const SlotConfiguration = require('./SlotConfiguration');
 const EmailTemplate = require('./EmailTemplate');
 const EmailTemplateTranslation = require('./EmailTemplateTranslation');
 const PdfTemplate = require('./PdfTemplate');
+const PdfTemplateTranslation = require('./PdfTemplateTranslation');
 const BrevoConfiguration = require('./BrevoConfiguration');
 const EmailSendLog = require('./EmailSendLog');
 // Blacklist models
@@ -350,6 +351,13 @@ const defineAssociations = () => {
   EmailSendLog.belongsTo(EmailTemplate, { foreignKey: 'email_template_id', as: 'emailTemplate' });
   Store.hasMany(EmailSendLog, { foreignKey: 'store_id', as: 'emailSendLogs' });
 
+  // PDF template associations
+  PdfTemplate.belongsTo(Store, { foreignKey: 'store_id', as: 'store' });
+  PdfTemplate.hasMany(PdfTemplateTranslation, { foreignKey: 'pdf_template_id', as: 'translationsData', onDelete: 'CASCADE' });
+  Store.hasMany(PdfTemplate, { foreignKey: 'store_id', as: 'pdfTemplates' });
+
+  PdfTemplateTranslation.belongsTo(PdfTemplate, { foreignKey: 'pdf_template_id', as: 'pdfTemplate' });
+
 };
 
 // Initialize associations
@@ -418,6 +426,7 @@ module.exports = {
   EmailTemplate,
   EmailTemplateTranslation,
   PdfTemplate,
+  PdfTemplateTranslation,
   BrevoConfiguration,
   EmailSendLog,
   // Blacklist models

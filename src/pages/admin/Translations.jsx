@@ -13,6 +13,8 @@ import AttributeTranslationRow from '../../components/admin/translations/Attribu
 import CmsPageTranslationRow from '../../components/admin/translations/CmsPageTranslationRow';
 import CmsBlockTranslationRow from '../../components/admin/translations/CmsBlockTranslationRow';
 import ProductTabTranslationRow from '../../components/admin/translations/ProductTabTranslationRow';
+import EmailTemplateTranslationRow from '../../components/admin/translations/EmailTemplateTranslationRow';
+import PdfTemplateTranslationRow from '../../components/admin/translations/PdfTemplateTranslationRow';
 import ProductLabelTranslationRow from '../../components/admin/translations/ProductLabelTranslationRow';
 import CookieConsentTranslationRow from '../../components/admin/translations/CookieConsentTranslationRow';
 import CustomOptionTranslationRow from '../../components/admin/translations/CustomOptionTranslationRow';
@@ -98,6 +100,16 @@ export default function Translations() {
 
   // Stock Labels state
   const [stockSettings, setStockSettings] = useState(null);
+
+  // Email Templates tab states
+  const [emailTemplates, setEmailTemplates] = useState([]);
+  const [loadingEmailTemplates, setLoadingEmailTemplates] = useState(false);
+  const [emailTemplateSearchQuery, setEmailTemplateSearchQuery] = useState('');
+
+  // PDF Templates tab states
+  const [pdfTemplates, setPdfTemplates] = useState([]);
+  const [loadingPdfTemplates, setLoadingPdfTemplates] = useState(false);
+  const [pdfTemplateSearchQuery, setPdfTemplateSearchQuery] = useState('');
   const [loadingStockSettings, setLoadingStockSettings] = useState(false);
 
   // Language selection for translations
@@ -419,6 +431,50 @@ export default function Translations() {
       showMessage('Failed to load CMS content', 'error');
     } finally {
       setLoadingCms(false);
+    }
+  };
+
+  const loadEmailTemplates = async () => {
+    const storeId = getSelectedStoreId();
+    if (!storeId) {
+      setEmailTemplates([]);
+      return;
+    }
+
+    try {
+      setLoadingEmailTemplates(true);
+      const response = await api.get(`/email-templates?store_id=${storeId}`);
+
+      if (response && response.success && response.data) {
+        setEmailTemplates(response.data || []);
+      }
+    } catch (error) {
+      console.error('Failed to load email templates:', error);
+      showMessage('Failed to load email templates', 'error');
+    } finally {
+      setLoadingEmailTemplates(false);
+    }
+  };
+
+  const loadPdfTemplates = async () => {
+    const storeId = getSelectedStoreId();
+    if (!storeId) {
+      setPdfTemplates([]);
+      return;
+    }
+
+    try {
+      setLoadingPdfTemplates(true);
+      const response = await api.get(`/pdf-templates?store_id=${storeId}`);
+
+      if (response && response.success && response.data) {
+        setPdfTemplates(response.data || []);
+      }
+    } catch (error) {
+      console.error('Failed to load PDF templates:', error);
+      showMessage('Failed to load PDF templates', 'error');
+    } finally {
+      setLoadingPdfTemplates(false);
     }
   };
 
@@ -889,6 +945,20 @@ export default function Translations() {
     }
   }, [activeTab, selectedStore]);
 
+  // Load email templates when switching to Email Templates tab
+  useEffect(() => {
+    if (activeTab === 'email-templates' && selectedStore) {
+      loadEmailTemplates();
+    }
+  }, [activeTab, selectedStore]);
+
+  // Load PDF templates when switching to PDF Templates tab
+  useEffect(() => {
+    if (activeTab === 'pdf-templates' && selectedStore) {
+      loadPdfTemplates();
+    }
+  }, [activeTab, selectedStore]);
+
   // Load various settings when switching to various tab
   useEffect(() => {
     if (activeTab === 'various' && selectedStore) {
@@ -1019,6 +1089,30 @@ export default function Translations() {
             `}
           >
             CMS Blocks
+          </button>
+          <button
+            onClick={() => setActiveTab('email-templates')}
+            className={`
+              px-4 py-2 font-medium border-b-2 transition-colors whitespace-nowrap
+              ${activeTab === 'email-templates'
+                ? 'border-blue-600 text-blue-600'
+                : 'border-transparent text-gray-600 hover:text-gray-900'
+              }
+            `}
+          >
+            Email Templates
+          </button>
+          <button
+            onClick={() => setActiveTab('pdf-templates')}
+            className={`
+              px-4 py-2 font-medium border-b-2 transition-colors whitespace-nowrap
+              ${activeTab === 'pdf-templates'
+                ? 'border-blue-600 text-blue-600'
+                : 'border-transparent text-gray-600 hover:text-gray-900'
+              }
+            `}
+          >
+            PDF Templates
           </button>
           <button
             onClick={() => setActiveTab('various')}
@@ -2026,6 +2120,195 @@ export default function Translations() {
                       return title.includes(query) || identifier.includes(query);
                     }).length} of {cmsBlocks.length} blocks
                   </span>
+                </div>
+              )}
+            </>
+          )}
+        </div>
+      )}
+
+      {/* Email Templates Tab */}
+      {activeTab === 'email-templates' && (
+        <div className="space-y-6">
+          {!selectedStore ? (
+            <div className="bg-white border border-gray-200 rounded-lg p-8 text-center text-gray-500">
+              <Globe className="w-12 h-12 mx-auto mb-4 text-gray-400" />
+              <h3 className="text-lg font-semibold text-gray-700 mb-2">
+                No Store Selected
+              </h3>
+              <p>
+                Please select a store to manage email template translations.
+              </p>
+            </div>
+          ) : (
+            <>
+              {/* Header */}
+              <div className="bg-white border border-gray-200 rounded-lg p-6">
+                <div className="mb-4">
+                  <h2 className="text-xl font-semibold text-gray-900 mb-2">Email Template Translations</h2>
+                  <p className="text-sm text-gray-600">
+                    Manage translations for email templates sent to customers
+                  </p>
+                </div>
+
+                {/* Language Selection */}
+                <div className="flex flex-wrap gap-2">
+                  {availableLanguages.map((lang) => (
+                    <label
+                      key={lang.code}
+                      className="flex items-center gap-1.5 px-2 py-1 rounded bg-gray-100 hover:bg-gray-200 cursor-pointer text-xs"
+                    >
+                      <input
+                        type="checkbox"
+                        checked={selectedTranslationLanguages.includes(lang.code)}
+                        onChange={() => handleToggleTranslationLanguage(lang.code)}
+                        className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                      />
+                      <span className="font-medium">{lang.code.toUpperCase()}</span>
+                      <span className="text-gray-600">({lang.native_name})</span>
+                    </label>
+                  ))}
+                </div>
+              </div>
+
+              {/* Loading State */}
+              {loadingEmailTemplates && (
+                <div className="bg-white border border-gray-200 rounded-lg p-8 text-center">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
+                  <p className="mt-4 text-gray-600">Loading email templates...</p>
+                </div>
+              )}
+
+              {/* Email Templates List */}
+              {!loadingEmailTemplates && emailTemplates.length > 0 && (
+                <div className="space-y-4">
+                  {emailTemplates
+                    .filter((template) => {
+                      if (!emailTemplateSearchQuery) return true;
+                      const query = emailTemplateSearchQuery.toLowerCase();
+                      return (
+                        template.identifier?.toLowerCase().includes(query) ||
+                        template.translations?.en?.subject?.toLowerCase().includes(query)
+                      );
+                    })
+                    .map((template) => (
+                      <EmailTemplateTranslationRow
+                        key={template.id}
+                        template={template}
+                        onUpdate={(id, translations) => {
+                          setEmailTemplates(prev => prev.map(t => t.id === id ? { ...t, translations } : t));
+                        }}
+                        selectedLanguages={selectedTranslationLanguages}
+                        onFlashMessage={showFlashMessage}
+                      />
+                    ))}
+                </div>
+              )}
+
+              {/* Empty State */}
+              {!loadingEmailTemplates && emailTemplates.length === 0 && (
+                <div className="bg-white border border-gray-200 rounded-lg p-8 text-center text-gray-500">
+                  <h3 className="text-lg font-semibold text-gray-700 mb-2">
+                    No Email Templates Found
+                  </h3>
+                  <p>
+                    Create email templates in Settings → Email Templates to manage translations.
+                  </p>
+                </div>
+              )}
+            </>
+          )}
+        </div>
+      )}
+
+      {/* PDF Templates Tab */}
+      {activeTab === 'pdf-templates' && (
+        <div className="space-y-6">
+          {!selectedStore ? (
+            <div className="bg-white border border-gray-200 rounded-lg p-8 text-center text-gray-500">
+              <Globe className="w-12 h-12 mx-auto mb-4 text-gray-400" />
+              <h3 className="text-lg font-semibold text-gray-700 mb-2">
+                No Store Selected
+              </h3>
+              <p>
+                Please select a store to manage PDF template translations.
+              </p>
+            </div>
+          ) : (
+            <>
+              {/* Header */}
+              <div className="bg-white border border-gray-200 rounded-lg p-6">
+                <div className="mb-4">
+                  <h2 className="text-xl font-semibold text-gray-900 mb-2">PDF Template Translations</h2>
+                  <p className="text-sm text-gray-600">
+                    Manage translations for PDF documents (invoices, shipments, etc.)
+                  </p>
+                </div>
+
+                {/* Language Selection */}
+                <div className="flex flex-wrap gap-2">
+                  {availableLanguages.map((lang) => (
+                    <label
+                      key={lang.code}
+                      className="flex items-center gap-1.5 px-2 py-1 rounded bg-gray-100 hover:bg-gray-200 cursor-pointer text-xs"
+                    >
+                      <input
+                        type="checkbox"
+                        checked={selectedTranslationLanguages.includes(lang.code)}
+                        onChange={() => handleToggleTranslationLanguage(lang.code)}
+                        className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                      />
+                      <span className="font-medium">{lang.code.toUpperCase()}</span>
+                      <span className="text-gray-600">({lang.native_name})</span>
+                    </label>
+                  ))}
+                </div>
+              </div>
+
+              {/* Loading State */}
+              {loadingPdfTemplates && (
+                <div className="bg-white border border-gray-200 rounded-lg p-8 text-center">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
+                  <p className="mt-4 text-gray-600">Loading PDF templates...</p>
+                </div>
+              )}
+
+              {/* PDF Templates List */}
+              {!loadingPdfTemplates && pdfTemplates.length > 0 && (
+                <div className="space-y-4">
+                  {pdfTemplates
+                    .filter((template) => {
+                      if (!pdfTemplateSearchQuery) return true;
+                      const query = pdfTemplateSearchQuery.toLowerCase();
+                      return (
+                        template.identifier?.toLowerCase().includes(query) ||
+                        template.name?.toLowerCase().includes(query) ||
+                        template.template_type?.toLowerCase().includes(query)
+                      );
+                    })
+                    .map((template) => (
+                      <PdfTemplateTranslationRow
+                        key={template.id}
+                        template={template}
+                        onUpdate={(id, translations) => {
+                          setPdfTemplates(prev => prev.map(t => t.id === id ? { ...t, translations } : t));
+                        }}
+                        selectedLanguages={selectedTranslationLanguages}
+                        onFlashMessage={showFlashMessage}
+                      />
+                    ))}
+                </div>
+              )}
+
+              {/* Empty State */}
+              {!loadingPdfTemplates && pdfTemplates.length === 0 && (
+                <div className="bg-white border border-gray-200 rounded-lg p-8 text-center text-gray-500">
+                  <h3 className="text-lg font-semibold text-gray-700 mb-2">
+                    No PDF Templates Found
+                  </h3>
+                  <p>
+                    PDF templates are automatically created for your store.
+                  </p>
                 </div>
               )}
             </>

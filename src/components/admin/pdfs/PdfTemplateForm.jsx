@@ -7,6 +7,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { FileText, RotateCcw, Copy, Info } from 'lucide-react';
+import TranslationFields from '@/components/admin/TranslationFields';
 import { useStoreSelection } from '@/contexts/StoreSelectionContext.jsx';
 import { toast } from 'sonner';
 import api from '@/utils/api';
@@ -29,13 +30,24 @@ export default function PdfTemplateForm({ template, onSubmit, onCancel }) {
         bottom: '20px',
         left: '20px'
       }
+    },
+    translations: {
+      en: {
+        html_template: ''
+      }
     }
   });
 
   useEffect(() => {
     if (template) {
+      const translations = template.translations || {
+        en: {
+          html_template: template.html_template || ''
+        }
+      };
+
       setFormData({
-        html_template: template.html_template || '',
+        html_template: translations.en?.html_template || template.html_template || '',
         is_active: template.is_active !== false,
         settings: template.settings || {
           page_size: 'A4',
@@ -46,13 +58,36 @@ export default function PdfTemplateForm({ template, onSubmit, onCancel }) {
             bottom: '20px',
             left: '20px'
           }
-        }
+        },
+        translations
       });
     }
   }, [template]);
 
   const handleInputChange = (field, value) => {
-    setFormData(prev => ({ ...prev, [field]: value }));
+    setFormData(prev => {
+      const updated = { ...prev, [field]: value };
+
+      // Sync html_template field with en translations
+      if (field === 'html_template') {
+        updated.translations = {
+          ...prev.translations,
+          en: {
+            ...prev.translations?.en,
+            html_template: value
+          }
+        };
+      }
+
+      return updated;
+    });
+  };
+
+  const handleTranslationsChange = (translations) => {
+    setFormData(prev => ({
+      ...prev,
+      translations
+    }));
   };
 
   const handleSettingsChange = (field, value) => {
@@ -86,7 +121,7 @@ export default function PdfTemplateForm({ template, onSubmit, onCancel }) {
   const handleRestoreDefault = async () => {
     if (!template || !template.is_system) return;
 
-    if (!confirm('Are you sure you want to restore this PDF template to default? All customizations will be lost.')) {
+    if (!confirm('Are you sure you want to restore this PDF template to default? All customizations and translations will be lost.')) {
       return;
     }
 
@@ -99,10 +134,17 @@ export default function PdfTemplateForm({ template, onSubmit, onCancel }) {
         // Reload the template data
         const updated = await api.get(`/pdf-templates/${template.id}`);
         if (updated && updated.success && updated.data) {
+          const translations = updated.data.translations || {
+            en: {
+              html_template: updated.data.html_template || ''
+            }
+          };
+
           setFormData({
-            html_template: updated.data.html_template || '',
+            html_template: translations.en?.html_template || updated.data.html_template || '',
             is_active: updated.data.is_active !== false,
-            settings: updated.data.settings || formData.settings
+            settings: updated.data.settings || formData.settings,
+            translations
           });
         }
       }
@@ -426,6 +468,23 @@ export default function PdfTemplateForm({ template, onSubmit, onCancel }) {
               <li>Keep fonts system-standard (Arial, Helvetica, Times)</li>
             </ul>
           </div>
+        </CardContent>
+      </Card>
+
+      {/* Translations */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Translations</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <TranslationFields
+            entityType="pdf_template"
+            translations={formData.translations || {}}
+            fields={[
+              { key: 'html_template', label: 'HTML Template', type: 'textarea', rows: 15 }
+            ]}
+            onChange={handleTranslationsChange}
+          />
         </CardContent>
       </Card>
 

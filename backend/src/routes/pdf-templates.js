@@ -1,6 +1,6 @@
 const express = require('express');
 const { body, validationResult } = require('express-validator');
-const { PdfTemplate, Store } = require('../models');
+const { PdfTemplate, PdfTemplateTranslation, Store } = require('../models');
 const { authMiddleware } = require('../middleware/auth');
 const { checkStoreOwnership } = require('../middleware/storeAuth');
 
@@ -35,12 +35,35 @@ router.get('/', async (req, res) => {
 
     const templates = await PdfTemplate.findAll({
       where: { store_id },
+      include: [{
+        model: PdfTemplateTranslation,
+        as: 'translationsData'
+      }],
       order: [['sort_order', 'ASC'], ['created_at', 'DESC']]
+    });
+
+    // Format translations as object for easier frontend consumption
+    const formattedTemplates = templates.map(template => {
+      const templateData = template.toJSON();
+      const translations = {};
+
+      if (templateData.translationsData) {
+        templateData.translationsData.forEach(trans => {
+          translations[trans.language_code] = {
+            html_template: trans.html_template
+          };
+        });
+      }
+
+      delete templateData.translationsData;
+      templateData.translations = translations;
+
+      return templateData;
     });
 
     res.json({
       success: true,
-      data: templates
+      data: formattedTemplates
     });
   } catch (error) {
     console.error('Get PDF templates error:', error);
@@ -60,7 +83,12 @@ router.get('/:id', async (req, res) => {
   try {
     const { id } = req.params;
 
-    const template = await PdfTemplate.findByPk(id);
+    const template = await PdfTemplate.findByPk(id, {
+      include: [{
+        model: PdfTemplateTranslation,
+        as: 'translationsData'
+      }]
+    });
 
     if (!template) {
       return res.status(404).json({
@@ -78,9 +106,24 @@ router.get('/:id', async (req, res) => {
       });
     });
 
+    // Format translations
+    const templateData = template.toJSON();
+    const translations = {};
+
+    if (templateData.translationsData) {
+      templateData.translationsData.forEach(trans => {
+        translations[trans.language_code] = {
+          html_template: trans.html_template
+        };
+      });
+    }
+
+    delete templateData.translationsData;
+    templateData.translations = translations;
+
     res.json({
       success: true,
-      data: template
+      data: templateData
     });
   } catch (error) {
     console.error('Get PDF template error:', error);
@@ -99,7 +142,7 @@ router.get('/:id', async (req, res) => {
 router.put('/:id', async (req, res) => {
   try {
     const { id } = req.params;
-    const { html_template, settings, is_active } = req.body;
+    const { html_template, settings, is_active, translations } = req.body;
 
     const template = await PdfTemplate.findByPk(id);
 
@@ -127,6 +170,28 @@ router.put('/:id', async (req, res) => {
 
     // Update template
     await template.update(updateData);
+
+    // Update translations if provided
+    if (translations && typeof translations === 'object') {
+      for (const [lang_code, trans_data] of Object.entries(translations)) {
+        // Only save translations that have html_template content
+        if (trans_data && trans_data.html_template && trans_data.html_template.trim()) {
+          await PdfTemplateTranslation.upsert({
+            pdf_template_id: template.id,
+            language_code: lang_code,
+            html_template: trans_data.html_template
+          });
+        } else {
+          // Delete translation if html_template is empty
+          await PdfTemplateTranslation.destroy({
+            where: {
+              pdf_template_id: template.id,
+              language_code: lang_code
+            }
+          });
+        }
+      }
+    }
 
     res.json({
       success: true,

@@ -1,0 +1,64 @@
+require('dotenv').config();
+const { Pool } = require('pg');
+const fs = require('fs');
+const path = require('path');
+
+// Database connection string from environment
+const connectionString = process.env.SUPABASE_DATABASE_URL || process.env.DATABASE_URL;
+
+if (!connectionString) {
+  console.error('❌ SUPABASE_DATABASE_URL or DATABASE_URL environment variable is not set');
+  process.exit(1);
+}
+
+async function runMigration() {
+  const pool = new Pool({ connectionString });
+
+  try {
+    console.log('🔄 Connecting to database...');
+
+    // Read the SQL migration file
+    const sqlPath = path.join(__dirname, 'create-pdf-template-translations-table.sql');
+    const sql = fs.readFileSync(sqlPath, 'utf8');
+
+    console.log('📄 Running migration: create-pdf-template-translations-table.sql');
+    console.log('---');
+
+    // Execute the SQL
+    await pool.query(sql);
+
+    console.log('✅ Migration completed successfully!');
+    console.log('---');
+
+    // Verify the table was created
+    const tableExists = await pool.query(`
+      SELECT EXISTS (
+        SELECT FROM information_schema.tables
+        WHERE table_name = 'pdf_template_translations'
+      );
+    `);
+
+    if (tableExists.rows[0].exists) {
+      console.log('✅ pdf_template_translations table created successfully');
+
+      // Count existing translations
+      const result = await pool.query(`
+        SELECT COUNT(*) as count
+        FROM pdf_template_translations;
+      `);
+
+      console.log(`✅ PDF template translations table ready (${result.rows[0].count} translations)`);
+    }
+
+    console.log('\n✅ All done! PDF template translations table is ready.');
+
+  } catch (error) {
+    console.error('❌ Migration failed:', error.message);
+    console.error('Full error:', error);
+    process.exit(1);
+  } finally {
+    await pool.end();
+  }
+}
+
+runMigration();
