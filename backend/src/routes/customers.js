@@ -393,11 +393,16 @@ router.put('/:id/blacklist', storeOwnerOnly, async (req, res) => {
 // @desc    Update blacklist status for all customers with a specific email
 // @access  Private (Store Owner Only)
 router.put('/update-blacklist-by-email', storeOwnerOnly, async (req, res) => {
+  console.log('=== UPDATE BLACKLIST BY EMAIL ENDPOINT HIT ===');
+  console.log('Query params:', req.query);
+  console.log('Body:', req.body);
+
   try {
     const { store_id } = req.query;
     const { email, is_blacklisted } = req.body;
 
     if (!store_id) {
+      console.log('❌ Missing store_id');
       return res.status(400).json({
         success: false,
         message: 'store_id is required'
@@ -405,11 +410,15 @@ router.put('/update-blacklist-by-email', storeOwnerOnly, async (req, res) => {
     }
 
     if (!email) {
+      console.log('❌ Missing email');
       return res.status(400).json({
         success: false,
         message: 'email is required'
       });
     }
+
+    console.log(`Updating customers with email: ${email} in store: ${store_id}`);
+    console.log(`Setting is_blacklisted to: ${is_blacklisted}`);
 
     // Update all customers with this email in this store
     const [updatedCount] = await Customer.update(
@@ -425,6 +434,8 @@ router.put('/update-blacklist-by-email', storeOwnerOnly, async (req, res) => {
         }
       }
     );
+
+    console.log(`✅ Updated ${updatedCount} customer(s)`);
 
     res.json({
       success: true,

@@ -340,7 +340,8 @@ export default function Blacklist() {
                 // Update customer is_blacklisted status to false for this email
                 if (emailAddress) {
                     try {
-                        await fetch(`/api/customers/update-blacklist-by-email?store_id=${storeId}`, {
+                        console.log('Updating customer blacklist status for email:', emailAddress);
+                        const updateResponse = await fetch(`/api/customers/update-blacklist-by-email?store_id=${storeId}`, {
                             method: 'PUT',
                             headers: {
                                 'Content-Type': 'application/json',
@@ -351,8 +352,13 @@ export default function Blacklist() {
                                 is_blacklisted: false
                             })
                         });
+                        const updateData = await updateResponse.json();
+                        console.log('Update response:', updateData);
+                        if (!updateData.success) {
+                            console.error('Failed to update customer blacklist status:', updateData.message);
+                        }
                     } catch (updateError) {
-                        console.warn('Could not update customer blacklist status:', updateError);
+                        console.error('Could not update customer blacklist status:', updateError);
                     }
                 }
 
