@@ -120,52 +120,59 @@ class FinalizePendingOrdersJob extends BaseJobHandler {
           finalizedCount++;
           console.log(`✅ Order ${order.order_number} finalized successfully`);
 
-          // Send confirmation email
-          try {
-            const orderWithDetails = await Order.findByPk(order.id, {
-              include: [{
-                model: OrderItem,
-                as: 'OrderItems',
+          // Send confirmation email (only if not already sent)
+          if (!order.confirmation_email_sent_at) {
+            try {
+              const orderWithDetails = await Order.findByPk(order.id, {
                 include: [{
-                  model: Product,
-                  attributes: ['id', 'sku']
+                  model: OrderItem,
+                  as: 'OrderItems',
+                  include: [{
+                    model: Product,
+                    attributes: ['id', 'sku']
+                  }]
+                }, {
+                  model: Store,
+                  as: 'Store'
                 }]
-              }, {
-                model: Store,
-                as: 'Store'
-              }]
-            });
+              });
 
-            // Try to get customer details
-            let customer = null;
-            if (order.customer_id) {
-              customer = await Customer.findByPk(order.customer_id);
+              // Try to get customer details
+              let customer = null;
+              if (order.customer_id) {
+                customer = await Customer.findByPk(order.customer_id);
+              }
+
+              // Extract customer name from shipping/billing address if customer not found
+              const customerName = customer
+                ? `${customer.first_name} ${customer.last_name}`
+                : (order.shipping_address?.full_name || order.shipping_address?.name || order.billing_address?.full_name || order.billing_address?.name || 'Customer');
+
+              const [firstName, ...lastNameParts] = customerName.split(' ');
+              const lastName = lastNameParts.join(' ') || '';
+
+              // Send order success email
+              await emailService.sendTransactionalEmail(order.store_id, 'order_success_email', {
+                recipientEmail: order.customer_email,
+                customer: customer || {
+                  first_name: firstName,
+                  last_name: lastName,
+                  email: order.customer_email
+                },
+                order: orderWithDetails.toJSON(),
+                store: orderWithDetails.Store
+              });
+
+              // Mark email as sent
+              await order.update({ confirmation_email_sent_at: new Date() });
+
+              console.log(`📧 Sent confirmation email to ${order.customer_email}`);
+            } catch (emailError) {
+              console.error(`❌ Failed to send email for order ${order.order_number}:`, emailError.message);
+              // Don't fail the job if email fails
             }
-
-            // Extract customer name from shipping/billing address if customer not found
-            const customerName = customer
-              ? `${customer.first_name} ${customer.last_name}`
-              : (order.shipping_address?.full_name || order.shipping_address?.name || order.billing_address?.full_name || order.billing_address?.name || 'Customer');
-
-            const [firstName, ...lastNameParts] = customerName.split(' ');
-            const lastName = lastNameParts.join(' ') || '';
-
-            // Send order success email
-            await emailService.sendTransactionalEmail(order.store_id, 'order_success_email', {
-              recipientEmail: order.customer_email,
-              customer: customer || {
-                first_name: firstName,
-                last_name: lastName,
-                email: order.customer_email
-              },
-              order: orderWithDetails.toJSON(),
-              store: orderWithDetails.Store
-            });
-
-            console.log(`📧 Sent confirmation email to ${order.customer_email}`);
-          } catch (emailError) {
-            console.error(`❌ Failed to send email for order ${order.order_number}:`, emailError.message);
-            // Don't fail the job if email fails
+          } else {
+            console.log(`✅ Confirmation email already sent for order ${order.order_number} at ${order.confirmation_email_sent_at}`);
           }
         } else {
           // Payment not verified - already logged in provider-specific blocks above

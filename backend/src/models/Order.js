@@ -131,6 +131,12 @@ const Order = sequelize.define('Order', {
     type: DataTypes.TEXT,
     allowNull: true
   },
+  // Email tracking
+  confirmation_email_sent_at: {
+    type: DataTypes.DATE,
+    allowNull: true,
+    comment: 'Timestamp when order confirmation email was sent (prevents duplicates)'
+  },
   // Foreign keys
   store_id: {
     type: DataTypes.UUID,

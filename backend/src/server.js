@@ -1907,54 +1907,61 @@ publicOrderRouter.post('/finalize-order', async (req, res) => {
 
     console.log('✅ Order status updated successfully');
 
-    // Send confirmation email
-    try {
-      console.log('📧 Sending order confirmation email to:', order.customer_email);
-      const emailService = require('./services/email-service');
+    // Send confirmation email (only if not already sent)
+    if (!order.confirmation_email_sent_at) {
+      try {
+        console.log('📧 Sending order confirmation email to:', order.customer_email);
+        const emailService = require('./services/email-service');
 
-      const orderWithDetails = await Order.findByPk(order.id, {
-        include: [{
-          model: OrderItem,
-          as: 'OrderItems',
+        const orderWithDetails = await Order.findByPk(order.id, {
           include: [{
-            model: Product,
-            attributes: ['id', 'sku']
+            model: OrderItem,
+            as: 'OrderItems',
+            include: [{
+              model: Product,
+              attributes: ['id', 'sku']
+            }]
+          }, {
+            model: Store,
+            as: 'Store'
           }]
-        }, {
-          model: Store,
-          as: 'Store'
-        }]
-      });
+        });
 
-      // Try to get customer details
-      let customer = null;
-      if (order.customer_id) {
-        customer = await Customer.findByPk(order.customer_id);
+        // Try to get customer details
+        let customer = null;
+        if (order.customer_id) {
+          customer = await Customer.findByPk(order.customer_id);
+        }
+
+        // Extract customer name
+        const customerName = customer
+          ? `${customer.first_name} ${customer.last_name}`
+          : (order.shipping_address?.full_name || order.shipping_address?.name || 'Customer');
+
+        const [firstName, ...lastNameParts] = customerName.split(' ');
+        const lastName = lastNameParts.join(' ') || '';
+
+        // Send email
+        await emailService.sendTransactionalEmail(order.store_id, 'order_success_email', {
+          recipientEmail: order.customer_email,
+          customer: customer || {
+            first_name: firstName,
+            last_name: lastName,
+            email: order.customer_email
+          },
+          order: orderWithDetails.toJSON(),
+          store: orderWithDetails.Store
+        });
+
+        // Mark email as sent
+        await order.update({ confirmation_email_sent_at: new Date() });
+
+        console.log('✅ Order confirmation email sent successfully');
+      } catch (emailError) {
+        console.error('❌ Failed to send confirmation email:', emailError);
       }
-
-      // Extract customer name
-      const customerName = customer
-        ? `${customer.first_name} ${customer.last_name}`
-        : (order.shipping_address?.full_name || order.shipping_address?.name || 'Customer');
-
-      const [firstName, ...lastNameParts] = customerName.split(' ');
-      const lastName = lastNameParts.join(' ') || '';
-
-      // Send email
-      await emailService.sendTransactionalEmail(order.store_id, 'order_success_email', {
-        recipientEmail: order.customer_email,
-        customer: customer || {
-          first_name: firstName,
-          last_name: lastName,
-          email: order.customer_email
-        },
-        order: orderWithDetails.toJSON(),
-        store: orderWithDetails.Store
-      });
-
-      console.log('✅ Order confirmation email sent successfully');
-    } catch (emailError) {
-      console.error('❌ Failed to send confirmation email:', emailError);
+    } else {
+      console.log('✅ Order confirmation email already sent at:', order.confirmation_email_sent_at);
     }
 
     res.json({
