@@ -121,6 +121,11 @@ const defaultTranslations = [
   { key: 'message.invalid_email', value: 'Invalid email address', category: 'common' },
   { key: 'message.password_mismatch', value: 'Passwords do not match', category: 'common' },
 
+  // Blacklist / Security errors
+  { key: 'error.blacklist.email', value: 'This email address cannot be used for checkout. Please contact support for assistance.', category: 'error' },
+  { key: 'error.blacklist.ip', value: 'Your request cannot be processed. Please contact support for assistance.', category: 'error' },
+  { key: 'error.blacklist.country', value: 'Orders from your location cannot be processed at this time. Please contact support for assistance.', category: 'error' },
+
   // Admin
   { key: 'admin.manage', value: 'Manage', category: 'admin' },
   { key: 'admin.create', value: 'Create', category: 'admin' },

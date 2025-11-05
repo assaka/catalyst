@@ -604,7 +604,7 @@ router.post('/login', [
     if (authenticatedUser.role === 'customer' && authenticatedUser.is_blacklisted) {
       return res.status(403).json({
         success: false,
-        message: 'Your account has been disabled. Please contact support for assistance.'
+        message: 'This email address cannot be used for checkout. Please contact support for assistance.'
       });
     }
 
