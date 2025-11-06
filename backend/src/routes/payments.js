@@ -1445,20 +1445,28 @@ router.post('/webhook', async (req, res) => {
               store: orderWithDetails.Store.toJSON(),
               languageCode: 'en'
             }).then(async () => {
-              console.log(`✅ Order success email sent successfully to: ${finalOrder.customer_email}`);
+              console.log('🎉 ========================================');
+              console.log('🎉 ORDER SUCCESS EMAIL CALLBACK EXECUTING');
+              console.log(`🎉 Order success email sent successfully to: ${finalOrder.customer_email}`);
+              console.log('🎉 ========================================');
 
               // Check if auto-invoice is enabled in sales settings
               const store = orderWithDetails.Store;
               const salesSettings = store.settings?.sales_settings || {};
 
+              console.log('🔍 ========================================');
               console.log('🔍 DEBUG: Checking auto-invoice settings...');
               console.log('🔍 DEBUG: Store ID:', store.id);
+              console.log('🔍 DEBUG: Store name:', store.name);
               console.log('🔍 DEBUG: Store settings:', JSON.stringify(store.settings, null, 2));
               console.log('🔍 DEBUG: Sales settings:', JSON.stringify(salesSettings, null, 2));
               console.log('🔍 DEBUG: auto_invoice_enabled:', salesSettings.auto_invoice_enabled);
+              console.log('🔍 ========================================');
 
               if (salesSettings.auto_invoice_enabled) {
-                console.log('📧 Auto-invoice enabled, sending invoice email immediately after order success email...');
+                console.log('📧 ========================================');
+                console.log('📧 AUTO-INVOICE ENABLED - Starting invoice send process...');
+                console.log('📧 ========================================');
 
                 try {
                   // Check if PDF attachment should be included
@@ -1481,10 +1489,17 @@ router.post('/webhook', async (req, res) => {
                     }];
 
                     console.log('✅ PDF invoice generated successfully');
+                  } else {
+                    console.log('ℹ️ PDF generation skipped (auto_invoice_pdf_enabled = false)');
                   }
 
+                  console.log('📧 Preparing to send invoice email...');
+                  console.log('📧 Recipient:', finalOrder.customer_email);
+                  console.log('📧 Store ID:', finalOrder.store_id);
+                  console.log('📧 Order ID:', finalOrder.id);
+
                   // Send invoice email
-                  await emailService.sendTransactionalEmail(finalOrder.store_id, 'invoice_email', {
+                  const invoiceResult = await emailService.sendTransactionalEmail(finalOrder.store_id, 'invoice_email', {
                     recipientEmail: finalOrder.customer_email,
                     customer: customer || {
                       first_name: firstName,
@@ -1496,7 +1511,10 @@ router.post('/webhook', async (req, res) => {
                     attachments: attachments
                   });
 
-                  console.log('✅ Invoice email sent successfully');
+                  console.log('✅ ========================================');
+                  console.log('✅ INVOICE EMAIL SENT SUCCESSFULLY!');
+                  console.log('✅ Result:', JSON.stringify(invoiceResult, null, 2));
+                  console.log('✅ ========================================');
 
                   // Create invoice record to track that invoice was sent
                   try {
@@ -1594,14 +1612,27 @@ router.post('/webhook', async (req, res) => {
                     }
                   }
                 } catch (invoiceError) {
-                  console.error('❌ Failed to send invoice email:', invoiceError);
+                  console.error('❌ ========================================');
+                  console.error('❌ FAILED TO SEND INVOICE EMAIL!');
+                  console.error('❌ Error:', invoiceError);
+                  console.error('❌ Error message:', invoiceError.message);
+                  console.error('❌ Error stack:', invoiceError.stack);
+                  console.error('❌ ========================================');
                   // Don't fail the webhook if invoice email fails
                 }
               } else {
-                console.log('⚠️ Auto-invoice is DISABLED - invoice email will not be sent automatically');
+                console.log('⚠️ ========================================');
+                console.log('⚠️ AUTO-INVOICE IS DISABLED');
+                console.log('⚠️ Invoice email will NOT be sent automatically');
+                console.log('⚠️ ========================================');
               }
             }).catch(emailError => {
-              console.error(`❌ Failed to send order success email:`, emailError.message);
+              console.error('❌ ========================================');
+              console.error('❌ FAILED TO SEND ORDER SUCCESS EMAIL!');
+              console.error('❌ This means the .then() callback never ran');
+              console.error('❌ Error:', emailError.message);
+              console.error('❌ Error stack:', emailError.stack);
+              console.error('❌ ========================================');
               // Don't fail the webhook if email fails
             });
           }
