@@ -1131,6 +1131,9 @@ router.post('/:id/send-invoice', authMiddleware, async (req, res) => {
     // Check if invoice already exists
     let invoice = await Invoice.findOne({ where: { order_id: id } });
 
+    // Generate invoice number once (reuse if invoice exists)
+    const invoiceNumber = invoice ? invoice.invoice_number : ('INV-' + Date.now() + '-' + Math.random().toString(36).substr(2, 9).toUpperCase());
+
     // Prepare attachments if PDF is requested
     let attachments = [];
     let pdfGeneratedSuccessfully = false;
@@ -1157,6 +1160,8 @@ router.post('/:id/send-invoice', authMiddleware, async (req, res) => {
       customer: customer || { first_name: firstName, last_name: lastName, email: order.customer_email },
       order: order.toJSON(),
       store: order.Store,
+      invoice_number: invoiceNumber,
+      invoice_date: new Date().toLocaleDateString(),
       attachments: attachments
     });
 
@@ -1168,9 +1173,6 @@ router.post('/:id/send-invoice', authMiddleware, async (req, res) => {
         email_status: 'sent'
       });
     } else {
-      // Generate invoice number (in case hook doesn't fire)
-      const invoiceNumber = 'INV-' + Date.now() + '-' + Math.random().toString(36).substr(2, 9).toUpperCase();
-
       invoice = await Invoice.create({
         invoice_number: invoiceNumber,
         order_id: id,
@@ -1178,6 +1180,14 @@ router.post('/:id/send-invoice', authMiddleware, async (req, res) => {
         customer_email: order.customer_email,
         pdf_generated: pdfGeneratedSuccessfully,
         email_status: 'sent'
+      });
+    }
+
+    // Update order status to 'processing' when invoice is sent
+    if (order.status === 'pending') {
+      await order.update({
+        status: 'processing',
+        payment_status: 'paid'
       });
     }
 
@@ -1250,10 +1260,11 @@ router.post('/:id/send-shipment', authMiddleware, async (req, res) => {
       customer: customer || { first_name: firstName, last_name: lastName, email: order.customer_email },
       order: order.toJSON(),
       store: order.Store,
-      tracking_number: trackingNumber || order.tracking_number,
-      tracking_url: trackingUrl,
-      carrier: carrier,
-      estimated_delivery_date: estimatedDeliveryDate
+      tracking_number: trackingNumber || order.tracking_number || 'Not provided',
+      tracking_url: trackingUrl || '',
+      carrier: carrier || 'Not specified',
+      shipping_method: carrier || order.shipping_method || 'Not specified',
+      estimated_delivery_date: estimatedDeliveryDate ? new Date(estimatedDeliveryDate).toLocaleDateString() : 'To be confirmed'
     });
 
     // Create or update shipment record

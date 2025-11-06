@@ -3,6 +3,7 @@ const { body, validationResult } = require('express-validator');
 const { PdfTemplate, PdfTemplateTranslation, Store } = require('../models');
 const { authMiddleware } = require('../middleware/auth');
 const { checkStoreOwnership } = require('../middleware/storeAuth');
+const translationService = require('../services/translation-service');
 
 const router = express.Router();
 
@@ -266,6 +267,105 @@ router.post('/:id/restore-default', async (req, res) => {
     });
   } catch (error) {
     console.error('Restore PDF template error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Server error',
+      error: error.message
+    });
+  }
+});
+
+/**
+ * POST /api/pdf-templates/bulk-translate
+ * Bulk translate PDF templates using AI
+ */
+router.post('/bulk-translate', [
+  body('store_id').isUUID().withMessage('Valid store_id is required'),
+  body('from_lang').notEmpty().withMessage('from_lang is required'),
+  body('to_lang').notEmpty().withMessage('to_lang is required')
+], async (req, res) => {
+  try {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({
+        success: false,
+        errors: errors.array()
+      });
+    }
+
+    const { store_id, from_lang, to_lang } = req.body;
+
+    // Check store access
+    req.params.store_id = store_id;
+    await new Promise((resolve, reject) => {
+      checkStoreOwnership(req, res, (err) => {
+        if (err) reject(err);
+        else resolve();
+      });
+    });
+
+    // Get all templates for the store
+    const templates = await PdfTemplate.findAll({
+      where: { store_id, is_active: true }
+    });
+
+    let translated = 0;
+    let skipped = 0;
+    let failed = 0;
+    const errors_list = [];
+
+    for (const template of templates) {
+      try {
+        // Check if translation already exists
+        const existingTranslation = await PdfTemplateTranslation.findOne({
+          where: {
+            pdf_template_id: template.id,
+            language_code: to_lang
+          }
+        });
+
+        if (existingTranslation) {
+          skipped++;
+          continue;
+        }
+
+        // Translate HTML template
+        const translatedHtmlTemplate = await translationService.translateText(
+          template.html_template,
+          from_lang,
+          to_lang
+        );
+
+        // Create translation
+        await PdfTemplateTranslation.create({
+          pdf_template_id: template.id,
+          language_code: to_lang,
+          html_template: translatedHtmlTemplate
+        });
+
+        translated++;
+      } catch (error) {
+        console.error(`Failed to translate template ${template.id}:`, error.message);
+        failed++;
+        errors_list.push({
+          template_id: template.id,
+          identifier: template.identifier,
+          error: error.message
+        });
+      }
+    }
+
+    res.json({
+      success: true,
+      data: {
+        translated,
+        skipped,
+        failed,
+        errors: errors_list
+      }
+    });
+  } catch (error) {
+    console.error('Bulk translate error:', error);
     res.status(500).json({
       success: false,
       message: 'Server error',

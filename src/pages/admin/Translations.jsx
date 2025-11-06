@@ -703,7 +703,9 @@ export default function Translations() {
                        selectedEntityType === 'product_tab' ? 'product-tabs' :
                        selectedEntityType === 'product_label' ? 'product-labels' :
                        selectedEntityType === 'cookie_consent' ? 'cookie-consent-settings' :
-                       selectedEntityType === 'custom_option' ? 'custom-option-rules' : null;
+                       selectedEntityType === 'custom_option' ? 'custom-option-rules' :
+                       selectedEntityType === 'email_template' ? 'email-templates' :
+                       selectedEntityType === 'pdf_template' ? 'pdf-templates' : null;
 
       if (!endpoint) {
         throw new Error('Invalid entity type');
@@ -2144,11 +2146,25 @@ export default function Translations() {
             <>
               {/* Header */}
               <div className="bg-white border border-gray-200 rounded-lg p-6">
-                <div className="mb-4">
-                  <h2 className="text-xl font-semibold text-gray-900 mb-2">Email Template Translations</h2>
-                  <p className="text-sm text-gray-600">
-                    Manage translations for email templates sent to customers
-                  </p>
+                <div className="mb-4 flex items-center justify-between">
+                  <div>
+                    <h2 className="text-xl font-semibold text-gray-900 mb-2">Email Template Translations</h2>
+                    <p className="text-sm text-gray-600">
+                      Manage translations for email templates sent to customers
+                    </p>
+                  </div>
+                  <button
+                    onClick={() => {
+                      setSelectedEntityType('email_template');
+                      setSelectedEntityName('Email Templates');
+                      setSelectedEntityItemCount(emailTemplates.length);
+                      setShowBulkTranslateDialog(true);
+                    }}
+                    className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 flex items-center gap-2"
+                  >
+                    <Languages className="w-4 h-4" />
+                    Bulk AI Translate Email Templates
+                  </button>
                 </div>
 
                 {/* Language Selection */}
@@ -2238,11 +2254,25 @@ export default function Translations() {
             <>
               {/* Header */}
               <div className="bg-white border border-gray-200 rounded-lg p-6">
-                <div className="mb-4">
-                  <h2 className="text-xl font-semibold text-gray-900 mb-2">PDF Template Translations</h2>
-                  <p className="text-sm text-gray-600">
-                    Manage translations for PDF documents (invoices, shipments, etc.)
-                  </p>
+                <div className="mb-4 flex items-center justify-between">
+                  <div>
+                    <h2 className="text-xl font-semibold text-gray-900 mb-2">PDF Template Translations</h2>
+                    <p className="text-sm text-gray-600">
+                      Manage translations for PDF documents (invoices, shipments, etc.)
+                    </p>
+                  </div>
+                  <button
+                    onClick={() => {
+                      setSelectedEntityType('pdf_template');
+                      setSelectedEntityName('PDF Templates');
+                      setSelectedEntityItemCount(pdfTemplates.length);
+                      setShowBulkTranslateDialog(true);
+                    }}
+                    className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 flex items-center gap-2"
+                  >
+                    <Languages className="w-4 h-4" />
+                    Bulk AI Translate PDF Templates
+                  </button>
                 </div>
 
                 {/* Language Selection */}

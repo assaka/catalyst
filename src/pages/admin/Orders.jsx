@@ -25,6 +25,14 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
+import {
   Table,
   TableBody,
   TableCell,
@@ -50,6 +58,13 @@ export default function Orders() {
   const [error, setError] = useState(null);
   const [actionLoading, setActionLoading] = useState({});
   const [actionSuccess, setActionSuccess] = useState({});
+  const [shipmentModalOpen, setShipmentModalOpen] = useState(false);
+  const [selectedOrderForShipment, setSelectedOrderForShipment] = useState(null);
+  const [shipmentDetails, setShipmentDetails] = useState({
+    trackingNumber: '',
+    carrier: '',
+    estimatedDeliveryDate: ''
+  });
 
   useEffect(() => {
     if (selectedStore) {
@@ -223,6 +238,9 @@ export default function Orders() {
 
       setActionSuccess(prev => ({ ...prev, [key]: true }));
       setTimeout(() => setActionSuccess(prev => ({ ...prev, [key]: false })), 3000);
+
+      // Reload orders to show updated status
+      loadOrders();
     } catch (error) {
       console.error('Error sending invoice:', error);
       alert('Failed to send invoice');
@@ -231,9 +249,23 @@ export default function Orders() {
     }
   };
 
-  const handleSendShipment = async (orderId) => {
+  const openShipmentModal = (order) => {
+    setSelectedOrderForShipment(order);
+    setShipmentDetails({
+      trackingNumber: order.tracking_number || '',
+      carrier: '',
+      estimatedDeliveryDate: ''
+    });
+    setShipmentModalOpen(true);
+  };
+
+  const handleSendShipmentSubmit = async () => {
+    if (!selectedOrderForShipment) return;
+
+    const orderId = selectedOrderForShipment.id;
     const key = `send-shipment-${orderId}`;
     setActionLoading(prev => ({ ...prev, [key]: true }));
+
     try {
       const response = await fetch(`/api/orders/${orderId}/send-shipment`, {
         method: 'POST',
@@ -241,13 +273,21 @@ export default function Orders() {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${localStorage.getItem('store_owner_auth_token')}`
         },
-        body: JSON.stringify({})
+        body: JSON.stringify({
+          trackingNumber: shipmentDetails.trackingNumber,
+          carrier: shipmentDetails.carrier,
+          estimatedDeliveryDate: shipmentDetails.estimatedDeliveryDate
+        })
       });
 
       if (!response.ok) throw new Error('Failed to send shipment notification');
 
       setActionSuccess(prev => ({ ...prev, [key]: true }));
       setTimeout(() => setActionSuccess(prev => ({ ...prev, [key]: false })), 3000);
+
+      // Close modal and reload orders to get updated status
+      setShipmentModalOpen(false);
+      loadOrders();
     } catch (error) {
       console.error('Error sending shipment:', error);
       alert('Failed to send shipment notification');
@@ -661,7 +701,7 @@ export default function Orders() {
                                         <Button
                                           variant="outline"
                                           size="sm"
-                                          onClick={() => handleSendShipment(order.id)}
+                                          onClick={() => openShipmentModal(order)}
                                           disabled={actionLoading[`send-shipment-${order.id}`]}
                                           className={actionSuccess[`send-shipment-${order.id}`] ? 'bg-green-50 border-green-500' : ''}
                                         >
@@ -696,6 +736,55 @@ export default function Orders() {
             </Card>
           </>
       </div>
+
+      {/* Shipment Details Modal */}
+      <Dialog open={shipmentModalOpen} onOpenChange={setShipmentModalOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Send Shipment Notification</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="trackingNumber">Tracking Number</Label>
+              <Input
+                id="trackingNumber"
+                placeholder="Enter tracking number"
+                value={shipmentDetails.trackingNumber}
+                onChange={(e) => setShipmentDetails(prev => ({ ...prev, trackingNumber: e.target.value }))}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="carrier">Carrier / Shipping Method</Label>
+              <Input
+                id="carrier"
+                placeholder="e.g., FedEx, UPS, DHL"
+                value={shipmentDetails.carrier}
+                onChange={(e) => setShipmentDetails(prev => ({ ...prev, carrier: e.target.value }))}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="estimatedDelivery">Estimated Delivery Date</Label>
+              <Input
+                id="estimatedDelivery"
+                type="date"
+                value={shipmentDetails.estimatedDeliveryDate}
+                onChange={(e) => setShipmentDetails(prev => ({ ...prev, estimatedDeliveryDate: e.target.value }))}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShipmentModalOpen(false)}>
+              Cancel
+            </Button>
+            <Button
+              onClick={handleSendShipmentSubmit}
+              disabled={actionLoading[`send-shipment-${selectedOrderForShipment?.id}`]}
+            >
+              {actionLoading[`send-shipment-${selectedOrderForShipment?.id}`] ? 'Sending...' : 'Send Shipment'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
