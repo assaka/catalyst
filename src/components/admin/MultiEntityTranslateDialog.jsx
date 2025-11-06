@@ -201,8 +201,8 @@ export default function MultiEntityTranslateDialog({
         toast.error(`Translation failed: ${allResults.failed} items failed`);
       }
 
-      // Update credits in sidebar and local state
-      if (allResults.translated > 0 && allResults.creditsDeducted > 0) {
+      // Update credits in sidebar and local state (charges for all items including skipped)
+      if (allResults.creditsDeducted > 0) {
         // Update local credits with actual deducted amount from backend
         setLocalCredits(prev => Math.max(0, (prev || 0) - allResults.creditsDeducted));
 
@@ -352,7 +352,7 @@ export default function MultiEntityTranslateDialog({
               </div>
 
               {/* Credits Used */}
-              {results.translated > 0 && results.creditsDeducted > 0 && (
+              {results.creditsDeducted > 0 && (
                 <div className="bg-green-50 border border-green-200 rounded-lg p-3">
                   <div className="flex items-center justify-between text-sm mb-2">
                     <span className="text-green-800 font-medium">💰 Credits Used:</span>
@@ -360,22 +360,17 @@ export default function MultiEntityTranslateDialog({
                       {results.creditsDeducted.toFixed(2)} credits
                     </span>
                   </div>
-                  <div className="flex items-center justify-between text-xs">
+                  <div className="flex items-center justify-between text-xs mb-1">
                     <span className="text-green-700">New Balance:</span>
                     <span className="text-green-800 font-medium">
                       {Number(localCredits).toFixed(2)} credits
                     </span>
                   </div>
-                </div>
-              )}
-
-              {/* No Credits Used - All Skipped */}
-              {results.translated === 0 && results.skipped > 0 && (
-                <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
-                  <div className="flex items-center gap-2 text-sm text-blue-800">
-                    <AlertCircle className="w-4 h-4" />
-                    <span>No credits used - all items already have translations</span>
-                  </div>
+                  {results.skipped > 0 && (
+                    <div className="text-xs text-green-700 mt-2 pt-2 border-t border-green-200">
+                      ℹ️ Charged for {results.total} items (including {results.skipped} already translated)
+                    </div>
+                  )}
                 </div>
               )}
 
@@ -442,6 +437,9 @@ export default function MultiEntityTranslateDialog({
                       </span>
                       <span className="text-xs text-green-600">
                         Rates: CMS pages {serviceCosts['cms_page'] || 0.5} • CMS blocks {serviceCosts['cms_block'] || 0.2} • Others {serviceCosts['standard'] || 0.1} credits
+                      </span>
+                      <span className="text-xs text-blue-700 font-medium mt-1 block">
+                        ⚠️ Credits charged for all items, including those already translated
                       </span>
                       {/* Credit Balance Warning */}
                       {localCredits !== null && localCredits !== undefined && totalEstimatedCost > 0 && (

@@ -1282,15 +1282,15 @@ router.post('/bulk-translate-entities', authMiddleware, async (req, res) => {
       }
     }
 
-    // Deduct credits based on what was translated
+    // Deduct credits for ALL items processed (including skipped ones)
     let actualCost = 0;
 
-    if (allResults.translated > 0) {
-      // Calculate cost based on entity types translated
+    if (allResults.total > 0) {
+      // Calculate cost based on ALL items processed (translated + skipped)
       for (const [entityType, entityData] of Object.entries(allResults.byEntity)) {
-        if (entityData.translated > 0) {
+        if (entityData.total > 0) {
           const costPerItem = await translationService.getTranslationCost(entityType);
-          actualCost += entityData.translated * costPerItem;
+          actualCost += entityData.total * costPerItem;
         }
       }
 
@@ -1304,15 +1304,17 @@ router.post('/bulk-translate-entities', authMiddleware, async (req, res) => {
             entity_types,
             fromLang,
             toLang,
+            itemsProcessed: allResults.total,
             translationsCompleted: allResults.translated,
             failed: allResults.failed,
             skipped: allResults.skipped,
-            byEntity: allResults.byEntity
+            byEntity: allResults.byEntity,
+            note: 'Charged for all items including skipped'
           },
           null,
           'ai_translation'
         );
-        console.log(`✅ Deducted ${actualCost} credits for ${allResults.translated} translations`);
+        console.log(`✅ Deducted ${actualCost} credits for ${allResults.total} items (${allResults.translated} translated, ${allResults.skipped} skipped)`);
       } catch (deductError) {
         console.error('Failed to deduct credits:', deductError);
         // Don't fail the entire operation if credit deduction fails
@@ -1788,15 +1790,15 @@ router.post('/wizard-execute', authMiddleware, async (req, res) => {
       }
     }
 
-    // Deduct credits based on what was translated (flat rates by entity type)
+    // Deduct credits for ALL items processed (including skipped ones)
     let actualCost = 0;
 
-    if (results.translated > 0) {
-      // Calculate cost based on entity types translated
+    if (results.total > 0) {
+      // Calculate cost based on ALL items processed (translated + skipped)
       for (const [entityType, entityData] of Object.entries(results.byEntity)) {
-        if (entityData.translated > 0) {
+        if (entityData.total > 0) {
           const costPerItem = await translationService.getTranslationCost(entityType);
-          actualCost += entityData.translated * costPerItem;
+          actualCost += entityData.total * costPerItem;
         }
       }
 
@@ -1810,15 +1812,17 @@ router.post('/wizard-execute', authMiddleware, async (req, res) => {
             what,
             fromLang,
             toLanguages,
+            itemsProcessed: results.total,
             translationsCompleted: results.translated,
             failed: results.failed,
             skipped: results.skipped,
-            byEntity: results.byEntity
+            byEntity: results.byEntity,
+            note: 'Charged for all items including skipped'
           },
           null,
           'ai_translation'
         );
-        console.log(`✅ Deducted ${actualCost} credits for ${results.translated} translations`);
+        console.log(`✅ Deducted ${actualCost} credits for ${results.total} items (${results.translated} translated, ${results.skipped} skipped)`);
       } catch (deductError) {
         console.error('Failed to deduct credits:', deductError);
         // Don't fail the entire operation if credit deduction fails

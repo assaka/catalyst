@@ -275,6 +275,9 @@ export default function BulkTranslateDialog({
               {translateToLangs.length > 0 ? (
                 <>
                   This will translate all {entityType} from {translateFromLang} to {translateToLangs.length} selected language(s). {entityName} that already have translations will be skipped.
+                  <span className="block mt-2 text-xs font-medium">
+                    ⚠️ Note: Credits are charged for all items, including those already translated.
+                  </span>
                 </>
               ) : (
                 'Please select at least one target language.'

@@ -688,9 +688,14 @@ export default function TranslationWizard({ isOpen, onClose, storeId, userCredit
                   </div>
                 )}
 
+                {/* Important Notice */}
+                <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 text-sm text-blue-800">
+                  ⚠️ <span className="font-medium">Important:</span> Credits are charged for all items processed, including those already translated (skipped).
+                </div>
+
                 {/* Credit Balance Warning */}
                 {userCredits !== null && userCredits !== undefined && stats.toTranslate > 0 && (
-                  <div className={`mt-2 p-3 rounded-lg border ${
+                  <div className={`p-3 rounded-lg border ${
                     userCredits < calculateEstimatedCost()
                       ? 'bg-red-50 border-red-200'
                       : 'bg-green-50 border-green-200'
