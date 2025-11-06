@@ -1577,6 +1577,7 @@ export default function Translations() {
                             p.id === productId ? { ...p, translations } : p
                           ));
                         }}
+                        storeId={getSelectedStoreId()}
                       />
                     ))}
                 </div>
@@ -1709,6 +1710,7 @@ export default function Translations() {
                             c.id === categoryId ? { ...c, translations } : c
                           ));
                         }}
+                        storeId={getSelectedStoreId()}
                       />
                     ))}
                 </div>
@@ -1841,6 +1843,7 @@ export default function Translations() {
                             a.id === attributeId ? { ...a, translations, values } : a
                           ));
                         }}
+                        storeId={getSelectedStoreId()}
                       />
                     ))}
                 </div>
@@ -1972,6 +1975,7 @@ export default function Translations() {
                             p.id === pageId ? { ...p, translations } : p
                           ));
                         }}
+                        storeId={getSelectedStoreId()}
                       />
                     ))}
                 </div>
@@ -2105,6 +2109,7 @@ export default function Translations() {
                             b.id === blockId ? { ...b, translations } : b
                           ));
                         }}
+                        storeId={getSelectedStoreId()}
                       />
                     ))}
                 </div>
@@ -2455,6 +2460,7 @@ export default function Translations() {
                               t.id === tabId ? { ...t, translations } : t
                             ));
                           }}
+                          storeId={getSelectedStoreId()}
                         />
                       ))}
                   </div>
@@ -2524,6 +2530,7 @@ export default function Translations() {
                               l.id === labelId ? { ...l, translations } : l
                             ));
                           }}
+                          storeId={getSelectedStoreId()}
                         />
                       ))}
                   </div>
@@ -2575,6 +2582,7 @@ export default function Translations() {
                             s.id === settingsId ? { ...s, translations } : s
                           ));
                         }}
+                        storeId={getSelectedStoreId()}
                       />
                     ))}
                   </div>
@@ -2645,6 +2653,7 @@ export default function Translations() {
                               o.id === ruleId ? { ...o, translations } : o
                             ));
                           }}
+                          storeId={getSelectedStoreId()}
                         />
                       ))}
                   </div>
