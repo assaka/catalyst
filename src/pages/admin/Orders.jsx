@@ -18,7 +18,10 @@ import {
   DollarSign,
   Mail,
   FileText,
-  Truck
+  Truck,
+  MoreVertical,
+  X,
+  RefreshCw
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -32,6 +35,13 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+  DropdownMenuSeparator
+} from "@/components/ui/dropdown-menu";
 import {
   Table,
   TableBody,
@@ -323,6 +333,69 @@ export default function Orders() {
     return 'Send Shipment';
   };
 
+  const handleCancelOrder = async (orderId) => {
+    if (!confirm('Are you sure you want to cancel this order?')) return;
+
+    const key = `cancel-order-${orderId}`;
+    setActionLoading(prev => ({ ...prev, [key]: true }));
+    try {
+      const response = await fetch(`/api/orders/${orderId}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('store_owner_auth_token')}`
+        },
+        body: JSON.stringify({ status: 'cancelled' })
+      });
+
+      if (!response.ok) throw new Error('Failed to cancel order');
+
+      setActionSuccess(prev => ({ ...prev, [key]: true }));
+      setTimeout(() => setActionSuccess(prev => ({ ...prev, [key]: false })), 3000);
+
+      // Reload orders to show updated status
+      loadOrders();
+    } catch (error) {
+      console.error('Error cancelling order:', error);
+      alert('Failed to cancel order');
+    } finally {
+      setActionLoading(prev => ({ ...prev, [key]: false }));
+    }
+  };
+
+  const handleRefundOrder = async (orderId) => {
+    if (!confirm('Are you sure you want to refund this order? This action cannot be undone.')) return;
+
+    const key = `refund-order-${orderId}`;
+    setActionLoading(prev => ({ ...prev, [key]: true }));
+    try {
+      const response = await fetch(`/api/orders/${orderId}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('store_owner_auth_token')}`
+        },
+        body: JSON.stringify({
+          status: 'refunded',
+          payment_status: 'refunded'
+        })
+      });
+
+      if (!response.ok) throw new Error('Failed to refund order');
+
+      setActionSuccess(prev => ({ ...prev, [key]: true }));
+      setTimeout(() => setActionSuccess(prev => ({ ...prev, [key]: false })), 3000);
+
+      // Reload orders to show updated status
+      loadOrders();
+    } catch (error) {
+      console.error('Error refunding order:', error);
+      alert('Failed to refund order');
+    } finally {
+      setActionLoading(prev => ({ ...prev, [key]: false }));
+    }
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
@@ -435,6 +508,7 @@ export default function Orders() {
                         <TableHead>Customer</TableHead>
                         <TableHead>Total</TableHead>
                         <TableHead>Status</TableHead>
+                        <TableHead className="w-20">Actions</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -476,11 +550,51 @@ export default function Orders() {
                                     {order.status?.charAt(0).toUpperCase() + order.status?.slice(1) || 'Pending'}
                                   </Badge>
                                 </TableCell>
+                                <TableCell onClick={(e) => e.stopPropagation()}>
+                                  <DropdownMenu>
+                                    <DropdownMenuTrigger asChild>
+                                      <Button variant="ghost" size="sm">
+                                        <MoreVertical className="w-4 h-4" />
+                                      </Button>
+                                    </DropdownMenuTrigger>
+                                    <DropdownMenuContent align="end">
+                                      <DropdownMenuItem onClick={() => handleResendOrder(order.id)}>
+                                        <Mail className="w-4 h-4 mr-2" />
+                                        Resend Order
+                                      </DropdownMenuItem>
+                                      <DropdownMenuItem onClick={() => handleSendInvoice(order.id)}>
+                                        <FileText className="w-4 h-4 mr-2" />
+                                        {getInvoiceButtonText(order)}
+                                      </DropdownMenuItem>
+                                      <DropdownMenuItem onClick={() => openShipmentModal(order)}>
+                                        <Truck className="w-4 h-4 mr-2" />
+                                        {getShipmentButtonText(order)}
+                                      </DropdownMenuItem>
+                                      <DropdownMenuSeparator />
+                                      <DropdownMenuItem
+                                        onClick={() => handleCancelOrder(order.id)}
+                                        disabled={order.status === 'cancelled' || order.status === 'refunded'}
+                                        className="text-orange-600"
+                                      >
+                                        <X className="w-4 h-4 mr-2" />
+                                        Cancel Order
+                                      </DropdownMenuItem>
+                                      <DropdownMenuItem
+                                        onClick={() => handleRefundOrder(order.id)}
+                                        disabled={order.status === 'refunded' || order.payment_status !== 'paid'}
+                                        className="text-red-600"
+                                      >
+                                        <RefreshCw className="w-4 h-4 mr-2" />
+                                        Refund Order
+                                      </DropdownMenuItem>
+                                    </DropdownMenuContent>
+                                  </DropdownMenu>
+                                </TableCell>
                               </TableRow>
                             </CollapsibleTrigger>
                             <CollapsibleContent asChild>
                               <TableRow>
-                                <TableCell colSpan={6} className="p-0">
+                                <TableCell colSpan={7} className="p-0">
                                   <div className="p-6 bg-gray-50 border-t">
                                     {/* Order Items */}
                                     <div className="mb-6">
@@ -660,60 +774,6 @@ export default function Orders() {
                                             </div>
                                           </div>
                                         )}
-                                      </div>
-                                    </div>
-
-                                    {/* Action Buttons */}
-                                    <div className="mt-6 pt-6 border-t">
-                                      <h4 className="font-semibold text-gray-900 mb-3">Actions</h4>
-                                      <div className="flex flex-wrap gap-2">
-                                        {/* Resend Order Button - Always visible */}
-                                        <Button
-                                          variant="outline"
-                                          size="sm"
-                                          onClick={() => handleResendOrder(order.id)}
-                                          disabled={actionLoading[`resend-order-${order.id}`]}
-                                          className={actionSuccess[`resend-order-${order.id}`] ? 'bg-green-50 border-green-500' : ''}
-                                        >
-                                          <Mail className="w-4 h-4 mr-2" />
-                                          {actionLoading[`resend-order-${order.id}`]
-                                            ? 'Sending...'
-                                            : actionSuccess[`resend-order-${order.id}`]
-                                            ? 'Sent!'
-                                            : 'Resend Order'}
-                                        </Button>
-
-                                        {/* Invoice Button - Always visible */}
-                                        <Button
-                                          variant="outline"
-                                          size="sm"
-                                          onClick={() => handleSendInvoice(order.id)}
-                                          disabled={actionLoading[`send-invoice-${order.id}`]}
-                                          className={actionSuccess[`send-invoice-${order.id}`] ? 'bg-green-50 border-green-500' : ''}
-                                        >
-                                          <FileText className="w-4 h-4 mr-2" />
-                                          {actionLoading[`send-invoice-${order.id}`]
-                                            ? 'Sending...'
-                                            : actionSuccess[`send-invoice-${order.id}`]
-                                            ? 'Sent!'
-                                            : getInvoiceButtonText(order)}
-                                        </Button>
-
-                                        {/* Shipment Button - Always visible */}
-                                        <Button
-                                          variant="outline"
-                                          size="sm"
-                                          onClick={() => openShipmentModal(order)}
-                                          disabled={actionLoading[`send-shipment-${order.id}`]}
-                                          className={actionSuccess[`send-shipment-${order.id}`] ? 'bg-green-50 border-green-500' : ''}
-                                        >
-                                          <Truck className="w-4 h-4 mr-2" />
-                                          {actionLoading[`send-shipment-${order.id}`]
-                                            ? 'Sending...'
-                                            : actionSuccess[`send-shipment-${order.id}`]
-                                            ? 'Sent!'
-                                            : getShipmentButtonText(order)}
-                                        </Button>
                                       </div>
                                     </div>
                                   </div>
