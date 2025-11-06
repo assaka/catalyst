@@ -46,28 +46,48 @@ class CreditService {
    * @returns {object} - Deduction result with remaining balance
    */
   async deduct(userId, storeId, amount, description, metadata = {}, referenceId = null, referenceType = null) {
+    console.log(`\n💳 ============ CREDIT DEDUCTION START ============`);
+    console.log(`💳 Input parameters:`, {
+      userId,
+      storeId,
+      amount,
+      description,
+      referenceType
+    });
+
     // Ensure amount is a number
     const creditAmount = parseFloat(amount);
+    console.log(`💳 Parsed amount: ${creditAmount} (type: ${typeof creditAmount})`);
 
     // Check if user has enough credits
+    console.log(`💳 Checking if user has enough credits...`);
+    const balance = await this.getBalance(userId);
+    console.log(`💳 Current balance: ${balance} credits`);
+
     const hasCredits = await this.hasEnoughCredits(userId, storeId, creditAmount);
+    console.log(`💳 Has enough credits: ${hasCredits}`);
+
     if (!hasCredits) {
-      const balance = await this.getBalance(userId);
+      console.log(`❌ INSUFFICIENT CREDITS: Required ${creditAmount}, Available ${balance}`);
       throw new Error(`Insufficient credits. Required: ${creditAmount}, Available: ${balance}`);
     }
 
     // Deduct from users.credits (single source of truth)
-    await sequelize.query(`
+    console.log(`💳 Updating users.credits: ${balance} - ${creditAmount} = ${balance - creditAmount}`);
+    const updateResult = await sequelize.query(`
       UPDATE users
       SET credits = credits - $1::numeric,
           updated_at = NOW()
       WHERE id = $2
+      RETURNING id, credits
     `, {
       bind: [creditAmount, userId],
       type: sequelize.QueryTypes.UPDATE
     });
+    console.log(`💳 Update result:`, updateResult);
 
     // Record usage for tracking (store_id kept for analytics)
+    console.log(`💳 Creating credit_usage record...`);
     const usage = await CreditUsage.create({
       user_id: userId,
       store_id: storeId,
@@ -81,14 +101,23 @@ class CreditService {
         ...metadata
       }
     });
+    console.log(`💳 Created credit_usage record:`, usage.id);
 
-    return {
+    const newBalance = await this.getBalance(userId);
+    console.log(`💳 New balance after deduction: ${newBalance} credits`);
+
+    const result = {
       success: true,
       usage_id: usage.id,
       credits_deducted: creditAmount,
-      remaining_balance: await this.getBalance(userId),
+      remaining_balance: newBalance,
       description: description
     };
+
+    console.log(`✅ CREDIT DEDUCTION SUCCESS:`, result);
+    console.log(`💳 ============ CREDIT DEDUCTION END ============\n`);
+
+    return result;
   }
 
   /**

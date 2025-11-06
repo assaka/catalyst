@@ -644,15 +644,8 @@ router.post('/bulk-translate', authMiddleware, [
       try {
         const blockTitle = block.translations?.[fromLang]?.title || block.title || block.identifier;
 
-        console.log(`\n📋 Processing block: ${blockTitle}`);
-        console.log(`   - Has translations object: ${!!block.translations}`);
-        console.log(`   - Has ${fromLang} translation: ${!!(block.translations && block.translations[fromLang])}`);
-        console.log(`   - Translations keys:`, block.translations ? Object.keys(block.translations) : 'none');
-        console.log(`   - ${fromLang} translation:`, block.translations?.[fromLang]);
-
         // Check if source translation exists
         if (!block.translations || !block.translations[fromLang]) {
-          console.log(`⏭️  Skipping block "${blockTitle}": No ${fromLang} translation`);
           results.skipped++;
           results.skippedDetails.push({
             blockId: block.id,
