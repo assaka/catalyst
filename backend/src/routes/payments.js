@@ -1541,23 +1541,28 @@ router.post('/webhook', async (req, res) => {
 
                       // Generate shipment PDF if enabled
                       let shipmentAttachments = [];
-                      if (salesSettings.auto_invoice_pdf_enabled) { // Reuse PDF setting for shipment
-                        console.log('📄 Generating PDF shipment notice...');
-                        const pdfService = require('../services/pdf-service');
+                      if (salesSettings.auto_shipment_pdf_enabled) {
+                        try {
+                          console.log('📄 Generating PDF shipment notice...');
+                          const pdfService = require('../services/pdf-service');
 
-                        const shipmentPdf = await pdfService.generateShipmentPDF(
-                          orderWithDetails,
-                          orderWithDetails.Store,
-                          orderWithDetails.OrderItems
-                        );
+                          const shipmentPdf = await pdfService.generateShipmentPDF(
+                            orderWithDetails,
+                            orderWithDetails.Store,
+                            orderWithDetails.OrderItems
+                          );
 
-                        shipmentAttachments = [{
-                          filename: pdfService.getShipmentFilename(orderWithDetails),
-                          content: shipmentPdf.toString('base64'),
-                          contentType: 'application/pdf'
-                        }];
+                          shipmentAttachments = [{
+                            filename: pdfService.getShipmentFilename(orderWithDetails),
+                            content: shipmentPdf.toString('base64'),
+                            contentType: 'application/pdf'
+                          }];
 
-                        console.log('✅ PDF shipment notice generated successfully');
+                          console.log('✅ PDF shipment notice generated successfully');
+                        } catch (pdfError) {
+                          console.error('⚠️ Shipment PDF generation failed, sending email without PDF:', pdfError.message);
+                          // Continue without PDF attachment
+                        }
                       }
 
                       // Send shipment notification email

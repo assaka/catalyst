@@ -56,6 +56,7 @@ export default function SalesSettings() {
         auto_invoice_enabled: false,
         auto_invoice_pdf_enabled: false,
         auto_ship_enabled: false,
+        auto_shipment_pdf_enabled: false,
         manual_invoice_send: true,
         manual_shipment_send: true,
       };
@@ -114,6 +115,7 @@ export default function SalesSettings() {
             auto_invoice_enabled: store.settings.sales_settings.auto_invoice_enabled,
             auto_invoice_pdf_enabled: store.settings.sales_settings.auto_invoice_pdf_enabled,
             auto_ship_enabled: store.settings.sales_settings.auto_ship_enabled,
+            auto_shipment_pdf_enabled: store.settings.sales_settings.auto_shipment_pdf_enabled,
             manual_invoice_send: store.settings.sales_settings.manual_invoice_send,
             manual_shipment_send: store.settings.sales_settings.manual_shipment_send,
           }
@@ -243,6 +245,20 @@ export default function SalesSettings() {
                 id="auto_ship_enabled"
                 checked={store?.settings?.sales_settings?.auto_ship_enabled || false}
                 onCheckedChange={(checked) => handleSalesSettingsChange('auto_ship_enabled', checked)}
+              />
+            </div>
+
+            <div className="flex items-center justify-between p-4 border rounded-lg">
+              <div className="space-y-0.5">
+                <Label htmlFor="auto_shipment_pdf_enabled" className="text-base">Include PDF Shipment</Label>
+                <p className="text-sm text-gray-500">
+                  Attach PDF shipment notice to automatic emails (requires PDF template in Content → PDF Templates)
+                </p>
+              </div>
+              <Switch
+                id="auto_shipment_pdf_enabled"
+                checked={store?.settings?.sales_settings?.auto_shipment_pdf_enabled || false}
+                onCheckedChange={(checked) => handleSalesSettingsChange('auto_shipment_pdf_enabled', checked)}
               />
             </div>
 
