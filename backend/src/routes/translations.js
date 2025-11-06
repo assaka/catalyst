@@ -1174,24 +1174,36 @@ router.post('/bulk-translate-entities', authMiddleware, async (req, res) => {
     let estimatedCost = 0;
     const entityCounts = {};
 
+    console.log(`💰 Calculating cost for bulk translation: ${entity_types.join(', ')}`);
+
     for (const entityType of entity_types) {
       const entityConfig = entityTypeMap[entityType];
-      if (!entityConfig || entityConfig.special) continue;
+      if (!entityConfig || entityConfig.special) {
+        console.log(`⏭️ Skipping ${entityType} (special or not found)`);
+        continue;
+      }
 
       try {
         const count = await entityConfig.model.count({ where: { store_id } });
         entityCounts[entityType] = count;
         const costPerItem = await translationService.getTranslationCost(entityType);
-        estimatedCost += count * costPerItem;
+        const typeCost = count * costPerItem;
+        estimatedCost += typeCost;
+        console.log(`📊 ${entityType}: ${count} items × ${costPerItem} credits = ${typeCost.toFixed(2)} credits`);
       } catch (error) {
-        console.error(`Error counting ${entityType}:`, error);
+        console.error(`❌ Error counting ${entityType}:`, error);
       }
     }
 
+    console.log(`💰 Total estimated cost: ${estimatedCost.toFixed(2)} credits`);
+
     // Check if user has enough credits
+    const balance = await creditService.getBalance(userId);
+    console.log(`👤 User balance: ${balance} credits`);
+
     const hasCredits = await creditService.hasEnoughCredits(userId, store_id, estimatedCost);
     if (!hasCredits) {
-      const balance = await creditService.getBalance(userId);
+      console.log(`❌ Insufficient credits: need ${estimatedCost.toFixed(2)}, have ${balance}`);
       return res.status(402).json({
         success: false,
         code: 'INSUFFICIENT_CREDITS',
@@ -1200,6 +1212,8 @@ router.post('/bulk-translate-entities', authMiddleware, async (req, res) => {
         available: balance
       });
     }
+
+    console.log(`✅ Sufficient credits available, proceeding with translation`);
 
     const allResults = {
       total: 0,
@@ -1313,19 +1327,21 @@ router.post('/bulk-translate-entities', authMiddleware, async (req, res) => {
       }
     }
 
-    // Deduct credits for ALL items processed (including skipped ones)
-    let actualCost = 0;
+    // Deduct credits based on entity counts (ALL items selected, regardless of skip/translate)
+    // Use the pre-calculated estimatedCost instead of counting results
+    let actualCost = estimatedCost;
 
-    if (allResults.total > 0) {
-      // Calculate cost based on ALL items processed (translated + skipped)
-      for (const [entityType, entityData] of Object.entries(allResults.byEntity)) {
-        if (entityData.total > 0) {
-          const costPerItem = await translationService.getTranslationCost(entityType);
-          actualCost += entityData.total * costPerItem;
-        }
-      }
+    console.log(`💳 Preparing to deduct credits: ${actualCost.toFixed(2)} credits`);
 
+    if (actualCost > 0) {
       try {
+        console.log(`📤 Calling creditService.deduct with:`, {
+          userId,
+          storeId: store_id,
+          amount: actualCost,
+          entityTypes: entity_types
+        });
+
         const deductionResult = await creditService.deduct(
           userId,
           store_id,
@@ -1335,17 +1351,18 @@ router.post('/bulk-translate-entities', authMiddleware, async (req, res) => {
             entity_types,
             fromLang,
             toLang,
-            itemsProcessed: allResults.total,
+            itemsSelected: Object.values(entityCounts).reduce((sum, count) => sum + count, 0),
             translationsCompleted: allResults.translated,
             failed: allResults.failed,
             skipped: allResults.skipped,
             byEntity: allResults.byEntity,
-            note: 'Charged for all items including skipped'
+            note: 'Charged for all items in selection (including skipped)'
           },
           null,
           'ai_translation'
         );
-        console.log(`✅ Deducted ${actualCost} credits for ${allResults.total} items (${allResults.translated} translated, ${allResults.skipped} skipped)`);
+        console.log(`✅ Successfully deducted ${actualCost} credits for all selected items`);
+        console.log(`📊 Breakdown: ${allResults.translated} translated, ${allResults.skipped} skipped, ${allResults.failed} failed`);
         console.log(`💰 Deduction result:`, deductionResult);
       } catch (deductError) {
         console.error('❌ CREDIT DEDUCTION FAILED:', deductError);
@@ -1361,6 +1378,8 @@ router.post('/bulk-translate-entities', authMiddleware, async (req, res) => {
         // But set actualCost to 0 so frontend doesn't show false info
         actualCost = 0;
       }
+    } else {
+      console.log(`⏭️ No credits to deduct (actualCost = 0)`);
     }
 
     res.json({
@@ -1834,17 +1853,24 @@ router.post('/wizard-execute', authMiddleware, async (req, res) => {
     // Deduct credits for ALL items processed (including skipped ones)
     let actualCost = 0;
 
+    console.log(`💰 Calculating wizard translation cost for ${results.total} total items`);
+
     if (results.total > 0) {
       // Calculate cost based on ALL items processed (translated + skipped)
       for (const [entityType, entityData] of Object.entries(results.byEntity)) {
         if (entityData.total > 0) {
           const costPerItem = await translationService.getTranslationCost(entityType);
-          actualCost += entityData.total * costPerItem;
+          const typeCost = entityData.total * costPerItem;
+          actualCost += typeCost;
+          console.log(`📊 ${entityType}: ${entityData.total} items × ${costPerItem} credits = ${typeCost.toFixed(2)} credits`);
         }
       }
 
+      console.log(`💰 Total cost to deduct: ${actualCost.toFixed(2)} credits`);
+      console.log(`👤 User: ${userId}, Store: ${storeId}`);
+
       try {
-        await creditService.deduct(
+        const deductionResult = await creditService.deduct(
           userId,
           storeId,
           actualCost,
@@ -1863,7 +1889,8 @@ router.post('/wizard-execute', authMiddleware, async (req, res) => {
           null,
           'ai_translation'
         );
-        console.log(`✅ Deducted ${actualCost} credits for ${results.total} items (${results.translated} translated, ${results.skipped} skipped)`);
+        console.log(`✅ Successfully deducted ${actualCost} credits for ${results.total} items (${results.translated} translated, ${results.skipped} skipped)`);
+        console.log(`💰 Deduction result:`, deductionResult);
       } catch (deductError) {
         console.error('❌ CREDIT DEDUCTION FAILED (wizard-execute):', deductError);
         console.error('❌ Error details:', {
@@ -1878,6 +1905,8 @@ router.post('/wizard-execute', authMiddleware, async (req, res) => {
         // But set actualCost to 0 so frontend doesn't show false info
         actualCost = 0;
       }
+    } else {
+      console.log(`⏭️ No items to charge for (results.total = 0)`);
     }
 
     res.json({
