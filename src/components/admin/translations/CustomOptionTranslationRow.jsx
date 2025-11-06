@@ -3,6 +3,7 @@ import { ChevronDown, ChevronRight, Globe, Wand2 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import SaveButton from '@/components/ui/save-button';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { useTranslation } from '@/contexts/TranslationContext';
 import { toast } from 'sonner';
 import api from '@/utils/api';
@@ -166,16 +167,25 @@ export default function CustomOptionTranslationRow({ rule, onUpdate, selectedLan
                       />
                     </div>
                     {lang.code !== 'en' && (
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => handleAITranslate('en', lang.code)}
-                        disabled={translating[translatingKey] || !translations.en?.display_label}
-                        className="flex-shrink-0"
-                      >
-                        <Wand2 className={`w-4 h-4 ${translating[translatingKey] ? 'animate-spin' : ''}`} />
-                      </Button>
+                      <TooltipProvider>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleAITranslate('en', lang.code)}
+                              disabled={translating[translatingKey] || !translations.en?.display_label}
+                              className="flex-shrink-0"
+                            >
+                              <Wand2 className={`w-4 h-4 ${translating[translatingKey] ? 'animate-spin' : ''}`} />
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            <p>Cost: 0.1 credits per translation</p>
+                          </TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
                     )}
                   </div>
                 );
