@@ -45,13 +45,6 @@ class CartService {
     try {
       const user = await this.getCurrentUser();
 
-      console.log('🛒 CartService.getCart: User detection:', {
-        isAuthenticated: !!user,
-        userId: user?.id,
-        userRole: user?.role,
-        sessionId: sessionId
-      });
-
       const params = new URLSearchParams();
       params.append('session_id', sessionId);
 
@@ -59,9 +52,6 @@ class CartService {
       // Customers use session_id only to avoid foreign key constraint issues
       if (user?.id && user?.role !== 'customer') {
         params.append('user_id', user.id);
-        console.log('🔄 CartService.getCart: Sending both session_id and user_id for cart merging (admin user)');
-      } else if (user?.role === 'customer') {
-        console.log('🛒 CartService.getCart: Customer detected - using session_id only (no user_id)');
       }
 
       // CRITICAL: Add store_id to filter cart by store (fixes multi-store cart issue)
@@ -118,21 +108,12 @@ class CartService {
         const cartData = result.data.dataValues || result.data;
         const items = Array.isArray(cartData.items) ? cartData.items : [];
 
-        console.log('🛒 CartService.getCart: Cart loaded successfully:', {
-          itemCount: items.length,
-          cartId: cartData.id,
-          cartUserId: cartData.user_id,
-          cartSessionId: cartData.session_id
-        });
-
         return {
           success: true,
           cart: cartData,
           items: items
         };
       }
-
-      console.log('🛒 CartService.getCart: No cart data in response');
       return { success: false, cart: null, items: [] };
     } catch (error) {
       console.error('🛒 CartService.getCart error:', {

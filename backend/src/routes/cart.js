@@ -81,8 +81,6 @@ router.get('/', async (req, res) => {
       try {
         const { Op } = require('sequelize');
 
-        console.log('🔄 Cart GET: Starting cart merge logic', { session_id, user_id, store_id });
-
         // Look for both guest cart (by session_id) and user cart (by user_id)
         const bothWhere = {
           [Op.or]: [
@@ -96,35 +94,13 @@ router.get('/', async (req, res) => {
         }
 
         const allCarts = await Cart.findAll({ where: bothWhere });
-        console.log('🔄 Cart GET: Found carts for merge', {
-          totalCarts: allCarts.length,
-          cartDetails: allCarts.map(c => ({
-            id: c.id,
-            session_id: c.session_id,
-            user_id: c.user_id,
-            itemCount: Array.isArray(c.items) ? c.items.length : 0
-          }))
-        });
-
         const guestCart = allCarts.find(c => c.session_id === session_id && !c.user_id);
         const userCart = allCarts.find(c => c.user_id === user_id);
-
-        console.log('🔄 Cart GET: Cart merge candidates', {
-          hasGuestCart: !!guestCart,
-          hasUserCart: !!userCart,
-          guestCartId: guestCart?.id,
-          userCartId: userCart?.id
-        });
 
         if (guestCart && userCart) {
           // Both carts exist - merge guest cart items into user cart
           const guestItems = Array.isArray(guestCart.items) ? guestCart.items : [];
           const userItems = Array.isArray(userCart.items) ? userCart.items : [];
-
-          console.log('🔄 Cart GET: Merging both carts', {
-            guestItemCount: guestItems.length,
-            userItemCount: userItems.length
-          });
 
           // Merge items - add guest items to user cart (avoiding duplicates based on product_id and options)
           for (const guestItem of guestItems) {
@@ -151,21 +127,16 @@ router.get('/', async (req, res) => {
           // Delete guest cart as it's now merged
           await guestCart.destroy();
 
-          console.log(`✅ Cart merged: ${guestItems.length} items from guest cart merged into user cart (total now: ${userItems.length})`);
           cart = userCart;
         } else if (guestCart && !userCart) {
           // Only guest cart exists - keep it linked by session_id
           // NOTE: We don't set user_id because:
           // 1. Customer users are in a different table (foreign key constraint would fail)
           // 2. Session-based tracking works for both customers and guests
-          console.log('🔄 Cart GET: Using guest cart (keeping session_id tracking)');
           cart = guestCart;
         } else if (userCart) {
           // Only user cart exists - use it
-          console.log('🔄 Cart GET: Using existing user cart');
           cart = userCart;
-        } else {
-          console.log('⚠️ Cart GET: No carts found for merge');
         }
       } catch (mergeError) {
         console.error('❌ Cart GET: Cart merge failed', {
@@ -197,13 +168,6 @@ router.get('/', async (req, res) => {
 
       if (Object.keys(whereClause).length > 0) {
         cart = await Cart.findOne({ where: whereClause });
-        if (cart) {
-          console.log('🔄 Cart GET: Found cart via simple query', {
-            cartId: cart.id,
-            user_id: cart.user_id,
-            session_id: cart.session_id
-          });
-        }
       }
     }
 
