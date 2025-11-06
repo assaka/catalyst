@@ -50,6 +50,7 @@ export default function BulkTranslateDialog({
   const [showFlash, setShowFlash] = useState(false);
   const [flashMessage, setFlashMessage] = useState(null);
   const [localCredits, setLocalCredits] = useState(userCredits);
+  const [translationProgress, setTranslationProgress] = useState({ current: 0, total: 0 });
 
   // Sync local credits with prop
   useEffect(() => {
@@ -150,6 +151,7 @@ export default function BulkTranslateDialog({
     }
 
     setIsTranslating(true);
+    setTranslationProgress({ current: 0, total: translateToLangs.length });
 
     // Warn user if translating UI labels (can be slow)
     if (entityName === 'UI Labels' && itemCount > 50) {
@@ -164,7 +166,9 @@ export default function BulkTranslateDialog({
       let totalCreditsDeducted = 0;
       const allErrors = [];
 
-      for (const toLang of translateToLangs) {
+      for (let i = 0; i < translateToLangs.length; i++) {
+        const toLang = translateToLangs[i];
+        setTranslationProgress({ current: i + 1, total: translateToLangs.length });
         const result = await onTranslate(translateFromLang, toLang);
 
         console.log(`📥 BulkTranslateDialog: Received result for ${toLang}:`, {
@@ -235,6 +239,7 @@ export default function BulkTranslateDialog({
       toast.error(`Failed to translate ${entityType}`);
     } finally {
       setIsTranslating(false);
+      setTranslationProgress({ current: 0, total: 0 });
     }
   };
 
@@ -384,7 +389,11 @@ export default function BulkTranslateDialog({
               {isTranslating ? (
                 <>
                   <span className="animate-spin mr-2">⏳</span>
-                  Translating...
+                  {translationProgress.total > 0 ? (
+                    `Translating ${translationProgress.current}/${translationProgress.total}...`
+                  ) : (
+                    'Translating...'
+                  )}
                 </>
               ) : (
                 <>
