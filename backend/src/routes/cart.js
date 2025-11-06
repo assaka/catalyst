@@ -73,25 +73,11 @@ router.get('/', async (req, res) => {
       });
     }
 
-    // Build where clause
-    const whereClause = {};
+    let cart = null;
 
-    if (user_id) {
-      whereClause.user_id = user_id;
-    } else {
-      whereClause.session_id = session_id;
-    }
-
-    // CRITICAL: Filter by store_id if provided (fixes multi-store cart issue)
-    if (store_id) {
-      whereClause.store_id = store_id;
-    }
-
-    let cart = await Cart.findOne({ where: whereClause });
-
-    // If no cart found but both session_id and user_id were provided,
-    // handle cart merging for logged-in users
-    if (!cart && session_id && user_id) {
+    // CRITICAL: When both session_id and user_id are provided, check for cart merging FIRST
+    // This handles the case where a user logs in while having items in their guest cart
+    if (session_id && user_id) {
       try {
         const { Op } = require('sequelize');
 
@@ -192,6 +178,33 @@ router.get('/', async (req, res) => {
         });
         // Don't fail the request, just return empty cart
         cart = null;
+      }
+    }
+
+    // If cart not found yet (merge didn't run or didn't find anything), try simple query
+    if (!cart) {
+      const whereClause = {};
+
+      if (user_id) {
+        whereClause.user_id = user_id;
+      } else if (session_id) {
+        whereClause.session_id = session_id;
+      }
+
+      // CRITICAL: Filter by store_id if provided (fixes multi-store cart issue)
+      if (store_id) {
+        whereClause.store_id = store_id;
+      }
+
+      if (Object.keys(whereClause).length > 0) {
+        cart = await Cart.findOne({ where: whereClause });
+        if (cart) {
+          console.log('🔄 Cart GET: Found cart via simple query', {
+            cartId: cart.id,
+            user_id: cart.user_id,
+            session_id: cart.session_id
+          });
+        }
       }
     }
 
