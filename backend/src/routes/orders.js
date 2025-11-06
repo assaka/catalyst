@@ -1254,6 +1254,34 @@ router.post('/:id/send-shipment', authMiddleware, async (req, res) => {
     // Check if shipment already exists
     let shipment = await Shipment.findOne({ where: { order_id: id } });
 
+    // Check if PDF should be generated for shipment
+    const salesSettings = order.Store.settings?.sales_settings || {};
+    let shipmentAttachments = [];
+
+    if (salesSettings.auto_invoice_pdf_enabled) { // Reuse PDF setting for shipment
+      try {
+        console.log('📄 Generating PDF shipment notice...');
+        const pdfService = require('../services/pdf-service');
+
+        const shipmentPdf = await pdfService.generateShipmentPDF(
+          order,
+          order.Store,
+          order.OrderItems
+        );
+
+        shipmentAttachments = [{
+          filename: pdfService.getShipmentFilename(order),
+          content: shipmentPdf.toString('base64'),
+          contentType: 'application/pdf'
+        }];
+
+        console.log('✅ PDF shipment notice generated successfully');
+      } catch (pdfError) {
+        console.error('❌ Failed to generate shipment PDF:', pdfError);
+        // Continue without PDF if generation fails
+      }
+    }
+
     // Send shipment notification email
     await emailService.sendTransactionalEmail(order.store_id, 'shipment_email', {
       recipientEmail: order.customer_email,
@@ -1264,7 +1292,8 @@ router.post('/:id/send-shipment', authMiddleware, async (req, res) => {
       tracking_url: trackingUrl || '',
       carrier: carrier || 'Not specified',
       shipping_method: carrier || order.shipping_method || 'Not specified',
-      estimated_delivery_date: estimatedDeliveryDate ? new Date(estimatedDeliveryDate).toLocaleDateString() : 'To be confirmed'
+      estimated_delivery_date: estimatedDeliveryDate ? new Date(estimatedDeliveryDate).toLocaleDateString() : 'To be confirmed',
+      attachments: shipmentAttachments
     });
 
     // Create or update shipment record

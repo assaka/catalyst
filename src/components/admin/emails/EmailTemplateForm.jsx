@@ -108,20 +108,14 @@ export default function EmailTemplateForm({ template, onSubmit, onCancel }) {
 
   useEffect(() => {
     if (template) {
-      const translations = template.translations || {
-        en: {
-          subject: template.subject || '',
-          template_content: template.template_content || '',
-          html_content: template.html_content || ''
-        }
-      };
+      const translations = template.translations || { en: { subject: '', template_content: '', html_content: '' } };
 
       setFormData({
         identifier: template.identifier,
-        subject: translations.en?.subject || template.subject || '',
+        subject: translations.en?.subject || '',
         content_type: template.content_type || 'both',
-        template_content: translations.en?.template_content || template.template_content || '',
-        html_content: translations.en?.html_content || template.html_content || '',
+        template_content: translations.en?.template_content || '',
+        html_content: translations.en?.html_content || '',
         is_active: template.is_active !== false,
         sort_order: template.sort_order || 0,
         attachment_enabled: template.attachment_enabled || false,
@@ -178,20 +172,14 @@ export default function EmailTemplateForm({ template, onSubmit, onCancel }) {
         // Reload the template data
         const updated = await api.get(`/email-templates/${template.id}`);
         if (updated && updated.success && updated.data) {
-          const translations = updated.data.translations || {
-            en: {
-              subject: updated.data.subject || '',
-              template_content: updated.data.template_content || '',
-              html_content: updated.data.html_content || ''
-            }
-          };
+          const translations = updated.data.translations || { en: { subject: '', template_content: '', html_content: '' } };
 
           setFormData({
             identifier: updated.data.identifier,
-            subject: translations.en?.subject || updated.data.subject || '',
+            subject: translations.en?.subject || '',
             content_type: updated.data.content_type || 'both',
-            template_content: translations.en?.template_content || updated.data.template_content || '',
-            html_content: translations.en?.html_content || updated.data.html_content || '',
+            template_content: translations.en?.template_content || '',
+            html_content: translations.en?.html_content || '',
             is_active: updated.data.is_active !== false,
             sort_order: updated.data.sort_order || 0,
             attachment_enabled: updated.data.attachment_enabled || false,

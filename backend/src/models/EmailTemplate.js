@@ -20,10 +20,6 @@ const EmailTemplate = sequelize.define('EmailTemplate', {
     allowNull: false,
     comment: 'Unique identifier (signup_email, credit_purchase_email, order_success_email)'
   },
-  subject: {
-    type: DataTypes.STRING(255),
-    allowNull: false
-  },
   content_type: {
     type: DataTypes.STRING(20),
     allowNull: false,
@@ -31,16 +27,6 @@ const EmailTemplate = sequelize.define('EmailTemplate', {
     validate: {
       isIn: [['template', 'html', 'both']]
     }
-  },
-  template_content: {
-    type: DataTypes.TEXT,
-    allowNull: true,
-    comment: 'Content with variables like {{customer_name}}'
-  },
-  html_content: {
-    type: DataTypes.TEXT,
-    allowNull: true,
-    comment: 'Full HTML content for advanced users'
   },
   // Default content for restore functionality
   default_subject: {

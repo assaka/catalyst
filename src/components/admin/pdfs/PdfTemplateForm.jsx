@@ -40,14 +40,10 @@ export default function PdfTemplateForm({ template, onSubmit, onCancel }) {
 
   useEffect(() => {
     if (template) {
-      const translations = template.translations || {
-        en: {
-          html_template: template.html_template || ''
-        }
-      };
+      const translations = template.translations || { en: { html_template: '' } };
 
       setFormData({
-        html_template: translations.en?.html_template || template.html_template || '',
+        html_template: translations.en?.html_template || '',
         is_active: template.is_active !== false,
         settings: template.settings || {
           page_size: 'A4',
@@ -134,14 +130,10 @@ export default function PdfTemplateForm({ template, onSubmit, onCancel }) {
         // Reload the template data
         const updated = await api.get(`/pdf-templates/${template.id}`);
         if (updated && updated.success && updated.data) {
-          const translations = updated.data.translations || {
-            en: {
-              html_template: updated.data.html_template || ''
-            }
-          };
+          const translations = updated.data.translations || { en: { html_template: '' } };
 
           setFormData({
-            html_template: translations.en?.html_template || updated.data.html_template || '',
+            html_template: translations.en?.html_template || '',
             is_active: updated.data.is_active !== false,
             settings: updated.data.settings || formData.settings,
             translations

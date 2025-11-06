@@ -65,21 +65,27 @@ class EmailService {
         throw new Error(errorMsg);
       }
 
-      console.log(`✅ [EMAIL SERVICE] Email template found: ${template.subject}`);
+      console.log(`✅ [EMAIL SERVICE] Email template found`);
 
-      // Get translation or fall back to default
+      // Get translation (content is now stored exclusively in translations table)
       const translation = template.translationsData && template.translationsData.length > 0
         ? template.translationsData[0]
         : null;
 
-      const subject = translation?.subject || template.subject;
+      if (!translation) {
+        const errorMsg = `No ${languageCode} translation found for email template '${templateIdentifier}'. Please add translations in Layout > Translations.`;
+        console.error(`❌ [EMAIL SERVICE] ${errorMsg}`);
+        throw new Error(errorMsg);
+      }
+
+      const subject = translation.subject;
       let content;
 
       // Choose content based on template type
       if (template.content_type === 'html' || template.content_type === 'both') {
-        content = translation?.html_content || template.html_content;
+        content = translation.html_content;
       } else {
-        content = translation?.template_content || template.template_content;
+        content = translation.template_content;
       }
 
       // Process email_header and email_footer placeholders

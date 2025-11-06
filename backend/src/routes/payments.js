@@ -1450,6 +1450,151 @@ router.post('/webhook', async (req, res) => {
               console.error(`❌ Failed to send order success email:`, emailError.message);
               // Don't fail the webhook if email fails
             });
+
+            // Check if auto-invoice is enabled in sales settings
+            const store = orderWithDetails.Store;
+            const salesSettings = store.settings?.sales_settings || {};
+            if (salesSettings.auto_invoice_enabled) {
+              console.log('📧 Auto-invoice enabled, sending invoice email...');
+
+              try {
+                // Check if PDF attachment should be included
+                let attachments = [];
+                if (salesSettings.auto_invoice_pdf_enabled) {
+                  console.log('📄 Generating PDF invoice...');
+                  const pdfService = require('../services/pdf-service');
+
+                  // Generate invoice PDF
+                  const invoicePdf = await pdfService.generateInvoicePDF(
+                    orderWithDetails,
+                    orderWithDetails.Store,
+                    orderWithDetails.OrderItems
+                  );
+
+                  attachments = [{
+                    filename: pdfService.getInvoiceFilename(orderWithDetails),
+                    content: invoicePdf.toString('base64'),
+                    contentType: 'application/pdf'
+                  }];
+
+                  console.log('✅ PDF invoice generated successfully');
+                }
+
+                // Send invoice email
+                await emailService.sendTransactionalEmail(finalOrder.store_id, 'invoice_email', {
+                  recipientEmail: finalOrder.customer_email,
+                  customer: customer || {
+                    first_name: firstName,
+                    last_name: lastName,
+                    email: finalOrder.customer_email
+                  },
+                  order: orderWithDetails.toJSON(),
+                  store: orderWithDetails.Store,
+                  attachments: attachments
+                });
+
+                console.log('✅ Invoice email sent successfully');
+
+                // Create invoice record to track that invoice was sent
+                try {
+                  const { Invoice } = require('../models');
+                  // Generate invoice number
+                  const invoiceNumber = 'INV-' + Date.now() + '-' + Math.random().toString(36).substr(2, 9).toUpperCase();
+
+                  await Invoice.create({
+                    invoice_number: invoiceNumber,
+                    order_id: finalOrder.id,
+                    store_id: finalOrder.store_id,
+                    customer_email: finalOrder.customer_email,
+                    pdf_generated: salesSettings.auto_invoice_pdf_enabled || false,
+                    email_status: 'sent'
+                  });
+                  console.log('✅ Invoice record created');
+
+                  // Check if auto-ship is enabled and trigger shipment
+                  if (salesSettings.auto_ship_enabled) {
+                    console.log('📦 Auto-ship enabled, sending shipment notification...');
+                    try {
+                      const { Shipment } = require('../models');
+
+                      // Generate shipment PDF if enabled
+                      let shipmentAttachments = [];
+                      if (salesSettings.auto_invoice_pdf_enabled) { // Reuse PDF setting for shipment
+                        console.log('📄 Generating PDF shipment notice...');
+                        const pdfService = require('../services/pdf-service');
+
+                        const shipmentPdf = await pdfService.generateShipmentPDF(
+                          orderWithDetails,
+                          orderWithDetails.Store,
+                          orderWithDetails.OrderItems
+                        );
+
+                        shipmentAttachments = [{
+                          filename: pdfService.getShipmentFilename(orderWithDetails),
+                          content: shipmentPdf.toString('base64'),
+                          contentType: 'application/pdf'
+                        }];
+
+                        console.log('✅ PDF shipment notice generated successfully');
+                      }
+
+                      // Send shipment notification email
+                      await emailService.sendTransactionalEmail(finalOrder.store_id, 'shipment_email', {
+                        recipientEmail: finalOrder.customer_email,
+                        customer: customer || {
+                          first_name: firstName,
+                          last_name: lastName,
+                          email: finalOrder.customer_email
+                        },
+                        order: orderWithDetails.toJSON(),
+                        store: orderWithDetails.Store,
+                        tracking_number: finalOrder.tracking_number || 'Will be provided soon',
+                        tracking_url: finalOrder.tracking_url || '',
+                        carrier: 'Standard',
+                        shipping_method: finalOrder.shipping_method || 'Standard Shipping',
+                        estimated_delivery_date: 'To be confirmed',
+                        attachments: shipmentAttachments
+                      });
+
+                      console.log('✅ Shipment email sent successfully');
+
+                      // Create shipment record
+                      const shipmentNumber = 'SHIP-' + Date.now() + '-' + Math.random().toString(36).substr(2, 9).toUpperCase();
+
+                      await Shipment.create({
+                        shipment_number: shipmentNumber,
+                        order_id: finalOrder.id,
+                        store_id: finalOrder.store_id,
+                        customer_email: finalOrder.customer_email,
+                        tracking_number: finalOrder.tracking_number,
+                        tracking_url: finalOrder.tracking_url,
+                        carrier: 'Standard',
+                        shipping_method: finalOrder.shipping_method,
+                        email_status: 'sent'
+                      });
+
+                      // Update order status to shipped
+                      await orderWithDetails.update({
+                        status: 'shipped',
+                        fulfillment_status: 'shipped',
+                        shipped_at: new Date()
+                      });
+
+                      console.log('✅ Shipment record created and order marked as shipped');
+                    } catch (shipmentError) {
+                      console.error('❌ Failed to send shipment notification:', shipmentError);
+                      // Don't fail if shipment notification fails
+                    }
+                  }
+                } catch (invoiceCreateError) {
+                  console.error('❌ Failed to create invoice record:', invoiceCreateError);
+                  // Don't fail if invoice record creation fails
+                }
+              } catch (invoiceError) {
+                console.error('❌ Failed to send invoice email:', invoiceError);
+                // Don't fail the webhook if invoice email fails
+              }
+            }
             } catch (emailError) {
               console.error(`❌ Error preparing order success email:`, emailError.message);
               // Don't fail the webhook if email fails

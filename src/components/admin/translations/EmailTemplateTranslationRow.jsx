@@ -5,6 +5,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
 import SaveButton from '@/components/ui/save-button';
 import { Badge } from '@/components/ui/badge';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { useTranslation } from '@/contexts/TranslationContext';
 import { toast } from 'sonner';
 import api from '@/utils/api';
@@ -177,16 +178,25 @@ export default function EmailTemplateTranslationRow({ template, onUpdate, select
                           {lang.name} ({lang.code})
                         </label>
                         {lang.code !== 'en' && (
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => handleAITranslate(field.key, 'en', lang.code)}
-                            disabled={translating[`${field.key}-${lang.code}`]}
-                            className="h-6 px-2 text-xs"
-                          >
-                            <Wand2 className={`w-3 h-3 mr-1 ${translating[`${field.key}-${lang.code}`] ? 'animate-spin' : ''}`} />
-                            AI Translate
-                          </Button>
+                          <TooltipProvider>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => handleAITranslate(field.key, 'en', lang.code)}
+                                  disabled={translating[`${field.key}-${lang.code}`]}
+                                  className="h-6 px-2 text-xs"
+                                >
+                                  <Wand2 className={`w-3 h-3 mr-1 ${translating[`${field.key}-${lang.code}`] ? 'animate-spin' : ''}`} />
+                                  AI Translate
+                                </Button>
+                              </TooltipTrigger>
+                              <TooltipContent>
+                                <p>Cost: 0.1 credits per translation</p>
+                              </TooltipContent>
+                            </Tooltip>
+                          </TooltipProvider>
                         )}
                       </div>
                       {field.multiline ? (

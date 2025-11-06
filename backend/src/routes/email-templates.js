@@ -50,14 +50,7 @@ router.get('/', async (req, res) => {
       const templateData = template.toJSON();
       const translations = {};
 
-      // Add base template content as 'en' translation if not already present
-      translations.en = {
-        subject: templateData.subject,
-        template_content: templateData.template_content,
-        html_content: templateData.html_content
-      };
-
-      // Add other language translations from translations table
+      // Add all language translations from translations table
       if (templateData.translationsData) {
         templateData.translationsData.forEach(trans => {
           translations[trans.language_code] = {
@@ -123,14 +116,7 @@ router.get('/:id', async (req, res) => {
     const templateData = template.toJSON();
     const translations = {};
 
-    // Add base template content as 'en' translation
-    translations.en = {
-      subject: templateData.subject,
-      template_content: templateData.template_content,
-      html_content: templateData.html_content
-    };
-
-    // Add other language translations from translations table
+    // Add all language translations from translations table
     if (templateData.translationsData) {
       templateData.translationsData.forEach(trans => {
         translations[trans.language_code] = {
@@ -168,8 +154,8 @@ router.get('/:id', async (req, res) => {
 router.post('/', [
   body('store_id').isUUID().withMessage('Valid store_id is required'),
   body('identifier').notEmpty().withMessage('identifier is required'),
-  body('subject').notEmpty().withMessage('subject is required'),
-  body('content_type').isIn(['template', 'html', 'both']).withMessage('Invalid content_type')
+  body('content_type').isIn(['template', 'html', 'both']).withMessage('Invalid content_type'),
+  body('translations').notEmpty().withMessage('translations object is required')
 ], async (req, res) => {
   try {
     const errors = validationResult(req);
@@ -180,7 +166,7 @@ router.post('/', [
       });
     }
 
-    const { store_id, identifier, subject, content_type, template_content, html_content, is_active, sort_order, attachment_enabled, attachment_config, translations } = req.body;
+    const { store_id, identifier, content_type, is_active, sort_order, attachment_enabled, attachment_config, translations } = req.body;
 
     // Prevent creating system template identifiers
     const systemIdentifiers = ['signup_email', 'email_verification', 'order_success_email'];
@@ -203,14 +189,11 @@ router.post('/', [
     // Get available variables for this template type
     const variables = getVariablesForTemplate(identifier);
 
-    // Create template (is_system will be false by default)
+    // Create template (content is stored in translations table)
     const template = await EmailTemplate.create({
       store_id,
       identifier,
-      subject,
       content_type,
-      template_content,
-      html_content,
       variables,
       is_active: is_active !== undefined ? is_active : true,
       is_system: false,
@@ -257,7 +240,7 @@ router.post('/', [
 router.put('/:id', async (req, res) => {
   try {
     const { id } = req.params;
-    const { identifier, subject, content_type, template_content, html_content, is_active, sort_order, attachment_enabled, attachment_config, translations } = req.body;
+    const { identifier, content_type, is_active, sort_order, attachment_enabled, attachment_config, translations } = req.body;
 
     const template = await EmailTemplate.findByPk(id);
 
@@ -285,12 +268,9 @@ router.put('/:id', async (req, res) => {
       });
     }
 
-    // Build update object
+    // Build update object (content is now stored only in translations table)
     const updateData = {
-      subject,
       content_type,
-      template_content,
-      html_content,
       is_active,
       sort_order,
       attachment_enabled,
@@ -484,9 +464,15 @@ router.post('/bulk-translate', [
       });
     });
 
-    // Get all templates for the store
+    // Get all templates for the store with source language translations
     const templates = await EmailTemplate.findAll({
-      where: { store_id, is_active: true }
+      where: { store_id, is_active: true },
+      include: [{
+        model: EmailTemplateTranslation,
+        as: 'translationsData',
+        where: { language_code: fromLang },
+        required: true // Only include templates that have source language
+      }]
     });
 
     console.log(`📧 Bulk translating ${templates.length} email templates from ${fromLang} to ${toLang}`);
@@ -500,7 +486,10 @@ router.post('/bulk-translate', [
       try {
         console.log(`🔄 Processing template: ${template.identifier} (${template.id})`);
 
-        // Check if translation already exists
+        // Get source translation
+        const sourceTranslation = template.translationsData[0]; // We know it exists due to required: true
+
+        // Check if target translation already exists
         const existingTranslation = await EmailTemplateTranslation.findOne({
           where: {
             email_template_id: template.id,
@@ -517,7 +506,7 @@ router.post('/bulk-translate', [
         // Translate subject
         console.log(`🌐 Translating subject for ${template.identifier}...`);
         const translatedSubject = await translationService.aiTranslate(
-          template.subject,
+          sourceTranslation.subject,
           fromLang,
           toLang
         );
@@ -527,17 +516,17 @@ router.post('/bulk-translate', [
         let translatedTemplateContent = null;
         let translatedHtmlContent = null;
 
-        if (template.template_content) {
+        if (sourceTranslation.template_content) {
           translatedTemplateContent = await translationService.aiTranslate(
-            template.template_content,
+            sourceTranslation.template_content,
             fromLang,
             toLang
           );
         }
 
-        if (template.html_content) {
+        if (sourceTranslation.html_content) {
           translatedHtmlContent = await translationService.aiTranslate(
-            template.html_content,
+            sourceTranslation.html_content,
             fromLang,
             toLang
           );
@@ -621,16 +610,18 @@ router.post('/:id/restore-default', async (req, res) => {
       });
     });
 
-    // Restore to default content
-    await template.update({
-      subject: template.default_subject || template.subject,
-      template_content: template.default_template_content || template.template_content,
-      html_content: template.default_html_content || template.html_content
-    });
-
-    // Also delete all translations to restore them to default
+    // Delete all existing translations
     await EmailTemplateTranslation.destroy({
       where: { email_template_id: template.id }
+    });
+
+    // Restore English translation with default content
+    await EmailTemplateTranslation.create({
+      email_template_id: template.id,
+      language_code: 'en',
+      subject: template.default_subject,
+      template_content: template.default_template_content,
+      html_content: template.default_html_content
     });
 
     res.json({

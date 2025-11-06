@@ -31,11 +31,6 @@ const PdfTemplate = sequelize.define('PdfTemplate', {
       isIn: [['invoice', 'shipment', 'packing_slip', 'receipt']]
     }
   },
-  html_template: {
-    type: DataTypes.TEXT,
-    allowNull: false,
-    comment: 'Current HTML template (user-editable)'
-  },
   default_html_template: {
     type: DataTypes.TEXT,
     allowNull: false,
