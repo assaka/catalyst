@@ -330,7 +330,7 @@ router.post('/bulk-translate', [
         }
 
         // Translate HTML template
-        const translatedHtmlTemplate = await translationService.translateText(
+        const translatedHtmlTemplate = await translationService.aiTranslate(
           template.html_template,
           fromLang,
           toLang

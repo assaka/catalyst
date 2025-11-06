@@ -516,7 +516,7 @@ router.post('/bulk-translate', [
 
         // Translate subject
         console.log(`🌐 Translating subject for ${template.identifier}...`);
-        const translatedSubject = await translationService.translateText(
+        const translatedSubject = await translationService.aiTranslate(
           template.subject,
           fromLang,
           toLang
@@ -528,7 +528,7 @@ router.post('/bulk-translate', [
         let translatedHtmlContent = null;
 
         if (template.template_content) {
-          translatedTemplateContent = await translationService.translateText(
+          translatedTemplateContent = await translationService.aiTranslate(
             template.template_content,
             fromLang,
             toLang
@@ -536,7 +536,7 @@ router.post('/bulk-translate', [
         }
 
         if (template.html_content) {
-          translatedHtmlContent = await translationService.translateText(
+          translatedHtmlContent = await translationService.aiTranslate(
             template.html_content,
             fromLang,
             toLang
