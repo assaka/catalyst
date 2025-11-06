@@ -55,10 +55,13 @@ class CartService {
       const params = new URLSearchParams();
       params.append('session_id', sessionId);
 
-      // Add user_id if authenticated to enable cart merging
-      if (user?.id) {
+      // Add user_id only for admin users (not customers) to enable cart merging
+      // Customers use session_id only to avoid foreign key constraint issues
+      if (user?.id && user?.role !== 'customer') {
         params.append('user_id', user.id);
-        console.log('🔄 CartService.getCart: Sending both session_id and user_id for cart merging');
+        console.log('🔄 CartService.getCart: Sending both session_id and user_id for cart merging (admin user)');
+      } else if (user?.role === 'customer') {
+        console.log('🛒 CartService.getCart: Customer detected - using session_id only (no user_id)');
       }
 
       // CRITICAL: Add store_id to filter cart by store (fixes multi-store cart issue)
