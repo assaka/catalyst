@@ -370,25 +370,44 @@ export default function BulkTranslateDialog({
           )}
 
           {/* Translation Progress */}
-          {isTranslating && translationProgress.total > 0 && (
+          {isTranslating && (
             <div className="bg-purple-50 border border-purple-200 rounded-lg p-4">
               <div className="flex items-center justify-between mb-2">
                 <span className="text-sm font-medium text-purple-900">
                   Translation in Progress
                 </span>
-                <span className="text-sm font-bold text-purple-700">
-                  {translationProgress.current} / {translationProgress.total}
-                </span>
+                {entityName === 'UI Labels' ? (
+                  <span className="text-sm font-bold text-purple-700">
+                    Processing {itemCount} items
+                  </span>
+                ) : translationProgress.total > 0 && (
+                  <span className="text-sm font-bold text-purple-700">
+                    {translationProgress.current} / {translationProgress.total}
+                  </span>
+                )}
               </div>
-              <div className="w-full bg-purple-200 rounded-full h-2.5">
-                <div
-                  className="bg-purple-600 h-2.5 rounded-full transition-all duration-300"
-                  style={{ width: `${(translationProgress.current / translationProgress.total) * 100}%` }}
-                ></div>
-              </div>
-              <p className="text-xs text-purple-700 mt-2">
-                Processing language {translationProgress.current} of {translationProgress.total}
-              </p>
+              {entityName !== 'UI Labels' && translationProgress.total > 0 ? (
+                <>
+                  <div className="w-full bg-purple-200 rounded-full h-2.5">
+                    <div
+                      className="bg-purple-600 h-2.5 rounded-full transition-all duration-300"
+                      style={{ width: `${(translationProgress.current / translationProgress.total) * 100}%` }}
+                    ></div>
+                  </div>
+                  <p className="text-xs text-purple-700 mt-2">
+                    Processing language {translationProgress.current} of {translationProgress.total}
+                  </p>
+                </>
+              ) : (
+                <div className="space-y-2">
+                  <div className="w-full bg-purple-200 rounded-full h-2.5 overflow-hidden">
+                    <div className="bg-purple-600 h-2.5 rounded-full animate-pulse" style={{ width: '100%' }}></div>
+                  </div>
+                  <p className="text-xs text-purple-700">
+                    Processing in batches of 10. This may take several minutes for large sets...
+                  </p>
+                </div>
+              )}
             </div>
           )}
 
@@ -413,7 +432,9 @@ export default function BulkTranslateDialog({
               {isTranslating ? (
                 <>
                   <span className="animate-spin mr-2">⏳</span>
-                  {translationProgress.total > 0 ? (
+                  {entityName === 'UI Labels' ? (
+                    `Processing ${itemCount} items...`
+                  ) : translationProgress.total > 0 ? (
                     `${Math.round((translationProgress.current / translationProgress.total) * 100)}% Complete (${translationProgress.current}/${translationProgress.total})`
                   ) : (
                     'Processing...'
