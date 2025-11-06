@@ -22,6 +22,12 @@ export default function MultiEntityTranslateDialog({
   const [translating, setTranslating] = useState(false);
   const [results, setResults] = useState(null);
   const [serviceCosts, setServiceCosts] = useState({});
+  const [localCredits, setLocalCredits] = useState(userCredits);
+
+  // Sync local credits with prop
+  useEffect(() => {
+    setLocalCredits(userCredits);
+  }, [userCredits]);
 
   // Get cost based on entity type
   const getEntityCost = (entityType) => {
@@ -101,6 +107,8 @@ export default function MultiEntityTranslateDialog({
         ? prev.filter(t => t !== entityType)
         : [...prev, entityType]
     );
+    // Reset results to show Translate button again
+    setResults(null);
     // Refresh credit balance when checkbox is toggled
     if (onCreditsUpdate) {
       onCreditsUpdate();
@@ -113,6 +121,8 @@ export default function MultiEntityTranslateDialog({
         ? prev.filter(code => code !== langCode)
         : [...prev, langCode]
     );
+    // Reset results to show Translate button again
+    setResults(null);
   };
 
   const handleTranslate = async () => {
@@ -184,8 +194,24 @@ export default function MultiEntityTranslateDialog({
         toast.warning(`Translation completed with ${allResults.failed} failures`);
       }
 
-      // Update credits in sidebar
+      // Update credits in sidebar and local state
       if (allResults.translated > 0) {
+        // Calculate credits deducted based on translated items
+        // Use average cost estimation since we don't have per-entity breakdown
+        const selectedStats = entityStats.filter(stat => selectedEntities.includes(stat.type));
+        let estimatedCreditsUsed = 0;
+        selectedStats.forEach(stat => {
+          const itemCost = getEntityCost(stat.type);
+          // Estimate: assume proportional distribution of translations across entity types
+          const proportion = stat.totalItems / selectedStats.reduce((sum, s) => sum + s.totalItems, 1);
+          const itemsTranslated = Math.round(allResults.translated * proportion);
+          estimatedCreditsUsed += itemsTranslated * itemCost;
+        });
+
+        // Update local credits
+        setLocalCredits(prev => Math.max(0, (prev || 0) - estimatedCreditsUsed));
+
+        // Update global credits
         window.dispatchEvent(new CustomEvent('creditsUpdated'));
         if (onCreditsUpdate) {
           onCreditsUpdate();
@@ -407,17 +433,17 @@ export default function MultiEntityTranslateDialog({
                         Rates: CMS pages {serviceCosts['cms_page'] || 0.5} • CMS blocks {serviceCosts['cms_block'] || 0.2} • Others {serviceCosts['standard'] || 0.1} credits
                       </span>
                       {/* Credit Balance Warning */}
-                      {userCredits !== null && totalEstimatedCost > 0 && (
+                      {localCredits !== null && totalEstimatedCost > 0 && (
                         <div className={`mt-2 p-3 rounded-lg border ${
-                          userCredits < totalEstimatedCost
+                          localCredits < totalEstimatedCost
                             ? 'bg-red-50 border-red-200'
                             : 'bg-green-50 border-green-200'
                         }`}>
                           <div className="flex items-center justify-between text-sm">
-                            <span className={userCredits < totalEstimatedCost ? 'text-red-800' : 'text-green-800'}>
-                              Your balance: {userCredits.toFixed(2)} credits
+                            <span className={localCredits < totalEstimatedCost ? 'text-red-800' : 'text-green-800'}>
+                              Your balance: {localCredits.toFixed(2)} credits
                             </span>
-                            {userCredits < totalEstimatedCost && (
+                            {localCredits < totalEstimatedCost && (
                               <span className="text-red-600 font-medium text-xs">
                                 ⚠️ Insufficient credits
                               </span>
@@ -442,14 +468,14 @@ export default function MultiEntityTranslateDialog({
             {!results && (
               <button
                 onClick={handleTranslate}
-                disabled={translating || selectedEntities.length === 0 || translateToLangs.length === 0 || (userCredits !== null && (() => {
+                disabled={translating || selectedEntities.length === 0 || translateToLangs.length === 0 || (localCredits !== null && (() => {
                   const selectedStats = entityStats.filter(stat => selectedEntities.includes(stat.type));
                   let totalEstimatedCost = 0;
                   selectedStats.forEach(stat => {
                     const itemCost = getEntityCost(stat.type);
                     totalEstimatedCost += stat.totalItems * translateToLangs.length * itemCost;
                   });
-                  return userCredits < totalEstimatedCost;
+                  return localCredits < totalEstimatedCost;
                 })())}
                 className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 flex items-center gap-2"
               >
