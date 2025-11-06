@@ -36,9 +36,15 @@ const authMiddleware = async (req, res, next) => {
 
     // Try Supabase first
     try {
+      // Build select statement based on table (customers have store_id, users don't)
+      const baseFields = 'id, email, first_name, last_name, phone, avatar_url, is_active, email_verified, last_login, role, account_type, created_at, updated_at';
+      const selectFields = isCustomer
+        ? `${baseFields}, store_id`
+        : `${baseFields}, credits`;
+
       const { data: supabaseUser, error } = await supabase
         .from(tableName)
-        .select('id, email, first_name, last_name, phone, avatar_url, is_active, email_verified, last_login, role, account_type, credits, created_at, updated_at, store_id')
+        .select(selectFields)
         .eq('id', decoded.id)
         .single();
 
