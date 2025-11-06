@@ -1402,7 +1402,7 @@ router.post('/webhook', async (req, res) => {
               }, {
                 model: Store,
                 as: 'Store',
-                attributes: ['id', 'name', 'domain', 'currency', 'settings'] // Explicitly include settings
+                attributes: ['id', 'name', 'slug', 'currency', 'settings'] // Explicitly include settings
               }]
             });
 
@@ -1904,7 +1904,7 @@ router.post('/webhook-connect', async (req, res) => {
             }, {
               model: Store,
               as: 'Store',
-              attributes: ['id', 'name', 'domain', 'currency', 'settings']
+              attributes: ['id', 'name', 'slug', 'currency', 'settings']
             }]
           });
 
@@ -2298,7 +2298,7 @@ async function createPreliminaryOrder(session, orderData) {
           }, {
             model: Store,
             as: 'Store',
-            attributes: ['id', 'name', 'domain', 'currency', 'settings'] // Explicitly include settings
+            attributes: ['id', 'name', 'slug', 'currency', 'settings'] // Explicitly include settings
           }]
         });
 

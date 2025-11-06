@@ -224,7 +224,7 @@ router.post('/finalize-order', async (req, res) => {
         }, {
           model: Store,
           as: 'Store',
-          attributes: ['id', 'name', 'domain', 'currency', 'settings'] // Explicitly include settings
+          attributes: ['id', 'name', 'slug', 'currency', 'settings'] // Explicitly include settings
         }]
       });
 
@@ -1368,7 +1368,7 @@ router.get('/test-invoice-settings/:storeId', async (req, res) => {
 
     // Load store with settings
     const store = await Store.findByPk(storeId, {
-      attributes: ['id', 'name', 'domain', 'currency', 'settings']
+      attributes: ['id', 'name', 'slug', 'currency', 'settings']
     });
 
     if (!store) {
@@ -1389,7 +1389,7 @@ router.get('/test-invoice-settings/:storeId', async (req, res) => {
       store: {
         id: store.id,
         name: store.name,
-        domain: store.domain
+        slug: store.slug
       },
       settings: store.settings,
       sales_settings: salesSettings,
