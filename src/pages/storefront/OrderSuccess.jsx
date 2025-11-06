@@ -367,44 +367,6 @@ export default function OrderSuccess() {
           <p className="text-lg text-gray-600 mb-4">{t('success.order_placed', settings)}</p>
           <p className="text-sm text-gray-600">{t('success.confirmation_sent', settings)}{' '} <span className="font-medium text-gray-900">{order.customer_email}</span></p>
           <p className="text-sm text-gray-500 mb-4">{t('order.number', settings)}: <span className="font-semibold text-gray-900">#{order.order_number}</span></p>
-          
-          {/* Download Invoice Button */}
-          <Button 
-            variant="outline" 
-            size="sm"
-            onClick={() => {
-              // Create simple invoice content
-              const invoiceContent = `
-                INVOICE
-                Order #${order.order_number}
-                Date: ${formatDate(order.created_date || order.createdAt)}
-                
-                Customer: ${order.customer_email}
-                
-                Items:
-                ${orderItems.map(item => 
-                  `${item.product_name} x${item.quantity} - ${formatCurrency(item.total_price, order.currency)}`
-                ).join('\n                ')}
-                
-                Subtotal: ${formatCurrency(order.subtotal, order.currency)}
-                Shipping${order.shipping_method ? ` (${order.shipping_method})` : ''}: ${formatCurrency(order.shipping_amount || order.shipping_cost, order.currency)}
-                Tax: ${formatCurrency(order.tax_amount, order.currency)}
-                ${safeNumber(order.discount_amount) > 0 ? `Discount: -${formatCurrency(order.discount_amount, order.currency)}\n                ` : ''}Total: ${formatCurrency(order.total_amount, order.currency)}
-              `;
-              
-              const blob = new Blob([invoiceContent], { type: 'text/plain' });
-              const url = URL.createObjectURL(blob);
-              const a = document.createElement('a');
-              a.href = url;
-              a.download = `invoice-${order.order_number}.txt`;
-              document.body.appendChild(a);
-              a.click();
-              document.body.removeChild(a);
-              URL.revokeObjectURL(url);
-            }}
-          >
-            📄 {t('success.download_invoice', settings)}
-          </Button>
         </div>
 
         <div className="grid lg:grid-cols-2 gap-8">
