@@ -57,6 +57,7 @@ import {
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
 import { Separator } from "@/components/ui/separator";
+import FlashMessage from "@/components/storefront/FlashMessage";
 
 export default function Orders() {
   const { selectedStore, getSelectedStoreId } = useStoreSelection();
@@ -70,6 +71,7 @@ export default function Orders() {
   const [error, setError] = useState(null);
   const [actionLoading, setActionLoading] = useState({});
   const [actionSuccess, setActionSuccess] = useState({});
+  const [flashMessage, setFlashMessage] = useState(null);
   const [shipmentModalOpen, setShipmentModalOpen] = useState(false);
   const [selectedOrderForShipment, setSelectedOrderForShipment] = useState(null);
   const [shipmentDetails, setShipmentDetails] = useState({
@@ -225,9 +227,18 @@ export default function Orders() {
 
       setActionSuccess(prev => ({ ...prev, [key]: true }));
       setTimeout(() => setActionSuccess(prev => ({ ...prev, [key]: false })), 3000);
+
+      // Show success message
+      setFlashMessage({
+        type: 'success',
+        message: 'Order confirmation email sent successfully!'
+      });
     } catch (error) {
       console.error('Error resending order:', error);
-      showError('Failed to resend order confirmation');
+      setFlashMessage({
+        type: 'error',
+        message: 'Failed to resend order confirmation'
+      });
     } finally {
       setActionLoading(prev => ({ ...prev, [key]: false }));
     }
@@ -251,11 +262,26 @@ export default function Orders() {
       setActionSuccess(prev => ({ ...prev, [key]: true }));
       setTimeout(() => setActionSuccess(prev => ({ ...prev, [key]: false })), 3000);
 
-      // Reload orders to show updated status
-      loadOrders();
+      // Update order status locally
+      setOrders(prevOrders =>
+        prevOrders.map(order =>
+          order.id === orderId
+            ? { ...order, status: 'processing', payment_status: 'paid' }
+            : order
+        )
+      );
+
+      // Show success message
+      setFlashMessage({
+        type: 'success',
+        message: 'Invoice email sent successfully with PDF attachment!'
+      });
     } catch (error) {
       console.error('Error sending invoice:', error);
-      showError('Failed to send invoice');
+      setFlashMessage({
+        type: 'error',
+        message: 'Failed to send invoice'
+      });
     } finally {
       setActionLoading(prev => ({ ...prev, [key]: false }));
     }
@@ -297,12 +323,34 @@ export default function Orders() {
       setActionSuccess(prev => ({ ...prev, [key]: true }));
       setTimeout(() => setActionSuccess(prev => ({ ...prev, [key]: false })), 3000);
 
-      // Close modal and reload orders to get updated status
+      // Update order status locally
+      setOrders(prevOrders =>
+        prevOrders.map(order =>
+          order.id === orderId
+            ? {
+                ...order,
+                status: 'shipped',
+                fulfillment_status: 'shipped',
+                tracking_number: shipmentDetails.trackingNumber || order.tracking_number
+              }
+            : order
+        )
+      );
+
+      // Close modal
       setShipmentModalOpen(false);
-      loadOrders();
+
+      // Show success message
+      setFlashMessage({
+        type: 'success',
+        message: 'Shipment notification sent successfully with PDF attachment!'
+      });
     } catch (error) {
       console.error('Error sending shipment:', error);
-      showError('Failed to send shipment notification');
+      setFlashMessage({
+        type: 'error',
+        message: 'Failed to send shipment notification'
+      });
     } finally {
       setActionLoading(prev => ({ ...prev, [key]: false }));
     }
@@ -360,11 +408,24 @@ export default function Orders() {
       setActionSuccess(prev => ({ ...prev, [key]: true }));
       setTimeout(() => setActionSuccess(prev => ({ ...prev, [key]: false })), 3000);
 
-      // Reload orders to show updated status
-      loadOrders();
+      // Update order status locally
+      setOrders(prevOrders =>
+        prevOrders.map(order =>
+          order.id === orderId ? { ...order, status: 'cancelled' } : order
+        )
+      );
+
+      // Show success message
+      setFlashMessage({
+        type: 'success',
+        message: 'Order cancelled successfully'
+      });
     } catch (error) {
       console.error('Error cancelling order:', error);
-      showError('Failed to cancel order');
+      setFlashMessage({
+        type: 'error',
+        message: 'Failed to cancel order'
+      });
     } finally {
       setActionLoading(prev => ({ ...prev, [key]: false }));
     }
@@ -398,11 +459,26 @@ export default function Orders() {
       setActionSuccess(prev => ({ ...prev, [key]: true }));
       setTimeout(() => setActionSuccess(prev => ({ ...prev, [key]: false })), 3000);
 
-      // Reload orders to show updated status
-      loadOrders();
+      // Update order status locally
+      setOrders(prevOrders =>
+        prevOrders.map(order =>
+          order.id === orderId
+            ? { ...order, status: 'refunded', payment_status: 'refunded' }
+            : order
+        )
+      );
+
+      // Show success message
+      setFlashMessage({
+        type: 'success',
+        message: 'Order refunded successfully'
+      });
     } catch (error) {
       console.error('Error refunding order:', error);
-      showError('Failed to refund order');
+      setFlashMessage({
+        type: 'error',
+        message: 'Failed to refund order'
+      });
     } finally {
       setActionLoading(prev => ({ ...prev, [key]: false }));
     }
@@ -862,6 +938,9 @@ export default function Orders() {
 
       {/* Alert Dialog Component */}
       <AlertComponent />
+
+      {/* Flash Message */}
+      <FlashMessage message={flashMessage} onClose={() => setFlashMessage(null)} />
     </div>
   );
 }
