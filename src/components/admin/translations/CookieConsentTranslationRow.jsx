@@ -11,7 +11,7 @@ import api from '@/utils/api';
 /**
  * Accordion row for managing cookie consent translations
  */
-export default function CookieConsentTranslationRow({ settings, onUpdate, selectedLanguages, onFlashMessage }) {
+export default function CookieConsentTranslationRow({ settings, onUpdate, selectedLanguages, onFlashMessage, storeId }) {
   const { availableLanguages } = useTranslation();
   const [isExpanded, setIsExpanded] = useState(false);
   const [translations, setTranslations] = useState(settings.translations || {});
@@ -125,7 +125,8 @@ export default function CookieConsentTranslationRow({ settings, onUpdate, select
       const response = await api.post('/translations/ai-translate', {
         text: sourceText,
         fromLang,
-        toLang
+        toLang,
+        storeId
       });
 
       if (response && response.success && response.data) {
