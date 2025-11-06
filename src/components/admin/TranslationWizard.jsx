@@ -17,7 +17,23 @@ export default function TranslationWizard({ isOpen, onClose, storeId }) {
   const [step, setStep] = useState(1);
   const [loading, setLoading] = useState(false);
   const [languages, setLanguages] = useState([]);
-  const [translationCost, setTranslationCost] = useState(0.1); // Default fallback
+  const [serviceCosts, setServiceCosts] = useState({
+    standard: 0.1,
+    product: 0.1,
+    category: 0.1,
+    attribute: 0.1,
+    cms_page: 0.5,
+    cms_block: 0.2,
+    product_tab: 0.1,
+    product_label: 0.1,
+    cookie_consent: 0.1,
+    attribute_value: 0.1,
+    'email-template': 0.1,
+    'pdf-template': 0.1,
+    'custom-option': 0.1,
+    'stock-label': 0.1,
+    'ui-labels': 0.1
+  });
 
   // Wizard state
   const [config, setConfig] = useState({
@@ -32,25 +48,73 @@ export default function TranslationWizard({ isOpen, onClose, storeId }) {
   const [stats, setStats] = useState(null);
   const [translationResult, setTranslationResult] = useState(null);
 
-  // Load languages and translation cost on mount
+  // Load languages and translation costs on mount
   useEffect(() => {
     if (isOpen) {
       loadLanguages();
-      loadTranslationCost();
+      loadTranslationCosts();
     }
   }, [isOpen]);
 
-  const loadTranslationCost = async () => {
+  const loadTranslationCosts = async () => {
     try {
-      // Use standard flat rate
-      const response = await api.get('service-credit-costs/key/ai_translation');
-      if (response.success && response.service) {
-        setTranslationCost(response.service.cost_per_unit);
-      }
+      // Load all translation service costs
+      const serviceKeys = [
+        'ai_translation',
+        'ai_translation_product',
+        'ai_translation_category',
+        'ai_translation_attribute',
+        'ai_translation_cms_page',
+        'ai_translation_cms_block',
+        'ai_translation_product_tab',
+        'ai_translation_product_label',
+        'ai_translation_cookie_consent',
+        'ai_translation_attribute_value',
+        'ai_translation_email_template',
+        'ai_translation_pdf_template',
+        'ai_translation_custom_option',
+        'ai_translation_stock_label'
+      ];
+
+      const costs = { ...serviceCosts };
+
+      await Promise.all(
+        serviceKeys.map(async (key) => {
+          try {
+            const response = await api.get(`service-credit-costs/key/${key}`);
+            if (response.success && response.service) {
+              const entityType = key.replace('ai_translation_', '').replace('ai_translation', 'standard');
+              costs[entityType] = parseFloat(response.service.cost_per_unit);
+            }
+          } catch (error) {
+            console.warn(`Could not load cost for ${key}, using fallback`);
+          }
+        })
+      );
+
+      setServiceCosts(costs);
     } catch (error) {
-      console.error('Error loading translation cost:', error);
-      // Keep using default fallback value
+      console.error('Error loading translation costs:', error);
+      // Keep using default fallback values
     }
+  };
+
+  // Helper to get cost for an entity type
+  const getCostForEntityType = (entityType) => {
+    return serviceCosts[entityType] || serviceCosts.standard;
+  };
+
+  // Calculate total estimated cost based on stats
+  const calculateEstimatedCost = () => {
+    if (!stats || !stats.byEntityType) return 0;
+
+    let totalCost = 0;
+    Object.entries(stats.byEntityType).forEach(([entityType, data]) => {
+      const cost = getCostForEntityType(entityType);
+      totalCost += data.toTranslate * cost;
+    });
+
+    return totalCost;
   };
 
   const loadLanguages = async () => {
@@ -515,6 +579,9 @@ export default function TranslationWizard({ isOpen, onClose, storeId }) {
                             <div className="font-medium">{data.name}</div>
                             <div className="text-xs text-gray-500">
                               {data.toTranslate} items need translation
+                              <span className="text-blue-600 ml-1">
+                                ({getCostForEntityType(type).toFixed(2)} credits each)
+                              </span>
                             </div>
                           </div>
                         </div>
@@ -544,30 +611,49 @@ export default function TranslationWizard({ isOpen, onClose, storeId }) {
                 {/* Credit cost estimate */}
                 {stats.toTranslate > 0 && (
                   <div className="mt-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
-                    <div className="flex flex-col gap-2">
+                    <div className="flex flex-col gap-3">
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-2 text-blue-800">
                           <span>💰</span>
-                          <span className="font-medium">Pricing:</span>
+                          <span className="font-medium">Estimated Cost:</span>
+                        </div>
+                        <div className="text-xl font-bold text-blue-900">
+                          {calculateEstimatedCost().toFixed(2)} credits
                         </div>
                       </div>
-                      <div className="grid grid-cols-2 gap-2 text-xs">
-                        <div className="flex justify-between">
-                          <span className="text-blue-700">Products, Categories, etc:</span>
-                          <span className="font-semibold">0.1 credits</span>
+
+                      {/* Breakdown by entity type */}
+                      {stats.byEntityType && Object.keys(stats.byEntityType).length > 0 && (
+                        <div className="space-y-2">
+                          <div className="text-xs font-medium text-blue-700 uppercase">Cost Breakdown:</div>
+                          <div className="space-y-1">
+                            {Object.entries(stats.byEntityType)
+                              .filter(([_, data]) => data.toTranslate > 0)
+                              .map(([entityType, data]) => {
+                                const cost = getCostForEntityType(entityType);
+                                const totalCost = data.toTranslate * cost;
+                                return (
+                                  <div key={entityType} className="flex justify-between text-xs bg-white p-2 rounded">
+                                    <div className="flex items-center gap-2">
+                                      <span>{data.icon}</span>
+                                      <span className="text-gray-700">{data.name}</span>
+                                      <span className="text-gray-500">
+                                        ({data.toTranslate} × {cost.toFixed(2)})
+                                      </span>
+                                    </div>
+                                    <span className="font-semibold text-blue-900">
+                                      {totalCost.toFixed(2)}
+                                    </span>
+                                  </div>
+                                );
+                              })}
+                          </div>
                         </div>
-                        <div className="flex justify-between">
-                          <span className="text-blue-700">CMS Blocks:</span>
-                          <span className="font-semibold">0.2 credits</span>
-                        </div>
-                        <div className="flex justify-between">
-                          <span className="text-blue-700">CMS Pages:</span>
-                          <span className="font-semibold">0.5 credits</span>
-                        </div>
+                      )}
+
+                      <div className="border-t border-blue-200 pt-2 text-xs text-gray-600 italic">
+                        Cost = items to translate × rate per item
                       </div>
-                      <p className="text-xs text-gray-600 mt-1 italic">
-                        Final cost = items translated × rate × languages
-                      </p>
                     </div>
                   </div>
                 )}
