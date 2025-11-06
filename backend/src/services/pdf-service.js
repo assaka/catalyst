@@ -29,7 +29,15 @@ class PDFService {
         right: '20px',
         bottom: '20px',
         left: '20px'
-      }
+      },
+      // Puppeteer launch args for Render.com compatibility
+      args: [
+        '--no-sandbox',
+        '--disable-setuid-sandbox',
+        '--disable-dev-shm-usage',
+        '--disable-gpu'
+      ],
+      executablePath: process.env.PUPPETEER_EXECUTABLE_PATH || undefined
     };
   }
 
