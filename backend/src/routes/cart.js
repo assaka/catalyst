@@ -154,12 +154,11 @@ router.get('/', async (req, res) => {
           console.log(`✅ Cart merged: ${guestItems.length} items from guest cart merged into user cart (total now: ${userItems.length})`);
           cart = userCart;
         } else if (guestCart && !userCart) {
-          // Only guest cart exists - associate it with the user
-          console.log('🔄 Cart GET: Associating guest cart with user');
-          guestCart.user_id = user_id;
-          await guestCart.save();
-          await guestCart.reload();
-          console.log(`✅ Cart merged: session_id ${session_id} now associated with user_id ${user_id}`);
+          // Only guest cart exists - keep it linked by session_id
+          // NOTE: We don't set user_id because:
+          // 1. Customer users are in a different table (foreign key constraint would fail)
+          // 2. Session-based tracking works for both customers and guests
+          console.log('🔄 Cart GET: Using guest cart (keeping session_id tracking)');
           cart = guestCart;
         } else if (userCart) {
           // Only user cart exists - use it
