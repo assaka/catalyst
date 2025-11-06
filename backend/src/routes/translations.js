@@ -674,7 +674,9 @@ router.get('/entity-stats', authMiddleware, async (req, res) => {
       { type: 'cms_block', model: CmsBlock, icon: '📝', name: 'CMS Blocks' },
       { type: 'product_tab', model: ProductTab, icon: '📑', name: 'Product Tabs' },
       { type: 'product_label', model: ProductLabel, icon: '🏷️', name: 'Product Labels' },
-      { type: 'cookie_consent', model: CookieConsentSettings, icon: '🍪', name: 'Cookie Consent' }
+      { type: 'cookie_consent', model: CookieConsentSettings, icon: '🍪', name: 'Cookie Consent' },
+      { type: 'email-template', model: EmailTemplate, icon: '📧', name: 'Email Templates' },
+      { type: 'pdf-template', model: PdfTemplate, icon: '📑', name: 'PDF Templates' }
     ];
 
     const stats = [];
@@ -710,7 +712,9 @@ router.get('/entity-stats', authMiddleware, async (req, res) => {
           cms_block: 'cms_block_translations',
           product_tab: 'product_tab_translations',
           product_label: 'product_label_translations',
-          cookie_consent: 'cookie_consent_settings_translations'
+          cookie_consent: 'cookie_consent_settings_translations',
+          'email-template': 'email_template_translations',
+          'pdf-template': 'pdf_template_translations'
         };
 
         // Map entity types to their ID column names in translation tables
@@ -722,7 +726,9 @@ router.get('/entity-stats', authMiddleware, async (req, res) => {
           cms_block: 'cms_block_id',
           product_tab: 'product_tab_id',
           product_label: 'product_label_id',
-          cookie_consent: 'cookie_consent_settings_id'  // Special case: doesn't follow standard pattern
+          cookie_consent: 'cookie_consent_settings_id',  // Special case: doesn't follow standard pattern
+          'email-template': 'email_template_id',
+          'pdf-template': 'pdf_template_id'
         };
 
         const translationTable = translationTableMap[entityType.type];
@@ -743,7 +749,9 @@ router.get('/entity-stats', authMiddleware, async (req, res) => {
           cms_page: `AND t.title IS NOT NULL AND t.title != ''`,   // CMS Pages use 'title', not 'name'
           cms_block: `AND t.title IS NOT NULL AND t.title != ''`,  // CMS Blocks use 'title', not 'name'
           product_label: `AND t.text IS NOT NULL AND t.text != ''`, // Product Labels use 'text'
-          cookie_consent: `AND t.banner_text IS NOT NULL AND t.banner_text != ''` // Cookie consent uses 'banner_text'
+          cookie_consent: `AND t.banner_text IS NOT NULL AND t.banner_text != ''`, // Cookie consent uses 'banner_text'
+          'email-template': `AND t.subject IS NOT NULL AND t.subject != ''`, // Email templates use 'subject'
+          'pdf-template': `AND t.html_template IS NOT NULL AND t.html_template != ''` // PDF templates use 'html_template'
         };
 
         const contentCheck = contentCheckMap[entityType.type] || `AND t.name IS NOT NULL AND t.name != ''`;
@@ -1159,6 +1167,8 @@ router.post('/bulk-translate-entities', authMiddleware, async (req, res) => {
       product_label: { model: ProductLabel, name: 'Product Labels' },
       cookie_consent: { model: CookieConsentSettings, name: 'Cookie Consent' },
       attribute_value: { model: AttributeValue, name: 'Attribute Values', special: true },
+      'email-template': { model: EmailTemplate, name: 'Email Templates' },
+      'pdf-template': { model: PdfTemplate, name: 'PDF Templates' },
       custom_option: { name: 'Custom Options', special: true, useJsonTranslations: true },
       stock_labels: { name: 'Stock Labels', special: true, storeSettings: true }
     };

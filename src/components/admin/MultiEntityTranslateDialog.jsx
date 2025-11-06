@@ -36,7 +36,11 @@ export default function MultiEntityTranslateDialog({
       'product_tab': serviceCosts.standard,
       'product_label': serviceCosts.standard,
       'cookie_consent': serviceCosts.standard,
-      'stock_labels': serviceCosts.standard
+      'stock_labels': serviceCosts.standard,
+      'email-template': serviceCosts.standard,
+      'pdf-template': serviceCosts.standard,
+      'custom-option': serviceCosts.standard,
+      'stock-label': serviceCosts.standard
     };
 
     return entityCosts[entityType] || serviceCosts.standard;
