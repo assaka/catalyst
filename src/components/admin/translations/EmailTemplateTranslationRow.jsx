@@ -194,7 +194,7 @@ export default function EmailTemplateTranslationRow({ template, onUpdate, select
                                 </Button>
                               </TooltipTrigger>
                               <TooltipContent>
-                                <p>Cost: 0.1 credits per translation</p>
+                                <p>Cost: 1 credit per translation</p>
                               </TooltipContent>
                             </Tooltip>
                           </TooltipProvider>

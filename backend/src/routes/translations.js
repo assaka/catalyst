@@ -157,7 +157,7 @@ router.delete('/ui-labels/:key/:languageCode', authMiddleware, async (req, res) 
 // @access  Private
 router.post('/ai-translate', authMiddleware, async (req, res) => {
   try {
-    const { text, fromLang = 'en', toLang, storeId } = req.body;
+    const { text, fromLang = 'en', toLang, storeId, entityType } = req.body;
     const userId = req.user.id;
 
     if (!text || !toLang) {
@@ -167,8 +167,9 @@ router.post('/ai-translate', authMiddleware, async (req, res) => {
       });
     }
 
-    // Standard translation cost: 0.1 credits
-    const translationCost = await translationService.getTranslationCost('standard');
+    // Get translation cost based on entity type (defaults to 'standard' if not provided)
+    const costType = entityType || 'standard';
+    const translationCost = await translationService.getTranslationCost(costType);
 
     // Check if user has enough credits
     const hasCredits = await creditService.hasEnoughCredits(userId, storeId, translationCost);
@@ -191,8 +192,9 @@ router.post('/ai-translate', authMiddleware, async (req, res) => {
       userId,
       storeId,
       translationCost,
-      `AI Translation: ${fromLang} → ${toLang}`,
+      `AI Translation${entityType ? ` (${entityType})` : ''}: ${fromLang} → ${toLang}`,
       {
+        entityType: entityType || 'standard',
         fromLang,
         toLang,
         textLength: text.length,
