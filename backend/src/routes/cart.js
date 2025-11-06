@@ -92,64 +92,106 @@ router.get('/', async (req, res) => {
     // If no cart found but both session_id and user_id were provided,
     // handle cart merging for logged-in users
     if (!cart && session_id && user_id) {
-      const { Op } = require('sequelize');
+      try {
+        const { Op } = require('sequelize');
 
-      // Look for both guest cart (by session_id) and user cart (by user_id)
-      const bothWhere = {
-        [Op.or]: [
-          { session_id: session_id },
-          { user_id: user_id }
-        ]
-      };
+        console.log('🔄 Cart GET: Starting cart merge logic', { session_id, user_id, store_id });
 
-      if (store_id) {
-        bothWhere.store_id = store_id;
-      }
+        // Look for both guest cart (by session_id) and user cart (by user_id)
+        const bothWhere = {
+          [Op.or]: [
+            { session_id: session_id },
+            { user_id: user_id }
+          ]
+        };
 
-      const allCarts = await Cart.findAll({ where: bothWhere });
-      const guestCart = allCarts.find(c => c.session_id === session_id && !c.user_id);
-      const userCart = allCarts.find(c => c.user_id === user_id);
-
-      if (guestCart && userCart) {
-        // Both carts exist - merge guest cart items into user cart
-        const guestItems = Array.isArray(guestCart.items) ? guestCart.items : [];
-        const userItems = Array.isArray(userCart.items) ? userCart.items : [];
-
-        // Merge items - add guest items to user cart (avoiding duplicates based on product_id and options)
-        for (const guestItem of guestItems) {
-          const existingIndex = userItems.findIndex(item =>
-            item.product_id === guestItem.product_id &&
-            JSON.stringify(item.selected_options) === JSON.stringify(guestItem.selected_options)
-          );
-
-          if (existingIndex >= 0) {
-            // Item exists, increase quantity
-            userItems[existingIndex].quantity += guestItem.quantity;
-          } else {
-            // New item, add to cart
-            userItems.push(guestItem);
-          }
+        if (store_id) {
+          bothWhere.store_id = store_id;
         }
 
-        // Update user cart with merged items
-        userCart.items = userItems;
-        userCart.changed('items', true);
-        await userCart.save();
+        const allCarts = await Cart.findAll({ where: bothWhere });
+        console.log('🔄 Cart GET: Found carts for merge', {
+          totalCarts: allCarts.length,
+          cartDetails: allCarts.map(c => ({
+            id: c.id,
+            session_id: c.session_id,
+            user_id: c.user_id,
+            itemCount: Array.isArray(c.items) ? c.items.length : 0
+          }))
+        });
 
-        // Delete guest cart as it's now merged
-        await guestCart.destroy();
+        const guestCart = allCarts.find(c => c.session_id === session_id && !c.user_id);
+        const userCart = allCarts.find(c => c.user_id === user_id);
 
-        console.log(`🔄 Cart merged: ${guestItems.length} items from guest cart merged into user cart`);
-        cart = userCart;
-      } else if (guestCart && !userCart) {
-        // Only guest cart exists - associate it with the user
-        guestCart.user_id = user_id;
-        await guestCart.save();
-        console.log(`🔄 Cart merged: session_id ${session_id} now associated with user_id ${user_id}`);
-        cart = guestCart;
-      } else if (userCart) {
-        // Only user cart exists - use it
-        cart = userCart;
+        console.log('🔄 Cart GET: Cart merge candidates', {
+          hasGuestCart: !!guestCart,
+          hasUserCart: !!userCart,
+          guestCartId: guestCart?.id,
+          userCartId: userCart?.id
+        });
+
+        if (guestCart && userCart) {
+          // Both carts exist - merge guest cart items into user cart
+          const guestItems = Array.isArray(guestCart.items) ? guestCart.items : [];
+          const userItems = Array.isArray(userCart.items) ? userCart.items : [];
+
+          console.log('🔄 Cart GET: Merging both carts', {
+            guestItemCount: guestItems.length,
+            userItemCount: userItems.length
+          });
+
+          // Merge items - add guest items to user cart (avoiding duplicates based on product_id and options)
+          for (const guestItem of guestItems) {
+            const existingIndex = userItems.findIndex(item =>
+              item.product_id === guestItem.product_id &&
+              JSON.stringify(item.selected_options) === JSON.stringify(guestItem.selected_options)
+            );
+
+            if (existingIndex >= 0) {
+              // Item exists, increase quantity
+              userItems[existingIndex].quantity += guestItem.quantity;
+            } else {
+              // New item, add to cart
+              userItems.push(guestItem);
+            }
+          }
+
+          // Update user cart with merged items
+          userCart.items = userItems;
+          userCart.changed('items', true);
+          await userCart.save();
+          await userCart.reload();
+
+          // Delete guest cart as it's now merged
+          await guestCart.destroy();
+
+          console.log(`✅ Cart merged: ${guestItems.length} items from guest cart merged into user cart (total now: ${userItems.length})`);
+          cart = userCart;
+        } else if (guestCart && !userCart) {
+          // Only guest cart exists - associate it with the user
+          console.log('🔄 Cart GET: Associating guest cart with user');
+          guestCart.user_id = user_id;
+          await guestCart.save();
+          await guestCart.reload();
+          console.log(`✅ Cart merged: session_id ${session_id} now associated with user_id ${user_id}`);
+          cart = guestCart;
+        } else if (userCart) {
+          // Only user cart exists - use it
+          console.log('🔄 Cart GET: Using existing user cart');
+          cart = userCart;
+        } else {
+          console.log('⚠️ Cart GET: No carts found for merge');
+        }
+      } catch (mergeError) {
+        console.error('❌ Cart GET: Cart merge failed', {
+          error: mergeError.message,
+          stack: mergeError.stack,
+          session_id,
+          user_id,
+          store_id
+        });
+        // Don't fail the request, just return empty cart
+        cart = null;
       }
     }
 
