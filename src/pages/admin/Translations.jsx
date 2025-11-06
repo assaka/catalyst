@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Plus, Search, Globe, Edit2, Trash2, Save, X, Wand2, Languages } from 'lucide-react';
 import api from '../../utils/api';
+import { User } from '@/api/entities';
 import { useTranslation } from '../../contexts/TranslationContext';
 import { useStoreSelection } from '../../contexts/StoreSelectionContext';
 import BulkTranslateDialog from '../../components/admin/BulkTranslateDialog';
@@ -115,6 +116,10 @@ export default function Translations() {
   // Language selection for translations
   const [selectedTranslationLanguages, setSelectedTranslationLanguages] = useState(['en', 'nl']);
 
+  // User credits for AI translations
+  const [userCredits, setUserCredits] = useState(null);
+  const [loadingCredits, setLoadingCredits] = useState(true);
+
   const categories = ['common', 'navigation', 'product', 'checkout', 'account', 'admin'];
 
   /**
@@ -168,6 +173,22 @@ export default function Translations() {
       showMessage(`Failed to load translations: ${error.message}`, 'error');
     } finally {
       setLoading(false);
+    }
+  };
+
+  /**
+   * Load user credits for AI translation checks
+   */
+  const loadUserCredits = async () => {
+    try {
+      setLoadingCredits(true);
+      const userData = await User.me();
+      setUserCredits(userData.credits || 0);
+    } catch (error) {
+      console.error('Failed to load user credits:', error);
+      setUserCredits(0);
+    } finally {
+      setLoadingCredits(false);
     }
   };
 
@@ -905,6 +926,11 @@ export default function Translations() {
     loadLabels(selectedLanguage);
   }, [selectedLanguage]);
 
+  // Load user credits on component mount
+  useEffect(() => {
+    loadUserCredits();
+  }, []);
+
   // Load entity stats when switching to dashboard or entity tabs or when store changes
   useEffect(() => {
     if (activeTab === 'dashboard' && selectedStore) {
@@ -1571,6 +1597,7 @@ export default function Translations() {
                         product={product}
                         selectedLanguages={selectedTranslationLanguages}
                         onFlashMessage={showFlash}
+                        userCredits={userCredits}
                         onUpdate={(productId, translations) => {
                           // Update local state
                           setProducts(products.map(p =>
@@ -1704,6 +1731,7 @@ export default function Translations() {
                         category={category}
                         selectedLanguages={selectedTranslationLanguages}
                         onFlashMessage={showFlash}
+                        userCredits={userCredits}
                         onUpdate={(categoryId, translations) => {
                           // Update local state
                           setProductCategories(productCategories.map(c =>
@@ -1837,6 +1865,7 @@ export default function Translations() {
                         attribute={attribute}
                         selectedLanguages={selectedTranslationLanguages}
                         onFlashMessage={showFlash}
+                        userCredits={userCredits}
                         onUpdate={(attributeId, translations, values) => {
                           // Update local state
                           setProductAttributes(productAttributes.map(a =>
@@ -1970,6 +1999,7 @@ export default function Translations() {
                         page={page}
                         selectedLanguages={selectedTranslationLanguages}
                         onFlashMessage={showFlash}
+                        userCredits={userCredits}
                         onUpdate={(pageId, translations) => {
                           setCmsPages(cmsPages.map(p =>
                             p.id === pageId ? { ...p, translations } : p
@@ -2104,6 +2134,7 @@ export default function Translations() {
                         block={block}
                         selectedLanguages={selectedTranslationLanguages}
                         onFlashMessage={showFlash}
+                        userCredits={userCredits}
                         onUpdate={(blockId, translations) => {
                           setCmsBlocks(cmsBlocks.map(b =>
                             b.id === blockId ? { ...b, translations } : b
@@ -2222,6 +2253,7 @@ export default function Translations() {
                         selectedLanguages={selectedTranslationLanguages}
                         onFlashMessage={showFlashMessage}
                         storeId={getSelectedStoreId()}
+                        userCredits={userCredits}
                       />
                     ))}
                 </div>
@@ -2332,6 +2364,7 @@ export default function Translations() {
                         selectedLanguages={selectedTranslationLanguages}
                         onFlashMessage={showFlashMessage}
                         storeId={getSelectedStoreId()}
+                        userCredits={userCredits}
                       />
                     ))}
                 </div>
@@ -2455,6 +2488,7 @@ export default function Translations() {
                           tab={tab}
                           selectedLanguages={selectedTranslationLanguages}
                           onFlashMessage={showFlash}
+                          userCredits={userCredits}
                           onUpdate={(tabId, translations) => {
                             setProductTabs(productTabs.map(t =>
                               t.id === tabId ? { ...t, translations } : t
@@ -2525,6 +2559,7 @@ export default function Translations() {
                           label={label}
                           selectedLanguages={selectedTranslationLanguages}
                           onFlashMessage={showFlash}
+                          userCredits={userCredits}
                           onUpdate={(labelId, translations) => {
                             setProductLabels(productLabels.map(l =>
                               l.id === labelId ? { ...l, translations } : l
@@ -2577,6 +2612,7 @@ export default function Translations() {
                         settings={settings}
                         selectedLanguages={selectedTranslationLanguages}
                         onFlashMessage={showFlash}
+                        userCredits={userCredits}
                         onUpdate={(settingsId, translations) => {
                           setCookieConsent(cookieConsent.map(s =>
                             s.id === settingsId ? { ...s, translations } : s
@@ -2648,6 +2684,7 @@ export default function Translations() {
                           rule={option}
                           selectedLanguages={selectedTranslationLanguages}
                           onFlashMessage={showFlash}
+                          userCredits={userCredits}
                           onUpdate={(ruleId, translations) => {
                             setCustomOptions(customOptions.map(o =>
                               o.id === ruleId ? { ...o, translations } : o
