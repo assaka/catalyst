@@ -283,6 +283,12 @@ class PDFService {
    */
   async generateInvoicePDF(order, store, orderItems, languageCode = 'en') {
     try {
+      console.log('📋 Looking for PDF template:', {
+        store_id: store.id,
+        identifier: 'invoice_pdf',
+        languageCode
+      });
+
       // Get invoice PDF template from database with translation
       const pdfTemplate = await PdfTemplate.findOne({
         where: { store_id: store.id, identifier: 'invoice_pdf', is_active: true },
@@ -295,9 +301,12 @@ class PDFService {
       });
 
       if (!pdfTemplate) {
-        console.warn('No invoice PDF template found, using legacy method');
+        console.warn('⚠️ No invoice PDF template found in database, using legacy method');
         return this.generateInvoicePDFLegacy(order, store, orderItems);
       }
+
+      console.log('✅ PDF template found:', pdfTemplate.id);
+      console.log('📋 Translations available:', pdfTemplate.translationsData?.length || 0);
 
       // Get template HTML from translation
       const translation = pdfTemplate.translationsData && pdfTemplate.translationsData.length > 0
@@ -305,10 +314,12 @@ class PDFService {
         : null;
 
       if (!translation) {
-        console.warn(`No ${languageCode} translation found for invoice PDF, using legacy method`);
+        console.warn(`⚠️ No ${languageCode} translation found for invoice PDF template, using legacy method`);
+        console.log('💡 TIP: Add translations in Content → PDF Templates → Invoice PDF → Translations');
         return this.generateInvoicePDFLegacy(order, store, orderItems);
       }
 
+      console.log('✅ Using database PDF template with translation');
       let html = translation.html_template;
 
       // Process {{email_header}} and {{email_footer}} placeholders
