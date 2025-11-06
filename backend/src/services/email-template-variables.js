@@ -3,6 +3,8 @@
  * Defines available variables for each email template type
  */
 
+const Handlebars = require('handlebars');
+
 const EMAIL_VARIABLES = {
   // Signup/Welcome Email Variables
   signup_email: [
@@ -85,19 +87,9 @@ function getVariableKeys(templateIdentifier) {
 function renderTemplate(template, values) {
   if (!template) return '';
 
-  let rendered = template;
-
-  // Replace all variables
-  Object.keys(values).forEach(key => {
-    const placeholder = `{{${key}}}`;
-    const value = values[key] !== undefined && values[key] !== null ? values[key] : '';
-    rendered = rendered.replace(new RegExp(placeholder.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'g'), value);
-  });
-
-  // Remove any unreplaced variables
-  rendered = rendered.replace(/\{\{.*?\}\}/g, '');
-
-  return rendered;
+  // Use Handlebars for full template support ({{#if}}, {{#each}}, etc.)
+  const compiledTemplate = Handlebars.compile(template);
+  return compiledTemplate(values);
 }
 
 /**
