@@ -23,7 +23,7 @@ services:
     name: catalyst-backend
     env: node
     rootDir: backend
-    buildCommand: npm install && npx puppeteer browsers install chrome
+    buildCommand: npm install --legacy-peer-deps && npx puppeteer browsers install chrome
     startCommand: npm start
     envVars:
       - key: NODE_ENV
@@ -75,7 +75,7 @@ services:
     name: catalyst-background-worker
     env: node
     rootDir: backend
-    buildCommand: npm install
+    buildCommand: npm install --legacy-peer-deps
     startCommand: node worker.cjs
     envVars:
       - key: NODE_ENV
@@ -114,7 +114,7 @@ services:
     env: node
     rootDir: backend
     schedule: "0 0 * * *"  # Every day at midnight UTC
-    buildCommand: npm install
+    buildCommand: npm install --legacy-peer-deps
     startCommand: node scripts/run-daily-credit-deduction.js
     envVars:
       - key: NODE_ENV
