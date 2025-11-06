@@ -49,6 +49,12 @@ export default function BulkTranslateDialog({
   const [translationCost, setTranslationCost] = useState(0.1); // Default fallback
   const [showFlash, setShowFlash] = useState(false);
   const [flashMessage, setFlashMessage] = useState(null);
+  const [localCredits, setLocalCredits] = useState(userCredits);
+
+  // Sync local credits with prop
+  useEffect(() => {
+    setLocalCredits(userCredits);
+  }, [userCredits]);
 
   // Get flat-rate cost based on entity type
   const getEntityCost = (entityType) => {
@@ -149,6 +155,7 @@ export default function BulkTranslateDialog({
       let totalTranslated = 0;
       let totalSkipped = 0;
       let totalFailed = 0;
+      let totalCreditsDeducted = 0;
       const allErrors = [];
 
       for (const toLang of translateToLangs) {
@@ -158,12 +165,18 @@ export default function BulkTranslateDialog({
           totalTranslated += result.data.translated || 0;
           totalSkipped += result.data.skipped || 0;
           totalFailed += result.data.failed || 0;
+          totalCreditsDeducted += result.creditsDeducted || 0;
           if (result.data.errors && result.data.errors.length > 0) {
             allErrors.push(...result.data.errors.map(err => ({ ...err, toLang })));
           }
         } else {
           toast.error(`Failed to translate to ${toLang}: ${result.message}`);
         }
+      }
+
+      // Update local credits if any were deducted
+      if (totalCreditsDeducted > 0) {
+        setLocalCredits(prev => Math.max(0, (prev || 0) - totalCreditsDeducted));
       }
 
       if (totalTranslated > 0) {
@@ -311,17 +324,17 @@ export default function BulkTranslateDialog({
           )}
 
           {/* Credit Balance Warning */}
-          {translateToLangs.length > 0 && itemCount > 0 && userCredits !== null && userCredits !== undefined && (
+          {translateToLangs.length > 0 && itemCount > 0 && localCredits !== null && localCredits !== undefined && (
             <div className={`p-3 rounded-lg border ${
-              userCredits < (itemCount * translateToLangs.length * translationCost)
+              localCredits < (itemCount * translateToLangs.length * translationCost)
                 ? 'bg-red-50 border-red-200'
                 : 'bg-green-50 border-green-200'
             }`}>
               <div className="flex items-center justify-between text-sm">
-                <span className={userCredits < (itemCount * translateToLangs.length * translationCost) ? 'text-red-800' : 'text-green-800'}>
-                  Your balance: {Number(userCredits).toFixed(2)} credits
+                <span className={localCredits < (itemCount * translateToLangs.length * translationCost) ? 'text-red-800' : 'text-green-800'}>
+                  Your balance: {Number(localCredits).toFixed(2)} credits
                 </span>
-                {userCredits < (itemCount * translateToLangs.length * translationCost) && (
+                {localCredits < (itemCount * translateToLangs.length * translationCost) && (
                   <span className="text-red-600 font-medium text-xs">
                     ⚠️ Insufficient credits
                   </span>
@@ -345,7 +358,7 @@ export default function BulkTranslateDialog({
             <Button
               type="button"
               onClick={handleTranslate}
-              disabled={isTranslating || !translateFromLang || translateToLangs.length === 0 || (userCredits !== null && userCredits < (itemCount * translateToLangs.length * translationCost))}
+              disabled={isTranslating || !translateFromLang || translateToLangs.length === 0 || (localCredits !== null && localCredits < (itemCount * translateToLangs.length * translationCost))}
               className="bg-blue-600 hover:bg-blue-700"
             >
               {isTranslating ? (
