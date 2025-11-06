@@ -469,14 +469,15 @@ router.post('/ui-labels/bulk-translate', authMiddleware, async (req, res) => {
     console.log(`🌐 Starting UI labels bulk translation: ${fromLang} → ${toLang}`);
     console.log(`📊 Total labels: ${results.total}, To translate: ${keysToTranslate.length}, Already translated: ${results.skipped}`);
 
-    // Process translations in parallel batches for better performance
-    const BATCH_SIZE = 50; // Process 50 labels at a time for maximum speed
+    // Process translations in parallel batches with rate limit protection
+    const BATCH_SIZE = 10; // Process 10 labels at a time to avoid Anthropic rate limits
+    const BATCH_DELAY_MS = 3000; // 3 second delay between batches to respect rate limits
     const batches = [];
     for (let i = 0; i < keysToTranslate.length; i += BATCH_SIZE) {
       batches.push(keysToTranslate.slice(i, i + BATCH_SIZE));
     }
 
-    console.log(`🚀 Processing ${keysToTranslate.length} labels in ${batches.length} batches of ${BATCH_SIZE}`);
+    console.log(`🚀 Processing ${keysToTranslate.length} labels in ${batches.length} batches of ${BATCH_SIZE} (with ${BATCH_DELAY_MS}ms delays)`);
 
     for (let batchIndex = 0; batchIndex < batches.length; batchIndex++) {
       const batch = batches[batchIndex];
@@ -491,8 +492,26 @@ router.post('/ui-labels/bulk-translate', authMiddleware, async (req, res) => {
             return { key, status: 'skipped' };
           }
 
-          // Translate using AI
-          const translatedValue = await translationService.aiTranslate(sourceValue, fromLang, toLang);
+          // Translate using AI with retry on rate limit
+          let translatedValue;
+          let retries = 0;
+          const MAX_RETRIES = 2;
+
+          while (retries <= MAX_RETRIES) {
+            try {
+              translatedValue = await translationService.aiTranslate(sourceValue, fromLang, toLang);
+              break; // Success, exit retry loop
+            } catch (aiError) {
+              if (aiError.message?.includes('rate_limit') && retries < MAX_RETRIES) {
+                retries++;
+                const waitTime = retries * 5000; // 5s, 10s
+                console.log(`⏳ Rate limit hit for ${key}, waiting ${waitTime}ms before retry ${retries}/${MAX_RETRIES}`);
+                await new Promise(resolve => setTimeout(resolve, waitTime));
+              } else {
+                throw aiError; // Re-throw if not rate limit or out of retries
+              }
+            }
+          }
 
           // Determine category from key
           const category = key.split('.')[0] || 'common';
@@ -515,6 +534,12 @@ router.post('/ui-labels/bulk-translate', authMiddleware, async (req, res) => {
 
       await Promise.all(batchPromises);
       console.log(`✅ Batch ${batchIndex + 1} complete - Progress: ${results.translated}/${keysToTranslate.length} translated`);
+
+      // Add delay between batches to respect Anthropic rate limits (except after last batch)
+      if (batchIndex < batches.length - 1) {
+        console.log(`⏸️  Waiting ${BATCH_DELAY_MS}ms before next batch to respect rate limits...`);
+        await new Promise(resolve => setTimeout(resolve, BATCH_DELAY_MS));
+      }
     }
 
     console.log(`✅ UI labels translation complete: ${results.translated} translated, ${results.skipped} skipped, ${results.failed} failed`);
