@@ -469,47 +469,96 @@ router.post('/ui-labels/bulk-translate', authMiddleware, async (req, res) => {
     console.log(`🌐 Starting UI labels bulk translation: ${fromLang} → ${toLang}`);
     console.log(`📊 Total labels: ${results.total}, To translate: ${keysToTranslate.length}, Already translated: ${results.skipped}`);
 
-    // Translate each label
-    for (let i = 0; i < keysToTranslate.length; i++) {
-      const key = keysToTranslate[i];
-      try {
-        const sourceValue = flatSourceLabels[key];
-        if (!sourceValue || typeof sourceValue !== 'string') {
-          results.skipped++;
-          continue;
+    // Process translations in parallel batches for better performance
+    const BATCH_SIZE = 5; // Process 5 labels at a time
+    const batches = [];
+    for (let i = 0; i < keysToTranslate.length; i += BATCH_SIZE) {
+      batches.push(keysToTranslate.slice(i, i + BATCH_SIZE));
+    }
+
+    console.log(`🚀 Processing ${keysToTranslate.length} labels in ${batches.length} batches of ${BATCH_SIZE}`);
+
+    for (let batchIndex = 0; batchIndex < batches.length; batchIndex++) {
+      const batch = batches[batchIndex];
+      console.log(`📦 Processing batch ${batchIndex + 1}/${batches.length} (${batch.length} labels)`);
+
+      // Translate batch in parallel
+      const batchPromises = batch.map(async (key) => {
+        try {
+          const sourceValue = flatSourceLabels[key];
+          if (!sourceValue || typeof sourceValue !== 'string') {
+            results.skipped++;
+            return { key, status: 'skipped' };
+          }
+
+          // Translate using AI
+          const translatedValue = await translationService.aiTranslate(sourceValue, fromLang, toLang);
+
+          // Determine category from key
+          const category = key.split('.')[0] || 'common';
+
+          // Save the translation
+          await translationService.saveUILabel(key, toLang, translatedValue, category, 'system');
+
+          results.translated++;
+          return { key, status: 'success' };
+        } catch (error) {
+          console.error(`❌ Error translating UI label ${key}:`, error.message);
+          results.failed++;
+          results.errors.push({
+            key,
+            error: error.message
+          });
+          return { key, status: 'failed', error: error.message };
         }
+      });
 
-        // Progress update every 10 labels
-        if (i % 10 === 0 || i === 0) {
-          console.log(`📊 Progress: ${i + 1}/${keysToTranslate.length} - Translating "${key}": "${sourceValue.substring(0, 30)}..."`);
-        }
-
-        // Translate using AI
-        const translatedValue = await translationService.aiTranslate(sourceValue, fromLang, toLang);
-
-        // Determine category from key
-        const category = key.split('.')[0] || 'common';
-
-        // Save the translation
-        await translationService.saveUILabel(key, toLang, translatedValue, category, 'system');
-
-        results.translated++;
-      } catch (error) {
-        console.error(`❌ Error translating UI label ${key}:`, error.message);
-        results.failed++;
-        results.errors.push({
-          key,
-          error: error.message
-        });
-      }
+      await Promise.all(batchPromises);
+      console.log(`✅ Batch ${batchIndex + 1} complete - Progress: ${results.translated}/${keysToTranslate.length} translated`);
     }
 
     console.log(`✅ UI labels translation complete: ${results.translated} translated, ${results.skipped} skipped, ${results.failed} failed`);
 
+    // Deduct credits for ALL labels (including skipped)
+    const totalItems = Object.keys(flatSourceLabels).length;
+    let actualCost = 0;
+
+    if (totalItems > 0) {
+      const costPerItem = await translationService.getTranslationCost('standard');
+      actualCost = totalItems * costPerItem;
+
+      console.log(`💰 UI Labels bulk translate - charging for ${totalItems} items × ${costPerItem} credits = ${actualCost} credits`);
+
+      try {
+        await creditService.deduct(
+          req.user.id,
+          null, // UI labels are not store-specific
+          actualCost,
+          `Bulk UI Labels Translation (${fromLang} → ${toLang})`,
+          {
+            fromLang,
+            toLang,
+            totalItems,
+            translated: results.translated,
+            skipped: results.skipped,
+            failed: results.failed,
+            note: 'Charged for all items including skipped'
+          },
+          null,
+          'ai_translation'
+        );
+        console.log(`✅ Deducted ${actualCost} credits for ${totalItems} UI labels`);
+      } catch (deductError) {
+        console.error(`❌ CREDIT DEDUCTION FAILED (ui-labels-bulk-translate):`, deductError);
+        actualCost = 0;
+      }
+    }
+
     res.json({
       success: true,
       message: `Bulk translation completed. Translated: ${results.translated}, Skipped: ${results.skipped}, Failed: ${results.failed}`,
-      data: results
+      data: results,
+      creditsDeducted: actualCost
     });
   } catch (error) {
     console.error('Bulk translate UI labels error:', error);
