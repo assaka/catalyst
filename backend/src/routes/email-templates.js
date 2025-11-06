@@ -489,6 +489,8 @@ router.post('/bulk-translate', [
       where: { store_id, is_active: true }
     });
 
+    console.log(`📧 Bulk translating ${templates.length} email templates from ${fromLang} to ${toLang}`);
+
     let translated = 0;
     let skipped = 0;
     let failed = 0;
@@ -496,6 +498,8 @@ router.post('/bulk-translate', [
 
     for (const template of templates) {
       try {
+        console.log(`🔄 Processing template: ${template.identifier} (${template.id})`);
+
         // Check if translation already exists
         const existingTranslation = await EmailTemplateTranslation.findOne({
           where: {
@@ -505,16 +509,19 @@ router.post('/bulk-translate', [
         });
 
         if (existingTranslation) {
+          console.log(`⏭️  Skipping ${template.identifier} - translation already exists`);
           skipped++;
           continue;
         }
 
         // Translate subject
+        console.log(`🌐 Translating subject for ${template.identifier}...`);
         const translatedSubject = await translationService.translateText(
           template.subject,
           fromLang,
           toLang
         );
+        console.log(`✅ Subject translated: ${translatedSubject}`);
 
         // Translate content
         let translatedTemplateContent = null;
@@ -537,13 +544,15 @@ router.post('/bulk-translate', [
         }
 
         // Create translation
-        await EmailTemplateTranslation.create({
+        console.log(`💾 Saving translation for ${template.identifier} to database...`);
+        const savedTranslation = await EmailTemplateTranslation.create({
           email_template_id: template.id,
           language_code: toLang,
           subject: translatedSubject,
           template_content: translatedTemplateContent,
           html_content: translatedHtmlContent
         });
+        console.log(`✅ Translation saved with ID: ${savedTranslation.id}`);
 
         translated++;
       } catch (error) {
@@ -556,6 +565,8 @@ router.post('/bulk-translate', [
         });
       }
     }
+
+    console.log(`📊 Bulk translate complete: ${translated} translated, ${skipped} skipped, ${failed} failed`);
 
     res.json({
       success: true,
