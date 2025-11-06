@@ -4,6 +4,7 @@ const { CookieConsentSettings, Store } = require('../models');
 const { Op } = require('sequelize');
 const { authMiddleware } = require('../middleware/auth');
 const translationService = require('../services/translation-service');
+const creditService = require('../services/credit-service');
 const { getLanguageFromRequest } = require('../utils/languageUtils');
 const {
   getCookieConsentSettingsWithTranslations,
@@ -532,10 +533,45 @@ router.post('/bulk-translate', authMiddleware, [
 
     console.log(`✅ Cookie consent settings translation complete: ${results.translated} translated, ${results.skipped} skipped, ${results.failed} failed`);
 
+    // Deduct credits for ALL items (including skipped)
+    const totalItems = settingsRecords.length;
+    let actualCost = 0;
+
+    if (totalItems > 0) {
+      const costPerItem = await translationService.getTranslationCost('cookie_consent');
+      actualCost = totalItems * costPerItem;
+
+      console.log(`💰 Cookie Consent bulk translate - charging for ${totalItems} items × ${costPerItem} credits = ${actualCost} credits`);
+
+      try {
+        await creditService.deduct(
+          req.user.id,
+          store_id,
+          actualCost,
+          `Bulk Cookie Consent Translation (${fromLang} → ${toLang})`,
+          {
+            fromLang,
+            toLang,
+            totalItems,
+            translated: results.translated,
+            skipped: results.skipped,
+            failed: results.failed,
+            note: 'Charged for all items including skipped'
+          },
+          null,
+          'ai_translation'
+        );
+        console.log(`✅ Deducted ${actualCost} credits for ${totalItems} cookie consent settings`);
+      } catch (deductError) {
+        console.error(`❌ CREDIT DEDUCTION FAILED (cookie-consent-bulk-translate):`, deductError);
+        actualCost = 0;
+      }
+    }
+
     res.json({
       success: true,
       message: `Bulk translation completed. Translated: ${results.translated}, Skipped: ${results.skipped}, Failed: ${results.failed}`,
-      data: results
+      data: { ...results, creditsDeducted: actualCost }
     });
   } catch (error) {
     console.error('Bulk translate cookie consent settings error:', error);

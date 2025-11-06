@@ -2,6 +2,7 @@ const express = require('express');
 const { body, validationResult } = require('express-validator');
 const { authMiddleware } = require('../middleware/auth');
 const translationService = require('../services/translation-service');
+const creditService = require('../services/credit-service');
 const { getLanguageFromRequest } = require('../utils/languageUtils');
 const {
   getProductLabelsWithTranslations,
@@ -477,10 +478,45 @@ router.post('/bulk-translate', authMiddleware, [
 
     console.log(`✅ Product labels translation complete: ${results.translated} translated, ${results.skipped} skipped, ${results.failed} failed`);
 
+    // Deduct credits for ALL items (including skipped)
+    const totalItems = labels.length;
+    let actualCost = 0;
+
+    if (totalItems > 0) {
+      const costPerItem = await translationService.getTranslationCost('product_label');
+      actualCost = totalItems * costPerItem;
+
+      console.log(`💰 Product Label bulk translate - charging for ${totalItems} items × ${costPerItem} credits = ${actualCost} credits`);
+
+      try {
+        await creditService.deduct(
+          req.user.id,
+          store_id,
+          actualCost,
+          `Bulk Product Label Translation (${fromLang} → ${toLang})`,
+          {
+            fromLang,
+            toLang,
+            totalItems,
+            translated: results.translated,
+            skipped: results.skipped,
+            failed: results.failed,
+            note: 'Charged for all items including skipped'
+          },
+          null,
+          'ai_translation'
+        );
+        console.log(`✅ Deducted ${actualCost} credits for ${totalItems} product labels`);
+      } catch (deductError) {
+        console.error(`❌ CREDIT DEDUCTION FAILED (product-label-bulk-translate):`, deductError);
+        actualCost = 0;
+      }
+    }
+
     res.json({
       success: true,
       message: `Bulk translation completed. Translated: ${results.translated}, Skipped: ${results.skipped}, Failed: ${results.failed}`,
-      data: results
+      data: { ...results, creditsDeducted: actualCost }
     });
   } catch (error) {
     console.error('Bulk translate product labels error:', error);

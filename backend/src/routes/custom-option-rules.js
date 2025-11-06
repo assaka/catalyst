@@ -2,6 +2,8 @@ const express = require('express');
 const router = express.Router();
 const { supabase } = require('../database/connection');
 const { authMiddleware } = require('../middleware/auth');
+const translationService = require('../services/translation-service');
+const creditService = require('../services/credit-service');
 
 // Apply authentication middleware only if not accessed via public API
 // Public API requests (like from storefront) don't need auth for reading
@@ -250,8 +252,6 @@ router.post('/bulk-translate', async (req, res) => {
       });
     }
 
-    const translationService = require('../services/translation-service');
-
     // Translate each rule
     const results = {
       total: rules.length,
@@ -340,10 +340,45 @@ router.post('/bulk-translate', async (req, res) => {
 
     console.log(`✅ Custom option rules translation complete: ${results.translated} translated, ${results.skipped} skipped, ${results.failed} failed`);
 
+    // Deduct credits for ALL items (including skipped)
+    const totalItems = rules.length;
+    let actualCost = 0;
+
+    if (totalItems > 0) {
+      const costPerItem = await translationService.getTranslationCost('custom_option');
+      actualCost = totalItems * costPerItem;
+
+      console.log(`💰 Custom Option bulk translate - charging for ${totalItems} items × ${costPerItem} credits = ${actualCost} credits`);
+
+      try {
+        await creditService.deduct(
+          req.user.id,
+          store_id,
+          actualCost,
+          `Bulk Custom Option Translation (${fromLang} → ${toLang})`,
+          {
+            fromLang,
+            toLang,
+            totalItems,
+            translated: results.translated,
+            skipped: results.skipped,
+            failed: results.failed,
+            note: 'Charged for all items including skipped'
+          },
+          null,
+          'ai_translation'
+        );
+        console.log(`✅ Deducted ${actualCost} credits for ${totalItems} custom option rules`);
+      } catch (deductError) {
+        console.error(`❌ CREDIT DEDUCTION FAILED (custom-option-bulk-translate):`, deductError);
+        actualCost = 0;
+      }
+    }
+
     res.json({
       success: true,
       message: `Bulk translation completed. Translated: ${results.translated}, Skipped: ${results.skipped}, Failed: ${results.failed}`,
-      data: results
+      data: { ...results, creditsDeducted: actualCost }
     });
   } catch (error) {
     console.error('Bulk translate custom option rules error:', error);

@@ -5,6 +5,7 @@ const { Op, QueryTypes } = require('sequelize');
 const { sequelize } = require('../database/connection');
 const { authMiddleware } = require('../middleware/auth');
 const translationService = require('../services/translation-service');
+const creditService = require('../services/credit-service');
 const router = express.Router();
 
 // @route   GET /api/public/cms-blocks
@@ -695,10 +696,45 @@ router.post('/bulk-translate', authMiddleware, [
 
     console.log(`✅ CMS blocks translation complete: ${results.translated} translated, ${results.skipped} skipped, ${results.failed} failed`);
 
+    // Deduct credits for ALL items (including skipped)
+    const totalItems = blocks.length;
+    let actualCost = 0;
+
+    if (totalItems > 0) {
+      const costPerItem = await translationService.getTranslationCost('cms_block');
+      actualCost = totalItems * costPerItem;
+
+      console.log(`💰 CMS Block bulk translate - charging for ${totalItems} items × ${costPerItem} credits = ${actualCost} credits`);
+
+      try {
+        await creditService.deduct(
+          req.user.id,
+          store_id,
+          actualCost,
+          `Bulk CMS Block Translation (${fromLang} → ${toLang})`,
+          {
+            fromLang,
+            toLang,
+            totalItems,
+            translated: results.translated,
+            skipped: results.skipped,
+            failed: results.failed,
+            note: 'Charged for all items including skipped'
+          },
+          null,
+          'ai_translation'
+        );
+        console.log(`✅ Deducted ${actualCost} credits for ${totalItems} cms blocks`);
+      } catch (deductError) {
+        console.error(`❌ CREDIT DEDUCTION FAILED (cms-block-bulk-translate):`, deductError);
+        actualCost = 0;
+      }
+    }
+
     res.json({
       success: true,
       message: `Bulk translation completed. Translated: ${results.translated}, Skipped: ${results.skipped}, Failed: ${results.failed}`,
-      data: results
+      data: { ...results, creditsDeducted: actualCost }
     });
   } catch (error) {
     console.error('Bulk translate CMS blocks error:', error);

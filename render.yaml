@@ -66,6 +66,22 @@ services:
         sync: false
       - key: STRIPE_PUBLISHABLE_KEY
         sync: false
+      - key: PDF_SERVICE_URL
+        value: http://catalyst-pdf-service:3001
+    autoDeploy: true
+
+  # PDF Generation Microservice (Docker with Chromium)
+  - type: web
+    name: catalyst-pdf-service
+    env: docker
+    rootDir: backend/pdf-service
+    dockerfilePath: ./Dockerfile
+    dockerContext: ./
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 3001
     autoDeploy: true
 
   # Dedicated Background Job Worker Service

@@ -3,6 +3,7 @@ const { body, validationResult } = require('express-validator');
 const { CmsPage, Store } = require('../models');
 const { Op } = require('sequelize');
 const translationService = require('../services/translation-service');
+const creditService = require('../services/credit-service');
 const {
   getCMSPagesWithAllTranslations,
   getCMSPageWithAllTranslations,
@@ -365,10 +366,45 @@ router.post('/bulk-translate', [
 
     console.log(`✅ CMS page translation complete: ${results.translated} translated, ${results.skipped} skipped, ${results.failed} failed`);
 
+    // Deduct credits for ALL items (including skipped)
+    const totalItems = pages.length;
+    let actualCost = 0;
+
+    if (totalItems > 0) {
+      const costPerItem = await translationService.getTranslationCost('cms_page');
+      actualCost = totalItems * costPerItem;
+
+      console.log(`💰 CMS Page bulk translate - charging for ${totalItems} items × ${costPerItem} credits = ${actualCost} credits`);
+
+      try {
+        await creditService.deduct(
+          req.user.id,
+          store_id,
+          actualCost,
+          `Bulk CMS Page Translation (${fromLang} → ${toLang})`,
+          {
+            fromLang,
+            toLang,
+            totalItems,
+            translated: results.translated,
+            skipped: results.skipped,
+            failed: results.failed,
+            note: 'Charged for all items including skipped'
+          },
+          null,
+          'ai_translation'
+        );
+        console.log(`✅ Deducted ${actualCost} credits for ${totalItems} cms pages`);
+      } catch (deductError) {
+        console.error(`❌ CREDIT DEDUCTION FAILED (cms-page-bulk-translate):`, deductError);
+        actualCost = 0;
+      }
+    }
+
     res.json({
       success: true,
       message: `Bulk translation completed. Translated: ${results.translated}, Skipped: ${results.skipped}, Failed: ${results.failed}`,
-      data: results
+      data: { ...results, creditsDeducted: actualCost }
     });
   } catch (error) {
     console.error('Bulk translate CMS pages error:', error);

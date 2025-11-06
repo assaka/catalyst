@@ -1,4 +1,4 @@
-const pdf = require('html-pdf');
+const axios = require('axios');
 const path = require('path');
 const { PdfTemplate, PdfTemplateTranslation, EmailTemplate, EmailTemplateTranslation } = require('../models');
 
@@ -7,6 +7,8 @@ const { PdfTemplate, PdfTemplateTranslation, EmailTemplate, EmailTemplateTransla
  * Generates PDFs from HTML templates for invoices, shipments, etc.
  * Supports {{email_header}} and {{email_footer}} placeholders for reusable layouts
  * (same templates used for both emails and PDFs for consistency)
+ *
+ * Uses separate PDF microservice (Docker + Chromium + Puppeteer)
  */
 
 /**
@@ -20,22 +22,41 @@ const safeNumber = (value) => {
 };
 
 /**
- * Helper to convert html-pdf callback to Promise
+ * Generate PDF from HTML using PDF microservice
  */
-const generatePdfFromHtml = (html, options) => {
-  return new Promise((resolve, reject) => {
-    pdf.create(html, options).toBuffer((err, buffer) => {
-      if (err) reject(err);
-      else resolve(buffer);
+const generatePdfFromHtml = async (html, options = {}) => {
+  const pdfServiceUrl = process.env.PDF_SERVICE_URL || 'http://localhost:3001';
+
+  console.log(`📡 Calling PDF microservice at: ${pdfServiceUrl}`);
+
+  try {
+    const response = await axios.post(`${pdfServiceUrl}/generate-pdf`, {
+      html,
+      options
+    }, {
+      timeout: 30000 // 30 second timeout
     });
-  });
+
+    if (!response.data.success) {
+      throw new Error(response.data.error || 'PDF generation failed');
+    }
+
+    // Convert base64 back to Buffer
+    const pdfBuffer = Buffer.from(response.data.pdf, 'base64');
+    console.log(`✅ PDF received from microservice: ${pdfBuffer.length} bytes`);
+
+    return pdfBuffer;
+  } catch (error) {
+    console.error('❌ PDF microservice error:', error.message);
+    throw new Error(`PDF generation failed: ${error.message}`);
+  }
 };
 
 class PDFService {
   constructor() {
     this.options = {
       format: 'A4',
-      border: {
+      margin: {
         top: '20px',
         right: '20px',
         bottom: '20px',

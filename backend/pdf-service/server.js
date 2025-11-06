@@ -1,0 +1,108 @@
+require('dotenv').config();
+const express = require('express');
+const cors = require('cors');
+const puppeteer = require('puppeteer');
+
+const app = express();
+const PORT = process.env.PORT || 3001;
+
+// Middleware
+app.use(cors());
+app.use(express.json({ limit: '10mb' })); // Large limit for HTML content
+
+// Health check endpoint
+app.get('/health', (req, res) => {
+  res.json({
+    status: 'ok',
+    service: 'PDF Generator',
+    timestamp: new Date().toISOString()
+  });
+});
+
+// Generate PDF endpoint
+app.post('/generate-pdf', async (req, res) => {
+  const requestId = Math.random().toString(36).substring(7);
+
+  try {
+    console.log(`📄 [${requestId}] PDF generation request received`);
+
+    const { html, options = {} } = req.body;
+
+    if (!html) {
+      return res.status(400).json({
+        success: false,
+        error: 'HTML content is required'
+      });
+    }
+
+    console.log(`📄 [${requestId}] HTML length: ${html.length} characters`);
+    console.log(`📄 [${requestId}] Options:`, options);
+
+    // Launch browser
+    console.log(`🚀 [${requestId}] Launching Chromium...`);
+    const browser = await puppeteer.launch({
+      headless: true,
+      args: [
+        '--no-sandbox',
+        '--disable-setuid-sandbox',
+        '--disable-dev-shm-usage',
+        '--disable-gpu',
+        '--disable-software-rasterizer',
+        '--disable-extensions'
+      ],
+      executablePath: process.env.PUPPETEER_EXECUTABLE_PATH || '/usr/bin/chromium'
+    });
+
+    try {
+      const page = await browser.newPage();
+      console.log(`📄 [${requestId}] Setting HTML content...`);
+
+      await page.setContent(html, {
+        waitUntil: 'networkidle0',
+        timeout: 30000
+      });
+
+      console.log(`📄 [${requestId}] Generating PDF...`);
+      const pdfBuffer = await page.pdf({
+        format: options.format || 'A4',
+        printBackground: true,
+        margin: options.margin || {
+          top: '20px',
+          right: '20px',
+          bottom: '20px',
+          left: '20px'
+        }
+      });
+
+      console.log(`✅ [${requestId}] PDF generated successfully! Size: ${pdfBuffer.length} bytes`);
+
+      // Return PDF as base64
+      res.json({
+        success: true,
+        pdf: pdfBuffer.toString('base64'),
+        size: pdfBuffer.length
+      });
+
+    } finally {
+      await browser.close();
+      console.log(`🔒 [${requestId}] Browser closed`);
+    }
+
+  } catch (error) {
+    console.error(`❌ [${requestId}] PDF generation error:`, error);
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
+// Start server
+app.listen(PORT, '0.0.0.0', () => {
+  console.log('='.repeat(60));
+  console.log(`📄 PDF Service running on port ${PORT}`);
+  console.log(`📄 Health check: http://localhost:${PORT}/health`);
+  console.log(`📄 Generate PDF: POST http://localhost:${PORT}/generate-pdf`);
+  console.log(`📄 Chromium path: ${process.env.PUPPETEER_EXECUTABLE_PATH || '/usr/bin/chromium'}`);
+  console.log('='.repeat(60));
+});

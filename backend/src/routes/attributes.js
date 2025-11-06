@@ -3,6 +3,7 @@ const { body, validationResult } = require('express-validator');
 const { Attribute, AttributeValue, Store, AttributeSet } = require('../models');
 const { Op } = require('sequelize');
 const translationService = require('../services/translation-service');
+const creditService = require('../services/credit-service');
 const {
   getAttributesWithTranslations,
   getAttributeValuesWithTranslations,
@@ -617,10 +618,45 @@ router.post('/bulk-translate', authMiddleware, authorize(['admin', 'store_owner'
 
     console.log(`✅ Attribute translation complete: ${results.translated} translated, ${results.skipped} skipped, ${results.failed} failed`);
 
+    // Deduct credits for ALL items (including skipped)
+    const totalItems = attributes.length;
+    let actualCost = 0;
+
+    if (totalItems > 0) {
+      const costPerItem = await translationService.getTranslationCost('attribute');
+      actualCost = totalItems * costPerItem;
+
+      console.log(`💰 Attribute bulk translate - charging for ${totalItems} items × ${costPerItem} credits = ${actualCost} credits`);
+
+      try {
+        await creditService.deduct(
+          req.user.id,
+          store_id,
+          actualCost,
+          `Bulk Attribute Translation (${fromLang} → ${toLang})`,
+          {
+            fromLang,
+            toLang,
+            totalItems,
+            translated: results.translated,
+            skipped: results.skipped,
+            failed: results.failed,
+            note: 'Charged for all items including skipped'
+          },
+          null,
+          'ai_translation'
+        );
+        console.log(`✅ Deducted ${actualCost} credits for ${totalItems} attributes`);
+      } catch (deductError) {
+        console.error(`❌ CREDIT DEDUCTION FAILED (attribute-bulk-translate):`, deductError);
+        actualCost = 0;
+      }
+    }
+
     res.json({
       success: true,
       message: `Bulk translation completed. Translated: ${results.translated}, Skipped: ${results.skipped}, Failed: ${results.failed}`,
-      data: results
+      data: { ...results, creditsDeducted: actualCost }
     });
   } catch (error) {
     console.error('Bulk translate attributes error:', error);
@@ -814,10 +850,45 @@ router.post('/values/bulk-translate', authMiddleware, authorize(['admin', 'store
       }
     }
 
+    // Deduct credits for ALL items (including skipped)
+    const totalItems = values.length;
+    let actualCost = 0;
+
+    if (totalItems > 0) {
+      const costPerItem = await translationService.getTranslationCost('attribute_value');
+      actualCost = totalItems * costPerItem;
+
+      console.log(`💰 Attribute Value bulk translate - charging for ${totalItems} items × ${costPerItem} credits = ${actualCost} credits`);
+
+      try {
+        await creditService.deduct(
+          req.user.id,
+          store_id,
+          actualCost,
+          `Bulk Attribute Value Translation (${fromLang} → ${toLang})`,
+          {
+            fromLang,
+            toLang,
+            totalItems,
+            translated: results.translated,
+            skipped: results.skipped,
+            failed: results.failed,
+            note: 'Charged for all items including skipped'
+          },
+          null,
+          'ai_translation'
+        );
+        console.log(`✅ Deducted ${actualCost} credits for ${totalItems} attribute values`);
+      } catch (deductError) {
+        console.error(`❌ CREDIT DEDUCTION FAILED (attribute-value-bulk-translate):`, deductError);
+        actualCost = 0;
+      }
+    }
+
     res.json({
       success: true,
       message: `Bulk translation completed. Translated: ${results.translated}, Skipped: ${results.skipped}, Failed: ${results.failed}`,
-      data: results
+      data: { ...results, creditsDeducted: actualCost }
     });
   } catch (error) {
     console.error('Bulk translate attribute values error:', error);
