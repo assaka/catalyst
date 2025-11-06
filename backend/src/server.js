@@ -227,7 +227,11 @@ app.use(cors({
 
 // Step 1: Apply raw body parser to webhook endpoint FIRST
 app.use((req, res, next) => {
-  if (req.originalUrl === '/api/payments/webhook' || req.path === '/webhook') {
+  // Check if this is the Stripe webhook endpoint (be flexible with the check)
+  const isWebhook = req.originalUrl.includes('/webhook') || req.url.includes('/webhook') || req.path.includes('/webhook');
+
+  if (isWebhook) {
+    console.log('🔧 Using RAW body parser for webhook:', req.originalUrl);
     express.raw({ type: 'application/json' })(req, res, next);
   } else {
     express.json({ limit: '10mb' })(req, res, next);
