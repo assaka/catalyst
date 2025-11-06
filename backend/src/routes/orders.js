@@ -205,6 +205,10 @@ router.post('/finalize-order', async (req, res) => {
 
     console.log('✅ Order status updated successfully');
 
+    // NOTE: Email sending is handled by the Stripe webhook (webhook-connect)
+    // This is the authoritative source since it's Stripe's official confirmation
+    // Commenting out duplicate email logic here to prevent double emails
+    /*
     // Send confirmation email
     try {
       console.log('📧 Sending order confirmation email to:', order.customer_email);
@@ -322,6 +326,10 @@ router.post('/finalize-order', async (req, res) => {
       console.error('❌ Failed to send confirmation email:', emailError);
       // Don't fail the request if email fails
     }
+    */
+
+    console.log('📧 Email sending disabled in finalize-order - Stripe webhook will handle all emails');
+    console.log('📧 This prevents duplicate emails since finalize-order runs before webhook');
 
     // TODO: Save addresses if requested (requires passing customer_id and address data)
     // This would need to be added to the request body

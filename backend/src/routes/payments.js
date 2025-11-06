@@ -1884,8 +1884,10 @@ router.post('/webhook-connect', async (req, res) => {
         }
 
         // Send order success email + auto-invoice
-        if (finalOrder && finalOrder.customer_email && !statusAlreadyUpdated) {
+        // ALWAYS send emails for connected account webhooks (this is the authoritative confirmation from Stripe)
+        if (finalOrder && finalOrder.customer_email) {
           console.log('📧 Sending order success email to:', finalOrder.customer_email);
+          console.log('📧 NOTE: Sending from webhook (authoritative Stripe confirmation)');
 
           const emailService = require('../services/email-service');
           const { Customer } = require('../models');
