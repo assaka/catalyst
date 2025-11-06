@@ -90,18 +90,10 @@ async function getProductLabelsWithTranslations(where = {}, lang = 'en', allTran
     ORDER BY pl.sort_order ASC, pl.priority DESC, pl.name ASC
   `;
 
-  console.log('🔍 SQL Query for product labels:', query.replace(/\s+/g, ' '));
-  console.log('🔍 Language parameter:', lang);
-
   const results = await sequelize.query(query, {
     replacements: { lang },
     type: sequelize.QueryTypes.SELECT
   });
-
-  console.log('✅ Query returned', results.length, 'labels');
-  if (results.length > 0) {
-    console.log('📝 Sample label:', JSON.stringify(results[0], null, 2));
-  }
 
   return results;
 }
@@ -180,19 +172,9 @@ async function getProductLabelWithAllTranslations(id) {
     GROUP BY pl.id
   `;
 
-  console.log('🔍 Backend: Querying product label with all translations for ID:', id);
-
   const results = await sequelize.query(query, {
     replacements: { id },
     type: sequelize.QueryTypes.SELECT
-  });
-
-  console.log('🔍 Backend: Query result:', {
-    hasResults: !!results[0],
-    translations: results[0]?.translations,
-    translationType: typeof results[0]?.translations,
-    translationKeys: Object.keys(results[0]?.translations || {}),
-    rawResult: results[0]
   });
 
   return results[0] || null;
@@ -259,12 +241,6 @@ async function createProductLabelWithTranslations(labelData, translations = {}) 
           name: data.name ?? null,
           text: data.text ?? null
         };
-
-        console.log('🔍 Creating product label translation:', {
-          langCode,
-          data,
-          replacements
-        });
 
         await sequelize.query(`
           INSERT INTO product_label_translations (

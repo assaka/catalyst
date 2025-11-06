@@ -109,7 +109,6 @@ router.get('/', async (req, res) => {
     }
 
     if (!cart) {
-      console.log('Cart GET - No cart found, returning empty cart for session:', session_id, 'user:', user_id);
       // Return empty cart structure
       cart = {
         session_id: session_id || null,
@@ -122,28 +121,9 @@ router.get('/', async (req, res) => {
         total: 0
       };
     } else {
-      console.log('Cart GET - found cart:', {
-        id: cart.id,
-        session_id: cart.session_id,
-        user_id: cart.user_id,
-        items: cart.items,
-        itemsType: typeof cart.items,
-        itemsLength: cart.items ? cart.items.length : 0,
-        rawItems: JSON.stringify(cart.items),
-        createdAt: cart.createdAt,
-        updatedAt: cart.updatedAt
-      });
-
       // Additional debug: directly query from DB to ensure we're getting latest data
       try {
         const freshCart = await Cart.findByPk(cart.id);
-        console.log('Cart GET - Fresh DB query result:', {
-          id: freshCart?.id,
-          session_id: freshCart?.session_id,
-          items: freshCart?.items,
-          itemsLength: freshCart?.items ? freshCart.items.length : 0,
-          updatedAt: freshCart?.updatedAt
-        });
       } catch (debugError) {
         console.error('Cart GET - Debug query failed:', debugError);
       }
@@ -200,9 +180,7 @@ router.get('/', async (req, res) => {
 // @access  Public
 router.post('/', async (req, res) => {
   try {
-    console.log('Cart POST - Full request body:', JSON.stringify(req.body));
     const { session_id, store_id, items, user_id, product_id, quantity, price, selected_attributes, selected_options } = req.body;
-    console.log('Cart POST - Parsed fields:', { session_id, store_id, items, user_id, product_id, quantity, price });
 
     if ((!session_id && !user_id) || !store_id) {
       return res.status(400).json({
@@ -214,10 +192,8 @@ router.post('/', async (req, res) => {
     // Build where clause to find existing cart - CRITICAL: include store_id
     const whereClause = {};
     if (user_id) {
-      console.log('Cart POST - Looking for cart by user_id:', user_id, 'and store_id:', store_id);
       whereClause.user_id = user_id;
     } else {
-      console.log('Cart POST - Looking for cart by session_id:', session_id, 'and store_id:', store_id);
       whereClause.session_id = session_id;
     }
 
@@ -225,7 +201,6 @@ router.post('/', async (req, res) => {
     whereClause.store_id = store_id;
 
     let cart = await Cart.findOne({ where: whereClause });
-    console.log('Cart POST - Found existing cart:', cart ? cart.id : 'none');
 
     let cartItems = [];
 
@@ -236,8 +211,6 @@ router.post('/', async (req, res) => {
 
     // If individual item fields are provided, add as new item
     if (product_id && quantity) {
-      console.log('Cart POST - Adding individual item, existing cartItems:', JSON.stringify(cartItems));
-
       // Validate product stock before adding to cart
       const product = await Product.findByPk(product_id);
 
@@ -290,37 +263,28 @@ router.post('/', async (req, res) => {
         selected_options: selected_options || []
       };
 
-      console.log('Cart POST - New item to add:', JSON.stringify(newItem));
-      console.log('Cart POST - Existing item index:', existingItemIndex);
-
       if (existingItemIndex >= 0) {
         // Update quantity of existing item
         cartItems[existingItemIndex].quantity += newItem.quantity;
-        console.log('Cart POST - Updated existing item quantity');
       } else {
         // Add new item
         cartItems.push(newItem);
-        console.log('Cart POST - Added new item, cartItems now:', JSON.stringify(cartItems));
       }
     } else if (items !== undefined && !product_id) {
       // Only use provided items array if no individual product is being added
       cartItems = Array.isArray(items) ? items : [];
-      console.log('Cart POST - Using provided items array:', JSON.stringify(cartItems));
     }
 
     if (cart) {
       // Update existing cart - use changed() to force JSON column update
-      console.log('Cart POST - Updating existing cart with items:', JSON.stringify(cartItems));
       cart.items = cartItems;
       cart.user_id = user_id || cart.user_id;
       cart.store_id = store_id || cart.store_id;
       cart.changed('items', true); // Force Sequelize to recognize JSON change
       await cart.save();
       await cart.reload();
-      console.log('Cart POST - After reload, cart items:', JSON.stringify(cart.items));
     } else {
       // Create new cart with upsert to handle race conditions
-      console.log('Cart POST - Creating new cart with items:', JSON.stringify(cartItems));
       try {
         cart = await Cart.create({
           session_id,
@@ -328,11 +292,9 @@ router.post('/', async (req, res) => {
           user_id,
           items: cartItems
         });
-        console.log('Cart POST - After create, cart items:', JSON.stringify(cart.items));
       } catch (createError) {
         // Handle duplicate session_id error by fetching the existing cart
         if (createError.name === 'SequelizeUniqueConstraintError' && createError.fields?.session_id) {
-          console.log('Cart POST - Duplicate session_id detected, fetching existing cart');
           cart = await Cart.findOne({ where: { session_id } });
           if (cart) {
             // Update the existing cart
@@ -342,7 +304,6 @@ router.post('/', async (req, res) => {
             cart.changed('items', true);
             await cart.save();
             await cart.reload();
-            console.log('Cart POST - Updated cart after duplicate error, items:', JSON.stringify(cart.items));
           } else {
             // If still not found, re-throw the error
             throw createError;
@@ -353,11 +314,6 @@ router.post('/', async (req, res) => {
         }
       }
     }
-
-    // Additional logging to debug data persistence
-    console.log('Cart after save - ID:', cart.id);
-    console.log('Cart after save - Items:', JSON.stringify(cart.items));
-    console.log('Cart after save - Items length:', cart.items ? cart.items.length : 0);
 
     res.json({
       success: true,
@@ -423,29 +379,6 @@ router.delete('/', async (req, res) => {
     });
   } catch (error) {
     console.error('Clear cart error:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Server error'
-    });
-  }
-});
-
-// Debug route to check raw cart data
-router.get('/debug/:id', async (req, res) => {
-  try {
-    const cart = await Cart.findByPk(req.params.id);
-    console.log('DEBUG - Raw cart from DB:', JSON.stringify(cart, null, 2));
-    res.json({
-      success: true,
-      data: cart,
-      debug: {
-        items: cart?.items,
-        itemsType: typeof cart?.items,
-        itemsLength: cart?.items ? cart.items.length : 0
-      }
-    });
-  } catch (error) {
-    console.error('Debug cart error:', error);
     res.status(500).json({
       success: false,
       message: 'Server error'
