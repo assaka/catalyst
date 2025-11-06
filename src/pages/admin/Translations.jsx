@@ -120,6 +120,10 @@ export default function Translations() {
   const [userCredits, setUserCredits] = useState(null);
   const [loadingCredits, setLoadingCredits] = useState(true);
 
+  // Service credit costs for AI translations
+  const [serviceCosts, setServiceCosts] = useState({});
+  const [loadingServiceCosts, setLoadingServiceCosts] = useState(true);
+
   const categories = ['common', 'navigation', 'product', 'checkout', 'account', 'admin'];
 
   /**
@@ -189,6 +193,30 @@ export default function Translations() {
       setUserCredits(0);
     } finally {
       setLoadingCredits(false);
+    }
+  };
+
+  /**
+   * Load service credit costs for AI translations
+   */
+  const loadServiceCosts = async () => {
+    try {
+      setLoadingServiceCosts(true);
+      const response = await api.get('/service-credit-costs?category=ai_services&active_only=true');
+
+      if (response && response.success && response.services) {
+        // Create a map of service_key -> cost_per_unit
+        const costsMap = {};
+        response.services.forEach(service => {
+          costsMap[service.service_key] = service.cost_per_unit;
+        });
+        setServiceCosts(costsMap);
+      }
+    } catch (error) {
+      console.error('Failed to load service costs:', error);
+      setServiceCosts({});
+    } finally {
+      setLoadingServiceCosts(false);
     }
   };
 
@@ -926,9 +954,10 @@ export default function Translations() {
     loadLabels(selectedLanguage);
   }, [selectedLanguage]);
 
-  // Load user credits on component mount
+  // Load user credits and service costs on component mount
   useEffect(() => {
     loadUserCredits();
+    loadServiceCosts();
   }, []);
 
   // Load entity stats when switching to dashboard or entity tabs or when store changes
@@ -2006,6 +2035,7 @@ export default function Translations() {
                           ));
                         }}
                         storeId={getSelectedStoreId()}
+                        translationCost={serviceCosts['ai_translation_cms_page'] || 0.5}
                       />
                     ))}
                 </div>
@@ -2254,6 +2284,7 @@ export default function Translations() {
                         onFlashMessage={showFlashMessage}
                         storeId={getSelectedStoreId()}
                         userCredits={userCredits}
+                        translationCost={serviceCosts['ai_translation_email_template'] || 1}
                       />
                     ))}
                 </div>
@@ -2365,6 +2396,7 @@ export default function Translations() {
                         onFlashMessage={showFlashMessage}
                         storeId={getSelectedStoreId()}
                         userCredits={userCredits}
+                        translationCost={serviceCosts['ai_translation_pdf_template'] || 0.1}
                       />
                     ))}
                 </div>

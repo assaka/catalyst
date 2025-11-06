@@ -12,7 +12,7 @@ import api from '@/utils/api';
 /**
  * Accordion row for managing CMS page translations
  */
-export default function CmsPageTranslationRow({ page, onUpdate, selectedLanguages, onFlashMessage, storeId }) {
+export default function CmsPageTranslationRow({ page, onUpdate, selectedLanguages, onFlashMessage, storeId, userCredits, translationCost }) {
   const { availableLanguages } = useTranslation();
   const [isExpanded, setIsExpanded] = useState(false);
   const [translations, setTranslations] = useState(page.translations || {});
@@ -198,14 +198,18 @@ export default function CmsPageTranslationRow({ page, onUpdate, selectedLanguage
                                 variant="ghost"
                                 size="sm"
                                 onClick={() => handleAITranslate(field.key, 'en', lang.code)}
-                                disabled={translating[translatingKey] || !translations.en?.[field.key]}
+                                disabled={translating[translatingKey] || !translations.en?.[field.key] || (userCredits !== null && userCredits < translationCost)}
                                 className="flex-shrink-0"
                               >
                                 <Wand2 className={`w-4 h-4 ${translating[translatingKey] ? 'animate-spin' : ''}`} />
                               </Button>
                             </TooltipTrigger>
                             <TooltipContent>
-                              <p>Cost: 0.5 credits per translation</p>
+                              {userCredits !== null && userCredits < translationCost ? (
+                                <p>Insufficient credits ({userCredits} available, {translationCost} required)</p>
+                              ) : (
+                                <p>Cost: {translationCost} credit{translationCost !== 1 ? 's' : ''} per translation</p>
+                              )}
                             </TooltipContent>
                           </Tooltip>
                         </TooltipProvider>
