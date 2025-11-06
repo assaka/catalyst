@@ -1225,7 +1225,7 @@ export default function Products() {
                                   <DropdownMenu>
                                     <DropdownMenuTrigger asChild>
                                       <Button variant="ghost" size="sm">
-                                        <ChevronDown className="w-4 h-4" />
+                                        <MoreVertical className="w-4 h-4" />
                                       </Button>
                                     </DropdownMenuTrigger>
                                     <DropdownMenuContent>
