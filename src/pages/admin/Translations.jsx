@@ -2216,6 +2216,7 @@ export default function Translations() {
                         }}
                         selectedLanguages={selectedTranslationLanguages}
                         onFlashMessage={showFlashMessage}
+                        storeId={getSelectedStoreId()}
                       />
                     ))}
                 </div>
@@ -2325,6 +2326,7 @@ export default function Translations() {
                         }}
                         selectedLanguages={selectedTranslationLanguages}
                         onFlashMessage={showFlashMessage}
+                        storeId={getSelectedStoreId()}
                       />
                     ))}
                 </div>

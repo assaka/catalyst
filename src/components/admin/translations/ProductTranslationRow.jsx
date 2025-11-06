@@ -12,7 +12,7 @@ import api from '@/utils/api';
  * Accordion row for managing product translations
  * Follows the pattern from AttributeValueTranslations
  */
-export default function ProductTranslationRow({ product, selectedLanguages, onUpdate, onFlashMessage }) {
+export default function ProductTranslationRow({ product, selectedLanguages, onUpdate, onFlashMessage, storeId }) {
   const { availableLanguages } = useTranslation();
   const [isExpanded, setIsExpanded] = useState(false);
   const [translations, setTranslations] = useState(product.translations || {});
@@ -106,7 +106,8 @@ export default function ProductTranslationRow({ product, selectedLanguages, onUp
       const response = await api.post('/translations/ai-translate', {
         text: sourceText,
         fromLang,
-        toLang
+        toLang,
+        storeId
       });
 
       if (response && response.success && response.data) {

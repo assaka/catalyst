@@ -11,7 +11,7 @@ import AttributeValueTranslations from '../attributes/AttributeValueTranslations
 /**
  * Accordion row for managing attribute translations (name + options)
  */
-export default function AttributeTranslationRow({ attribute, selectedLanguages, onUpdate, onFlashMessage }) {
+export default function AttributeTranslationRow({ attribute, selectedLanguages, onUpdate, onFlashMessage, storeId }) {
   const { availableLanguages } = useTranslation();
   const [isExpanded, setIsExpanded] = useState(false);
   const [translations, setTranslations] = useState(attribute.translations || {});
@@ -132,7 +132,8 @@ export default function AttributeTranslationRow({ attribute, selectedLanguages, 
       const response = await api.post('/translations/ai-translate', {
         text: sourceText,
         fromLang,
-        toLang
+        toLang,
+        storeId
       });
 
       if (response && response.success && response.data) {

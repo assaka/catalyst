@@ -11,7 +11,7 @@ import api from '@/utils/api';
 /**
  * Accordion row for managing CMS page translations
  */
-export default function CmsPageTranslationRow({ page, onUpdate, selectedLanguages, onFlashMessage }) {
+export default function CmsPageTranslationRow({ page, onUpdate, selectedLanguages, onFlashMessage, storeId }) {
   const { availableLanguages } = useTranslation();
   const [isExpanded, setIsExpanded] = useState(false);
   const [translations, setTranslations] = useState(page.translations || {});
@@ -93,7 +93,8 @@ export default function CmsPageTranslationRow({ page, onUpdate, selectedLanguage
       const response = await api.post('/translations/ai-translate', {
         text: sourceText,
         fromLang,
-        toLang
+        toLang,
+        storeId
       });
 
       if (response && response.success && response.data) {

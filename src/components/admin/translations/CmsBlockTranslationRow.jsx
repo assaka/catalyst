@@ -11,7 +11,7 @@ import api from '@/utils/api';
 /**
  * Accordion row for managing CMS block translations
  */
-export default function CmsBlockTranslationRow({ block, onUpdate, selectedLanguages, onFlashMessage }) {
+export default function CmsBlockTranslationRow({ block, onUpdate, selectedLanguages, onFlashMessage, storeId }) {
   const { availableLanguages } = useTranslation();
   const [isExpanded, setIsExpanded] = useState(false);
   const [translations, setTranslations] = useState(block.translations || {});
@@ -90,7 +90,8 @@ export default function CmsBlockTranslationRow({ block, onUpdate, selectedLangua
       const response = await api.post('/translations/ai-translate', {
         text: sourceText,
         fromLang,
-        toLang
+        toLang,
+        storeId
       });
 
       if (response && response.success && response.data) {

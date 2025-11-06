@@ -11,7 +11,7 @@ import api from '@/utils/api';
 /**
  * Accordion row for managing category translations
  */
-export default function CategoryTranslationRow({ category, selectedLanguages, onUpdate, onFlashMessage }) {
+export default function CategoryTranslationRow({ category, selectedLanguages, onUpdate, onFlashMessage, storeId }) {
   const { availableLanguages } = useTranslation();
   const [isExpanded, setIsExpanded] = useState(false);
   const [translations, setTranslations] = useState(category.translations || {});
@@ -114,7 +114,8 @@ export default function CategoryTranslationRow({ category, selectedLanguages, on
       const response = await api.post('/translations/ai-translate', {
         text: sourceText,
         fromLang,
-        toLang
+        toLang,
+        storeId
       });
 
       if (response && response.success && response.data) {

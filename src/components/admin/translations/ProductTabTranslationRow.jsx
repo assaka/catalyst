@@ -11,7 +11,7 @@ import api from '@/utils/api';
 /**
  * Accordion row for managing product tab translations
  */
-export default function ProductTabTranslationRow({ tab, onUpdate, selectedLanguages, onFlashMessage }) {
+export default function ProductTabTranslationRow({ tab, onUpdate, selectedLanguages, onFlashMessage, storeId }) {
   const { availableLanguages } = useTranslation();
   const [isExpanded, setIsExpanded] = useState(false);
   const [translations, setTranslations] = useState(tab.translations || {});
@@ -116,7 +116,8 @@ export default function ProductTabTranslationRow({ tab, onUpdate, selectedLangua
       const response = await api.post('/translations/ai-translate', {
         text: sourceText,
         fromLang,
-        toLang
+        toLang,
+        storeId
       });
 
       if (response && response.success && response.data) {
