@@ -23,15 +23,13 @@ services:
     name: catalyst-backend
     env: node
     rootDir: backend
-    buildCommand: npm install --legacy-peer-deps && npx puppeteer browsers install chrome
+    buildCommand: npm install
     startCommand: npm start
     envVars:
       - key: NODE_ENV
         value: production
       - key: PORT
         value: 10000
-      - key: PUPPETEER_SKIP_DOWNLOAD
-        value: 'false'
       # Supabase Configuration - Set these in Render Dashboard
       - key: SUPABASE_URL
         sync: false
@@ -75,7 +73,7 @@ services:
     name: catalyst-background-worker
     env: node
     rootDir: backend
-    buildCommand: npm install --legacy-peer-deps
+    buildCommand: npm install
     startCommand: node worker.cjs
     envVars:
       - key: NODE_ENV
@@ -114,7 +112,7 @@ services:
     env: node
     rootDir: backend
     schedule: "0 0 * * *"  # Every day at midnight UTC
-    buildCommand: npm install --legacy-peer-deps
+    buildCommand: npm install
     startCommand: node scripts/run-daily-credit-deduction.js
     envVars:
       - key: NODE_ENV

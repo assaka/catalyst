@@ -1,4 +1,4 @@
-const htmlPdf = require('html-pdf-node');
+const pdf = require('html-pdf');
 const path = require('path');
 const { PdfTemplate, PdfTemplateTranslation, EmailTemplate, EmailTemplateTranslation } = require('../models');
 
@@ -19,25 +19,28 @@ const safeNumber = (value) => {
   return isNaN(num) ? 0 : num;
 };
 
+/**
+ * Helper to convert html-pdf callback to Promise
+ */
+const generatePdfFromHtml = (html, options) => {
+  return new Promise((resolve, reject) => {
+    pdf.create(html, options).toBuffer((err, buffer) => {
+      if (err) reject(err);
+      else resolve(buffer);
+    });
+  });
+};
+
 class PDFService {
   constructor() {
     this.options = {
       format: 'A4',
-      printBackground: true,
-      margin: {
+      border: {
         top: '20px',
         right: '20px',
         bottom: '20px',
         left: '20px'
-      },
-      // Puppeteer launch args for Render.com compatibility
-      args: [
-        '--no-sandbox',
-        '--disable-setuid-sandbox',
-        '--disable-dev-shm-usage',
-        '--disable-gpu'
-      ],
-      executablePath: process.env.PUPPETEER_EXECUTABLE_PATH || undefined
+      }
     };
   }
 
@@ -304,8 +307,7 @@ class PDFService {
         margin: pdfTemplate.settings?.margins || this.options.margin
       };
 
-      const file = { content: html };
-      return await htmlPdf.generatePdf(file, options);
+      return await generatePdfFromHtml(html, options);
     } catch (error) {
       console.error('Error generating invoice PDF from template:', error);
       console.warn('Falling back to legacy method');
@@ -471,9 +473,7 @@ class PDFService {
       </html>
     `;
 
-    const file = { content: html };
-    const pdfBuffer = await htmlPdf.generatePdf(file, this.options);
-    return pdfBuffer;
+    return await generatePdfFromHtml(html, this.options);
   }
 
   /**
@@ -530,8 +530,7 @@ class PDFService {
         margin: pdfTemplate.settings?.margins || this.options.margin
       };
 
-      const file = { content: html };
-      return await htmlPdf.generatePdf(file, options);
+      return await generatePdfFromHtml(html, options);
     } catch (error) {
       console.error('Error generating shipment PDF from template:', error);
       console.warn('Falling back to legacy method');
@@ -672,9 +671,7 @@ class PDFService {
       </html>
     `;
 
-    const file = { content: html };
-    const pdfBuffer = await htmlPdf.generatePdf(file, this.options);
-    return pdfBuffer;
+    return await generatePdfFromHtml(html, this.options);
   }
 
   /**
