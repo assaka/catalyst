@@ -239,8 +239,8 @@ export default function EmailTemplateTranslationRow({ template, onUpdate, select
           <div className="px-4 py-3 bg-gray-50 flex justify-end">
             <SaveButton
               onClick={handleSave}
-              saving={saving}
-              saveSuccess={saveSuccess}
+              loading={saving}
+              success={saveSuccess}
             >
               Save Translations
             </SaveButton>

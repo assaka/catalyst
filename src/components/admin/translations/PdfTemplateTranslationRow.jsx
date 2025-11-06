@@ -218,8 +218,8 @@ export default function PdfTemplateTranslationRow({ template, onUpdate, selected
           <div className="px-4 py-3 bg-gray-50 flex justify-end">
             <SaveButton
               onClick={handleSave}
-              saving={saving}
-              saveSuccess={saveSuccess}
+              loading={saving}
+              success={saveSuccess}
             >
               Save Translations
             </SaveButton>

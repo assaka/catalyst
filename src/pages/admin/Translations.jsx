@@ -2289,7 +2289,7 @@ export default function Translations() {
                           setEmailTemplates(prev => prev.map(t => t.id === id ? { ...t, translations } : t));
                         }}
                         selectedLanguages={selectedTranslationLanguages}
-                        onFlashMessage={showFlashMessage}
+                        onFlashMessage={showFlash}
                         storeId={getSelectedStoreId()}
                         userCredits={userCredits}
                         translationCost={serviceCosts['ai_translation_email_template'] || 1}
@@ -2402,7 +2402,7 @@ export default function Translations() {
                           setPdfTemplates(prev => prev.map(t => t.id === id ? { ...t, translations } : t));
                         }}
                         selectedLanguages={selectedTranslationLanguages}
-                        onFlashMessage={showFlashMessage}
+                        onFlashMessage={showFlash}
                         storeId={getSelectedStoreId()}
                         userCredits={userCredits}
                         translationCost={serviceCosts['ai_translation_pdf_template'] || 0.1}
