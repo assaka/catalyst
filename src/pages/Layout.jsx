@@ -232,13 +232,16 @@ function LayoutInner({ children, currentPageName }) {
   }, [location.pathname, toggleAI]);
 
   const loadUserAndHandleCredits = async () => {
+    console.log('🔄 [Layout] loadUserAndHandleCredits called - fetching fresh user data');
     try {
       const hasStoreOwnerToken = !!localStorage.getItem('store_owner_auth_token');
 
       if (hasStoreOwnerToken) {
         try {
+          console.log('🔄 [Layout] Fetching user data from API...');
           // Fetch fresh user data from database (single source of truth for credits)
           const userData = await User.me();
+          console.log('✅ [Layout] User data fetched, credits:', userData.credits);
           setUser(userData);
         } catch (apiError) {
           console.error('🔍 Layout.jsx: Error fetching user data:', apiError);

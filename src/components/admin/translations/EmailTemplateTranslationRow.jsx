@@ -116,6 +116,7 @@ export default function EmailTemplateTranslationRow({ template, onUpdate, select
         if (response.creditsDeducted && onCreditsDeducted) {
           onCreditsDeducted(response.creditsDeducted);
         }
+        console.log('🔔 EmailTemplateTranslationRow: Dispatching creditsUpdated event');
         window.dispatchEvent(new CustomEvent('creditsUpdated'));
       }
     } catch (error) {

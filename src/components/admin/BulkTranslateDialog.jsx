@@ -161,11 +161,20 @@ export default function BulkTranslateDialog({
       for (const toLang of translateToLangs) {
         const result = await onTranslate(translateFromLang, toLang);
 
+        console.log(`📥 BulkTranslateDialog: Received result for ${toLang}:`, {
+          success: result.success,
+          translated: result.data?.translated,
+          skipped: result.data?.skipped,
+          creditsDeducted: result.creditsDeducted || result.data?.creditsDeducted
+        });
+
         if (result.success) {
           totalTranslated += result.data.translated || 0;
           totalSkipped += result.data.skipped || 0;
           totalFailed += result.data.failed || 0;
-          totalCreditsDeducted += result.creditsDeducted || 0;
+          const creditsFromResponse = result.creditsDeducted || result.data?.creditsDeducted || 0;
+          totalCreditsDeducted += creditsFromResponse;
+          console.log(`💰 BulkTranslateDialog: Added ${creditsFromResponse} credits, total now: ${totalCreditsDeducted}`);
           if (result.data.errors && result.data.errors.length > 0) {
             allErrors.push(...result.data.errors.map(err => ({ ...err, toLang })));
           }
@@ -174,15 +183,22 @@ export default function BulkTranslateDialog({
         }
       }
 
+      console.log(`📊 BulkTranslateDialog: Final totals - Translated: ${totalTranslated}, Skipped: ${totalSkipped}, Credits: ${totalCreditsDeducted}`);
+
       // Update local credits if any were deducted
       if (totalCreditsDeducted > 0) {
+        console.log(`🔔 BulkTranslateDialog: Credits deducted: ${totalCreditsDeducted}, updating sidebar`);
         setLocalCredits(prev => Math.max(0, (prev || 0) - totalCreditsDeducted));
 
         // Update credits in sidebar
+        console.log('🔔 BulkTranslateDialog: Dispatching creditsUpdated event');
         window.dispatchEvent(new CustomEvent('creditsUpdated'));
         if (onCreditsUpdate) {
+          console.log('🔔 BulkTranslateDialog: Calling onCreditsUpdate callback');
           onCreditsUpdate();
         }
+      } else {
+        console.log('⚠️ BulkTranslateDialog: No credits deducted, not updating sidebar');
       }
 
       if (totalTranslated > 0) {
