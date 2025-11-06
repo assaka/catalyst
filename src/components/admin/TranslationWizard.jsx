@@ -16,24 +16,9 @@ import { toast } from 'sonner';
 export default function TranslationWizard({ isOpen, onClose, storeId }) {
   const [step, setStep] = useState(1);
   const [loading, setLoading] = useState(false);
+  const [loadingCosts, setLoadingCosts] = useState(true);
   const [languages, setLanguages] = useState([]);
-  const [serviceCosts, setServiceCosts] = useState({
-    standard: 0.1,
-    product: 0.1,
-    category: 0.1,
-    attribute: 0.1,
-    cms_page: 0.5,
-    cms_block: 0.2,
-    product_tab: 0.1,
-    product_label: 0.1,
-    cookie_consent: 0.1,
-    attribute_value: 0.1,
-    'email-template': 0.1,
-    'pdf-template': 0.1,
-    'custom-option': 0.1,
-    'stock-label': 0.1,
-    'ui-labels': 0.1
-  });
+  const [serviceCosts, setServiceCosts] = useState({});
 
   // Wizard state
   const [config, setConfig] = useState({
@@ -57,51 +42,73 @@ export default function TranslationWizard({ isOpen, onClose, storeId }) {
   }, [isOpen]);
 
   const loadTranslationCosts = async () => {
+    setLoadingCosts(true);
     try {
-      // Load all translation service costs
-      const serviceKeys = [
-        'ai_translation',
-        'ai_translation_product',
-        'ai_translation_category',
-        'ai_translation_attribute',
-        'ai_translation_cms_page',
-        'ai_translation_cms_block',
-        'ai_translation_product_tab',
-        'ai_translation_product_label',
-        'ai_translation_cookie_consent',
-        'ai_translation_attribute_value',
-        'ai_translation_email_template',
-        'ai_translation_pdf_template',
-        'ai_translation_custom_option',
-        'ai_translation_stock_label'
+      // Load all translation service costs from database
+      const serviceKeyMap = [
+        { key: 'ai_translation', type: 'standard' },
+        { key: 'ai_translation', type: 'ui-labels' },
+        { key: 'ai_translation_product', type: 'product' },
+        { key: 'ai_translation_category', type: 'category' },
+        { key: 'ai_translation_attribute', type: 'attribute' },
+        { key: 'ai_translation_cms_page', type: 'cms_page' },
+        { key: 'ai_translation_cms_block', type: 'cms_block' },
+        { key: 'ai_translation_product_tab', type: 'product_tab' },
+        { key: 'ai_translation_product_label', type: 'product_label' },
+        { key: 'ai_translation_cookie_consent', type: 'cookie_consent' },
+        { key: 'ai_translation_attribute_value', type: 'attribute_value' },
+        { key: 'ai_translation_email_template', type: 'email-template' },
+        { key: 'ai_translation_pdf_template', type: 'pdf-template' },
+        { key: 'ai_translation_custom_option', type: 'custom-option' },
+        { key: 'ai_translation_stock_label', type: 'stock-label' }
       ];
 
-      const costs = { ...serviceCosts };
+      const costs = {};
+      let loadedCount = 0;
 
       await Promise.all(
-        serviceKeys.map(async (key) => {
+        serviceKeyMap.map(async ({ key, type }) => {
           try {
             const response = await api.get(`service-credit-costs/key/${key}`);
             if (response.success && response.service) {
-              const entityType = key.replace('ai_translation_', '').replace('ai_translation', 'standard');
-              costs[entityType] = parseFloat(response.service.cost_per_unit);
+              costs[type] = parseFloat(response.service.cost_per_unit);
+              loadedCount++;
             }
           } catch (error) {
-            console.warn(`Could not load cost for ${key}, using fallback`);
+            console.warn(`Could not load cost for ${key} (${type})`);
           }
         })
       );
 
+      console.log(`✅ Loaded ${loadedCount}/${serviceKeyMap.length} service costs from database`);
       setServiceCosts(costs);
     } catch (error) {
       console.error('Error loading translation costs:', error);
-      // Keep using default fallback values
+      toast.error('Failed to load service costs, using fallback values');
+    } finally {
+      setLoadingCosts(false);
     }
   };
 
   // Helper to get cost for an entity type
   const getCostForEntityType = (entityType) => {
-    return serviceCosts[entityType] || serviceCosts.standard;
+    // Try to get from loaded service costs
+    if (serviceCosts[entityType]) {
+      return serviceCosts[entityType];
+    }
+
+    // Try standard cost
+    if (serviceCosts.standard) {
+      return serviceCosts.standard;
+    }
+
+    // Last resort hardcoded fallbacks (only if database loading failed)
+    const emergencyFallbacks = {
+      'cms_page': 0.5,
+      'cms_block': 0.2,
+    };
+
+    return emergencyFallbacks[entityType] || 0.1;
   };
 
   // Calculate total estimated cost based on stats
@@ -521,13 +528,18 @@ export default function TranslationWizard({ isOpen, onClose, storeId }) {
                 </Button>
                 <Button
                   onClick={getPreview}
-                  disabled={config.toLanguages.length === 0 || loading}
+                  disabled={config.toLanguages.length === 0 || loading || loadingCosts}
                   className="flex items-center gap-2"
                 >
                   {loading ? (
                     <>
                       <Loader2 className="w-4 h-4 animate-spin" />
                       Loading preview...
+                    </>
+                  ) : loadingCosts ? (
+                    <>
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                      Loading costs...
                     </>
                   ) : (
                     <>
@@ -651,8 +663,16 @@ export default function TranslationWizard({ isOpen, onClose, storeId }) {
                         </div>
                       )}
 
-                      <div className="border-t border-blue-200 pt-2 text-xs text-gray-600 italic">
-                        Cost = items to translate × rate per item
+                      <div className="border-t border-blue-200 pt-2 space-y-1">
+                        <div className="text-xs text-gray-600 italic">
+                          Cost = items to translate × rate per item
+                        </div>
+                        {Object.keys(serviceCosts).length > 0 && (
+                          <div className="text-xs text-green-600 flex items-center gap-1">
+                            <span>✓</span>
+                            <span>Rates loaded from database</span>
+                          </div>
+                        )}
                       </div>
                     </div>
                   </div>
