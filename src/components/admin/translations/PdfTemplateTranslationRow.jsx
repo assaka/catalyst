@@ -12,7 +12,7 @@ import api from '@/utils/api';
 /**
  * Accordion row for managing PDF template translations
  */
-export default function PdfTemplateTranslationRow({ template, onUpdate, selectedLanguages, onFlashMessage, storeId, userCredits, translationCost }) {
+export default function PdfTemplateTranslationRow({ template, onUpdate, selectedLanguages, onFlashMessage, storeId, userCredits, translationCost, onCreditsDeducted }) {
   const { availableLanguages } = useTranslation();
   const [isExpanded, setIsExpanded] = useState(false);
   const [translations, setTranslations] = useState(template.translations || {});
@@ -98,6 +98,12 @@ export default function PdfTemplateTranslationRow({ template, onUpdate, selected
       if (response && response.success && response.data) {
         handleTranslationChange(toLang, field, response.data.translated);
         toast.success(`${field} translated to ${toLang.toUpperCase()}`);
+
+        // Update credits in sidebar and local state
+        if (response.creditsDeducted && onCreditsDeducted) {
+          onCreditsDeducted(response.creditsDeducted);
+        }
+        window.dispatchEvent(new CustomEvent('creditsUpdated'));
       }
     } catch (error) {
       console.error('AI translate error:', error);

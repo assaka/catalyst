@@ -221,6 +221,13 @@ export default function Translations() {
   };
 
   /**
+   * Handle credits deducted after translation
+   */
+  const handleCreditsDeducted = (amount) => {
+    setUserCredits(prev => Math.max(0, (prev || 0) - amount));
+  };
+
+  /**
    * Filter labels based on search and category
    */
   useEffect(() => {
@@ -2036,6 +2043,7 @@ export default function Translations() {
                         }}
                         storeId={getSelectedStoreId()}
                         translationCost={serviceCosts['ai_translation_cms_page'] || 0.5}
+                        onCreditsDeducted={handleCreditsDeducted}
                       />
                     ))}
                 </div>
@@ -2285,6 +2293,7 @@ export default function Translations() {
                         storeId={getSelectedStoreId()}
                         userCredits={userCredits}
                         translationCost={serviceCosts['ai_translation_email_template'] || 1}
+                        onCreditsDeducted={handleCreditsDeducted}
                       />
                     ))}
                 </div>
@@ -2397,6 +2406,7 @@ export default function Translations() {
                         storeId={getSelectedStoreId()}
                         userCredits={userCredits}
                         translationCost={serviceCosts['ai_translation_pdf_template'] || 0.1}
+                        onCreditsDeducted={handleCreditsDeducted}
                       />
                     ))}
                 </div>
