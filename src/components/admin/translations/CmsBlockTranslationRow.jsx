@@ -92,7 +92,8 @@ export default function CmsBlockTranslationRow({ block, onUpdate, selectedLangua
         text: sourceText,
         fromLang,
         toLang,
-        storeId
+        storeId,
+        entityType: 'cms_block'
       });
 
       if (response && response.success && response.data) {

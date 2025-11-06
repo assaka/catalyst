@@ -85,7 +85,8 @@ export default function CustomOptionTranslationRow({ rule, onUpdate, selectedLan
         text: sourceText,
         fromLang,
         toLang,
-        storeId
+        storeId,
+        entityType: 'custom_option'
       });
 
       if (response && response.success && response.data) {

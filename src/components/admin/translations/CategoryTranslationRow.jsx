@@ -116,7 +116,8 @@ export default function CategoryTranslationRow({ category, selectedLanguages, on
         text: sourceText,
         fromLang,
         toLang,
-        storeId
+        storeId,
+        entityType: 'category'
       });
 
       if (response && response.success && response.data) {

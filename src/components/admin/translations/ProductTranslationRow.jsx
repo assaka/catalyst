@@ -108,7 +108,8 @@ export default function ProductTranslationRow({ product, selectedLanguages, onUp
         text: sourceText,
         fromLang,
         toLang,
-        storeId
+        storeId,
+        entityType: 'product'
       });
 
       if (response && response.success && response.data) {

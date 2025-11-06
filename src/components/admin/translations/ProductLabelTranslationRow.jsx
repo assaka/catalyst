@@ -85,7 +85,8 @@ export default function ProductLabelTranslationRow({ label, onUpdate, selectedLa
         text: sourceText,
         fromLang,
         toLang,
-        storeId
+        storeId,
+        entityType: 'product_label'
       });
 
       if (response && response.success && response.data) {

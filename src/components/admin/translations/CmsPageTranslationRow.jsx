@@ -95,7 +95,8 @@ export default function CmsPageTranslationRow({ page, onUpdate, selectedLanguage
         text: sourceText,
         fromLang,
         toLang,
-        storeId
+        storeId,
+        entityType: 'cms_page'
       });
 
       if (response && response.success && response.data) {

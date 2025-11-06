@@ -127,7 +127,8 @@ export default function CookieConsentTranslationRow({ settings, onUpdate, select
         text: sourceText,
         fromLang,
         toLang,
-        storeId
+        storeId,
+        entityType: 'cookie_consent'
       });
 
       if (response && response.success && response.data) {

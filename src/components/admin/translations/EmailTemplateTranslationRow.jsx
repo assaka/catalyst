@@ -104,7 +104,8 @@ export default function EmailTemplateTranslationRow({ template, onUpdate, select
         text: sourceText,
         fromLang,
         toLang,
-        storeId
+        storeId,
+        entityType: 'email-template'
       });
 
       if (response && response.success && response.data) {

@@ -134,7 +134,8 @@ export default function AttributeTranslationRow({ attribute, selectedLanguages, 
         text: sourceText,
         fromLang,
         toLang,
-        storeId
+        storeId,
+        entityType: 'attribute'
       });
 
       if (response && response.success && response.data) {

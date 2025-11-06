@@ -91,7 +91,8 @@ export default function PdfTemplateTranslationRow({ template, onUpdate, selected
         text: sourceText,
         fromLang,
         toLang,
-        storeId
+        storeId,
+        entityType: 'pdf-template'
       });
 
       if (response && response.success && response.data) {

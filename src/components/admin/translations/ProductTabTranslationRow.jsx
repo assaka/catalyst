@@ -118,7 +118,8 @@ export default function ProductTabTranslationRow({ tab, onUpdate, selectedLangua
         text: sourceText,
         fromLang,
         toLang,
-        storeId
+        storeId,
+        entityType: 'product_tab'
       });
 
       if (response && response.success && response.data) {
