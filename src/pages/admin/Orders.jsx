@@ -6,6 +6,7 @@ import { User } from "@/api/entities";
 import { useStoreSelection } from "@/contexts/StoreSelectionContext.jsx";
 import NoStoreSelected from "@/components/admin/NoStoreSelected";
 import { formatPrice, _setStoreContext } from "@/utils/priceUtils";
+import { useAlertTypes } from "@/hooks/useAlert";
 import {
   Search,
   ChevronDown,
@@ -59,6 +60,7 @@ import { Separator } from "@/components/ui/separator";
 
 export default function Orders() {
   const { selectedStore, getSelectedStoreId } = useStoreSelection();
+  const { showConfirm, showError, AlertComponent } = useAlertTypes();
   const [orders, setOrders] = useState([]);
   const [users, setUsers] = useState({});
   const [orderItems, setOrderItems] = useState({});
@@ -225,7 +227,7 @@ export default function Orders() {
       setTimeout(() => setActionSuccess(prev => ({ ...prev, [key]: false })), 3000);
     } catch (error) {
       console.error('Error resending order:', error);
-      alert('Failed to resend order confirmation');
+      showError('Failed to resend order confirmation');
     } finally {
       setActionLoading(prev => ({ ...prev, [key]: false }));
     }
@@ -253,7 +255,7 @@ export default function Orders() {
       loadOrders();
     } catch (error) {
       console.error('Error sending invoice:', error);
-      alert('Failed to send invoice');
+      showError('Failed to send invoice');
     } finally {
       setActionLoading(prev => ({ ...prev, [key]: false }));
     }
@@ -300,7 +302,7 @@ export default function Orders() {
       loadOrders();
     } catch (error) {
       console.error('Error sending shipment:', error);
-      alert('Failed to send shipment notification');
+      showError('Failed to send shipment notification');
     } finally {
       setActionLoading(prev => ({ ...prev, [key]: false }));
     }
@@ -334,7 +336,12 @@ export default function Orders() {
   };
 
   const handleCancelOrder = async (orderId) => {
-    if (!confirm('Are you sure you want to cancel this order?')) return;
+    const confirmed = await showConfirm(
+      'Are you sure you want to cancel this order?',
+      'Cancel Order'
+    );
+
+    if (!confirmed) return;
 
     const key = `cancel-order-${orderId}`;
     setActionLoading(prev => ({ ...prev, [key]: true }));
@@ -357,14 +364,19 @@ export default function Orders() {
       loadOrders();
     } catch (error) {
       console.error('Error cancelling order:', error);
-      alert('Failed to cancel order');
+      showError('Failed to cancel order');
     } finally {
       setActionLoading(prev => ({ ...prev, [key]: false }));
     }
   };
 
   const handleRefundOrder = async (orderId) => {
-    if (!confirm('Are you sure you want to refund this order? This action cannot be undone.')) return;
+    const confirmed = await showConfirm(
+      'Are you sure you want to refund this order? This action cannot be undone.',
+      'Refund Order'
+    );
+
+    if (!confirmed) return;
 
     const key = `refund-order-${orderId}`;
     setActionLoading(prev => ({ ...prev, [key]: true }));
@@ -390,7 +402,7 @@ export default function Orders() {
       loadOrders();
     } catch (error) {
       console.error('Error refunding order:', error);
-      alert('Failed to refund order');
+      showError('Failed to refund order');
     } finally {
       setActionLoading(prev => ({ ...prev, [key]: false }));
     }
@@ -847,6 +859,9 @@ export default function Orders() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Alert Dialog Component */}
+      <AlertComponent />
     </div>
   );
 }

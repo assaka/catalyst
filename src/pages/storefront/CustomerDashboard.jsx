@@ -91,7 +91,7 @@ const StatsCard = ({ icon: Icon, title, value, subtitle }) => (
 );
 
 
-const OrdersTab = ({ orders, getCountryName, onStatusUpdate, settings }) => {
+const OrdersTab = ({ orders, getCountryName, onStatusUpdate, settings, showConfirm }) => {
   const [expandedOrders, setExpandedOrders] = useState(new Set());
   const [updatingStatus, setUpdatingStatus] = useState(new Set());
 
@@ -106,7 +106,12 @@ const OrdersTab = ({ orders, getCountryName, onStatusUpdate, settings }) => {
   };
 
   const handleStatusUpdate = async (orderId, newStatus) => {
-    if (!window.confirm(`Are you sure you want to ${newStatus} this order?`)) {
+    const confirmed = await showConfirm(
+      `Are you sure you want to ${newStatus} this order?`,
+      `${newStatus.charAt(0).toUpperCase() + newStatus.slice(1)} Order`
+    );
+
+    if (!confirmed) {
       return;
     }
 
@@ -741,7 +746,7 @@ export default function CustomerDashboard() {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const { store, settings, taxes, selectedCountry, loading: storeLoading } = useStore();
-  const { showError, AlertComponent } = useAlertTypes();
+  const { showError, showConfirm, AlertComponent } = useAlertTypes();
   const [user, setUser] = useState(null);
   const [isGuest, setIsGuest] = useState(false);
   const [orders, setOrders] = useState([]);
@@ -1050,22 +1055,27 @@ export default function CustomerDashboard() {
   };
 
   const handleDeleteAddress = async (addressId) => {
-      if (!window.confirm("Are you sure you want to delete this address?")) {
+      const confirmed = await showConfirm(
+        'Are you sure you want to delete this address?',
+        'Delete Address'
+      );
+
+      if (!confirmed) {
           return;
       }
-      
-      setLoading(true); 
+
+      setLoading(true);
       setFlashMessage(null);
-      
+
       try {
           await retryApiCall(() => CustomerAddress.delete(addressId));
           setAddresses(prev => prev.filter(addr => addr.id !== addressId));
           setFlashMessage({ type: 'success', message: 'Address deleted successfully!' });
       } catch (error) {
           console.error("Failed to delete address:", error);
-          setFlashMessage({ 
-            type: 'error', 
-            message: `Failed to delete address: ${error.message || 'Unknown error'}` 
+          setFlashMessage({
+            type: 'error',
+            message: `Failed to delete address: ${error.message || 'Unknown error'}`
           });
       } finally {
           setLoading(false);
@@ -1340,6 +1350,7 @@ export default function CustomerDashboard() {
                   getCountryName={getCountryName}
                   onStatusUpdate={handleOrderStatusUpdate}
                   settings={settings}
+                  showConfirm={showConfirm}
                 />
               )}
 

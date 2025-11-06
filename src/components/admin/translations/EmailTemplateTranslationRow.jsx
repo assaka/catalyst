@@ -13,7 +13,7 @@ import api from '@/utils/api';
 /**
  * Accordion row for managing email template translations
  */
-export default function EmailTemplateTranslationRow({ template, onUpdate, selectedLanguages, onFlashMessage, storeId }) {
+export default function EmailTemplateTranslationRow({ template, onUpdate, selectedLanguages, onFlashMessage, storeId, userCredits }) {
   const { availableLanguages } = useTranslation();
   const [isExpanded, setIsExpanded] = useState(false);
   const [translations, setTranslations] = useState(template.translations || {});
@@ -186,7 +186,7 @@ export default function EmailTemplateTranslationRow({ template, onUpdate, select
                                   variant="ghost"
                                   size="sm"
                                   onClick={() => handleAITranslate(field.key, 'en', lang.code)}
-                                  disabled={translating[`${field.key}-${lang.code}`]}
+                                  disabled={translating[`${field.key}-${lang.code}`] || (userCredits !== null && userCredits < 1)}
                                   className="h-6 px-2 text-xs"
                                 >
                                   <Wand2 className={`w-3 h-3 mr-1 ${translating[`${field.key}-${lang.code}`] ? 'animate-spin' : ''}`} />
@@ -194,7 +194,11 @@ export default function EmailTemplateTranslationRow({ template, onUpdate, select
                                 </Button>
                               </TooltipTrigger>
                               <TooltipContent>
-                                <p>Cost: 1 credit per translation</p>
+                                {userCredits !== null && userCredits < 1 ? (
+                                  <p>Insufficient credits ({userCredits} available, 1 required)</p>
+                                ) : (
+                                  <p>Cost: 1 credit per translation</p>
+                                )}
                               </TooltipContent>
                             </Tooltip>
                           </TooltipProvider>
