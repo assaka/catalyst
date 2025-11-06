@@ -1853,18 +1853,27 @@ router.post('/webhook-connect', async (req, res) => {
 
         if (existingOrder) {
           console.log('✅ Found existing preliminary order:', existingOrder.id, existingOrder.order_number);
+          console.log('🔍 Order current status:', {
+            status: existingOrder.status,
+            payment_status: existingOrder.payment_status
+          });
+
           const isOnlinePayment = existingOrder.status === 'pending' && existingOrder.payment_status === 'pending';
+          console.log('🔍 Is this an online payment needing confirmation?', isOnlinePayment);
 
           if (isOnlinePayment) {
-            console.log('🔄 Online payment confirmed - updating order status...');
+            console.log('🔄 Online payment confirmed - updating order status to paid/processing...');
             await existingOrder.update({
               status: 'processing',
               payment_status: 'paid',
               updatedAt: new Date()
             });
             statusAlreadyUpdated = false; // Send emails
+            console.log('📧 Will SEND emails (order was pending, now confirmed)');
           } else {
             statusAlreadyUpdated = true; // Skip emails
+            console.log('⚠️ Will SKIP emails - order already processed');
+            console.log('⚠️ Status:', existingOrder.status, '| Payment status:', existingOrder.payment_status);
           }
 
           finalOrder = existingOrder;
