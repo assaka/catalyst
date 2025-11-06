@@ -1118,6 +1118,7 @@ router.get('/entity-stats', authMiddleware, async (req, res) => {
 router.post('/bulk-translate-entities', authMiddleware, async (req, res) => {
   try {
     const { store_id, entity_types, fromLang, toLang } = req.body;
+    const userId = req.user.id;
 
     if (!store_id || !entity_types || !Array.isArray(entity_types) || entity_types.length === 0) {
       return res.status(400).json({
@@ -1281,10 +1282,49 @@ router.post('/bulk-translate-entities', authMiddleware, async (req, res) => {
       }
     }
 
+    // Deduct credits based on what was translated
+    let actualCost = 0;
+
+    if (allResults.translated > 0) {
+      // Calculate cost based on entity types translated
+      for (const [entityType, entityData] of Object.entries(allResults.byEntity)) {
+        if (entityData.translated > 0) {
+          const costPerItem = await translationService.getTranslationCost(entityType);
+          actualCost += entityData.translated * costPerItem;
+        }
+      }
+
+      try {
+        await creditService.deduct(
+          userId,
+          store_id,
+          actualCost,
+          `Bulk Multi-Entity Translation: ${entity_types.join(', ')} (${fromLang} → ${toLang})`,
+          {
+            entity_types,
+            fromLang,
+            toLang,
+            translationsCompleted: allResults.translated,
+            failed: allResults.failed,
+            skipped: allResults.skipped,
+            byEntity: allResults.byEntity
+          },
+          null,
+          'ai_translation'
+        );
+        console.log(`✅ Deducted ${actualCost} credits for ${allResults.translated} translations`);
+      } catch (deductError) {
+        console.error('Failed to deduct credits:', deductError);
+        // Don't fail the entire operation if credit deduction fails
+        // The translations were already done
+      }
+    }
+
     res.json({
       success: true,
       message: `Multi-entity bulk translation completed. Total: ${allResults.total}, Translated: ${allResults.translated}, Skipped: ${allResults.skipped}, Failed: ${allResults.failed}`,
-      data: allResults
+      data: allResults,
+      creditsDeducted: actualCost
     });
   } catch (error) {
     console.error('Bulk translate entities error:', error);

@@ -76,10 +76,31 @@ export default function BulkTranslateDialog({
         // Determine which service to use based on entity type
         let serviceKey = 'ai_translation'; // Default
 
-        if (entityType === 'cms_page' || entityName === 'CMS Pages') {
+        // Map entity types to service keys
+        const entityTypeToServiceKey = {
+          'cms_page': 'ai_translation_cms_page',
+          'cms_block': 'ai_translation_cms_block',
+          'email_template': 'ai_translation_email_template',
+          'pdf_template': 'ai_translation_pdf_template',
+          'product': 'ai_translation_product',
+          'category': 'ai_translation_category',
+          'attribute': 'ai_translation_attribute',
+          'product_tab': 'ai_translation_product_tab',
+          'product_label': 'ai_translation_product_label',
+          'cookie_consent': 'ai_translation_cookie_consent',
+          'custom_option': 'ai_translation_custom_option'
+        };
+
+        if (entityTypeToServiceKey[entityType]) {
+          serviceKey = entityTypeToServiceKey[entityType];
+        } else if (entityName === 'CMS Pages') {
           serviceKey = 'ai_translation_cms_page';
-        } else if (entityType === 'cms_block' || entityName === 'CMS Blocks') {
+        } else if (entityName === 'CMS Blocks') {
           serviceKey = 'ai_translation_cms_block';
+        } else if (entityName === 'Email Templates') {
+          serviceKey = 'ai_translation_email_template';
+        } else if (entityName === 'PDF Templates') {
+          serviceKey = 'ai_translation_pdf_template';
         } else if (entityName === 'CMS Content') {
           // For mixed CMS content, use average
           const pageResponse = await api.get('service-credit-costs/key/ai_translation_cms_page');
@@ -277,9 +298,11 @@ export default function BulkTranslateDialog({
               </p>
               <p className="text-xs text-gray-500 mt-1">
                 {entityName === 'CMS Content' && 'Mixed CMS content (average of pages and blocks)'}
-                {entityName === 'CMS Pages' && 'CMS pages: 0.5 credits each ($0.05)'}
-                {entityName === 'CMS Blocks' && 'CMS blocks: 0.2 credits each ($0.02)'}
-                {!entityName.includes('CMS') && 'Standard rate: 0.1 credits per item ($0.01)'}
+                {entityName === 'CMS Pages' && `CMS pages: ${translationCost.toFixed(2)} credits each`}
+                {entityName === 'CMS Blocks' && `CMS blocks: ${translationCost.toFixed(2)} credits each`}
+                {entityName === 'Email Templates' && `Email templates: ${translationCost.toFixed(2)} credits each`}
+                {entityName === 'PDF Templates' && `PDF templates: ${translationCost.toFixed(2)} credits each`}
+                {!['CMS Content', 'CMS Pages', 'CMS Blocks', 'Email Templates', 'PDF Templates'].includes(entityName) && `Standard rate: ${translationCost.toFixed(2)} credits per item`}
               </p>
             </div>
           )}
