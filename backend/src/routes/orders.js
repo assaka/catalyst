@@ -1349,4 +1349,57 @@ router.post('/:id/send-shipment', authMiddleware, async (req, res) => {
   }
 });
 
+// @route   GET /api/orders/test-invoice-settings/:storeId
+// @desc    Test endpoint to check auto-invoice settings for a store
+// @access  Public (for debugging)
+router.get('/test-invoice-settings/:storeId', async (req, res) => {
+  try {
+    const { storeId } = req.params;
+
+    console.log('🔍 Testing invoice settings for store:', storeId);
+
+    // Load store with settings
+    const store = await Store.findByPk(storeId, {
+      attributes: ['id', 'name', 'domain', 'currency', 'settings']
+    });
+
+    if (!store) {
+      return res.status(404).json({
+        success: false,
+        message: 'Store not found'
+      });
+    }
+
+    const salesSettings = store.settings?.sales_settings || {};
+
+    console.log('✅ Store loaded:', store.name);
+    console.log('📋 Settings:', JSON.stringify(store.settings, null, 2));
+    console.log('📋 Sales Settings:', JSON.stringify(salesSettings, null, 2));
+
+    res.json({
+      success: true,
+      store: {
+        id: store.id,
+        name: store.name,
+        domain: store.domain
+      },
+      settings: store.settings,
+      sales_settings: salesSettings,
+      auto_invoice_enabled: salesSettings.auto_invoice_enabled || false,
+      auto_invoice_pdf_enabled: salesSettings.auto_invoice_pdf_enabled || false,
+      auto_ship_enabled: salesSettings.auto_ship_enabled || false,
+      message: salesSettings.auto_invoice_enabled
+        ? '✅ Auto-invoice is ENABLED - invoices will be sent automatically'
+        : '⚠️ Auto-invoice is DISABLED - invoices will NOT be sent automatically'
+    });
+  } catch (error) {
+    console.error('❌ Error testing invoice settings:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error testing invoice settings',
+      error: error.message
+    });
+  }
+});
+
 module.exports = router;
