@@ -2928,6 +2928,7 @@ export default function Translations() {
         entityName={selectedEntityName || "UI Labels"}
         itemCount={selectedEntityItemCount}
         userCredits={userCredits}
+        onCreditsUpdate={loadUserCredits}
         onTranslate={selectedEntityType ? handleEntityTranslate : handleBulkTranslate}
         onComplete={() => {
           // Reload the appropriate data based on entity type
@@ -2967,6 +2968,7 @@ export default function Translations() {
         onTranslate={handleMultiEntityTranslate}
         availableLanguages={availableLanguages || []}
         userCredits={userCredits}
+        onCreditsUpdate={loadUserCredits}
       />
 
       {/* Translation Wizard */}
@@ -2979,6 +2981,7 @@ export default function Translations() {
         }}
         storeId={getSelectedStoreId()}
         userCredits={userCredits}
+        onCreditsUpdate={loadUserCredits}
       />
 
       {/* Delete Confirmation Dialog */}

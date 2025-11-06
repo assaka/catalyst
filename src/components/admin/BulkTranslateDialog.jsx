@@ -39,7 +39,8 @@ export default function BulkTranslateDialog({
   onTranslate,
   onComplete,
   itemCount = 0,
-  userCredits = null
+  userCredits = null,
+  onCreditsUpdate = null
 }) {
   const { availableLanguages } = useTranslation();
   const [translateFromLang, setTranslateFromLang] = useState('en');
@@ -103,6 +104,10 @@ export default function BulkTranslateDialog({
 
     if (open) {
       loadTranslationCost();
+      // Refresh credit balance when modal opens
+      if (onCreditsUpdate) {
+        onCreditsUpdate();
+      }
     }
   }, [open, entityType, entityName]);
 
@@ -148,6 +153,12 @@ export default function BulkTranslateDialog({
         setFlashMessage({ type: 'success', message });
         setShowFlash(true);
         setTimeout(() => setShowFlash(false), 3000);
+
+        // Update credits in sidebar
+        window.dispatchEvent(new CustomEvent('creditsUpdated'));
+        if (onCreditsUpdate) {
+          onCreditsUpdate();
+        }
       }
       if (totalSkipped > 0 && totalTranslated === 0) {
         toast.info(`All ${totalSkipped} ${entityType} were skipped (already translated or missing source language)`);

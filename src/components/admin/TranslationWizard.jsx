@@ -13,7 +13,7 @@ import { toast } from 'sonner';
  * - Preview before translating
  * - Progress tracking
  */
-export default function TranslationWizard({ isOpen, onClose, storeId, userCredits = null }) {
+export default function TranslationWizard({ isOpen, onClose, storeId, userCredits = null, onCreditsUpdate = null }) {
   const [step, setStep] = useState(1);
   const [loading, setLoading] = useState(false);
   const [loadingCosts, setLoadingCosts] = useState(true);
@@ -38,6 +38,10 @@ export default function TranslationWizard({ isOpen, onClose, storeId, userCredit
     if (isOpen) {
       loadLanguages();
       loadTranslationCosts();
+      // Refresh credit balance when wizard opens
+      if (onCreditsUpdate) {
+        onCreditsUpdate();
+      }
     }
   }, [isOpen]);
 
@@ -181,6 +185,12 @@ export default function TranslationWizard({ isOpen, onClose, storeId, userCredit
       setTranslationResult(data.data || data);
       setStep(4);
       toast.success('Translation completed!');
+
+      // Update credits in sidebar
+      window.dispatchEvent(new CustomEvent('creditsUpdated'));
+      if (onCreditsUpdate) {
+        onCreditsUpdate();
+      }
     } catch (error) {
       console.error('Error executing translation:', error);
       toast.error('Translation failed: ' + (error.message || 'Unknown error'));

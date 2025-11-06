@@ -13,7 +13,8 @@ export default function MultiEntityTranslateDialog({
   entityStats = [],
   onTranslate,
   availableLanguages = [],
-  userCredits = null
+  userCredits = null,
+  onCreditsUpdate = null
 }) {
   const [selectedEntities, setSelectedEntities] = useState([]);
   const [translateFromLang, setTranslateFromLang] = useState('en');
@@ -76,6 +77,10 @@ export default function MultiEntityTranslateDialog({
 
     if (open) {
       loadTranslationCosts();
+      // Refresh credit balance when modal opens
+      if (onCreditsUpdate) {
+        onCreditsUpdate();
+      }
     }
   }, [open]);
 
@@ -96,6 +101,10 @@ export default function MultiEntityTranslateDialog({
         ? prev.filter(t => t !== entityType)
         : [...prev, entityType]
     );
+    // Refresh credit balance when checkbox is toggled
+    if (onCreditsUpdate) {
+      onCreditsUpdate();
+    }
   };
 
   const toggleLanguageSelection = (langCode) => {
@@ -173,6 +182,14 @@ export default function MultiEntityTranslateDialog({
         toast.success(`Successfully translated ${allResults.translated} items across ${translateToLangs.length} languages!`);
       } else {
         toast.warning(`Translation completed with ${allResults.failed} failures`);
+      }
+
+      // Update credits in sidebar
+      if (allResults.translated > 0) {
+        window.dispatchEvent(new CustomEvent('creditsUpdated'));
+        if (onCreditsUpdate) {
+          onCreditsUpdate();
+        }
       }
     } catch (error) {
       console.error('Translation error:', error);
