@@ -68,9 +68,9 @@ const User = sequelize.define('User', {
     defaultValue: 'agency'
   },
   credits: {
-    type: DataTypes.INTEGER,
+    type: DataTypes.DECIMAL(10, 2),
     allowNull: true,
-    defaultValue: 0
+    defaultValue: 0.00
   }
 }, {
   tableName: 'users',

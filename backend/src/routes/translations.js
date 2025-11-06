@@ -690,8 +690,6 @@ router.get('/entity-stats', authMiddleware, async (req, res) => {
           where: { store_id }
         });
 
-        console.log(`📊 ${entityType.type}: Found ${totalItems} entities for store ${store_id}`);
-
         if (totalItems === 0) {
           stats.push({
             type: entityType.type,
@@ -771,9 +769,6 @@ router.get('/entity-stats', authMiddleware, async (req, res) => {
           ) = :languageCount
         `;
 
-        console.log(`   🔍 Checking translated entities with query...`);
-        console.log(`   📋 Translation table: ${translationTable}, ID column: ${entityIdColumn}`);
-
         let translatedCount = 0;
         try {
           const [translatedEntities] = await sequelize.query(query, {
@@ -785,7 +780,6 @@ router.get('/entity-stats', authMiddleware, async (req, res) => {
           });
 
           translatedCount = translatedEntities.length;
-          console.log(`   ✅ Found ${translatedCount} fully translated ${entityType.type}`);
         } catch (queryError) {
           console.error(`   ❌ Error querying translated entities for ${entityType.type}:`, queryError.message);
           console.error(`   📋 Query was:`, query);

@@ -447,8 +447,8 @@ class CreditService {
       type: sequelize.QueryTypes.SELECT
     });
 
-    // Convert credits_purchased to integer (users.credits is INTEGER type)
-    const creditsToAdd = Math.floor(parseFloat(transaction.credits_purchased));
+    // Parse credits_purchased as decimal (users.credits is NUMERIC type)
+    const creditsToAdd = parseFloat(transaction.credits_purchased);
 
     console.log(`💰 [CreditService] User balance BEFORE adding credits:`, {
       userId: userBefore?.id,
