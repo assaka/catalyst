@@ -483,6 +483,64 @@ class TranslationService {
 
     return Model;
   }
+
+  /**
+   * Get translation cost for an entity type
+   * Maps entity types to service_credit_cost keys and retrieves the cost
+   */
+  async getTranslationCost(entityType) {
+    // Map entity types to service keys
+    const serviceKeyMap = {
+      'standard': 'ai_translation',
+      'product': 'ai_translation_product',
+      'category': 'ai_translation_category',
+      'attribute': 'ai_translation_attribute',
+      'cms_page': 'ai_translation_cms_page',
+      'cms_block': 'ai_translation_cms_block',
+      'product_tab': 'ai_translation_product_tab',
+      'product_label': 'ai_translation_product_label',
+      'cookie_consent': 'ai_translation_cookie_consent',
+      'attribute_value': 'ai_translation_attribute_value',
+      'email-template': 'ai_translation_email_template',
+      'pdf-template': 'ai_translation_pdf_template',
+      'custom-option': 'ai_translation_custom_option',
+      'custom_option': 'ai_translation_custom_option',
+      'stock-label': 'ai_translation_stock_label',
+      'stock_labels': 'ai_translation_stock_label',
+      'ui-labels': 'ai_translation'
+    };
+
+    // Fallback costs (in credits) if not found in database
+    const fallbackCosts = {
+      'standard': 0.1,
+      'product': 0.1,
+      'category': 0.1,
+      'attribute': 0.1,
+      'cms_page': 0.5,
+      'cms_block': 0.2,
+      'product_tab': 0.1,
+      'product_label': 0.1,
+      'cookie_consent': 0.1,
+      'attribute_value': 0.1,
+      'email-template': 0.1,
+      'pdf-template': 0.1,
+      'custom-option': 0.1,
+      'custom_option': 0.1,
+      'stock-label': 0.1,
+      'stock_labels': 0.1,
+      'ui-labels': 0.1
+    };
+
+    const serviceKey = serviceKeyMap[entityType] || serviceKeyMap['standard'];
+
+    try {
+      const cost = await ServiceCreditCost.getCostByKey(serviceKey);
+      return parseFloat(cost);
+    } catch (error) {
+      console.warn(`⚠️ Could not fetch cost for ${serviceKey}, using fallback:`, error.message);
+      return fallbackCosts[entityType] || fallbackCosts['standard'];
+    }
+  }
 }
 
 module.exports = new TranslationService();
