@@ -1449,6 +1449,13 @@ router.post('/webhook', async (req, res) => {
               // Check if auto-invoice is enabled in sales settings
               const store = orderWithDetails.Store;
               const salesSettings = store.settings?.sales_settings || {};
+
+              console.log('🔍 DEBUG: Checking auto-invoice settings...');
+              console.log('🔍 DEBUG: Store ID:', store.id);
+              console.log('🔍 DEBUG: Store settings:', JSON.stringify(store.settings, null, 2));
+              console.log('🔍 DEBUG: Sales settings:', JSON.stringify(salesSettings, null, 2));
+              console.log('🔍 DEBUG: auto_invoice_enabled:', salesSettings.auto_invoice_enabled);
+
               if (salesSettings.auto_invoice_enabled) {
                 console.log('📧 Auto-invoice enabled, sending invoice email immediately after order success email...');
 
@@ -1589,6 +1596,8 @@ router.post('/webhook', async (req, res) => {
                   console.error('❌ Failed to send invoice email:', invoiceError);
                   // Don't fail the webhook if invoice email fails
                 }
+              } else {
+                console.log('⚠️ Auto-invoice is DISABLED - invoice email will not be sent automatically');
               }
             }).catch(emailError => {
               console.error(`❌ Failed to send order success email:`, emailError.message);
