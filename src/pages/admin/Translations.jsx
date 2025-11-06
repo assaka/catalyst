@@ -471,7 +471,7 @@ export default function Translations() {
 
       // Load both pages and blocks in parallel
       const [pagesResponse, blocksResponse] = await Promise.all([
-        api.get(`/cms?store_id=${storeId}&limit=1000`),
+        api.get(`/cms-pages?store_id=${storeId}&limit=1000`),
         api.get(`/cms-blocks?store_id=${storeId}&limit=1000`)
       ]);
 
