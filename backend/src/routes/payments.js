@@ -1272,31 +1272,16 @@ router.post('/webhook', async (req, res) => {
     return res.status(500).send('Webhook secret not configured');
   }
 
-  console.log(`✅ [${webhookId}] Webhook secret configured:`, {
+  console.log(`✅ [${webhookId}] Platform webhook secret configured:`, {
     prefix: process.env.STRIPE_WEBHOOK_SECRET.substring(0, 10) + '...',
-    length: process.env.STRIPE_WEBHOOK_SECRET.length,
-    startsWithWhsec: process.env.STRIPE_WEBHOOK_SECRET.startsWith('whsec_')
+    length: process.env.STRIPE_WEBHOOK_SECRET.length
   });
 
   let event;
 
   try {
-    console.log(`🔐 [${webhookId}] Attempting to verify webhook signature...`);
-    console.log(`🔐 [${webhookId}] Verification inputs:`, {
-      bodyType: typeof req.body,
-      bodyIsBuffer: Buffer.isBuffer(req.body),
-      bodyLength: req.body?.length,
-      signaturePresent: !!sig,
-      signatureFormat: sig.split(',').map(part => part.split('=')[0]),
-      secretPresent: !!process.env.STRIPE_WEBHOOK_SECRET,
-      secretFormat: process.env.STRIPE_WEBHOOK_SECRET?.startsWith('whsec_') ? 'Valid format' : 'Invalid format'
-    });
-
-    console.log(`🔐 [${webhookId}] IMPORTANT: Verify this webhook secret matches your Stripe dashboard`);
-    console.log(`🔐 [${webhookId}] Secret prefix: ${process.env.STRIPE_WEBHOOK_SECRET.substring(0, 15)}...`);
-
+    console.log(`🔐 [${webhookId}] Verifying with PLATFORM secret...`);
     event = stripe.webhooks.constructEvent(req.body, sig, process.env.STRIPE_WEBHOOK_SECRET);
-
     console.log(`✅ [${webhookId}] Webhook signature verified successfully!`);
     console.log(`✅ [${webhookId}] Event type: ${event.type}`);
     console.log(`✅ [${webhookId}] Event ID: ${event.id}`);
@@ -1803,6 +1788,205 @@ router.post('/webhook', async (req, res) => {
   }
 
   res.json({ received: true });
+});
+
+// @route   POST /api/payments/webhook-connect
+// @desc    Handle Stripe webhooks from CONNECTED ACCOUNTS (tenant stores)
+// @access  Public
+router.post('/webhook-connect', async (req, res) => {
+  const webhookId = Math.random().toString(36).substring(7);
+
+  console.log('='.repeat(80));
+  console.log('🏪🏪🏪 CONNECTED ACCOUNT WEBHOOK HIT 🏪🏪🏪');
+  console.log(`🔔 [${webhookId}] CONNECTED WEBHOOK RECEIVED`);
+  console.log(`🔔 [${webhookId}] Timestamp: ${new Date().toISOString()}`);
+  console.log('🏪 This webhook handles STORE ORDERS (tenant events)');
+  console.log('='.repeat(80));
+
+  const sig = req.headers['stripe-signature'];
+
+  if (!sig) {
+    console.error(`❌ [${webhookId}] No stripe-signature header found`);
+    return res.status(400).send('No stripe-signature header');
+  }
+
+  if (!process.env.STRIPE_WEBHOOK_SECRET_CONNECT) {
+    console.error(`❌ [${webhookId}] STRIPE_WEBHOOK_SECRET_CONNECT not configured`);
+    return res.status(500).send('Connected webhook secret not configured');
+  }
+
+  let event;
+
+  try {
+    console.log(`🔐 [${webhookId}] Verifying with CONNECTED ACCOUNT secret...`);
+    event = stripe.webhooks.constructEvent(req.body, sig, process.env.STRIPE_WEBHOOK_SECRET_CONNECT);
+    console.log(`✅ [${webhookId}] Webhook signature verified successfully!`);
+    console.log(`✅ [${webhookId}] Event type: ${event.type}`);
+    console.log(`✅ [${webhookId}] Event ID: ${event.id}`);
+    console.log(`✅ [${webhookId}] Account: ${event.account || 'platform'}`);
+  } catch (err) {
+    console.error('='.repeat(80));
+    console.error(`❌ [${webhookId}] WEBHOOK SIGNATURE VERIFICATION FAILED`);
+    console.error(`❌ [${webhookId}] Error:`, err.message);
+    console.error('='.repeat(80));
+    return res.status(400).send(`Webhook Error: ${err.message}`);
+  }
+
+  console.log('🏪 Processing CONNECTED ACCOUNT event:', event.type);
+
+  // Handle connected account events
+  switch (event.type) {
+    case 'checkout.session.completed':
+      const session = event.data.object;
+      console.log('🏪 Processing store checkout.session.completed for session:', session.id);
+      console.log('🏪 Session metadata:', session.metadata);
+      console.log('🏪 Session customer details:', session.customer_details);
+
+      try {
+        // Check if preliminary order already exists
+        const existingOrder = await Order.findOne({
+          where: { payment_reference: session.id }
+        });
+
+        let finalOrder = null;
+        let statusAlreadyUpdated = false;
+
+        if (existingOrder) {
+          console.log('✅ Found existing preliminary order:', existingOrder.id, existingOrder.order_number);
+          const isOnlinePayment = existingOrder.status === 'pending' && existingOrder.payment_status === 'pending';
+
+          if (isOnlinePayment) {
+            console.log('🔄 Online payment confirmed - updating order status...');
+            await existingOrder.update({
+              status: 'processing',
+              payment_status: 'paid',
+              updatedAt: new Date()
+            });
+            statusAlreadyUpdated = false; // Send emails
+          } else {
+            statusAlreadyUpdated = true; // Skip emails
+          }
+
+          finalOrder = existingOrder;
+        } else {
+          console.log('⚠️ No preliminary order found, creating new order...');
+          const order = await createOrderFromCheckoutSession(session);
+          finalOrder = order;
+        }
+
+        // Send order success email + auto-invoice
+        if (finalOrder && finalOrder.customer_email && !statusAlreadyUpdated) {
+          console.log('📧 Sending order success email to:', finalOrder.customer_email);
+
+          const emailService = require('../services/email-service');
+          const { Customer } = require('../models');
+
+          // Get order with full details
+          const orderWithDetails = await Order.findByPk(finalOrder.id, {
+            include: [{
+              model: OrderItem,
+              as: 'OrderItems',
+              include: [{
+                model: Product,
+                attributes: ['id', 'sku']
+              }]
+            }, {
+              model: Store,
+              as: 'Store',
+              attributes: ['id', 'name', 'domain', 'currency', 'settings']
+            }]
+          });
+
+          let customer = null;
+          if (finalOrder.customer_id) {
+            customer = await Customer.findByPk(finalOrder.customer_id);
+          }
+
+          const customerName = customer
+            ? `${customer.first_name} ${customer.last_name}`
+            : (finalOrder.shipping_address?.full_name || 'Customer');
+
+          const [firstName, ...lastNameParts] = customerName.split(' ');
+          const lastName = lastNameParts.join(' ') || '';
+
+          // Send order success email
+          emailService.sendTransactionalEmail(finalOrder.store_id, 'order_success_email', {
+            recipientEmail: finalOrder.customer_email,
+            customer: customer || {
+              first_name: firstName,
+              last_name: lastName,
+              email: finalOrder.customer_email
+            },
+            order: orderWithDetails.toJSON(),
+            store: orderWithDetails.Store.toJSON(),
+            languageCode: 'en'
+          }).then(async () => {
+            console.log(`🎉 Order success email sent to: ${finalOrder.customer_email}`);
+
+            // Check auto-invoice settings
+            const store = orderWithDetails.Store;
+            const salesSettings = store.settings?.sales_settings || {};
+
+            console.log('🔍 Checking auto-invoice settings:', {
+              storeId: store.id,
+              auto_invoice_enabled: salesSettings.auto_invoice_enabled
+            });
+
+            if (salesSettings.auto_invoice_enabled) {
+              console.log('📧 AUTO-INVOICE ENABLED - Sending invoice email now!');
+
+              try {
+                let attachments = [];
+                if (salesSettings.auto_invoice_pdf_enabled) {
+                  console.log('📄 Generating PDF invoice...');
+                  const pdfService = require('../services/pdf-service');
+                  const invoicePdf = await pdfService.generateInvoicePDF(
+                    orderWithDetails,
+                    orderWithDetails.Store,
+                    orderWithDetails.OrderItems
+                  );
+
+                  attachments = [{
+                    filename: pdfService.getInvoiceFilename(orderWithDetails),
+                    content: invoicePdf.toString('base64'),
+                    contentType: 'application/pdf'
+                  }];
+                }
+
+                await emailService.sendTransactionalEmail(finalOrder.store_id, 'invoice_email', {
+                  recipientEmail: finalOrder.customer_email,
+                  customer: customer || {
+                    first_name: firstName,
+                    last_name: lastName,
+                    email: finalOrder.customer_email
+                  },
+                  order: orderWithDetails.toJSON(),
+                  store: orderWithDetails.Store,
+                  attachments: attachments
+                });
+
+                console.log('✅ INVOICE EMAIL SENT SUCCESSFULLY!');
+              } catch (invoiceError) {
+                console.error('❌ Failed to send invoice email:', invoiceError);
+              }
+            } else {
+              console.log('⚠️ Auto-invoice is DISABLED');
+            }
+          }).catch(emailError => {
+            console.error(`❌ Failed to send order success email:`, emailError.message);
+          });
+        }
+      } catch (error) {
+        console.error('❌ Error processing store order:', error);
+        return res.status(500).json({ error: 'Failed to process order' });
+      }
+      break;
+
+    default:
+      console.log(`Unhandled connected account event type ${event.type}`);
+  }
+
+  res.json({ received: true, source: 'connected-account' });
 });
 
 // Debug endpoint to check OrderItems for a specific order
