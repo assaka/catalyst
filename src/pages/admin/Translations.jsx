@@ -2860,6 +2860,10 @@ export default function Translations() {
             loadCookieConsent();
           } else if (selectedEntityType === 'custom_option') {
             loadCustomOptions();
+          } else if (selectedEntityType === 'email_template') {
+            loadEmailTemplates();
+          } else if (selectedEntityType === 'pdf_template') {
+            loadPdfTemplates();
           }
         }}
       />
