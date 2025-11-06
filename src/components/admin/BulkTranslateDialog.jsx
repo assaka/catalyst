@@ -252,16 +252,16 @@ export default function BulkTranslateDialog({
         />
       )}
 
-      <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent className="max-w-md max-h-[80vh] overflow-hidden flex flex-col">
+      <Dialog open={open} onOpenChange={!isTranslating ? onOpenChange : undefined}>
+        <DialogContent className="max-w-md max-h-[80vh] overflow-hidden flex flex-col" onInteractOutside={(e) => { if (isTranslating) e.preventDefault(); }}>
           <DialogHeader>
             <DialogTitle>Bulk AI Translate {entityName}</DialogTitle>
           </DialogHeader>
         <div className="space-y-4 py-4 overflow-y-auto">
           <div className="space-y-2">
             <Label htmlFor="from-lang">From Language</Label>
-            <Select value={translateFromLang} onValueChange={setTranslateFromLang}>
-              <SelectTrigger id="from-lang">
+            <Select value={translateFromLang} onValueChange={setTranslateFromLang} disabled={isTranslating}>
+              <SelectTrigger id="from-lang" disabled={isTranslating}>
                 <SelectValue placeholder="Select source language" />
               </SelectTrigger>
               <SelectContent>
@@ -284,6 +284,7 @@ export default function BulkTranslateDialog({
                     <Checkbox
                       id={`lang-${lang.code}`}
                       checked={translateToLangs.includes(lang.code)}
+                      disabled={isTranslating}
                       onCheckedChange={(checked) => {
                         if (checked) {
                           setTranslateToLangs([...translateToLangs, lang.code]);
@@ -294,7 +295,7 @@ export default function BulkTranslateDialog({
                     />
                     <Label
                       htmlFor={`lang-${lang.code}`}
-                      className="text-sm font-normal cursor-pointer"
+                      className={`text-sm font-normal ${isTranslating ? 'cursor-not-allowed opacity-50' : 'cursor-pointer'}`}
                     >
                       {lang.name} ({lang.native_name})
                     </Label>
@@ -368,6 +369,29 @@ export default function BulkTranslateDialog({
             </div>
           )}
 
+          {/* Translation Progress */}
+          {isTranslating && translationProgress.total > 0 && (
+            <div className="bg-purple-50 border border-purple-200 rounded-lg p-4">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-sm font-medium text-purple-900">
+                  Translation in Progress
+                </span>
+                <span className="text-sm font-bold text-purple-700">
+                  {translationProgress.current} / {translationProgress.total}
+                </span>
+              </div>
+              <div className="w-full bg-purple-200 rounded-full h-2.5">
+                <div
+                  className="bg-purple-600 h-2.5 rounded-full transition-all duration-300"
+                  style={{ width: `${(translationProgress.current / translationProgress.total) * 100}%` }}
+                ></div>
+              </div>
+              <p className="text-xs text-purple-700 mt-2">
+                Processing language {translationProgress.current} of {translationProgress.total}
+              </p>
+            </div>
+          )}
+
           <div className="flex justify-end gap-2 pt-4">
             <Button
               type="button"
@@ -390,9 +414,9 @@ export default function BulkTranslateDialog({
                 <>
                   <span className="animate-spin mr-2">⏳</span>
                   {translationProgress.total > 0 ? (
-                    `Translating ${translationProgress.current}/${translationProgress.total}...`
+                    `${Math.round((translationProgress.current / translationProgress.total) * 100)}% Complete (${translationProgress.current}/${translationProgress.total})`
                   ) : (
-                    'Translating...'
+                    'Processing...'
                   )}
                 </>
               ) : (
