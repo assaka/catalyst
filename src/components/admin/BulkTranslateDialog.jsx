@@ -177,6 +177,12 @@ export default function BulkTranslateDialog({
       // Update local credits if any were deducted
       if (totalCreditsDeducted > 0) {
         setLocalCredits(prev => Math.max(0, (prev || 0) - totalCreditsDeducted));
+
+        // Update credits in sidebar
+        window.dispatchEvent(new CustomEvent('creditsUpdated'));
+        if (onCreditsUpdate) {
+          onCreditsUpdate();
+        }
       }
 
       if (totalTranslated > 0) {
@@ -187,12 +193,6 @@ export default function BulkTranslateDialog({
         setFlashMessage({ type: 'success', message });
         setShowFlash(true);
         setTimeout(() => setShowFlash(false), 3000);
-
-        // Update credits in sidebar
-        window.dispatchEvent(new CustomEvent('creditsUpdated'));
-        if (onCreditsUpdate) {
-          onCreditsUpdate();
-        }
       }
       if (totalSkipped > 0 && totalTranslated === 0) {
         toast.info(`All ${totalSkipped} ${entityType} were skipped (already translated or missing source language)`);
