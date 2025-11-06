@@ -1192,9 +1192,9 @@ export default function CustomerDashboard() {
       const storeCodeMatch = currentPath.match(/\/public\/([^\/]+)/);
       const storeSlug = storeCodeMatch?.[1] || store?.slug || store?.code || localStorage.getItem('customer_auth_store_code') || 'default';
 
-      // Redirect to the current store's storefront - use /public/{storeCode} without /storefront
-      const storefrontUrl = `/public/${storeSlug}`;
-      navigate(storefrontUrl);
+      // Redirect to the login page instead of storefront
+      const loginUrl = createPublicUrl(storeSlug, 'CUSTOMER_AUTH');
+      navigate(loginUrl);
     } catch (error) {
       console.error('❌ Customer logout error:', error);
       // Still clear local data even if API call fails
@@ -1208,9 +1208,9 @@ export default function CustomerDashboard() {
       const storeCodeMatch = currentPath.match(/\/public\/([^\/]+)/);
       const storeSlug = storeCodeMatch?.[1] || store?.slug || store?.code || localStorage.getItem('customer_auth_store_code') || 'default';
 
-      // Redirect to the current store's storefront - use /public/{storeCode} without /storefront
-      const storefrontUrl = `/public/${storeSlug}`;
-      navigate(storefrontUrl);
+      // Redirect to the login page instead of storefront
+      const loginUrl = createPublicUrl(storeSlug, 'CUSTOMER_AUTH');
+      navigate(loginUrl);
     }
   };
 

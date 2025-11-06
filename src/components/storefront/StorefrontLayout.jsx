@@ -99,12 +99,14 @@ export default function StorefrontLayout({ children }) {
             // This will NOT clear store_owner_auth_token or store_owner_user_data
             await CustomerAuth.logout();
 
-            // Reload page to refresh the UI and show logged out state
-            window.location.reload();
+            // Redirect to login page after logout
+            const loginUrl = createPublicUrl(store?.slug || 'default', 'CUSTOMER_AUTH');
+            window.location.href = loginUrl;
         } catch (error) {
             console.error('Customer logout error:', error);
-            // Even on error, reload to ensure clean state
-            window.location.reload();
+            // Even on error, redirect to login to ensure clean state
+            const loginUrl = createPublicUrl(store?.slug || 'default', 'CUSTOMER_AUTH');
+            window.location.href = loginUrl;
         }
     };
 
