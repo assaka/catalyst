@@ -19,6 +19,12 @@ export default function TranslationWizard({ isOpen, onClose, storeId, userCredit
   const [loadingCosts, setLoadingCosts] = useState(true);
   const [languages, setLanguages] = useState([]);
   const [serviceCosts, setServiceCosts] = useState({});
+  const [localCredits, setLocalCredits] = useState(userCredits);
+
+  // Sync local credits with prop
+  useEffect(() => {
+    setLocalCredits(userCredits);
+  }, [userCredits]);
 
   // Wizard state
   const [config, setConfig] = useState({
@@ -186,10 +192,16 @@ export default function TranslationWizard({ isOpen, onClose, storeId, userCredit
       setStep(4);
       toast.success('Translation completed!');
 
-      // Update credits in sidebar
-      window.dispatchEvent(new CustomEvent('creditsUpdated'));
-      if (onCreditsUpdate) {
-        onCreditsUpdate();
+      // Update credits if any were deducted
+      const creditsDeducted = response.creditsDeducted || data.creditsDeducted || 0;
+      if (creditsDeducted > 0) {
+        setLocalCredits(prev => Math.max(0, (prev || 0) - creditsDeducted));
+
+        // Update credits in sidebar
+        window.dispatchEvent(new CustomEvent('creditsUpdated'));
+        if (onCreditsUpdate) {
+          onCreditsUpdate();
+        }
       }
     } catch (error) {
       console.error('Error executing translation:', error);
@@ -694,17 +706,17 @@ export default function TranslationWizard({ isOpen, onClose, storeId, userCredit
                 </div>
 
                 {/* Credit Balance Warning */}
-                {userCredits !== null && userCredits !== undefined && stats.toTranslate > 0 && (
+                {localCredits !== null && localCredits !== undefined && stats.toTranslate > 0 && (
                   <div className={`p-3 rounded-lg border ${
-                    userCredits < calculateEstimatedCost()
+                    localCredits < calculateEstimatedCost()
                       ? 'bg-red-50 border-red-200'
                       : 'bg-green-50 border-green-200'
                   }`}>
                     <div className="flex items-center justify-between text-sm">
-                      <span className={userCredits < calculateEstimatedCost() ? 'text-red-800' : 'text-green-800'}>
-                        Your balance: {Number(userCredits).toFixed(2)} credits
+                      <span className={localCredits < calculateEstimatedCost() ? 'text-red-800' : 'text-green-800'}>
+                        Your balance: {Number(localCredits).toFixed(2)} credits
                       </span>
-                      {userCredits < calculateEstimatedCost() && (
+                      {localCredits < calculateEstimatedCost() && (
                         <span className="text-red-600 font-medium text-xs">
                           ⚠️ Insufficient credits
                         </span>
@@ -724,7 +736,7 @@ export default function TranslationWizard({ isOpen, onClose, storeId, userCredit
                 </Button>
                 <Button
                   onClick={executeTranslation}
-                  disabled={loading || stats.toTranslate === 0 || (userCredits !== null && userCredits < calculateEstimatedCost())}
+                  disabled={loading || stats.toTranslate === 0 || (localCredits !== null && localCredits < calculateEstimatedCost())}
                   className="flex items-center gap-2 bg-green-600 hover:bg-green-700"
                 >
                   {loading ? (
