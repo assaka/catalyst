@@ -140,7 +140,7 @@ const createCustomerAddresses = async (userId, firstName, lastName, phone, email
       }
     }
   } catch (error) {
-    console.error('Failed to create addresses:', error);
+    // Failed to create addresses
   }
 };
 
@@ -155,10 +155,10 @@ const sendWelcomeEmail = async (storeId, email, customer) => {
       store: store ? store.toJSON() : null,
       languageCode: 'en'
     }).catch(err => {
-      console.error('Welcome email failed:', err.message);
+      // Welcome email failed
     });
   } catch (error) {
-    console.error('Error sending welcome email:', error.message);
+    // Error sending welcome email
   }
 };
 
@@ -177,7 +177,6 @@ const sendVerificationEmail = async (storeId, email, customer, verificationCode)
       current_year: new Date().getFullYear()
     }, 'en').catch(templateError => {
       // Fallback: Send simple email with verification code
-      console.log('Email template not found, sending simple verification email');
       emailService.sendViaBrevo(storeId, email,
         `Verify your email - ${store?.name || 'Our Store'}`,
         `
@@ -189,11 +188,11 @@ const sendVerificationEmail = async (storeId, email, customer, verificationCode)
           <p>If you didn't create an account, please ignore this email.</p>
         `
       ).catch(err => {
-        console.error('Verification email failed:', err.message);
+        // Verification email failed
       });
     });
   } catch (error) {
-    console.error('Error sending verification email:', error.message);
+    // Error sending verification email
   }
 };
 
@@ -269,7 +268,6 @@ router.post('/register', [
       }
     });
   } catch (error) {
-    console.error('Registration error:', error);
     res.status(500).json({
       success: false,
       message: 'Server error'
@@ -312,8 +310,6 @@ router.post('/upgrade-guest', [
       });
     }
 
-    console.log('🔄 Upgrading guest customer to registered:', email);
-
     // Update the guest customer with password (this will be hashed by the beforeUpdate hook)
     await guestCustomer.update({
       password: password,
@@ -322,9 +318,6 @@ router.post('/upgrade-guest', [
 
     // Reload customer to get the fresh data with hashed password
     await guestCustomer.reload();
-
-    console.log('✅ Guest customer upgraded successfully');
-    console.log('✅ Password hash exists:', !!guestCustomer.password);
 
     // Link all guest orders to this customer account
     try {
@@ -339,9 +332,7 @@ router.post('/upgrade-guest', [
           }
         }
       );
-      console.log(`✅ Linked ${updatedOrders[0]} guest orders to customer account`);
     } catch (orderLinkError) {
-      console.error('Failed to link orders to customer:', orderLinkError);
       // Don't fail the account upgrade if order linking fails
     }
 
@@ -350,8 +341,6 @@ router.post('/upgrade-guest', [
 
     // Send welcome email
     try {
-      console.log(`📧 Sending welcome email to upgraded guest: ${email}`);
-
       // Get store for email context
       const store = store_id ? await Store.findByPk(store_id) : null;
 
@@ -362,13 +351,12 @@ router.post('/upgrade-guest', [
         store: store ? store.toJSON() : null,
         languageCode: 'en' // TODO: Get from customer preferences
       }).then(() => {
-        console.log('✅ Welcome email sent successfully to upgraded guest:', email);
+        // Welcome email sent successfully
       }).catch(emailError => {
-        console.error('❌ Failed to send welcome email to upgraded guest:', emailError.message);
         // Don't fail account upgrade if email fails
       });
     } catch (emailError) {
-      console.error('Failed to send welcome email:', emailError);
+      // Failed to send welcome email
     }
 
     res.status(200).json({
@@ -383,7 +371,6 @@ router.post('/upgrade-guest', [
       }
     });
   } catch (error) {
-    console.error('Guest upgrade error:', error);
     res.status(500).json({
       success: false,
       message: 'Server error',
@@ -422,7 +409,6 @@ router.get('/check-customer-status/:email/:store_id', async (req, res) => {
       }
     });
   } catch (error) {
-    console.error('Check customer status error:', error);
     res.status(500).json({
       success: false,
       message: 'Server error'
@@ -480,7 +466,6 @@ router.post('/check-email', [
       }
     });
   } catch (error) {
-    console.error('Check email error:', error);
     res.status(500).json({
       success: false,
       message: 'Server error'
@@ -639,7 +624,6 @@ router.post('/login', [
       }
     });
   } catch (error) {
-    console.error('Login error:', error);
     res.status(500).json({
       success: false,
       message: 'Server error'
@@ -686,7 +670,6 @@ router.patch('/me', require('../middleware/auth').authMiddleware, async (req, re
       message: 'User updated successfully'
     });
   } catch (error) {
-    console.error('Update user error:', error);
     res.status(500).json({
       success: false,
       message: 'Server error'
@@ -700,8 +683,7 @@ router.patch('/me', require('../middleware/auth').authMiddleware, async (req, re
 router.get('/google', (req, res, next) => {
   // Google OAuth is only for store owners
   req.session.intendedRole = 'store_owner';
-  console.log(`🔐 Starting Google OAuth for store_owner role`);
-  
+
   passport.authenticate('google', { scope: ['profile', 'email'] })(req, res, next);
 });
 
@@ -713,15 +695,8 @@ router.get('/google/callback', (req, res, next) => {
     const corsOrigin = process.env.CORS_ORIGIN || 'https://catalyst-pearl.vercel.app';
     // Google OAuth is always for store_owner
     const intendedRole = 'store_owner';
-    
+
     if (err) {
-      console.error('OAuth authentication error:', err);
-      console.error('Error details:', {
-        message: err.message,
-        stack: err.stack,
-        name: err.name
-      });
-      
       // Handle database connection errors specifically
       if (err.message && err.message.includes('ENETUNREACH')) {
         return res.redirect(`${corsOrigin}/auth?error=database_connection_failed`);
@@ -735,16 +710,14 @@ router.get('/google/callback', (req, res, next) => {
       const errorParam = err.message ? err.message.replace(/\s+/g, '_').toLowerCase() : 'oauth_failed';
       return res.redirect(`${corsOrigin}/auth?error=${errorParam}`);
     }
-    
+
     if (!user) {
-      console.error('OAuth failed: No user returned');
       return res.redirect(`${corsOrigin}/auth?error=oauth_failed`);
     }
     
     try {
       // Always set user role to store_owner for Google OAuth
       if (!user.role || user.role !== 'store_owner') {
-        console.log(`✅ Setting user role to store_owner for OAuth user:`, user.email);
         await User.update(
           { 
             role: 'store_owner',
@@ -757,16 +730,12 @@ router.get('/google/callback', (req, res, next) => {
         user.role = 'store_owner';
         user.account_type = 'agency';
       }
-      
-      console.log('✅ OAuth successful, generating token for store_owner:', user.email);
+
       const token = generateToken(user);
-      
+
       // Always redirect to store owner auth page for Google OAuth
-      console.log('✅ Token generated successfully, redirecting to:', `${corsOrigin}/auth?token=${token}&oauth=success`);
       res.redirect(`${corsOrigin}/auth?token=${token}&oauth=success`);
     } catch (tokenError) {
-      console.error('Token generation error:', tokenError);
-      console.error('User object:', user);
       res.redirect(`${corsOrigin}/auth?error=token_generation_failed`);
     }
   })(req, res, next);
@@ -777,8 +746,6 @@ router.get('/google/callback', (req, res, next) => {
 // @access  Private
 router.post('/logout', require('../middleware/auth').authMiddleware, async (req, res) => {
   try {
-    console.log('🔐 Logout request received for user:', req.user.email);
-    
     // Log the logout event for security auditing
     try {
       await LoginAttempt.create({
@@ -789,9 +756,7 @@ router.post('/logout', require('../middleware/auth').authMiddleware, async (req,
         action: 'logout',
         attempted_at: new Date()
       });
-      console.log('✅ Logout event logged successfully');
     } catch (logError) {
-      console.error('❌ Failed to log logout event:', logError.message);
       // Don't fail the logout if logging fails
     }
     
@@ -803,10 +768,7 @@ router.post('/logout', require('../middleware/auth').authMiddleware, async (req,
       success: true,
       message: 'Logged out successfully'
     });
-    
-    console.log('✅ Logout successful for user:', req.user.email);
   } catch (error) {
-    console.error('❌ Logout error:', error);
     res.status(500).json({
       success: false,
       message: 'Logout failed'
@@ -901,8 +863,6 @@ router.post('/customer/register', [
       }
     });
   } catch (error) {
-    console.error('Customer registration error:', error);
-
     // Handle specific error types
     if (error.name === 'SequelizeUniqueConstraintError') {
       return res.status(400).json({
@@ -958,7 +918,6 @@ router.post('/customer/login', [
 
     // CRITICAL SECURITY: store_id is REQUIRED for customer login to prevent cross-store access
     if (!store_id) {
-      console.log('❌ Customer login attempt without store_id for:', email);
       await LoginAttempt.create({
         email,
         ip_address: ipAddress,
@@ -972,12 +931,9 @@ router.post('/customer/login', [
     }
 
     // CRITICAL: Find customer with this email AND store_id to prevent cross-store login
-    console.log('🔐 Customer login attempt for:', email, 'at store:', store_id);
-
     const customer = await Customer.findOne({ where: { email, store_id } });
 
     if (!customer) {
-      console.log('❌ Customer not found:', email, store_id ? `for store ${store_id}` : '');
       await LoginAttempt.create({
         email,
         ip_address: ipAddress,
@@ -991,12 +947,8 @@ router.post('/customer/login', [
       });
     }
 
-    console.log('✅ Customer found:', customer.id, 'Store:', customer.store_id);
-    console.log('🔍 Customer has password:', !!customer.password);
-
     // Check password
     if (!customer.password) {
-      console.log('❌ Customer has no password (guest account)');
       return res.status(400).json({
         success: false,
         message: 'This account has not been activated yet. Please create a password first.'
@@ -1004,10 +956,8 @@ router.post('/customer/login', [
     }
 
     const isMatch = await customer.comparePassword(password);
-    console.log('🔍 Password match result:', isMatch);
 
     if (!isMatch) {
-      console.log('❌ Password mismatch for customer:', customer.id);
       await LoginAttempt.create({
         email,
         ip_address: ipAddress,
@@ -1041,7 +991,6 @@ router.post('/customer/login', [
 
     // Verify customer has a store assigned
     if (!customer.store_id) {
-      console.log('⚠️ Customer has no store assigned:', customer.id);
       return res.status(403).json({
         success: false,
         message: 'Customer account is not assigned to a store. Please contact support.'
@@ -1073,7 +1022,6 @@ router.post('/customer/login', [
       }
     });
   } catch (error) {
-    console.error('Customer login error:', error);
     res.status(500).json({
       success: false,
       message: 'Server error'
@@ -1145,7 +1093,6 @@ router.post('/verify-email', [
       message: 'Email verified successfully!'
     });
   } catch (error) {
-    console.error('Email verification error:', error);
     res.status(500).json({
       success: false,
       message: 'Server error during verification'
@@ -1208,7 +1155,6 @@ router.post('/resend-verification', [
       message: 'Verification code sent! Please check your email.'
     });
   } catch (error) {
-    console.error('Resend verification error:', error);
     res.status(500).json({
       success: false,
       message: 'Server error'
@@ -1250,9 +1196,7 @@ router.post('/debug/fix-customer-stores', async (req, res) => {
       { store_id: defaultStore.id },
       { where: { store_id: null } }
     );
-    
-    console.log('🏪 Fixed customers with null store_id, assigned to store:', defaultStore.name);
-    
+
     res.json({
       success: true,
       message: `Updated ${result[0]} customers with store_id: ${defaultStore.id}`,

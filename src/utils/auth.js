@@ -33,8 +33,6 @@ export const handleLogout = async () => {
     }
     
   } catch (error) {
-    console.error('❌ Logout failed:', error);
-    
     // Even if logout fails, redirect appropriately for security
     const currentUser = getCurrentUser();
     const userRole = currentUser?.role;
@@ -75,8 +73,6 @@ export const handleLogoutWithNavigate = async (navigate) => {
     }
     
   } catch (error) {
-    console.error('❌ Logout failed:', error);
-    
     // Even if logout fails, navigate appropriately for security
     const currentUser = getCurrentUser();
     const userRole = currentUser?.role;
@@ -146,7 +142,6 @@ export const getCurrentUser = () => {
     
     return null;
   } catch (error) {
-    console.error('Error parsing user data:', error);
     return null;
   }
 };
@@ -209,10 +204,7 @@ export const setRoleBasedAuthData = (user, token, storeSlug = null) => {
     // Store the store slug for reference (backend validates via JWT)
     if (storeSlug) {
       localStorage.setItem('customer_store_slug', storeSlug);
-      console.log('🔒 Customer session bound to store:', storeSlug);
     }
-
-    console.log('✅ Customer session stored');
 
   } else if (user.role === 'store_owner' || user.role === 'admin') {
     localStorage.setItem('store_owner_auth_token', token);
@@ -223,7 +215,6 @@ export const setRoleBasedAuthData = (user, token, storeSlug = null) => {
 
     localStorage.setItem('store_owner_session_id', generateSessionId());
     apiClient.setToken(token);
-    console.log('✅ Store owner session stored (credits excluded - fetched live)');
   }
 
   localStorage.setItem('session_created_at', new Date().toISOString());
@@ -297,7 +288,7 @@ export const getUserDataForRole = (role) => {
       return storeOwnerUserData ? JSON.parse(storeOwnerUserData) : null;
     }
   } catch (error) {
-    console.error(`Error parsing user data for role ${role}:`, error);
+    // Error parsing user data
   }
   return null;
 };
@@ -306,8 +297,6 @@ export const getUserDataForRole = (role) => {
  * Explicitly activate a specific role session (used for UI switching)
  */
 export const activateRoleSession = (targetRole) => {
-  console.log('🔄 Activating role session:', targetRole);
-  
   if (targetRole === 'customer') {
     const customerToken = localStorage.getItem('customer_auth_token');
     
@@ -329,7 +318,7 @@ export const activateRoleSession = (targetRole) => {
         window.dispatchEvent(new CustomEvent('roleSessionChanged', { detail: { role: userData.role } }));
         return true;
       } catch (e) {
-        console.error('Error parsing store owner data:', e);
+        // Error parsing store owner data
       }
     }
   }
