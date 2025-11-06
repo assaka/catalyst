@@ -219,7 +219,8 @@ router.post('/finalize-order', async (req, res) => {
           }]
         }, {
           model: Store,
-          as: 'Store'
+          as: 'Store',
+          attributes: ['id', 'name', 'domain', 'currency', 'settings'] // Explicitly include settings
         }]
       });
 
