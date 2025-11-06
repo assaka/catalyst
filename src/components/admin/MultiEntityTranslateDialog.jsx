@@ -93,6 +93,14 @@ export default function MultiEntityTranslateDialog({
   if (!open) return null;
 
   const handleClose = () => {
+    // If translation happened, reload credits in sidebar
+    if (results && results.creditsDeducted > 0) {
+      console.log('🔄 MultiEntityTranslateDialog: Closing after translation, reloading credits');
+      setTimeout(() => {
+        window.dispatchEvent(new CustomEvent('creditsUpdated'));
+      }, 200);
+    }
+
     setSelectedEntities([]);
     setTranslateFromLang('en');
     setTranslateToLangs([]);
@@ -201,16 +209,9 @@ export default function MultiEntityTranslateDialog({
         toast.error(`Translation failed: ${allResults.failed} items failed`);
       }
 
-      // Update credits in sidebar and local state (charges for all items including skipped)
+      // Update local credits for display in modal
       if (allResults.creditsDeducted > 0) {
-        // Update local credits with actual deducted amount from backend
         setLocalCredits(prev => Math.max(0, (prev || 0) - allResults.creditsDeducted));
-
-        // Update global credits
-        window.dispatchEvent(new CustomEvent('creditsUpdated'));
-        if (onCreditsUpdate) {
-          onCreditsUpdate();
-        }
       }
     } catch (error) {
       console.error('Translation error:', error);

@@ -185,20 +185,12 @@ export default function BulkTranslateDialog({
 
       console.log(`📊 BulkTranslateDialog: Final totals - Translated: ${totalTranslated}, Skipped: ${totalSkipped}, Credits: ${totalCreditsDeducted}`);
 
-      // Update local credits if any were deducted
+      // Update local credits for display in modal
       if (totalCreditsDeducted > 0) {
-        console.log(`🔔 BulkTranslateDialog: Credits deducted: ${totalCreditsDeducted}, updating sidebar`);
+        console.log(`💰 BulkTranslateDialog: Credits deducted: ${totalCreditsDeducted}, updating local balance`);
         setLocalCredits(prev => Math.max(0, (prev || 0) - totalCreditsDeducted));
-
-        // Update credits in sidebar
-        console.log('🔔 BulkTranslateDialog: Dispatching creditsUpdated event');
-        window.dispatchEvent(new CustomEvent('creditsUpdated'));
-        if (onCreditsUpdate) {
-          console.log('🔔 BulkTranslateDialog: Calling onCreditsUpdate callback');
-          onCreditsUpdate();
-        }
       } else {
-        console.log('⚠️ BulkTranslateDialog: No credits deducted, not updating sidebar');
+        console.log('⚠️ BulkTranslateDialog: No credits deducted');
       }
 
       if (totalTranslated > 0) {
@@ -222,10 +214,16 @@ export default function BulkTranslateDialog({
       setTranslateToLangs([]);
       onOpenChange(false);
 
-      // Reload data after closing dialog to ensure fresh data
+      // Reload data and credits after closing dialog
       if (onComplete) {
         setTimeout(() => onComplete(), 100);
       }
+
+      // Reload credits in sidebar after modal closes
+      setTimeout(() => {
+        console.log('🔄 BulkTranslateDialog: Modal closed, reloading credits in sidebar');
+        window.dispatchEvent(new CustomEvent('creditsUpdated'));
+      }, 150);
     } catch (error) {
       console.error('Bulk translate error:', error);
       toast.error(`Failed to translate ${entityType}`);

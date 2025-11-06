@@ -2975,9 +2975,15 @@ export default function Translations() {
       <TranslationWizard
         isOpen={showTranslationWizard}
         onClose={() => {
+          console.log('🔄 TranslationWizard closing, reloading credits and stats');
           setShowTranslationWizard(false);
-          // Reload data after wizard completes
+          // Reload data and credits after wizard completes
           loadEntityStats();
+          loadUserCredits();
+          // Also dispatch event for sidebar
+          setTimeout(() => {
+            window.dispatchEvent(new CustomEvent('creditsUpdated'));
+          }, 200);
         }}
         storeId={getSelectedStoreId()}
         userCredits={userCredits}
