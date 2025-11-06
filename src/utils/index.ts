@@ -1,5 +1,6 @@
 
-
+// Re-export URL utilities from urlUtils.js
+export { createPublicUrl, createAdminUrl, createProductUrl, createCategoryUrl } from './urlUtils';
 
 export function createPageUrl(pageName: string) {
     // Use /admin prefix for admin pages
