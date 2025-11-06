@@ -15,7 +15,6 @@ const { sequelize } = require('../database/connection');
  * @returns {Promise<Array>} CMS pages with translated fields
  */
 async function getCMSPagesWithTranslations(where = {}, lang = 'en') {
-  console.log('🔍 [CMS Helper] getCMSPagesWithTranslations called with:', { where, lang });
 
   const whereConditions = Object.entries(where)
     .map(([key, value]) => {
@@ -59,32 +58,12 @@ async function getCMSPagesWithTranslations(where = {}, lang = 'en') {
     ORDER BY p.sort_order ASC, p.created_at DESC
   `;
 
-  console.log('📋 [CMS Helper] Executing SQL with lang:', lang);
-
   const results = await sequelize.query(query, {
     replacements: { lang },
     type: sequelize.QueryTypes.SELECT
   });
 
-  console.log(`📦 [CMS Helper] Query returned ${results.length} pages`);
-
-  if (results.length > 0) {
-    console.log('📝 [CMS Helper] First page debug:', {
-      slug: results[0].slug,
-      pt_title: results[0].pt_title,
-      pt_en_title: results[0].pt_en_title,
-      final_title: results[0].title,
-      has_pt_content: !!results[0].pt_content,
-      has_pt_en_content: !!results[0].pt_en_content,
-      has_final_content: !!results[0].content,
-      lang: lang
-    });
-  }
-
-  // Remove debug fields before returning
-  const cleanResults = results.map(({ pt_title, pt_en_title, pt_content, pt_en_content, ...rest }) => rest);
-
-  return cleanResults;
+  return results;
 }
 
 /**
@@ -134,7 +113,6 @@ async function getCMSPageById(id, lang = 'en') {
  * @returns {Promise<Array>} CMS blocks with translated fields
  */
 async function getCMSBlocksWithTranslations(where = {}, lang = 'en') {
-  console.log('🔍 [CMS Helper] getCMSBlocksWithTranslations called with:', { where, lang });
 
   const whereConditions = Object.entries(where)
     .map(([key, value]) => {
@@ -175,32 +153,12 @@ async function getCMSBlocksWithTranslations(where = {}, lang = 'en') {
     ORDER BY b.sort_order ASC, b.created_at DESC
   `;
 
-  console.log('📋 [CMS Helper] Executing SQL with lang:', lang);
-
   const results = await sequelize.query(query, {
     replacements: { lang },
     type: sequelize.QueryTypes.SELECT
   });
 
-  console.log(`📦 [CMS Helper] Query returned ${results.length} blocks`);
-
-  if (results.length > 0) {
-    console.log('📝 [CMS Helper] First block debug:', {
-      identifier: results[0].identifier,
-      bt_title: results[0].bt_title,
-      bt_en_title: results[0].bt_en_title,
-      final_title: results[0].title,
-      has_bt_content: !!results[0].bt_content,
-      has_bt_en_content: !!results[0].bt_en_content,
-      has_final_content: !!results[0].content,
-      lang: lang
-    });
-  }
-
-  // Remove debug fields before returning
-  const cleanResults = results.map(({ bt_title, bt_en_title, bt_content, bt_en_content, ...rest }) => rest);
-
-  return cleanResults;
+  return results;
 }
 
 /**
