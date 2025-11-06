@@ -176,16 +176,18 @@ export default function PdfTemplateTranslationRow({ template, onUpdate, selected
                           <TooltipProvider>
                             <Tooltip>
                               <TooltipTrigger asChild>
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  onClick={() => handleAITranslate(field.key, 'en', lang.code)}
-                                  disabled={translating[`${field.key}-${lang.code}`] || (userCredits !== null && userCredits < translationCost)}
-                                  className="h-6 px-2 text-xs"
-                                >
-                                  <Wand2 className={`w-3 h-3 mr-1 ${translating[`${field.key}-${lang.code}`] ? 'animate-spin' : ''}`} />
-                                  AI Translate
-                                </Button>
+                                <span className="inline-block">
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => handleAITranslate(field.key, 'en', lang.code)}
+                                    disabled={translating[`${field.key}-${lang.code}`] || (userCredits !== null && userCredits < translationCost)}
+                                    className="h-6 px-2 text-xs"
+                                  >
+                                    <Wand2 className={`w-3 h-3 mr-1 ${translating[`${field.key}-${lang.code}`] ? 'animate-spin' : ''}`} />
+                                    AI Translate
+                                  </Button>
+                                </span>
                               </TooltipTrigger>
                               <TooltipContent>
                                 {userCredits !== null && userCredits < translationCost ? (

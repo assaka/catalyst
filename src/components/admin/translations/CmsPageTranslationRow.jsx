@@ -199,16 +199,18 @@ export default function CmsPageTranslationRow({ page, onUpdate, selectedLanguage
                         <TooltipProvider>
                           <Tooltip>
                             <TooltipTrigger asChild>
-                              <Button
-                                type="button"
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => handleAITranslate(field.key, 'en', lang.code)}
-                                disabled={translating[translatingKey] || !translations.en?.[field.key] || (userCredits !== null && userCredits < translationCost)}
-                                className="flex-shrink-0"
-                              >
-                                <Wand2 className={`w-4 h-4 ${translating[translatingKey] ? 'animate-spin' : ''}`} />
-                              </Button>
+                              <span className="inline-block">
+                                <Button
+                                  type="button"
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => handleAITranslate(field.key, 'en', lang.code)}
+                                  disabled={translating[translatingKey] || !translations.en?.[field.key] || (userCredits !== null && userCredits < translationCost)}
+                                  className="flex-shrink-0"
+                                >
+                                  <Wand2 className={`w-4 h-4 ${translating[translatingKey] ? 'animate-spin' : ''}`} />
+                                </Button>
+                              </span>
                             </TooltipTrigger>
                             <TooltipContent>
                               {userCredits !== null && userCredits < translationCost ? (

@@ -2927,6 +2927,7 @@ export default function Translations() {
         entityType={selectedEntityType || "UI labels"}
         entityName={selectedEntityName || "UI Labels"}
         itemCount={selectedEntityItemCount}
+        userCredits={userCredits}
         onTranslate={selectedEntityType ? handleEntityTranslate : handleBulkTranslate}
         onComplete={() => {
           // Reload the appropriate data based on entity type
@@ -2965,6 +2966,7 @@ export default function Translations() {
         entityStats={entityStats}
         onTranslate={handleMultiEntityTranslate}
         availableLanguages={availableLanguages || []}
+        userCredits={userCredits}
       />
 
       {/* Translation Wizard */}
@@ -2976,6 +2978,7 @@ export default function Translations() {
           loadEntityStats();
         }}
         storeId={getSelectedStoreId()}
+        userCredits={userCredits}
       />
 
       {/* Delete Confirmation Dialog */}
