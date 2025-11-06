@@ -90,22 +90,67 @@ router.get('/', async (req, res) => {
     let cart = await Cart.findOne({ where: whereClause });
 
     // If no cart found but both session_id and user_id were provided,
-    // try finding by either field (for cases where cart was created with one but accessed with both)
+    // handle cart merging for logged-in users
     if (!cart && session_id && user_id) {
       const { Op } = require('sequelize');
-      const fallbackWhere = {
+
+      // Look for both guest cart (by session_id) and user cart (by user_id)
+      const bothWhere = {
         [Op.or]: [
           { session_id: session_id },
           { user_id: user_id }
         ]
       };
 
-      // Still filter by store_id in fallback query
       if (store_id) {
-        fallbackWhere.store_id = store_id;
+        bothWhere.store_id = store_id;
       }
 
-      cart = await Cart.findOne({ where: fallbackWhere });
+      const allCarts = await Cart.findAll({ where: bothWhere });
+      const guestCart = allCarts.find(c => c.session_id === session_id && !c.user_id);
+      const userCart = allCarts.find(c => c.user_id === user_id);
+
+      if (guestCart && userCart) {
+        // Both carts exist - merge guest cart items into user cart
+        const guestItems = Array.isArray(guestCart.items) ? guestCart.items : [];
+        const userItems = Array.isArray(userCart.items) ? userCart.items : [];
+
+        // Merge items - add guest items to user cart (avoiding duplicates based on product_id and options)
+        for (const guestItem of guestItems) {
+          const existingIndex = userItems.findIndex(item =>
+            item.product_id === guestItem.product_id &&
+            JSON.stringify(item.selected_options) === JSON.stringify(guestItem.selected_options)
+          );
+
+          if (existingIndex >= 0) {
+            // Item exists, increase quantity
+            userItems[existingIndex].quantity += guestItem.quantity;
+          } else {
+            // New item, add to cart
+            userItems.push(guestItem);
+          }
+        }
+
+        // Update user cart with merged items
+        userCart.items = userItems;
+        userCart.changed('items', true);
+        await userCart.save();
+
+        // Delete guest cart as it's now merged
+        await guestCart.destroy();
+
+        console.log(`🔄 Cart merged: ${guestItems.length} items from guest cart merged into user cart`);
+        cart = userCart;
+      } else if (guestCart && !userCart) {
+        // Only guest cart exists - associate it with the user
+        guestCart.user_id = user_id;
+        await guestCart.save();
+        console.log(`🔄 Cart merged: session_id ${session_id} now associated with user_id ${user_id}`);
+        cart = guestCart;
+      } else if (userCart) {
+        // Only user cart exists - use it
+        cart = userCart;
+      }
     }
 
     if (!cart) {

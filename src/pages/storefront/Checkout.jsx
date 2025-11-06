@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { createPageUrl } from "@/utils";
+import { createPageUrl, createPublicUrl } from "@/utils";
 import { StorefrontProduct, CustomerAddress } from "@/api/storefront-entities";
 import { User } from "@/api/entities";
 import cartService from "@/services/cartService";
@@ -1241,7 +1241,7 @@ export default function Checkout() {
       <div className="max-w-4xl mx-auto px-4 py-8 text-center">
         <h1 className="text-2xl font-bold text-gray-900 mb-4">{t('common.cart_empty', 'Your cart is empty')}</h1>
         <p className="text-gray-600 mb-6">{t('common.add_products_checkout', 'Add products before checkout')}</p>
-        <Button onClick={() => navigate(createPageUrl('Storefront'))}>
+        <Button onClick={() => navigate(createPublicUrl(store?.slug || 'store', 'STOREFRONT'))}>
           {t('common.continue_shopping', 'Continue Shopping')}
         </Button>
       </div>
