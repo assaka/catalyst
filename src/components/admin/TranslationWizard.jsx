@@ -247,6 +247,62 @@ export default function TranslationWizard({ isOpen, onClose, storeId }) {
                     <div className="text-sm text-gray-600">Pages & blocks</div>
                   </button>
 
+                  {/* Email Templates */}
+                  <button
+                    onClick={() => setConfig({ ...config, whatToTranslate: 'email-template' })}
+                    className={`p-4 border-2 rounded-lg text-left transition-all ${
+                      config.whatToTranslate === 'email-template'
+                        ? 'border-blue-600 bg-blue-50'
+                        : 'border-gray-200 hover:border-blue-300'
+                    }`}
+                  >
+                    <div className="text-3xl mb-2">📧</div>
+                    <div className="font-semibold">Email Templates</div>
+                    <div className="text-sm text-gray-600">Email content & subjects</div>
+                  </button>
+
+                  {/* PDF Templates */}
+                  <button
+                    onClick={() => setConfig({ ...config, whatToTranslate: 'pdf-template' })}
+                    className={`p-4 border-2 rounded-lg text-left transition-all ${
+                      config.whatToTranslate === 'pdf-template'
+                        ? 'border-blue-600 bg-blue-50'
+                        : 'border-gray-200 hover:border-blue-300'
+                    }`}
+                  >
+                    <div className="text-3xl mb-2">📑</div>
+                    <div className="font-semibold">PDF Templates</div>
+                    <div className="text-sm text-gray-600">PDF content & labels</div>
+                  </button>
+
+                  {/* Custom Options */}
+                  <button
+                    onClick={() => setConfig({ ...config, whatToTranslate: 'custom-option' })}
+                    className={`p-4 border-2 rounded-lg text-left transition-all ${
+                      config.whatToTranslate === 'custom-option'
+                        ? 'border-blue-600 bg-blue-50'
+                        : 'border-gray-200 hover:border-blue-300'
+                    }`}
+                  >
+                    <div className="text-3xl mb-2">⚙️</div>
+                    <div className="font-semibold">Custom Options</div>
+                    <div className="text-sm text-gray-600">Product custom options</div>
+                  </button>
+
+                  {/* Stock Labels */}
+                  <button
+                    onClick={() => setConfig({ ...config, whatToTranslate: 'stock-label' })}
+                    className={`p-4 border-2 rounded-lg text-left transition-all ${
+                      config.whatToTranslate === 'stock-label'
+                        ? 'border-blue-600 bg-blue-50'
+                        : 'border-gray-200 hover:border-blue-300'
+                    }`}
+                  >
+                    <div className="text-3xl mb-2">🏷️</div>
+                    <div className="font-semibold">Stock Labels</div>
+                    <div className="text-sm text-gray-600">Stock status labels</div>
+                  </button>
+
                   {/* Single Field */}
                   <button
                     onClick={() => setConfig({ ...config, whatToTranslate: 'single-field' })}
