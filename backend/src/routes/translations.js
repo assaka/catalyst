@@ -1170,6 +1170,37 @@ router.post('/bulk-translate-entities', authMiddleware, async (req, res) => {
       stock_labels: { name: 'Stock Labels', special: true, storeSettings: true }
     };
 
+    // Pre-calculate estimated cost and check credits BEFORE translating
+    let estimatedCost = 0;
+    const entityCounts = {};
+
+    for (const entityType of entity_types) {
+      const entityConfig = entityTypeMap[entityType];
+      if (!entityConfig || entityConfig.special) continue;
+
+      try {
+        const count = await entityConfig.model.count({ where: { store_id } });
+        entityCounts[entityType] = count;
+        const costPerItem = await translationService.getTranslationCost(entityType);
+        estimatedCost += count * costPerItem;
+      } catch (error) {
+        console.error(`Error counting ${entityType}:`, error);
+      }
+    }
+
+    // Check if user has enough credits
+    const hasCredits = await creditService.hasEnoughCredits(userId, store_id, estimatedCost);
+    if (!hasCredits) {
+      const balance = await creditService.getBalance(userId);
+      return res.status(402).json({
+        success: false,
+        code: 'INSUFFICIENT_CREDITS',
+        message: `Insufficient credits. Required: ${estimatedCost.toFixed(2)}, Available: ${balance.toFixed(2)}`,
+        required: estimatedCost,
+        available: balance
+      });
+    }
+
     const allResults = {
       total: 0,
       translated: 0,
@@ -1295,7 +1326,7 @@ router.post('/bulk-translate-entities', authMiddleware, async (req, res) => {
       }
 
       try {
-        await creditService.deduct(
+        const deductionResult = await creditService.deduct(
           userId,
           store_id,
           actualCost,
@@ -1315,10 +1346,20 @@ router.post('/bulk-translate-entities', authMiddleware, async (req, res) => {
           'ai_translation'
         );
         console.log(`✅ Deducted ${actualCost} credits for ${allResults.total} items (${allResults.translated} translated, ${allResults.skipped} skipped)`);
+        console.log(`💰 Deduction result:`, deductionResult);
       } catch (deductError) {
-        console.error('Failed to deduct credits:', deductError);
+        console.error('❌ CREDIT DEDUCTION FAILED:', deductError);
+        console.error('❌ Error details:', {
+          message: deductError.message,
+          stack: deductError.stack,
+          userId,
+          storeId: store_id,
+          amount: actualCost
+        });
         // Don't fail the entire operation if credit deduction fails
         // The translations were already done
+        // But set actualCost to 0 so frontend doesn't show false info
+        actualCost = 0;
       }
     }
 
@@ -1824,9 +1865,18 @@ router.post('/wizard-execute', authMiddleware, async (req, res) => {
         );
         console.log(`✅ Deducted ${actualCost} credits for ${results.total} items (${results.translated} translated, ${results.skipped} skipped)`);
       } catch (deductError) {
-        console.error('Failed to deduct credits:', deductError);
+        console.error('❌ CREDIT DEDUCTION FAILED (wizard-execute):', deductError);
+        console.error('❌ Error details:', {
+          message: deductError.message,
+          stack: deductError.stack,
+          userId,
+          storeId,
+          amount: actualCost
+        });
         // Don't fail the entire operation if credit deduction fails
         // The translations were already done
+        // But set actualCost to 0 so frontend doesn't show false info
+        actualCost = 0;
       }
     }
 
