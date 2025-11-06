@@ -4,6 +4,7 @@ const { PdfTemplate, PdfTemplateTranslation, Store } = require('../models');
 const { authMiddleware } = require('../middleware/auth');
 const { checkStoreOwnership } = require('../middleware/storeAuth');
 const translationService = require('../services/translation-service');
+const creditService = require('../services/credit-service');
 
 const router = express.Router();
 
@@ -371,6 +372,41 @@ router.post('/bulk-translate', [
 
     console.log(`📊 Bulk translate complete: ${translated} translated, ${skipped} skipped, ${failed} failed`);
 
+    // Deduct credits for ALL templates (including skipped)
+    const totalItems = templates.length;
+    let actualCost = 0;
+
+    if (totalItems > 0) {
+      const costPerItem = await translationService.getTranslationCost('pdf-template');
+      actualCost = totalItems * costPerItem;
+
+      console.log(`💰 PDF template bulk translate - charging for ${totalItems} items × ${costPerItem} credits = ${actualCost} credits`);
+
+      try {
+        await creditService.deduct(
+          req.user.id,
+          store_id,
+          actualCost,
+          `Bulk PDF Template Translation (${fromLang} → ${toLang})`,
+          {
+            fromLang,
+            toLang,
+            totalItems,
+            translated,
+            skipped,
+            failed,
+            note: 'Charged for all items including skipped'
+          },
+          null,
+          'ai_translation'
+        );
+        console.log(`✅ Deducted ${actualCost} credits for ${totalItems} PDF templates`);
+      } catch (deductError) {
+        console.error('❌ CREDIT DEDUCTION FAILED (pdf-templates/bulk-translate):', deductError);
+        actualCost = 0; // Don't show false info in frontend
+      }
+    }
+
     res.json({
       success: true,
       data: {
@@ -378,7 +414,8 @@ router.post('/bulk-translate', [
         skipped,
         failed,
         errors: errors_list
-      }
+      },
+      creditsDeducted: actualCost
     });
   } catch (error) {
     console.error('Bulk translate error:', error);
