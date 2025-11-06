@@ -38,7 +38,8 @@ export default function BulkTranslateDialog({
   entityName = 'Items',
   onTranslate,
   onComplete,
-  itemCount = 0
+  itemCount = 0,
+  userCredits = null
 }) {
   const { availableLanguages } = useTranslation();
   const [translateFromLang, setTranslateFromLang] = useState('en');
@@ -272,6 +273,26 @@ export default function BulkTranslateDialog({
             </div>
           )}
 
+          {/* Credit Balance Warning */}
+          {translateToLangs.length > 0 && itemCount > 0 && userCredits !== null && (
+            <div className={`p-3 rounded-lg border ${
+              userCredits < (itemCount * translateToLangs.length * translationCost)
+                ? 'bg-red-50 border-red-200'
+                : 'bg-green-50 border-green-200'
+            }`}>
+              <div className="flex items-center justify-between text-sm">
+                <span className={userCredits < (itemCount * translateToLangs.length * translationCost) ? 'text-red-800' : 'text-green-800'}>
+                  Your balance: {userCredits.toFixed(2)} credits
+                </span>
+                {userCredits < (itemCount * translateToLangs.length * translationCost) && (
+                  <span className="text-red-600 font-medium text-xs">
+                    ⚠️ Insufficient credits
+                  </span>
+                )}
+              </div>
+            </div>
+          )}
+
           <div className="flex justify-end gap-2 pt-4">
             <Button
               type="button"
@@ -287,7 +308,7 @@ export default function BulkTranslateDialog({
             <Button
               type="button"
               onClick={handleTranslate}
-              disabled={isTranslating || !translateFromLang || translateToLangs.length === 0}
+              disabled={isTranslating || !translateFromLang || translateToLangs.length === 0 || (userCredits !== null && userCredits < (itemCount * translateToLangs.length * translationCost))}
               className="bg-blue-600 hover:bg-blue-700"
             >
               {isTranslating ? (

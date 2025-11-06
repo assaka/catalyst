@@ -13,7 +13,7 @@ import { toast } from 'sonner';
  * - Preview before translating
  * - Progress tracking
  */
-export default function TranslationWizard({ isOpen, onClose, storeId }) {
+export default function TranslationWizard({ isOpen, onClose, storeId, userCredits = null }) {
   const [step, setStep] = useState(1);
   const [loading, setLoading] = useState(false);
   const [loadingCosts, setLoadingCosts] = useState(true);
@@ -677,6 +677,26 @@ export default function TranslationWizard({ isOpen, onClose, storeId }) {
                     </div>
                   </div>
                 )}
+
+                {/* Credit Balance Warning */}
+                {userCredits !== null && stats.toTranslate > 0 && (
+                  <div className={`mt-2 p-3 rounded-lg border ${
+                    userCredits < calculateEstimatedCost()
+                      ? 'bg-red-50 border-red-200'
+                      : 'bg-green-50 border-green-200'
+                  }`}>
+                    <div className="flex items-center justify-between text-sm">
+                      <span className={userCredits < calculateEstimatedCost() ? 'text-red-800' : 'text-green-800'}>
+                        Your balance: {userCredits.toFixed(2)} credits
+                      </span>
+                      {userCredits < calculateEstimatedCost() && (
+                        <span className="text-red-600 font-medium text-xs">
+                          ⚠️ Insufficient credits
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                )}
               </div>
 
               <div className="flex justify-between">
@@ -689,7 +709,7 @@ export default function TranslationWizard({ isOpen, onClose, storeId }) {
                 </Button>
                 <Button
                   onClick={executeTranslation}
-                  disabled={loading || stats.toTranslate === 0}
+                  disabled={loading || stats.toTranslate === 0 || (userCredits !== null && userCredits < calculateEstimatedCost())}
                   className="flex items-center gap-2 bg-green-600 hover:bg-green-700"
                 >
                   {loading ? (

@@ -13,7 +13,7 @@ import api from '@/utils/api';
 /**
  * Accordion row for managing email template translations
  */
-export default function EmailTemplateTranslationRow({ template, onUpdate, selectedLanguages, onFlashMessage, storeId, userCredits, translationCost }) {
+export default function EmailTemplateTranslationRow({ template, onUpdate, selectedLanguages, onFlashMessage, storeId, userCredits, translationCost, onCreditsDeducted }) {
   const { availableLanguages } = useTranslation();
   const [isExpanded, setIsExpanded] = useState(false);
   const [translations, setTranslations] = useState(template.translations || {});
@@ -111,6 +111,12 @@ export default function EmailTemplateTranslationRow({ template, onUpdate, select
       if (response && response.success && response.data) {
         handleTranslationChange(toLang, field, response.data.translated);
         toast.success(`${field} translated to ${toLang.toUpperCase()}`);
+
+        // Update credits in sidebar and local state
+        if (response.creditsDeducted && onCreditsDeducted) {
+          onCreditsDeducted(response.creditsDeducted);
+        }
+        window.dispatchEvent(new CustomEvent('creditsUpdated'));
       }
     } catch (error) {
       console.error('AI translate error:', error);
@@ -182,16 +188,18 @@ export default function EmailTemplateTranslationRow({ template, onUpdate, select
                           <TooltipProvider>
                             <Tooltip>
                               <TooltipTrigger asChild>
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  onClick={() => handleAITranslate(field.key, 'en', lang.code)}
-                                  disabled={translating[`${field.key}-${lang.code}`] || (userCredits !== null && userCredits < translationCost)}
-                                  className="h-6 px-2 text-xs"
-                                >
-                                  <Wand2 className={`w-3 h-3 mr-1 ${translating[`${field.key}-${lang.code}`] ? 'animate-spin' : ''}`} />
-                                  AI Translate
-                                </Button>
+                                <span className="inline-block">
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => handleAITranslate(field.key, 'en', lang.code)}
+                                    disabled={translating[`${field.key}-${lang.code}`] || (userCredits !== null && userCredits < translationCost)}
+                                    className="h-6 px-2 text-xs"
+                                  >
+                                    <Wand2 className={`w-3 h-3 mr-1 ${translating[`${field.key}-${lang.code}`] ? 'animate-spin' : ''}`} />
+                                    AI Translate
+                                  </Button>
+                                </span>
                               </TooltipTrigger>
                               <TooltipContent>
                                 {userCredits !== null && userCredits < translationCost ? (

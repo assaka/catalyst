@@ -12,58 +12,65 @@ export default function MultiEntityTranslateDialog({
   onOpenChange,
   entityStats = [],
   onTranslate,
-  availableLanguages = []
+  availableLanguages = [],
+  userCredits = null
 }) {
   const [selectedEntities, setSelectedEntities] = useState([]);
   const [translateFromLang, setTranslateFromLang] = useState('en');
   const [translateToLangs, setTranslateToLangs] = useState([]);
   const [translating, setTranslating] = useState(false);
   const [results, setResults] = useState(null);
-  const [serviceCosts, setServiceCosts] = useState({
-    standard: 0.1,
-    cms_page: 0.5,
-    cms_block: 0.2
-  });
+  const [serviceCosts, setServiceCosts] = useState({});
 
-  // Get flat-rate cost based on entity type
+  // Get cost based on entity type
   const getEntityCost = (entityType) => {
-    const entityCosts = {
-      'product': serviceCosts.standard,
-      'category': serviceCosts.standard,
-      'attribute': serviceCosts.standard,
-      'cms_page': serviceCosts.cms_page,
-      'cms_block': serviceCosts.cms_block,
-      'product_tab': serviceCosts.standard,
-      'product_label': serviceCosts.standard,
-      'cookie_consent': serviceCosts.standard,
-      'stock_labels': serviceCosts.standard,
-      'email-template': serviceCosts.standard,
-      'pdf-template': serviceCosts.standard,
-      'custom-option': serviceCosts.standard,
-      'stock-label': serviceCosts.standard
-    };
-
-    return entityCosts[entityType] || serviceCosts.standard;
+    return serviceCosts[entityType] || 0.1;
   };
 
   // Load translation costs from API
   useEffect(() => {
     const loadTranslationCosts = async () => {
       try {
-        const [standardRes, pageRes, blockRes] = await Promise.all([
-          api.get('service-credit-costs/key/ai_translation'),
-          api.get('service-credit-costs/key/ai_translation_cms_page'),
-          api.get('service-credit-costs/key/ai_translation_cms_block')
-        ]);
+        const response = await api.get('service-credit-costs?category=ai_services&active_only=true');
 
-        setServiceCosts({
-          standard: standardRes.success ? standardRes.service.cost_per_unit : 0.1,
-          cms_page: pageRes.success ? pageRes.service.cost_per_unit : 0.5,
-          cms_block: blockRes.success ? blockRes.service.cost_per_unit : 0.2
-        });
+        if (response && response.success && response.services) {
+          // Create a map of entity types to costs
+          const costsMap = {};
+          response.services.forEach(service => {
+            // Map service keys to entity types
+            const keyToEntityMap = {
+              'ai_translation': 'standard',
+              'ai_translation_product': 'product',
+              'ai_translation_category': 'category',
+              'ai_translation_attribute': 'attribute',
+              'ai_translation_cms_page': 'cms_page',
+              'ai_translation_cms_block': 'cms_block',
+              'ai_translation_product_tab': 'product_tab',
+              'ai_translation_product_label': 'product_label',
+              'ai_translation_cookie_consent': 'cookie_consent',
+              'ai_translation_attribute_value': 'attribute_value',
+              'ai_translation_email_template': 'email-template',
+              'ai_translation_pdf_template': 'pdf-template',
+              'ai_translation_custom_option': 'custom_option',
+              'ai_translation_stock_label': 'stock_labels'
+            };
+
+            const entityType = keyToEntityMap[service.service_key];
+            if (entityType) {
+              costsMap[entityType] = service.cost_per_unit;
+            }
+          });
+
+          setServiceCosts(costsMap);
+        }
       } catch (error) {
         console.error('Error loading translation costs:', error);
-        // Keep using default fallback values
+        // Use fallback values
+        setServiceCosts({
+          standard: 0.1,
+          cms_page: 0.5,
+          cms_block: 0.2
+        });
       }
     };
 
@@ -380,8 +387,27 @@ export default function MultiEntityTranslateDialog({
                         {totalItems} items × {translateToLangs.length} lang(s)
                       </span>
                       <span className="text-xs text-green-600">
-                        Rates: CMS pages 0.5 • CMS blocks 0.2 • Others 0.1 credits
+                        Rates: CMS pages {serviceCosts['cms_page'] || 0.5} • CMS blocks {serviceCosts['cms_block'] || 0.2} • Others {serviceCosts['standard'] || 0.1} credits
                       </span>
+                      {/* Credit Balance Warning */}
+                      {userCredits !== null && totalEstimatedCost > 0 && (
+                        <div className={`mt-2 p-3 rounded-lg border ${
+                          userCredits < totalEstimatedCost
+                            ? 'bg-red-50 border-red-200'
+                            : 'bg-green-50 border-green-200'
+                        }`}>
+                          <div className="flex items-center justify-between text-sm">
+                            <span className={userCredits < totalEstimatedCost ? 'text-red-800' : 'text-green-800'}>
+                              Your balance: {userCredits.toFixed(2)} credits
+                            </span>
+                            {userCredits < totalEstimatedCost && (
+                              <span className="text-red-600 font-medium text-xs">
+                                ⚠️ Insufficient credits
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      )}
                     </div>
                   ) : null;
                 })()}
@@ -399,7 +425,15 @@ export default function MultiEntityTranslateDialog({
             {!results && (
               <button
                 onClick={handleTranslate}
-                disabled={translating || selectedEntities.length === 0 || translateToLangs.length === 0}
+                disabled={translating || selectedEntities.length === 0 || translateToLangs.length === 0 || (userCredits !== null && (() => {
+                  const selectedStats = entityStats.filter(stat => selectedEntities.includes(stat.type));
+                  let totalEstimatedCost = 0;
+                  selectedStats.forEach(stat => {
+                    const itemCost = getEntityCost(stat.type);
+                    totalEstimatedCost += stat.totalItems * translateToLangs.length * itemCost;
+                  });
+                  return userCredits < totalEstimatedCost;
+                })())}
                 className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 flex items-center gap-2"
               >
                 {translating ? (
