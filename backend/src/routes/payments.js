@@ -1466,23 +1466,28 @@ router.post('/webhook', async (req, res) => {
                   // Check if PDF attachment should be included
                   let attachments = [];
                   if (salesSettings.auto_invoice_pdf_enabled) {
-                    console.log('📄 Generating PDF invoice...');
-                    const pdfService = require('../services/pdf-service');
+                    try {
+                      console.log('📄 Generating PDF invoice...');
+                      const pdfService = require('../services/pdf-service');
 
-                    // Generate invoice PDF
-                    const invoicePdf = await pdfService.generateInvoicePDF(
-                      orderWithDetails,
-                      orderWithDetails.Store,
-                      orderWithDetails.OrderItems
-                    );
+                      // Generate invoice PDF
+                      const invoicePdf = await pdfService.generateInvoicePDF(
+                        orderWithDetails,
+                        orderWithDetails.Store,
+                        orderWithDetails.OrderItems
+                      );
 
-                    attachments = [{
-                      filename: pdfService.getInvoiceFilename(orderWithDetails),
-                      content: invoicePdf.toString('base64'),
-                      contentType: 'application/pdf'
-                    }];
+                      attachments = [{
+                        filename: pdfService.getInvoiceFilename(orderWithDetails),
+                        content: invoicePdf.toString('base64'),
+                        contentType: 'application/pdf'
+                      }];
 
-                    console.log('✅ PDF invoice generated successfully');
+                      console.log('✅ PDF invoice generated successfully');
+                    } catch (pdfError) {
+                      console.error('⚠️ PDF generation failed, sending invoice email without PDF:', pdfError.message);
+                      // Continue without PDF attachment - email is more important
+                    }
                   } else {
                     console.log('ℹ️ PDF generation skipped (auto_invoice_pdf_enabled = false)');
                   }
@@ -1961,19 +1966,25 @@ router.post('/webhook-connect', async (req, res) => {
 
                 let attachments = [];
                 if (salesSettings.auto_invoice_pdf_enabled) {
-                  console.log('📄 Generating PDF invoice...');
-                  const pdfService = require('../services/pdf-service');
-                  const invoicePdf = await pdfService.generateInvoicePDF(
-                    orderWithDetails,
-                    orderWithDetails.Store,
-                    orderWithDetails.OrderItems
-                  );
+                  try {
+                    console.log('📄 Generating PDF invoice...');
+                    const pdfService = require('../services/pdf-service');
+                    const invoicePdf = await pdfService.generateInvoicePDF(
+                      orderWithDetails,
+                      orderWithDetails.Store,
+                      orderWithDetails.OrderItems
+                    );
 
-                  attachments = [{
-                    filename: pdfService.getInvoiceFilename(orderWithDetails),
-                    content: invoicePdf.toString('base64'),
-                    contentType: 'application/pdf'
-                  }];
+                    attachments = [{
+                      filename: pdfService.getInvoiceFilename(orderWithDetails),
+                      content: invoicePdf.toString('base64'),
+                      contentType: 'application/pdf'
+                    }];
+                    console.log('✅ PDF invoice generated successfully');
+                  } catch (pdfError) {
+                    console.error('⚠️ PDF generation failed, sending invoice email without PDF:', pdfError.message);
+                    // Continue without PDF attachment - email is more important
+                  }
                 }
 
                 await emailService.sendTransactionalEmail(finalOrder.store_id, 'invoice_email', {
