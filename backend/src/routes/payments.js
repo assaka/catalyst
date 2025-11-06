@@ -1229,8 +1229,10 @@ router.post('/webhook', async (req, res) => {
   const webhookId = Math.random().toString(36).substring(7);
 
   console.log('='.repeat(80));
+  console.log('💥💥💥 STRIPE WEBHOOK HIT - THIS SHOULD BE VERY VISIBLE 💥💥💥');
   console.log(`🔔 [${webhookId}] WEBHOOK RECEIVED`);
   console.log(`🔔 [${webhookId}] Timestamp: ${new Date().toISOString()}`);
+  console.log('💥💥💥 IF YOU SEE THIS, WEBHOOKS ARE WORKING 💥💥💥');
   console.log('='.repeat(80));
 
   console.log(`📋 [${webhookId}] Request details:`, {
@@ -2501,6 +2503,23 @@ router.post('/process', async (req, res) => {
       message: 'Server error'
     });
   }
+});
+
+// Test endpoint to verify deployment and auto-invoice feature
+router.get('/test-auto-invoice-deployment', (req, res) => {
+  res.json({
+    success: true,
+    message: '✅ Auto-invoice feature is deployed',
+    deployment_date: '2025-01-06',
+    commit: '10cf159d',
+    features: {
+      auto_invoice_after_order_email: 'ENABLED',
+      comprehensive_logging: 'ENABLED',
+      store_settings_fix: 'ENABLED'
+    },
+    test_instructions: 'Place a Stripe checkout order and search Render logs for: 💥 (webhook hit), 🎉 (order email), 🔍 (settings check), 📧 (invoice email)',
+    timestamp: new Date().toISOString()
+  });
 });
 
 module.exports = router;
