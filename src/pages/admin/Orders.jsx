@@ -308,16 +308,18 @@ export default function Orders() {
   };
 
   const getInvoiceButtonText = (order) => {
-    // Always show the invoice button
-    // The button text changes based on whether an invoice was already sent
-    // This will be enhanced later to check if invoice exists in sales_invoices table
+    // If order is processing or later, invoice was already sent
+    if (order.status === 'processing' || order.status === 'shipped' || order.status === 'delivered') {
+      return 'Resend Invoice';
+    }
     return 'Send Invoice';
   };
 
   const getShipmentButtonText = (order) => {
-    // Always show the shipment button
-    // The button text changes based on whether a shipment was already sent
-    // This will be enhanced later to check if shipment exists in sales_shipments table
+    // If order is shipped or delivered, shipment was already sent
+    if (order.status === 'shipped' || order.status === 'delivered') {
+      return 'Resend Shipment';
+    }
     return 'Send Shipment';
   };
 

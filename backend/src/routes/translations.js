@@ -1,7 +1,7 @@
 const express = require('express');
 const { Op } = require('sequelize');
 const { sequelize } = require('../database/connection');
-const { Translation, Language, Product, Category, CmsPage, CmsBlock, ProductTab, ProductLabel, CookieConsentSettings, Attribute, AttributeValue, Store } = require('../models');
+const { Translation, Language, Product, Category, CmsPage, CmsBlock, ProductTab, ProductLabel, CookieConsentSettings, Attribute, AttributeValue, Store, EmailTemplate, PdfTemplate } = require('../models');
 const { authMiddleware } = require('../middleware/auth');
 const translationService = require('../services/translation-service');
 const creditService = require('../services/credit-service');
@@ -1315,7 +1315,11 @@ router.post('/preview', authMiddleware, async (req, res) => {
       cms_block: { model: CmsBlock, name: 'CMS Blocks', icon: '📝' },
       product_tab: { model: ProductTab, name: 'Product Tabs', icon: '📑' },
       product_label: { model: ProductLabel, name: 'Product Labels', icon: '🏷️' },
-      cookie_consent: { model: CookieConsentSettings, name: 'Cookie Consent', icon: '🍪' }
+      cookie_consent: { model: CookieConsentSettings, name: 'Cookie Consent', icon: '🍪' },
+      'email-template': { model: EmailTemplate, name: 'Email Templates', icon: '📧' },
+      'pdf-template': { model: PdfTemplate, name: 'PDF Templates', icon: '📑' },
+      'custom-option': { name: 'Custom Options', icon: '⚙️', special: true },
+      'stock-label': { name: 'Stock Labels', icon: '🏷️', special: true }
     };
 
     const stats = {
@@ -1386,6 +1390,8 @@ router.post('/preview', authMiddleware, async (req, res) => {
         const whereClause = store_id ? { store_id } : {};
 
         let entityCount;
+
+        // Handle special entity types
         if (entityType === 'attribute_value') {
           if (!store_id) continue;
           const attributes = await Attribute.findAll({
@@ -1396,6 +1402,22 @@ router.post('/preview', authMiddleware, async (req, res) => {
           entityCount = await AttributeValue.count({
             where: { attribute_id: { [Op.in]: attributeIds } }
           });
+        } else if (entityType === 'custom-option') {
+          if (!store_id) continue;
+          const [customOptions] = await sequelize.query(`
+            SELECT COUNT(*) as count
+            FROM custom_option_rules
+            WHERE store_id = :storeId
+          `, {
+            replacements: { storeId: store_id }
+          });
+          entityCount = parseInt(customOptions[0].count);
+        } else if (entityType === 'stock-label') {
+          // Stock labels is always 1 item (the settings themselves)
+          entityCount = 1;
+        } else if (config.special) {
+          // Skip other special types that don't have a model
+          continue;
         } else {
           entityCount = await config.model.count({
             where: whereClause
@@ -1595,7 +1617,11 @@ router.post('/wizard-execute', authMiddleware, async (req, res) => {
       cms_block: { model: CmsBlock, name: 'CMS Blocks' },
       product_tab: { model: ProductTab, name: 'Product Tabs' },
       product_label: { model: ProductLabel, name: 'Product Labels' },
-      attribute: { model: Attribute, name: 'Attributes' }
+      attribute: { model: Attribute, name: 'Attributes' },
+      'email-template': { model: EmailTemplate, name: 'Email Templates' },
+      'pdf-template': { model: PdfTemplate, name: 'PDF Templates' },
+      'custom-option': { name: 'Custom Options', special: true },
+      'stock-label': { name: 'Stock Labels', special: true }
     };
 
     const entityTypes = what === 'all'
@@ -1613,7 +1639,36 @@ router.post('/wizard-execute', authMiddleware, async (req, res) => {
       const whereClause = store_id ? { store_id } : {};
 
       try {
-        const entities = await config.model.findAll({ where: whereClause });
+        let entities;
+
+        // Handle special entity types
+        if (entityType === 'custom-option') {
+          if (!store_id) continue;
+          const [customOptions] = await sequelize.query(`
+            SELECT id, translations
+            FROM custom_option_rules
+            WHERE store_id = :storeId
+          `, {
+            replacements: { storeId: store_id }
+          });
+          entities = customOptions;
+        } else if (entityType === 'stock-label') {
+          if (!store_id) continue;
+          const store = await Store.findByPk(store_id, {
+            attributes: ['id', 'settings']
+          });
+          const stockSettings = store?.settings?.stock_settings || {};
+          // Create a pseudo-entity with translations
+          entities = [{
+            id: 'stock_labels',
+            translations: stockSettings.translations || {}
+          }];
+        } else if (config.special) {
+          // Skip other special types without models
+          continue;
+        } else {
+          entities = await config.model.findAll({ where: whereClause });
+        }
 
         let typeTranslated = 0;
         let typeSkipped = 0;

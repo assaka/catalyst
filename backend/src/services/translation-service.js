@@ -21,7 +21,7 @@
  * See: backend/src/services/aiContextService.js for context fetching
  */
 
-const { Translation, Language, Product, Category, Attribute, CmsPage, CmsBlock } = require('../models');
+const { Translation, Language, Product, Category, Attribute, CmsPage, CmsBlock, EmailTemplate, PdfTemplate } = require('../models');
 const { Op } = require('sequelize');
 const aiContextService = require('./aiContextService');
 const creditService = require('./credit-service');
@@ -471,7 +471,9 @@ class TranslationService {
       category: Category,
       attribute: Attribute,
       cms_page: CmsPage,
-      cms_block: CmsBlock
+      cms_block: CmsBlock,
+      'email-template': EmailTemplate,
+      'pdf-template': PdfTemplate
     };
 
     const Model = models[entityType.toLowerCase()];

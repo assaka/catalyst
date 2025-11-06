@@ -461,8 +461,8 @@ router.post('/:id/test', [
  */
 router.post('/bulk-translate', [
   body('store_id').isUUID().withMessage('Valid store_id is required'),
-  body('from_lang').notEmpty().withMessage('from_lang is required'),
-  body('to_lang').notEmpty().withMessage('to_lang is required')
+  body('fromLang').notEmpty().withMessage('fromLang is required'),
+  body('toLang').notEmpty().withMessage('toLang is required')
 ], async (req, res) => {
   try {
     const errors = validationResult(req);
@@ -473,7 +473,7 @@ router.post('/bulk-translate', [
       });
     }
 
-    const { store_id, from_lang, to_lang } = req.body;
+    const { store_id, fromLang, toLang } = req.body;
 
     // Check store access
     req.params.store_id = store_id;
@@ -500,7 +500,7 @@ router.post('/bulk-translate', [
         const existingTranslation = await EmailTemplateTranslation.findOne({
           where: {
             email_template_id: template.id,
-            language_code: to_lang
+            language_code: toLang
           }
         });
 
@@ -512,8 +512,8 @@ router.post('/bulk-translate', [
         // Translate subject
         const translatedSubject = await translationService.translateText(
           template.subject,
-          from_lang,
-          to_lang
+          fromLang,
+          toLang
         );
 
         // Translate content
@@ -523,23 +523,23 @@ router.post('/bulk-translate', [
         if (template.template_content) {
           translatedTemplateContent = await translationService.translateText(
             template.template_content,
-            from_lang,
-            to_lang
+            fromLang,
+            toLang
           );
         }
 
         if (template.html_content) {
           translatedHtmlContent = await translationService.translateText(
             template.html_content,
-            from_lang,
-            to_lang
+            fromLang,
+            toLang
           );
         }
 
         // Create translation
         await EmailTemplateTranslation.create({
           email_template_id: template.id,
-          language_code: to_lang,
+          language_code: toLang,
           subject: translatedSubject,
           template_content: translatedTemplateContent,
           html_content: translatedHtmlContent
