@@ -1,10 +1,13 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { createPageUrl } from '@/utils';
+import { createPageUrl, createPublicUrl } from '@/utils';
+import { useStore } from '@/components/storefront/StoreProvider';
 import { Button } from '@/components/ui/button';
 import { XCircle } from 'lucide-react';
 
 export default function OrderCancel() {
+    const { store } = useStore();
+
     return (
         <div className="flex flex-col items-center justify-center min-h-[60vh] text-center">
             <XCircle className="w-20 h-20 text-red-500 mb-6" />
@@ -14,10 +17,10 @@ export default function OrderCancel() {
             </p>
             <div className="flex gap-4">
                 <Button asChild>
-                    <Link to={createPageUrl('Cart')}>View Cart</Link>
+                    <Link to={createPublicUrl(store?.slug || 'store', 'CART')}>View Cart</Link>
                 </Button>
                 <Button variant="outline" asChild>
-                    <Link to={createPageUrl('Storefront')}>Continue Shopping</Link>
+                    <Link to={createPublicUrl(store?.slug || 'store', 'STOREFRONT')}>Continue Shopping</Link>
                 </Button>
             </div>
         </div>

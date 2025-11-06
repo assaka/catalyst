@@ -192,16 +192,10 @@ export default function TranslationWizard({ isOpen, onClose, storeId, userCredit
       setStep(4);
       toast.success('Translation completed!');
 
-      // Update credits if any were deducted
+      // Update credits if any were deducted (store for later when wizard closes)
       const creditsDeducted = response.creditsDeducted || data.creditsDeducted || 0;
       if (creditsDeducted > 0) {
         setLocalCredits(prev => Math.max(0, (prev || 0) - creditsDeducted));
-
-        // Update credits in sidebar
-        window.dispatchEvent(new CustomEvent('creditsUpdated'));
-        if (onCreditsUpdate) {
-          onCreditsUpdate();
-        }
       }
     } catch (error) {
       console.error('Error executing translation:', error);
