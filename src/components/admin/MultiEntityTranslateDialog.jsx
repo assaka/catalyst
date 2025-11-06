@@ -151,6 +151,7 @@ export default function MultiEntityTranslateDialog({
         translated: 0,
         skipped: 0,
         failed: 0,
+        creditsDeducted: 0,
         byLanguage: {}
       };
 
@@ -171,6 +172,7 @@ export default function MultiEntityTranslateDialog({
             allResults.translated += response.data.translated || 0;
             allResults.skipped += response.data.skipped || 0;
             allResults.failed += response.data.failed || 0;
+            allResults.creditsDeducted += response.creditsDeducted || 0;
             allResults.byLanguage[toLang] = response.data;
           } else {
             allResults.failed++;
@@ -188,28 +190,21 @@ export default function MultiEntityTranslateDialog({
 
       setResults(allResults);
 
-      if (allResults.failed === 0) {
-        toast.success(`Successfully translated ${allResults.translated} items across ${translateToLangs.length} languages!`);
-      } else {
-        toast.warning(`Translation completed with ${allResults.failed} failures`);
+      // Show appropriate toast based on results
+      if (allResults.translated > 0 && allResults.failed === 0) {
+        toast.success(`Successfully translated ${allResults.translated} items (${allResults.skipped} skipped)`);
+      } else if (allResults.translated > 0 && allResults.failed > 0) {
+        toast.warning(`Translated ${allResults.translated} items (${allResults.skipped} skipped, ${allResults.failed} failed)`);
+      } else if (allResults.skipped > 0 && allResults.translated === 0) {
+        toast.info(`All ${allResults.skipped} items were skipped (already translated)`);
+      } else if (allResults.failed > 0) {
+        toast.error(`Translation failed: ${allResults.failed} items failed`);
       }
 
       // Update credits in sidebar and local state
-      if (allResults.translated > 0) {
-        // Calculate credits deducted based on translated items
-        // Use average cost estimation since we don't have per-entity breakdown
-        const selectedStats = entityStats.filter(stat => selectedEntities.includes(stat.type));
-        let estimatedCreditsUsed = 0;
-        selectedStats.forEach(stat => {
-          const itemCost = getEntityCost(stat.type);
-          // Estimate: assume proportional distribution of translations across entity types
-          const proportion = stat.totalItems / selectedStats.reduce((sum, s) => sum + s.totalItems, 1);
-          const itemsTranslated = Math.round(allResults.translated * proportion);
-          estimatedCreditsUsed += itemsTranslated * itemCost;
-        });
-
-        // Update local credits
-        setLocalCredits(prev => Math.max(0, (prev || 0) - estimatedCreditsUsed));
+      if (allResults.translated > 0 && allResults.creditsDeducted > 0) {
+        // Update local credits with actual deducted amount from backend
+        setLocalCredits(prev => Math.max(0, (prev || 0) - allResults.creditsDeducted));
 
         // Update global credits
         window.dispatchEvent(new CustomEvent('creditsUpdated'));
@@ -357,13 +352,29 @@ export default function MultiEntityTranslateDialog({
               </div>
 
               {/* Credits Used */}
-              {results.translated > 0 && (
+              {results.translated > 0 && results.creditsDeducted > 0 && (
                 <div className="bg-green-50 border border-green-200 rounded-lg p-3">
-                  <div className="flex items-center justify-between text-sm">
+                  <div className="flex items-center justify-between text-sm mb-2">
                     <span className="text-green-800 font-medium">💰 Credits Used:</span>
                     <span className="text-green-900 font-bold">
-                      {results.creditsDeducted ? results.creditsDeducted.toFixed(2) : '0.00'} credits
+                      {results.creditsDeducted.toFixed(2)} credits
                     </span>
+                  </div>
+                  <div className="flex items-center justify-between text-xs">
+                    <span className="text-green-700">New Balance:</span>
+                    <span className="text-green-800 font-medium">
+                      {Number(localCredits).toFixed(2)} credits
+                    </span>
+                  </div>
+                </div>
+              )}
+
+              {/* No Credits Used - All Skipped */}
+              {results.translated === 0 && results.skipped > 0 && (
+                <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+                  <div className="flex items-center gap-2 text-sm text-blue-800">
+                    <AlertCircle className="w-4 h-4" />
+                    <span>No credits used - all items already have translations</span>
                   </div>
                 </div>
               )}
