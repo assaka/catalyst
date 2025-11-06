@@ -1,13 +1,19 @@
 const express = require('express');
 const { CustomerActivity } = require('../models');
 const { Op } = require('sequelize');
+const { analyticsLimiter, publicReadLimiter } = require('../middleware/rateLimiters');
+const { validateRequest, customerActivitySchema } = require('../validation/analyticsSchemas');
+const eventBus = require('../services/analytics/EventBus');
+
+// Initialize handlers
+require('../services/analytics/handlers/CustomerActivityHandler');
 
 const router = express.Router();
 
 // @route   GET /api/customer-activity
 // @desc    Get customer activities
-// @access  Public
-router.get('/', async (req, res) => {
+// @access  Public (Rate Limited)
+router.get('/', publicReadLimiter, async (req, res) => {
   try {
     const { 
       session_id, 
@@ -70,9 +76,9 @@ router.get('/', async (req, res) => {
 });
 
 // @route   POST /api/customer-activity
-// @desc    Log customer activity
-// @access  Public
-router.post('/', async (req, res) => {
+// @desc    Log customer activity (via unified event bus)
+// @access  Public (Rate Limited + Validated)
+router.post('/', analyticsLimiter, validateRequest(customerActivitySchema), async (req, res) => {
   try {
     const {
       session_id,
@@ -86,14 +92,8 @@ router.post('/', async (req, res) => {
       metadata
     } = req.body;
 
-    if (!session_id || !store_id || !activity_type) {
-      return res.status(400).json({
-        success: false,
-        message: 'session_id, store_id, and activity_type are required'
-      });
-    }
-
-    const activity = await CustomerActivity.create({
+    // Publish event to unified event bus
+    const result = await eventBus.publish('customer_activity', {
       session_id,
       store_id,
       user_id,
@@ -105,17 +105,38 @@ router.post('/', async (req, res) => {
       user_agent: req.get('User-Agent'),
       ip_address: req.ip || req.connection.remoteAddress,
       metadata: metadata || {}
+    }, {
+      source: 'api',
+      priority: activity_type === 'order_completed' ? 'high' : 'normal'
     });
+
+    if (!result.success) {
+      throw new Error(result.error);
+    }
 
     res.status(201).json({
       success: true,
-      data: activity
+      data: {
+        event_id: result.eventId,
+        correlation_id: result.correlationId,
+        session_id,
+        activity_type,
+        duplicate: result.duplicate || false
+      }
     });
   } catch (error) {
-    console.error('Log customer activity error:', error);
+    // Log error with context for debugging
+    console.error('[CUSTOMER ACTIVITY ERROR]', {
+      error: error.message,
+      stack: error.stack,
+      ip: req.ip,
+      store_id: req.body?.store_id
+    });
+
     res.status(500).json({
       success: false,
-      message: 'Server error'
+      message: 'Server error while logging activity',
+      error: error.message
     });
   }
 });

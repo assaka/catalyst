@@ -5,9 +5,15 @@ const HeatmapInteraction = require('../models/HeatmapInteraction');
 const HeatmapSession = require('../models/HeatmapSession');
 const { authMiddleware } = require('../middleware/auth');
 const { checkStoreOwnership } = require('../middleware/storeAuth');
+const { heatmapLimiter, publicReadLimiter } = require('../middleware/rateLimiters');
+const { validateRequest, heatmapInteractionSchema, heatmapBatchSchema } = require('../validation/analyticsSchemas');
+const eventBus = require('../services/analytics/EventBus');
 
-// Track individual interaction
-router.post('/track', async (req, res) => {
+// Initialize handlers
+require('../services/analytics/handlers/HeatmapHandler');
+
+// Track individual interaction (Public - Rate Limited + Validated)
+router.post('/track', heatmapLimiter, validateRequest(heatmapInteractionSchema), async (req, res) => {
   try {
     const {
       session_id,
@@ -27,16 +33,15 @@ router.post('/track', async (req, res) => {
       scroll_position,
       scroll_depth_percent,
       time_on_element,
+      user_id,
       metadata = {}
     } = req.body;
 
-    // Get user agent and IP from request
-    const user_agent = req.get('User-Agent');
-    const ip_address = req.ip || req.connection.remoteAddress;
-
-    const result = await heatmapTrackingService.trackInteraction({
+    // Publish event to unified event bus
+    const result = await eventBus.publish('heatmap_interaction', {
       session_id,
       store_id,
+      user_id,
       page_url,
       page_title,
       viewport_width,
@@ -52,42 +57,71 @@ router.post('/track', async (req, res) => {
       scroll_position,
       scroll_depth_percent,
       time_on_element,
-      user_agent,
-      ip_address,
+      user_agent: req.get('User-Agent'),
+      ip_address: req.ip || req.connection.remoteAddress,
       metadata
+    }, {
+      source: 'api',
+      priority: 'low' // Heatmap data is lower priority
     });
 
-    res.json(result);
+    if (!result.success) {
+      throw new Error(result.error);
+    }
+
+    res.json({
+      success: true,
+      event_id: result.eventId,
+      correlation_id: result.correlationId,
+      duplicate: result.duplicate || false
+    });
   } catch (error) {
-    console.error('Error tracking heatmap interaction:', error);
-    res.status(500).json({ success: false, error: error.message });
+    console.error('[HEATMAP ERROR]', {
+      error: error.message,
+      stack: error.stack,
+      ip: req.ip,
+      store_id: req.body?.store_id
+    });
+    res.status(500).json({ success: false, error: 'Server error while tracking interaction' });
   }
 });
 
-// Track batch of interactions
-router.post('/track-batch', async (req, res) => {
+// Track batch of interactions (Public - Rate Limited + Validated)
+router.post('/track-batch', heatmapLimiter, validateRequest(heatmapBatchSchema), async (req, res) => {
   try {
     const { interactions } = req.body;
 
-    if (!Array.isArray(interactions) || interactions.length === 0) {
-      return res.status(400).json({ 
-        success: false, 
-        error: 'Interactions must be a non-empty array' 
-      });
-    }
+    // Publish each interaction to event bus
+    const results = await Promise.all(
+      interactions.map(interaction =>
+        eventBus.publish('heatmap_interaction', {
+          ...interaction,
+          user_agent: req.get('User-Agent'),
+          ip_address: req.ip || req.connection.remoteAddress
+        }, {
+          source: 'api_batch',
+          priority: 'low'
+        })
+      )
+    );
 
-    // Add request metadata to each interaction
-    const enrichedInteractions = interactions.map(interaction => ({
-      ...interaction,
-      user_agent: req.get('User-Agent'),
-      ip_address: req.ip || req.connection.remoteAddress
-    }));
+    const successCount = results.filter(r => r.success).length;
+    const duplicateCount = results.filter(r => r.duplicate).length;
 
-    const result = await heatmapTrackingService.trackInteractionBatch(enrichedInteractions);
-    res.json(result);
+    res.json({
+      success: true,
+      processed: successCount,
+      duplicates: duplicateCount,
+      total: interactions.length
+    });
   } catch (error) {
-    console.error('Error tracking interaction batch:', error);
-    res.status(500).json({ success: false, error: error.message });
+    console.error('[HEATMAP BATCH ERROR]', {
+      error: error.message,
+      stack: error.stack,
+      ip: req.ip,
+      batch_size: req.body?.interactions?.length
+    });
+    res.status(500).json({ success: false, error: 'Server error while tracking batch' });
   }
 });
 
