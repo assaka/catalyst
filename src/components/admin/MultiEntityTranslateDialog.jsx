@@ -433,7 +433,7 @@ export default function MultiEntityTranslateDialog({
                         Rates: CMS pages {serviceCosts['cms_page'] || 0.5} • CMS blocks {serviceCosts['cms_block'] || 0.2} • Others {serviceCosts['standard'] || 0.1} credits
                       </span>
                       {/* Credit Balance Warning */}
-                      {localCredits !== null && totalEstimatedCost > 0 && (
+                      {localCredits !== null && localCredits !== undefined && totalEstimatedCost > 0 && (
                         <div className={`mt-2 p-3 rounded-lg border ${
                           localCredits < totalEstimatedCost
                             ? 'bg-red-50 border-red-200'
@@ -441,7 +441,7 @@ export default function MultiEntityTranslateDialog({
                         }`}>
                           <div className="flex items-center justify-between text-sm">
                             <span className={localCredits < totalEstimatedCost ? 'text-red-800' : 'text-green-800'}>
-                              Your balance: {localCredits.toFixed(2)} credits
+                              Your balance: {Number(localCredits).toFixed(2)} credits
                             </span>
                             {localCredits < totalEstimatedCost && (
                               <span className="text-red-600 font-medium text-xs">

@@ -285,7 +285,7 @@ export default function BulkTranslateDialog({
           )}
 
           {/* Credit Balance Warning */}
-          {translateToLangs.length > 0 && itemCount > 0 && userCredits !== null && (
+          {translateToLangs.length > 0 && itemCount > 0 && userCredits !== null && userCredits !== undefined && (
             <div className={`p-3 rounded-lg border ${
               userCredits < (itemCount * translateToLangs.length * translationCost)
                 ? 'bg-red-50 border-red-200'
@@ -293,7 +293,7 @@ export default function BulkTranslateDialog({
             }`}>
               <div className="flex items-center justify-between text-sm">
                 <span className={userCredits < (itemCount * translateToLangs.length * translationCost) ? 'text-red-800' : 'text-green-800'}>
-                  Your balance: {userCredits.toFixed(2)} credits
+                  Your balance: {Number(userCredits).toFixed(2)} credits
                 </span>
                 {userCredits < (itemCount * translateToLangs.length * translationCost) && (
                   <span className="text-red-600 font-medium text-xs">
