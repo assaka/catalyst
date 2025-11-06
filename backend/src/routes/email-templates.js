@@ -50,6 +50,14 @@ router.get('/', async (req, res) => {
       const templateData = template.toJSON();
       const translations = {};
 
+      // Add base template content as 'en' translation if not already present
+      translations.en = {
+        subject: templateData.subject,
+        template_content: templateData.template_content,
+        html_content: templateData.html_content
+      };
+
+      // Add other language translations from translations table
       if (templateData.translationsData) {
         templateData.translationsData.forEach(trans => {
           translations[trans.language_code] = {
@@ -115,6 +123,14 @@ router.get('/:id', async (req, res) => {
     const templateData = template.toJSON();
     const translations = {};
 
+    // Add base template content as 'en' translation
+    translations.en = {
+      subject: templateData.subject,
+      template_content: templateData.template_content,
+      html_content: templateData.html_content
+    };
+
+    // Add other language translations from translations table
     if (templateData.translationsData) {
       templateData.translationsData.forEach(trans => {
         translations[trans.language_code] = {

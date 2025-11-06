@@ -47,6 +47,12 @@ router.get('/', async (req, res) => {
       const templateData = template.toJSON();
       const translations = {};
 
+      // Add base template content as 'en' translation
+      translations.en = {
+        html_template: templateData.html_template
+      };
+
+      // Add other language translations from translations table
       if (templateData.translationsData) {
         templateData.translationsData.forEach(trans => {
           translations[trans.language_code] = {
@@ -110,6 +116,12 @@ router.get('/:id', async (req, res) => {
     const templateData = template.toJSON();
     const translations = {};
 
+    // Add base template content as 'en' translation
+    translations.en = {
+      html_template: templateData.html_template
+    };
+
+    // Add other language translations from translations table
     if (templateData.translationsData) {
       templateData.translationsData.forEach(trans => {
         translations[trans.language_code] = {
