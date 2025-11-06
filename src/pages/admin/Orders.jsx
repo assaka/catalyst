@@ -22,7 +22,9 @@ import {
   Truck,
   MoreVertical,
   X,
-  RefreshCw
+  RefreshCw,
+  Info,
+  Sparkles
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -893,6 +895,25 @@ export default function Orders() {
           <DialogHeader>
             <DialogTitle>Send Shipment Notification</DialogTitle>
           </DialogHeader>
+
+          {/* Coming Soon Notice */}
+          <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-lg p-4">
+            <div className="flex items-start gap-3">
+              <div className="flex-shrink-0">
+                <Sparkles className="w-5 h-5 text-blue-600 mt-0.5" />
+              </div>
+              <div className="flex-1">
+                <h4 className="text-sm font-semibold text-blue-900 mb-1">
+                  Shipping Provider Integrations Coming Soon!
+                </h4>
+                <p className="text-xs text-blue-700 leading-relaxed">
+                  We're working on direct integrations with FedEx, UPS, DHL, USPS, and other major carriers.
+                  Soon you'll be able to automatically generate labels, track shipments in real-time, and sync tracking numbers seamlessly.
+                </p>
+              </div>
+            </div>
+          </div>
+
           <div className="space-y-4 py-4">
             <div className="space-y-2">
               <Label htmlFor="trackingNumber">Tracking Number</Label>
