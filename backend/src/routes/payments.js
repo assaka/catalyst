@@ -1456,6 +1456,13 @@ router.post('/webhook', async (req, res) => {
                 console.log('📧 ========================================');
 
                 try {
+                  // Generate invoice number and date BEFORE sending email
+                  const { Invoice } = require('../models');
+                  const invoiceNumber = 'INV-' + Date.now() + '-' + Math.random().toString(36).substr(2, 9).toUpperCase();
+                  const invoiceDate = new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
+
+                  console.log('📋 Generated invoice details:', { invoiceNumber, invoiceDate });
+
                   // Check if PDF attachment should be included
                   let attachments = [];
                   if (salesSettings.auto_invoice_pdf_enabled) {
@@ -1495,7 +1502,9 @@ router.post('/webhook', async (req, res) => {
                     },
                     order: orderWithDetails.toJSON(),
                     store: orderWithDetails.Store,
-                    attachments: attachments
+                    attachments: attachments,
+                    invoice_number: invoiceNumber,
+                    invoice_date: invoiceDate
                   });
 
                   console.log('✅ ========================================');
@@ -1505,10 +1514,6 @@ router.post('/webhook', async (req, res) => {
 
                   // Create invoice record to track that invoice was sent
                   try {
-                    const { Invoice } = require('../models');
-                    // Generate invoice number
-                    const invoiceNumber = 'INV-' + Date.now() + '-' + Math.random().toString(36).substr(2, 9).toUpperCase();
-
                     await Invoice.create({
                       invoice_number: invoiceNumber,
                       order_id: finalOrder.id,
@@ -1517,7 +1522,7 @@ router.post('/webhook', async (req, res) => {
                       pdf_generated: salesSettings.auto_invoice_pdf_enabled || false,
                       email_status: 'sent'
                     });
-                    console.log('✅ Invoice record created');
+                    console.log('✅ Invoice record created:', invoiceNumber);
                   } catch (invoiceCreateError) {
                     console.error('❌ Failed to create invoice record:', invoiceCreateError);
                     // Don't fail if invoice record creation fails
@@ -1947,6 +1952,13 @@ router.post('/webhook-connect', async (req, res) => {
               console.log('📧 AUTO-INVOICE ENABLED - Sending invoice email now!');
 
               try {
+                // Generate invoice number and date BEFORE sending email
+                const { Invoice } = require('../models');
+                const invoiceNumber = 'INV-' + Date.now() + '-' + Math.random().toString(36).substr(2, 9).toUpperCase();
+                const invoiceDate = new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
+
+                console.log('📋 Generated invoice details:', { invoiceNumber, invoiceDate });
+
                 let attachments = [];
                 if (salesSettings.auto_invoice_pdf_enabled) {
                   console.log('📄 Generating PDF invoice...');
@@ -1973,10 +1985,28 @@ router.post('/webhook-connect', async (req, res) => {
                   },
                   order: orderWithDetails.toJSON(),
                   store: orderWithDetails.Store,
-                  attachments: attachments
+                  attachments: attachments,
+                  invoice_number: invoiceNumber,
+                  invoice_date: invoiceDate
                 });
 
                 console.log('✅ INVOICE EMAIL SENT SUCCESSFULLY!');
+
+                // Create invoice record to track that invoice was sent
+                try {
+                  await Invoice.create({
+                    invoice_number: invoiceNumber,
+                    order_id: finalOrder.id,
+                    store_id: finalOrder.store_id,
+                    customer_email: finalOrder.customer_email,
+                    pdf_generated: salesSettings.auto_invoice_pdf_enabled || false,
+                    email_status: 'sent'
+                  });
+                  console.log('✅ Invoice record created:', invoiceNumber);
+                } catch (invoiceCreateError) {
+                  console.error('❌ Failed to create invoice record:', invoiceCreateError);
+                  // Don't fail if invoice record creation fails
+                }
               } catch (invoiceError) {
                 console.error('❌ Failed to send invoice email:', invoiceError);
               }

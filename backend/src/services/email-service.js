@@ -223,6 +223,9 @@ class EmailService {
         break;
       case 'invoice_email':
         variables = await this.buildOrderSuccessVariables(data);
+        // Add invoice-specific variables if provided
+        if (data.invoice_number) variables.invoice_number = data.invoice_number;
+        if (data.invoice_date) variables.invoice_date = data.invoice_date;
         break;
       case 'shipment_email':
         variables = await this.buildOrderSuccessVariables(data);
