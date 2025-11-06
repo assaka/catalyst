@@ -150,6 +150,12 @@ export default function BulkTranslateDialog({
     }
 
     setIsTranslating(true);
+
+    // Warn user if translating UI labels (can be slow)
+    if (entityName === 'UI Labels' && itemCount > 50) {
+      toast.info(`Translating ${itemCount} UI labels. This may take a few minutes...`, { duration: 5000 });
+    }
+
     try {
       // Call the provided onTranslate callback for each target language
       let totalTranslated = 0;

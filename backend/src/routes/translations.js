@@ -470,7 +470,7 @@ router.post('/ui-labels/bulk-translate', authMiddleware, async (req, res) => {
     console.log(`📊 Total labels: ${results.total}, To translate: ${keysToTranslate.length}, Already translated: ${results.skipped}`);
 
     // Process translations in parallel batches for better performance
-    const BATCH_SIZE = 5; // Process 5 labels at a time
+    const BATCH_SIZE = 50; // Process 50 labels at a time for maximum speed
     const batches = [];
     for (let i = 0; i < keysToTranslate.length; i += BATCH_SIZE) {
       batches.push(keysToTranslate.slice(i, i + BATCH_SIZE));
