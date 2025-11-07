@@ -48,14 +48,7 @@ router.get('/', publicReadLimiter, async (req, res) => {
       where: whereClause,
       order: [['created_at', 'DESC']],
       limit: parseInt(limit),
-      offset: parseInt(offset),
-      include: [
-        {
-          model: require('../models').Product,
-          attributes: ['id', 'name', 'slug'],
-          required: false
-        }
-      ]
+      offset: parseInt(offset)
     });
 
     res.json({

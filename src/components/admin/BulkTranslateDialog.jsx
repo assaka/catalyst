@@ -236,10 +236,18 @@ export default function BulkTranslateDialog({
       // Wait 3 seconds before closing to let user see the message
       console.log('⏸️ Waiting 3 seconds before closing modal...');
       await new Promise(resolve => setTimeout(resolve, 3000));
+      console.log('✅ 3 seconds elapsed, closing modal now');
 
-      // Reset and close dialog
+      // Reset states first
+      setIsTranslating(false);
+      setTranslationProgress({ current: 0, total: 0 });
+      setItemProgress({ current: 0, total: 0 });
       setTranslateToLangs([]);
+
+      // Then close dialog
+      console.log('🔒 Calling onOpenChange(false) to close modal');
       onOpenChange(false);
+      console.log('✅ onOpenChange(false) called');
 
       // Reload data and credits after closing dialog
       if (onComplete) {
@@ -254,7 +262,7 @@ export default function BulkTranslateDialog({
     } catch (error) {
       console.error('Bulk translate error:', error);
       toast.error(`Failed to translate ${entityType}`);
-    } finally {
+      // Reset states on error too
       setIsTranslating(false);
       setTranslationProgress({ current: 0, total: 0 });
       setItemProgress({ current: 0, total: 0 });
