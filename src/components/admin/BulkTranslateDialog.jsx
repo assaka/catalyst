@@ -231,10 +231,10 @@ export default function BulkTranslateDialog({
           setLocalCredits(prev => Math.max(0, (prev || 0) - totalCreditsDeducted));
         }
 
-        // Wait 3 seconds before closing to let user see the message
-        console.log('⏸️ Waiting 3 seconds before closing modal...');
-        await new Promise(resolve => setTimeout(resolve, 3000));
-        console.log('✅ 3 seconds elapsed, closing modal now');
+        // Wait 5 seconds before closing to let user see the message
+        console.log('⏸️ Waiting 5 seconds before closing modal...');
+        await new Promise(resolve => setTimeout(resolve, 5000));
+        console.log('✅ 5 seconds elapsed, closing modal now');
 
         // Reset states
         setShowBackgroundMessage(false);
@@ -340,115 +340,123 @@ export default function BulkTranslateDialog({
             <DialogTitle>Bulk AI Translate {entityName}</DialogTitle>
           </DialogHeader>
         <div className="space-y-4 py-4 overflow-y-auto">
-          <div className="space-y-2">
-            <Label htmlFor="from-lang">From Language</Label>
-            <Select value={translateFromLang} onValueChange={setTranslateFromLang} disabled={isTranslating}>
-              <SelectTrigger id="from-lang" disabled={isTranslating}>
-                <SelectValue placeholder="Select source language" />
-              </SelectTrigger>
-              <SelectContent>
-                {availableLanguages.map((lang) => (
-                  <SelectItem key={lang.code} value={lang.code}>
-                    {lang.name} ({lang.native_name})
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-
-          <div className="space-y-2">
-            <Label>To Languages (Select one or more)</Label>
-            <div className="border rounded-lg p-3 space-y-2 max-h-60 overflow-y-auto">
-              {availableLanguages
-                .filter((lang) => lang.code !== translateFromLang)
-                .map((lang) => (
-                  <div key={lang.code} className="flex items-center space-x-2">
-                    <Checkbox
-                      id={`lang-${lang.code}`}
-                      checked={translateToLangs.includes(lang.code)}
-                      disabled={isTranslating}
-                      onCheckedChange={(checked) => {
-                        if (checked) {
-                          setTranslateToLangs([...translateToLangs, lang.code]);
-                        } else {
-                          setTranslateToLangs(translateToLangs.filter(code => code !== lang.code));
-                        }
-                      }}
-                    />
-                    <Label
-                      htmlFor={`lang-${lang.code}`}
-                      className={`text-sm font-normal ${isTranslating ? 'cursor-not-allowed opacity-50' : 'cursor-pointer'}`}
-                    >
-                      {lang.name} ({lang.native_name})
-                    </Label>
-                  </div>
-                ))}
-            </div>
-            {translateToLangs.length > 0 && (
-              <p className="text-xs text-gray-600 mt-1">
-                {translateToLangs.length} language(s) selected
-              </p>
-            )}
-          </div>
-
-          <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
-            <p className="text-sm text-blue-800">
-              {translateToLangs.length > 0 ? (
-                <>
-                  This will translate all {entityType} from {translateFromLang} to {translateToLangs.length} selected language(s).
-                  <span className="block mt-2 text-xs font-medium">
-                    ⚠️ Credits are charged for all items processed.
-                  </span>
-                </>
-              ) : (
-                'Please select at least one target language.'
-              )}
-            </p>
-          </div>
-
-          {/* Credit Cost Estimate */}
-          {translateToLangs.length > 0 && itemCount > 0 && (
-            <div className="bg-green-50 border border-green-200 rounded-lg p-3">
-              <div className="flex items-center justify-between text-sm mb-1">
-                <span className="text-green-800 font-medium">
-                  💰 Estimated Cost:
-                </span>
-                <span className="text-green-900 font-bold">
-                  {(itemCount * translateToLangs.length * translationCost).toFixed(2)} credits
-                </span>
+          {!showBackgroundMessage && (
+            <>
+              <div className="space-y-2">
+                <Label htmlFor="from-lang">From Language</Label>
+                <Select value={translateFromLang} onValueChange={setTranslateFromLang} disabled={isTranslating}>
+                  <SelectTrigger id="from-lang" disabled={isTranslating}>
+                    <SelectValue placeholder="Select source language" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {availableLanguages.map((lang) => (
+                      <SelectItem key={lang.code} value={lang.code}>
+                        {lang.name} ({lang.native_name})
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
-              <p className="text-xs text-green-700">
-                {itemCount} {entityType} × {translateToLangs.length} lang(s) × {translationCost.toFixed(2)} credits per item
-              </p>
-              <p className="text-xs text-gray-500 mt-1">
-                {entityName === 'CMS Content' && 'Mixed CMS content (average of pages and blocks)'}
-                {entityName === 'CMS Pages' && `CMS pages: ${translationCost.toFixed(2)} credits each`}
-                {entityName === 'CMS Blocks' && `CMS blocks: ${translationCost.toFixed(2)} credits each`}
-                {entityName === 'Email Templates' && `Email templates: ${translationCost.toFixed(2)} credits each`}
-                {entityName === 'PDF Templates' && `PDF templates: ${translationCost.toFixed(2)} credits each`}
-                {!['CMS Content', 'CMS Pages', 'CMS Blocks', 'Email Templates', 'PDF Templates'].includes(entityName) && `Standard rate: ${translationCost.toFixed(2)} credits per item`}
-              </p>
-            </div>
-          )}
 
-          {/* Credit Balance Warning */}
-          {translateToLangs.length > 0 && itemCount > 0 && localCredits !== null && localCredits !== undefined && (
-            <div className={`p-3 rounded-lg border ${
-              localCredits < (itemCount * translateToLangs.length * translationCost)
-                ? 'bg-red-50 border-red-200'
-                : 'bg-green-50 border-green-200'
-            }`}>
-              <div className="flex items-center justify-between text-sm">
-                <span className={localCredits < (itemCount * translateToLangs.length * translationCost) ? 'text-red-800' : 'text-green-800'}>
-                  Your balance: {Number(localCredits).toFixed(2)} credits
-                </span>
-                {localCredits < (itemCount * translateToLangs.length * translationCost) && (
-                  <span className="text-red-600 font-medium text-xs">
-                    ⚠️ Insufficient credits
-                  </span>
+              <div className="space-y-2">
+                <Label>To Languages (Select one or more)</Label>
+                <div className="border rounded-lg p-3 space-y-2 max-h-60 overflow-y-auto">
+                  {availableLanguages
+                    .filter((lang) => lang.code !== translateFromLang)
+                    .map((lang) => (
+                      <div key={lang.code} className="flex items-center space-x-2">
+                        <Checkbox
+                          id={`lang-${lang.code}`}
+                          checked={translateToLangs.includes(lang.code)}
+                          disabled={isTranslating}
+                          onCheckedChange={(checked) => {
+                            if (checked) {
+                              setTranslateToLangs([...translateToLangs, lang.code]);
+                            } else {
+                              setTranslateToLangs(translateToLangs.filter(code => code !== lang.code));
+                            }
+                          }}
+                        />
+                        <Label
+                          htmlFor={`lang-${lang.code}`}
+                          className={`text-sm font-normal ${isTranslating ? 'cursor-not-allowed opacity-50' : 'cursor-pointer'}`}
+                        >
+                          {lang.name} ({lang.native_name})
+                        </Label>
+                      </div>
+                    ))}
+                </div>
+                {translateToLangs.length > 0 && (
+                  <p className="text-xs text-gray-600 mt-1">
+                    {translateToLangs.length} language(s) selected
+                  </p>
                 )}
               </div>
-            </div>
+            </>
+          )}
+
+          {!showBackgroundMessage && (
+            <>
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+                <p className="text-sm text-blue-800">
+                  {translateToLangs.length > 0 ? (
+                    <>
+                      This will translate all {entityType} from {translateFromLang} to {translateToLangs.length} selected language(s).
+                      <span className="block mt-2 text-xs font-medium">
+                        ⚠️ Credits are charged for all items processed.
+                      </span>
+                    </>
+                  ) : (
+                    'Please select at least one target language.'
+                  )}
+                </p>
+              </div>
+
+              {/* Credit Cost Estimate */}
+              {translateToLangs.length > 0 && itemCount > 0 && (
+                <div className="bg-green-50 border border-green-200 rounded-lg p-3">
+                  <div className="flex items-center justify-between text-sm mb-1">
+                    <span className="text-green-800 font-medium">
+                      💰 Estimated Cost:
+                    </span>
+                    <span className="text-green-900 font-bold">
+                      {(itemCount * translateToLangs.length * translationCost).toFixed(2)} credits
+                    </span>
+                  </div>
+                  <p className="text-xs text-green-700">
+                    {itemCount} {entityType} × {translateToLangs.length} lang(s) × {translationCost.toFixed(2)} credits per item
+                  </p>
+                  <p className="text-xs text-gray-500 mt-1">
+                    {entityName === 'CMS Content' && 'Mixed CMS content (average of pages and blocks)'}
+                    {entityName === 'CMS Pages' && `CMS pages: ${translationCost.toFixed(2)} credits each`}
+                    {entityName === 'CMS Blocks' && `CMS blocks: ${translationCost.toFixed(2)} credits each`}
+                    {entityName === 'Email Templates' && `Email templates: ${translationCost.toFixed(2)} credits each`}
+                    {entityName === 'PDF Templates' && `PDF templates: ${translationCost.toFixed(2)} credits each`}
+                    {!['CMS Content', 'CMS Pages', 'CMS Blocks', 'Email Templates', 'PDF Templates'].includes(entityName) && `Standard rate: ${translationCost.toFixed(2)} credits per item`}
+                  </p>
+                </div>
+              )}
+
+              {/* Credit Balance Warning */}
+              {translateToLangs.length > 0 && itemCount > 0 && localCredits !== null && localCredits !== undefined && (
+                <div className={`p-3 rounded-lg border ${
+                  localCredits < (itemCount * translateToLangs.length * translationCost)
+                    ? 'bg-red-50 border-red-200'
+                    : 'bg-green-50 border-green-200'
+                }`}>
+                  <div className="flex items-center justify-between text-sm">
+                    <span className={localCredits < (itemCount * translateToLangs.length * translationCost) ? 'text-red-800' : 'text-green-800'}>
+                      Your balance: {Number(localCredits).toFixed(2)} credits
+                    </span>
+                    {localCredits < (itemCount * translateToLangs.length * translationCost) && (
+                      <span className="text-red-600 font-medium text-xs">
+                        ⚠️ Insufficient credits
+                      </span>
+                    )}
+                  </div>
+                </div>
+              )}
+            </>
           )}
 
           {/* Background Processing Message for UI Labels */}
@@ -459,19 +467,28 @@ export default function BulkTranslateDialog({
                   <CheckCircle className="w-8 h-8 text-white" />
                 </div>
                 <div className="flex-1">
-                  <h3 className="text-lg font-bold text-green-900">Translation Started in Background</h3>
-                  <p className="text-sm text-green-700">This modal will close in 3 seconds</p>
+                  <h3 className="text-lg font-bold text-green-900">Started in Background</h3>
+                  <p className="text-sm text-green-700">Closing in 5 seconds</p>
                 </div>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    setShowBackgroundMessage(false);
+                    setTranslationProgress({ current: 0, total: 0 });
+                    setItemProgress({ current: 0, total: 0 });
+                    setTranslateToLangs([]);
+                    onOpenChange(false);
+                  }}
+                  className="text-green-700 border-green-700 hover:bg-green-100"
+                >
+                  Close Now
+                </Button>
               </div>
               <div className="bg-white rounded-lg p-4 border border-green-200">
-                <p className="text-sm text-gray-700 mb-2">
-                  ✅ Your UI labels translation has been started in the background.
-                </p>
-                <p className="text-sm text-gray-700 mb-2">
+                <p className="text-sm text-gray-700">
                   📧 <strong>You will be notified by email when complete</strong> (approximately 10 minutes).
-                </p>
-                <p className="text-xs text-gray-500">
-                  You can close this window and continue working. The translation will continue processing on the server.
                 </p>
               </div>
             </div>
@@ -515,43 +532,45 @@ export default function BulkTranslateDialog({
             </div>
           )}
 
-          <div className="flex justify-end gap-2 pt-4">
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => {
-                onOpenChange(false);
-                setTranslateToLangs([]);
-              }}
-              disabled={isTranslating || showBackgroundMessage}
-            >
-              Cancel
-            </Button>
-            <Button
-              type="button"
-              onClick={handleTranslate}
-              disabled={isTranslating || showBackgroundMessage || !translateFromLang || translateToLangs.length === 0 || (localCredits !== null && localCredits < (itemCount * translateToLangs.length * translationCost))}
-              className="bg-blue-600 hover:bg-blue-700"
-            >
-              {isTranslating ? (
-                <>
-                  <span className="animate-spin mr-2">⏳</span>
-                  {entityName === 'UI Labels' ? (
-                    'Starting translation...'
-                  ) : translationProgress.total > 0 ? (
-                    `${Math.round((translationProgress.current / translationProgress.total) * 100)}% Complete (${translationProgress.current}/${translationProgress.total})`
-                  ) : (
-                    'Processing...'
-                  )}
-                </>
-              ) : (
-                <>
-                  <Languages className="w-4 h-4 mr-2" />
-                  Translate to {translateToLangs.length || 0} Language(s)
-                </>
-              )}
-            </Button>
-          </div>
+          {!showBackgroundMessage && (
+            <div className="flex justify-end gap-2 pt-4">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => {
+                  onOpenChange(false);
+                  setTranslateToLangs([]);
+                }}
+                disabled={isTranslating}
+              >
+                Cancel
+              </Button>
+              <Button
+                type="button"
+                onClick={handleTranslate}
+                disabled={isTranslating || !translateFromLang || translateToLangs.length === 0 || (localCredits !== null && localCredits < (itemCount * translateToLangs.length * translationCost))}
+                className="bg-blue-600 hover:bg-blue-700"
+              >
+                {isTranslating ? (
+                  <>
+                    <span className="animate-spin mr-2">⏳</span>
+                    {entityName === 'UI Labels' ? (
+                      'Starting translation...'
+                    ) : translationProgress.total > 0 ? (
+                      `${Math.round((translationProgress.current / translationProgress.total) * 100)}% Complete (${translationProgress.current}/${translationProgress.total})`
+                    ) : (
+                      'Processing...'
+                    )}
+                  </>
+                ) : (
+                  <>
+                    <Languages className="w-4 h-4 mr-2" />
+                    Translate to {translateToLangs.length || 0} Language(s)
+                  </>
+                )}
+              </Button>
+            </div>
+          )}
         </div>
       </DialogContent>
     </Dialog>
