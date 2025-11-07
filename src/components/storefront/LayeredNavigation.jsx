@@ -188,8 +188,13 @@ export default function LayeredNavigation({
                             pAttr.code === attr.code || pAttr.code === attr.name
                         );
 
-                        if (matchingAttr && matchingAttr.value) {
-                            values.add(String(matchingAttr.value));
+                        if (matchingAttr) {
+                            // Use rawValue (code) if available, otherwise fall back to value (translated label)
+                            // This matches the logic in Category.jsx buildFilters()
+                            const productValue = matchingAttr.rawValue || matchingAttr.value;
+                            if (productValue) {
+                                values.add(String(productValue));
+                            }
                         }
                     }
                 });
@@ -208,7 +213,10 @@ export default function LayeredNavigation({
                                 const matchingAttr = productAttributes.find(pAttr =>
                                     pAttr.code === attr.code || pAttr.code === attr.name
                                 );
-                                return matchingAttr && String(matchingAttr.value) === String(value);
+                                // Use rawValue (code) if available, otherwise fall back to value (translated label)
+                                // This matches the logic in Category.jsx buildFilters()
+                                const productValue = String(matchingAttr?.rawValue || matchingAttr?.value || '');
+                                return matchingAttr && productValue === String(value);
                             }
                             return false;
                         }).length;
@@ -569,7 +577,10 @@ export default function LayeredNavigation({
                                                 const matchingAttr = productAttributes.find(pAttr =>
                                                     pAttr.code === code
                                                 );
-                                                return matchingAttr && String(matchingAttr.value) === String(value);
+                                                // Use rawValue (code) if available, otherwise fall back to value (translated label)
+                                                // This matches the logic in Category.jsx buildFilters()
+                                                const productValue = String(matchingAttr?.rawValue || matchingAttr?.value || '');
+                                                return matchingAttr && productValue === String(value);
                                             }
                                             return false;
                                         }).length;

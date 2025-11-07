@@ -340,7 +340,10 @@ export function CategorySlotRenderer({
               if (!Array.isArray(productAttributes)) return false;
 
               const matchingAttr = productAttributes.find(pAttr => pAttr.code === attrCode);
-              return matchingAttr && String(matchingAttr.value) === String(valueCode);
+              // Use rawValue (code) if available, otherwise fall back to value (translated label)
+              // This matches the logic in Category.jsx buildFilters()
+              const productValue = String(matchingAttr?.rawValue || matchingAttr?.value || '');
+              return matchingAttr && productValue === String(valueCode);
             }).length;
 
             if (attrValue) {
