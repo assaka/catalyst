@@ -484,6 +484,7 @@ export default function HeatmapVisualization({
 
     try {
       console.log('📸 Requesting screenshot for:', pageUrl);
+      console.log('📸 Viewport:', viewportSize);
 
       const response = await apiClient.post(`heatmap/screenshot/${storeId}`, {
         url: pageUrl,
@@ -492,12 +493,36 @@ export default function HeatmapVisualization({
         fullPage: true
       });
 
-      if (response.data?.screenshot) {
+      console.log('📸 Screenshot response:', {
+        hasResponse: !!response,
+        responseType: typeof response,
+        responseKeys: response ? Object.keys(response) : [],
+        hasScreenshot: response?.screenshot ? true : false,
+        screenshotLength: response?.screenshot?.length || 0,
+        format: response?.format,
+        viewport: response?.viewport
+      });
+
+      // Response structure can vary - check both response.screenshot and response directly
+      const screenshotData = response?.screenshot || (response?.success ? response : null);
+
+      if (screenshotData && typeof screenshotData === 'string' && screenshotData.startsWith('data:image')) {
         console.log('✅ Screenshot loaded successfully');
-        setScreenshot(response.data.screenshot);
+        setScreenshot(screenshotData);
+      } else if (response?.screenshot) {
+        console.log('✅ Screenshot loaded from response.screenshot');
+        setScreenshot(response.screenshot);
+      } else {
+        console.warn('⚠️ Screenshot response format unexpected:', response);
+        setScreenshot(null);
       }
     } catch (err) {
-      console.error('Error loading screenshot:', err);
+      console.error('❌ Error loading screenshot:', err);
+      console.error('Error details:', {
+        message: err.message,
+        status: err.status,
+        data: err.data
+      });
       // Don't set error state, just log it - screenshot is optional
       setScreenshot(null);
     } finally {

@@ -15,8 +15,10 @@ const captureScreenshot = async (url, options = {}) => {
 
   console.log(`📸 Calling screenshot microservice at: ${pdfServiceUrl}`);
   console.log(`📸 URL to capture: ${url}`);
+  console.log(`📸 Options:`, options);
 
   try {
+    const startTime = Date.now();
     const response = await axios.post(`${pdfServiceUrl}/capture-screenshot`, {
       url,
       options: {
@@ -31,7 +33,11 @@ const captureScreenshot = async (url, options = {}) => {
       timeout: 45000 // 45 second timeout (longer than page navigation timeout)
     });
 
+    const duration = Date.now() - startTime;
+    console.log(`📸 Screenshot request took ${duration}ms`);
+
     if (!response.data.success) {
+      console.error(`❌ Screenshot capture failed:`, response.data);
       throw new Error(response.data.error || 'Screenshot capture failed');
     }
 

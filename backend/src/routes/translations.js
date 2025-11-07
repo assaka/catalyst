@@ -14,13 +14,20 @@ const router = express.Router();
 // ============================================
 
 // @route   GET /api/translations/ui-labels
-// @desc    Get all UI labels for a specific language
+// @desc    Get all UI labels for a specific language and store
 // @access  Public
 router.get('/ui-labels', async (req, res) => {
   try {
-    const { lang = 'en' } = req.query;
+    const { store_id, lang = 'en' } = req.query;
 
-    const result = await translationService.getUILabels(lang);
+    if (!store_id) {
+      return res.status(400).json({
+        success: false,
+        message: 'store_id is required'
+      });
+    }
+
+    const result = await translationService.getUILabels(store_id, lang);
 
     res.json({
       success: true,
@@ -40,11 +47,20 @@ router.get('/ui-labels', async (req, res) => {
 });
 
 // @route   GET /api/translations/ui-labels/all
-// @desc    Get all UI labels for all languages (for admin)
+// @desc    Get all UI labels for all languages for a specific store (for admin)
 // @access  Private
 router.get('/ui-labels/all', authMiddleware, async (req, res) => {
   try {
-    const labels = await translationService.getAllUILabels();
+    const { store_id } = req.query;
+
+    if (!store_id) {
+      return res.status(400).json({
+        success: false,
+        message: 'store_id is required'
+      });
+    }
+
+    const labels = await translationService.getAllUILabels(store_id);
 
     res.json({
       success: true,
@@ -60,20 +76,21 @@ router.get('/ui-labels/all', authMiddleware, async (req, res) => {
 });
 
 // @route   POST /api/translations/ui-labels
-// @desc    Save or update a UI label translation
+// @desc    Save or update a UI label translation for a specific store
 // @access  Private
 router.post('/ui-labels', authMiddleware, async (req, res) => {
   try {
-    const { key, language_code, value, category, type = 'custom' } = req.body;
+    const { store_id, key, language_code, value, category, type = 'custom' } = req.body;
 
-    if (!key || !language_code || !value) {
+    if (!store_id || !key || !language_code || !value) {
       return res.status(400).json({
         success: false,
-        message: 'Key, language_code, and value are required'
+        message: 'store_id, key, language_code, and value are required'
       });
     }
 
     const translation = await translationService.saveUILabel(
+      store_id,
       key,
       language_code,
       value,
@@ -95,11 +112,18 @@ router.post('/ui-labels', authMiddleware, async (req, res) => {
 });
 
 // @route   POST /api/translations/ui-labels/bulk
-// @desc    Save multiple UI labels at once
+// @desc    Save multiple UI labels at once for a specific store
 // @access  Private
 router.post('/ui-labels/bulk', authMiddleware, async (req, res) => {
   try {
-    const { labels } = req.body;
+    const { store_id, labels } = req.body;
+
+    if (!store_id) {
+      return res.status(400).json({
+        success: false,
+        message: 'store_id is required'
+      });
+    }
 
     if (!Array.isArray(labels)) {
       return res.status(400).json({
@@ -108,7 +132,7 @@ router.post('/ui-labels/bulk', authMiddleware, async (req, res) => {
       });
     }
 
-    const saved = await translationService.saveBulkUILabels(labels);
+    const saved = await translationService.saveBulkUILabels(store_id, labels);
 
     res.json({
       success: true,
@@ -127,13 +151,21 @@ router.post('/ui-labels/bulk', authMiddleware, async (req, res) => {
 });
 
 // @route   DELETE /api/translations/ui-labels/:key/:languageCode
-// @desc    Delete a UI label translation
+// @desc    Delete a UI label translation for a specific store
 // @access  Private
 router.delete('/ui-labels/:key/:languageCode', authMiddleware, async (req, res) => {
   try {
     const { key, languageCode } = req.params;
+    const { store_id } = req.body;
 
-    await translationService.deleteUILabel(key, languageCode);
+    if (!store_id) {
+      return res.status(400).json({
+        success: false,
+        message: 'store_id is required'
+      });
+    }
+
+    await translationService.deleteUILabel(store_id, key, languageCode);
 
     res.json({
       success: true,
@@ -315,16 +347,16 @@ router.post('/ai-translate-entity', authMiddleware, async (req, res) => {
 });
 
 // @route   POST /api/translations/auto-translate-ui-label
-// @desc    Automatically translate a UI label to all active languages
+// @desc    Automatically translate a UI label to all active languages for a specific store
 // @access  Private
 router.post('/auto-translate-ui-label', authMiddleware, async (req, res) => {
   try {
-    const { key, value, category = 'common', fromLang = 'en' } = req.body;
+    const { store_id, key, value, category = 'common', fromLang = 'en' } = req.body;
 
-    if (!key || !value) {
+    if (!store_id || !key || !value) {
       return res.status(400).json({
         success: false,
-        message: 'Key and value are required'
+        message: 'store_id, key, and value are required'
       });
     }
 
@@ -338,7 +370,7 @@ router.post('/auto-translate-ui-label', authMiddleware, async (req, res) => {
     const errors = [];
 
     // Save the source language first
-    await translationService.saveUILabel(key, fromLang, value, category);
+    await translationService.saveUILabel(store_id, key, fromLang, value, category);
     results.push({ language_code: fromLang, value, status: 'saved' });
 
     // Translate to all other active languages
@@ -350,7 +382,7 @@ router.post('/auto-translate-ui-label', authMiddleware, async (req, res) => {
         const translatedValue = await translationService.aiTranslate(value, fromLang, lang.code);
 
         // Save the translation
-        await translationService.saveUILabel(key, lang.code, translatedValue, category);
+        await translationService.saveUILabel(store_id, key, lang.code, translatedValue, category);
 
         results.push({
           language_code: lang.code,
@@ -388,11 +420,18 @@ router.post('/auto-translate-ui-label', authMiddleware, async (req, res) => {
 });
 
 // @route   POST /api/translations/ui-labels/translate-batch
-// @desc    AI translate a batch of specific UI label keys (for progress tracking)
+// @desc    AI translate a batch of specific UI label keys for a specific store (for progress tracking)
 // @access  Private
 router.post('/ui-labels/translate-batch', authMiddleware, async (req, res) => {
   try {
-    const { keys, fromLang, toLang } = req.body;
+    const { store_id, keys, fromLang, toLang } = req.body;
+
+    if (!store_id) {
+      return res.status(400).json({
+        success: false,
+        message: 'store_id is required'
+      });
+    }
 
     if (!keys || !Array.isArray(keys) || keys.length === 0) {
       return res.status(400).json({
@@ -408,7 +447,7 @@ router.post('/ui-labels/translate-batch', authMiddleware, async (req, res) => {
       });
     }
 
-    const sourceLabels = await translationService.getUILabels(fromLang);
+    const sourceLabels = await translationService.getUILabels(store_id, fromLang);
     const flattenLabels = (obj, prefix = '') => {
       const result = {};
       Object.entries(obj).forEach(([key, value]) => {
@@ -441,7 +480,7 @@ router.post('/ui-labels/translate-batch', authMiddleware, async (req, res) => {
 
         const translatedValue = await translationService.aiTranslate(sourceValue, fromLang, toLang);
         const category = key.split('.')[0] || 'common';
-        await translationService.saveUILabel(key, toLang, translatedValue, category, 'system');
+        await translationService.saveUILabel(store_id, key, toLang, translatedValue, category, 'system');
         results.translated++;
       } catch (error) {
         results.failed++;
@@ -463,10 +502,10 @@ router.post('/ui-labels/translate-batch', authMiddleware, async (req, res) => {
 });
 
 // Background translation function
-async function performUILabelsBulkTranslation(userId, userEmail, fromLang, toLang) {
+async function performUILabelsBulkTranslation(userId, userEmail, storeId, fromLang, toLang) {
   try {
     // Get all labels in the source language
-    const sourceLabels = await translationService.getUILabels(fromLang);
+    const sourceLabels = await translationService.getUILabels(storeId, fromLang);
 
     if (!sourceLabels || !sourceLabels.labels) {
       console.log('⚠️ No labels found to translate');
@@ -474,7 +513,7 @@ async function performUILabelsBulkTranslation(userId, userEmail, fromLang, toLan
     }
 
     // Get existing labels in target language to avoid re-translating
-    const targetLabels = await translationService.getUILabels(toLang);
+    const targetLabels = await translationService.getUILabels(storeId, toLang);
     const existingKeys = new Set(Object.keys(targetLabels.labels || {}));
 
     // Flatten the source labels
@@ -558,7 +597,7 @@ async function performUILabelsBulkTranslation(userId, userEmail, fromLang, toLan
           const category = key.split('.')[0] || 'common';
 
           // Save the translation
-          await translationService.saveUILabel(key, toLang, translatedValue, category, 'system');
+          await translationService.saveUILabel(storeId, key, toLang, translatedValue, category, 'system');
 
           results.translated++;
           return { key, status: 'success' };
@@ -598,7 +637,7 @@ async function performUILabelsBulkTranslation(userId, userEmail, fromLang, toLan
       try {
         await creditService.deduct(
           userId,
-          null, // UI labels are not store-specific
+          storeId, // UI labels are now store-specific
           actualCost,
           `Bulk UI Labels Translation (${fromLang} → ${toLang})`,
           {
