@@ -291,10 +291,16 @@ class HeatmapTracker {
   getElementInfo(element) {
     if (!element) return {};
 
+    // Truncate className to avoid validation errors
+    const className = element.className || null;
+    const truncatedClassName = className && typeof className === 'string'
+      ? className.substring(0, 500)
+      : className;
+
     return {
       element_tag: element.tagName.toLowerCase(),
-      element_id: element.id || null,
-      element_class: element.className || null,
+      element_id: element.id ? element.id.substring(0, 200) : null,
+      element_class: truncatedClassName,
       element_text: this.getElementText(element),
       element_selector: this.getElementSelector(element)
     };

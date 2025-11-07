@@ -442,6 +442,160 @@ router.get('/element-rankings/:storeId', authMiddleware, checkStoreOwnership, as
   }
 });
 
+// Get session list with details (requires authentication)
+router.get('/sessions/:storeId', authMiddleware, checkStoreOwnership, async (req, res) => {
+  try {
+    const { storeId } = req.params;
+    const {
+      page_url,
+      start_date,
+      end_date,
+      device_type,
+      limit = 50,
+      offset = 0
+    } = req.query;
+
+    const whereClause = {
+      store_id: storeId
+    };
+
+    if (page_url) {
+      whereClause.page_url = page_url;
+    }
+
+    if (device_type && device_type !== 'all') {
+      whereClause.device_type = device_type;
+    }
+
+    if (start_date && end_date) {
+      whereClause.timestamp_utc = {
+        [Op.between]: [new Date(start_date), new Date(end_date)]
+      };
+    }
+
+    // Get unique sessions with aggregated data
+    const sessions = await HeatmapInteraction.findAll({
+      where: whereClause,
+      attributes: [
+        'session_id',
+        'user_id',
+        'device_type',
+        'user_agent',
+        [HeatmapInteraction.sequelize.fn('MIN', HeatmapInteraction.sequelize.col('timestamp_utc')), 'session_start'],
+        [HeatmapInteraction.sequelize.fn('MAX', HeatmapInteraction.sequelize.col('timestamp_utc')), 'session_end'],
+        [HeatmapInteraction.sequelize.fn('COUNT', '*'), 'interaction_count'],
+        [HeatmapInteraction.sequelize.fn('COUNT', HeatmapInteraction.sequelize.fn('DISTINCT', HeatmapInteraction.sequelize.col('page_url'))), 'pages_visited'],
+        [HeatmapInteraction.sequelize.fn('COUNT', HeatmapInteraction.sequelize.literal("CASE WHEN interaction_type = 'click' THEN 1 END")), 'click_count'],
+        [HeatmapInteraction.sequelize.fn('COUNT', HeatmapInteraction.sequelize.literal("CASE WHEN interaction_type = 'scroll' THEN 1 END")), 'scroll_count']
+      ],
+      group: ['session_id', 'user_id', 'device_type', 'user_agent'],
+      order: [[HeatmapInteraction.sequelize.fn('MIN', HeatmapInteraction.sequelize.col('timestamp_utc')), 'DESC']],
+      limit: parseInt(limit),
+      offset: parseInt(offset),
+      raw: true
+    });
+
+    // Calculate session duration for each
+    const sessionsWithDuration = sessions.map(session => ({
+      ...session,
+      duration_ms: new Date(session.session_end) - new Date(session.session_start),
+      duration_seconds: Math.round((new Date(session.session_end) - new Date(session.session_start)) / 1000)
+    }));
+
+    res.json({
+      success: true,
+      data: sessionsWithDuration,
+      meta: {
+        store_id: storeId,
+        count: sessionsWithDuration.length,
+        limit: parseInt(limit),
+        offset: parseInt(offset)
+      }
+    });
+  } catch (error) {
+    console.error('Error getting sessions:', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// Get session details and timeline (requires authentication)
+router.get('/sessions/:storeId/:sessionId', authMiddleware, checkStoreOwnership, async (req, res) => {
+  try {
+    const { storeId, sessionId } = req.params;
+
+    // Get all interactions for this session
+    const interactions = await HeatmapInteraction.findAll({
+      where: {
+        store_id: storeId,
+        session_id: sessionId
+      },
+      order: [['timestamp_utc', 'ASC']],
+      raw: true
+    });
+
+    if (interactions.length === 0) {
+      return res.status(404).json({
+        success: false,
+        error: 'Session not found'
+      });
+    }
+
+    // Group by page URL to show page flow
+    const pageFlow = [];
+    const pageMap = {};
+
+    interactions.forEach(interaction => {
+      if (!pageMap[interaction.page_url]) {
+        pageMap[interaction.page_url] = {
+          page_url: interaction.page_url,
+          page_title: interaction.page_title,
+          first_visit: interaction.timestamp_utc,
+          last_visit: interaction.timestamp_utc,
+          interactions: []
+        };
+        pageFlow.push(pageMap[interaction.page_url]);
+      }
+
+      pageMap[interaction.page_url].interactions.push(interaction);
+      pageMap[interaction.page_url].last_visit = interaction.timestamp_utc;
+    });
+
+    // Calculate time on each page
+    pageFlow.forEach((page, index) => {
+      if (index < pageFlow.length - 1) {
+        page.time_on_page_ms = new Date(pageFlow[index + 1].first_visit) - new Date(page.first_visit);
+      } else {
+        page.time_on_page_ms = new Date(page.last_visit) - new Date(page.first_visit);
+      }
+      page.time_on_page_seconds = Math.round(page.time_on_page_ms / 1000);
+    });
+
+    const sessionSummary = {
+      session_id: sessionId,
+      start_time: interactions[0].timestamp_utc,
+      end_time: interactions[interactions.length - 1].timestamp_utc,
+      duration_ms: new Date(interactions[interactions.length - 1].timestamp_utc) - new Date(interactions[0].timestamp_utc),
+      total_interactions: interactions.length,
+      pages_visited: pageFlow.length,
+      device_type: interactions[0].device_type,
+      user_agent: interactions[0].user_agent,
+      user_id: interactions[0].user_id
+    };
+
+    res.json({
+      success: true,
+      data: {
+        summary: sessionSummary,
+        pageFlow: pageFlow,
+        interactions: interactions
+      }
+    });
+  } catch (error) {
+    console.error('Error getting session details:', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
 // Get scroll depth analytics (requires authentication)
 router.get('/scroll-depth/:storeId', authMiddleware, checkStoreOwnership, async (req, res) => {
   try {

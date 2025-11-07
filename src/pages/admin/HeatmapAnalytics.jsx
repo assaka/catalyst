@@ -4,17 +4,22 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
   BarChart3,
   AlertTriangle,
   Power,
-  Activity
+  Activity,
+  Users,
+  Target
 } from 'lucide-react';
 
 import HeatmapVisualization from '@/components/admin/heatmap/HeatmapVisualization';
 import HeatmapTrackerComponent from '@/components/admin/heatmap/HeatmapTracker';
 import ScrollDepthMap from '@/components/admin/heatmap/ScrollDepthMap';
 import ElementClickRanking from '@/components/admin/heatmap/ElementClickRanking';
+import SessionList from '@/components/admin/heatmap/SessionList';
+import SessionReplay from '@/components/admin/heatmap/SessionReplay';
 
 export default function HeatmapAnalytics() {
   const { selectedStore } = useStoreSelection();
@@ -22,6 +27,8 @@ export default function HeatmapAnalytics() {
   const [selectedPageUrl, setSelectedPageUrl] = useState('');
   const [error, setError] = useState(null);
   const [dateRange, setDateRange] = useState('7d');
+  const [selectedSession, setSelectedSession] = useState(null);
+  const [activeTab, setActiveTab] = useState('heatmaps');
 
   // Heatmap enable state
   const [heatmapEnabled, setHeatmapEnabled] = useState(true); // Default enabled for alpha
@@ -115,37 +122,58 @@ export default function HeatmapAnalytics() {
             </Alert>
           )}
 
-          {/* Heatmap Visualizations */}
+          {/* Heatmap Visualizations with Tabs */}
           {heatmapEnabled ? (
-            <div className="space-y-6">
-              {/* Main Heatmap */}
-              <HeatmapVisualization
-                storeId={selectedStore.id}
-                initialPageUrl={selectedPageUrl}
-                onPageUrlChange={setSelectedPageUrl}
-                onDateRangeChange={setDateRange}
-              />
+            <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
+              <TabsList className="grid w-full max-w-md grid-cols-2">
+                <TabsTrigger value="heatmaps" className="flex items-center gap-2">
+                  <Target className="w-4 h-4" />
+                  Heatmaps
+                </TabsTrigger>
+                <TabsTrigger value="sessions" className="flex items-center gap-2">
+                  <Users className="w-4 h-4" />
+                  Sessions
+                </TabsTrigger>
+              </TabsList>
 
-              {/* Two-column layout for Scroll Depth and Element Rankings */}
-              {selectedPageUrl && (
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                  {/* Scroll Depth Map */}
-                  <ScrollDepthMap
-                    storeId={selectedStore.id}
-                    pageUrl={selectedPageUrl}
-                    dateRange={dateRange}
-                  />
+              <TabsContent value="heatmaps" className="space-y-6">
+                {/* Main Heatmap */}
+                <HeatmapVisualization
+                  storeId={selectedStore.id}
+                  initialPageUrl={selectedPageUrl}
+                  onPageUrlChange={setSelectedPageUrl}
+                  onDateRangeChange={setDateRange}
+                />
 
-                  {/* Element Click Rankings */}
-                  <ElementClickRanking
-                    storeId={selectedStore.id}
-                    pageUrl={selectedPageUrl}
-                    dateRange={dateRange}
-                    limit={15}
-                  />
-                </div>
-              )}
-            </div>
+                {/* Two-column layout for Scroll Depth and Element Rankings */}
+                {selectedPageUrl && (
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    {/* Scroll Depth Map */}
+                    <ScrollDepthMap
+                      storeId={selectedStore.id}
+                      pageUrl={selectedPageUrl}
+                      dateRange={dateRange}
+                    />
+
+                    {/* Element Click Rankings */}
+                    <ElementClickRanking
+                      storeId={selectedStore.id}
+                      pageUrl={selectedPageUrl}
+                      dateRange={dateRange}
+                      limit={15}
+                    />
+                  </div>
+                )}
+              </TabsContent>
+
+              <TabsContent value="sessions">
+                <SessionList
+                  storeId={selectedStore.id}
+                  dateRange={dateRange}
+                  onSessionSelect={setSelectedSession}
+                />
+              </TabsContent>
+            </Tabs>
           ) : (
             <Card>
               <CardContent className="py-12">
@@ -161,6 +189,15 @@ export default function HeatmapAnalytics() {
                 </div>
               </CardContent>
             </Card>
+          )}
+
+          {/* Session Replay Modal */}
+          {selectedSession && (
+            <SessionReplay
+              storeId={selectedStore.id}
+              session={selectedSession}
+              onClose={() => setSelectedSession(null)}
+            />
           )}
         </div>
       </div>
