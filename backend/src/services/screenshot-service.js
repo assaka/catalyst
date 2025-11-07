@@ -133,9 +133,31 @@ class ScreenshotService {
       throw new Error(validation.error);
     }
 
-    // Capture new screenshot (caching disabled for fresh captures)
-    console.log(`📸 Capturing new screenshot for: ${url} (cache disabled)`);
+    const cacheKey = generateCacheKey(
+      url,
+      options.viewportWidth || 1920,
+      options.viewportHeight || 1080
+    );
+
+    // Check cache
+    const cached = this.cache.get(cacheKey);
+    if (cached && Date.now() - cached.timestamp < this.cacheExpiry) {
+      console.log(`✅ Screenshot cache hit for: ${url}`);
+      return cached.data;
+    }
+
+    // Capture new screenshot
+    console.log(`📸 Capturing new screenshot for: ${url}`);
     const screenshot = await captureScreenshot(url, options);
+
+    // Store in cache
+    this.cache.set(cacheKey, {
+      data: screenshot,
+      timestamp: Date.now()
+    });
+
+    // Clean up old cache entries
+    this.cleanCache();
 
     return screenshot;
   }
