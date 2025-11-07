@@ -316,10 +316,104 @@ export default function Translations() {
 
   /**
    * Handle bulk translate using the new BulkTranslateDialog
+   * Supports progress callback for UI labels
    */
-  const handleBulkTranslate = async (fromLang, toLang) => {
+  const handleBulkTranslate = async (fromLang, toLang, onProgress) => {
     try {
-      // Use api client which automatically handles authentication
+      // For UI labels with progress callback, use batch processing
+      if (onProgress) {
+        // Get all source labels
+        const sourceLabelsResponse = await api.get(`/translations/ui-labels?lang=${fromLang}`);
+        const targetLabelsResponse = await api.get(`/translations/ui-labels?lang=${toLang}`);
+
+        const flattenLabels = (obj, prefix = '') => {
+          const result = {};
+          Object.entries(obj || {}).forEach(([key, value]) => {
+            const fullKey = prefix ? `${prefix}.${key}` : key;
+            if (typeof value === 'object' && value !== null && !Array.isArray(value)) {
+              Object.assign(result, flattenLabels(value, fullKey));
+            } else {
+              result[fullKey] = value;
+            }
+          });
+          return result;
+        };
+
+        const sourceLabels = flattenLabels(sourceLabelsResponse.data?.labels);
+        const targetLabels = flattenLabels(targetLabelsResponse.data?.labels);
+        const existingKeys = new Set(Object.keys(targetLabels));
+        const keysToTranslate = Object.keys(sourceLabels).filter(key => !existingKeys.has(key));
+
+        if (keysToTranslate.length === 0) {
+          return {
+            success: true,
+            data: { translated: 0, skipped: Object.keys(sourceLabels).length, failed: 0 },
+            creditsDeducted: 0
+          };
+        }
+
+        // Process in batches
+        const BATCH_SIZE = 10;
+        const batches = [];
+        for (let i = 0; i < keysToTranslate.length; i += BATCH_SIZE) {
+          batches.push(keysToTranslate.slice(i, i + BATCH_SIZE));
+        }
+
+        let totalTranslated = 0;
+        let totalSkipped = 0;
+        let totalFailed = 0;
+
+        for (let i = 0; i < batches.length; i++) {
+          const batch = batches[i];
+
+          // Update progress before processing batch
+          if (onProgress) {
+            onProgress({
+              current: i * BATCH_SIZE + Math.min(batch.length, BATCH_SIZE),
+              total: keysToTranslate.length
+            });
+          }
+
+          const batchResult = await api.post('translations/ui-labels/translate-batch', {
+            keys: batch,
+            fromLang,
+            toLang
+          });
+
+          if (batchResult.success) {
+            totalTranslated += batchResult.data.translated;
+            totalSkipped += batchResult.data.skipped;
+            totalFailed += batchResult.data.failed;
+          }
+
+          // Wait between batches (except last one)
+          if (i < batches.length - 1) {
+            await new Promise(resolve => setTimeout(resolve, 3000));
+          }
+        }
+
+        // Reload labels if target language is the currently selected one
+        if (toLang === selectedLanguage) {
+          await loadLabels(selectedLanguage);
+        }
+
+        // Calculate credits (all labels including already translated)
+        const totalLabels = Object.keys(sourceLabels).length;
+        const costPerItem = 0.1; // Standard rate for UI labels
+        const creditsDeducted = totalLabels * costPerItem;
+
+        return {
+          success: true,
+          data: {
+            translated: totalTranslated,
+            skipped: totalSkipped + (Object.keys(sourceLabels).length - keysToTranslate.length),
+            failed: totalFailed
+          },
+          creditsDeducted
+        };
+      }
+
+      // Fallback to old behavior for non-UI labels or no progress callback
       const data = await api.post('translations/ui-labels/bulk-translate', {
         fromLang,
         toLang

@@ -51,6 +51,7 @@ export default function BulkTranslateDialog({
   const [flashMessage, setFlashMessage] = useState(null);
   const [localCredits, setLocalCredits] = useState(userCredits);
   const [translationProgress, setTranslationProgress] = useState({ current: 0, total: 0 });
+  const [itemProgress, setItemProgress] = useState({ current: 0, total: 0 }); // For UI labels item-level progress
 
   // Sync local credits with prop
   useEffect(() => {
@@ -152,6 +153,7 @@ export default function BulkTranslateDialog({
 
     setIsTranslating(true);
     setTranslationProgress({ current: 0, total: translateToLangs.length });
+    setItemProgress({ current: 0, total: 0 });
 
     // Warn user if translating UI labels (can be slow)
     if (entityName === 'UI Labels' && itemCount > 50) {
@@ -169,7 +171,13 @@ export default function BulkTranslateDialog({
       for (let i = 0; i < translateToLangs.length; i++) {
         const toLang = translateToLangs[i];
         setTranslationProgress({ current: i + 1, total: translateToLangs.length });
-        const result = await onTranslate(translateFromLang, toLang);
+
+        // For UI Labels, pass progress callback to get item-level updates
+        const progressCallback = (entityName === 'UI Labels') ? (progress) => {
+          setItemProgress(progress);
+        } : null;
+
+        const result = await onTranslate(translateFromLang, toLang, progressCallback);
 
         console.log(`📥 BulkTranslateDialog: Received result for ${toLang}:`, {
           success: result.success,
@@ -240,6 +248,7 @@ export default function BulkTranslateDialog({
     } finally {
       setIsTranslating(false);
       setTranslationProgress({ current: 0, total: 0 });
+      setItemProgress({ current: 0, total: 0 });
     }
   };
 
@@ -376,9 +385,9 @@ export default function BulkTranslateDialog({
                 <span className="text-sm font-medium text-purple-900">
                   Translation in Progress
                 </span>
-                {entityName === 'UI Labels' ? (
+                {entityName === 'UI Labels' && itemProgress.total > 0 ? (
                   <span className="text-sm font-bold text-purple-700">
-                    Processing {itemCount} items
+                    {itemProgress.current} / {itemProgress.total}
                   </span>
                 ) : translationProgress.total > 0 && (
                   <span className="text-sm font-bold text-purple-700">
@@ -386,7 +395,19 @@ export default function BulkTranslateDialog({
                   </span>
                 )}
               </div>
-              {entityName !== 'UI Labels' && translationProgress.total > 0 ? (
+              {entityName === 'UI Labels' && itemProgress.total > 0 ? (
+                <>
+                  <div className="w-full bg-purple-200 rounded-full h-2.5">
+                    <div
+                      className="bg-purple-600 h-2.5 rounded-full transition-all duration-300"
+                      style={{ width: `${(itemProgress.current / itemProgress.total) * 100}%` }}
+                    ></div>
+                  </div>
+                  <p className="text-xs text-purple-700 mt-2">
+                    {Math.round((itemProgress.current / itemProgress.total) * 100)}% complete • Processing in batches of 10 with 3s delays
+                  </p>
+                </>
+              ) : entityName !== 'UI Labels' && translationProgress.total > 0 ? (
                 <>
                   <div className="w-full bg-purple-200 rounded-full h-2.5">
                     <div
@@ -404,7 +425,7 @@ export default function BulkTranslateDialog({
                     <div className="bg-purple-600 h-2.5 rounded-full animate-pulse" style={{ width: '100%' }}></div>
                   </div>
                   <p className="text-xs text-purple-700">
-                    Processing in batches of 10. This may take several minutes for large sets...
+                    Preparing translation...
                   </p>
                 </div>
               )}
@@ -432,8 +453,10 @@ export default function BulkTranslateDialog({
               {isTranslating ? (
                 <>
                   <span className="animate-spin mr-2">⏳</span>
-                  {entityName === 'UI Labels' ? (
-                    `Processing ${itemCount} items...`
+                  {entityName === 'UI Labels' && itemProgress.total > 0 ? (
+                    `${itemProgress.current}/${itemProgress.total} (${Math.round((itemProgress.current / itemProgress.total) * 100)}%)`
+                  ) : entityName === 'UI Labels' ? (
+                    `Preparing ${itemCount} items...`
                   ) : translationProgress.total > 0 ? (
                     `${Math.round((translationProgress.current / translationProgress.total) * 100)}% Complete (${translationProgress.current}/${translationProgress.total})`
                   ) : (

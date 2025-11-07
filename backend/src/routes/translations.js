@@ -387,6 +387,81 @@ router.post('/auto-translate-ui-label', authMiddleware, async (req, res) => {
   }
 });
 
+// @route   POST /api/translations/ui-labels/translate-batch
+// @desc    AI translate a batch of specific UI label keys (for progress tracking)
+// @access  Private
+router.post('/ui-labels/translate-batch', authMiddleware, async (req, res) => {
+  try {
+    const { keys, fromLang, toLang } = req.body;
+
+    if (!keys || !Array.isArray(keys) || keys.length === 0) {
+      return res.status(400).json({
+        success: false,
+        message: 'keys array is required'
+      });
+    }
+
+    if (!fromLang || !toLang) {
+      return res.status(400).json({
+        success: false,
+        message: 'fromLang and toLang are required'
+      });
+    }
+
+    const sourceLabels = await translationService.getUILabels(fromLang);
+    const flattenLabels = (obj, prefix = '') => {
+      const result = {};
+      Object.entries(obj).forEach(([key, value]) => {
+        const fullKey = prefix ? `${prefix}.${key}` : key;
+        if (typeof value === 'object' && value !== null && !Array.isArray(value)) {
+          Object.assign(result, flattenLabels(value, fullKey));
+        } else {
+          result[fullKey] = value;
+        }
+      });
+      return result;
+    };
+    const flatSourceLabels = flattenLabels(sourceLabels.labels || {});
+
+    const results = {
+      translated: 0,
+      skipped: 0,
+      failed: 0,
+      errors: []
+    };
+
+    // Translate each key in the batch (in parallel for speed)
+    await Promise.all(keys.map(async (key) => {
+      try {
+        const sourceValue = flatSourceLabels[key];
+        if (!sourceValue || typeof sourceValue !== 'string') {
+          results.skipped++;
+          return;
+        }
+
+        const translatedValue = await translationService.aiTranslate(sourceValue, fromLang, toLang);
+        const category = key.split('.')[0] || 'common';
+        await translationService.saveUILabel(key, toLang, translatedValue, category, 'system');
+        results.translated++;
+      } catch (error) {
+        results.failed++;
+        results.errors.push({ key, error: error.message });
+      }
+    }));
+
+    res.json({
+      success: true,
+      data: results
+    });
+  } catch (error) {
+    console.error('Translate batch error:', error);
+    res.status(500).json({
+      success: false,
+      message: error.message || 'Server error'
+    });
+  }
+});
+
 // @route   POST /api/translations/ui-labels/bulk-translate
 // @desc    AI translate all UI labels from one language to another
 // @access  Private
