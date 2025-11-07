@@ -479,19 +479,15 @@ export default function AnalyticsSettings() {
             <FlashMessage message={flashMessage} onClose={() => setFlashMessage(null)} />
 
             <div className="mb-8">
-                <h1 className="text-3xl font-bold text-gray-900">Analytics & Data Layer</h1>
-                <p className="text-gray-600 mt-1">Manage Google Tag Manager integration, track customer behavior, and export analytics data.</p>
+                <h1 className="text-3xl font-bold text-gray-900">Tracking & Data Layer</h1>
+                <p className="text-gray-600 mt-1">Manage Google Tag Manager integration, configure tracking scripts, and export analytics data.</p>
             </div>
 
             <Tabs defaultValue="basic" className="space-y-6">
-                <TabsList className="grid w-full grid-cols-4">
+                <TabsList className="grid w-full grid-cols-3">
                     <TabsTrigger value="basic" className="flex items-center gap-2">
                         <BarChart3 className="w-4 h-4" />
                         GTM
-                    </TabsTrigger>
-                    <TabsTrigger value="datalayer" className="flex items-center gap-2">
-                        <Activity className="w-4 h-4" />
-                        Live Events
                     </TabsTrigger>
                     <TabsTrigger value="import" className="flex items-center gap-2">
                         <Upload className="w-4 h-4" />
@@ -698,112 +694,6 @@ export default function AnalyticsSettings() {
                                     </ul>
                                 </div>
                             )}
-                        </CardContent>
-                    </Card>
-                </TabsContent>
-
-                {/* DataLayer Monitor */}
-                <TabsContent value="datalayer" className="space-y-6">
-                    <Card>
-                        <CardHeader>
-                            <CardTitle className="flex items-center justify-between">
-                                <div className="flex items-center gap-2">
-                                    <span>All Analytics Events ({dataLayerEvents.length})</span>
-                                    {newEventsCount > 0 && (
-                                        <Badge variant="secondary" className="bg-green-100 text-green-800 animate-pulse">
-                                            +{newEventsCount} new
-                                        </Badge>
-                                    )}
-                                </div>
-                                <div className="flex items-center gap-2">
-                                    <div className="flex items-center gap-2">
-                                        <Switch
-                                            checked={autoRefresh}
-                                            onCheckedChange={setAutoRefresh}
-                                            id="auto-refresh"
-                                        />
-                                        <Label htmlFor="auto-refresh" className="text-sm whitespace-nowrap">
-                                            Auto-refresh
-                                        </Label>
-                                    </div>
-                                    {autoRefresh && (
-                                        <select
-                                            value={refreshInterval}
-                                            onChange={(e) => setRefreshInterval(Number(e.target.value))}
-                                            className="text-xs border rounded px-2 py-1"
-                                        >
-                                            <option value={2}>2s</option>
-                                            <option value={5}>5s</option>
-                                            <option value={10}>10s</option>
-                                            <option value={30}>30s</option>
-                                        </select>
-                                    )}
-                                    <Button 
-                                        variant="outline" 
-                                        size="sm" 
-                                        onClick={loadDataLayerEvents}
-                                        disabled={autoRefresh}
-                                    >
-                                        {autoRefresh ? 'Auto-refreshing...' : 'Refresh'}
-                                    </Button>
-                                </div>
-                            </CardTitle>
-                            {autoRefresh && (
-                                <CardDescription className="text-xs text-green-600 flex items-center gap-1">
-                                    <RotateCcw className="w-3 h-3 animate-spin" />
-                                    Live updates enabled • Last refresh: {lastRefresh.toLocaleTimeString()}
-                                </CardDescription>
-                            )}
-                        </CardHeader>
-                        <CardContent>
-                            <div className="space-y-3 max-h-96 overflow-y-auto">
-                                {dataLayerEvents.length > 0 ? (
-                                    dataLayerEvents.map((event, index) => (
-                                        <div key={index} className="p-3 border rounded-lg bg-gray-50">
-                                            <div className="flex items-center justify-between mb-2">
-                                                <div className="flex items-center gap-2">
-                                                    <Badge variant="outline">{event.event || 'Unknown Event'}</Badge>
-                                                    <Badge 
-                                                        variant={event.source === 'browser' ? 'default' : 'secondary'}
-                                                        className={event.source === 'browser' ? 'bg-blue-100 text-blue-800' : 'bg-green-100 text-green-800'}
-                                                    >
-                                                        {event.source === 'browser' ? '🌐 Browser' : '💾 Database'}
-                                                    </Badge>
-                                                </div>
-                                                <span className="text-xs text-gray-500">
-                                                    {(() => {
-                                                        if (!event.timestamp) return 'No timestamp';
-                                                        try {
-                                                            const date = new Date(event.timestamp);
-                                                            if (isNaN(date.getTime())) return 'Invalid timestamp';
-                                                            return date.toLocaleString('en-US', {
-                                                                month: 'short',
-                                                                day: 'numeric',
-                                                                hour: '2-digit',
-                                                                minute: '2-digit',
-                                                                second: '2-digit'
-                                                            });
-                                                        } catch (e) {
-                                                            return 'Invalid timestamp';
-                                                        }
-                                                    })()}
-                                                </span>
-                                            </div>
-                                            <pre className="text-xs bg-white p-2 rounded border overflow-x-auto">
-                                                {JSON.stringify(event, null, 2)}
-                                            </pre>
-                                        </div>
-                                    ))
-                                ) : (
-                                    <div className="text-center py-8">
-                                        <Activity className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-                                        <p className="text-gray-600">No events recorded yet</p>
-                                        <p className="text-sm text-gray-500 mt-2">
-                                            Visit your storefront to generate tracking events
-                                        </p>
-                                    </div>
-                                )}
-                            </div>
                         </CardContent>
                     </Card>
                 </TabsContent>
