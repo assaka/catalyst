@@ -66,21 +66,46 @@ class HeatmapRenderer {
       return;
     }
 
+    // Ensure canvas is properly sized
+    if (!this.width || !this.height || this.width <= 0 || this.height <= 0) {
+      console.warn('HeatmapRenderer: Invalid canvas dimensions', { width: this.width, height: this.height });
+      this.setupCanvas();
+    }
+
     this.clear();
 
     // Filter out invalid points and normalize coordinates
     const validPoints = dataPoints.filter(point => {
       const x = parseFloat(point.x);
       const y = parseFloat(point.y);
-      return (
+      const isValid = (
+        point.x !== null && point.x !== undefined &&
+        point.y !== null && point.y !== undefined &&
         !isNaN(x) && !isNaN(y) &&
         isFinite(x) && isFinite(y) &&
         x >= 0 && y >= 0 &&
+        this.width > 0 && this.height > 0 &&
         x <= this.width && y <= this.height
       );
+
+      if (!isValid && process.env.NODE_ENV === 'development') {
+        console.debug('HeatmapRenderer: Filtered out invalid point', {
+          point,
+          x,
+          y,
+          canvasWidth: this.width,
+          canvasHeight: this.height
+        });
+      }
+
+      return isValid;
     });
 
     if (validPoints.length === 0) {
+      console.warn('HeatmapRenderer: No valid points to render', {
+        total: dataPoints.length,
+        sample: dataPoints.slice(0, 3)
+      });
       this.clear();
       return;
     }
@@ -94,12 +119,20 @@ class HeatmapRenderer {
     tempCanvas.height = this.canvas.height;
     const tempCtx = tempCanvas.getContext('2d', { alpha: true });
 
+    if (!tempCtx) {
+      console.error('HeatmapRenderer: Failed to get 2d context');
+      return;
+    }
+
     // Draw intensity circles
     validPoints.forEach(point => {
       const x = parseFloat(point.x);
       const y = parseFloat(point.y);
 
-      if (!isFinite(x) || !isFinite(y)) return;
+      // Extra validation before canvas operations
+      if (!isFinite(x) || !isFinite(y) || x < 0 || y < 0 || x > this.width || y > this.height) {
+        return;
+      }
 
       const normalizedIntensity = (point.total_count || 1) / maxIntensity;
       const intensity = this.options.minOpacity +
@@ -107,23 +140,33 @@ class HeatmapRenderer {
 
       const radius = this.options.radius;
 
-      // Create radial gradient for smooth falloff
-      const gradient = tempCtx.createRadialGradient(
-        x, y, 0,
-        x, y, radius
-      );
+      // Validate radius is finite
+      if (!isFinite(radius) || radius <= 0) {
+        console.error('HeatmapRenderer: Invalid radius', radius);
+        return;
+      }
 
-      gradient.addColorStop(0, `rgba(255, 255, 255, ${intensity})`);
-      gradient.addColorStop(0.5, `rgba(255, 255, 255, ${intensity * 0.5})`);
-      gradient.addColorStop(1, 'rgba(255, 255, 255, 0)');
+      try {
+        // Create radial gradient for smooth falloff
+        const gradient = tempCtx.createRadialGradient(
+          x, y, 0,
+          x, y, radius
+        );
 
-      tempCtx.fillStyle = gradient;
-      tempCtx.fillRect(
-        x - radius,
-        y - radius,
-        radius * 2,
-        radius * 2
-      );
+        gradient.addColorStop(0, `rgba(255, 255, 255, ${intensity})`);
+        gradient.addColorStop(0.5, `rgba(255, 255, 255, ${intensity * 0.5})`);
+        gradient.addColorStop(1, 'rgba(255, 255, 255, 0)');
+
+        tempCtx.fillStyle = gradient;
+        tempCtx.fillRect(
+          x - radius,
+          y - radius,
+          radius * 2,
+          radius * 2
+        );
+      } catch (error) {
+        console.error('HeatmapRenderer: Error creating gradient', { x, y, radius, error });
+      }
     });
 
     // Apply color gradient
@@ -342,29 +385,60 @@ export default function HeatmapVisualization({
 
       const response = await apiClient.get(`heatmap/data/${storeId}?${params}`);
 
+      console.log('Heatmap API response:', {
+        dataLength: response.data?.length,
+        sampleData: response.data?.slice(0, 3)
+      });
+
       // Transform the data to use x/y instead of normalized_x/normalized_y
-      const transformedData = (response.data || []).map(point => ({
-        ...point,
-        x: point.normalized_x || point.x_coordinate || 0,
-        y: point.normalized_y || point.y_coordinate || 0,
-        total_count: 1 // Each point represents one interaction
-      }));
+      const transformedData = (response.data || []).map(point => {
+        const x = point.normalized_x ?? point.x_coordinate ?? null;
+        const y = point.normalized_y ?? point.y_coordinate ?? null;
+
+        return {
+          ...point,
+          x: x !== null && !isNaN(parseFloat(x)) ? parseFloat(x) : null,
+          y: y !== null && !isNaN(parseFloat(y)) ? parseFloat(y) : null,
+          total_count: 1 // Each point represents one interaction
+        };
+      });
+
+      console.log('Transformed data:', {
+        total: transformedData.length,
+        sampleTransformed: transformedData.slice(0, 3),
+        nullCoords: transformedData.filter(p => p.x === null || p.y === null).length
+      });
 
       // Group by coordinates and count occurrences
       const groupedData = {};
       transformedData.forEach(point => {
-        const key = `${Math.round(point.x)},${Math.round(point.y)}`;
+        // Skip points with null coordinates
+        if (point.x === null || point.y === null) return;
+
+        const x = Math.round(point.x);
+        const y = Math.round(point.y);
+
+        // Skip invalid coordinates
+        if (!isFinite(x) || !isFinite(y)) return;
+
+        const key = `${x},${y}`;
         if (!groupedData[key]) {
           groupedData[key] = {
-            x: Math.round(point.x),
-            y: Math.round(point.y),
+            x: x,
+            y: y,
             total_count: 0
           };
         }
         groupedData[key].total_count++;
       });
 
-      setHeatmapData(Object.values(groupedData));
+      const finalData = Object.values(groupedData);
+      console.log('Final grouped data:', {
+        points: finalData.length,
+        sample: finalData.slice(0, 5)
+      });
+
+      setHeatmapData(finalData);
     } catch (err) {
       console.error('Error loading heatmap data:', err);
       setError(err.message);
