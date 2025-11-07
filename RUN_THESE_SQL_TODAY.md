@@ -211,15 +211,21 @@ CREATE TRIGGER update_ab_assignments_updated_at
 
 ### C. Custom Analytics Events Table
 
-**IMPORTANT**: If you're getting an error about "null value in column 'id' violates not-null constraint", run this fix FIRST:
+**IMPORTANT**: If you're getting errors about null value constraint violations, run this fix FIRST:
 
 ```sql
--- FIX: Add missing DEFAULT constraint to id column
+-- FIX: Add missing DEFAULT constraints to all columns
 ALTER TABLE custom_analytics_events
 ALTER COLUMN id SET DEFAULT gen_random_uuid();
 
--- Then retry the INSERT
-DELETE FROM custom_analytics_events WHERE id IS NULL;
+ALTER TABLE custom_analytics_events
+ALTER COLUMN created_at SET DEFAULT CURRENT_TIMESTAMP;
+
+ALTER TABLE custom_analytics_events
+ALTER COLUMN updated_at SET DEFAULT CURRENT_TIMESTAMP;
+
+-- Clean up any failed rows with NULL values
+DELETE FROM custom_analytics_events WHERE id IS NULL OR created_at IS NULL OR updated_at IS NULL;
 ```
 
 **Fresh Installation** (if table doesn't exist yet):
