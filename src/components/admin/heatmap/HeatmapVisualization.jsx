@@ -68,8 +68,25 @@ class HeatmapRenderer {
 
     this.clear();
 
+    // Filter out invalid points and normalize coordinates
+    const validPoints = dataPoints.filter(point => {
+      const x = parseFloat(point.x);
+      const y = parseFloat(point.y);
+      return (
+        !isNaN(x) && !isNaN(y) &&
+        isFinite(x) && isFinite(y) &&
+        x >= 0 && y >= 0 &&
+        x <= this.width && y <= this.height
+      );
+    });
+
+    if (validPoints.length === 0) {
+      this.clear();
+      return;
+    }
+
     // Find max intensity for normalization
-    const maxIntensity = Math.max(...dataPoints.map(p => p.total_count || 1));
+    const maxIntensity = Math.max(...validPoints.map(p => p.total_count || 1));
 
     // Create intensity map first
     const tempCanvas = document.createElement('canvas');
@@ -78,7 +95,12 @@ class HeatmapRenderer {
     const tempCtx = tempCanvas.getContext('2d', { alpha: true });
 
     // Draw intensity circles
-    dataPoints.forEach(point => {
+    validPoints.forEach(point => {
+      const x = parseFloat(point.x);
+      const y = parseFloat(point.y);
+
+      if (!isFinite(x) || !isFinite(y)) return;
+
       const normalizedIntensity = (point.total_count || 1) / maxIntensity;
       const intensity = this.options.minOpacity +
         (normalizedIntensity * (this.options.maxOpacity - this.options.minOpacity));
@@ -87,8 +109,8 @@ class HeatmapRenderer {
 
       // Create radial gradient for smooth falloff
       const gradient = tempCtx.createRadialGradient(
-        point.x, point.y, 0,
-        point.x, point.y, radius
+        x, y, 0,
+        x, y, radius
       );
 
       gradient.addColorStop(0, `rgba(255, 255, 255, ${intensity})`);
@@ -97,8 +119,8 @@ class HeatmapRenderer {
 
       tempCtx.fillStyle = gradient;
       tempCtx.fillRect(
-        point.x - radius,
-        point.y - radius,
+        x - radius,
+        y - radius,
         radius * 2,
         radius * 2
       );
@@ -299,7 +321,7 @@ export default function HeatmapVisualization({
       if (dateRange !== 'all') {
         const now = new Date();
         let startDate;
-        
+
         switch (dateRange) {
           case '1d':
             startDate = new Date(now.getTime() - 24 * 60 * 60 * 1000);
@@ -311,7 +333,7 @@ export default function HeatmapVisualization({
             startDate = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
             break;
         }
-        
+
         if (startDate) {
           params.append('start_date', startDate.toISOString());
           params.append('end_date', now.toISOString());
@@ -319,7 +341,30 @@ export default function HeatmapVisualization({
       }
 
       const response = await apiClient.get(`heatmap/data/${storeId}?${params}`);
-      setHeatmapData(response.data || []);
+
+      // Transform the data to use x/y instead of normalized_x/normalized_y
+      const transformedData = (response.data || []).map(point => ({
+        ...point,
+        x: point.normalized_x || point.x_coordinate || 0,
+        y: point.normalized_y || point.y_coordinate || 0,
+        total_count: 1 // Each point represents one interaction
+      }));
+
+      // Group by coordinates and count occurrences
+      const groupedData = {};
+      transformedData.forEach(point => {
+        const key = `${Math.round(point.x)},${Math.round(point.y)}`;
+        if (!groupedData[key]) {
+          groupedData[key] = {
+            x: Math.round(point.x),
+            y: Math.round(point.y),
+            total_count: 0
+          };
+        }
+        groupedData[key].total_count++;
+      });
+
+      setHeatmapData(Object.values(groupedData));
     } catch (err) {
       console.error('Error loading heatmap data:', err);
       setError(err.message);
