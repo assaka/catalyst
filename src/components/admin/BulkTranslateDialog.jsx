@@ -209,14 +209,20 @@ export default function BulkTranslateDialog({
 
       console.log(`📊 BulkTranslateDialog: Final totals - Translated: ${totalTranslated}, Skipped: ${totalSkipped}, Credits: ${totalCreditsDeducted}`);
 
-      // Check if any result indicates background processing
-      const hasBackgroundProcessing = allErrors.length === 0 &&
-        translateToLangs.length === 1 &&
-        allResults.some(result => result.data?.backgroundProcessing);
+      // Check if any result indicates background processing (for UI Labels)
+      const hasBackgroundProcessing = allResults.some(result => result.data?.backgroundProcessing);
 
       if (hasBackgroundProcessing) {
-        // Background processing mode - close immediately
-        console.log('🔄 Background processing detected, closing modal immediately');
+        // Background processing mode - show message and close after 3 seconds
+        console.log('🔄 Background processing detected for UI Labels');
+
+        // Show success message about background processing and email notification
+        const message = 'Translation started in background. You will be notified by email when complete (approximately 10 minutes).';
+        toast.success(message, { duration: 8000 });
+
+        // Show green flash message
+        setFlashMessage({ type: 'success', message });
+        setShowFlash(true);
 
         // Update local credits for display
         if (totalCreditsDeducted > 0) {
@@ -224,13 +230,19 @@ export default function BulkTranslateDialog({
           setLocalCredits(prev => Math.max(0, (prev || 0) - totalCreditsDeducted));
         }
 
+        // Wait 3 seconds before closing to let user see the message
+        console.log('⏸️ Waiting 3 seconds before closing modal...');
+        await new Promise(resolve => setTimeout(resolve, 3000));
+        console.log('✅ 3 seconds elapsed, closing modal now');
+
         // Reset states
         setIsTranslating(false);
         setTranslationProgress({ current: 0, total: 0 });
         setItemProgress({ current: 0, total: 0 });
         setTranslateToLangs([]);
+        setShowFlash(false);
 
-        // Close dialog immediately
+        // Close dialog
         onOpenChange(false);
 
         // Reload data and credits
@@ -440,35 +452,19 @@ export default function BulkTranslateDialog({
           )}
 
           {/* Translation Progress */}
-          {isTranslating && (
+          {isTranslating && entityName !== 'UI Labels' && (
             <div className="bg-purple-50 border border-purple-200 rounded-lg p-4">
               <div className="flex items-center justify-between mb-2">
                 <span className="text-sm font-medium text-purple-900">
                   Translation in Progress
                 </span>
-                {entityName === 'UI Labels' && itemProgress.total > 0 ? (
-                  <span className="text-sm font-bold text-purple-700">
-                    {itemProgress.current} / {itemProgress.total}
-                  </span>
-                ) : translationProgress.total > 0 && (
+                {translationProgress.total > 0 && (
                   <span className="text-sm font-bold text-purple-700">
                     {translationProgress.current} / {translationProgress.total}
                   </span>
                 )}
               </div>
-              {entityName === 'UI Labels' && itemProgress.total > 0 ? (
-                <>
-                  <div className="w-full bg-purple-200 rounded-full h-2.5">
-                    <div
-                      className="bg-purple-600 h-2.5 rounded-full transition-all duration-300"
-                      style={{ width: `${(itemProgress.current / itemProgress.total) * 100}%` }}
-                    ></div>
-                  </div>
-                  <p className="text-xs text-purple-700 mt-2">
-                    {Math.round((itemProgress.current / itemProgress.total) * 100)}% complete • Processing in batches of 10 with 3s delays
-                  </p>
-                </>
-              ) : entityName !== 'UI Labels' && translationProgress.total > 0 ? (
+              {translationProgress.total > 0 ? (
                 <>
                   <div className="w-full bg-purple-200 rounded-full h-2.5">
                     <div
@@ -514,10 +510,8 @@ export default function BulkTranslateDialog({
               {isTranslating ? (
                 <>
                   <span className="animate-spin mr-2">⏳</span>
-                  {entityName === 'UI Labels' && itemProgress.total > 0 ? (
-                    `${itemProgress.current}/${itemProgress.total} (${Math.round((itemProgress.current / itemProgress.total) * 100)}%)`
-                  ) : entityName === 'UI Labels' ? (
-                    `Preparing ${itemCount} items...`
+                  {entityName === 'UI Labels' ? (
+                    'Starting translation...'
                   ) : translationProgress.total > 0 ? (
                     `${Math.round((translationProgress.current / translationProgress.total) * 100)}% Complete (${translationProgress.current}/${translationProgress.total})`
                   ) : (
