@@ -532,63 +532,6 @@ export default function CustomerActivityPage() {
 
             {/* Top Products & Pages */}
             {widgets.topProducts && (
-              <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-              <Card>
-                <CardContent className="p-4">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-xs text-gray-500 uppercase">Total Events</p>
-                      <p className="text-2xl font-bold">{totalItems.toLocaleString()}</p>
-                    </div>
-                    <Activity className="w-8 h-8 text-blue-500" />
-                  </div>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardContent className="p-4">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-xs text-gray-500 uppercase">Unique Sessions</p>
-                      <p className="text-2xl font-bold">
-                        {new Set(activities.map(a => a.session_id)).size}
-                      </p>
-                    </div>
-                    <Users className="w-8 h-8 text-purple-500" />
-                  </div>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardContent className="p-4">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-xs text-gray-500 uppercase">Product Views</p>
-                      <p className="text-2xl font-bold">
-                        {activities.filter(a => a.activity_type === 'product_view').length}
-                      </p>
-                    </div>
-                    <Eye className="w-8 h-8 text-green-500" />
-                  </div>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardContent className="p-4">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-xs text-gray-500 uppercase">Orders</p>
-                      <p className="text-2xl font-bold">
-                        {activities.filter(a => a.activity_type === 'order_completed').length}
-                      </p>
-                    </div>
-                    <CheckCircle className="w-8 h-8 text-emerald-500" />
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
-
-            {/* Top Products & Pages */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               {/* Top Viewed Products */}
               <Card>
@@ -681,8 +624,10 @@ export default function CustomerActivityPage() {
                 </CardContent>
               </Card>
             </div>
+            )}
 
             {/* Best Sellers & Conversion Funnel */}
+            {widgets.bestSellers && widgets.funnel && (
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               {/* Best Sellers (by add_to_cart) */}
               <Card>
@@ -815,8 +760,10 @@ export default function CustomerActivityPage() {
                 </CardContent>
               </Card>
             </div>
+            )}
 
             {/* Geographic & Language Breakdown */}
+            {widgets.geo && (
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               {/* Countries */}
               <Card>
@@ -868,8 +815,10 @@ export default function CustomerActivityPage() {
                 </CardContent>
               </Card>
             </div>
+            )}
 
             {/* Search Terms & Popular Searches */}
+            {widgets.searches && (
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
@@ -904,6 +853,7 @@ export default function CustomerActivityPage() {
                 })()}
               </CardContent>
             </Card>
+            )}
           </div>
         )}
 
