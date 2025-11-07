@@ -4,6 +4,7 @@ import { useSeoSettings } from './SeoSettingsProvider';
 import apiClient from '@/api/client';
 import { getPriceDisplay, formatPrice } from '@/utils/priceUtils';
 import { getCategoryName, getProductName, getCurrentLanguage } from '@/utils/translationUtils';
+import { createSafeScript } from '@/utils/scriptSanitizer';
 
 export default function SeoHeadManager({ pageType, pageData, pageTitle, pageDescription, imageUrl }) {
     const storeContext = useStore();
@@ -841,7 +842,6 @@ export default function SeoHeadManager({ pageType, pageData, pageTitle, pageDesc
         if (analyticsSettings?.enable_google_tag_manager && isValidGTMId(analyticsSettings.gtm_id)) {
             if (analyticsSettings.gtm_script_type === 'custom' && analyticsSettings.custom_gtm_script) {
                 // Custom GTM Script (Server-Side Tagging) - WITH SANITIZATION
-                const { createSafeScript } = await import('../utils/scriptSanitizer');
                 const script = createSafeScript({
                     content: analyticsSettings.custom_gtm_script,
                     attributes: { 'data-gtm': 'head-custom' }
