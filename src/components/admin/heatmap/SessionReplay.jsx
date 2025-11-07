@@ -307,11 +307,11 @@ export default function SessionReplay({ storeId, session, onClose }) {
                       </div>
                     )}
 
-                    {sessionDetails.interactions[currentInteractionIndex].scroll_depth_percent && (
+                    {sessionDetails.interactions[currentInteractionIndex].scroll_depth_percent != null && (
                       <div>
                         <div className="text-gray-600 mb-1">Scroll Depth</div>
                         <div className="font-mono text-xs">
-                          {sessionDetails.interactions[currentInteractionIndex].scroll_depth_percent.toFixed(1)}%
+                          {parseFloat(sessionDetails.interactions[currentInteractionIndex].scroll_depth_percent).toFixed(1)}%
                         </div>
                       </div>
                     )}
