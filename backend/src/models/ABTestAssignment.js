@@ -4,7 +4,7 @@
  */
 
 const { DataTypes } = require('sequelize');
-const sequelize = require('../config/database');
+const { sequelize } = require('../database/connection');
 
 const ABTestAssignment = sequelize.define('ABTestAssignment', {
   id: {
