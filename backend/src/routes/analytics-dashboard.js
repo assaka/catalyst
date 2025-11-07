@@ -152,6 +152,29 @@ router.get('/:storeId/sessions', async (req, res) => {
       };
     });
 
+    // Get geographic and language data
+    const geoActivities = await CustomerActivity.findAll({
+      where: whereClause,
+      attributes: ['country_name', 'city', 'language'],
+      raw: true
+    });
+
+    const countryBreakdown = {};
+    const cityBreakdown = {};
+    const languageBreakdown = {};
+
+    geoActivities.forEach(activity => {
+      if (activity.country_name) {
+        countryBreakdown[activity.country_name] = (countryBreakdown[activity.country_name] || 0) + 1;
+      }
+      if (activity.city) {
+        cityBreakdown[activity.city] = (cityBreakdown[activity.city] || 0) + 1;
+      }
+      if (activity.language) {
+        languageBreakdown[activity.language] = (languageBreakdown[activity.language] || 0) + 1;
+      }
+    });
+
     // Aggregate demographics
     const deviceBreakdown = {};
     const browserBreakdown = {};
@@ -181,6 +204,9 @@ router.get('/:storeId/sessions', async (req, res) => {
         device_breakdown: deviceBreakdown,
         browser_breakdown: browserBreakdown,
         os_breakdown: osBreakdown,
+        country_breakdown: countryBreakdown,
+        city_breakdown: cityBreakdown,
+        language_breakdown: languageBreakdown,
         sessions: sessionsList
       }
     });

@@ -44,7 +44,10 @@ export default function CustomerActivityPage() {
     avg_events_per_session: 0,
     device_breakdown: {},
     browser_breakdown: {},
-    os_breakdown: {}
+    os_breakdown: {},
+    country_breakdown: {},
+    city_breakdown: {},
+    language_breakdown: {}
   });
   const [timeSeriesData, setTimeSeriesData] = useState([]);
 
@@ -83,8 +86,10 @@ export default function CustomerActivityPage() {
 
     try {
       const response = await apiClient.get(`/analytics-dashboard/${selectedStore.id}/realtime`);
+      console.log('[Real-time] Response:', response.data); // Debug
       if (response.data.success) {
         setRealtimeData(response.data.data);
+        console.log('[Real-time] Users online:', response.data.data.users_online); // Debug
       }
     } catch (error) {
       console.error('Error loading realtime data:', error);
@@ -786,6 +791,59 @@ export default function CustomerActivityPage() {
               </Card>
             </div>
 
+            {/* Geographic & Language Breakdown */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              {/* Countries */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Globe className="w-5 h-5 text-blue-600" />
+                    Top Countries
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  {Object.keys(sessionAnalytics.country_breakdown || {}).length > 0 ? (
+                    <div className="space-y-2">
+                      {Object.entries(sessionAnalytics.country_breakdown)
+                        .sort((a, b) => b[1] - a[1])
+                        .slice(0, 5)
+                        .map(([country, count], index) => (
+                          <div key={country} className="flex items-center justify-between p-3 border rounded-lg">
+                            <div className="flex items-center gap-3">
+                              <span className="font-bold text-gray-400">#{index + 1}</span>
+                              <span className="font-medium text-sm">{country}</span>
+                            </div>
+                            <Badge variant="secondary">{count} visits</Badge>
+                          </div>
+                        ))}
+                    </div>
+                  ) : (
+                    <p className="text-sm text-gray-500 text-center py-8">No country data yet</p>
+                  )}
+                </CardContent>
+              </Card>
+
+              {/* Languages */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Globe className="w-5 h-5 text-purple-600" />
+                    Languages
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  {Object.keys(sessionAnalytics.language_breakdown || {}).length > 0 ? (
+                    <DonutChart
+                      data={sessionAnalytics.language_breakdown}
+                      size={180}
+                    />
+                  ) : (
+                    <p className="text-sm text-gray-500 text-center py-8">No language data yet</p>
+                  )}
+                </CardContent>
+              </Card>
+            </div>
+
             {/* Search Terms & Popular Searches */}
             <Card>
               <CardHeader>
@@ -972,6 +1030,20 @@ export default function CustomerActivityPage() {
                             Order Total: ${parseFloat(activity.metadata.order_total).toFixed(2)}
                             {activity.metadata.order_items_count && <span className="text-gray-500"> ({activity.metadata.order_items_count} items)</span>}
                           </p>
+                        )}
+                        {(activity.country_name || activity.city || activity.language) && (
+                          <div className="flex items-center gap-2 mt-2 text-xs text-gray-500">
+                            {activity.country_name && (
+                              <Badge variant="outline" className="text-xs">
+                                {activity.city ? `${activity.city}, ${activity.country_name}` : activity.country_name}
+                              </Badge>
+                            )}
+                            {activity.language && (
+                              <Badge variant="outline" className="text-xs">
+                                {activity.language.toUpperCase()}
+                              </Badge>
+                            )}
+                          </div>
                         )}
                       </div>
                     </div>

@@ -24,35 +24,40 @@ import {
 class HeatmapRenderer {
   constructor(canvas, options = {}) {
     this.canvas = canvas;
-    this.ctx = canvas.getContext('2d');
+    this.ctx = canvas.getContext('2d', { alpha: true });
     this.options = {
-      radius: 20,
-      blur: 15,
-      maxOpacity: 0.8,
-      minOpacity: 0.1,
+      radius: 30,
+      blur: 20,
+      maxOpacity: 0.9,
+      minOpacity: 0,
       gradient: {
-        0.0: '#000080',  // Dark blue (cold)
-        0.25: '#0000FF', // Blue
-        0.5: '#00FF00',  // Green
-        0.75: '#FFFF00', // Yellow
-        1.0: '#FF0000'   // Red (hot)
+        0.0: 'rgba(0, 0, 255, 0)',      // Transparent blue
+        0.2: 'rgba(0, 0, 255, 0.5)',    // Blue
+        0.4: 'rgba(0, 255, 255, 0.7)',  // Cyan
+        0.6: 'rgba(0, 255, 0, 0.8)',    // Green
+        0.8: 'rgba(255, 255, 0, 0.9)',  // Yellow
+        1.0: 'rgba(255, 0, 0, 1)'       // Red
       },
       ...options
     };
 
-    this.colorStops = Object.keys(this.options.gradient).map(Number);
     this.setupCanvas();
+    this.gradientTexture = this.createGradientTexture();
   }
 
   setupCanvas() {
-    // Set canvas size
-    this.canvas.width = this.canvas.offsetWidth * window.devicePixelRatio;
-    this.canvas.height = this.canvas.offsetHeight * window.devicePixelRatio;
-    this.ctx.scale(window.devicePixelRatio, window.devicePixelRatio);
+    const dpr = window.devicePixelRatio || 1;
+    const rect = this.canvas.getBoundingClientRect();
 
-    // Set canvas style size
-    this.canvas.style.width = this.canvas.offsetWidth + 'px';
-    this.canvas.style.height = this.canvas.offsetHeight + 'px';
+    this.canvas.width = rect.width * dpr;
+    this.canvas.height = rect.height * dpr;
+    this.ctx.scale(dpr, dpr);
+
+    this.canvas.style.width = rect.width + 'px';
+    this.canvas.style.height = rect.height + 'px';
+
+    this.width = rect.width;
+    this.height = rect.height;
   }
 
   render(dataPoints) {
@@ -62,55 +67,123 @@ class HeatmapRenderer {
     }
 
     this.clear();
-    
+
     // Find max intensity for normalization
-    const maxIntensity = Math.max(...dataPoints.map(p => p.total_count));
-    
-    // Create gradient
-    const gradient = this.createGradient();
+    const maxIntensity = Math.max(...dataPoints.map(p => p.total_count || 1));
 
+    // Create intensity map first
+    const tempCanvas = document.createElement('canvas');
+    tempCanvas.width = this.canvas.width;
+    tempCanvas.height = this.canvas.height;
+    const tempCtx = tempCanvas.getContext('2d', { alpha: true });
+
+    // Draw intensity circles
     dataPoints.forEach(point => {
-      const intensity = point.total_count / maxIntensity;
-      const opacity = this.options.minOpacity + 
-        (intensity * (this.options.maxOpacity - this.options.minOpacity));
-      
-      this.drawHeatPoint(point.x, point.y, opacity, gradient);
+      const normalizedIntensity = (point.total_count || 1) / maxIntensity;
+      const intensity = this.options.minOpacity +
+        (normalizedIntensity * (this.options.maxOpacity - this.options.minOpacity));
+
+      const radius = this.options.radius;
+
+      // Create radial gradient for smooth falloff
+      const gradient = tempCtx.createRadialGradient(
+        point.x, point.y, 0,
+        point.x, point.y, radius
+      );
+
+      gradient.addColorStop(0, `rgba(255, 255, 255, ${intensity})`);
+      gradient.addColorStop(0.5, `rgba(255, 255, 255, ${intensity * 0.5})`);
+      gradient.addColorStop(1, 'rgba(255, 255, 255, 0)');
+
+      tempCtx.fillStyle = gradient;
+      tempCtx.fillRect(
+        point.x - radius,
+        point.y - radius,
+        radius * 2,
+        radius * 2
+      );
     });
+
+    // Apply color gradient
+    const imageData = tempCtx.getImageData(0, 0, tempCanvas.width, tempCanvas.height);
+    const pixels = imageData.data;
+
+    for (let i = 0; i < pixels.length; i += 4) {
+      const alpha = pixels[i + 3] / 255;
+
+      if (alpha > 0) {
+        const color = this.getColorForIntensity(alpha);
+        pixels[i] = color.r;
+        pixels[i + 1] = color.g;
+        pixels[i + 2] = color.b;
+        pixels[i + 3] = color.a * 255;
+      }
+    }
+
+    // Draw colored heatmap
+    this.ctx.putImageData(imageData, 0, 0);
   }
 
-  drawHeatPoint(x, y, intensity, gradient) {
-    const radius = this.options.radius;
-    
-    // Create radial gradient for this point
-    const radGradient = this.ctx.createRadialGradient(x, y, 0, x, y, radius);
-    radGradient.addColorStop(0, `rgba(255, 0, 0, ${intensity})`);
-    radGradient.addColorStop(1, 'rgba(255, 0, 0, 0)');
-    
-    this.ctx.globalCompositeOperation = 'screen';
-    this.ctx.fillStyle = radGradient;
-    this.ctx.beginPath();
-    this.ctx.arc(x, y, radius, 0, Math.PI * 2);
-    this.ctx.fill();
-    this.ctx.globalCompositeOperation = 'source-over';
+  getColorForIntensity(intensity) {
+    const stops = Object.keys(this.options.gradient)
+      .map(Number)
+      .sort((a, b) => a - b);
+
+    // Find the two stops to interpolate between
+    let lowerStop = stops[0];
+    let upperStop = stops[stops.length - 1];
+
+    for (let i = 0; i < stops.length - 1; i++) {
+      if (intensity >= stops[i] && intensity <= stops[i + 1]) {
+        lowerStop = stops[i];
+        upperStop = stops[i + 1];
+        break;
+      }
+    }
+
+    // Interpolate between colors
+    const lowerColor = this.parseColor(this.options.gradient[lowerStop]);
+    const upperColor = this.parseColor(this.options.gradient[upperStop]);
+
+    const range = upperStop - lowerStop;
+    const rangeIntensity = (intensity - lowerStop) / range;
+
+    return {
+      r: Math.round(lowerColor.r + (upperColor.r - lowerColor.r) * rangeIntensity),
+      g: Math.round(lowerColor.g + (upperColor.g - lowerColor.g) * rangeIntensity),
+      b: Math.round(lowerColor.b + (upperColor.b - lowerColor.b) * rangeIntensity),
+      a: lowerColor.a + (upperColor.a - lowerColor.a) * rangeIntensity
+    };
   }
 
-  createGradient() {
-    // Create a temporary canvas for gradient
-    const gradCanvas = document.createElement('canvas');
-    gradCanvas.width = 256;
-    gradCanvas.height = 1;
-    const gradCtx = gradCanvas.getContext('2d');
-    
-    const gradient = gradCtx.createLinearGradient(0, 0, 256, 0);
-    
+  parseColor(colorString) {
+    const rgba = colorString.match(/rgba?\((\d+),\s*(\d+),\s*(\d+),?\s*([\d.]*)\)/);
+    if (rgba) {
+      return {
+        r: parseInt(rgba[1]),
+        g: parseInt(rgba[2]),
+        b: parseInt(rgba[3]),
+        a: rgba[4] ? parseFloat(rgba[4]) : 1
+      };
+    }
+    return { r: 0, g: 0, b: 0, a: 0 };
+  }
+
+  createGradientTexture() {
+    const canvas = document.createElement('canvas');
+    canvas.width = 256;
+    canvas.height = 1;
+    const ctx = canvas.getContext('2d');
+
+    const gradient = ctx.createLinearGradient(0, 0, 256, 0);
     Object.entries(this.options.gradient).forEach(([stop, color]) => {
       gradient.addColorStop(parseFloat(stop), color);
     });
-    
-    gradCtx.fillStyle = gradient;
-    gradCtx.fillRect(0, 0, 256, 1);
-    
-    return gradCtx.getImageData(0, 0, 256, 1).data;
+
+    ctx.fillStyle = gradient;
+    ctx.fillRect(0, 0, 256, 1);
+
+    return ctx.getImageData(0, 0, 256, 1).data;
   }
 
   clear() {
@@ -122,10 +195,12 @@ class HeatmapRenderer {
   }
 }
 
-export default function HeatmapVisualization({ 
-  storeId, 
+export default function HeatmapVisualization({
+  storeId,
   initialPageUrl = '',
-  className = '' 
+  className = '',
+  onPageUrlChange,
+  onDateRangeChange
 }) {
   const canvasRef = useRef(null);
   const rendererRef = useRef(null);
@@ -134,13 +209,26 @@ export default function HeatmapVisualization({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [realTimeStats, setRealTimeStats] = useState(null);
-  
+
   // Filters
   const [interactionType, setInteractionType] = useState('click');
   const [deviceType, setDeviceType] = useState('all');
   const [dateRange, setDateRange] = useState('7d');
   const [autoRefresh, setAutoRefresh] = useState(false);
   const [viewportSize, setViewportSize] = useState({ width: 1920, height: 1080 });
+
+  // Notify parent of state changes
+  useEffect(() => {
+    if (onPageUrlChange) {
+      onPageUrlChange(pageUrl);
+    }
+  }, [pageUrl, onPageUrlChange]);
+
+  useEffect(() => {
+    if (onDateRangeChange) {
+      onDateRangeChange(dateRange);
+    }
+  }, [dateRange, onDateRangeChange]);
 
   // Auto refresh interval
   useEffect(() => {

@@ -375,6 +375,178 @@ router.get('/interactions/:storeId', authMiddleware, checkStoreOwnership, async 
   }
 });
 
+// Get element click rankings (requires authentication)
+router.get('/element-rankings/:storeId', authMiddleware, checkStoreOwnership, async (req, res) => {
+  try {
+    const { storeId } = req.params;
+    const {
+      page_url,
+      start_date,
+      end_date,
+      limit = 20
+    } = req.query;
+
+    if (!page_url) {
+      return res.status(400).json({
+        success: false,
+        error: 'page_url parameter is required'
+      });
+    }
+
+    const whereClause = {
+      store_id: storeId,
+      page_url,
+      interaction_type: ['click', 'touch'], // Focus on click/touch interactions
+      element_selector: {
+        [Op.ne]: null // Only include elements with selectors
+      }
+    };
+
+    if (start_date && end_date) {
+      whereClause.timestamp_utc = {
+        [Op.between]: [new Date(start_date), new Date(end_date)]
+      };
+    }
+
+    const rankings = await HeatmapInteraction.findAll({
+      where: whereClause,
+      attributes: [
+        'element_selector',
+        'element_tag',
+        'element_id',
+        'element_class',
+        'element_text',
+        [HeatmapInteraction.sequelize.fn('COUNT', '*'), 'click_count'],
+        [HeatmapInteraction.sequelize.fn('COUNT', HeatmapInteraction.sequelize.fn('DISTINCT', HeatmapInteraction.sequelize.col('session_id'))), 'unique_users'],
+        [HeatmapInteraction.sequelize.fn('AVG', HeatmapInteraction.sequelize.col('x_coordinate')), 'avg_x'],
+        [HeatmapInteraction.sequelize.fn('AVG', HeatmapInteraction.sequelize.col('y_coordinate')), 'avg_y']
+      ],
+      group: ['element_selector', 'element_tag', 'element_id', 'element_class', 'element_text'],
+      order: [[HeatmapInteraction.sequelize.fn('COUNT', '*'), 'DESC']],
+      limit: parseInt(limit),
+      raw: true
+    });
+
+    res.json({
+      success: true,
+      data: rankings,
+      meta: {
+        store_id: storeId,
+        page_url,
+        count: rankings.length
+      }
+    });
+  } catch (error) {
+    console.error('Error getting element rankings:', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// Get scroll depth analytics (requires authentication)
+router.get('/scroll-depth/:storeId', authMiddleware, checkStoreOwnership, async (req, res) => {
+  try {
+    const { storeId } = req.params;
+    const {
+      page_url,
+      start_date,
+      end_date,
+      bucket_size = 10 // Group by 10% buckets
+    } = req.query;
+
+    if (!page_url) {
+      return res.status(400).json({
+        success: false,
+        error: 'page_url parameter is required'
+      });
+    }
+
+    const whereClause = {
+      store_id: storeId,
+      page_url,
+      interaction_type: 'scroll',
+      scroll_depth_percent: {
+        [Op.ne]: null
+      }
+    };
+
+    if (start_date && end_date) {
+      whereClause.timestamp_utc = {
+        [Op.between]: [new Date(start_date), new Date(end_date)]
+      };
+    }
+
+    // Get all scroll interactions
+    const scrollData = await HeatmapInteraction.findAll({
+      where: whereClause,
+      attributes: ['session_id', 'scroll_depth_percent'],
+      raw: true
+    });
+
+    // Group sessions by maximum scroll depth reached
+    const sessionMaxDepths = {};
+    scrollData.forEach(record => {
+      const sessionId = record.session_id;
+      const depth = parseFloat(record.scroll_depth_percent);
+
+      if (!sessionMaxDepths[sessionId] || depth > sessionMaxDepths[sessionId]) {
+        sessionMaxDepths[sessionId] = depth;
+      }
+    });
+
+    // Create buckets
+    const bucketSize = parseInt(bucket_size);
+    const buckets = {};
+    const totalSessions = Object.keys(sessionMaxDepths).length;
+
+    // Initialize buckets
+    for (let i = 0; i < 100; i += bucketSize) {
+      buckets[i] = 0;
+    }
+
+    // Count sessions in each bucket
+    Object.values(sessionMaxDepths).forEach(maxDepth => {
+      const bucketKey = Math.floor(maxDepth / bucketSize) * bucketSize;
+      if (buckets.hasOwnProperty(bucketKey)) {
+        buckets[bucketKey]++;
+      } else {
+        buckets[Math.max(...Object.keys(buckets).map(Number))] = (buckets[Math.max(...Object.keys(buckets).map(Number))] || 0) + 1;
+      }
+    });
+
+    // Calculate cumulative percentages (what % of users scrolled to at least this depth)
+    const result = [];
+    let cumulativeCount = totalSessions;
+
+    Object.keys(buckets).sort((a, b) => parseInt(a) - parseInt(b)).forEach(bucket => {
+      const depth = parseInt(bucket);
+      const percentage = totalSessions > 0 ? (cumulativeCount / totalSessions) * 100 : 0;
+
+      result.push({
+        depth_percent: depth,
+        depth_range: `${depth}-${depth + bucketSize}%`,
+        users_reached: cumulativeCount,
+        percentage: Math.round(percentage * 100) / 100
+      });
+
+      cumulativeCount -= buckets[bucket];
+    });
+
+    res.json({
+      success: true,
+      data: result,
+      meta: {
+        store_id: storeId,
+        page_url,
+        total_sessions: totalSessions,
+        bucket_size: bucketSize
+      }
+    });
+  } catch (error) {
+    console.error('Error getting scroll depth analytics:', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
 // Clean up old data (admin only)
 router.delete('/cleanup/:storeId', authMiddleware, checkStoreOwnership, async (req, res) => {
   try {

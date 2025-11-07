@@ -13,12 +13,15 @@ import {
 
 import HeatmapVisualization from '@/components/admin/heatmap/HeatmapVisualization';
 import HeatmapTrackerComponent from '@/components/admin/heatmap/HeatmapTracker';
+import ScrollDepthMap from '@/components/admin/heatmap/ScrollDepthMap';
+import ElementClickRanking from '@/components/admin/heatmap/ElementClickRanking';
 
 export default function HeatmapAnalytics() {
   const { selectedStore } = useStoreSelection();
   const [loading, setLoading] = useState(false);
   const [selectedPageUrl, setSelectedPageUrl] = useState('');
   const [error, setError] = useState(null);
+  const [dateRange, setDateRange] = useState('7d');
 
   // Heatmap enable state
   const [heatmapEnabled, setHeatmapEnabled] = useState(true); // Default enabled for alpha
@@ -112,12 +115,37 @@ export default function HeatmapAnalytics() {
             </Alert>
           )}
 
-          {/* Heatmap Visualization */}
+          {/* Heatmap Visualizations */}
           {heatmapEnabled ? (
-            <HeatmapVisualization
-              storeId={selectedStore.id}
-              initialPageUrl={selectedPageUrl}
-            />
+            <div className="space-y-6">
+              {/* Main Heatmap */}
+              <HeatmapVisualization
+                storeId={selectedStore.id}
+                initialPageUrl={selectedPageUrl}
+                onPageUrlChange={setSelectedPageUrl}
+                onDateRangeChange={setDateRange}
+              />
+
+              {/* Two-column layout for Scroll Depth and Element Rankings */}
+              {selectedPageUrl && (
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                  {/* Scroll Depth Map */}
+                  <ScrollDepthMap
+                    storeId={selectedStore.id}
+                    pageUrl={selectedPageUrl}
+                    dateRange={dateRange}
+                  />
+
+                  {/* Element Click Rankings */}
+                  <ElementClickRanking
+                    storeId={selectedStore.id}
+                    pageUrl={selectedPageUrl}
+                    dateRange={dateRange}
+                    limit={15}
+                  />
+                </div>
+              )}
+            </div>
           ) : (
             <Card>
               <CardContent className="py-12">

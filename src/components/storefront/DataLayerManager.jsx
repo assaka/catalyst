@@ -60,6 +60,7 @@ export const trackActivity = async (activityType, data = {}) => {
       page_url: window.location.href,
       referrer: document.referrer,
       user_agent: navigator.userAgent,
+      language: navigator.language || navigator.userLanguage || null,
       ip_address: null, // Will be filled by server
       metadata: data,
       ...data

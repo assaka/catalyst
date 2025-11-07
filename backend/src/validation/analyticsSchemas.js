@@ -120,6 +120,54 @@ const customerActivitySchema = Joi.object({
             'string.ip': 'ip_address must be a valid IPv4 or IPv6 address'
         }),
 
+    language: Joi.string()
+        .max(10)
+        .optional()
+        .allow(null, '')
+        .messages({
+            'string.max': 'language must not exceed 10 characters'
+        }),
+
+    country: Joi.string()
+        .max(2)
+        .optional()
+        .allow(null, '')
+        .messages({
+            'string.max': 'country must not exceed 2 characters'
+        }),
+
+    country_name: Joi.string()
+        .max(100)
+        .optional()
+        .allow(null, '')
+        .messages({
+            'string.max': 'country_name must not exceed 100 characters'
+        }),
+
+    city: Joi.string()
+        .max(100)
+        .optional()
+        .allow(null, '')
+        .messages({
+            'string.max': 'city must not exceed 100 characters'
+        }),
+
+    region: Joi.string()
+        .max(100)
+        .optional()
+        .allow(null, '')
+        .messages({
+            'string.max': 'region must not exceed 100 characters'
+        }),
+
+    timezone: Joi.string()
+        .max(50)
+        .optional()
+        .allow(null, '')
+        .messages({
+            'string.max': 'timezone must not exceed 50 characters'
+        }),
+
     metadata: Joi.object()
         .optional()
         .allow(null)

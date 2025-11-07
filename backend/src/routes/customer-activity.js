@@ -4,6 +4,7 @@ const { Op } = require('sequelize');
 const { analyticsLimiter, publicReadLimiter } = require('../middleware/rateLimiters');
 const { validateRequest, customerActivitySchema } = require('../validation/analyticsSchemas');
 const { attachConsentInfo, sanitizeEventData } = require('../middleware/consentMiddleware');
+const { attachGeoLocation } = require('../middleware/geoLocationMiddleware');
 const eventBus = require('../services/analytics/EventBus');
 
 // Initialize handlers
@@ -11,8 +12,9 @@ require('../services/analytics/handlers/CustomerActivityHandler');
 
 const router = express.Router();
 
-// Apply consent middleware to all routes
+// Apply middleware to all routes
 router.use(attachConsentInfo);
+router.use(attachGeoLocation); // Add geographic data
 
 // @route   GET /api/customer-activity
 // @desc    Get customer activities
@@ -86,8 +88,12 @@ router.post('/', analyticsLimiter, validateRequest(customerActivitySchema), sani
       product_id,
       search_query,
       user_id,
+      language,
       metadata
     } = req.body;
+
+    // Get geographic data from middleware
+    const geoData = req.geoLocation || {};
 
     // Publish event to unified event bus
     const result = await eventBus.publish('customer_activity', {
@@ -101,6 +107,12 @@ router.post('/', analyticsLimiter, validateRequest(customerActivitySchema), sani
       search_query,
       user_agent: req.get('User-Agent'),
       ip_address: req.ip || req.connection.remoteAddress,
+      country: geoData.country,
+      country_name: geoData.country_name,
+      city: geoData.city,
+      region: geoData.region,
+      timezone: geoData.timezone,
+      language: language || req.get('Accept-Language')?.split(',')[0]?.split('-')[0] || null,
       metadata: metadata || {}
     }, {
       source: 'api',

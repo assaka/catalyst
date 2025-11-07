@@ -45,6 +45,12 @@ class CustomerActivityHandler {
         search_query: event.data.search_query || null,
         user_agent: event.data.user_agent || null,
         ip_address: event.data.ip_address || null,
+        country: event.data.country || null,
+        country_name: event.data.country_name || null,
+        city: event.data.city || null,
+        region: event.data.region || null,
+        language: event.data.language || null,
+        timezone: event.data.timezone || null,
         metadata: {
           ...event.data.metadata,
           event_id: event.id,
