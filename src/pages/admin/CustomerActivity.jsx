@@ -29,7 +29,6 @@ export default function CustomerActivityPage() {
     conversionFunnel: {},
     timeSeriesData: []
   });
-  const [showDashboard, setShowDashboard] = useState(true);
 
   // Widget visibility (localStorage persistence)
   const [widgets, setWidgets] = useState(() => {
@@ -375,13 +374,6 @@ export default function CustomerActivityPage() {
           </div>
           <div className="flex items-center gap-2">
             <Button
-              onClick={() => setShowDashboard(!showDashboard)}
-              variant="outline"
-              size="sm"
-            >
-              {showDashboard ? 'Hide' : 'Show'} Dashboard
-            </Button>
-            <Button
               onClick={() => loadData(currentPage)}
               disabled={loading}
               variant="outline"
@@ -394,31 +386,169 @@ export default function CustomerActivityPage() {
           </div>
         </div>
 
-        {/* Analytics Dashboard */}
-        {showDashboard && (
-          <div className="mb-6 space-y-6">
-            {/* Real-Time Users Online */}
-            <Card className="border-green-200 bg-green-50">
-              <CardContent className="p-6">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <div className="flex items-center gap-2 mb-1">
-                      <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
-                      <h3 className="text-sm font-medium text-green-900 uppercase">Users Online Now</h3>
-                    </div>
-                    <p className="text-4xl font-bold text-green-700">{realtimeData.users_online}</p>
-                    <p className="text-sm text-green-600 mt-1">
-                      {realtimeData.logged_in_users} logged in • {realtimeData.guest_users} guests
-                    </p>
-                  </div>
-                  <Activity className="w-12 h-12 text-green-500 opacity-50" />
+        <Card className="mb-6">
+          <CardContent className="p-6">
+            <div className="space-y-4">
+              {/* First row: Search and Activity Filter */}
+              <div className="flex flex-col md:flex-row gap-4">
+                <div className="flex-1">
+                  <Input
+                    placeholder="Search by email, query, or page..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                  />
                 </div>
-                <div className="mt-4 pt-4 border-t border-green-200">
-                  <p className="text-xs text-green-700">Active in last 5 minutes • Auto-refreshes every 30s</p>
-                </div>
-              </CardContent>
-            </Card>
+                <Select value={activityFilter} onValueChange={setActivityFilter}>
+                  <SelectTrigger className="w-48">
+                    <SelectValue placeholder="Filter by activity" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Activities</SelectItem>
+                    <SelectItem value="page_view">Page Views</SelectItem>
+                    <SelectItem value="product_view">Product Views</SelectItem>
+                    <SelectItem value="add_to_cart">Add to Cart</SelectItem>
+                    <SelectItem value="remove_from_cart">Remove from Cart</SelectItem>
+                    <SelectItem value="checkout_started">Checkout Started</SelectItem>
+                    <SelectItem value="order_completed">Orders Completed</SelectItem>
+                    <SelectItem value="search">Searches</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
 
+              {/* Second row: Date Range Filter */}
+              <div className="flex flex-col md:flex-row gap-4 items-center">
+                <div className="flex items-center gap-2">
+                  <Calendar className="w-4 h-4 text-gray-500" />
+                  <span className="text-sm font-medium text-gray-700 whitespace-nowrap">Date Range:</span>
+                </div>
+                <div className="flex flex-col sm:flex-row gap-2 flex-1">
+                  <div className="flex-1">
+                    <Input
+                      type="date"
+                      placeholder="Start date"
+                      value={startDate}
+                      onChange={(e) => setStartDate(e.target.value)}
+                      className="text-sm"
+                    />
+                  </div>
+                  <div className="flex-1">
+                    <Input
+                      type="date"
+                      placeholder="End date"
+                      value={endDate}
+                      onChange={(e) => setEndDate(e.target.value)}
+                      className="text-sm"
+                    />
+                  </div>
+                  {(startDate || endDate) && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        setStartDate("");
+                        setEndDate("");
+                      }}
+                      className="text-sm"
+                    >
+                      Clear
+                    </Button>
+                  )}
+                </div>
+              </div>
+
+              {/* Widget Toggle Badges */}
+              <div className="pt-4 border-t">
+                <p className="text-xs font-medium text-gray-500 mb-2">CUSTOMIZE DASHBOARD:</p>
+                <div className="flex flex-wrap gap-2">
+                  <Badge variant={widgets.traffic ? "default" : "outline"} className="cursor-pointer" onClick={() => toggleWidget('traffic')}>
+                    📈 Traffic
+                  </Badge>
+                  <Badge variant={widgets.demographics ? "default" : "outline"} className="cursor-pointer" onClick={() => toggleWidget('demographics')}>
+                    📱 Demographics
+                  </Badge>
+                  <Badge variant={widgets.topProducts ? "default" : "outline"} className="cursor-pointer" onClick={() => toggleWidget('topProducts')}>
+                    ⭐ Top Products
+                  </Badge>
+                  <Badge variant={widgets.bestSellers ? "default" : "outline"} className="cursor-pointer" onClick={() => toggleWidget('bestSellers')}>
+                    🏆 Best Sellers
+                  </Badge>
+                  <Badge variant={widgets.funnel ? "default" : "outline"} className="cursor-pointer" onClick={() => toggleWidget('funnel')}>
+                    🎯 Funnel
+                  </Badge>
+                  <Badge variant={widgets.geo ? "default" : "outline"} className="cursor-pointer" onClick={() => toggleWidget('geo')}>
+                    🌍 Geography
+                  </Badge>
+                  <Badge variant={widgets.searches ? "default" : "outline"} className="cursor-pointer" onClick={() => toggleWidget('searches')}>
+                    🔍 Searches
+                  </Badge>
+                </div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Key Metrics Grid - Always Visible */}
+        <div className="grid grid-cols-1 md:grid-cols-5 gap-4 mb-6">
+          <Card className="border-green-200 bg-green-50">
+            <CardContent className="p-4">
+              <div className="flex flex-col">
+                <div className="flex items-center gap-2 mb-1">
+                  <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
+                  <p className="text-xs text-green-700 uppercase font-medium">Online Now</p>
+                </div>
+                <p className="text-3xl font-bold text-green-700">{realtimeData.users_online}</p>
+                <p className="text-xs text-green-600 mt-1">{realtimeData.logged_in_users} / {realtimeData.guest_users}</p>
+              </div>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardContent className="p-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-xs text-gray-500 uppercase">Events</p>
+                  <p className="text-2xl font-bold">{totalItems.toLocaleString()}</p>
+                </div>
+                <Activity className="w-8 h-8 text-blue-500" />
+              </div>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardContent className="p-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-xs text-gray-500 uppercase">Sessions</p>
+                  <p className="text-2xl font-bold">{new Set(activities.map(a => a.session_id)).size}</p>
+                </div>
+                <Users className="w-8 h-8 text-purple-500" />
+              </div>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardContent className="p-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-xs text-gray-500 uppercase">Products</p>
+                  <p className="text-2xl font-bold">{activities.filter(a => a.activity_type === 'product_view').length}</p>
+                </div>
+                <Eye className="w-8 h-8 text-green-500" />
+              </div>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardContent className="p-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-xs text-gray-500 uppercase">Orders</p>
+                  <p className="text-2xl font-bold">{activities.filter(a => a.activity_type === 'order_completed').length}</p>
+                </div>
+                <CheckCircle className="w-8 h-8 text-emerald-500" />
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Widget Sections - Shown based on badge toggles */}
+        <div className="mb-6 space-y-6">
             {/* Traffic Over Time Chart */}
             {widgets.traffic && (
               <Card>
@@ -854,173 +984,7 @@ export default function CustomerActivityPage() {
               </CardContent>
             </Card>
             )}
-          </div>
-        )}
-
-        <Card className="mb-6">
-          <CardContent className="p-6">
-            <div className="space-y-4">
-              {/* First row: Search and Activity Filter */}
-              <div className="flex flex-col md:flex-row gap-4">
-                <div className="flex-1">
-                  <Input
-                    placeholder="Search by email, query, or page..."
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                  />
-                </div>
-                <Select value={activityFilter} onValueChange={setActivityFilter}>
-                  <SelectTrigger className="w-48">
-                    <SelectValue placeholder="Filter by activity" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All Activities</SelectItem>
-                    <SelectItem value="page_view">Page Views</SelectItem>
-                    <SelectItem value="product_view">Product Views</SelectItem>
-                    <SelectItem value="add_to_cart">Add to Cart</SelectItem>
-                    <SelectItem value="remove_from_cart">Remove from Cart</SelectItem>
-                    <SelectItem value="checkout_started">Checkout Started</SelectItem>
-                    <SelectItem value="order_completed">Orders Completed</SelectItem>
-                    <SelectItem value="search">Searches</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              
-              {/* Second row: Date Range Filter */}
-              <div className="flex flex-col md:flex-row gap-4 items-center">
-                <div className="flex items-center gap-2">
-                  <Calendar className="w-4 h-4 text-gray-500" />
-                  <span className="text-sm font-medium text-gray-700 whitespace-nowrap">Date Range:</span>
-                </div>
-                <div className="flex flex-col sm:flex-row gap-2 flex-1">
-                  <div className="flex-1">
-                    <Input
-                      type="date"
-                      placeholder="Start date"
-                      value={startDate}
-                      onChange={(e) => setStartDate(e.target.value)}
-                      className="text-sm"
-                    />
-                  </div>
-                  <div className="flex-1">
-                    <Input
-                      type="date"
-                      placeholder="End date"
-                      value={endDate}
-                      onChange={(e) => setEndDate(e.target.value)}
-                      className="text-sm"
-                    />
-                  </div>
-                  {(startDate || endDate) && (
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => {
-                        setStartDate("");
-                        setEndDate("");
-                      }}
-                      className="text-sm"
-                    >
-                      Clear
-                    </Button>
-                  )}
-                </div>
-              </div>
-
-              {/* Widget Toggle Badges */}
-              {showDashboard && (
-                <div className="pt-4 border-t">
-                  <p className="text-xs font-medium text-gray-500 mb-2">CUSTOMIZE DASHBOARD:</p>
-                  <div className="flex flex-wrap gap-2">
-                    <Badge variant={widgets.traffic ? "default" : "outline"} className="cursor-pointer" onClick={() => toggleWidget('traffic')}>
-                      📈 Traffic
-                    </Badge>
-                    <Badge variant={widgets.demographics ? "default" : "outline"} className="cursor-pointer" onClick={() => toggleWidget('demographics')}>
-                      📱 Demographics
-                    </Badge>
-                    <Badge variant={widgets.topProducts ? "default" : "outline"} className="cursor-pointer" onClick={() => toggleWidget('topProducts')}>
-                      ⭐ Top Products
-                    </Badge>
-                    <Badge variant={widgets.bestSellers ? "default" : "outline"} className="cursor-pointer" onClick={() => toggleWidget('bestSellers')}>
-                      🏆 Best Sellers
-                    </Badge>
-                    <Badge variant={widgets.funnel ? "default" : "outline"} className="cursor-pointer" onClick={() => toggleWidget('funnel')}>
-                      🎯 Funnel
-                    </Badge>
-                    <Badge variant={widgets.geo ? "default" : "outline"} className="cursor-pointer" onClick={() => toggleWidget('geo')}>
-                      🌍 Geography
-                    </Badge>
-                    <Badge variant={widgets.searches ? "default" : "outline"} className="cursor-pointer" onClick={() => toggleWidget('searches')}>
-                      🔍 Searches
-                    </Badge>
-                  </div>
-                </div>
-              )}
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Always Visible: Key Metrics (5 cards) */}
-        {showDashboard && (
-          <div className="grid grid-cols-1 md:grid-cols-5 gap-4 mb-6">
-            <Card className="border-green-200 bg-green-50">
-              <CardContent className="p-4">
-                <div className="flex flex-col">
-                  <div className="flex items-center gap-2 mb-1">
-                    <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
-                    <p className="text-xs text-green-700 uppercase font-medium">Online Now</p>
-                  </div>
-                  <p className="text-3xl font-bold text-green-700">{realtimeData.users_online}</p>
-                  <p className="text-xs text-green-600 mt-1">{realtimeData.logged_in_users} / {realtimeData.guest_users}</p>
-                </div>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardContent className="p-4">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-xs text-gray-500 uppercase">Events</p>
-                    <p className="text-2xl font-bold">{totalItems.toLocaleString()}</p>
-                  </div>
-                  <Activity className="w-8 h-8 text-blue-500" />
-                </div>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardContent className="p-4">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-xs text-gray-500 uppercase">Sessions</p>
-                    <p className="text-2xl font-bold">{new Set(activities.map(a => a.session_id)).size}</p>
-                  </div>
-                  <Users className="w-8 h-8 text-purple-500" />
-                </div>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardContent className="p-4">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-xs text-gray-500 uppercase">Products</p>
-                    <p className="text-2xl font-bold">{activities.filter(a => a.activity_type === 'product_view').length}</p>
-                  </div>
-                  <Eye className="w-8 h-8 text-green-500" />
-                </div>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardContent className="p-4">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-xs text-gray-500 uppercase">Orders</p>
-                    <p className="text-2xl font-bold">{activities.filter(a => a.activity_type === 'order_completed').length}</p>
-                  </div>
-                  <CheckCircle className="w-8 h-8 text-emerald-500" />
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-        )}
+        </div>
 
         <Card>
           <CardHeader>
