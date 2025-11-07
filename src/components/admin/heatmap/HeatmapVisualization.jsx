@@ -274,6 +274,8 @@ export default function HeatmapVisualization({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [realTimeStats, setRealTimeStats] = useState(null);
+  const [screenshot, setScreenshot] = useState(null);
+  const [loadingScreenshot, setLoadingScreenshot] = useState(false);
 
   // Filters
   const [interactionType, setInteractionType] = useState('click');
@@ -342,6 +344,7 @@ export default function HeatmapVisualization({
     if (storeId && pageUrl) {
       loadHeatmapData();
       loadRealTimeStats();
+      loadScreenshot();
     }
   }, [storeId, pageUrl, interactionType, deviceType, dateRange, viewportSize.width, viewportSize.height]);
 
@@ -474,6 +477,34 @@ export default function HeatmapVisualization({
     }
   };
 
+  const loadScreenshot = async () => {
+    if (!storeId || !pageUrl) return;
+
+    setLoadingScreenshot(true);
+
+    try {
+      console.log('📸 Requesting screenshot for:', pageUrl);
+
+      const response = await apiClient.post(`heatmap/screenshot/${storeId}`, {
+        url: pageUrl,
+        viewportWidth: viewportSize.width,
+        viewportHeight: viewportSize.height,
+        fullPage: true
+      });
+
+      if (response.data?.screenshot) {
+        console.log('✅ Screenshot loaded successfully');
+        setScreenshot(response.data.screenshot);
+      }
+    } catch (err) {
+      console.error('Error loading screenshot:', err);
+      // Don't set error state, just log it - screenshot is optional
+      setScreenshot(null);
+    } finally {
+      setLoadingScreenshot(false);
+    }
+  };
+
   const exportHeatmapData = async () => {
     try {
       // Export current view as JSON
@@ -542,16 +573,21 @@ export default function HeatmapVisualization({
               <Button
                 variant="outline"
                 size="sm"
-                onClick={loadHeatmapData}
-                disabled={loading}
+                onClick={() => {
+                  loadHeatmapData();
+                  loadScreenshot();
+                }}
+                disabled={loading || loadingScreenshot}
+                title="Refresh data and screenshot"
               >
-                <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
+                <RefreshCw className={`w-4 h-4 ${loading || loadingScreenshot ? 'animate-spin' : ''}`} />
               </Button>
               <Button
                 variant="outline"
                 size="sm"
                 onClick={exportHeatmapData}
                 disabled={!heatmapData || heatmapData.length === 0}
+                title="Export heatmap data"
               >
                 <Download className="w-4 h-4" />
               </Button>
@@ -736,13 +772,37 @@ export default function HeatmapVisualization({
               height: '700px' // Larger canvas for better visualization
             }}
           >
+            {/* Screenshot background */}
+            {loadingScreenshot && (
+              <div className="absolute inset-0 flex items-center justify-center bg-gray-50">
+                <div className="text-center">
+                  <RefreshCw className="w-8 h-8 animate-spin mx-auto mb-2 text-blue-500" />
+                  <p className="text-sm text-gray-600">Capturing page screenshot...</p>
+                </div>
+              </div>
+            )}
+
+            {screenshot && !loadingScreenshot && (
+              <img
+                src={screenshot}
+                alt="Page screenshot"
+                className="absolute inset-0 w-full h-full object-contain"
+                style={{
+                  opacity: 0.7, // Make screenshot slightly transparent so heatmap shows well
+                  pointerEvents: 'none'
+                }}
+              />
+            )}
+
+            {/* Heatmap overlay canvas */}
             <canvas
               ref={canvasRef}
-              className="absolute inset-0 w-full h-full bg-white"
+              className="absolute inset-0 w-full h-full"
               style={{
                 width: '100%',
                 height: '100%',
-                imageRendering: 'auto'
+                imageRendering: 'auto',
+                backgroundColor: screenshot ? 'transparent' : 'white'
               }}
             />
 

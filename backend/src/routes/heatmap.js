@@ -9,6 +9,7 @@ const { heatmapLimiter, publicReadLimiter } = require('../middleware/rateLimiter
 const { validateRequest, heatmapInteractionSchema, heatmapBatchSchema } = require('../validation/analyticsSchemas');
 const { attachConsentInfo, sanitizeEventData } = require('../middleware/consentMiddleware');
 const eventBus = require('../services/analytics/EventBus');
+const screenshotService = require('../services/screenshot-service');
 
 // Initialize handlers
 require('../services/analytics/handlers/HeatmapHandler');
@@ -698,6 +699,103 @@ router.get('/scroll-depth/:storeId', authMiddleware, checkStoreOwnership, async 
   } catch (error) {
     console.error('Error getting scroll depth analytics:', error);
     res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// Get screenshot for heatmap visualization (requires authentication)
+router.post('/screenshot/:storeId', authMiddleware, checkStoreOwnership, async (req, res) => {
+  try {
+    const { storeId } = req.params;
+    const {
+      url,
+      viewportWidth = 1920,
+      viewportHeight = 1080,
+      fullPage = true
+    } = req.body;
+
+    if (!url) {
+      return res.status(400).json({
+        success: false,
+        error: 'URL parameter is required'
+      });
+    }
+
+    console.log(`📸 Screenshot request for store ${storeId}: ${url}`);
+
+    const screenshot = await screenshotService.getScreenshot(url, {
+      viewportWidth: parseInt(viewportWidth),
+      viewportHeight: parseInt(viewportHeight),
+      fullPage
+    });
+
+    // Return screenshot as base64 data URL
+    const dataUrl = `data:image/${screenshot.format};base64,${screenshot.buffer.toString('base64')}`;
+
+    res.json({
+      success: true,
+      screenshot: dataUrl,
+      format: screenshot.format,
+      viewport: screenshot.viewport,
+      size: screenshot.size
+    });
+  } catch (error) {
+    console.error('Error capturing screenshot:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
+// Get screenshot cache stats (admin only)
+router.get('/screenshot-cache-stats', authMiddleware, async (req, res) => {
+  try {
+    // Check if user is admin
+    if (req.user.role !== 'admin' && req.user.role !== 'store_owner') {
+      return res.status(403).json({
+        success: false,
+        error: 'Insufficient permissions'
+      });
+    }
+
+    const stats = screenshotService.getCacheStats();
+
+    res.json({
+      success: true,
+      cache: stats
+    });
+  } catch (error) {
+    console.error('Error getting screenshot cache stats:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
+// Clear screenshot cache (admin only)
+router.post('/screenshot-cache-clear', authMiddleware, async (req, res) => {
+  try {
+    // Check if user is admin
+    if (req.user.role !== 'admin') {
+      return res.status(403).json({
+        success: false,
+        error: 'Admin access required'
+      });
+    }
+
+    screenshotService.clearCache();
+
+    res.json({
+      success: true,
+      message: 'Screenshot cache cleared'
+    });
+  } catch (error) {
+    console.error('Error clearing screenshot cache:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
   }
 });
 

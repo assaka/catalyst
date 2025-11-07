@@ -97,12 +97,107 @@ app.post('/generate-pdf', async (req, res) => {
   }
 });
 
+// Capture screenshot endpoint
+app.post('/capture-screenshot', async (req, res) => {
+  const requestId = Math.random().toString(36).substring(7);
+
+  try {
+    console.log(`📸 [${requestId}] Screenshot capture request received`);
+
+    const { url, options = {} } = req.body;
+
+    if (!url) {
+      return res.status(400).json({
+        success: false,
+        error: 'URL is required'
+      });
+    }
+
+    console.log(`📸 [${requestId}] URL: ${url}`);
+    console.log(`📸 [${requestId}] Options:`, options);
+
+    // Launch browser
+    console.log(`🚀 [${requestId}] Launching Chromium...`);
+    const browser = await puppeteer.launch({
+      headless: true,
+      args: [
+        '--no-sandbox',
+        '--disable-setuid-sandbox',
+        '--disable-dev-shm-usage',
+        '--disable-gpu',
+        '--disable-software-rasterizer',
+        '--disable-extensions'
+      ],
+      executablePath: process.env.PUPPETEER_EXECUTABLE_PATH || '/usr/bin/chromium'
+    });
+
+    try {
+      const page = await browser.newPage();
+
+      // Set viewport size
+      await page.setViewport({
+        width: options.viewportWidth || 1920,
+        height: options.viewportHeight || 1080,
+        deviceScaleFactor: options.deviceScaleFactor || 1
+      });
+
+      console.log(`📸 [${requestId}] Navigating to URL...`);
+
+      // Navigate to the page
+      await page.goto(url, {
+        waitUntil: 'networkidle0',
+        timeout: 30000
+      });
+
+      // Wait for additional time if specified
+      if (options.waitTime) {
+        await page.waitForTimeout(options.waitTime);
+      }
+
+      console.log(`📸 [${requestId}] Capturing screenshot...`);
+
+      // Take screenshot
+      const screenshotBuffer = await page.screenshot({
+        type: options.format || 'png',
+        fullPage: options.fullPage !== false, // Default to true
+        encoding: 'binary'
+      });
+
+      console.log(`✅ [${requestId}] Screenshot captured! Size: ${screenshotBuffer.length} bytes`);
+
+      // Return screenshot as base64
+      res.json({
+        success: true,
+        screenshot: screenshotBuffer.toString('base64'),
+        size: screenshotBuffer.length,
+        format: options.format || 'png',
+        viewport: {
+          width: options.viewportWidth || 1920,
+          height: options.viewportHeight || 1080
+        }
+      });
+
+    } finally {
+      await browser.close();
+      console.log(`🔒 [${requestId}] Browser closed`);
+    }
+
+  } catch (error) {
+    console.error(`❌ [${requestId}] Screenshot capture error:`, error);
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
 // Start server
 app.listen(PORT, '0.0.0.0', () => {
   console.log('='.repeat(60));
-  console.log(`📄 PDF Service running on port ${PORT}`);
+  console.log(`📄 PDF & Screenshot Service running on port ${PORT}`);
   console.log(`📄 Health check: http://localhost:${PORT}/health`);
   console.log(`📄 Generate PDF: POST http://localhost:${PORT}/generate-pdf`);
+  console.log(`📸 Capture Screenshot: POST http://localhost:${PORT}/capture-screenshot`);
   console.log(`📄 Chromium path: ${process.env.PUPPETEER_EXECUTABLE_PATH || '/usr/bin/chromium'}`);
   console.log('='.repeat(60));
 });
