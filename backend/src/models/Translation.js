@@ -7,6 +7,15 @@ const Translation = sequelize.define('Translation', {
     defaultValue: DataTypes.UUIDV4,
     primaryKey: true
   },
+  store_id: {
+    type: DataTypes.UUID,
+    allowNull: false,
+    references: {
+      model: 'stores',
+      key: 'id'
+    },
+    comment: 'Store that owns this translation'
+  },
   key: {
     type: DataTypes.STRING(255),
     allowNull: false,
@@ -39,8 +48,12 @@ const Translation = sequelize.define('Translation', {
   indexes: [
     {
       unique: true,
-      fields: ['key', 'language_code'],
-      name: 'translations_key_language_unique'
+      fields: ['store_id', 'key', 'language_code'],
+      name: 'translations_store_key_language_unique'
+    },
+    {
+      fields: ['store_id'],
+      name: 'translations_store_id_index'
     },
     {
       fields: ['category'],

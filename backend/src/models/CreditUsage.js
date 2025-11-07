@@ -17,7 +17,7 @@ const CreditUsage = sequelize.define('CreditUsage', {
   },
   store_id: {
     type: DataTypes.UUID,
-    allowNull: true, // Made nullable for global features like UI labels
+    allowNull: false,
     references: {
       model: 'stores',
       key: 'id'
@@ -69,8 +69,7 @@ const CreditUsage = sequelize.define('CreditUsage', {
   hooks: {
     afterCreate: async (usage) => {
       // Deduct credits from balance when usage is recorded
-      // Skip if store_id is null (global features like UI labels)
-      if (usage.credits_used > 0 && usage.store_id) {
+      if (usage.credits_used > 0) {
         const Credit = require('./Credit');
 
         // Initialize balance if it doesn't exist

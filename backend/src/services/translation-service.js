@@ -34,11 +34,14 @@ class TranslationService {
   }
 
   /**
-   * Get all UI labels for a specific language
+   * Get all UI labels for a specific language and store
    */
-  async getUILabels(languageCode) {
+  async getUILabels(storeId, languageCode) {
     const translations = await Translation.findAll({
-      where: { language_code: languageCode },
+      where: {
+        store_id: storeId,
+        language_code: languageCode
+      },
       attributes: ['key', 'value', 'category', 'type']
     });
 
@@ -88,10 +91,11 @@ class TranslationService {
   }
 
   /**
-   * Get UI labels for all languages
+   * Get UI labels for all languages for a specific store
    */
-  async getAllUILabels() {
+  async getAllUILabels(storeId) {
     const translations = await Translation.findAll({
+      where: { store_id: storeId },
       attributes: ['key', 'language_code', 'value', 'category']
     });
 
@@ -111,12 +115,23 @@ class TranslationService {
   }
 
   /**
-   * Save or update a UI label translation
+   * Save or update a UI label translation for a specific store
    */
-  async saveUILabel(key, languageCode, value, category = 'common', type = 'custom') {
+  async saveUILabel(storeId, key, languageCode, value, category = 'common', type = 'custom') {
     const [translation, created] = await Translation.findOrCreate({
-      where: { key, language_code: languageCode },
-      defaults: { key, language_code: languageCode, value, category, type }
+      where: {
+        store_id: storeId,
+        key,
+        language_code: languageCode
+      },
+      defaults: {
+        store_id: storeId,
+        key,
+        language_code: languageCode,
+        value,
+        category,
+        type
+      }
     });
 
     if (!created) {
@@ -130,21 +145,25 @@ class TranslationService {
   }
 
   /**
-   * Save multiple UI labels at once
+   * Save multiple UI labels at once for a specific store
    */
-  async saveBulkUILabels(labels) {
+  async saveBulkUILabels(storeId, labels) {
     const promises = labels.map(({ key, language_code, value, category, type = 'custom' }) =>
-      this.saveUILabel(key, language_code, value, category, type)
+      this.saveUILabel(storeId, key, language_code, value, category, type)
     );
     return await Promise.all(promises);
   }
 
   /**
-   * Delete a UI label translation
+   * Delete a UI label translation for a specific store
    */
-  async deleteUILabel(key, languageCode) {
+  async deleteUILabel(storeId, key, languageCode) {
     return await Translation.destroy({
-      where: { key, language_code: languageCode }
+      where: {
+        store_id: storeId,
+        key,
+        language_code: languageCode
+      }
     });
   }
 
