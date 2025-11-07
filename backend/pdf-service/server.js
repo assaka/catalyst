@@ -143,15 +143,18 @@ app.post('/capture-screenshot', async (req, res) => {
 
       console.log(`📸 [${requestId}] Navigating to URL...`);
 
-      // Navigate to the page
+      // Navigate to the page with increased timeout
       await page.goto(url, {
-        waitUntil: 'networkidle0',
-        timeout: 30000
+        waitUntil: 'networkidle2', // Less strict than networkidle0
+        timeout: 45000 // Increased to 45 seconds
       });
 
-      // Wait for additional time if specified
+      console.log(`📸 [${requestId}] Page loaded, waiting for stability...`);
+
+      // Wait for additional time if specified (using setTimeout instead of deprecated waitForTimeout)
       if (options.waitTime) {
-        await page.waitForTimeout(options.waitTime);
+        await new Promise(resolve => setTimeout(resolve, options.waitTime));
+        console.log(`📸 [${requestId}] Waited ${options.waitTime}ms`);
       }
 
       console.log(`📸 [${requestId}] Capturing screenshot...`);
@@ -184,9 +187,22 @@ app.post('/capture-screenshot', async (req, res) => {
 
   } catch (error) {
     console.error(`❌ [${requestId}] Screenshot capture error:`, error);
+    console.error(`❌ [${requestId}] Error stack:`, error.stack);
+    console.error(`❌ [${requestId}] Error type:`, error.constructor.name);
+
+    // Provide more specific error messages
+    let errorMessage = error.message;
+    if (error.message.includes('timeout')) {
+      errorMessage = `Page load timeout: The page took too long to load (>45s)`;
+    } else if (error.message.includes('net::ERR')) {
+      errorMessage = `Network error: Unable to reach the URL - ${error.message}`;
+    } else if (error.message.includes('Navigation failed')) {
+      errorMessage = `Navigation failed: The page could not be loaded - ${error.message}`;
+    }
+
     res.status(500).json({
       success: false,
-      error: error.message
+      error: errorMessage
     });
   }
 });
