@@ -8,7 +8,10 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { Eye, ShoppingCart, Search, Heart, CreditCard, Package, RefreshCw, Calendar, ChevronLeft, ChevronRight, Activity, Users, CheckCircle, TrendingUp, BarChart3 } from "lucide-react";
+import { Eye, ShoppingCart, Search, Heart, CreditCard, Package, RefreshCw, Calendar, ChevronLeft, ChevronRight, Activity, Users, CheckCircle, TrendingUp, BarChart3, Clock, Monitor, Smartphone, Tablet, Globe } from "lucide-react";
+import SimpleLineChart from "@/components/admin/analytics/SimpleLineChart";
+import DonutChart from "@/components/admin/analytics/DonutChart";
+import apiClient from "@/api/client";
 
 export default function CustomerActivityPage() {
   const { selectedStore, getSelectedStoreId } = useStoreSelection();
@@ -28,6 +31,23 @@ export default function CustomerActivityPage() {
   });
   const [showDashboard, setShowDashboard] = useState(true);
 
+  // Real-time and session analytics
+  const [realtimeData, setRealtimeData] = useState({
+    users_online: 0,
+    logged_in_users: 0,
+    guest_users: 0,
+    active_pages: []
+  });
+  const [sessionAnalytics, setSessionAnalytics] = useState({
+    total_sessions: 0,
+    avg_session_duration: 0,
+    avg_events_per_session: 0,
+    device_breakdown: {},
+    browser_breakdown: {},
+    os_breakdown: {}
+  });
+  const [timeSeriesData, setTimeSeriesData] = useState([]);
+
   // Pagination state
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage] = useState(20);
@@ -41,29 +61,76 @@ export default function CustomerActivityPage() {
   useEffect(() => {
     if (selectedStore) {
       loadData(1); // Reset to page 1 when store changes
-      loadAnalytics(); // Load dashboard analytics
+      loadRealtimeData(); // Load real-time users
+      loadSessionAnalytics(); // Load session data
+      loadTimeSeriesData(); // Load time-series chart data
     }
+  }, [selectedStore, startDate, endDate]);
+
+  // Auto-refresh real-time data every 30 seconds
+  useEffect(() => {
+    if (!selectedStore) return;
+
+    const interval = setInterval(() => {
+      loadRealtimeData();
+    }, 30000); // 30 seconds
+
+    return () => clearInterval(interval);
   }, [selectedStore]);
 
-  const loadAnalytics = async () => {
+  const loadRealtimeData = async () => {
     if (!selectedStore) return;
 
     try {
-      // Calculate analytics from activities
-      // In production, this would be a dedicated analytics endpoint
-
-      // For now, we'll calculate from the activities we have
-      // This is a temporary solution until we create analytics API endpoints
-
-      setAnalytics({
-        topProducts: [],
-        topPages: [],
-        bestSellers: [],
-        conversionFunnel: {},
-        timeSeriesData: []
-      });
+      const response = await apiClient.get(`/analytics-dashboard/${selectedStore.id}/realtime`);
+      if (response.data.success) {
+        setRealtimeData(response.data.data);
+      }
     } catch (error) {
-      console.error('Error loading analytics:', error);
+      console.error('Error loading realtime data:', error);
+    }
+  };
+
+  const loadSessionAnalytics = async () => {
+    if (!selectedStore) return;
+
+    try {
+      const params = new URLSearchParams();
+      if (startDate) params.append('start_date', startDate);
+      if (endDate) params.append('end_date', endDate);
+
+      const response = await apiClient.get(`/analytics-dashboard/${selectedStore.id}/sessions?${params}`);
+      if (response.data.success) {
+        setSessionAnalytics(response.data.data);
+      }
+    } catch (error) {
+      console.error('Error loading session analytics:', error);
+    }
+  };
+
+  const loadTimeSeriesData = async () => {
+    if (!selectedStore) return;
+
+    try {
+      const params = new URLSearchParams({ interval: 'hour' });
+      if (startDate) params.append('start_date', startDate);
+      if (endDate) params.append('end_date', endDate);
+
+      const response = await apiClient.get(`/analytics-dashboard/${selectedStore.id}/timeseries?${params}`);
+      if (response.data.success) {
+        const chartData = response.data.data.map(d => ({
+          label: new Date(d.timestamp).toLocaleString('en-US', {
+            month: 'short',
+            day: 'numeric',
+            hour: 'numeric'
+          }),
+          value: d.events,
+          sessions: d.unique_sessions
+        }));
+        setTimeSeriesData(chartData);
+      }
+    } catch (error) {
+      console.error('Error loading timeseries data:', error);
     }
   };
 
@@ -305,6 +372,135 @@ export default function CustomerActivityPage() {
         {/* Analytics Dashboard */}
         {showDashboard && (
           <div className="mb-6 space-y-6">
+            {/* Real-Time Users Online */}
+            <Card className="border-green-200 bg-green-50">
+              <CardContent className="p-6">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <div className="flex items-center gap-2 mb-1">
+                      <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
+                      <h3 className="text-sm font-medium text-green-900 uppercase">Users Online Now</h3>
+                    </div>
+                    <p className="text-4xl font-bold text-green-700">{realtimeData.users_online}</p>
+                    <p className="text-sm text-green-600 mt-1">
+                      {realtimeData.logged_in_users} logged in • {realtimeData.guest_users} guests
+                    </p>
+                  </div>
+                  <Activity className="w-12 h-12 text-green-500 opacity-50" />
+                </div>
+                <div className="mt-4 pt-4 border-t border-green-200">
+                  <p className="text-xs text-green-700">Active in last 5 minutes • Auto-refreshes every 30s</p>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Traffic Over Time Chart */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <BarChart3 className="w-5 h-5 text-indigo-600" />
+                  Traffic Overview
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                {timeSeriesData.length > 0 ? (
+                  <SimpleLineChart
+                    data={timeSeriesData}
+                    height={250}
+                    color="#4F46E5"
+                  />
+                ) : (
+                  <div className="text-center py-12 text-gray-500">
+                    <BarChart3 className="w-12 h-12 mx-auto mb-2 text-gray-300" />
+                    <p>No traffic data available for selected period</p>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+
+            {/* Session Analytics Row */}
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+              {/* Device Breakdown */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Monitor className="w-5 h-5 text-blue-600" />
+                    Devices
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  {Object.keys(sessionAnalytics.device_breakdown || {}).length > 0 ? (
+                    <DonutChart
+                      data={sessionAnalytics.device_breakdown}
+                      size={180}
+                    />
+                  ) : (
+                    <div className="text-center py-8 text-gray-500">
+                      <Smartphone className="w-8 h-8 mx-auto mb-2 text-gray-300" />
+                      <p className="text-sm">No device data</p>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+
+              {/* Browser Breakdown */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Globe className="w-5 h-5 text-purple-600" />
+                    Browsers
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  {Object.keys(sessionAnalytics.browser_breakdown || {}).length > 0 ? (
+                    <DonutChart
+                      data={sessionAnalytics.browser_breakdown}
+                      size={180}
+                    />
+                  ) : (
+                    <div className="text-center py-8 text-gray-500">
+                      <Globe className="w-8 h-8 mx-auto mb-2 text-gray-300" />
+                      <p className="text-sm">No browser data</p>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+
+              {/* Session Duration Stats */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Clock className="w-5 h-5 text-orange-600" />
+                    Session Stats
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-4">
+                    <div className="flex items-center justify-between p-3 bg-blue-50 rounded-lg">
+                      <span className="text-sm font-medium text-gray-700">Total Sessions</span>
+                      <span className="text-lg font-bold text-blue-900">
+                        {sessionAnalytics.total_sessions?.toLocaleString() || 0}
+                      </span>
+                    </div>
+                    <div className="flex items-center justify-between p-3 bg-green-50 rounded-lg">
+                      <span className="text-sm font-medium text-gray-700">Avg. Duration</span>
+                      <span className="text-lg font-bold text-green-900">
+                        {sessionAnalytics.avg_session_duration
+                          ? `${Math.floor(sessionAnalytics.avg_session_duration / 60)}m ${Math.floor(sessionAnalytics.avg_session_duration % 60)}s`
+                          : '0s'}
+                      </span>
+                    </div>
+                    <div className="flex items-center justify-between p-3 bg-purple-50 rounded-lg">
+                      <span className="text-sm font-medium text-gray-700">Avg. Events</span>
+                      <span className="text-lg font-bold text-purple-900">
+                        {sessionAnalytics.avg_events_per_session?.toFixed(1) || 0}
+                      </span>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+
             {/* Quick Stats */}
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
               <Card>

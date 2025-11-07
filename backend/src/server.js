@@ -55,6 +55,7 @@ const migrationsRoutes = require('./routes/migrations');
 const customerActivityRoutes = require('./routes/customer-activity');
 const abTestingRoutes = require('./routes/ab-testing');
 const analyticsRoutes = require('./routes/analytics');
+const analyticsDashboardRoutes = require('./routes/analytics-dashboard');
 const gdprRoutes = require('./routes/gdpr');
 const customAnalyticsEventsRoutes = require('./routes/custom-analytics-events');
 const seoSettingsRoutes = require('./routes/seo-settings');
@@ -746,6 +747,7 @@ app.use('/api/plugins/ai', pluginAIRoutes); // Claude API integration for plugin
 app.use('/api/customer-activity', customerActivityRoutes);
 app.use('/api/ab-testing', abTestingRoutes);
 app.use('/api/analytics', analyticsRoutes);
+app.use('/api/analytics-dashboard', analyticsDashboardRoutes);
 app.use('/api/gdpr', gdprRoutes);
 app.use('/api/custom-analytics-events', customAnalyticsEventsRoutes);
 app.use('/api/seo-settings', seoSettingsRoutes);
