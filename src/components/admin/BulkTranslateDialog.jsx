@@ -173,13 +173,17 @@ export default function BulkTranslateDialog({
         setTranslationProgress({ current: i + 1, total: translateToLangs.length });
 
         // For UI Labels, pass progress callback to get item-level updates
+        console.log(`🔍 Checking entityName: "${entityName}" === "UI Labels": ${entityName === 'UI Labels'}`);
         const progressCallback = (entityName === 'UI Labels') ? (progress) => {
+          console.log('📊 Progress callback triggered:', progress);
           setItemProgress(progress);
         } : null;
+        console.log(`📞 Calling onTranslate with progressCallback:`, progressCallback !== null ? 'YES' : 'NO');
 
         const result = await onTranslate(translateFromLang, toLang, progressCallback);
 
-        console.log(`📥 BulkTranslateDialog: Received result for ${toLang}:`, {
+        console.log(`📥 BulkTranslateDialog: Full result object for ${toLang}:`, result);
+        console.log(`📥 BulkTranslateDialog: Parsed result:`, {
           success: result.success,
           translated: result.data?.translated,
           skipped: result.data?.skipped,
