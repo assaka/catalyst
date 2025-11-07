@@ -4,7 +4,10 @@
  * Run with: node src/database/migrations/add-demographics-to-customer-activities.js
  */
 
-const sequelize = require('../../config/database');
+const { Sequelize } = require('sequelize');
+const { getDatabaseConfig } = require('../../config/database');
+
+const sequelize = new Sequelize(getDatabaseConfig());
 
 async function runMigration() {
   try {
