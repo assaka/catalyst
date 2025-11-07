@@ -803,16 +803,16 @@ export default function HeatmapVisualization({
             </div>
           )}
 
-          {/* Canvas Container - sized to maintain viewport aspect ratio */}
+          {/* Canvas Container - full width and scrollable */}
           <div
-            className="relative w-full border rounded-lg bg-gray-100 overflow-hidden"
+            className="relative w-full border rounded-lg bg-gray-100 overflow-y-auto overflow-x-hidden"
             style={{
-              height: '700px' // Larger canvas for better visualization
+              maxHeight: '800px' // Max height for scrollable container
             }}
           >
             {/* Screenshot background */}
             {loadingScreenshot && (
-              <div className="absolute inset-0 flex items-center justify-center bg-gray-50">
+              <div className="flex items-center justify-center bg-gray-50 py-20">
                 <div className="text-center">
                   <RefreshCw className="w-8 h-8 animate-spin mx-auto mb-2 text-blue-500" />
                   <p className="text-sm text-gray-600">Capturing page screenshot...</p>
@@ -821,11 +821,11 @@ export default function HeatmapVisualization({
             )}
 
             {screenshot && !loadingScreenshot && (
-              <>
+              <div className="relative w-full">
                 <img
                   src={screenshot}
                   alt="Page screenshot"
-                  className="absolute inset-0 w-full h-full object-contain"
+                  className="w-full h-auto block"
                   style={{
                     opacity: 0.7, // Make screenshot slightly transparent so heatmap shows well
                     pointerEvents: 'none',
@@ -847,20 +847,34 @@ export default function HeatmapVisualization({
                 <div className="absolute top-2 left-2 bg-green-500 text-white px-2 py-1 rounded text-xs font-mono z-50 shadow-lg">
                   ✅ Screenshot Loaded ({(screenshot.length / 1024).toFixed(0)}KB)
                 </div>
-              </>
+
+                {/* Heatmap overlay canvas */}
+                <canvas
+                  ref={canvasRef}
+                  className="absolute top-0 left-0 w-full h-full"
+                  style={{
+                    width: '100%',
+                    height: '100%',
+                    imageRendering: 'auto',
+                    backgroundColor: 'transparent',
+                    pointerEvents: 'none'
+                  }}
+                />
+              </div>
             )}
 
-            {/* Heatmap overlay canvas */}
-            <canvas
-              ref={canvasRef}
-              className="absolute inset-0 w-full h-full"
-              style={{
-                width: '100%',
-                height: '100%',
-                imageRendering: 'auto',
-                backgroundColor: screenshot ? 'transparent' : 'white'
-              }}
-            />
+            {!screenshot && !loadingScreenshot && (
+              <canvas
+                ref={canvasRef}
+                className="w-full"
+                style={{
+                  height: '700px',
+                  width: '100%',
+                  imageRendering: 'auto',
+                  backgroundColor: 'white'
+                }}
+              />
+            )}
 
             {/* Color Legend */}
             {heatmapData.length > 0 && (
