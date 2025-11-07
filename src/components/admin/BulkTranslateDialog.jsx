@@ -225,7 +225,8 @@ export default function BulkTranslateDialog({
         setTimeout(() => setShowFlash(false), 3000);
       }
       if (totalSkipped > 0 && totalTranslated === 0) {
-        toast.info(`All ${totalSkipped} ${entityType} were skipped (already translated or missing source language)`);
+        const message = `All ${totalSkipped} ${entityType} already have translations. ${totalCreditsDeducted > 0 ? `Charged ${totalCreditsDeducted.toFixed(2)} credits.` : ''}`;
+        toast.info(message, { duration: 5000 });
       }
       if (totalFailed > 0) {
         console.warn('Translation errors:', allErrors);

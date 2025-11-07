@@ -349,16 +349,19 @@ export default function Translations() {
         console.log(`📊 UI Labels analysis: ${Object.keys(sourceLabels).length} total, ${keysToTranslate.length} to translate, ${existingKeys.size} already exist`);
 
         if (keysToTranslate.length === 0) {
-          console.log('⏭️ All labels already translated, returning early');
-          // Still need to charge for all labels
-          const totalLabels = Object.keys(sourceLabels).length;
-          const costPerItem = 0.1;
-          const creditsDeducted = totalLabels * costPerItem;
+          console.log('⏭️ All labels already translated, but still charging credits');
+          // Call backend to charge for all labels even though all are skipped
+          const chargeResult = await api.post('translations/ui-labels/bulk-translate', {
+            fromLang,
+            toLang
+          });
+
+          console.log('💰 Charge result for skipped labels:', chargeResult);
 
           return {
             success: true,
             data: { translated: 0, skipped: Object.keys(sourceLabels).length, failed: 0 },
-            creditsDeducted
+            creditsDeducted: chargeResult.creditsDeducted || 0
           };
         }
 

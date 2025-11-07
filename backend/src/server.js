@@ -53,6 +53,10 @@ const aiRoutes = require('./routes/ai'); // Centralized AI service
 const migrationsRoutes = require('./routes/migrations');
 // const diagnosticRoutes = require('./routes/diagnostic'); // Temporarily disabled
 const customerActivityRoutes = require('./routes/customer-activity');
+const abTestingRoutes = require('./routes/ab-testing');
+const analyticsRoutes = require('./routes/analytics');
+const gdprRoutes = require('./routes/gdpr');
+const customAnalyticsEventsRoutes = require('./routes/custom-analytics-events');
 const seoSettingsRoutes = require('./routes/seo-settings');
 const seoTemplateRoutes = require('./routes/seo-templates');
 const redirectRoutes = require('./routes/redirects');
@@ -740,6 +744,10 @@ app.use('/api/ai', aiStudioRoutes);
 app.use('/api/ai', aiPluginAssistantRoutes); // AI Plugin Assistant for no-code and developer modes
 app.use('/api/plugins/ai', pluginAIRoutes); // Claude API integration for plugin generation
 app.use('/api/customer-activity', customerActivityRoutes);
+app.use('/api/ab-testing', abTestingRoutes);
+app.use('/api/analytics', analyticsRoutes);
+app.use('/api/gdpr', gdprRoutes);
+app.use('/api/custom-analytics-events', customAnalyticsEventsRoutes);
 app.use('/api/seo-settings', seoSettingsRoutes);
 app.use('/api/seo-templates', seoTemplateRoutes);
 app.use('/api/redirects', redirectRoutes);

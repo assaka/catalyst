@@ -23,6 +23,9 @@ const Wishlist = require('./Wishlist');
 const Language = require('./Language');
 const Translation = require('./Translation');
 const CustomerActivity = require('./CustomerActivity');
+const ABTest = require('./ABTest');
+const ABTestAssignment = require('./ABTestAssignment');
+const CustomAnalyticsEvent = require('./CustomAnalyticsEvent');
 const SeoSettings = require('./SeoSettings');
 const SeoTemplate = require('./SeoTemplate');
 const Redirect = require('./Redirect');
@@ -197,6 +200,21 @@ const defineAssociations = () => {
   CustomerActivity.belongsTo(User, { foreignKey: 'user_id' });
   CustomerActivity.belongsTo(Product, { foreignKey: 'product_id' });
   Store.hasMany(CustomerActivity, { foreignKey: 'store_id' });
+
+  // ABTest associations
+  ABTest.belongsTo(Store, { foreignKey: 'store_id' });
+  Store.hasMany(ABTest, { foreignKey: 'store_id' });
+
+  // ABTestAssignment associations
+  ABTestAssignment.belongsTo(ABTest, { foreignKey: 'test_id' });
+  ABTestAssignment.belongsTo(Store, { foreignKey: 'store_id' });
+  ABTestAssignment.belongsTo(User, { foreignKey: 'user_id' });
+  ABTest.hasMany(ABTestAssignment, { foreignKey: 'test_id' });
+  Store.hasMany(ABTestAssignment, { foreignKey: 'store_id' });
+
+  // CustomAnalyticsEvent associations
+  CustomAnalyticsEvent.belongsTo(Store, { foreignKey: 'store_id' });
+  Store.hasMany(CustomAnalyticsEvent, { foreignKey: 'store_id' });
 
   // SeoSettings associations
   SeoSettings.belongsTo(Store, { foreignKey: 'store_id' });
@@ -389,6 +407,9 @@ module.exports = {
   Language,
   Translation,
   CustomerActivity,
+  ABTest,
+  ABTestAssignment,
+  CustomAnalyticsEvent,
   SeoSettings,
   SeoTemplate,
   Redirect,
