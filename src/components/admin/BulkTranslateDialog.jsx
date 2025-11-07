@@ -244,6 +244,9 @@ export default function BulkTranslateDialog({
       setItemProgress({ current: 0, total: 0 });
       setTranslateToLangs([]);
 
+      // Wait for React to process state updates before closing
+      await new Promise(resolve => setTimeout(resolve, 100));
+
       // Then close dialog
       console.log('🔒 Calling onOpenChange(false) to close modal');
       onOpenChange(false);

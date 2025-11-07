@@ -136,101 +136,405 @@ export const trackActivity = async (activityType, data = {}) => {
   }
 };
 
+/**
+ * Format product for dataLayer (enhanced with all available fields)
+ */
+const formatProduct = (product, index = 0, listName = null) => {
+  return {
+    item_id: product.id || product.product_id,
+    item_name: product.name || product.product_name,
+    item_brand: product.brand || product.brand_name || 'Unknown',
+    item_category: product.category_name || product.category || 'Uncategorized',
+    item_category2: product.subcategory || undefined,
+    item_variant: product.variant_name || product.selected_variant || undefined,
+    item_list_name: listName,
+    item_list_id: listName,
+    index: index,
+    quantity: product.quantity || 1,
+    price: parseFloat(product.price || 0),
+    discount: product.discount || 0,
+    currency: product.currency || 'USD',
+    sku: product.sku,
+    stock_status: product.in_stock ? 'in_stock' : 'out_of_stock',
+    item_url: product.url || product.product_url,
+    image_url: product.image || product.image_url
+  };
+};
+
 // Enhanced event tracking functions
-export const trackProductView = (product) => {
-  trackEvent('view_item', {
-    item_id: product.id,
-    item_name: product.name,
-    item_category: product.category_name,
-    price: product.price,
-    currency: 'No Currency'
+
+/**
+ * PRODUCT IMPRESSIONS (Category/List View)
+ */
+export const trackProductImpressions = (products, listName = 'Category Page') => {
+  if (!products || products.length === 0) return;
+
+  const items = products.map((product, index) => formatProduct(product, index, listName));
+
+  pushToDataLayer({
+    event: 'view_item_list',
+    ecommerce: {
+      item_list_name: listName,
+      item_list_id: listName.toLowerCase().replace(/\s+/g, '_'),
+      items: items
+    }
   });
-  
+
+  trackActivity('page_view', {
+    page_type: 'category_list',
+    metadata: {
+      products_shown: products.length,
+      list_name: listName,
+      product_ids: products.map(p => p.id).slice(0, 10)
+    }
+  });
+};
+
+/**
+ * PRODUCT CLICK (From List to Detail)
+ */
+export const trackProductClick = (product, position, listName = 'Category Page') => {
+  pushToDataLayer({
+    event: 'select_item',
+    ecommerce: {
+      item_list_name: listName,
+      item_list_id: listName.toLowerCase().replace(/\s+/g, '_'),
+      items: [formatProduct(product, position, listName)]
+    }
+  });
+};
+
+/**
+ * PRODUCT DETAIL VIEW (Enhanced)
+ */
+export const trackProductView = (product) => {
+  const productData = formatProduct(product);
+
+  pushToDataLayer({
+    event: 'view_item',
+    ecommerce: {
+      currency: productData.currency,
+      value: productData.price,
+      items: [productData]
+    }
+  });
+
   trackActivity('product_view', {
     product_id: product.id,
-    product_name: product.name,
-    product_price: product.price
+    metadata: {
+      product_name: product.name,
+      product_sku: product.sku,
+      product_price: product.price,
+      product_category: product.category_name,
+      product_brand: product.brand,
+      in_stock: product.in_stock,
+      has_variants: product.has_variants || false
+    }
   });
 };
 
-export const trackAddToCart = (product, quantity = 1) => {
-  trackEvent('add_to_cart', {
-    currency: 'No Currency',
-    value: product.price * quantity,
-    items: [{
-      item_id: product.id,
-      item_name: product.name,
-      item_category: product.category_name,
-      quantity: quantity,
-      price: product.price
-    }]
+/**
+ * ADD TO CART (Enhanced with full product data)
+ */
+export const trackAddToCart = (product, quantity = 1, variant = null) => {
+  const productData = {
+    ...formatProduct(product),
+    quantity: quantity
+  };
+
+  if (variant) {
+    productData.item_variant = variant.name || variant.option_values?.join(' / ');
+    productData.variant_id = variant.id;
+  }
+
+  pushToDataLayer({
+    event: 'add_to_cart',
+    ecommerce: {
+      currency: productData.currency,
+      value: productData.price * quantity,
+      items: [productData]
+    }
   });
-  
+
   trackActivity('add_to_cart', {
     product_id: product.id,
-    product_name: product.name,
-    quantity: quantity,
-    value: product.price * quantity
+    metadata: {
+      product_name: product.name,
+      product_sku: product.sku,
+      product_price: product.price,
+      quantity: quantity,
+      variant: variant ? {
+        id: variant.id,
+        name: variant.name,
+        options: variant.option_values
+      } : null,
+      cart_value: product.price * quantity,
+      currency: productData.currency,
+      category: product.category_name,
+      brand: product.brand
+    }
   });
 };
 
+/**
+ * REMOVE FROM CART (Enhanced)
+ */
 export const trackRemoveFromCart = (product, quantity = 1) => {
-  trackEvent('remove_from_cart', {
-    currency: 'USD',
-    value: product.price * quantity,
-    items: [{
-      item_id: product.id,
-      item_name: product.name,
-      item_category: product.category_name,
-      quantity: quantity,
-      price: product.price
-    }]
+  const productData = {
+    ...formatProduct(product),
+    quantity: quantity
+  };
+
+  pushToDataLayer({
+    event: 'remove_from_cart',
+    ecommerce: {
+      currency: productData.currency,
+      value: productData.price * quantity,
+      items: [productData]
+    }
   });
-  
+
   trackActivity('remove_from_cart', {
     product_id: product.id,
-    product_name: product.name,
-    quantity: quantity,
-    value: product.price * quantity
+    metadata: {
+      product_name: product.name,
+      product_sku: product.sku,
+      product_price: product.price,
+      quantity: quantity,
+      removed_value: product.price * quantity,
+      currency: productData.currency,
+      category: product.category_name,
+      brand: product.brand
+    }
   });
 };
 
+/**
+ * VIEW CART
+ */
+export const trackViewCart = (cartItems, cartTotal) => {
+  const items = cartItems.map((item, index) => formatProduct({
+    id: item.product_id || item.id,
+    name: item.product_name || item.name,
+    price: item.unit_price || item.price,
+    quantity: item.quantity,
+    category_name: item.category_name,
+    brand: item.brand,
+    sku: item.sku
+  }, index));
+
+  pushToDataLayer({
+    event: 'view_cart',
+    ecommerce: {
+      currency: 'USD',
+      value: parseFloat(cartTotal),
+      items: items
+    }
+  });
+};
+
+/**
+ * BEGIN CHECKOUT
+ */
+export const trackBeginCheckout = (cartItems, cartTotal) => {
+  const items = cartItems.map((item, index) => formatProduct({
+    id: item.product_id || item.id,
+    name: item.product_name || item.name,
+    price: item.unit_price || item.price,
+    quantity: item.quantity,
+    category_name: item.category_name,
+    brand: item.brand,
+    sku: item.sku
+  }, index));
+
+  pushToDataLayer({
+    event: 'begin_checkout',
+    ecommerce: {
+      currency: 'USD',
+      value: parseFloat(cartTotal),
+      items: items
+    }
+  });
+
+  trackActivity('checkout_started', {
+    metadata: {
+      cart_items_count: items.length,
+      cart_value: cartTotal,
+      product_ids: items.map(item => item.item_id)
+    }
+  });
+};
+
+/**
+ * ADD TO WISHLIST
+ */
+export const trackAddToWishlist = (product) => {
+  const productData = formatProduct(product);
+
+  pushToDataLayer({
+    event: 'add_to_wishlist',
+    ecommerce: {
+      currency: productData.currency,
+      value: productData.price,
+      items: [productData]
+    }
+  });
+};
+
+/**
+ * PROMOTION VIEW
+ */
+export const trackPromotionView = (promotions) => {
+  if (!Array.isArray(promotions)) promotions = [promotions];
+
+  const promoItems = promotions.map((promo, index) => ({
+    promotion_id: promo.id,
+    promotion_name: promo.name || promo.title,
+    creative_name: promo.creative || promo.banner_name,
+    creative_slot: promo.position || `slot_${index}`,
+    location_id: promo.location || window.location.pathname
+  }));
+
+  pushToDataLayer({
+    event: 'view_promotion',
+    ecommerce: {
+      items: promoItems
+    }
+  });
+};
+
+/**
+ * PROMOTION CLICK
+ */
+export const trackPromotionClick = (promotion) => {
+  pushToDataLayer({
+    event: 'select_promotion',
+    ecommerce: {
+      items: [{
+        promotion_id: promotion.id,
+        promotion_name: promotion.name || promotion.title,
+        creative_name: promotion.creative || promotion.banner_name,
+        creative_slot: promotion.position,
+        location_id: window.location.pathname
+      }]
+    }
+  });
+};
+
+/**
+ * NEWSLETTER SIGNUP
+ */
+export const trackNewsletterSignup = (source = 'footer') => {
+  pushToDataLayer({
+    event: 'newsletter_signup',
+    form_location: source,
+    page_url: window.location.href
+  });
+};
+
+/**
+ * PRODUCT FILTER APPLIED
+ */
+export const trackFilterApplied = (filterType, filterValue, resultsCount) => {
+  pushToDataLayer({
+    event: 'filter_applied',
+    filter_type: filterType,
+    filter_value: filterValue,
+    results_count: resultsCount,
+    page_url: window.location.href
+  });
+};
+
+/**
+ * COUPON APPLIED
+ */
+export const trackCouponApplied = (couponCode, discountAmount, cartTotal) => {
+  pushToDataLayer({
+    event: 'coupon_applied',
+    coupon_code: couponCode,
+    discount_amount: parseFloat(discountAmount),
+    cart_total: parseFloat(cartTotal)
+  });
+};
+
+/**
+ * QUICK VIEW
+ */
+export const trackQuickView = (product) => {
+  const productData = formatProduct(product);
+
+  pushToDataLayer({
+    event: 'quick_view',
+    ecommerce: {
+      items: [productData]
+    }
+  });
+};
+
+/**
+ * PURCHASE (Enhanced)
+ */
 export const trackPurchase = (order) => {
-  // Support multiple order formats from different contexts
   const orderId = order.id || order.order_id;
-  const orderTotal = order.total_amount || order.total;
-  const orderCurrency = order.currency || 'No Currency';
+  const orderTotal = parseFloat(order.total_amount || order.total || 0);
+  const orderCurrency = order.currency || 'USD';
   const orderItems = order.OrderItems || order.items || order.orderItems || [];
 
-  trackEvent('purchase', {
-    transaction_id: orderId,
-    value: orderTotal,
-    currency: orderCurrency,
-    items: orderItems.map(item => ({
-      item_id: item.product_id || item.id,
-      item_name: item.product_name || item.name,
-      item_category: item.category_name || item.category,
-      quantity: item.quantity || 1,
-      price: item.unit_price || item.price || 0
-    }))
+  const items = orderItems.map((item, index) => formatProduct({
+    id: item.product_id || item.id,
+    name: item.product_name || item.name,
+    price: item.unit_price || item.price,
+    quantity: item.quantity,
+    category_name: item.category_name,
+    brand: item.brand,
+    sku: item.sku
+  }, index));
+
+  pushToDataLayer({
+    event: 'purchase',
+    ecommerce: {
+      transaction_id: orderId,
+      value: orderTotal,
+      tax: parseFloat(order.tax_amount || 0),
+      shipping: parseFloat(order.shipping_amount || 0),
+      currency: orderCurrency,
+      coupon: order.coupon_code || undefined,
+      items: items
+    }
   });
 
   trackActivity('order_completed', {
-    order_id: orderId,
-    order_total: orderTotal,
-    order_items_count: orderItems.length
+    metadata: {
+      order_id: orderId,
+      order_total: orderTotal,
+      order_items_count: orderItems.length,
+      tax_amount: order.tax_amount,
+      shipping_amount: order.shipping_amount,
+      discount_amount: order.discount_amount,
+      coupon_code: order.coupon_code,
+      payment_method: order.payment_method,
+      shipping_method: order.shipping_method
+    }
   });
 };
 
-export const trackSearch = (query, results_count = 0) => {
-  trackEvent('search', {
+/**
+ * SEARCH
+ */
+export const trackSearch = (query, resultsCount = 0, filters = {}) => {
+  pushToDataLayer({
+    event: 'search',
     search_term: query,
-    results_count: results_count
+    search_results: resultsCount,
+    search_filters: filters
   });
-  
+
   trackActivity('search', {
     search_query: query,
-    results_count: results_count
+    metadata: {
+      results_count: resultsCount,
+      filters: filters
+    }
   });
 };
 
@@ -244,13 +548,29 @@ export default function DataLayerManager() {
       
       // Make tracking functions globally available
       window.catalyst = {
+        // Core tracking
+        trackEvent,
+        trackActivity,
+        pushToDataLayer,
+        // Product tracking
+        trackProductImpressions,
+        trackProductClick,
         trackProductView,
         trackAddToCart,
         trackRemoveFromCart,
+        trackViewCart,
+        // Checkout tracking
+        trackBeginCheckout,
         trackPurchase,
         trackSearch,
-        trackEvent,
-        trackActivity
+        // Engagement tracking
+        trackAddToWishlist,
+        trackPromotionView,
+        trackPromotionClick,
+        trackNewsletterSignup,
+        trackFilterApplied,
+        trackCouponApplied,
+        trackQuickView
       };
     }
 
