@@ -268,6 +268,7 @@ export default function HeatmapVisualization({
   onDateRangeChange
 }) {
   const canvasRef = useRef(null);
+  const imgRef = useRef(null);
   const rendererRef = useRef(null);
   const [pageUrl, setPageUrl] = useState(initialPageUrl);
   const [heatmapData, setHeatmapData] = useState([]);
@@ -276,6 +277,7 @@ export default function HeatmapVisualization({
   const [realTimeStats, setRealTimeStats] = useState(null);
   const [screenshot, setScreenshot] = useState(null);
   const [loadingScreenshot, setLoadingScreenshot] = useState(false);
+  const [screenshotDimensions, setScreenshotDimensions] = useState(null);
 
   // Filters
   const [interactionType, setInteractionType] = useState('click');
@@ -823,6 +825,7 @@ export default function HeatmapVisualization({
             {screenshot && !loadingScreenshot && (
               <div className="relative w-full">
                 <img
+                  ref={imgRef}
                   src={screenshot}
                   alt="Page screenshot"
                   className="w-full h-auto block"
@@ -831,12 +834,30 @@ export default function HeatmapVisualization({
                     pointerEvents: 'none',
                     border: '2px solid red' // Temporary debug border
                   }}
-                  onLoad={() => {
+                  onLoad={(e) => {
+                    const img = e.target;
+                    const width = img.clientWidth;
+                    const height = img.clientHeight;
+
                     console.log('✅ Screenshot <img> loaded and rendered successfully');
                     console.log('📸 Image dimensions:', {
-                      naturalWidth: document.querySelector('img[alt="Page screenshot"]')?.naturalWidth,
-                      naturalHeight: document.querySelector('img[alt="Page screenshot"]')?.naturalHeight
+                      naturalWidth: img.naturalWidth,
+                      naturalHeight: img.naturalHeight,
+                      clientWidth: width,
+                      clientHeight: height
                     });
+
+                    setScreenshotDimensions({ width, height });
+
+                    // Resize canvas to match image and re-render heatmap
+                    if (canvasRef.current && rendererRef.current) {
+                      console.log('🎨 Resizing canvas to match screenshot:', { width, height });
+                      rendererRef.current.resize();
+                      if (heatmapData.length > 0) {
+                        console.log('🎨 Re-rendering heatmap with', heatmapData.length, 'points');
+                        rendererRef.current.render(heatmapData);
+                      }
+                    }
                   }}
                   onError={(e) => {
                     console.error('❌ Screenshot <img> failed to load', e);
@@ -846,15 +867,16 @@ export default function HeatmapVisualization({
                 {/* Debug indicator */}
                 <div className="absolute top-2 left-2 bg-green-500 text-white px-2 py-1 rounded text-xs font-mono z-50 shadow-lg">
                   ✅ Screenshot Loaded ({(screenshot.length / 1024).toFixed(0)}KB)
+                  {screenshotDimensions && ` - ${screenshotDimensions.width}x${screenshotDimensions.height}`}
                 </div>
 
                 {/* Heatmap overlay canvas */}
                 <canvas
                   ref={canvasRef}
-                  className="absolute top-0 left-0 w-full h-full"
+                  className="absolute top-0 left-0"
                   style={{
-                    width: '100%',
-                    height: '100%',
+                    width: screenshotDimensions ? `${screenshotDimensions.width}px` : '100%',
+                    height: screenshotDimensions ? `${screenshotDimensions.height}px` : '100%',
                     imageRendering: 'auto',
                     backgroundColor: 'transparent',
                     pointerEvents: 'none'
