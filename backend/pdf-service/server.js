@@ -143,19 +143,18 @@ app.post('/capture-screenshot', async (req, res) => {
 
       console.log(`📸 [${requestId}] Navigating to URL...`);
 
-      // Navigate to the page with increased timeout
+      // Navigate to the page and wait for it to be fully loaded
       await page.goto(url, {
-        waitUntil: 'networkidle2', // Less strict than networkidle0
+        waitUntil: ['load', 'domcontentloaded', 'networkidle0'], // Wait for complete page load
         timeout: 45000 // Increased to 45 seconds
       });
 
       console.log(`📸 [${requestId}] Page loaded, waiting for stability...`);
 
-      // Wait for additional time if specified (using setTimeout instead of deprecated waitForTimeout)
-      if (options.waitTime) {
-        await new Promise(resolve => setTimeout(resolve, options.waitTime));
-        console.log(`📸 [${requestId}] Waited ${options.waitTime}ms`);
-      }
+      // Always wait for additional time to ensure images/fonts/animations are rendered
+      const waitTime = options.waitTime || 3000; // Default to 3 seconds
+      await new Promise(resolve => setTimeout(resolve, waitTime));
+      console.log(`📸 [${requestId}] Waited ${waitTime}ms for page to fully render`)
 
       console.log(`📸 [${requestId}] Capturing screenshot...`);
 
