@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Languages } from "lucide-react";
+import { Languages, CheckCircle } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -52,6 +52,7 @@ export default function BulkTranslateDialog({
   const [localCredits, setLocalCredits] = useState(userCredits);
   const [translationProgress, setTranslationProgress] = useState({ current: 0, total: 0 });
   const [itemProgress, setItemProgress] = useState({ current: 0, total: 0 }); // For UI labels item-level progress
+  const [showBackgroundMessage, setShowBackgroundMessage] = useState(false); // For UI Labels background processing message
 
   // Sync local credits with prop
   useEffect(() => {
@@ -216,13 +217,13 @@ export default function BulkTranslateDialog({
         // Background processing mode - show message and close after 3 seconds
         console.log('🔄 Background processing detected for UI Labels');
 
+        // Show the background message in modal
+        setShowBackgroundMessage(true);
+        setIsTranslating(false); // Stop showing "translating" state
+
         // Show success message about background processing and email notification
         const message = 'Translation started in background. You will be notified by email when complete (approximately 10 minutes).';
         toast.success(message, { duration: 8000 });
-
-        // Show green flash message
-        setFlashMessage({ type: 'success', message });
-        setShowFlash(true);
 
         // Update local credits for display
         if (totalCreditsDeducted > 0) {
@@ -236,11 +237,10 @@ export default function BulkTranslateDialog({
         console.log('✅ 3 seconds elapsed, closing modal now');
 
         // Reset states
-        setIsTranslating(false);
+        setShowBackgroundMessage(false);
         setTranslationProgress({ current: 0, total: 0 });
         setItemProgress({ current: 0, total: 0 });
         setTranslateToLangs([]);
-        setShowFlash(false);
 
         // Close dialog
         onOpenChange(false);
@@ -334,8 +334,8 @@ export default function BulkTranslateDialog({
         />
       )}
 
-      <Dialog open={open} onOpenChange={!isTranslating ? onOpenChange : undefined}>
-        <DialogContent className="max-w-md max-h-[80vh] overflow-hidden flex flex-col" onInteractOutside={(e) => { if (isTranslating) e.preventDefault(); }}>
+      <Dialog open={open} onOpenChange={!isTranslating && !showBackgroundMessage ? onOpenChange : undefined}>
+        <DialogContent className="max-w-md max-h-[80vh] overflow-hidden flex flex-col" onInteractOutside={(e) => { if (isTranslating || showBackgroundMessage) e.preventDefault(); }}>
           <DialogHeader>
             <DialogTitle>Bulk AI Translate {entityName}</DialogTitle>
           </DialogHeader>
@@ -451,6 +451,32 @@ export default function BulkTranslateDialog({
             </div>
           )}
 
+          {/* Background Processing Message for UI Labels */}
+          {showBackgroundMessage && (
+            <div className="bg-green-50 border-2 border-green-500 rounded-lg p-6 animate-pulse">
+              <div className="flex items-center gap-3 mb-3">
+                <div className="w-12 h-12 bg-green-500 rounded-full flex items-center justify-center">
+                  <CheckCircle className="w-8 h-8 text-white" />
+                </div>
+                <div className="flex-1">
+                  <h3 className="text-lg font-bold text-green-900">Translation Started in Background</h3>
+                  <p className="text-sm text-green-700">This modal will close in 3 seconds</p>
+                </div>
+              </div>
+              <div className="bg-white rounded-lg p-4 border border-green-200">
+                <p className="text-sm text-gray-700 mb-2">
+                  ✅ Your UI labels translation has been started in the background.
+                </p>
+                <p className="text-sm text-gray-700 mb-2">
+                  📧 <strong>You will be notified by email when complete</strong> (approximately 10 minutes).
+                </p>
+                <p className="text-xs text-gray-500">
+                  You can close this window and continue working. The translation will continue processing on the server.
+                </p>
+              </div>
+            </div>
+          )}
+
           {/* Translation Progress */}
           {isTranslating && entityName !== 'UI Labels' && (
             <div className="bg-purple-50 border border-purple-200 rounded-lg p-4">
@@ -497,14 +523,14 @@ export default function BulkTranslateDialog({
                 onOpenChange(false);
                 setTranslateToLangs([]);
               }}
-              disabled={isTranslating}
+              disabled={isTranslating || showBackgroundMessage}
             >
               Cancel
             </Button>
             <Button
               type="button"
               onClick={handleTranslate}
-              disabled={isTranslating || !translateFromLang || translateToLangs.length === 0 || (localCredits !== null && localCredits < (itemCount * translateToLangs.length * translationCost))}
+              disabled={isTranslating || showBackgroundMessage || !translateFromLang || translateToLangs.length === 0 || (localCredits !== null && localCredits < (itemCount * translateToLangs.length * translationCost))}
               className="bg-blue-600 hover:bg-blue-700"
             >
               {isTranslating ? (
