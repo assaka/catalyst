@@ -798,21 +798,56 @@ export default function AnalyticsSettings() {
                                 </div>
 
                                 <div className="p-4 bg-green-50 border-green-200 rounded-lg">
-                                    <h4 className="font-semibold text-green-900 mb-2">✅ Available Event Templates</h4>
+                                    <h4 className="font-semibold text-green-900 mb-2">✅ Enhanced Tracking Available Now</h4>
                                     <p className="text-sm text-green-800 mb-3">
-                                        Common event templates will be available soon:
+                                        20+ tracking functions are ready to use in your components via <code className="px-1 py-0.5 bg-green-100 rounded">window.catalyst</code>:
                                     </p>
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-sm text-green-800">
-                                        <div>• Newsletter Signup</div>
-                                        <div>• Add to Wishlist</div>
-                                        <div>• Scroll Depth Tracking</div>
-                                        <div>• Video Engagement</div>
-                                        <div>• Product Filter Used</div>
-                                        <div>• Promo Banner Click</div>
-                                        <div>• Quick View Opened</div>
-                                        <div>• Coupon Applied</div>
-                                        <div>• Live Chat Opened</div>
-                                        <div>• Size Guide Viewed</div>
+                                        <div className="flex items-center gap-1">
+                                            <CheckCircle className="w-3 h-3" />
+                                            Product Impressions (Lists)
+                                        </div>
+                                        <div className="flex items-center gap-1">
+                                            <CheckCircle className="w-3 h-3" />
+                                            Product Clicks
+                                        </div>
+                                        <div className="flex items-center gap-1">
+                                            <CheckCircle className="w-3 h-3" />
+                                            Add/Remove Cart (Enhanced)
+                                        </div>
+                                        <div className="flex items-center gap-1">
+                                            <CheckCircle className="w-3 h-3" />
+                                            Wishlist Tracking
+                                        </div>
+                                        <div className="flex items-center gap-1">
+                                            <CheckCircle className="w-3 h-3" />
+                                            Promotion Views & Clicks
+                                        </div>
+                                        <div className="flex items-center gap-1">
+                                            <CheckCircle className="w-3 h-3" />
+                                            Newsletter Signup
+                                        </div>
+                                        <div className="flex items-center gap-1">
+                                            <CheckCircle className="w-3 h-3" />
+                                            Filter & Sort Tracking
+                                        </div>
+                                        <div className="flex items-center gap-1">
+                                            <CheckCircle className="w-3 h-3" />
+                                            Coupon Applied
+                                        </div>
+                                        <div className="flex items-center gap-1">
+                                            <CheckCircle className="w-3 h-3" />
+                                            Quick View
+                                        </div>
+                                        <div className="flex items-center gap-1">
+                                            <CheckCircle className="w-3 h-3" />
+                                            Checkout Funnel
+                                        </div>
+                                    </div>
+                                    <div className="mt-3 pt-3 border-t border-green-200">
+                                        <p className="text-xs text-green-700">
+                                            📖 See <strong>ENHANCED_TRACKING_GUIDE.md</strong> for implementation examples
+                                        </p>
                                     </div>
                                 </div>
                             </div>
