@@ -1,5 +1,6 @@
 const express = require('express');
 const router = express.Router();
+const { Op } = require('sequelize');
 const HeatmapInteraction = require('../models/HeatmapInteraction');
 const HeatmapSession = require('../models/HeatmapSession');
 const { authMiddleware } = require('../middleware/auth');
@@ -158,7 +159,7 @@ router.get('/data/:storeId', authMiddleware, checkStoreOwnership, async (req, re
       deviceTypes: device_types ? device_types.split(',') : ['desktop', 'tablet', 'mobile']
     };
 
-    const heatmapData = await heatmapTrackingService.getHeatmapData(storeId, page_url, options);
+    const heatmapData = await HeatmapInteraction.getHeatmapData(storeId, page_url, options);
 
     res.json({
       success: true,
@@ -191,7 +192,7 @@ router.get('/analytics/:storeId', authMiddleware, checkStoreOwnership, async (re
       deviceType: device_type || null
     };
 
-    const analytics = await heatmapTrackingService.getSessionAnalytics(storeId, options);
+    const analytics = await HeatmapSession.getSessionAnalytics(storeId, options);
 
     res.json({
       success: true,
@@ -212,12 +213,33 @@ router.get('/realtime/:storeId', authMiddleware, checkStoreOwnership, async (req
   try {
     const { storeId } = req.params;
     const { time_window = 300000 } = req.query; // 5 minutes default
+    const timeWindow = parseInt(time_window);
 
-    const stats = await heatmapTrackingService.getRealTimeStats(storeId, parseInt(time_window));
+    const startTime = new Date(Date.now() - timeWindow);
+
+    const stats = await HeatmapInteraction.findAll({
+      where: {
+        store_id: storeId,
+        timestamp_utc: {
+          [Op.gte]: startTime
+        }
+      },
+      attributes: [
+        'interaction_type',
+        [HeatmapInteraction.sequelize.fn('COUNT', '*'), 'count'],
+        [HeatmapInteraction.sequelize.fn('COUNT', HeatmapInteraction.sequelize.fn('DISTINCT', HeatmapInteraction.sequelize.col('session_id'))), 'unique_sessions']
+      ],
+      group: ['interaction_type'],
+      raw: true
+    });
 
     res.json({
       success: true,
-      data: stats
+      data: {
+        time_window: timeWindow,
+        start_time: startTime,
+        stats
+      }
     });
   } catch (error) {
     console.error('Error getting real-time heatmap stats:', error);
@@ -328,7 +350,7 @@ router.get('/interactions/:storeId', authMiddleware, checkStoreOwnership, async 
 
     if (start_date && end_date) {
       whereClause.timestamp_utc = {
-        [HeatmapInteraction.sequelize.Op.between]: [new Date(start_date), new Date(end_date)]
+        [Op.between]: [new Date(start_date), new Date(end_date)]
       };
     }
 
@@ -367,11 +389,36 @@ router.delete('/cleanup/:storeId', authMiddleware, checkStoreOwnership, async (r
       });
     }
 
-    const result = await heatmapTrackingService.cleanupOldData(parseInt(retention_days));
+    const retentionDays = parseInt(retention_days);
+    const cutoffDate = new Date(Date.now() - (retentionDays * 24 * 60 * 60 * 1000));
+
+    const deletedInteractions = await HeatmapInteraction.destroy({
+      where: {
+        store_id: storeId,
+        timestamp_utc: {
+          [Op.lt]: cutoffDate
+        }
+      }
+    });
+
+    const deletedSessions = await HeatmapSession.destroy({
+      where: {
+        store_id: storeId,
+        session_start: {
+          [Op.lt]: cutoffDate
+        }
+      }
+    });
+
+    console.log(`Cleaned up ${deletedInteractions} interactions and ${deletedSessions} sessions older than ${retentionDays} days`);
 
     res.json({
       success: true,
-      data: result
+      data: {
+        deletedInteractions,
+        deletedSessions,
+        cutoffDate
+      }
     });
   } catch (error) {
     console.error('Error cleaning up heatmap data:', error);

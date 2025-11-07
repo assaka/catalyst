@@ -319,9 +319,11 @@ export default function Translations() {
    * Supports progress callback for UI labels
    */
   const handleBulkTranslate = async (fromLang, toLang, onProgress) => {
+    console.log('🎯 handleBulkTranslate called with:', { fromLang, toLang, hasProgressCallback: !!onProgress });
     try {
       // For UI labels with progress callback, use batch processing
       if (onProgress) {
+        console.log('📊 Using client-side batching for UI labels');
         // Get all source labels
         const sourceLabelsResponse = await api.get(`/translations/ui-labels?lang=${fromLang}`);
         const targetLabelsResponse = await api.get(`/translations/ui-labels?lang=${toLang}`);
@@ -344,11 +346,19 @@ export default function Translations() {
         const existingKeys = new Set(Object.keys(targetLabels));
         const keysToTranslate = Object.keys(sourceLabels).filter(key => !existingKeys.has(key));
 
+        console.log(`📊 UI Labels analysis: ${Object.keys(sourceLabels).length} total, ${keysToTranslate.length} to translate, ${existingKeys.size} already exist`);
+
         if (keysToTranslate.length === 0) {
+          console.log('⏭️ All labels already translated, returning early');
+          // Still need to charge for all labels
+          const totalLabels = Object.keys(sourceLabels).length;
+          const costPerItem = 0.1;
+          const creditsDeducted = totalLabels * costPerItem;
+
           return {
             success: true,
             data: { translated: 0, skipped: Object.keys(sourceLabels).length, failed: 0 },
-            creditsDeducted: 0
+            creditsDeducted
           };
         }
 
