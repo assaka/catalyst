@@ -420,13 +420,14 @@ export default function CustomerActivityPage() {
             </Card>
 
             {/* Traffic Over Time Chart */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <BarChart3 className="w-5 h-5 text-indigo-600" />
-                  Traffic Overview
-                </CardTitle>
-              </CardHeader>
+            {widgets.traffic && (
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <BarChart3 className="w-5 h-5 text-indigo-600" />
+                    Traffic Overview
+                  </CardTitle>
+                </CardHeader>
               <CardContent>
                 {timeSeriesData.length > 0 ? (
                   <SimpleLineChart
@@ -441,10 +442,12 @@ export default function CustomerActivityPage() {
                   </div>
                 )}
               </CardContent>
-            </Card>
+              </Card>
+            )}
 
             {/* Session Analytics Row */}
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            {widgets.demographics && (
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
               {/* Device Breakdown */}
               <Card>
                 <CardHeader>
@@ -524,10 +527,12 @@ export default function CustomerActivityPage() {
                   </div>
                 </CardContent>
               </Card>
-            </div>
+              </div>
+            )}
 
-            {/* Quick Stats */}
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+            {/* Top Products & Pages */}
+            {widgets.topProducts && (
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
               <Card>
                 <CardContent className="p-4">
                   <div className="flex items-center justify-between">
