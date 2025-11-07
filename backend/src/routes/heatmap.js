@@ -702,6 +702,34 @@ router.get('/scroll-depth/:storeId', authMiddleware, checkStoreOwnership, async 
   }
 });
 
+// Test endpoint to check if screenshot service is reachable (requires authentication)
+router.get('/screenshot-test', authMiddleware, async (req, res) => {
+  try {
+    console.log('📸 Screenshot test endpoint called');
+
+    // Test if we can reach the PDF service
+    const pdfServiceUrl = process.env.PDF_SERVICE_URL || 'http://localhost:3001';
+    console.log(`📸 PDF_SERVICE_URL is: ${pdfServiceUrl}`);
+
+    const axios = require('axios');
+    const healthCheck = await axios.get(`${pdfServiceUrl}/health`);
+
+    res.json({
+      success: true,
+      pdfServiceUrl,
+      pdfServiceStatus: healthCheck.data,
+      message: 'Screenshot service is reachable'
+    });
+  } catch (error) {
+    console.error('❌ Screenshot test failed:', error.message);
+    res.status(500).json({
+      success: false,
+      error: error.message,
+      pdfServiceUrl: process.env.PDF_SERVICE_URL
+    });
+  }
+});
+
 // Get screenshot for heatmap visualization (requires authentication)
 router.post('/screenshot/:storeId', authMiddleware, checkStoreOwnership, async (req, res) => {
   try {
@@ -721,6 +749,7 @@ router.post('/screenshot/:storeId', authMiddleware, checkStoreOwnership, async (
     }
 
     console.log(`📸 Screenshot request for store ${storeId}: ${url}`);
+    console.log(`📸 PDF_SERVICE_URL: ${process.env.PDF_SERVICE_URL}`);
 
     const screenshot = await screenshotService.getScreenshot(url, {
       viewportWidth: parseInt(viewportWidth),
