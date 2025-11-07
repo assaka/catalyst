@@ -787,6 +787,9 @@ export default function HeatmapVisualization({
               <Eye className="w-12 h-12 mx-auto mb-4 text-gray-300" />
               <p>Enter a page URL above to visualize customer behavior</p>
               <p className="text-sm mt-2">The heatmap will show clicks, hovers, and scrolling patterns</p>
+              <p className="text-xs mt-2 text-gray-400">
+                Note: Screenshot capture may take 20-30 seconds for the first request
+              </p>
             </div>
           )}
 
@@ -808,15 +811,23 @@ export default function HeatmapVisualization({
             )}
 
             {screenshot && !loadingScreenshot && (
-              <img
-                src={screenshot}
-                alt="Page screenshot"
-                className="absolute inset-0 w-full h-full object-contain"
-                style={{
-                  opacity: 0.7, // Make screenshot slightly transparent so heatmap shows well
-                  pointerEvents: 'none'
-                }}
-              />
+              <>
+                <img
+                  src={screenshot}
+                  alt="Page screenshot"
+                  className="absolute inset-0 w-full h-full object-contain"
+                  style={{
+                    opacity: 0.7, // Make screenshot slightly transparent so heatmap shows well
+                    pointerEvents: 'none'
+                  }}
+                  onLoad={() => console.log('✅ Screenshot image loaded successfully')}
+                  onError={(e) => console.error('❌ Screenshot image failed to load', e)}
+                />
+                {/* Debug indicator */}
+                <div className="absolute top-2 left-2 bg-green-500 text-white px-2 py-1 rounded text-xs font-mono z-50">
+                  Screenshot Loaded ({(screenshot.length / 1024).toFixed(0)}KB)
+                </div>
+              </>
             )}
 
             {/* Heatmap overlay canvas */}
