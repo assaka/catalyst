@@ -343,7 +343,7 @@ export default function HeatmapVisualization({
       loadHeatmapData();
       loadRealTimeStats();
     }
-  }, [storeId, pageUrl, interactionType, deviceType, dateRange]);
+  }, [storeId, pageUrl, interactionType, deviceType, dateRange, viewportSize.width, viewportSize.height]);
 
   const loadHeatmapData = async () => {
     if (!storeId || !pageUrl) return;
@@ -390,15 +390,31 @@ export default function HeatmapVisualization({
         sampleData: response.data?.slice(0, 3)
       });
 
-      // Transform the data to use x/y instead of normalized_x/normalized_y
+      // Get the actual canvas size for coordinate scaling
+      const canvas = canvasRef.current;
+      const canvasRect = canvas ? canvas.getBoundingClientRect() : { width: viewportSize.width, height: viewportSize.height };
+      const scaleX = canvasRect.width / viewportSize.width;
+      const scaleY = canvasRect.height / viewportSize.height;
+
+      console.log('Canvas scaling:', {
+        canvasSize: { width: canvasRect.width, height: canvasRect.height },
+        targetViewport: viewportSize,
+        scale: { x: scaleX, y: scaleY }
+      });
+
+      // Transform and scale the data to match the actual canvas size
       const transformedData = (response.data || []).map(point => {
-        const x = point.normalized_x ?? point.x_coordinate ?? null;
-        const y = point.normalized_y ?? point.y_coordinate ?? null;
+        const normalizedX = point.normalized_x ?? point.x_coordinate ?? null;
+        const normalizedY = point.normalized_y ?? point.y_coordinate ?? null;
+
+        // Scale coordinates to match canvas size
+        const scaledX = normalizedX !== null ? normalizedX * scaleX : null;
+        const scaledY = normalizedY !== null ? normalizedY * scaleY : null;
 
         return {
           ...point,
-          x: x !== null && !isNaN(parseFloat(x)) ? parseFloat(x) : null,
-          y: y !== null && !isNaN(parseFloat(y)) ? parseFloat(y) : null,
+          x: scaledX !== null && !isNaN(parseFloat(scaledX)) ? parseFloat(scaledX) : null,
+          y: scaledY !== null && !isNaN(parseFloat(scaledY)) ? parseFloat(scaledY) : null,
           total_count: 1 // Each point represents one interaction
         };
       });
@@ -544,7 +560,7 @@ export default function HeatmapVisualization({
         </CardHeader>
         <CardContent className="space-y-4">
           {/* Filters */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
             <div>
               <Label htmlFor="page-url">Page URL</Label>
               <Input
@@ -582,6 +598,30 @@ export default function HeatmapVisualization({
                   <SelectItem value="desktop">Desktop</SelectItem>
                   <SelectItem value="tablet">Tablet</SelectItem>
                   <SelectItem value="mobile">Mobile</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div>
+              <Label htmlFor="viewport-size">Viewport Size</Label>
+              <Select
+                value={`${viewportSize.width}x${viewportSize.height}`}
+                onValueChange={(value) => {
+                  const [width, height] = value.split('x').map(Number);
+                  setViewportSize({ width, height });
+                }}
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="1920x1080">1920×1080 (Full HD)</SelectItem>
+                  <SelectItem value="1366x768">1366×768 (Laptop)</SelectItem>
+                  <SelectItem value="1536x864">1536×864 (Laptop)</SelectItem>
+                  <SelectItem value="2560x1440">2560×1440 (2K)</SelectItem>
+                  <SelectItem value="3840x2160">3840×2160 (4K)</SelectItem>
+                  <SelectItem value="768x1024">768×1024 (Tablet)</SelectItem>
+                  <SelectItem value="375x667">375×667 (Mobile)</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -674,7 +714,10 @@ export default function HeatmapVisualization({
             <div className="text-center py-8 text-gray-500">
               <Filter className="w-12 h-12 mx-auto mb-4 text-gray-300" />
               <p>No interaction data found for the specified filters.</p>
-              <p className="text-sm mt-2">Try adjusting the date range or interaction type.</p>
+              <p className="text-sm mt-2">Try adjusting the date range, interaction type, or viewport size.</p>
+              <p className="text-xs mt-2 text-gray-400">
+                Tip: Make sure the viewport size matches the screen where you tested the page.
+              </p>
             </div>
           )}
 
@@ -686,13 +729,18 @@ export default function HeatmapVisualization({
             </div>
           )}
 
-          {/* Canvas Container */}
-          <div className="relative w-full" style={{ height: '600px' }}>
+          {/* Canvas Container - sized to maintain viewport aspect ratio */}
+          <div
+            className="relative w-full border rounded-lg bg-gray-100 overflow-hidden"
+            style={{
+              height: '700px' // Larger canvas for better visualization
+            }}
+          >
             <canvas
               ref={canvasRef}
-              className="absolute inset-0 w-full h-full border rounded-lg bg-white"
-              style={{ 
-                width: '100%', 
+              className="absolute inset-0 w-full h-full bg-white"
+              style={{
+                width: '100%',
                 height: '100%',
                 imageRendering: 'auto'
               }}
