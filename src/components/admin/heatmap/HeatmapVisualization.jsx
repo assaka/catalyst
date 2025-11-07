@@ -506,12 +506,22 @@ export default function HeatmapVisualization({
       // Response structure can vary - check both response.screenshot and response directly
       const screenshotData = response?.screenshot || (response?.success ? response : null);
 
+      console.log('📸 Screenshot data details:', {
+        dataType: typeof screenshotData,
+        dataLength: screenshotData?.length,
+        startsWithDataImage: screenshotData?.startsWith?.('data:image'),
+        first50Chars: screenshotData?.substring?.(0, 50)
+      });
+
       if (screenshotData && typeof screenshotData === 'string' && screenshotData.startsWith('data:image')) {
-        console.log('✅ Screenshot loaded successfully');
+        console.log('✅ Screenshot loaded successfully - setting to state');
+        console.log('📸 Screenshot preview (first 100 chars):', screenshotData.substring(0, 100));
         setScreenshot(screenshotData);
+        console.log('📸 Screenshot state should now be set');
       } else if (response?.screenshot) {
-        console.log('✅ Screenshot loaded from response.screenshot');
+        console.log('✅ Screenshot loaded from response.screenshot - setting to state');
         setScreenshot(response.screenshot);
+        console.log('📸 Screenshot state should now be set');
       } else {
         console.warn('⚠️ Screenshot response format unexpected:', response);
         setScreenshot(null);
@@ -818,14 +828,24 @@ export default function HeatmapVisualization({
                   className="absolute inset-0 w-full h-full object-contain"
                   style={{
                     opacity: 0.7, // Make screenshot slightly transparent so heatmap shows well
-                    pointerEvents: 'none'
+                    pointerEvents: 'none',
+                    border: '2px solid red' // Temporary debug border
                   }}
-                  onLoad={() => console.log('✅ Screenshot image loaded successfully')}
-                  onError={(e) => console.error('❌ Screenshot image failed to load', e)}
+                  onLoad={() => {
+                    console.log('✅ Screenshot <img> loaded and rendered successfully');
+                    console.log('📸 Image dimensions:', {
+                      naturalWidth: document.querySelector('img[alt="Page screenshot"]')?.naturalWidth,
+                      naturalHeight: document.querySelector('img[alt="Page screenshot"]')?.naturalHeight
+                    });
+                  }}
+                  onError={(e) => {
+                    console.error('❌ Screenshot <img> failed to load', e);
+                    console.error('❌ Image src length:', screenshot?.length);
+                  }}
                 />
                 {/* Debug indicator */}
-                <div className="absolute top-2 left-2 bg-green-500 text-white px-2 py-1 rounded text-xs font-mono z-50">
-                  Screenshot Loaded ({(screenshot.length / 1024).toFixed(0)}KB)
+                <div className="absolute top-2 left-2 bg-green-500 text-white px-2 py-1 rounded text-xs font-mono z-50 shadow-lg">
+                  ✅ Screenshot Loaded ({(screenshot.length / 1024).toFixed(0)}KB)
                 </div>
               </>
             )}
