@@ -1,6 +1,5 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import api from '../utils/api';
-import { useStoreSelection } from './StoreSelectionContext';
 
 const TranslationContext = createContext();
 
@@ -10,13 +9,14 @@ const TranslationContext = createContext();
  * Manages translation state and provides translation functions
  * throughout the application.
  *
- * For admin panel: Uses store from StoreSelectionContext
- * For storefront: Expects storeId prop
+ * For admin panel: Uses store from StoreSelectionContext (must be wrapped in StoreSelectionProvider)
+ * For storefront: Expects storeId prop from StoreProvider
  */
 export function TranslationProvider({ children, storeId: propStoreId }) {
-  const storeSelection = useStoreSelection?.() || {}; // Safe access, may be undefined in storefront
-  const adminStoreId = storeSelection?.getSelectedStoreId?.();
-  const storeId = propStoreId || adminStoreId; // Prop takes priority (storefront), then admin selection
+  // For admin panel, storeId will come from the component that uses TranslationContext
+  // For storefront, storeId is passed as a prop
+  // This context is now primarily used for managing translation state, not fetching with store_id
+  const storeId = propStoreId;
 
   const [currentLanguage, setCurrentLanguage] = useState('en');
   const [availableLanguages, setAvailableLanguages] = useState([]);
@@ -117,14 +117,18 @@ export function TranslationProvider({ children, storeId: propStoreId }) {
       document.documentElement.lang = langCode;
     }
 
-    // Load translations for new language
-    await loadTranslations(langCode);
+    // Load translations for new language (only if storeId is available)
+    if (storeId) {
+      await loadTranslations(langCode);
+    } else {
+      console.warn('No storeId available, skipping translation loading in TranslationContext');
+    }
 
     console.log(`✅ [Frontend] Language changed to: "${langCode}"`);
 
     // Dispatch custom event for language change
     window.dispatchEvent(new CustomEvent('languageChanged', { detail: { language: langCode } }));
-  }, [availableLanguages, loadTranslations]);
+  }, [availableLanguages, loadTranslations, storeId]);
 
   /**
    * Get translated text by key
