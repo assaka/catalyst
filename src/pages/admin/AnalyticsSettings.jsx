@@ -484,10 +484,14 @@ export default function AnalyticsSettings() {
             </div>
 
             <Tabs defaultValue="basic" className="space-y-6">
-                <TabsList className="grid w-full grid-cols-3">
+                <TabsList className="grid w-full grid-cols-4">
                     <TabsTrigger value="basic" className="flex items-center gap-2">
                         <BarChart3 className="w-4 h-4" />
                         GTM
+                    </TabsTrigger>
+                    <TabsTrigger value="events" className="flex items-center gap-2">
+                        <Activity className="w-4 h-4" />
+                        DataLayer Events
                     </TabsTrigger>
                     <TabsTrigger value="import" className="flex items-center gap-2">
                         <Upload className="w-4 h-4" />
@@ -694,6 +698,124 @@ export default function AnalyticsSettings() {
                                     </ul>
                                 </div>
                             )}
+                        </CardContent>
+                    </Card>
+                </TabsContent>
+
+                {/* DataLayer Events */}
+                <TabsContent value="events" className="space-y-6">
+                    <Card>
+                        <CardHeader>
+                            <CardTitle className="flex items-center gap-2">
+                                <Activity className="w-5 h-5" />
+                                Custom DataLayer Events
+                            </CardTitle>
+                            <CardDescription>
+                                Configure custom events to track specific user interactions. Events are pushed to window.dataLayer and can be sent to Google Tag Manager.
+                                View collected data in <a href="/admin/customer-activity" className="text-blue-600 hover:underline">Customer Activity</a>.
+                            </CardDescription>
+                        </CardHeader>
+                        <CardContent>
+                            <Alert className="mb-6">
+                                <AlertCircle className="w-4 h-4" />
+                                <AlertDescription>
+                                    <strong>Coming Soon:</strong> Custom event configuration UI is under development.
+                                    For now, events are configured programmatically in DataLayerManager.jsx.
+                                </AlertDescription>
+                            </Alert>
+
+                            <div className="space-y-4">
+                                <div className="p-4 bg-blue-50 rounded-lg">
+                                    <h4 className="font-semibold text-blue-900 mb-2">Current Event Collection</h4>
+                                    <p className="text-sm text-blue-800 mb-3">
+                                        Your store automatically collects these events:
+                                    </p>
+                                    <ul className="space-y-2 text-sm text-blue-800">
+                                        <li className="flex items-center gap-2">
+                                            <CheckCircle className="w-4 h-4" />
+                                            <strong>Page Views</strong> - Every page load
+                                        </li>
+                                        <li className="flex items-center gap-2">
+                                            <CheckCircle className="w-4 h-4" />
+                                            <strong>Product Views</strong> - When users view product details
+                                        </li>
+                                        <li className="flex items-center gap-2">
+                                            <CheckCircle className="w-4 h-4" />
+                                            <strong>Add to Cart</strong> - When products are added to cart
+                                        </li>
+                                        <li className="flex items-center gap-2">
+                                            <CheckCircle className="w-4 h-4" />
+                                            <strong>Remove from Cart</strong> - When products are removed
+                                        </li>
+                                        <li className="flex items-center gap-2">
+                                            <CheckCircle className="w-4 h-4" />
+                                            <strong>Checkout Started</strong> - When checkout process begins
+                                        </li>
+                                        <li className="flex items-center gap-2">
+                                            <CheckCircle className="w-4 h-4" />
+                                            <strong>Order Completed</strong> - When purchase is finalized
+                                        </li>
+                                        <li className="flex items-center gap-2">
+                                            <CheckCircle className="w-4 h-4" />
+                                            <strong>Search</strong> - When users search products
+                                        </li>
+                                    </ul>
+                                </div>
+
+                                <div className="p-4 border rounded-lg">
+                                    <h4 className="font-semibold text-gray-900 mb-2">DataLayer Structure</h4>
+                                    <p className="text-sm text-gray-600 mb-3">
+                                        Events are pushed to <code className="px-1 py-0.5 bg-gray-100 rounded text-xs">window.dataLayer</code> with this format:
+                                    </p>
+                                    <pre className="text-xs bg-gray-900 text-green-400 p-4 rounded overflow-x-auto">
+{`{
+  "event": "add_to_cart",
+  "timestamp": "2025-01-07T12:00:00Z",
+  "item_id": "product-uuid",
+  "item_name": "Product Name",
+  "item_category": "Electronics",
+  "price": 99.99,
+  "quantity": 1,
+  "currency": "USD"
+}`}
+                                    </pre>
+                                </div>
+
+                                <div className="p-4 bg-amber-50 border-amber-200 rounded-lg">
+                                    <h4 className="font-semibold text-amber-900 mb-2">📊 View Collected Data</h4>
+                                    <p className="text-sm text-amber-800 mb-3">
+                                        All collected events are stored and can be viewed in the Customer Activity page.
+                                    </p>
+                                    <Button
+                                        onClick={() => window.location.href = '/admin/customer-activity'}
+                                        variant="outline"
+                                        size="sm"
+                                        className="border-amber-300 text-amber-800 hover:bg-amber-100"
+                                    >
+                                        <BarChart3 className="w-4 h-4 mr-2" />
+                                        View Customer Activity
+                                    </Button>
+                                </div>
+
+                                <div className="p-4 bg-green-50 border-green-200 rounded-lg">
+                                    <h4 className="font-semibold text-green-900 mb-2">✅ Available Event Templates</h4>
+                                    <p className="text-sm text-green-800 mb-3">
+                                        Common event templates will be available soon:
+                                    </p>
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-sm text-green-800">
+                                        <div>• Newsletter Signup</div>
+                                        <div>• Add to Wishlist</div>
+                                        <div>• Scroll Depth Tracking</div>
+                                        <div>• Video Engagement</div>
+                                        <div>• Product Filter Used</div>
+                                        <div>• Promo Banner Click</div>
+                                        <div>• Quick View Opened</div>
+                                        <div>• Coupon Applied</div>
+                                        <div>• Live Chat Opened</div>
+                                        <div>• Size Guide Viewed</div>
+                                    </div>
+                                </div>
+                            </div>
                         </CardContent>
                     </Card>
                 </TabsContent>
