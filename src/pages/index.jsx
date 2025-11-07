@@ -50,7 +50,6 @@ export { default as RobotsTxt } from './admin/RobotsTxt';
 export { default as HtmlSitemap } from './admin/HtmlSitemap';
 export { default as AnalyticsSettings } from './admin/AnalyticsSettings';
 export { default as HeatmapAnalytics } from './admin/HeatmapAnalytics';
-export { default as HeatMaps } from './admin/HeatMaps';
 export { default as ScheduledJobs } from './admin/ScheduledJobs';
 export { default as MonitoringDashboard } from './admin/MonitoringDashboard';
 export { default as ABTesting } from './admin/ABTesting';
@@ -67,7 +66,6 @@ export { default as NavigationManager } from './admin/NavigationManager';
 
 // Editor Pages
 export { default as EditorWrapper } from './editor/EditorWrapper';
-export { default as AIContextWindow } from './editor/EditorWrapper'; // Alias for backward compatibility
 export { default as HeaderSlotsEditor } from './editor/HeaderSlotsEditor';
 export { default as CartSlotsEditor } from './editor/CartSlotsEditor';
 export { default as CategorySlotsEditor } from './editor/CategorySlotsEditor';

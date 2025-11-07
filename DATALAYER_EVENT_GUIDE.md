@@ -6,17 +6,33 @@ Complete guide for understanding how analytics events are collected, tracked, an
 
 ## 🎯 Overview
 
-Your store uses **window.dataLayer** (Google Tag Manager standard) to collect user interaction events. These events are:
-1. **Pushed to dataLayer** → Available to GTM and analytics tools
-2. **Sent to backend** → Stored in `customer_activities` table
-3. **Displayed in admin** → Customer Activity page for analysis
+Your store has **TWO tracking systems** working together:
+
+### 1. Customer Activity Tracking (High-Level Events)
+- **Purpose:** Business analytics (what users do)
+- **Storage:** `customer_activities` table
+- **Events:** Page views, product views, cart, checkout, orders, searches
+- **View in:** `/admin/customer-activity`
+- **DataLayer:** ✅ Yes, pushed to window.dataLayer for GTM
+
+### 2. Heatmap Interaction Tracking (Detailed Behavior)
+- **Purpose:** UX optimization (how users interact)
+- **Storage:** `heatmap_interactions` table
+- **Events:** Mouse moves, clicks (with coordinates), scrolls, hovers
+- **View in:** `/admin/heatmaps` (visual overlay)
+- **DataLayer:** ❌ No, only stored for heatmap visualization
+
+**Both systems are integrated** but serve different purposes:
+- Customer Activity = Business insights
+- Heatmaps = UX insights
 
 ---
 
 ## 📊 Architecture
 
+### Customer Activity Tracking
 ```
-User Interaction (click, page view, etc.)
+User Interaction (page view, add to cart, etc.)
          ↓
 DataLayerManager.jsx (Frontend)
          ↓
@@ -30,6 +46,29 @@ GA4, Facebook Pixel          customer_activities table
    ↓                                  ↓
 External Analytics            Admin: Customer Activity Page
 ```
+
+### Heatmap Interaction Tracking
+```
+User Interaction (mouse move, click, scroll)
+         ↓
+HeatmapTracker.jsx (Frontend)
+         ↓
+POST /api/heatmap/track
+         ↓
+Event Bus → Database
+         ↓
+heatmap_interactions table
+         ↓
+Admin: Heatmaps Page (Visual Overlay)
+```
+
+**Key Difference:**
+- **Customer Activity** → dataLayer → GTM → External analytics
+- **Heatmap Interactions** → Direct to backend → Visualization only
+
+**Why separate?**
+- Heatmaps track EVERY mouse move (100s/1000s per session) = Too much for GTM
+- Customer Activity tracks KEY events (5-20 per session) = Perfect for GTM/analytics
 
 ---
 
@@ -651,16 +690,30 @@ Features coming:
 
 ### 1. Track What Matters
 
-✅ **Do track:**
+✅ **Do track (Customer Activity Events):**
 - User intent (searches, filters)
 - Engagement (video views, scrolls)
 - Conversions (add to cart, purchase)
 - Errors (404s, failed searches)
+- High-level interactions
+
+✅ **Do track (Heatmap Interactions):**
+- **Mouse movements** (essential for heatmap visualization)
+  - Tracks x/y coordinates every few hundred milliseconds
+  - Shows user attention and browsing patterns
+  - Creates the actual "heat" in heatmaps
+- **Clicks with coordinates** (where users click)
+- **Scroll depth** (how far users scroll)
+- **Hover events** (what users hover over)
+- **Touch events** (mobile interactions)
+
+**Important:** Mouse moves are ONLY for heatmaps, not sent to GTM/dataLayer
 
 ❌ **Don't track:**
-- Every mouse move (too much data)
-- PII without consent
-- Sensitive data (passwords, credit cards)
+- PII without consent (emails, passwords)
+- Sensitive data (credit card numbers)
+- Every keystroke (privacy concern)
+- Mouse moves in Customer Activity (too much data for business analytics)
 
 ### 2. Use Descriptive Event Names
 
