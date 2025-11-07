@@ -152,7 +152,7 @@ app.post('/capture-screenshot', async (req, res) => {
       console.log(`📸 [${requestId}] Page loaded, waiting for stability...`);
 
       // Always wait for additional time to ensure images/fonts/animations are rendered
-      const waitTime = options.waitTime || 20000; // Default to 20 seconds
+      const waitTime = options.waitTime || 5000; // Default to 5 seconds
       await new Promise(resolve => setTimeout(resolve, waitTime));
       console.log(`📸 [${requestId}] Waited ${waitTime}ms for page to fully render`)
 
