@@ -840,11 +840,18 @@ export default function SeoHeadManager({ pageType, pageData, pageTitle, pageDesc
 
         if (analyticsSettings?.enable_google_tag_manager && isValidGTMId(analyticsSettings.gtm_id)) {
             if (analyticsSettings.gtm_script_type === 'custom' && analyticsSettings.custom_gtm_script) {
-                // Custom GTM Script (Server-Side Tagging)
-                const script = document.createElement('script');
-                script.setAttribute('data-gtm', 'head-custom');
-                script.innerHTML = analyticsSettings.custom_gtm_script;
-                document.head.appendChild(script);
+                // Custom GTM Script (Server-Side Tagging) - WITH SANITIZATION
+                const { createSafeScript } = await import('../utils/scriptSanitizer');
+                const script = createSafeScript({
+                    content: analyticsSettings.custom_gtm_script,
+                    attributes: { 'data-gtm': 'head-custom' }
+                });
+
+                if (script) {
+                    document.head.appendChild(script);
+                } else {
+                    console.error('❌ Custom GTM script failed security validation and was blocked');
+                }
 
                 // Add noscript fallback to body for custom scripts
                 if (analyticsSettings.gtm_id) {

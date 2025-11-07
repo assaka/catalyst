@@ -3,12 +3,16 @@ const { CustomerActivity } = require('../models');
 const { Op } = require('sequelize');
 const { analyticsLimiter, publicReadLimiter } = require('../middleware/rateLimiters');
 const { validateRequest, customerActivitySchema } = require('../validation/analyticsSchemas');
+const { attachConsentInfo, sanitizeEventData } = require('../middleware/consentMiddleware');
 const eventBus = require('../services/analytics/EventBus');
 
 // Initialize handlers
 require('../services/analytics/handlers/CustomerActivityHandler');
 
 const router = express.Router();
+
+// Apply consent middleware to all routes
+router.use(attachConsentInfo);
 
 // @route   GET /api/customer-activity
 // @desc    Get customer activities
@@ -77,8 +81,8 @@ router.get('/', publicReadLimiter, async (req, res) => {
 
 // @route   POST /api/customer-activity
 // @desc    Log customer activity (via unified event bus)
-// @access  Public (Rate Limited + Validated)
-router.post('/', analyticsLimiter, validateRequest(customerActivitySchema), async (req, res) => {
+// @access  Public (Rate Limited + Validated + Consent-aware)
+router.post('/', analyticsLimiter, validateRequest(customerActivitySchema), sanitizeEventData, async (req, res) => {
   try {
     const {
       session_id,

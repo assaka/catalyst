@@ -1,19 +1,22 @@
 const express = require('express');
 const router = express.Router();
-const heatmapTrackingService = require('../services/heatmap-tracking');
 const HeatmapInteraction = require('../models/HeatmapInteraction');
 const HeatmapSession = require('../models/HeatmapSession');
 const { authMiddleware } = require('../middleware/auth');
 const { checkStoreOwnership } = require('../middleware/storeAuth');
 const { heatmapLimiter, publicReadLimiter } = require('../middleware/rateLimiters');
 const { validateRequest, heatmapInteractionSchema, heatmapBatchSchema } = require('../validation/analyticsSchemas');
+const { attachConsentInfo, sanitizeEventData } = require('../middleware/consentMiddleware');
 const eventBus = require('../services/analytics/EventBus');
 
 // Initialize handlers
 require('../services/analytics/handlers/HeatmapHandler');
 
-// Track individual interaction (Public - Rate Limited + Validated)
-router.post('/track', heatmapLimiter, validateRequest(heatmapInteractionSchema), async (req, res) => {
+// Apply consent middleware to all routes
+router.use(attachConsentInfo);
+
+// Track individual interaction (Public - Rate Limited + Validated + Consent-aware)
+router.post('/track', heatmapLimiter, validateRequest(heatmapInteractionSchema), sanitizeEventData, async (req, res) => {
   try {
     const {
       session_id,
@@ -86,8 +89,8 @@ router.post('/track', heatmapLimiter, validateRequest(heatmapInteractionSchema),
   }
 });
 
-// Track batch of interactions (Public - Rate Limited + Validated)
-router.post('/track-batch', heatmapLimiter, validateRequest(heatmapBatchSchema), async (req, res) => {
+// Track batch of interactions (Public - Rate Limited + Validated + Consent-aware)
+router.post('/track-batch', heatmapLimiter, validateRequest(heatmapBatchSchema), sanitizeEventData, async (req, res) => {
   try {
     const { interactions } = req.body;
 
