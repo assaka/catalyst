@@ -622,22 +622,59 @@ async function performUILabelsBulkTranslation(userId, userEmail, fromLang, toLan
 
     // Send email notification
     try {
-      const brevoService = require('../services/brevo-service');
+      const axios = require('axios');
       const User = require('../models/User');
 
       // Get user details
       const user = await User.findByPk(userId);
 
       if (user && user.email) {
-        // Try to send email notification (may fail if Brevo not configured, which is okay)
         console.log(`📧 Sending email notification to ${user.email}`);
 
-        // Use simple email sending via Brevo if available
-        // For now, just log - in production, you would send actual email
-        console.log(`📧 Email notification would be sent to: ${user.email}`);
-        console.log(`📧 Subject: UI Labels Translation Complete`);
-        console.log(`📧 Message: Your bulk translation of UI labels from ${fromLang} to ${toLang} has been completed.`);
-        console.log(`📧 Results: ${results.translated} translated, ${results.skipped} skipped, ${results.failed} failed`);
+        // Try to get Brevo API key from environment or configuration
+        const brevoApiKey = process.env.BREVO_API_KEY;
+
+        if (brevoApiKey) {
+          // Send actual email via Brevo API
+          const emailData = {
+            sender: {
+              name: 'Catalyst Platform',
+              email: process.env.BREVO_SENDER_EMAIL || 'noreply@catalyst.com'
+            },
+            to: [
+              {
+                email: user.email,
+                name: user.name || user.email
+              }
+            ],
+            subject: 'UI Labels Translation Complete',
+            htmlContent: `
+              <h2>UI Labels Translation Complete</h2>
+              <p>Your bulk translation of UI labels from <strong>${fromLang}</strong> to <strong>${toLang}</strong> has been completed.</p>
+              <h3>Results:</h3>
+              <ul>
+                <li>✅ Translated: ${results.translated}</li>
+                <li>⏭️ Skipped: ${results.skipped}</li>
+                <li>❌ Failed: ${results.failed}</li>
+              </ul>
+              <p>You can now view the translated labels in your admin panel.</p>
+            `
+          };
+
+          await axios.post('https://api.brevo.com/v3/smtp/email', emailData, {
+            headers: {
+              'api-key': brevoApiKey,
+              'Content-Type': 'application/json'
+            }
+          });
+
+          console.log(`✅ Email sent successfully to ${user.email}`);
+        } else {
+          // Fallback: just log (no Brevo configured)
+          console.log(`⚠️ Brevo not configured - email would be sent to: ${user.email}`);
+          console.log(`📧 Subject: UI Labels Translation Complete`);
+          console.log(`📧 Results: ${results.translated} translated, ${results.skipped} skipped, ${results.failed} failed`);
+        }
       }
     } catch (emailError) {
       console.error('❌ Failed to send email notification:', emailError.message);
