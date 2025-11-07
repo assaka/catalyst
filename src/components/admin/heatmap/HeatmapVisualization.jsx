@@ -404,7 +404,8 @@ export default function HeatmapVisualization({
       console.log('Canvas scaling:', {
         canvasSize: { width: canvasRect.width, height: canvasRect.height },
         targetViewport: viewportSize,
-        scale: { x: scaleX, y: scaleY }
+        scale: { x: scaleX, y: scaleY },
+        screenshotDimensions: screenshotDimensions
       });
 
       // Transform and scale the data to match the actual canvas size
@@ -427,7 +428,8 @@ export default function HeatmapVisualization({
       console.log('Transformed data:', {
         total: transformedData.length,
         sampleTransformed: transformedData.slice(0, 3),
-        nullCoords: transformedData.filter(p => p.x === null || p.y === null).length
+        nullCoords: transformedData.filter(p => p.x === null || p.y === null).length,
+        validCoords: transformedData.filter(p => p.x !== null && p.y !== null).length
       });
 
       // Group by coordinates and count occurrences
@@ -456,8 +458,20 @@ export default function HeatmapVisualization({
       const finalData = Object.values(groupedData);
       console.log('Final grouped data:', {
         points: finalData.length,
-        sample: finalData.slice(0, 5)
+        sample: finalData.slice(0, 5),
+        canvasDimensions: canvasRect
       });
+
+      // Log to renderer to confirm rendering
+      if (rendererRef.current && finalData.length > 0) {
+        console.log('🎨 About to set heatmap data and trigger render');
+        console.log('🎨 Canvas current dimensions:', {
+          width: canvasRef.current?.width,
+          height: canvasRef.current?.height,
+          clientWidth: canvasRef.current?.clientWidth,
+          clientHeight: canvasRef.current?.clientHeight
+        });
+      }
 
       setHeatmapData(finalData);
     } catch (err) {
@@ -849,14 +863,22 @@ export default function HeatmapVisualization({
 
                     setScreenshotDimensions({ width, height });
 
-                    // Resize canvas to match image and re-render heatmap
+                    // Resize canvas to match image and re-load heatmap data with correct scaling
                     if (canvasRef.current && rendererRef.current) {
                       console.log('🎨 Resizing canvas to match screenshot:', { width, height });
-                      rendererRef.current.resize();
-                      if (heatmapData.length > 0) {
-                        console.log('🎨 Re-rendering heatmap with', heatmapData.length, 'points');
-                        rendererRef.current.render(heatmapData);
-                      }
+
+                      // Force canvas to update size
+                      setTimeout(() => {
+                        if (rendererRef.current && canvasRef.current) {
+                          rendererRef.current.resize();
+
+                          // Re-load heatmap data to scale coordinates properly
+                          if (heatmapData.length > 0) {
+                            console.log('🎨 Re-loading heatmap data for proper scaling');
+                            loadHeatmapData();
+                          }
+                        }
+                      }, 100);
                     }
                   }}
                   onError={(e) => {
