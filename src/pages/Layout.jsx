@@ -694,7 +694,7 @@ function LayoutInner({ children, currentPageName }) {
         </div>
 
         <div className="flex flex-col h-full">
-          <div className="p-6 flex-shrink-0">
+          <div className="px-6 pt-6 pb-1 flex-shrink-0">
             <div className="mb-6">
               <div className="flex items-center space-x-3 mb-2">
                 <div className="w-10 h-10 bg-gray-200 rounded-full flex items-center justify-center">
@@ -719,7 +719,7 @@ function LayoutInner({ children, currentPageName }) {
             {/* Dashboard as direct menu item */}
             <Link
               to={createAdminUrl("Dashboard")}
-              className={`flex items-center space-x-3 px-3 py-1 rounded-lg text-sm font-medium transition-colors ${
+              className={`flex items-center space-x-3 py-2 rounded-lg text-sm font-medium transition-colors ${
                 currentPageName === 'Dashboard'
                   ? 'bg-blue-50 text-blue-700 border-r-2 border-blue-700'
                   : 'text-gray-700 hover:bg-gray-100'
@@ -734,7 +734,7 @@ function LayoutInner({ children, currentPageName }) {
             {/* Manage Navigation Meta-Tool */}
             <Link
               to="/admin/navigation-manager"
-              className={`flex items-center space-x-3 px-3 py-1 rounded-lg text-sm font-medium transition-colors mb-6 ${
+              className={`flex items-center space-x-3 py-1 rounded-lg text-sm font-medium transition-colors mb-6 ${
                 location.pathname === '/admin/navigation-manager'
                   ? 'bg-blue-50 text-blue-700 border-r-2 border-blue-700'
                   : 'text-gray-700 hover:bg-gray-100'

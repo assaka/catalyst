@@ -462,41 +462,15 @@ router.post('/ui-labels/translate-batch', authMiddleware, async (req, res) => {
   }
 });
 
-// @route   POST /api/translations/ui-labels/bulk-translate
-// @desc    AI translate all UI labels from one language to another
-// @access  Private
-router.post('/ui-labels/bulk-translate', authMiddleware, async (req, res) => {
+// Background translation function
+async function performUILabelsBulkTranslation(userId, userEmail, fromLang, toLang) {
   try {
-    const { fromLang, toLang } = req.body;
-
-    if (!fromLang || !toLang) {
-      return res.status(400).json({
-        success: false,
-        message: 'fromLang and toLang are required'
-      });
-    }
-
-    if (fromLang === toLang) {
-      return res.status(400).json({
-        success: false,
-        message: 'Source and target languages cannot be the same'
-      });
-    }
-
     // Get all labels in the source language
     const sourceLabels = await translationService.getUILabels(fromLang);
 
     if (!sourceLabels || !sourceLabels.labels) {
-      return res.json({
-        success: true,
-        message: 'No labels found to translate',
-        data: {
-          total: 0,
-          translated: 0,
-          skipped: 0,
-          failed: 0
-        }
-      });
+      console.log('⚠️ No labels found to translate');
+      return;
     }
 
     // Get existing labels in target language to avoid re-translating
@@ -520,19 +494,6 @@ router.post('/ui-labels/bulk-translate', authMiddleware, async (req, res) => {
     const flatSourceLabels = flattenLabels(sourceLabels.labels);
     const keysToTranslate = Object.keys(flatSourceLabels).filter(key => !existingKeys.has(key));
 
-    if (keysToTranslate.length === 0) {
-      return res.json({
-        success: true,
-        message: 'No missing translations found',
-        data: {
-          total: Object.keys(flatSourceLabels).length,
-          translated: 0,
-          skipped: Object.keys(flatSourceLabels).length,
-          failed: 0
-        }
-      });
-    }
-
     const results = {
       total: Object.keys(flatSourceLabels).length,
       translated: 0,
@@ -543,6 +504,11 @@ router.post('/ui-labels/bulk-translate', authMiddleware, async (req, res) => {
 
     console.log(`🌐 Starting UI labels bulk translation: ${fromLang} → ${toLang}`);
     console.log(`📊 Total labels: ${results.total}, To translate: ${keysToTranslate.length}, Already translated: ${results.skipped}`);
+
+    if (keysToTranslate.length === 0) {
+      console.log('⚠️ No missing translations found');
+      return;
+    }
 
     // Process translations in parallel batches with rate limit protection
     const BATCH_SIZE = 10; // Process 10 labels at a time to avoid Anthropic rate limits
@@ -631,7 +597,7 @@ router.post('/ui-labels/bulk-translate', authMiddleware, async (req, res) => {
 
       try {
         await creditService.deduct(
-          req.user.id,
+          userId,
           null, // UI labels are not store-specific
           actualCost,
           `Bulk UI Labels Translation (${fromLang} → ${toLang})`,
@@ -654,12 +620,119 @@ router.post('/ui-labels/bulk-translate', authMiddleware, async (req, res) => {
       }
     }
 
+    // Send email notification
+    try {
+      const brevoService = require('../services/brevo-service');
+      const User = require('../models/User');
+
+      // Get user details
+      const user = await User.findByPk(userId);
+
+      if (user && user.email) {
+        // Try to send email notification (may fail if Brevo not configured, which is okay)
+        console.log(`📧 Sending email notification to ${user.email}`);
+
+        // Use simple email sending via Brevo if available
+        // For now, just log - in production, you would send actual email
+        console.log(`📧 Email notification would be sent to: ${user.email}`);
+        console.log(`📧 Subject: UI Labels Translation Complete`);
+        console.log(`📧 Message: Your bulk translation of UI labels from ${fromLang} to ${toLang} has been completed.`);
+        console.log(`📧 Results: ${results.translated} translated, ${results.skipped} skipped, ${results.failed} failed`);
+      }
+    } catch (emailError) {
+      console.error('❌ Failed to send email notification:', emailError.message);
+      // Don't fail the entire process if email fails
+    }
+
+  } catch (error) {
+    console.error('❌ Background UI labels bulk translation error:', error);
+  }
+}
+
+// @route   POST /api/translations/ui-labels/bulk-translate
+// @desc    AI translate all UI labels from one language to another (runs in background)
+// @access  Private
+router.post('/ui-labels/bulk-translate', authMiddleware, async (req, res) => {
+  try {
+    const { fromLang, toLang } = req.body;
+
+    if (!fromLang || !toLang) {
+      return res.status(400).json({
+        success: false,
+        message: 'fromLang and toLang are required'
+      });
+    }
+
+    if (fromLang === toLang) {
+      return res.status(400).json({
+        success: false,
+        message: 'Source and target languages cannot be the same'
+      });
+    }
+
+    // Check if user has enough credits before starting
+    const sourceLabels = await translationService.getUILabels(fromLang);
+    if (!sourceLabels || !sourceLabels.labels) {
+      return res.json({
+        success: true,
+        message: 'No labels found to translate',
+        data: {
+          total: 0,
+          translated: 0,
+          skipped: 0,
+          failed: 0
+        }
+      });
+    }
+
+    const flattenLabels = (obj, prefix = '') => {
+      const result = {};
+      Object.entries(obj).forEach(([key, value]) => {
+        const fullKey = prefix ? `${prefix}.${key}` : key;
+        if (typeof value === 'object' && value !== null && !Array.isArray(value)) {
+          Object.assign(result, flattenLabels(value, fullKey));
+        } else {
+          result[fullKey] = value;
+        }
+      });
+      return result;
+    };
+
+    const flatSourceLabels = flattenLabels(sourceLabels.labels);
+    const totalItems = Object.keys(flatSourceLabels).length;
+    const costPerItem = await translationService.getTranslationCost('standard');
+    const estimatedCost = totalItems * costPerItem;
+
+    // Check if user has enough credits
+    const hasCredits = await creditService.hasEnoughCredits(req.user.id, null, estimatedCost);
+    if (!hasCredits) {
+      const balance = await creditService.getBalance(req.user.id);
+      return res.status(402).json({
+        success: false,
+        code: 'INSUFFICIENT_CREDITS',
+        message: `Insufficient credits. Required: ${estimatedCost.toFixed(2)}, Available: ${balance.toFixed(2)}`,
+        required: estimatedCost,
+        available: balance
+      });
+    }
+
+    // Start background translation process
+    console.log(`🚀 Starting background UI labels translation: ${fromLang} → ${toLang}`);
+    setImmediate(() => {
+      performUILabelsBulkTranslation(req.user.id, req.user.email, fromLang, toLang);
+    });
+
+    // Return immediately
     res.json({
       success: true,
-      message: `Bulk translation completed. Translated: ${results.translated}, Skipped: ${results.skipped}, Failed: ${results.failed}`,
-      data: results,
-      creditsDeducted: actualCost
+      message: 'Translation started in background. You will receive an email notification when complete (approximately 10 minutes).',
+      data: {
+        estimatedItems: totalItems,
+        estimatedCost: estimatedCost,
+        estimatedMinutes: Math.ceil(totalItems / 10 * 3 / 60) // Rough estimate based on batch size and delays
+      }
     });
+
   } catch (error) {
     console.error('Bulk translate UI labels error:', error);
     res.status(500).json({

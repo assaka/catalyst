@@ -316,149 +316,45 @@ export default function Translations() {
 
   /**
    * Handle bulk translate using the new BulkTranslateDialog
-   * Supports progress callback for UI labels
+   * Now runs in background on the server
    */
   const handleBulkTranslate = async (fromLang, toLang, onProgress) => {
     console.log('🎯 handleBulkTranslate called with:', { fromLang, toLang, hasProgressCallback: !!onProgress });
     try {
-      // For UI labels with progress callback, use batch processing
-      if (onProgress) {
-        console.log('📊 Using client-side batching for UI labels');
-        // Get all source labels
-        const sourceLabelsResponse = await api.get(`/translations/ui-labels?lang=${fromLang}`);
-        const targetLabelsResponse = await api.get(`/translations/ui-labels?lang=${toLang}`);
-
-        const flattenLabels = (obj, prefix = '') => {
-          const result = {};
-          Object.entries(obj || {}).forEach(([key, value]) => {
-            const fullKey = prefix ? `${prefix}.${key}` : key;
-            if (typeof value === 'object' && value !== null && !Array.isArray(value)) {
-              Object.assign(result, flattenLabels(value, fullKey));
-            } else {
-              result[fullKey] = value;
-            }
-          });
-          return result;
-        };
-
-        const sourceLabels = flattenLabels(sourceLabelsResponse.data?.labels);
-        const targetLabels = flattenLabels(targetLabelsResponse.data?.labels);
-        const existingKeys = new Set(Object.keys(targetLabels));
-        const keysToTranslate = Object.keys(sourceLabels).filter(key => !existingKeys.has(key));
-
-        console.log(`📊 UI Labels analysis: ${Object.keys(sourceLabels).length} total, ${keysToTranslate.length} to translate, ${existingKeys.size} already exist`);
-
-        if (keysToTranslate.length === 0) {
-          console.log('⏭️ All labels already translated, but still charging credits');
-          // Call backend to charge for all labels even though all are skipped
-          const chargeResult = await api.post('translations/ui-labels/bulk-translate', {
-            fromLang,
-            toLang
-          });
-
-          console.log('💰 Charge result for skipped labels:', chargeResult);
-
-          return {
-            success: true,
-            data: { translated: 0, skipped: Object.keys(sourceLabels).length, failed: 0 },
-            creditsDeducted: chargeResult.creditsDeducted || 0
-          };
-        }
-
-        // Process in batches
-        const BATCH_SIZE = 10;
-        const batches = [];
-        for (let i = 0; i < keysToTranslate.length; i += BATCH_SIZE) {
-          batches.push(keysToTranslate.slice(i, i + BATCH_SIZE));
-        }
-
-        console.log(`🚀 Starting client-side batching: ${batches.length} batches of ${BATCH_SIZE}`);
-
-        let totalTranslated = 0;
-        let totalSkipped = 0;
-        let totalFailed = 0;
-
-        // Set initial progress to show total
-        if (onProgress) {
-          onProgress({
-            current: 0,
-            total: keysToTranslate.length
-          });
-        }
-
-        for (let i = 0; i < batches.length; i++) {
-          const batch = batches[i];
-          console.log(`📦 Frontend processing batch ${i + 1}/${batches.length} (${batch.length} keys)`);
-
-          const batchResult = await api.post('translations/ui-labels/translate-batch', {
-            keys: batch,
-            fromLang,
-            toLang
-          });
-
-          console.log(`✅ Batch ${i + 1} result:`, batchResult);
-
-          if (batchResult.success) {
-            totalTranslated += batchResult.data.translated;
-            totalSkipped += batchResult.data.skipped;
-            totalFailed += batchResult.data.failed;
-          }
-
-          // Update progress after processing batch
-          const itemsProcessed = (i + 1) * BATCH_SIZE;
-          if (onProgress) {
-            onProgress({
-              current: Math.min(itemsProcessed, keysToTranslate.length),
-              total: keysToTranslate.length
-            });
-          }
-          console.log(`📊 Progress updated: ${Math.min(itemsProcessed, keysToTranslate.length)}/${keysToTranslate.length}`);
-
-          // Wait between batches (except last one)
-          if (i < batches.length - 1) {
-            console.log('⏸️ Waiting 3s before next batch...');
-            await new Promise(resolve => setTimeout(resolve, 3000));
-          }
-        }
-
-        console.log(`✅ All batches complete! Total: ${totalTranslated} translated, ${totalSkipped} skipped`);
-
-        // Reload labels if target language is the currently selected one
-        if (toLang === selectedLanguage) {
-          await loadLabels(selectedLanguage);
-        }
-
-        // Calculate credits (all labels including already translated)
-        const totalLabels = Object.keys(sourceLabels).length;
-        const costPerItem = 0.1; // Standard rate for UI labels
-        const creditsDeducted = totalLabels * costPerItem;
-
-        return {
-          success: true,
-          data: {
-            translated: totalTranslated,
-            skipped: totalSkipped + (Object.keys(sourceLabels).length - keysToTranslate.length),
-            failed: totalFailed
-          },
-          creditsDeducted
-        };
-      }
-
-      // Fallback to old behavior for non-UI labels or no progress callback
+      // Call backend endpoint which now runs in background
       const data = await api.post('translations/ui-labels/bulk-translate', {
         fromLang,
         toLang
       });
 
-      // Reload labels if target language is the currently selected one
-      if (toLang === selectedLanguage) {
-        await loadLabels(selectedLanguage);
+      console.log('📥 Bulk translate response:', data);
+
+      if (data.success) {
+        // Show toast notification about background processing
+        toast.info(data.message || 'Translation started in background. You will receive an email notification when complete.', {
+          duration: 10000
+        });
+
+        // Return a response that indicates background processing
+        return {
+          success: true,
+          data: {
+            translated: 0,
+            skipped: 0,
+            failed: 0,
+            backgroundProcessing: true,
+            estimatedItems: data.data?.estimatedItems || 0,
+            estimatedMinutes: data.data?.estimatedMinutes || 10
+          },
+          creditsDeducted: data.data?.estimatedCost || 0,
+          message: data.message
+        };
       }
 
       return data;
     } catch (error) {
       console.error('Bulk translate error:', error);
-      return { success: false, message: error.message };
+      return { success: false, message: error.message || 'Translation failed' };
     }
   };
 

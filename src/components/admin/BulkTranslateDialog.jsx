@@ -167,6 +167,7 @@ export default function BulkTranslateDialog({
       let totalFailed = 0;
       let totalCreditsDeducted = 0;
       const allErrors = [];
+      const allResults = [];
 
       for (let i = 0; i < translateToLangs.length; i++) {
         const toLang = translateToLangs[i];
@@ -181,6 +182,7 @@ export default function BulkTranslateDialog({
         console.log(`📞 Calling onTranslate with progressCallback:`, progressCallback !== null ? 'YES' : 'NO');
 
         const result = await onTranslate(translateFromLang, toLang, progressCallback);
+        allResults.push(result);
 
         console.log(`📥 BulkTranslateDialog: Full result object for ${toLang}:`, result);
         console.log(`📥 BulkTranslateDialog: Parsed result:`, {
@@ -207,6 +209,45 @@ export default function BulkTranslateDialog({
 
       console.log(`📊 BulkTranslateDialog: Final totals - Translated: ${totalTranslated}, Skipped: ${totalSkipped}, Credits: ${totalCreditsDeducted}`);
 
+      // Check if any result indicates background processing
+      const hasBackgroundProcessing = allErrors.length === 0 &&
+        translateToLangs.length === 1 &&
+        allResults.some(result => result.data?.backgroundProcessing);
+
+      if (hasBackgroundProcessing) {
+        // Background processing mode - close immediately
+        console.log('🔄 Background processing detected, closing modal immediately');
+
+        // Update local credits for display
+        if (totalCreditsDeducted > 0) {
+          console.log(`💰 BulkTranslateDialog: Credits deducted: ${totalCreditsDeducted}, updating local balance`);
+          setLocalCredits(prev => Math.max(0, (prev || 0) - totalCreditsDeducted));
+        }
+
+        // Reset states
+        setIsTranslating(false);
+        setTranslationProgress({ current: 0, total: 0 });
+        setItemProgress({ current: 0, total: 0 });
+        setTranslateToLangs([]);
+
+        // Close dialog immediately
+        onOpenChange(false);
+
+        // Reload data and credits
+        if (onComplete) {
+          setTimeout(() => onComplete(), 100);
+        }
+
+        // Reload credits in sidebar
+        setTimeout(() => {
+          console.log('🔄 BulkTranslateDialog: Modal closed, reloading credits in sidebar');
+          window.dispatchEvent(new CustomEvent('creditsUpdated'));
+        }, 150);
+
+        return;
+      }
+
+      // Regular processing mode - show results and wait before closing
       // Update local credits for display in modal
       if (totalCreditsDeducted > 0) {
         console.log(`💰 BulkTranslateDialog: Credits deducted: ${totalCreditsDeducted}, updating local balance`);
