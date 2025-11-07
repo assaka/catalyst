@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import api from '../utils/api';
+import { useStoreSelection } from './StoreSelectionContext';
 
 const TranslationContext = createContext();
 
@@ -8,8 +9,15 @@ const TranslationContext = createContext();
  *
  * Manages translation state and provides translation functions
  * throughout the application.
+ *
+ * For admin panel: Uses store from StoreSelectionContext
+ * For storefront: Expects storeId prop
  */
-export function TranslationProvider({ children }) {
+export function TranslationProvider({ children, storeId: propStoreId }) {
+  const storeSelection = useStoreSelection?.() || {}; // Safe access, may be undefined in storefront
+  const adminStoreId = storeSelection?.getSelectedStoreId?.();
+  const storeId = propStoreId || adminStoreId; // Prop takes priority (storefront), then admin selection
+
   const [currentLanguage, setCurrentLanguage] = useState('en');
   const [availableLanguages, setAvailableLanguages] = useState([]);
   const [translations, setTranslations] = useState({});
@@ -65,7 +73,13 @@ export function TranslationProvider({ children }) {
   const loadTranslations = useCallback(async (lang) => {
     try {
       setLoading(true);
-      const response = await api.get(`/translations/ui-labels?lang=${lang}`);
+      if (!storeId) {
+        console.warn('No store_id available for translation loading');
+        setTranslations({});
+        setLoading(false);
+        return;
+      }
+      const response = await api.get(`/translations/ui-labels?store_id=${storeId}&lang=${lang}`);
 
       // API client returns the full backend response for translations endpoints
       // Backend response structure: { success: true, data: { language: 'nl', labels: {...} } }
@@ -78,7 +92,7 @@ export function TranslationProvider({ children }) {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [storeId]);
 
   /**
    * Change current language

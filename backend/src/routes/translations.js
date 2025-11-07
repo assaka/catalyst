@@ -726,11 +726,18 @@ async function performUILabelsBulkTranslation(userId, userEmail, storeId, fromLa
 }
 
 // @route   POST /api/translations/ui-labels/bulk-translate
-// @desc    AI translate all UI labels from one language to another (runs in background)
+// @desc    AI translate all UI labels from one language to another for a specific store (runs in background)
 // @access  Private
 router.post('/ui-labels/bulk-translate', authMiddleware, async (req, res) => {
   try {
-    const { fromLang, toLang } = req.body;
+    const { store_id, fromLang, toLang } = req.body;
+
+    if (!store_id) {
+      return res.status(400).json({
+        success: false,
+        message: 'store_id is required'
+      });
+    }
 
     if (!fromLang || !toLang) {
       return res.status(400).json({
@@ -747,7 +754,7 @@ router.post('/ui-labels/bulk-translate', authMiddleware, async (req, res) => {
     }
 
     // Check if user has enough credits before starting
-    const sourceLabels = await translationService.getUILabels(fromLang);
+    const sourceLabels = await translationService.getUILabels(store_id, fromLang);
     if (!sourceLabels || !sourceLabels.labels) {
       return res.json({
         success: true,
@@ -780,7 +787,7 @@ router.post('/ui-labels/bulk-translate', authMiddleware, async (req, res) => {
     const estimatedCost = totalItems * costPerItem;
 
     // Check if user has enough credits
-    const hasCredits = await creditService.hasEnoughCredits(req.user.id, null, estimatedCost);
+    const hasCredits = await creditService.hasEnoughCredits(req.user.id, store_id, estimatedCost);
     if (!hasCredits) {
       const balance = await creditService.getBalance(req.user.id);
       return res.status(402).json({
@@ -795,7 +802,7 @@ router.post('/ui-labels/bulk-translate', authMiddleware, async (req, res) => {
     // Start background translation process
     console.log(`🚀 Starting background UI labels translation: ${fromLang} → ${toLang}`);
     setImmediate(() => {
-      performUILabelsBulkTranslation(req.user.id, req.user.email, fromLang, toLang);
+      performUILabelsBulkTranslation(req.user.id, req.user.email, store_id, fromLang, toLang);
     });
 
     // Return immediately
@@ -1738,7 +1745,7 @@ router.post('/preview', authMiddleware, async (req, res) => {
 
     // Handle UI labels
     if (what === 'all' || what === 'ui-labels') {
-      const sourceLabels = await translationService.getUILabels(fromLang);
+      const sourceLabels = await translationService.getUILabels(storeId, fromLang);
       const flattenLabels = (obj, prefix = '') => {
         const result = {};
         Object.entries(obj).forEach(([key, value]) => {
@@ -1757,7 +1764,7 @@ router.post('/preview', authMiddleware, async (req, res) => {
       let uiAlreadyTranslated = 0;
 
       for (const toLang of toLanguages) {
-        const targetLabels = await translationService.getUILabels(toLang);
+        const targetLabels = await translationService.getUILabels(storeId, toLang);
         const existingKeys = new Set(Object.keys(targetLabels.labels || {}));
 
         const missing = Object.keys(flatSourceLabels).filter(key => !existingKeys.has(key));
@@ -1946,8 +1953,8 @@ router.post('/wizard-execute', authMiddleware, async (req, res) => {
       for (const toLang of toLanguages) {
         try {
           // Use existing bulk translate endpoint logic
-          const sourceLabels = await translationService.getUILabels(fromLang);
-          const targetLabels = await translationService.getUILabels(toLang);
+          const sourceLabels = await translationService.getUILabels(storeId, fromLang);
+          const targetLabels = await translationService.getUILabels(storeId, toLang);
 
           const flattenLabels = (obj, prefix = '') => {
             const result = {};
@@ -1976,7 +1983,7 @@ router.post('/wizard-execute', authMiddleware, async (req, res) => {
 
               const translatedValue = await translationService.aiTranslate(sourceValue, fromLang, toLang);
               const category = key.split('.')[0] || 'common';
-              await translationService.saveUILabel(key, toLang, translatedValue, category, 'system');
+              await translationService.saveUILabel(storeId, key, toLang, translatedValue, category, 'system');
 
               // Track text length for cost calculation
               if (sourceValue && typeof sourceValue === 'string') {

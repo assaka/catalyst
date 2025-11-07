@@ -132,7 +132,13 @@ export default function Translations() {
   const loadLabels = async (lang) => {
     try {
       setLoading(true);
-      const response = await api.get(`/translations/ui-labels?lang=${lang}`);
+      const storeId = getSelectedStoreId();
+      if (!storeId) {
+        showMessage('Please select a store first', 'error');
+        setLoading(false);
+        return;
+      }
+      const response = await api.get(`/translations/ui-labels?store_id=${storeId}&lang=${lang}`);
 
       if (response && response.success && response.data && response.data.labels) {
         // Flatten nested objects into separate label entries
@@ -257,7 +263,14 @@ export default function Translations() {
   const saveLabel = async (key, value, category = 'common', type = 'system') => {
     try {
       setSaving(true);
+      const storeId = getSelectedStoreId();
+      if (!storeId) {
+        showMessage('Please select a store first', 'error');
+        setSaving(false);
+        return;
+      }
       const response = await api.post('/translations/ui-labels', {
+        store_id: storeId,
         key,
         language_code: selectedLanguage,
         value,
@@ -303,7 +316,15 @@ export default function Translations() {
     if (!labelToDelete) return;
 
     try {
-      await api.delete(`/translations/ui-labels/${encodeURIComponent(labelToDelete)}/${selectedLanguage}`);
+      const storeId = getSelectedStoreId();
+      if (!storeId) {
+        showMessage('Please select a store first', 'error');
+        setIsDeleteModalOpen(false);
+        return;
+      }
+      await api.delete(`/translations/ui-labels/${encodeURIComponent(labelToDelete)}/${selectedLanguage}`, {
+        data: { store_id: storeId }
+      });
       showMessage('Translation deleted successfully', 'success');
       await loadLabels(selectedLanguage);
       setIsDeleteModalOpen(false);
@@ -321,8 +342,15 @@ export default function Translations() {
   const handleBulkTranslate = async (fromLang, toLang, onProgress) => {
     console.log('🎯 handleBulkTranslate called with:', { fromLang, toLang, hasProgressCallback: !!onProgress });
     try {
+      const storeId = getSelectedStoreId();
+      if (!storeId) {
+        toast.error('Please select a store first');
+        return { success: false, message: 'No store selected' };
+      }
+
       // Call backend endpoint which now runs in background
       const data = await api.post('translations/ui-labels/bulk-translate', {
+        store_id: storeId,
         fromLang,
         toLang
       });
@@ -940,7 +968,14 @@ export default function Translations() {
       }
 
       // Save in bulk
-      await api.post('/translations/ui-labels/bulk', { labels: translationsToSave });
+      const storeId = getSelectedStoreId();
+      if (!storeId) {
+        showMessage('Please select a store first', 'error');
+        setSaving(false);
+        return;
+      }
+
+      await api.post('/translations/ui-labels/bulk', { store_id: storeId, labels: translationsToSave });
 
       if (autoTranslate) {
         showMessage(`Successfully added and auto-translated to ${translationsToSave.length} languages`, 'success');
