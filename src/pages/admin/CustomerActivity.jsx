@@ -8,7 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { Eye, ShoppingCart, Search, Heart, CreditCard, Package, RefreshCw, Calendar, ChevronLeft, ChevronRight } from "lucide-react";
+import { Eye, ShoppingCart, Search, Heart, CreditCard, Package, RefreshCw, Calendar, ChevronLeft, ChevronRight, Activity, Users, CheckCircle, TrendingUp, BarChart3 } from "lucide-react";
 
 export default function CustomerActivityPage() {
   const { selectedStore, getSelectedStoreId } = useStoreSelection();
@@ -17,7 +17,17 @@ export default function CustomerActivityPage() {
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const [activityFilter, setActivityFilter] = useState("all");
-  
+
+  // Analytics dashboard state
+  const [analytics, setAnalytics] = useState({
+    topProducts: [],
+    topPages: [],
+    bestSellers: [],
+    conversionFunnel: {},
+    timeSeriesData: []
+  });
+  const [showDashboard, setShowDashboard] = useState(true);
+
   // Pagination state
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage] = useState(20);
@@ -31,8 +41,31 @@ export default function CustomerActivityPage() {
   useEffect(() => {
     if (selectedStore) {
       loadData(1); // Reset to page 1 when store changes
+      loadAnalytics(); // Load dashboard analytics
     }
   }, [selectedStore]);
+
+  const loadAnalytics = async () => {
+    if (!selectedStore) return;
+
+    try {
+      // Calculate analytics from activities
+      // In production, this would be a dedicated analytics endpoint
+
+      // For now, we'll calculate from the activities we have
+      // This is a temporary solution until we create analytics API endpoints
+
+      setAnalytics({
+        topProducts: [],
+        topPages: [],
+        bestSellers: [],
+        conversionFunnel: {},
+        timeSeriesData: []
+      });
+    } catch (error) {
+      console.error('Error loading analytics:', error);
+    }
+  };
 
   // Reload data when filters change
   useEffect(() => {
@@ -248,17 +281,352 @@ export default function CustomerActivityPage() {
             <h1 className="text-3xl font-bold text-gray-900">Customer Activity</h1>
             <p className="text-gray-600 mt-1">Track customer behavior and interactions</p>
           </div>
-          <Button 
-            onClick={() => loadData(currentPage)} 
-            disabled={loading}
-            variant="outline"
-            size="sm"
-            className="flex items-center gap-2"
-          >
-            <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
-            Refresh
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button
+              onClick={() => setShowDashboard(!showDashboard)}
+              variant="outline"
+              size="sm"
+            >
+              {showDashboard ? 'Hide' : 'Show'} Dashboard
+            </Button>
+            <Button
+              onClick={() => loadData(currentPage)}
+              disabled={loading}
+              variant="outline"
+              size="sm"
+              className="flex items-center gap-2"
+            >
+              <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
+              Refresh
+            </Button>
+          </div>
         </div>
+
+        {/* Analytics Dashboard */}
+        {showDashboard && (
+          <div className="mb-6 space-y-6">
+            {/* Quick Stats */}
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+              <Card>
+                <CardContent className="p-4">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-xs text-gray-500 uppercase">Total Events</p>
+                      <p className="text-2xl font-bold">{totalItems.toLocaleString()}</p>
+                    </div>
+                    <Activity className="w-8 h-8 text-blue-500" />
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardContent className="p-4">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-xs text-gray-500 uppercase">Unique Sessions</p>
+                      <p className="text-2xl font-bold">
+                        {new Set(activities.map(a => a.session_id)).size}
+                      </p>
+                    </div>
+                    <Users className="w-8 h-8 text-purple-500" />
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardContent className="p-4">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-xs text-gray-500 uppercase">Product Views</p>
+                      <p className="text-2xl font-bold">
+                        {activities.filter(a => a.activity_type === 'product_view').length}
+                      </p>
+                    </div>
+                    <Eye className="w-8 h-8 text-green-500" />
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardContent className="p-4">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-xs text-gray-500 uppercase">Orders</p>
+                      <p className="text-2xl font-bold">
+                        {activities.filter(a => a.activity_type === 'order_completed').length}
+                      </p>
+                    </div>
+                    <CheckCircle className="w-8 h-8 text-emerald-500" />
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+
+            {/* Top Products & Pages */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              {/* Top Viewed Products */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <TrendingUp className="w-5 h-5 text-blue-600" />
+                    Top Viewed Products
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  {(() => {
+                    const productViews = activities.filter(a => a.activity_type === 'product_view' && a.metadata?.product_name);
+                    const productCounts = {};
+                    productViews.forEach(a => {
+                      const key = a.product_id;
+                      if (!productCounts[key]) {
+                        productCounts[key] = {
+                          count: 0,
+                          name: a.metadata.product_name,
+                          sku: a.metadata.product_sku,
+                          price: a.metadata.product_price
+                        };
+                      }
+                      productCounts[key].count++;
+                    });
+
+                    const topProducts = Object.entries(productCounts)
+                      .sort((a, b) => b[1].count - a[1].count)
+                      .slice(0, 5);
+
+                    return topProducts.length > 0 ? (
+                      <div className="space-y-2">
+                        {topProducts.map(([id, data], index) => (
+                          <div key={id} className="flex items-center justify-between p-3 border rounded-lg">
+                            <div className="flex items-center gap-3">
+                              <span className="font-bold text-gray-400">#{index + 1}</span>
+                              <div>
+                                <p className="font-medium text-sm">{data.name}</p>
+                                <p className="text-xs text-gray-500">SKU: {data.sku || 'N/A'}</p>
+                              </div>
+                            </div>
+                            <Badge variant="secondary">{data.count} views</Badge>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <p className="text-sm text-gray-500 text-center py-8">No product views yet</p>
+                    );
+                  })()}
+                </CardContent>
+              </Card>
+
+              {/* Top Pages */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <BarChart3 className="w-5 h-5 text-purple-600" />
+                    Top Pages
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  {(() => {
+                    const pageViews = activities.filter(a => a.page_url);
+                    const pageCounts = {};
+                    pageViews.forEach(a => {
+                      const url = a.page_url;
+                      pageCounts[url] = (pageCounts[url] || 0) + 1;
+                    });
+
+                    const topPages = Object.entries(pageCounts)
+                      .sort((a, b) => b[1] - a[1])
+                      .slice(0, 5);
+
+                    return topPages.length > 0 ? (
+                      <div className="space-y-2">
+                        {topPages.map(([url, count], index) => (
+                          <div key={url} className="flex items-center justify-between p-3 border rounded-lg">
+                            <div className="flex items-center gap-3 flex-1 min-w-0">
+                              <span className="font-bold text-gray-400">#{index + 1}</span>
+                              <p className="font-medium text-sm truncate">{url}</p>
+                            </div>
+                            <Badge variant="secondary">{count} visits</Badge>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <p className="text-sm text-gray-500 text-center py-8">No page views yet</p>
+                    );
+                  })()}
+                </CardContent>
+              </Card>
+            </div>
+
+            {/* Best Sellers & Conversion Funnel */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              {/* Best Sellers (by add_to_cart) */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <ShoppingCart className="w-5 h-5 text-green-600" />
+                    Best Sellers (Add to Cart)
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  {(() => {
+                    const cartAdds = activities.filter(a => a.activity_type === 'add_to_cart' && a.metadata?.product_name);
+                    const productCounts = {};
+                    cartAdds.forEach(a => {
+                      const key = a.product_id;
+                      if (!productCounts[key]) {
+                        productCounts[key] = {
+                          count: 0,
+                          name: a.metadata.product_name,
+                          sku: a.metadata.product_sku,
+                          totalQty: 0,
+                          totalValue: 0
+                        };
+                      }
+                      productCounts[key].count++;
+                      productCounts[key].totalQty += parseInt(a.metadata.quantity || 1);
+                      productCounts[key].totalValue += parseFloat(a.metadata.cart_value || 0);
+                    });
+
+                    const bestSellers = Object.entries(productCounts)
+                      .sort((a, b) => b[1].count - a[1].count)
+                      .slice(0, 5);
+
+                    return bestSellers.length > 0 ? (
+                      <div className="space-y-2">
+                        {bestSellers.map(([id, data], index) => (
+                          <div key={id} className="flex items-center justify-between p-3 border rounded-lg">
+                            <div className="flex items-center gap-3">
+                              <span className="font-bold text-gray-400">#{index + 1}</span>
+                              <div>
+                                <p className="font-medium text-sm">{data.name}</p>
+                                <p className="text-xs text-gray-500">
+                                  {data.totalQty} units • ${data.totalValue.toFixed(2)} value
+                                </p>
+                              </div>
+                            </div>
+                            <Badge variant="secondary">{data.count} carts</Badge>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <p className="text-sm text-gray-500 text-center py-8">No cart activity yet</p>
+                    );
+                  })()}
+                </CardContent>
+              </Card>
+
+              {/* Conversion Funnel */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <TrendingUp className="w-5 h-5 text-orange-600" />
+                    Conversion Funnel
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  {(() => {
+                    const productViews = activities.filter(a => a.activity_type === 'product_view').length;
+                    const cartAdds = activities.filter(a => a.activity_type === 'add_to_cart').length;
+                    const checkouts = activities.filter(a => a.activity_type === 'checkout_started').length;
+                    const orders = activities.filter(a => a.activity_type === 'order_completed').length;
+
+                    const addToCartRate = productViews > 0 ? ((cartAdds / productViews) * 100).toFixed(1) : 0;
+                    const checkoutRate = cartAdds > 0 ? ((checkouts / cartAdds) * 100).toFixed(1) : 0;
+                    const purchaseRate = checkouts > 0 ? ((orders / checkouts) * 100).toFixed(1) : 0;
+
+                    return (
+                      <div className="space-y-4">
+                        <div className="flex items-center justify-between p-3 bg-blue-50 rounded-lg">
+                          <div className="flex items-center gap-2">
+                            <Eye className="w-4 h-4 text-blue-600" />
+                            <span className="font-medium text-sm">Product Views</span>
+                          </div>
+                          <span className="font-bold text-blue-900">{productViews}</span>
+                        </div>
+
+                        <div className="flex items-center justify-between p-3 bg-green-50 rounded-lg">
+                          <div className="flex items-center gap-2">
+                            <ShoppingCart className="w-4 h-4 text-green-600" />
+                            <span className="font-medium text-sm">Add to Cart</span>
+                          </div>
+                          <div className="text-right">
+                            <span className="font-bold text-green-900">{cartAdds}</span>
+                            <span className="text-xs text-green-600 ml-2">({addToCartRate}%)</span>
+                          </div>
+                        </div>
+
+                        <div className="flex items-center justify-between p-3 bg-orange-50 rounded-lg">
+                          <div className="flex items-center gap-2">
+                            <CreditCard className="w-4 h-4 text-orange-600" />
+                            <span className="font-medium text-sm">Checkouts Started</span>
+                          </div>
+                          <div className="text-right">
+                            <span className="font-bold text-orange-900">{checkouts}</span>
+                            <span className="text-xs text-orange-600 ml-2">({checkoutRate}%)</span>
+                          </div>
+                        </div>
+
+                        <div className="flex items-center justify-between p-3 bg-emerald-50 rounded-lg">
+                          <div className="flex items-center gap-2">
+                            <CheckCircle className="w-4 h-4 text-emerald-600" />
+                            <span className="font-medium text-sm">Orders Completed</span>
+                          </div>
+                          <div className="text-right">
+                            <span className="font-bold text-emerald-900">{orders}</span>
+                            <span className="text-xs text-emerald-600 ml-2">({purchaseRate}%)</span>
+                          </div>
+                        </div>
+
+                        {productViews > 0 && (
+                          <div className="pt-3 border-t">
+                            <p className="text-xs text-gray-600 text-center">
+                              Overall Conversion: <strong>{orders > 0 && productViews > 0 ? ((orders / productViews) * 100).toFixed(2) : 0}%</strong>
+                            </p>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })()}
+                </CardContent>
+              </Card>
+            </div>
+
+            {/* Search Terms & Popular Searches */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Search className="w-5 h-5 text-gray-600" />
+                  Popular Searches
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                {(() => {
+                  const searches = activities.filter(a => a.activity_type === 'search' && a.search_query);
+                  const searchCounts = {};
+                  searches.forEach(a => {
+                    const query = a.search_query.toLowerCase();
+                    searchCounts[query] = (searchCounts[query] || 0) + 1;
+                  });
+
+                  const topSearches = Object.entries(searchCounts)
+                    .sort((a, b) => b[1] - a[1])
+                    .slice(0, 10);
+
+                  return topSearches.length > 0 ? (
+                    <div className="flex flex-wrap gap-2">
+                      {topSearches.map(([query, count]) => (
+                        <Badge key={query} variant="outline" className="text-sm">
+                          "{query}" ({count})
+                        </Badge>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="text-sm text-gray-500 text-center py-4">No searches yet</p>
+                  );
+                })()}
+              </CardContent>
+            </Card>
+          </div>
+        )}
 
         <Card className="mb-6">
           <CardContent className="p-6">
@@ -381,8 +749,33 @@ export default function CustomerActivityPage() {
                         {activity.search_query && (
                           <p className="text-sm text-gray-600">Search: "{activity.search_query}"</p>
                         )}
-                        {activity.product_id && (
-                          <p className="text-sm text-gray-600">Product ID: {activity.product_id}</p>
+                        {activity.product_id && activity.metadata?.product_name && (
+                          <p className="text-sm text-gray-600">
+                            <strong>{activity.metadata.product_name}</strong>
+                            {activity.metadata.product_sku && <span className="text-gray-500"> (SKU: {activity.metadata.product_sku})</span>}
+                          </p>
+                        )}
+                        {activity.metadata?.quantity && (
+                          <p className="text-xs text-gray-500">
+                            Qty: {activity.metadata.quantity}
+                            {activity.metadata.cart_value && <span> • Value: ${parseFloat(activity.metadata.cart_value).toFixed(2)}</span>}
+                          </p>
+                        )}
+                        {activity.metadata?.variant && (
+                          <p className="text-xs text-gray-500">
+                            Variant: {activity.metadata.variant.name || activity.metadata.variant.options?.join(' / ')}
+                          </p>
+                        )}
+                        {activity.metadata?.list_name && (
+                          <p className="text-xs text-gray-500">
+                            From: {activity.metadata.list_name}
+                          </p>
+                        )}
+                        {activity.metadata?.order_total && (
+                          <p className="text-sm text-gray-600">
+                            Order Total: ${parseFloat(activity.metadata.order_total).toFixed(2)}
+                            {activity.metadata.order_items_count && <span className="text-gray-500"> ({activity.metadata.order_items_count} items)</span>}
+                          </p>
                         )}
                       </div>
                     </div>
