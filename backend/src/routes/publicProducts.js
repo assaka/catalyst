@@ -6,12 +6,15 @@ const { applyProductTranslationsToMany, applyProductTranslations } = require('..
 const { getAttributesWithTranslations, getAttributeValuesWithTranslations } = require('../utils/attributeHelpers');
 const { applyCacheHeaders } = require('../utils/cacheUtils');
 const { getStoreSettings } = require('../utils/storeCache');
+const { cacheProducts, cacheProduct } = require('../middleware/cacheMiddleware');
+const { wrap, generateKey, CACHE_KEYS, DEFAULT_TTL } = require('../utils/cacheManager');
 const router = express.Router();
 
 // @route   GET /api/public/products
 // @desc    Get all active products (no authentication required)
 // @access  Public
-router.get('/', async (req, res) => {
+// @cache   3 minutes (Redis/in-memory)
+router.get('/', cacheProducts(180), async (req, res) => {
   try {
     const { page = 1, limit = 100, store_id, category_id, status = 'active', search, slug, sku, id, ids, featured } = req.query;
     const offset = (page - 1) * limit;
@@ -272,7 +275,8 @@ router.get('/', async (req, res) => {
 // @route   GET /api/public/products/:id
 // @desc    Get single product by ID (no authentication required)
 // @access  Public
-router.get('/:id', async (req, res) => {
+// @cache   5 minutes (Redis/in-memory)
+router.get('/:id', cacheProduct(300), async (req, res) => {
   try {
     const lang = getLanguageFromRequest(req);
 
@@ -406,7 +410,8 @@ router.get('/:id', async (req, res) => {
 // @route   GET /api/public/products/by-slug/:slug/full
 // @desc    Get complete product data with tabs, labels, and custom options in one request
 // @access  Public
-router.get('/by-slug/:slug/full', async (req, res) => {
+// @cache   5 minutes (Redis/in-memory)
+router.get('/by-slug/:slug/full', cacheProduct(300), async (req, res) => {
   try {
     const { slug } = req.params;
     const { store_id } = req.query;

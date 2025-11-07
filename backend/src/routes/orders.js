@@ -7,6 +7,7 @@ const { Op } = require('sequelize');
 const { authMiddleware } = require('../middleware/auth');
 const { validateCustomerOrderAccess } = require('../middleware/customerStoreAuth');
 const emailService = require('../services/email-service');
+const { cacheOrder } = require('../middleware/cacheMiddleware');
 const router = express.Router();
 
 // Initialize Stripe
@@ -28,7 +29,8 @@ router.get('/test', (req, res) => {
 // @route   GET /api/orders/by-payment-reference/:paymentReference
 // @desc    Get order by payment reference (for order success page)
 // @access  Public (no auth required for order success)
-router.get('/by-payment-reference/:paymentReference', async (req, res) => {
+// @cache   1 minute (Redis/in-memory) - short TTL as orders may update
+router.get('/by-payment-reference/:paymentReference', cacheOrder(60), async (req, res) => {
   try {
     const { paymentReference } = req.params;
     const { QueryTypes } = require('sequelize');

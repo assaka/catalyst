@@ -309,6 +309,33 @@ app.get('/health/db', async (req, res) => {
   }
 });
 
+// Redis cache health check endpoint
+app.get('/health/cache', async (req, res) => {
+  try {
+    const { isRedisConnected, getRedisInfo } = require('./config/redis');
+    const { getStats } = require('./utils/cacheManager');
+
+    const redisInfo = getRedisInfo();
+    const stats = await getStats();
+
+    res.json({
+      status: 'OK',
+      redis: {
+        connected: isRedisConnected(),
+        ...redisInfo
+      },
+      stats,
+      timestamp: new Date().toISOString()
+    });
+  } catch (error) {
+    res.status(500).json({
+      status: 'ERROR',
+      error: error.message,
+      timestamp: new Date().toISOString()
+    });
+  }
+});
+
 // API routes
 app.use('/api/auth', authRoutes);
 
@@ -920,8 +947,17 @@ const startServer = async () => {
   });
 
   // Handle graceful shutdown
-  process.on('SIGTERM', () => {
+  process.on('SIGTERM', async () => {
     console.log('SIGTERM received, shutting down gracefully');
+
+    // Close Redis connection
+    try {
+      const { closeRedis } = require('./config/redis');
+      await closeRedis();
+    } catch (error) {
+      console.error('Error closing Redis:', error);
+    }
+
     server.close(() => {
       console.log('Process terminated');
     });
@@ -944,6 +980,15 @@ const startServer = async () => {
           await sequelize.sync({ alter: true });
         } else {
           await sequelize.sync({ alter: false });
+        }
+
+        // Initialize Redis cache
+        try {
+          const { initRedis } = require('./config/redis');
+          await initRedis();
+          console.log('✅ Redis cache initialized');
+        } catch (error) {
+          console.warn('⚠️  Redis initialization failed, continuing without cache:', error.message);
         }
 
         // Initialize Plugin Manager

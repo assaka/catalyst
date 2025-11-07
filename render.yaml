@@ -68,6 +68,25 @@ services:
         sync: false
       - key: PDF_SERVICE_URL
         value: http://catalyst-pdf-service:3001
+      # Redis Configuration (Render managed Redis)
+      - key: REDIS_URL
+        fromDatabase:
+          name: catalyst-redis
+          property: connectionString
+      - key: REDIS_ENABLED
+        value: true
+      # Cloudflare CDN Configuration
+      - key: CLOUDFLARE_ZONE_ID
+        sync: false
+      - key: CLOUDFLARE_API_TOKEN
+        sync: false
+      - key: CLOUDFLARE_ACCOUNT_ID
+        sync: false
+      - key: CLOUDFLARE_IMAGES_ENABLED
+        value: false
+      # Service type for connection pool optimization
+      - key: SERVICE_TYPE
+        value: main
     autoDeploy: true
 
   # PDF Generation Microservice (Docker with Chromium)
@@ -120,6 +139,20 @@ services:
       # Integration Encryption Key
       - key: INTEGRATION_ENCRYPTION_KEY
         sync: false
+      # Redis Configuration (Render managed Redis)
+      - key: REDIS_URL
+        fromDatabase:
+          name: catalyst-redis
+          property: connectionString
+      - key: REDIS_ENABLED
+        value: true
+      # Service type for connection pool optimization
+      - key: SERVICE_TYPE
+        value: worker
+      - key: DB_POOL_MAX
+        value: 5
+      - key: DB_POOL_MIN
+        value: 1
     autoDeploy: true
 
   # Daily Credit Deduction Cron Job (runs at midnight UTC daily)
@@ -148,3 +181,7 @@ services:
       - key: JWT_SECRET
         sync: false
     autoDeploy: true
+
+# Key-Value Store (Redis) - Managed by Render
+# Note: Render uses "Key-Value Store" for Redis
+# This will be created automatically on deployment

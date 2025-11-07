@@ -6,6 +6,7 @@ const { authMiddleware } = require('../middleware/auth');
 const translationService = require('../services/translation-service');
 const creditService = require('../services/credit-service');
 const ServiceCreditCost = require('../models/ServiceCreditCost');
+const { cacheMiddleware } = require('../middleware/cacheMiddleware');
 
 const router = express.Router();
 
@@ -2225,6 +2226,463 @@ router.post('/wizard-execute', authMiddleware, async (req, res) => {
     res.status(500).json({
       success: false,
       message: error.message || 'Server error'
+    });
+  }
+});
+
+// ============================================
+// BATCH TRANSLATION ENDPOINTS (Performance Optimization)
+// ============================================
+
+/**
+ * @route   GET /api/translations/products/batch
+ * @desc    Get product translations in batch (optimized for N+1 prevention)
+ * @access  Public
+ * @query   ids - Comma-separated product IDs
+ * @query   lang - Language code (default: 'en')
+ * @cache   1 hour (translations rarely change)
+ */
+router.get('/products/batch', cacheMiddleware({
+  prefix: 'translations_products',
+  ttl: 3600, // 1 hour
+  keyGenerator: (req) => {
+    const ids = (req.query.ids || '').split(',').sort().join(',');
+    const lang = req.query.lang || 'en';
+    return `translations_products:${ids}:${lang}`;
+  }
+}), async (req, res) => {
+  try {
+    const { ids, lang = 'en' } = req.query;
+
+    if (!ids) {
+      return res.status(400).json({
+        success: false,
+        message: 'ids parameter required (comma-separated product IDs)'
+      });
+    }
+
+    const productIds = ids.split(',').filter(Boolean);
+
+    if (productIds.length === 0) {
+      return res.json({ success: true, data: {} });
+    }
+
+    // Single optimized query instead of N queries
+    const translations = await sequelize.query(`
+      SELECT
+        product_id,
+        language_code,
+        name,
+        description,
+        short_description,
+        meta_title,
+        meta_description,
+        meta_keywords
+      FROM product_translations
+      WHERE product_id IN (:productIds)
+        AND language_code = :lang
+    `, {
+      replacements: { productIds, lang },
+      type: sequelize.QueryTypes.SELECT
+    });
+
+    // Transform to object map for easy lookup: { productId: translation }
+    const translationMap = {};
+    translations.forEach(t => {
+      translationMap[t.product_id] = {
+        name: t.name,
+        description: t.description,
+        short_description: t.short_description,
+        meta_title: t.meta_title,
+        meta_description: t.meta_description,
+        meta_keywords: t.meta_keywords,
+        language_code: t.language_code,
+      };
+    });
+
+    res.json({
+      success: true,
+      data: translationMap,
+      count: Object.keys(translationMap).length,
+      requested: productIds.length
+    });
+
+  } catch (error) {
+    console.error('Batch product translation error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Server error'
+    });
+  }
+});
+
+/**
+ * @route   GET /api/translations/categories/batch
+ * @desc    Get category translations in batch
+ * @access  Public
+ * @cache   1 hour
+ */
+router.get('/categories/batch', cacheMiddleware({
+  prefix: 'translations_categories',
+  ttl: 3600,
+  keyGenerator: (req) => {
+    const ids = (req.query.ids || '').split(',').sort().join(',');
+    const lang = req.query.lang || 'en';
+    return `translations_categories:${ids}:${lang}`;
+  }
+}), async (req, res) => {
+  try {
+    const { ids, lang = 'en' } = req.query;
+
+    if (!ids) {
+      return res.status(400).json({
+        success: false,
+        message: 'ids parameter required'
+      });
+    }
+
+    const categoryIds = ids.split(',').filter(Boolean);
+
+    if (categoryIds.length === 0) {
+      return res.json({ success: true, data: {} });
+    }
+
+    const translations = await sequelize.query(`
+      SELECT
+        category_id,
+        language_code,
+        name,
+        description,
+        meta_title,
+        meta_description,
+        meta_keywords
+      FROM category_translations
+      WHERE category_id IN (:categoryIds)
+        AND language_code = :lang
+    `, {
+      replacements: { categoryIds, lang },
+      type: sequelize.QueryTypes.SELECT
+    });
+
+    const translationMap = {};
+    translations.forEach(t => {
+      translationMap[t.category_id] = {
+        name: t.name,
+        description: t.description,
+        meta_title: t.meta_title,
+        meta_description: t.meta_description,
+        meta_keywords: t.meta_keywords,
+        language_code: t.language_code,
+      };
+    });
+
+    res.json({
+      success: true,
+      data: translationMap,
+      count: Object.keys(translationMap).length
+    });
+
+  } catch (error) {
+    console.error('Batch category translation error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Server error'
+    });
+  }
+});
+
+/**
+ * @route   GET /api/translations/attributes/batch
+ * @desc    Get attribute translations in batch
+ * @access  Public
+ * @cache   1 hour
+ */
+router.get('/attributes/batch', cacheMiddleware({
+  prefix: 'translations_attributes',
+  ttl: 3600,
+  keyGenerator: (req) => {
+    const ids = (req.query.ids || '').split(',').sort().join(',');
+    const lang = req.query.lang || 'en';
+    return `translations_attributes:${ids}:${lang}`;
+  }
+}), async (req, res) => {
+  try {
+    const { ids, lang = 'en' } = req.query;
+
+    if (!ids) {
+      return res.status(400).json({
+        success: false,
+        message: 'ids parameter required'
+      });
+    }
+
+    const attributeIds = ids.split(',').filter(Boolean);
+
+    if (attributeIds.length === 0) {
+      return res.json({ success: true, data: {} });
+    }
+
+    const translations = await sequelize.query(`
+      SELECT
+        attribute_id,
+        language_code,
+        label,
+        description
+      FROM attribute_translations
+      WHERE attribute_id IN (:attributeIds)
+        AND language_code = :lang
+    `, {
+      replacements: { attributeIds, lang },
+      type: sequelize.QueryTypes.SELECT
+    });
+
+    const translationMap = {};
+    translations.forEach(t => {
+      translationMap[t.attribute_id] = {
+        label: t.label,
+        description: t.description,
+        language_code: t.language_code,
+      };
+    });
+
+    res.json({
+      success: true,
+      data: translationMap,
+      count: Object.keys(translationMap).length
+    });
+
+  } catch (error) {
+    console.error('Batch attribute translation error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Server error'
+    });
+  }
+});
+
+/**
+ * @route   GET /api/translations/attribute-values/batch
+ * @desc    Get attribute value translations in batch
+ * @access  Public
+ * @cache   1 hour
+ */
+router.get('/attribute-values/batch', cacheMiddleware({
+  prefix: 'translations_attribute_values',
+  ttl: 3600,
+  keyGenerator: (req) => {
+    const ids = (req.query.ids || '').split(',').sort().join(',');
+    const lang = req.query.lang || 'en';
+    return `translations_attribute_values:${ids}:${lang}`;
+  }
+}), async (req, res) => {
+  try {
+    const { ids, lang = 'en' } = req.query;
+
+    if (!ids) {
+      return res.status(400).json({
+        success: false,
+        message: 'ids parameter required'
+      });
+    }
+
+    const valueIds = ids.split(',').filter(Boolean);
+
+    if (valueIds.length === 0) {
+      return res.json({ success: true, data: {} });
+    }
+
+    const translations = await sequelize.query(`
+      SELECT
+        attribute_value_id,
+        language_code,
+        label
+      FROM attribute_value_translations
+      WHERE attribute_value_id IN (:valueIds)
+        AND language_code = :lang
+    `, {
+      replacements: { valueIds, lang },
+      type: sequelize.QueryTypes.SELECT
+    });
+
+    const translationMap = {};
+    translations.forEach(t => {
+      translationMap[t.attribute_value_id] = {
+        label: t.label,
+        language_code: t.language_code,
+      };
+    });
+
+    res.json({
+      success: true,
+      data: translationMap,
+      count: Object.keys(translationMap).length
+    });
+
+  } catch (error) {
+    console.error('Batch attribute value translation error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Server error'
+    });
+  }
+});
+
+/**
+ * @route   GET /api/translations/all/batch
+ * @desc    Get all entity translations in one request (ultimate optimization)
+ * @access  Public
+ * @query   product_ids, category_ids, attribute_ids, attribute_value_ids, lang
+ * @cache   1 hour
+ */
+router.get('/all/batch', cacheMiddleware({
+  prefix: 'translations_all',
+  ttl: 3600,
+  keyGenerator: (req) => {
+    const productIds = (req.query.product_ids || '').split(',').sort().join(',');
+    const categoryIds = (req.query.category_ids || '').split(',').sort().join(',');
+    const attributeIds = (req.query.attribute_ids || '').split(',').sort().join(',');
+    const valueIds = (req.query.attribute_value_ids || '').split(',').sort().join(',');
+    const lang = req.query.lang || 'en';
+    return `translations_all:p${productIds}:c${categoryIds}:a${attributeIds}:v${valueIds}:${lang}`;
+  }
+}), async (req, res) => {
+  try {
+    const {
+      product_ids,
+      category_ids,
+      attribute_ids,
+      attribute_value_ids,
+      lang = 'en'
+    } = req.query;
+
+    const results = {
+      products: {},
+      categories: {},
+      attributes: {},
+      attribute_values: {},
+    };
+
+    // Fetch all translations in parallel
+    const promises = [];
+
+    // Product translations
+    if (product_ids) {
+      const productIds = product_ids.split(',').filter(Boolean);
+      if (productIds.length > 0) {
+        promises.push(
+          sequelize.query(`
+            SELECT product_id, language_code, name, description, short_description,
+                   meta_title, meta_description, meta_keywords
+            FROM product_translations
+            WHERE product_id IN (:productIds) AND language_code = :lang
+          `, {
+            replacements: { productIds, lang },
+            type: sequelize.QueryTypes.SELECT
+          }).then(translations => {
+            translations.forEach(t => {
+              results.products[t.product_id] = {
+                name: t.name,
+                description: t.description,
+                short_description: t.short_description,
+                meta_title: t.meta_title,
+                meta_description: t.meta_description,
+                meta_keywords: t.meta_keywords,
+              };
+            });
+          })
+        );
+      }
+    }
+
+    // Category translations
+    if (category_ids) {
+      const categoryIds = category_ids.split(',').filter(Boolean);
+      if (categoryIds.length > 0) {
+        promises.push(
+          sequelize.query(`
+            SELECT category_id, language_code, name, description,
+                   meta_title, meta_description, meta_keywords
+            FROM category_translations
+            WHERE category_id IN (:categoryIds) AND language_code = :lang
+          `, {
+            replacements: { categoryIds, lang },
+            type: sequelize.QueryTypes.SELECT
+          }).then(translations => {
+            translations.forEach(t => {
+              results.categories[t.category_id] = {
+                name: t.name,
+                description: t.description,
+                meta_title: t.meta_title,
+                meta_description: t.meta_description,
+                meta_keywords: t.meta_keywords,
+              };
+            });
+          })
+        );
+      }
+    }
+
+    // Attribute translations
+    if (attribute_ids) {
+      const attributeIds = attribute_ids.split(',').filter(Boolean);
+      if (attributeIds.length > 0) {
+        promises.push(
+          sequelize.query(`
+            SELECT attribute_id, language_code, label, description
+            FROM attribute_translations
+            WHERE attribute_id IN (:attributeIds) AND language_code = :lang
+          `, {
+            replacements: { attributeIds, lang },
+            type: sequelize.QueryTypes.SELECT
+          }).then(translations => {
+            translations.forEach(t => {
+              results.attributes[t.attribute_id] = {
+                label: t.label,
+                description: t.description,
+              };
+            });
+          })
+        );
+      }
+    }
+
+    // Attribute value translations
+    if (attribute_value_ids) {
+      const valueIds = attribute_value_ids.split(',').filter(Boolean);
+      if (valueIds.length > 0) {
+        promises.push(
+          sequelize.query(`
+            SELECT attribute_value_id, language_code, label
+            FROM attribute_value_translations
+            WHERE attribute_value_id IN (:valueIds) AND language_code = :lang
+          `, {
+            replacements: { valueIds, lang },
+            type: sequelize.QueryTypes.SELECT
+          }).then(translations => {
+            translations.forEach(t => {
+              results.attribute_values[t.attribute_value_id] = {
+                label: t.label,
+              };
+            });
+          })
+        );
+      }
+    }
+
+    // Execute all queries in parallel
+    await Promise.all(promises);
+
+    res.json({
+      success: true,
+      data: results,
+      language: lang
+    });
+
+  } catch (error) {
+    console.error('Batch all translations error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Server error'
     });
   }
 });

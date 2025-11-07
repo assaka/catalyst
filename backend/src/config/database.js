@@ -47,8 +47,11 @@ const getDatabaseConfig = () => {
     },
     
     pool: {
-      max: parseInt(process.env.DB_POOL_MAX) || 5,
-      min: parseInt(process.env.DB_POOL_MIN) || 0,
+      // Optimized pool settings for Render.com
+      // Main service: max 10, min 2 (default)
+      // Worker service: max 5, min 1 (set DB_POOL_MAX=5, DB_POOL_MIN=1)
+      max: parseInt(process.env.DB_POOL_MAX) || (process.env.SERVICE_TYPE === 'worker' ? 5 : 10),
+      min: parseInt(process.env.DB_POOL_MIN) || (process.env.SERVICE_TYPE === 'worker' ? 1 : 2),
       acquire: 60000, // Maximum time to wait for connection
       idle: 10000,    // Maximum time connection can be idle
       evict: 1000,    // Check for idle connections every second

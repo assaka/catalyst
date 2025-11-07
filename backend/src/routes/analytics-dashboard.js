@@ -19,7 +19,7 @@ router.get('/:storeId/realtime', async (req, res) => {
     const { storeId } = req.params;
     const fiveMinutesAgo = new Date(Date.now() - 5 * 60 * 1000);
 
-    // Get unique sessions in last 5 minutes
+    // Get unique sessions in last 5 minutes (limit to 5000 recent activities)
     const recentActivities = await CustomerActivity.findAll({
       where: {
         store_id: storeId,
@@ -28,7 +28,8 @@ router.get('/:storeId/realtime', async (req, res) => {
         }
       },
       attributes: ['session_id', 'user_id', 'page_url', 'created_at'],
-      order: [['created_at', 'DESC']]
+      order: [['created_at', 'DESC']],
+      limit: 5000
     });
 
     // Get unique sessions
@@ -69,7 +70,7 @@ router.get('/:storeId/realtime', async (req, res) => {
 router.get('/:storeId/sessions', async (req, res) => {
   try {
     const { storeId } = req.params;
-    const { start_date, end_date } = req.query;
+    const { start_date, end_date, limit = 10000 } = req.query; // Default limit: 10,000 activities
 
     const whereClause = { store_id: storeId };
 
@@ -85,10 +86,12 @@ router.get('/:storeId/sessions', async (req, res) => {
       };
     }
 
+    // Add pagination to prevent memory issues with large datasets
     const activities = await CustomerActivity.findAll({
       where: whereClause,
       attributes: ['session_id', 'user_agent', 'created_at', 'metadata'],
-      order: [['created_at', 'ASC']]
+      order: [['created_at', 'ASC']],
+      limit: parseInt(limit)
     });
 
     // Calculate session metrics
