@@ -551,7 +551,7 @@ async function performUILabelsBulkTranslation(userId, userEmail, storeId, fromLa
 
     // Process translations in parallel batches with rate limit protection
     const BATCH_SIZE = 10; // Process 10 labels at a time to avoid Anthropic rate limits
-    const BATCH_DELAY_MS = 3000; // 3 second delay between batches to respect rate limits
+    const BATCH_DELAY_MS = 2000; // 2 second delay between batches to respect rate limits
     const batches = [];
     for (let i = 0; i < keysToTranslate.length; i += BATCH_SIZE) {
       batches.push(keysToTranslate.slice(i, i + BATCH_SIZE));
