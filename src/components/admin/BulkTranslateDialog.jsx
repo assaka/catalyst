@@ -233,6 +233,10 @@ export default function BulkTranslateDialog({
         toast.warning(`${totalFailed} translations failed. Check console for details.`);
       }
 
+      // Wait 3 seconds before closing to let user see the message
+      console.log('⏸️ Waiting 3 seconds before closing modal...');
+      await new Promise(resolve => setTimeout(resolve, 3000));
+
       // Reset and close dialog
       setTranslateToLangs([]);
       onOpenChange(false);
