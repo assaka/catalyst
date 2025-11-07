@@ -59,6 +59,57 @@ const CustomerActivity = sequelize.define('CustomerActivity', {
     type: DataTypes.STRING,
     allowNull: true
   },
+  // Geographic data
+  country: {
+    type: DataTypes.STRING(2),
+    allowNull: true
+  },
+  country_name: {
+    type: DataTypes.STRING(100),
+    allowNull: true
+  },
+  city: {
+    type: DataTypes.STRING(100),
+    allowNull: true
+  },
+  region: {
+    type: DataTypes.STRING(100),
+    allowNull: true
+  },
+  language: {
+    type: DataTypes.STRING(10),
+    allowNull: true
+  },
+  timezone: {
+    type: DataTypes.STRING(50),
+    allowNull: true
+  },
+  // Device and browser data
+  device_type: {
+    type: DataTypes.ENUM('desktop', 'tablet', 'mobile'),
+    allowNull: true
+  },
+  browser_name: {
+    type: DataTypes.STRING(100),
+    allowNull: true
+  },
+  operating_system: {
+    type: DataTypes.STRING(100),
+    allowNull: true
+  },
+  // UTM tracking
+  utm_source: {
+    type: DataTypes.STRING(255),
+    allowNull: true
+  },
+  utm_medium: {
+    type: DataTypes.STRING(255),
+    allowNull: true
+  },
+  utm_campaign: {
+    type: DataTypes.STRING(255),
+    allowNull: true
+  },
   metadata: {
     type: DataTypes.JSON,
     defaultValue: {}
@@ -74,6 +125,21 @@ const CustomerActivity = sequelize.define('CustomerActivity', {
     },
     {
       fields: ['created_at']
+    },
+    {
+      fields: ['country']
+    },
+    {
+      fields: ['city']
+    },
+    {
+      fields: ['language']
+    },
+    {
+      fields: ['device_type']
+    },
+    {
+      fields: ['utm_source']
     }
   ]
 });
