@@ -369,20 +369,23 @@ export default function Translations() {
           batches.push(keysToTranslate.slice(i, i + BATCH_SIZE));
         }
 
+        console.log(`🚀 Starting client-side batching: ${batches.length} batches of ${BATCH_SIZE}`);
+
         let totalTranslated = 0;
         let totalSkipped = 0;
         let totalFailed = 0;
 
+        // Set initial progress to show total
+        if (onProgress) {
+          onProgress({
+            current: 0,
+            total: keysToTranslate.length
+          });
+        }
+
         for (let i = 0; i < batches.length; i++) {
           const batch = batches[i];
-
-          // Update progress before processing batch
-          if (onProgress) {
-            onProgress({
-              current: i * BATCH_SIZE + Math.min(batch.length, BATCH_SIZE),
-              total: keysToTranslate.length
-            });
-          }
+          console.log(`📦 Frontend processing batch ${i + 1}/${batches.length} (${batch.length} keys)`);
 
           const batchResult = await api.post('translations/ui-labels/translate-batch', {
             keys: batch,
@@ -390,17 +393,32 @@ export default function Translations() {
             toLang
           });
 
+          console.log(`✅ Batch ${i + 1} result:`, batchResult);
+
           if (batchResult.success) {
             totalTranslated += batchResult.data.translated;
             totalSkipped += batchResult.data.skipped;
             totalFailed += batchResult.data.failed;
           }
 
+          // Update progress after processing batch
+          const itemsProcessed = (i + 1) * BATCH_SIZE;
+          if (onProgress) {
+            onProgress({
+              current: Math.min(itemsProcessed, keysToTranslate.length),
+              total: keysToTranslate.length
+            });
+          }
+          console.log(`📊 Progress updated: ${Math.min(itemsProcessed, keysToTranslate.length)}/${keysToTranslate.length}`);
+
           // Wait between batches (except last one)
           if (i < batches.length - 1) {
+            console.log('⏸️ Waiting 3s before next batch...');
             await new Promise(resolve => setTimeout(resolve, 3000));
           }
         }
+
+        console.log(`✅ All batches complete! Total: ${totalTranslated} translated, ${totalSkipped} skipped`);
 
         // Reload labels if target language is the currently selected one
         if (toLang === selectedLanguage) {
