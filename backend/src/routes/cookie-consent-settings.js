@@ -59,17 +59,13 @@ router.get('/', async (req, res) => {
       }
 
       if (store_id) {
-        console.log(`Overriding where clause with specific store_id: ${store_id}`);
         where.store_id = store_id;
       }
     }
 
     const lang = getLanguageFromRequest(req);
-    console.log('🌍 Cookie Consent: Requesting language:', lang);
 
     const settings = await getCookieConsentSettingsWithTranslations(where, lang);
-
-    console.log(`Found ${settings.length} cookie consent settings for query:`, where);
 
     if (isPublicRequest) {
       // Return just the array for public requests (for compatibility)
@@ -82,7 +78,6 @@ router.get('/', async (req, res) => {
       });
     }
   } catch (error) {
-    console.error('Get cookie consent settings error:', error);
     res.status(500).json({
       success: false,
       message: 'Server error'
@@ -180,12 +175,10 @@ router.post('/', [
         settingsData,
         translations || {}
       );
-      console.log(`Updated existing cookie consent settings for store ${store_id}, ID: ${settings.id}`);
     } else {
       // Create new settings
       settings = await createCookieConsentSettingsWithTranslations(settingsData, translations || {});
       isNew = true;
-      console.log(`Created new cookie consent settings for store ${store_id}, ID: ${settings.id}`);
     }
 
     res.status(isNew ? 201 : 200).json({
@@ -195,11 +188,6 @@ router.post('/', [
       isNew
     });
   } catch (error) {
-    console.error('Create/update cookie consent settings error:', error);
-    console.error('Error details:', error.message);
-    console.error('Error stack:', error.stack);
-    console.error('Request body:', JSON.stringify(req.body, null, 2));
-
     res.status(500).json({
       success: false,
       message: 'Server error',
@@ -253,7 +241,6 @@ router.put('/:id', async (req, res) => {
       data: settings
     });
   } catch (error) {
-    console.error('Update cookie consent settings error:', error);
     res.status(500).json({
       success: false,
       message: 'Server error'
@@ -295,7 +282,6 @@ router.delete('/:id', async (req, res) => {
       message: 'Cookie consent settings deleted successfully'
     });
   } catch (error) {
-    console.error('Delete cookie consent settings error:', error);
     res.status(500).json({
       success: false,
       message: 'Server error'
@@ -364,7 +350,6 @@ router.post('/:id/translate', [
       data: updatedSettings
     });
   } catch (error) {
-    console.error('Translate cookie consent settings error:', error);
     res.status(500).json({
       success: false,
       message: error.message || 'Server error'
@@ -408,16 +393,6 @@ router.post('/bulk-translate', authMiddleware, [
     const lang = getLanguageFromRequest(req);
     const settingsRecords = await getCookieConsentSettingsWithTranslations({ store_id }, lang);
 
-    console.log(`📦 Loaded ${settingsRecords.length} cookie consent settings from database`);
-    if (settingsRecords.length > 0) {
-      console.log(`🔍 First settings structure:`, JSON.stringify({
-        id: settingsRecords[0].id,
-        translations: settingsRecords[0].translations,
-        hasTranslations: !!settingsRecords[0].translations,
-        translationKeys: settingsRecords[0].translations ? Object.keys(settingsRecords[0].translations) : 'none'
-      }, null, 2));
-    }
-
     if (settingsRecords.length === 0) {
       return res.json({
         success: true,
@@ -441,20 +416,12 @@ router.post('/bulk-translate', authMiddleware, [
       skippedDetails: []
     };
 
-    console.log(`🌐 Starting cookie consent settings translation: ${fromLang} → ${toLang} (${settingsRecords.length} settings)`);
-
     for (const settings of settingsRecords) {
       try {
         const settingsName = settings.translations?.[fromLang]?.banner_text || `Settings ${settings.id}`;
 
-        console.log(`\n📋 Processing settings: ${settingsName}`);
-        console.log(`   - Has translations object: ${!!settings.translations}`);
-        console.log(`   - Has ${fromLang} translation: ${!!(settings.translations && settings.translations[fromLang])}`);
-        console.log(`   - Translations keys:`, settings.translations ? Object.keys(settings.translations) : 'none');
-
         // Check if source translation exists
         if (!settings.translations || !settings.translations[fromLang]) {
-          console.log(`⏭️  Skipping settings "${settingsName}": No ${fromLang} translation`);
           results.skipped++;
           results.skippedDetails.push({
             settingsId: settings.id,
@@ -475,7 +442,6 @@ router.post('/bulk-translate', authMiddleware, [
         });
 
         if (allFieldsTranslated && sourceFields.length > 0) {
-          console.log(`⏭️  Skipping settings "${settingsName}": All fields already translated`);
           results.skipped++;
           results.skippedDetails.push({
             settingsId: settings.id,
@@ -485,12 +451,8 @@ router.post('/bulk-translate', authMiddleware, [
           continue;
         }
 
-        console.log(`   ℹ️  Some fields need translation - proceeding`);
-
         // Translate the settings (only empty fields)
-        console.log(`🔄 Translating settings "${settingsName}"...`);
         const sourceTranslation = settings.translations[fromLang];
-        console.log(`   📋 Source translation fields:`, Object.keys(sourceTranslation));
 
         // Start with existing target translation (preserve already translated fields)
         const translatedData = { ...(targetTranslation || {}) };
@@ -501,27 +463,19 @@ router.post('/bulk-translate', authMiddleware, [
           const targetHasContent = targetValue && typeof targetValue === 'string' && targetValue.trim().length > 0;
 
           if (typeof value === 'string' && value.trim() && !targetHasContent) {
-            console.log(`      🤖 Translating field "${key}": "${value.substring(0, 50)}..."`);
             translatedData[key] = await translationService.aiTranslate(value, fromLang, toLang);
             fieldCount++;
-          } else if (targetHasContent) {
-            console.log(`      ⏭️  Skipping field "${key}": already has content`);
           }
         }
-
-        console.log(`   ✨ Translated ${fieldCount} fields`);
-        console.log(`   💾 Saving translations for ${toLang}...`);
 
         // Save the translation using normalized tables
         const translations = settings.translations || {};
         translations[toLang] = translatedData;
 
         await updateCookieConsentSettingsWithTranslations(settings.id, {}, translations);
-        console.log(`✅ Successfully translated settings "${settingsName}"`);
         results.translated++;
       } catch (error) {
         const settingsName = settings.translations?.[fromLang]?.banner_title || `Settings ${settings.id}`;
-        console.error(`❌ Error translating cookie consent settings "${settingsName}":`, error);
         results.failed++;
         results.errors.push({
           settingsId: settings.id,
@@ -531,8 +485,6 @@ router.post('/bulk-translate', authMiddleware, [
       }
     }
 
-    console.log(`✅ Cookie consent settings translation complete: ${results.translated} translated, ${results.skipped} skipped, ${results.failed} failed`);
-
     // Deduct credits for ALL items (including skipped)
     const totalItems = settingsRecords.length;
     let actualCost = 0;
@@ -540,8 +492,6 @@ router.post('/bulk-translate', authMiddleware, [
     if (totalItems > 0) {
       const costPerItem = await translationService.getTranslationCost('cookie_consent');
       actualCost = totalItems * costPerItem;
-
-      console.log(`💰 Cookie Consent bulk translate - charging for ${totalItems} items × ${costPerItem} credits = ${actualCost} credits`);
 
       try {
         await creditService.deduct(
@@ -561,9 +511,7 @@ router.post('/bulk-translate', authMiddleware, [
           null,
           'ai_translation'
         );
-        console.log(`✅ Deducted ${actualCost} credits for ${totalItems} cookie consent settings`);
       } catch (deductError) {
-        console.error(`❌ CREDIT DEDUCTION FAILED (cookie-consent-bulk-translate):`, deductError);
         actualCost = 0;
       }
     }
@@ -574,7 +522,6 @@ router.post('/bulk-translate', authMiddleware, [
       data: { ...results, creditsDeducted: actualCost }
     });
   } catch (error) {
-    console.error('Bulk translate cookie consent settings error:', error);
     res.status(500).json({
       success: false,
       message: error.message || 'Server error'

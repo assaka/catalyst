@@ -95,19 +95,9 @@ async function getCookieConsentSettingsWithTranslations(where = {}, lang = 'en')
     ORDER BY ccs.created_at DESC
   `;
 
-  console.log('🔍 SQL Query for cookie consent:', query.replace(/\s+/g, ' '));
-
   const results = await sequelize.query(query, {
     type: sequelize.QueryTypes.SELECT
   });
-
-  console.log('✅ Query returned', results.length, 'cookie consent settings');
-  if (results.length > 0) {
-    console.log('📝 Sample settings:', JSON.stringify({
-      id: results[0].id,
-      translations: results[0].translations
-    }, null, 2));
-  }
 
   return results;
 }
