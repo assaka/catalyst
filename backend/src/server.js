@@ -70,6 +70,7 @@ const paymentMethodRoutes = require('./routes/payment-methods');
 const cookieConsentRoutes = require('./routes/cookie-consent-settings');
 const consentLogRoutes = require('./routes/consent-logs');
 const customOptionRuleRoutes = require('./routes/custom-option-rules');
+const cacheTestRoutes = require('./routes/cache-test');
 
 // Public route modules (lightweight, no auth)
 const storefrontBootstrapRoutes = require('./routes/storefront-bootstrap');
@@ -342,6 +343,7 @@ app.get('/health/cache', async (req, res) => {
 
 // API routes
 app.use('/api/auth', authRoutes);
+app.use('/api/cache-test', cacheTestRoutes); // Test cache middleware
 
 // Public routes for guest access
 app.use('/api/public/auth', authRoutes); // Public auth endpoints (login, register, etc.)
