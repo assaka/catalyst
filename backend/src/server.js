@@ -156,6 +156,10 @@ app.use((req, res, next) => {
 });
 app.use(compression());
 
+// Request timing and query count tracking
+const { timingMiddleware } = require('./middleware/timingMiddleware');
+app.use(timingMiddleware);
+
 // Rate limiting - increased limits for development
 const limiter = rateLimit({
   windowMs: (process.env.RATE_LIMIT_WINDOW || 15) * 60 * 1000, // 15 minutes

@@ -32,7 +32,35 @@ const getDatabaseConfig = () => {
     username: url.username,
     password: url.password,
     database: url.pathname.slice(1), // Remove leading slash
-    logging: process.env.NODE_ENV === 'development' ? console.log : false,
+    logging: process.env.DB_QUERY_LOG === 'true'
+      ? (sql, timing) => {
+          // Increment query counter for request tracking
+          try {
+            const { incrementQueryCount } = require('../middleware/timingMiddleware');
+            incrementQueryCount();
+          } catch (e) {
+            // Middleware not loaded yet, skip
+          }
+
+          // Log slow queries (>100ms)
+          if (timing && timing > 100) {
+            console.log(`⚠️  SLOW QUERY (${timing}ms):`, sql.substring(0, 200) + '...');
+          }
+          // Log all queries in development
+          if (process.env.NODE_ENV === 'development') {
+            console.log(`[DB ${timing}ms]`, sql.substring(0, 150));
+          }
+        }
+      : (sql, timing) => {
+          // Even without logging, track query count
+          try {
+            const { incrementQueryCount } = require('../middleware/timingMiddleware');
+            incrementQueryCount();
+          } catch (e) {
+            // Middleware not loaded yet, skip
+          }
+        },
+    benchmark: true, // Enable query timing
     
     dialectOptions: {
       ssl: process.env.NODE_ENV === 'production' ? {
