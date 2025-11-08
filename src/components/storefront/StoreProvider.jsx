@@ -731,7 +731,7 @@ export const StoreProvider = ({ children }) => {
         const translationsData = await cachedApiCall(translationsCacheKey, async () => {
           // Add cache-busting timestamp to force fresh data
           const cacheBuster = Date.now();
-          const response = await fetch(`${import.meta.env.VITE_API_BASE_URL || 'https://catalyst-backend-fzhu.onrender.com'}/api/translations/ui-labels?store_id=${storeId}&lang=${currentLang}&_=${cacheBuster}`, {
+          const response = await fetch(`${import.meta.env.VITE_API_BASE_URL || 'https://catalyst-backend-fzhu.onrender.com'}/api/translations/ui-labels?store_id=${selectedStore.id}&lang=${currentLang}&_=${cacheBuster}`, {
             method: 'GET',
             headers: {
               'Content-Type': 'application/json',

@@ -21,10 +21,10 @@ router.get('/ui-labels', async (req, res) => {
   try {
     const { store_id, lang = 'en' } = req.query;
 
-    if (!store_id) {
+    if (!store_id || store_id === 'null' || store_id === 'undefined') {
       return res.status(400).json({
         success: false,
-        message: 'store_id is required'
+        message: 'store_id is required and must be a valid UUID'
       });
     }
 
@@ -54,10 +54,10 @@ router.get('/ui-labels/all', authMiddleware, async (req, res) => {
   try {
     const { store_id } = req.query;
 
-    if (!store_id) {
+    if (!store_id || store_id === 'null' || store_id === 'undefined') {
       return res.status(400).json({
         success: false,
-        message: 'store_id is required'
+        message: 'store_id is required and must be a valid UUID'
       });
     }
 
