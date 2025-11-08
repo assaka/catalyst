@@ -87,7 +87,18 @@ router.get('/', async (req, res) => {
       }),
 
       // 3. Get UI translations for the specified language
-      translationService.getUILabels(language),
+      (async () => {
+        // First find the store to get its ID
+        const storeForTranslations = await Store.findOne({
+          where: { slug, is_active: true }
+        });
+
+        if (!storeForTranslations) {
+          return { labels: {}, customKeys: [] };
+        }
+
+        return translationService.getUILabels(storeForTranslations.id, language);
+      })(),
 
       // 4. Get categories for navigation (limited to 1000 for performance)
       (async () => {
