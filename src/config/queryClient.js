@@ -13,10 +13,12 @@ export const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
       // Stale time: How long before data is considered stale (but still usable)
-      staleTime: 60000, // 1 minute - data is fresh for this duration
+      // Increased from 1 min to 3 min for better performance
+      staleTime: 180000, // 3 minutes - data is fresh for this duration
 
       // Cache time: How long unused data stays in cache
-      gcTime: 300000, // 5 minutes (formerly cacheTime in v4)
+      // Increased from 5 min to 10 min to reduce re-fetching
+      gcTime: 600000, // 10 minutes (formerly cacheTime in v4)
 
       // Retry configuration
       retry: 2, // Retry failed requests up to 2 times
