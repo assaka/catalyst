@@ -283,6 +283,8 @@ const ProductItemCard = ({
               alt={translatedProductName}
               className={imageConfig.className || `w-full ${viewMode === 'list' ? 'h-32' : 'h-48'} object-cover transition-transform duration-300 group-hover:scale-105`}
               style={imageConfig.styles || {}}
+              loading="lazy"
+              decoding="async"
             />
             {/* Product labels */}
             {renderProductLabels()}

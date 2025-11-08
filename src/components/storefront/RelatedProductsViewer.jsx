@@ -21,6 +21,8 @@ const MiniProductCard = ({ product }) => {
                         src={product.images?.[0] || 'https://placehold.co/150x150?text=No+Image'}
                         alt={product.name}
                         className="w-full h-32 object-cover rounded-md mb-3"
+                        loading="lazy"
+                        decoding="async"
                     />
                     <h4 className="font-semibold text-sm truncate">{product.name}</h4>
                     <p className="text-lg font-bold text-gray-800">
