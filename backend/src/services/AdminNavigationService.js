@@ -53,7 +53,6 @@ class AdminNavigationService {
               };
             }
           } catch (e) {
-            console.error(`Failed to parse adminNavigation for file-based plugin ${p.id}:`, e);
           }
           return null;
         })
@@ -92,7 +91,6 @@ class AdminNavigationService {
               };
             }
           } catch (e) {
-            console.error('[NAV-SERVICE] ERROR parsing adminNavigation for plugin', p.id, ':', e);
           }
           return null;
         })
@@ -137,7 +135,6 @@ class AdminNavigationService {
       return tree;
 
     } catch (error) {
-      console.error('Failed to load navigation:', error);
       throw error;
     }
   }

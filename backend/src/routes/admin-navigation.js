@@ -10,26 +10,17 @@ const { sequelize } = require('../database/connection');
  */
 router.get('/navigation', async (req, res) => {
   try {
-    console.log('[NAV-ROUTE] ========================================');
-    console.log('[NAV-ROUTE] GET /api/admin/navigation request received');
-    console.log('[NAV-ROUTE] User:', req.user);
 
     // ALWAYS use AdminNavigationService to include plugin navigation
     const tenantId = req.user?.tenantId || 'default-tenant';
-    console.log('[NAV-ROUTE] Resolved tenant ID:', tenantId);
 
     const navigation = await AdminNavigationService.getNavigationForTenant(tenantId);
-
-    console.log('[NAV-ROUTE] Service returned', navigation.length, 'top-level items');
-    console.log('[NAV-ROUTE] Sending response to client');
-    console.log('[NAV-ROUTE] ========================================');
 
     res.json({
       success: true,
       navigation
     });
   } catch (error) {
-    console.error('[NAV-ROUTE] ERROR:', error);
     res.status(500).json({
       success: false,
       error: error.message
@@ -50,7 +41,6 @@ router.post('/navigation/seed', async (req, res) => {
       message: 'Core navigation seeded successfully'
     });
   } catch (error) {
-    console.error('Failed to seed navigation:', error);
     res.status(500).json({
       success: false,
       error: error.message
@@ -66,9 +56,6 @@ router.put('/plugins/:pluginId/navigation', async (req, res) => {
   try {
     const { pluginId } = req.params;
     const { adminNavigation } = req.body;
-
-    console.log('[PLUGIN-NAV] Updating navigation for plugin:', pluginId);
-    console.log('[PLUGIN-NAV] New adminNavigation:', adminNavigation);
 
     // 1. Update the manifest in the plugins table
     await sequelize.query(
@@ -86,8 +73,6 @@ router.put('/plugins/:pluginId/navigation', async (req, res) => {
       }
     );
 
-    console.log('[PLUGIN-NAV] Successfully updated plugins table manifest');
-
     // Also update plugin_registry table
     await sequelize.query(
       `UPDATE plugin_registry
@@ -103,8 +88,6 @@ router.put('/plugins/:pluginId/navigation', async (req, res) => {
         type: sequelize.QueryTypes.UPDATE
       }
     );
-
-    console.log('[PLUGIN-NAV] Successfully updated plugin_registry table manifest');
 
     // 2. Handle admin_navigation_registry
     if (adminNavigation.enabled) {
@@ -128,7 +111,6 @@ router.put('/plugins/:pluginId/navigation', async (req, res) => {
         if (adminNavigation.order !== undefined && adminNavigation.order !== null) {
           // Use the direct order number if provided
           orderPosition = adminNavigation.order;
-          console.log('[PLUGIN-NAV] Using direct order from manifest:', orderPosition);
         } else if (adminNavigation.relativeToKey && adminNavigation.position) {
           // Calculate based on relativeToKey and position
           const relativeItem = await sequelize.query(
@@ -145,14 +127,12 @@ router.put('/plugins/:pluginId/navigation', async (req, res) => {
             } else {
               orderPosition = relativeItem[0].order_position + 0.5;
             }
-            console.log('[PLUGIN-NAV] Calculated order from relativeToKey:', orderPosition);
           } else {
             orderPosition = 100; // fallback if relative item not found
           }
         } else {
           // Use default
           orderPosition = 100;
-          console.log('[PLUGIN-NAV] Using default order:', orderPosition);
         }
 
         // Upsert into admin_navigation_registry
@@ -182,8 +162,6 @@ router.put('/plugins/:pluginId/navigation', async (req, res) => {
             type: sequelize.QueryTypes.UPDATE
           }
         );
-
-        console.log('[PLUGIN-NAV] Upserted into admin_navigation_registry with order:', orderPosition);
       }
     } else {
       // Navigation disabled - remove from registry
@@ -194,7 +172,6 @@ router.put('/plugins/:pluginId/navigation', async (req, res) => {
           type: sequelize.QueryTypes.DELETE
         }
       );
-      console.log('[PLUGIN-NAV] Removed from admin_navigation_registry (disabled)');
     }
 
     res.json({
@@ -202,7 +179,6 @@ router.put('/plugins/:pluginId/navigation', async (req, res) => {
       message: 'Plugin navigation settings updated successfully'
     });
   } catch (error) {
-    console.error('[PLUGIN-NAV] Failed to update plugin navigation:', error);
     res.status(500).json({
       success: false,
       error: error.message
@@ -225,12 +201,9 @@ router.post('/navigation/reorder', async (req, res) => {
       });
     }
 
-    console.log('[NAV-REORDER] Processing', items.length, 'items');
-
     // Update each navigation item
     for (const item of items) {
       if (!item.key) {
-        console.log('[NAV-REORDER] Skipping item without key');
         continue;
       }
 
@@ -238,8 +211,6 @@ router.post('/navigation/reorder', async (req, res) => {
       const orderPosition = item.order_position ?? item.orderPosition ?? item.order ?? 0;
       const isVisible = item.is_visible ?? item.isVisible ?? true;
       const parentKey = item.parent_key ?? item.parentKey ?? null;
-
-      console.log('[NAV-REORDER] Processing item:', item.key, '(order:', orderPosition, ', visible:', isVisible, ')');
 
       // Check if this is a plugin item (key starts with 'plugin-')
       const isPluginItem = item.key.startsWith('plugin-');
@@ -273,7 +244,6 @@ router.post('/navigation/reorder', async (req, res) => {
             type: sequelize.QueryTypes.UPDATE
           }
         );
-        console.log('[NAV-REORDER] Upserted plugin item:', item.key);
       } else {
         // For core items, just UPDATE
         const result = await sequelize.query(
@@ -285,18 +255,14 @@ router.post('/navigation/reorder', async (req, res) => {
             type: sequelize.QueryTypes.UPDATE
           }
         );
-        console.log('[NAV-REORDER] Updated core item:', item.key, '(rows affected:', result[1], ')');
       }
     }
-
-    console.log('[NAV-REORDER] Successfully updated all items');
 
     res.json({
       success: true,
       message: 'Navigation order updated successfully'
     });
   } catch (error) {
-    console.error('[NAV-REORDER] Failed to reorder navigation:', error);
     res.status(500).json({
       success: false,
       error: error.message

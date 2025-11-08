@@ -108,7 +108,6 @@ const retryApiCall = async (apiCall, maxRetries = 5, baseDelay = 3000) => {
 
       if (isRateLimit && i < maxRetries - 1) {
         const delayTime = baseDelay * Math.pow(2, i) + Math.random() * 2000;
-        console.warn(`Layout: Rate limit hit, retrying in ${delayTime}ms... (Attempt ${i + 1}/${maxRetries})`);
         await delay(delayTime);
         continue;
       }
@@ -199,7 +198,6 @@ function LayoutInner({ children, currentPageName }) {
 
     // Listen for credits updated event (e.g., after credit purchase)
     const handleCreditsUpdated = () => {
-      console.log('📢 [Layout] creditsUpdated event received - reloading user data');
       loadUserAndHandleCredits();
     };
 
@@ -232,19 +230,15 @@ function LayoutInner({ children, currentPageName }) {
   }, [location.pathname, toggleAI]);
 
   const loadUserAndHandleCredits = async () => {
-    console.log('🔄 [Layout] loadUserAndHandleCredits called - fetching fresh user data');
     try {
       const hasStoreOwnerToken = !!localStorage.getItem('store_owner_auth_token');
 
       if (hasStoreOwnerToken) {
         try {
-          console.log('🔄 [Layout] Fetching user data from API...');
           // Fetch fresh user data from database (single source of truth for credits)
           const userData = await User.me();
-          console.log('✅ [Layout] User data fetched, credits:', userData.credits);
           setUser(userData);
         } catch (apiError) {
-          console.error('🔍 Layout.jsx: Error fetching user data:', apiError);
           // Fallback to localStorage if API fails
           const storeOwnerUserData = localStorage.getItem('store_owner_user_data');
           if (storeOwnerUserData) {
@@ -255,11 +249,9 @@ function LayoutInner({ children, currentPageName }) {
           }
         }
       } else {
-        console.error('🔍 Layout.jsx: No valid store owner token found');
         setUser(null);
       }
     } catch (error) {
-      console.error('🔍 Layout.jsx: Error in user validation:', error);
       setUser(null);
     } finally {
       setIsLoading(false);
@@ -346,7 +338,6 @@ function LayoutInner({ children, currentPageName }) {
         setDynamicNavItems(navigationGroups);
       }
     } catch (error) {
-      console.error('Error loading dynamic navigation:', error);
     }
   };
 
@@ -648,11 +639,8 @@ function LayoutInner({ children, currentPageName }) {
                         
                         if (storeSlug) {
                             window.open(getExternalStoreUrl(storeSlug, '', baseUrl), '_blank');
-                        } else {
-                            console.warn('Store slug not found for store:', selectedStore);
                         }
                     } catch (error) {
-                        console.error('Error loading store data for View Storefront:', error);
                     }
                 }}>
                     <ShoppingBag className="mr-2 h-4 w-4" />
@@ -674,7 +662,6 @@ function LayoutInner({ children, currentPageName }) {
                     try {
                         await handleLogout();
                     } catch (error) {
-                        console.error('❌ Mobile logout error:', error);
                         window.location.href = '/admin/auth';
                     }
                 }}>

@@ -37,7 +37,6 @@ router.get('/', async (req, res) => {
  */
 router.get('/widgets', async (req, res) => {
   try {
-    console.log('🎨 Loading all available widgets...');
 
     // Query plugin_widgets table (exclude starter templates)
     const widgets = await sequelize.query(`
@@ -52,8 +51,6 @@ router.get('/widgets', async (req, res) => {
     `, {
       type: sequelize.QueryTypes.SELECT
     });
-
-    console.log(`  ✅ Found ${widgets.length} widgets`);
 
     res.json({
       success: true,
@@ -84,8 +81,6 @@ router.get('/widgets/:widgetId', async (req, res) => {
   try {
     const { widgetId } = req.params;
 
-    console.log(`🎨 Loading widget: ${widgetId}`);
-
     // Query plugin_widgets table directly
     const widgets = await sequelize.query(`
       SELECT widget_id, widget_name, description, component_code, default_config, category, icon
@@ -105,8 +100,6 @@ router.get('/widgets/:widgetId', async (req, res) => {
     }
 
     const widget = widgets[0];
-
-    console.log(`  ✅ Found widget: ${widget.widget_name}`);
 
     res.json({
       success: true,
@@ -135,7 +128,6 @@ router.get('/widgets/:widgetId', async (req, res) => {
  */
 router.get('/starters', async (req, res) => {
   try {
-    console.log('🎨 Loading starter templates...');
 
     const starters = await sequelize.query(`
       SELECT
@@ -147,8 +139,6 @@ router.get('/starters', async (req, res) => {
     `, {
       type: sequelize.QueryTypes.SELECT
     });
-
-    console.log(`  ✅ Found ${starters.length} starter templates`);
 
     res.json({
       success: true,
@@ -276,8 +266,6 @@ router.get('/active', async (req, res) => {
     res.set('Pragma', 'no-cache');
     res.set('Expires', '0');
 
-    console.log('🔌 Loading active plugins from normalized tables...');
-
     // Get active plugins from plugin_registry table (exclude starter templates)
     const plugins = await sequelize.query(`
       SELECT
@@ -290,8 +278,6 @@ router.get('/active', async (req, res) => {
     `, {
       type: sequelize.QueryTypes.SELECT
     });
-
-    console.log(`📦 Found ${plugins.length} active plugins`);
 
     // Load hooks and events for each plugin from normalized tables
     const pluginsWithData = await Promise.all(plugins.map(async (plugin) => {
@@ -314,10 +300,8 @@ router.get('/active', async (req, res) => {
           priority: h.priority || 10,
           enabled: h.is_enabled !== false
         }));
-
-        console.log(`  ✅ ${plugin.name}: loaded ${hooks.length} hooks from plugin_hooks table`);
       } catch (hookError) {
-        console.log(`  ⚠️ ${plugin.name}: plugin_hooks table error`);
+        //
       }
 
       // Load events from normalized plugin_events table
@@ -339,10 +323,8 @@ router.get('/active', async (req, res) => {
           priority: e.priority || 10,
           enabled: e.is_enabled !== false
         }));
-
-        console.log(`  ✅ ${plugin.name}: loaded ${events.length} events from plugin_events table`);
       } catch (eventError) {
-        console.log(`  ⚠️ ${plugin.name}: plugin_events table error`);
+        //
       }
 
       // Parse manifest
@@ -364,14 +346,11 @@ router.get('/active', async (req, res) => {
       };
     }));
 
-    console.log('✅ All plugins loaded with hooks and events');
-
     res.json({
       success: true,
       data: pluginsWithData
     });
   } catch (error) {
-    console.error('❌ Failed to get active plugins:', error);
     res.status(500).json({
       success: false,
       error: error.message
@@ -405,8 +384,6 @@ router.get('/registry', async (req, res) => {
     `, {
       type: sequelize.QueryTypes.SELECT
     });
-
-    console.log(`📦 [LEGACY] Found ${plugins.length} plugins`);
 
     // Load hooks and events from normalized tables (same as /active endpoint)
     const pluginsWithData = await Promise.all(plugins.map(async (plugin) => {
@@ -472,14 +449,11 @@ router.get('/registry', async (req, res) => {
       };
     }));
 
-    console.log('✅ [LEGACY] All plugins loaded with hooks and events');
-
     res.json({
       success: true,
       data: pluginsWithData
     });
   } catch (error) {
-    console.error('Failed to get plugin registry:', error);
     res.status(500).json({
       success: false,
       error: error.message
@@ -499,8 +473,6 @@ router.get('/active/:pluginId', async (req, res) => {
     res.set('Expires', '0');
 
     const { pluginId } = req.params;
-
-    console.log(`🔍 Loading plugin ${pluginId} from normalized tables...`);
 
     // Get plugin details from plugin_registry
     const plugin = await sequelize.query(`
@@ -536,10 +508,7 @@ router.get('/active/:pluginId', async (req, res) => {
         priority: h.priority || 10,
         enabled: h.is_enabled !== false
       }));
-
-      console.log(`  ✅ Loaded ${hooks.length} hooks from plugin_hooks table`);
     } catch (hookError) {
-      console.log(`  ⚠️ plugin_hooks table error:`, hookError.message);
     }
 
     // Load events from plugin_events table (normalized structure)
@@ -561,10 +530,7 @@ router.get('/active/:pluginId', async (req, res) => {
         priority: e.priority || 10,
         enabled: e.is_enabled !== false
       }));
-
-      console.log(`  ✅ Loaded ${events.length} events from plugin_events table`);
     } catch (eventError) {
-      console.log(`  ⚠️ plugin_events table error:`, eventError.message);
     }
 
     // Parse JSON fields
@@ -610,8 +576,6 @@ router.get('/registry/:pluginId', async (req, res) => {
 
     const { pluginId } = req.params;
 
-    console.log(`🔍 [LEGACY DETAIL] Loading plugin ${pluginId}...`);
-
     // Get plugin details from plugin_registry
     const plugin = await sequelize.query(`
       SELECT * FROM plugin_registry WHERE id = $1
@@ -646,10 +610,7 @@ router.get('/registry/:pluginId', async (req, res) => {
         priority: h.priority || 10,
         enabled: h.is_enabled !== false
       }));
-
-      console.log(`  ✅ Loaded ${hooks.length} hooks from plugin_hooks table`);
     } catch (hookError) {
-      console.log(`  ⚠️ plugin_hooks table error:`, hookError.message);
     }
 
     // Note: plugin_event_listeners table has been dropped - all events now in plugin_events
@@ -674,10 +635,7 @@ router.get('/registry/:pluginId', async (req, res) => {
         scope: s.scope,
         load_priority: s.load_priority
       }));
-
-      console.log(`  ✅ Loaded ${pluginScripts.length} scripts from plugin_scripts table`);
     } catch (scriptsError) {
-      console.log(`  ⚠️ plugin_scripts table error:`, scriptsError.message);
     }
 
     // Load plugin_events from normalized table
@@ -699,10 +657,7 @@ router.get('/registry/:pluginId', async (req, res) => {
         event_name: e.event_name,
         priority: e.priority || 10
       }));
-
-      console.log(`  ✅ Loaded ${pluginEvents.length} events from plugin_events table`);
     } catch (eventsError) {
-      console.log(`  ⚠️ plugin_events table error:`, eventsError.message);
     }
 
     // Load plugin_entities from normalized table
@@ -734,10 +689,7 @@ router.get('/registry/:pluginId', async (req, res) => {
         table_name: e.table_name,
         migration_status: e.migration_status
       }));
-
-      console.log(`  ✅ Loaded ${pluginEntities.length} entities from plugin_entities table`);
     } catch (entitiesError) {
-      console.log(`  ⚠️ plugin_entities table error:`, entitiesError.message);
     }
 
     // Load plugin_controllers from normalized table
@@ -763,10 +715,7 @@ router.get('/registry/:pluginId', async (req, res) => {
         description: c.description,
         requires_auth: c.requires_auth
       }));
-
-      console.log(`  ✅ Loaded ${pluginControllers.length} controllers from plugin_controllers table`);
     } catch (controllersError) {
-      console.log(`  ⚠️ plugin_controllers table error:`, controllersError.message);
     }
 
     // Load plugin_migrations from normalized table
@@ -800,10 +749,7 @@ ${m.down_sql || '-- No down SQL'}`,
         migration_status: m.status,
         executed_at: m.executed_at
       }));
-
-      console.log(`  ✅ Loaded ${pluginMigrations.length} migrations from plugin_migrations table`);
     } catch (migrationsError) {
-      console.log(`  ⚠️ plugin_migrations table error:`, migrationsError.message);
     }
 
     // Load documentation from plugin_docs table (README only, NOT manifest)
@@ -832,10 +778,7 @@ ${m.down_sql || '-- No down SQL'}`,
       if (readmeDoc) {
         readme = readmeDoc.code;
       }
-
-      console.log(`  ✅ Loaded ${pluginDocs.length} docs from plugin_docs table`);
     } catch (docsError) {
-      console.log(`  ⚠️ plugin_docs table error:`, docsError.message);
     }
 
     // Parse manifest from plugin_registry.manifest column (NOT from plugin_docs)
@@ -850,8 +793,6 @@ ${m.down_sql || '-- No down SQL'}`,
     // 5. plugin_migrations table
     // 6. plugin_docs table
     let allFiles = [];
-
-    console.log(`📦 Loading files from normalized tables only (no JSON backward compatibility)`);
 
     // Add files from plugin_scripts table
     allFiles = allFiles.concat(pluginScripts);
@@ -938,36 +879,8 @@ ${m.down_sql || '-- No down SQL'}`,
       });
 
       adminPages = adminPagesResult;
-      console.log(`  ✅ Loaded ${adminPages.length} admin pages from plugin_admin_pages table`);
     } catch (adminError) {
-      console.log(`  ⚠️ plugin_admin_pages table error:`, adminError.message);
     }
-
-    console.log(`\n📦 Sending response for ${pluginId}:`);
-    console.log(`  📄 Generated Files: ${generatedFiles.length}`);
-    console.log(`  📜 Scripts from DB: ${pluginScripts.length}`);
-    console.log(`  📡 Events from DB: ${pluginEvents.length}`);
-    console.log(`  🗄️  Entities from DB: ${pluginEntities.length}`);
-    console.log(`  🎮 Controllers from DB: ${pluginControllers.length}`);
-    console.log(`  🔄 Migrations from DB: ${pluginMigrations.length}`);
-    console.log(`  📚 Docs from DB: ${pluginDocs.length}`);
-    console.log(`  🪝 Hooks: ${hooks.length}`);
-
-    if (generatedFiles.length > 0) {
-      console.log(`  📂 Files with metadata:`);
-      generatedFiles.forEach(f => {
-        console.log(`     - ${f.name}:`, {
-          hasEventName: !!f.event_name,
-          hasPriority: !!f.priority,
-          hasScriptType: !!f.script_type
-        });
-      });
-    }
-
-    console.log(`  📊 Response summary:`);
-    console.log(`     - hooks: ${hooks.length} items`);
-    console.log(`     - source_code: ${generatedFiles.length} files`);
-    console.log(`     - Hook names:`, hooks.map(h => h.hook_name));
 
     res.json({
       success: true,
@@ -985,7 +898,6 @@ ${m.down_sql || '-- No down SQL'}`,
       }
     });
   } catch (error) {
-    console.error('Failed to get plugin details:', error);
     res.status(500).json({
       success: false,
       error: error.message
@@ -1000,8 +912,6 @@ ${m.down_sql || '-- No down SQL'}`,
 router.get('/:id/export', async (req, res) => {
   try {
     const { id } = req.params;
-
-    console.log(`📦 Exporting plugin: ${id}`);
 
     // Get plugin metadata
     const plugin = await sequelize.query(`
@@ -1264,11 +1174,8 @@ router.get('/:id/export', async (req, res) => {
       }))
     };
 
-    console.log(`  ✅ Exported ${scripts.length} files, ${events.length} events, ${hooks.length} hooks, ${widgets.length} widgets, ${entities.length} entities, ${migrations.length} migrations, ${controllers.length} controllers, ${pluginDataKV.length} data entries, ${pluginDependencies.length} dependencies, ${pluginDocs.length} docs, ${adminPages.length} admin pages, ${adminScripts.length} admin scripts`);
-
     res.json(packageData);
   } catch (error) {
-    console.error('Failed to export plugin:', error);
     res.status(500).json({
       success: false,
       error: error.message
@@ -1285,8 +1192,6 @@ router.post('/import', async (req, res) => {
 
   try {
     const packageData = req.body;
-
-    console.log(`📥 Importing plugin: ${packageData.plugin.name}`);
 
     // Generate new UUID
     const { randomUUID } = require('crypto');
@@ -1305,8 +1210,6 @@ router.post('/import', async (req, res) => {
       });
       creatorId = firstUser?.id;
     }
-
-    console.log(`  📋 Creator ID: ${creatorId}`);
 
     // Ensure unique name and slug
     let uniqueName = packageData.plugin.name;
@@ -1331,11 +1234,6 @@ router.post('/import', async (req, res) => {
       counter++;
       uniqueName = `${packageData.plugin.name} (${counter})`;
       uniqueSlug = `${packageData.plugin.slug}-${counter}`;
-    }
-
-    if (counter > 1) {
-      console.log(`  📝 Made name unique: ${uniqueName}`);
-      console.log(`  📝 Made slug unique: ${uniqueSlug}`);
     }
 
     // Create plugin_registry entry
@@ -1674,8 +1572,6 @@ router.post('/import', async (req, res) => {
     // Commit transaction
     await transaction.commit();
 
-    console.log(`  ✅ Imported: ${packageData.files?.length || 0} files, ${packageData.events?.length || 0} events, ${packageData.hooks?.length || 0} hooks, ${packageData.widgets?.length || 0} widgets, ${packageData.entities?.length || 0} entities, ${packageData.migrations?.length || 0} migrations, ${packageData.controllers?.length || 0} controllers, ${packageData.pluginData?.length || 0} data entries, ${packageData.pluginDependencies?.length || 0} dependencies, ${packageData.pluginDocs?.length || 0} docs, ${packageData.adminPages?.length || 0} admin pages, ${packageData.adminScripts?.length || 0} admin scripts`);
-
     res.json({
       success: true,
       message: 'Plugin imported successfully',
@@ -1687,8 +1583,6 @@ router.post('/import', async (req, res) => {
   } catch (error) {
     // Rollback transaction on error
     await transaction.rollback();
-
-    console.error('Failed to import plugin:', error);
     res.status(500).json({
       success: false,
       error: error.message
@@ -1726,8 +1620,6 @@ router.put('/registry/:id/files', async (req, res) => {
 
     // Handle manifest.json - save to plugin_registry.manifest column
     if (normalizedRequestPath === 'manifest.json') {
-      console.log(`🔄 Saving manifest.json to plugin_registry.manifest column`);
-
       try {
         const manifestData = JSON.parse(content); // Validate JSON
 
@@ -1739,8 +1631,6 @@ router.put('/registry/:id/files', async (req, res) => {
           bind: [JSON.stringify(manifestData), id],
           type: sequelize.QueryTypes.UPDATE
         });
-
-        console.log(`✅ Updated manifest in plugin_registry`);
 
         return res.json({
           success: true,
@@ -1768,8 +1658,6 @@ router.put('/registry/:id/files', async (req, res) => {
       const docType = docTypeMap[normalizedRequestPath];
       const format = 'markdown';
 
-      console.log(`🔄 Saving documentation file: ${normalizedRequestPath} to plugin_docs`);
-
       try {
         // Check if doc exists
         const existing = await sequelize.query(`
@@ -1790,7 +1678,6 @@ router.put('/registry/:id/files', async (req, res) => {
             bind: [content, format, id, docType],
             type: sequelize.QueryTypes.UPDATE
           });
-          console.log(`✅ Updated ${docType} in plugin_docs`);
         } else {
           // Insert new doc
           await sequelize.query(`
@@ -1800,7 +1687,6 @@ router.put('/registry/:id/files', async (req, res) => {
             bind: [id, docType, normalizedRequestPath, content, format],
             type: sequelize.QueryTypes.INSERT
           });
-          console.log(`✅ Created ${docType} in plugin_docs`);
         }
 
         return res.json({
@@ -1819,8 +1705,6 @@ router.put('/registry/:id/files', async (req, res) => {
     if (normalizedRequestPath.startsWith('events/')) {
       // Extract filename from path
       const fileName = normalizedRequestPath.replace('events/', '');
-
-      console.log(`🔄 Saving event file: ${fileName}`);
 
       try {
         // Look up event by filename (supports custom filenames)
@@ -1843,7 +1727,6 @@ router.put('/registry/:id/files', async (req, res) => {
             bind: [content, id, fileName],
             type: sequelize.QueryTypes.UPDATE
           });
-          console.log(`✅ Updated event: ${eventName} (file: ${fileName})`);
         } else {
           // Fallback: Try to derive event name from filename for legacy files
           const eventName = fileName.replace('.js', '').replace(/_/g, '.');
@@ -1854,7 +1737,6 @@ router.put('/registry/:id/files', async (req, res) => {
             bind: [id, eventName, fileName, content],
             type: sequelize.QueryTypes.INSERT
           });
-          console.log(`✅ Created event: ${eventName} (file: ${fileName})`);
         }
 
         return res.json({
@@ -1862,7 +1744,6 @@ router.put('/registry/:id/files', async (req, res) => {
           message: 'Event file saved successfully in plugin_events table'
         });
       } catch (eventError) {
-        console.error(`❌ Error upserting plugin_events table:`, eventError);
         return res.status(500).json({
           success: false,
           error: `Failed to save event in plugin_events table: ${eventError.message}`
@@ -1873,8 +1754,6 @@ router.put('/registry/:id/files', async (req, res) => {
     // Special handling for hook files - update plugin_hooks table (normalized structure)
     if (normalizedRequestPath.startsWith('hooks/')) {
       const hookName = normalizedRequestPath.replace('hooks/', '').replace('.js', '').replace(/_/g, '.');
-
-      console.log(`🔄 Upserting hook ${hookName} in plugin_hooks table...`);
 
       try {
         // Check if hook exists
@@ -1896,7 +1775,6 @@ router.put('/registry/:id/files', async (req, res) => {
             bind: [content, id, hookName],
             type: sequelize.QueryTypes.UPDATE
           });
-          console.log(`✅ Hook ${hookName} updated in plugin_hooks table`);
         } else {
           // Insert new hook
           await sequelize.query(`
@@ -1906,7 +1784,6 @@ router.put('/registry/:id/files', async (req, res) => {
             bind: [id, hookName, content],
             type: sequelize.QueryTypes.INSERT
           });
-          console.log(`✅ Hook ${hookName} created in plugin_hooks table`);
         }
 
         return res.json({
@@ -1914,7 +1791,6 @@ router.put('/registry/:id/files', async (req, res) => {
           message: 'Hook file saved successfully in plugin_hooks table'
         });
       } catch (hookError) {
-        console.error(`❌ Error upserting plugin_hooks table:`, hookError);
         return res.status(500).json({
           success: false,
           error: `Failed to save hook in plugin_hooks table: ${hookError.message}`
@@ -1925,8 +1801,6 @@ router.put('/registry/:id/files', async (req, res) => {
     // Handle entity files - update plugin_entities table
     if (normalizedRequestPath.startsWith('entities/')) {
       const entityFileName = normalizedRequestPath.replace('entities/', '').replace('.json', '');
-
-      console.log(`🔄 Saving entity file: ${entityFileName}`);
 
       try {
         // Parse entity JSON
@@ -1969,7 +1843,6 @@ router.put('/registry/:id/files', async (req, res) => {
             ],
             type: sequelize.QueryTypes.UPDATE
           });
-          console.log(`✅ Updated entity: ${entityName}`);
         } else {
           // Insert new entity
           await sequelize.query(`
@@ -1987,7 +1860,6 @@ router.put('/registry/:id/files', async (req, res) => {
             ],
             type: sequelize.QueryTypes.INSERT
           });
-          console.log(`✅ Created entity: ${entityName}`);
         }
 
         return res.json({
@@ -1995,7 +1867,6 @@ router.put('/registry/:id/files', async (req, res) => {
           message: 'Entity saved successfully in plugin_entities table'
         });
       } catch (entityError) {
-        console.error(`❌ Error saving entity:`, entityError);
         return res.status(500).json({
           success: false,
           error: `Failed to save entity: ${entityError.message}`
@@ -2006,8 +1877,6 @@ router.put('/registry/:id/files', async (req, res) => {
     // Handle controller files - update plugin_controllers table
     if (normalizedRequestPath.startsWith('controllers/')) {
       const controllerFileName = normalizedRequestPath.replace('controllers/', '').replace('.js', '');
-
-      console.log(`🔄 Saving controller file: ${controllerFileName}`);
 
       try {
         // Look up controller by controller_name (filename without extension)
@@ -2030,10 +1899,8 @@ router.put('/registry/:id/files', async (req, res) => {
             bind: [content, id, controllerFileName],
             type: sequelize.QueryTypes.UPDATE
           });
-          console.log(`✅ Updated controller: ${controllerFileName} (${controller.method} ${controller.path})`);
         } else {
           // Controller not found - cannot create without metadata
-          console.log(`⚠️ Controller ${controllerFileName} not found in plugin_controllers table`);
           return res.status(404).json({
             success: false,
             error: `Controller '${controllerFileName}' not found. Controllers must be created with metadata (method, path, etc.) before they can be edited.`
@@ -2045,7 +1912,6 @@ router.put('/registry/:id/files', async (req, res) => {
           message: 'Controller handler code updated successfully in plugin_controllers table'
         });
       } catch (controllerError) {
-        console.error(`❌ Error saving controller:`, controllerError);
         return res.status(500).json({
           success: false,
           error: `Failed to save controller: ${controllerError.message}`
@@ -2080,7 +1946,6 @@ router.put('/registry/:id/files', async (req, res) => {
     }
 
     // For executable frontend files ONLY (components, utils, services, styles)
-    console.log(`🔄 Upserting file ${normalizedRequestPath} in plugin_scripts table...`);
 
     try {
       // Check if file exists in plugin_scripts
@@ -2102,7 +1967,6 @@ router.put('/registry/:id/files', async (req, res) => {
           bind: [content, id, normalizedRequestPath],
           type: sequelize.QueryTypes.UPDATE
         });
-        console.log(`✅ Updated file ${normalizedRequestPath}`);
       } else {
         // Insert new file
         await sequelize.query(`
@@ -2112,7 +1976,6 @@ router.put('/registry/:id/files', async (req, res) => {
           bind: [id, normalizedRequestPath, content],
           type: sequelize.QueryTypes.INSERT
         });
-        console.log(`✅ Created file ${normalizedRequestPath}`);
       }
 
       // Update plugin_registry timestamp
@@ -2130,14 +1993,12 @@ router.put('/registry/:id/files', async (req, res) => {
         message: 'File saved successfully in plugin_scripts table'
       });
     } catch (scriptError) {
-      console.error(`❌ Error upserting plugin_scripts table:`, scriptError);
       res.status(500).json({
         success: false,
         error: `Failed to save file in plugin_scripts table: ${scriptError.message}`
       });
     }
   } catch (error) {
-    console.error('Failed to update file:', error);
     res.status(500).json({
       success: false,
       error: error.message
@@ -2337,7 +2198,6 @@ router.post('/registry', async (req, res) => {
       id
     });
   } catch (error) {
-    console.error('Failed to create plugin:', error);
     res.status(500).json({
       success: false,
       error: error.message
@@ -2358,8 +2218,6 @@ router.get('/:pluginId/scripts', async (req, res) => {
     res.set('Cache-Control', 'no-store, no-cache, must-revalidate, private');
     res.set('Pragma', 'no-cache');
     res.set('Expires', '0');
-
-    console.log(`📄 Loading scripts for plugin ${pluginId}${scope ? ` (scope: ${scope})` : ''}...`);
 
     // Build query
     let query = `
@@ -2382,8 +2240,6 @@ router.get('/:pluginId/scripts', async (req, res) => {
       type: sequelize.QueryTypes.SELECT
     });
 
-    console.log(`  ✅ Found ${scripts.length} scripts`);
-
     res.json({
       success: true,
       data: scripts.map(s => ({
@@ -2395,7 +2251,6 @@ router.get('/:pluginId/scripts', async (req, res) => {
       }))
     });
   } catch (error) {
-    console.error('❌ Failed to get plugin scripts:', error);
     res.status(500).json({
       success: false,
       error: error.message
@@ -2564,7 +2419,6 @@ router.put('/:pluginId/controllers/:controllerName', async (req, res) => {
       message: 'Controller updated successfully'
     });
   } catch (error) {
-    console.error('❌ Failed to update controller:', error);
     res.status(500).json({
       success: false,
       error: error.message
@@ -2700,7 +2554,6 @@ router.all('/:pluginId/exec/*', async (req, res) => {
     }
 
   } catch (error) {
-    console.error(`❌ Dynamic controller execution error:`, error);
     if (!res.headersSent) {
       res.status(500).json({
         success: false,
@@ -2716,15 +2569,11 @@ router.all('/:pluginId/exec/*', async (req, res) => {
  */
 router.delete('/registry/:id/files', async (req, res) => {
   try {
-    console.log('🗑️ DELETE /registry/:id/files called');
-    console.log('   req.params:', req.params);
-    console.log('   req.body:', req.body);
 
     const { id } = req.params;
     const { path } = req.body;
 
     if (!path) {
-      console.log('❌ No path provided in request body');
       return res.status(400).json({
         success: false,
         error: 'File path is required'
@@ -2948,8 +2797,6 @@ router.post('/:id/run-migration', async (req, res) => {
     const { id } = req.params;
     const { migration_version, migration_name } = req.body;
 
-    console.log(`🔄 Running migration ${migration_version} for plugin ${id}`);
-
     const startTime = Date.now();
 
     // Get migration from database
@@ -2993,10 +2840,6 @@ router.post('/:id/run-migration', async (req, res) => {
       warnings.push(`⚠️ DROPS TABLE - All data will be permanently deleted!`);
     }
 
-    if (warnings.length > 0) {
-      console.log(`⚠️ Risky operations detected:`, warnings);
-    }
-
     // Execute migration
     await sequelize.query(migration.up_sql);
 
@@ -3037,8 +2880,6 @@ router.post('/:id/generate-entity-migration', async (req, res) => {
     const { id } = req.params;
     const { entity_name, table_name, schema_definition, is_update } = req.body;
 
-    console.log(`🔧 Generating ${is_update ? 'ALTER' : 'CREATE'} migration for entity ${entity_name} (${table_name})`);
-
     // Get plugin name from database
     const pluginData = await sequelize.query(`
       SELECT name FROM plugin_registry WHERE id = $1
@@ -3057,13 +2898,6 @@ router.post('/:id/generate-entity-migration', async (req, res) => {
     const pluginName = pluginData[0].name;
     const migrationVersion = new Date().toISOString().replace(/[-:T]/g, '').slice(0, 14);
 
-    console.log(`🔍 Migration params:`, {
-      is_update,
-      entity_name,
-      table_name,
-      has_schema: !!schema_definition
-    });
-
     // Check if table actually exists in database
     const tableExists = await sequelize.query(`
       SELECT EXISTS (
@@ -3077,14 +2911,12 @@ router.post('/:id/generate-entity-migration', async (req, res) => {
     });
 
     const tableExistsInDB = tableExists[0].exists;
-    console.log(`🗄️ Table '${table_name}' exists in database:`, tableExistsInDB ? 'YES' : 'NO');
 
     // Generate SQL based on whether table exists in database
     let upSQL, downSQL, migrationDescription;
     let warnings = []; // Track risky operations for warnings
 
     if (tableExistsInDB) {
-      console.log(`📊 Generating ALTER TABLE migration (table exists)`);
 
       // Get existing entity schema from database to compare
       const existingEntity = await sequelize.query(`
@@ -3095,10 +2927,7 @@ router.post('/:id/generate-entity-migration', async (req, res) => {
         type: sequelize.QueryTypes.SELECT
       });
 
-      console.log(`📦 Found existing entity:`, existingEntity.length > 0 ? 'YES' : 'NO');
-
       if (existingEntity.length === 0) {
-        console.log(`❌ Entity not found in database, cannot generate ALTER TABLE`);
         return res.status(404).json({
           success: false,
           error: 'Entity not found in database. Cannot generate ALTER TABLE migration. Use CREATE TABLE instead.'
@@ -3108,13 +2937,6 @@ router.post('/:id/generate-entity-migration', async (req, res) => {
       const oldSchema = existingEntity[0].schema_definition;
       const oldColumns = oldSchema.columns || [];
       const newColumns = schema_definition.columns || [];
-
-      console.log(`📋 Schema comparison:`, {
-        oldColumns: oldColumns.length,
-        newColumns: newColumns.length
-      });
-      console.log(`   Old column names:`, oldColumns.map(c => c.name));
-      console.log(`   New column names:`, newColumns.map(c => c.name));
 
       // Detect changes
       const oldColumnNames = oldColumns.map(c => c.name);
@@ -3244,8 +3066,6 @@ router.post('/:id/generate-entity-migration', async (req, res) => {
       migrationDescription = `Update ${table_name} table schema for ${entity_name} entity`;
 
     } else {
-      console.log(`📊 Generating CREATE TABLE migration (table does not exist)`);
-
       // Generate CREATE TABLE migration
       upSQL = `CREATE TABLE IF NOT EXISTS ${table_name} (\n`;
 
@@ -3316,8 +3136,6 @@ router.post('/:id/generate-entity-migration', async (req, res) => {
       migrationFileName = `create_${table_name}_table.sql`;
     }
 
-    console.log(`📝 Migration file name: ${migrationVersion}_${migrationFileName}`);
-
     // Create PENDING migration (don't execute)
     await sequelize.query(`
       INSERT INTO plugin_migrations (
@@ -3336,11 +3154,6 @@ router.post('/:id/generate-entity-migration', async (req, res) => {
       ]
     });
 
-    console.log(`✅ Created pending migration: ${migrationVersion}`);
-    if (warnings.length > 0) {
-      console.log(`⚠️ Warnings:`, warnings);
-    }
-
     res.json({
       success: true,
       migrationVersion,
@@ -3352,7 +3165,6 @@ router.post('/:id/generate-entity-migration', async (req, res) => {
     });
 
   } catch (error) {
-    console.error('Failed to generate and run migration:', error);
     res.status(500).json({
       success: false,
       error: error.message
