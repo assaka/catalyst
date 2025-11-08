@@ -12,6 +12,7 @@ import {
   StorefrontCookieConsentSettings,
   storefrontApiClient
 } from '@/api/storefront-entities';
+import { TranslationProvider } from '@/contexts/TranslationContext';
 // Removed SeoSetting import as it's now dynamically imported within fetchStoreData
 
 const StoreContext = createContext(null);
@@ -869,7 +870,9 @@ export const StoreProvider = ({ children }) => {
 
   return (
     <StoreContext.Provider value={value}>
-      {children}
+      <TranslationProvider storeId={store?.id}>
+        {children}
+      </TranslationProvider>
     </StoreContext.Provider>
   );
 };
