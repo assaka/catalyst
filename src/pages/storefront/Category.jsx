@@ -31,9 +31,15 @@ export default function Category() {
   const { storeCode } = useParams();
   const location = useLocation();
 
-  // Extract category path from URL: /public/storeCode/category/path/to/category
-  const categoryPath = location.pathname.split('/').slice(4).join('/');
-  const categorySlug = categoryPath.split('/').pop(); // Get the last segment as the actual category slug
+  // Extract category path from URL
+  // Platform domain: /public/storeCode/category/path/to/category (slice from index 4)
+  // Custom domain: /category/path/to/category (slice from index 2)
+  const isCustomDomain = !storeCode; // If no storeCode param, we're on a custom domain
+  const pathParts = location.pathname.split('/');
+  const categoryPath = isCustomDomain
+    ? pathParts.slice(2).join('/') // /category/keuken -> ['', 'category', 'keuken'] -> 'keuken'
+    : pathParts.slice(4).join('/'); // /public/hamid2/category/keuken -> ['', 'public', 'hamid2', 'category', 'keuken'] -> 'keuken'
+  const categorySlug = categoryPath.split('/').pop() || categoryPath; // Get the last segment as the actual category slug
 
   // Use React Query hooks for automatic caching & deduplication
   const {
