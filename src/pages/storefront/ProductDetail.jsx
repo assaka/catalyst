@@ -80,6 +80,8 @@ const generateProductName = (product, basePrefix = '') => {
 };
 
 export default function ProductDetail() {
+  console.log('🚀 ProductDetail component loaded');
+
   const { slug: paramSlug, productSlug: routeProductSlug, storeCode } = useParams();
   const [searchParams] = useSearchParams();
   const slug = searchParams.get('slug') || routeProductSlug || paramSlug;
@@ -90,6 +92,8 @@ export default function ProductDetail() {
   const navigate = useNavigate();
   const { showNotFound } = useNotFound();
   const { t, currentLanguage, translations } = useTranslation();
+
+  console.log('🔍 ProductDetail store:', { storeId: store?.id, storeName: store?.name });
 
   // Use React Query hooks for optimized API calls with automatic deduplication
   const { data: user } = useUser();
@@ -123,7 +127,16 @@ export default function ProductDetail() {
   const [displayProduct, setDisplayProduct] = useState(null);
 
   // A/B Testing - Get active tests for product page
-  const { activeTests, isLoading: abTestsLoading } = useABTesting(store?.id, 'product');
+  console.log('📊 About to call useABTesting hook with:', { storeId: store?.id, pageType: 'product' });
+
+  const { activeTests, isLoading: abTestsLoading, error: abTestError } = useABTesting(store?.id, 'product');
+
+  console.log('📊 useABTesting returned:', {
+    activeTests,
+    activeTestsCount: activeTests?.length,
+    abTestsLoading,
+    abTestError
+  });
 
   // Debug A/B testing
   useEffect(() => {
