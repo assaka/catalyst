@@ -44,6 +44,9 @@ export const useUser = (options = {}) => {
     staleTime: 300000, // 5 minutes - user data doesn't change often
     gcTime: 600000, // 10 minutes cache
     retry: 1, // Only retry once for auth calls
+    refetchOnMount: false, // CRITICAL: Don't refetch when component remounts
+    refetchOnWindowFocus: false, // CRITICAL: Don't refetch on window focus
+    refetchOnReconnect: false, // CRITICAL: Don't refetch on reconnect
     ...options
   });
 };
