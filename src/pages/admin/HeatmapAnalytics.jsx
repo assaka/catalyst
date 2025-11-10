@@ -131,7 +131,7 @@ export default function HeatmapAnalytics() {
               <TabsList className="grid w-full max-w-2xl grid-cols-3">
                 <TabsTrigger value="heatmaps" className="flex items-center gap-2">
                   <Target className="w-4 h-4" />
-                  Heatmaps
+                  Clicks
                 </TabsTrigger>
                 <TabsTrigger value="scroll" className="flex items-center gap-2">
                   <ArrowDown className="w-4 h-4" />
