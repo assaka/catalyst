@@ -182,7 +182,7 @@ app.options('/api/*', (req, res) => {
   if (isVercelApp || isLocalhost || isRenderApp) {
     res.setHeader('Access-Control-Allow-Origin', origin);
     res.setHeader('Access-Control-Allow-Methods', 'GET,POST,PUT,DELETE,OPTIONS,PATCH');
-    res.setHeader('Access-Control-Allow-Headers', 'Content-Type,Authorization,X-Requested-With,Accept,Origin,x-store-id,X-Language');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type,Authorization,X-Requested-With,Accept,Origin,x-store-id,X-Store-Id,X-Language,x-session-id,X-Session-Id,Cache-Control,cache-control,Pragma,pragma,Expires,expires,params,headers');
     res.setHeader('Access-Control-Allow-Credentials', 'true');
     res.setHeader('Access-Control-Max-Age', '86400'); // 24 hours
     res.setHeader('Cache-Control', 'public, max-age=86400'); // Browser cache
@@ -251,7 +251,27 @@ app.use(cors({
   },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept', 'Origin', 'x-store-id', 'X-Language', 'x-session-id', 'params', 'cache-control', 'pragma', 'expires', 'headers'],
+  allowedHeaders: [
+    'Content-Type',
+    'Authorization',
+    'X-Requested-With',
+    'Accept',
+    'Origin',
+    'x-store-id',
+    'X-Store-Id',
+    'X-Language',
+    'x-session-id',
+    'X-Session-Id',
+    'params',
+    'cache-control',
+    'Cache-Control',
+    'pragma',
+    'Pragma',
+    'expires',
+    'Expires',
+    'headers',
+    'x-requested-with'
+  ],
   exposedHeaders: ['Access-Control-Allow-Origin'],
   optionsSuccessStatus: 200,
   preflightContinue: false
