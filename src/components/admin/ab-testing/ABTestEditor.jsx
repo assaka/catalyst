@@ -100,12 +100,26 @@ export default function ABTestEditor({ test, storeId, onSave, onCancel }) {
         </Alert>
       )}
 
+      {/* Quick Guide */}
+      <Card className="bg-blue-50 border-blue-200">
+        <CardContent className="pt-4">
+          <h4 className="font-semibold text-sm mb-2">📖 How to Create an A/B Test:</h4>
+          <ol className="text-sm space-y-1 list-decimal list-inside text-muted-foreground">
+            <li><strong>Basics:</strong> Give your test a name (e.g., "Button Color Test")</li>
+            <li><strong>Variants:</strong> Keep "Control" as-is. Add changes to other variants (test versions)</li>
+            <li><strong>Targeting:</strong> Choose which pages to test (e.g., "product")</li>
+            <li><strong>Metrics:</strong> What success looks like (e.g., "add to cart rate")</li>
+            <li><strong>Save & Start:</strong> Click save, then click ▶️ to start the test</li>
+          </ol>
+        </CardContent>
+      </Card>
+
       <Tabs defaultValue="basics" className="w-full">
         <TabsList className="grid w-full grid-cols-4">
-          <TabsTrigger value="basics">Basics</TabsTrigger>
-          <TabsTrigger value="variants">Variants</TabsTrigger>
-          <TabsTrigger value="targeting">Targeting</TabsTrigger>
-          <TabsTrigger value="metrics">Metrics</TabsTrigger>
+          <TabsTrigger value="basics">1. Basics</TabsTrigger>
+          <TabsTrigger value="variants">2. Variants</TabsTrigger>
+          <TabsTrigger value="targeting">3. Targeting</TabsTrigger>
+          <TabsTrigger value="metrics">4. Metrics</TabsTrigger>
         </TabsList>
 
         {/* Basics Tab */}
@@ -161,46 +175,69 @@ export default function ABTestEditor({ test, storeId, onSave, onCancel }) {
 
         {/* Variants Tab */}
         <TabsContent value="variants" className="space-y-4">
+          {/* Explanation */}
+          <Card className="bg-amber-50 border-amber-200">
+            <CardContent className="pt-4">
+              <h4 className="font-semibold text-sm mb-2">💡 What are Variants?</h4>
+              <div className="text-sm space-y-2 text-muted-foreground">
+                <p><strong>Control:</strong> Your current/original version (no changes). Half your visitors see this.</p>
+                <p><strong>Variant A, B, C:</strong> Test versions with changes. Half your visitors see these.</p>
+                <p>The system compares which version performs better!</p>
+              </div>
+            </CardContent>
+          </Card>
+
           <div className="flex items-center justify-between">
-            <p className="text-sm text-muted-foreground">
-              Configure the different versions to test
-            </p>
+            <div>
+              <p className="text-sm font-medium">Your Test Versions</p>
+              <p className="text-xs text-muted-foreground">Add variants to test different changes</p>
+            </div>
             <Button onClick={addVariant} size="sm">
               <Plus className="w-4 h-4 mr-2" />
-              Add Variant
+              Add Test Version
             </Button>
           </div>
 
           <div className="space-y-4">
             {formData.variants.map((variant, index) => (
-              <Card key={variant.id}>
+              <Card key={variant.id} className={variant.is_control ? 'border-2 border-gray-300' : 'border-2 border-blue-300'}>
                 <CardHeader>
                   <div className="flex items-center justify-between">
                     <CardTitle className="text-base flex items-center gap-2">
                       {variant.name}
-                      {variant.is_control && <Badge>Control</Badge>}
+                      {variant.is_control ? (
+                        <Badge className="bg-gray-200 text-gray-800">
+                          Original Version (Baseline)
+                        </Badge>
+                      ) : (
+                        <Badge className="bg-blue-100 text-blue-800">
+                          Test Version
+                        </Badge>
+                      )}
                     </CardTitle>
                     <div className="flex items-center gap-2">
-                      {!variant.is_control && (
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => toggleControlVariant(index)}
-                        >
-                          Set as Control
-                        </Button>
-                      )}
                       {formData.variants.length > 2 && !variant.is_control && (
                         <Button
                           size="sm"
                           variant="ghost"
                           onClick={() => removeVariant(index)}
+                          title="Delete this variant"
                         >
                           <Trash2 className="w-4 h-4" />
                         </Button>
                       )}
                     </div>
                   </div>
+                  {variant.is_control && (
+                    <p className="text-xs text-muted-foreground mt-1">
+                      This is your baseline - leave it empty (no changes). We'll compare test versions against this.
+                    </p>
+                  )}
+                  {!variant.is_control && (
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Add changes below to create a different version to test
+                    </p>
+                  )}
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <div className="grid grid-cols-2 gap-4">

@@ -227,12 +227,28 @@ export default function DynamicVariantEditor({ variant, onChange, storeId }) {
 
   return (
     <div className="space-y-4">
+      {/* Instructions */}
+      {changes.length === 0 && (
+        <Alert>
+          <AlertDescription>
+            <strong>👉 To configure this variant:</strong>
+            <ol className="list-decimal ml-4 mt-2 space-y-1 text-sm">
+              <li>Select which page type below (Product, Homepage, etc.)</li>
+              <li>Find the element you want to change</li>
+              <li>Click "Add" button next to the element</li>
+              <li>Configure your changes (text, color, etc.)</li>
+              <li>Preview shows how it will look</li>
+            </ol>
+          </AlertDescription>
+        </Alert>
+      )}
+
       {/* Page & Element Selector */}
       <Card>
         <CardHeader>
-          <CardTitle className="text-base">Select Page & Elements</CardTitle>
+          <CardTitle className="text-base">Step 1: Select Page & Find Elements</CardTitle>
           <p className="text-sm text-muted-foreground">
-            Choose a page to see real elements from your store
+            Choose a page to see what elements you can test
           </p>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -388,12 +404,15 @@ export default function DynamicVariantEditor({ variant, onChange, storeId }) {
 
       {/* Configured Changes */}
       {changes.length > 0 && (
-        <Card>
+        <Card className="border-2 border-green-300 bg-green-50/30">
           <CardHeader>
             <div className="flex items-center justify-between">
-              <CardTitle className="text-base">Your Changes</CardTitle>
-              <Badge>{changes.length} changes</Badge>
+              <CardTitle className="text-base">Step 2: Your Changes ({changes.length})</CardTitle>
+              <Badge className="bg-green-100 text-green-800">{changes.length} changes configured</Badge>
             </div>
+            <p className="text-sm text-muted-foreground">
+              These changes will be applied to this variant. Visitors will see these modifications.
+            </p>
           </CardHeader>
           <CardContent className="space-y-4">
             {changes.map((change, index) => {
