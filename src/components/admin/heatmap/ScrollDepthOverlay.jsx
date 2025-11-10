@@ -70,8 +70,6 @@ export default function ScrollDepthOverlay({ storeId, pageUrl, dateRange, viewpo
     setLoadingScreenshot(true);
 
     try {
-      console.log('📸 [ScrollDepthOverlay] Requesting screenshot for:', pageUrl);
-
       const response = await apiClient.post(`heatmap/screenshot/${storeId}`, {
         url: pageUrl,
         viewportWidth: viewportSize.width,
@@ -79,21 +77,13 @@ export default function ScrollDepthOverlay({ storeId, pageUrl, dateRange, viewpo
         fullPage: true
       });
 
-      console.log('📸 [ScrollDepthOverlay] Screenshot response:', {
-        hasResponse: !!response,
-        hasScreenshot: !!response?.screenshot,
-        responseKeys: response ? Object.keys(response) : []
-      });
-
       if (response?.screenshot) {
-        console.log('✅ [ScrollDepthOverlay] Screenshot loaded, length:', response.screenshot.length);
         setScreenshot(response.screenshot);
       } else {
-        console.warn('⚠️ [ScrollDepthOverlay] No screenshot in response');
         setError('Screenshot not available in response');
       }
     } catch (err) {
-      console.error('❌ [ScrollDepthOverlay] Error loading screenshot:', err);
+      console.error('Error loading screenshot:', err);
       setError(err.message);
     } finally {
       setLoadingScreenshot(false);

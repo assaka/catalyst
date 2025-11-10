@@ -391,22 +391,9 @@ export default function HeatmapVisualization({
 
       const response = await apiClient.get(`heatmap/data/${storeId}?${params}`);
 
-      console.log('Heatmap API response:', {
-        dataLength: response.data?.length,
-        sampleData: response.data?.slice(0, 3)
-      });
-
       // Get the actual canvas size for coordinate scaling
       const canvas = canvasRef.current;
       const canvasRect = canvas ? canvas.getBoundingClientRect() : { width: viewportSize.width, height: viewportSize.height };
-
-      console.log('🔍 DEBUG - Canvas and Screenshot Info:', {
-        canvasSize: { width: canvasRect.width, height: canvasRect.height },
-        selectedViewport: viewportSize,
-        screenshotDisplayDimensions: screenshotDimensions,
-        screenshotNaturalDimensions: screenshotNaturalDimensions,
-        hasScreenshot: !!screenshot
-      });
 
       // Transform and scale the data to match the actual canvas size
       // IMPORTANT: For responsive sites, use proportional positioning
@@ -421,14 +408,6 @@ export default function HeatmapVisualization({
 
         // Skip interactions without coordinates (scroll, focus, etc.)
         if (rawX === null || rawY === null || rawX === undefined || rawY === undefined) {
-          if (index < 5) {
-            console.warn(`⚠️ Skipping point without coordinates:`, {
-              type: interactionType,
-              rawX,
-              rawY,
-              element: point.element_selector
-            });
-          }
           return {
             ...point,
             x: null,
@@ -448,16 +427,6 @@ export default function HeatmapVisualization({
 
           finalX = rawX * scaleX;
           finalY = rawY * scaleY;
-
-          if (index < 3) {
-            console.log(`🔍 DEBUG - Point ${index} (${interactionType}):`, {
-              raw: { x: rawX, y: rawY, vw: capturedViewportWidth },
-              screenshotNatural: screenshotNaturalDimensions,
-              screenshotDisplay: screenshotDimensions,
-              scales: { x: scaleX.toFixed(3), y: scaleY.toFixed(3) },
-              final: { x: finalX.toFixed(1), y: finalY.toFixed(1) }
-            });
-          }
         } else if (screenshotDimensions) {
           // Fallback: scale to canvas
           finalX = (rawX / capturedViewportWidth) * screenshotDimensions.width;
@@ -474,13 +443,6 @@ export default function HeatmapVisualization({
           y: finalY !== null && !isNaN(parseFloat(finalY)) ? parseFloat(finalY) : null,
           total_count: 1 // Each point represents one interaction
         };
-      });
-
-      console.log('Transformed data:', {
-        total: transformedData.length,
-        sampleTransformed: transformedData.slice(0, 3),
-        nullCoords: transformedData.filter(p => p.x === null || p.y === null).length,
-        validCoords: transformedData.filter(p => p.x !== null && p.y !== null).length
       });
 
       // Group by coordinates and count occurrences
@@ -507,23 +469,6 @@ export default function HeatmapVisualization({
       });
 
       const finalData = Object.values(groupedData);
-      console.log('Final grouped data:', {
-        points: finalData.length,
-        sample: finalData.slice(0, 5),
-        canvasDimensions: canvasRect
-      });
-
-      // Log to renderer to confirm rendering
-      if (rendererRef.current && finalData.length > 0) {
-        console.log('🎨 About to set heatmap data and trigger render');
-        console.log('🎨 Canvas current dimensions:', {
-          width: canvasRef.current?.width,
-          height: canvasRef.current?.height,
-          clientWidth: canvasRef.current?.clientWidth,
-          clientHeight: canvasRef.current?.clientHeight
-        });
-      }
-
       setHeatmapData(finalData);
     } catch (err) {
       console.error('Error loading heatmap data:', err);
@@ -550,9 +495,6 @@ export default function HeatmapVisualization({
     setLoadingScreenshot(true);
 
     try {
-      console.log('📸 Requesting screenshot for:', pageUrl);
-      console.log('📸 Viewport:', viewportSize);
-
       const response = await apiClient.post(`heatmap/screenshot/${storeId}`, {
         url: pageUrl,
         viewportWidth: viewportSize.width,
@@ -560,47 +502,18 @@ export default function HeatmapVisualization({
         fullPage: true
       });
 
-      console.log('📸 Screenshot response:', {
-        hasResponse: !!response,
-        responseType: typeof response,
-        responseKeys: response ? Object.keys(response) : [],
-        hasScreenshot: response?.screenshot ? true : false,
-        screenshotLength: response?.screenshot?.length || 0,
-        format: response?.format,
-        viewport: response?.viewport
-      });
-
       // Response structure can vary - check both response.screenshot and response directly
       const screenshotData = response?.screenshot || (response?.success ? response : null);
 
-      console.log('📸 Screenshot data details:', {
-        dataType: typeof screenshotData,
-        dataLength: screenshotData?.length,
-        startsWithDataImage: screenshotData?.startsWith?.('data:image'),
-        first50Chars: screenshotData?.substring?.(0, 50)
-      });
-
       if (screenshotData && typeof screenshotData === 'string' && screenshotData.startsWith('data:image')) {
-        console.log('✅ Screenshot loaded successfully - setting to state');
-        console.log('📸 Screenshot preview (first 100 chars):', screenshotData.substring(0, 100));
         setScreenshot(screenshotData);
-        console.log('📸 Screenshot state should now be set');
       } else if (response?.screenshot) {
-        console.log('✅ Screenshot loaded from response.screenshot - setting to state');
         setScreenshot(response.screenshot);
-        console.log('📸 Screenshot state should now be set');
       } else {
-        console.warn('⚠️ Screenshot response format unexpected:', response);
         setScreenshot(null);
       }
     } catch (err) {
-      console.error('❌ Error loading screenshot:', err);
-      console.error('Error details:', {
-        message: err.message,
-        status: err.status,
-        data: err.data
-      });
-      // Don't set error state, just log it - screenshot is optional
+      console.error('Error loading screenshot:', err);
       setScreenshot(null);
     } finally {
       setLoadingScreenshot(false);
@@ -905,14 +818,6 @@ export default function HeatmapVisualization({
                     const width = img.clientWidth;
                     const height = img.clientHeight;
 
-                    console.log('✅ Screenshot <img> loaded and rendered successfully');
-                    console.log('📸 Image dimensions:', {
-                      naturalWidth: img.naturalWidth,
-                      naturalHeight: img.naturalHeight,
-                      clientWidth: width,
-                      clientHeight: height
-                    });
-
                     setScreenshotDimensions({ width, height });
                     setScreenshotNaturalDimensions({
                       width: img.naturalWidth,
@@ -921,8 +826,6 @@ export default function HeatmapVisualization({
 
                     // Resize canvas to match image and re-load heatmap data with correct scaling
                     if (canvasRef.current && rendererRef.current) {
-                      console.log('🎨 Resizing canvas to match screenshot:', { width, height });
-
                       // Force canvas to update size
                       setTimeout(() => {
                         if (rendererRef.current && canvasRef.current) {
@@ -930,16 +833,11 @@ export default function HeatmapVisualization({
 
                           // Re-load heatmap data to scale coordinates properly
                           if (heatmapData.length > 0) {
-                            console.log('🎨 Re-loading heatmap data for proper scaling');
                             loadHeatmapData();
                           }
                         }
                       }, 100);
                     }
-                  }}
-                  onError={(e) => {
-                    console.error('❌ Screenshot <img> failed to load', e);
-                    console.error('❌ Image src length:', screenshot?.length);
                   }}
                 />
                 {/* Debug indicator */}
