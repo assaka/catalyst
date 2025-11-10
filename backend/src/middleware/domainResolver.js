@@ -38,7 +38,10 @@ setInterval(cleanupCache, CACHE_TTL);
  */
 async function domainResolver(req, res, next) {
   try {
-    const host = req.get('host'); // e.g., www.myshop.com or localhost:5000
+    // Check X-Forwarded-Host first (set by Vercel/proxies), then fall back to Host header
+    const host = req.get('x-forwarded-host') || req.get('host'); // e.g., www.myshop.com or localhost:5000
+
+    console.log(`[DomainResolver] Host: ${req.get('host')}, X-Forwarded-Host: ${req.get('x-forwarded-host')}, Final: ${host}, Path: ${req.path}`);
 
     // Skip resolution for:
     // - API endpoints (handled separately)
@@ -52,6 +55,7 @@ async function domainResolver(req, res, next) {
       host.includes('vercel.app') ||
       host.includes('onrender.com')
     ) {
+      console.log(`[DomainResolver] Skipping resolution - platform domain or API endpoint`);
       return next();
     }
 
@@ -70,6 +74,7 @@ async function domainResolver(req, res, next) {
     }
 
     // Query database for domain mapping
+    console.log(`[DomainResolver] Looking up domain: "${hostname}"`);
     const domainRecord = await CustomDomain.findOne({
       where: {
         domain: hostname,
@@ -82,6 +87,8 @@ async function domainResolver(req, res, next) {
         attributes: ['id', 'slug', 'name', 'is_active']
       }]
     });
+
+    console.log(`[DomainResolver] Domain record found:`, domainRecord ? `Yes - Store: ${domainRecord.store?.slug}` : 'No');
 
     if (domainRecord && domainRecord.store && domainRecord.store.is_active) {
       const mapping = {
