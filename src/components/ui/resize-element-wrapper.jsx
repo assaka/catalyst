@@ -299,8 +299,6 @@ const ResizeWrapper = ({
       e.nativeEvent.stopImmediatePropagation();
     }
 
-    console.log('🎯 [RESIZE DEBUG] Mouse down', { x: e.clientX, y: e.clientY });
-
     // CRITICAL: Capture pointer events to this element
     if (e.currentTarget.setPointerCapture) {
       e.currentTarget.setPointerCapture(e.pointerId);
@@ -382,19 +380,12 @@ const ResizeWrapper = ({
     const isText = children?.type === 'span' || children?.props?.['data-slot-id']?.includes('text');
     const hasWFit = children?.props?.className?.includes('w-fit') || className?.includes('w-fit');
 
-    console.log('🎯 [RESIZE DEBUG] Starting drag with element types:', { isButton, isText, hasWFit });
-
     const handleMouseMove = (moveEvent) => {
-      console.log('🖱️ [RESIZE] MouseMove', { x: moveEvent.clientX, y: moveEvent.clientY });
-
       const deltaX = moveEvent.clientX - startX;
       const deltaY = moveEvent.clientY - startY;
 
-      console.log('📏 [RESIZE] Delta', { deltaX, deltaY, startX, startY, startWidth, startHeight });
-
       // Only apply sizing if there's significant movement (prevents jumping on click)
       if (Math.abs(deltaX) < 3 && Math.abs(deltaY) < 3) {
-        console.log('⏭️ [RESIZE] Movement too small, skipping');
         return;
       }
 
@@ -425,15 +416,6 @@ const ResizeWrapper = ({
         const effectiveMinWidth = isText ? 20 : minWidth;
         const newWidth = Math.max(effectiveMinWidth, Math.min(maxAllowedWidth, startWidth + deltaX));
         const newHeight = Math.max(minHeight, Math.min(maxHeight, startHeight + deltaY));
-
-        console.log('📐 [RESIZE] Calculated dimensions', {
-          newWidth,
-          newHeight,
-          maxAllowedWidth,
-          effectiveMinWidth,
-          isButton,
-          isText
-        });
 
         // Calculate width units
         let widthValue = newWidth;
@@ -477,8 +459,6 @@ const ResizeWrapper = ({
           ...(fontSize !== undefined && { fontSize })
         };
 
-        console.log('✅ [RESIZE] Applying size', newSize);
-
         // Store latest size in ref for immediate access during mouseup
         latestSizeRef.current = newSize;
 
@@ -491,7 +471,6 @@ const ResizeWrapper = ({
         }
         saveTimeoutRef.current = setTimeout(() => {
           if (onResize) {
-            console.log('💾 [RESIZE] Saving after 1s delay', newSize);
             onResize(newSize);
           }
         }, 1000);
@@ -513,8 +492,6 @@ const ResizeWrapper = ({
     const handleElement = e.currentTarget;
 
     const handleMouseUp = (upEvent) => {
-      console.log('🏁 [RESIZE DEBUG] Drag completed', { frames: frameCount });
-
       // Cancel any pending RAF
       if (animationFrameId) {
         cancelAnimationFrame(animationFrameId);
@@ -529,7 +506,6 @@ const ResizeWrapper = ({
       // Save final size immediately on release using the latest calculated value from ref
       const finalSize = latestSizeRef.current;
       if (onResize && finalSize) {
-        console.log('💾 [RESIZE] Saving final size on mouse up', finalSize);
         onResize(finalSize);
         // Update state to match the saved value to prevent position shifts
         setSize(finalSize);
@@ -539,7 +515,6 @@ const ResizeWrapper = ({
       if (upEvent.pointerId !== undefined && handleElement) {
         try {
           handleElement.releasePointerCapture(upEvent.pointerId);
-          console.log('🔓 [RESIZE DEBUG] Pointer released from handle element');
         } catch (err) {
           console.warn('Could not release pointer', err);
         }
@@ -557,7 +532,6 @@ const ResizeWrapper = ({
         handleElement.removeEventListener('pointermove', handleMouseMove);
         handleElement.removeEventListener('pointerup', handleMouseUp);
         handleElement.removeEventListener('pointercancel', handleMouseUp);
-        console.log('👋 [RESIZE DEBUG] Event listeners removed from handle element');
       }
     };
 
@@ -565,8 +539,6 @@ const ResizeWrapper = ({
     handleElement.addEventListener('pointermove', handleMouseMove);
     handleElement.addEventListener('pointerup', handleMouseUp);
     handleElement.addEventListener('pointercancel', handleMouseUp);
-
-    console.log('👂 [RESIZE DEBUG] Event listeners attached to handle element (pointermove, pointerup, pointercancel)');
   }, [minWidth, minHeight, maxWidth, maxHeight, onResize, disabled, children, className, size.widthUnit]);
 
   // Check if this is an image element
