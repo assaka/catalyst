@@ -10,6 +10,22 @@
       "destination": "https://catalyst-backend-fzhu.onrender.com/api/$1"
     },
     {
+      "source": "/robots.txt",
+      "destination": "https://catalyst-backend-fzhu.onrender.com/robots.txt"
+    },
+    {
+      "source": "/sitemap.xml",
+      "destination": "https://catalyst-backend-fzhu.onrender.com/sitemap.xml"
+    },
+    {
+      "source": "/public/:storeSlug/robots.txt",
+      "destination": "https://catalyst-backend-fzhu.onrender.com/public/:storeSlug/robots.txt"
+    },
+    {
+      "source": "/public/:storeSlug/sitemap.xml",
+      "destination": "https://catalyst-backend-fzhu.onrender.com/public/:storeSlug/sitemap.xml"
+    },
+    {
       "source": "/(.*)",
       "destination": "/index.html"
     }
