@@ -118,6 +118,7 @@ function escapeXml(unsafe) {
     .replace(/'/g, '&apos;');
 }
 
+
 /**
  * GET /api/sitemap/:storeId
  * Serves the sitemap.xml for a specific store by ID
@@ -221,3 +222,4 @@ router.get('/store/:storeSlug', async (req, res) => {
 });
 
 module.exports = router;
+module.exports.generateSitemapXml = generateSitemapXml;

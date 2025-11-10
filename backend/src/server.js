@@ -377,10 +377,53 @@ app.use('/api/preview', previewRoutes);
 // Store-specific robots.txt route (for multi-store)
 app.get('/public/:storeSlug/robots.txt', async (req, res) => {
   try {
+    const { Store, SeoSettings } = require('./models');
     const { storeSlug } = req.params;
 
-    // Redirect to the store-specific robots.txt API endpoint
-    return res.redirect(301, `/api/robots/store/${storeSlug}`);
+    // Find store by slug
+    const store = await Store.findOne({
+      where: { slug: storeSlug }
+    });
+
+    if (!store) {
+      console.warn(`[Robots] Store not found for slug: ${storeSlug}`);
+      return res.status(404).set({
+        'Content-Type': 'text/plain; charset=utf-8'
+      }).send('# Store not found\nUser-agent: *\nDisallow: /');
+    }
+
+    // Find SEO settings for the store
+    const seoSettings = await SeoSettings.findOne({
+      where: { store_id: store.id }
+    });
+
+    let robotsContent = '';
+
+    if (seoSettings && seoSettings.robots_txt_content) {
+      robotsContent = seoSettings.robots_txt_content;
+    } else {
+      // Default robots.txt content with store-specific sitemap
+      const baseUrl = store.custom_domain || `${req.protocol}://${req.get('host')}/public/${storeSlug}`;
+      robotsContent = `User-agent: *
+Allow: /
+Disallow: /admin/
+Disallow: /checkout/
+Disallow: /cart/
+Disallow: /account/
+Disallow: /login
+
+# Sitemap
+Sitemap: ${baseUrl}/sitemap.xml`;
+    }
+
+    // Set proper content-type and headers for robots.txt
+    res.set({
+      'Content-Type': 'text/plain; charset=utf-8',
+      'Cache-Control': 'public, max-age=86400', // Cache for 24 hours
+      'X-Robots-Tag': 'noindex' // Don't index the robots.txt URL itself
+    });
+
+    res.send(robotsContent);
   } catch (error) {
     console.error('[Robots] Error serving store robots.txt:', error);
     res.set({
@@ -399,6 +442,7 @@ app.get('/robots.txt', async (req, res) => {
 
     // Check if request came from custom domain (set by domainResolver middleware)
     let targetStoreSlug = req.storeSlug;
+    let store = null;
 
     // If not from custom domain, get the first active store as default
     if (!targetStoreSlug) {
@@ -417,10 +461,53 @@ Disallow: /admin/`);
       }
 
       targetStoreSlug = defaultStore.slug;
+      store = defaultStore;
+    } else {
+      // Find store by slug for custom domain
+      store = await Store.findOne({
+        where: { slug: targetStoreSlug }
+      });
     }
 
-    // Redirect to the store-specific robots.txt API endpoint
-    return res.redirect(301, `/api/robots/store/${targetStoreSlug}`);
+    if (!store) {
+      console.warn(`[Robots] Store not found for slug: ${targetStoreSlug}`);
+      return res.status(404).set({
+        'Content-Type': 'text/plain; charset=utf-8'
+      }).send('# Store not found\nUser-agent: *\nDisallow: /');
+    }
+
+    // Find SEO settings for the store
+    const seoSettings = await SeoSettings.findOne({
+      where: { store_id: store.id }
+    });
+
+    let robotsContent = '';
+
+    if (seoSettings && seoSettings.robots_txt_content) {
+      robotsContent = seoSettings.robots_txt_content;
+    } else {
+      // Default robots.txt content with store-specific sitemap
+      const baseUrl = store.custom_domain || `${req.protocol}://${req.get('host')}/public/${targetStoreSlug}`;
+      robotsContent = `User-agent: *
+Allow: /
+Disallow: /admin/
+Disallow: /checkout/
+Disallow: /cart/
+Disallow: /account/
+Disallow: /login
+
+# Sitemap
+Sitemap: ${baseUrl}/sitemap.xml`;
+    }
+
+    // Set proper content-type and headers for robots.txt
+    res.set({
+      'Content-Type': 'text/plain; charset=utf-8',
+      'Cache-Control': 'public, max-age=86400', // Cache for 24 hours
+      'X-Robots-Tag': 'noindex' // Don't index the robots.txt URL itself
+    });
+
+    res.send(robotsContent);
   } catch (error) {
     console.error('[Robots] Error serving default robots.txt:', error);
     res.set({
@@ -436,9 +523,11 @@ Disallow: /admin/`);
 app.get('/sitemap.xml', async (req, res) => {
   try {
     const { Store } = require('./models');
+    const { generateSitemapXml } = require('./routes/sitemap');
 
     // Check if request came from custom domain (set by domainResolver middleware)
     let targetStoreSlug = req.storeSlug;
+    let store = null;
 
     // If not from custom domain, get the first active store as default
     if (!targetStoreSlug) {
@@ -454,10 +543,44 @@ app.get('/sitemap.xml', async (req, res) => {
       }
 
       targetStoreSlug = defaultStore.slug;
+      store = defaultStore;
+    } else {
+      // Find store by slug for custom domain
+      store = await Store.findOne({
+        where: { slug: targetStoreSlug }
+      });
     }
 
-    // Redirect to the store-specific sitemap.xml API endpoint
-    return res.redirect(301, `/api/sitemap/store/${targetStoreSlug}`);
+    if (!store) {
+      console.warn(`[Sitemap] Store not found for slug: ${targetStoreSlug}`);
+      return res.status(404).set({
+        'Content-Type': 'text/plain; charset=utf-8'
+      }).send('Store not found');
+    }
+
+    // Determine base URL
+    const baseUrl = store.custom_domain
+      ? `https://${store.custom_domain}`
+      : `${req.protocol}://${req.get('host')}/public/${store.slug}`;
+
+    // Generate sitemap
+    const sitemapXml = await generateSitemapXml(store.id, baseUrl);
+
+    if (!sitemapXml) {
+      console.log(`[Sitemap] Sitemap disabled for store: ${targetStoreSlug}`);
+      return res.status(404).set({
+        'Content-Type': 'text/plain; charset=utf-8'
+      }).send('Sitemap is disabled for this store');
+    }
+
+    // Set proper content-type and headers for XML
+    res.set({
+      'Content-Type': 'application/xml; charset=utf-8',
+      'Cache-Control': 'public, max-age=3600', // Cache for 1 hour
+      'X-Robots-Tag': 'noindex' // Don't index the sitemap URL itself
+    });
+
+    res.send(sitemapXml);
   } catch (error) {
     console.error('[Sitemap] Error serving default sitemap.xml:', error);
     res.status(500).set({
@@ -469,9 +592,45 @@ app.get('/sitemap.xml', async (req, res) => {
 // Public store-specific sitemap.xml route
 app.get('/public/:storeSlug/sitemap.xml', async (req, res) => {
   try {
+    const { Store } = require('./models');
+    const { generateSitemapXml } = require('./routes/sitemap');
     const { storeSlug } = req.params;
-    // Redirect to the API endpoint
-    return res.redirect(301, `/api/sitemap/store/${storeSlug}`);
+
+    // Find store by slug
+    const store = await Store.findOne({
+      where: { slug: storeSlug }
+    });
+
+    if (!store) {
+      console.warn(`[Sitemap] Store not found for slug: ${storeSlug}`);
+      return res.status(404).set({
+        'Content-Type': 'text/plain; charset=utf-8'
+      }).send('Store not found');
+    }
+
+    // Determine base URL
+    const baseUrl = store.custom_domain
+      ? `https://${store.custom_domain}`
+      : `${req.protocol}://${req.get('host')}/public/${store.slug}`;
+
+    // Generate sitemap
+    const sitemapXml = await generateSitemapXml(store.id, baseUrl);
+
+    if (!sitemapXml) {
+      console.log(`[Sitemap] Sitemap disabled for store: ${storeSlug}`);
+      return res.status(404).set({
+        'Content-Type': 'text/plain; charset=utf-8'
+      }).send('Sitemap is disabled for this store');
+    }
+
+    // Set proper content-type and headers for XML
+    res.set({
+      'Content-Type': 'application/xml; charset=utf-8',
+      'Cache-Control': 'public, max-age=3600', // Cache for 1 hour
+      'X-Robots-Tag': 'noindex' // Don't index the sitemap URL itself
+    });
+
+    res.send(sitemapXml);
   } catch (error) {
     console.error('[Sitemap] Error serving public sitemap.xml:', error);
     res.status(500).set({
