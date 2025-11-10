@@ -331,7 +331,7 @@ export default function BrevoProvider({
                 required
               />
               <p className="text-xs text-gray-500">
-                Uses Store Name from Settings > General. Override to use a different name.
+                Uses Store Name from Settings &gt; General. Override to use a different name.
               </p>
             </div>
 
@@ -346,7 +346,7 @@ export default function BrevoProvider({
                 required
               />
               <p className="text-xs text-gray-500">
-                Uses Store Email from Settings > General. Override to use a different email.
+                Uses Store Email from Settings &gt; General. Override to use a different email.
               </p>
               <div className="bg-blue-50 border border-blue-200 rounded p-3 mt-2">
                 <p className="text-xs text-blue-800">
