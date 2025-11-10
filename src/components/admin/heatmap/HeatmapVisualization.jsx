@@ -626,10 +626,11 @@ export default function HeatmapVisualization({
                 size="sm"
                 onClick={() => {
                   loadHeatmapData();
+                  loadRealTimeStats();
                   loadScreenshot();
                 }}
                 disabled={loading || loadingScreenshot}
-                title="Refresh data and screenshot"
+                title="Refresh data, live stats, and screenshot"
               >
                 <RefreshCw className={`w-4 h-4 ${loading || loadingScreenshot ? 'animate-spin' : ''}`} />
               </Button>
