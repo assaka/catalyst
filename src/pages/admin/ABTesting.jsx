@@ -1,229 +1,453 @@
-import React from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
+import React, { useState } from 'react';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useStore } from '@/contexts/StoreContext';
+import abTestService from '@/services/abTestService';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { FlaskConical, Target, BarChart3, Users, Zap, Clock, TrendingUp, Split } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+  DialogFooter,
+} from '@/components/ui/dialog';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import {
+  Tabs,
+  TabsContent,
+  TabsList,
+  TabsTrigger,
+} from '@/components/ui/tabs';
+import {
+  FlaskConical,
+  Plus,
+  MoreVertical,
+  Play,
+  Pause,
+  CheckCircle2,
+  Archive,
+  TrendingUp,
+  TrendingDown,
+  Minus,
+  BarChart3,
+  Clock,
+  Users,
+  Target,
+  Loader2,
+  Edit,
+  Eye,
+  Trash2,
+} from 'lucide-react';
+import { format } from 'date-fns';
+
+// Lazy load the child components to avoid issues
+const ABTestEditor = React.lazy(() => import('@/components/admin/ab-testing/ABTestEditor'));
+const ABTestResults = React.lazy(() => import('@/components/admin/ab-testing/ABTestResults'));
 
 export default function ABTesting() {
+  const { selectedStore } = useStore();
+  const queryClient = useQueryClient();
+  const [selectedTest, setSelectedTest] = useState(null);
+  const [viewMode, setViewMode] = useState(null); // 'edit', 'results', null
+  const [filterStatus, setFilterStatus] = useState('all');
+
+  console.log('[ABTesting] selectedStore:', selectedStore);
+  console.log('[ABTesting] viewMode:', viewMode);
+
+  // Fetch all tests
+  const { data: testsData, isLoading } = useQuery({
+    queryKey: ['ab-tests', selectedStore?.id, filterStatus],
+    queryFn: () => abTestService.getTests(
+      selectedStore.id,
+      filterStatus === 'all' ? null : filterStatus
+    ),
+    enabled: !!selectedStore?.id,
+  });
+
+  const tests = testsData?.data || [];
+
+  // Mutations
+  const startTestMutation = useMutation({
+    mutationFn: (testId) => abTestService.startTest(selectedStore.id, testId),
+    onSuccess: () => {
+      queryClient.invalidateQueries(['ab-tests']);
+    },
+  });
+
+  const pauseTestMutation = useMutation({
+    mutationFn: (testId) => abTestService.pauseTest(selectedStore.id, testId),
+    onSuccess: () => {
+      queryClient.invalidateQueries(['ab-tests']);
+    },
+  });
+
+  const completeTestMutation = useMutation({
+    mutationFn: ({ testId, winnerVariantId }) =>
+      abTestService.completeTest(selectedStore.id, testId, winnerVariantId),
+    onSuccess: () => {
+      queryClient.invalidateQueries(['ab-tests']);
+    },
+  });
+
+  const deleteTestMutation = useMutation({
+    mutationFn: (testId) => abTestService.deleteTest(selectedStore.id, testId),
+    onSuccess: () => {
+      queryClient.invalidateQueries(['ab-tests']);
+    },
+  });
+
+  const handleCreateTest = () => {
+    setSelectedTest(null);
+    setViewMode('edit');
+  };
+
+  const handleEditTest = (test) => {
+    setSelectedTest(test);
+    setViewMode('edit');
+  };
+
+  const handleViewResults = (test) => {
+    setSelectedTest(test);
+    setViewMode('results');
+  };
+
+  const handleCloseDialog = () => {
+    setViewMode(null);
+    setSelectedTest(null);
+  };
+
+  const getStatusBadge = (status) => {
+    const variants = {
+      draft: { label: 'Draft', className: 'bg-gray-100 text-gray-800' },
+      running: { label: 'Running', className: 'bg-green-100 text-green-800' },
+      paused: { label: 'Paused', className: 'bg-yellow-100 text-yellow-800' },
+      completed: { label: 'Completed', className: 'bg-blue-100 text-blue-800' },
+      archived: { label: 'Archived', className: 'bg-gray-100 text-gray-600' },
+    };
+    const variant = variants[status] || variants.draft;
+    return <Badge className={variant.className}>{variant.label}</Badge>;
+  };
+
+  const stats = {
+    total: tests.length,
+    running: tests.filter(t => t.status === 'running').length,
+    completed: tests.filter(t => t.status === 'completed').length,
+    draft: tests.filter(t => t.status === 'draft').length,
+  };
+
+  if (!selectedStore) {
+    return (
+      <div className="flex items-center justify-center h-screen">
+        <p className="text-muted-foreground">Please select a store first</p>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-gray-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight">A/B Testing</h1>
-          <p className="text-muted-foreground">
-            Test different versions of your store to optimize conversions
-          </p>
-        </div>
-        <Badge variant="secondary" className="bg-orange-100 text-orange-800">
-          <Clock className="w-4 h-4 mr-1" />
-          Coming Soon
-        </Badge>
-      </div>
-
-      {/* Coming Soon Banner */}
-      <Card className="border-2 border-dashed border-orange-200 bg-orange-50/50">
-        <CardContent className="flex flex-col items-center justify-center py-12">
-          <div className="rounded-full bg-orange-100 p-6 mb-6">
-            <FlaskConical className="w-12 h-12 text-orange-600" />
+        {/* Header */}
+        <div className="flex items-center justify-between mb-6">
+          <div>
+            <h1 className="text-3xl font-bold tracking-tight flex items-center gap-2">
+              <FlaskConical className="w-8 h-8" />
+              A/B Testing
+            </h1>
+            <p className="text-muted-foreground">
+              Test different versions of your store to optimize conversions
+            </p>
           </div>
-          <h2 className="text-2xl font-semibold text-gray-900 mb-2">A/B Testing Coming Soon!</h2>
-          <p className="text-gray-600 text-center max-w-md mb-6">
-            Data-driven optimization is on its way. Test different page versions, buttons, content, and layouts to maximize your conversions.
-          </p>
-          <Button disabled className="bg-orange-600 hover:bg-orange-700">
-            <Target className="w-4 h-4 mr-2" />
-            Start Testing When Available
+          <Button onClick={handleCreateTest}>
+            <Plus className="w-4 h-4 mr-2" />
+            Create Test
           </Button>
-        </CardContent>
-      </Card>
-
-      {/* Feature Preview Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        <Card className="relative overflow-hidden">
-          <div className="absolute top-2 right-2">
-            <Badge variant="outline" className="text-xs">Soon</Badge>
-          </div>
-          <CardHeader>
-            <CardTitle className="flex items-center space-x-2">
-              <Split className="w-5 h-5 text-orange-600" />
-              <span>Split Testing</span>
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-sm text-gray-600">
-              Create multiple versions of your pages and automatically split traffic to determine which performs better.
-            </p>
-            <div className="mt-4 space-y-2">
-              <div className="flex justify-between text-xs text-gray-500">
-                <span>Version A</span>
-                <span>50% traffic</span>
-              </div>
-              <div className="flex justify-between text-xs text-gray-500">
-                <span>Version B</span>
-                <span>50% traffic</span>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="relative overflow-hidden">
-          <div className="absolute top-2 right-2">
-            <Badge variant="outline" className="text-xs">Soon</Badge>
-          </div>
-          <CardHeader>
-            <CardTitle className="flex items-center space-x-2">
-              <BarChart3 className="w-5 h-5 text-blue-600" />
-              <span>Conversion Tracking</span>
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-sm text-gray-600">
-              Monitor key metrics like conversion rates, revenue per visitor, and engagement to identify winning variations.
-            </p>
-            <div className="mt-4 space-y-2">
-              <div className="flex justify-between text-xs text-gray-500">
-                <span>Conversion rate</span>
-                <span>Track performance</span>
-              </div>
-              <div className="flex justify-between text-xs text-gray-500">
-                <span>Revenue impact</span>
-                <span>Measure success</span>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="relative overflow-hidden">
-          <div className="absolute top-2 right-2">
-            <Badge variant="outline" className="text-xs">Soon</Badge>
-          </div>
-          <CardHeader>
-            <CardTitle className="flex items-center space-x-2">
-              <Users className="w-5 h-5 text-green-600" />
-              <span>Audience Targeting</span>
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-sm text-gray-600">
-              Run targeted tests for specific customer segments, devices, locations, or traffic sources.
-            </p>
-            <div className="mt-4 space-y-2">
-              <div className="flex justify-between text-xs text-gray-500">
-                <span>New visitors</span>
-                <span>Returning customers</span>
-              </div>
-              <div className="flex justify-between text-xs text-gray-500">
-                <span>Mobile users</span>
-                <span>Desktop users</span>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Test Types */}
-      <div className="grid md:grid-cols-2 gap-6">
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center space-x-2">
-              <Zap className="w-5 h-5 text-yellow-600" />
-              <span>Test Types Available</span>
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              <div className="border-l-4 border-blue-500 pl-4">
-                <h4 className="font-semibold text-sm">Page Layout Tests</h4>
-                <p className="text-xs text-gray-600">Test different page structures, navigation styles, and content layouts</p>
-              </div>
-              <div className="border-l-4 border-green-500 pl-4">
-                <h4 className="font-semibold text-sm">Button & CTA Tests</h4>
-                <p className="text-xs text-gray-600">Optimize button colors, text, sizes, and placement for better clicks</p>
-              </div>
-              <div className="border-l-4 border-purple-500 pl-4">
-                <h4 className="font-semibold text-sm">Product Page Tests</h4>
-                <p className="text-xs text-gray-600">Test product descriptions, images, pricing displays, and checkout flows</p>
-              </div>
-              <div className="border-l-4 border-orange-500 pl-4">
-                <h4 className="font-semibold text-sm">Content Tests</h4>
-                <p className="text-xs text-gray-600">Compare headlines, copy, offers, and promotional messaging</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center space-x-2">
-              <TrendingUp className="w-5 h-5 text-green-600" />
-              <span>Key Metrics</span>
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                <span className="font-semibold text-sm">Conversion Rate</span>
-                <Badge variant="secondary">Primary KPI</Badge>
-              </div>
-              <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                <span className="font-semibold text-sm">Revenue per Visitor</span>
-                <Badge variant="secondary">Revenue Impact</Badge>
-              </div>
-              <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                <span className="font-semibold text-sm">Click-through Rate</span>
-                <Badge variant="secondary">Engagement</Badge>
-              </div>
-              <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                <span className="font-semibold text-sm">Time on Page</span>
-                <Badge variant="secondary">User Behavior</Badge>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Statistical Significance */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Statistical Significance & Best Practices</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="grid md:grid-cols-3 gap-6">
-            <div className="text-center">
-              <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-3">
-                <BarChart3 className="w-8 h-8 text-blue-600" />
-              </div>
-              <h4 className="font-semibold mb-2">95% Confidence</h4>
-              <p className="text-sm text-gray-600">
-                Ensure statistical significance before making decisions
-              </p>
-            </div>
-            <div className="text-center">
-              <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-3">
-                <Users className="w-8 h-8 text-green-600" />
-              </div>
-              <h4 className="font-semibold mb-2">Sample Size</h4>
-              <p className="text-sm text-gray-600">
-                Automatic calculation of required visitors for valid results
-              </p>
-            </div>
-            <div className="text-center">
-              <div className="w-16 h-16 bg-orange-100 rounded-full flex items-center justify-center mx-auto mb-3">
-                <Clock className="w-8 h-8 text-orange-600" />
-              </div>
-              <h4 className="font-semibold mb-2">Test Duration</h4>
-              <p className="text-sm text-gray-600">
-                Run tests for optimal duration to account for weekly patterns
-              </p>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
         </div>
+
+        {/* Stats Cards */}
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+          <Card>
+            <CardContent className="pt-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium text-muted-foreground">Total Tests</p>
+                  <p className="text-2xl font-bold">{stats.total}</p>
+                </div>
+                <BarChart3 className="w-8 h-8 text-blue-500" />
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardContent className="pt-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium text-muted-foreground">Running</p>
+                  <p className="text-2xl font-bold text-green-600">{stats.running}</p>
+                </div>
+                <Play className="w-8 h-8 text-green-500" />
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardContent className="pt-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium text-muted-foreground">Completed</p>
+                  <p className="text-2xl font-bold text-blue-600">{stats.completed}</p>
+                </div>
+                <CheckCircle2 className="w-8 h-8 text-blue-500" />
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardContent className="pt-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium text-muted-foreground">Drafts</p>
+                  <p className="text-2xl font-bold text-gray-600">{stats.draft}</p>
+                </div>
+                <Clock className="w-8 h-8 text-gray-500" />
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Tests Table */}
+        <Card>
+          <CardHeader>
+            <div className="flex items-center justify-between">
+              <CardTitle>Your Tests</CardTitle>
+              <Tabs value={filterStatus} onValueChange={setFilterStatus}>
+                <TabsList>
+                  <TabsTrigger value="all">All</TabsTrigger>
+                  <TabsTrigger value="draft">Draft</TabsTrigger>
+                  <TabsTrigger value="running">Running</TabsTrigger>
+                  <TabsTrigger value="completed">Completed</TabsTrigger>
+                </TabsList>
+              </Tabs>
+            </div>
+          </CardHeader>
+          <CardContent>
+            {isLoading ? (
+              <div className="flex justify-center py-12">
+                <Loader2 className="w-8 h-8 animate-spin text-muted-foreground" />
+              </div>
+            ) : tests.length === 0 ? (
+              <div className="text-center py-12">
+                <FlaskConical className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
+                <h3 className="text-lg font-semibold mb-2">No tests yet</h3>
+                <p className="text-muted-foreground mb-4">
+                  Create your first A/B test to start optimizing your store
+                </p>
+                <Button onClick={handleCreateTest}>
+                  <Plus className="w-4 h-4 mr-2" />
+                  Create Your First Test
+                </Button>
+              </div>
+            ) : (
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Test Name</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead>Variants</TableHead>
+                    <TableHead>Primary Metric</TableHead>
+                    <TableHead>Start Date</TableHead>
+                    <TableHead>Actions</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {tests.map((test) => (
+                    <TableRow key={test.id}>
+                      <TableCell>
+                        <div>
+                          <div className="font-medium">{test.name}</div>
+                          {test.description && (
+                            <div className="text-sm text-muted-foreground">
+                              {test.description}
+                            </div>
+                          )}
+                        </div>
+                      </TableCell>
+                      <TableCell>{getStatusBadge(test.status)}</TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-1">
+                          <Users className="w-4 h-4 text-muted-foreground" />
+                          <span>{test.variants?.length || 0} variants</span>
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant="outline">{test.primary_metric}</Badge>
+                      </TableCell>
+                      <TableCell>
+                        {test.start_date
+                          ? format(new Date(test.start_date), 'MMM d, yyyy')
+                          : '-'}
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-2">
+                          {test.status === 'draft' && (
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => startTestMutation.mutate(test.id)}
+                              disabled={startTestMutation.isPending}
+                            >
+                              <Play className="w-4 h-4" />
+                            </Button>
+                          )}
+                          {test.status === 'running' && (
+                            <>
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => handleViewResults(test)}
+                              >
+                                <Eye className="w-4 h-4" />
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => pauseTestMutation.mutate(test.id)}
+                                disabled={pauseTestMutation.isPending}
+                              >
+                                <Pause className="w-4 h-4" />
+                              </Button>
+                            </>
+                          )}
+                          {test.status === 'paused' && (
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => startTestMutation.mutate(test.id)}
+                              disabled={startTestMutation.isPending}
+                            >
+                              <Play className="w-4 h-4" />
+                            </Button>
+                          )}
+                          {test.status === 'completed' && (
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => handleViewResults(test)}
+                            >
+                              <BarChart3 className="w-4 h-4" />
+                            </Button>
+                          )}
+
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button size="sm" variant="ghost">
+                                <MoreVertical className="w-4 h-4" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                              <DropdownMenuItem onClick={() => handleEditTest(test)}>
+                                <Edit className="w-4 h-4 mr-2" />
+                                Edit
+                              </DropdownMenuItem>
+                              <DropdownMenuItem onClick={() => handleViewResults(test)}>
+                                <Eye className="w-4 h-4 mr-2" />
+                                View Results
+                              </DropdownMenuItem>
+                              {(test.status === 'running' || test.status === 'paused') && (
+                                <>
+                                  <DropdownMenuSeparator />
+                                  <DropdownMenuItem
+                                    onClick={() => completeTestMutation.mutate({ testId: test.id })}
+                                  >
+                                    <CheckCircle2 className="w-4 h-4 mr-2" />
+                                    Complete Test
+                                  </DropdownMenuItem>
+                                </>
+                              )}
+                              <DropdownMenuSeparator />
+                              <DropdownMenuItem
+                                onClick={() => {
+                                  if (confirm('Are you sure you want to delete this test?')) {
+                                    deleteTestMutation.mutate(test.id);
+                                  }
+                                }}
+                                className="text-red-600"
+                              >
+                                <Trash2 className="w-4 h-4 mr-2" />
+                                Delete
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            )}
+          </CardContent>
+        </Card>
       </div>
+
+      {/* Edit/Create Dialog */}
+      <Dialog open={viewMode === 'edit'} onOpenChange={(open) => !open && handleCloseDialog()}>
+        <DialogContent className="max-w-6xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>
+              {selectedTest ? 'Edit Test' : 'Create New Test'}
+            </DialogTitle>
+            <DialogDescription>
+              {selectedTest
+                ? 'Modify your test configuration'
+                : 'Set up a new A/B test for your store'}
+            </DialogDescription>
+          </DialogHeader>
+          <React.Suspense fallback={<div className="flex justify-center py-8"><Loader2 className="w-8 h-8 animate-spin" /></div>}>
+            <ABTestEditor
+              test={selectedTest}
+              storeId={selectedStore.id}
+              onSave={() => {
+                queryClient.invalidateQueries(['ab-tests']);
+                handleCloseDialog();
+              }}
+              onCancel={handleCloseDialog}
+            />
+          </React.Suspense>
+        </DialogContent>
+      </Dialog>
+
+      {/* Results Dialog */}
+      <Dialog open={viewMode === 'results'} onOpenChange={(open) => !open && handleCloseDialog()}>
+        <DialogContent className="max-w-6xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Test Results: {selectedTest?.name}</DialogTitle>
+            <DialogDescription>
+              View statistical analysis and performance metrics
+            </DialogDescription>
+          </DialogHeader>
+          {selectedTest && (
+            <React.Suspense fallback={<div className="flex justify-center py-8"><Loader2 className="w-8 h-8 animate-spin" /></div>}>
+              <ABTestResults testId={selectedTest.id} storeId={selectedStore.id} />
+            </React.Suspense>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

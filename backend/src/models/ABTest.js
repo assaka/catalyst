@@ -106,4 +106,123 @@ const ABTest = sequelize.define('ABTest', {
   ]
 });
 
+// Static Methods
+
+/**
+ * Find all tests for a store with optional status filter
+ */
+ABTest.findByStore = async function(storeId, status = null) {
+  const where = { store_id: storeId };
+  if (status) {
+    where.status = status;
+  }
+  return this.findAll({
+    where,
+    order: [['created_at', 'DESC']]
+  });
+};
+
+/**
+ * Find all running tests for a store
+ */
+ABTest.findRunning = async function(storeId) {
+  const now = new Date();
+  return this.findAll({
+    where: {
+      store_id: storeId,
+      status: 'running',
+      start_date: { [require('sequelize').Op.lte]: now },
+      [require('sequelize').Op.or]: [
+        { end_date: null },
+        { end_date: { [require('sequelize').Op.gte]: now } }
+      ]
+    }
+  });
+};
+
+/**
+ * Find active tests that apply to a specific page type
+ */
+ABTest.findActiveForPage = async function(storeId, pageType) {
+  const runningTests = await this.findRunning(storeId);
+  return runningTests.filter(test => {
+    const targetingRules = test.targeting_rules || {};
+    const pages = targetingRules.pages || [];
+    return pages.length === 0 || pages.includes(pageType);
+  });
+};
+
+/**
+ * Start a test (transition from draft to running)
+ */
+ABTest.prototype.start = async function() {
+  if (this.status !== 'draft' && this.status !== 'paused') {
+    throw new Error(`Cannot start test with status: ${this.status}`);
+  }
+  this.status = 'running';
+  this.start_date = this.start_date || new Date();
+  return this.save();
+};
+
+/**
+ * Pause a running test
+ */
+ABTest.prototype.pause = async function() {
+  if (this.status !== 'running') {
+    throw new Error(`Cannot pause test with status: ${this.status}`);
+  }
+  this.status = 'paused';
+  return this.save();
+};
+
+/**
+ * Complete a test and optionally declare a winner
+ */
+ABTest.prototype.complete = async function(winnerVariantId = null) {
+  if (this.status !== 'running' && this.status !== 'paused') {
+    throw new Error(`Cannot complete test with status: ${this.status}`);
+  }
+  this.status = 'completed';
+  this.end_date = this.end_date || new Date();
+  if (winnerVariantId) {
+    this.winner_variant_id = winnerVariantId;
+  }
+  return this.save();
+};
+
+/**
+ * Archive a test
+ */
+ABTest.prototype.archive = async function() {
+  this.status = 'archived';
+  return this.save();
+};
+
+/**
+ * Get variant by ID from this test
+ */
+ABTest.prototype.getVariant = function(variantId) {
+  return this.variants.find(v => v.id === variantId);
+};
+
+/**
+ * Get control variant
+ */
+ABTest.prototype.getControlVariant = function() {
+  return this.variants.find(v => v.is_control === true) || this.variants[0];
+};
+
+/**
+ * Check if test is currently active
+ */
+ABTest.prototype.isActive = function() {
+  if (this.status !== 'running') return false;
+
+  const now = new Date();
+  if (this.start_date && this.start_date > now) return false;
+  if (this.end_date && this.end_date < now) return false;
+
+  return true;
+};
+
 module.exports = ABTest;
