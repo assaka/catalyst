@@ -1868,15 +1868,7 @@ const EditorSidebar = ({
                     <Button
                       variant="outline"
                       size="sm"
-                      onClick={() => {
-                        handlePropertyChange('width', 'fit-content');
-                        // Remove naturalWidth from metadata when resetting to fit-content
-                        if (slotConfig?.metadata?.naturalWidth) {
-                          const updatedMetadata = { ...slotConfig.metadata };
-                          delete updatedMetadata.naturalWidth;
-                          handlePropertyChange('metadata', updatedMetadata);
-                        }
-                      }}
+                      onClick={() => handlePropertyChange('width', 'fit-content')}
                       className="h-7 px-2 text-xs"
                     >
                       Fit

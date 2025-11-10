@@ -627,7 +627,6 @@ export function UnifiedSlotRenderer({
         minHeight={minHeight}
         disabled={isDisabled}
         hideBorder={selectedElementId === slot.id}
-        storedNaturalWidth={slot.metadata?.naturalWidth}
         onResizeStart={onResizeStart}
         onResizeEnd={onResizeEnd}
         onResize={(newSize) => {
@@ -663,16 +662,9 @@ export function UnifiedSlotRenderer({
               ...(newSize.fontSize !== undefined && { fontSize: `${newSize.fontSize}px` })
             };
 
-            // For text elements, store the natural (fit-content) width in metadata
-            const newMetadata = {
-              ...updatedSlots[slot.id].metadata,
-              ...(newSize.naturalWidth && { naturalWidth: newSize.naturalWidth })
-            };
-
             updatedSlots[slot.id] = {
               ...updatedSlots[slot.id],
-              styles: newStyles,
-              metadata: newMetadata
+              styles: newStyles
             };
 
             const updatedConfig = { ...prevConfig, slots: updatedSlots };
