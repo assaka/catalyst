@@ -75,12 +75,14 @@ export const trackActivity = async (activityType, data = {}) => {
     
     // Only track if we have store_id to prevent validation errors
     if (storeId) {
-      try {
-        // Use direct fetch instead of CustomerActivity.create to avoid auth issues
-        const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000';
-        const apiUrl = `${apiBaseUrl}/api/customer-activity`;
+      // DEFER analytics tracking to improve LCP (don't block page render)
+      setTimeout(async () => {
+        try {
+          // Use direct fetch instead of CustomerActivity.create to avoid auth issues
+          const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000';
+          const apiUrl = `${apiBaseUrl}/api/customer-activity`;
 
-        const response = await fetch(apiUrl, {
+          const response = await fetch(apiUrl, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -123,7 +125,8 @@ export const trackActivity = async (activityType, data = {}) => {
         }
         
         // Log the error for debugging (removed alert for production)
-      }
+        }
+      }, 2000); // Defer by 2 seconds - after LCP
     } else {
       console.warn('🚫 CRITICAL: Skipping activity tracking - no store_id available', {
         storeId: storeId,
