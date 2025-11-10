@@ -18,7 +18,7 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Plus, Trash2, Loader2, AlertCircle, Wand2 } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import SimpleVariantEditor from './SimpleVariantEditor';
+import DynamicVariantEditor from './DynamicVariantEditor';
 
 export default function ABTestEditor({ test, storeId, onSave, onCancel }) {
   const [formData, setFormData] = useState(() => {
@@ -257,10 +257,10 @@ export default function ABTestEditor({ test, storeId, onSave, onCancel }) {
                       </div>
 
                       {editMode === 'simple' ? (
-                        <SimpleVariantEditor
+                        <DynamicVariantEditor
                           variant={variant}
                           onChange={(updated) => updateVariant(index, 'config', updated.config)}
-                          pageType={formData.targeting_rules?.pages?.[0] || 'product'}
+                          storeId={storeId}
                         />
                       ) : (
                         <Textarea
