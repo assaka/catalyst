@@ -221,13 +221,15 @@ export function TranslationProvider({ children, storeId: propStoreId }) {
       // Update HTML attributes
       document.documentElement.lang = initialLang;
 
-      // Load translations
-      await loadTranslations(initialLang);
+      // Load translations (only if storeId is available)
+      if (storeId) {
+        await loadTranslations(initialLang);
+      }
 
     };
 
     initializeTranslations();
-  }, []); // Run once on mount
+  }, [storeId, loadAvailableLanguages, loadTranslations]); // Re-run when storeId becomes available
 
   const value = {
     // State
