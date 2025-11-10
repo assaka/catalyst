@@ -398,29 +398,52 @@ export default function HeatmapVisualization({
       // Get the actual canvas size for coordinate scaling
       const canvas = canvasRef.current;
       const canvasRect = canvas ? canvas.getBoundingClientRect() : { width: viewportSize.width, height: viewportSize.height };
-      const scaleX = canvasRect.width / viewportSize.width;
-      const scaleY = canvasRect.height / viewportSize.height;
 
-      console.log('Canvas scaling:', {
+      console.log('🔍 DEBUG - Canvas and Screenshot Info:', {
         canvasSize: { width: canvasRect.width, height: canvasRect.height },
-        targetViewport: viewportSize,
-        scale: { x: scaleX, y: scaleY },
-        screenshotDimensions: screenshotDimensions
+        selectedViewport: viewportSize,
+        screenshotDimensions: screenshotDimensions,
+        hasScreenshot: !!screenshot
       });
 
       // Transform and scale the data to match the actual canvas size
-      const transformedData = (response.data || []).map(point => {
-        const normalizedX = point.normalized_x ?? point.x_coordinate ?? null;
-        const normalizedY = point.normalized_y ?? point.y_coordinate ?? null;
+      const transformedData = (response.data || []).map((point, index) => {
+        const rawX = point.x_coordinate;
+        const rawY = point.y_coordinate;
+        const capturedViewportWidth = point.viewport_width;
+        const capturedViewportHeight = point.viewport_height;
+        const normalizedX = point.normalized_x;
+        const normalizedY = point.normalized_y;
 
-        // Scale coordinates to match canvas size
-        const scaledX = normalizedX !== null ? normalizedX * scaleX : null;
-        const scaledY = normalizedY !== null ? normalizedY * scaleY : null;
+        // Calculate scale from captured viewport to screenshot viewport
+        const scaleX = viewportSize.width / capturedViewportWidth;
+        const scaleY = canvasRect.height / capturedViewportHeight;
+
+        // Use normalized coordinates if available, otherwise scale raw coordinates
+        let finalX, finalY;
+        if (normalizedX !== null && normalizedX !== undefined) {
+          // Backend already normalized - just scale to canvas
+          finalX = normalizedX * (canvasRect.width / viewportSize.width);
+          finalY = normalizedY * (canvasRect.height / viewportSize.height);
+        } else {
+          // No normalization - scale directly from capture viewport to display
+          finalX = rawX * scaleX;
+          finalY = rawY * scaleY;
+        }
+
+        if (index < 3) {
+          console.log(`🔍 DEBUG - Point ${index}:`, {
+            raw: { x: rawX, y: rawY, vw: capturedViewportWidth, vh: capturedViewportHeight },
+            normalized: { x: normalizedX, y: normalizedY },
+            final: { x: finalX, y: finalY },
+            scales: { scaleX, scaleY }
+          });
+        }
 
         return {
           ...point,
-          x: scaledX !== null && !isNaN(parseFloat(scaledX)) ? parseFloat(scaledX) : null,
-          y: scaledY !== null && !isNaN(parseFloat(scaledY)) ? parseFloat(scaledY) : null,
+          x: finalX !== null && !isNaN(parseFloat(finalX)) ? parseFloat(finalX) : null,
+          y: finalY !== null && !isNaN(parseFloat(finalY)) ? parseFloat(finalY) : null,
           total_count: 1 // Each point represents one interaction
         };
       });
