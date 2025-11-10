@@ -101,12 +101,14 @@ export default function ScrollDepthOverlay({ storeId, pageUrl, dateRange, viewpo
   };
 
   const getColorForPercentage = (percentage) => {
-    // Color gradient from green (high engagement) to red (low engagement)
-    if (percentage >= 80) return 'rgba(34, 197, 94, 0.4)';  // Green
-    if (percentage >= 60) return 'rgba(234, 179, 8, 0.4)';   // Yellow
-    if (percentage >= 40) return 'rgba(249, 115, 22, 0.4)';  // Orange
-    if (percentage >= 20) return 'rgba(239, 68, 68, 0.4)';   // Red
-    return 'rgba(127, 29, 29, 0.4)';  // Dark red
+    // Smooth gradient from green (high) to red (low) with better visual distinction
+    if (percentage >= 90) return 'rgba(16, 185, 129, 0.5)';   // Bright green
+    if (percentage >= 75) return 'rgba(52, 211, 153, 0.5)';   // Light green
+    if (percentage >= 60) return 'rgba(163, 230, 53, 0.5)';   // Lime
+    if (percentage >= 45) return 'rgba(250, 204, 21, 0.5)';   // Yellow
+    if (percentage >= 30) return 'rgba(251, 146, 60, 0.5)';   // Orange
+    if (percentage >= 15) return 'rgba(248, 113, 113, 0.5)';  // Light red
+    return 'rgba(220, 38, 38, 0.6)';                          // Strong red
   };
 
   if (!pageUrl) {
@@ -224,23 +226,23 @@ export default function ScrollDepthOverlay({ storeId, pageUrl, dateRange, viewpo
               </div>
             </div>
 
-            {/* Legend */}
-            <div className="flex items-center justify-center gap-6 text-xs">
-              <div className="flex items-center gap-2">
-                <div className="w-6 h-4 rounded" style={{ backgroundColor: 'rgba(34, 197, 94, 0.6)' }}></div>
-                <span className="text-gray-700">80-100% reached</span>
+            {/* Legend with Gradient */}
+            <div className="space-y-3">
+              <div className="text-xs font-medium text-gray-700 text-center">Engagement Level</div>
+              <div className="flex items-center gap-4">
+                <span className="text-xs text-gray-600 font-medium">Low</span>
+                <div className="flex-1 h-6 rounded-lg overflow-hidden border border-gray-300" style={{
+                  background: 'linear-gradient(to right, rgba(220, 38, 38, 0.7), rgba(248, 113, 113, 0.6), rgba(251, 146, 60, 0.6), rgba(250, 204, 21, 0.6), rgba(163, 230, 53, 0.6), rgba(52, 211, 153, 0.6), rgba(16, 185, 129, 0.6))'
+                }}></div>
+                <span className="text-xs text-gray-600 font-medium">High</span>
               </div>
-              <div className="flex items-center gap-2">
-                <div className="w-6 h-4 rounded" style={{ backgroundColor: 'rgba(234, 179, 8, 0.6)' }}></div>
-                <span className="text-gray-700">60-79% reached</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <div className="w-6 h-4 rounded" style={{ backgroundColor: 'rgba(249, 115, 22, 0.6)' }}></div>
-                <span className="text-gray-700">40-59% reached</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <div className="w-6 h-4 rounded" style={{ backgroundColor: 'rgba(239, 68, 68, 0.6)' }}></div>
-                <span className="text-gray-700">&lt;40% reached</span>
+              <div className="flex justify-between text-xs text-gray-500 px-8">
+                <span>&lt;15%</span>
+                <span>30%</span>
+                <span>45%</span>
+                <span>60%</span>
+                <span>75%</span>
+                <span>90%+</span>
               </div>
             </div>
 

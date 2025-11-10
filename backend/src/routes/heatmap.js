@@ -776,6 +776,23 @@ router.get('/scroll-depth/:storeId', authMiddleware, checkStoreOwnership, async 
       raw: true
     });
 
+    console.log(`[SCROLL-DEPTH] Found ${scrollData.length} scroll interactions for ${page_url}`);
+
+    if (scrollData.length === 0) {
+      console.warn(`[SCROLL-DEPTH] No scroll data found. Check if scroll tracking is enabled and working.`);
+      return res.json({
+        success: true,
+        data: [],
+        meta: {
+          store_id: storeId,
+          page_url,
+          total_sessions: 0,
+          bucket_size: parseInt(bucket_size),
+          message: 'No scroll interactions found for this page'
+        }
+      });
+    }
+
     // Group sessions by maximum scroll depth reached
     const sessionMaxDepths = {};
     scrollData.forEach(record => {
@@ -791,6 +808,8 @@ router.get('/scroll-depth/:storeId', authMiddleware, checkStoreOwnership, async 
     const bucketSize = parseInt(bucket_size);
     const buckets = {};
     const totalSessions = Object.keys(sessionMaxDepths).length;
+
+    console.log(`[SCROLL-DEPTH] Processed ${totalSessions} unique sessions with scroll data`);
 
     // Initialize buckets
     for (let i = 0; i < 100; i += bucketSize) {
