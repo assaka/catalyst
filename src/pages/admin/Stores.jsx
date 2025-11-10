@@ -115,13 +115,13 @@ export default function Stores() {
 
     try {
       // The outline significantly simplifies this logic, removing client_email handling,
-      // credit deductions, and specific owner_id/agency_id assignments in favor of owner_email.
+      // credit deductions, and specific owner_id/agency_id assignments in favor of user_id.
       // Remove client_email from the request data since it's not supported by the model
       const storeRequest = {
         name: newStore.name,
         description: newStore.description,
         slug: storeSlug,
-        owner_email: user.email
+        user_id: user.id
       };
       
       
@@ -395,7 +395,7 @@ export default function Stores() {
                   </div>
                   <div className="flex gap-2">
                     {/* Check multiple ways to determine ownership */}
-                    {(store.owner_email === user?.email || store.is_direct_owner || store.access_role === 'owner') ? (
+                    {(store.user_id === user?.id || store.is_direct_owner || store.access_role === 'owner') ? (
                       <Badge className="bg-purple-100 text-purple-800 border-purple-200" variant="outline">
                         <Crown className="w-3 h-3 mr-1" />
                         Owner

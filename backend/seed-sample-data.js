@@ -14,19 +14,34 @@ async function seedSampleData() {
     // Check if we have the hamid2 store
     console.log('\n🏪 Checking for existing store...');
     let store = await Store.findOne({ where: { slug: 'hamid2' } });
-    
+
     if (!store) {
       console.log('❌ Store "hamid2" not found, creating it...');
+
+      // Find or create user for store ownership
+      let user = await User.findOne({ where: { email: 'playamin998@gmail.com' } });
+      if (!user) {
+        console.log('⚠️ User not found, creating sample user...');
+        user = await User.create({
+          email: 'playamin998@gmail.com',
+          password: 'hashed_password_placeholder',
+          first_name: 'Hamid',
+          last_name: 'Sample',
+          role: 'store_owner',
+          is_active: true
+        });
+      }
+
       store = await Store.create({
         name: 'Hamid',
         slug: 'hamid2',
         description: 'Sample store for testing',
-        owner_email: 'playamin998@gmail.com',
+        user_id: user.id,
         currency: 'USD',
         status: 'active'
       });
     }
-    
+
     console.log(`✅ Store found/created: ${store.name} (${store.id})`);
 
     // Check existing products

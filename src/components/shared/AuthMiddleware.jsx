@@ -159,24 +159,19 @@ window.checkStoreOwnership = async () => {
       stores.forEach(store => {
         console.log(`\nStore: ${store.name}`);
         console.log(`  ID: ${store.id}`);
-        console.log(`  Owner ID: ${store.user_id || store.owner_id || 'Not specified'}`);
-        console.log(`  Owner Email: ${store.owner_email || 'Not specified'}`);
+        console.log(`  Owner ID: ${store.user_id || 'Not specified'}`);
         console.log(`  Created At: ${store.createdAt}`);
-        
+
         // Check all possible owner fields
         const ownerFields = {
           user_id: store.user_id,
-          owner_id: store.owner_id,
-          owner_email: store.owner_email,
           created_by: store.created_by,
-          userId: store.userId,
-          ownerId: store.ownerId
+          userId: store.userId
         };
-        
+
         console.log('  Owner Fields:', ownerFields);
-        console.log(`  Is Owner Match: ${store.user_id === user.id || store.owner_id === user.id ? '✅ YES' : '❌ NO'}`);
-        console.log(`  Email Match: ${store.owner_email === user.email ? '✅ YES' : '❌ NO'}`);
-        
+        console.log(`  Is Owner Match: ${store.user_id === user.id ? '✅ YES' : '❌ NO'}`);
+
         // Check all store properties
         console.log('  All Store Properties:', Object.keys(store));
       });
@@ -231,10 +226,10 @@ window.switchToOwnedStore = async () => {
   try {
     const user = await User.me();
     const stores = await Store.getUserStores();
-    
-    // Find stores where owner_email matches
-    const ownedStores = stores.filter(s => s.owner_email === user.email);
-    
+
+    // Find stores where user_id matches
+    const ownedStores = stores.filter(s => s.user_id === user.id);
+
     console.log(`Found ${ownedStores.length} stores you own:`);
     ownedStores.forEach(s => {
       console.log(`- ${s.name} (${s.id})`);
@@ -251,7 +246,7 @@ window.switchToOwnedStore = async () => {
       
       return firstOwned;
     } else {
-      console.log('❌ No stores found with your email as owner');
+      console.log('❌ No stores found where you are the owner');
     }
   } catch (error) {
     console.error('Error switching store:', error);
@@ -276,33 +271,31 @@ window.fixStoreOwnership = async () => {
     console.log(`\n🏪 Attempting to fix ownership for store: ${store.name}`);
     console.log(`Store ID: ${store.id}`);
     console.log(`Your User ID: ${user.id}`);
-    
-    // Try to update the store's owner_email
+
+    // Try to update the store's user_id
     try {
-      console.log(`Current owner_email: ${store.owner_email}`);
-      console.log(`Your email: ${user.email}`);
-      
-      if (store.owner_email === user.email) {
+      console.log(`Current user_id: ${store.user_id}`);
+      console.log(`Your user ID: ${user.id}`);
+
+      if (store.user_id === user.id) {
         console.log('✅ Already owns this store!');
         return;
       }
-      
+
       const updateData = {
-        owner_email: user.email
+        user_id: user.id
       };
-      
-      console.log('Attempting to claim ownership by updating owner_email...');
-      
+
+      console.log('Attempting to claim ownership by updating user_id...');
+
       const updated = await Store.update(store.id, updateData);
       console.log('✅ Store ownership claimed successfully:', updated);
-      
+
       // Verify the update
       const verifyStores = await Store.getUserStores();
       const verifyStore = verifyStores.find(s => s.id === store.id);
       console.log('\nVerification:', {
-        user_id: verifyStore?.user_id,
-        owner_id: verifyStore?.owner_id,
-        owner_email: verifyStore?.owner_email
+        user_id: verifyStore?.user_id
       });
       
     } catch (error) {

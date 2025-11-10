@@ -55,10 +55,6 @@
       ],
       "default": "active"
     },
-    "owner_email": {
-      "type": "string",
-      "description": "Email of the store owner"
-    },
     "contact_details": {
       "type": "object",
       "properties": {
@@ -356,7 +352,6 @@
   },
   "required": [
     "name",
-    "slug",
-    "owner_email"
+    "slug"
   ]
 }
