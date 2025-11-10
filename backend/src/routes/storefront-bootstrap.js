@@ -6,6 +6,7 @@ const { getCategoriesWithTranslations } = require('../utils/categoryHelpers');
 const { getLanguageFromRequest } = require('../utils/languageUtils');
 const { applyCacheHeaders } = require('../utils/cacheUtils');
 const { applyProductTranslationsToMany } = require('../utils/productHelpers');
+const { cacheMiddleware } = require('../middleware/cacheMiddleware');
 const jwt = require('jsonwebtoken');
 const router = express.Router();
 
@@ -13,6 +14,7 @@ const router = express.Router();
  * @route   GET /api/public/storefront/bootstrap
  * @desc    Get all storefront initialization data in one request
  * @access  Public
+ * @cache   5 minutes (Redis) - Critical optimization for initial page load
  * @query   {string} slug - Store slug (required)
  * @query   {string} lang - Language code (optional, defaults to 'en')
  * @query   {string} session_id - Guest session ID for wishlist (optional)
@@ -30,7 +32,19 @@ const router = express.Router();
  *   - seoSettings: Store SEO settings
  *   - seoTemplates: Active SEO templates
  */
-router.get('/', async (req, res) => {
+router.get('/', cacheMiddleware({
+  prefix: 'bootstrap',
+  ttl: 300, // 5 minutes - balance between freshness and performance
+  keyGenerator: (req) => {
+    const slug = req.query.slug || 'default';
+    const lang = req.query.lang || 'en';
+    // Don't include session_id/user_id in cache key for better hit rate
+    // User-specific data (wishlist) is small and can be fetched separately
+    return `bootstrap:${slug}:${lang}`;
+  },
+  // Skip caching if user is authenticated (personalized data)
+  condition: (req) => !req.headers.authorization
+}), async (req, res) => {
   try {
     const { slug, lang, session_id, user_id } = req.query;
     const authHeader = req.headers.authorization;
