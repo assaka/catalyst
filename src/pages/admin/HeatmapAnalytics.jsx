@@ -5,13 +5,15 @@ import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Input } from '@/components/ui/input';
 import {
   BarChart3,
   AlertTriangle,
   Power,
   Activity,
   Users,
-  Target
+  Target,
+  ArrowDown
 } from 'lucide-react';
 
 import HeatmapVisualization from '@/components/admin/heatmap/HeatmapVisualization';
@@ -126,10 +128,14 @@ export default function HeatmapAnalytics() {
           {/* Heatmap Visualizations with Tabs */}
           {heatmapEnabled ? (
             <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-              <TabsList className="grid w-full max-w-md grid-cols-2">
+              <TabsList className="grid w-full max-w-2xl grid-cols-3">
                 <TabsTrigger value="heatmaps" className="flex items-center gap-2">
                   <Target className="w-4 h-4" />
                   Heatmaps
+                </TabsTrigger>
+                <TabsTrigger value="scroll" className="flex items-center gap-2">
+                  <ArrowDown className="w-4 h-4" />
+                  Scroll
                 </TabsTrigger>
                 <TabsTrigger value="sessions" className="flex items-center gap-2">
                   <Users className="w-4 h-4" />
@@ -146,31 +152,64 @@ export default function HeatmapAnalytics() {
                   onDateRangeChange={setDateRange}
                 />
 
-                {/* Analytics Grid */}
+                {/* Element Click Rankings */}
                 {selectedPageUrl && (
-                  <div className="space-y-6">
-                    {/* Top Row: Scroll Depth and Time on Page */}
-                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                      <ScrollDepthMap
-                        storeId={selectedStore.id}
-                        pageUrl={selectedPageUrl}
-                        dateRange={dateRange}
-                      />
-                      <TimeOnPageMap
-                        storeId={selectedStore.id}
-                        pageUrl={selectedPageUrl}
-                        dateRange={dateRange}
-                      />
-                    </div>
+                  <ElementClickRanking
+                    storeId={selectedStore.id}
+                    pageUrl={selectedPageUrl}
+                    dateRange={dateRange}
+                    limit={15}
+                  />
+                )}
+              </TabsContent>
 
-                    {/* Bottom Row: Element Click Rankings */}
-                    <ElementClickRanking
+              <TabsContent value="scroll" className="space-y-6">
+                {/* Page URL Input for Scroll Analytics */}
+                <Card>
+                  <CardContent className="pt-6">
+                    <div className="flex items-center gap-4">
+                      <div className="flex-1">
+                        <Label htmlFor="scroll-page-url" className="text-sm font-medium mb-2 block">
+                          Page URL
+                        </Label>
+                        <input
+                          id="scroll-page-url"
+                          type="text"
+                          value={selectedPageUrl}
+                          onChange={(e) => setSelectedPageUrl(e.target.value)}
+                          placeholder="Enter page URL to analyze"
+                          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        />
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                {/* Scroll Analytics Grid */}
+                {selectedPageUrl && (
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    <ScrollDepthMap
                       storeId={selectedStore.id}
                       pageUrl={selectedPageUrl}
                       dateRange={dateRange}
-                      limit={15}
+                    />
+                    <TimeOnPageMap
+                      storeId={selectedStore.id}
+                      pageUrl={selectedPageUrl}
+                      dateRange={dateRange}
                     />
                   </div>
+                )}
+
+                {!selectedPageUrl && (
+                  <Card>
+                    <CardContent className="py-12">
+                      <div className="text-center text-gray-500">
+                        <ArrowDown className="w-12 h-12 mx-auto mb-4 text-gray-300" />
+                        <p>Enter a page URL above to see scroll and engagement analytics</p>
+                      </div>
+                    </CardContent>
+                  </Card>
                 )}
               </TabsContent>
 
