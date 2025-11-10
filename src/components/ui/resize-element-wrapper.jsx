@@ -40,6 +40,7 @@ const ResizeWrapper = ({
   initialHeight,
   disabled = false,
   hideBorder = false,
+  storedNaturalWidth,
   ...props
 }) => {
   // Check if element has w-fit class to determine initial units
@@ -88,7 +89,10 @@ const ResizeWrapper = ({
   const [size, setSize] = useState(() => {
     return getInitialDimensions();
   });
-  const [naturalSize, setNaturalSize] = useState({ width: null, height: null });
+  const [naturalSize, setNaturalSize] = useState({
+    width: storedNaturalWidth || null,
+    height: null
+  });
   const [isResizing, setIsResizing] = useState(false);
   const [isHovered, setIsHovered] = useState(false);
   const [performanceStats, setPerformanceStats] = useState({ fps: 0, frameTime: 0 });
@@ -194,7 +198,11 @@ const ResizeWrapper = ({
         const naturalPercentage = Math.min(100, (rect.width / parentRect.width) * 100);
         const hasWFitClass = children?.props?.className?.includes('w-fit') || className?.includes('w-fit');
 
-        setNaturalSize({ width: rect.width, height: rect.height });
+        // Only update naturalSize if not already set (from storedNaturalWidth or previous measurement)
+        setNaturalSize(prev => ({
+          width: prev.width || rect.width,
+          height: prev.height || rect.height
+        }));
 
         // For w-fit elements, don't set an initial width
         if (hasWFitClass) {
@@ -430,8 +438,15 @@ const ResizeWrapper = ({
         let widthUnit = 'px';
 
         if (isText || hasWFit) {
-          widthValue = Math.max(20, newWidth);
-          widthUnit = 'px';
+          // For text elements, calculate percentage relative to natural (fit-content) size
+          if (naturalSize.width && naturalSize.width > 0) {
+            const widthPercentage = Math.max(1, Math.min(500, (newWidth / naturalSize.width) * 100));
+            widthValue = Math.round(widthPercentage * 10) / 10;
+            widthUnit = '%';
+          } else {
+            widthValue = Math.max(20, newWidth);
+            widthUnit = 'px';
+          }
         } else if (parentRect && parentRect.width > 0 && size.widthUnit === '%') {
           const widthPercentage = Math.max(1, Math.min(100, (newWidth / parentRect.width) * 100));
           widthValue = Math.round(widthPercentage * 10) / 10;
@@ -457,7 +472,9 @@ const ResizeWrapper = ({
           height: heightValue,
           widthUnit,
           heightUnit,
-          ...(fontSize !== undefined && { fontSize })
+          ...(fontSize !== undefined && { fontSize }),
+          // Include natural width for text elements so it can be stored in metadata
+          ...((isText || hasWFit) && naturalSize.width && { naturalWidth: naturalSize.width })
         };
 
         console.log('✅ [RESIZE] Applying size', newSize);

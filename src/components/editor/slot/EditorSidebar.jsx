@@ -1821,18 +1821,26 @@ const EditorSidebar = ({
                   <div>
                     <Label htmlFor="width" className="text-xs font-medium">Width</Label>
                     <div className="flex items-center mt-1">
-                      <Input
-                        id="width"
-                        type="number"
-                        value={parseInt(elementProperties.styles?.width) || 100}
-                        onChange={(e) => handlePropertyChange('width', `${e.target.value}%`)}
-                        className="text-xs h-7"
-                        placeholder="100"
-                        min="5"
-                        max="300"
-                        step="5"
-                      />
-                      <span className="ml-1 text-xs text-gray-500">%</span>
+                      {elementProperties.styles?.width === 'fit-content' || !elementProperties.styles?.width ? (
+                        <div className="text-xs h-7 px-3 py-1 border rounded-md bg-gray-50 text-gray-600 flex items-center w-full">
+                          fit-content
+                        </div>
+                      ) : (
+                        <>
+                          <Input
+                            id="width"
+                            type="number"
+                            value={parseInt(elementProperties.styles?.width) || 100}
+                            onChange={(e) => handlePropertyChange('width', `${e.target.value}%`)}
+                            className="text-xs h-7"
+                            placeholder="100"
+                            min="5"
+                            max="500"
+                            step="5"
+                          />
+                          <span className="ml-1 text-xs text-gray-500">%</span>
+                        </>
+                      )}
                     </div>
                   </div>
                   <div>
@@ -1860,10 +1868,18 @@ const EditorSidebar = ({
                     <Button
                       variant="outline"
                       size="sm"
-                      onClick={() => handlePropertyChange('width', '25%')}
+                      onClick={() => {
+                        handlePropertyChange('width', 'fit-content');
+                        // Remove naturalWidth from metadata when resetting to fit-content
+                        if (slotConfig?.metadata?.naturalWidth) {
+                          const updatedMetadata = { ...slotConfig.metadata };
+                          delete updatedMetadata.naturalWidth;
+                          handlePropertyChange('metadata', updatedMetadata);
+                        }
+                      }}
                       className="h-7 px-2 text-xs"
                     >
-                      25%
+                      Fit
                     </Button>
                     <Button
                       variant="outline"

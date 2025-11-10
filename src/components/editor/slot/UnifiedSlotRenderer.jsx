@@ -627,6 +627,7 @@ export function UnifiedSlotRenderer({
         minHeight={minHeight}
         disabled={isDisabled}
         hideBorder={selectedElementId === slot.id}
+        storedNaturalWidth={slot.metadata?.naturalWidth}
         onResizeStart={onResizeStart}
         onResizeEnd={onResizeEnd}
         onResize={(newSize) => {
@@ -662,9 +663,16 @@ export function UnifiedSlotRenderer({
               ...(newSize.fontSize !== undefined && { fontSize: `${newSize.fontSize}px` })
             };
 
+            // For text elements, store the natural (fit-content) width in metadata
+            const newMetadata = {
+              ...updatedSlots[slot.id].metadata,
+              ...(newSize.naturalWidth && { naturalWidth: newSize.naturalWidth })
+            };
+
             updatedSlots[slot.id] = {
               ...updatedSlots[slot.id],
-              styles: newStyles
+              styles: newStyles,
+              metadata: newMetadata
             };
 
             const updatedConfig = { ...prevConfig, slots: updatedSlots };
@@ -843,8 +851,9 @@ export function UnifiedSlotRenderer({
           ? `${processedClassName} ${htmlClass} whitespace-normal`.trim()
           : `${processedClassName} whitespace-normal`.trim();
 
-        // Remove width from styles for text elements - let them be fit-content
-        const { width, ...stylesWithoutWidth } = processedStyles || {};
+        // Keep width from styles if it's a percentage, otherwise use fit-content
+        const { width: storedWidth, ...stylesWithoutWidth } = processedStyles || {};
+        const shouldUseStoredWidth = storedWidth && storedWidth.includes('%');
 
         // Check if slot is conditional (exact match or starts with pattern for instances)
         const conditionalSlotPatterns = ['product_labels', 'product_card_compare_price', 'compare_price'];
@@ -858,10 +867,10 @@ export function UnifiedSlotRenderer({
           {
             className: mergedClassName,
             style: {
-              ...stylesWithoutWidth, // Use styles without width
+              ...stylesWithoutWidth,
               cursor: 'pointer',
               display: 'inline-block',
-              width: 'fit-content' // Always fit-content for text
+              width: shouldUseStoredWidth ? storedWidth : 'fit-content'
             },
             onClick: (e) => {
               e.stopPropagation();
