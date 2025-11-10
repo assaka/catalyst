@@ -68,21 +68,31 @@ export default function ABTestResults({ testId, storeId }) {
   const controlVariant = results.variants?.find(v => v.is_control);
   const hasWinner = results.has_significant_winner;
 
+  // Helper to safely convert to number
+  const toNumber = (value, defaultValue = 0) => {
+    if (value === null || value === undefined) return defaultValue;
+    const num = Number(value);
+    return isNaN(num) ? defaultValue : num;
+  };
+
   // Ensure all variants have default values
   const safeVariants = (results.variants || []).map(v => ({
     variant_id: v.variant_id || 'unknown',
     variant_name: v.variant_name || 'Unknown',
-    total_assignments: v.total_assignments || 0,
-    total_conversions: v.total_conversions || 0,
-    conversion_rate: v.conversion_rate || 0,
-    avg_conversion_value: v.avg_conversion_value || 0,
-    total_conversion_value: v.total_conversion_value || 0,
-    lift: v.lift || 0,
+    total_assignments: toNumber(v.total_assignments, 0),
+    total_conversions: toNumber(v.total_conversions, 0),
+    conversion_rate: toNumber(v.conversion_rate, 0),
+    avg_conversion_value: toNumber(v.avg_conversion_value, 0),
+    total_conversion_value: toNumber(v.total_conversion_value, 0),
+    lift: toNumber(v.lift, 0),
     is_control: v.is_control || false,
     is_significant: v.is_significant || false,
-    p_value: v.p_value,
-    z_score: v.z_score,
-    confidence_interval: v.confidence_interval,
+    p_value: toNumber(v.p_value, null),
+    z_score: toNumber(v.z_score, null),
+    confidence_interval: v.confidence_interval ? {
+      lower: toNumber(v.confidence_interval.lower, 0),
+      upper: toNumber(v.confidence_interval.upper, 0),
+    } : null,
   }));
 
   const getLiftIcon = (lift) => {
