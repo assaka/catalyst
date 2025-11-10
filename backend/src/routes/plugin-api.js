@@ -257,15 +257,11 @@ router.get('/installed', async (req, res) => {
 /**
  * GET /api/plugins/active
  * Get active plugins from normalized tables (for App.jsx initialization)
- * This endpoint loads plugins with their events from the new normalized structure
+ * This endpoint loads plugins with their hooks, events, AND frontend scripts
+ * OPTIMIZED: Now includes all plugin data in one call
  */
 router.get('/active', async (req, res) => {
   try {
-    // Prevent caching - always get fresh plugin data
-    res.set('Cache-Control', 'no-store, no-cache, must-revalidate, private');
-    res.set('Pragma', 'no-cache');
-    res.set('Expires', '0');
-
     // Get active plugins from plugin_registry table (exclude starter templates)
     const plugins = await sequelize.query(`
       SELECT
@@ -327,6 +323,24 @@ router.get('/active', async (req, res) => {
         //
       }
 
+      // Load frontend scripts from plugin_scripts table
+      let frontendScripts = [];
+      try {
+        const scriptsResult = await sequelize.query(`
+          SELECT name, content, type, load_order
+          FROM plugin_scripts
+          WHERE plugin_id = $1 AND scope = 'frontend' AND is_enabled = true
+          ORDER BY load_order ASC
+        `, {
+          bind: [plugin.id],
+          type: sequelize.QueryTypes.SELECT
+        });
+
+        frontendScripts = scriptsResult || [];
+      } catch (scriptError) {
+        // Scripts are optional
+      }
+
       // Parse manifest
       const manifest = typeof plugin.manifest === 'string' ? JSON.parse(plugin.manifest) : plugin.manifest;
 
@@ -342,7 +356,8 @@ router.get('/active', async (req, res) => {
         type: plugin.type,
         generated_by_ai: manifest?.generated_by_ai || plugin.type === 'ai-generated',
         hooks: hooks,
-        events: events
+        events: events,
+        frontendScripts: frontendScripts // Include scripts in response!
       };
     }));
 

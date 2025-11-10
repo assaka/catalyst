@@ -52,12 +52,66 @@ async function initializeDatabasePlugins() {
 
     const activePlugins = result.data || [];
 
-    // Load hooks, events AND frontend scripts for each plugin in parallel (faster!)
-    // Add timeout to prevent hanging
+    // Process plugins - hooks and events are ALREADY in the response!
+    // No need to fetch each plugin individually
     const loadPromise = Promise.all(
       activePlugins.map(async (plugin) => {
-        await loadPluginHooksAndEvents(plugin.id);
-        await loadPluginFrontendScripts(plugin.id);
+        // Use hooks and events from the response (no additional API call!)
+        if (plugin.hooks && Array.isArray(plugin.hooks)) {
+          plugin.hooks.forEach(hook => {
+            try {
+              if (hook.handler_code && hook.enabled !== false) {
+                const handlerFn = eval(`(${hook.handler_code})`);
+                hookSystem.register(hook.hook_name, handlerFn);
+              }
+            } catch (error) {
+              console.error(`Error registering hook ${hook.hook_name}:`, error);
+            }
+          });
+        }
+
+        // Register events from response (no additional API call!)
+        if (plugin.events && Array.isArray(plugin.events)) {
+          plugin.events.forEach(event => {
+            try {
+              if (event.listener_code && event.enabled !== false) {
+                const listenerFn = eval(`(${event.listener_code})`);
+                eventSystem.on(event.event_name, listenerFn);
+              }
+            } catch (error) {
+              console.error(`Error registering event ${event.event_name}:`, error);
+            }
+          });
+        }
+
+        // Load frontend scripts from response (no additional API call!)
+        if (plugin.frontendScripts && Array.isArray(plugin.frontendScripts)) {
+          plugin.frontendScripts.forEach(script => {
+            try {
+              if (!script.content || script.content.trim().startsWith('<')) {
+                console.error(`Script ${script.name} contains HTML, not JavaScript. Skipping.`);
+                return;
+              }
+
+              // Skip Node.js backend scripts
+              const scriptContent = script.content.trim();
+              if (scriptContent.includes('require(') || scriptContent.includes('module.exports')) {
+                console.warn(`Skipping backend script ${script.name}`);
+                return;
+              }
+
+              // Create and inject script
+              const scriptElement = document.createElement('script');
+              scriptElement.type = 'module';
+              scriptElement.textContent = script.content;
+              scriptElement.setAttribute('data-plugin-id', plugin.id);
+              scriptElement.setAttribute('data-script-name', script.name);
+              document.head.appendChild(scriptElement);
+            } catch (error) {
+              console.error(`Error loading script ${script.name}:`, error);
+            }
+          });
+        }
       })
     );
 
