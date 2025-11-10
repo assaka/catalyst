@@ -39,25 +39,12 @@ setInterval(cleanupCache, CACHE_TTL);
 async function domainResolver(req, res, next) {
   try {
     // Check all possible forwarded host headers (different proxies use different headers)
+    // Vercel Edge Middleware sets x-forwarded-host with the original domain
     const host = req.get('x-forwarded-host') ||
                  req.get('x-original-host') ||
                  req.get('x-host') ||
                  req.get('forwarded-host') ||
                  req.get('host'); // e.g., www.myshop.com or localhost:5000
-
-    // Log all relevant headers for debugging
-    console.log(`[DomainResolver] Headers:`, {
-      host: req.get('host'),
-      'x-forwarded-host': req.get('x-forwarded-host'),
-      'x-original-host': req.get('x-original-host'),
-      'x-host': req.get('x-host'),
-      'forwarded': req.get('forwarded'),
-      'x-forwarded-for': req.get('x-forwarded-for'),
-      'x-forwarded-proto': req.get('x-forwarded-proto'),
-      'referer': req.get('referer'),
-      final: host,
-      path: req.path
-    });
 
     // Skip resolution for:
     // - API endpoints (handled separately)
@@ -71,7 +58,6 @@ async function domainResolver(req, res, next) {
       host.includes('vercel.app') ||
       host.includes('onrender.com')
     ) {
-      console.log(`[DomainResolver] Skipping resolution - platform domain or API endpoint`);
       return next();
     }
 
@@ -90,7 +76,6 @@ async function domainResolver(req, res, next) {
     }
 
     // Query database for domain mapping
-    console.log(`[DomainResolver] Looking up domain: "${hostname}"`);
     const domainRecord = await CustomDomain.findOne({
       where: {
         domain: hostname,
@@ -103,8 +88,6 @@ async function domainResolver(req, res, next) {
         attributes: ['id', 'slug', 'name', 'is_active']
       }]
     });
-
-    console.log(`[DomainResolver] Domain record found:`, domainRecord ? `Yes - Store: ${domainRecord.store?.slug}` : 'No');
 
     if (domainRecord && domainRecord.store && domainRecord.store.is_active) {
       const mapping = {
