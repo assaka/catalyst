@@ -65,8 +65,25 @@ export default function ABTestResults({ testId, storeId }) {
     );
   }
 
-  const controlVariant = results.variants.find(v => v.is_control);
+  const controlVariant = results.variants?.find(v => v.is_control);
   const hasWinner = results.has_significant_winner;
+
+  // Ensure all variants have default values
+  const safeVariants = (results.variants || []).map(v => ({
+    variant_id: v.variant_id || 'unknown',
+    variant_name: v.variant_name || 'Unknown',
+    total_assignments: v.total_assignments || 0,
+    total_conversions: v.total_conversions || 0,
+    conversion_rate: v.conversion_rate || 0,
+    avg_conversion_value: v.avg_conversion_value || 0,
+    total_conversion_value: v.total_conversion_value || 0,
+    lift: v.lift || 0,
+    is_control: v.is_control || false,
+    is_significant: v.is_significant || false,
+    p_value: v.p_value,
+    z_score: v.z_score,
+    confidence_interval: v.confidence_interval,
+  }));
 
   const getLiftIcon = (lift) => {
     if (lift > 0) return <TrendingUp className="w-4 h-4 text-green-600" />;
@@ -75,6 +92,7 @@ export default function ABTestResults({ testId, storeId }) {
   };
 
   const formatPercentage = (value, decimals = 2) => {
+    if (value === null || value === undefined) return '0.00%';
     return (value * 100).toFixed(decimals) + '%';
   };
 
@@ -111,7 +129,7 @@ export default function ABTestResults({ testId, storeId }) {
               <div>
                 <p className="text-sm font-medium text-muted-foreground">Total Participants</p>
                 <p className="text-2xl font-bold">
-                  {results.variants.reduce((sum, v) => sum + v.total_assignments, 0).toLocaleString()}
+                  {safeVariants.reduce((sum, v) => sum + (v.total_assignments || 0), 0).toLocaleString()}
                 </p>
               </div>
               <Users className="w-8 h-8 text-blue-500" />
@@ -125,7 +143,7 @@ export default function ABTestResults({ testId, storeId }) {
               <div>
                 <p className="text-sm font-medium text-muted-foreground">Total Conversions</p>
                 <p className="text-2xl font-bold">
-                  {results.variants.reduce((sum, v) => sum + v.total_conversions, 0).toLocaleString()}
+                  {safeVariants.reduce((sum, v) => sum + (v.total_conversions || 0), 0).toLocaleString()}
                 </p>
               </div>
               <CheckCircle2 className="w-8 h-8 text-green-500" />
@@ -139,7 +157,7 @@ export default function ABTestResults({ testId, storeId }) {
               <div>
                 <p className="text-sm font-medium text-muted-foreground">Total Revenue</p>
                 <p className="text-2xl font-bold">
-                  ${results.variants.reduce((sum, v) => sum + (v.total_conversion_value || 0), 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                  ${safeVariants.reduce((sum, v) => sum + (v.total_conversion_value || 0), 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                 </p>
               </div>
               <DollarSign className="w-8 h-8 text-green-500" />
@@ -167,7 +185,7 @@ export default function ABTestResults({ testId, storeId }) {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {results.variants.map((variant) => (
+              {safeVariants.map((variant) => (
                 <TableRow key={variant.variant_id} className={variant.is_control ? 'bg-gray-50' : ''}>
                   <TableCell>
                     <div className="flex items-center gap-2">
@@ -214,7 +232,7 @@ export default function ABTestResults({ testId, storeId }) {
           <CardTitle>Statistical Analysis</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
-          {results.variants.filter(v => !v.is_control).map((variant) => (
+          {safeVariants.filter(v => !v.is_control).map((variant) => (
             <div key={variant.variant_id} className="border-l-4 border-blue-500 pl-4">
               <div className="flex items-center justify-between mb-2">
                 <h4 className="font-semibold">{variant.variant_name} vs Control</h4>
@@ -277,7 +295,7 @@ export default function ABTestResults({ testId, storeId }) {
           <CardTitle>Conversion Rate Comparison</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
-          {results.variants.map((variant) => (
+          {safeVariants.map((variant) => (
             <div key={variant.variant_id}>
               <div className="flex items-center justify-between mb-2">
                 <div className="flex items-center gap-2">
