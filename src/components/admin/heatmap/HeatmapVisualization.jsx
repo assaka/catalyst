@@ -437,38 +437,35 @@ export default function HeatmapVisualization({
           };
         }
 
-        // PROPORTIONAL SCALING for responsive websites
-        // Convert to percentage of captured viewport, then scale to screenshot
+        // Direct scaling from page coordinates to displayed screenshot
+        // This works because pageX/pageY captures scroll-adjusted coordinates
         let finalX, finalY;
 
         if (screenshotNaturalDimensions && screenshotDimensions) {
-          // Step 1: Calculate position as percentage of captured viewport
-          const xPercent = rawX / capturedViewportWidth; // e.g., 1217/1338 = 0.91 (91%)
-          const yPercent = rawY / screenshotNaturalDimensions.height; // Use screenshot height for Y
+          // Simple direct scaling from natural screenshot size to displayed size
+          const scaleX = screenshotDimensions.width / screenshotNaturalDimensions.width;
+          const scaleY = screenshotDimensions.height / screenshotNaturalDimensions.height;
 
-          // Step 2: Apply percentage to displayed screenshot dimensions
-          finalX = xPercent * screenshotDimensions.width;  // e.g., 0.91 * 886 = 806
-          finalY = yPercent * screenshotDimensions.height;
+          finalX = rawX * scaleX;
+          finalY = rawY * scaleY;
 
           if (index < 3) {
             console.log(`🔍 DEBUG - Point ${index} (${interactionType}):`, {
               raw: { x: rawX, y: rawY, vw: capturedViewportWidth },
-              percentages: { x: (xPercent * 100).toFixed(1) + '%', y: (yPercent * 100).toFixed(1) + '%' },
               screenshotNatural: screenshotNaturalDimensions,
               screenshotDisplay: screenshotDimensions,
+              scales: { x: scaleX.toFixed(3), y: scaleY.toFixed(3) },
               final: { x: finalX.toFixed(1), y: finalY.toFixed(1) }
             });
           }
         } else if (screenshotDimensions) {
-          // Fallback: proportional scaling to canvas
-          const xPercent = rawX / capturedViewportWidth;
-          finalX = xPercent * screenshotDimensions.width;
-          finalY = (rawY / viewportSize.height) * screenshotDimensions.height;
+          // Fallback: scale to canvas
+          finalX = (rawX / capturedViewportWidth) * screenshotDimensions.width;
+          finalY = rawY * (screenshotDimensions.height / canvasRect.height);
         } else {
           // No screenshot yet - scale to canvas
-          const xPercent = rawX / capturedViewportWidth;
-          finalX = xPercent * canvasRect.width;
-          finalY = (rawY / viewportSize.height) * canvasRect.height;
+          finalX = (rawX / capturedViewportWidth) * canvasRect.width;
+          finalY = rawY * (canvasRect.height / viewportSize.height);
         }
 
         return {

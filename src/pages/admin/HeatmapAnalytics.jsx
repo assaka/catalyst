@@ -19,6 +19,7 @@ import {
 import HeatmapVisualization from '@/components/admin/heatmap/HeatmapVisualization';
 import HeatmapTrackerComponent from '@/components/admin/heatmap/HeatmapTracker';
 import ScrollDepthMap from '@/components/admin/heatmap/ScrollDepthMap';
+import ScrollDepthOverlay from '@/components/admin/heatmap/ScrollDepthOverlay';
 import TimeOnPageMap from '@/components/admin/heatmap/TimeOnPageMap';
 import ElementClickRanking from '@/components/admin/heatmap/ElementClickRanking';
 import SessionList from '@/components/admin/heatmap/SessionList';
@@ -185,19 +186,29 @@ export default function HeatmapAnalytics() {
                   </CardContent>
                 </Card>
 
-                {/* Scroll Analytics Grid */}
+                {/* Scroll Analytics */}
                 {selectedPageUrl && (
-                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                    <ScrollDepthMap
+                  <div className="space-y-6">
+                    {/* Scroll Depth Overlay Visualization */}
+                    <ScrollDepthOverlay
                       storeId={selectedStore.id}
                       pageUrl={selectedPageUrl}
                       dateRange={dateRange}
                     />
-                    <TimeOnPageMap
-                      storeId={selectedStore.id}
-                      pageUrl={selectedPageUrl}
-                      dateRange={dateRange}
-                    />
+
+                    {/* Stats Grid */}
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                      <ScrollDepthMap
+                        storeId={selectedStore.id}
+                        pageUrl={selectedPageUrl}
+                        dateRange={dateRange}
+                      />
+                      <TimeOnPageMap
+                        storeId={selectedStore.id}
+                        pageUrl={selectedPageUrl}
+                        dateRange={dateRange}
+                      />
+                    </div>
                   </div>
                 )}
 
