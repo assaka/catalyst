@@ -125,6 +125,18 @@ export default function ProductDetail() {
   // A/B Testing - Get active tests for product page
   const { activeTests, isLoading: abTestsLoading } = useABTesting(store?.id, 'product');
 
+  // Debug A/B testing
+  useEffect(() => {
+    console.log('[A/B Test Debug] Status:', {
+      storeId: store?.id,
+      abTestsLoading,
+      activeTests: activeTests?.length || 0,
+      activeTestsData: activeTests,
+      configLoaded,
+      hasConfig: !!productLayoutConfig
+    });
+  }, [store?.id, abTestsLoading, activeTests, configLoaded, productLayoutConfig]);
+
   // Update display product when product or selected variant changes
   useEffect(() => {
     if (product) {
@@ -261,7 +273,15 @@ export default function ProductDetail() {
 
   // Apply A/B test overrides to loaded config
   useEffect(() => {
+    console.log('[A/B Test Override] useEffect triggered', {
+      hasConfig: !!productLayoutConfig,
+      configLoaded,
+      abTestsLoading,
+      activeTestsCount: activeTests?.length || 0
+    });
+
     if (!productLayoutConfig || !configLoaded || abTestsLoading) {
+      console.log('[A/B Test Override] Waiting for config or tests to load...');
       return;
     }
 
@@ -270,29 +290,39 @@ export default function ProductDetail() {
       return;
     }
 
-    console.log('[A/B Test] Applying overrides from', activeTests.length, 'active tests');
+    console.log('[A/B Test] ✨ Applying overrides from', activeTests.length, 'active tests');
+    console.log('[A/B Test] Active tests:', activeTests);
 
     // Clone the config to avoid mutations
     const configWithTests = JSON.parse(JSON.stringify(productLayoutConfig));
 
     // Apply each test's overrides
     activeTests.forEach((test, index) => {
-      console.log(`[A/B Test ${index + 1}]`, {
+      console.log(`[A/B Test ${index + 1}] Processing test:`, {
         test: test.test_name,
         variant: test.variant_name,
-        variantId: test.variant_id
+        variantId: test.variant_id,
+        fullTest: test
       });
 
       // Check different possible locations for variant config
       const variantConfig = test.variant_config || test.config;
 
+      console.log(`[A/B Test ${index + 1}] Variant config:`, variantConfig);
+
       if (variantConfig?.slot_overrides) {
         const overrides = variantConfig.slot_overrides;
 
-        console.log(`[A/B Test ${index + 1}] Applying slot overrides:`, Object.keys(overrides));
+        console.log(`[A/B Test ${index + 1}] Found slot_overrides with keys:`, Object.keys(overrides));
+        console.log(`[A/B Test ${index + 1}] Full slot_overrides:`, overrides);
 
         // Apply each slot override
         Object.entries(overrides).forEach(([slotId, override]) => {
+          console.log(`[A/B Test ${index + 1}] Processing slot "${slotId}"`, {
+            slotExists: !!configWithTests.slots[slotId],
+            override
+          });
+
           if (configWithTests.slots[slotId]) {
             // Slot exists, merge the override
             const originalContent = configWithTests.slots[slotId].content;
@@ -303,7 +333,8 @@ export default function ProductDetail() {
 
             console.log(`[A/B Test ${index + 1}] ✅ Overrode slot "${slotId}"`, {
               before: originalContent,
-              after: override.content || 'no content change'
+              after: override.content || 'no content change',
+              fullSlot: configWithTests.slots[slotId]
             });
           } else {
             // Slot doesn't exist, create it if enabled
@@ -320,7 +351,7 @@ export default function ProductDetail() {
 
     // Update the config with A/B test overrides applied
     setProductLayoutConfig(configWithTests);
-    console.log('[A/B Test] ✅ Config updated with A/B test overrides');
+    console.log('[A/B Test] ✅ Config updated with A/B test overrides. Final config:', configWithTests);
 
   }, [activeTests, configLoaded, abTestsLoading]);
 
