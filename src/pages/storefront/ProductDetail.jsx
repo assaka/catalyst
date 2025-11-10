@@ -39,6 +39,7 @@ import slotConfigurationService from '@/services/slotConfigurationService';
 import { UnifiedSlotRenderer } from '@/components/editor/slot/UnifiedSlotRenderer';
 import '@/components/editor/slot/UnifiedSlotComponents'; // Register unified components
 import { productConfig } from '@/components/editor/slot/configs/product-config';
+import { useABTesting } from '@/hooks/useABTest';
 
 // Utility function to generate a product name from attributes
 const generateProductName = (product, basePrefix = '') => {
@@ -120,6 +121,9 @@ export default function ProductDetail() {
   // State for configurable products
   const [selectedVariant, setSelectedVariant] = useState(null);
   const [displayProduct, setDisplayProduct] = useState(null);
+
+  // A/B Testing - Get active tests for product page
+  const { activeTests, isLoading: abTestsLoading } = useABTesting(store?.id, 'product');
 
   // Update display product when product or selected variant changes
   useEffect(() => {
@@ -254,6 +258,71 @@ export default function ProductDetail() {
       loadProductLayoutConfig();
     }
   }, [store?.id, storeLoading]);
+
+  // Apply A/B test overrides to loaded config
+  useEffect(() => {
+    if (!productLayoutConfig || !configLoaded || abTestsLoading) {
+      return;
+    }
+
+    if (!activeTests || activeTests.length === 0) {
+      console.log('[A/B Test] No active tests for product page');
+      return;
+    }
+
+    console.log('[A/B Test] Applying overrides from', activeTests.length, 'active tests');
+
+    // Clone the config to avoid mutations
+    const configWithTests = JSON.parse(JSON.stringify(productLayoutConfig));
+
+    // Apply each test's overrides
+    activeTests.forEach((test, index) => {
+      console.log(`[A/B Test ${index + 1}]`, {
+        test: test.test_name,
+        variant: test.variant_name,
+        variantId: test.variant_id
+      });
+
+      // Check different possible locations for variant config
+      const variantConfig = test.variant_config || test.config;
+
+      if (variantConfig?.slot_overrides) {
+        const overrides = variantConfig.slot_overrides;
+
+        console.log(`[A/B Test ${index + 1}] Applying slot overrides:`, Object.keys(overrides));
+
+        // Apply each slot override
+        Object.entries(overrides).forEach(([slotId, override]) => {
+          if (configWithTests.slots[slotId]) {
+            // Slot exists, merge the override
+            const originalContent = configWithTests.slots[slotId].content;
+            configWithTests.slots[slotId] = {
+              ...configWithTests.slots[slotId],
+              ...override
+            };
+
+            console.log(`[A/B Test ${index + 1}] ✅ Overrode slot "${slotId}"`, {
+              before: originalContent,
+              after: override.content || 'no content change'
+            });
+          } else {
+            // Slot doesn't exist, create it if enabled
+            if (override.enabled !== false) {
+              configWithTests.slots[slotId] = override;
+              console.log(`[A/B Test ${index + 1}] ➕ Created new slot "${slotId}"`);
+            }
+          }
+        });
+      } else {
+        console.log(`[A/B Test ${index + 1}] ⚠️ No slot_overrides found in variant config:`, variantConfig);
+      }
+    });
+
+    // Update the config with A/B test overrides applied
+    setProductLayoutConfig(configWithTests);
+    console.log('[A/B Test] ✅ Config updated with A/B test overrides');
+
+  }, [activeTests, configLoaded, abTestsLoading]);
 
   /**
    * Evaluate which labels apply to the product based on their conditions
