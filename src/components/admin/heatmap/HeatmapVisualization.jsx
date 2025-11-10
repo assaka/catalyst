@@ -409,32 +409,11 @@ export default function HeatmapVisualization({
       });
 
       // Transform and scale the data to match the actual canvas size
-      // IMPORTANT: For responsive sites, only use clicks captured at same viewport width as screenshot
+      // IMPORTANT: For responsive sites, use proportional positioning
+      // Scale X as percentage of viewport width, Y proportionally
       const screenshotViewportWidth = screenshotNaturalDimensions?.width || viewportSize.width;
 
-      // Filter out clicks from different viewport widths (responsive design issue)
-      const filteredData = (response.data || []).filter((point, index) => {
-        const capturedWidth = point.viewport_width;
-        const widthDifference = Math.abs(capturedWidth - screenshotViewportWidth);
-        const widthTolerance = 50; // Allow 50px difference for viewport rounding
-
-        const isMatch = widthDifference <= widthTolerance;
-
-        if (!isMatch && index < 5) {
-          console.warn(`⚠️ Filtering out click from different viewport:`, {
-            capturedWidth,
-            screenshotWidth: screenshotViewportWidth,
-            difference: widthDifference,
-            point: { x: point.x_coordinate, y: point.y_coordinate }
-          });
-        }
-
-        return isMatch;
-      });
-
-      console.log(`📊 Viewport filtering: ${response.data?.length || 0} total → ${filteredData.length} matching viewport width`);
-
-      const transformedData = filteredData.map((point, index) => {
+      const transformedData = (response.data || []).map((point, index) => {
         const rawX = point.x_coordinate;
         const rawY = point.y_coordinate;
         const capturedViewportWidth = point.viewport_width;
@@ -458,36 +437,38 @@ export default function HeatmapVisualization({
           };
         }
 
-        // For full-page screenshots with natural dimensions available
-        // Scale from page coordinates to displayed canvas coordinates
+        // PROPORTIONAL SCALING for responsive websites
+        // Convert to percentage of captured viewport, then scale to screenshot
         let finalX, finalY;
 
         if (screenshotNaturalDimensions && screenshotDimensions) {
-          // Scale: page coord → natural screenshot → displayed screenshot
-          // Now that viewport widths match, direct scaling should be accurate
-          const scaleX = screenshotDimensions.width / screenshotNaturalDimensions.width;
-          const scaleY = screenshotDimensions.height / screenshotNaturalDimensions.height;
+          // Step 1: Calculate position as percentage of captured viewport
+          const xPercent = rawX / capturedViewportWidth; // e.g., 1217/1338 = 0.91 (91%)
+          const yPercent = rawY / screenshotNaturalDimensions.height; // Use screenshot height for Y
 
-          finalX = rawX * scaleX;
-          finalY = rawY * scaleY;
+          // Step 2: Apply percentage to displayed screenshot dimensions
+          finalX = xPercent * screenshotDimensions.width;  // e.g., 0.91 * 886 = 806
+          finalY = yPercent * screenshotDimensions.height;
+
+          if (index < 3) {
+            console.log(`🔍 DEBUG - Point ${index} (${interactionType}):`, {
+              raw: { x: rawX, y: rawY, vw: capturedViewportWidth },
+              percentages: { x: (xPercent * 100).toFixed(1) + '%', y: (yPercent * 100).toFixed(1) + '%' },
+              screenshotNatural: screenshotNaturalDimensions,
+              screenshotDisplay: screenshotDimensions,
+              final: { x: finalX.toFixed(1), y: finalY.toFixed(1) }
+            });
+          }
         } else if (screenshotDimensions) {
-          // Fallback: scale from captured viewport to displayed screenshot
-          finalX = (rawX / capturedViewportWidth) * screenshotDimensions.width;
-          finalY = rawY * (screenshotDimensions.height / canvasRect.height);
+          // Fallback: proportional scaling to canvas
+          const xPercent = rawX / capturedViewportWidth;
+          finalX = xPercent * screenshotDimensions.width;
+          finalY = (rawY / viewportSize.height) * screenshotDimensions.height;
         } else {
           // No screenshot yet - scale to canvas
-          finalX = (rawX / capturedViewportWidth) * canvasRect.width;
-          finalY = rawY * (canvasRect.height / viewportSize.height);
-        }
-
-        if (index < 3) {
-          console.log(`🔍 DEBUG - Point ${index} (${interactionType}):`, {
-            raw: { x: rawX, y: rawY, vw: capturedViewportWidth },
-            screenshotNatural: screenshotNaturalDimensions,
-            screenshotDisplay: screenshotDimensions,
-            canvas: { w: canvasRect.width, h: canvasRect.height },
-            final: { x: finalX, y: finalY }
-          });
+          const xPercent = rawX / capturedViewportWidth;
+          finalX = xPercent * canvasRect.width;
+          finalY = (rawY / viewportSize.height) * canvasRect.height;
         }
 
         return {
