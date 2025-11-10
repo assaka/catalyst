@@ -1,4 +1,6 @@
 
+console.log('🔵 ProductDetail.jsx FILE LOADED');
+
 import React, { useState, useEffect, useCallback, Fragment } from "react";
 import { useParams, useSearchParams, Link, useNavigate } from "react-router-dom";
 import { createPageUrl } from "@/utils";
