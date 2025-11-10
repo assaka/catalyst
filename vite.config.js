@@ -29,16 +29,40 @@ export default defineConfig({
     },
   },
   build: {
-    sourcemap: true, // Enable source maps for production debugging
-    minify: 'terser', // Use terser for better control over minification
+    sourcemap: false, // Disable sourcemaps to reduce bundle size
+    minify: 'terser',
     terserOptions: {
       compress: {
-        drop_console: false, // Keep console logs in production for debugging
-        drop_debugger: false // Keep debugger statements for now
-      },
-      mangle: {
-        keep_fnames: true, // Keep function names for better error messages
+        drop_console: true, // Remove console logs in production
+        drop_debugger: true,
+        pure_funcs: ['console.log', 'console.debug']
       }
-    }
+    },
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          // Vendor chunks - split large libraries
+          'react-vendor': ['react', 'react-dom', 'react-router-dom'],
+          'react-query': ['@tanstack/react-query'],
+          'ui-vendor': ['lucide-react'],
+
+          // Feature chunks - split by route
+          'admin-features': [
+            './src/pages/admin/Dashboard.jsx',
+            './src/pages/admin/Products.jsx',
+            './src/pages/admin/Orders.jsx',
+            './src/pages/admin/Categories.jsx',
+            './src/pages/admin/Attributes.jsx',
+          ],
+          'storefront-features': [
+            './src/pages/storefront/ProductDetail.jsx',
+            './src/pages/storefront/Category.jsx',
+            './src/pages/storefront/Cart.jsx',
+            './src/pages/storefront/Checkout.jsx',
+          ]
+        }
+      }
+    },
+    chunkSizeWarningLimit: 500, // Warn if chunk > 500KB
   }
 }) 
