@@ -409,11 +409,54 @@ export default function HeatmapVisualization({
       });
 
       // Transform and scale the data to match the actual canvas size
-      // IMPORTANT: For full-page screenshots, we need to scale page coordinates properly
-      const transformedData = (response.data || []).map((point, index) => {
+      // IMPORTANT: For responsive sites, only use clicks captured at same viewport width as screenshot
+      const screenshotViewportWidth = screenshotNaturalDimensions?.width || viewportSize.width;
+
+      // Filter out clicks from different viewport widths (responsive design issue)
+      const filteredData = (response.data || []).filter((point, index) => {
+        const capturedWidth = point.viewport_width;
+        const widthDifference = Math.abs(capturedWidth - screenshotViewportWidth);
+        const widthTolerance = 50; // Allow 50px difference for viewport rounding
+
+        const isMatch = widthDifference <= widthTolerance;
+
+        if (!isMatch && index < 5) {
+          console.warn(`⚠️ Filtering out click from different viewport:`, {
+            capturedWidth,
+            screenshotWidth: screenshotViewportWidth,
+            difference: widthDifference,
+            point: { x: point.x_coordinate, y: point.y_coordinate }
+          });
+        }
+
+        return isMatch;
+      });
+
+      console.log(`📊 Viewport filtering: ${response.data?.length || 0} total → ${filteredData.length} matching viewport width`);
+
+      const transformedData = filteredData.map((point, index) => {
         const rawX = point.x_coordinate;
         const rawY = point.y_coordinate;
         const capturedViewportWidth = point.viewport_width;
+        const interactionType = point.interaction_type;
+
+        // Skip interactions without coordinates (scroll, focus, etc.)
+        if (rawX === null || rawY === null || rawX === undefined || rawY === undefined) {
+          if (index < 5) {
+            console.warn(`⚠️ Skipping point without coordinates:`, {
+              type: interactionType,
+              rawX,
+              rawY,
+              element: point.element_selector
+            });
+          }
+          return {
+            ...point,
+            x: null,
+            y: null,
+            total_count: 1
+          };
+        }
 
         // For full-page screenshots with natural dimensions available
         // Scale from page coordinates to displayed canvas coordinates
@@ -421,8 +464,7 @@ export default function HeatmapVisualization({
 
         if (screenshotNaturalDimensions && screenshotDimensions) {
           // Scale: page coord → natural screenshot → displayed screenshot
-          // Assume clicks were captured at the same width as screenshot (e.g., both 1920px)
-          // Then scale down to the displayed size
+          // Now that viewport widths match, direct scaling should be accurate
           const scaleX = screenshotDimensions.width / screenshotNaturalDimensions.width;
           const scaleY = screenshotDimensions.height / screenshotNaturalDimensions.height;
 
@@ -439,7 +481,7 @@ export default function HeatmapVisualization({
         }
 
         if (index < 3) {
-          console.log(`🔍 DEBUG - Point ${index}:`, {
+          console.log(`🔍 DEBUG - Point ${index} (${interactionType}):`, {
             raw: { x: rawX, y: rawY, vw: capturedViewportWidth },
             screenshotNatural: screenshotNaturalDimensions,
             screenshotDisplay: screenshotDimensions,
