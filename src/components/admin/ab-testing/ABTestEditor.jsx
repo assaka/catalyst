@@ -16,8 +16,9 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Plus, Trash2, Loader2, AlertCircle } from 'lucide-react';
+import { Plus, Trash2, Loader2, AlertCircle, Wand2 } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import SimpleVariantEditor from './SimpleVariantEditor';
 
 export default function ABTestEditor({ test, storeId, onSave, onCancel }) {
   const [formData, setFormData] = useState(() => {
@@ -28,6 +29,7 @@ export default function ABTestEditor({ test, storeId, onSave, onCancel }) {
   });
 
   const [errors, setErrors] = useState([]);
+  const [editMode, setEditMode] = useState('simple'); // 'simple' or 'advanced'
 
   const saveMutation = useMutation({
     mutationFn: (data) => {
@@ -230,25 +232,53 @@ export default function ABTestEditor({ test, storeId, onSave, onCancel }) {
                     />
                   </div>
 
-                  {/* Config Preview - Show JSON for advanced users */}
-                  <details>
-                    <summary className="text-sm font-medium cursor-pointer">
-                      Advanced Configuration (JSON)
-                    </summary>
-                    <Textarea
-                      className="mt-2 font-mono text-xs"
-                      rows={6}
-                      value={JSON.stringify(variant.config, null, 2)}
-                      onChange={(e) => {
-                        try {
-                          const config = JSON.parse(e.target.value);
-                          updateVariant(index, 'config', config);
-                        } catch (err) {
-                          // Invalid JSON, ignore
-                        }
-                      }}
-                    />
-                  </details>
+                  {/* Visual Editor Toggle */}
+                  {!variant.is_control && (
+                    <div className="space-y-2 border-t pt-4">
+                      <div className="flex items-center justify-between">
+                        <Label>Configure Changes</Label>
+                        <div className="flex gap-2">
+                          <Button
+                            size="sm"
+                            variant={editMode === 'simple' ? 'default' : 'outline'}
+                            onClick={() => setEditMode('simple')}
+                          >
+                            <Wand2 className="w-4 h-4 mr-1" />
+                            Simple
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant={editMode === 'advanced' ? 'default' : 'outline'}
+                            onClick={() => setEditMode('advanced')}
+                          >
+                            Advanced (JSON)
+                          </Button>
+                        </div>
+                      </div>
+
+                      {editMode === 'simple' ? (
+                        <SimpleVariantEditor
+                          variant={variant}
+                          onChange={(updated) => updateVariant(index, 'config', updated.config)}
+                          pageType={formData.targeting_rules?.pages?.[0] || 'product'}
+                        />
+                      ) : (
+                        <Textarea
+                          className="font-mono text-xs"
+                          rows={8}
+                          value={JSON.stringify(variant.config, null, 2)}
+                          onChange={(e) => {
+                            try {
+                              const config = JSON.parse(e.target.value);
+                              updateVariant(index, 'config', config);
+                            } catch (err) {
+                              // Invalid JSON, ignore
+                            }
+                          }}
+                        />
+                      )}
+                    </div>
+                  )}
                 </CardContent>
               </Card>
             ))}
