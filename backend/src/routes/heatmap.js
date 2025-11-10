@@ -597,6 +597,145 @@ router.get('/sessions/:storeId/:sessionId', authMiddleware, checkStoreOwnership,
   }
 });
 
+// Get time-on-page analytics (requires authentication)
+router.get('/time-on-page/:storeId', authMiddleware, checkStoreOwnership, async (req, res) => {
+  try {
+    const { storeId } = req.params;
+    const {
+      page_url,
+      start_date,
+      end_date
+    } = req.query;
+
+    if (!page_url) {
+      return res.status(400).json({
+        success: false,
+        error: 'page_url parameter is required'
+      });
+    }
+
+    const whereClause = {
+      store_id: storeId
+    };
+
+    if (start_date && end_date) {
+      whereClause.timestamp_utc = {
+        [Op.between]: [new Date(start_date), new Date(end_date)]
+      };
+    }
+
+    // Get all sessions for this page with their durations
+    const sessions = await HeatmapInteraction.findAll({
+      where: whereClause,
+      attributes: [
+        'session_id',
+        [HeatmapInteraction.sequelize.fn('MIN', HeatmapInteraction.sequelize.col('timestamp_utc')), 'session_start'],
+        [HeatmapInteraction.sequelize.fn('MAX', HeatmapInteraction.sequelize.col('timestamp_utc')), 'session_end']
+      ],
+      group: ['session_id'],
+      having: HeatmapInteraction.sequelize.where(
+        HeatmapInteraction.sequelize.fn('COUNT', HeatmapInteraction.sequelize.col('page_url')),
+        {
+          [Op.gte]: 1
+        }
+      ),
+      raw: true
+    });
+
+    // Filter for the specific page URL and calculate durations
+    const pageSessions = [];
+
+    for (const session of sessions) {
+      // Check if this session has interactions on the target page
+      const pageInteractions = await HeatmapInteraction.findAll({
+        where: {
+          store_id: storeId,
+          session_id: session.session_id,
+          page_url: page_url
+        },
+        attributes: ['timestamp_utc'],
+        order: [['timestamp_utc', 'ASC']],
+        raw: true
+      });
+
+      if (pageInteractions.length > 0) {
+        const firstInteraction = new Date(pageInteractions[0].timestamp_utc);
+        const lastInteraction = new Date(pageInteractions[pageInteractions.length - 1].timestamp_utc);
+        const durationSeconds = (lastInteraction - firstInteraction) / 1000;
+
+        // Only include sessions with reasonable durations (> 0 and < 1 hour)
+        if (durationSeconds > 0 && durationSeconds < 3600) {
+          pageSessions.push({
+            session_id: session.session_id,
+            duration_seconds: durationSeconds
+          });
+        }
+      }
+    }
+
+    if (pageSessions.length === 0) {
+      return res.json({
+        success: true,
+        data: {
+          total_sessions: 0,
+          avg_time_seconds: 0,
+          median_time_seconds: 0,
+          max_time_seconds: 0,
+          min_time_seconds: 0,
+          time_buckets: []
+        }
+      });
+    }
+
+    // Calculate statistics
+    const durations = pageSessions.map(s => s.duration_seconds).sort((a, b) => a - b);
+    const totalSessions = durations.length;
+    const avgTime = durations.reduce((a, b) => a + b, 0) / totalSessions;
+    const medianTime = durations[Math.floor(totalSessions / 2)];
+    const maxTime = Math.max(...durations);
+    const minTime = Math.min(...durations);
+
+    // Create time buckets
+    const timeBuckets = [
+      { label: '0-10 seconds', min: 0, max: 10, count: 0 },
+      { label: '10-30 seconds', min: 10, max: 30, count: 0 },
+      { label: '30-60 seconds', min: 30, max: 60, count: 0 },
+      { label: '1-2 minutes', min: 60, max: 120, count: 0 },
+      { label: '2-5 minutes', min: 120, max: 300, count: 0 },
+      { label: '5+ minutes', min: 300, max: Infinity, count: 0 }
+    ];
+
+    durations.forEach(duration => {
+      const bucket = timeBuckets.find(b => duration >= b.min && duration < b.max);
+      if (bucket) bucket.count++;
+    });
+
+    // Calculate percentages
+    timeBuckets.forEach(bucket => {
+      bucket.percentage = (bucket.count / totalSessions) * 100;
+    });
+
+    res.json({
+      success: true,
+      data: {
+        total_sessions: totalSessions,
+        avg_time_seconds: Math.round(avgTime * 10) / 10,
+        median_time_seconds: Math.round(medianTime * 10) / 10,
+        max_time_seconds: Math.round(maxTime * 10) / 10,
+        min_time_seconds: Math.round(minTime * 10) / 10,
+        time_buckets: timeBuckets.filter(b => b.count > 0)
+      },
+      meta: {
+        store_id: storeId,
+        page_url
+      }
+    });
+  } catch (error) {
+    console.error('Error getting time-on-page analytics:', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
 // Get scroll depth analytics (requires authentication)
 router.get('/scroll-depth/:storeId', authMiddleware, checkStoreOwnership, async (req, res) => {
   try {

@@ -17,6 +17,7 @@ import {
 import HeatmapVisualization from '@/components/admin/heatmap/HeatmapVisualization';
 import HeatmapTrackerComponent from '@/components/admin/heatmap/HeatmapTracker';
 import ScrollDepthMap from '@/components/admin/heatmap/ScrollDepthMap';
+import TimeOnPageMap from '@/components/admin/heatmap/TimeOnPageMap';
 import ElementClickRanking from '@/components/admin/heatmap/ElementClickRanking';
 import SessionList from '@/components/admin/heatmap/SessionList';
 import SessionReplay from '@/components/admin/heatmap/SessionReplay';
@@ -145,17 +146,24 @@ export default function HeatmapAnalytics() {
                   onDateRangeChange={setDateRange}
                 />
 
-                {/* Two-column layout for Scroll Depth and Element Rankings */}
+                {/* Analytics Grid */}
                 {selectedPageUrl && (
-                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                    {/* Scroll Depth Map */}
-                    <ScrollDepthMap
-                      storeId={selectedStore.id}
-                      pageUrl={selectedPageUrl}
-                      dateRange={dateRange}
-                    />
+                  <div className="space-y-6">
+                    {/* Top Row: Scroll Depth and Time on Page */}
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                      <ScrollDepthMap
+                        storeId={selectedStore.id}
+                        pageUrl={selectedPageUrl}
+                        dateRange={dateRange}
+                      />
+                      <TimeOnPageMap
+                        storeId={selectedStore.id}
+                        pageUrl={selectedPageUrl}
+                        dateRange={dateRange}
+                      />
+                    </div>
 
-                    {/* Element Click Rankings */}
+                    {/* Bottom Row: Element Click Rankings */}
                     <ElementClickRanking
                       storeId={selectedStore.id}
                       pageUrl={selectedPageUrl}
