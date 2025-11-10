@@ -44,7 +44,7 @@ export default function Onboarding() {
             await Store.create({
               name: storeName,
               slug: storeSlug,
-              owner_email: user.email,
+              user_id: user.id,
             });
 
             localStorage.removeItem('onboarding_form_data');

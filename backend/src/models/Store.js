@@ -28,13 +28,6 @@ const Store = sequelize.define('Store', {
       key: 'id'
     }
   },
-  owner_email: {
-    type: DataTypes.STRING,
-    allowNull: true, // Made optional - deprecated field
-    validate: {
-      isEmail: true
-    }
-  },
   logo_url: {
     type: DataTypes.STRING,
     allowNull: true

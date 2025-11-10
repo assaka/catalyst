@@ -57,9 +57,8 @@ router.post('/connect', authMiddleware, async (req, res) => {
     }
 
     // Check if user has access to this store
-    const userEmail = req.user.email;
-    const hasAccess = store.owner_email === userEmail || 
-                     req.user.role === 'admin' || 
+    const hasAccess = store.user_id === req.user.id ||
+                     req.user.role === 'admin' ||
                      req.user.account_type === 'agency';
 
     if (!hasAccess) {
@@ -153,9 +152,8 @@ router.post('/migrate', authMiddleware, async (req, res) => {
     }
 
     // Check if user has access to this store
-    const userEmail = req.user.email;
-    const hasAccess = store.owner_email === userEmail || 
-                     req.user.role === 'admin' || 
+    const hasAccess = store.user_id === req.user.id ||
+                     req.user.role === 'admin' ||
                      req.user.account_type === 'agency';
 
     if (!hasAccess) {
@@ -260,9 +258,8 @@ router.post('/disconnect', authMiddleware, async (req, res) => {
     }
 
     // Check if user has access to this store
-    const userEmail = req.user.email;
-    const hasAccess = store.owner_email === userEmail || 
-                     req.user.role === 'admin' || 
+    const hasAccess = store.user_id === req.user.id ||
+                     req.user.role === 'admin' ||
                      req.user.account_type === 'agency';
 
     if (!hasAccess) {
