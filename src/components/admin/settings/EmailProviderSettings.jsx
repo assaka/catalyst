@@ -110,7 +110,7 @@ export default function EmailProviderSettings({ storeEmail, storeName }) {
                   onClick={() => window.location.href = '/admin/settings?tab=general'}
                   className="border-yellow-400 text-yellow-900 hover:bg-yellow-100"
                 >
-                  Go to Settings > General
+                  Go to Settings &gt; General
                 </Button>
               </div>
             </div>

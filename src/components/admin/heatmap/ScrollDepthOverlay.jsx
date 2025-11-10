@@ -270,9 +270,22 @@ export default function ScrollDepthOverlay({ storeId, pageUrl, dateRange, viewpo
           </div>
         )}
 
-        {!loadingScreenshot && !screenshot && !error && (
-          <div className="text-center py-8 text-gray-500">
-            <p>No screenshot available</p>
+        {!loadingScreenshot && !screenshot && (
+          <div className="text-center py-8 bg-gray-50 rounded-lg border-2 border-dashed border-gray-300">
+            <ArrowDown className="w-12 h-12 mx-auto mb-4 text-gray-300" />
+            <p className="text-gray-600 font-medium mb-2">
+              {error ? 'Error loading screenshot' : 'Screenshot not available'}
+            </p>
+            {error && <p className="text-sm text-red-600">{error}</p>}
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={loadScreenshot}
+              className="mt-4"
+            >
+              <RefreshCw className="w-4 h-4 mr-2" />
+              Retry
+            </Button>
           </div>
         )}
       </CardContent>

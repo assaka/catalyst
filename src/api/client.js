@@ -244,6 +244,7 @@ class ApiClient {
                             endpoint.includes('/health') ||
                             endpoint.includes('/version') ||
                             endpoint.includes('/translations/') || // Translation endpoints (UI labels, etc.)
+                            endpoint.includes('/canonical-urls/') || // Canonical URLs for SEO (public access)
                             endpoint === 'languages' || // Language list endpoint
                             endpoint === '/languages';
 

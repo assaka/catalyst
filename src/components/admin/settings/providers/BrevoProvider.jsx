@@ -315,7 +315,7 @@ export default function BrevoProvider({
                   rel="noopener noreferrer"
                   className="text-blue-600 hover:underline"
                 >
-                  Brevo Settings > API Keys
+                  Brevo Settings &gt; API Keys
                   <ExternalLink className="w-3 h-3 inline ml-1" />
                 </a>
               </p>
