@@ -35,29 +35,67 @@ export default function DynamicVariantEditor({ variant, onChange, storeId }) {
   ];
 
   // Fetch REAL slot configuration from database
-  const { data: configData, isLoading, refetch } = useQuery({
+  const { data: configData, isLoading, error: fetchError, refetch } = useQuery({
     queryKey: ['slot-config-for-test', storeId, selectedPage],
     queryFn: async () => {
-      const response = await apiClient.get(
-        `slot-configurations/published/${storeId}/${selectedPage}`
-      );
-      return response.data;
+      console.log('[DynamicVariantEditor] Fetching slots for:', { storeId, selectedPage });
+      try {
+        const response = await apiClient.get(
+          `slot-configurations/published/${storeId}/${selectedPage}`
+        );
+        console.log('[DynamicVariantEditor] Response:', response);
+        return response;
+      } catch (err) {
+        console.error('[DynamicVariantEditor] Error fetching slots:', err);
+        throw err;
+      }
     },
     enabled: !!storeId && !!selectedPage,
+    retry: false,
   });
 
-  const slots = configData?.configuration?.slots || {};
+  console.log('[DynamicVariantEditor] Config data:', configData);
+
+  const slots = configData?.data?.configuration?.slots || configData?.configuration?.slots || {};
+
+  // Fallback common elements if no slots found
+  const fallbackElements = {
+    product: [
+      { id: 'add_to_cart_button', name: '🔘 Add to Cart Button', type: 'button', content: 'Add to Cart' },
+      { id: 'buy_now_button', name: '⚡ Buy Now Button', type: 'button', content: 'Buy Now' },
+      { id: 'product_title', name: '📝 Product Title', type: 'text', content: 'Product Name' },
+      { id: 'product_price', name: '💰 Product Price', type: 'text', content: '$99.99' },
+      { id: 'product_description', name: '📄 Product Description', type: 'text', content: 'Product description' },
+    ],
+    home: [
+      { id: 'hero_cta_button', name: '🔘 Hero CTA Button', type: 'button', content: 'Shop Now' },
+      { id: 'hero_title', name: '📝 Hero Title', type: 'text', content: 'Welcome' },
+      { id: 'hero_subtitle', name: '📝 Hero Subtitle', type: 'text', content: 'Subtitle' },
+    ],
+    cart: [
+      { id: 'checkout_button', name: '✅ Checkout Button', type: 'button', content: 'Proceed to Checkout' },
+      { id: 'cart_title', name: '📝 Cart Title', type: 'text', content: 'Shopping Cart' },
+    ],
+  };
+
+  const hasRealSlots = Object.keys(slots).length > 0;
 
   // Convert slots to searchable array with metadata
-  const availableElements = Object.entries(slots).map(([id, slot]) => ({
-    id,
-    name: getSlotDisplayName(id, slot),
-    type: slot.type || 'unknown',
-    component: slot.component,
-    content: slot.content,
-    hasStyles: !!slot.styles && Object.keys(slot.styles).length > 0,
-    slot, // Keep original slot data
-  }));
+  const availableElements = hasRealSlots
+    ? Object.entries(slots).map(([id, slot]) => ({
+        id,
+        name: getSlotDisplayName(id, slot),
+        type: slot.type || 'unknown',
+        component: slot.component,
+        content: slot.content,
+        hasStyles: !!slot.styles && Object.keys(slot.styles).length > 0,
+        slot, // Keep original slot data
+      }))
+    : (fallbackElements[selectedPage] || []).map(el => ({
+        ...el,
+        slot: { type: el.type, content: el.content },
+        hasStyles: false,
+      }));
 
   // Filter elements by search term
   const filteredElements = availableElements.filter(el => {
@@ -241,15 +279,67 @@ export default function DynamicVariantEditor({ variant, onChange, storeId }) {
             </div>
           </div>
 
+          {/* Debug Info */}
+          {!isLoading && !fetchError && (
+            <div className="text-xs text-muted-foreground flex items-center justify-between">
+              <span>Store: {storeId} | Page: {selectedPage} | Slots found: {Object.keys(slots).length}</span>
+              {!hasRealSlots && availableElements.length > 0 && (
+                <Badge variant="outline" className="text-xs">
+                  Using fallback elements
+                </Badge>
+              )}
+            </div>
+          )}
+
           {/* Available Elements List */}
           {isLoading ? (
             <div className="flex items-center justify-center py-8">
               <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
+              <span className="ml-2 text-sm text-muted-foreground">Loading elements...</span>
             </div>
-          ) : filteredElements.length === 0 ? (
+          ) : fetchError ? (
+            <Alert variant="destructive">
+              <AlertDescription>
+                <div className="font-semibold mb-2">Error loading elements:</div>
+                <div className="text-sm">{fetchError.message}</div>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="mt-2"
+                  onClick={() => refetch()}
+                >
+                  Try Again
+                </Button>
+              </AlertDescription>
+            </Alert>
+          ) : availableElements.length === 0 && searchTerm ? (
             <Alert>
               <AlertDescription>
-                {searchTerm ? 'No elements found matching your search.' : 'No elements found on this page. Make sure you have published a slot configuration for this page.'}
+                No elements found matching "{searchTerm}". Try a different search term or clear the search.
+              </AlertDescription>
+            </Alert>
+          ) : availableElements.length === 0 && !hasRealSlots ? (
+            <Alert>
+              <AlertDescription>
+                <div className="font-semibold mb-2">No slot configuration found for this page.</div>
+                <div className="text-sm mb-3">
+                  You can still create tests using common element IDs, or publish a slot configuration to see your actual page elements.
+                </div>
+                <div className="text-sm">
+                  <strong>To see your real elements:</strong>
+                  <ol className="list-decimal ml-4 mt-2 space-y-1">
+                    <li>Go to the {pageTypes.find(p => p.value === selectedPage)?.label} editor</li>
+                    <li>Configure your page layout with slots</li>
+                    <li>Click "Publish"</li>
+                    <li>Come back here and click refresh ↻</li>
+                  </ol>
+                </div>
+              </AlertDescription>
+            </Alert>
+          ) : availableElements.length === 0 ? (
+            <Alert>
+              <AlertDescription>
+                No elements available. Try selecting a different page type.
               </AlertDescription>
             </Alert>
           ) : (
