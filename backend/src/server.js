@@ -169,6 +169,31 @@ const limiter = rateLimit({
 });
 app.use('/api/', limiter);
 
+// Optimize OPTIONS preflight requests - handle them early before CORS async logic
+app.options('/api/*', (req, res) => {
+  // Get origin from request
+  const origin = req.headers.origin;
+
+  // Check if origin is allowed (simplified check for OPTIONS)
+  const isVercelApp = origin && origin.endsWith('.vercel.app');
+  const isLocalhost = origin && (origin.includes('localhost') || origin.includes('127.0.0.1'));
+  const isRenderApp = origin && origin.endsWith('.onrender.com');
+
+  if (isVercelApp || isLocalhost || isRenderApp) {
+    res.setHeader('Access-Control-Allow-Origin', origin);
+    res.setHeader('Access-Control-Allow-Methods', 'GET,POST,PUT,DELETE,OPTIONS,PATCH');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type,Authorization,X-Requested-With,Accept,Origin,x-store-id,X-Language');
+    res.setHeader('Access-Control-Allow-Credentials', 'true');
+    res.setHeader('Access-Control-Max-Age', '86400'); // 24 hours
+    res.setHeader('Cache-Control', 'public, max-age=86400'); // Browser cache
+    res.setHeader('Vary', 'Origin'); // Important for caching
+    return res.sendStatus(204);
+  }
+
+  // If not recognized origin, let CORS middleware handle it
+  next();
+});
+
 // CORS configuration
 const allowedOrigins = [
   'http://localhost:5173',
