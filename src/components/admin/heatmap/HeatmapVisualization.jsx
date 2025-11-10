@@ -278,6 +278,7 @@ export default function HeatmapVisualization({
   const [screenshot, setScreenshot] = useState(null);
   const [loadingScreenshot, setLoadingScreenshot] = useState(false);
   const [screenshotDimensions, setScreenshotDimensions] = useState(null);
+  const [screenshotNaturalDimensions, setScreenshotNaturalDimensions] = useState(null);
 
   // Filters
   const [interactionType, setInteractionType] = useState('click');
@@ -402,41 +403,48 @@ export default function HeatmapVisualization({
       console.log('🔍 DEBUG - Canvas and Screenshot Info:', {
         canvasSize: { width: canvasRect.width, height: canvasRect.height },
         selectedViewport: viewportSize,
-        screenshotDimensions: screenshotDimensions,
+        screenshotDisplayDimensions: screenshotDimensions,
+        screenshotNaturalDimensions: screenshotNaturalDimensions,
         hasScreenshot: !!screenshot
       });
 
       // Transform and scale the data to match the actual canvas size
+      // IMPORTANT: For full-page screenshots, we need to scale page coordinates properly
       const transformedData = (response.data || []).map((point, index) => {
         const rawX = point.x_coordinate;
         const rawY = point.y_coordinate;
         const capturedViewportWidth = point.viewport_width;
-        const capturedViewportHeight = point.viewport_height;
-        const normalizedX = point.normalized_x;
-        const normalizedY = point.normalized_y;
 
-        // Calculate scale from captured viewport to screenshot viewport
-        const scaleX = viewportSize.width / capturedViewportWidth;
-        const scaleY = canvasRect.height / capturedViewportHeight;
-
-        // Use normalized coordinates if available, otherwise scale raw coordinates
+        // For full-page screenshots with natural dimensions available
+        // Scale from page coordinates to displayed canvas coordinates
         let finalX, finalY;
-        if (normalizedX !== null && normalizedX !== undefined) {
-          // Backend already normalized - just scale to canvas
-          finalX = normalizedX * (canvasRect.width / viewportSize.width);
-          finalY = normalizedY * (canvasRect.height / viewportSize.height);
-        } else {
-          // No normalization - scale directly from capture viewport to display
+
+        if (screenshotNaturalDimensions && screenshotDimensions) {
+          // Scale: page coord → natural screenshot → displayed screenshot
+          // Assume clicks were captured at the same width as screenshot (e.g., both 1920px)
+          // Then scale down to the displayed size
+          const scaleX = screenshotDimensions.width / screenshotNaturalDimensions.width;
+          const scaleY = screenshotDimensions.height / screenshotNaturalDimensions.height;
+
           finalX = rawX * scaleX;
           finalY = rawY * scaleY;
+        } else if (screenshotDimensions) {
+          // Fallback: scale from captured viewport to displayed screenshot
+          finalX = (rawX / capturedViewportWidth) * screenshotDimensions.width;
+          finalY = rawY * (screenshotDimensions.height / canvasRect.height);
+        } else {
+          // No screenshot yet - scale to canvas
+          finalX = (rawX / capturedViewportWidth) * canvasRect.width;
+          finalY = rawY * (canvasRect.height / viewportSize.height);
         }
 
         if (index < 3) {
           console.log(`🔍 DEBUG - Point ${index}:`, {
-            raw: { x: rawX, y: rawY, vw: capturedViewportWidth, vh: capturedViewportHeight },
-            normalized: { x: normalizedX, y: normalizedY },
-            final: { x: finalX, y: finalY },
-            scales: { scaleX, scaleY }
+            raw: { x: rawX, y: rawY, vw: capturedViewportWidth },
+            screenshotNatural: screenshotNaturalDimensions,
+            screenshotDisplay: screenshotDimensions,
+            canvas: { w: canvasRect.width, h: canvasRect.height },
+            final: { x: finalX, y: finalY }
           });
         }
 
@@ -886,6 +894,10 @@ export default function HeatmapVisualization({
                     });
 
                     setScreenshotDimensions({ width, height });
+                    setScreenshotNaturalDimensions({
+                      width: img.naturalWidth,
+                      height: img.naturalHeight
+                    });
 
                     // Resize canvas to match image and re-load heatmap data with correct scaling
                     if (canvasRef.current && rendererRef.current) {
