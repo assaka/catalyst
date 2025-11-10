@@ -181,6 +181,7 @@ const allowedOrigins = [
 ].filter(Boolean);
 
 app.use(cors({
+  maxAge: 86400, // Cache OPTIONS preflight for 24 hours
   origin: async function (origin, callback) {
     // Allow requests with no origin (like mobile apps or curl requests)
     if (!origin) {
