@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { useStore } from '@/contexts/StoreContext';
+import { useStoreSelection } from '@/contexts/StoreSelectionContext';
 import abTestService from '@/services/abTestService';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -62,7 +62,7 @@ const ABTestEditor = React.lazy(() => import('@/components/admin/ab-testing/ABTe
 const ABTestResults = React.lazy(() => import('@/components/admin/ab-testing/ABTestResults'));
 
 export default function ABTesting() {
-  const { selectedStore } = useStore();
+  const { selectedStore } = useStoreSelection();
   const queryClient = useQueryClient();
   const [selectedTest, setSelectedTest] = useState(null);
   const [viewMode, setViewMode] = useState(null); // 'edit', 'results', null
