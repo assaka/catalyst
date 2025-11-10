@@ -20,20 +20,21 @@ export const queryClient = new QueryClient({
       // Increased from 5 min to 10 min to reduce re-fetching
       gcTime: 600000, // 10 minutes (formerly cacheTime in v4)
 
-      // Retry configuration
-      retry: 2, // Retry failed requests up to 2 times
+      // Retry configuration - reduced to minimize duplicate-looking requests
+      retry: 1, // Reduced from 2 to prevent duplicate-looking requests
       retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000),
 
-      // Refetch configuration
+      // Refetch configuration - aggressive caching to prevent duplicates
       refetchOnWindowFocus: false, // Don't refetch when window regains focus
-      refetchOnReconnect: true, // Refetch when reconnecting to network
+      refetchOnReconnect: false, // Don't refetch on reconnect
       refetchOnMount: false, // Don't refetch on component mount if data exists
+      refetchInterval: false, // Disable automatic periodic refetching
 
       // Enable request deduplication (default: true, but being explicit)
       structuralSharing: true,
 
       // Network mode: only fetch when online
-      networkMode: 'online',
+      networkMode: 'online'
     },
     mutations: {
       // Retry mutations once
@@ -132,6 +133,18 @@ export const queryKeys = {
   language: {
     all: ['language'],
     list: () => [...queryKeys.language.all, 'list'],
+  },
+
+  // Auth
+  auth: {
+    all: ['auth'],
+    me: () => [...queryKeys.auth.all, 'me'],
+  },
+
+  // Analytics
+  analytics: {
+    all: ['analytics'],
+    activity: (storeId) => [...queryKeys.analytics.all, 'activity', storeId],
   },
 
   // CMS

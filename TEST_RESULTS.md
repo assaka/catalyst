@@ -209,5 +209,125 @@ ls -lh dist/assets/*.js
 
 ---
 
-**Status:** Optimization deployed, testing in progress
-**Next:** Wait 3 min → Retest → Move to TEST 2
+**Status:** Testing complete, critical issues identified
+**Next:** Fix duplicate API calls and reduce total call count
+
+---
+
+## ✅ TEST 2: Frontend Network Analysis - COMPLETE
+
+### 🔴 CRITICAL ISSUES FOUND:
+
+#### Issue #1: Too Many API Calls
+```
+Total API Calls: 37 (Target: <5)
+Total API Time: 16,843ms (16.8 seconds!)
+```
+
+**Breakdown:**
+- Bootstrap, auth, languages, stores: Initial data
+- Plugins: 8+ plugin-related calls
+- Slot configurations: 3+ calls
+- Product data: Multiple calls
+- Analytics: customer-activity, heatmap
+- Wishlist, cart, canonical URLs, SEO
+
+**Impact:** Page spends 16.8 seconds waiting for APIs!
+
+#### Issue #2: Duplicate API Calls (10 duplicates)
+```
+❌ DUPLICATES:
+3x /api/languages             ← React Query issue
+3x /api/auth/me              ← Called by multiple components
+2x /api/customer-activity     ← Analytics tracking duplicate
+2x /api/wishlist             ← Multiple wishlist checks
+2x /api/slot-configurations  ← Slot system duplicate
+2x /api/canonical-urls       ← SEO duplicate
+2x /api/public/products      ← Product fetch duplicate
+2x /api/translations/ui-labels ← Translation duplicate
+```
+
+**Impact:** ~50% of API calls are unnecessary duplicates!
+
+#### Issue #3: Large JavaScript Bundle
+```
+Main bundle: 775.8KB (loads in 1,591ms)
+```
+
+**Impact:** 1.6 seconds just loading JavaScript
+
+#### Issue #4: Slow "Cached" API Calls
+```
+/api/languages: 961-971ms (marked "cached")
+/api/auth/me: 633-1527ms (marked "cached")
+/api/stores: 1147ms (marked "cached")
+```
+
+**These show "cached" but still take 500-1500ms!**
+
+This indicates:
+- React Query is refetching despite having cached data
+- staleTime might not be working
+- Query keys might be inconsistent
+
+---
+
+## 📊 Performance Breakdown
+
+### Page Load Analysis:
+```
+Total Page Load: 2.56s
+├─ JavaScript Bundle: 1.59s (62%)
+├─ API Calls: 16.84s total (but parallel)
+│  ├─ Actual wait time: ~1-2s (parallel loading)
+│  └─ Wasted on duplicates: ~8s (50%)
+└─ DOM/Render: 0.4s
+```
+
+### Resource Count:
+```
+Total Resources: 47
+├─ API Calls: 37  ❌ (Target: <5)
+├─ Images: 2      ✅
+├─ Scripts: 2     ✅
+└─ CSS: 1         ✅
+```
+
+---
+
+## 🎯 PRIORITY FIXES (Ordered by Impact)
+
+### FIX #1: Eliminate Duplicate API Calls (HIGHEST IMPACT)
+**Expected improvement:** 50% reduction in API calls
+**Time to fix:** 30-60 minutes
+**Impact:** 37 calls → 18-20 calls (save ~8 seconds of duplicate time)
+
+### FIX #2: Consolidate API Calls
+**Expected improvement:** Further reduce to <10 calls
+**Time to fix:** 1-2 hours
+**Impact:** 20 calls → <10 calls (save another 5+ seconds)
+
+### FIX #3: Fix React Query Refetching
+**Expected improvement:** APIs actually use cache
+**Time to fix:** 30 minutes
+**Impact:** "Cached" calls should be instant (save 1-2 seconds)
+
+### FIX #4: Code Splitting
+**Expected improvement:** 50% smaller initial bundle
+**Time to fix:** 2-3 hours
+**Impact:** 1.6s → 0.5-0.8s for JavaScript load
+
+---
+
+## 🚀 ESTIMATED FINAL RESULT
+
+After all fixes:
+```
+Before: 2.56s page load, 37 API calls, 16.8s API time
+After:  0.8-1.2s page load, <5 API calls, <2s API time
+
+Improvement: 70-80% faster!
+```
+
+**Status:** Issues identified, ready to fix
+**Next:** Implement fixes for duplicate calls
