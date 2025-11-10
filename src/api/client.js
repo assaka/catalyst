@@ -125,6 +125,16 @@ class ApiClient {
     return `${this.baseURL}/api/${cleanEndpoint}`;
   }
 
+  // Get or create session ID for A/B testing
+  getSessionId() {
+    let sessionId = localStorage.getItem('session_id');
+    if (!sessionId) {
+      sessionId = `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+      localStorage.setItem('session_id', sessionId);
+    }
+    return sessionId;
+  }
+
   // Default headers
   getHeaders(customHeaders = {}) {
     const headers = {
@@ -146,6 +156,10 @@ class ApiClient {
     if (selectedStoreId && selectedStoreId !== 'undefined') {
       headers['x-store-id'] = selectedStoreId;
     }
+
+    // Add X-Session-ID for A/B testing (consistent across requests)
+    const sessionId = this.getSessionId();
+    headers['X-Session-ID'] = sessionId;
 
     return headers;
   }
