@@ -3,6 +3,9 @@ const router = express.Router();
 const SlotConfiguration = require('../models/SlotConfiguration');
 const { authMiddleware } = require('../middleware/auth');
 const { Op } = require('sequelize');
+const ABTest = require('../models/ABTest');
+const ABTestAssignment = require('../models/ABTestAssignment');
+const ABTestService = require('../services/ABTestService');
 
 // Get or create draft configuration for editing
 router.get('/draft/:storeId/:pageType?', authMiddleware, async (req, res) => {
@@ -111,10 +114,13 @@ router.get('/public/slot-configurations', async (req, res) => {
 router.get('/published/:storeId/:pageType?', async (req, res) => {
   try {
     const { storeId, pageType = 'cart' } = req.params;
-    
+
+    console.log('[Slot Config API] Fetching published config:', { storeId, pageType });
+
     const published = await SlotConfiguration.findLatestPublished(storeId, pageType);
-    
+
     if (!published) {
+      console.log('[Slot Config API] No published config found, returning empty');
       // Return default configuration if no published version exists
       return res.json({
         success: true,
@@ -129,10 +135,91 @@ router.get('/published/:storeId/:pageType?', async (req, res) => {
         }
       });
     }
-    
+
+    console.log('[Slot Config API] Found published config, checking for A/B tests...');
+
+    // Check for active A/B tests for this page
+    const activeTests = await ABTest.findActiveForPage(storeId, pageType);
+
+    console.log('[Slot Config API] Active A/B tests:', activeTests.length);
+
+    if (activeTests.length === 0) {
+      console.log('[Slot Config API] No A/B tests, returning original config');
+      return res.json({
+        success: true,
+        data: published
+      });
+    }
+
+    // Get session ID from header or generate one
+    const sessionId = req.headers['x-session-id'] || `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+
+    console.log('[Slot Config API] Session ID:', sessionId);
+
+    // Clone the configuration to avoid mutations
+    const configWithTests = JSON.parse(JSON.stringify(published.toJSON()));
+
+    // Apply A/B test overrides
+    for (const test of activeTests) {
+      console.log(`[Slot Config API] Processing test: ${test.name}`);
+
+      try {
+        // Get variant assignment for this session
+        const assignment = await ABTestService.getVariantAssignment(test.id, sessionId, {
+          storeId,
+          deviceType: req.headers['user-agent']?.includes('Mobile') ? 'mobile' : 'desktop'
+        });
+
+        console.log(`[Slot Config API] Variant assigned:`, {
+          test: test.name,
+          variant: assignment.variant_name,
+          excluded: assignment.excluded
+        });
+
+        if (assignment.excluded) {
+          console.log(`[Slot Config API] User excluded from test "${test.name}"`);
+          continue;
+        }
+
+        // Get the variant configuration
+        const variant = test.variants.find(v => v.id === assignment.variant_id);
+
+        if (!variant || !variant.config || !variant.config.slot_overrides) {
+          console.log(`[Slot Config API] No slot overrides in variant`);
+          continue;
+        }
+
+        const slotOverrides = variant.config.slot_overrides;
+        console.log(`[Slot Config API] Applying slot overrides:`, Object.keys(slotOverrides));
+
+        // Apply each override
+        Object.entries(slotOverrides).forEach(([slotId, override]) => {
+          if (configWithTests.configuration.slots[slotId]) {
+            // Merge override with existing slot
+            const before = configWithTests.configuration.slots[slotId].content;
+            configWithTests.configuration.slots[slotId] = {
+              ...configWithTests.configuration.slots[slotId],
+              ...override
+            };
+            console.log(`[Slot Config API] ✅ Overrode slot "${slotId}": "${before}" → "${override.content}"`);
+          } else if (override.enabled !== false) {
+            // Create new slot
+            configWithTests.configuration.slots[slotId] = override;
+            console.log(`[Slot Config API] ➕ Created new slot "${slotId}"`);
+          }
+        });
+
+      } catch (error) {
+        console.error(`[Slot Config API] Error processing test "${test.name}":`, error);
+        // Continue with other tests
+      }
+    }
+
+    console.log('[Slot Config API] ✅ Returning config with A/B test overrides applied');
+
     res.json({
       success: true,
-      data: published
+      data: configWithTests
     });
   } catch (error) {
     console.error('Error getting published configuration:', error);
