@@ -810,8 +810,7 @@ export default function HeatmapVisualization({
                   className="w-full h-auto block"
                   style={{
                     opacity: 0.7, // Make screenshot slightly transparent so heatmap shows well
-                    pointerEvents: 'none',
-                    border: '2px solid red' // Temporary debug border
+                    pointerEvents: 'none'
                   }}
                   onLoad={(e) => {
                     const img = e.target;
@@ -840,11 +839,6 @@ export default function HeatmapVisualization({
                     }
                   }}
                 />
-                {/* Debug indicator */}
-                <div className="absolute top-2 left-2 bg-green-500 text-white px-2 py-1 rounded text-xs font-mono z-50 shadow-lg">
-                  ✅ Screenshot Loaded ({(screenshot.length / 1024).toFixed(0)}KB)
-                  {screenshotDimensions && ` - ${screenshotDimensions.width}x${screenshotDimensions.height}`}
-                </div>
 
                 {/* Heatmap overlay canvas */}
                 <canvas
