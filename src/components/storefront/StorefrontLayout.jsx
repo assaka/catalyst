@@ -25,7 +25,10 @@ import SeoHeadManager from './SeoHeadManager';
 import DataLayerManager from '@/components/storefront/DataLayerManager';
 import CookieConsentBanner from '@/components/storefront/CookieConsentBanner';
 import RoleSwitcher from '@/components/admin/RoleSwitcher';
-import HeatmapTrackerComponent from '@/components/admin/heatmap/HeatmapTracker';
+import { lazy, Suspense } from 'react';
+
+// Lazy load heatmap tracker to defer it (improves LCP)
+const HeatmapTrackerComponent = lazy(() => import('@/components/admin/heatmap/HeatmapTracker'));
 import FlashMessage from '@/components/storefront/FlashMessage';
 import { HeaderSlotRenderer } from './HeaderSlotRenderer';
 import { useHeaderConfig } from '@/hooks/useHeaderConfig';
@@ -335,20 +338,22 @@ export default function StorefrontLayout({ children }) {
                 <RoleSwitcher />
                 <DataLayerManager />
                 
-                {/* Heatmap Tracker - Track all customer interactions */}
-                <HeatmapTrackerComponent 
-                    storeId={store?.id}
-                    config={{
-                        trackClicks: true,
-                        trackHovers: true,
-                        trackScrolls: true,
-                        trackTouches: true,
-                        trackFocus: true,
-                        batchSize: 10,
-                        batchTimeout: 3000,
-                        excludeSelectors: ['.heatmap-exclude', '[data-heatmap-exclude]', '.role-switcher']
-                    }}
-                />
+                {/* Heatmap Tracker - Lazy loaded to not block LCP */}
+                <Suspense fallback={null}>
+                    <HeatmapTrackerComponent
+                        storeId={store?.id}
+                        config={{
+                            trackClicks: true,
+                            trackHovers: true,
+                            trackScrolls: true,
+                            trackTouches: true,
+                            trackFocus: true,
+                            batchSize: 10,
+                            batchTimeout: 3000,
+                            excludeSelectors: ['.heatmap-exclude', '[data-heatmap-exclude]', '.role-switcher']
+                        }}
+                    />
+                </Suspense>
             {googleFontLink && (
               <link href={googleFontLink} rel="stylesheet" />
             )}

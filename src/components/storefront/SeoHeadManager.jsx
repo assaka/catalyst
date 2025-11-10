@@ -36,13 +36,21 @@ export default function SeoHeadManager({ pageType, pageData, pageTitle, pageDesc
                 }
 
                 // Check if there's a custom canonical URL for this path
-                const response = await apiClient.get(`/canonical-urls/check?store_id=${store.id}&path=${encodeURIComponent(relativePath)}`);
+                // DEFER by 2 seconds to improve LCP (not critical for initial render)
+                setTimeout(async () => {
+                    try {
+                        const response = await apiClient.get(`/canonical-urls/check?store_id=${store.id}&path=${encodeURIComponent(relativePath)}`);
 
-                if (response?.found && response?.canonical_url) {
-                    setCustomCanonicalUrl(response.canonical_url);
-                } else {
-                    setCustomCanonicalUrl(null);
-                }
+                        if (response?.found && response?.canonical_url) {
+                            setCustomCanonicalUrl(response.canonical_url);
+                        } else {
+                            setCustomCanonicalUrl(null);
+                        }
+                    } catch (deferredError) {
+                        console.error('Error fetching deferred canonical URL:', deferredError);
+                        setCustomCanonicalUrl(null);
+                    }
+                }, 2000);
             } catch (error) {
                 console.error('Error fetching custom canonical URL:', error);
                 setCustomCanonicalUrl(null);
