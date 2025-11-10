@@ -38,10 +38,26 @@ setInterval(cleanupCache, CACHE_TTL);
  */
 async function domainResolver(req, res, next) {
   try {
-    // Check X-Forwarded-Host first (set by Vercel/proxies), then fall back to Host header
-    const host = req.get('x-forwarded-host') || req.get('host'); // e.g., www.myshop.com or localhost:5000
+    // Check all possible forwarded host headers (different proxies use different headers)
+    const host = req.get('x-forwarded-host') ||
+                 req.get('x-original-host') ||
+                 req.get('x-host') ||
+                 req.get('forwarded-host') ||
+                 req.get('host'); // e.g., www.myshop.com or localhost:5000
 
-    console.log(`[DomainResolver] Host: ${req.get('host')}, X-Forwarded-Host: ${req.get('x-forwarded-host')}, Final: ${host}, Path: ${req.path}`);
+    // Log all relevant headers for debugging
+    console.log(`[DomainResolver] Headers:`, {
+      host: req.get('host'),
+      'x-forwarded-host': req.get('x-forwarded-host'),
+      'x-original-host': req.get('x-original-host'),
+      'x-host': req.get('x-host'),
+      'forwarded': req.get('forwarded'),
+      'x-forwarded-for': req.get('x-forwarded-for'),
+      'x-forwarded-proto': req.get('x-forwarded-proto'),
+      'referer': req.get('referer'),
+      final: host,
+      path: req.path
+    });
 
     // Skip resolution for:
     // - API endpoints (handled separately)
