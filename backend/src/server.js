@@ -392,28 +392,35 @@ Disallow: /admin/`);
   }
 });
 
-// Standard robots.txt route (for default store)
+// Standard robots.txt route (for default store or custom domain)
 app.get('/robots.txt', async (req, res) => {
   try {
     const { Store, SeoSettings } = require('./models');
 
-    // Get the first active store as default
-    const defaultStore = await Store.findOne({
-      where: { is_active: true },
-      order: [['createdAt', 'ASC']]
-    });
+    // Check if request came from custom domain (set by domainResolver middleware)
+    let targetStoreSlug = req.storeSlug;
 
-    if (!defaultStore) {
-      return res.set({
-        'Content-Type': 'text/plain; charset=utf-8',
-        'Cache-Control': 'public, max-age=3600'
-      }).send(`User-agent: *
+    // If not from custom domain, get the first active store as default
+    if (!targetStoreSlug) {
+      const defaultStore = await Store.findOne({
+        where: { is_active: true },
+        order: [['createdAt', 'ASC']]
+      });
+
+      if (!defaultStore) {
+        return res.set({
+          'Content-Type': 'text/plain; charset=utf-8',
+          'Cache-Control': 'public, max-age=3600'
+        }).send(`User-agent: *
 Allow: /
 Disallow: /admin/`);
+      }
+
+      targetStoreSlug = defaultStore.slug;
     }
 
     // Redirect to the store-specific robots.txt API endpoint
-    return res.redirect(301, `/api/robots/store/${defaultStore.slug}`);
+    return res.redirect(301, `/api/robots/store/${targetStoreSlug}`);
   } catch (error) {
     console.error('[Robots] Error serving default robots.txt:', error);
     res.set({
@@ -425,25 +432,32 @@ Disallow: /admin/`);
   }
 });
 
-// Standard sitemap.xml route (for default store)
+// Standard sitemap.xml route (for default store or custom domain)
 app.get('/sitemap.xml', async (req, res) => {
   try {
     const { Store } = require('./models');
 
-    // Get the first active store as default
-    const defaultStore = await Store.findOne({
-      where: { is_active: true },
-      order: [['createdAt', 'ASC']]
-    });
+    // Check if request came from custom domain (set by domainResolver middleware)
+    let targetStoreSlug = req.storeSlug;
 
-    if (!defaultStore) {
-      return res.status(404).set({
-        'Content-Type': 'text/plain; charset=utf-8'
-      }).send('No active store found');
+    // If not from custom domain, get the first active store as default
+    if (!targetStoreSlug) {
+      const defaultStore = await Store.findOne({
+        where: { is_active: true },
+        order: [['createdAt', 'ASC']]
+      });
+
+      if (!defaultStore) {
+        return res.status(404).set({
+          'Content-Type': 'text/plain; charset=utf-8'
+        }).send('No active store found');
+      }
+
+      targetStoreSlug = defaultStore.slug;
     }
 
     // Redirect to the store-specific sitemap.xml API endpoint
-    return res.redirect(301, `/api/sitemap/store/${defaultStore.slug}`);
+    return res.redirect(301, `/api/sitemap/store/${targetStoreSlug}`);
   } catch (error) {
     console.error('[Sitemap] Error serving default sitemap.xml:', error);
     res.status(500).set({

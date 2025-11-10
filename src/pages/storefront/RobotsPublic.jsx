@@ -9,13 +9,34 @@ export default function RobotsPublic() {
     useEffect(() => {
         const fetchRobotsContent = async () => {
             try {
+                // Determine if we're on a custom domain
+                const hostname = window.location.hostname;
+                const isCustomDomain = !hostname.includes('vercel.app') &&
+                                      !hostname.includes('onrender.com') &&
+                                      !hostname.includes('localhost') &&
+                                      !hostname.includes('127.0.0.1');
+
+                let endpoint;
+                if (storeCode) {
+                    // Platform domain with explicit store code: /public/:storeCode/robots.txt
+                    endpoint = `/api/robots/store/${storeCode}`;
+                } else if (isCustomDomain) {
+                    // Custom domain: fetch by domain (backend will resolve)
+                    // Call backend /robots.txt which uses domainResolver middleware
+                    endpoint = `/robots.txt`;
+                } else {
+                    // Default store fallback
+                    endpoint = `/robots.txt`;
+                }
+
                 // Use the backend API endpoint for robots.txt
-                const response = await fetch(`/api/robots/store/${storeCode}`, {
+                const response = await fetch(endpoint, {
                     headers: {
                         'Accept': 'text/plain'
-                    }
+                    },
+                    redirect: 'follow' // Follow redirects from backend
                 });
-                
+
                 if (response.ok) {
                     const content = await response.text();
                     setRobotsContent(content);
@@ -40,9 +61,7 @@ Disallow: /admin/`);
             }
         };
 
-        if (storeCode) {
-            fetchRobotsContent();
-        }
+        fetchRobotsContent();
     }, [storeCode]);
 
     useEffect(() => {

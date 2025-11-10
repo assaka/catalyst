@@ -3,6 +3,18 @@
  * Supports /public and /admin URL prefixes, UTM tracking, and filter parameters
  */
 
+/**
+ * Check if current hostname is a custom domain (not platform domains)
+ * Platform domains: vercel.app, onrender.com, localhost, 127.0.0.1
+ */
+export function isCustomDomain() {
+  const hostname = window.location.hostname;
+  return !hostname.includes('vercel.app') &&
+         !hostname.includes('onrender.com') &&
+         !hostname.includes('localhost') &&
+         !hostname.includes('127.0.0.1');
+}
+
 // URL Architecture Configuration
 export const URL_CONFIG = {
   // Base prefixes
@@ -121,6 +133,7 @@ export function createAdminUrl(pageName, params = {}) {
 
 /**
  * Create public storefront URL with store context
+ * On custom domains, omits /public/:storeSlug prefix
  */
 export function createPublicUrl(storeSlug, pageName, params = {}) {
   const pageKey = pageName.toUpperCase();
@@ -133,7 +146,13 @@ export function createPublicUrl(storeSlug, pageName, params = {}) {
 
   const slug = URL_CONFIG.PAGES[pageKey];
 
-  // Handle empty slug (for STOREFRONT page) to avoid double slashes
+  // Custom domain: use root paths without /public/:storeSlug prefix
+  if (isCustomDomain()) {
+    const baseUrl = slug ? `/${slug}` : '/';
+    return addUrlParams(baseUrl, params);
+  }
+
+  // Platform domain: include /public/:storeSlug prefix
   const baseUrl = slug
     ? `${URL_CONFIG.PUBLIC_PREFIX}/${storeSlug}/${slug}`
     : `${URL_CONFIG.PUBLIC_PREFIX}/${storeSlug}`;
@@ -143,20 +162,34 @@ export function createPublicUrl(storeSlug, pageName, params = {}) {
 
 /**
  * Create SEO-friendly product URL
- * Example: /public/storename/product/wireless-headphones-sony
+ * Custom domain: /product/wireless-headphones-sony
+ * Platform domain: /public/storename/product/wireless-headphones-sony
  */
 export function createProductUrl(storeSlug, productSlug, params = {}, useShortUrl = false) {
   const productPage = useShortUrl ? URL_CONFIG.PAGES.PRODUCT_SHORT : URL_CONFIG.PAGES.PRODUCT_DETAIL;
+
+  // Custom domain: use root paths without /public/:storeSlug prefix
+  if (isCustomDomain()) {
+    const baseUrl = `/${productPage}/${productSlug}`;
+    return addUrlParams(baseUrl, params);
+  }
+
+  // Platform domain: include /public/:storeSlug prefix
   const baseUrl = `${URL_CONFIG.PUBLIC_PREFIX}/${storeSlug}/${productPage}/${productSlug}`;
   return addUrlParams(baseUrl, params);
 }
 
 /**
  * Create SEO-friendly brand URL
- * Example: /public/storename/brand/nike
+ * Custom domain: /brand/nike
+ * Platform domain: /public/storename/brand/nike
  */
 export function createBrandUrl(storeSlug, brandSlug, filters = {}, params = {}) {
-  const baseUrl = `${URL_CONFIG.PUBLIC_PREFIX}/${storeSlug}/${URL_CONFIG.PAGES.BRAND}/${brandSlug}`;
+  // Custom domain: use root paths without /public/:storeSlug prefix
+  const baseUrl = isCustomDomain()
+    ? `/${URL_CONFIG.PAGES.BRAND}/${brandSlug}`
+    : `${URL_CONFIG.PUBLIC_PREFIX}/${storeSlug}/${URL_CONFIG.PAGES.BRAND}/${brandSlug}`;
+
   const filterParams = buildFilterParams(filters);
   const allParams = { ...filterParams, ...params };
   return addUrlParams(baseUrl, allParams);
@@ -164,10 +197,15 @@ export function createBrandUrl(storeSlug, brandSlug, filters = {}, params = {}) 
 
 /**
  * Create SEO-friendly collection URL
- * Example: /public/storename/collection/summer-2024
+ * Custom domain: /collection/summer-2024
+ * Platform domain: /public/storename/collection/summer-2024
  */
 export function createCollectionUrl(storeSlug, collectionSlug, filters = {}, params = {}) {
-  const baseUrl = `${URL_CONFIG.PUBLIC_PREFIX}/${storeSlug}/${URL_CONFIG.PAGES.COLLECTION}/${collectionSlug}`;
+  // Custom domain: use root paths without /public/:storeSlug prefix
+  const baseUrl = isCustomDomain()
+    ? `/${URL_CONFIG.PAGES.COLLECTION}/${collectionSlug}`
+    : `${URL_CONFIG.PUBLIC_PREFIX}/${storeSlug}/${URL_CONFIG.PAGES.COLLECTION}/${collectionSlug}`;
+
   const filterParams = buildFilterParams(filters);
   const allParams = { ...filterParams, ...params };
   return addUrlParams(baseUrl, allParams);
@@ -175,11 +213,17 @@ export function createCollectionUrl(storeSlug, collectionSlug, filters = {}, par
 
 /**
  * Create SEO-friendly search URL
- * Example: /public/storename/search/wireless-headphones
+ * Custom domain: /search/wireless-headphones
+ * Platform domain: /public/storename/search/wireless-headphones
  */
 export function createSearchUrl(storeSlug, searchQuery, filters = {}, params = {}) {
   const searchSlug = encodeURIComponent(searchQuery.toLowerCase().replace(/\s+/g, '-'));
-  const baseUrl = `${URL_CONFIG.PUBLIC_PREFIX}/${storeSlug}/${URL_CONFIG.PAGES.SEARCH}/${searchSlug}`;
+
+  // Custom domain: use root paths without /public/:storeSlug prefix
+  const baseUrl = isCustomDomain()
+    ? `/${URL_CONFIG.PAGES.SEARCH}/${searchSlug}`
+    : `${URL_CONFIG.PUBLIC_PREFIX}/${storeSlug}/${URL_CONFIG.PAGES.SEARCH}/${searchSlug}`;
+
   const filterParams = buildFilterParams(filters);
   const allParams = { ...filterParams, ...params };
   return addUrlParams(baseUrl, allParams);
@@ -187,25 +231,35 @@ export function createSearchUrl(storeSlug, searchQuery, filters = {}, params = {
 
 /**
  * Create SEO-friendly category URL with layered navigation
- * Example: /public/storename/category/electronics/headphones?brand=sony,apple&price=100-500&color=black
+ * Custom domain: /category/electronics/headphones?brand=sony,apple&price=100-500&color=black
+ * Platform domain: /public/storename/category/electronics/headphones?brand=sony,apple&price=100-500&color=black
  */
 export function createCategoryUrl(storeSlug, categoryPath, filters = {}, params = {}, useShortUrl = false) {
   const categorySlug = Array.isArray(categoryPath) ? categoryPath.join('/') : categoryPath;
   const categoryPage = useShortUrl ? URL_CONFIG.PAGES.CATEGORY_SHORT : URL_CONFIG.PAGES.CATEGORY;
-  let baseUrl = `${URL_CONFIG.PUBLIC_PREFIX}/${storeSlug}/${categoryPage}/${categorySlug}`;
-  
+
+  // Custom domain: use root paths without /public/:storeSlug prefix
+  let baseUrl = isCustomDomain()
+    ? `/${categoryPage}/${categorySlug}`
+    : `${URL_CONFIG.PUBLIC_PREFIX}/${storeSlug}/${categoryPage}/${categorySlug}`;
+
   // Convert filters to SEO-friendly URL structure
   const filterParams = buildFilterParams(filters);
   const allParams = { ...filterParams, ...params };
-  
+
   return addUrlParams(baseUrl, allParams);
 }
 
 /**
  * Create CMS page URL
+ * Custom domain: /cms-page/about-us
+ * Platform domain: /public/storename/cms-page/about-us
  */
 export function createCmsPageUrl(storeSlug, pageSlug) {
-  return `${URL_CONFIG.PUBLIC_PREFIX}/${storeSlug}/${URL_CONFIG.PAGES.CMS_PAGE}/${pageSlug}`;
+  // Custom domain: use root paths without /public/:storeSlug prefix
+  return isCustomDomain()
+    ? `/${URL_CONFIG.PAGES.CMS_PAGE}/${pageSlug}`
+    : `${URL_CONFIG.PUBLIC_PREFIX}/${storeSlug}/${URL_CONFIG.PAGES.CMS_PAGE}/${pageSlug}`;
 }
 
 /**
