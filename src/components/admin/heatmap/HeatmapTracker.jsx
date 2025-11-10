@@ -140,10 +140,15 @@ class HeatmapTracker {
     if (this.shouldExcludeElement(event.target)) return;
 
     const elementInfo = this.getElementInfo(event.target);
+    // Use pageX/pageY to get absolute page coordinates (includes scroll offset)
+    // Fallback to clientX/Y + scroll offsets for compatibility
+    const x = event.pageX ?? (event.clientX + window.pageXOffset);
+    const y = event.pageY ?? (event.clientY + window.pageYOffset);
+
     this.trackInteraction({
       interaction_type: 'click',
-      x_coordinate: event.clientX,
-      y_coordinate: event.clientY,
+      x_coordinate: x,
+      y_coordinate: y,
       ...elementInfo
     });
   }
@@ -159,10 +164,14 @@ class HeatmapTracker {
     this.hoverTimer = setTimeout(() => {
       if (this.lastHoverElement === event.target) {
         const elementInfo = this.getElementInfo(event.target);
+        // Use pageX/pageY to get absolute page coordinates (includes scroll offset)
+        const x = event.pageX ?? (event.clientX + window.pageXOffset);
+        const y = event.pageY ?? (event.clientY + window.pageYOffset);
+
         this.trackInteraction({
           interaction_type: 'hover',
-          x_coordinate: event.clientX,
-          y_coordinate: event.clientY,
+          x_coordinate: x,
+          y_coordinate: y,
           time_on_element: Date.now() - this.hoverStartTime,
           ...elementInfo
         });
@@ -203,10 +212,14 @@ class HeatmapTracker {
     if (this.mouseMoveTimer) return;
 
     this.mouseMoveTimer = setTimeout(() => {
+      // Use pageX/pageY to get absolute page coordinates (includes scroll offset)
+      const x = event.pageX ?? (event.clientX + window.pageXOffset);
+      const y = event.pageY ?? (event.clientY + window.pageYOffset);
+
       this.trackInteraction({
         interaction_type: 'mouse_move',
-        x_coordinate: event.clientX,
-        y_coordinate: event.clientY
+        x_coordinate: x,
+        y_coordinate: y
       });
 
       this.mouseMoveTimer = null;
@@ -220,10 +233,14 @@ class HeatmapTracker {
     const touch = event.touches[0];
     if (touch) {
       const elementInfo = this.getElementInfo(event.target);
+      // Use pageX/pageY to get absolute page coordinates (includes scroll offset)
+      const x = touch.pageX ?? (touch.clientX + window.pageXOffset);
+      const y = touch.pageY ?? (touch.clientY + window.pageYOffset);
+
       this.trackInteraction({
         interaction_type: 'touch',
-        x_coordinate: touch.clientX,
-        y_coordinate: touch.clientY,
+        x_coordinate: x,
+        y_coordinate: y,
         ...elementInfo
       });
     }
