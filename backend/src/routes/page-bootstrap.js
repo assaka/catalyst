@@ -4,7 +4,6 @@ const {
   Attribute,
   AttributeSet,
   ProductLabel,
-  CustomOptionRule,
   ProductTab,
   Tax,
   ShippingMethod,
@@ -58,8 +57,8 @@ router.get('/', cacheMiddleware({
 
     switch (page_type) {
       case 'product':
-        // Product page needs: attributes, attribute sets, labels, custom options, tabs
-        const [attributes, attributeSets, productLabels, customOptionRules, productTabs] = await Promise.all([
+        // Product page needs: attributes, attribute sets, labels, tabs
+        const [attributes, attributeSets, productLabels, productTabs] = await Promise.all([
           Attribute.findAll({
             where: { store_id },
             order: [['name', 'ASC']]
@@ -72,10 +71,6 @@ router.get('/', cacheMiddleware({
             where: { store_id, is_active: true },
             order: [['name', 'ASC']]
           }),
-          CustomOptionRule.findAll({
-            where: { store_id },
-            order: [['sort_order', 'ASC']]
-          }),
           ProductTab.findAll({
             where: { store_id, is_active: true },
             order: [['sort_order', 'ASC']]
@@ -86,7 +81,6 @@ router.get('/', cacheMiddleware({
           attributes: attributes || [],
           attributeSets: attributeSets || [],
           productLabels: productLabels || [],
-          customOptionRules: customOptionRules || [],
           productTabs: productTabs || []
         };
         break;
