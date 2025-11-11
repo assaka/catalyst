@@ -61,11 +61,16 @@ export function useStoreBootstrap(storeSlug, language) {
       }
 
       // Build query string for bootstrap endpoint
+      const sessionId = localStorage.getItem('guestSessionId') || localStorage.getItem('guest_session_id');
       const params = new URLSearchParams({
         slug: storeSlug,
-        lang: language || 'en',
-        session_id: localStorage.getItem('guestSessionId') || ''
+        lang: language || 'en'
       });
+
+      // Only add session_id if it exists
+      if (sessionId) {
+        params.append('session_id', sessionId);
+      }
 
       // Use getPublic (not .get) - returns data directly, not wrapped in response.data
       const result = await storefrontApiClient.getPublic(`storefront/bootstrap?${params.toString()}`);
