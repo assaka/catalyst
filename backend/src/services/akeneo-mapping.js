@@ -307,6 +307,78 @@ class AkeneoMapping {
   }
 
   /**
+   * Transform Akeneo product model to Catalyst configurable product format
+   */
+  async transformProductModel(akeneoProductModel, storeId, locale = 'en_US', processedImages = null, customMappings = {}, settings = {}, akeneoClient = null) {
+    const values = akeneoProductModel.values || {};
+
+    // Extract product name
+    const productName = this.extractProductValue(values, 'name', locale) ||
+                       this.extractProductValue(values, 'label', locale) ||
+                       akeneoProductModel.code;
+
+    // Determine what to use for slug generation
+    let slugSource = productName;
+    if (settings.akeneoUrlField && values[settings.akeneoUrlField]) {
+      const urlFieldValue = this.extractProductValue(values, settings.akeneoUrlField, locale);
+      if (urlFieldValue && typeof urlFieldValue === 'string' && urlFieldValue.trim()) {
+        slugSource = urlFieldValue.trim();
+      }
+    }
+
+    // Extract variation axes (configurable attributes)
+    const variationAxes = akeneoProductModel.family_variant?.variant_attribute_sets?.[0]?.axes || [];
+
+    // Start with configurable product structure
+    const configurableProduct = {
+      store_id: storeId,
+      name: productName,
+      slug: this.generateSlug(slugSource),
+      sku: `${akeneoProductModel.code}-configurable`, // Configurable products need unique SKU
+      type: 'configurable', // Set type as configurable
+      barcode: this.extractProductValue(values, 'ean', locale) ||
+               this.extractProductValue(values, 'barcode', locale),
+      description: this.extractProductValue(values, 'description', locale),
+      short_description: this.extractProductValue(values, 'short_description', locale),
+      price: this.extractNumericValue(values, 'price', locale),
+      compare_price: this.extractNumericValue(values, 'compare_price', locale) ||
+                     this.extractNumericValue(values, 'msrp', locale),
+      cost_price: this.extractNumericValue(values, 'cost_price', locale) ||
+                  this.extractNumericValue(values, 'cost', locale),
+      weight: this.extractNumericValue(values, 'weight', locale),
+      dimensions: this.extractDimensions(values, locale),
+      images: await this.extractImages(values, processedImages, settings.downloadImages !== false, settings.akeneoBaseUrl, storeId, akeneoClient, akeneoProductModel.code, customMappings),
+      status: 'active', // Product models are typically active
+      visibility: 'visible',
+      manage_stock: false, // Configurable products don't manage stock directly
+      stock_quantity: 0,
+      allow_backorders: false,
+      low_stock_threshold: 0,
+      infinite_stock: false,
+      is_custom_option: false,
+      is_coupon_eligible: true,
+      featured: this.extractBooleanValue(values, 'featured', locale) || false,
+      tags: [],
+      attributes: await this.extractAllAttributes(values, locale, storeId, akeneoClient, customMappings),
+      seo: this.extractSeoData(values, locale),
+      attribute_set_id: null, // Will be mapped from family
+      category_ids: akeneoProductModel.categories || [],
+      related_product_ids: [],
+      configurable_attributes: variationAxes, // Store the axes codes for configuration
+      sort_order: 0,
+      view_count: 0,
+      purchase_count: 0,
+      // Keep original Akeneo data for reference
+      akeneo_code: akeneoProductModel.code,
+      akeneo_family: akeneoProductModel.family,
+      akeneo_family_variant: akeneoProductModel.family_variant?.code,
+      _originalSlug: this.generateSlug(slugSource)
+    };
+
+    return configurableProduct;
+  }
+
+  /**
    * Apply custom field mapping to catalyst product
    */
   applyCustomMapping(catalystProduct, catalystField, akeneoValue, akeneoField) {

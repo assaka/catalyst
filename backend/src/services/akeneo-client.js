@@ -441,6 +441,49 @@ class AkeneoClient {
   }
 
   /**
+   * Get all product models with pagination handling
+   */
+  async getAllProductModels() {
+    const allProductModels = [];
+
+    try {
+      console.log('🔍 Fetching ALL product models with pagination...');
+      let nextUrl = null;
+      let pageCount = 0;
+
+      do {
+        pageCount++;
+        const params = nextUrl ? {} : { limit: 100 };
+        const endpoint = nextUrl ? nextUrl.replace(this.baseUrl, '') : '/api/rest/v1/product-models';
+
+        console.log(`📄 Fetching product models page ${pageCount}${nextUrl ? ' (from next URL)' : ''}`);
+        const response = await this.makeRequest('GET', endpoint, null, nextUrl ? null : params);
+
+        if (response._embedded && response._embedded.items) {
+          allProductModels.push(...response._embedded.items);
+          console.log(`✅ Page ${pageCount}: ${response._embedded.items.length} product models (total: ${allProductModels.length})`);
+        }
+
+        nextUrl = response._links && response._links.next ? response._links.next.href : null;
+      } while (nextUrl);
+
+      console.log(`✅ Fetched ${allProductModels.length} total product models`);
+      return allProductModels;
+
+    } catch (error) {
+      console.error('❌ Error fetching product models:', error.message);
+      throw error;
+    }
+  }
+
+  /**
+   * Get specific product model by code
+   */
+  async getProductModel(code) {
+    return this.makeRequest('GET', `/api/rest/v1/product-models/${code}`);
+  }
+
+  /**
    * Get all families with pagination handling
    */
   async getAllFamilies() {
@@ -450,7 +493,7 @@ class AkeneoClient {
     do {
       const params = nextUrl ? {} : { limit: 100 };
       const endpoint = nextUrl ? nextUrl.replace(this.baseUrl, '') : '/api/rest/v1/families';
-      
+
       const response = await this.makeRequest('GET', endpoint, null, nextUrl ? null : params);
 
       if (response._embedded && response._embedded.items) {

@@ -1264,6 +1264,427 @@ class AkeneoIntegration {
   }
 
   /**
+   * Import a single transformed product to the database
+   */
+  async importSingleProduct(transformedProduct, storeId) {
+    try {
+      // Check if product already exists
+      const existingProduct = await Product.findOne({
+        where: {
+          store_id: storeId,
+          sku: transformedProduct.sku
+        }
+      });
+
+      if (existingProduct) {
+        // Prepare update data
+        const updateData = { ...transformedProduct };
+        delete updateData.id;
+        delete updateData.sku; // Don't update SKU
+        delete updateData.store_id; // Don't update store_id
+        delete updateData._originalSlug;
+        delete updateData.akeneo_uuid;
+        delete updateData.akeneo_identifier;
+        delete updateData.akeneo_family;
+        delete updateData.akeneo_groups;
+        delete updateData.akeneo_code;
+        delete updateData.akeneo_family_variant;
+
+        await existingProduct.update(updateData);
+        return { success: true, action: 'updated', productId: existingProduct.id };
+      } else {
+        // Create new product
+        const productData = { ...transformedProduct };
+        delete productData._originalSlug;
+        delete productData.akeneo_uuid;
+        delete productData.akeneo_identifier;
+        delete productData.akeneo_family;
+        delete productData.akeneo_groups;
+        delete productData.akeneo_code;
+        delete productData.akeneo_family_variant;
+
+        const newProduct = await Product.create(productData);
+        return { success: true, action: 'created', productId: newProduct.id };
+      }
+    } catch (error) {
+      console.error(`Failed to import product ${transformedProduct.sku}:`, error.message);
+      return { success: false, error: error.message };
+    }
+  }
+
+  /**
+   * Import products and product models from Akeneo to Catalyst
+   * This method handles both simple products and configurable products (from product models)
+   */
+  async importProductsWithModels(storeId, options = {}) {
+    const { locale = 'en_US', dryRun = false, batchSize = 50, filters = {}, settings = {}, customMappings = {} } = options;
+
+    // Ensure downloadImages is enabled by default in settings
+    const enhancedSettings = {
+      includeImages: true,
+      downloadImages: true,
+      includeFiles: true,
+      includeStock: true,
+      akeneoBaseUrl: this.config.baseUrl,
+      ...settings
+    };
+
+    try {
+      console.log('🚀 Starting product and product model import from Akeneo...');
+      console.log(`📍 Store ID: ${storeId}`);
+      console.log(`🧪 Dry run mode: ${dryRun}`);
+      console.log(`📦 Batch size: ${batchSize}`);
+
+      // Get category and family mappings
+      console.log('📂 Building category mapping...');
+      const categoryMapping = await this.buildCategoryMapping(storeId);
+      console.log(`✅ Category mapping built: ${Object.keys(categoryMapping).length} categories`);
+
+      console.log('🏷️ Building family mapping...');
+      const familyMapping = await this.buildFamilyMapping(storeId);
+      console.log(`✅ Family mapping built: ${Object.keys(familyMapping).length} families`);
+
+      // Fetch all products and product models
+      console.log('📡 Fetching all products from Akeneo...');
+      let akeneoProducts = await this.client.getAllProducts();
+      console.log(`📦 Found ${akeneoProducts.length} products in Akeneo`);
+
+      console.log('📡 Fetching all product models from Akeneo...');
+      let akeneoProductModels = await this.client.getAllProductModels();
+      console.log(`📦 Found ${akeneoProductModels.length} product models in Akeneo`);
+
+      // Apply filters to products
+      if (filters.families && filters.families.length > 0) {
+        console.log(`🔍 Filtering products by families: ${filters.families.join(', ')}`);
+        akeneoProducts = akeneoProducts.filter(product =>
+          filters.families.includes(product.family)
+        );
+        akeneoProductModels = akeneoProductModels.filter(model =>
+          filters.families.includes(model.family)
+        );
+        console.log(`📊 After family filtering: ${akeneoProducts.length} products, ${akeneoProductModels.length} product models`);
+      }
+
+      // Separate products into variants (have parent) and standalone products
+      const variantProducts = akeneoProducts.filter(p => p.parent);
+      const standaloneProducts = akeneoProducts.filter(p => !p.parent);
+
+      console.log(`📊 Product breakdown:`);
+      console.log(`   - ${standaloneProducts.length} standalone products`);
+      console.log(`   - ${variantProducts.length} variant products`);
+      console.log(`   - ${akeneoProductModels.length} product models (will become configurable)`);
+
+      this.importStats.products.total = standaloneProducts.length + variantProducts.length + akeneoProductModels.length;
+
+      // Build a map of product model code to product model data
+      const productModelMap = {};
+      akeneoProductModels.forEach(model => {
+        productModelMap[model.code] = model;
+      });
+
+      // Track created products by their Akeneo identifier/code
+      const createdProducts = {}; // Maps akeneo identifier/code to Catalyst product ID
+      let processed = 0;
+
+      // STEP 1: Import standalone simple products first
+      if (standaloneProducts.length > 0) {
+        console.log(`\n📦 STEP 1: Processing ${standaloneProducts.length} standalone products...`);
+
+        for (let i = 0; i < standaloneProducts.length; i += batchSize) {
+          const batch = standaloneProducts.slice(i, i + batchSize);
+          console.log(`\n📦 Processing standalone batch ${Math.floor(i/batchSize) + 1}/${Math.ceil(standaloneProducts.length/batchSize)} (${batch.length} products)`);
+
+          for (const akeneoProduct of batch) {
+            processed++;
+            try {
+              // Transform product to Catalyst format
+              const catalystProduct = await this.mapping.transformProduct(akeneoProduct, storeId, locale, null, customMappings, enhancedSettings, this.client);
+
+              // Apply settings
+              if (enhancedSettings.status === 'disabled') {
+                catalystProduct.status = 'inactive';
+              } else if (enhancedSettings.status === 'enabled') {
+                catalystProduct.status = 'active';
+              }
+
+              // Map category IDs and family
+              catalystProduct.category_ids = this.mapping.mapCategoryIds(akeneoProduct.categories || [], categoryMapping);
+              if (akeneoProduct.family && familyMapping[akeneoProduct.family]) {
+                catalystProduct.attribute_set_id = familyMapping[akeneoProduct.family];
+              }
+
+              // Validate product
+              const validationErrors = this.mapping.validateProduct(catalystProduct);
+              if (validationErrors.length > 0) {
+                this.importStats.products.failed++;
+                this.importStats.errors.push({
+                  type: 'product',
+                  akeneo_identifier: catalystProduct.akeneo_identifier,
+                  errors: validationErrors
+                });
+                console.error(`❌ Validation failed for ${catalystProduct.sku}: ${validationErrors.join(', ')}`);
+                continue;
+              }
+
+              if (!dryRun) {
+                const result = await this.importSingleProduct(catalystProduct, storeId);
+                if (result.success) {
+                  createdProducts[akeneoProduct.identifier] = result.productId;
+                  this.importStats.products.imported++;
+                  if (processed <= 5 || processed % 25 === 0) {
+                    console.log(`✅ ${result.action} standalone product: ${catalystProduct.name} (${catalystProduct.sku})`);
+                  }
+                } else {
+                  this.importStats.products.failed++;
+                  this.importStats.errors.push({
+                    type: 'product',
+                    akeneo_identifier: akeneoProduct.identifier,
+                    error: result.error
+                  });
+                }
+              } else {
+                this.importStats.products.imported++;
+              }
+            } catch (error) {
+              this.importStats.products.failed++;
+              this.importStats.errors.push({
+                type: 'product',
+                akeneo_identifier: akeneoProduct.identifier,
+                error: error.message
+              });
+              console.error(`❌ Failed to import standalone product ${akeneoProduct.identifier}: ${error.message}`);
+            }
+          }
+        }
+      }
+
+      // STEP 2: Import variant products as simple products
+      if (variantProducts.length > 0) {
+        console.log(`\n📦 STEP 2: Processing ${variantProducts.length} variant products...`);
+
+        for (let i = 0; i < variantProducts.length; i += batchSize) {
+          const batch = variantProducts.slice(i, i + batchSize);
+          console.log(`\n📦 Processing variant batch ${Math.floor(i/batchSize) + 1}/${Math.ceil(variantProducts.length/batchSize)} (${batch.length} products)`);
+
+          for (const akeneoProduct of batch) {
+            processed++;
+            try {
+              // Transform variant as a simple product (for now, we'll link to parent later)
+              const catalystProduct = await this.mapping.transformProduct(akeneoProduct, storeId, locale, null, customMappings, enhancedSettings, this.client);
+
+              // Ensure it's marked as simple
+              catalystProduct.type = 'simple';
+
+              // Apply settings
+              if (enhancedSettings.status === 'disabled') {
+                catalystProduct.status = 'inactive';
+              } else if (enhancedSettings.status === 'enabled') {
+                catalystProduct.status = 'active';
+              }
+
+              // Map category IDs and family
+              catalystProduct.category_ids = this.mapping.mapCategoryIds(akeneoProduct.categories || [], categoryMapping);
+              if (akeneoProduct.family && familyMapping[akeneoProduct.family]) {
+                catalystProduct.attribute_set_id = familyMapping[akeneoProduct.family];
+              }
+
+              // Validate product
+              const validationErrors = this.mapping.validateProduct(catalystProduct);
+              if (validationErrors.length > 0) {
+                this.importStats.products.failed++;
+                this.importStats.errors.push({
+                  type: 'product',
+                  akeneo_identifier: catalystProduct.akeneo_identifier,
+                  errors: validationErrors
+                });
+                console.error(`❌ Validation failed for variant ${catalystProduct.sku}: ${validationErrors.join(', ')}`);
+                continue;
+              }
+
+              if (!dryRun) {
+                const result = await this.importSingleProduct(catalystProduct, storeId);
+                if (result.success) {
+                  // Store variant product ID for later linking to parent
+                  createdProducts[akeneoProduct.identifier] = result.productId;
+                  this.importStats.products.imported++;
+                  if (processed <= 5 || processed % 25 === 0) {
+                    console.log(`✅ ${result.action} variant product: ${catalystProduct.name} (${catalystProduct.sku}) - parent: ${akeneoProduct.parent}`);
+                  }
+                } else {
+                  this.importStats.products.failed++;
+                  this.importStats.errors.push({
+                    type: 'product',
+                    akeneo_identifier: akeneoProduct.identifier,
+                    error: result.error
+                  });
+                }
+              } else {
+                this.importStats.products.imported++;
+              }
+            } catch (error) {
+              this.importStats.products.failed++;
+              this.importStats.errors.push({
+                type: 'product',
+                akeneo_identifier: akeneoProduct.identifier,
+                error: error.message
+              });
+              console.error(`❌ Failed to import variant product ${akeneoProduct.identifier}: ${error.message}`);
+            }
+          }
+        }
+      }
+
+      // STEP 3: Import product models as configurable products
+      if (akeneoProductModels.length > 0) {
+        console.log(`\n📦 STEP 3: Processing ${akeneoProductModels.length} product models as configurable products...`);
+
+        for (let i = 0; i < akeneoProductModels.length; i += batchSize) {
+          const batch = akeneoProductModels.slice(i, i + batchSize);
+          console.log(`\n📦 Processing product model batch ${Math.floor(i/batchSize) + 1}/${Math.ceil(akeneoProductModels.length/batchSize)} (${batch.length} models)`);
+
+          for (const akeneoProductModel of batch) {
+            processed++;
+            try {
+              // Transform product model to configurable product
+              const configurableProduct = await this.mapping.transformProductModel(akeneoProductModel, storeId, locale, null, customMappings, enhancedSettings, this.client);
+
+              // Apply settings
+              if (enhancedSettings.status === 'disabled') {
+                configurableProduct.status = 'inactive';
+              } else if (enhancedSettings.status === 'enabled') {
+                configurableProduct.status = 'active';
+              }
+
+              // Map category IDs and family
+              configurableProduct.category_ids = this.mapping.mapCategoryIds(akeneoProductModel.categories || [], categoryMapping);
+              if (akeneoProductModel.family && familyMapping[akeneoProductModel.family]) {
+                configurableProduct.attribute_set_id = familyMapping[akeneoProductModel.family];
+              }
+
+              // Validate configurable product
+              const validationErrors = this.mapping.validateProduct(configurableProduct);
+              if (validationErrors.length > 0) {
+                this.importStats.products.failed++;
+                this.importStats.errors.push({
+                  type: 'product_model',
+                  akeneo_code: akeneoProductModel.code,
+                  errors: validationErrors
+                });
+                console.error(`❌ Validation failed for product model ${configurableProduct.sku}: ${validationErrors.join(', ')}`);
+                continue;
+              }
+
+              if (!dryRun) {
+                const result = await this.importSingleProduct(configurableProduct, storeId);
+                if (result.success) {
+                  createdProducts[akeneoProductModel.code] = result.productId;
+                  this.importStats.products.imported++;
+                  console.log(`✅ ${result.action} configurable product: ${configurableProduct.name} (${configurableProduct.sku})`);
+                } else {
+                  this.importStats.products.failed++;
+                  this.importStats.errors.push({
+                    type: 'product_model',
+                    akeneo_code: akeneoProductModel.code,
+                    error: result.error
+                  });
+                }
+              } else {
+                this.importStats.products.imported++;
+              }
+            } catch (error) {
+              this.importStats.products.failed++;
+              this.importStats.errors.push({
+                type: 'product_model',
+                akeneo_code: akeneoProductModel.code,
+                error: error.message
+              });
+              console.error(`❌ Failed to import product model ${akeneoProductModel.code}: ${error.message}`);
+            }
+          }
+        }
+      }
+
+      // STEP 4: Link variants to their parent configurable products
+      if (variantProducts.length > 0 && !dryRun) {
+        console.log(`\n📦 STEP 4: Linking ${variantProducts.length} variants to their parent configurable products...`);
+
+        for (const variantProduct of variantProducts) {
+          try {
+            const parentCode = variantProduct.parent;
+            const variantIdentifier = variantProduct.identifier;
+
+            const parentId = createdProducts[parentCode];
+            const variantId = createdProducts[variantIdentifier];
+
+            if (parentId && variantId) {
+              // Update variant to set parent_id
+              await Product.update(
+                { parent_id: parentId },
+                { where: { id: variantId } }
+              );
+              console.log(`✅ Linked variant ${variantIdentifier} to parent ${parentCode}`);
+            } else {
+              console.warn(`⚠️ Could not link variant ${variantIdentifier} to parent ${parentCode} - parent or variant not found`);
+            }
+          } catch (error) {
+            console.error(`❌ Failed to link variant ${variantProduct.identifier} to parent: ${error.message}`);
+          }
+        }
+      }
+
+      console.log('🎉 Product and product model import completed!');
+      console.log(`📊 Final stats: ${this.importStats.products.imported} imported, ${this.importStats.products.failed} failed, ${this.importStats.products.total} total`);
+
+      const response = {
+        success: true,
+        stats: this.importStats.products,
+        dryRun: dryRun,
+        details: {
+          processedCount: processed,
+          standaloneProducts: standaloneProducts.length,
+          variantProducts: variantProducts.length,
+          productModels: akeneoProductModels.length,
+          completedSuccessfully: true
+        }
+      };
+
+      // Save import statistics to database (only if not a dry run)
+      if (!dryRun) {
+        try {
+          const ImportStatistic = require('../models/ImportStatistic');
+          await ImportStatistic.saveImportResults(storeId, 'products', {
+            totalProcessed: this.importStats.products.total,
+            successfulImports: this.importStats.products.imported,
+            failedImports: this.importStats.products.failed,
+            skippedImports: this.importStats.products.skipped,
+            errorDetails: this.importStats.errors.length > 0 ? JSON.stringify(this.importStats.errors) : null,
+            importMethod: 'manual'
+          });
+          console.log('✅ Product import statistics saved to database');
+        } catch (statsError) {
+          console.error('❌ Failed to save product import statistics:', statsError.message);
+        }
+      }
+
+      if (dryRun) {
+        response.message = `Dry run completed. Would import ${this.importStats.products.imported} products`;
+      } else {
+        response.message = `Successfully imported ${this.importStats.products.imported} products (including configurable products)`;
+      }
+
+      return response;
+
+    } catch (error) {
+      console.error('Product and product model import failed:', error);
+      return {
+        success: false,
+        error: error.message,
+        stats: this.importStats.products
+      };
+    }
+  }
+
+  /**
    * Reset import statistics
    */
   resetStats() {
