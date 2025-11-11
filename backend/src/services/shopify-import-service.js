@@ -137,7 +137,8 @@ class ShopifyImportService {
         failedImports: this.importStats.collections.failed,
         skippedImports: this.importStats.collections.skipped,
         errorDetails: JSON.stringify(this.importStats.errors.filter(e => e.type === 'collection')),
-        importMethod: 'shopify'
+        importMethod: 'manual',
+        importSource: 'shopify'
       });
 
       return {
@@ -291,7 +292,8 @@ class ShopifyImportService {
         failedImports: this.importStats.products.failed,
         skippedImports: this.importStats.products.skipped,
         errorDetails: JSON.stringify(this.importStats.errors.filter(e => e.type === 'product')),
-        importMethod: 'shopify'
+        importMethod: 'manual',
+        importSource: 'shopify'
       });
 
       return {
