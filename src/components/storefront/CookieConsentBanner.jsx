@@ -13,13 +13,28 @@ import { createCmsPageUrl } from '@/utils/urlUtils';
 import { useTranslation } from '@/contexts/TranslationContext';
 
 const getUserCountry = async () => {
+  // Check cache first (24-hour localStorage cache)
+  const cached = localStorage.getItem('user_country');
+  const cacheTimestamp = localStorage.getItem('user_country_timestamp');
+
+  // Use cache if less than 24 hours old
+  if (cached && cacheTimestamp && (Date.now() - parseInt(cacheTimestamp) < 86400000)) {
+    return cached;
+  }
+
   try {
     const response = await fetch('https://ipapi.co/json/');
     const data = await response.json();
-    return data.country_code;
+    const country = data.country_code || 'US';
+
+    // Cache for 24 hours
+    localStorage.setItem('user_country', country);
+    localStorage.setItem('user_country_timestamp', Date.now().toString());
+
+    return country;
   } catch (error) {
     console.warn('Could not detect user country:', error);
-    return 'US';
+    return cached || 'US'; // Use cached value if fetch fails
   }
 };
 
@@ -44,15 +59,21 @@ export default function CookieConsentBanner() {
   useEffect(() => {
     const initializeBanner = async () => {
       if (store?.id && settings?.cookie_consent) {
-        // IMPORTANT: Wait for country detection to complete BEFORE checking consent
-        // Get the country directly to avoid React state update timing issues
-        const detectedCountry = await getUserCountry();
-        setUserCountry(detectedCountry);
+        // DEFER country detection by 3 seconds to improve LCP (not critical for initial render)
+        setTimeout(async () => {
+          try {
+            // Get the country directly to avoid React state update timing issues
+            const detectedCountry = await getUserCountry();
+            setUserCountry(detectedCountry);
 
-        await loadUser();
+            await loadUser();
 
-        // Pass the detected country directly instead of relying on state
-        checkExistingConsent(detectedCountry);
+            // Pass the detected country directly instead of relying on state
+            checkExistingConsent(detectedCountry);
+          } catch (error) {
+            console.warn('Error initializing cookie banner:', error);
+          }
+        }, 3000); // Defer by 3 seconds
       }
     };
 
