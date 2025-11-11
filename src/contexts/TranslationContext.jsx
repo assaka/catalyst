@@ -1,7 +1,11 @@
-import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
 import api from '../utils/api';
 
 const TranslationContext = createContext();
+
+// Global cache to prevent duplicate language fetches across all instances
+let globalLanguagesCache = null;
+let globalLanguagesFetching = false;
 
 /**
  * Translation Provider Component
@@ -30,7 +34,7 @@ export function TranslationProvider({ children, storeId: propStoreId, initialLan
    * Admin: Fetches from API
    */
   const loadAvailableLanguages = useCallback(async () => {
-    // If languages provided from bootstrap, use them (no API call!)
+    // CRITICAL: If languages provided from bootstrap, use them (no API call!)
     if (initialLanguages && Array.isArray(initialLanguages) && initialLanguages.length > 0) {
       const activeLanguages = initialLanguages.filter(lang => lang.is_active !== false);
       setAvailableLanguages(activeLanguages);
@@ -40,10 +44,38 @@ export function TranslationProvider({ children, storeId: propStoreId, initialLan
       if (current) {
         setIsRTL(current.is_rtl || false);
       }
+      setLoading(false);
       return; // Skip API call!
     }
 
-    // Otherwise fetch from API (for admin panel)
+    // If already loaded, skip
+    if (availableLanguages.length > 0) {
+      setLoading(false);
+      return; // Skip duplicate API call!
+    }
+
+    // Check global cache first
+    if (globalLanguagesCache) {
+      setAvailableLanguages(globalLanguagesCache);
+      setLoading(false);
+      return; // Use cached data!
+    }
+
+    // If another instance is already fetching, wait for it
+    if (globalLanguagesFetching) {
+      // Wait for the other fetch to complete
+      const checkCache = setInterval(() => {
+        if (globalLanguagesCache) {
+          setAvailableLanguages(globalLanguagesCache);
+          setLoading(false);
+          clearInterval(checkCache);
+        }
+      }, 100);
+      return;
+    }
+
+    // Otherwise fetch from API (for admin panel ONLY)
+    globalLanguagesFetching = true;
     try {
       const response = await api.get('/languages');
 
@@ -55,6 +87,7 @@ export function TranslationProvider({ children, storeId: propStoreId, initialLan
           : [];
 
         if (languages.length > 0) {
+          globalLanguagesCache = languages; // Cache globally
           setAvailableLanguages(languages);
 
           // Set RTL status based on current language
@@ -64,9 +97,11 @@ export function TranslationProvider({ children, storeId: propStoreId, initialLan
           }
         } else {
           // No active languages found, use English fallback
-          setAvailableLanguages([
+          const fallback = [
             { code: 'en', name: 'English', native_name: 'English', is_active: true, is_rtl: false }
-          ]);
+          ];
+          globalLanguagesCache = fallback;
+          setAvailableLanguages(fallback);
         }
       } else {
         // Invalid response, use English fallback
@@ -77,11 +112,15 @@ export function TranslationProvider({ children, storeId: propStoreId, initialLan
     } catch (error) {
       console.error('Failed to load languages:', error);
       // Fallback to English only
-      setAvailableLanguages([
+      const fallback = [
         { code: 'en', name: 'English', native_name: 'English', is_active: true, is_rtl: false }
-      ]);
+      ];
+      globalLanguagesCache = fallback;
+      setAvailableLanguages(fallback);
+    } finally {
+      globalLanguagesFetching = false;
     }
-  }, [currentLanguage, initialLanguages]);
+  }, [currentLanguage, initialLanguages, availableLanguages.length]);
 
   /**
    * Load UI translations for current language
