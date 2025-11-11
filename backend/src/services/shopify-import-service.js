@@ -347,9 +347,10 @@ class ShopifyImportService {
       // Prepare product data
       const productData = {
         name: product.title,
+        slug: product.handle, // Shopify handle → SuprShop slug
         description: product.body_html || '',
         short_description: product.body_html ? product.body_html.replace(/<[^>]*>/g, '').substring(0, 255) : '',
-        sku: product.handle,
+        sku: product.handle, // Also use handle as SKU
         status: product.status === 'active' ? 'active' : 'draft',
         price: product.variants?.[0]?.price || 0,
         compare_price: product.variants?.[0]?.compare_at_price || null,
