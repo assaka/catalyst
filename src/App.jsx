@@ -15,6 +15,7 @@ import * as Pages from '@/pages'
 
 // Import plugin components
 import DynamicPluginAdminPage from '@/components/plugins/DynamicPluginAdminPage'
+import { AdminLayoutWrapper } from '@/components/admin/AdminLayoutWrapper'
 
 // Import new hook-based systems
 import { useEffect, useState } from 'react'
@@ -28,9 +29,11 @@ window.__pluginsReady = false;
 // Component to wrap pages with Layout
 function PageWrapper({ Component, pageName }) {
   return (
-    <Layout currentPageName={pageName}>
-      <Component />
-    </Layout>
+    <AdminLayoutWrapper>
+      <Layout currentPageName={pageName}>
+        <Component />
+      </Layout>
+    </AdminLayoutWrapper>
   );
 }
 
@@ -390,10 +393,9 @@ function App() {
 
   return (
     <QueryClientProvider client={queryClient}>
-      <TranslationProvider>
-        <AIProvider>
-          <Router>
-            <StoreSelectionProvider>
+      <AIProvider>
+        <Router>
+          <StoreSelectionProvider>
             <Routes>
           {/* Admin routes */}
           <Route path="/admin" element={<PageWrapper Component={Pages.Dashboard} pageName="Dashboard" />} />
@@ -530,8 +532,7 @@ function App() {
           </StoreSelectionProvider>
         </Router>
       </AIProvider>
-    </TranslationProvider>
-    <ReactQueryDevtools initialIsOpen={false} />
+      <ReactQueryDevtools initialIsOpen={false} />
     </QueryClientProvider>
   )
 }
