@@ -274,13 +274,20 @@ export const StoreProvider = ({ children }) => {
 
   return (
     <StoreContext.Provider value={value}>
-      <TranslationProvider
-        storeId={storeData?.store?.id}
-        initialLanguages={storeData?.languages}
-        initialTranslations={storeData?.translations}
-      >
-        {children}
-      </TranslationProvider>
+      {storeData?.languages ? (
+        <TranslationProvider
+          storeId={storeData.store.id}
+          initialLanguages={storeData.languages}
+          initialTranslations={storeData.translations}
+        >
+          {children}
+        </TranslationProvider>
+      ) : (
+        // Show loading spinner while bootstrap data loads
+        <div className="flex items-center justify-center min-h-screen">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-gray-900"></div>
+        </div>
+      )}
     </StoreContext.Provider>
   );
 };

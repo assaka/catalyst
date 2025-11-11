@@ -87,6 +87,13 @@ export function TranslationProvider({ children, storeId: propStoreId, initialLan
    * Load UI translations for current language
    */
   const loadTranslations = useCallback(async (lang) => {
+    // If translations provided from bootstrap, use them (no API call!)
+    if (initialTranslations && initialTranslations.labels) {
+      setTranslations(initialTranslations.labels);
+      setLoading(false);
+      return; // Skip API call!
+    }
+
     try {
       setLoading(true);
       if (!storeId) {
@@ -108,7 +115,7 @@ export function TranslationProvider({ children, storeId: propStoreId, initialLan
     } finally {
       setLoading(false);
     }
-  }, [storeId]);
+  }, [storeId, initialTranslations]);
 
   /**
    * Change current language
@@ -237,15 +244,19 @@ export function TranslationProvider({ children, storeId: propStoreId, initialLan
       // Update HTML attributes
       document.documentElement.lang = initialLang;
 
-      // Load translations (only if storeId is available)
-      if (storeId) {
+      // Load translations (skip if bootstrap provided them)
+      if (initialTranslations && initialTranslations.labels) {
+        setTranslations(initialTranslations.labels);
+        setLoading(false);
+      } else if (storeId) {
         await loadTranslations(initialLang);
+      } else {
+        setLoading(false);
       }
-
     };
 
     initializeTranslations();
-  }, [storeId, loadAvailableLanguages, loadTranslations]); // Re-run when storeId becomes available
+  }, [storeId, loadAvailableLanguages, loadTranslations, initialTranslations]); // Re-run when storeId becomes available
 
   const value = {
     // State
