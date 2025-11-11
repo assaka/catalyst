@@ -82,6 +82,14 @@ export function TranslationProvider({ children, storeId: propStoreId, initialLan
 
     // Otherwise fetch from API (for admin panel ONLY)
     window.__languagesFetching = true;
+
+    // DEBUG: Log when we're making API call
+    console.warn('⚠️ TranslationContext calling /api/languages (should use bootstrap!)', {
+      hasInitialLanguages: !!initialLanguages,
+      initialLangLength: initialLanguages?.length,
+      availableLangLength: availableLanguages.length
+    });
+
     try {
       const response = await api.get('/languages');
 
