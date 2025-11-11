@@ -24,7 +24,11 @@ import {
   Loader2,
   Settings,
   Key,
-  Shield
+  Shield,
+  ExternalLink,
+  ChevronDown,
+  ChevronUp,
+  Info
 } from 'lucide-react';
 
 const ShopifyIntegration = () => {
@@ -40,12 +44,9 @@ const ShopifyIntegration = () => {
   const [shopInfo, setShopInfo] = useState(null);
   const [appConfigured, setAppConfigured] = useState(false);
   const [showAppConfig, setShowAppConfig] = useState(false);
-  const [appCredentials, setAppCredentials] = useState({
-    client_id: '',
-    client_secret: '',
-    access_token: ''
-  });
+  const [accessToken, setAccessToken] = useState('');
   const [saveSuccess, setSaveSuccess] = useState(false);
+  const [showInstructions, setShowInstructions] = useState(true);
 
   useEffect(() => {
     if (storeId) {
@@ -70,10 +71,10 @@ const ShopifyIntegration = () => {
   };
 
   const connectWithDirectAccess = async () => {
-    if (!shopDomain || !appCredentials.client_id || !appCredentials.client_secret || !appCredentials.access_token) {
+    if (!shopDomain || !accessToken) {
       setMessage({
         type: 'error',
-        text: 'Please fill in all required fields: Shop Domain, Client ID, Client Secret, and Access Token'
+        text: 'Please fill in both Shop Domain and Access Token'
       });
       return;
     }
@@ -97,7 +98,7 @@ const ShopifyIntegration = () => {
         },
         body: JSON.stringify({
           shop_domain: formattedDomain,
-          access_token: appCredentials.access_token
+          access_token: accessToken
         })
       });
 
@@ -114,11 +115,7 @@ const ShopifyIntegration = () => {
         setShowAppConfig(false);
 
         // Clear sensitive data from state
-        setAppCredentials({
-          client_id: '',
-          client_secret: '',
-          access_token: ''
-        });
+        setAccessToken('');
         setShopDomain('');
 
         // Refresh connection status
@@ -354,16 +351,96 @@ const ShopifyIntegration = () => {
           {!connectionStatus?.connected ? (
             <div className="space-y-4">
               {/* App Configuration Section */}
-              <Alert className="border-blue-200 bg-blue-50">
-                <AlertCircle className="h-4 w-4 text-blue-600" />
-                <AlertDescription className="text-blue-800">
-                  <strong>Direct Access Connection</strong> - Enter your Shopify store credentials to connect.
-                </AlertDescription>
-              </Alert>
+              {/* Instructions Card */}
+              <Card className="border-blue-200 bg-blue-50/50">
+                <CardHeader className="cursor-pointer" onClick={() => setShowInstructions(!showInstructions)}>
+                  <div className="flex items-center justify-between">
+                    <CardTitle className="text-base flex items-center">
+                      <Info className="w-5 h-5 mr-2 text-blue-600" />
+                      How to Get Your Shopify Credentials
+                    </CardTitle>
+                    {showInstructions ? (
+                      <ChevronUp className="w-5 h-5 text-blue-600" />
+                    ) : (
+                      <ChevronDown className="w-5 h-5 text-blue-600" />
+                    )}
+                  </div>
+                </CardHeader>
+                {showInstructions && (
+                  <CardContent className="space-y-4 text-sm">
+                    <div className="space-y-3">
+                      <div className="font-medium text-blue-900">Step 1: Get Your Shop Domain</div>
+                      <p className="text-gray-700">
+                        Your shop domain is the URL you use to access your Shopify admin. It looks like: <code className="bg-white px-2 py-1 rounded">your-store.myshopify.com</code>
+                      </p>
 
+                      <div className="font-medium text-blue-900 mt-4">Step 2: Create a Custom App in Shopify</div>
+                      <ol className="list-decimal list-inside space-y-2 text-gray-700">
+                        <li>
+                          Log into your Shopify Admin and go to{' '}
+                          <strong>Settings → Apps and sales channels</strong>
+                        </li>
+                        <li>
+                          Click <strong>"Develop apps"</strong> (you may need to enable custom app development first)
+                        </li>
+                        <li>
+                          Click <strong>"Create an app"</strong> and name it (e.g., "SuprShop Integration")
+                        </li>
+                        <li>
+                          Click <strong>"Configure Admin API scopes"</strong>
+                        </li>
+                        <li>
+                          Select these permissions:
+                          <ul className="list-disc list-inside ml-4 mt-1">
+                            <li>read_products</li>
+                            <li>read_product_listings</li>
+                            <li>read_inventory</li>
+                            <li>read_content (for collections)</li>
+                          </ul>
+                        </li>
+                        <li>Click <strong>"Save"</strong></li>
+                        <li>
+                          Click <strong>"Install app"</strong> to install it on your store
+                        </li>
+                        <li>
+                          You'll see an <strong>Admin API access token</strong> - copy this!
+                          <br />
+                          <span className="text-xs text-gray-600">
+                            (It starts with <code className="bg-white px-1 rounded">shpat_</code>)
+                          </span>
+                        </li>
+                      </ol>
+
+                      <Alert className="border-yellow-200 bg-yellow-50 mt-4">
+                        <AlertCircle className="h-4 w-4 text-yellow-600" />
+                        <AlertDescription className="text-yellow-800 text-xs">
+                          <strong>Important:</strong> The access token is only shown once! Copy it immediately and store it securely.
+                        </AlertDescription>
+                      </Alert>
+
+                      <div className="mt-4 pt-4 border-t border-blue-200">
+                        <a
+                          href="https://help.shopify.com/en/manual/apps/custom-apps"
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-blue-600 hover:text-blue-700 flex items-center text-sm font-medium"
+                        >
+                          Read Shopify's Official Guide
+                          <ExternalLink className="w-4 h-4 ml-1" />
+                        </a>
+                      </div>
+                    </div>
+                  </CardContent>
+                )}
+              </Card>
+
+              {/* Connection Form */}
               <div className="space-y-4">
                 <div>
-                  <Label htmlFor="shop-domain">Shopify Store Domain</Label>
+                  <Label htmlFor="shop-domain" className="flex items-center">
+                    Shopify Store Domain
+                    <span className="text-red-500 ml-1">*</span>
+                  </Label>
                   <Input
                     id="shop-domain"
                     type="text"
@@ -371,70 +448,45 @@ const ShopifyIntegration = () => {
                     value={shopDomain}
                     onChange={(e) => setShopDomain(e.target.value)}
                     disabled={loading}
+                    className="mt-1"
                   />
                   <p className="text-xs text-gray-500 mt-1">
-                    Enter your Shopify store domain (e.g., my-store.myshopify.com)
+                    Example: my-awesome-store.myshopify.com
                   </p>
                 </div>
 
                 <div>
-                  <Label htmlFor="client-id">Client ID</Label>
-                  <Input
-                    id="client-id"
-                    type="text"
-                    placeholder="e.g., 7f4e5d3c2b1a0987654321"
-                    value={appCredentials.client_id}
-                    onChange={(e) => setAppCredentials({...appCredentials, client_id: e.target.value})}
-                    disabled={loading}
-                  />
-                  <p className="text-xs text-gray-500 mt-1">
-                    Found in your Shopify app's "Client credentials" section
-                  </p>
-                </div>
-
-                <div>
-                  <Label htmlFor="client-secret">Client Secret</Label>
-                  <Input
-                    id="client-secret"
-                    type="password"
-                    placeholder="e.g., shpss_1234567890abcdef..."
-                    value={appCredentials.client_secret}
-                    onChange={(e) => setAppCredentials({...appCredentials, client_secret: e.target.value})}
-                    disabled={loading}
-                  />
-                  <p className="text-xs text-gray-500 mt-1">
-                    Keep this secret! Never share or commit to version control
-                  </p>
-                </div>
-
-                <div>
-                  <Label htmlFor="access-token">Access Token</Label>
+                  <Label htmlFor="access-token" className="flex items-center">
+                    Admin API Access Token
+                    <span className="text-red-500 ml-1">*</span>
+                  </Label>
                   <Input
                     id="access-token"
                     type="password"
                     placeholder="shpat_..."
-                    value={appCredentials.access_token}
-                    onChange={(e) => setAppCredentials({...appCredentials, access_token: e.target.value})}
+                    value={accessToken}
+                    onChange={(e) => setAccessToken(e.target.value)}
                     disabled={loading}
+                    className="mt-1"
                   />
                   <p className="text-xs text-gray-500 mt-1">
-                    Admin API access token from your Shopify custom app
+                    Get this from your custom app in Shopify (starts with shpat_)
                   </p>
                 </div>
 
-                <Alert className="border-blue-200">
-                  <Shield className="h-4 w-4 text-blue-600" />
-                  <AlertDescription className="text-blue-800 text-sm">
-                    Your credentials are encrypted and stored securely. They are never exposed in the frontend or API responses.
+                <Alert className="border-green-200 bg-green-50">
+                  <Shield className="h-4 w-4 text-green-600" />
+                  <AlertDescription className="text-green-800 text-sm">
+                    Your credentials are encrypted and stored securely. They are never exposed in responses or logs.
                   </AlertDescription>
                 </Alert>
 
-                <div className="flex justify-end">
+                <div className="flex justify-end pt-2">
                   <SaveButton
                     onClick={connectWithDirectAccess}
                     loading={loading}
                     success={saveSuccess}
-                    disabled={!shopDomain || !appCredentials.client_id || !appCredentials.client_secret || !appCredentials.access_token}
+                    disabled={!shopDomain || !accessToken}
                     defaultText="Connect to Shopify"
                   />
                 </div>
