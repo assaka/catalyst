@@ -1,12 +1,17 @@
-// Global cache to prevent duplicate cart fetches
-let cartCache = null;
-let cartCacheTimestamp = 0;
+// Global cache to prevent duplicate cart fetches (use window to share across chunks)
+if (typeof window !== 'undefined') {
+  if (!window.__cartCache) {
+    window.__cartCache = { data: null, timestamp: 0 };
+  }
+}
+
 const CART_CACHE_TTL = 5000; // 5 seconds - short cache to prevent rapid duplicates
 
 // Helper to invalidate cart cache
 const invalidateCartCache = () => {
-  cartCache = null;
-  cartCacheTimestamp = 0;
+  if (typeof window !== 'undefined') {
+    window.__cartCache = { data: null, timestamp: 0 };
+  }
 };
 
 // Simplified Cart Service
@@ -51,8 +56,8 @@ class CartService {
   // Get cart - simplified to always use session_id approach with aggressive cache busting
   async getCart(bustCache = false, storeId = null) {
     // Check global cache (unless busting cache)
-    if (!bustCache && cartCache && (Date.now() - cartCacheTimestamp < CART_CACHE_TTL)) {
-      return cartCache; // Return cached data
+    if (!bustCache && window.__cartCache?.data && (Date.now() - window.__cartCache.timestamp < CART_CACHE_TTL)) {
+      return window.__cartCache.data; // Return cached data
     }
 
     const sessionId = this.getSessionId();
@@ -131,15 +136,19 @@ class CartService {
         };
 
         // Cache the result
-        cartCache = cartResult;
-        cartCacheTimestamp = Date.now();
+        window.__cartCache = {
+          data: cartResult,
+          timestamp: Date.now()
+        };
 
         return cartResult;
       }
 
       const emptyResult = { success: false, cart: null, items: [] };
-      cartCache = emptyResult;
-      cartCacheTimestamp = Date.now();
+      window.__cartCache = {
+        data: emptyResult,
+        timestamp: Date.now()
+      };
       return emptyResult;
     } catch (error) {
       console.error('🛒 CartService.getCart error:', {

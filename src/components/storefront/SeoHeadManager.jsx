@@ -6,8 +6,10 @@ import { getPriceDisplay, formatPrice } from '@/utils/priceUtils';
 import { getCategoryName, getProductName, getCurrentLanguage } from '@/utils/translationUtils';
 import { createSafeScript } from '@/utils/scriptSanitizer';
 
-// Global cache to prevent duplicate canonical URL checks
-const canonicalCache = new Map();
+// Global cache to prevent duplicate canonical URL checks (use window to share across chunks)
+if (typeof window !== 'undefined' && !window.__canonicalCache) {
+  window.__canonicalCache = new Map();
+}
 const CANONICAL_CACHE_TTL = 60000; // 1 minute
 
 export default function SeoHeadManager({ pageType, pageData, pageTitle, pageDescription, imageUrl }) {
@@ -45,7 +47,7 @@ export default function SeoHeadManager({ pageType, pageData, pageTitle, pageDesc
                     try {
                         // Check cache first
                         const cacheKey = `${store.id}:${relativePath}`;
-                        const cached = canonicalCache.get(cacheKey);
+                        const cached = window.__canonicalCache.get(cacheKey);
 
                         if (cached && (Date.now() - cached.timestamp < CANONICAL_CACHE_TTL)) {
                             setCustomCanonicalUrl(cached.url);
@@ -57,7 +59,7 @@ export default function SeoHeadManager({ pageType, pageData, pageTitle, pageDesc
                         const canonicalUrl = response?.found && response?.canonical_url ? response.canonical_url : null;
 
                         // Cache the result
-                        canonicalCache.set(cacheKey, {
+                        window.__canonicalCache.set(cacheKey, {
                             url: canonicalUrl,
                             timestamp: Date.now()
                         });

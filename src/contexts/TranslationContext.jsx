@@ -3,9 +3,15 @@ import api from '../utils/api';
 
 const TranslationContext = createContext();
 
-// Global cache to prevent duplicate language fetches across all instances
-let globalLanguagesCache = null;
-let globalLanguagesFetching = false;
+// Global cache to prevent duplicate language fetches across all instances (use window)
+if (typeof window !== 'undefined') {
+  if (!window.__languagesCache) {
+    window.__languagesCache = null;
+  }
+  if (typeof window.__languagesFetching === 'undefined') {
+    window.__languagesFetching = false;
+  }
+}
 
 /**
  * Translation Provider Component
@@ -55,18 +61,18 @@ export function TranslationProvider({ children, storeId: propStoreId, initialLan
     }
 
     // Check global cache first
-    if (globalLanguagesCache) {
-      setAvailableLanguages(globalLanguagesCache);
+    if (window.__languagesCache) {
+      setAvailableLanguages(window.__languagesCache);
       setLoading(false);
       return; // Use cached data!
     }
 
     // If another instance is already fetching, wait for it
-    if (globalLanguagesFetching) {
+    if (window.__languagesFetching) {
       // Wait for the other fetch to complete
       const checkCache = setInterval(() => {
-        if (globalLanguagesCache) {
-          setAvailableLanguages(globalLanguagesCache);
+        if (window.__languagesCache) {
+          setAvailableLanguages(window.__languagesCache);
           setLoading(false);
           clearInterval(checkCache);
         }
@@ -75,7 +81,7 @@ export function TranslationProvider({ children, storeId: propStoreId, initialLan
     }
 
     // Otherwise fetch from API (for admin panel ONLY)
-    globalLanguagesFetching = true;
+    window.__languagesFetching = true;
     try {
       const response = await api.get('/languages');
 
@@ -87,7 +93,7 @@ export function TranslationProvider({ children, storeId: propStoreId, initialLan
           : [];
 
         if (languages.length > 0) {
-          globalLanguagesCache = languages; // Cache globally
+          window.__languagesCache = languages; // Cache globally
           setAvailableLanguages(languages);
 
           // Set RTL status based on current language
@@ -100,7 +106,7 @@ export function TranslationProvider({ children, storeId: propStoreId, initialLan
           const fallback = [
             { code: 'en', name: 'English', native_name: 'English', is_active: true, is_rtl: false }
           ];
-          globalLanguagesCache = fallback;
+          window.__languagesCache = fallback;
           setAvailableLanguages(fallback);
         }
       } else {
@@ -115,10 +121,10 @@ export function TranslationProvider({ children, storeId: propStoreId, initialLan
       const fallback = [
         { code: 'en', name: 'English', native_name: 'English', is_active: true, is_rtl: false }
       ];
-      globalLanguagesCache = fallback;
+      window.__languagesCache = fallback;
       setAvailableLanguages(fallback);
     } finally {
-      globalLanguagesFetching = false;
+      window.__languagesFetching = false;
     }
   }, [currentLanguage, initialLanguages, availableLanguages.length]);
 
