@@ -100,15 +100,6 @@ class CartService {
 
       fullUrl = `${this.endpoint}?${params.toString()}`;
 
-      console.log('🛒 CartService.getCart: Making API request', {
-        sessionId,
-        userId: user?.id || null,
-        userRole: user?.role || null,
-        storeId,
-        bustCache,
-        fullUrl
-      });
-
       let response;
       try {
         // Build headers object without undefined values to avoid CORS issues
