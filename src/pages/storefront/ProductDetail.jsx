@@ -1,6 +1,4 @@
 
-console.log('🔵 ProductDetail.jsx FILE LOADED');
-
 import React, { useState, useEffect, useCallback, Fragment } from "react";
 import { useParams, useSearchParams, Link, useNavigate } from "react-router-dom";
 import { createPageUrl } from "@/utils";
@@ -82,8 +80,6 @@ const generateProductName = (product, basePrefix = '') => {
 };
 
 export default function ProductDetail() {
-  console.log('🚀 ProductDetail component loaded');
-
   const { slug: paramSlug, productSlug: routeProductSlug, storeCode } = useParams();
   const [searchParams] = useSearchParams();
   const slug = searchParams.get('slug') || routeProductSlug || paramSlug;
@@ -94,8 +90,6 @@ export default function ProductDetail() {
   const navigate = useNavigate();
   const { showNotFound } = useNotFound();
   const { t, currentLanguage, translations } = useTranslation();
-
-  console.log('🔍 ProductDetail store:', { storeId: store?.id, storeName: store?.name });
 
   // Use React Query hooks for optimized API calls with automatic deduplication
   const { data: user } = useUser();
@@ -132,28 +126,7 @@ export default function ProductDetail() {
   const [displayProduct, setDisplayProduct] = useState(null);
 
   // A/B Testing - Get active tests for product page
-  console.log('📊 About to call useABTesting hook with:', { storeId: store?.id, pageType: 'product' });
-
   const { activeTests, isLoading: abTestsLoading, error: abTestError } = useABTesting(store?.id, 'product');
-
-  console.log('📊 useABTesting returned:', {
-    activeTests,
-    activeTestsCount: activeTests?.length,
-    abTestsLoading,
-    abTestError
-  });
-
-  // Debug A/B testing
-  useEffect(() => {
-    console.log('[A/B Test Debug] Status:', {
-      storeId: store?.id,
-      abTestsLoading,
-      activeTests: activeTests?.length || 0,
-      activeTestsData: activeTests,
-      configLoaded,
-      hasConfig: !!productLayoutConfig
-    });
-  }, [store?.id, abTestsLoading, activeTests, configLoaded, productLayoutConfig]);
 
   // Update display product when product or selected variant changes
   useEffect(() => {
@@ -292,85 +265,45 @@ export default function ProductDetail() {
 
   // Apply A/B test overrides to loaded config
   useEffect(() => {
-    console.log('[A/B Test Override] useEffect triggered', {
-      hasConfig: !!productLayoutConfig,
-      configLoaded,
-      abTestsLoading,
-      activeTestsCount: activeTests?.length || 0
-    });
-
     if (!productLayoutConfig || !configLoaded || abTestsLoading) {
-      console.log('[A/B Test Override] Waiting for config or tests to load...');
       return;
     }
 
     if (!activeTests || activeTests.length === 0) {
-      console.log('[A/B Test] No active tests for product page');
       return;
     }
-
-    console.log('[A/B Test] ✨ Applying overrides from', activeTests.length, 'active tests');
-    console.log('[A/B Test] Active tests:', activeTests);
 
     // Clone the config to avoid mutations
     const configWithTests = JSON.parse(JSON.stringify(productLayoutConfig));
 
     // Apply each test's overrides
     activeTests.forEach((test, index) => {
-      console.log(`[A/B Test ${index + 1}] Processing test:`, {
-        test: test.test_name,
-        variant: test.variant_name,
-        variantId: test.variant_id,
-        fullTest: test
-      });
-
       // Check different possible locations for variant config
       const variantConfig = test.variant_config || test.config;
-
-      console.log(`[A/B Test ${index + 1}] Variant config:`, variantConfig);
 
       if (variantConfig?.slot_overrides) {
         const overrides = variantConfig.slot_overrides;
 
-        console.log(`[A/B Test ${index + 1}] Found slot_overrides with keys:`, Object.keys(overrides));
-        console.log(`[A/B Test ${index + 1}] Full slot_overrides:`, overrides);
-
         // Apply each slot override
         Object.entries(overrides).forEach(([slotId, override]) => {
-          console.log(`[A/B Test ${index + 1}] Processing slot "${slotId}"`, {
-            slotExists: !!configWithTests.slots[slotId],
-            override
-          });
-
           if (configWithTests.slots[slotId]) {
             // Slot exists, merge the override
-            const originalContent = configWithTests.slots[slotId].content;
             configWithTests.slots[slotId] = {
               ...configWithTests.slots[slotId],
               ...override
             };
-
-            console.log(`[A/B Test ${index + 1}] ✅ Overrode slot "${slotId}"`, {
-              before: originalContent,
-              after: override.content || 'no content change',
-              fullSlot: configWithTests.slots[slotId]
-            });
           } else {
             // Slot doesn't exist, create it if enabled
             if (override.enabled !== false) {
               configWithTests.slots[slotId] = override;
-              console.log(`[A/B Test ${index + 1}] ➕ Created new slot "${slotId}"`);
             }
           }
         });
-      } else {
-        console.log(`[A/B Test ${index + 1}] ⚠️ No slot_overrides found in variant config:`, variantConfig);
       }
     });
 
     // Update the config with A/B test overrides applied
     setProductLayoutConfig(configWithTests);
-    console.log('[A/B Test] ✅ Config updated with A/B test overrides. Final config:', configWithTests);
 
   }, [activeTests, configLoaded, abTestsLoading]);
 
@@ -380,7 +313,6 @@ export default function ProductDetail() {
    */
   const evaluateProductLabels = (product, labels) => {
     if (!labels || !Array.isArray(labels) || !product) {
-      console.log('🏷️ evaluateProductLabels: Missing data', { hasProduct: !!product, labelsCount: labels?.length });
       return [];
     }
 
@@ -621,11 +553,6 @@ export default function ProductDetail() {
         `product-tabs-${store.id}-${currentLanguage}`,
         () => StorefrontProductTab.filter({ store_id: store.id, is_active: true })
       );
-      console.log('✅ ProductDetail: Loaded product tabs:', {
-        count: tabs?.length,
-        language: currentLanguage,
-        tabs: tabs?.map(t => ({ id: t.id, name: t.name }))
-      });
       setProductTabs(tabs || []);
     } catch (error) {
       console.error('❌ ProductDetail: Error loading product tabs:', error);

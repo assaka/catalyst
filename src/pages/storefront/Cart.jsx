@@ -856,15 +856,6 @@ export default function Cart() {
                     const quantity = safeNumber(item.quantity || 1);
                     let itemTotal = price * quantity;
 
-                    console.log(`💰 Price details for ${item.product?.name}:`, {
-                        'item.price': item.price,
-                        'item.product.price': item.product?.price,
-                        'item.product.sale_price': item.product?.sale_price,
-                        'Using price': price,
-                        'Quantity': quantity,
-                        'Item total': itemTotal
-                    });
-
                     // Add custom options for this item
                     if (item.selected_options && Array.isArray(item.selected_options)) {
                         const optionsPrice = item.selected_options.reduce((sum, option) =>
