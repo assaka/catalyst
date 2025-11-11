@@ -446,23 +446,28 @@ export default function Checkout() {
 
       setCartItems(cartItems);
 
-      // Load product details for cart items
+      // Load product details for cart items (BATCH FETCH - prevents duplicates!)
       if (cartItems && cartItems.length > 0) {
-        const productDetails = {};
-        for (const item of cartItems) {
-          if (!productDetails[item.product_id]) {
-            try {
-              const result = await StorefrontProduct.filter({ id: item.product_id });
-              const products = Array.isArray(result) ? result : [];
-              if (products.length > 0) {
-                productDetails[item.product_id] = products[0];
-              }
-            } catch (error) {
-              console.warn(`Failed to load product ${item.product_id}:`, error);
+        try {
+          const productIds = [...new Set(cartItems.map(item => item.product_id))];
+
+          // Batch fetch all products at once (1 API call instead of N!)
+          const products = await StorefrontProduct.filter({ ids: productIds });
+          const productsArray = Array.isArray(products) ? products : [];
+
+          // Create lookup map
+          const productDetails = {};
+          productsArray.forEach(product => {
+            if (product && product.id) {
+              productDetails[product.id] = product;
             }
-          }
+          });
+
+          setCartProducts(productDetails);
+        } catch (error) {
+          console.warn('Failed to load cart products:', error);
+          setCartProducts({});
         }
-        setCartProducts(productDetails);
         
         // Validate applied coupon when cart contents change
         if (appliedCoupon) {
