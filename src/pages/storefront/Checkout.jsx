@@ -46,10 +46,18 @@ import StepIndicator from "@/components/storefront/StepIndicator";
 import { formatPrice as formatPriceUtil } from '@/utils/priceUtils';
 import { getProductName, getCurrentLanguage, getShippingMethodName, getShippingMethodDescription, getPaymentMethodName, getPaymentMethodDescription, getTranslatedField } from '@/utils/translationUtils';
 import { useTranslation } from '@/contexts/TranslationContext';
+import { useCheckoutPageBootstrap } from '@/hooks/usePageBootstrap';
 
 export default function Checkout() {
   const { t, getEntityTranslation, currentLanguage } = useTranslation();
   const { store, settings, loading: storeLoading, selectedCountry, setSelectedCountry } = useStore();
+
+  // Layer 2: Checkout page bootstrap (taxes, shipping, payment, delivery)
+  const language = getCurrentLanguage();
+  const { data: pageBootstrap, isLoading: pageBootstrapLoading } = useCheckoutPageBootstrap(
+    store?.id,
+    language
+  );
 
   // Get currency symbol from settings
   // Currency symbol comes from StoreProvider which derives it from store.currency → getCurrencySymbol()
@@ -380,14 +388,25 @@ export default function Checkout() {
       // Load cart items
       await loadCartItems();
 
-      // Load payment methods, shipping methods, delivery settings, and tax rules
-      const [paymentData, shippingData, deliveryData, taxData] = await Promise.all([
-        PaymentMethod.filter({ store_id: store.id }),
-        ShippingMethod.filter({ store_id: store.id }),
-        DeliverySettings.filter({ store_id: store.id }),
-        Tax.filter({ store_id: store.id })
-      ]);
+      // Use page bootstrap data if available (Layer 2 - no API calls!)
+      // Otherwise fetch individually (fallback)
+      let paymentData, shippingData, deliveryData, taxData;
 
+      if (pageBootstrap) {
+        // Use page bootstrap data (no API calls!)
+        paymentData = pageBootstrap.paymentMethods || [];
+        shippingData = pageBootstrap.shippingMethods || [];
+        deliveryData = pageBootstrap.deliverySettings || [];
+        taxData = pageBootstrap.taxes || [];
+      } else {
+        // Fallback: Fetch individually if page bootstrap not available
+        [paymentData, shippingData, deliveryData, taxData] = await Promise.all([
+          PaymentMethod.filter({ store_id: store.id }),
+          ShippingMethod.filter({ store_id: store.id }),
+          DeliverySettings.filter({ store_id: store.id }),
+          Tax.filter({ store_id: store.id })
+        ]);
+      }
 
       setPaymentMethods(paymentData || []);
       setShippingMethods(shippingData || []);
