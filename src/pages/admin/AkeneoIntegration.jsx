@@ -341,6 +341,7 @@ const AkeneoIntegration = () => {
     includeFiles: true,
     stockFilter: 'disabled', // disabled, in_stock, out_of_stock
     preventUrlKeyOverride: true, // Enabled by default to preserve existing URLs
+    importProductModels: true, // Enabled by default - import product models as configurable products
     akeneoUrlField: 'url_key' // Default Akeneo field for URL generation
   });
   
@@ -1916,6 +1917,7 @@ const AkeneoIntegration = () => {
           includeFiles: productSettings.includeFiles,
           stockFilter: productSettings.stockFilter,
           preventUrlKeyOverride: productSettings.preventUrlKeyOverride,
+          importProductModels: productSettings.importProductModels,
           akeneoUrlField: productSettings.akeneoUrlField
         },
         customMappings: customMappings
@@ -3362,7 +3364,7 @@ const AkeneoIntegration = () => {
                     id="product-akeneo-url-field"
                     placeholder="e.g., url_key, slug, seo_url"
                     value={productSettings.akeneoUrlField}
-                    onChange={(e) => 
+                    onChange={(e) =>
                       setProductSettings(prev => ({ ...prev, akeneoUrlField: e.target.value }))
                     }
                   />
@@ -3371,6 +3373,22 @@ const AkeneoIntegration = () => {
                   </p>
                 </div>
               )}
+
+              <div className="flex items-center space-x-2">
+                <Switch
+                  id="import-product-models"
+                  checked={productSettings.importProductModels}
+                  onCheckedChange={(checked) =>
+                    setProductSettings(prev => ({ ...prev, importProductModels: checked }))
+                  }
+                />
+                <div className="space-y-1">
+                  <Label htmlFor="import-product-models">Create configurable products from product models</Label>
+                  <p className="text-sm text-muted-foreground">
+                    Variants are always imported as simple products. {productSettings.importProductModels ? 'Linked to configurable parents.' : 'No configurables created.'}
+                  </p>
+                </div>
+              </div>
 
               {/* Advanced Product Settings */}
               <Card className="bg-gray-50">
