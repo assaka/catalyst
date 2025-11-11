@@ -454,6 +454,7 @@ const ShopifyIntegration = () => {
               </div>
             )}
           </div>
+          </div>
         ) : null}
 
         {connectionStatus?.connected && (
