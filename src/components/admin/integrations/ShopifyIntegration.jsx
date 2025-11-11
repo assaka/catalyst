@@ -463,7 +463,12 @@ const ShopifyIntegration = () => {
 
         {connectionStatus?.connected && (
           <div className="bg-white border border-gray-200 rounded-lg p-6">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">Connected Store</h3>
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-semibold text-gray-900">Connected Store</h3>
+              <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                Connected
+              </span>
+            </div>
             {shopInfo && (
               <div className="bg-gray-50 rounded-lg p-4 space-y-2 mb-4">
                 <div className="flex items-center space-x-2">
