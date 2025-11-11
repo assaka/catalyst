@@ -315,7 +315,7 @@ class ShopifyIntegration {
    */
   async getShopInfo(shopDomain, accessToken) {
     try {
-      const response = await axios.get(`https://${shopDomain}/admin/api/2024-04/shop.json`, {
+      const response = await axios.get(`https://${shopDomain}/admin/api/2024-01/shop.json`, {
         headers: {
           'X-Shopify-Access-Token': accessToken,
           'Content-Type': 'application/json'
