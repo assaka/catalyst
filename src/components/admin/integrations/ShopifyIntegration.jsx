@@ -454,28 +454,31 @@ const ShopifyIntegration = () => {
               </div>
             )}
           </div>
-        ) : (
-          <div className="space-y-4 bg-white border border-gray-200 rounded-lg p-6">
-              {shopInfo && (
-                <div className="bg-gray-50 rounded-lg p-4 space-y-2">
-                  <div className="flex items-center space-x-2">
-                    <Store className="w-4 h-4 text-gray-500" />
-                    <span className="font-medium">{shopInfo.shop_name}</span>
-                  </div>
-                  <div className="grid grid-cols-2 gap-2 text-sm text-gray-600">
-                    <div>Domain: {shopInfo.shop_domain}</div>
-                    <div>Plan: {shopInfo.plan_name}</div>
-                    <div>Currency: {shopInfo.shop_currency}</div>
-                    <div>Country: {shopInfo.shop_country}</div>
-                  </div>
-                  {shopInfo.connected_at && (
-                    <div className="text-xs text-gray-500 flex items-center">
-                      <Clock className="w-3 h-3 mr-1" />
-                      Connected: {formatDate(shopInfo.connected_at)}
-                    </div>
-                  )}
+        ) : null}
+
+        {connectionStatus?.connected && (
+          <div className="bg-white border border-gray-200 rounded-lg p-6">
+            <h3 className="text-lg font-semibold text-gray-900 mb-4">Connected Store</h3>
+            {shopInfo && (
+              <div className="bg-gray-50 rounded-lg p-4 space-y-2 mb-4">
+                <div className="flex items-center space-x-2">
+                  <Store className="w-4 h-4 text-gray-500" />
+                  <span className="font-medium">{shopInfo.shop_name}</span>
                 </div>
-              )}
+                <div className="grid grid-cols-2 gap-2 text-sm text-gray-600">
+                  <div>Domain: {shopInfo.shop_domain}</div>
+                  <div>Plan: {shopInfo.plan_name}</div>
+                  <div>Currency: {shopInfo.shop_currency}</div>
+                  <div>Country: {shopInfo.shop_country}</div>
+                </div>
+                {shopInfo.connected_at && (
+                  <div className="text-xs text-gray-500 flex items-center">
+                    <Clock className="w-3 h-3 mr-1" />
+                    Connected: {formatDate(shopInfo.connected_at)}
+                  </div>
+                )}
+              </div>
+            )}
 
             <div className="flex space-x-2">
               <button
