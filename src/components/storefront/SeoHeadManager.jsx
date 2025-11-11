@@ -7,8 +7,13 @@ import { getCategoryName, getProductName, getCurrentLanguage } from '@/utils/tra
 import { createSafeScript } from '@/utils/scriptSanitizer';
 
 // Global cache to prevent duplicate canonical URL checks (use window to share across chunks)
-if (typeof window !== 'undefined' && !window.__canonicalCache) {
-  window.__canonicalCache = new Map();
+if (typeof window !== 'undefined') {
+  if (!window.__canonicalCache) {
+    window.__canonicalCache = new Map();
+  }
+  if (!window.__canonicalFetching) {
+    window.__canonicalFetching = new Map(); // Track in-flight requests
+  }
 }
 const CANONICAL_CACHE_TTL = 60000; // 1 minute
 
@@ -54,17 +59,35 @@ export default function SeoHeadManager({ pageType, pageData, pageTitle, pageDesc
                             return; // Use cached value
                         }
 
-                        const response = await apiClient.get(`/canonical-urls/check?store_id=${store.id}&path=${encodeURIComponent(relativePath)}`);
+                        // Check if already fetching this path
+                        if (window.__canonicalFetching.has(cacheKey)) {
+                            // Wait for the in-flight request
+                            const inFlight = window.__canonicalFetching.get(cacheKey);
+                            const result = await inFlight;
+                            setCustomCanonicalUrl(result);
+                            return;
+                        }
 
-                        const canonicalUrl = response?.found && response?.canonical_url ? response.canonical_url : null;
+                        // Mark as fetching
+                        const fetchPromise = (async () => {
+                            const response = await apiClient.get(`/canonical-urls/check?store_id=${store.id}&path=${encodeURIComponent(relativePath)}`);
+                            const canonicalUrl = response?.found && response?.canonical_url ? response.canonical_url : null;
 
-                        // Cache the result
-                        window.__canonicalCache.set(cacheKey, {
-                            url: canonicalUrl,
-                            timestamp: Date.now()
-                        });
+                            // Cache the result
+                            window.__canonicalCache.set(cacheKey, {
+                                url: canonicalUrl,
+                                timestamp: Date.now()
+                            });
 
-                        setCustomCanonicalUrl(canonicalUrl);
+                            // Remove from fetching map
+                            window.__canonicalFetching.delete(cacheKey);
+
+                            return canonicalUrl;
+                        })();
+
+                        window.__canonicalFetching.set(cacheKey, fetchPromise);
+                        const result = await fetchPromise;
+                        setCustomCanonicalUrl(result);
                     } catch (deferredError) {
                         console.error('Error fetching deferred canonical URL:', deferredError);
                         setCustomCanonicalUrl(null);
