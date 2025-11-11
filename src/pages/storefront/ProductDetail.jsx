@@ -14,7 +14,7 @@ import { StorefrontProduct } from "@/api/storefront-entities";
 import { User } from "@/api/entities";
 import cartService from "@/services/cartService";
 // React Query hooks for optimized API calls
-import { useProduct, useUser } from "@/hooks/useApiQueries";
+import { useProduct, useUser, useWishlist } from "@/hooks/useApiQueries";
 // ProductLabel entity is no longer imported directly as its data is now provided via useStore.
 import { useStore, cachedApiCall } from "@/components/storefront/StoreProvider";
 import { formatPriceWithTax, calculateDisplayPrice, safeNumber, formatPrice, getPriceDisplay } from "@/utils/priceUtils";
@@ -106,6 +106,9 @@ export default function ProductDetail() {
   } = useProduct(slug, store?.id, {
     enabled: !storeLoading && !!store?.id && !!slug
   });
+
+  // Use shared wishlist hook to avoid duplicate API calls
+  const { data: wishlistData = [] } = useWishlist(store?.id);
 
   const [product, setProduct] = useState(null);
   const [quantity, setQuantity] = useState(1);
@@ -208,12 +211,13 @@ export default function ProductDetail() {
         });
       }
 
-      // Check wishlist status
-      if (productData.product.id) {
-        checkWishlistStatus(productData.product.id);
+      // Check wishlist status using shared hook data (no additional API call!)
+      if (productData.product.id && wishlistData) {
+        const isProductInWishlist = wishlistData.some(item => item.product_id === productData.product.id);
+        setIsInWishlist(isProductInWishlist);
       }
     }
-  }, [productData, categories, settings]);
+  }, [productData, categories, settings, wishlistData]);
 
   // Load product layout configuration directly
   useEffect(() => {
@@ -629,22 +633,8 @@ export default function ProductDetail() {
     }
   };
 
-  const checkWishlistStatus = async (productId) => {
-    if (!store?.id || !productId) return;
-    try {
-      const wishlistItems = await CustomerWishlist.getItems(store?.id);
-      // Check if this specific product is in the wishlist
-      const isProductInWishlist = wishlistItems && wishlistItems.some(item => 
-        item.product_id === productId || item.product_id === parseInt(productId)
-      );
-      
-      
-      setIsInWishlist(isProductInWishlist);
-    } catch (error) {
-      console.error('Error checking wishlist status:', error);
-      setIsInWishlist(false);
-    }
-  };
+  // checkWishlistStatus removed - now using shared useWishlist() hook
+  // This eliminates duplicate API calls (was called 2x per page load)
 
   const getTotalPrice = () => {
     if (!product) return 0;
@@ -790,11 +780,10 @@ export default function ProductDetail() {
       
       // Add a small delay to ensure backend persistence completes
       await new Promise(resolve => setTimeout(resolve, 500));
-      
-      // Refresh wishlist status to ensure UI is in sync
-      if (product?.id) {
-        checkWishlistStatus(product.id);
-      }
+
+      // Wishlist hook will automatically update via React Query invalidation
+      // No need to manually check - useWishlist will refetch automatically
+      // when CustomerWishlist.addItem() or removeItem() is called
 
     } catch (error) {
       console.error("Error toggling wishlist:", error);

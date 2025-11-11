@@ -102,9 +102,12 @@ export const useWishlist = (storeId, options = {}) => {
       }
     },
     enabled: !!storeId,
-    staleTime: 30000, // 30 seconds - wishlist can change frequently
-    gcTime: 60000, // 1 minute cache
-    retry: 1, // Reduce retries for wishlist
+    staleTime: 60000, // Increased to 1 minute (from 30s)
+    gcTime: 120000, // 2 minutes cache (from 1 min)
+    retry: 1,
+    refetchOnMount: false, // CRITICAL: Prevent duplicate calls
+    refetchOnWindowFocus: false, // CRITICAL: Prevent duplicate calls
+    refetchOnReconnect: false, // CRITICAL: Prevent duplicate calls
     ...options
   });
 };
