@@ -72,7 +72,7 @@ const ShopifyIntegration = () => {
     setSaveSuccess(false);
 
     try {
-      const token = localStorage.getItem('token');
+      const token = localStorage.getItem('store_owner_auth_token');
       const headers = {
         'Authorization': `Bearer ${token}`,
         'Content-Type': 'application/json',
@@ -135,7 +135,7 @@ const ShopifyIntegration = () => {
     try {
       const response = await fetch('/api/shopify/status', {
         headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
+          'Authorization': `Bearer ${localStorage.getItem('store_owner_auth_token')}`
         }
       });
       const data = await response.json();
@@ -153,7 +153,7 @@ const ShopifyIntegration = () => {
     try {
       const response = await fetch('/api/shopify/shop-info', {
         headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
+          'Authorization': `Bearer ${localStorage.getItem('store_owner_auth_token')}`
         }
       });
       
@@ -170,7 +170,7 @@ const ShopifyIntegration = () => {
     try {
       const response = await fetch('/api/shopify/import/stats', {
         headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
+          'Authorization': `Bearer ${localStorage.getItem('store_owner_auth_token')}`
         }
       });
       
@@ -192,7 +192,7 @@ const ShopifyIntegration = () => {
       const response = await fetch('/api/shopify/test-connection', {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
+          'Authorization': `Bearer ${localStorage.getItem('store_owner_auth_token')}`
         }
       });
 
@@ -223,7 +223,7 @@ const ShopifyIntegration = () => {
       const response = await fetch('/api/shopify/disconnect', {
         method: 'DELETE',
         headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
+          'Authorization': `Bearer ${localStorage.getItem('store_owner_auth_token')}`
         }
       });
 
@@ -257,7 +257,7 @@ const ShopifyIntegration = () => {
       const response = await fetch(endpoint, {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`,
+          'Authorization': `Bearer ${localStorage.getItem('store_owner_auth_token')}`,
           'Content-Type': 'application/json'
         },
         body: JSON.stringify(options)
