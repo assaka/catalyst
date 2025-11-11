@@ -125,7 +125,7 @@ const ShopifyIntegration = () => {
                     <li className="flex items-start">
                       <CheckCircle className="w-5 h-5 text-green-500 mr-2 mt-0.5" />
                       <div>
-                        <strong>OAuth 2.0 Authentication:</strong> Secure connection using Shopify's OAuth flow
+                        <strong>Direct Access Token:</strong> Secure connection using Shopify's Admin API access token
                       </div>
                     </li>
                     <li className="flex items-start">
@@ -217,10 +217,10 @@ const ShopifyIntegration = () => {
                         1
                       </div>
                       <div className="ml-4">
-                        <h4 className="font-medium">Connect Your Store</h4>
+                        <h4 className="font-medium">Create Custom App in Shopify</h4>
                         <p className="text-gray-600 text-sm mt-1">
-                          Enter your Shopify store domain (e.g., your-store.myshopify.com) and click Connect.
-                          You'll be redirected to Shopify to authorize the connection.
+                          In your Shopify Admin, go to Settings → Apps and sales channels → Develop apps.
+                          Create a custom app and get your Admin API access token.
                         </p>
                       </div>
                     </div>
@@ -229,9 +229,9 @@ const ShopifyIntegration = () => {
                         2
                       </div>
                       <div className="ml-4">
-                        <h4 className="font-medium">Authorize Access</h4>
+                        <h4 className="font-medium">Connect Your Store</h4>
                         <p className="text-gray-600 text-sm mt-1">
-                          Review the permissions requested and click "Install app" in Shopify to grant access.
+                          Enter your shop domain and access token in the Connection tab above. Click "Connect to Shopify".
                         </p>
                       </div>
                     </div>
@@ -278,9 +278,9 @@ const ShopifyIntegration = () => {
           <TabsContent value="configuration" className="space-y-6">
             <Card>
               <CardHeader>
-                <CardTitle>Shopify App Configuration</CardTitle>
+                <CardTitle>Create a Custom App in Shopify</CardTitle>
                 <CardDescription>
-                  Step-by-step guide to configure your Shopify app for integration
+                  Detailed step-by-step instructions for creating a custom app and getting your access token
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-6">
@@ -288,193 +288,191 @@ const ShopifyIntegration = () => {
                 <Alert className="border-blue-200 bg-blue-50">
                   <Info className="h-4 w-4 text-blue-600" />
                   <AlertDescription className="text-blue-800">
-                    <strong>Prerequisites:</strong> You need a Shopify Partner account and a development store for testing.
-                    Create a free Partner account at <a href="https://partners.shopify.com" target="_blank" rel="noopener noreferrer" className="underline">partners.shopify.com</a>
+                    <strong>What you'll need:</strong> Admin access to your Shopify store. No Partner account required!
+                    The process takes about 2-3 minutes.
                   </AlertDescription>
                 </Alert>
 
-                {/* Step 1: Create App */}
+                {/* Step 1: Access Settings */}
                 <div>
-                  <h3 className="text-lg font-semibold mb-3">Step 1: Create a Shopify App</h3>
+                  <h3 className="text-lg font-semibold mb-3">Step 1: Navigate to App Settings</h3>
                   <ol className="space-y-3 text-sm">
                     <li className="flex items-start">
                       <span className="font-medium mr-2">1.</span>
                       <div>
-                        Log in to your <a href="https://partners.shopify.com" target="_blank" rel="noopener noreferrer" className="text-blue-600 underline">Shopify Partner Dashboard</a>
+                        Log in to your <strong>Shopify Admin</strong> (your-store.myshopify.com/admin)
                       </div>
                     </li>
                     <li className="flex items-start">
                       <span className="font-medium mr-2">2.</span>
-                      <div>Navigate to Apps → Create app</div>
+                      <div>Click <strong>Settings</strong> (bottom left corner)</div>
                     </li>
                     <li className="flex items-start">
                       <span className="font-medium mr-2">3.</span>
-                      <div>Choose "Custom app" for your store</div>
+                      <div>Click <strong>Apps and sales channels</strong></div>
                     </li>
                     <li className="flex items-start">
                       <span className="font-medium mr-2">4.</span>
+                      <div>Click <strong>Develop apps</strong></div>
+                    </li>
+                  </ol>
+                  <div className="mt-3 p-3 bg-yellow-50 border border-yellow-200 rounded">
+                    <p className="text-sm text-yellow-800">
+                      <strong>First time?</strong> You may need to click "Allow custom app development" first.
+                    </p>
+                  </div>
+                </div>
+
+                {/* Step 2: Create App */}
+                <div>
+                  <h3 className="text-lg font-semibold mb-3">Step 2: Create Your Custom App</h3>
+                  <ol className="space-y-3 text-sm">
+                    <li className="flex items-start">
+                      <span className="font-medium mr-2">1.</span>
+                      <div>Click <strong>"Create an app"</strong></div>
+                    </li>
+                    <li className="flex items-start">
+                      <span className="font-medium mr-2">2.</span>
                       <div>
-                        Set app name: <code className="bg-gray-100 px-2 py-1 rounded">SuprShop Integration</code>
+                        App name: <code className="bg-gray-100 px-2 py-1 rounded">SuprShop Integration</code> (or any name you prefer)
                       </div>
+                    </li>
+                    <li className="flex items-start">
+                      <span className="font-medium mr-2">3.</span>
+                      <div>App developer: Enter your email address</div>
+                    </li>
+                    <li className="flex items-start">
+                      <span className="font-medium mr-2">4.</span>
+                      <div>Click <strong>"Create app"</strong></div>
                     </li>
                   </ol>
                 </div>
 
-                {/* Step 2: Configure OAuth */}
+                {/* Step 3: Configure Scopes */}
                 <div>
-                  <h3 className="text-lg font-semibold mb-3">Step 2: Configure OAuth Settings</h3>
-                  <div className="bg-gray-50 rounded-lg p-4 space-y-4">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">App URL</label>
-                      <code className="block bg-white p-2 rounded border text-xs">
-                        https://your-frontend-domain.com/admin/shopify-integration
-                      </code>
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Allowed redirection URLs</label>
-                      <div className="space-y-2">
-                        <code className="block bg-white p-2 rounded border text-xs">
-                          https://your-backend-domain.com/api/shopify/callback
-                        </code>
-                        <code className="block bg-white p-2 rounded border text-xs">
-                          https://your-frontend-domain.com/integrations/shopify/success
-                        </code>
-                        <code className="block bg-white p-2 rounded border text-xs">
-                          https://your-frontend-domain.com/integrations/shopify/error
-                        </code>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Step 3: API Scopes */}
-                <div>
-                  <h3 className="text-lg font-semibold mb-3">Step 3: Configure API Scopes</h3>
-                  <p className="text-gray-600 mb-3">Select the following scopes in your app configuration:</p>
-                  <div className="grid grid-cols-2 gap-3">
+                  <h3 className="text-lg font-semibold mb-3">Step 3: Configure Admin API Scopes</h3>
+                  <ol className="space-y-3 text-sm mb-3">
+                    <li className="flex items-start">
+                      <span className="font-medium mr-2">1.</span>
+                      <div>Click <strong>"Configure Admin API scopes"</strong></div>
+                    </li>
+                    <li className="flex items-start">
+                      <span className="font-medium mr-2">2.</span>
+                      <div>Search for and select these permissions:</div>
+                    </li>
+                  </ol>
+                  <div className="grid grid-cols-2 gap-3 ml-6">
                     <div className="flex items-center space-x-2">
-                      <CheckCircle className="w-4 h-4 text-green-500" />
+                      <CheckCircle className="w-4 h-4 text-green-500 flex-shrink-0" />
                       <code className="text-sm">read_products</code>
                     </div>
                     <div className="flex items-center space-x-2">
-                      <CheckCircle className="w-4 h-4 text-green-500" />
+                      <CheckCircle className="w-4 h-4 text-green-500 flex-shrink-0" />
                       <code className="text-sm">read_product_listings</code>
                     </div>
                     <div className="flex items-center space-x-2">
-                      <CheckCircle className="w-4 h-4 text-green-500" />
+                      <CheckCircle className="w-4 h-4 text-green-500 flex-shrink-0" />
                       <code className="text-sm">read_inventory</code>
                     </div>
                     <div className="flex items-center space-x-2">
-                      <CheckCircle className="w-4 h-4 text-green-500" />
-                      <code className="text-sm">read_customers</code>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <CheckCircle className="w-4 h-4 text-green-500" />
-                      <code className="text-sm">read_orders</code>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <CheckCircle className="w-4 h-4 text-green-500" />
+                      <CheckCircle className="w-4 h-4 text-green-500 flex-shrink-0" />
                       <code className="text-sm">read_content</code>
                     </div>
-                    <div className="flex items-center space-x-2">
-                      <CheckCircle className="w-4 h-4 text-green-500" />
-                      <code className="text-sm">read_themes</code>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <CheckCircle className="w-4 h-4 text-green-500" />
-                      <code className="text-sm">read_script_tags</code>
-                    </div>
                   </div>
+                  <ol start="3" className="space-y-3 text-sm mt-3">
+                    <li className="flex items-start">
+                      <span className="font-medium mr-2">3.</span>
+                      <div>Click <strong>"Save"</strong> at the top</div>
+                    </li>
+                  </ol>
                 </div>
 
-                {/* Step 4: Configure App in SuprShop */}
+                {/* Step 4: Install App */}
                 <div>
-                  <h3 className="text-lg font-semibold mb-3">Step 4: Configure App Credentials in SuprShop</h3>
-                  <p className="text-gray-600 mb-3">After creating your Shopify app, configure it in SuprShop:</p>
+                  <h3 className="text-lg font-semibold mb-3">Step 4: Install the App</h3>
+                  <ol className="space-y-3 text-sm">
+                    <li className="flex items-start">
+                      <span className="font-medium mr-2">1.</span>
+                      <div>Click the <strong>"API credentials"</strong> tab</div>
+                    </li>
+                    <li className="flex items-start">
+                      <span className="font-medium mr-2">2.</span>
+                      <div>Click <strong>"Install app"</strong></div>
+                    </li>
+                    <li className="flex items-start">
+                      <span className="font-medium mr-2">3.</span>
+                      <div>Review the permissions and click <strong>"Install"</strong></div>
+                    </li>
+                  </ol>
+                </div>
+
+                {/* Step 5: Get Access Token */}
+                <div>
+                  <h3 className="text-lg font-semibold mb-3">Step 5: Copy Your Access Token</h3>
                   <ol className="space-y-3 text-sm">
                     <li className="flex items-start">
                       <span className="font-medium mr-2">1.</span>
                       <div>
-                        Go to the <strong>Connection</strong> tab on this page
+                        After installing, you'll see <strong>"Admin API access token"</strong>
                       </div>
                     </li>
                     <li className="flex items-start">
                       <span className="font-medium mr-2">2.</span>
-                      <div>
-                        Click <strong>"Configure App Credentials"</strong>
-                      </div>
+                      <div>Click <strong>"Reveal token once"</strong></div>
                     </li>
                     <li className="flex items-start">
                       <span className="font-medium mr-2">3.</span>
                       <div>
-                        Enter your <strong>Client ID</strong> from Shopify Partner Dashboard
-                      </div>
-                    </li>
-                    <li className="flex items-start">
-                      <span className="font-medium mr-2">4.</span>
-                      <div>
-                        Enter your <strong>Client Secret</strong> (keep this secure!)
-                      </div>
-                    </li>
-                    <li className="flex items-start">
-                      <span className="font-medium mr-2">5.</span>
-                      <div>
-                        Verify the <strong>Redirect URI</strong> matches what you added in Shopify
-                      </div>
-                    </li>
-                    <li className="flex items-start">
-                      <span className="font-medium mr-2">6.</span>
-                      <div>
-                        Click <strong>"Save Credentials"</strong>
+                        <strong>Copy the token immediately!</strong> It starts with <code className="bg-gray-100 px-1 rounded">shpat_</code>
                       </div>
                     </li>
                   </ol>
-                  <Alert className="mt-3">
-                    <Shield className="h-4 w-4" />
-                    <AlertDescription>
-                      Your credentials are encrypted and stored securely per store. Each store can have its own Shopify app configuration.
+
+                  <Alert className="mt-4 border-red-200 bg-red-50">
+                    <AlertTriangle className="h-4 w-4 text-red-600" />
+                    <AlertDescription className="text-red-800">
+                      <strong>IMPORTANT:</strong> The access token is only shown ONCE! Copy it immediately and store it securely. If you lose it, you'll need to uninstall and reinstall the app.
                     </AlertDescription>
                   </Alert>
                 </div>
 
-                {/* Step 5: Connect Your Store */}
+                {/* Step 6: Connect */}
                 <div>
-                  <h3 className="text-lg font-semibold mb-3">Step 5: Connect Your Shopify Store</h3>
-                  <p className="text-gray-600 mb-3">Once your app credentials are configured:</p>
+                  <h3 className="text-lg font-semibold mb-3">Step 6: Connect to SuprShop</h3>
                   <ol className="space-y-3 text-sm">
                     <li className="flex items-start">
                       <span className="font-medium mr-2">1.</span>
-                      <div>
-                        Enter your Shopify store domain (e.g., <code>your-store.myshopify.com</code>)
-                      </div>
+                      <div>Go back to the <strong>Connection</strong> tab in SuprShop</div>
                     </li>
                     <li className="flex items-start">
                       <span className="font-medium mr-2">2.</span>
                       <div>
-                        Click <strong>"Connect"</strong> to initiate OAuth
+                        Enter your shop domain (e.g., <code className="bg-gray-100 px-1 rounded">your-store.myshopify.com</code>)
                       </div>
                     </li>
                     <li className="flex items-start">
                       <span className="font-medium mr-2">3.</span>
-                      <div>
-                        Authorize the app in Shopify when prompted
-                      </div>
+                      <div>Paste the access token you copied</div>
                     </li>
                     <li className="flex items-start">
                       <span className="font-medium mr-2">4.</span>
-                      <div>
-                        You'll be redirected back to SuprShop once connected
-                      </div>
+                      <div>Click <strong>"Connect to Shopify"</strong></div>
                     </li>
                   </ol>
+
+                  <Alert className="mt-4 border-green-200 bg-green-50">
+                    <CheckCircle className="h-4 w-4 text-green-600" />
+                    <AlertDescription className="text-green-800">
+                      <strong>That's it!</strong> You're now connected and can start importing products and collections.
+                    </AlertDescription>
+                  </Alert>
                 </div>
 
                 {/* Security Note */}
-                <Alert className="border-yellow-200 bg-yellow-50">
-                  <AlertTriangle className="h-4 w-4 text-yellow-600" />
-                  <AlertDescription className="text-yellow-800">
-                    <strong>Security Note:</strong> Never commit your Client Secret to version control. 
-                    Always use environment variables and keep them secure.
+                <Alert className="border-blue-200 bg-blue-50">
+                  <Shield className="h-4 w-4 text-blue-600" />
+                  <AlertDescription className="text-blue-800">
+                    <strong>Security:</strong> Your access token is encrypted and stored securely. It's never exposed in API responses or logs.
                   </AlertDescription>
                 </Alert>
               </CardContent>
@@ -567,18 +565,16 @@ const ShopifyIntegration = () => {
                     <Alert className="border-red-200">
                       <XCircle className="h-4 w-4 text-red-600" />
                       <AlertDescription>
-                        <strong>Error: "Shopify app not configured"</strong><br />
-                        You need to configure your Shopify app credentials first. Go to the Connection tab 
-                        and click "Configure App Credentials" to enter your Client ID and Client Secret.
+                        <strong>Error: "Invalid access token"</strong><br />
+                        Make sure you copied the access token correctly. It should start with "shpat_" and have no extra spaces.
                       </AlertDescription>
                     </Alert>
 
                     <Alert className="border-red-200">
                       <XCircle className="h-4 w-4 text-red-600" />
                       <AlertDescription>
-                        <strong>Error: "Invalid HMAC"</strong><br />
-                        This indicates a security verification failure. Ensure your Client Secret is correct 
-                        and matches the one in your Shopify app settings.
+                        <strong>Error: "Connection failed"</strong><br />
+                        Verify that your custom app is installed in Shopify and has the correct API scopes enabled.
                       </AlertDescription>
                     </Alert>
 
