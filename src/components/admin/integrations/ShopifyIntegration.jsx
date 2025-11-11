@@ -34,8 +34,8 @@ import {
 // Shopify Integration Component - Direct Access Token Flow
 const ShopifyIntegration = () => {
   const { selectedStore } = useStoreSelection();
-  const storeId = selectedStore?.id || localStorage.getItem('selectedStoreId');
-  
+  const storeId = selectedStore?.id;
+
   const [connectionStatus, setConnectionStatus] = useState(null);
   const [loading, setLoading] = useState(false);
   const [shopDomain, setShopDomain] = useState('');
@@ -48,7 +48,8 @@ const ShopifyIntegration = () => {
   const [showInstructions, setShowInstructions] = useState(true);
 
   useEffect(() => {
-    if (storeId) {
+    console.log('ShopifyIntegration - storeId:', storeId);
+    if (storeId && storeId !== 'undefined') {
       checkConnectionStatus();
       fetchImportStats();
     }
@@ -133,6 +134,11 @@ const ShopifyIntegration = () => {
   };
 
   const checkConnectionStatus = async () => {
+    if (!storeId) {
+      console.warn('Cannot check connection status - no store ID');
+      return;
+    }
+
     try {
       const response = await fetch('/api/shopify/status', {
         headers: {
@@ -153,6 +159,11 @@ const ShopifyIntegration = () => {
   };
 
   const fetchShopInfo = async () => {
+    if (!storeId) {
+      console.warn('Cannot fetch shop info - no store ID');
+      return;
+    }
+
     try {
       const response = await fetch('/api/shopify/shop-info', {
         headers: {
@@ -172,10 +183,16 @@ const ShopifyIntegration = () => {
   };
 
   const fetchImportStats = async () => {
+    if (!storeId) {
+      console.warn('Cannot fetch import stats - no store ID');
+      return;
+    }
+
     try {
       const response = await fetch('/api/shopify/import/stats', {
         headers: {
-          'Authorization': `Bearer ${localStorage.getItem('store_owner_auth_token')}`
+          'Authorization': `Bearer ${localStorage.getItem('store_owner_auth_token')}`,
+          'x-store-id': storeId
         }
       });
       
@@ -190,6 +207,11 @@ const ShopifyIntegration = () => {
 
 
   const testConnection = async () => {
+    if (!storeId) {
+      setMessage({ type: 'error', text: 'No store selected' });
+      return;
+    }
+
     setLoading(true);
     setMessage(null);
 
@@ -197,7 +219,8 @@ const ShopifyIntegration = () => {
       const response = await fetch('/api/shopify/test-connection', {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${localStorage.getItem('store_owner_auth_token')}`
+          'Authorization': `Bearer ${localStorage.getItem('store_owner_auth_token')}`,
+          'x-store-id': storeId
         }
       });
 
@@ -217,6 +240,11 @@ const ShopifyIntegration = () => {
   };
 
   const disconnectShopify = async () => {
+    if (!storeId) {
+      setMessage({ type: 'error', text: 'No store selected' });
+      return;
+    }
+
     if (!window.confirm('Are you sure you want to disconnect from Shopify? This will remove your access token.')) {
       return;
     }
@@ -228,7 +256,8 @@ const ShopifyIntegration = () => {
       const response = await fetch('/api/shopify/disconnect', {
         method: 'DELETE',
         headers: {
-          'Authorization': `Bearer ${localStorage.getItem('store_owner_auth_token')}`
+          'Authorization': `Bearer ${localStorage.getItem('store_owner_auth_token')}`,
+          'x-store-id': storeId
         }
       });
 
@@ -250,12 +279,17 @@ const ShopifyIntegration = () => {
   };
 
   const importData = async (type, options = {}) => {
+    if (!storeId) {
+      setMessage({ type: 'error', text: 'No store selected' });
+      return;
+    }
+
     setLoading(true);
     setMessage(null);
     setImportProgress({ type, progress: 0, message: 'Starting import...' });
 
     try {
-      const endpoint = type === 'full' 
+      const endpoint = type === 'full'
         ? '/api/shopify/import/full'
         : `/api/shopify/import/${type}`;
 
@@ -263,7 +297,8 @@ const ShopifyIntegration = () => {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('store_owner_auth_token')}`,
-          'Content-Type': 'application/json'
+          'Content-Type': 'application/json',
+          'x-store-id': storeId
         },
         body: JSON.stringify(options)
       });
