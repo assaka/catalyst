@@ -147,7 +147,7 @@ export const StoreProvider = ({ children }) => {
         mergedSettings.ui_translations[currentLang] = bootstrap.translations?.labels || {};
 
         // Set all data
-        setStoreData({
+        const finalStoreData = {
           // Layer 1 - From bootstrap
           store: { ...store, settings: mergedSettings },
           languages: bootstrap.languages || [],
@@ -164,7 +164,21 @@ export const StoreProvider = ({ children }) => {
           attributes: additionalData.attributes || [],
           filterableAttributes: additionalData.filterableAttributes || [],
           attributeSets: additionalData.attributeSets || [],
+        };
+
+        // DEBUG: Log what we're setting
+        console.warn('StoreProvider setting data:', {
+          hasCategories: !!bootstrap.categories,
+          categoryCount: bootstrap.categories?.length,
+          categoriesPreview: bootstrap.categories?.slice(0, 2)
         });
+
+        setStoreData(finalStoreData);
+
+        // Make available globally for debugging
+        if (typeof window !== 'undefined') {
+          window.__storeContext = finalStoreData;
+        }
 
         setLoading(false);
       } catch (error) {
