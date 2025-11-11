@@ -1325,7 +1325,15 @@ class AkeneoIntegration {
 
   /**
    * Import products and product models from Akeneo to Catalyst
-   * This method handles both simple products and configurable products (from product models)
+   *
+   * Import behavior:
+   * - Standalone products: ALWAYS imported as simple products
+   * - Variant products: ALWAYS imported as simple products
+   * - Product models: OPTIONAL - when enabled, imported as configurable products
+   *
+   * importProductModels setting:
+   * - true (default): Import product models as configurable + link variants to them via parent_id
+   * - false: Skip product models, import only products (all as simple, no linking)
    */
   async importProductsWithModels(storeId, options = {}) {
     const { locale = 'en_US', dryRun = false, batchSize = 50, filters = {}, settings = {}, customMappings = {} } = options;
@@ -1336,16 +1344,17 @@ class AkeneoIntegration {
       downloadImages: true,
       includeFiles: true,
       includeStock: true,
-      importProductModels: true, // Default to true - import product models as configurable products
+      importProductModels: true, // true = import product models as configurable + link variants | false = skip product models
       akeneoBaseUrl: this.config.baseUrl,
       ...settings
     };
 
     try {
-      console.log('🚀 Starting product and product model import from Akeneo...');
+      console.log('🚀 Starting product import from Akeneo...');
       console.log(`📍 Store ID: ${storeId}`);
       console.log(`🧪 Dry run mode: ${dryRun}`);
       console.log(`📦 Batch size: ${batchSize}`);
+      console.log(`⚙️ Import product models: ${enhancedSettings.importProductModels ? 'YES (will create configurables and link variants)' : 'NO (variants will remain standalone simple products)'}`);
 
       // Get category and family mappings
       console.log('📂 Building category mapping...');
@@ -1653,8 +1662,13 @@ class AkeneoIntegration {
         }
       }
 
-      console.log('🎉 Product and product model import completed!');
+      console.log('🎉 Product import completed!');
       console.log(`📊 Final stats: ${this.importStats.products.imported} imported, ${this.importStats.products.failed} failed, ${this.importStats.products.total} total`);
+      if (enhancedSettings.importProductModels) {
+        console.log(`✅ Imported ${standaloneProducts.length} standalone + ${variantProducts.length} variants (linked to ${akeneoProductModels.length} configurables)`);
+      } else {
+        console.log(`✅ Imported ${standaloneProducts.length} standalone + ${variantProducts.length} variants (all as simple products, no configurables)`);
+      }
 
       const response = {
         success: true,
@@ -1691,9 +1705,9 @@ class AkeneoIntegration {
         response.message = `Dry run completed. Would import ${this.importStats.products.imported} products`;
       } else {
         if (enhancedSettings.importProductModels) {
-          response.message = `Successfully imported ${this.importStats.products.imported} products (including configurable products from product models)`;
+          response.message = `Successfully imported ${standaloneProducts.length} standalone + ${variantProducts.length} variants as simple products, and ${akeneoProductModels.length} product models as configurable products (variants linked to configurables)`;
         } else {
-          response.message = `Successfully imported ${this.importStats.products.imported} products (product models skipped)`;
+          response.message = `Successfully imported ${standaloneProducts.length} standalone + ${variantProducts.length} variants as simple products (no configurables created)`;
         }
       }
 
