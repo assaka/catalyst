@@ -82,8 +82,17 @@ export default function Cart() {
 
 
     // Use StoreProvider data instead of making separate API calls
-    const { store, settings, taxes, selectedCountry, loading: storeLoading } = useStore();
-    // Layer 2: Cart page bootstrap (cart slots, taxes)    const language = getCurrentLanguage();    const { data: pageBootstrap, isLoading: pageBootstrapLoading } = useCartPageBootstrap(        store?.id,        language    );
+    const { store, settings, taxes: storeTaxes, selectedCountry, loading: storeLoading } = useStore();
+
+    // Layer 2: Cart page bootstrap (cart slots, taxes)
+    const language = getCurrentLanguage();
+    const { data: pageBootstrap, isLoading: pageBootstrapLoading } = useCartPageBootstrap(
+        store?.id,
+        language
+    );
+
+    // Use taxes from page bootstrap if available, otherwise use from StoreProvider
+    const taxes = pageBootstrap?.taxes || storeTaxes;
 
     // State for cart layout configuration
     const [cartLayoutConfig, setCartLayoutConfig] = useState(null);
@@ -96,6 +105,14 @@ export default function Cart() {
                 return;
             }
 
+            // Priority 1: Use page bootstrap if available (no API call!)
+            if (pageBootstrap?.cartSlotConfig) {
+                setCartLayoutConfig(pageBootstrap.cartSlotConfig);
+                setConfigLoaded(true);
+                return;
+            }
+
+            // Priority 2: Fetch from API if page bootstrap not available
             try {
                 const response = await slotConfigurationService.getPublishedConfiguration(store.id, 'cart');
 
@@ -160,7 +177,7 @@ export default function Cart() {
         return () => {
             window.removeEventListener('storage', handleStorageChange);
         };
-    }, [store?.id]);
+    }, [store?.id, pageBootstrap]);
     
     const [taxRules, setTaxRules] = useState([]);
     
