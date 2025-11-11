@@ -17,7 +17,32 @@
  */
 
 import { useQuery } from '@tanstack/react-query';
-import { storefrontApiClient } from '@/api/storefront-entities';
+import { storefrontApiClient, StorefrontStore } from '@/api/storefront-entities';
+
+/**
+ * Helper hook to fetch store slug when we only have ID
+ * @param {string} storeId - Store ID
+ * @returns {Object} React Query result with store slug
+ */
+export function useStoreSlugById(storeId) {
+  return useQuery({
+    queryKey: ['store-slug', storeId],
+    queryFn: async () => {
+      if (!storeId) return null;
+
+      try {
+        const result = await StorefrontStore.filter({ id: storeId });
+        const store = Array.isArray(result) ? result[0] : null;
+        return store?.slug || null;
+      } catch (error) {
+        console.error('Failed to fetch store slug:', error);
+        return null;
+      }
+    },
+    staleTime: 3600000, // 1 hour - slug rarely changes
+    enabled: !!storeId,
+  });
+}
 
 /**
  * Hook to fetch bootstrap data (Layer 1 - Global data)
@@ -82,6 +107,12 @@ export function determineStoreSlug(location) {
     return hostname;
   }
 
-  // Fallback to localStorage or default
-  return localStorage.getItem('selectedStoreSlug') || 'default';
+  // Fallback to localStorage
+  const savedSlug = localStorage.getItem('selectedStoreSlug');
+  if (savedSlug) {
+    return savedSlug;
+  }
+
+  // Final fallback: if no slug, return null (will fetch first store)
+  return null;
 }

@@ -19,8 +19,9 @@ export const StoreSelectionProvider = ({ children }) => {
     // Try to restore from localStorage immediately
     const savedStoreId = localStorage.getItem('selectedStoreId');
     const savedStoreName = localStorage.getItem('selectedStoreName');
+    const savedStoreSlug = localStorage.getItem('selectedStoreSlug');
     if (savedStoreId && savedStoreName) {
-      return { id: savedStoreId, name: savedStoreName };
+      return { id: savedStoreId, name: savedStoreName, slug: savedStoreSlug };
     }
     return null;
   });
@@ -76,11 +77,13 @@ export const StoreSelectionProvider = ({ children }) => {
         if (savedStore) {
           setSelectedStore(savedStore);
           localStorage.setItem('selectedStoreName', savedStore.name);
+          localStorage.setItem('selectedStoreSlug', savedStore.slug);
         } else if (!selectedStore) {
           // Only auto-select if we don't have a current selection
           setSelectedStore(stores[0]);
           localStorage.setItem('selectedStoreId', stores[0].id);
           localStorage.setItem('selectedStoreName', stores[0].name);
+          localStorage.setItem('selectedStoreSlug', stores[0].slug);
         }
       }
     } catch (error) {
@@ -100,10 +103,11 @@ export const StoreSelectionProvider = ({ children }) => {
     setSelectedStore(store);
     localStorage.setItem('selectedStoreId', store.id);
     localStorage.setItem('selectedStoreName', store.name);
-    
+    localStorage.setItem('selectedStoreSlug', store.slug);
+
     // Dispatch custom event to notify components of store change
-    window.dispatchEvent(new CustomEvent('storeSelectionChanged', { 
-      detail: { store } 
+    window.dispatchEvent(new CustomEvent('storeSelectionChanged', {
+      detail: { store }
     }));
   };
 

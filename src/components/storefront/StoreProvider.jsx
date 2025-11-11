@@ -19,7 +19,7 @@ import { TranslationProvider } from '@/contexts/TranslationContext';
 import { storefrontApiClient } from '@/api/storefront-entities';
 
 // New utilities and hooks
-import { useStoreBootstrap, determineStoreSlug } from '@/hooks/useStoreBootstrap';
+import { useStoreBootstrap, useStoreSlugById, determineStoreSlug } from '@/hooks/useStoreBootstrap';
 import { fetchAdditionalStoreData, fetchCookieConsentSettings } from '@/hooks/useStoreData';
 import { mergeStoreSettings } from '@/utils/storeSettingsDefaults';
 import { clearCache, deleteCacheKey } from '@/utils/cacheUtils';
@@ -38,8 +38,20 @@ export const StoreProvider = ({ children }) => {
     return localStorage.getItem('selectedCountry') || 'US';
   });
 
-  // Determine store slug and language
-  const storeSlug = determineStoreSlug(location);
+  // Step 1: Try to get store slug
+  let storeSlug = determineStoreSlug(location);
+  const storeId = !storeSlug ? localStorage.getItem('selectedStoreId') : null;
+
+  // Step 2: If no slug but have ID, fetch slug first
+  const { data: fetchedSlug, isLoading: slugLoading } = useStoreSlugById(storeId);
+
+  // Use fetched slug if we had to look it up
+  if (!storeSlug && fetchedSlug) {
+    storeSlug = fetchedSlug;
+    // Save it for next time
+    localStorage.setItem('selectedStoreSlug', fetchedSlug);
+  }
+
   const language = localStorage.getItem('catalyst_language') || 'en';
 
   // LAYER 1: Bootstrap data (global data - 1 API call)
@@ -47,7 +59,7 @@ export const StoreProvider = ({ children }) => {
 
   // Main data loading effect
   useEffect(() => {
-    if (bootstrapLoading || !bootstrap) {
+    if (slugLoading || bootstrapLoading || !bootstrap) {
       setLoading(true);
       return;
     }
@@ -138,7 +150,7 @@ export const StoreProvider = ({ children }) => {
     };
 
     loadStoreData();
-  }, [bootstrap, bootstrapLoading, language, location.pathname]);
+  }, [bootstrap, bootstrapLoading, slugLoading, language, location.pathname]);
 
   // Event Listener: Store selection changes
   useEffect(() => {
