@@ -1,3 +1,14 @@
+// Global cache to prevent duplicate cart fetches
+let cartCache = null;
+let cartCacheTimestamp = 0;
+const CART_CACHE_TTL = 5000; // 5 seconds - short cache to prevent rapid duplicates
+
+// Helper to invalidate cart cache
+const invalidateCartCache = () => {
+  cartCache = null;
+  cartCacheTimestamp = 0;
+};
+
 // Simplified Cart Service
 class CartService {
   constructor() {
@@ -39,6 +50,11 @@ class CartService {
 
   // Get cart - simplified to always use session_id approach with aggressive cache busting
   async getCart(bustCache = false, storeId = null) {
+    // Check global cache (unless busting cache)
+    if (!bustCache && cartCache && (Date.now() - cartCacheTimestamp < CART_CACHE_TTL)) {
+      return cartCache; // Return cached data
+    }
+
     const sessionId = this.getSessionId();
     let fullUrl = '';
 
@@ -108,13 +124,23 @@ class CartService {
         const cartData = result.data.dataValues || result.data;
         const items = Array.isArray(cartData.items) ? cartData.items : [];
 
-        return {
+        const cartResult = {
           success: true,
           cart: cartData,
           items: items
         };
+
+        // Cache the result
+        cartCache = cartResult;
+        cartCacheTimestamp = Date.now();
+
+        return cartResult;
       }
-      return { success: false, cart: null, items: [] };
+
+      const emptyResult = { success: false, cart: null, items: [] };
+      cartCache = emptyResult;
+      cartCacheTimestamp = Date.now();
+      return emptyResult;
     } catch (error) {
       console.error('🛒 CartService.getCart error:', {
         message: error.message,
@@ -217,6 +243,9 @@ class CartService {
         const cartItems = Array.isArray(freshCartData?.items) ? freshCartData.items :
                          Array.isArray(freshCartData?.dataValues?.items) ? freshCartData.dataValues.items : [];
 
+        // Invalidate cache when cart changes
+        invalidateCartCache();
+
         // Dispatch cart update event with the fresh cart data
         window.dispatchEvent(new CustomEvent('cartUpdated', {
           detail: {
@@ -286,6 +315,9 @@ class CartService {
                          Array.isArray(freshCartData?.dataValues?.items) ? freshCartData.dataValues.items : [];
 
         // Dispatch cart update event with fresh cart data (same pattern as addItem)
+        // Invalidate cache when cart changes
+        invalidateCartCache();
+
         window.dispatchEvent(new CustomEvent('cartUpdated', {
           detail: {
             action: 'update_from_service',
@@ -361,6 +393,9 @@ class CartService {
         const freshCartData = result.data;
         const cartItems = Array.isArray(freshCartData?.items) ? freshCartData.items :
                          Array.isArray(freshCartData?.dataValues?.items) ? freshCartData.dataValues.items : [];
+
+        // Invalidate cache when cart changes
+        invalidateCartCache();
 
         // Dispatch cart update event with fresh cart data (same pattern as other methods)
         window.dispatchEvent(new CustomEvent('cartUpdated', {
