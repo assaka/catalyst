@@ -330,93 +330,16 @@ const ShopifyIntegration = () => {
           )}
 
           {!connectionStatus?.connected ? (
-            <div className="space-y-4">
-              {/* App Configuration Section */}
-              {/* Instructions Card */}
-              <Card className="border-blue-200 bg-blue-50/50">
-                <CardHeader className="cursor-pointer" onClick={() => setShowInstructions(!showInstructions)}>
-                  <div className="flex items-center justify-between">
-                    <CardTitle className="text-base flex items-center">
-                      <Info className="w-5 h-5 mr-2 text-blue-600" />
-                      How to Get Your Shopify Credentials
-                    </CardTitle>
-                    {showInstructions ? (
-                      <ChevronUp className="w-5 h-5 text-blue-600" />
-                    ) : (
-                      <ChevronDown className="w-5 h-5 text-blue-600" />
-                    )}
-                  </div>
-                </CardHeader>
-                {showInstructions && (
-                  <CardContent className="space-y-4 text-sm">
-                    <div className="space-y-3">
-                      <div className="font-medium text-blue-900">Step 1: Get Your Shop Domain</div>
-                      <p className="text-gray-700">
-                        Your shop domain is the URL you use to access your Shopify admin. It looks like: <code className="bg-white px-2 py-1 rounded">your-store.myshopify.com</code>
-                      </p>
-
-                      <div className="font-medium text-blue-900 mt-4">Step 2: Create a Custom App in Shopify</div>
-                      <ol className="list-decimal list-inside space-y-2 text-gray-700">
-                        <li>
-                          Log into your Shopify Admin and go to{' '}
-                          <strong>Settings → Apps and sales channels</strong>
-                        </li>
-                        <li>
-                          Click <strong>"Develop apps"</strong> (you may need to enable custom app development first)
-                        </li>
-                        <li>
-                          Click <strong>"Create an app"</strong> and name it (e.g., "SuprShop Integration")
-                        </li>
-                        <li>
-                          Click <strong>"Configure Admin API scopes"</strong>
-                        </li>
-                        <li>
-                          Select these permissions:
-                          <ul className="list-disc list-inside ml-4 mt-1">
-                            <li>read_products</li>
-                            <li>read_product_listings</li>
-                            <li>read_inventory</li>
-                            <li>read_content (for collections)</li>
-                          </ul>
-                        </li>
-                        <li>Click <strong>"Save"</strong></li>
-                        <li>
-                          Click <strong>"Install app"</strong> to install it on your store
-                        </li>
-                        <li>
-                          You'll see an <strong>Admin API access token</strong> - copy this!
-                          <br />
-                          <span className="text-xs text-gray-600">
-                            (It starts with <code className="bg-white px-1 rounded">shpat_</code>)
-                          </span>
-                        </li>
-                      </ol>
-
-                      <Alert className="border-yellow-200 bg-yellow-50 mt-4">
-                        <AlertCircle className="h-4 w-4 text-yellow-600" />
-                        <AlertDescription className="text-yellow-800 text-xs">
-                          <strong>Important:</strong> The access token is only shown once! Copy it immediately and store it securely.
-                        </AlertDescription>
-                      </Alert>
-
-                      <div className="mt-4 pt-4 border-t border-blue-200">
-                        <a
-                          href="https://help.shopify.com/en/manual/apps/custom-apps"
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-blue-600 hover:text-blue-700 flex items-center text-sm font-medium"
-                        >
-                          Read Shopify's Official Guide
-                          <ExternalLink className="w-4 h-4 ml-1" />
-                        </a>
-                      </div>
-                    </div>
-                  </CardContent>
-                )}
-              </Card>
-
+            <div className="space-y-6">
               {/* Connection Form */}
-              <div className="space-y-4">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Connect Your Shopify Store</CardTitle>
+                  <CardDescription>
+                    Enter your Shopify credentials to connect your store
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
                 <div>
                   <Label htmlFor="shop-domain" className="flex items-center">
                     Shopify Store Domain
@@ -471,8 +394,92 @@ const ShopifyIntegration = () => {
                     defaultText="Connect to Shopify"
                   />
                 </div>
-              </div>
-            </div>
+              </CardContent>
+            </Card>
+
+            {/* Instructions Card - Moved Below */}
+            <Card className="border-blue-200 bg-blue-50/50">
+              <CardHeader className="cursor-pointer" onClick={() => setShowInstructions(!showInstructions)}>
+                <div className="flex items-center justify-between">
+                  <CardTitle className="text-base flex items-center">
+                    <Info className="w-5 h-5 mr-2 text-blue-600" />
+                    How to Get Your Shopify Credentials
+                  </CardTitle>
+                  {showInstructions ? (
+                    <ChevronUp className="w-5 h-5 text-blue-600" />
+                  ) : (
+                    <ChevronDown className="w-5 h-5 text-blue-600" />
+                  )}
+                </div>
+              </CardHeader>
+              {showInstructions && (
+                <CardContent className="space-y-4 text-sm">
+                  <div className="space-y-3">
+                    <div className="font-medium text-blue-900">Step 1: Get Your Shop Domain</div>
+                    <p className="text-gray-700">
+                      Your shop domain is the URL you use to access your Shopify admin. It looks like: <code className="bg-white px-2 py-1 rounded">your-store.myshopify.com</code>
+                    </p>
+
+                    <div className="font-medium text-blue-900 mt-4">Step 2: Create a Custom App in Shopify</div>
+                    <ol className="list-decimal list-inside space-y-2 text-gray-700">
+                      <li>
+                        Log into your Shopify Admin and go to{' '}
+                        <strong>Settings → Apps and sales channels</strong>
+                      </li>
+                      <li>
+                        Click <strong>"Develop apps"</strong> (you may need to enable custom app development first)
+                      </li>
+                      <li>
+                        Click <strong>"Create an app"</strong> and name it (e.g., "SuprShop Integration")
+                      </li>
+                      <li>
+                        Click <strong>"Configure Admin API scopes"</strong>
+                      </li>
+                      <li>
+                        Select these permissions:
+                        <ul className="list-disc list-inside ml-4 mt-1">
+                          <li>read_products</li>
+                          <li>read_product_listings</li>
+                          <li>read_inventory</li>
+                          <li>read_content (for collections)</li>
+                        </ul>
+                      </li>
+                      <li>Click <strong>"Save"</strong></li>
+                      <li>
+                        Click <strong>"Install app"</strong> to install it on your store
+                      </li>
+                      <li>
+                        You'll see an <strong>Admin API access token</strong> - copy this!
+                        <br />
+                        <span className="text-xs text-gray-600">
+                          (It starts with <code className="bg-white px-1 rounded">shpat_</code>)
+                        </span>
+                      </li>
+                    </ol>
+
+                    <Alert className="border-yellow-200 bg-yellow-50 mt-4">
+                      <AlertCircle className="h-4 w-4 text-yellow-600" />
+                      <AlertDescription className="text-yellow-800 text-xs">
+                        <strong>Important:</strong> The access token is only shown once! Copy it immediately and store it securely.
+                      </AlertDescription>
+                    </Alert>
+
+                    <div className="mt-4 pt-4 border-t border-blue-200">
+                      <a
+                        href="https://help.shopify.com/en/manual/apps/custom-apps"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-blue-600 hover:text-blue-700 flex items-center text-sm font-medium"
+                      >
+                        Read Shopify's Official Guide
+                        <ExternalLink className="w-4 h-4 ml-1" />
+                      </a>
+                    </div>
+                  </div>
+                </CardContent>
+              )}
+            </Card>
+          </div>
           ) : (
             <div className="space-y-4">
               {shopInfo && (
