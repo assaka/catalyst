@@ -120,8 +120,8 @@ router.get('/', cacheMiddleware({
             order: [['sort_order', 'ASC']]
           }),
           DeliverySettings.findAll({
-            where: { store_id },
-            order: [['sort_order', 'ASC']]
+            where: { store_id }
+            // Note: DeliverySettings doesn't have sort_order column
           })
         ]);
 
