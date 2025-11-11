@@ -295,64 +295,57 @@ const ShopifyIntegration = () => {
 
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="space-y-6">
-          {/* Header */}
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-3xl font-bold tracking-tight">Shopify Integration</h1>
-              <p className="text-muted-foreground">
-                Connect your Shopify store to import products and sync inventory
-              </p>
-            </div>
-            {connectionStatus?.connected && (
-              <Badge className="bg-green-100 text-green-800">
-                <CheckCircle className="w-4 h-4 mr-1" />
-                Connected
-              </Badge>
-            )}
+    <div className="bg-white">
+      <div className="space-y-6">
+        {/* Header */}
+        <div className="flex items-center justify-between border-b border-gray-200 pb-4">
+          <div>
+            <h2 className="text-2xl font-bold text-gray-900">Shopify Integration</h2>
+            <p className="text-sm text-gray-600 mt-1">
+              Connect your Shopify store to import products and sync inventory
+            </p>
           </div>
 
-          {/* Flash Message */}
-          {message && (
-            <Alert className={message.type === 'error' ? 'border-red-200' : message.type === 'success' ? 'border-green-200' : 'border-blue-200'}>
-              <AlertCircle className="h-4 w-4" />
-              <AlertDescription>{message.text}</AlertDescription>
-            </Alert>
-          )}
-          
-          {/* Connection Status Card */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center space-x-2">
-            <ShoppingBag className="w-5 h-5" />
-            <span>Connection Settings</span>
-          </CardTitle>
-          <CardDescription>
-            Manage your Shopify store connection and import settings
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          {message && (
-            <Alert className={`mb-4 ${message.type === 'error' ? 'border-red-200' : 'border-green-200'}`}>
-              <AlertDescription className={message.type === 'error' ? 'text-red-800' : 'text-green-800'}>
-                {message.text}
-              </AlertDescription>
-            </Alert>
-          )}
+          <div className="flex items-center space-x-2">
+            {connectionStatus?.connected ? (
+              <>
+                <button
+                  onClick={() => checkConnectionStatus()}
+                  disabled={loading}
+                  className="p-1 text-gray-400 hover:text-gray-600 disabled:opacity-50"
+                  title="Refresh connection status"
+                >
+                  <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
+                </button>
+                <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                  Connected
+                </span>
+              </>
+            ) : (
+              <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
+                Not Connected
+              </span>
+            )}
+          </div>
+        </div>
 
-          {!connectionStatus?.connected ? (
-            <div className="space-y-6">
-              {/* Connection Form */}
-              <Card>
-                <CardHeader>
-                  <CardTitle>Connect Your Shopify Store</CardTitle>
-                  <CardDescription>
-                    Enter your Shopify credentials to connect your store
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-4">
+        {/* Flash Message */}
+        {message && (
+          <Alert className={message.type === 'error' ? 'border-red-200' : message.type === 'success' ? 'border-green-200' : 'border-blue-200'}>
+            <AlertCircle className="h-4 w-4" />
+            <AlertDescription>{message.text}</AlertDescription>
+          </Alert>
+        )}
+
+        {!connectionStatus?.connected ? (
+          <div className="space-y-6">
+            {/* Connection Form */}
+            <div className="bg-white border border-gray-200 rounded-lg p-6">
+              <h3 className="text-lg font-semibold text-gray-900 mb-1">Connect Your Shopify Store</h3>
+              <p className="text-sm text-gray-600 mb-6">
+                Enter your Shopify credentials to connect your store
+              </p>
+              <div className="space-y-4">
                 <div>
                   <Label htmlFor="shop-domain" className="flex items-center">
                     Shopify Store Domain
@@ -398,35 +391,35 @@ const ShopifyIntegration = () => {
                   </AlertDescription>
                 </Alert>
 
-                <div className="flex justify-end pt-2">
-                  <SaveButton
-                    onClick={connectWithDirectAccess}
-                    loading={loading}
-                    success={saveSuccess}
-                    disabled={!shopDomain || !accessToken}
-                    defaultText="Connect to Shopify"
-                  />
-                </div>
-              </CardContent>
-            </Card>
+              <div className="flex justify-end pt-2">
+                <SaveButton
+                  onClick={connectWithDirectAccess}
+                  loading={loading}
+                  success={saveSuccess}
+                  disabled={!shopDomain || !accessToken}
+                  defaultText="Connect to Shopify"
+                />
+              </div>
+            </div>
+          </div>
 
-            {/* Instructions Card - Moved Below */}
-            <Card className="border-blue-200 bg-blue-50/50">
-              <CardHeader className="cursor-pointer" onClick={() => setShowInstructions(!showInstructions)}>
-                <div className="flex items-center justify-between">
-                  <CardTitle className="text-base flex items-center">
-                    <Info className="w-5 h-5 mr-2 text-blue-600" />
-                    How to Get Your Shopify Credentials
-                  </CardTitle>
-                  {showInstructions ? (
-                    <ChevronUp className="w-5 h-5 text-blue-600" />
-                  ) : (
-                    <ChevronDown className="w-5 h-5 text-blue-600" />
-                  )}
-                </div>
-              </CardHeader>
-              {showInstructions && (
-                <CardContent className="space-y-4 text-sm">
+          {/* Instructions Card - Moved Below */}
+          <div className="border border-blue-200 bg-blue-50/50 rounded-lg">
+            <div className="p-4 cursor-pointer" onClick={() => setShowInstructions(!showInstructions)}>
+              <div className="flex items-center justify-between">
+                <h3 className="text-base font-semibold flex items-center text-blue-900">
+                  <Info className="w-5 h-5 mr-2 text-blue-600" />
+                  How to Get Your Shopify Credentials
+                </h3>
+                {showInstructions ? (
+                  <ChevronUp className="w-5 h-5 text-blue-600" />
+                ) : (
+                  <ChevronDown className="w-5 h-5 text-blue-600" />
+                )}
+              </div>
+            </div>
+            {showInstructions && (
+              <div className="px-4 pb-4 space-y-4 text-sm">
                   <div className="space-y-3">
                     <div className="font-medium text-blue-900">Step 1: Get Your Shop Domain</div>
                     <p className="text-gray-700">
@@ -488,13 +481,12 @@ const ShopifyIntegration = () => {
                         <ExternalLink className="w-4 h-4 ml-1" />
                       </a>
                     </div>
-                  </div>
-                </CardContent>
-              )}
-            </Card>
+                </div>
+              </div>
+            )}
           </div>
-          ) : (
-            <div className="space-y-4">
+        ) : (
+          <div className="space-y-4 bg-white border border-gray-200 rounded-lg p-6">
               {shopInfo && (
                 <div className="bg-gray-50 rounded-lg p-4 space-y-2">
                   <div className="flex items-center space-x-2">
@@ -516,47 +508,42 @@ const ShopifyIntegration = () => {
                 </div>
               )}
 
-              <div className="flex space-x-2">
-                <Button
-                  onClick={testConnection}
-                  disabled={loading}
-                  variant="outline"
-                >
-                  {loading ? (
-                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                  ) : (
-                    <RefreshCw className="w-4 h-4 mr-2" />
-                  )}
-                  Test Connection
-                </Button>
-                <Button
-                  onClick={disconnectShopify}
-                  disabled={loading}
-                  variant="destructive"
-                >
-                  {loading ? (
-                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                  ) : (
-                    <Unlink className="w-4 h-4 mr-2" />
-                  )}
-                  Disconnect
-                </Button>
-              </div>
+            <div className="flex space-x-2">
+              <button
+                onClick={testConnection}
+                disabled={loading}
+                className="px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed flex items-center"
+              >
+                {loading ? (
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                ) : (
+                  <RefreshCw className="w-4 h-4 mr-2" />
+                )}
+                Test Connection
+              </button>
+              <button
+                onClick={disconnectShopify}
+                disabled={loading}
+                className="px-4 py-2 bg-red-600 text-white rounded-lg text-sm font-medium hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center"
+              >
+                {loading ? (
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                ) : (
+                  <Unlink className="w-4 h-4 mr-2" />
+                )}
+                Disconnect
+              </button>
             </div>
-          )}
-        </CardContent>
-      </Card>
+          </div>
+        )}
 
-      {/* Import Options - Only show when connected */}
-      {connectionStatus?.connected && (
-        <Card>
-          <CardHeader>
-            <CardTitle>Import Data</CardTitle>
-            <CardDescription>
+        {/* Import Options - Only show when connected */}
+        {connectionStatus?.connected && (
+          <div className="bg-white border border-gray-200 rounded-lg p-6">
+            <h3 className="text-lg font-semibold text-gray-900 mb-1">Import Data</h3>
+            <p className="text-sm text-gray-600 mb-6">
               Import your Shopify data into SuprShop
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
+            </p>
             <Tabs defaultValue="quick" className="w-full">
               <TabsList className="grid w-full grid-cols-2">
                 <TabsTrigger value="quick">Quick Import</TabsTrigger>
@@ -676,20 +663,16 @@ const ShopifyIntegration = () => {
                 </div>
               </TabsContent>
             </Tabs>
-          </CardContent>
-        </Card>
-      )}
+          </div>
+        )}
 
-      {/* Import Statistics */}
-      {importStats && (importStats.collections || importStats.products) && (
-        <Card>
-          <CardHeader>
-            <CardTitle>Import Statistics</CardTitle>
-            <CardDescription>
+        {/* Import Statistics */}
+        {importStats && (importStats.collections || importStats.products) && (
+          <div className="bg-white border border-gray-200 rounded-lg p-6">
+            <h3 className="text-lg font-semibold text-gray-900 mb-1">Import Statistics</h3>
+            <p className="text-sm text-gray-600 mb-6">
               Summary of your last import operations
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
+            </p>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {importStats.collections && (
                 <div className="bg-gray-50 rounded-lg p-4">
@@ -745,10 +728,8 @@ const ShopifyIntegration = () => {
                 </div>
               )}
             </div>
-          </CardContent>
-        </Card>
-      )}
-        </div>
+          </div>
+        )}
       </div>
     </div>
   );
