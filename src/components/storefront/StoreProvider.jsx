@@ -38,30 +38,51 @@ export const StoreProvider = ({ children }) => {
     return localStorage.getItem('selectedCountry') || 'US';
   });
 
-  // Step 1: Try to get store slug
-  let storeSlug = determineStoreSlug(location);
-  const storeId = !storeSlug ? localStorage.getItem('selectedStoreId') : null;
+  // Step 1: Try to get store slug (use useState to prevent re-renders)
+  const [resolvedSlug, setResolvedSlug] = useState(() => {
+    const slug = determineStoreSlug(location);
+    return slug;
+  });
+
+  const storeId = !resolvedSlug ? localStorage.getItem('selectedStoreId') : null;
 
   // DEBUG: Visual indicator
-  document.title = `DEBUG: slug=${storeSlug || 'none'} id=${storeId || 'none'}`;
+  document.title = `DEBUG: slug=${resolvedSlug || 'none'} id=${storeId || 'none'}`;
 
   // Step 2: If no slug but have ID, fetch slug first
   const { data: fetchedSlug, isLoading: slugLoading } = useStoreSlugById(storeId);
 
   // Use fetched slug if we had to look it up
-  if (!storeSlug && fetchedSlug) {
-    storeSlug = fetchedSlug;
-    // Save it for next time
-    localStorage.setItem('selectedStoreSlug', fetchedSlug);
-  }
+  useEffect(() => {
+    if (!resolvedSlug && fetchedSlug) {
+      setResolvedSlug(fetchedSlug);
+      localStorage.setItem('selectedStoreSlug', fetchedSlug);
+    }
+  }, [fetchedSlug, resolvedSlug]);
 
   const language = localStorage.getItem('catalyst_language') || 'en';
 
   // LAYER 1: Bootstrap data (global data - 1 API call)
-  const { data: bootstrap, isLoading: bootstrapLoading, refetch: refetchBootstrap } = useStoreBootstrap(storeSlug, language);
+  const { data: bootstrap, isLoading: bootstrapLoading, refetch: refetchBootstrap, error: bootstrapError } = useStoreBootstrap(resolvedSlug, language);
+
+  // DEBUG: Show error if any
+  if (bootstrapError) {
+    document.title = `ERROR: ${bootstrapError.message}`;
+  }
 
   // Main data loading effect
   useEffect(() => {
+    // DEBUG: Show loading state in title
+    if (slugLoading) {
+      document.title = 'LOADING: Fetching slug...';
+    } else if (bootstrapLoading) {
+      document.title = 'LOADING: Fetching bootstrap...';
+    } else if (!bootstrap) {
+      document.title = 'WAITING: No bootstrap data';
+    } else {
+      document.title = 'LOADED: Processing data...';
+    }
+
     if (slugLoading || bootstrapLoading || !bootstrap) {
       setLoading(true);
       return;
