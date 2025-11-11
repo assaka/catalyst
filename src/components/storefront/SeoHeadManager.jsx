@@ -6,6 +6,10 @@ import { getPriceDisplay, formatPrice } from '@/utils/priceUtils';
 import { getCategoryName, getProductName, getCurrentLanguage } from '@/utils/translationUtils';
 import { createSafeScript } from '@/utils/scriptSanitizer';
 
+// Global cache to prevent duplicate canonical URL checks
+const canonicalCache = new Map();
+const CANONICAL_CACHE_TTL = 60000; // 1 minute
+
 export default function SeoHeadManager({ pageType, pageData, pageTitle, pageDescription, imageUrl }) {
     const storeContext = useStore();
     const seoContext = useSeoSettings();
@@ -39,13 +43,26 @@ export default function SeoHeadManager({ pageType, pageData, pageTitle, pageDesc
                 // DEFER by 2 seconds to improve LCP (not critical for initial render)
                 setTimeout(async () => {
                     try {
+                        // Check cache first
+                        const cacheKey = `${store.id}:${relativePath}`;
+                        const cached = canonicalCache.get(cacheKey);
+
+                        if (cached && (Date.now() - cached.timestamp < CANONICAL_CACHE_TTL)) {
+                            setCustomCanonicalUrl(cached.url);
+                            return; // Use cached value
+                        }
+
                         const response = await apiClient.get(`/canonical-urls/check?store_id=${store.id}&path=${encodeURIComponent(relativePath)}`);
 
-                        if (response?.found && response?.canonical_url) {
-                            setCustomCanonicalUrl(response.canonical_url);
-                        } else {
-                            setCustomCanonicalUrl(null);
-                        }
+                        const canonicalUrl = response?.found && response?.canonical_url ? response.canonical_url : null;
+
+                        // Cache the result
+                        canonicalCache.set(cacheKey, {
+                            url: canonicalUrl,
+                            timestamp: Date.now()
+                        });
+
+                        setCustomCanonicalUrl(canonicalUrl);
                     } catch (deferredError) {
                         console.error('Error fetching deferred canonical URL:', deferredError);
                         setCustomCanonicalUrl(null);
