@@ -153,12 +153,20 @@ const loadSeoSettingsWithSimpleCache = async (storeId) => {
 };
 
 export const SeoSettingsProvider = ({ children }) => {
-  const { store } = useStore();
+  const { store, seoSettings: bootstrapSeoSettings } = useStore();
   const [seoSettings, setSeoSettings] = useState(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (store?.id) {
+    // Priority 1: Use bootstrap seoSettings if available (no API call!)
+    if (bootstrapSeoSettings) {
+      setSeoSettings(bootstrapSeoSettings);
+      setLoading(false);
+      return;
+    }
+
+    // Priority 2: Fetch from API (for admin or if bootstrap didn't provide)
+    if (store?.id && !bootstrapSeoSettings) {
       loadSeoSettingsWithSimpleCache(store.id)
         .then(settings => {
           setSeoSettings(settings);
@@ -170,7 +178,7 @@ export const SeoSettingsProvider = ({ children }) => {
           setLoading(false);
         });
     }
-  }, [store?.id]);
+  }, [store?.id, bootstrapSeoSettings]);
 
   // Clear cache function - simple like CMS blocks
   const clearSeoCache = () => {

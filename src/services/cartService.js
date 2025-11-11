@@ -1,16 +1,16 @@
 // Global cache to prevent duplicate cart fetches (use window to share across chunks)
 if (typeof window !== 'undefined') {
   if (!window.__cartCache) {
-    window.__cartCache = { data: null, timestamp: 0 };
+    window.__cartCache = { data: null, timestamp: 0, fetching: false, pendingCallbacks: [] };
   }
 }
 
-const CART_CACHE_TTL = 5000; // 5 seconds - short cache to prevent rapid duplicates
+const CART_CACHE_TTL = 30000; // 30 seconds - cache cart data to prevent duplicates
 
 // Helper to invalidate cart cache
 const invalidateCartCache = () => {
   if (typeof window !== 'undefined') {
-    window.__cartCache = { data: null, timestamp: 0 };
+    window.__cartCache = { data: null, timestamp: 0, fetching: false, pendingCallbacks: [] };
   }
 };
 
@@ -59,6 +59,19 @@ class CartService {
     if (!bustCache && window.__cartCache?.data && (Date.now() - window.__cartCache.timestamp < CART_CACHE_TTL)) {
       return window.__cartCache.data; // Return cached data
     }
+
+    // If already fetching, wait for that request to complete
+    if (window.__cartCache?.fetching) {
+      return new Promise((resolve) => {
+        window.__cartCache.pendingCallbacks.push(resolve);
+        // Timeout after 10 seconds
+        setTimeout(() => resolve({ success: false, items: [] }), 10000);
+      });
+    }
+
+    // Mark as fetching
+    window.__cartCache.fetching = true;
+    window.__cartCache.pendingCallbacks = [];
 
     const sessionId = this.getSessionId();
     let fullUrl = '';
@@ -138,8 +151,14 @@ class CartService {
         // Cache the result
         window.__cartCache = {
           data: cartResult,
-          timestamp: Date.now()
+          timestamp: Date.now(),
+          fetching: false,
+          pendingCallbacks: []
         };
+
+        // Resolve any pending callbacks
+        const callbacks = window.__cartCache.pendingCallbacks || [];
+        callbacks.forEach(cb => cb(cartResult));
 
         return cartResult;
       }
@@ -147,8 +166,15 @@ class CartService {
       const emptyResult = { success: false, cart: null, items: [] };
       window.__cartCache = {
         data: emptyResult,
-        timestamp: Date.now()
+        timestamp: Date.now(),
+        fetching: false,
+        pendingCallbacks: []
       };
+
+      // Resolve any pending callbacks
+      const callbacks = window.__cartCache.pendingCallbacks || [];
+      callbacks.forEach(cb => cb(emptyResult));
+
       return emptyResult;
     } catch (error) {
       console.error('🛒 CartService.getCart error:', {

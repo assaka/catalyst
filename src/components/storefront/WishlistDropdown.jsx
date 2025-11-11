@@ -13,11 +13,15 @@ import { useWishlist, useRemoveFromWishlist } from '@/hooks/useApiQueries';
 
 export default function WishlistDropdown({ iconVariant = 'outline' }) {
   const { t } = useTranslation();
-  const { store } = useStore();
+  const { store, wishlist: bootstrapWishlist } = useStore();
 
-  // Use React Query hooks for automatic caching and deduplication
-  const { data: wishlistData = [], isLoading, refetch } = useWishlist(store?.id);
+  // Use bootstrap wishlist if available (no API call!), otherwise use React Query
+  const shouldFetchWishlist = !bootstrapWishlist || bootstrapWishlist.length === 0;
+  const { data: fetchedWishlist = [], isLoading, refetch } = useWishlist(store?.id, { enabled: shouldFetchWishlist });
   const removeFromWishlist = useRemoveFromWishlist();
+
+  // Use bootstrap wishlist first, fallback to fetched
+  const wishlistData = bootstrapWishlist || fetchedWishlist;
 
   const [wishlistItems, setWishlistItems] = useState([]);
 

@@ -18,14 +18,21 @@ import { processVariables, generateDemoData } from '@/utils/variableProcessor';
  * @param {Object} store - The store object containing store.id
  * @param {string} pageType - The type of page (e.g., 'cart', 'category', 'product')
  * @param {Object} fallbackConfig - Fallback configuration object to use when no published config exists
+ * @param {Boolean} shouldFetch - Whether to fetch from API (default true, false if bootstrap provides data)
  * @returns {Object} - { layoutConfig, configLoaded, reloadConfig }
  */
-export function useLayoutConfig(store, pageType, fallbackConfig) {
+export function useLayoutConfig(store, pageType, fallbackConfig, shouldFetch = true) {
     const [layoutConfig, setLayoutConfig] = useState(null);
     const [configLoaded, setConfigLoaded] = useState(false);
 
     const loadLayoutConfig = useCallback(async () => {
         if (!store?.id) {
+            return;
+        }
+
+        // Skip fetch if not needed (bootstrap provided data)
+        if (!shouldFetch) {
+            setConfigLoaded(true);
             return;
         }
 
@@ -102,7 +109,7 @@ export function useLayoutConfig(store, pageType, fallbackConfig) {
                 setConfigLoaded(true);
             }
         }
-    }, [store?.id, pageType, fallbackConfig]);
+    }, [store?.id, pageType, fallbackConfig, shouldFetch]);
 
     useEffect(() => {
         loadLayoutConfig();

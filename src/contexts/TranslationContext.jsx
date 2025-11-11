@@ -289,11 +289,15 @@ export function TranslationProvider({ children, storeId: propStoreId, initialLan
       // Update HTML attributes
       document.documentElement.lang = initialLang;
 
-      // Load translations (skip if bootstrap provided them)
+      // CRITICAL: If bootstrap provided translations, ONLY use those (no API call)
       if (initialTranslations && initialTranslations.labels) {
         setTranslations(initialTranslations.labels);
         setLoading(false);
-      } else if (storeId) {
+        return; // STOP - don't fetch from API!
+      }
+
+      // Only fetch translations for admin panel (no initialTranslations)
+      if (storeId && !initialTranslations) {
         await loadTranslations(initialLang);
       } else {
         setLoading(false);
@@ -301,7 +305,8 @@ export function TranslationProvider({ children, storeId: propStoreId, initialLan
     };
 
     initializeTranslations();
-  }, [storeId, loadAvailableLanguages, loadTranslations, initialTranslations]); // Re-run when storeId becomes available
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [storeId]); // Only re-run when storeId changes, NOT when initialTranslations changes
 
   const value = {
     // State
