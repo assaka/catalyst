@@ -136,12 +136,14 @@ const ShopifyIntegration = () => {
     try {
       const response = await fetch('/api/shopify/status', {
         headers: {
-          'Authorization': `Bearer ${localStorage.getItem('store_owner_auth_token')}`
+          'Authorization': `Bearer ${localStorage.getItem('store_owner_auth_token')}`,
+          'x-store-id': storeId
         }
       });
       const data = await response.json();
+      console.log('Connection status:', data);
       setConnectionStatus(data);
-      
+
       if (data.connected) {
         fetchShopInfo();
       }
@@ -154,12 +156,14 @@ const ShopifyIntegration = () => {
     try {
       const response = await fetch('/api/shopify/shop-info', {
         headers: {
-          'Authorization': `Bearer ${localStorage.getItem('store_owner_auth_token')}`
+          'Authorization': `Bearer ${localStorage.getItem('store_owner_auth_token')}`,
+          'x-store-id': storeId
         }
       });
-      
+
       if (response.ok) {
         const data = await response.json();
+        console.log('Shop info:', data);
         setShopInfo(data.shop_info);
       }
     } catch (error) {
