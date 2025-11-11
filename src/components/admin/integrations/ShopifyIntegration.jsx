@@ -72,13 +72,23 @@ const ShopifyIntegration = () => {
     setSaveSuccess(false);
 
     try {
+      const token = localStorage.getItem('token');
+      const headers = {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json',
+        'x-store-id': storeId
+      };
+
+      console.log('Making request with:', {
+        storeId,
+        hasToken: !!token,
+        tokenPreview: token ? token.substring(0, 20) + '...' : 'null',
+        shopDomain: formattedDomain
+      });
+
       const response = await fetch('/api/shopify/direct-access', {
         method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`,
-          'Content-Type': 'application/json',
-          'x-store-id': storeId
-        },
+        headers,
         body: JSON.stringify({
           shop_domain: formattedDomain,
           access_token: accessToken
