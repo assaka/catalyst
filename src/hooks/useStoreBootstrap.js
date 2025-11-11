@@ -60,19 +60,22 @@ export function useStoreBootstrap(storeSlug, language) {
         throw new Error('Store slug is required for bootstrap');
       }
 
-      const response = await storefrontApiClient.get('/api/public/storefront/bootstrap', {
-        params: {
-          slug: storeSlug,
-          lang: language || 'en',
-          session_id: localStorage.getItem('guestSessionId')
-        }
+      // Build query string for bootstrap endpoint
+      const params = new URLSearchParams({
+        slug: storeSlug,
+        lang: language || 'en',
+        session_id: localStorage.getItem('guestSessionId') || ''
       });
 
-      if (!response.data.success) {
-        throw new Error(response.data.message || 'Bootstrap failed');
+      // Use getPublic (not .get) - returns data directly, not wrapped in response.data
+      const result = await storefrontApiClient.getPublic(`storefront/bootstrap?${params.toString()}`);
+
+      // getPublic returns the JSON directly
+      if (!result.success) {
+        throw new Error(result.message || 'Bootstrap failed');
       }
 
-      return response.data.data;
+      return result.data;
     },
     staleTime: 900000, // 15 minutes - global data rarely changes
     gcTime: 1800000, // 30 minutes
