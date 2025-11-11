@@ -311,8 +311,19 @@ class AkeneoIntegration {
 
   /**
    * Import products from Akeneo to Catalyst
+   * This method now automatically imports product models as configurable products
+   * and links variants to their parent products
    */
   async importProducts(storeId, options = {}) {
+    // Delegate to the new method that handles product models
+    return await this.importProductsWithModels(storeId, options);
+  }
+
+  /**
+   * Legacy method: Import products from Akeneo to Catalyst (without product model support)
+   * This is kept for backward compatibility but importProducts() now uses importProductsWithModels()
+   */
+  async importProductsLegacy(storeId, options = {}) {
     const { locale = 'en_US', dryRun = false, batchSize = 50, filters = {}, settings = {}, customMappings = {} } = options;
     
     // Ensure downloadImages is enabled by default in settings
@@ -1325,6 +1336,7 @@ class AkeneoIntegration {
       downloadImages: true,
       includeFiles: true,
       includeStock: true,
+      importProductModels: true, // Default to true - import product models as configurable products
       akeneoBaseUrl: this.config.baseUrl,
       ...settings
     };
@@ -1349,9 +1361,14 @@ class AkeneoIntegration {
       let akeneoProducts = await this.client.getAllProducts();
       console.log(`📦 Found ${akeneoProducts.length} products in Akeneo`);
 
-      console.log('📡 Fetching all product models from Akeneo...');
-      let akeneoProductModels = await this.client.getAllProductModels();
-      console.log(`📦 Found ${akeneoProductModels.length} product models in Akeneo`);
+      let akeneoProductModels = [];
+      if (enhancedSettings.importProductModels) {
+        console.log('📡 Fetching all product models from Akeneo...');
+        akeneoProductModels = await this.client.getAllProductModels();
+        console.log(`📦 Found ${akeneoProductModels.length} product models in Akeneo`);
+      } else {
+        console.log('⏭️ Skipping product models (importProductModels is disabled)');
+      }
 
       // Apply filters to products
       if (filters.families && filters.families.length > 0) {
@@ -1359,10 +1376,12 @@ class AkeneoIntegration {
         akeneoProducts = akeneoProducts.filter(product =>
           filters.families.includes(product.family)
         );
-        akeneoProductModels = akeneoProductModels.filter(model =>
-          filters.families.includes(model.family)
-        );
-        console.log(`📊 After family filtering: ${akeneoProducts.length} products, ${akeneoProductModels.length} product models`);
+        if (enhancedSettings.importProductModels) {
+          akeneoProductModels = akeneoProductModels.filter(model =>
+            filters.families.includes(model.family)
+          );
+        }
+        console.log(`📊 After family filtering: ${akeneoProducts.length} products${enhancedSettings.importProductModels ? `, ${akeneoProductModels.length} product models` : ''}`);
       }
 
       // Separate products into variants (have parent) and standalone products
@@ -1372,9 +1391,11 @@ class AkeneoIntegration {
       console.log(`📊 Product breakdown:`);
       console.log(`   - ${standaloneProducts.length} standalone products`);
       console.log(`   - ${variantProducts.length} variant products`);
-      console.log(`   - ${akeneoProductModels.length} product models (will become configurable)`);
+      if (enhancedSettings.importProductModels) {
+        console.log(`   - ${akeneoProductModels.length} product models (will become configurable)`);
+      }
 
-      this.importStats.products.total = standaloneProducts.length + variantProducts.length + akeneoProductModels.length;
+      this.importStats.products.total = standaloneProducts.length + variantProducts.length + (enhancedSettings.importProductModels ? akeneoProductModels.length : 0);
 
       // Build a map of product model code to product model data
       const productModelMap = {};
@@ -1534,8 +1555,8 @@ class AkeneoIntegration {
         }
       }
 
-      // STEP 3: Import product models as configurable products
-      if (akeneoProductModels.length > 0) {
+      // STEP 3: Import product models as configurable products (only if enabled)
+      if (enhancedSettings.importProductModels && akeneoProductModels.length > 0) {
         console.log(`\n📦 STEP 3: Processing ${akeneoProductModels.length} product models as configurable products...`);
 
         for (let i = 0; i < akeneoProductModels.length; i += batchSize) {
@@ -1604,8 +1625,8 @@ class AkeneoIntegration {
         }
       }
 
-      // STEP 4: Link variants to their parent configurable products
-      if (variantProducts.length > 0 && !dryRun) {
+      // STEP 4: Link variants to their parent configurable products (only if product models were imported)
+      if (enhancedSettings.importProductModels && variantProducts.length > 0 && !dryRun) {
         console.log(`\n📦 STEP 4: Linking ${variantProducts.length} variants to their parent configurable products...`);
 
         for (const variantProduct of variantProducts) {
@@ -1669,7 +1690,11 @@ class AkeneoIntegration {
       if (dryRun) {
         response.message = `Dry run completed. Would import ${this.importStats.products.imported} products`;
       } else {
-        response.message = `Successfully imported ${this.importStats.products.imported} products (including configurable products)`;
+        if (enhancedSettings.importProductModels) {
+          response.message = `Successfully imported ${this.importStats.products.imported} products (including configurable products from product models)`;
+        } else {
+          response.message = `Successfully imported ${this.importStats.products.imported} products (product models skipped)`;
+        }
       }
 
       return response;
