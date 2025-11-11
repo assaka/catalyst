@@ -53,19 +53,12 @@ export function useStoreSlugById(storeId) {
  * @returns {Object} React Query result with bootstrap data
  */
 export function useStoreBootstrap(storeSlug, language) {
-  console.warn('🎯 useStoreBootstrap hook called:', { storeSlug, language, enabled: !!storeSlug });
-
   return useQuery({
     queryKey: ['bootstrap', storeSlug, language],
     queryFn: async () => {
-      console.warn('🌐 Bootstrap queryFn EXECUTING...');
-
       if (!storeSlug) {
-        console.error('❌ No storeSlug - throwing error');
         throw new Error('Store slug is required for bootstrap');
       }
-
-      console.warn('📡 Calling bootstrap API with:', { slug: storeSlug, lang: language });
 
       const response = await storefrontApiClient.get('/api/public/storefront/bootstrap', {
         params: {
@@ -75,10 +68,7 @@ export function useStoreBootstrap(storeSlug, language) {
         }
       });
 
-      console.warn('✅ Bootstrap API returned:', response.data?.success);
-
       if (!response.data.success) {
-        console.error('❌ Bootstrap failed:', response.data.message);
         throw new Error(response.data.message || 'Bootstrap failed');
       }
 
