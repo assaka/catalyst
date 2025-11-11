@@ -42,6 +42,9 @@ export const StoreProvider = ({ children }) => {
   let storeSlug = determineStoreSlug(location);
   const storeId = !storeSlug ? localStorage.getItem('selectedStoreId') : null;
 
+  // DEBUG: Visual indicator
+  document.title = `DEBUG: slug=${storeSlug || 'none'} id=${storeId || 'none'}`;
+
   // Step 2: If no slug but have ID, fetch slug first
   const { data: fetchedSlug, isLoading: slugLoading } = useStoreSlugById(storeId);
 
