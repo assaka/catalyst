@@ -70,6 +70,14 @@ export function useCategoryPageBootstrap(storeId, language = 'en', enabled = tru
 }
 
 /**
+ * Hook for cart page bootstrap
+ * Returns: cartSlotConfig, taxes
+ */
+export function useCartPageBootstrap(storeId, language = 'en', enabled = true) {
+  return usePageBootstrap('cart', storeId, language, enabled);
+}
+
+/**
  * Hook for checkout page bootstrap
  * Returns: taxes, shippingMethods, paymentMethods, deliverySettings
  */

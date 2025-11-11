@@ -104,6 +104,30 @@ router.get('/', cacheMiddleware({
         };
         break;
 
+      case 'cart':
+        // Cart page needs: cart slot config, taxes
+        try {
+          const [cartSlotConfig, cartTaxes] = await Promise.all([
+            SlotConfiguration.findLatestPublished(store_id, 'cart').catch(() => null),
+            Tax.findAll({
+              where: { store_id, is_active: true },
+              order: [['name', 'ASC']]
+            })
+          ]);
+
+          pageData = {
+            cartSlotConfig: cartSlotConfig,
+            taxes: cartTaxes || []
+          };
+        } catch (cartError) {
+          console.error('Cart bootstrap error:', cartError);
+          pageData = {
+            cartSlotConfig: null,
+            taxes: []
+          };
+        }
+        break;
+
       case 'checkout':
         // Checkout page needs: taxes, shipping, payment, delivery settings
         const [taxes, shippingMethods, paymentMethods, deliverySettings] = await Promise.all([

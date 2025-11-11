@@ -14,6 +14,7 @@ import FlashMessage from '@/components/storefront/FlashMessage';
 import SeoHeadManager from '@/components/storefront/SeoHeadManager';
 import { formatPriceWithTax, calculateDisplayPrice, safeNumber, formatPrice as formatPriceUtil } from '@/utils/priceUtils';
 import { getProductName, getCurrentLanguage } from '@/utils/translationUtils';
+import { useCartPageBootstrap } from '@/hooks/usePageBootstrap';
 import { useTranslation } from '@/contexts/TranslationContext';
 
 // Import new hook system
@@ -82,6 +83,7 @@ export default function Cart() {
 
     // Use StoreProvider data instead of making separate API calls
     const { store, settings, taxes, selectedCountry, loading: storeLoading } = useStore();
+    // Layer 2: Cart page bootstrap (cart slots, taxes)    const language = getCurrentLanguage();    const { data: pageBootstrap, isLoading: pageBootstrapLoading } = useCartPageBootstrap(        store?.id,        language    );
 
     // State for cart layout configuration
     const [cartLayoutConfig, setCartLayoutConfig] = useState(null);
