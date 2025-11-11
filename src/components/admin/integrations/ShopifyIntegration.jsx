@@ -297,38 +297,6 @@ const ShopifyIntegration = () => {
   return (
     <div className="bg-white">
       <div className="space-y-6">
-        {/* Header */}
-        <div className="flex items-center justify-between border-b border-gray-200 pb-4">
-          <div>
-            <h2 className="text-2xl font-bold text-gray-900">Shopify Integration</h2>
-            <p className="text-sm text-gray-600 mt-1">
-              Connect your Shopify store to import products and sync inventory
-            </p>
-          </div>
-
-          <div className="flex items-center space-x-2">
-            {connectionStatus?.connected ? (
-              <>
-                <button
-                  onClick={() => checkConnectionStatus()}
-                  disabled={loading}
-                  className="p-1 text-gray-400 hover:text-gray-600 disabled:opacity-50"
-                  title="Refresh connection status"
-                >
-                  <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
-                </button>
-                <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                  Connected
-                </span>
-              </>
-            ) : (
-              <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
-                Not Connected
-              </span>
-            )}
-          </div>
-        </div>
-
         {/* Flash Message */}
         {message && (
           <Alert className={message.type === 'error' ? 'border-red-200' : message.type === 'success' ? 'border-green-200' : 'border-blue-200'}>
