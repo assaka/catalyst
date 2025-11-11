@@ -9,8 +9,7 @@ const Cart = sequelize.define('Cart', {
   },
   session_id: {
     type: DataTypes.STRING,
-    allowNull: true,
-    unique: true
+    allowNull: true
   },
   store_id: {
     type: DataTypes.UUID,
@@ -61,7 +60,14 @@ const Cart = sequelize.define('Cart', {
     allowNull: true
   }
 }, {
-  tableName: 'carts'
+  tableName: 'carts',
+  indexes: [
+    {
+      unique: true,
+      fields: ['session_id', 'store_id'],
+      name: 'unique_session_store_cart'
+    }
+  ]
 });
 
 module.exports = Cart;
