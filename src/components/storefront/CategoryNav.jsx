@@ -82,8 +82,30 @@ export default function CategoryNav({ categories, styles = {}, metadata = {}, st
         });
     };
 //
-    // Build hierarchical tree from flat category list
+    // Build hierarchical tree from flat category list OR use existing tree
     const buildCategoryTree = (categories) => {
+        if (!categories || categories.length === 0) return [];
+
+        // Check if categories are already in tree format (have children property)
+        const isAlreadyTree = categories.some(c => c.children && Array.isArray(c.children));
+
+        // If already a tree AND we need to exclude root, extract children
+        if (isAlreadyTree && store?.settings?.excludeRootFromMenu && store?.settings?.rootCategoryId) {
+            const rootCategory = categories.find(c => c.id === store.settings.rootCategoryId);
+            if (rootCategory && rootCategory.children) {
+                // Return children of root category (excludes the root itself)
+                return rootCategory.children.filter(c => !c.hide_in_menu);
+            }
+            // If root not found, return all top-level categories
+            return categories.filter(c => !c.hide_in_menu);
+        }
+
+        // If already a tree and NOT excluding root, filter hidden and return
+        if (isAlreadyTree) {
+            return categories.filter(c => !c.hide_in_menu);
+        }
+
+        // Otherwise, build tree from flat structure (legacy behavior)
         const categoryMap = new Map();
         const rootCategories = [];
 
@@ -95,19 +117,19 @@ export default function CategoryNav({ categories, styles = {}, metadata = {}, st
             const filterCategoryTree = (categoryId, allCategories) => {
                 const children = allCategories.filter(c => c.parent_id === categoryId);
                 let result = children.slice(); // Copy array
-                
+
                 children.forEach(child => {
                     result = result.concat(filterCategoryTree(child.id, allCategories));
                 });
-                
+
                 return result;
             };
-            
+
             // Include the root category itself and all its descendants
             const rootCategory = visibleCategories.find(c => c.id === store.settings.rootCategoryId);
             if (rootCategory) {
                 const descendants = filterCategoryTree(store.settings.rootCategoryId, visibleCategories);
-                
+
                 // Check if we should exclude root category from menu
                 if (store.settings.excludeRootFromMenu) {
                     visibleCategories = descendants; // Only show descendants, not the root

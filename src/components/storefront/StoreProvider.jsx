@@ -166,19 +166,17 @@ export const StoreProvider = ({ children }) => {
           attributeSets: additionalData.attributeSets || [],
         };
 
-        // DEBUG: Log what we're setting
-        console.warn('StoreProvider setting data:', {
-          hasCategories: !!bootstrap.categories,
-          categoryCount: bootstrap.categories?.length,
-          categoriesPreview: bootstrap.categories?.slice(0, 2)
-        });
-
-        setStoreData(finalStoreData);
-
-        // Make available globally for debugging
+        // Make available globally for debugging BEFORE setting state
         if (typeof window !== 'undefined') {
           window.__storeContext = finalStoreData;
+          window.__bootstrapCategories = bootstrap.categories;
+          window.__finalCategories = finalStoreData.categories;
+
+          // Visual indicator that can't be stripped
+          document.title = `CATS: ${bootstrap.categories?.length || 0} loaded`;
         }
+
+        setStoreData(finalStoreData);
 
         setLoading(false);
       } catch (error) {
