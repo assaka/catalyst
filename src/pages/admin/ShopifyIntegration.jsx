@@ -1,14 +1,14 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import ShopifyIntegrationComponent from '@/components/admin/integrations/ShopifyIntegration';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
-import { 
-  ShoppingBag, 
-  BookOpen, 
-  Settings, 
-  CheckCircle, 
+import {
+  ShoppingBag,
+  BookOpen,
+  Settings,
+  CheckCircle,
   XCircle,
   Info,
   AlertTriangle,
@@ -24,6 +24,30 @@ import {
 
 const ShopifyIntegration = () => {
   const [activeTab, setActiveTab] = useState('connection');
+  const [connectionStatus, setConnectionStatus] = useState(null);
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    checkConnectionStatus();
+  }, []);
+
+  const checkConnectionStatus = async () => {
+    try {
+      setLoading(true);
+      const response = await fetch('/api/shopify/status', {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('store_owner_auth_token')}`,
+          'x-store-id': localStorage.getItem('selectedStoreId')
+        }
+      });
+      const data = await response.json();
+      setConnectionStatus(data);
+    } catch (error) {
+      console.error('Error checking Shopify connection status:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -31,15 +55,39 @@ const ShopifyIntegration = () => {
         <div className="space-y-6">
           {/* Header */}
           <div className="mb-6">
-            <div className="flex items-center space-x-4">
-              <div className="p-3 bg-green-100 rounded-lg">
-                <ShoppingBag className="w-8 h-8 text-green-600" />
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-4">
+                <div className="p-3 bg-green-100 rounded-lg">
+                  <ShoppingBag className="w-8 h-8 text-green-600" />
+                </div>
+                <div>
+                  <h1 className="text-3xl font-bold text-gray-900">Shopify Integration</h1>
+                  <p className="text-gray-600 mt-1">
+                    Connect your Shopify store to import products, collections, and sync inventory
+                  </p>
+                </div>
               </div>
-              <div>
-                <h1 className="text-3xl font-bold text-gray-900">Shopify Integration</h1>
-                <p className="text-gray-600 mt-1">
-                  Connect your Shopify store to import products, collections, and sync inventory
-                </p>
+
+              <div className="flex items-center space-x-2">
+                {connectionStatus?.connected ? (
+                  <>
+                    <button
+                      onClick={checkConnectionStatus}
+                      disabled={loading}
+                      className="p-1 text-gray-400 hover:text-gray-600 disabled:opacity-50"
+                      title="Refresh connection status"
+                    >
+                      <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
+                    </button>
+                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                      Connected
+                    </span>
+                  </>
+                ) : (
+                  <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
+                    Not Connected
+                  </span>
+                )}
               </div>
             </div>
           </div>
