@@ -12,38 +12,22 @@ const TranslationContext = createContext();
  * For admin panel: Uses store from StoreSelectionContext (must be wrapped in StoreSelectionProvider)
  * For storefront: Expects storeId prop from StoreProvider
  */
-export function TranslationProvider({ children, storeId: propStoreId, initialLanguages, initialTranslations }) {
+export function TranslationProvider({ children, storeId: propStoreId }) {
   // For admin panel, storeId will come from the component that uses TranslationContext
-  // For storefront, storeId is passed as a prop along with bootstrap data
+  // For storefront, storeId is passed as a prop
   // This context is now primarily used for managing translation state, not fetching with store_id
   const storeId = propStoreId;
 
   const [currentLanguage, setCurrentLanguage] = useState('en');
-  const [availableLanguages, setAvailableLanguages] = useState(initialLanguages || []);
-  const [translations, setTranslations] = useState(initialTranslations?.labels || {});
+  const [availableLanguages, setAvailableLanguages] = useState([]);
+  const [translations, setTranslations] = useState({});
   const [loading, setLoading] = useState(true);
   const [isRTL, setIsRTL] = useState(false);
 
   /**
-   * Load available languages from API (only if not provided via props)
-   * For storefront: initialLanguages from bootstrap
-   * For admin: fetch from API
+   * Load available languages from API
    */
   const loadAvailableLanguages = useCallback(async () => {
-    // If languages provided via props (from bootstrap), use them!
-    if (initialLanguages && Array.isArray(initialLanguages) && initialLanguages.length > 0) {
-      const activeLanguages = initialLanguages.filter(lang => lang.is_active !== false);
-      setAvailableLanguages(activeLanguages);
-
-      // Set RTL status based on current language
-      const current = activeLanguages.find(lang => lang.code === currentLanguage);
-      if (current) {
-        setIsRTL(current.is_rtl || false);
-      }
-      return; // Don't call API!
-    }
-
-    // Otherwise fetch from API (for admin panel)
     try {
       const response = await api.get('/languages');
 
@@ -81,7 +65,7 @@ export function TranslationProvider({ children, storeId: propStoreId, initialLan
         { code: 'en', name: 'English', native_name: 'English', is_active: true, is_rtl: false }
       ]);
     }
-  }, [currentLanguage, initialLanguages]);
+  }, [currentLanguage]);
 
   /**
    * Load UI translations for current language
@@ -219,27 +203,11 @@ export function TranslationProvider({ children, storeId: propStoreId, initialLan
   }, [currentLanguage]);
 
   /**
-   * Sync initialLanguages when bootstrap data arrives
-   */
-  useEffect(() => {
-    if (initialLanguages && Array.isArray(initialLanguages) && initialLanguages.length > 0) {
-      const activeLanguages = initialLanguages.filter(lang => lang.is_active !== false);
-      setAvailableLanguages(activeLanguages);
-
-      // Set RTL status based on current language
-      const current = activeLanguages.find(lang => lang.code === currentLanguage);
-      if (current) {
-        setIsRTL(current.is_rtl || false);
-      }
-    }
-  }, [initialLanguages, currentLanguage]);
-
-  /**
    * Initialize translations
    */
   useEffect(() => {
     const initializeTranslations = async () => {
-      // Load available languages (will use initialLanguages if provided)
+      // Load available languages
       await loadAvailableLanguages();
 
       // Check for saved language preference
