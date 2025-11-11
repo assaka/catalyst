@@ -43,7 +43,7 @@ const ShopifyIntegration = () => {
   const [appCredentials, setAppCredentials] = useState({
     client_id: '',
     client_secret: '',
-    redirect_uri: ''
+    access_token: ''
   });
   const [saveSuccess, setSaveSuccess] = useState(false);
 
@@ -64,47 +64,41 @@ const ShopifyIntegration = () => {
       });
       const data = await response.json();
       setAppConfigured(data.configured || data.has_global_config);
-      
-      // Set default redirect URI if available
-      if (data.redirect_uri) {
-        setAppCredentials(prev => ({
-          ...prev,
-          redirect_uri: data.redirect_uri
-        }));
-      } else {
-        // Set default redirect URI based on current backend URL
-        const backendUrl = process.env.REACT_APP_BACKEND_URL || 'https://catalyst-backend-fzhu.onrender.com';
-        setAppCredentials(prev => ({
-          ...prev,
-          redirect_uri: `${backendUrl}/api/shopify/callback`
-        }));
-      }
     } catch (error) {
       console.error('Error checking app configuration:', error);
     }
   };
 
-  const saveAppCredentials = async () => {
-    if (!appCredentials.client_id || !appCredentials.client_secret || !appCredentials.redirect_uri) {
+  const connectWithDirectAccess = async () => {
+    if (!shopDomain || !appCredentials.client_id || !appCredentials.client_secret || !appCredentials.access_token) {
       setMessage({
         type: 'error',
-        text: 'Please fill in all required fields'
+        text: 'Please fill in all required fields: Shop Domain, Client ID, Client Secret, and Access Token'
       });
       return;
     }
+
+    // Ensure the domain has .myshopify.com
+    const formattedDomain = shopDomain.includes('.myshopify.com')
+      ? shopDomain
+      : `${shopDomain}.myshopify.com`;
 
     setLoading(true);
     setMessage(null);
     setSaveSuccess(false);
 
     try {
-      const response = await fetch('/api/shopify/configure-app', {
+      const response = await fetch('/api/shopify/direct-access', {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('token')}`,
-          'Content-Type': 'application/json'
+          'Content-Type': 'application/json',
+          'x-store-id': storeId
         },
-        body: JSON.stringify(appCredentials)
+        body: JSON.stringify({
+          shop_domain: formattedDomain,
+          access_token: appCredentials.access_token
+        })
       });
 
       const data = await response.json();
@@ -112,7 +106,7 @@ const ShopifyIntegration = () => {
       if (data.success) {
         setMessage({
           type: 'success',
-          text: 'Shopify app credentials saved successfully!'
+          text: 'Successfully connected to Shopify!'
         });
         setSaveSuccess(true);
         setTimeout(() => setSaveSuccess(false), 2000);
@@ -120,21 +114,26 @@ const ShopifyIntegration = () => {
         setShowAppConfig(false);
 
         // Clear sensitive data from state
-        setAppCredentials(prev => ({
-          ...prev,
-          client_secret: ''
-        }));
+        setAppCredentials({
+          client_id: '',
+          client_secret: '',
+          access_token: ''
+        });
+        setShopDomain('');
+
+        // Refresh connection status
+        checkConnectionStatus();
       } else {
         setMessage({
           type: 'error',
-          text: data.message || 'Failed to save app credentials'
+          text: data.message || 'Failed to connect to Shopify'
         });
       }
     } catch (error) {
-      console.error('Error saving app credentials:', error);
+      console.error('Error connecting to Shopify:', error);
       setMessage({
         type: 'error',
-        text: 'Failed to save app credentials'
+        text: 'Failed to connect to Shopify'
       });
     } finally {
       setLoading(false);
@@ -193,47 +192,6 @@ const ShopifyIntegration = () => {
     }
   };
 
-  const initiateOAuth = async () => {
-    if (!shopDomain) {
-      setMessage({ type: 'error', text: 'Please enter your Shopify store domain' });
-      return;
-    }
-
-    // Ensure the domain has .myshopify.com
-    const formattedDomain = shopDomain.includes('.myshopify.com') 
-      ? shopDomain 
-      : `${shopDomain}.myshopify.com`;
-
-    setLoading(true);
-    setMessage(null);
-
-    try {
-      const response = await fetch(`/api/shopify/auth?shop_domain=${formattedDomain}`, {
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
-        }
-      });
-
-      const data = await response.json();
-
-      if (data.success && data.auth_url) {
-        // Redirect to Shopify OAuth URL
-        window.location.href = data.auth_url;
-      } else {
-        setMessage({ 
-          type: 'error', 
-          text: data.message || 'Failed to generate authorization URL' 
-        });
-      }
-    } catch (error) {
-      setMessage({ 
-        type: 'error', 
-        text: 'Failed to initiate OAuth connection' 
-      });
-    } finally {
-      setLoading(false);
-    }
-  };
 
   const testConnection = async () => {
     setLoading(true);
@@ -344,21 +302,6 @@ const ShopifyIntegration = () => {
     return new Date(dateString).toLocaleString();
   };
 
-  // Check for OAuth callback success/error
-  useEffect(() => {
-    const urlParams = new URLSearchParams(window.location.search);
-    if (window.location.pathname.includes('/integrations/shopify/success')) {
-      setMessage({ type: 'success', text: 'Successfully connected to Shopify!' });
-      checkConnectionStatus();
-      // Clean up URL
-      window.history.replaceState({}, document.title, '/admin/integrations');
-    } else if (window.location.pathname.includes('/integrations/shopify/error')) {
-      const error = urlParams.get('error');
-      setMessage({ type: 'error', text: `Connection failed: ${error || 'Unknown error'}` });
-      // Clean up URL
-      window.history.replaceState({}, document.title, '/admin/integrations');
-    }
-  }, []);
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -411,154 +354,91 @@ const ShopifyIntegration = () => {
           {!connectionStatus?.connected ? (
             <div className="space-y-4">
               {/* App Configuration Section */}
-              {!appConfigured && (
-                <Alert className="border-yellow-200 bg-yellow-50">
-                  <AlertCircle className="h-4 w-4 text-yellow-600" />
-                  <AlertDescription className="text-yellow-800">
-                    <strong>Shopify app not configured.</strong> You need to configure your Shopify app credentials before connecting.
-                    <Button
-                      variant="link"
-                      className="ml-2 text-yellow-800 underline p-0 h-auto"
-                      onClick={() => setShowAppConfig(!showAppConfig)}
-                    >
-                      {showAppConfig ? 'Hide' : 'Configure'} App Credentials
-                    </Button>
-                  </AlertDescription>
-                </Alert>
-              )}
+              <Alert className="border-blue-200 bg-blue-50">
+                <AlertCircle className="h-4 w-4 text-blue-600" />
+                <AlertDescription className="text-blue-800">
+                  <strong>Direct Access Connection</strong> - Enter your Shopify store credentials to connect.
+                </AlertDescription>
+              </Alert>
 
-              {showAppConfig && (
-                <Card className="border-blue-200 bg-blue-50/50">
-                  <CardHeader>
-                    <CardTitle className="text-lg flex items-center">
-                      <Key className="w-5 h-5 mr-2" />
-                      Configure Shopify App Credentials
-                    </CardTitle>
-                    <CardDescription>
-                      Enter your Shopify app's Client ID and Client Secret. You can find these in your Shopify Partner Dashboard.
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                    <div>
-                      <Label htmlFor="client-id">Client ID</Label>
-                      <Input
-                        id="client-id"
-                        type="text"
-                        placeholder="e.g., 7f4e5d3c2b1a0987654321"
-                        value={appCredentials.client_id}
-                        onChange={(e) => setAppCredentials({...appCredentials, client_id: e.target.value})}
-                        disabled={loading}
-                      />
-                      <p className="text-xs text-gray-500 mt-1">
-                        Found in your Shopify app's "Client credentials" section
-                      </p>
-                    </div>
-                    
-                    <div>
-                      <Label htmlFor="client-secret">Client Secret</Label>
-                      <Input
-                        id="client-secret"
-                        type="password"
-                        placeholder="e.g., shpss_1234567890abcdef..."
-                        value={appCredentials.client_secret}
-                        onChange={(e) => setAppCredentials({...appCredentials, client_secret: e.target.value})}
-                        disabled={loading}
-                      />
-                      <p className="text-xs text-gray-500 mt-1">
-                        Keep this secret! Never share or commit to version control
-                      </p>
-                    </div>
-                    
-                    <div>
-                      <Label htmlFor="redirect-uri">Redirect URI</Label>
-                      <Input
-                        id="redirect-uri"
-                        type="text"
-                        value={appCredentials.redirect_uri}
-                        onChange={(e) => setAppCredentials({...appCredentials, redirect_uri: e.target.value})}
-                        disabled={loading}
-                      />
-                      <p className="text-xs text-gray-500 mt-1">
-                        Add this exact URL to your Shopify app's "Allowed redirection URLs"
-                      </p>
-                    </div>
-
-                    <Alert className="border-blue-200">
-                      <Shield className="h-4 w-4 text-blue-600" />
-                      <AlertDescription className="text-blue-800 text-sm">
-                        Your credentials are encrypted and stored securely. They are never exposed in the frontend or API responses.
-                      </AlertDescription>
-                    </Alert>
-
-                    <div className="flex justify-end space-x-2">
-                      <Button
-                        variant="outline"
-                        onClick={() => {
-                          setShowAppConfig(false);
-                          setAppCredentials({...appCredentials, client_secret: ''});
-                        }}
-                        disabled={loading}
-                      >
-                        Cancel
-                      </Button>
-                      <SaveButton
-                        onClick={saveAppCredentials}
-                        loading={loading}
-                        success={saveSuccess}
-                        disabled={!appCredentials.client_id || !appCredentials.client_secret}
-                        defaultText="Save Credentials"
-                      />
-                    </div>
-                  </CardContent>
-                </Card>
-              )}
-
-              {/* Connection Section (only show if app is configured) */}
-              {appConfigured && (
+              <div className="space-y-4">
                 <div>
                   <Label htmlFor="shop-domain">Shopify Store Domain</Label>
-                  <div className="flex space-x-2 mt-1">
-                    <Input
-                      id="shop-domain"
-                      type="text"
-                      placeholder="your-store.myshopify.com"
-                      value={shopDomain}
-                      onChange={(e) => setShopDomain(e.target.value)}
-                      disabled={loading}
-                    />
-                    <Button
-                      onClick={initiateOAuth}
-                      disabled={loading || !shopDomain}
-                    >
-                      {loading ? (
-                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                      ) : (
-                        <Link className="w-4 h-4 mr-2" />
-                      )}
-                      Connect
-                    </Button>
-                  </div>
-                  <p className="text-sm text-gray-500 mt-1">
+                  <Input
+                    id="shop-domain"
+                    type="text"
+                    placeholder="your-store.myshopify.com"
+                    value={shopDomain}
+                    onChange={(e) => setShopDomain(e.target.value)}
+                    disabled={loading}
+                  />
+                  <p className="text-xs text-gray-500 mt-1">
                     Enter your Shopify store domain (e.g., my-store.myshopify.com)
                   </p>
                 </div>
-              )}
 
-              {appConfigured && (
-                <Alert className="border-green-200 bg-green-50">
-                  <CheckCircle className="h-4 w-4 text-green-600" />
-                  <AlertDescription className="text-green-800">
-                    <strong>App configured!</strong> You can now connect your Shopify store.
-                    <Button
-                      variant="link"
-                      className="ml-2 text-green-800 underline p-0 h-auto"
-                      onClick={() => setShowAppConfig(true)}
-                    >
-                      Update Credentials
-                    </Button>
+                <div>
+                  <Label htmlFor="client-id">Client ID</Label>
+                  <Input
+                    id="client-id"
+                    type="text"
+                    placeholder="e.g., 7f4e5d3c2b1a0987654321"
+                    value={appCredentials.client_id}
+                    onChange={(e) => setAppCredentials({...appCredentials, client_id: e.target.value})}
+                    disabled={loading}
+                  />
+                  <p className="text-xs text-gray-500 mt-1">
+                    Found in your Shopify app's "Client credentials" section
+                  </p>
+                </div>
+
+                <div>
+                  <Label htmlFor="client-secret">Client Secret</Label>
+                  <Input
+                    id="client-secret"
+                    type="password"
+                    placeholder="e.g., shpss_1234567890abcdef..."
+                    value={appCredentials.client_secret}
+                    onChange={(e) => setAppCredentials({...appCredentials, client_secret: e.target.value})}
+                    disabled={loading}
+                  />
+                  <p className="text-xs text-gray-500 mt-1">
+                    Keep this secret! Never share or commit to version control
+                  </p>
+                </div>
+
+                <div>
+                  <Label htmlFor="access-token">Access Token</Label>
+                  <Input
+                    id="access-token"
+                    type="password"
+                    placeholder="shpat_..."
+                    value={appCredentials.access_token}
+                    onChange={(e) => setAppCredentials({...appCredentials, access_token: e.target.value})}
+                    disabled={loading}
+                  />
+                  <p className="text-xs text-gray-500 mt-1">
+                    Admin API access token from your Shopify custom app
+                  </p>
+                </div>
+
+                <Alert className="border-blue-200">
+                  <Shield className="h-4 w-4 text-blue-600" />
+                  <AlertDescription className="text-blue-800 text-sm">
+                    Your credentials are encrypted and stored securely. They are never exposed in the frontend or API responses.
                   </AlertDescription>
                 </Alert>
-              )}
+
+                <div className="flex justify-end">
+                  <SaveButton
+                    onClick={connectWithDirectAccess}
+                    loading={loading}
+                    success={saveSuccess}
+                    disabled={!shopDomain || !appCredentials.client_id || !appCredentials.client_secret || !appCredentials.access_token}
+                    defaultText="Connect to Shopify"
+                  />
+                </div>
+              </div>
             </div>
           ) : (
             <div className="space-y-4">
