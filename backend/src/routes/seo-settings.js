@@ -23,19 +23,14 @@ router.get('/', async (req, res) => {
         });
       }
 
-      console.log('[SEO Settings] Public request for store:', store_id);
-
       const seoSettings = await SeoSettings.findOne({
         where: { store_id }
       });
 
       if (!seoSettings) {
-        console.log('[SEO Settings] No settings found, returning empty array');
         return res.json([]);
       }
 
-      console.log('[SEO Settings] Found settings:', !!seoSettings);
-      
       // Add cache-busting headers to prevent caching
       res.set({
         'Cache-Control': 'no-cache, no-store, must-revalidate',
@@ -46,7 +41,6 @@ router.get('/', async (req, res) => {
       // Return array format that the frontend expects
       res.json([seoSettings]);
     } catch (error) {
-      console.error('[SEO Settings] Public request error:', error);
       res.status(500).json({
         success: false,
         message: 'Server error',
@@ -114,14 +108,6 @@ router.get('/', async (req, res) => {
 // @access  Private
 router.post('/', authMiddleware, async (req, res) => {
   try {
-    console.log('🚀 POST /api/seo-settings INCOMING REQUEST');
-    console.log('🐛 POST /api/seo-settings DEBUG:', {
-      body: req.body,
-      user: req.user?.email,
-      userRole: req.user?.role,
-      bodyKeys: Object.keys(req.body || {}),
-      timestamp: new Date().toISOString()
-    });
 
     const { store_id } = req.body;
 
@@ -149,22 +135,14 @@ router.post('/', authMiddleware, async (req, res) => {
 
     if (seoSettings) {
       // Update existing settings
-      console.log('🔄 Updating existing SEO settings for store:', store_id);
       await seoSettings.update(req.body);
     } else {
       // Create new settings
-      console.log('✨ Creating new SEO settings for store:', store_id);
       seoSettings = await SeoSettings.create(req.body);
     }
-
-    console.log('✅ SEO settings saved successfully:', seoSettings.id);
-
     // Return array format that the frontend expects
     res.json([seoSettings]);
   } catch (error) {
-    console.error('Save SEO settings error:', error);
-    console.error('Error details:', error.message);
-    console.error('Error name:', error.name);
     res.status(500).json({
       success: false,
       message: 'Server error',
@@ -178,16 +156,6 @@ router.post('/', authMiddleware, async (req, res) => {
 // @access  Private
 router.put('/:id', authMiddleware, async (req, res) => {
   try {
-    console.log('🚀 PUT /api/seo-settings/:id INCOMING REQUEST');
-    console.log('🐛 PUT /api/seo-settings/:id DEBUG:', {
-      id: req.params.id,
-      body: req.body,
-      user: req.user?.email,
-      userRole: req.user?.role,
-      bodyKeys: Object.keys(req.body || {}),
-      timestamp: new Date().toISOString()
-    });
-
     const seoSettings = await SeoSettings.findByPk(req.params.id);
 
     if (!seoSettings) {
@@ -210,16 +178,11 @@ router.put('/:id', authMiddleware, async (req, res) => {
       }
     }
 
-    console.log('🔄 Updating SEO settings with ID:', req.params.id);
     await seoSettings.update(req.body);
-    console.log('✅ SEO settings updated successfully');
 
     // Return array format that the frontend expects
     res.json([seoSettings]);
   } catch (error) {
-    console.error('Update SEO settings error:', error);
-    console.error('Error details:', error.message);
-    console.error('Error name:', error.name);
     res.status(500).json({
       success: false,
       message: 'Server error',
