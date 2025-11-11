@@ -157,6 +157,9 @@ class CartService {
           items: items
         };
 
+        // Resolve any pending callbacks BEFORE updating cache
+        const callbacks = window.__cartCache?.pendingCallbacks || [];
+
         // Cache the result
         window.__cartCache = {
           data: cartResult,
@@ -165,14 +168,17 @@ class CartService {
           pendingCallbacks: []
         };
 
-        // Resolve any pending callbacks
-        const callbacks = window.__cartCache.pendingCallbacks || [];
+        // Resolve callbacks after cache is updated
         callbacks.forEach(cb => cb(cartResult));
 
         return cartResult;
       }
 
       const emptyResult = { success: false, cart: null, items: [] };
+
+      // Resolve any pending callbacks BEFORE updating cache
+      const callbacks = window.__cartCache?.pendingCallbacks || [];
+
       window.__cartCache = {
         data: emptyResult,
         timestamp: Date.now(),
@@ -180,8 +186,7 @@ class CartService {
         pendingCallbacks: []
       };
 
-      // Resolve any pending callbacks
-      const callbacks = window.__cartCache.pendingCallbacks || [];
+      // Resolve callbacks after cache is updated
       callbacks.forEach(cb => cb(emptyResult));
 
       return emptyResult;
@@ -199,13 +204,27 @@ class CartService {
         console.error('🌐 Network connectivity issue - check backend server status');
       }
 
-      return {
+      const errorResult = {
         success: false,
         cart: null,
         items: [],
         error: error.message,
         errorType: error.name
       };
+
+      // Resolve any pending callbacks BEFORE updating cache
+      const callbacks = window.__cartCache?.pendingCallbacks || [];
+
+      // Reset fetching state
+      if (window.__cartCache) {
+        window.__cartCache.fetching = false;
+        window.__cartCache.pendingCallbacks = [];
+      }
+
+      // Resolve callbacks
+      callbacks.forEach(cb => cb(errorResult));
+
+      return errorResult;
     }
   }
 
