@@ -87,6 +87,8 @@ const ShopifyIntegration = () => {
 
       const data = await response.json();
 
+      console.log('Backend response:', data);
+
       if (data.success) {
         setMessage({
           type: 'success',
@@ -102,6 +104,7 @@ const ShopifyIntegration = () => {
         // Refresh connection status
         checkConnectionStatus();
       } else {
+        console.error('Connection failed:', data);
         setMessage({
           type: 'error',
           text: data.message || 'Failed to connect to Shopify'
@@ -111,7 +114,7 @@ const ShopifyIntegration = () => {
       console.error('Error connecting to Shopify:', error);
       setMessage({
         type: 'error',
-        text: 'Failed to connect to Shopify'
+        text: error.message || 'Failed to connect to Shopify'
       });
     } finally {
       setLoading(false);
