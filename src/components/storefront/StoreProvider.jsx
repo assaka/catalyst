@@ -42,12 +42,6 @@ export const StoreProvider = ({ children }) => {
   let storeSlug = determineStoreSlug(location);
   const storeId = !storeSlug ? localStorage.getItem('selectedStoreId') : null;
 
-  console.log('🔍 StoreProvider Debug:', {
-    storeSlug,
-    storeId,
-    pathname: location.pathname
-  });
-
   // Step 2: If no slug but have ID, fetch slug first
   const { data: fetchedSlug, isLoading: slugLoading } = useStoreSlugById(storeId);
 
@@ -56,22 +50,12 @@ export const StoreProvider = ({ children }) => {
     storeSlug = fetchedSlug;
     // Save it for next time
     localStorage.setItem('selectedStoreSlug', fetchedSlug);
-    console.log('✅ Fetched slug from ID:', fetchedSlug);
   }
 
   const language = localStorage.getItem('catalyst_language') || 'en';
 
-  console.log('🚀 Calling useStoreBootstrap with:', { storeSlug, language });
-
   // LAYER 1: Bootstrap data (global data - 1 API call)
-  const { data: bootstrap, isLoading: bootstrapLoading, refetch: refetchBootstrap, error: bootstrapError } = useStoreBootstrap(storeSlug, language);
-
-  console.log('📊 Bootstrap state:', {
-    hasData: !!bootstrap,
-    isLoading: bootstrapLoading,
-    slugLoading,
-    error: bootstrapError
-  });
+  const { data: bootstrap, isLoading: bootstrapLoading, refetch: refetchBootstrap } = useStoreBootstrap(storeSlug, language);
 
   // Main data loading effect
   useEffect(() => {
