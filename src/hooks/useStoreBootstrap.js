@@ -113,6 +113,6 @@ export function determineStoreSlug(location) {
     return savedSlug;
   }
 
-  // Final fallback: if no slug, return null (will fetch first store)
-  return null;
+  // Final fallback: use hamid2 for testing
+  return 'hamid2';
 }
