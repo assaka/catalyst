@@ -11,6 +11,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { getProductName, getProductShortDescription, getCurrentLanguage } from "@/utils/translationUtils";
 import { useTranslation } from "@/contexts/TranslationContext";
+import { useHomepageBootstrap } from "@/hooks/usePageBootstrap";
 
 const ensureArray = (data) => {
   if (Array.isArray(data)) return data;
@@ -23,16 +24,28 @@ export default function Homepage() {
   const searchQuery = searchParams.get('search');
   const { store, settings, loading: storeLoading, categories, productLabels, taxes, selectedCountry } = useStore();
   const { t } = useTranslation();
-  const [featuredProducts, setFeaturedProducts] = useState([]);
+
+  // Layer 2: Homepage bootstrap (featuredProducts, cmsBlocks)
+  const language = getCurrentLanguage();
+  const { data: pageBootstrap, isLoading: pageBootstrapLoading } = useHomepageBootstrap(
+    store?.id,
+    language,
+    !searchQuery // Only fetch if not searching
+  );
+
   const [searchResults, setSearchResults] = useState([]);
   const [loading, setLoading] = useState(true);
+
+  // Use featured products from page bootstrap (no API call!)
+  const featuredProducts = pageBootstrap?.featuredProducts || [];
 
   useEffect(() => {
     if (!storeLoading && store?.id) {
       if (searchQuery) {
         loadSearchResults(searchQuery);
       } else {
-        loadFeaturedProducts();
+        // Featured products come from page bootstrap, just stop loading
+        setLoading(pageBootstrapLoading);
       }
 
       // Track homepage view
@@ -45,32 +58,7 @@ export default function Homepage() {
         });
       }
     }
-  }, [store?.id, storeLoading, searchQuery]);
-
-  const loadFeaturedProducts = async () => {
-    try {
-      setLoading(true);
-      if (!store) return;
-
-      const featuredCacheKey = `featured-products-${store.id}`;
-      let featuredData = [];
-      try {
-        featuredData = await cachedApiCall(
-          featuredCacheKey,
-          () => StorefrontProduct.getFeatured({ store_id: store.id, limit: 12 })
-        );
-      } catch (featuredError) {
-        featuredData = []; // Use empty array as fallback
-      }
-      const featuredArray = ensureArray(featuredData);
-      setFeaturedProducts(featuredArray);
-    } catch (error) {
-      console.error("Homepage: Error loading featured products:", error);
-      setFeaturedProducts([]);
-    } finally {
-      setLoading(false);
-    }
-  };
+  }, [store?.id, storeLoading, searchQuery, pageBootstrapLoading]);
 
   const loadSearchResults = async (query) => {
     try {

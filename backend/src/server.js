@@ -74,6 +74,7 @@ const cacheTestRoutes = require('./routes/cache-test');
 
 // Public route modules (lightweight, no auth)
 const storefrontBootstrapRoutes = require('./routes/storefront-bootstrap');
+const pageBootstrapRoutes = require('./routes/page-bootstrap');
 const publicProductTabRoutes = require('./routes/publicProductTabs');
 const publicProductLabelRoutes = require('./routes/publicProductLabels');
 const publicAttributeRoutes = require('./routes/publicAttributes');
@@ -394,6 +395,7 @@ app.use('/api/cache-test', cacheTestRoutes); // Test cache middleware
 // Public routes for guest access
 app.use('/api/public/auth', authRoutes); // Public auth endpoints (login, register, etc.)
 app.use('/api/public/storefront/bootstrap', storefrontBootstrapRoutes); // Unified storefront initialization endpoint
+app.use('/api/public/page-bootstrap', pageBootstrapRoutes); // Page-specific bootstrap (product, category, checkout, homepage)
 app.use('/api/public/stores', storeRoutes);
 app.use('/api/public/products', publicProductRoutes);
 app.use('/api/public/categories', publicCategoryRoutes);
