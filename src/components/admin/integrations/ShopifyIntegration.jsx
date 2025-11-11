@@ -42,33 +42,16 @@ const ShopifyIntegration = () => {
   const [importProgress, setImportProgress] = useState(null);
   const [message, setMessage] = useState(null);
   const [shopInfo, setShopInfo] = useState(null);
-  const [appConfigured, setAppConfigured] = useState(false);
-  const [showAppConfig, setShowAppConfig] = useState(false);
   const [accessToken, setAccessToken] = useState('');
   const [saveSuccess, setSaveSuccess] = useState(false);
   const [showInstructions, setShowInstructions] = useState(true);
 
   useEffect(() => {
     if (storeId) {
-      checkAppConfiguration();
       checkConnectionStatus();
       fetchImportStats();
     }
   }, [storeId]);
-
-  const checkAppConfiguration = async () => {
-    try {
-      const response = await fetch('/api/shopify/app-configured', {
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
-        }
-      });
-      const data = await response.json();
-      setAppConfigured(data.configured || data.has_global_config);
-    } catch (error) {
-      console.error('Error checking app configuration:', error);
-    }
-  };
 
   const connectWithDirectAccess = async () => {
     if (!shopDomain || !accessToken) {
@@ -111,8 +94,6 @@ const ShopifyIntegration = () => {
         });
         setSaveSuccess(true);
         setTimeout(() => setSaveSuccess(false), 2000);
-        setAppConfigured(true);
-        setShowAppConfig(false);
 
         // Clear sensitive data from state
         setAccessToken('');

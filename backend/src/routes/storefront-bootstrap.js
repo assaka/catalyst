@@ -74,9 +74,20 @@ router.get('/', cacheMiddleware({
       }
     }
 
-    // Execute all queries in parallel for optimal performance
+    // CRITICAL FIX: Fetch store ONCE to prevent database lock errors
+    const store = await Store.findOne({
+      where: { slug, is_active: true }
+    });
+
+    if (!store) {
+      return res.status(404).json({
+        success: false,
+        message: 'Store not found'
+      });
+    }
+
+    // Execute all other queries in parallel using store.id (NO more store queries!)
     const [
-      stores,
       languages,
       translationsResult,
       categoriesResult,
@@ -85,56 +96,25 @@ router.get('/', cacheMiddleware({
       seoSettingsResult,
       seoTemplatesResult
     ] = await Promise.all([
-      // 1. Get store by slug
-      Store.findAll({
-        where: {
-          slug,
-          is_active: true
-        },
-        limit: 1
-      }),
-
-      // 2. Get all active languages
+      // 1. Get all active languages
       Language.findAll({
         where: { is_active: true },
         order: [['name', 'ASC']]
       }),
 
-      // 3. Get UI translations for the specified language
-      (async () => {
-        // First find the store to get its ID
-        const storeForTranslations = await Store.findOne({
-          where: { slug, is_active: true }
-        });
+      // 2. Get UI translations using store.id (no duplicate query!)
+      translationService.getUILabels(store.id, language),
 
-        if (!storeForTranslations) {
-          return { labels: {}, customKeys: [] };
-        }
-
-        return translationService.getUILabels(storeForTranslations.id, language);
-      })(),
-
-      // 4. Get categories for navigation (limited to 1000 for performance)
-      (async () => {
-        // First find the store to get its ID
-        const storeForCategories = await Store.findOne({
-          where: { slug, is_active: true }
-        });
-
-        if (!storeForCategories) {
-          return { rows: [], count: 0 };
-        }
-
-        return getCategoriesWithTranslations(
-          {
-            store_id: storeForCategories.id,
-            is_active: true,
-            hide_in_menu: false
-          },
-          language,
-          { limit: 1000, offset: 0 }
-        );
-      })(),
+      // 3. Get categories using store.id (no duplicate query!)
+      getCategoriesWithTranslations(
+        {
+          store_id: store.id,
+          is_active: true,
+          hide_in_menu: false
+        },
+        language,
+        { limit: 1000, offset: 0 }
+      ),
 
       // 5. Get wishlist (if session_id, user_id, or auth provided)
       (async () => {
@@ -180,25 +160,17 @@ router.get('/', cacheMiddleware({
         }
       })(),
 
-      // 6. Get header slot configuration
+      // 4. Get header slot configuration using store.id (no duplicate query!)
       (async () => {
-        const storeForSlots = await Store.findOne({
-          where: { slug, is_active: true }
-        });
-
-        if (!storeForSlots) {
-          return null;
-        }
-
         try {
           // First try to find published version
-          let configuration = await SlotConfiguration.findLatestPublished(storeForSlots.id, 'header');
+          let configuration = await SlotConfiguration.findLatestPublished(store.id, 'header');
 
           // If no published version, try to find draft
           if (!configuration) {
             configuration = await SlotConfiguration.findOne({
               where: {
-                store_id: storeForSlots.id,
+                store_id: store.id,
                 status: 'draft',
                 page_type: 'header'
               },
@@ -213,19 +185,11 @@ router.get('/', cacheMiddleware({
         }
       })(),
 
-      // 7. Get SEO settings
+      // 5. Get SEO settings using store.id (no duplicate query!)
       (async () => {
-        const storeForSeo = await Store.findOne({
-          where: { slug, is_active: true }
-        });
-
-        if (!storeForSeo) {
-          return null;
-        }
-
         try {
           const seoSettings = await SeoSettings.findOne({
-            where: { store_id: storeForSeo.id }
+            where: { store_id: store.id }
           });
           return seoSettings;
         } catch (error) {
@@ -234,20 +198,12 @@ router.get('/', cacheMiddleware({
         }
       })(),
 
-      // 8. Get active SEO templates
+      // 6. Get active SEO templates using store.id (no duplicate query!)
       (async () => {
-        const storeForTemplates = await Store.findOne({
-          where: { slug, is_active: true }
-        });
-
-        if (!storeForTemplates) {
-          return [];
-        }
-
         try {
           const templates = await SeoTemplate.findAll({
             where: {
-              store_id: storeForTemplates.id,
+              store_id: store.id,
               is_active: true
             },
             order: [['sort_order', 'ASC'], ['type', 'ASC']]
@@ -259,16 +215,6 @@ router.get('/', cacheMiddleware({
         }
       })()
     ]);
-
-    // Check if store exists
-    if (!stores || stores.length === 0) {
-      return res.status(404).json({
-        success: false,
-        message: 'Store not found'
-      });
-    }
-
-    const store = stores[0];
 
     // Build category tree for navigation
     const categoriesFlat = categoriesResult.rows || [];
