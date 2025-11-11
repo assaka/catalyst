@@ -315,7 +315,7 @@ class ShopifyIntegration {
    */
   async getShopInfo(shopDomain, accessToken) {
     try {
-      const response = await axios.get(`https://${shopDomain}/admin/api/2023-10/shop.json`, {
+      const response = await axios.get(`https://${shopDomain}/admin/api/2024-04/shop.json`, {
         headers: {
           'X-Shopify-Access-Token': accessToken,
           'Content-Type': 'application/json'
@@ -325,7 +325,24 @@ class ShopifyIntegration {
       return response.data.shop;
     } catch (error) {
       console.error('Error fetching shop info:', error.response?.data || error.message);
-      throw new Error('Failed to fetch shop information from Shopify');
+
+      // Provide more specific error messages
+      if (error.response) {
+        const status = error.response.status;
+        const data = error.response.data;
+
+        if (status === 401) {
+          throw new Error('Invalid access token. Please verify your token is correct and has the required scopes.');
+        } else if (status === 403) {
+          throw new Error('Access denied. Your token may be missing required API scopes.');
+        } else if (status === 404) {
+          throw new Error('Shop not found. Please verify your shop domain is correct.');
+        } else {
+          throw new Error(`Shopify API error: ${data?.errors || error.message}`);
+        }
+      }
+
+      throw new Error('Failed to connect to Shopify. Please check your internet connection and try again.');
     }
   }
 
