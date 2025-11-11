@@ -18,6 +18,16 @@ const Product = sequelize.define('Product', {
     allowNull: false,
     unique: true
   },
+  external_id: {
+    type: DataTypes.STRING,
+    allowNull: true,
+    comment: 'External system ID (e.g., Shopify product ID, Akeneo product ID)'
+  },
+  external_source: {
+    type: DataTypes.STRING(50),
+    allowNull: true,
+    comment: 'Source of external_id (e.g., shopify, akeneo, woocommerce)'
+  },
   barcode: {
     type: DataTypes.STRING,
     allowNull: true
