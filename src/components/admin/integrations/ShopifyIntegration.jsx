@@ -31,6 +31,7 @@ import {
   Info
 } from 'lucide-react';
 
+// Shopify Integration Component - Direct Access Token Flow
 const ShopifyIntegration = () => {
   const { selectedStore } = useStoreSelection();
   const storeId = selectedStore?.id || localStorage.getItem('selectedStoreId');
