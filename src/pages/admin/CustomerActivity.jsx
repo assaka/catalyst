@@ -81,10 +81,13 @@ export default function CustomerActivityPage() {
   const [endDate, setEndDate] = useState("");
 
   useEffect(() => {
+    console.log('[useEffect] Triggered with selectedStore:', selectedStore?.id, 'startDate:', startDate, 'endDate:', endDate);
     if (selectedStore) {
       loadData(1); // Reset to page 1 when store changes
       loadRealtimeData(); // Load real-time users
+      console.log('[useEffect] About to call loadSessionAnalytics...');
       loadSessionAnalytics(); // Load session data
+      console.log('[useEffect] About to call loadTimeSeriesData...');
       loadTimeSeriesData(); // Load time-series chart data
     }
   }, [selectedStore, startDate, endDate]);
@@ -116,7 +119,11 @@ export default function CustomerActivityPage() {
   };
 
   const loadSessionAnalytics = async () => {
-    if (!selectedStore) return;
+    console.log('[loadSessionAnalytics] Called, selectedStore:', selectedStore?.id);
+    if (!selectedStore) {
+      console.log('[loadSessionAnalytics] No selectedStore, returning early');
+      return;
+    }
 
     try {
       const params = new URLSearchParams();
@@ -124,7 +131,12 @@ export default function CustomerActivityPage() {
       if (endDate) params.append('end_date', endDate);
 
       const response = await apiClient.get(`/analytics-dashboard/${selectedStore.id}/sessions?${params}`);
+      console.log('[Session Analytics] Response:', response.data);
       if (response.data.success) {
+        console.log('[Session Analytics] Device breakdown:', response.data.data.device_breakdown);
+        console.log('[Session Analytics] Browser breakdown:', response.data.data.browser_breakdown);
+        console.log('[Session Analytics] Country breakdown:', response.data.data.country_breakdown);
+        console.log('[Session Analytics] Language breakdown:', response.data.data.language_breakdown);
         setSessionAnalytics(response.data.data);
       }
     } catch (error) {
@@ -133,7 +145,11 @@ export default function CustomerActivityPage() {
   };
 
   const loadTimeSeriesData = async () => {
-    if (!selectedStore) return;
+    console.log('[loadTimeSeriesData] Called, selectedStore:', selectedStore?.id);
+    if (!selectedStore) {
+      console.log('[loadTimeSeriesData] No selectedStore, returning early');
+      return;
+    }
 
     try {
       const params = new URLSearchParams({ interval: 'hour' });
@@ -141,6 +157,7 @@ export default function CustomerActivityPage() {
       if (endDate) params.append('end_date', endDate);
 
       const response = await apiClient.get(`/analytics-dashboard/${selectedStore.id}/timeseries?${params}`);
+      console.log('[Time Series] Response:', response.data);
       if (response.data.success) {
         const chartData = response.data.data.map(d => ({
           label: new Date(d.timestamp).toLocaleString('en-US', {
@@ -151,6 +168,7 @@ export default function CustomerActivityPage() {
           value: d.events,
           sessions: d.unique_sessions
         }));
+        console.log('[Time Series] Chart data:', chartData);
         setTimeSeriesData(chartData);
       }
     } catch (error) {
