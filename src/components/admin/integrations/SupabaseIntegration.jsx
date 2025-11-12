@@ -2,8 +2,11 @@ import React, { useState, useEffect } from 'react';
 import { toast } from 'sonner';
 import apiClient from '@/api/client';
 import { ExternalLink, Trash2, Cloud, Image, BarChart3, Key, AlertCircle, Info, Copy, ArrowRight, RefreshCw, FileText, Database, HardDrive, Upload, X, Folder, FolderOpen, Package } from 'lucide-react';
+import FlashMessage from '@/components/storefront/FlashMessage';
 
 const SupabaseIntegration = ({ storeId, context = 'full' }) => {
+  // Flash message state
+  const [flashMessage, setFlashMessage] = useState(null);
   // Helper function to format storage sizes (handles both string and number values)
   const formatStorageSize = (sizeValue, unit = 'MB') => {
     if (!sizeValue) return `0 ${unit}`;
@@ -241,9 +244,16 @@ const SupabaseIntegration = ({ storeId, context = 'full' }) => {
               authWindow.close();
             }
 
-            // Show toast and reload immediately
-            toast.success('Successfully connected to Supabase!');
-            window.location.reload();
+            // Show flash message at top center
+            setFlashMessage({
+              type: 'success',
+              message: 'Successfully connected to Supabase!'
+            });
+
+            // Reload page immediately
+            setTimeout(() => {
+              window.location.reload();
+            }, 100);
           } else if (event.data.type === 'supabase-oauth-error') {
             console.error('Supabase OAuth error:', event.data.error);
             window.removeEventListener('message', messageHandler);
@@ -511,8 +521,15 @@ const SupabaseIntegration = ({ storeId, context = 'full' }) => {
   }
 
   return (
-    <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-      <div className="flex items-center justify-between mb-6">
+    <>
+      {/* Flash Message */}
+      <FlashMessage
+        message={flashMessage}
+        onClose={() => setFlashMessage(null)}
+      />
+
+      <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+        <div className="flex items-center justify-between mb-6">
         <div className="flex items-center space-x-3">
           <div className="p-2 bg-green-100 rounded-lg">
             <Cloud className="w-8 h-8 text-green-600" />
@@ -1359,7 +1376,8 @@ const SupabaseIntegration = ({ storeId, context = 'full' }) => {
           </div>
         </div>
       )}
-    </div>
+      </div>
+    </>
   );
 };
 

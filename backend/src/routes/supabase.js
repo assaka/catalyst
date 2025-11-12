@@ -159,17 +159,17 @@ router.get('/callback', async (req, res) => {
       }
     }
     
-    // Send success page that closes the popup window
+    // Send simple success page that immediately notifies parent and closes
     const projectUrl = result.project?.url || 'Connected';
     const userEmail = result.user?.email || '';
-    
+
     // Check if this is a limited scope connection
-    const isLimitedScope = result.limitedScope || 
-                          projectUrl === 'Configuration pending' || 
+    const isLimitedScope = result.limitedScope ||
+                          projectUrl === 'Configuration pending' ||
                           projectUrl === 'https://pending-configuration.supabase.co' ||
                           projectUrl === 'pending_configuration' ||
                           projectUrl === 'Configuration pending - limited scope';
-    
+
     res.send(`
       <!DOCTYPE html>
       <html>
@@ -183,13 +183,13 @@ router.get('/callback', async (req, res) => {
             align-items: center;
             height: 100vh;
             margin: 0;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: #f9fafb;
           }
           .container {
             background: white;
             padding: 2rem;
             border-radius: 8px;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
             text-align: center;
             max-width: 400px;
           }
@@ -201,27 +201,20 @@ router.get('/callback', async (req, res) => {
           h1 {
             color: #1f2937;
             margin-bottom: 0.5rem;
+            font-size: 20px;
           }
           p {
             color: #6b7280;
             margin-bottom: 1rem;
-          }
-          .email {
             font-size: 14px;
-            color: #4b5563;
-            margin-top: 0.5rem;
           }
         </style>
       </head>
       <body>
         <div class="container">
           <div class="success">✓</div>
-          <h1>${isLimitedScope ? 'Connected with Limited Scope' : 'Successfully Connected!'}</h1>
-          <p>${isLimitedScope 
-            ? 'Connection established but with limited permissions. You may need to update your OAuth app scopes for full functionality.' 
-            : 'Your Supabase account has been connected. This window will close automatically.'}</p>
-          ${userEmail ? `<p class="email">Connected as: ${userEmail}</p>` : ''}
-          ${isLimitedScope ? '<p class="email" style="color: #f59e0b;">⚠️ Limited permissions - some features may not work</p>' : ''}
+          <h1>Success!</h1>
+          <p>Closing window...</p>
         </div>
         <script>
           // Notify parent window of success immediately
@@ -229,15 +222,16 @@ router.get('/callback', async (req, res) => {
             window.opener.postMessage({
               type: 'supabase-oauth-success',
               project: '${projectUrl}',
-              userEmail: '${userEmail}'
+              userEmail: '${userEmail}',
+              isLimitedScope: ${isLimitedScope}
             }, '${process.env.FRONTEND_URL || 'http://localhost:3000'}');
 
-            // Parent will close this window, but try to close anyway after a short delay
+            // Close immediately
             setTimeout(() => {
               window.close();
-            }, 500);
+            }, 100);
           } else {
-            // No opener, show manual close button immediately
+            // No opener, show manual close button
             document.querySelector('.container').innerHTML =
               '<div class="success">✓</div>' +
               '<h1>Connection Successful!</h1>' +
@@ -245,7 +239,7 @@ router.get('/callback', async (req, res) => {
               '<button onclick="window.close();" style="' +
               'background: #10b981; color: white; border: none; ' +
               'padding: 10px 20px; border-radius: 6px; cursor: pointer; ' +
-              'font-size: 16px; margin-top: 10px;">Close Window</button>';
+              'font-size: 14px; margin-top: 10px;">Close Window</button>';
           }
         </script>
       </body>
