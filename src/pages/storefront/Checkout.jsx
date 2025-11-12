@@ -307,10 +307,11 @@ export default function Checkout() {
     };
 
     window.addEventListener('cartUpdated', handleCartUpdate);
-    
+
     return () => {
       window.removeEventListener('cartUpdated', handleCartUpdate);
     };
+    }
   }, [loading]);
 
   // Sync shipping and billing address countries with selectedCountry when it changes
@@ -329,6 +330,7 @@ export default function Checkout() {
         return prev;
       });
     }
+    }
   }, [selectedCountry, selectedShippingAddress]);
 
   // Sync billing address country separately
@@ -346,6 +348,7 @@ export default function Checkout() {
         return prev;
       });
     }
+    }
   }, [selectedCountry, selectedBillingAddress, useShippingForBilling]);
 
   // Trigger tax recalculation when shipping address country changes
@@ -353,6 +356,7 @@ export default function Checkout() {
     // Wait for both store AND pageBootstrap to be ready
     if (!storeLoading && !pageBootstrapLoading && store?.id) {
     // Tax will be recalculated automatically through getTotalAmount since it calls calculateTax
+    }
   }, [shippingAddress.country, selectedShippingAddress]);
 
   // Calculate payment fee when payment method or cart changes
@@ -361,6 +365,7 @@ export default function Checkout() {
     if (!storeLoading && !pageBootstrapLoading && store?.id) {
     if (selectedPaymentMethod && cartItems.length > 0 && paymentMethods.length > 0) {
       calculatePaymentFee(selectedPaymentMethod);
+    }
     }
   }, [selectedPaymentMethod, cartItems, paymentMethods]);
 
