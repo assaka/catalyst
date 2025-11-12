@@ -2,9 +2,13 @@ const ShopifyClient = require('./shopify-client');
 const ShopifyOAuthToken = require('../models/ShopifyOAuthToken');
 const Category = require('../models/Category');
 const Product = require('../models/Product');
+const ProductTranslation = require('../models/ProductTranslation');
 const Attribute = require('../models/Attribute');
 const AttributeSet = require('../models/AttributeSet');
 const ImportStatistic = require('../models/ImportStatistic');
+const StorageManager = require('./storage/StorageManager');
+const axios = require('axios');
+const path = require('path');
 const { Op } = require('sequelize');
 const { sequelize } = require('../database/connection');
 
@@ -313,6 +317,46 @@ class ShopifyImportService {
   }
 
   /**
+   * Download and store image from URL using store's configured storage provider
+   */
+  async downloadAndStoreImage(imageUrl, productHandle, index = 0) {
+    try {
+      // Get storage provider for this store
+      const storageProvider = await StorageManager.getProvider(this.storeId);
+
+      // Download image from Shopify
+      const response = await axios.get(imageUrl, {
+        responseType: 'arraybuffer',
+        timeout: 30000 // 30 second timeout
+      });
+
+      const imageBuffer = Buffer.from(response.data);
+
+      // Determine file extension from URL or content-type
+      const urlExt = path.extname(new URL(imageUrl).pathname).toLowerCase();
+      const contentType = response.headers['content-type'];
+      const ext = urlExt || (contentType?.includes('jpeg') ? '.jpg' : contentType?.includes('png') ? '.png' : '.jpg');
+
+      // Generate filename: products/handle/image-0.jpg
+      const filename = `products/${productHandle}/image-${index}${ext}`;
+
+      // Upload to storage provider
+      const uploadResult = await storageProvider.upload(imageBuffer, filename, {
+        contentType: contentType || 'image/jpeg',
+        folder: 'products'
+      });
+
+      console.log(`✅ Stored image: ${filename}`);
+      return uploadResult.url;
+
+    } catch (error) {
+      console.error(`Failed to download/store image from ${imageUrl}:`, error.message);
+      // Return original URL as fallback
+      return imageUrl;
+    }
+  }
+
+  /**
    * Import a single Shopify product
    */
   async importProduct(product) {
@@ -352,12 +396,12 @@ class ShopifyImportService {
         short_description: product.body_html ? product.body_html.replace(/<[^>]*>/g, '').substring(0, 255) : '',
         sku: product.handle, // Also use handle as SKU
         status: product.status === 'active' ? 'active' : 'draft',
-        price: product.variants?.[0]?.price || 0,
-        compare_price: product.variants?.[0]?.compare_at_price || null,
+        price: parseFloat(product.variants?.[0]?.price || 0),
+        compare_price: product.variants?.[0]?.compare_at_price ? parseFloat(product.variants[0].compare_at_price) : null,
         cost: null,
-        track_quantity: product.variants?.[0]?.inventory_management === 'shopify',
-        quantity: product.variants?.reduce((total, variant) => total + (variant.inventory_quantity || 0), 0) || 0,
-        allow_backorder: product.variants?.[0]?.inventory_policy === 'continue',
+        manage_stock: product.variants?.[0]?.inventory_management === 'shopify',
+        stock_quantity: product.variants?.reduce((total, variant) => total + (variant.inventory_quantity || 0), 0) || 0,
+        allow_backorders: product.variants?.[0]?.inventory_policy === 'continue',
         weight: product.variants?.[0]?.weight || null,
         weight_unit: product.variants?.[0]?.weight_unit || 'kg',
         category_ids: categoryIds,
@@ -379,30 +423,52 @@ class ShopifyImportService {
         custom_attributes: this.extractProductAttributes(product)
       };
 
-      // Handle images
+      // Download and store images using store's storage provider
       if (product.images && product.images.length > 0) {
-        productData.images = product.images.map((image, index) => ({
-          src: image.src,
-          alt: image.alt || product.title,
-          position: image.position || index + 1,
-          shopify_id: image.id
-        }));
-        
-        // Set main image
-        if (product.image) {
-          productData.image_url = product.image.src;
+        const storedImages = [];
+
+        for (let i = 0; i < product.images.length; i++) {
+          const image = product.images[i];
+          const storedUrl = await this.downloadAndStoreImage(image.src, product.handle, i);
+
+          storedImages.push({
+            src: storedUrl,
+            alt: image.alt || product.title,
+            position: image.position || i + 1,
+            shopify_id: image.id
+          });
+        }
+
+        productData.images = storedImages;
+
+        // Set main image (first image)
+        if (storedImages.length > 0) {
+          productData.image_url = storedImages[0].src;
         }
       }
 
+      let savedProduct;
       if (existingProduct) {
         await existingProduct.update(productData);
+        savedProduct = existingProduct;
         console.log(`Updated product: ${product.title}`);
-        return existingProduct;
       } else {
-        const newProduct = await Product.create(productData);
+        savedProduct = await Product.create(productData);
         console.log(`Created product: ${product.title}`);
-        return newProduct;
       }
+
+      // Save translations for name and description (default language: 'en')
+      await ProductTranslation.upsert({
+        product_id: savedProduct.id,
+        language_code: 'en',
+        name: product.title,
+        description: product.body_html || '',
+        short_description: product.body_html ? product.body_html.replace(/<[^>]*>/g, '').substring(0, 255) : ''
+      });
+
+      console.log(`✅ Saved translations for product: ${product.title}`);
+
+      return savedProduct;
     } catch (error) {
       console.error(`Error importing product ${product.title}:`, error);
       throw error;
