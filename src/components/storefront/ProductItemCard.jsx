@@ -222,7 +222,7 @@ const ProductItemCard = ({
         window.dispatchEvent(new CustomEvent('showFlashMessage', {
           detail: {
             type: 'success',
-            message: `${translatedProductName} ${t('common.added_to_cart_success', 'added to cart successfully!')}`
+            message: `${translatedProductName} ${t('common.added_to_cart', 'added to cart successfully!')}`
           }
         }));
       } else {

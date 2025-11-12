@@ -652,7 +652,7 @@ export default function ProductDetail() {
         const translatedProductName = getProductName(product, currentLanguage) || product.name;
         setFlashMessage({
           type: 'success',
-          message: `${translatedProductName} ${t('common.added_to_cart_success', ' added to cart successfully!')}`
+          message: `${translatedProductName} ${t('common.added_to_cart', ' added to cart successfully!')}`
         });
       } else {
         setFlashMessage({
