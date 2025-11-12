@@ -999,7 +999,6 @@ export default function Checkout() {
               message: t('checkout.login_success', 'Successfully logged in! Your cart has been updated.')
             }
           }));
-        }
       } else {
         setLoginError('Invalid email or password');
       }
