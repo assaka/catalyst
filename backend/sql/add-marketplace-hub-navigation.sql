@@ -5,14 +5,27 @@ DO $$
 DECLARE
   import_export_id UUID;
   marketplace_hub_id UUID;
+  shopify_parent UUID;
 BEGIN
-  -- Find the "import_export" parent group
-  SELECT id INTO import_export_id
+  -- First, check if Shopify has a parent (it should be the import_export group)
+  SELECT parent_key INTO shopify_parent
   FROM admin_navigation_registry
-  WHERE key = 'import_export' AND parent_key IS NULL
+  WHERE key = 'shopify_integration'
   LIMIT 1;
 
-  -- If Import & Export group doesn't exist, create it
+  -- If Shopify has a parent, use that as import_export_id
+  IF shopify_parent IS NOT NULL THEN
+    import_export_id := shopify_parent;
+    RAISE NOTICE 'Using existing Import & Export group ID from Shopify: %', import_export_id;
+  ELSE
+    -- Find the "import_export" parent group by key
+    SELECT id INTO import_export_id
+    FROM admin_navigation_registry
+    WHERE key = 'import_export' AND parent_key IS NULL
+    LIMIT 1;
+  END IF;
+
+  -- If still not found, create the Import & Export group
   IF import_export_id IS NULL THEN
     INSERT INTO admin_navigation_registry (
       id,
