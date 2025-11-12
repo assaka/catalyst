@@ -961,8 +961,8 @@ export function UnifiedSlotRenderer({
                 // Get translation from ui_translations
                 const currentLang = localStorage.getItem('catalyst_language') || 'en';
                 const translations = variableContext?.settings?.ui_translations || {};
-                const addedToCartMessage = translations[currentLang]?.['common.added_to_cart'] ||
-                                          translations['en']?.['common.added_to_cart'] ||
+                const addedToCartMessage = translations[currentLang]?.common?.added_to_cart ||
+                                          translations['en']?.common?.added_to_cart ||
                                           ' added to cart successfully!';
 
                 // Show success message
@@ -979,8 +979,8 @@ export function UnifiedSlotRenderer({
               // Get translation from ui_translations
               const currentLang = localStorage.getItem('catalyst_language') || 'en';
               const translations = variableContext?.settings?.ui_translations || {};
-              const errorMessage = translations[currentLang]?.['common.error_adding_to_cart'] ||
-                                  translations['en']?.['common.error_adding_to_cart'] ||
+              const errorMessage = translations[currentLang]?.common?.error_adding_to_cart ||
+                                  translations['en']?.common?.error_adding_to_cart ||
                                   'Failed to add to cart. Please try again.';
 
               window.dispatchEvent(new CustomEvent('showFlashMessage', {

@@ -740,16 +740,9 @@ export const categoryConfig = {
                 // Show success message
                 const currentLang = localStorage.getItem('catalyst_language') || 'en';
                 const successMessage = variableContext?.translations?.['common.added_to_cart']
-                  || variableContext?.settings?.ui_translations?.[currentLang]?.['common.added_to_cart']
-                  || variableContext?.settings?.ui_translations?.en?.['common.added_to_cart']
+                  || variableContext?.settings?.ui_translations?.[currentLang]?.common?.added_to_cart
+                  || variableContext?.settings?.ui_translations?.en?.common?.added_to_cart
                   || ' added to cart successfully!';
-                console.log('🔍 Category flash message:', {
-                  currentLang,
-                  successMessage,
-                  fromTranslations: variableContext?.translations?.['common.added_to_cart'],
-                  fromUiTranslations: variableContext?.settings?.ui_translations?.[currentLang]?.['common.added_to_cart'],
-                  allUiTransKeys: variableContext?.settings?.ui_translations?.[currentLang] ? Object.keys(variableContext.settings.ui_translations[currentLang]) : []
-                });
                 window.dispatchEvent(new CustomEvent('showFlashMessage', {
                   detail: {
                     type: 'success',
@@ -763,8 +756,8 @@ export const categoryConfig = {
               console.error('Failed to add to cart:', error);
               const currentLang = localStorage.getItem('catalyst_language') || 'en';
               const errorMessage = variableContext?.translations?.['common.error_adding_to_cart']
-                || variableContext?.settings?.ui_translations?.[currentLang]?.['common.error_adding_to_cart']
-                || variableContext?.settings?.ui_translations?.en?.['common.error_adding_to_cart']
+                || variableContext?.settings?.ui_translations?.[currentLang]?.common?.error_adding_to_cart
+                || variableContext?.settings?.ui_translations?.en?.common?.error_adding_to_cart
                 || 'Failed to add to cart. Please try again.';
               window.dispatchEvent(new CustomEvent('showFlashMessage', {
                 detail: {
@@ -937,8 +930,8 @@ export const categoryConfig = {
                 // Show success message
                 const currentLang = localStorage.getItem('catalyst_language') || 'en';
                 const successMessage = variableContext?.translations?.['common.added_to_cart']
-                  || variableContext?.settings?.ui_translations?.[currentLang]?.['common.added_to_cart']
-                  || variableContext?.settings?.ui_translations?.en?.['common.added_to_cart']
+                  || variableContext?.settings?.ui_translations?.[currentLang]?.common?.added_to_cart
+                  || variableContext?.settings?.ui_translations?.en?.common?.added_to_cart
                   || ' added to cart successfully!';
                 window.dispatchEvent(new CustomEvent('showFlashMessage', {
                   detail: {
@@ -953,8 +946,8 @@ export const categoryConfig = {
               console.error('Failed to add to cart:', error);
               const currentLang = localStorage.getItem('catalyst_language') || 'en';
               const errorMessage = variableContext?.translations?.['common.error_adding_to_cart']
-                || variableContext?.settings?.ui_translations?.[currentLang]?.['common.error_adding_to_cart']
-                || variableContext?.settings?.ui_translations?.en?.['common.error_adding_to_cart']
+                || variableContext?.settings?.ui_translations?.[currentLang]?.common?.error_adding_to_cart
+                || variableContext?.settings?.ui_translations?.en?.common?.error_adding_to_cart
                 || 'Failed to add to cart. Please try again.';
               window.dispatchEvent(new CustomEvent('showFlashMessage', {
                 detail: {
