@@ -234,6 +234,16 @@ const SupabaseIntegration = ({ storeId, context = 'full' }) => {
           'width=600,height=700,scrollbars=yes,resizable=yes'
         );
 
+        // Fallback: Force close the window after 3 seconds if still open
+        const forceCloseTimer = setTimeout(() => {
+          if (authWindow && !authWindow.closed) {
+            console.log('⏰ Force closing popup after timeout...');
+            authWindow.close();
+            // Check if connection was successful
+            loadStatus();
+          }
+        }, 3000);
+
         // Listen for postMessage from OAuth callback
         const messageHandler = (event) => {
           console.log('📨 Received postMessage:', {
@@ -263,12 +273,21 @@ const SupabaseIntegration = ({ storeId, context = 'full' }) => {
             console.log('✅ Supabase OAuth success:', event.data);
             window.removeEventListener('message', messageHandler);
             clearInterval(checkClosed);
+            clearTimeout(forceCloseTimer);
 
             // Force close the popup window immediately
             console.log('🔒 Attempting to close popup window...');
             if (authWindow && !authWindow.closed) {
               authWindow.close();
               console.log('🔒 Window close called');
+
+              // Double-check it closed, try again if needed
+              setTimeout(() => {
+                if (authWindow && !authWindow.closed) {
+                  console.log('🔒 Window still open, trying again...');
+                  authWindow.close();
+                }
+              }, 100);
             } else {
               console.log('⚠️ Window already closed or not available');
             }
@@ -283,6 +302,7 @@ const SupabaseIntegration = ({ storeId, context = 'full' }) => {
             console.error('Supabase OAuth error:', event.data.error);
             window.removeEventListener('message', messageHandler);
             clearInterval(checkClosed);
+            clearTimeout(forceCloseTimer);
             setConnecting(false);
 
             // Close the popup window
@@ -300,6 +320,7 @@ const SupabaseIntegration = ({ storeId, context = 'full' }) => {
         const checkClosed = setInterval(() => {
           if (authWindow.closed) {
             clearInterval(checkClosed);
+            clearTimeout(forceCloseTimer);
             window.removeEventListener('message', messageHandler);
             setConnecting(false);
           }
@@ -308,6 +329,7 @@ const SupabaseIntegration = ({ storeId, context = 'full' }) => {
         // Clean up after 5 minutes (timeout)
         setTimeout(() => {
           clearInterval(checkClosed);
+          clearTimeout(forceCloseTimer);
           window.removeEventListener('message', messageHandler);
           if (connecting) {
             setConnecting(false);
