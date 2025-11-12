@@ -743,6 +743,13 @@ export const categoryConfig = {
                   || variableContext?.settings?.ui_translations?.[currentLang]?.['common.added_to_cart']
                   || variableContext?.settings?.ui_translations?.en?.['common.added_to_cart']
                   || ' added to cart successfully!';
+                console.log('🔍 Category flash message:', {
+                  currentLang,
+                  successMessage,
+                  fromTranslations: variableContext?.translations?.['common.added_to_cart'],
+                  fromUiTranslations: variableContext?.settings?.ui_translations?.[currentLang]?.['common.added_to_cart'],
+                  allUiTransKeys: variableContext?.settings?.ui_translations?.[currentLang] ? Object.keys(variableContext.settings.ui_translations[currentLang]) : []
+                });
                 window.dispatchEvent(new CustomEvent('showFlashMessage', {
                   detail: {
                     type: 'success',
