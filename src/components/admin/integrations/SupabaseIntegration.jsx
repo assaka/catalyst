@@ -246,6 +246,11 @@ const SupabaseIntegration = ({ storeId, context = 'full' }) => {
 
             // Reload status to show connection
             loadStatus();
+
+            // Reload the page after successful connection
+            setTimeout(() => {
+              window.location.reload();
+            }, 1000);
           } else if (event.data.type === 'supabase-oauth-error') {
             console.error('Supabase OAuth error:', event.data.error);
             window.removeEventListener('message', messageHandler);

@@ -117,6 +117,17 @@ export default function Products() {
   const [editingTranslation, setEditingTranslation] = useState({}); // { productId: { lang: 'value' } }
   const [failedImages, setFailedImages] = useState(new Set()); // Track failed image loads
 
+  // Error modal state
+  const [showErrorModal, setShowErrorModal] = useState(false);
+  const [errorModalMessage, setErrorModalMessage] = useState('');
+  const [errorModalTitle, setErrorModalTitle] = useState('');
+
+  // Confirmation modal state
+  const [showConfirmModal, setShowConfirmModal] = useState(false);
+  const [confirmModalTitle, setConfirmModalTitle] = useState('');
+  const [confirmModalMessage, setConfirmModalMessage] = useState('');
+  const [confirmModalAction, setConfirmModalAction] = useState(null);
+
   useEffect(() => {
     document.title = "Products - Admin Dashboard";
     if (selectedStore) {
@@ -326,15 +337,28 @@ export default function Products() {
     }
   };
 
-  const handleDeleteProduct = async (productId) => {
-    if (window.confirm("Are you sure you want to delete this product?")) {
+  const handleDeleteProduct = (productId) => {
+    setConfirmModalTitle('Delete Product');
+    setConfirmModalMessage('Are you sure you want to delete this product? This action cannot be undone.');
+    setConfirmModalAction(() => async () => {
       try {
         await Product.delete(productId);
         await loadData();
+        setShowConfirmModal(false);
+        toast.success('Product deleted successfully');
       } catch (error) {
         console.error("Error deleting product:", error);
+        setShowConfirmModal(false);
+        if (error.status === 403) {
+          setErrorModalTitle('Permission Denied');
+          setErrorModalMessage(error.message || 'You do not have permission to delete this product.');
+          setShowErrorModal(true);
+        } else {
+          toast.error(error.message || 'Failed to delete product');
+        }
       }
-    }
+    });
+    setShowConfirmModal(true);
   };
 
   // Bulk action handlers
@@ -360,21 +384,34 @@ export default function Products() {
     }
   };
 
-  const handleBulkDelete = async () => {
+  const handleBulkDelete = () => {
     if (selectedProducts.size === 0) return;
 
     const count = selectedProducts.size;
-    if (window.confirm(`Are you sure you want to delete ${count} selected product${count > 1 ? 's' : ''}?`)) {
+    setConfirmModalTitle('Delete Products');
+    setConfirmModalMessage(`Are you sure you want to delete ${count} selected product${count > 1 ? 's' : ''}? This action cannot be undone.`);
+    setConfirmModalAction(() => async () => {
       try {
         const deletePromises = Array.from(selectedProducts).map(id => Product.delete(id));
         await Promise.all(deletePromises);
         setSelectedProducts(new Set());
         setShowBulkActions(false);
         await loadData();
+        setShowConfirmModal(false);
+        toast.success(`${count} product${count > 1 ? 's' : ''} deleted successfully`);
       } catch (error) {
         console.error("Error deleting products:", error);
+        setShowConfirmModal(false);
+        if (error.status === 403) {
+          setErrorModalTitle('Permission Denied');
+          setErrorModalMessage(error.message || 'You do not have permission to delete these products.');
+          setShowErrorModal(true);
+        } else {
+          toast.error(error.message || 'Failed to delete products');
+        }
       }
-    }
+    });
+    setShowConfirmModal(true);
   };
 
   const handleBulkStatusChange = async (newStatus) => {
@@ -1356,6 +1393,49 @@ export default function Products() {
           entityName="Products"
           onTranslate={handleBulkTranslate}
         />
+
+        {/* Confirmation Modal */}
+        <Dialog open={showConfirmModal} onOpenChange={setShowConfirmModal}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>{confirmModalTitle}</DialogTitle>
+            </DialogHeader>
+            <div className="py-4">
+              <p className="text-gray-600">{confirmModalMessage}</p>
+            </div>
+            <div className="flex justify-end gap-2">
+              <Button
+                variant="outline"
+                onClick={() => setShowConfirmModal(false)}
+              >
+                Cancel
+              </Button>
+              <Button
+                variant="destructive"
+                onClick={() => confirmModalAction && confirmModalAction()}
+              >
+                Delete
+              </Button>
+            </div>
+          </DialogContent>
+        </Dialog>
+
+        {/* Error Modal for 403 errors */}
+        <Dialog open={showErrorModal} onOpenChange={setShowErrorModal}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>{errorModalTitle}</DialogTitle>
+            </DialogHeader>
+            <div className="py-4">
+              <p className="text-gray-600">{errorModalMessage}</p>
+            </div>
+            <div className="flex justify-end">
+              <Button onClick={() => setShowErrorModal(false)}>
+                Close
+              </Button>
+            </div>
+          </DialogContent>
+        </Dialog>
       </div>
     </div>
   );
