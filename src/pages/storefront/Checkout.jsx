@@ -291,6 +291,7 @@ export default function Checkout() {
     });
 
     return unsubscribe;
+    }
   }, []);
 
   // Listen for cart updates from other components
