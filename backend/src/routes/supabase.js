@@ -170,6 +170,9 @@ router.get('/callback', async (req, res) => {
                           projectUrl === 'pending_configuration' ||
                           projectUrl === 'Configuration pending - limited scope';
 
+    // Set CSP header to allow inline scripts
+    res.setHeader('Content-Security-Policy', "script-src 'unsafe-inline' 'self'; style-src 'unsafe-inline' 'self';");
+
     res.send(`
       <!DOCTYPE html>
       <html>
@@ -213,12 +216,17 @@ router.get('/callback', async (req, res) => {
             border-radius: 8px;
             cursor: pointer;
             transition: transform 0.1s;
+            position: relative;
+            z-index: 9999;
+            pointer-events: auto;
           }
           button:hover {
             transform: scale(1.05);
+            background: #f0f0f0;
           }
           button:active {
             transform: scale(0.95);
+            background: #e0e0e0;
           }
         </style>
       </head>
@@ -227,7 +235,8 @@ router.get('/callback', async (req, res) => {
           <div class="checkmark">✓</div>
           <h1>Successfully Connected!</h1>
           <p>Your Supabase account has been connected</p>
-          <button id="closeBtn" style="cursor: pointer;">Close & Continue</button>
+          <button id="closeBtn">Close & Continue</button>
+          <p style="font-size: 12px; margin-top: 20px; opacity: 0.7;">Window will auto-close in 5 seconds or click above</p>
         </div>
         <script>
           (function() {
@@ -246,26 +255,45 @@ router.get('/callback', async (req, res) => {
 
               const closeBtn = document.getElementById('closeBtn');
               console.log('🔍 Button found:', !!closeBtn);
+              console.log('🔍 Button element:', closeBtn);
 
               if (closeBtn) {
-                // Try multiple ways to attach the click handler
-
-                // Method 1: addEventListener
-                closeBtn.addEventListener('click', function(e) {
-                  console.log('🖱️ Click detected via addEventListener!');
-                  e.preventDefault();
-                  closeWindow();
+                // Log button properties
+                console.log('Button styles:', {
+                  display: closeBtn.style.display,
+                  visibility: closeBtn.style.visibility,
+                  pointerEvents: closeBtn.style.pointerEvents
                 });
 
-                // Method 2: onclick property
-                closeBtn.onclick = function(e) {
-                  console.log('🖱️ Click detected via onclick property!');
+                // Test: Change button text on mouseover
+                closeBtn.addEventListener('mouseenter', function() {
+                  console.log('🖱️ Mouse entered button!');
+                });
+
+                closeBtn.addEventListener('mouseleave', function() {
+                  console.log('🖱️ Mouse left button!');
+                });
+
+                // Try multiple ways to attach the click handler
+                closeBtn.addEventListener('click', function(e) {
+                  console.log('🖱️ CLICK DETECTED via addEventListener!');
                   e.preventDefault();
+                  e.stopPropagation();
+                  closeWindow();
+                }, { capture: true });
+
+                closeBtn.onclick = function(e) {
+                  console.log('🖱️ CLICK DETECTED via onclick!');
                   closeWindow();
                   return false;
                 };
 
-                console.log('✅ Button handlers attached');
+                // Also listen on document for any clicks
+                document.addEventListener('click', function(e) {
+                  console.log('🖱️ Document click detected, target:', e.target);
+                });
+
+                console.log('✅ All handlers attached');
               } else {
                 console.error('❌ Button not found!');
               }
