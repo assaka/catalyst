@@ -23,6 +23,7 @@ import { cn } from "@/lib/utils";
  * @param {string} props.size - Button size: "default" | "sm" | "lg"
  * @param {string} props.className - Additional CSS classes
  * @param {number} props.successTimeout - Auto-clear success timeout in ms (default: 2000, set to 0 to disable)
+ * @param {React.ReactNode} props.icon - Custom icon for default state (replaces Save icon)
  */
 const SaveButton = React.forwardRef(({
   onClick,
@@ -35,6 +36,7 @@ const SaveButton = React.forwardRef(({
   size = "default",
   className,
   successTimeout = 2000,
+  icon = null,
   ...props
 }, ref) => {
   const isDisabled = disabled || loading || success;
@@ -65,7 +67,7 @@ const SaveButton = React.forwardRef(({
         </>
       ) : (
         <>
-          <Save className="w-4 h-4 mr-2" />
+          {icon ? icon : <Save className="w-4 h-4 mr-2" />}
           {defaultText}
         </>
       )}

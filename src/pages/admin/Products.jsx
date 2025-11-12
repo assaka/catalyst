@@ -62,6 +62,7 @@ import FlashMessage from "@/components/storefront/FlashMessage";
 import { getCategoryName as getTranslatedCategoryName, getProductName, getProductShortDescription } from "@/utils/translationUtils";
 import { toast } from "sonner";
 import { useTranslation } from "@/contexts/TranslationContext.jsx";
+import { SaveButton } from "@/components/ui/save-button";
 
 const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 
@@ -108,6 +109,7 @@ export default function Products() {
   const [selectedProducts, setSelectedProducts] = useState(new Set());
   const [showBulkActions, setShowBulkActions] = useState(false);
   const [bulkActionInProgress, setBulkActionInProgress] = useState(false);
+  const [bulkDeleteInProgress, setBulkDeleteInProgress] = useState(false);
 
   // Translation dialog state
   const [showBulkTranslateDialog, setShowBulkTranslateDialog] = useState(false);
@@ -388,6 +390,7 @@ export default function Products() {
     setConfirmModalMessage(`Are you sure you want to delete ${count} selected product${count > 1 ? 's' : ''}? This action cannot be undone.`);
     setConfirmModalAction(() => async () => {
       setShowConfirmModal(false);
+      setBulkDeleteInProgress(true);
 
       // Delete products one by one to handle individual errors
       const results = { success: [], failed: [] };
@@ -406,6 +409,8 @@ export default function Products() {
       setSelectedProducts(new Set());
       setShowBulkActions(false);
       await loadData();
+
+      setBulkDeleteInProgress(false);
 
       // Show appropriate message
       if (results.failed.length === 0) {
@@ -1042,14 +1047,17 @@ export default function Products() {
                           </DropdownMenuContent>
                         </DropdownMenu>
                         
-                        <Button 
-                          variant="destructive" 
-                          size="sm" 
+                        <SaveButton
+                          defaultText="Delete Selected"
+                          loadingText="Deleting..."
+                          successText="Deleted!"
                           onClick={handleBulkDelete}
-                        >
-                          <Trash2 className="w-4 h-4 mr-2" />
-                          Delete Selected
-                        </Button>
+                          loading={bulkDeleteInProgress}
+                          disabled={bulkDeleteInProgress}
+                          size="sm"
+                          className="bg-red-600 hover:bg-red-700 text-white"
+                          icon={<Trash2 className="w-4 h-4 mr-2" />}
+                        />
                         
                         <Button 
                           variant="ghost" 
