@@ -1713,18 +1713,33 @@ const ProductImage = createSlotComponent({
     }
 
     const getImageUrl = () => {
+      console.log('🖼️ ProductImage Debug:', {
+        hasProduct: !!product,
+        hasImages: !!product?.images,
+        imagesLength: product?.images?.length,
+        images: product?.images,
+        activeImageIndex,
+        productKeys: product ? Object.keys(product) : []
+      });
+
       if (!product.images || product.images.length === 0) {
+        console.log('❌ No images found');
         return 'https://placehold.co/600x600?text=No+Image';
       }
 
       const index = activeImageIndex || 0;
       const image = product.images[index];
 
+      console.log('🖼️ Image at index', index, ':', image);
+
       // Only handle new format - object with url property
       if (typeof image === 'object' && image !== null) {
-        return image.url || 'https://placehold.co/600x600?text=No+Image';
+        const url = image.url || 'https://placehold.co/600x600?text=No+Image';
+        console.log('✅ Image URL:', url);
+        return url;
       }
 
+      console.log('❌ Invalid image format');
       return 'https://placehold.co/600x600?text=Invalid+Format';
     };
 

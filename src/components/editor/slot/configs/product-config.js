@@ -148,7 +148,7 @@ export const productConfig = {
             <div class="w-full relative">
               <div class="aspect-square bg-gray-50 rounded-lg overflow-hidden w-full relative">
                 {{#if product.images}}
-                  <img src="{{product.images.[0]}}" alt="{{product.name}}" class="w-full h-full object-cover" />
+                  <img src="{{product.images.[0].url}}" alt="{{product.name}}" class="w-full h-full object-cover" />
                 {{else}}
                   <img src="https://placehold.co/600x600?text=Product" alt="Demo Product" class="w-full h-full object-cover" />
                 {{/if}}
@@ -188,7 +188,7 @@ export const productConfig = {
                 {{#each product.images}}
                   {{#if @index < 10}}
                     <button class="flex-shrink-0 w-12 h-12 sm:w-16 sm:h-16 rounded-lg overflow-hidden border-2 border-gray-200 hover:border-gray-400 transition-all snap-start">
-                      <img src="{{this}}" alt="Thumbnail {{@index}}" class="w-full h-full object-cover" />
+                      <img src="{{this.url}}" alt="Thumbnail {{@index}}" class="w-full h-full object-cover" />
                     </button>
                   {{/if}}
                 {{/each}}
@@ -225,7 +225,7 @@ export const productConfig = {
                   {{#each product.images}}
                     {{#if @index < 10}}
                       <button class="flex-shrink-0 w-12 h-12 sm:w-16 sm:h-16 rounded-lg overflow-hidden border-2 border-gray-200 hover:border-gray-400 transition-all snap-start">
-                        <img src="{{this}}" alt="Thumbnail {{@index}}" class="w-full h-full object-cover" />
+                        <img src="{{this.url}}" alt="Thumbnail {{@index}}" class="w-full h-full object-cover" />
                       </button>
                     {{/if}}
                   {{/each}}
@@ -250,7 +250,7 @@ export const productConfig = {
               <div class="flex-1 relative min-w-0">
                 <div class="aspect-square bg-gray-50 rounded-lg overflow-hidden w-full max-w-full relative">
                   {{#if product.images}}
-                    <img src="{{product.images.[0]}}" alt="{{product.name}}" class="w-full h-full object-cover" />
+                    <img src="{{product.images.[0].url}}" alt="{{product.name}}" class="w-full h-full object-cover" />
                   {{else}}
                     <img src="https://placehold.co/600x600?text=Product" alt="Demo Product" class="w-full h-full object-cover" />
                   {{/if}}
@@ -298,7 +298,7 @@ export const productConfig = {
                   {{#each product.images}}
                     {{#if @index < 10}}
                       <button class="flex-shrink-0 w-12 h-12 sm:w-16 sm:h-16 rounded-lg overflow-hidden border-2 border-gray-200 hover:border-gray-400 transition-all snap-start">
-                        <img src="{{this}}" alt="Thumbnail {{@index}}" class="w-full h-full object-cover" />
+                        <img src="{{this.url}}" alt="Thumbnail {{@index}}" class="w-full h-full object-cover" />
                       </button>
                     {{/if}}
                   {{/each}}
@@ -323,7 +323,7 @@ export const productConfig = {
               <div class="flex-1 relative min-w-0">
                 <div class="aspect-square bg-gray-50 rounded-lg overflow-hidden w-full max-w-full relative">
                   {{#if product.images}}
-                    <img src="{{product.images.[0]}}" alt="{{product.name}}" class="w-full h-full object-cover" />
+                    <img src="{{product.images.[0].url}}" alt="{{product.name}}" class="w-full h-full object-cover" />
                   {{else}}
                     <img src="https://placehold.co/600x600?text=Product" alt="Demo Product" class="w-full h-full object-cover" />
                   {{/if}}
@@ -620,7 +620,7 @@ export const productConfig = {
                     <div class="flex-1 flex items-start space-x-3">
                       {{#if this.images}}
                         <div class="flex-shrink-0">
-                          <img src="{{this.images.[0]}}" alt="{{this.name}}" class="w-16 h-16 object-cover rounded-md" />
+                          <img src="{{this.images.[0].url}}" alt="{{this.name}}" class="w-16 h-16 object-cover rounded-md" />
                         </div>
                       {{/if}}
 
