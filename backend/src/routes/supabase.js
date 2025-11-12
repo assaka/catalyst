@@ -235,27 +235,27 @@ router.get('/callback', async (req, res) => {
 
           function closeAndReload() {
             if (window.opener) {
-              // Send message to parent to reload
-              const targetOrigin = '*';
-              const message = {
-                type: 'supabase-oauth-success',
-                project: '${projectUrl}',
-                userEmail: '${userEmail}',
-                isLimitedScope: ${isLimitedScope}
-              };
+              console.log('🔄 Setting session storage and reloading parent...');
 
-              console.log('📤 Sending postMessage to parent:', { targetOrigin, message });
-
+              // Store success message in parent's sessionStorage
               try {
-                window.opener.postMessage(message, targetOrigin);
-                console.log('✅ Message sent successfully');
+                window.opener.sessionStorage.setItem('supabase_connection_success', 'Successfully connected to Supabase!');
+                console.log('✅ Session storage set in parent');
               } catch (error) {
-                console.error('❌ Error sending message:', error);
+                console.error('❌ Could not set session storage:', error);
               }
 
-              // Close window
-              console.log('🔒 Closing window...');
-              window.close();
+              // Reload parent window directly
+              try {
+                window.opener.location.reload();
+                console.log('✅ Parent reload triggered');
+              } catch (error) {
+                console.error('❌ Could not reload parent:', error);
+              }
+
+              // Close this popup window
+              console.log('🔒 Closing popup window...');
+              setTimeout(() => window.close(), 100);
             }
           }
 
