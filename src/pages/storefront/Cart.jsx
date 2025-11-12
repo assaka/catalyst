@@ -112,9 +112,39 @@ export default function Cart() {
                 return;
             }
 
-            // Priority 2: Fetch from API if page bootstrap not available
-            try {
+            // Priority 2: Check global cache
+            if (!window.__slotConfigCache) window.__slotConfigCache = {};
+            if (!window.__slotConfigFetching) window.__slotConfigFetching = {};
+
+            const cacheKey = `cart:${store.id}`;
+            const cached = window.__slotConfigCache[cacheKey];
+
+            if (cached && Date.now() - cached.timestamp < 300000) { // 5 min cache
+                setCartLayoutConfig(cached.data);
+                setConfigLoaded(true);
+                return;
+            }
+
+            // Priority 3: Fetch from API (with deduplication)
+            if (window.__slotConfigFetching[cacheKey]) {
+                // Already fetching - wait for it
+                const config = await window.__slotConfigFetching[cacheKey];
+                setCartLayoutConfig(config);
+                setConfigLoaded(true);
+                return;
+            }
+
+            // Start fetching
+            const fetchPromise = (async () => {
                 const response = await slotConfigurationService.getPublishedConfiguration(store.id, 'cart');
+                delete window.__slotConfigFetching[cacheKey];
+                return response;
+            })();
+
+            window.__slotConfigFetching[cacheKey] = fetchPromise;
+
+            try {
+                const response = await fetchPromise;
 
                 // Check for various "no published config" scenarios
                 if (response.success && response.data &&
@@ -123,7 +153,12 @@ export default function Cart() {
                     Object.keys(response.data.configuration.slots).length > 0) {
 
                     const publishedConfig = response.data;
-                    setCartLayoutConfig(publishedConfig.configuration);
+                    const config = publishedConfig.configuration;
+
+                    // Cache the result
+                    window.__slotConfigCache[cacheKey] = { data: config, timestamp: Date.now() };
+
+                    setCartLayoutConfig(config);
                     setConfigLoaded(true);
 
                 } else {
@@ -136,6 +171,9 @@ export default function Cart() {
                             fallbackReason: `No valid published configuration`
                         }
                     };
+
+                    // Cache the fallback too
+                    window.__slotConfigCache[cacheKey] = { data: fallbackConfig, timestamp: Date.now() };
 
                     setCartLayoutConfig(fallbackConfig);
                     setConfigLoaded(true);
@@ -152,6 +190,9 @@ export default function Cart() {
                         fallbackReason: `Error loading configuration: ${error.message}`
                     }
                 };
+
+                // Cache the fallback
+                window.__slotConfigCache[cacheKey] = { data: fallbackConfig, timestamp: Date.now() };
 
                 setCartLayoutConfig(fallbackConfig);
                 setConfigLoaded(true);
