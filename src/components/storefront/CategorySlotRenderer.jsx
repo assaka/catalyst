@@ -255,15 +255,7 @@ export function CategorySlotRenderer({
           // Also keep old names for backwards compatibility
           formatted_price: formatPrice(priceInfo.displayPrice),
           formatted_compare_price: priceInfo.hasComparePrice ? formatPrice(priceInfo.originalPrice) : null,
-          image_url: (() => {
-            console.log('📦 CategorySlotRenderer - Product:', product.name);
-            console.log('📦 Product images:', product.images);
-            console.log('📦 Images type:', typeof product.images);
-            console.log('📦 First image:', product.images?.[0]);
-            const url = getProductImageUrl ? getProductImageUrl(product) : (product.images?.[0]?.url || product.image_url || product.image || '');
-            console.log('📦 Final image_url:', url);
-            return url;
-          })(),
+          image_url: getProductImageUrl ? getProductImageUrl(product) : (product.images?.[0]?.url || product.image_url || product.image || ''),
           url: product.url || createProductUrl(store?.public_storecode || store?.slug || store?.code, product.slug || product.id),
           in_stock: isInStock,
           // Add stock label using centralized utility (respects admin settings including colors)

@@ -542,14 +542,6 @@ export function UnifiedSlotRenderer({
     const lowestPrice = hasValidComparePrice ? Math.min(price, comparePrice) : price;
     const highestPrice = hasValidComparePrice ? Math.max(price, comparePrice) : price;
 
-    // Debug product images
-    console.log('🛒 UnifiedSlotRenderer - Processing product for template:', product.name);
-    console.log('🛒 Product images:', product.images);
-    console.log('🛒 Images type:', typeof product.images);
-    console.log('🛒 First image:', product.images?.[0]);
-    const imageUrl = product.images?.[0]?.url || product.image_url || product.image || '';
-    console.log('🛒 Final image_url:', imageUrl);
-
     return {
       ...product,
       // Formatted prices for template
@@ -559,7 +551,7 @@ export function UnifiedSlotRenderer({
       highest_price_formatted: formatPrice(highestPrice),
       formatted_price: formatPrice(price),
       formatted_compare_price: hasValidComparePrice ? formatPrice(comparePrice) : null,
-      image_url: imageUrl,
+      image_url: product.images?.[0]?.url || product.image_url || product.image || '',
       url: product.url || '#',
       in_stock: product.infinite_stock || product.stock_quantity > 0,
       labels: []
