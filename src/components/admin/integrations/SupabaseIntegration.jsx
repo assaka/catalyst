@@ -34,7 +34,6 @@ const SupabaseIntegration = ({ storeId, context = 'full' }) => {
   const [loadingBuckets, setLoadingBuckets] = useState(false);
   const [showDisconnectModal, setShowDisconnectModal] = useState(false);
   const [disconnecting, setDisconnecting] = useState(false);
-  const [showSuccessFlash, setShowSuccessFlash] = useState(false);
   // Removed manual bucket creation/deletion states as buckets are auto-generated
 
   // Check for and clear logout flags on component mount
@@ -242,11 +241,9 @@ const SupabaseIntegration = ({ storeId, context = 'full' }) => {
               authWindow.close();
             }
 
-            // Show green flash and reload immediately
-            setShowSuccessFlash(true);
-            setTimeout(() => {
-              window.location.reload();
-            }, 500);
+            // Show toast and reload immediately
+            toast.success('Successfully connected to Supabase!');
+            window.location.reload();
           } else if (event.data.type === 'supabase-oauth-error') {
             console.error('Supabase OAuth error:', event.data.error);
             window.removeEventListener('message', messageHandler);
@@ -514,20 +511,7 @@ const SupabaseIntegration = ({ storeId, context = 'full' }) => {
   }
 
   return (
-    <>
-      {/* Green Success Flash */}
-      {showSuccessFlash && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-green-500 animate-pulse">
-          <div className="text-white text-center">
-            <svg className="w-24 h-24 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-            </svg>
-            <h2 className="text-3xl font-bold">Successfully Connected!</h2>
-          </div>
-        </div>
-      )}
-
-      <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+    <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center space-x-3">
           <div className="p-2 bg-green-100 rounded-lg">
@@ -1376,7 +1360,6 @@ const SupabaseIntegration = ({ storeId, context = 'full' }) => {
         </div>
       )}
     </div>
-    </>
   );
 };
 
