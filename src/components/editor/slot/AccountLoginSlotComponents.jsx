@@ -395,37 +395,37 @@ const RegisterFormSlotComponent = ({ slot, context, variableContext }) => {
     try {
       // Client-side password validation
       if (formData.password.length < 8) {
-        setError(t('common.password_too_short', 'Password must be at least 8 characters long'));
+        setError(t('auth.error.password.min_length', 'Password must be at least 8 characters long'));
         setLoading(false);
         return;
       }
 
       if (!/[A-Z]/.test(formData.password)) {
-        setError(t('common.password_needs_uppercase', 'Password must contain at least one uppercase letter'));
+        setError(t('auth.error.password.uppercase', 'Password must contain at least one uppercase letter'));
         setLoading(false);
         return;
       }
 
       if (!/[a-z]/.test(formData.password)) {
-        setError(t('common.password_needs_lowercase', 'Password must contain at least one lowercase letter'));
+        setError(t('auth.error.password.lowercase', 'Password must contain at least one lowercase letter'));
         setLoading(false);
         return;
       }
 
       if (!/\d/.test(formData.password)) {
-        setError(t('common.password_needs_number', 'Password must contain at least one number'));
+        setError(t('auth.error.password.number', 'Password must contain at least one number'));
         setLoading(false);
         return;
       }
 
       if (!/[!@#$%^&*(),.?":{}|<>]/.test(formData.password)) {
-        setError(t('common.password_needs_special', 'Password must contain at least one special character'));
+        setError(t('auth.error.password.special_char', 'Password must contain at least one special character'));
         setLoading(false);
         return;
       }
 
       if (formData.password !== formData.confirmPassword) {
-        setError(t('common.passwords_do_not_match', 'Passwords do not match'));
+        setError(t('message.password_mismatch', 'Passwords do not match'));
         setLoading(false);
         return;
       }
@@ -459,7 +459,7 @@ const RegisterFormSlotComponent = ({ slot, context, variableContext }) => {
           // Redirect to verification page
           navigate(`/public/${storeCode}/verify-email?email=${encodeURIComponent(formData.email)}`);
         } else {
-          setSuccess(t('common.registration_successful', 'Registration successful!'));
+          setSuccess(t('customer_auth.success.registration', 'Registration successful!'));
           // Redirect after showing success message
           setTimeout(async () => {
             const accountUrl = await getCustomerAccountUrl();
@@ -468,7 +468,7 @@ const RegisterFormSlotComponent = ({ slot, context, variableContext }) => {
         }
       } else {
         // Show error message from backend
-        setError(response.message || t('common.registration_failed', 'Registration failed. Please try again.'));
+        setError(response.message || t('customer_auth.error.registration_failed', 'Registration failed. Please try again.'));
       }
     } catch (error) {
       console.error('Registration error:', error);
@@ -479,7 +479,7 @@ const RegisterFormSlotComponent = ({ slot, context, variableContext }) => {
         const errorMessages = validationErrors.map(err => err.msg || err.message).join('. ');
         setError(errorMessages);
       } else {
-        setError(error.message || t('common.registration_failed', 'Registration failed. Please try again.'));
+        setError(error.message || t('customer_auth.error.registration_failed', 'Registration failed. Please try again.'));
       }
     } finally {
       setLoading(false);
@@ -591,7 +591,7 @@ const RegisterFormSlotComponent = ({ slot, context, variableContext }) => {
           disabled={loading}
           className="w-full bg-green-600 hover:bg-green-700 text-white font-medium py-2.5 rounded-md disabled:bg-gray-400 disabled:cursor-not-allowed"
         >
-          {loading ? t('common.creating_account', 'Creating Account...') : t('common.create_account', 'Create My Account')}
+          {loading ? t('common.creating', 'Creating...') : t('common.create_account', 'Create My Account')}
         </button>
       </form>
     </div>
