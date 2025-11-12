@@ -1025,7 +1025,6 @@ export default function Checkout() {
       setUserAddresses([]);
       // Reload to refresh cart and state
       await       loadCheckoutData();
-    }
 
       // Show success message
       window.dispatchEvent(new CustomEvent('showFlashMessage', {
