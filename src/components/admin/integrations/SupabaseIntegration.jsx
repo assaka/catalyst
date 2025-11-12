@@ -983,8 +983,7 @@ const SupabaseIntegration = ({ storeId, context = 'full' }) => {
 
 
           {/* Storage Management - Show if connected and in storage context */}
-          {(context === 'full' || context === 'storage') && (
-            status.hasServiceRoleKey ? (
+          {(context === 'full' || context === 'storage') && status.hasServiceRoleKey && (
             <div className="border-t pt-6">
               <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl p-6 border border-blue-200">
                 <div className="flex items-center justify-between mb-6">
@@ -1206,34 +1205,6 @@ const SupabaseIntegration = ({ storeId, context = 'full' }) => {
                 )}
               </div>
             </div>
-            ) : (
-              <div className="border-t pt-6">
-                <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-6">
-                  <div className="flex items-start space-x-3">
-                    <Key className="w-6 h-6 text-yellow-600 mt-0.5" />
-                    <div className="flex-1">
-                      <h4 className="text-lg font-semibold text-gray-900 mb-2">Storage Management</h4>
-                      <p className="text-sm text-gray-600 mb-4">Manage your Supabase storage buckets and files</p>
-                      <div className="bg-white rounded-lg p-4 border border-yellow-200">
-                        <p className="text-sm text-yellow-800 mb-3">
-                          <strong>Service Role Key Required:</strong> Storage management and statistics require the service role key to be configured.
-                        </p>
-                        <p className="text-sm text-gray-600 mb-4">
-                          The service role key provides admin-level access to your Supabase storage buckets and files.
-                        </p>
-                        <button
-                          onClick={() => setShowKeyConfig(true)}
-                          className="inline-flex items-center px-4 py-2 bg-yellow-600 text-white rounded-md hover:bg-yellow-700 text-sm font-medium"
-                        >
-                          <Key className="w-4 h-4 mr-2" />
-                          Configure Service Role Key
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            )
           )}
         </div>
       ) : (
