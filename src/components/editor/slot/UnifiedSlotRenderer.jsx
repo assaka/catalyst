@@ -551,7 +551,7 @@ export function UnifiedSlotRenderer({
       highest_price_formatted: formatPrice(highestPrice),
       formatted_price: formatPrice(price),
       formatted_compare_price: hasValidComparePrice ? formatPrice(comparePrice) : null,
-      image_url: product.images?.[0] || product.image_url || product.image || '',
+      image_url: product.images?.[0]?.url || product.image_url || product.image || '',
       url: product.url || '#',
       in_stock: product.infinite_stock || product.stock_quantity > 0,
       labels: []
