@@ -1,15 +1,12 @@
 -- Add Marketplace Hub to the Import & Export navigation group
--- This creates a unified marketplace management interface
-
--- First, find the Import & Export parent ID
--- (Assuming it exists - if not, you'll need to create it first)
+-- Matches exact admin_navigation_registry schema structure
 
 DO $$
 DECLARE
   import_export_id UUID;
-  new_item_id UUID;
+  marketplace_hub_id UUID;
 BEGIN
-  -- Find or create the "Import & Export" group
+  -- Find the "import_export" parent group
   SELECT id INTO import_export_id
   FROM admin_navigation_registry
   WHERE key = 'import_export' AND parent_key IS NULL
@@ -20,107 +17,199 @@ BEGIN
     INSERT INTO admin_navigation_registry (
       id,
       key,
-      name,
-      path,
+      label,
       icon,
+      route,
       parent_key,
       order_position,
+      is_core,
       is_visible,
-      is_enabled,
+      plugin_id,
+      category,
+      required_permission,
+      description,
+      badge_config,
+      type,
       created_at,
       updated_at
     ) VALUES (
       gen_random_uuid(),
       'import_export',
       'Import & Export',
-      NULL, -- This is a group, not a page
       'Package',
+      NULL, -- Parent group has no route
       NULL,
-      800, -- Position in main menu
+      800, -- Order in main menu
       true,
       true,
+      NULL,
+      'import_export',
+      NULL,
+      'Manage imports and exports across all marketplaces and integrations',
+      NULL,
+      NULL,
       NOW(),
       NOW()
     )
     RETURNING id INTO import_export_id;
 
     RAISE NOTICE 'Created Import & Export group with ID: %', import_export_id;
+  ELSE
+    RAISE NOTICE 'Import & Export group found with ID: %', import_export_id;
   END IF;
 
-  -- Add Marketplace Hub (main unified interface)
+  -- Insert or update Marketplace Hub
   INSERT INTO admin_navigation_registry (
     id,
     key,
-    name,
-    path,
+    label,
     icon,
+    route,
     parent_key,
     order_position,
+    is_core,
     is_visible,
-    is_enabled,
+    plugin_id,
+    category,
+    required_permission,
+    description,
+    badge_config,
     type,
-    badge_text,
     created_at,
     updated_at
   ) VALUES (
     gen_random_uuid(),
     'marketplace_hub',
     'Marketplace Hub',
-    'marketplace-hub', -- Route path
-    'ShoppingCart', -- Lucide icon
+    'ShoppingCart',
+    '/admin/marketplace-hub',
     import_export_id,
-    1, -- First item in Import & Export
+    310, -- First item (before Shopify at 330)
     true,
     true,
-    'new', -- Show "New" badge
-    'New',
+    NULL,
+    'import_export',
+    NULL,
+    'Unified marketplace management: Amazon, eBay, and more with AI optimization',
+    jsonb_build_object(
+      'text', 'New',
+      'variant', 'default',
+      'color', 'blue'
+    ),
+    'new',
     NOW(),
     NOW()
   )
   ON CONFLICT (key) DO UPDATE SET
-    name = EXCLUDED.name,
-    path = EXCLUDED.path,
+    label = EXCLUDED.label,
     icon = EXCLUDED.icon,
+    route = EXCLUDED.route,
     parent_key = EXCLUDED.parent_key,
     order_position = EXCLUDED.order_position,
+    is_visible = EXCLUDED.is_visible,
+    description = EXCLUDED.description,
+    badge_config = EXCLUDED.badge_config,
     type = EXCLUDED.type,
-    badge_text = EXCLUDED.badge_text,
     updated_at = NOW()
-  RETURNING id INTO new_item_id;
+  RETURNING id INTO marketplace_hub_id;
 
-  RAISE NOTICE 'Added/Updated Marketplace Hub with ID: %', new_item_id;
+  RAISE NOTICE 'Added/Updated Marketplace Hub with ID: %', marketplace_hub_id;
 
-  -- Update existing items order positions
-  -- Shopify Integration
+  -- Update Shopify Integration order (keep it at 330)
   UPDATE admin_navigation_registry
-  SET order_position = 2, parent_key = import_export_id
-  WHERE key = 'shopify_integration' OR path = 'shopify-integration';
+  SET
+    parent_key = import_export_id,
+    order_position = 330,
+    type = NULL, -- Remove "coming_soon" - it's fully functional now
+    updated_at = NOW()
+  WHERE key = 'shopify_integration';
 
-  -- Akeneo Integration
+  RAISE NOTICE 'Updated Shopify Integration';
+
+  -- Update or Insert Akeneo Integration
+  INSERT INTO admin_navigation_registry (
+    id,
+    key,
+    label,
+    icon,
+    route,
+    parent_key,
+    order_position,
+    is_core,
+    is_visible,
+    plugin_id,
+    category,
+    required_permission,
+    description,
+    badge_config,
+    type,
+    created_at,
+    updated_at
+  ) VALUES (
+    gen_random_uuid(),
+    'akeneo_integration',
+    'Akeneo PIM',
+    'Database',
+    '/admin/akeneo-integration',
+    import_export_id,
+    340, -- After Shopify
+    true,
+    true,
+    NULL,
+    'import_export',
+    NULL,
+    'Import products, categories, and attributes from Akeneo PIM',
+    NULL,
+    NULL,
+    NOW(),
+    NOW()
+  )
+  ON CONFLICT (key) DO UPDATE SET
+    parent_key = import_export_id,
+    order_position = 340,
+    updated_at = NOW();
+
+  RAISE NOTICE 'Added/Updated Akeneo Integration';
+
+  -- Hide old Marketplace Export page (deprecated by Marketplace Hub)
   UPDATE admin_navigation_registry
-  SET order_position = 3, parent_key = import_export_id
-  WHERE key = 'akeneo_integration' OR path = 'akeneo-integration';
+  SET
+    is_visible = false,
+    badge_config = jsonb_build_object(
+      'text', 'Deprecated',
+      'variant', 'outline',
+      'color', 'gray'
+    ),
+    type = 'deprecated',
+    updated_at = NOW()
+  WHERE key = 'marketplace_export' OR route = '/admin/marketplace-export';
 
-  -- Mark old Marketplace Export as deprecated (or hide it)
-  UPDATE admin_navigation_registry
-  SET is_visible = false, badge_text = 'Deprecated'
-  WHERE key = 'marketplace_export' OR path = 'MARKETPLACE_EXPORT';
-
-  RAISE NOTICE 'Navigation structure updated successfully';
+  RAISE NOTICE 'Hidden old Marketplace Export page';
 
 END $$;
 
 -- Verify the changes
 SELECT
-  n.name,
-  n.path,
+  n.key,
+  n.label,
+  n.route,
   n.icon,
-  p.name as parent_name,
+  p.label as parent_label,
   n.order_position,
   n.type,
-  n.badge_text,
-  n.is_visible
+  n.badge_config,
+  n.is_visible,
+  n.is_core
 FROM admin_navigation_registry n
 LEFT JOIN admin_navigation_registry p ON n.parent_key = p.id
-WHERE p.key = 'import_export' OR n.key = 'import_export'
+WHERE n.category = 'import_export' OR n.key = 'import_export'
 ORDER BY n.order_position;
+
+-- Expected output:
+-- key                 | label            | route                        | order | type | visible
+-- --------------------|------------------|------------------------------|-------|------|--------
+-- import_export       | Import & Export  | NULL                         | 800   | NULL | true
+-- marketplace_hub     | Marketplace Hub  | /admin/marketplace-hub       | 310   | new  | true
+-- shopify_integration | Shopify          | /admin/shopify-integration   | 330   | NULL | true
+-- akeneo_integration  | Akeneo PIM       | /admin/akeneo-integration    | 340   | NULL | true
+-- marketplace_export  | Marketplace Export| /admin/marketplace-export    | ???   | deprecated | false (hidden)
