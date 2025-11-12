@@ -7,6 +7,19 @@ import FlashMessage from '@/components/storefront/FlashMessage';
 const SupabaseIntegration = ({ storeId, context = 'full' }) => {
   // Flash message state
   const [flashMessage, setFlashMessage] = useState(null);
+
+  // Check for flash message after reload
+  useEffect(() => {
+    const successMessage = sessionStorage.getItem('supabase_connection_success');
+    if (successMessage) {
+      setFlashMessage({
+        type: 'success',
+        message: successMessage
+      });
+      sessionStorage.removeItem('supabase_connection_success');
+    }
+  }, []);
+
   // Helper function to format storage sizes (handles both string and number values)
   const formatStorageSize = (sizeValue, unit = 'MB') => {
     if (!sizeValue) return `0 ${unit}`;
@@ -244,16 +257,11 @@ const SupabaseIntegration = ({ storeId, context = 'full' }) => {
               authWindow.close();
             }
 
-            // Show flash message at top center
-            setFlashMessage({
-              type: 'success',
-              message: 'Successfully connected to Supabase!'
-            });
+            // Store success message in sessionStorage to show after reload
+            sessionStorage.setItem('supabase_connection_success', 'Successfully connected to Supabase!');
 
             // Reload page immediately
-            setTimeout(() => {
-              window.location.reload();
-            }, 100);
+            window.location.reload();
           } else if (event.data.type === 'supabase-oauth-error') {
             console.error('Supabase OAuth error:', event.data.error);
             window.removeEventListener('message', messageHandler);
