@@ -262,62 +262,34 @@ const SupabaseIntegration = ({ storeId, context = 'full' }) => {
             return;
           }
 
-          // Check if this is the success message - be very flexible with message structure
-          const messageData = event.data?.data || event.data;
-          const messageType = messageData?.type || event.data?.type;
+          // SIMPLIFIED: Close on ANY message from callback page
+          console.log('✅ Received message from OAuth callback - closing popup and reloading');
+          window.removeEventListener('message', messageHandler);
+          clearInterval(checkClosed);
 
-          // Also check if message has project field (indicates success)
-          const hasSuccessData = messageData?.project || event.data?.project;
+          // Force close the popup window immediately
+          console.log('🔒 Attempting to close popup window...');
+          if (authWindow && !authWindow.closed) {
+            authWindow.close();
+            console.log('🔒 Window close called');
 
-          console.log('📦 Parsed message:', {
-            messageType,
-            messageData,
-            hasSuccessData,
-            rawEventData: event.data
-          });
-
-          // Accept message if type matches OR if it has success data
-          if (messageType === 'supabase-oauth-success' || hasSuccessData) {
-            console.log('✅ Supabase OAuth success:', messageData);
-            window.removeEventListener('message', messageHandler);
-            clearInterval(checkClosed);
-
-            // Force close the popup window immediately
-            console.log('🔒 Attempting to close popup window...');
-            if (authWindow && !authWindow.closed) {
-              authWindow.close();
-              console.log('🔒 Window close called');
-
-              // Double-check it closed, try again if needed
-              setTimeout(() => {
-                if (authWindow && !authWindow.closed) {
-                  console.log('🔒 Window still open, trying again...');
-                  authWindow.close();
-                }
-              }, 100);
-            } else {
-              console.log('⚠️ Window already closed or not available');
-            }
-
-            // Store success message in sessionStorage to show after reload
-            sessionStorage.setItem('supabase_connection_success', 'Successfully connected to Supabase!');
-
-            // Reload page immediately
-            console.log('🔄 Reloading page...');
-            window.location.reload();
-          } else if (messageType === 'supabase-oauth-error') {
-            console.error('Supabase OAuth error:', messageData.error || event.data.error);
-            window.removeEventListener('message', messageHandler);
-            clearInterval(checkClosed);
-            setConnecting(false);
-
-            // Close the popup window
-            if (authWindow && !authWindow.closed) {
-              authWindow.close();
-            }
-
-            toast.error(messageData.error || event.data.error || 'Failed to connect to Supabase');
+            // Double-check it closed, try again if needed
+            setTimeout(() => {
+              if (authWindow && !authWindow.closed) {
+                console.log('🔒 Window still open, trying again...');
+                authWindow.close();
+              }
+            }, 100);
+          } else {
+            console.log('⚠️ Window already closed or not available');
           }
+
+          // Store success message in sessionStorage to show after reload
+          sessionStorage.setItem('supabase_connection_success', 'Successfully connected to Supabase!');
+
+          // Reload page immediately
+          console.log('🔄 Reloading page...');
+          window.location.reload();
         };
 
         window.addEventListener('message', messageHandler);
