@@ -758,33 +758,50 @@ function getNestedValue(path, context, pageData) {
   // Merge data: pageData should override context (pageData has loop item context)
   const fullData = { ...context, ...pageData };
 
+  // Helper function to traverse path with array bracket notation support
+  const traverse = (obj, pathStr) => {
+    // Handle array bracket notation like "images.[0].url" or "images[0].url"
+    const parts = pathStr.split('.').flatMap(part => {
+      // Check if part contains array index like "[0]" or ".[0]"
+      const arrayMatch = part.match(/^(.*)?\[(\d+)\]$/);
+      if (arrayMatch) {
+        // Split "images[0]" into ["images", "0"]
+        const [, prefix, index] = arrayMatch;
+        return prefix ? [prefix, index] : [index];
+      }
+      return part;
+    }).filter(Boolean);
+
+    return parts.reduce((current, key) => {
+      if (current === null || current === undefined) return null;
+
+      // Handle numeric indices for arrays
+      const numKey = Number(key);
+      if (!isNaN(numKey) && Array.isArray(current)) {
+        return current[numKey] !== undefined ? current[numKey] : null;
+      }
+
+      // Handle object properties
+      return current[key] !== undefined ? current[key] : null;
+    }, obj);
+  };
+
   // Handle 'this' keyword - inside {{#each}} loops, 'this' refers to current item
   if (path.startsWith('this.')) {
     const propertyPath = path.substring(5); // Remove 'this.'
 
     // Try to find 'this' object in the data first (loop creates { this: item, ...item })
     if (fullData.this) {
-      const result = propertyPath.split('.').reduce((obj, key) => {
-        return obj && obj[key] !== undefined ? obj[key] : null;
-      }, fullData.this);
-
+      const result = traverse(fullData.this, propertyPath);
       if (result !== null) return result;
     }
 
     // Fallback: try direct property access (when item properties are spread at root)
-    const result = propertyPath.split('.').reduce((obj, key) => {
-      return obj && obj[key] !== undefined ? obj[key] : null;
-    }, fullData);
-
-    return result;
+    return traverse(fullData, propertyPath);
   }
 
-  // For non-'this' paths, use standard lookup
-  const result = path.split('.').reduce((obj, key) => {
-    return obj && obj[key] !== undefined ? obj[key] : null;
-  }, fullData);
-
-  return result;
+  // For non-'this' paths, use standard lookup with array bracket support
+  return traverse(fullData, path);
 }
 
 /**
