@@ -375,10 +375,20 @@ class ShopifyImportService {
         throw new Error(`Invalid MIME type: ${mimeType}. Extension was: ${ext}`);
       }
 
+      // Prepare file object for storage provider (expects specific format)
+      const fileObject = {
+        buffer: imageBuffer,
+        mimetype: mimeType,
+        size: imageBuffer.length,
+        originalname: path.basename(urlPath)
+      };
+
       // Upload to storage provider
-      const uploadResult = await storageProvider.upload(imageBuffer, filename, {
+      const uploadResult = await storageProvider.upload(fileObject, filename, {
         contentType: mimeType,
-        folder: 'products'
+        folder: 'products',
+        public: true,
+        upsert: true
       });
 
       console.log(`✅ Stored image: ${filename}`);
