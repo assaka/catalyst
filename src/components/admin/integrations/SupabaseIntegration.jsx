@@ -5,8 +5,28 @@ import { ExternalLink, Trash2, Cloud, Image, BarChart3, Key, AlertCircle, Info, 
 import FlashMessage from '@/components/storefront/FlashMessage';
 
 const SupabaseIntegration = ({ storeId, context = 'full' }) => {
-  // Flash message state
+  // All state declarations first
   const [flashMessage, setFlashMessage] = useState(null);
+  const [status, setStatus] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [connecting, setConnecting] = useState(false);
+  const [testing, setTesting] = useState(false);
+  const [storageStats, setStorageStats] = useState(null);
+  const [loadingStats, setLoadingStats] = useState(false);
+  const [testingUpload, setTestingUpload] = useState(false);
+  const [uploadResult, setUploadResult] = useState(null);
+  const [refreshing, setRefreshing] = useState(false);
+  const [projects, setProjects] = useState([]);
+  const [loadingProjects, setLoadingProjects] = useState(false);
+  const [selectedProjectId, setSelectedProjectId] = useState(null);
+  const [changingProject, setChangingProject] = useState(false);
+  const [showKeyConfig, setShowKeyConfig] = useState(false);
+  const [serviceRoleKey, setServiceRoleKey] = useState('');
+  const [savingKeys, setSavingKeys] = useState(false);
+  const [buckets, setBuckets] = useState([]);
+  const [loadingBuckets, setLoadingBuckets] = useState(false);
+  const [showDisconnectModal, setShowDisconnectModal] = useState(false);
+  const [disconnecting, setDisconnecting] = useState(false);
 
   // Check for flash message after reload
   useEffect(() => {
@@ -38,28 +58,6 @@ const SupabaseIntegration = ({ storeId, context = 'full' }) => {
     // Already formatted string
     return `${sizeValue} ${unit}`;
   };
-
-  const [status, setStatus] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [connecting, setConnecting] = useState(false);
-  const [testing, setTesting] = useState(false);
-  const [storageStats, setStorageStats] = useState(null);
-  const [loadingStats, setLoadingStats] = useState(false);
-  const [testingUpload, setTestingUpload] = useState(false);
-  const [uploadResult, setUploadResult] = useState(null);
-  const [refreshing, setRefreshing] = useState(false);
-  const [projects, setProjects] = useState([]);
-  const [loadingProjects, setLoadingProjects] = useState(false);
-  const [selectedProjectId, setSelectedProjectId] = useState(null);
-  const [changingProject, setChangingProject] = useState(false);
-  const [showKeyConfig, setShowKeyConfig] = useState(false);
-  const [serviceRoleKey, setServiceRoleKey] = useState('');
-  const [savingKeys, setSavingKeys] = useState(false);
-  const [buckets, setBuckets] = useState([]);
-  const [loadingBuckets, setLoadingBuckets] = useState(false);
-  const [showDisconnectModal, setShowDisconnectModal] = useState(false);
-  const [disconnecting, setDisconnecting] = useState(false);
-  // Removed manual bucket creation/deletion states as buckets are auto-generated
 
   // Check for and clear logout flags on component mount
   useEffect(() => {
