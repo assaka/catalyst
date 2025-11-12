@@ -2683,7 +2683,7 @@ export default function Checkout() {
                 }}
                 className="text-sm text-blue-600 hover:text-blue-700"
               >
-                {t('common.forgot_password', 'Forgot password?')}
+                {t('account.forgot_password', 'Forgot password?')}
               </button>
             </div>
 
@@ -2716,7 +2716,7 @@ export default function Checkout() {
                 }}
                 className="text-blue-600 hover:text-blue-700 font-medium"
               >
-                {t('common.register', 'Register')}
+                {t('account.register', 'Register')}
               </button>
             </div>
           </form>
