@@ -437,6 +437,14 @@ export default function Cart() {
                         // Start fetching
                         const fetchPromise = StorefrontProduct.filter({ ids: productIds }).then(result => {
                             const productsResult = result || [];
+                            console.log('🛒 Cart fetched products:', productsResult);
+                            if (productsResult.length > 0) {
+                                console.log('🛒 First product:', productsResult[0].name);
+                                console.log('🛒 First product images:', productsResult[0].images);
+                                console.log('🛒 Images type:', typeof productsResult[0].images);
+                                console.log('🛒 Images is string?', typeof productsResult[0].images === 'string');
+                                console.log('🛒 Images is array?', Array.isArray(productsResult[0].images));
+                            }
                             window.__productBatchCache[cacheKey] = { data: productsResult, timestamp: Date.now() };
                             delete window.__productFetching[cacheKey];
                             return productsResult;

@@ -158,6 +158,16 @@ router.get('/by-slug/:slug/full', async (req, res) => {
 
     // Format products with attributes and translations
     const productsWithAttributes = productsWithTranslations.map(productData => {
+      // Ensure images is properly parsed as JSON array
+      if (productData.images && typeof productData.images === 'string') {
+        try {
+          productData.images = JSON.parse(productData.images);
+        } catch (e) {
+          console.error('Failed to parse product images:', e);
+          productData.images = [];
+        }
+      }
+
       // Format attributes for frontend
       if (productData.attributeValues && Array.isArray(productData.attributeValues)) {
         productData.attributes = productData.attributeValues.map(pav => {
