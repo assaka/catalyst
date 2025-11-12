@@ -34,12 +34,10 @@ export default function CustomerActivityPage() {
   const [widgets, setWidgets] = useState(() => {
     try {
       const saved = localStorage.getItem('analytics_widgets');
-      const widgetState = saved ? JSON.parse(saved) : {
+      return saved ? JSON.parse(saved) : {
         traffic: true, demographics: true, topProducts: true,
         bestSellers: true, funnel: true, geo: true, searches: true
       };
-      console.log('[Widgets] Initial state:', widgetState);
-      return widgetState;
     } catch {
       return { traffic: true, demographics: true, topProducts: true,
         bestSellers: true, funnel: true, geo: true, searches: true };
@@ -82,19 +80,11 @@ export default function CustomerActivityPage() {
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
 
-  // Debug: Log when sessionAnalytics changes
   useEffect(() => {
-    console.log('[sessionAnalytics] State updated:', sessionAnalytics);
-  }, [sessionAnalytics]);
-
-  useEffect(() => {
-    console.log('[useEffect] Triggered with selectedStore:', selectedStore?.id, 'startDate:', startDate, 'endDate:', endDate);
     if (selectedStore) {
       loadData(1); // Reset to page 1 when store changes
       loadRealtimeData(); // Load real-time users
-      console.log('[useEffect] About to call loadSessionAnalytics...');
       loadSessionAnalytics(); // Load session data
-      console.log('[useEffect] About to call loadTimeSeriesData...');
       loadTimeSeriesData(); // Load time-series chart data
     }
   }, [selectedStore, startDate, endDate]);
@@ -115,12 +105,10 @@ export default function CustomerActivityPage() {
 
     try {
       const response = await apiClient.get(`/analytics-dashboard/${selectedStore.id}/realtime`);
-      console.log('[Real-time] Response:', response.data); // Debug
       // apiClient auto-unwraps { success: true, data: {...} } responses
       // So response.data is already the realtime data object
       if (response.data && response.data.users_online !== undefined) {
         setRealtimeData(response.data);
-        console.log('[Real-time] Users online:', response.data.users_online); // Debug
       }
     } catch (error) {
       console.error('Error loading realtime data:', error);
@@ -128,11 +116,7 @@ export default function CustomerActivityPage() {
   };
 
   const loadSessionAnalytics = async () => {
-    console.log('[loadSessionAnalytics] Called, selectedStore:', selectedStore?.id);
-    if (!selectedStore) {
-      console.log('[loadSessionAnalytics] No selectedStore, returning early');
-      return;
-    }
+    if (!selectedStore) return;
 
     try {
       const params = new URLSearchParams();
@@ -140,14 +124,9 @@ export default function CustomerActivityPage() {
       if (endDate) params.append('end_date', endDate);
 
       const response = await apiClient.get(`/analytics-dashboard/${selectedStore.id}/sessions?${params}`);
-      console.log('[Session Analytics] Response:', response.data);
       // apiClient auto-unwraps { success: true, data: {...} } responses
       // So response.data is already the analytics data object
       if (response.data && response.data.total_sessions !== undefined) {
-        console.log('[Session Analytics] Device breakdown:', response.data.device_breakdown);
-        console.log('[Session Analytics] Browser breakdown:', response.data.browser_breakdown);
-        console.log('[Session Analytics] Country breakdown:', response.data.country_breakdown);
-        console.log('[Session Analytics] Language breakdown:', response.data.language_breakdown);
         setSessionAnalytics(response.data);
       }
     } catch (error) {
@@ -156,11 +135,7 @@ export default function CustomerActivityPage() {
   };
 
   const loadTimeSeriesData = async () => {
-    console.log('[loadTimeSeriesData] Called, selectedStore:', selectedStore?.id);
-    if (!selectedStore) {
-      console.log('[loadTimeSeriesData] No selectedStore, returning early');
-      return;
-    }
+    if (!selectedStore) return;
 
     try {
       const params = new URLSearchParams({ interval: 'hour' });
@@ -168,7 +143,6 @@ export default function CustomerActivityPage() {
       if (endDate) params.append('end_date', endDate);
 
       const response = await apiClient.get(`/analytics-dashboard/${selectedStore.id}/timeseries?${params}`);
-      console.log('[Time Series] Response:', response.data);
       // apiClient auto-unwraps { success: true, data: [...] } responses
       // So response.data is already the array of time series data
       if (response.data && Array.isArray(response.data)) {
@@ -181,7 +155,6 @@ export default function CustomerActivityPage() {
           value: d.events,
           sessions: d.unique_sessions
         }));
-        console.log('[Time Series] Chart data:', chartData);
         setTimeSeriesData(chartData);
       }
     } catch (error) {
