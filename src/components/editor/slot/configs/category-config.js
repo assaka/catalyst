@@ -739,6 +739,15 @@ export const categoryConfig = {
 
                 // Show success message
                 const currentLang = localStorage.getItem('catalyst_language') || 'en';
+                console.log('🔍 Category Add to Cart Translation Debug:', {
+                  currentLang,
+                  hasTranslations: !!variableContext?.translations,
+                  translationsKeys: variableContext?.translations ? Object.keys(variableContext.translations).slice(0, 10) : [],
+                  hasUiTranslations: !!variableContext?.settings?.ui_translations,
+                  uiTranslationsLangs: variableContext?.settings?.ui_translations ? Object.keys(variableContext.settings.ui_translations) : [],
+                  directTranslation: variableContext?.translations?.['common.added_to_cart_success'],
+                  uiTranslation: variableContext?.settings?.ui_translations?.[currentLang]?.['common.added_to_cart_success']
+                });
                 const successMessage = variableContext?.translations?.['common.added_to_cart_success']
                   || variableContext?.settings?.ui_translations?.[currentLang]?.['common.added_to_cart_success']
                   || variableContext?.settings?.ui_translations?.en?.['common.added_to_cart_success']
