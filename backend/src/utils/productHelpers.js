@@ -50,17 +50,17 @@ async function applyProductTranslations(product, lang = 'en') {
 
   if (translation) {
     // Use normalized translation (requested lang or English fallback)
-    productData.name = translation.name || productData.name || '';
-    productData.description = translation.description || productData.description || '';
-    productData.short_description = translation.short_description || productData.short_description || '';
+    productData.name = translation.name || '';
+    productData.description = translation.description || '';
+    productData.short_description = translation.short_description || '';
   } else if (productData.translations) {
     // Fallback to JSON column
     const fallbackLang = productData.translations[lang] || productData.translations.en || {};
-    productData.name = fallbackLang.name || productData.name || '';
-    productData.description = fallbackLang.description || productData.description || '';
-    productData.short_description = fallbackLang.short_description || productData.short_description || '';
+    productData.name = fallbackLang.name || '';
+    productData.description = fallbackLang.description || '';
+    productData.short_description = fallbackLang.short_description || '';
   }
-  // If no translations exist at all, keep the original productData values
+  // If no translations exist, fields will be empty strings
 
   return productData;
 }
@@ -115,17 +115,17 @@ async function applyProductTranslationsToMany(products, lang = 'en') {
 
     if (translation) {
       // Use normalized translation (requested lang or English fallback)
-      productData.name = translation.name || productData.name || '';
-      productData.description = translation.description || productData.description || '';
-      productData.short_description = translation.short_description || productData.short_description || '';
+      productData.name = translation.name || '';
+      productData.description = translation.description || '';
+      productData.short_description = translation.short_description || '';
     } else if (productData.translations) {
       // Fallback to JSON column
       const fallbackLang = productData.translations[lang] || productData.translations.en || {};
-      productData.name = fallbackLang.name || productData.name || '';
-      productData.description = fallbackLang.description || productData.description || '';
-      productData.short_description = fallbackLang.short_description || productData.short_description || '';
+      productData.name = fallbackLang.name || '';
+      productData.description = fallbackLang.description || '';
+      productData.short_description = fallbackLang.short_description || '';
     }
-    // If no translations exist at all, keep the original productData values
+    // If no translations exist, fields will be empty strings
 
     return productData;
   });
