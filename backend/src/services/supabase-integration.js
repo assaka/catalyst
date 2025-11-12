@@ -848,21 +848,31 @@ class SupabaseIntegration {
 
       const projectUrl = `https://${projectId}.supabase.co`;
 
+      // Preserve existing service role key if new one wasn't fetched
+      const currentToken = await SupabaseOAuthToken.findByStore(storeId);
+      const preservedServiceRoleKey = serviceRoleKey || currentToken?.service_role_key || null;
+
+      console.log('Service role key handling:', {
+        fetchedNewKey: !!serviceRoleKey,
+        hadExistingKey: !!currentToken?.service_role_key,
+        willPreserveKey: !!preservedServiceRoleKey
+      });
+
       // Update token with new project details
       await token.update({
         project_url: projectUrl,
         anon_key: anonKey,
-        service_role_key: serviceRoleKey,
+        service_role_key: preservedServiceRoleKey,
         database_url: `postgresql://postgres.[projectRef]:[password]@aws-0-[region].pooler.supabase.com:6543/postgres`,
         storage_url: `https://${projectId}.supabase.co/storage/v1`,
         auth_url: `https://${projectId}.supabase.co/auth/v1`
       });
 
-      // Store the keys for this project if we have them
+      // Store the keys for this project if we have them (use preserved key)
       if (anonKey && anonKey !== 'pending_configuration') {
         await SupabaseProjectKeys.upsertKeys(storeId, projectId, projectUrl, {
           anonKey: anonKey,
-          serviceRoleKey: serviceRoleKey
+          serviceRoleKey: preservedServiceRoleKey
         });
       }
 
