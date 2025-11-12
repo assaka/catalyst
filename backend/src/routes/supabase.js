@@ -176,20 +176,67 @@ router.get('/callback', async (req, res) => {
       <head>
         <title>Success</title>
         <style>
-          body { margin: 0; background: #10b981; }
+          body {
+            margin: 0;
+            background: #10b981;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+          }
+          .container {
+            text-align: center;
+            color: white;
+          }
+          .checkmark {
+            font-size: 64px;
+            margin-bottom: 20px;
+          }
+          h1 {
+            font-size: 24px;
+            margin: 0 0 10px 0;
+            font-weight: 600;
+          }
+          p {
+            font-size: 14px;
+            margin: 0 0 30px 0;
+            opacity: 0.9;
+          }
+          button {
+            background: white;
+            color: #10b981;
+            border: none;
+            padding: 12px 32px;
+            font-size: 16px;
+            font-weight: 600;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: transform 0.1s;
+          }
+          button:hover {
+            transform: scale(1.05);
+          }
+          button:active {
+            transform: scale(0.95);
+          }
         </style>
       </head>
       <body>
+        <div class="container">
+          <div class="checkmark">✓</div>
+          <h1>Successfully Connected!</h1>
+          <p>Your Supabase account has been connected</p>
+          <button onclick="closeAndReload()">Close & Continue</button>
+        </div>
         <script>
           console.log('🎯 OAuth callback page loaded');
           console.log('🔍 Window opener exists:', !!window.opener);
 
-          // Show green screen briefly, then send message and close
-          if (window.opener) {
-            // Wait 500ms to show green background, then notify parent and close
-            setTimeout(() => {
-              // Send to all possible origins to ensure delivery
-              const targetOrigin = '*'; // Allow any origin for OAuth callback
+          function closeAndReload() {
+            if (window.opener) {
+              // Send message to parent to reload
+              const targetOrigin = '*';
               const message = {
                 type: 'supabase-oauth-success',
                 project: '${projectUrl}',
@@ -206,15 +253,17 @@ router.get('/callback', async (req, res) => {
                 console.error('❌ Error sending message:', error);
               }
 
-              // Try to close - parent will also try to close us
-              console.log('🔒 Attempting to close window...');
+              // Close window
+              console.log('🔒 Closing window...');
               window.close();
-            }, 500);
-          } else {
-            // No opener - show minimal message
-            console.log('⚠️ No window.opener - showing manual close message');
-            document.body.innerHTML = '<div style="color:white;text-align:center;padding:2rem;font-family:sans-serif;"><h1>✓ Success!</h1><p>Please close this window.</p></div>';
+            }
           }
+
+          // Auto-close after 5 seconds as fallback
+          setTimeout(() => {
+            console.log('⏰ Auto-closing after 5 seconds...');
+            closeAndReload();
+          }, 5000);
         </script>
       </body>
       </html>
