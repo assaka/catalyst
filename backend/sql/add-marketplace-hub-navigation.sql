@@ -1,24 +1,25 @@
 -- Add Marketplace Hub to the existing Import & Export navigation group
--- Simple insert using the existing import_export parent
+-- Uses the same parent_key as Shopify Integration
 
 DO $$
 DECLARE
-  import_export_id UUID;
+  shopify_parent_id UUID;
   marketplace_hub_id UUID;
 BEGIN
-  -- Find the existing "import_export" parent group ID
-  SELECT id INTO import_export_id
+  -- Get the parent_key from the existing Shopify Integration
+  -- This ensures we use the correct parent that already exists
+  SELECT parent_key INTO shopify_parent_id
   FROM admin_navigation_registry
-  WHERE key = 'import_export'
+  WHERE key = 'shopify_integration'
   LIMIT 1;
 
-  IF import_export_id IS NULL THEN
-    RAISE EXCEPTION 'Import & Export group not found! Please create it first.';
+  IF shopify_parent_id IS NULL THEN
+    RAISE EXCEPTION 'Shopify Integration not found or has no parent! Cannot determine Import & Export group.';
   END IF;
 
-  RAISE NOTICE 'Found Import & Export group with ID: %', import_export_id;
+  RAISE NOTICE 'Using parent_key from Shopify Integration: %', shopify_parent_id;
 
-  -- Insert Marketplace Hub (use parent_key from import_export)
+  -- Insert Marketplace Hub with the same parent as Shopify
   INSERT INTO admin_navigation_registry (
     id,
     key,
@@ -43,7 +44,7 @@ BEGIN
     'Marketplace Hub',
     'ShoppingCart',
     '/admin/marketplace-hub',
-    import_export_id, -- Use the found parent ID
+    shopify_parent_id, -- Same parent as Shopify
     310, -- Before Shopify (330)
     true,
     true,
@@ -86,26 +87,6 @@ BEGIN
     RAISE NOTICE '✅ Removed coming_soon from Shopify Integration';
   END IF;
 
-  -- Optionally hide old Marketplace Export page (if it exists)
-  UPDATE admin_navigation_registry
-  SET
-    is_visible = false,
-    badge_config = jsonb_build_object(
-      'text', 'Deprecated',
-      'variant', 'outline',
-      'color', 'gray'
-    ),
-    type = 'deprecated',
-    updated_at = NOW()
-  WHERE (key = 'marketplace_export' OR route = '/admin/marketplace-export')
-    AND is_visible = true;
-
-  IF FOUND THEN
-    RAISE NOTICE '✅ Hidden old Marketplace Export page';
-  ELSE
-    RAISE NOTICE 'ℹ️ Marketplace Export page not found or already hidden';
-  END IF;
-
 END $$;
 
 -- Verify the changes
@@ -114,12 +95,15 @@ SELECT
   n.label,
   n.route,
   n.icon,
-  p.label as parent_label,
   n.order_position,
   n.type,
   n.badge_config->>'text' as badge,
-  n.is_visible
+  n.is_visible,
+  n.parent_key
 FROM admin_navigation_registry n
-LEFT JOIN admin_navigation_registry p ON n.parent_key = p.id
-WHERE n.category = 'import_export' OR n.key = 'import_export'
+WHERE n.category = 'import_export'
 ORDER BY n.order_position;
+
+-- Expected to see:
+-- marketplace_hub     | Marketplace Hub  | /admin/marketplace-hub  | 310 | new  | New  | true  | (same parent as shopify)
+-- shopify_integration | Shopify          | /admin/shopify-integration| 330 | NULL | NULL | true  | (parent_key)
