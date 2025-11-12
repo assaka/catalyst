@@ -1,0 +1,2626 @@
+{
+  "summary": {
+    "perfectMatches": 90,
+    "missingInDb": 220,
+    "valueMismatches": 34,
+    "unusedInCode": 269,
+    "duplicateValues": 5
+  },
+  "missingInDb": [
+    {
+      "key": "content-type",
+      "fallbackValue": null,
+      "usageCount": 5,
+      "files": [
+        "C:/Users/info/PhpstormProjects/catalyst/src/api/admin-client.js",
+        "C:/Users/info/PhpstormProjects/catalyst/src/api/client.js",
+        "C:/Users/info/PhpstormProjects/catalyst/src/api/client.js"
+      ]
+    },
+    {
+      "key": "auth/logout",
+      "fallbackValue": null,
+      "usageCount": 2,
+      "files": [
+        "C:/Users/info/PhpstormProjects/catalyst/src/api/admin-client.js",
+        "C:/Users/info/PhpstormProjects/catalyst/src/api/entities.js"
+      ]
+    },
+    {
+      "key": "auth/me",
+      "fallbackValue": null,
+      "usageCount": 6,
+      "files": [
+        "C:/Users/info/PhpstormProjects/catalyst/src/api/admin-entities.js",
+        "C:/Users/info/PhpstormProjects/catalyst/src/api/admin-entities.js",
+        "C:/Users/info/PhpstormProjects/catalyst/src/api/client.js"
+      ]
+    },
+    {
+      "key": "../utils/auth.js",
+      "fallbackValue": null,
+      "usageCount": 1,
+      "files": [
+        "C:/Users/info/PhpstormProjects/catalyst/src/api/client.js"
+      ]
+    },
+    {
+      "key": ";",
+      "fallbackValue": null,
+      "usageCount": 1,
+      "files": [
+        "C:/Users/info/PhpstormProjects/catalyst/src/api/entities.js"
+      ]
+    },
+    {
+      "key": "stores/dropdown",
+      "fallbackValue": null,
+      "usageCount": 1,
+      "files": [
+        "C:/Users/info/PhpstormProjects/catalyst/src/api/entities.js"
+      ]
+    },
+    {
+      "key": ".",
+      "fallbackValue": null,
+      "usageCount": 23,
+      "files": [
+        "C:/Users/info/PhpstormProjects/catalyst/src/api/entities.js",
+        "C:/Users/info/PhpstormProjects/catalyst/src/components/admin/ProductImageUpload.jsx",
+        "C:/Users/info/PhpstormProjects/catalyst/src/components/admin/ProductImageUpload.jsx"
+      ]
+    },
+    {
+      "key": "payments/publishable-key",
+      "fallbackValue": null,
+      "usageCount": 1,
+      "files": [
+        "C:/Users/info/PhpstormProjects/catalyst/src/api/functions.js"
+      ]
+    },
+    {
+      "key": "DELETE",
+      "fallbackValue": "cart/clear",
+      "usageCount": 1,
+      "files": [
+        "C:/Users/info/PhpstormProjects/catalyst/src/api/storefront-entities.js"
+      ]
+    },
+    {
+      "key": "script",
+      "fallbackValue": null,
+      "usageCount": 12,
+      "files": [
+        "C:/Users/info/PhpstormProjects/catalyst/src/App.jsx",
+        "C:/Users/info/PhpstormProjects/catalyst/src/App.jsx",
+        "C:/Users/info/PhpstormProjects/catalyst/src/components/storefront/SeoHeadManager.jsx"
+      ]
+    },
+    {
+      "key": "div",
+      "fallbackValue": null,
+      "usageCount": 17,
+      "files": [
+        "C:/Users/info/PhpstormProjects/catalyst/src/App.jsx",
+        "C:/Users/info/PhpstormProjects/catalyst/src/App.jsx",
+        "C:/Users/info/PhpstormProjects/catalyst/src/components/editor/slot/EditorSidebar.jsx"
+      ]
+    },
+    {
+      "key": "style",
+      "fallbackValue": null,
+      "usageCount": 2,
+      "files": [
+        "C:/Users/info/PhpstormProjects/catalyst/src/App.jsx",
+        "C:/Users/info/PhpstormProjects/catalyst/src/components/editor/ResponsiveIframe.jsx"
+      ]
+    },
+    {
+      "key": ",",
+      "fallbackValue": null,
+      "usageCount": 7,
+      "files": [
+        "C:/Users/info/PhpstormProjects/catalyst/src/components/admin/ab-testing/ABTestEditor.jsx",
+        "C:/Users/info/PhpstormProjects/catalyst/src/components/admin/ab-testing/ABTestEditor.jsx",
+        "C:/Users/info/PhpstormProjects/catalyst/src/components/admin/ab-testing/ABTestEditor.jsx"
+      ]
+    },
+    {
+      "key": "service-credit-costs/key/ai_translation_cms_page",
+      "fallbackValue": null,
+      "usageCount": 1,
+      "files": [
+        "C:/Users/info/PhpstormProjects/catalyst/src/components/admin/BulkTranslateDialog.jsx"
+      ]
+    },
+    {
+      "key": "service-credit-costs/key/ai_translation_cms_block",
+      "fallbackValue": null,
+      "usageCount": 1,
+      "files": [
+        "C:/Users/info/PhpstormProjects/catalyst/src/components/admin/BulkTranslateDialog.jsx"
+      ]
+    },
+    {
+      "key": "creditsUpdated",
+      "fallbackValue": null,
+      "usageCount": 8,
+      "files": [
+        "C:/Users/info/PhpstormProjects/catalyst/src/components/admin/BulkTranslateDialog.jsx",
+        "C:/Users/info/PhpstormProjects/catalyst/src/components/admin/BulkTranslateDialog.jsx",
+        "C:/Users/info/PhpstormProjects/catalyst/src/components/admin/MultiEntityTranslateDialog.jsx"
+      ]
+    },
+    {
+      "key": "success",
+      "fallbackValue": null,
+      "usageCount": 1,
+      "files": [
+        "C:/Users/info/PhpstormProjects/catalyst/src/components/admin/CloudflareCDN.jsx"
+      ]
+    },
+    {
+      "key": "error",
+      "fallbackValue": null,
+      "usageCount": 2,
+      "files": [
+        "C:/Users/info/PhpstormProjects/catalyst/src/components/admin/CloudflareCDN.jsx",
+        "C:/Users/info/PhpstormProjects/catalyst/src/components/shared/AuthMiddleware.jsx"
+      ]
+    },
+    {
+      "key": "zones",
+      "fallbackValue": null,
+      "usageCount": 1,
+      "files": [
+        "C:/Users/info/PhpstormProjects/catalyst/src/components/admin/CloudflareCDN.jsx"
+      ]
+    },
+    {
+      "key": "user_email",
+      "fallbackValue": null,
+      "usageCount": 1,
+      "files": [
+        "C:/Users/info/PhpstormProjects/catalyst/src/components/admin/CloudflareCDN.jsx"
+      ]
+    },
+    {
+      "key": "/supabase/storage/stats",
+      "fallbackValue": null,
+      "usageCount": 4,
+      "files": [
+        "C:/Users/info/PhpstormProjects/catalyst/src/components/admin/cms/MediaBrowser.jsx",
+        "C:/Users/info/PhpstormProjects/catalyst/src/components/admin/integrations/SupabaseIntegration.jsx",
+        "C:/Users/info/PhpstormProjects/catalyst/src/components/ui/FilePickerModal.jsx"
+      ]
+    },
+    {
+      "key": "T",
+      "fallbackValue": null,
+      "usageCount": 17,
+      "files": [
+        "C:/Users/info/PhpstormProjects/catalyst/src/components/admin/coupons/CouponForm.jsx",
+        "C:/Users/info/PhpstormProjects/catalyst/src/components/admin/coupons/CouponForm.jsx",
+        "C:/Users/info/PhpstormProjects/catalyst/src/components/admin/heatmap/HeatmapVisualization.jsx"
+      ]
+    },
+    {
+      "key": "canvas",
+      "fallbackValue": null,
+      "usageCount": 2,
+      "files": [
+        "C:/Users/info/PhpstormProjects/catalyst/src/components/admin/heatmap/HeatmapVisualization.jsx",
+        "C:/Users/info/PhpstormProjects/catalyst/src/components/admin/heatmap/HeatmapVisualization.jsx"
+      ]
+    },
+    {
+      "key": "2d",
+      "fallbackValue": null,
+      "usageCount": 1,
+      "files": [
+        "C:/Users/info/PhpstormProjects/catalyst/src/components/admin/heatmap/HeatmapVisualization.jsx"
+      ]
+    },
+    {
+      "key": "a",
+      "fallbackValue": null,
+      "usageCount": 8,
+      "files": [
+        "C:/Users/info/PhpstormProjects/catalyst/src/components/admin/heatmap/HeatmapVisualization.jsx",
+        "C:/Users/info/PhpstormProjects/catalyst/src/components/ai-studio/VersionCompareModal.jsx",
+        "C:/Users/info/PhpstormProjects/catalyst/src/pages/admin/AnalyticsSettings.jsx"
+      ]
+    },
+    {
+      "key": "x",
+      "fallbackValue": null,
+      "usageCount": 1,
+      "files": [
+        "C:/Users/info/PhpstormProjects/catalyst/src/components/admin/heatmap/HeatmapVisualization.jsx"
+      ]
+    },
+    {
+      "key": "/supabase/status",
+      "fallbackValue": null,
+      "usageCount": 5,
+      "files": [
+        "C:/Users/info/PhpstormProjects/catalyst/src/components/admin/integrations/SupabaseIntegration.jsx",
+        "C:/Users/info/PhpstormProjects/catalyst/src/components/admin/store/StoreSetupWizard.jsx",
+        "C:/Users/info/PhpstormProjects/catalyst/src/components/admin/store/StoreSetupWizard.jsx"
+      ]
+    },
+    {
+      "key": "/supabase/projects",
+      "fallbackValue": null,
+      "usageCount": 1,
+      "files": [
+        "C:/Users/info/PhpstormProjects/catalyst/src/components/admin/integrations/SupabaseIntegration.jsx"
+      ]
+    },
+    {
+      "key": "/supabase/storage/buckets",
+      "fallbackValue": null,
+      "usageCount": 2,
+      "files": [
+        "C:/Users/info/PhpstormProjects/catalyst/src/components/admin/integrations/SupabaseIntegration.jsx",
+        "C:/Users/info/PhpstormProjects/catalyst/src/components/ui/FilePickerModal.jsx"
+      ]
+    },
+    {
+      "key": "service-credit-costs?category=ai_services&active_only=true",
+      "fallbackValue": null,
+      "usageCount": 1,
+      "files": [
+        "C:/Users/info/PhpstormProjects/catalyst/src/components/admin/MultiEntityTranslateDialog.jsx"
+      ]
+    },
+    {
+      "key": "@/api/entities",
+      "fallbackValue": null,
+      "usageCount": 14,
+      "files": [
+        "C:/Users/info/PhpstormProjects/catalyst/src/components/admin/products/CustomOptionRuleForm.jsx",
+        "C:/Users/info/PhpstormProjects/catalyst/src/components/admin/products/ProductOptionRuleForm.jsx",
+        "C:/Users/info/PhpstormProjects/catalyst/src/components/shared/AuthMiddleware.jsx"
+      ]
+    },
+    {
+      "key": "/",
+      "fallbackValue": null,
+      "usageCount": 9,
+      "files": [
+        "C:/Users/info/PhpstormProjects/catalyst/src/components/admin/products/ProductForm.jsx",
+        "C:/Users/info/PhpstormProjects/catalyst/src/components/editor/FileTreeNavigator.jsx",
+        "C:/Users/info/PhpstormProjects/catalyst/src/components/editor/FileTreeNavigator.jsx"
+      ]
+    },
+    {
+      "key": "?",
+      "fallbackValue": null,
+      "usageCount": 3,
+      "files": [
+        "C:/Users/info/PhpstormProjects/catalyst/src/components/admin/products/ProductForm.jsx",
+        "C:/Users/info/PhpstormProjects/catalyst/src/pages/Layout.jsx",
+        "C:/Users/info/PhpstormProjects/catalyst/src/pages/Layout.jsx"
+      ]
+    },
+    {
+      "key": "/api/languages",
+      "fallbackValue": null,
+      "usageCount": 1,
+      "files": [
+        "C:/Users/info/PhpstormProjects/catalyst/src/components/admin/QuickTranslateDialog.jsx"
+      ]
+    },
+    {
+      "key": "languages",
+      "fallbackValue": null,
+      "usageCount": 1,
+      "files": [
+        "C:/Users/info/PhpstormProjects/catalyst/src/components/admin/TranslationWizard.jsx"
+      ]
+    },
+    {
+      "key": "service-credit-costs/key/custom_plugin_creation",
+      "fallbackValue": null,
+      "usageCount": 1,
+      "files": [
+        "C:/Users/info/PhpstormProjects/catalyst/src/components/ai-studio/ChatInterface.jsx"
+      ]
+    },
+    {
+      "key": "/plugins/starters",
+      "fallbackValue": null,
+      "usageCount": 1,
+      "files": [
+        "C:/Users/info/PhpstormProjects/catalyst/src/components/ai-studio/ChatInterface.jsx"
+      ]
+    },
+    {
+      "key": "Plugin name cannot be empty",
+      "fallbackValue": null,
+      "usageCount": 1,
+      "files": [
+        "C:/Users/info/PhpstormProjects/catalyst/src/components/ai-studio/ChatInterface.jsx"
+      ]
+    },
+    {
+      "key": "\\n",
+      "fallbackValue": null,
+      "usageCount": 27,
+      "files": [
+        "C:/Users/info/PhpstormProjects/catalyst/src/components/ai-studio/CodeEditor.jsx",
+        "C:/Users/info/PhpstormProjects/catalyst/src/components/ai-studio/CodeEditor.jsx",
+        "C:/Users/info/PhpstormProjects/catalyst/src/components/ai-studio/CodeEditor.jsx"
+      ]
+    },
+    {
+      "key": "extensions/baselines",
+      "fallbackValue": null,
+      "usageCount": 1,
+      "files": [
+        "C:/Users/info/PhpstormProjects/catalyst/src/components/editor/FileTreeNavigator.jsx"
+      ]
+    },
+    {
+      "key": "link",
+      "fallbackValue": null,
+      "usageCount": 4,
+      "files": [
+        "C:/Users/info/PhpstormProjects/catalyst/src/components/editor/ResponsiveIframe.jsx",
+        "C:/Users/info/PhpstormProjects/catalyst/src/components/editor/slot/SlotComponents.jsx",
+        "C:/Users/info/PhpstormProjects/catalyst/src/components/storefront/SeoHeadManager.jsx"
+      ]
+    },
+    {
+      "key": " ",
+      "fallbackValue": null,
+      "usageCount": 23,
+      "files": [
+        "C:/Users/info/PhpstormProjects/catalyst/src/components/editor/slot/AccountLoginSlotComponents.jsx",
+        "C:/Users/info/PhpstormProjects/catalyst/src/components/editor/slot/EditorSidebar.jsx",
+        "C:/Users/info/PhpstormProjects/catalyst/src/components/editor/slot/EditorSidebar.jsx"
+      ]
+    },
+    {
+      "key": "common.password_too_short",
+      "fallbackValue": "Password must be at least 8 characters long",
+      "usageCount": 1,
+      "files": [
+        "C:/Users/info/PhpstormProjects/catalyst/src/components/editor/slot/AccountLoginSlotComponents.jsx"
+      ]
+    },
+    {
+      "key": "common.password_needs_uppercase",
+      "fallbackValue": "Password must contain at least one uppercase letter",
+      "usageCount": 1,
+      "files": [
+        "C:/Users/info/PhpstormProjects/catalyst/src/components/editor/slot/AccountLoginSlotComponents.jsx"
+      ]
+    },
+    {
+      "key": "common.password_needs_lowercase",
+      "fallbackValue": "Password must contain at least one lowercase letter",
+      "usageCount": 1,
+      "files": [
+        "C:/Users/info/PhpstormProjects/catalyst/src/components/editor/slot/AccountLoginSlotComponents.jsx"
+      ]
+    },
+    {
+      "key": "common.password_needs_number",
+      "fallbackValue": "Password must contain at least one number",
+      "usageCount": 1,
+      "files": [
+        "C:/Users/info/PhpstormProjects/catalyst/src/components/editor/slot/AccountLoginSlotComponents.jsx"
+      ]
+    },
+    {
+      "key": "common.password_needs_special",
+      "fallbackValue": "Password must contain at least one special character",
+      "usageCount": 1,
+      "files": [
+        "C:/Users/info/PhpstormProjects/catalyst/src/components/editor/slot/AccountLoginSlotComponents.jsx"
+      ]
+    },
+    {
+      "key": "common.passwords_do_not_match",
+      "fallbackValue": "Passwords do not match",
+      "usageCount": 1,
+      "files": [
+        "C:/Users/info/PhpstormProjects/catalyst/src/components/editor/slot/AccountLoginSlotComponents.jsx"
+      ]
+    },
+    {
+      "key": "common.registration_successful",
+      "fallbackValue": "Registration successful!",
+      "usageCount": 1,
+      "files": [
+        "C:/Users/info/PhpstormProjects/catalyst/src/components/editor/slot/AccountLoginSlotComponents.jsx"
+      ]
+    },
+    {
+      "key": "common.registration_failed",
+      "fallbackValue": "Registration failed. Please try again.",
+      "usageCount": 2,
+      "files": [
+        "C:/Users/info/PhpstormProjects/catalyst/src/components/editor/slot/AccountLoginSlotComponents.jsx",
+        "C:/Users/info/PhpstormProjects/catalyst/src/components/editor/slot/AccountLoginSlotComponents.jsx"
+      ]
+    },
+    {
+      "key": "common.creating_account",
+      "fallbackValue": "Creating Account...",
+      "usageCount": 1,
+      "files": [
+        "C:/Users/info/PhpstormProjects/catalyst/src/components/editor/slot/AccountLoginSlotComponents.jsx"
+      ]
+    },
+    {
+      "key": "ProductItemsGrid",
+      "fallbackValue": null,
+      "usageCount": 1,
+      "files": [
+        "C:/Users/info/PhpstormProjects/catalyst/src/components/editor/slot/CategorySlotComponents.jsx"
+      ]
+    },
+    {
+      "key": "[data-filter-section]",
+      "fallbackValue": null,
+      "usageCount": 1,
+      "files": [
+        "C:/Users/info/PhpstormProjects/catalyst/src/components/editor/slot/CategorySlotComponents.jsx"
+      ]
+    },
+    {
+      "key": "[data-filter-overlay]",
+      "fallbackValue": null,
+      "usageCount": 1,
+      "files": [
+        "C:/Users/info/PhpstormProjects/catalyst/src/components/editor/slot/CategorySlotComponents.jsx"
+      ]
+    },
+    {
+      "key": "./sidebars/SidebarName",
+      "fallbackValue": null,
+      "usageCount": 1,
+      "files": [
+        "C:/Users/info/PhpstormProjects/catalyst/src/components/editor/slot/EditorSidebar.jsx"
+      ]
+    },
+    {
+      "key": "./sidebars/LayeredNavigationSidebar",
+      "fallbackValue": null,
+      "usageCount": 1,
+      "files": [
+        "C:/Users/info/PhpstormProjects/catalyst/src/components/editor/slot/EditorSidebar.jsx"
+      ]
+    },
+    {
+      "key": "./sidebars/HeaderEditorSidebar",
+      "fallbackValue": null,
+      "usageCount": 1,
+      "files": [
+        "C:/Users/info/PhpstormProjects/catalyst/src/components/editor/slot/EditorSidebar.jsx"
+      ]
+    },
+    {
+      "key": "./sidebars/ProductGridSidebar",
+      "fallbackValue": null,
+      "usageCount": 1,
+      "files": [
+        "C:/Users/info/PhpstormProjects/catalyst/src/components/editor/slot/EditorSidebar.jsx"
+      ]
+    },
+    {
+      "key": ".button-slot-container",
+      "fallbackValue": null,
+      "usageCount": 2,
+      "files": [
+        "C:/Users/info/PhpstormProjects/catalyst/src/components/editor/slot/EditorSidebar.jsx",
+        "C:/Users/info/PhpstormProjects/catalyst/src/components/editor/slot/EditorSidebar.jsx"
+      ]
+    },
+    {
+      "key": "[data-slot-id]",
+      "fallbackValue": null,
+      "usageCount": 2,
+      "files": [
+        "C:/Users/info/PhpstormProjects/catalyst/src/components/editor/slot/EditorSidebar.jsx",
+        "C:/Users/info/PhpstormProjects/catalyst/src/hooks/useSlotConfiguration.js"
+      ]
+    },
+    {
+      "key": "[data-editable]",
+      "fallbackValue": null,
+      "usageCount": 1,
+      "files": [
+        "C:/Users/info/PhpstormProjects/catalyst/src/components/editor/slot/EditorSidebar.jsx"
+      ]
+    },
+    {
+      "key": "key",
+      "fallbackValue": null,
+      "usageCount": 2,
+      "files": [
+        "C:/Users/info/PhpstormProjects/catalyst/src/components/editor/slot/EditorSidebar.jsx",
+        "C:/Users/info/PhpstormProjects/catalyst/src/components/editor/slot/EditorSidebar.jsx"
+      ]
+    },
+    {
+      "key": ".cursor-col-resize, .cursor-row-resize",
+      "fallbackValue": null,
+      "usageCount": 1,
+      "files": [
+        "C:/Users/info/PhpstormProjects/catalyst/src/components/editor/slot/SlotComponents.jsx"
+      ]
+    },
+    {
+      "key": "container",
+      "fallbackValue": null,
+      "usageCount": 1,
+      "files": [
+        "C:/Users/info/PhpstormProjects/catalyst/src/components/editor/slot/SlotComponents.jsx"
+      ]
+    },
+    {
+      "key": "text",
+      "fallbackValue": "New text content",
+      "usageCount": 1,
+      "files": [
+        "C:/Users/info/PhpstormProjects/catalyst/src/components/editor/slot/SlotComponents.jsx"
+      ]
+    },
+    {
+      "key": "button",
+      "fallbackValue": "Click me",
+      "usageCount": 2,
+      "files": [
+        "C:/Users/info/PhpstormProjects/catalyst/src/components/editor/slot/SlotComponents.jsx",
+        "C:/Users/info/PhpstormProjects/catalyst/src/hooks/useSlotConfiguration.js"
+      ]
+    },
+    {
+      "key": ".cart-item",
+      "fallbackValue": null,
+      "usageCount": 1,
+      "files": [
+        "C:/Users/info/PhpstormProjects/catalyst/src/components/editor/slot/UnifiedSlotComponents.jsx"
+      ]
+    },
+    {
+      "key": "span",
+      "fallbackValue": null,
+      "usageCount": 1,
+      "files": [
+        "C:/Users/info/PhpstormProjects/catalyst/src/components/editor/slot/UnifiedSlotComponents.jsx"
+      ]
+    },
+    {
+      "key": "@/utils/priceUtils",
+      "fallbackValue": null,
+      "usageCount": 1,
+      "files": [
+        "C:/Users/info/PhpstormProjects/catalyst/src/components/editor/slot/UnifiedSlotRenderer.jsx"
+      ]
+    },
+    {
+      "key": "@/components/plugins/PluginWidgetRenderer",
+      "fallbackValue": null,
+      "usageCount": 1,
+      "files": [
+        "C:/Users/info/PhpstormProjects/catalyst/src/components/editor/slot/UnifiedSlotRenderer.jsx"
+      ]
+    },
+    {
+      "key": "✗ No file selected",
+      "fallbackValue": "error",
+      "usageCount": 1,
+      "files": [
+        "C:/Users/info/PhpstormProjects/catalyst/src/components/plugins/DeveloperPluginEditor.jsx"
+      ]
+    },
+    {
+      "key": "✓ AI generated code applied",
+      "fallbackValue": "success",
+      "usageCount": 1,
+      "files": [
+        "C:/Users/info/PhpstormProjects/catalyst/src/components/plugins/DeveloperPluginEditor.jsx"
+      ]
+    },
+    {
+      "key": "⚠️ Test endpoint not implemented yet",
+      "fallbackValue": "error",
+      "usageCount": 1,
+      "files": [
+        "C:/Users/info/PhpstormProjects/catalyst/src/components/plugins/DeveloperPluginEditor.jsx"
+      ]
+    },
+    {
+      "key": "✗ File name cannot be empty",
+      "fallbackValue": "error",
+      "usageCount": 2,
+      "files": [
+        "C:/Users/info/PhpstormProjects/catalyst/src/components/plugins/DeveloperPluginEditor.jsx",
+        "C:/Users/info/PhpstormProjects/catalyst/src/components/plugins/DeveloperPluginEditor.jsx"
+      ]
+    },
+    {
+      "key": "✗ Please select an event for this file to listen to",
+      "fallbackValue": "error",
+      "usageCount": 1,
+      "files": [
+        "C:/Users/info/PhpstormProjects/catalyst/src/components/plugins/DeveloperPluginEditor.jsx"
+      ]
+    },
+    {
+      "key": "✗ Controller path cannot be empty",
+      "fallbackValue": "error",
+      "usageCount": 2,
+      "files": [
+        "C:/Users/info/PhpstormProjects/catalyst/src/components/plugins/DeveloperPluginEditor.jsx",
+        "C:/Users/info/PhpstormProjects/catalyst/src/components/plugins/DeveloperPluginEditor.jsx"
+      ]
+    },
+    {
+      "key": "✗ Please select an HTTP method",
+      "fallbackValue": "error",
+      "usageCount": 1,
+      "files": [
+        "C:/Users/info/PhpstormProjects/catalyst/src/components/plugins/DeveloperPluginEditor.jsx"
+      ]
+    },
+    {
+      "key": "✗ Event name cannot be empty",
+      "fallbackValue": "error",
+      "usageCount": 1,
+      "files": [
+        "C:/Users/info/PhpstormProjects/catalyst/src/components/plugins/DeveloperPluginEditor.jsx"
+      ]
+    },
+    {
+      "key": "✗ No event file selected",
+      "fallbackValue": "error",
+      "usageCount": 1,
+      "files": [
+        "C:/Users/info/PhpstormProjects/catalyst/src/components/plugins/DeveloperPluginEditor.jsx"
+      ]
+    },
+    {
+      "key": "✗ HTTP method cannot be empty",
+      "fallbackValue": "error",
+      "usageCount": 1,
+      "files": [
+        "C:/Users/info/PhpstormProjects/catalyst/src/components/plugins/DeveloperPluginEditor.jsx"
+      ]
+    },
+    {
+      "key": "✗ Controller name cannot be empty",
+      "fallbackValue": "error",
+      "usageCount": 1,
+      "files": [
+        "C:/Users/info/PhpstormProjects/catalyst/src/components/plugins/DeveloperPluginEditor.jsx"
+      ]
+    },
+    {
+      "key": "✗ No controller file selected",
+      "fallbackValue": "error",
+      "usageCount": 1,
+      "files": [
+        "C:/Users/info/PhpstormProjects/catalyst/src/components/plugins/DeveloperPluginEditor.jsx"
+      ]
+    },
+    {
+      "key": "⏳ Running all pending migrations...",
+      "fallbackValue": "info",
+      "usageCount": 1,
+      "files": [
+        "C:/Users/info/PhpstormProjects/catalyst/src/components/plugins/DeveloperPluginEditor.jsx"
+      ]
+    },
+    {
+      "key": "@/utils/urlUtils.js",
+      "fallbackValue": null,
+      "usageCount": 1,
+      "files": [
+        "C:/Users/info/PhpstormProjects/catalyst/src/components/shared/AuthMiddleware.jsx"
+      ]
+    },
+    {
+      "key": "location",
+      "fallbackValue": null,
+      "usageCount": 1,
+      "files": [
+        "C:/Users/info/PhpstormProjects/catalyst/src/components/shared/AuthMiddleware.jsx"
+      ]
+    },
+    {
+      "key": "@/api/entities.js",
+      "fallbackValue": null,
+      "usageCount": 1,
+      "files": [
+        "C:/Users/info/PhpstormProjects/catalyst/src/components/shared/AuthMiddleware.jsx"
+      ]
+    },
+    {
+      "key": "token",
+      "fallbackValue": null,
+      "usageCount": 1,
+      "files": [
+        "C:/Users/info/PhpstormProjects/catalyst/src/components/shared/AuthMiddleware.jsx"
+      ]
+    },
+    {
+      "key": "oauth",
+      "fallbackValue": null,
+      "usageCount": 1,
+      "files": [
+        "C:/Users/info/PhpstormProjects/catalyst/src/components/shared/AuthMiddleware.jsx"
+      ]
+    },
+    {
+      "key": "returnTo",
+      "fallbackValue": null,
+      "usageCount": 2,
+      "files": [
+        "C:/Users/info/PhpstormProjects/catalyst/src/components/shared/AuthMiddleware.jsx",
+        "C:/Users/info/PhpstormProjects/catalyst/src/components/shared/AuthMiddleware.jsx"
+      ]
+    },
+    {
+      "key": "common.cart_is_empty",
+      "fallbackValue": "Your cart is empty",
+      "usageCount": 1,
+      "files": [
+        "C:/Users/info/PhpstormProjects/catalyst/src/components/storefront/CartSlotRenderer.jsx"
+      ]
+    },
+    {
+      "key": "ComponentName",
+      "fallbackValue": null,
+      "usageCount": 1,
+      "files": [
+        "C:/Users/info/PhpstormProjects/catalyst/src/components/storefront/CategorySlotRenderer.jsx"
+      ]
+    },
+    {
+      "key": "banner_text",
+      "fallbackValue": "We use cookies to enhance your browsing experience.",
+      "usageCount": 1,
+      "files": [
+        "C:/Users/info/PhpstormProjects/catalyst/src/components/storefront/CookieConsentBanner.jsx"
+      ]
+    },
+    {
+      "key": "accept_button_text",
+      "fallbackValue": "Accept All",
+      "usageCount": 1,
+      "files": [
+        "C:/Users/info/PhpstormProjects/catalyst/src/components/storefront/CookieConsentBanner.jsx"
+      ]
+    },
+    {
+      "key": "reject_button_text",
+      "fallbackValue": "Reject All",
+      "usageCount": 1,
+      "files": [
+        "C:/Users/info/PhpstormProjects/catalyst/src/components/storefront/CookieConsentBanner.jsx"
+      ]
+    },
+    {
+      "key": "settings_button_text",
+      "fallbackValue": "Manage Preferences",
+      "usageCount": 1,
+      "files": [
+        "C:/Users/info/PhpstormProjects/catalyst/src/components/storefront/CookieConsentBanner.jsx"
+      ]
+    },
+    {
+      "key": "save_preferences_button_text",
+      "fallbackValue": "Save Preferences",
+      "usageCount": 1,
+      "files": [
+        "C:/Users/info/PhpstormProjects/catalyst/src/components/storefront/CookieConsentBanner.jsx"
+      ]
+    },
+    {
+      "key": "privacy_policy_text",
+      "fallbackValue": "Privacy Policy",
+      "usageCount": 1,
+      "files": [
+        "C:/Users/info/PhpstormProjects/catalyst/src/components/storefront/CookieConsentBanner.jsx"
+      ]
+    },
+    {
+      "key": "common.show_less",
+      "fallbackValue": "Show Less",
+      "usageCount": 1,
+      "files": [
+        "C:/Users/info/PhpstormProjects/catalyst/src/components/storefront/LayeredNavigation.jsx"
+      ]
+    },
+    {
+      "key": "common.more",
+      "fallbackValue": "more",
+      "usageCount": 1,
+      "files": [
+        "C:/Users/info/PhpstormProjects/catalyst/src/components/storefront/LayeredNavigation.jsx"
+      ]
+    },
+    {
+      "key": "product.out_of_stock",
+      "fallbackValue": "This product is currently out of stock.",
+      "usageCount": 2,
+      "files": [
+        "C:/Users/info/PhpstormProjects/catalyst/src/components/storefront/ProductItemCard.jsx",
+        "C:/Users/info/PhpstormProjects/catalyst/src/components/storefront/ProductItemCard.jsx"
+      ]
+    },
+    {
+      "key": "meta",
+      "fallbackValue": null,
+      "usageCount": 1,
+      "files": [
+        "C:/Users/info/PhpstormProjects/catalyst/src/components/storefront/SeoHeadManager.jsx"
+      ]
+    },
+    {
+      "key": "noscript",
+      "fallbackValue": null,
+      "usageCount": 2,
+      "files": [
+        "C:/Users/info/PhpstormProjects/catalyst/src/components/storefront/SeoHeadManager.jsx",
+        "C:/Users/info/PhpstormProjects/catalyst/src/components/storefront/SeoHeadManager.jsx"
+      ]
+    },
+    {
+      "key": "@/api/storefront-entities",
+      "fallbackValue": null,
+      "usageCount": 4,
+      "files": [
+        "C:/Users/info/PhpstormProjects/catalyst/src/components/storefront/SeoSettingsProvider.jsx",
+        "C:/Users/info/PhpstormProjects/catalyst/src/pages/storefront/OrderSuccess.jsx",
+        "C:/Users/info/PhpstormProjects/catalyst/src/services/cartService.js"
+      ]
+    },
+    {
+      "key": "@/components/admin/heatmap/HeatmapTracker",
+      "fallbackValue": null,
+      "usageCount": 1,
+      "files": [
+        "C:/Users/info/PhpstormProjects/catalyst/src/components/storefront/StorefrontLayout.jsx"
+      ]
+    },
+    {
+      "key": "/supabase/storage/list/suprshop-assets",
+      "fallbackValue": null,
+      "usageCount": 1,
+      "files": [
+        "C:/Users/info/PhpstormProjects/catalyst/src/components/ui/FilePickerModal.jsx"
+      ]
+    },
+    {
+      "key": "[data-grid-slot-id]",
+      "fallbackValue": null,
+      "usageCount": 2,
+      "files": [
+        "C:/Users/info/PhpstormProjects/catalyst/src/components/ui/resize-element-wrapper.jsx",
+        "C:/Users/info/PhpstormProjects/catalyst/src/components/ui/resize-element-wrapper.jsx"
+      ]
+    },
+    {
+      "key": "/languages",
+      "fallbackValue": null,
+      "usageCount": 1,
+      "files": [
+        "C:/Users/info/PhpstormProjects/catalyst/src/contexts/TranslationContext.jsx"
+      ]
+    },
+    {
+      "key": "-",
+      "fallbackValue": null,
+      "usageCount": 4,
+      "files": [
+        "C:/Users/info/PhpstormProjects/catalyst/src/contexts/TranslationContext.jsx",
+        "C:/Users/info/PhpstormProjects/catalyst/src/pages/admin/ThemeLayout.jsx",
+        "C:/Users/info/PhpstormProjects/catalyst/src/utils/translationUtils.js"
+      ]
+    },
+    {
+      "key": "common.welcome",
+      "fallbackValue": null,
+      "usageCount": 2,
+      "files": [
+        "C:/Users/info/PhpstormProjects/catalyst/src/contexts/TranslationContext.jsx",
+        "C:/Users/info/PhpstormProjects/catalyst/src/contexts/TranslationContext.jsx"
+      ]
+    },
+    {
+      "key": "../slot-system",
+      "fallbackValue": null,
+      "usageCount": 1,
+      "files": [
+        "C:/Users/info/PhpstormProjects/catalyst/src/core/monitoring/MigrationValidator.js"
+      ]
+    },
+    {
+      "key": "test-123",
+      "fallbackValue": null,
+      "usageCount": 1,
+      "files": [
+        "C:/Users/info/PhpstormProjects/catalyst/src/hooks/useABTest.jsx"
+      ]
+    },
+    {
+      "key": "checkout-test",
+      "fallbackValue": null,
+      "usageCount": 1,
+      "files": [
+        "C:/Users/info/PhpstormProjects/catalyst/src/hooks/useABTest.jsx"
+      ]
+    },
+    {
+      "key": "engagement-test",
+      "fallbackValue": null,
+      "usageCount": 1,
+      "files": [
+        "C:/Users/info/PhpstormProjects/catalyst/src/hooks/useABTest.jsx"
+      ]
+    },
+    {
+      "key": "wishlistUpdated",
+      "fallbackValue": null,
+      "usageCount": 4,
+      "files": [
+        "C:/Users/info/PhpstormProjects/catalyst/src/hooks/useApiQueries.js",
+        "C:/Users/info/PhpstormProjects/catalyst/src/hooks/useApiQueries.js",
+        "C:/Users/info/PhpstormProjects/catalyst/src/pages/storefront/CustomerDashboard.jsx"
+      ]
+    },
+    {
+      "key": "@/services/cartService",
+      "fallbackValue": null,
+      "usageCount": 1,
+      "files": [
+        "C:/Users/info/PhpstormProjects/catalyst/src/hooks/useApiQueries.js"
+      ]
+    },
+    {
+      "key": "@/services/slotConfigurationService",
+      "fallbackValue": null,
+      "usageCount": 1,
+      "files": [
+        "C:/Users/info/PhpstormProjects/catalyst/src/hooks/useApiQueries.js"
+      ]
+    },
+    {
+      "key": "analytics",
+      "fallbackValue": null,
+      "usageCount": 2,
+      "files": [
+        "C:/Users/info/PhpstormProjects/catalyst/src/hooks/useCookieConsent.js",
+        "C:/Users/info/PhpstormProjects/catalyst/src/hooks/useCookieConsent.js"
+      ]
+    },
+    {
+      "key": "marketing",
+      "fallbackValue": null,
+      "usageCount": 1,
+      "files": [
+        "C:/Users/info/PhpstormProjects/catalyst/src/hooks/useCookieConsent.js"
+      ]
+    },
+    {
+      "key": "functional",
+      "fallbackValue": null,
+      "usageCount": 1,
+      "files": [
+        "C:/Users/info/PhpstormProjects/catalyst/src/hooks/useCookieConsent.js"
+      ]
+    },
+    {
+      "key": "@/components/editor/slot/configs/header-config",
+      "fallbackValue": null,
+      "usageCount": 1,
+      "files": [
+        "C:/Users/info/PhpstormProjects/catalyst/src/hooks/useSlotConfiguration.js"
+      ]
+    },
+    {
+      "key": "@/components/editor/slot/configs/cart-config",
+      "fallbackValue": null,
+      "usageCount": 2,
+      "files": [
+        "C:/Users/info/PhpstormProjects/catalyst/src/hooks/useSlotConfiguration.js",
+        "C:/Users/info/PhpstormProjects/catalyst/src/hooks/useSlotConfiguration.js"
+      ]
+    },
+    {
+      "key": "@/components/editor/slot/configs/category-config",
+      "fallbackValue": null,
+      "usageCount": 2,
+      "files": [
+        "C:/Users/info/PhpstormProjects/catalyst/src/hooks/useSlotConfiguration.js",
+        "C:/Users/info/PhpstormProjects/catalyst/src/pages/editor/CategorySlotsEditor.jsx"
+      ]
+    },
+    {
+      "key": "@/components/editor/slot/configs/product-config",
+      "fallbackValue": null,
+      "usageCount": 2,
+      "files": [
+        "C:/Users/info/PhpstormProjects/catalyst/src/hooks/useSlotConfiguration.js",
+        "C:/Users/info/PhpstormProjects/catalyst/src/pages/editor/ProductSlotsEditor.jsx"
+      ]
+    },
+    {
+      "key": "@/components/editor/slot/configs/account-config",
+      "fallbackValue": null,
+      "usageCount": 1,
+      "files": [
+        "C:/Users/info/PhpstormProjects/catalyst/src/hooks/useSlotConfiguration.js"
+      ]
+    },
+    {
+      "key": "@/components/editor/slot/configs/login-config",
+      "fallbackValue": null,
+      "usageCount": 1,
+      "files": [
+        "C:/Users/info/PhpstormProjects/catalyst/src/hooks/useSlotConfiguration.js"
+      ]
+    },
+    {
+      "key": "@/components/editor/slot/configs/checkout-config",
+      "fallbackValue": null,
+      "usageCount": 1,
+      "files": [
+        "C:/Users/info/PhpstormProjects/catalyst/src/hooks/useSlotConfiguration.js"
+      ]
+    },
+    {
+      "key": "@/components/editor/slot/configs/success-config",
+      "fallbackValue": null,
+      "usageCount": 1,
+      "files": [
+        "C:/Users/info/PhpstormProjects/catalyst/src/hooks/useSlotConfiguration.js"
+      ]
+    },
+    {
+      "key": "page",
+      "fallbackValue": null,
+      "usageCount": 1,
+      "files": [
+        "C:/Users/info/PhpstormProjects/catalyst/src/hooks/useUrlUtils.js"
+      ]
+    },
+    {
+      "key": "sort",
+      "fallbackValue": null,
+      "usageCount": 1,
+      "files": [
+        "C:/Users/info/PhpstormProjects/catalyst/src/hooks/useUrlUtils.js"
+      ]
+    },
+    {
+      "key": "@/components/admin/ab-testing/ABTestEditor",
+      "fallbackValue": null,
+      "usageCount": 1,
+      "files": [
+        "C:/Users/info/PhpstormProjects/catalyst/src/pages/admin/ABTesting.jsx"
+      ]
+    },
+    {
+      "key": "@/components/admin/ab-testing/ABTestResults",
+      "fallbackValue": null,
+      "usageCount": 1,
+      "files": [
+        "C:/Users/info/PhpstormProjects/catalyst/src/pages/admin/ABTesting.jsx"
+      ]
+    },
+    {
+      "key": "/integrations/akeneo/schedules",
+      "fallbackValue": null,
+      "usageCount": 1,
+      "files": [
+        "C:/Users/info/PhpstormProjects/catalyst/src/pages/admin/AkeneoIntegration.jsx"
+      ]
+    },
+    {
+      "key": "/integrations/akeneo/custom-mappings",
+      "fallbackValue": null,
+      "usageCount": 1,
+      "files": [
+        "C:/Users/info/PhpstormProjects/catalyst/src/pages/admin/AkeneoIntegration.jsx"
+      ]
+    },
+    {
+      "key": "/integrations/akeneo/channels",
+      "fallbackValue": null,
+      "usageCount": 1,
+      "files": [
+        "C:/Users/info/PhpstormProjects/catalyst/src/pages/admin/AkeneoIntegration.jsx"
+      ]
+    },
+    {
+      "key": "/integrations/akeneo/categories",
+      "fallbackValue": null,
+      "usageCount": 1,
+      "files": [
+        "C:/Users/info/PhpstormProjects/catalyst/src/pages/admin/AkeneoIntegration.jsx"
+      ]
+    },
+    {
+      "key": "/integrations/akeneo/families",
+      "fallbackValue": null,
+      "usageCount": 1,
+      "files": [
+        "C:/Users/info/PhpstormProjects/catalyst/src/pages/admin/AkeneoIntegration.jsx"
+      ]
+    },
+    {
+      "key": "/integrations/akeneo/connection-status",
+      "fallbackValue": null,
+      "usageCount": 1,
+      "files": [
+        "C:/Users/info/PhpstormProjects/catalyst/src/pages/admin/AkeneoIntegration.jsx"
+      ]
+    },
+    {
+      "key": "/storage/providers",
+      "fallbackValue": null,
+      "usageCount": 1,
+      "files": [
+        "C:/Users/info/PhpstormProjects/catalyst/src/pages/admin/AkeneoIntegration.jsx"
+      ]
+    },
+    {
+      "key": "/integrations/akeneo/config-status",
+      "fallbackValue": null,
+      "usageCount": 1,
+      "files": [
+        "C:/Users/info/PhpstormProjects/catalyst/src/pages/admin/AkeneoIntegration.jsx"
+      ]
+    },
+    {
+      "key": "/integrations/akeneo/locales",
+      "fallbackValue": null,
+      "usageCount": 1,
+      "files": [
+        "C:/Users/info/PhpstormProjects/catalyst/src/pages/admin/AkeneoIntegration.jsx"
+      ]
+    },
+    {
+      "key": "Enter custom event name:",
+      "fallbackValue": null,
+      "usageCount": 1,
+      "files": [
+        "C:/Users/info/PhpstormProjects/catalyst/src/pages/admin/AnalyticsSettings.jsx"
+      ]
+    },
+    {
+      "key": "/custom-domains",
+      "fallbackValue": null,
+      "usageCount": 1,
+      "files": [
+        "C:/Users/info/PhpstormProjects/catalyst/src/pages/admin/CustomDomains.jsx"
+      ]
+    },
+    {
+      "key": "traffic",
+      "fallbackValue": null,
+      "usageCount": 1,
+      "files": [
+        "C:/Users/info/PhpstormProjects/catalyst/src/pages/admin/CustomerActivity.jsx"
+      ]
+    },
+    {
+      "key": "demographics",
+      "fallbackValue": null,
+      "usageCount": 1,
+      "files": [
+        "C:/Users/info/PhpstormProjects/catalyst/src/pages/admin/CustomerActivity.jsx"
+      ]
+    },
+    {
+      "key": "topProducts",
+      "fallbackValue": null,
+      "usageCount": 1,
+      "files": [
+        "C:/Users/info/PhpstormProjects/catalyst/src/pages/admin/CustomerActivity.jsx"
+      ]
+    },
+    {
+      "key": "bestSellers",
+      "fallbackValue": null,
+      "usageCount": 1,
+      "files": [
+        "C:/Users/info/PhpstormProjects/catalyst/src/pages/admin/CustomerActivity.jsx"
+      ]
+    },
+    {
+      "key": "funnel",
+      "fallbackValue": null,
+      "usageCount": 1,
+      "files": [
+        "C:/Users/info/PhpstormProjects/catalyst/src/pages/admin/CustomerActivity.jsx"
+      ]
+    },
+    {
+      "key": "geo",
+      "fallbackValue": null,
+      "usageCount": 1,
+      "files": [
+        "C:/Users/info/PhpstormProjects/catalyst/src/pages/admin/CustomerActivity.jsx"
+      ]
+    },
+    {
+      "key": "searches",
+      "fallbackValue": null,
+      "usageCount": 1,
+      "files": [
+        "C:/Users/info/PhpstormProjects/catalyst/src/pages/admin/CustomerActivity.jsx"
+      ]
+    },
+    {
+      "key": "first_name",
+      "fallbackValue": null,
+      "usageCount": 1,
+      "files": [
+        "C:/Users/info/PhpstormProjects/catalyst/src/pages/admin/Customers.jsx"
+      ]
+    },
+    {
+      "key": "last_name",
+      "fallbackValue": null,
+      "usageCount": 1,
+      "files": [
+        "C:/Users/info/PhpstormProjects/catalyst/src/pages/admin/Customers.jsx"
+      ]
+    },
+    {
+      "key": "email",
+      "fallbackValue": null,
+      "usageCount": 2,
+      "files": [
+        "C:/Users/info/PhpstormProjects/catalyst/src/pages/admin/Customers.jsx",
+        "C:/Users/info/PhpstormProjects/catalyst/src/pages/storefront/EmailVerification.jsx"
+      ]
+    },
+    {
+      "key": "phone",
+      "fallbackValue": null,
+      "usageCount": 1,
+      "files": [
+        "C:/Users/info/PhpstormProjects/catalyst/src/pages/admin/Customers.jsx"
+      ]
+    },
+    {
+      "key": "street",
+      "fallbackValue": null,
+      "usageCount": 1,
+      "files": [
+        "C:/Users/info/PhpstormProjects/catalyst/src/pages/admin/Customers.jsx"
+      ]
+    },
+    {
+      "key": "city",
+      "fallbackValue": null,
+      "usageCount": 1,
+      "files": [
+        "C:/Users/info/PhpstormProjects/catalyst/src/pages/admin/Customers.jsx"
+      ]
+    },
+    {
+      "key": "state",
+      "fallbackValue": null,
+      "usageCount": 1,
+      "files": [
+        "C:/Users/info/PhpstormProjects/catalyst/src/pages/admin/Customers.jsx"
+      ]
+    },
+    {
+      "key": "postal_code",
+      "fallbackValue": null,
+      "usageCount": 1,
+      "files": [
+        "C:/Users/info/PhpstormProjects/catalyst/src/pages/admin/Customers.jsx"
+      ]
+    },
+    {
+      "key": "country",
+      "fallbackValue": null,
+      "usageCount": 1,
+      "files": [
+        "C:/Users/info/PhpstormProjects/catalyst/src/pages/admin/Customers.jsx"
+      ]
+    },
+    {
+      "key": "setup",
+      "fallbackValue": null,
+      "usageCount": 1,
+      "files": [
+        "C:/Users/info/PhpstormProjects/catalyst/src/pages/admin/Dashboard.jsx"
+      ]
+    },
+    {
+      "key": "aiven",
+      "fallbackValue": null,
+      "usageCount": 1,
+      "files": [
+        "C:/Users/info/PhpstormProjects/catalyst/src/pages/admin/DatabaseIntegrations.jsx"
+      ]
+    },
+    {
+      "key": "aws-rds",
+      "fallbackValue": null,
+      "usageCount": 1,
+      "files": [
+        "C:/Users/info/PhpstormProjects/catalyst/src/pages/admin/DatabaseIntegrations.jsx"
+      ]
+    },
+    {
+      "key": "google-cloud-sql",
+      "fallbackValue": null,
+      "usageCount": 1,
+      "files": [
+        "C:/Users/info/PhpstormProjects/catalyst/src/pages/admin/DatabaseIntegrations.jsx"
+      ]
+    },
+    {
+      "key": "azure-database",
+      "fallbackValue": null,
+      "usageCount": 1,
+      "files": [
+        "C:/Users/info/PhpstormProjects/catalyst/src/pages/admin/DatabaseIntegrations.jsx"
+      ]
+    },
+    {
+      "key": "planetscale",
+      "fallbackValue": null,
+      "usageCount": 1,
+      "files": [
+        "C:/Users/info/PhpstormProjects/catalyst/src/pages/admin/DatabaseIntegrations.jsx"
+      ]
+    },
+    {
+      "key": "/supabase/storage/list",
+      "fallbackValue": null,
+      "usageCount": 1,
+      "files": [
+        "C:/Users/info/PhpstormProjects/catalyst/src/pages/admin/FileLibrary.jsx"
+      ]
+    },
+    {
+      "key": "/supabase/storage/ensure-buckets",
+      "fallbackValue": null,
+      "usageCount": 1,
+      "files": [
+        "C:/Users/info/PhpstormProjects/catalyst/src/pages/admin/MediaStorage.jsx"
+      ]
+    },
+    {
+      "key": "supabase",
+      "fallbackValue": null,
+      "usageCount": 1,
+      "files": [
+        "C:/Users/info/PhpstormProjects/catalyst/src/pages/admin/MediaStorage.jsx"
+      ]
+    },
+    {
+      "key": "cloudflare",
+      "fallbackValue": null,
+      "usageCount": 1,
+      "files": [
+        "C:/Users/info/PhpstormProjects/catalyst/src/pages/admin/MediaStorage.jsx"
+      ]
+    },
+    {
+      "key": "google-storage",
+      "fallbackValue": null,
+      "usageCount": 1,
+      "files": [
+        "C:/Users/info/PhpstormProjects/catalyst/src/pages/admin/MediaStorage.jsx"
+      ]
+    },
+    {
+      "key": "aws-s3",
+      "fallbackValue": null,
+      "usageCount": 1,
+      "files": [
+        "C:/Users/info/PhpstormProjects/catalyst/src/pages/admin/MediaStorage.jsx"
+      ]
+    },
+    {
+      "key": "admin/navigation",
+      "fallbackValue": null,
+      "usageCount": 1,
+      "files": [
+        "C:/Users/info/PhpstormProjects/catalyst/src/pages/admin/NavigationManager.jsx"
+      ]
+    },
+    {
+      "key": "Navigation order saved successfully!",
+      "fallbackValue": null,
+      "usageCount": 1,
+      "files": [
+        "C:/Users/info/PhpstormProjects/catalyst/src/pages/admin/NavigationManager.jsx"
+      ]
+    },
+    {
+      "key": "GET",
+      "fallbackValue": "plugins",
+      "usageCount": 2,
+      "files": [
+        "C:/Users/info/PhpstormProjects/catalyst/src/pages/admin/Plugins.jsx",
+        "C:/Users/info/PhpstormProjects/catalyst/src/pages/admin/Plugins.jsx"
+      ]
+    },
+    {
+      "key": "Public plugins cannot be made private again as other users may have installed them.",
+      "fallbackValue": null,
+      "usageCount": 1,
+      "files": [
+        "C:/Users/info/PhpstormProjects/catalyst/src/pages/admin/Plugins.jsx"
+      ]
+    },
+    {
+      "key": "Please enter a GitHub URL",
+      "fallbackValue": null,
+      "usageCount": 1,
+      "files": [
+        "C:/Users/info/PhpstormProjects/catalyst/src/pages/admin/Plugins.jsx"
+      ]
+    },
+    {
+      "key": "Plugin creation will be available in the next version",
+      "fallbackValue": null,
+      "usageCount": 1,
+      "files": [
+        "C:/Users/info/PhpstormProjects/catalyst/src/pages/admin/Plugins.jsx"
+      ]
+    },
+    {
+      "key": "raw",
+      "fallbackValue": null,
+      "usageCount": 1,
+      "files": [
+        "C:/Users/info/PhpstormProjects/catalyst/src/pages/admin/RobotsTxt.jsx"
+      ]
+    },
+    {
+      "key": "/background-jobs/status",
+      "fallbackValue": null,
+      "usageCount": 1,
+      "files": [
+        "C:/Users/info/PhpstormProjects/catalyst/src/pages/admin/ScheduledJobs.jsx"
+      ]
+    },
+    {
+      "key": "Failed to import custom rules. Please try again.",
+      "fallbackValue": null,
+      "usageCount": 1,
+      "files": [
+        "C:/Users/info/PhpstormProjects/catalyst/src/pages/admin/SeoRobots.jsx"
+      ]
+    },
+    {
+      "key": ":",
+      "fallbackValue": null,
+      "usageCount": 2,
+      "files": [
+        "C:/Users/info/PhpstormProjects/catalyst/src/pages/admin/SeoRobots.jsx",
+        "C:/Users/info/PhpstormProjects/catalyst/src/pages/admin/SeoRobots.jsx"
+      ]
+    },
+    {
+      "key": "✓ Validation Passed!\\n\\nNo errors or warnings found. Your robots.txt looks good!",
+      "fallbackValue": null,
+      "usageCount": 1,
+      "files": [
+        "C:/Users/info/PhpstormProjects/catalyst/src/pages/admin/SeoRobots.jsx"
+      ]
+    },
+    {
+      "key": "credits/uptime-report?days=365",
+      "fallbackValue": null,
+      "usageCount": 1,
+      "files": [
+        "C:/Users/info/PhpstormProjects/catalyst/src/pages/admin/Stores.jsx"
+      ]
+    },
+    {
+      "key": "Failed to update store status. Please try again.",
+      "fallbackValue": null,
+      "usageCount": 1,
+      "files": [
+        "C:/Users/info/PhpstormProjects/catalyst/src/pages/admin/Stores.jsx"
+      ]
+    },
+    {
+      "key": "/service-credit-costs?category=ai_services&active_only=true",
+      "fallbackValue": null,
+      "usageCount": 1,
+      "files": [
+        "C:/Users/info/PhpstormProjects/catalyst/src/pages/admin/Translations.jsx"
+      ]
+    },
+    {
+      "key": "service-credit-costs/key/store_daily_publishing",
+      "fallbackValue": null,
+      "usageCount": 1,
+      "files": [
+        "C:/Users/info/PhpstormProjects/catalyst/src/pages/admin/UptimeReport.jsx"
+      ]
+    },
+    {
+      "key": "CategoryBreadcrumbs",
+      "fallbackValue": null,
+      "usageCount": 1,
+      "files": [
+        "C:/Users/info/PhpstormProjects/catalyst/src/pages/editor/CategorySlotsEditor.jsx"
+      ]
+    },
+    {
+      "key": "/admin/navigation",
+      "fallbackValue": null,
+      "usageCount": 1,
+      "files": [
+        "C:/Users/info/PhpstormProjects/catalyst/src/pages/Layout.jsx"
+      ]
+    },
+    {
+      "key": "tab",
+      "fallbackValue": null,
+      "usageCount": 3,
+      "files": [
+        "C:/Users/info/PhpstormProjects/catalyst/src/pages/Layout.jsx",
+        "C:/Users/info/PhpstormProjects/catalyst/src/pages/Layout.jsx",
+        "C:/Users/info/PhpstormProjects/catalyst/src/pages/storefront/CustomerDashboard.jsx"
+      ]
+    },
+    {
+      "key": "cart.coupon_apply_failed",
+      "fallbackValue": "Failed to apply coupon. Please try again.",
+      "usageCount": 1,
+      "files": [
+        "C:/Users/info/PhpstormProjects/catalyst/src/pages/storefront/Cart.jsx"
+      ]
+    },
+    {
+      "key": "checkout.my_cart",
+      "fallbackValue": "My Cart",
+      "usageCount": 1,
+      "files": [
+        "C:/Users/info/PhpstormProjects/catalyst/src/pages/storefront/Cart.jsx"
+      ]
+    },
+    {
+      "key": "checkout.login_success",
+      "fallbackValue": "Successfully logged in! Your cart has been updated.",
+      "usageCount": 1,
+      "files": [
+        "C:/Users/info/PhpstormProjects/catalyst/src/pages/storefront/Checkout.jsx"
+      ]
+    },
+    {
+      "key": "checkout.logout_success",
+      "fallbackValue": "Successfully logged out. You can continue as a guest.",
+      "usageCount": 1,
+      "files": [
+        "C:/Users/info/PhpstormProjects/catalyst/src/pages/storefront/Checkout.jsx"
+      ]
+    },
+    {
+      "key": "checkout.logout_error",
+      "fallbackValue": "Failed to log out. Please try again.",
+      "usageCount": 1,
+      "files": [
+        "C:/Users/info/PhpstormProjects/catalyst/src/pages/storefront/Checkout.jsx"
+      ]
+    },
+    {
+      "key": "common.cart_empty",
+      "fallbackValue": "Your cart is empty",
+      "usageCount": 1,
+      "files": [
+        "C:/Users/info/PhpstormProjects/catalyst/src/pages/storefront/Checkout.jsx"
+      ]
+    },
+    {
+      "key": "checkout.step_2step_2",
+      "fallbackValue": "Payment",
+      "usageCount": 1,
+      "files": [
+        "C:/Users/info/PhpstormProjects/catalyst/src/pages/storefront/Checkout.jsx"
+      ]
+    },
+    {
+      "key": "checkout.step_3step_2",
+      "fallbackValue": "Shipping",
+      "usageCount": 1,
+      "files": [
+        "C:/Users/info/PhpstormProjects/catalyst/src/pages/storefront/Checkout.jsx"
+      ]
+    },
+    {
+      "key": "checkout.step_3step_3",
+      "fallbackValue": "Payment",
+      "usageCount": 1,
+      "files": [
+        "C:/Users/info/PhpstormProjects/catalyst/src/pages/storefront/Checkout.jsx"
+      ]
+    },
+    {
+      "key": "checkout.logged_in_as",
+      "fallbackValue": "Logged in as",
+      "usageCount": 1,
+      "files": [
+        "C:/Users/info/PhpstormProjects/catalyst/src/pages/storefront/Checkout.jsx"
+      ]
+    },
+    {
+      "key": "common.login",
+      "fallbackValue": "Login",
+      "usageCount": 3,
+      "files": [
+        "C:/Users/info/PhpstormProjects/catalyst/src/pages/storefront/Checkout.jsx",
+        "C:/Users/info/PhpstormProjects/catalyst/src/pages/storefront/Checkout.jsx",
+        "C:/Users/info/PhpstormProjects/catalyst/src/pages/storefront/Checkout.jsx"
+      ]
+    },
+    {
+      "key": "common.street",
+      "fallbackValue": "Street Address",
+      "usageCount": 1,
+      "files": [
+        "C:/Users/info/PhpstormProjects/catalyst/src/pages/storefront/Checkout.jsx"
+      ]
+    },
+    {
+      "key": "checkout.enter_coupon_code",
+      "fallbackValue": "Enter coupon code",
+      "usageCount": 1,
+      "files": [
+        "C:/Users/info/PhpstormProjects/catalyst/src/pages/storefront/Checkout.jsx"
+      ]
+    },
+    {
+      "key": "checkout.apply",
+      "fallbackValue": "Apply",
+      "usageCount": 1,
+      "files": [
+        "C:/Users/info/PhpstormProjects/catalyst/src/pages/storefront/Checkout.jsx"
+      ]
+    },
+    {
+      "key": "checkout.order_summary",
+      "fallbackValue": "Order Summary",
+      "usageCount": 1,
+      "files": [
+        "C:/Users/info/PhpstormProjects/catalyst/src/pages/storefront/Checkout.jsx"
+      ]
+    },
+    {
+      "key": "checkout.each",
+      "fallbackValue": "each",
+      "usageCount": 1,
+      "files": [
+        "C:/Users/info/PhpstormProjects/catalyst/src/pages/storefront/Checkout.jsx"
+      ]
+    },
+    {
+      "key": "checkout.discount",
+      "fallbackValue": "Discount",
+      "usageCount": 1,
+      "files": [
+        "C:/Users/info/PhpstormProjects/catalyst/src/pages/storefront/Checkout.jsx"
+      ]
+    },
+    {
+      "key": "checkout.title",
+      "fallbackValue": "Checkout",
+      "usageCount": 1,
+      "files": [
+        "C:/Users/info/PhpstormProjects/catalyst/src/pages/storefront/Checkout.jsx"
+      ]
+    },
+    {
+      "key": "common.logging_in",
+      "fallbackValue": "Logging in...",
+      "usageCount": 1,
+      "files": [
+        "C:/Users/info/PhpstormProjects/catalyst/src/pages/storefront/Checkout.jsx"
+      ]
+    },
+    {
+      "key": "Verification code sent! Please check your email.",
+      "fallbackValue": null,
+      "usageCount": 1,
+      "files": [
+        "C:/Users/info/PhpstormProjects/catalyst/src/pages/storefront/EmailVerification.jsx"
+      ]
+    },
+    {
+      "key": "search",
+      "fallbackValue": null,
+      "usageCount": 1,
+      "files": [
+        "C:/Users/info/PhpstormProjects/catalyst/src/pages/storefront/Homepage.jsx"
+      ]
+    },
+    {
+      "key": "session_id",
+      "fallbackValue": null,
+      "usageCount": 1,
+      "files": [
+        "C:/Users/info/PhpstormProjects/catalyst/src/pages/storefront/OrderSuccess.jsx"
+      ]
+    },
+    {
+      "key": "session_id=",
+      "fallbackValue": null,
+      "usageCount": 2,
+      "files": [
+        "C:/Users/info/PhpstormProjects/catalyst/src/pages/storefront/OrderSuccess.jsx",
+        "C:/Users/info/PhpstormProjects/catalyst/src/pages/storefront/OrderSuccess.jsx"
+      ]
+    },
+    {
+      "key": "&",
+      "fallbackValue": null,
+      "usageCount": 2,
+      "files": [
+        "C:/Users/info/PhpstormProjects/catalyst/src/pages/storefront/OrderSuccess.jsx",
+        "C:/Users/info/PhpstormProjects/catalyst/src/pages/storefront/OrderSuccess.jsx"
+      ]
+    },
+    {
+      "key": "slug",
+      "fallbackValue": null,
+      "usageCount": 1,
+      "files": [
+        "C:/Users/info/PhpstormProjects/catalyst/src/pages/storefront/ProductDetail.jsx"
+      ]
+    },
+    {
+      "key": "@/api/client",
+      "fallbackValue": null,
+      "usageCount": 1,
+      "files": [
+        "C:/Users/info/PhpstormProjects/catalyst/src/pages/storefront/ProductDetail.jsx"
+      ]
+    },
+    {
+      "key": "category",
+      "fallbackValue": null,
+      "usageCount": 1,
+      "files": [
+        "C:/Users/info/PhpstormProjects/catalyst/src/pages/storefront/Storefront.jsx"
+      ]
+    },
+    {
+      "key": "@/utils/stockUtils",
+      "fallbackValue": null,
+      "usageCount": 1,
+      "files": [
+        "C:/Users/info/PhpstormProjects/catalyst/src/services/cartService.js"
+      ]
+    },
+    {
+      "key": "credits/currencies",
+      "fallbackValue": null,
+      "usageCount": 1,
+      "files": [
+        "C:/Users/info/PhpstormProjects/catalyst/src/services/pricingService.js"
+      ]
+    },
+    {
+      "key": "@/components/editor/slot/configs/category-config.js",
+      "fallbackValue": null,
+      "usageCount": 1,
+      "files": [
+        "C:/Users/info/PhpstormProjects/catalyst/src/services/slotConfigurationService.js"
+      ]
+    },
+    {
+      "key": "@/components/editor/slot/configs/cart-config.js",
+      "fallbackValue": null,
+      "usageCount": 1,
+      "files": [
+        "C:/Users/info/PhpstormProjects/catalyst/src/services/slotConfigurationService.js"
+      ]
+    },
+    {
+      "key": "/ai/credits",
+      "fallbackValue": null,
+      "usageCount": 1,
+      "files": [
+        "C:/Users/info/PhpstormProjects/catalyst/src/utils/aiService.js"
+      ]
+    }
+  ],
+  "valueMismatches": [
+    {
+      "key": "common.store_info_not_available",
+      "codeValue": "Store information not available. Please refresh.",
+      "dbValue": "Store info not available",
+      "category": "common",
+      "usageCount": 3
+    },
+    {
+      "key": "common.login_failed",
+      "codeValue": "Login failed. Please check your credentials.",
+      "dbValue": "Login failed",
+      "category": "common",
+      "usageCount": 4
+    },
+    {
+      "key": "common.create_account",
+      "codeValue": "Create My Account",
+      "dbValue": "Create Account",
+      "category": "common",
+      "usageCount": 1
+    },
+    {
+      "key": "common.enter_coupon_code",
+      "codeValue": "Please enter a coupon code",
+      "dbValue": "Enter coupon code",
+      "category": "common",
+      "usageCount": 1
+    },
+    {
+      "key": "common.coupon_expired",
+      "codeValue": "This coupon has expired",
+      "dbValue": "Coupon expired",
+      "category": "common",
+      "usageCount": 1
+    },
+    {
+      "key": "common.coupon_not_active",
+      "codeValue": "This coupon is not yet active",
+      "dbValue": "Coupon not active",
+      "category": "common",
+      "usageCount": 1
+    },
+    {
+      "key": "common.coupon_usage_limit",
+      "codeValue": "This coupon has reached its usage limit",
+      "dbValue": "Coupon usage limit reached",
+      "category": "common",
+      "usageCount": 1
+    },
+    {
+      "key": "common.minimum_order_required",
+      "codeValue": "Minimum order amount of {amount} required",
+      "dbValue": "Minimum order required",
+      "category": "common",
+      "usageCount": 1
+    },
+    {
+      "key": "common.invalid_coupon",
+      "codeValue": "Invalid or expired coupon code",
+      "dbValue": "Invalid coupon",
+      "category": "common",
+      "usageCount": 1
+    },
+    {
+      "key": "common.add_products_checkout",
+      "codeValue": "Add products before checkout",
+      "dbValue": "Add products to checkout",
+      "category": "common",
+      "usageCount": 1
+    },
+    {
+      "key": "checkout.step_3step_1",
+      "codeValue": "Information",
+      "dbValue": "ggggggg",
+      "category": "checkout",
+      "usageCount": 1
+    },
+    {
+      "key": "checkout.guest_checkout",
+      "codeValue": "Guest Checkout",
+      "dbValue": "Guest checkout",
+      "category": "checkout",
+      "usageCount": 1
+    },
+    {
+      "key": "checkout.add_new_shipping_address",
+      "codeValue": "Add New Shipping Address",
+      "dbValue": "+ Add a new shipping address",
+      "category": "checkout",
+      "usageCount": 1
+    },
+    {
+      "key": "checkout.no_saved_addresses",
+      "codeValue": "No saved addresses",
+      "dbValue": "You don't have any saved addresses. Add one below.",
+      "category": "checkout",
+      "usageCount": 1
+    },
+    {
+      "key": "checkout.enter_shipping_address",
+      "codeValue": "Enter shipping address",
+      "dbValue": "Enter your shipping address",
+      "category": "checkout",
+      "usageCount": 1
+    },
+    {
+      "key": "common.email",
+      "codeValue": "Email",
+      "dbValue": "Email *",
+      "category": "common",
+      "usageCount": 3
+    },
+    {
+      "key": "checkout.valid_email_required",
+      "codeValue": "Valid email required",
+      "dbValue": "Please enter a valid email address",
+      "category": "checkout",
+      "usageCount": 2
+    },
+    {
+      "key": "common.full_name",
+      "codeValue": "Full Name",
+      "dbValue": "Full Name *",
+      "category": "common",
+      "usageCount": 2
+    },
+    {
+      "key": "common.street_address",
+      "codeValue": "Street Address",
+      "dbValue": "Street Address *",
+      "category": "common",
+      "usageCount": 1
+    },
+    {
+      "key": "common.city",
+      "codeValue": "City",
+      "dbValue": "City *",
+      "category": "common",
+      "usageCount": 2
+    },
+    {
+      "key": "common.state_province",
+      "codeValue": "State / Province",
+      "dbValue": "State/Province *",
+      "category": "common",
+      "usageCount": 2
+    },
+    {
+      "key": "common.postal_code",
+      "codeValue": "Postal Code",
+      "dbValue": "Postal Code *",
+      "category": "common",
+      "usageCount": 2
+    },
+    {
+      "key": "common.country",
+      "codeValue": "Select Country",
+      "dbValue": "Country",
+      "category": "common",
+      "usageCount": 2
+    },
+    {
+      "key": "checkout.save_address_future",
+      "codeValue": "Save address for future use",
+      "dbValue": "Save this address to my account for future orders",
+      "category": "checkout",
+      "usageCount": 1
+    },
+    {
+      "key": "checkout.add_new_billing_address",
+      "codeValue": "Add New Billing Address",
+      "dbValue": "+ Add a new billing address",
+      "category": "checkout",
+      "usageCount": 1
+    },
+    {
+      "key": "checkout.save_billing_future",
+      "codeValue": "Save billing address for future use",
+      "dbValue": "Save this billing address to my account for future orders",
+      "category": "checkout",
+      "usageCount": 1
+    },
+    {
+      "key": "checkout.select_delivery_date",
+      "codeValue": "Select delivery date",
+      "dbValue": "Select a delivery date",
+      "category": "checkout",
+      "usageCount": 1
+    },
+    {
+      "key": "checkout.select_time_slot",
+      "codeValue": "Select time slot",
+      "dbValue": "Select a time slot",
+      "category": "checkout",
+      "usageCount": 1
+    },
+    {
+      "key": "checkout.special_delivery_instructions",
+      "codeValue": "Special Delivery Instructions",
+      "dbValue": "Special delivery instructions (optional)",
+      "category": "checkout",
+      "usageCount": 1
+    },
+    {
+      "key": "checkout.special_instructions_placeholder",
+      "codeValue": "Enter any special instructions",
+      "dbValue": "Any special instructions for delivery...",
+      "category": "checkout",
+      "usageCount": 1
+    },
+    {
+      "key": "checkout.fee",
+      "codeValue": "Fee",
+      "dbValue": "Fee:",
+      "category": "checkout",
+      "usageCount": 1
+    },
+    {
+      "key": "discount.view_eligible_products",
+      "codeValue": "View eligible products",
+      "dbValue": "Eligible for",
+      "category": "discount",
+      "usageCount": 1
+    },
+    {
+      "key": "checkout.qty",
+      "codeValue": "Qty",
+      "dbValue": "Qty:",
+      "category": "checkout",
+      "usageCount": 1
+    },
+    {
+      "key": "account.forgot_password",
+      "codeValue": "Forgot password?",
+      "dbValue": "Forgot Password?",
+      "category": "account",
+      "usageCount": 1
+    }
+  ],
+  "duplicateValues": [
+    {
+      "value": "My Account",
+      "keys": [
+        "account.my_account",
+        "common.my_account",
+        "navigation.account"
+      ],
+      "count": 3
+    },
+    {
+      "value": "Payment",
+      "keys": [
+        "checkout.payment",
+        "order.payment"
+      ],
+      "count": 2
+    },
+    {
+      "value": "Shipping",
+      "keys": [
+        "checkout.shipping",
+        "common.shipping"
+      ],
+      "count": 2
+    },
+    {
+      "value": "Price",
+      "keys": [
+        "common.price",
+        "product.price"
+      ],
+      "count": 2
+    },
+    {
+      "value": "SKU",
+      "keys": [
+        "common.sku",
+        "product.sku"
+      ],
+      "count": 2
+    }
+  ],
+  "unusedInCode": [
+    {
+      "key": "account.address",
+      "value": "Address",
+      "category": "account"
+    },
+    {
+      "key": "account.browsing_as_guest",
+      "value": "You're browsing as a guest. Sign in to access your orders, addresses, and wishlist.",
+      "category": "account"
+    },
+    {
+      "key": "account.city",
+      "value": "City",
+      "category": "account"
+    },
+    {
+      "key": "account.create_new",
+      "value": "Create New Account",
+      "category": "account"
+    },
+    {
+      "key": "account.discover_products",
+      "value": "Discover our premium products and services",
+      "category": "account"
+    },
+    {
+      "key": "account.email",
+      "value": "Email",
+      "category": "account"
+    },
+    {
+      "key": "account.manage",
+      "value": "Manage your account, orders, and preferences",
+      "category": "account"
+    },
+    {
+      "key": "account.my_account",
+      "value": "My Account",
+      "category": "account"
+    },
+    {
+      "key": "account.my_orders",
+      "value": "My Orders",
+      "category": "account"
+    },
+    {
+      "key": "account.order_history",
+      "value": "Order History",
+      "category": "account"
+    },
+    {
+      "key": "account.overview",
+      "value": "Overview",
+      "category": "account"
+    },
+    {
+      "key": "account.postal_code",
+      "value": "Postal Code",
+      "category": "account"
+    },
+    {
+      "key": "account.reset_password",
+      "value": "Reset Password",
+      "category": "account"
+    },
+    {
+      "key": "account.sign_out",
+      "value": "Sign Out",
+      "category": "account"
+    },
+    {
+      "key": "account.sign_up",
+      "value": "Sign Up",
+      "category": "account"
+    },
+    {
+      "key": "account.welcome_guest",
+      "value": "Welcome, Guest!",
+      "category": "account"
+    },
+    {
+      "key": "account.welcome_to_store",
+      "value": "Welcome to SprShop",
+      "category": "account"
+    },
+    {
+      "key": "address.add",
+      "value": "Add Address",
+      "category": "address"
+    },
+    {
+      "key": "address.add_first",
+      "value": "Add your first address to make checkout faster.",
+      "category": "address"
+    },
+    {
+      "key": "address.add_new",
+      "value": "Add New Address",
+      "category": "address"
+    },
+    {
+      "key": "address.default_billing",
+      "value": "Set as default billing address",
+      "category": "address"
+    },
+    {
+      "key": "address.default_billing_badge",
+      "value": "Default Billing",
+      "category": "address"
+    },
+    {
+      "key": "address.default_shipping",
+      "value": "Set as default shipping address",
+      "category": "address"
+    },
+    {
+      "key": "address.default_shipping_badge",
+      "value": "Default Shipping",
+      "category": "address"
+    },
+    {
+      "key": "address.delivery_locations",
+      "value": "Delivery locations",
+      "category": "address"
+    },
+    {
+      "key": "address.edit",
+      "value": "Edit Address",
+      "category": "address"
+    },
+    {
+      "key": "address.list",
+      "value": "Addresses",
+      "category": "address"
+    },
+    {
+      "key": "address.my",
+      "value": "My Addresses",
+      "category": "address"
+    },
+    {
+      "key": "address.no_shipping",
+      "value": "No shipping address",
+      "category": "address"
+    },
+    {
+      "key": "address.none_saved",
+      "value": "No addresses saved",
+      "category": "address"
+    },
+    {
+      "key": "address.saved",
+      "value": "Saved Addresses",
+      "category": "address"
+    },
+    {
+      "key": "address.saving_note",
+      "value": "Notte: Address saving for customer accounts is currently limited. If you experience issues, please contact support.",
+      "category": "address"
+    },
+    {
+      "key": "address.update",
+      "value": "Update Address",
+      "category": "address"
+    },
+    {
+      "key": "admin.analytics",
+      "value": "Analytics",
+      "category": "admin"
+    },
+    {
+      "key": "admin.bulk_actions",
+      "value": "Bulk Actions",
+      "category": "admin"
+    },
+    {
+      "key": "admin.create",
+      "value": "Create",
+      "category": "admin"
+    },
+    {
+      "key": "admin.export",
+      "value": "Export",
+      "category": "admin"
+    },
+    {
+      "key": "admin.import",
+      "value": "Import",
+      "category": "admin"
+    },
+    {
+      "key": "admin.languages",
+      "value": "Languages",
+      "category": "admin"
+    },
+    {
+      "key": "admin.list",
+      "value": "List",
+      "category": "admin"
+    },
+    {
+      "key": "admin.manage",
+      "value": "Manage",
+      "category": "admin"
+    },
+    {
+      "key": "admin.reports",
+      "value": "Reports",
+      "category": "admin"
+    },
+    {
+      "key": "admin.translations",
+      "value": "Translations",
+      "category": "admin"
+    },
+    {
+      "key": "admin.update",
+      "value": "Update",
+      "category": "admin"
+    },
+    {
+      "key": "auth.error.account_inactive",
+      "value": "Account is inactive",
+      "category": "auth"
+    },
+    {
+      "key": "auth.error.account_not_activated",
+      "value": "This account has not been activated yet. Please create a password first.",
+      "category": "auth"
+    },
+    {
+      "key": "auth.error.customer_exists",
+      "value": "Customer with this email already exists",
+      "category": "auth"
+    },
+    {
+      "key": "auth.error.customer_exists_alt",
+      "value": "A customer with this email already exists",
+      "category": "auth"
+    },
+    {
+      "key": "auth.error.customer_not_found",
+      "value": "Customer not found",
+      "category": "auth"
+    },
+    {
+      "key": "auth.error.database_connection_failed",
+      "value": "Database connection issue. Please try again in a few moments.",
+      "category": "auth"
+    },
+    {
+      "key": "auth.error.email_already_verified",
+      "value": "Email is already verified",
+      "category": "auth"
+    },
+    {
+      "key": "auth.error.email.invalid",
+      "value": "Please enter a valid email",
+      "category": "auth"
+    },
+    {
+      "key": "auth.error.first_name.required",
+      "value": "First name is required",
+      "category": "auth"
+    },
+    {
+      "key": "auth.error.general",
+      "value": "An error occurred. Please try again.",
+      "category": "auth"
+    },
+    {
+      "key": "auth.error.guest_not_found",
+      "value": "No guest account found with this email, or account is already registered",
+      "category": "auth"
+    },
+    {
+      "key": "auth.error.invalid_credentials",
+      "value": "Invalid credentials",
+      "category": "auth"
+    },
+    {
+      "key": "auth.error.invalid_credentials_store",
+      "value": "Invalid credentials or you don't have an account for this store",
+      "category": "auth"
+    },
+    {
+      "key": "auth.error.last_name.required",
+      "value": "Last name is required",
+      "category": "auth"
+    },
+    {
+      "key": "auth.error.logout_failed",
+      "value": "Logout failed",
+      "category": "auth"
+    },
+    {
+      "key": "auth.error.no_store_assigned",
+      "value": "Customer account is not assigned to a store. Please contact support.",
+      "category": "auth"
+    },
+    {
+      "key": "auth.error.oauth_failed",
+      "value": "Google authentication failed. Please try again.",
+      "category": "auth"
+    },
+    {
+      "key": "auth.error.password.lowercase",
+      "value": "Password must contain at least one lowercase letter",
+      "category": "auth"
+    },
+    {
+      "key": "auth.error.password.min_length",
+      "value": "Password must be at least {minLength} characters long",
+      "category": "auth"
+    },
+    {
+      "key": "auth.error.password.number",
+      "value": "Password must contain at least one number",
+      "category": "auth"
+    },
+    {
+      "key": "auth.error.password.required",
+      "value": "Password is required",
+      "category": "auth"
+    },
+    {
+      "key": "auth.error.password.special_char",
+      "value": "Password must contain at least one special character",
+      "category": "auth"
+    },
+    {
+      "key": "auth.error.password.uppercase",
+      "value": "Password must contain at least one uppercase letter",
+      "category": "auth"
+    },
+    {
+      "key": "auth.error.rate_limit",
+      "value": "Too many login attempts. Please try again later.",
+      "category": "auth"
+    },
+    {
+      "key": "auth.error.registration_failed",
+      "value": "Server error during registration. Please try again.",
+      "category": "auth"
+    },
+    {
+      "key": "auth.error.role.invalid",
+      "value": "Invalid role",
+      "category": "auth"
+    },
+    {
+      "key": "auth.error.server",
+      "value": "Server error",
+      "category": "auth"
+    },
+    {
+      "key": "auth.error.store_id.required",
+      "value": "Store ID is required",
+      "category": "auth"
+    },
+    {
+      "key": "auth.error.token_generation_failed",
+      "value": "Failed to generate authentication token. Please try again.",
+      "category": "auth"
+    },
+    {
+      "key": "auth.error.user_exists",
+      "value": "User with this email already exists in the {tableName} table",
+      "category": "auth"
+    },
+    {
+      "key": "auth.error.verification_code_expired",
+      "value": "Verification code has expired. Please request a new one.",
+      "category": "auth"
+    },
+    {
+      "key": "auth.error.verification_code_invalid",
+      "value": "Invalid verification code",
+      "category": "auth"
+    },
+    {
+      "key": "auth.error.verification_code.required",
+      "value": "Verification code is required",
+      "category": "auth"
+    },
+    {
+      "key": "auth.error.verification_failed",
+      "value": "Server error during verification",
+      "category": "auth"
+    },
+    {
+      "key": "auth.success.account_upgraded",
+      "value": "Account upgraded successfully",
+      "category": "auth"
+    },
+    {
+      "key": "auth.success.email_verified",
+      "value": "Email verified successfully!",
+      "category": "auth"
+    },
+    {
+      "key": "auth.success.login",
+      "value": "Login successful",
+      "category": "auth"
+    },
+    {
+      "key": "auth.success.logout",
+      "value": "Logged out successfully",
+      "category": "auth"
+    },
+    {
+      "key": "auth.success.registration",
+      "value": "Registration successful! Please check your email for a verification code.",
+      "category": "auth"
+    },
+    {
+      "key": "auth.success.verification_sent",
+      "value": "Verification code sent! Please check your email.",
+      "category": "auth"
+    },
+    {
+      "key": "cart.cart_empty",
+      "value": "Cart is empty",
+      "category": "common"
+    },
+    {
+      "key": "cart.cart_empty_message",
+      "value": "Looks like you haven't added anything to your cart yet.",
+      "category": "common"
+    },
+    {
+      "key": "cart.coupon_applied",
+      "value": "Coupon \"{coupon}\" applied!",
+      "category": "cart"
+    },
+    {
+      "key": "category.no_products_in_category",
+      "value": "No products found in the \"{category}\" category.",
+      "category": "category"
+    },
+    {
+      "key": "checkout.applied",
+      "value": "Applied:",
+      "category": "checkout"
+    },
+    {
+      "key": "checkout.billing",
+      "value": "Billing",
+      "category": "checkout"
+    },
+    {
+      "key": "checkout.cart",
+      "value": "Shopping Cart",
+      "category": "checkout"
+    },
+    {
+      "key": "checkout.dont_have_account",
+      "value": "Don't have an account?",
+      "category": "checkout"
+    },
+    {
+      "key": "checkout.payment",
+      "value": "Payment",
+      "category": "checkout"
+    },
+    {
+      "key": "checkout.proceed_to_checkout",
+      "value": "Proceed to Checkout",
+      "category": "checkout"
+    },
+    {
+      "key": "checkout.shipping_fee",
+      "value": "Shipping Fee",
+      "category": "checkout"
+    },
+    {
+      "key": "common.active_filters",
+      "value": "Active Filters",
+      "category": "common"
+    },
+    {
+      "key": "common.add",
+      "value": "Add",
+      "category": "common"
+    },
+    {
+      "key": "common.added_to_cart_error",
+      "value": "Failed to add to cart. Please try again.",
+      "category": "common"
+    },
+    {
+      "key": "common.added_to_cart_success",
+      "value": " added to cart successfully!",
+      "category": "common"
+    },
+    {
+      "key": "common.additional_products",
+      "value": "Additional Products",
+      "category": "common"
+    }
+  ]
+}
