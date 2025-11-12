@@ -227,47 +227,80 @@ router.get('/callback', async (req, res) => {
           <div class="checkmark">✓</div>
           <h1>Successfully Connected!</h1>
           <p>Your Supabase account has been connected</p>
-          <button id="closeBtn">Close & Continue</button>
+          <button id="closeBtn" style="cursor: pointer;">Close & Continue</button>
         </div>
         <script>
-          console.log('🎯 OAuth callback page loaded');
-          console.log('🔍 Window opener exists:', !!window.opener);
+          (function() {
+            console.log('🎯 OAuth callback page loaded');
+            console.log('🔍 Window opener exists:', !!window.opener);
 
-          function closeAndReload() {
-            console.log('🔒 Closing popup...');
-
-            // Try to set sessionStorage in parent (may fail due to cross-origin)
-            try {
-              if (window.opener) {
-                window.opener.sessionStorage.setItem('supabase_connection_success', 'Successfully connected to Supabase!');
-                console.log('✅ Session storage set in parent');
-              }
-            } catch (error) {
-              console.log('⚠️ Could not set session storage (cross-origin):', error.message);
+            // Wait for DOM to be ready
+            if (document.readyState === 'loading') {
+              document.addEventListener('DOMContentLoaded', init);
+            } else {
+              init();
             }
 
-            // Close this popup window - parent will detect close and reload
-            console.log('⚡ Calling window.close()...');
-            window.close();
-          }
+            function init() {
+              console.log('📄 DOM ready, initializing...');
 
-          // Add click event listener to button
-          const closeBtn = document.getElementById('closeBtn');
-          if (closeBtn) {
-            closeBtn.addEventListener('click', function() {
-              console.log('🖱️ Button clicked!');
-              closeAndReload();
-            });
-            console.log('✅ Button click listener attached');
-          } else {
-            console.error('❌ Button not found!');
-          }
+              const closeBtn = document.getElementById('closeBtn');
+              console.log('🔍 Button found:', !!closeBtn);
 
-          // Auto-close after 5 seconds as fallback
-          setTimeout(() => {
-            console.log('⏰ Auto-closing after 5 seconds...');
-            closeAndReload();
-          }, 5000);
+              if (closeBtn) {
+                // Try multiple ways to attach the click handler
+
+                // Method 1: addEventListener
+                closeBtn.addEventListener('click', function(e) {
+                  console.log('🖱️ Click detected via addEventListener!');
+                  e.preventDefault();
+                  closeWindow();
+                });
+
+                // Method 2: onclick property
+                closeBtn.onclick = function(e) {
+                  console.log('🖱️ Click detected via onclick property!');
+                  e.preventDefault();
+                  closeWindow();
+                  return false;
+                };
+
+                console.log('✅ Button handlers attached');
+              } else {
+                console.error('❌ Button not found!');
+              }
+
+              // Auto-close after 5 seconds as fallback
+              setTimeout(() => {
+                console.log('⏰ Auto-closing after 5 seconds...');
+                closeWindow();
+              }, 5000);
+            }
+
+            function closeWindow() {
+              console.log('🔒 closeWindow() called');
+
+              // Try to set sessionStorage in parent
+              try {
+                if (window.opener && !window.opener.closed) {
+                  window.opener.sessionStorage.setItem('supabase_connection_success', 'Successfully connected to Supabase!');
+                  console.log('✅ Session storage set');
+                }
+              } catch (error) {
+                console.log('⚠️ Session storage failed:', error.message);
+              }
+
+              // Close window
+              console.log('⚡ Calling window.close()...');
+              window.close();
+
+              // Fallback: try again after 100ms
+              setTimeout(() => {
+                console.log('🔄 Trying close again...');
+                window.close();
+              }, 100);
+            }
+          })();
         </script>
       </body>
       </html>
