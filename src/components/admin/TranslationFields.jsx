@@ -1,5 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { useTranslation } from '@/contexts/TranslationContext';
+import { Wand2 } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { toast } from 'sonner';
+import api from '@/utils/api';
 
 /**
  * TranslationFields Component
@@ -28,11 +33,14 @@ export default function TranslationFields({
   onChange,
   fields = [],
   defaultLanguage = 'en',
-  className = ''
+  className = '',
+  storeId = null,
+  entityType = 'product'
 }) {
   const { availableLanguages } = useTranslation();
   const [activeLanguage, setActiveLanguage] = useState(defaultLanguage);
   const [localTranslations, setLocalTranslations] = useState(translations);
+  const [translating, setTranslating] = useState({}); // { fieldName-langCode: boolean }
 
   // Update local state when translations prop changes
   useEffect(() => {
@@ -95,6 +103,44 @@ export default function TranslationFields({
     return lang ? lang.native_name || lang.name : code.toUpperCase();
   };
 
+  // AI translate field from English to target language
+  const handleAITranslate = async (fieldName, toLang) => {
+    const sourceText = localTranslations[defaultLanguage]?.[fieldName];
+
+    if (!sourceText || !sourceText.trim()) {
+      toast.error(`No ${defaultLanguage.toUpperCase()} text found for ${fieldName}`);
+      return;
+    }
+
+    const translatingKey = `${fieldName}-${toLang}`;
+    try {
+      setTranslating(prev => ({ ...prev, [translatingKey]: true }));
+
+      const response = await api.post('/translations/ai-translate', {
+        text: sourceText,
+        fromLang: defaultLanguage,
+        toLang,
+        storeId,
+        entityType
+      });
+
+      if (response && response.success && response.data) {
+        // Update the translation
+        handleFieldChange(toLang, fieldName, response.data.translated);
+        toast.success(`${fieldName} translated to ${toLang.toUpperCase()} (0.1 credits charged)`);
+      }
+    } catch (error) {
+      console.error('AI translate error:', error);
+      if (error.response?.status === 402) {
+        toast.error('Insufficient credits for translation');
+      } else {
+        toast.error(`Failed to translate ${fieldName}`);
+      }
+    } finally {
+      setTranslating(prev => ({ ...prev, [translatingKey]: false }));
+    }
+  };
+
   if (availableLanguages.length === 0) {
     return (
       <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
@@ -154,16 +200,41 @@ export default function TranslationFields({
         {fields.map(field => {
           const value = getFieldValue(activeLanguage, field.name);
           const isRequired = field.required && activeLanguage === defaultLanguage;
+          const translatingKey = `${field.name}-${activeLanguage}`;
+          const showWand = activeLanguage !== defaultLanguage && storeId;
 
           return (
             <div key={field.name} className="form-group">
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                {field.label}
-                {isRequired && <span className="text-red-500 ml-1">*</span>}
-                {field.hint && (
-                  <span className="text-gray-500 text-xs ml-2">({field.hint})</span>
+              <div className="flex items-center justify-between mb-1">
+                <label className="block text-sm font-medium text-gray-700">
+                  {field.label}
+                  {isRequired && <span className="text-red-500 ml-1">*</span>}
+                  {field.hint && (
+                    <span className="text-gray-500 text-xs ml-2">({field.hint})</span>
+                  )}
+                </label>
+                {showWand && (
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleAITranslate(field.name, activeLanguage)}
+                          disabled={translating[translatingKey] || !localTranslations[defaultLanguage]?.[field.name]}
+                          className="h-8 w-8 p-0"
+                        >
+                          <Wand2 className={`w-4 h-4 ${translating[translatingKey] ? 'animate-spin' : ''}`} />
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p>AI Translate from {defaultLanguage.toUpperCase()} (0.1 credits)</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
                 )}
-              </label>
+              </div>
 
               {field.type === 'textarea' ? (
                 <textarea

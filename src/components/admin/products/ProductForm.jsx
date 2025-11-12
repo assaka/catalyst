@@ -998,6 +998,8 @@ export default function ProductForm({ product, categories, stores, taxes, attrib
                       { name: 'short_description', label: 'Short Description', type: 'textarea', rows: 2 },
                       { name: 'description', label: 'Full Description', type: 'textarea', rows: 6 }
                     ]}
+                    storeId={getSelectedStoreId()}
+                    entityType="product"
                   />
                   <p className="text-sm text-gray-600 mt-3">
                     Translate product information to provide a localized experience for your customers
