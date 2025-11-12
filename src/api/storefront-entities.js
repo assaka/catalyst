@@ -172,6 +172,10 @@ class CustomerAuthService {
 
       if (storeSlug) {
         this.client.setCustomerToken(token, storeSlug);
+        // Clear auth cache so next .me() call fetches fresh user data
+        if (window.__authMeCache) {
+          window.__authMeCache = { data: null, timestamp: 0, fetching: false, callbacks: [] };
+        }
       } else {
         console.error('Cannot set customer token: No store context available');
       }
@@ -205,6 +209,10 @@ class CustomerAuthService {
 
       if (storeSlug) {
         this.client.setCustomerToken(token, storeSlug);
+        // Clear auth cache so next .me() call fetches fresh user data
+        if (window.__authMeCache) {
+          window.__authMeCache = { data: null, timestamp: 0, fetching: false, callbacks: [] };
+        }
       } else {
         console.error('Cannot set customer token: No store context available');
       }
@@ -215,13 +223,55 @@ class CustomerAuthService {
   }
 
   async logout() {
+    // Clear auth cache on logout
+    if (window.__authMeCache) {
+      window.__authMeCache = { data: null, timestamp: 0, fetching: false, callbacks: [] };
+    }
     return this.client.customerLogout();
   }
 
   async me() {
-    const response = await this.client.getCustomer('auth/me');
-    const data = response.data || response;
-    return Array.isArray(data) ? data[0] : data;
+    // Global cache to prevent duplicate auth/me calls
+    if (!window.__authMeCache) window.__authMeCache = { data: null, timestamp: 0, fetching: false, callbacks: [] };
+
+    const cache = window.__authMeCache;
+    const now = Date.now();
+
+    // Return cached data if fresh (30 seconds)
+    if (cache.data && (now - cache.timestamp < 30000)) {
+      return cache.data;
+    }
+
+    // If already fetching, wait for that request
+    if (cache.fetching) {
+      return new Promise(resolve => {
+        cache.callbacks.push(resolve);
+      });
+    }
+
+    // Start fetching
+    cache.fetching = true;
+    try {
+      const response = await this.client.getCustomer('auth/me');
+      const data = response.data || response;
+      const userData = Array.isArray(data) ? data[0] : data;
+
+      // Cache the result
+      cache.data = userData;
+      cache.timestamp = now;
+      cache.fetching = false;
+
+      // Resolve any pending callbacks
+      cache.callbacks.forEach(cb => cb(userData));
+      cache.callbacks = [];
+
+      return userData;
+    } catch (error) {
+      cache.fetching = false;
+      cache.callbacks.forEach(cb => cb(null));
+      cache.callbacks = [];
+      throw error;
+    }
   }
 
   async getCurrentUser() {
