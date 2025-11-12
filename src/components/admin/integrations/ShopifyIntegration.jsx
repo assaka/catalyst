@@ -46,14 +46,39 @@ const ShopifyIntegration = () => {
   const [accessToken, setAccessToken] = useState('');
   const [saveSuccess, setSaveSuccess] = useState(false);
   const [showInstructions, setShowInstructions] = useState(true);
+  const [storageConfigured, setStorageConfigured] = useState(null);
 
   useEffect(() => {
     console.log('ShopifyIntegration - storeId:', storeId);
     if (storeId && storeId !== 'undefined') {
       checkConnectionStatus();
       fetchImportStats();
+      checkStorageConfiguration();
     }
   }, [storeId]);
+
+  const checkStorageConfiguration = async () => {
+    if (!storeId) return;
+
+    try {
+      const response = await fetch('/api/storage/status', {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('store_owner_auth_token')}`,
+          'x-store-id': storeId
+        }
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        setStorageConfigured(data.configured || data.hasProvider);
+      } else {
+        setStorageConfigured(false);
+      }
+    } catch (error) {
+      console.error('Error checking storage configuration:', error);
+      setStorageConfigured(false);
+    }
+  };
 
   const connectWithDirectAccess = async () => {
     if (!shopDomain || !accessToken) {
@@ -554,12 +579,44 @@ const ShopifyIntegration = () => {
           </div>
         )}
 
+        {/* Media Storage Warning - Show when connected but storage not configured */}
+        {connectionStatus?.connected && storageConfigured === false && (
+          <Alert className="border-yellow-200 bg-yellow-50">
+            <AlertCircle className="h-4 w-4 text-yellow-600" />
+            <AlertDescription className="text-yellow-800">
+              <div className="flex items-center justify-between">
+                <div>
+                  <strong>Media Storage Not Configured</strong>
+                  <p className="text-sm mt-1">
+                    Product images will be stored as external URLs. For better performance and reliability,
+                    configure a media storage provider (Supabase, S3, GCS, or Local).
+                  </p>
+                </div>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => window.location.href = '/admin/store-database'}
+                  className="ml-4 whitespace-nowrap"
+                >
+                  <Settings className="w-4 h-4 mr-2" />
+                  Configure Storage
+                </Button>
+              </div>
+            </AlertDescription>
+          </Alert>
+        )}
+
         {/* Import Options - Only show when connected */}
         {connectionStatus?.connected && (
           <div className="bg-white border border-gray-200 rounded-lg p-6">
             <h3 className="text-lg font-semibold text-gray-900 mb-1">Import Data</h3>
             <p className="text-sm text-gray-600 mb-6">
               Import your Shopify data into SuprShop
+              {storageConfigured === false && (
+                <span className="block text-yellow-600 text-xs mt-1">
+                  ⚠️ Images will be stored as external URLs (storage not configured)
+                </span>
+              )}
             </p>
             <Tabs defaultValue="quick" className="w-full">
               <TabsList className="grid w-full grid-cols-2">
