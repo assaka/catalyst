@@ -58,6 +58,7 @@ import {
 import ProductForm from "@/components/admin/products/ProductForm";
 import ProductFilters from "@/components/admin/products/ProductFilters";
 import BulkTranslateDialog from "@/components/admin/BulkTranslateDialog";
+import FlashMessage from "@/components/storefront/FlashMessage";
 import { getCategoryName as getTranslatedCategoryName, getProductName, getProductShortDescription } from "@/utils/translationUtils";
 import { toast } from "sonner";
 import { useTranslation } from "@/contexts/TranslationContext.jsx";
@@ -117,10 +118,8 @@ export default function Products() {
   const [editingTranslation, setEditingTranslation] = useState({}); // { productId: { lang: 'value' } }
   const [failedImages, setFailedImages] = useState(new Set()); // Track failed image loads
 
-  // Error modal state
-  const [showErrorModal, setShowErrorModal] = useState(false);
-  const [errorModalMessage, setErrorModalMessage] = useState('');
-  const [errorModalTitle, setErrorModalTitle] = useState('');
+  // FlashMessage state
+  const [flashMessage, setFlashMessage] = useState(null);
 
   // Confirmation modal state
   const [showConfirmModal, setShowConfirmModal] = useState(false);
@@ -345,17 +344,14 @@ export default function Products() {
         await Product.delete(productId);
         await loadData();
         setShowConfirmModal(false);
-        toast.success('Product deleted successfully');
+        setFlashMessage({ type: 'success', message: 'Product deleted successfully' });
       } catch (error) {
         console.error("Error deleting product:", error);
         setShowConfirmModal(false);
-        if (error.status === 403) {
-          setErrorModalTitle('Permission Denied');
-          setErrorModalMessage(error.message || 'You do not have permission to delete this product.');
-          setShowErrorModal(true);
-        } else {
-          toast.error(error.message || 'Failed to delete product');
-        }
+        setFlashMessage({
+          type: 'error',
+          message: error.message || 'Failed to delete product'
+        });
       }
     });
     setShowConfirmModal(true);
@@ -398,17 +394,17 @@ export default function Products() {
         setShowBulkActions(false);
         await loadData();
         setShowConfirmModal(false);
-        toast.success(`${count} product${count > 1 ? 's' : ''} deleted successfully`);
+        setFlashMessage({
+          type: 'success',
+          message: `${count} product${count > 1 ? 's' : ''} deleted successfully`
+        });
       } catch (error) {
         console.error("Error deleting products:", error);
         setShowConfirmModal(false);
-        if (error.status === 403) {
-          setErrorModalTitle('Permission Denied');
-          setErrorModalMessage(error.message || 'You do not have permission to delete these products.');
-          setShowErrorModal(true);
-        } else {
-          toast.error(error.message || 'Failed to delete products');
-        }
+        setFlashMessage({
+          type: 'error',
+          message: error.message || 'Failed to delete products'
+        });
       }
     });
     setShowConfirmModal(true);
@@ -862,6 +858,7 @@ export default function Products() {
 
   return (
     <div className="min-h-screen bg-gray-50">
+      <FlashMessage message={flashMessage} onClose={() => setFlashMessage(null)} />
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8">
           <div>
@@ -1415,23 +1412,6 @@ export default function Products() {
                 onClick={() => confirmModalAction && confirmModalAction()}
               >
                 Delete
-              </Button>
-            </div>
-          </DialogContent>
-        </Dialog>
-
-        {/* Error Modal for 403 errors */}
-        <Dialog open={showErrorModal} onOpenChange={setShowErrorModal}>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>{errorModalTitle}</DialogTitle>
-            </DialogHeader>
-            <div className="py-4">
-              <p className="text-gray-600">{errorModalMessage}</p>
-            </div>
-            <div className="flex justify-end">
-              <Button onClick={() => setShowErrorModal(false)}>
-                Close
               </Button>
             </div>
           </DialogContent>
