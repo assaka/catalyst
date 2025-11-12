@@ -230,6 +230,7 @@ export default function Checkout() {
         console.error('Failed to load persisted checkout data:', error);
       }
     }
+    }
   }, [loading, dataRestored]);
 
   // Persist form data to localStorage whenever it changes (only after initial load)
