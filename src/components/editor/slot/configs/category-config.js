@@ -746,7 +746,7 @@ export const categoryConfig = {
                 window.dispatchEvent(new CustomEvent('showFlashMessage', {
                   detail: {
                     type: 'success',
-                    message: product.name + successMessage
+                    message: product.name + ' ' + successMessage
                   }
                 }));
               } else {
@@ -936,7 +936,7 @@ export const categoryConfig = {
                 window.dispatchEvent(new CustomEvent('showFlashMessage', {
                   detail: {
                     type: 'success',
-                    message: productName + successMessage
+                    message: productName + ' ' + successMessage
                   }
                 }));
               } else {

@@ -969,7 +969,7 @@ export function UnifiedSlotRenderer({
                 window.dispatchEvent(new CustomEvent('showFlashMessage', {
                   detail: {
                     type: 'success',
-                    message: `${product.name}${addedToCartMessage}`
+                    message: `${product.name} ${addedToCartMessage}`
                   }
                 }));
               }
