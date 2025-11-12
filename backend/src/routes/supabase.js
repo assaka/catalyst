@@ -181,18 +181,40 @@ router.get('/callback', async (req, res) => {
       </head>
       <body>
         <script>
+          console.log('🎯 OAuth callback page loaded');
+          console.log('🔍 Window opener exists:', !!window.opener);
+
           // Notify parent window immediately and close
           if (window.opener) {
-            window.opener.postMessage({
+            const targetOrigin = '${process.env.FRONTEND_URL || 'http://localhost:3000'}';
+            const message = {
               type: 'supabase-oauth-success',
               project: '${projectUrl}',
               userEmail: '${userEmail}',
               isLimitedScope: ${isLimitedScope}
-            }, '${process.env.FRONTEND_URL || 'http://localhost:3000'}');
+            };
+
+            console.log('📤 Sending postMessage to parent:', { targetOrigin, message });
+
+            try {
+              window.opener.postMessage(message, targetOrigin);
+              console.log('✅ Message sent successfully');
+            } catch (error) {
+              console.error('❌ Error sending message:', error);
+            }
+
             // Close instantly
+            console.log('🔒 Closing window...');
             window.close();
+
+            // If window didn't close (some browsers block it), try again
+            setTimeout(() => {
+              console.log('⚠️ Window still open, trying to close again...');
+              window.close();
+            }, 100);
           } else {
             // No opener - show minimal message
+            console.log('⚠️ No window.opener - showing manual close message');
             document.body.innerHTML = '<div style="color:white;text-align:center;padding:2rem;font-family:sans-serif;"><h1>✓ Success!</h1><p>Please close this window.</p></div>';
           }
         </script>

@@ -236,31 +236,46 @@ const SupabaseIntegration = ({ storeId, context = 'full' }) => {
 
         // Listen for postMessage from OAuth callback
         const messageHandler = (event) => {
+          console.log('📨 Received postMessage:', {
+            origin: event.origin,
+            type: event.data?.type,
+            data: event.data
+          });
+
           // Verify origin
           const allowedOrigins = [
             process.env.REACT_APP_API_URL,
             'https://catalyst-backend-fzhu.onrender.com',
             'http://localhost:5000'
           ];
-          
-          if (!allowedOrigins.some(origin => event.origin.startsWith(origin))) {
+
+          const originAllowed = allowedOrigins.some(origin => origin && event.origin.startsWith(origin));
+          console.log('🔐 Origin check:', { originAllowed, eventOrigin: event.origin, allowedOrigins });
+
+          if (!originAllowed) {
+            console.warn('⚠️ Origin not allowed, ignoring message');
             return;
           }
 
           if (event.data.type === 'supabase-oauth-success') {
-            console.log('Supabase OAuth success:', event.data);
+            console.log('✅ Supabase OAuth success:', event.data);
             window.removeEventListener('message', messageHandler);
             clearInterval(checkClosed);
 
-            // Close the popup window
+            // Force close the popup window immediately
+            console.log('🔒 Attempting to close popup window...');
             if (authWindow && !authWindow.closed) {
               authWindow.close();
+              console.log('🔒 Window close called');
+            } else {
+              console.log('⚠️ Window already closed or not available');
             }
 
             // Store success message in sessionStorage to show after reload
             sessionStorage.setItem('supabase_connection_success', 'Successfully connected to Supabase!');
 
             // Reload page immediately
+            console.log('🔄 Reloading page...');
             window.location.reload();
           } else if (event.data.type === 'supabase-oauth-error') {
             console.error('Supabase OAuth error:', event.data.error);
