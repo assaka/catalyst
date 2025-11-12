@@ -234,66 +234,27 @@ const SupabaseIntegration = ({ storeId, context = 'full' }) => {
           'width=600,height=700,scrollbars=yes,resizable=yes'
         );
 
-        // No timeout fallback - only close when we receive the callback message
+        // Simple approach: Just wait for popup to close, then reload
+        // User will click button or it auto-closes after 5s
 
-        // Listen for postMessage from OAuth callback
-        const messageHandler = (event) => {
-          console.log('📨 Received postMessage:', {
-            origin: event.origin,
-            type: event.data?.type,
-            data: event.data,
-            fullEvent: event
-          });
-
-          // ULTRA SIMPLE: Check if message has type='supabase-oauth-success'
-          const messageType = event.data?.type;
-
-          console.log('📋 Message check:', {
-            eventOrigin: event.origin,
-            messageType: messageType,
-            fullData: event.data
-          });
-
-          // Only process if it's our OAuth success message
-          if (messageType !== 'supabase-oauth-success') {
-            console.log('⚠️ Not OAuth success message, ignoring');
-            return;
-          }
-
-          // Received success message from button click
-          console.log('✅ Received OAuth success message - user clicked button');
-          window.removeEventListener('message', messageHandler);
-          clearInterval(checkClosed);
-
-          // Close popup immediately (button already sent message)
-          if (authWindow && !authWindow.closed) {
-            console.log('🔒 Closing popup...');
-            authWindow.close();
-          }
-
-          // Store success message in sessionStorage to show after reload
-          sessionStorage.setItem('supabase_connection_success', 'Successfully connected to Supabase!');
-
-          // Reload page immediately
-          console.log('🔄 Reloading page...');
-          window.location.reload();
-        };
-
-        window.addEventListener('message', messageHandler);
-
-        // Also check if window is closed manually
+        // Check if window is closed - when it closes, assume success and reload
         const checkClosed = setInterval(() => {
           if (authWindow.closed) {
+            console.log('🎉 Popup closed - assuming OAuth success, reloading page...');
             clearInterval(checkClosed);
-            window.removeEventListener('message', messageHandler);
             setConnecting(false);
+
+            // Store success message for flash notification after reload
+            sessionStorage.setItem('supabase_connection_success', 'Successfully connected to Supabase!');
+
+            // Reload page to show updated connection status
+            window.location.reload();
           }
-        }, 1000);
+        }, 500);
 
         // Clean up after 5 minutes (timeout)
         setTimeout(() => {
           clearInterval(checkClosed);
-          window.removeEventListener('message', messageHandler);
           if (connecting) {
             setConnecting(false);
             toast.error('Connection timeout. Please try again.');
