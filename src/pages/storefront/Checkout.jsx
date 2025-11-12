@@ -142,7 +142,7 @@ export default function Checkout() {
 
   useEffect(() => {
     loadCheckoutData();
-  }, [store?.id, storeLoading, pageBootstrap]); // Re-run when pageBootstrap arrives
+  }, [store?.id, storeLoading]); // Run once when store ready
 
   // Load persisted form data from localStorage after loading completes
   useEffect(() => {
