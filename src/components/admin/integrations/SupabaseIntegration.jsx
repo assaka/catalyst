@@ -20,6 +20,15 @@ const SupabaseIntegration = ({ storeId, context = 'full' }) => {
     }
   }, []);
 
+  // Watch connecting state - reload when OAuth completes (connecting becomes false)
+  useEffect(() => {
+    // Check if we just finished connecting (was true, now false)
+    if (!connecting && sessionStorage.getItem('supabase_connection_success')) {
+      console.log('🔄 OAuth completed - reloading page...');
+      window.location.reload();
+    }
+  }, [connecting]);
+
   // Helper function to format storage sizes (handles both string and number values)
   const formatStorageSize = (sizeValue, unit = 'MB') => {
     if (!sizeValue) return `0 ${unit}`;
@@ -237,18 +246,17 @@ const SupabaseIntegration = ({ storeId, context = 'full' }) => {
         // Simple approach: Just wait for popup to close, then reload
         // User will click button or it auto-closes after 5s
 
-        // Check if window is closed - when it closes, assume success and reload
+        // Check if window is closed - when it closes, stop loading
         const checkClosed = setInterval(() => {
           if (authWindow.closed) {
-            console.log('🎉 Popup closed - assuming OAuth success, reloading page...');
+            console.log('🎉 Popup closed - stopping loader...');
             clearInterval(checkClosed);
-            setConnecting(false);
 
-            // Store success message for flash notification after reload
+            // Store success message for flash notification
             sessionStorage.setItem('supabase_connection_success', 'Successfully connected to Supabase!');
 
-            // Reload page to show updated connection status
-            window.location.reload();
+            // Stop loading - this will trigger reload via useEffect
+            setConnecting(false);
           }
         }, 500);
 
