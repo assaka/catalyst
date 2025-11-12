@@ -160,7 +160,7 @@ export default function CustomerAuth() {
       } else {
         // Registration
         if (formData.password !== formData.confirmPassword) {
-          setError(t('customer_auth.error.passwords_no_match'));
+          setError(t('message.password_mismatch'));
           return;
         }
 
@@ -207,7 +207,7 @@ export default function CustomerAuth() {
     } catch (error) {
       console.error('Auth error:', error);
       // Use backend error message if available
-      const defaultMessage = isLogin ? t('customer_auth.error.login_failed') : t('customer_auth.error.registration_failed');
+      const defaultMessage = isLogin ? t('common.login_failed') : t('customer_auth.error.registration_failed');
       const errorMessage = error.response?.data?.message || error.data?.message || error.message || defaultMessage;
       setError(errorMessage);
     } finally {
