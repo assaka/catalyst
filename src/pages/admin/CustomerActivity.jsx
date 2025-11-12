@@ -622,6 +622,7 @@ export default function CustomerActivityPage() {
                     <DonutChart
                       data={sessionAnalytics.device_breakdown}
                       size={180}
+                      className="block"
                     />
                   ) : (
                     <div className="text-center py-8 text-gray-500">
@@ -645,6 +646,7 @@ export default function CustomerActivityPage() {
                     <DonutChart
                       data={sessionAnalytics.browser_breakdown}
                       size={180}
+                      className="block"
                     />
                   ) : (
                     <div className="text-center py-8 text-gray-500">
