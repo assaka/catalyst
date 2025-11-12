@@ -262,23 +262,28 @@ const SupabaseIntegration = ({ storeId, context = 'full' }) => {
             return;
           }
 
-          // Check if this is actually our OAuth success message
-          // It must have type='supabase-oauth-success' OR have a 'project' field
+          // Check if this is from the backend callback - if so, accept it
+          const isFromBackend = event.origin.includes('catalyst-backend') || event.origin.includes('localhost:5000');
+
+          // Also check message content as secondary validation
           const messageData = event.data?.data || event.data;
-          const isOAuthSuccess =
+          const hasOAuthContent =
             messageData?.type === 'supabase-oauth-success' ||
             event.data?.type === 'supabase-oauth-success' ||
             messageData?.project ||
             event.data?.project;
 
           console.log('📋 Message validation:', {
-            isOAuthSuccess,
-            hasType: messageData?.type || event.data?.type,
-            hasProject: messageData?.project || event.data?.project
+            isFromBackend,
+            hasOAuthContent,
+            eventOrigin: event.origin,
+            messageData: messageData,
+            rawData: event.data
           });
 
-          if (!isOAuthSuccess) {
-            console.warn('⚠️ Not an OAuth success message, ignoring');
+          // Accept if from backend OR has OAuth content
+          if (!isFromBackend && !hasOAuthContent) {
+            console.warn('⚠️ Not from backend and no OAuth content, ignoring');
             return;
           }
 
