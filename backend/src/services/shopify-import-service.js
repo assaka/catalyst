@@ -476,7 +476,7 @@ class ShopifyImportService {
           const storedUrl = await this.downloadAndStoreImage(image.src, product.handle, i);
 
           storedImages.push({
-            src: storedUrl,
+            url: storedUrl,
             alt: image.alt || product.title,
             position: image.position || i + 1,
             shopify_id: image.id
@@ -487,7 +487,7 @@ class ShopifyImportService {
 
         // Set main image (first image)
         if (storedImages.length > 0) {
-          productData.image_url = storedImages[0].src;
+          productData.image_url = storedImages[0].url;
         }
       }
 
