@@ -129,7 +129,20 @@ function formatOrderItemsHtml(items) {
 
   items.forEach(item => {
     html += '<tr>';
-    html += `<td style="padding: 10px; border: 1px solid #dee2e6;">${item.product_name}</td>`;
+
+    // Product column with image and name
+    html += '<td style="padding: 10px; border: 1px solid #dee2e6;">';
+    html += '<div style="display: flex; align-items: center; gap: 10px;">';
+
+    // Add product image if available
+    if (item.product_image) {
+      html += `<img src="${item.product_image}" alt="${item.product_name}" style="width: 60px; height: 60px; object-fit: cover; border-radius: 4px;" />`;
+    }
+
+    html += `<span>${item.product_name}</span>`;
+    html += '</div>';
+    html += '</td>';
+
     html += `<td style="padding: 10px; text-align: center; border: 1px solid #dee2e6;">${item.quantity}</td>`;
     html += `<td style="padding: 10px; text-align: right; border: 1px solid #dee2e6;">$${parseFloat(item.unit_price).toFixed(2)}</td>`;
     html += `<td style="padding: 10px; text-align: right; border: 1px solid #dee2e6;">$${parseFloat(item.total_price).toFixed(2)}</td>`;

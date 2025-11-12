@@ -2303,11 +2303,19 @@ async function createPreliminaryOrder(session, orderData) {
       const unitPrice = basePrice + optionsPrice;
       const totalPrice = unitPrice * (item.quantity || 1);
 
+      // Extract product image from item if available
+      let productImage = null;
+      if (item.images && Array.isArray(item.images) && item.images.length > 0) {
+        const firstImage = item.images[0];
+        productImage = typeof firstImage === 'object' ? firstImage.url : firstImage;
+      }
+
       const orderItemData = {
         order_id: order.id,
         product_id: item.product_id,
         product_name: item.product_name || item.name || 'Product',
         product_sku: item.sku || '',
+        product_image: productImage,
         quantity: item.quantity || 1,
         unit_price: unitPrice.toFixed(2),
         total_price: totalPrice.toFixed(2),
@@ -2666,14 +2674,20 @@ async function createOrderFromCheckoutSession(session) {
     }
     
     for (const [productId, productData] of productMap) {
-      // Look up actual product name from database if needed
+      // Look up actual product name and image from database if needed
       let actualProductName = productData.product_name;
+      let productImage = null;
       if (!actualProductName || actualProductName === 'Product') {
         try {
           const product = await Product.findByPk(productId);
           if (product) {
             actualProductName = product.name;
-            console.log('Retrieved actual product name from database:', actualProductName);
+            // Extract first image URL from images array
+            if (product.images && Array.isArray(product.images) && product.images.length > 0) {
+              const firstImage = product.images[0];
+              productImage = typeof firstImage === 'object' ? firstImage.url : firstImage;
+            }
+            console.log('Retrieved actual product name and image from database:', actualProductName, productImage);
           }
         } catch (productLookupError) {
           console.warn('Could not look up product name for ID:', productId, productLookupError.message);
@@ -2692,6 +2706,7 @@ async function createOrderFromCheckoutSession(session) {
         product_id: productData.product_id,
         product_name: actualProductName,
         product_sku: productData.product_sku,
+        product_image: productImage, // Store product image URL
         quantity: productData.quantity,
         unit_price: finalPrice,
         total_price: totalPrice,
