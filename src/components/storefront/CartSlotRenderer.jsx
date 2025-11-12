@@ -7,6 +7,7 @@ import { Trash2, Plus, Minus, Tag, ShoppingCart, ChevronDown } from 'lucide-reac
 import { SlotManager } from '@/utils/slotUtils';
 import { filterSlotsByViewMode, sortSlotsByGridCoordinates } from '@/hooks/useSlotConfiguration';
 import { useTranslation } from '@/contexts/TranslationContext';
+import { getProductName } from '@/utils/translationUtils';
 
 /**
  * CartSlotRenderer - Renders slots with full cart functionality
@@ -18,7 +19,7 @@ export function CartSlotRenderer({
   viewMode = 'emptyCart',
   cartContext = {}
 }) {
-  const { t, getEntityTranslation } = useTranslation();
+  const { t, getEntityTranslation, currentLanguage } = useTranslation();
   const {
     cartItems = [],
     appliedCoupon,
@@ -190,15 +191,17 @@ export function CartSlotRenderer({
               let basePriceForDisplay = item.price > 0 ? item.price : (product.sale_price || product.price);
               const itemTotal = calculateItemTotal(item, product);
 
+              const translatedProductName = getProductName(product, currentLanguage) || product.name || 'Product';
+
               return (
                 <div key={item.id} className="flex items-center space-x-4 py-6 border-b border-gray-200">
                   <img
                     src={getProductImageUrl(product)}
-                    alt={product.name}
+                    alt={translatedProductName}
                     className="w-20 h-20 object-cover rounded-lg"
                   />
                   <div className="flex-1">
-                    <h3 className="text-lg font-semibold">{product.name}</h3>
+                    <h3 className="text-lg font-semibold">{translatedProductName}</h3>
                     <p className="text-gray-600">
                       {formatDisplayPrice(basePriceForDisplay)} each
                     </p>
@@ -263,16 +266,17 @@ export function CartSlotRenderer({
       const product = item.product;
       let basePriceForDisplay = item.price > 0 ? item.price : (product.sale_price || product.price);
       const itemTotal = calculateItemTotal(item, product);
+      const translatedProductName = getProductName(product, currentLanguage) || product.name || 'Product';
 
       return (
         <div className={`${className} flex items-center space-x-4 py-6 border-b border-gray-200`} style={styles}>
           <img
             src={getProductImageUrl(product)}
-            alt={product.name}
+            alt={translatedProductName}
             className="w-20 h-20 object-cover rounded-lg"
           />
           <div className="flex-1">
-            <h3 className="text-lg font-semibold">{product.name}</h3>
+            <h3 className="text-lg font-semibold">{translatedProductName}</h3>
             <p className="text-gray-600">
               {formatDisplayPrice(basePriceForDisplay)} each
             </p>
@@ -633,7 +637,9 @@ export function CartSlotRenderer({
                           return (
                             <ul className="space-y-1">
                               {eligibleItems.map((item, index) => {
-                                const productName = item.product?.name || item.name || 'Product';
+                                const productName = item.product
+                                  ? (getProductName(item.product, currentLanguage) || item.product.name || 'Product')
+                                  : (item.name || 'Product');
                                 return (
                                   <li key={index} className="text-xs flex items-center gap-2">
                                     <span className="inline-block w-1.5 h-1.5 bg-green-500 rounded-full"></span>

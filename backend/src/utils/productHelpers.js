@@ -9,7 +9,7 @@ const { sequelize } = require('../database/connection');
 const { Op } = require('sequelize');
 
 /**
- * Get product translation from normalized table
+ * Get product translation from normalized table with English fallback
  *
  * @param {string} productId - Product ID
  * @param {string} lang - Language code
@@ -17,9 +17,11 @@ const { Op } = require('sequelize');
  */
 async function getProductTranslation(productId, lang = 'en') {
   const query = `
-    SELECT name, description, short_description
+    SELECT name, description, short_description, language_code
     FROM product_translations
-    WHERE product_id = :productId AND language_code = :lang
+    WHERE product_id = :productId AND language_code IN (:lang, 'en')
+    ORDER BY CASE WHEN language_code = :lang THEN 1 ELSE 2 END
+    LIMIT 1
   `;
 
   const results = await sequelize.query(query, {
@@ -43,21 +45,22 @@ async function applyProductTranslations(product, lang = 'en') {
 
   const productData = product.toJSON ? product.toJSON() : product;
 
-  // Fetch translation from normalized table
+  // Fetch translation from normalized table (with English fallback)
   const translation = await getProductTranslation(productData.id, lang);
 
   if (translation) {
-    // Use normalized translation
-    productData.name = translation.name;
-    productData.description = translation.description;
-    productData.short_description = translation.short_description;
+    // Use normalized translation (requested lang or English fallback)
+    productData.name = translation.name || productData.name || '';
+    productData.description = translation.description || productData.description || '';
+    productData.short_description = translation.short_description || productData.short_description || '';
   } else if (productData.translations) {
     // Fallback to JSON column
     const fallbackLang = productData.translations[lang] || productData.translations.en || {};
-    productData.name = fallbackLang.name;
-    productData.description = fallbackLang.description;
-    productData.short_description = fallbackLang.short_description;
+    productData.name = fallbackLang.name || productData.name || '';
+    productData.description = fallbackLang.description || productData.description || '';
+    productData.short_description = fallbackLang.short_description || productData.short_description || '';
   }
+  // If no translations exist at all, keep the original productData values
 
   return productData;
 }
@@ -77,41 +80,52 @@ async function applyProductTranslationsToMany(products, lang = 'en') {
 
   if (productIds.length === 0) return products;
 
+  // Fetch both requested language and English fallback in one query
   const query = `
-    SELECT product_id, name, description, short_description
+    SELECT product_id, language_code, name, description, short_description
     FROM product_translations
-    WHERE product_id IN (:productIds) AND language_code = :lang
+    WHERE product_id IN (:productIds) AND language_code IN (:lang, 'en')
   `;
 
   const translations = await sequelize.query(query, {
-    replacements: { productIds, lang },
+    replacements: { productIds, lang: lang === 'en' ? 'en' : [lang, 'en'] },
     type: sequelize.QueryTypes.SELECT
   });
 
-  // Create a map for quick lookup
-  const translationMap = {};
+  // Create maps for quick lookup (requested language and English fallback)
+  const requestedLangMap = {};
+  const englishLangMap = {};
+
   translations.forEach(t => {
-    translationMap[t.product_id] = t;
+    if (t.language_code === lang) {
+      requestedLangMap[t.product_id] = t;
+    }
+    if (t.language_code === 'en') {
+      englishLangMap[t.product_id] = t;
+    }
   });
 
   // Apply translations to each product
   return products.map(product => {
     // Convert to plain object but preserve all nested data
     const productData = product.toJSON ? product.toJSON() : { ...product };
-    const translation = translationMap[productData.id];
+
+    // Try requested language first, then English, then keep original values
+    const translation = requestedLangMap[productData.id] || englishLangMap[productData.id];
 
     if (translation) {
-      // Use normalized translation
-      productData.name = translation.name;
-      productData.description = translation.description;
-      productData.short_description = translation.short_description;
+      // Use normalized translation (requested lang or English fallback)
+      productData.name = translation.name || productData.name || '';
+      productData.description = translation.description || productData.description || '';
+      productData.short_description = translation.short_description || productData.short_description || '';
     } else if (productData.translations) {
       // Fallback to JSON column
       const fallbackLang = productData.translations[lang] || productData.translations.en || {};
-      productData.name = fallbackLang.name || '';
-      productData.description = fallbackLang.description || '';
-      productData.short_description = fallbackLang.short_description || '';
+      productData.name = fallbackLang.name || productData.name || '';
+      productData.description = fallbackLang.description || productData.description || '';
+      productData.short_description = fallbackLang.short_description || productData.short_description || '';
     }
+    // If no translations exist at all, keep the original productData values
 
     return productData;
   });
