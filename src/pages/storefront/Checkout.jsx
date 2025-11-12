@@ -446,14 +446,33 @@ export default function Checkout() {
 
       setCartItems(cartItems);
 
-      // Load product details for cart items (BATCH FETCH - prevents duplicates!)
+      // Load product details for cart items (BATCH FETCH with global cache!)
       if (cartItems && cartItems.length > 0) {
         try {
           const productIds = [...new Set(cartItems.map(item => item.product_id))];
 
-          // Batch fetch all products at once (1 API call instead of N!)
-          const products = await StorefrontProduct.filter({ ids: productIds });
-          const productsArray = Array.isArray(products) ? products : [];
+          // Check global cache first (shared with Cart page!)
+          const cacheKey = `products:${productIds.sort().join(',')}`;
+          let productsArray = [];
+
+          if (window.__productBatchCache?.[cacheKey]) {
+            const cached = window.__productBatchCache[cacheKey];
+            if (Date.now() - cached.timestamp < 30000) { // 30s cache
+              productsArray = cached.data;
+            } else {
+              // Cache expired, fetch and update
+              const products = await StorefrontProduct.filter({ ids: productIds });
+              productsArray = Array.isArray(products) ? products : [];
+              if (!window.__productBatchCache) window.__productBatchCache = {};
+              window.__productBatchCache[cacheKey] = { data: productsArray, timestamp: Date.now() };
+            }
+          } else {
+            // Not cached, fetch and cache
+            const products = await StorefrontProduct.filter({ ids: productIds });
+            productsArray = Array.isArray(products) ? products : [];
+            if (!window.__productBatchCache) window.__productBatchCache = {};
+            window.__productBatchCache[cacheKey] = { data: productsArray, timestamp: Date.now() };
+          }
 
           // Create lookup map
           const productDetails = {};

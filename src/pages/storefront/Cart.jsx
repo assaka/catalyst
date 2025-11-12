@@ -217,17 +217,7 @@ export default function Cart() {
         
     }, [storeLoading, store?.id]);
 
-    const loadTaxRules = async () => {
-        try {
-            if (store?.id) {
-                const taxData = await Tax.filter({ store_id: store.id, is_active: true });
-                setTaxRules(taxData || []);
-            }
-        } catch (error) {
-            console.error('Error loading tax rules:', error);
-            setTaxRules([]);
-        }
-    };
+    // Removed loadTaxRules - now using taxes from page bootstrap or StoreProvider
 
     // Load applied coupon from service on mount
     useEffect(() => {
@@ -336,28 +326,14 @@ export default function Cart() {
 
             // Emit loading event
             eventSystem.emit('cart.loadingStarted', localCartContext);
-            const [cartResult, taxRulesData] = await Promise.allSettled([
-                // Load cart data
-                (async () => {
-                    // CRITICAL: Pass store.id to filter cart by store (fixes multi-store issue)
-                    // CRITICAL: Always bust cache (true) to get fresh data from database
-                    const result = await cartService.getCart(true, store?.id);
-                    return result;
-                })(),
+            // Load cart data (tax rules already available from page bootstrap or StoreProvider!)
+            const cartResult = await cartService.getCart(true, store?.id).then(
+                result => ({ status: 'fulfilled', value: result }),
+                error => ({ status: 'rejected', reason: error })
+            );
 
-                // Load tax rules in parallel
-                (async () => {
-                    const startTime = performance.now();
-                    try {
-                        const taxData = store?.id ? await Tax.filter({ store_id: store.id, is_active: true }) : [];
-                        const loadTime = performance.now() - startTime;
-                        return taxData || [];
-                    } catch (error) {
-                        console.error('Tax rules loading failed:', error);
-                        return [];
-                    }
-                })()
-            ]);
+            // Use tax rules from page bootstrap or StoreProvider (no API call!)
+            const taxRulesData = { status: 'fulfilled', value: taxes || [] };
 
             // Extract cart results
             let cartItems = [];
@@ -396,7 +372,22 @@ export default function Cart() {
             // Batch Product Fetching
             let products = [];
             try {
-                products = await StorefrontProduct.filter({ ids: productIds });
+                // Check global cache first (prevents duplicate fetch in Checkout)
+                const cacheKey = `products:${productIds.sort().join(',')}`;
+                if (window.__productBatchCache && window.__productBatchCache[cacheKey]) {
+                    const cached = window.__productBatchCache[cacheKey];
+                    if (Date.now() - cached.timestamp < 30000) { // 30 second cache
+                        products = cached.data;
+                    } else {
+                        products = await StorefrontProduct.filter({ ids: productIds });
+                        if (!window.__productBatchCache) window.__productBatchCache = {};
+                        window.__productBatchCache[cacheKey] = { data: products, timestamp: Date.now() };
+                    }
+                } else {
+                    products = await StorefrontProduct.filter({ ids: productIds });
+                    if (!window.__productBatchCache) window.__productBatchCache = {};
+                    window.__productBatchCache[cacheKey] = { data: products, timestamp: Date.now() };
+                }
             } catch (error) {
                 console.error('Cart: Failed to fetch products:', error);
                 products = [];
