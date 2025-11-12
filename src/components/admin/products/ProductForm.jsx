@@ -914,7 +914,17 @@ export default function ProductForm({ product, categories, stores, taxes, attrib
               {!showTranslations && (
                 <>
                   <div>
-                    <Label htmlFor="short_description">Short Description</Label>
+                    <div className="flex items-center justify-between mb-2">
+                      <Label htmlFor="short_description">Short Description</Label>
+                      <button
+                        type="button"
+                        onClick={() => setShowTranslations(true)}
+                        className="text-sm text-blue-600 hover:text-blue-800 flex items-center gap-1"
+                      >
+                        <Languages className="w-4 h-4" />
+                        Manage translations
+                      </button>
+                    </div>
                     <Textarea
                       id="short_description"
                       value={formData.short_description}
@@ -924,7 +934,17 @@ export default function ProductForm({ product, categories, stores, taxes, attrib
                     />
                   </div>
                   <div>
-                    <Label htmlFor="description">Full Description</Label>
+                    <div className="flex items-center justify-between mb-2">
+                      <Label htmlFor="description">Full Description</Label>
+                      <button
+                        type="button"
+                        onClick={() => setShowTranslations(true)}
+                        className="text-sm text-blue-600 hover:text-blue-800 flex items-center gap-1"
+                      >
+                        <Languages className="w-4 h-4" />
+                        Manage translations
+                      </button>
+                    </div>
                     <Textarea
                       id="description"
                       value={formData.description}
