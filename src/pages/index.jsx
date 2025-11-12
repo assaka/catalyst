@@ -37,6 +37,7 @@ export { default as ProductTabs } from './admin/ProductTabs';
 export { default as ProductLabels } from './admin/ProductLabels';
 export { default as CustomOptionRules } from './admin/CustomOptionRules';
 export { default as MarketplaceExport } from './admin/MarketplaceExport';
+export { default as MarketplaceHub } from './admin/MarketplaceHub';
 export { default as SeoSettings } from './admin/SeoSettings';
 export { default as SeoTemplates } from './admin/SeoTemplates';
 export { default as SeoRedirects } from './admin/SeoRedirects';
