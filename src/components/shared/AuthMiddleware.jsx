@@ -7,6 +7,7 @@ import { Auth as AuthService, User } from "@/api/entities";
 import apiClient from "@/api/client";
 import StoreOwnerAuthLayout from "@/components/admin/StoreOwnerAuthLayout";
 import CustomerAuthLayout from "@/components/storefront/CustomerAuthLayout";
+import { useTranslation } from "@/contexts/TranslationContext";
 
 // Helper function for debugging authentication status
 window.debugAuth = () => {
@@ -802,6 +803,7 @@ window.testDashboardAccess = async () => {
 };
 
 export default function AuthMiddleware({ role = 'store_owner' }) {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const [loading, setLoading] = useState(false);
@@ -856,12 +858,12 @@ export default function AuthMiddleware({ role = 'store_owner' }) {
   }, [searchParams, role]);
 
   const getErrorMessage = (error) => {
-    const errorMessages = {
-      'oauth_failed': 'Google authentication failed. Please try again.',
-      'token_generation_failed': 'Failed to generate authentication token. Please try again.',
-      'database_connection_failed': 'Database connection issue. Please try again in a few moments.'
+    const errorKeyMap = {
+      'oauth_failed': 'auth.error.oauth_failed',
+      'token_generation_failed': 'auth.error.token_generation_failed',
+      'database_connection_failed': 'auth.error.database_connection_failed'
     };
-    return errorMessages[error] || 'An error occurred. Please try again.';
+    return t(errorKeyMap[error] || 'auth.error.general');
   };
 
   const checkAuthStatus = async () => {
@@ -1087,7 +1089,7 @@ export default function AuthMiddleware({ role = 'store_owner' }) {
       } else {
         // Registration
         if (formData.password !== formData.confirmPassword) {
-          setError("Passwords do not match");
+          setError(t('message.password_mismatch'));
           return;
         }
 
@@ -1132,7 +1134,7 @@ export default function AuthMiddleware({ role = 'store_owner' }) {
               const accountUrl = await getCustomerAccountUrl();
               navigate(accountUrl);
             } else {
-              setSuccess("Registration successful! Redirecting...");
+              setSuccess(t('auth.success.user_created'));
               setTimeout(() => {
                 navigate(createAdminUrl("DASHBOARD"));
               }, 1500);
@@ -1147,7 +1149,8 @@ export default function AuthMiddleware({ role = 'store_owner' }) {
         status: error.status,
         data: error.data
       });
-      setError(error.message || `${isLogin ? 'Login' : 'Registration'} failed`);
+      const defaultMessage = isLogin ? t('common.login_failed') : t('customer_auth.error.registration_failed');
+      setError(error.message || defaultMessage);
     } finally {
       setLoading(false);
     }
@@ -1155,7 +1158,7 @@ export default function AuthMiddleware({ role = 'store_owner' }) {
 
   const handleGoogleAuth = () => {
     if (role === 'customer') {
-      setError("Google authentication is not available for customers.");
+      setError(t('auth.error.google_not_available_customer'));
       return;
     }
     
@@ -1183,7 +1186,7 @@ export default function AuthMiddleware({ role = 'store_owner' }) {
     const redirectTimeout = setTimeout(() => {
       console.log('🔍 Google auth redirect timeout - checking what happened');
       console.log('🔍 Current URL after timeout:', window.location.href);
-      setError("Google authentication redirect failed. The service may not be configured properly.");
+      setError(t('auth.error.google_redirect_failed'));
       setLoading(false);
     }, 5000);
     
@@ -1198,7 +1201,7 @@ export default function AuthMiddleware({ role = 'store_owner' }) {
       window.location.href = googleAuthUrl;
     } catch (error) {
       console.error('🔍 Error during redirect:', error);
-      setError("Failed to redirect to Google authentication.");
+      setError(t('auth.error.redirect_failed'));
       setLoading(false);
     }
   };
