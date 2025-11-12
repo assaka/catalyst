@@ -199,6 +199,16 @@ router.get('/', cacheProducts(180), async (req, res) => {
     // Transform products to include formatted attributes with normalized translations
     const productsWithAttributes = productsWithTranslations.map(productData => {
 
+      // Ensure images is properly parsed as JSON array
+      if (productData.images && typeof productData.images === 'string') {
+        try {
+          productData.images = JSON.parse(productData.images);
+        } catch (e) {
+          console.error('Failed to parse product images:', e);
+          productData.images = [];
+        }
+      }
+
       // Format attributes for frontend
       if (productData.attributeValues && Array.isArray(productData.attributeValues)) {
         productData.attributes = productData.attributeValues.map(pav => {
@@ -310,6 +320,16 @@ router.get('/:id', cacheProduct(300), async (req, res) => {
 
     // Apply product translations from normalized table
     const productData = await applyProductTranslations(product, lang);
+
+    // Ensure images is properly parsed as JSON array
+    if (productData.images && typeof productData.images === 'string') {
+      try {
+        productData.images = JSON.parse(productData.images);
+      } catch (e) {
+        console.error('Failed to parse product images:', e);
+        productData.images = [];
+      }
+    }
 
     // Collect attribute and attribute value IDs
     const attributeIds = new Set();

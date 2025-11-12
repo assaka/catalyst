@@ -263,6 +263,22 @@ const ProductItemCard = ({
     }
   };
 
+  // Debug logging for images
+  React.useEffect(() => {
+    if (product?.images) {
+      console.log('🖼️ ProductItemCard - Product:', product.name);
+      console.log('🖼️ Images type:', typeof product.images);
+      console.log('🖼️ Images is array:', Array.isArray(product.images));
+      console.log('🖼️ Images data:', product.images);
+      if (Array.isArray(product.images) && product.images.length > 0) {
+        console.log('🖼️ First image:', product.images[0]);
+        console.log('🖼️ First image type:', typeof product.images[0]);
+      }
+      const url = getPrimaryImageUrl(product.images);
+      console.log('🖼️ getPrimaryImageUrl result:', url);
+    }
+  }, [product]);
+
   return (
     <Card
       className={templateConfig.className || `group overflow-hidden ${className} ${viewMode === 'list' ? 'flex' : ''}`}
