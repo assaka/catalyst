@@ -158,23 +158,17 @@ export default function Products() {
 
     try {
       setLoading(true);
-      console.log('🔄 Products: Starting data load for store:', storeId);
 
       // Build filters for products API - load products using admin API
-      const productFilters = { 
-        store_id: storeId, 
+      const productFilters = {
+        store_id: storeId,
         order_by: "-created_date",
         _t: Date.now() // Cache-busting timestamp
       };
 
-      console.log('📋 Products: Using filters:', productFilters);
-
       // First, load other data and get initial product batch
-      console.log('🚀 Products: Loading initial data...');
-      
       const [firstProductBatch, categoriesData, taxesData, attributesData, attributeSetsData] = await Promise.all([
         retryApiCall(() => {
-          console.log('📦 Loading all products at once...');
           return Product.findPaginated(1, 10000, productFilters);
         }).catch((error) => {
           console.error('❌ Product.findPaginated failed:', error);
@@ -198,11 +192,7 @@ export default function Products() {
         })
       ]);
 
-      console.log('✅ Products: Initial data loaded');
-      console.log('📦 First batch:', firstProductBatch.data?.length || 0, 'products');
-
       // Set other data immediately
-      
       setCategories(Array.isArray(categoriesData) ? categoriesData : []);
       setTaxes(Array.isArray(taxesData) ? taxesData : []);
       setAttributes(Array.isArray(attributesData) ? attributesData : []);
@@ -212,24 +202,16 @@ export default function Products() {
       let allProducts = Array.isArray(firstProductBatch.data) ? [...firstProductBatch.data] : [];
       const totalProductsInStore = firstProductBatch.pagination?.total || 0;
       const totalPages = firstProductBatch.pagination?.total_pages || 1;
-      
-      console.log('📊 Total products in store:', totalProductsInStore);
-      console.log('📄 Total pages:', totalPages);
 
       // Check if we need to load more products (should be rare with limit 10000)
       if (totalPages > 1) {
-        console.log('🔄 Loading remaining products in batches...');
-        console.log('⚠️  Warning: Store has more than 10,000 products, loading in batches');
-        
         // Load pages 2 onwards in smaller batches to avoid timeout
         const batchSize = 2; // Load 2 pages at a time to avoid timeout with large datasets
-        
+
         for (let page = 2; page <= totalPages; page += batchSize) {
           const pagesToLoad = [];
           const endPage = Math.min(page + batchSize - 1, totalPages);
-          
-          console.log(`📦 Loading pages ${page} to ${endPage}...`);
-          
+
           // Create promises for this batch
           for (let p = page; p <= endPage; p++) {
             pagesToLoad.push(
@@ -240,40 +222,32 @@ export default function Products() {
                 })
             );
           }
-          
+
           // Load this batch of pages
           const batchResults = await Promise.all(pagesToLoad);
-          
+
           // Add products from each page
           for (const result of batchResults) {
             if (result.data && Array.isArray(result.data)) {
               allProducts = [...allProducts, ...result.data];
             }
           }
-          
-          console.log(`✅ Batch complete. Total products loaded: ${allProducts.length}`);
-          
+
           // Update UI with current progress - force re-render
           setProducts([...allProducts]); // Create new array to force React re-render
           setTotalItems(totalProductsInStore);
           setTotalPages(Math.ceil(allProducts.length / itemsPerPage));
-          
+
           // Small delay to ensure UI updates properly
           await new Promise(resolve => setTimeout(resolve, 100));
         }
-      } else {
-        console.log('✅ All products loaded in single request');
       }
-      
-      console.log('✅ All products loaded:', allProducts.length, 'products');
-      
+
       // Final state update - ensure fresh array reference
       setProducts([...allProducts]); // Force React re-render with new array reference
       setTotalItems(totalProductsInStore);
       setTotalPages(Math.ceil(allProducts.length / itemsPerPage));
       setCurrentPage(1);
-
-      console.log('✅ Products: Data loading completed successfully');
 
     } catch (error) {
       console.error("❌ Products: Error loading data:", error);
@@ -286,7 +260,6 @@ export default function Products() {
       setTotalItems(0);
       setTotalPages(0);
     } finally {
-      console.log('🏁 Products: Setting loading to false');
       setLoading(false);
     }
   };
@@ -297,15 +270,8 @@ export default function Products() {
       throw new Error("No store selected");
     }
 
-    // Debug: Log what we're receiving from ProductForm
-    console.log('🔍 Products.jsx handleCreateProduct: Received productData:', {
-      name: productData.name,
-      translations: productData.translations
-    });
-
     try {
       const result = await Product.create({ ...productData, store_id: storeId });
-      console.log('✅ Product.create result:', result);
       await loadData();
       setShowProductForm(false);
     } catch (error) {
@@ -318,15 +284,7 @@ export default function Products() {
     try {
       const { id, ...updateData } = productData;
 
-      // Debug: Log what we're updating
-      console.log('🔍 Products.jsx handleUpdateProduct: Updating product:', {
-        id,
-        name: updateData.name,
-        translations: updateData.translations
-      });
-
       const result = await Product.update(id, updateData);
-      console.log('✅ Product.update result:', result);
       await loadData();
       setShowProductForm(false);
       setSelectedProduct(null);
@@ -439,18 +397,14 @@ export default function Products() {
 
   const handleBulkStatusChange = async (newStatus) => {
     if (selectedProducts.size === 0) return;
-    
+
     // Prevent double execution
     if (bulkActionInProgress) {
-      console.log('⚠️ Bulk action already in progress, skipping');
       return;
     }
-    
+
     setBulkActionInProgress(true);
-    console.log('🔄 Starting bulk status change to:', newStatus);
-    console.log('📋 Selected products:', Array.from(selectedProducts));
-    console.log('🔍 Current filters before change:', filters);
-    
+
     try {
       const updatePromises = Array.from(selectedProducts).map(id => {
         // Find product in full products array, not just paginated/filtered ones
@@ -459,42 +413,19 @@ export default function Products() {
           console.warn(`❌ Product with id ${id} not found in products array`);
           return Promise.resolve();
         }
-        console.log(`📝 Updating product "${product.name}" (${product.sku}) from "${product.status}" to "${newStatus}"`);
         return Product.update(id, { status: newStatus })
-          .then(result => {
-            console.log(`✅ Successfully updated product ${id} to ${newStatus}`);
-            console.log('📋 API Response:', JSON.stringify(result, null, 2));
-            return result;
-          })
           .catch(error => {
             console.error(`❌ Failed to update product ${id}:`, error);
             throw error;
           });
       });
-      
+
       await Promise.all(updatePromises);
-      console.log('✅ All product updates completed');
-      
-      // Verify updates by fetching the specific products that were updated
-      console.log('🔍 Verifying updates by fetching updated products...');
-      for (const id of selectedProducts) {
-        try {
-          const updatedProduct = await Product.findById(id);
-          console.log(`📋 Product ${id} current status in database:`, updatedProduct?.status || 'NOT FOUND');
-        } catch (error) {
-          console.error(`❌ Failed to verify product ${id}:`, error);
-        }
-      }
-      
+
       setSelectedProducts(new Set());
       setShowBulkActions(false);
-      
-      // Temporarily removing filter reset to debug backend update issue
-      console.log('🔄 NOT resetting filters to debug backend update issue');
-      
-      console.log('🔄 Reloading data...');
+
       await loadData();
-      console.log('✅ Data reload completed');
     } catch (error) {
       console.error("❌ Error updating product statuses:", error);
     } finally {
@@ -675,14 +606,14 @@ export default function Products() {
       productName?.toLowerCase().includes(searchQuery.toLowerCase()) ||
       product.sku?.toLowerCase().includes(searchQuery.toLowerCase()) ||
       productShortDesc?.toLowerCase().includes(searchQuery.toLowerCase());
-    
+
     // Status filter
     const matchesStatus = filters.status === "all" || product.status === filters.status;
-    
+
     // Category filter
-    const matchesCategory = filters.category === "all" || 
+    const matchesCategory = filters.category === "all" ||
       (product.category_ids && product.category_ids.includes(filters.category));
-    
+
     // Price range filter
     let matchesPriceRange = true;
     if (filters.priceRange !== "all") {
@@ -699,28 +630,9 @@ export default function Products() {
           break;
       }
     }
-    
+
     return matchesSearch && matchesStatus && matchesCategory && matchesPriceRange;
   });
-
-  // Debug logging for filtering
-  const statusBreakdown = products.reduce((acc, p) => {
-    acc[p.status] = (acc[p.status] || 0) + 1;
-    return acc;
-  }, {});
-  
-  const filteredStatusBreakdown = filteredProducts.reduce((acc, p) => {
-    acc[p.status] = (acc[p.status] || 0) + 1;
-    return acc;
-  }, {});
-  
-  console.log('🔍 Products filtering debug:');
-  console.log('  📊 Total products:', products.length);
-  console.log('  📊 Filtered products:', filteredProducts.length);
-  console.log('  🔍 Search query:', searchQuery);
-  console.log('  🔍 Filters:', filters);
-  console.log('  📋 Status breakdown (all):', statusBreakdown);
-  console.log('  📋 Status breakdown (filtered):', filteredStatusBreakdown);
 
   // Client-side pagination for display
   const startIndex = (currentPage - 1) * itemsPerPage;
