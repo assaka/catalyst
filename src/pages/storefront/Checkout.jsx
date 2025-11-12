@@ -141,11 +141,16 @@ export default function Checkout() {
   const [shippingAddressSelectionError, setShippingAddressSelectionError] = useState('');
 
   useEffect(() => {
-    loadCheckoutData();
-  }, [store?.id, storeLoading]); // Run once when store ready
+    // Wait for both store AND pageBootstrap to be ready
+    if (!storeLoading && !pageBootstrapLoading && store?.id) {
+          loadCheckoutData();
+    }
+  }, [store?.id, storeLoading, pageBootstrapLoading]); // Wait for pageBootstrap
 
   // Load persisted form data from localStorage after loading completes
   useEffect(() => {
+    // Wait for both store AND pageBootstrap to be ready
+    if (!storeLoading && !pageBootstrapLoading && store?.id) {
     if (!loading && !dataRestored) {
       try {
         const persistedData = localStorage.getItem('checkout_form_data');
@@ -229,6 +234,8 @@ export default function Checkout() {
 
   // Persist form data to localStorage whenever it changes (only after initial load)
   useEffect(() => {
+    // Wait for both store AND pageBootstrap to be ready
+    if (!storeLoading && !pageBootstrapLoading && store?.id) {
     if (!loading) {
       try {
         const dataToSave = {
@@ -268,6 +275,8 @@ export default function Checkout() {
 
   // Load applied coupon from service on mount
   useEffect(() => {
+    // Wait for both store AND pageBootstrap to be ready
+    if (!storeLoading && !pageBootstrapLoading && store?.id) {
     const storedCoupon = couponService.getAppliedCoupon();
     if (storedCoupon) {
       setAppliedCoupon(storedCoupon);
@@ -284,6 +293,8 @@ export default function Checkout() {
 
   // Listen for cart updates from other components
   useEffect(() => {
+    // Wait for both store AND pageBootstrap to be ready
+    if (!storeLoading && !pageBootstrapLoading && store?.id) {
     const handleCartUpdate = (event) => {
       
       if (!loading) {
@@ -301,6 +312,8 @@ export default function Checkout() {
 
   // Sync shipping and billing address countries with selectedCountry when it changes
   useEffect(() => {
+    // Wait for both store AND pageBootstrap to be ready
+    if (!storeLoading && !pageBootstrapLoading && store?.id) {
     // Only update if user is entering a new address (not selecting a saved one)
     if (selectedShippingAddress === 'new' || !selectedShippingAddress) {
       // Always sync country with global selector, even if form has data
@@ -317,6 +330,8 @@ export default function Checkout() {
 
   // Sync billing address country separately
   useEffect(() => {
+    // Wait for both store AND pageBootstrap to be ready
+    if (!storeLoading && !pageBootstrapLoading && store?.id) {
     if (!useShippingForBilling && (selectedBillingAddress === 'new' || !selectedBillingAddress)) {
       // Always sync country with global selector, even if form has data
       const currentCountry = selectedCountry || localStorage.getItem('selectedCountry') || 'US';
@@ -332,11 +347,15 @@ export default function Checkout() {
 
   // Trigger tax recalculation when shipping address country changes
   useEffect(() => {
+    // Wait for both store AND pageBootstrap to be ready
+    if (!storeLoading && !pageBootstrapLoading && store?.id) {
     // Tax will be recalculated automatically through getTotalAmount since it calls calculateTax
   }, [shippingAddress.country, selectedShippingAddress]);
 
   // Calculate payment fee when payment method or cart changes
   useEffect(() => {
+    // Wait for both store AND pageBootstrap to be ready
+    if (!storeLoading && !pageBootstrapLoading && store?.id) {
     if (selectedPaymentMethod && cartItems.length > 0 && paymentMethods.length > 0) {
       calculatePaymentFee(selectedPaymentMethod);
     }
@@ -962,7 +981,8 @@ export default function Checkout() {
           // Reload checkout data with authenticated user
           // The cart service will automatically merge guest cart with user cart
           setShowLoginModal(false);
-          await loadCheckoutData();
+          await       loadCheckoutData();
+    }
 
           // Show success message
           window.dispatchEvent(new CustomEvent('showFlashMessage', {
@@ -997,7 +1017,8 @@ export default function Checkout() {
       setUser(null);
       setUserAddresses([]);
       // Reload to refresh cart and state
-      await loadCheckoutData();
+      await       loadCheckoutData();
+    }
 
       // Show success message
       window.dispatchEvent(new CustomEvent('showFlashMessage', {
