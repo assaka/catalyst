@@ -2163,7 +2163,7 @@ export default function Checkout() {
                 <div className="space-y-3">
                   <div className="flex space-x-2">
                     <Input
-                      placeholder={t('checkout.enter_coupon_code', 'Enter coupon code')}
+                      placeholder={t('common.enter_coupon_code', 'Enter coupon code')}
                       value={couponCode}
                       onChange={(e) => setCouponCode(e.target.value.toUpperCase())}
                       onKeyPress={handleCouponKeyPress}
@@ -2173,7 +2173,7 @@ export default function Checkout() {
                       disabled={!couponCode.trim()}
                     >
                       <Tag className="w-4 h-4 mr-2" />
-                      {t('checkout.apply', 'Apply')}
+                      {t('common.apply', 'Apply')}
                     </Button>
                   </div>
                   {couponError && (

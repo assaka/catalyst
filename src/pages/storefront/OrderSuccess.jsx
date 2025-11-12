@@ -248,7 +248,7 @@ export default function OrderSuccess() {
 
     // Validate form
     if (accountFormData.password.length < 6) {
-      setAccountCreationError(t('messages.password_min_length', settings));
+      setAccountCreationError(t('auth.error.password.min_lengthh', settings));
       return;
     }
 
