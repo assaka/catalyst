@@ -387,23 +387,45 @@ export default function Products() {
     setConfirmModalTitle('Delete Products');
     setConfirmModalMessage(`Are you sure you want to delete ${count} selected product${count > 1 ? 's' : ''}? This action cannot be undone.`);
     setConfirmModalAction(() => async () => {
-      try {
-        const deletePromises = Array.from(selectedProducts).map(id => Product.delete(id));
-        await Promise.all(deletePromises);
-        setSelectedProducts(new Set());
-        setShowBulkActions(false);
-        await loadData();
-        setShowConfirmModal(false);
+      setShowConfirmModal(false);
+
+      // Delete products one by one to handle individual errors
+      const results = { success: [], failed: [] };
+
+      for (const id of Array.from(selectedProducts)) {
+        try {
+          await Product.delete(id);
+          results.success.push(id);
+        } catch (error) {
+          console.error(`Error deleting product ${id}:`, error);
+          results.failed.push({ id, error });
+        }
+      }
+
+      // Clear selection and refresh
+      setSelectedProducts(new Set());
+      setShowBulkActions(false);
+      await loadData();
+
+      // Show appropriate message
+      if (results.failed.length === 0) {
+        // All succeeded
         setFlashMessage({
           type: 'success',
-          message: `${count} product${count > 1 ? 's' : ''} deleted successfully`
+          message: `${results.success.length} product${results.success.length > 1 ? 's' : ''} deleted successfully`
         });
-      } catch (error) {
-        console.error("Error deleting products:", error);
-        setShowConfirmModal(false);
+      } else if (results.success.length === 0) {
+        // All failed
+        const firstError = results.failed[0].error;
         setFlashMessage({
           type: 'error',
-          message: error.message || 'Failed to delete products'
+          message: firstError.message || 'Failed to delete products'
+        });
+      } else {
+        // Partial success
+        setFlashMessage({
+          type: 'warning',
+          message: `${results.success.length} product${results.success.length > 1 ? 's' : ''} deleted, ${results.failed.length} failed`
         });
       }
     });
