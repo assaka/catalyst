@@ -2347,7 +2347,7 @@ export default function Checkout() {
 
               <div className="border-t pt-4 space-y-2">
                 <div className="flex justify-between">
-                  <span>{t('checkout.subtotal', 'Subtotal')}</span>
+                  <span>{t('common.subtotal', 'Subtotal')}</span>
                   <span>{formatPrice(calculateSubtotal())}</span>
                 </div>
 
@@ -2397,7 +2397,7 @@ export default function Checkout() {
                 {taxCalculationResult.taxAmount > 0 && (
                   <div className="flex justify-between">
                     <span>
-                      {t('checkout.tax', 'Tax')}
+                      {t('common.tax', 'Tax')}
                       {taxCalculationResult.country && (
                         <span className="text-gray-500 text-sm ml-1">
                           ({taxCalculationResult.country} {taxCalculationResult.effectiveRate ? `${taxCalculationResult.effectiveRate}%` : ''})
@@ -2409,7 +2409,7 @@ export default function Checkout() {
                 )}
 
                 <div className="flex justify-between text-xl font-bold border-t pt-2">
-                  <span>{t('checkout.total', 'Total')}</span>
+                  <span>{t('common.total', 'Total')}</span>
                   <span>{formatPrice(getTotalAmount())}</span>
                 </div>
               </div>

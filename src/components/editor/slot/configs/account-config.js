@@ -30,7 +30,7 @@ export const accountConfig = {
     header_title: {
       id: 'header_title',
       type: 'text',
-      content: '{{t "my_account"}}',
+      content: '{{t "account.my_account"}}',
       className: 'text-3xl font-bold text-gray-900',
       styles: {},
       viewMode: ['overview', 'profile', 'intro']
