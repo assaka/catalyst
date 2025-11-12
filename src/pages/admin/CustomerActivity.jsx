@@ -34,10 +34,12 @@ export default function CustomerActivityPage() {
   const [widgets, setWidgets] = useState(() => {
     try {
       const saved = localStorage.getItem('analytics_widgets');
-      return saved ? JSON.parse(saved) : {
+      const widgetState = saved ? JSON.parse(saved) : {
         traffic: true, demographics: true, topProducts: true,
         bestSellers: true, funnel: true, geo: true, searches: true
       };
+      console.log('[Widgets] Initial state:', widgetState);
+      return widgetState;
     } catch {
       return { traffic: true, demographics: true, topProducts: true,
         bestSellers: true, funnel: true, geo: true, searches: true };
@@ -80,6 +82,11 @@ export default function CustomerActivityPage() {
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
 
+  // Debug: Log when sessionAnalytics changes
+  useEffect(() => {
+    console.log('[sessionAnalytics] State updated:', sessionAnalytics);
+  }, [sessionAnalytics]);
+
   useEffect(() => {
     console.log('[useEffect] Triggered with selectedStore:', selectedStore?.id, 'startDate:', startDate, 'endDate:', endDate);
     if (selectedStore) {
@@ -109,9 +116,11 @@ export default function CustomerActivityPage() {
     try {
       const response = await apiClient.get(`/analytics-dashboard/${selectedStore.id}/realtime`);
       console.log('[Real-time] Response:', response.data); // Debug
-      if (response.data.success) {
-        setRealtimeData(response.data.data);
-        console.log('[Real-time] Users online:', response.data.data.users_online); // Debug
+      // apiClient auto-unwraps { success: true, data: {...} } responses
+      // So response.data is already the realtime data object
+      if (response.data && response.data.users_online !== undefined) {
+        setRealtimeData(response.data);
+        console.log('[Real-time] Users online:', response.data.users_online); // Debug
       }
     } catch (error) {
       console.error('Error loading realtime data:', error);
@@ -132,12 +141,14 @@ export default function CustomerActivityPage() {
 
       const response = await apiClient.get(`/analytics-dashboard/${selectedStore.id}/sessions?${params}`);
       console.log('[Session Analytics] Response:', response.data);
-      if (response.data.success) {
-        console.log('[Session Analytics] Device breakdown:', response.data.data.device_breakdown);
-        console.log('[Session Analytics] Browser breakdown:', response.data.data.browser_breakdown);
-        console.log('[Session Analytics] Country breakdown:', response.data.data.country_breakdown);
-        console.log('[Session Analytics] Language breakdown:', response.data.data.language_breakdown);
-        setSessionAnalytics(response.data.data);
+      // apiClient auto-unwraps { success: true, data: {...} } responses
+      // So response.data is already the analytics data object
+      if (response.data && response.data.total_sessions !== undefined) {
+        console.log('[Session Analytics] Device breakdown:', response.data.device_breakdown);
+        console.log('[Session Analytics] Browser breakdown:', response.data.browser_breakdown);
+        console.log('[Session Analytics] Country breakdown:', response.data.country_breakdown);
+        console.log('[Session Analytics] Language breakdown:', response.data.language_breakdown);
+        setSessionAnalytics(response.data);
       }
     } catch (error) {
       console.error('Error loading session analytics:', error);
@@ -158,8 +169,10 @@ export default function CustomerActivityPage() {
 
       const response = await apiClient.get(`/analytics-dashboard/${selectedStore.id}/timeseries?${params}`);
       console.log('[Time Series] Response:', response.data);
-      if (response.data.success) {
-        const chartData = response.data.data.map(d => ({
+      // apiClient auto-unwraps { success: true, data: [...] } responses
+      // So response.data is already the array of time series data
+      if (response.data && Array.isArray(response.data)) {
+        const chartData = response.data.map(d => ({
           label: new Date(d.timestamp).toLocaleString('en-US', {
             month: 'short',
             day: 'numeric',
