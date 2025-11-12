@@ -745,8 +745,10 @@ export const categoryConfig = {
                   translationsKeys: variableContext?.translations ? Object.keys(variableContext.translations).slice(0, 10) : [],
                   hasUiTranslations: !!variableContext?.settings?.ui_translations,
                   uiTranslationsLangs: variableContext?.settings?.ui_translations ? Object.keys(variableContext.settings.ui_translations) : [],
+                  uiTranslationsCurrentLangKeys: variableContext?.settings?.ui_translations?.[currentLang] ? Object.keys(variableContext.settings.ui_translations[currentLang]).slice(0, 20) : [],
                   directTranslation: variableContext?.translations?.['common.added_to_cart_success'],
-                  uiTranslation: variableContext?.settings?.ui_translations?.[currentLang]?.['common.added_to_cart_success']
+                  uiTranslation: variableContext?.settings?.ui_translations?.[currentLang]?.['common.added_to_cart_success'],
+                  fullUiTranslations: variableContext?.settings?.ui_translations
                 });
                 const successMessage = variableContext?.translations?.['common.added_to_cart_success']
                   || variableContext?.settings?.ui_translations?.[currentLang]?.['common.added_to_cart_success']
