@@ -365,8 +365,10 @@ class ShopifyImportService {
 
       console.log(`Detected: ext=${ext}, mimeType=${mimeType}, url=${imageUrl.substring(0, 80)}...`);
 
-      // Generate filename: products/handle/image-0.jpg
-      const filename = `products/${productHandle}/image-${index}${ext}`;
+      // Generate organized directory path: products/t/e/test-product/image-0.jpg
+      const firstChar = productHandle.charAt(0).toLowerCase();
+      const secondChar = productHandle.length > 1 ? productHandle.charAt(1).toLowerCase() : firstChar;
+      const filename = `products/${firstChar}/${secondChar}/${productHandle}/image-${index}${ext}`;
 
       console.log(`Uploading image: ${filename} with MIME type: ${mimeType}`);
 
