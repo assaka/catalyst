@@ -66,13 +66,44 @@ export default function MiniCart({ iconVariant = 'outline' }) {
     }
 
     try {
-      const products = await StorefrontProduct.filter({ ids: productIds });
+      const cacheKey = `products:${productIds.sort().join(',')}`;
+
+      // Initialize global caches
+      if (!window.__productBatchCache) window.__productBatchCache = {};
+      if (!window.__productFetching) window.__productFetching = {};
+
+      let productsArray = [];
+
+      // Check cache first
+      if (window.__productBatchCache[cacheKey]) {
+        const cached = window.__productBatchCache[cacheKey];
+        if (Date.now() - cached.timestamp < 30000) { // 30s cache
+          productsArray = cached.data;
+        }
+      }
+
+      // If not cached, fetch (with deduplication)
+      if (!productsArray.length) {
+        if (window.__productFetching[cacheKey]) {
+          // Already fetching - wait for it
+          productsArray = await window.__productFetching[cacheKey];
+        } else {
+          // Start fetching
+          const fetchPromise = StorefrontProduct.filter({ ids: productIds }).then(result => {
+            const products = result || [];
+            window.__productBatchCache[cacheKey] = { data: products, timestamp: Date.now() };
+            delete window.__productFetching[cacheKey];
+            return products;
+          });
+          window.__productFetching[cacheKey] = fetchPromise;
+          productsArray = await fetchPromise;
+        }
+      }
 
       // Build product details map - ensure string keys for consistency
       const productDetails = {};
-      products.forEach(product => {
+      productsArray.forEach(product => {
         if (product && product.id) {
-          // Always use string keys for consistency
           productDetails[String(product.id)] = product;
         }
       });
