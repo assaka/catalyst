@@ -184,35 +184,32 @@ router.get('/callback', async (req, res) => {
           console.log('🎯 OAuth callback page loaded');
           console.log('🔍 Window opener exists:', !!window.opener);
 
-          // Notify parent window immediately and close
+          // Show green screen briefly, then send message and close
           if (window.opener) {
-            // Send to all possible origins to ensure delivery
-            const targetOrigin = '*'; // Allow any origin for OAuth callback
-            const message = {
-              type: 'supabase-oauth-success',
-              project: '${projectUrl}',
-              userEmail: '${userEmail}',
-              isLimitedScope: ${isLimitedScope}
-            };
-
-            console.log('📤 Sending postMessage to parent:', { targetOrigin, message });
-
-            try {
-              window.opener.postMessage(message, targetOrigin);
-              console.log('✅ Message sent successfully');
-            } catch (error) {
-              console.error('❌ Error sending message:', error);
-            }
-
-            // Close instantly
-            console.log('🔒 Closing window...');
-            window.close();
-
-            // If window didn't close (some browsers block it), try again
+            // Wait 500ms to show green background, then notify parent and close
             setTimeout(() => {
-              console.log('⚠️ Window still open, trying to close again...');
+              // Send to all possible origins to ensure delivery
+              const targetOrigin = '*'; // Allow any origin for OAuth callback
+              const message = {
+                type: 'supabase-oauth-success',
+                project: '${projectUrl}',
+                userEmail: '${userEmail}',
+                isLimitedScope: ${isLimitedScope}
+              };
+
+              console.log('📤 Sending postMessage to parent:', { targetOrigin, message });
+
+              try {
+                window.opener.postMessage(message, targetOrigin);
+                console.log('✅ Message sent successfully');
+              } catch (error) {
+                console.error('❌ Error sending message:', error);
+              }
+
+              // Try to close - parent will also try to close us
+              console.log('🔒 Attempting to close window...');
               window.close();
-            }, 100);
+            }, 500);
           } else {
             // No opener - show minimal message
             console.log('⚠️ No window.opener - showing manual close message');
