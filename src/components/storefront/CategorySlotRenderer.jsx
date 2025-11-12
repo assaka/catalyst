@@ -482,14 +482,6 @@ export function CategorySlotRenderer({
       // Get translated category name (reuse currentLanguage from above)
       const translatedCategoryName = category ? (getCategoryName(category, currentLanguage) || category.name) : '';
 
-      // Debug formatted products
-      console.log('📦 CategorySlotRenderer - formattedProducts:', formattedProducts);
-      if (formattedProducts.length > 0) {
-        console.log('📦 First formatted product:', formattedProducts[0]);
-        console.log('📦 First product has image_url:', formattedProducts[0].image_url);
-        console.log('📦 First product images:', formattedProducts[0].images);
-      }
-
       const variableContext = {
         category: category ? {
           ...category,

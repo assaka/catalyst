@@ -528,7 +528,7 @@ export default function Category() {
       const priceValue = typeof product === 'object' ? product.price : product;
       return formatPrice(priceValue);
     },
-    getProductImageUrl: (product) => product?.images?.[0] || '/placeholder-product.jpg',
+    getProductImageUrl: (product) => product?.images?.[0]?.url || '/placeholder-product.jpg',
     navigate: (url) => window.location.href = url,
     onProductClick: (product) => window.location.href = createProductUrl(storeCode, product.slug)
   };
