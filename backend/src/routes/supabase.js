@@ -227,14 +227,14 @@ router.get('/callback', async (req, res) => {
           <div class="checkmark">✓</div>
           <h1>Successfully Connected!</h1>
           <p>Your Supabase account has been connected</p>
-          <button onclick="closeAndReload()">Close & Continue</button>
+          <button id="closeBtn">Close & Continue</button>
         </div>
         <script>
           console.log('🎯 OAuth callback page loaded');
           console.log('🔍 Window opener exists:', !!window.opener);
 
           function closeAndReload() {
-            console.log('🔒 Button clicked - closing popup...');
+            console.log('🔒 Closing popup...');
 
             // Try to set sessionStorage in parent (may fail due to cross-origin)
             try {
@@ -247,7 +247,20 @@ router.get('/callback', async (req, res) => {
             }
 
             // Close this popup window - parent will detect close and reload
+            console.log('⚡ Calling window.close()...');
             window.close();
+          }
+
+          // Add click event listener to button
+          const closeBtn = document.getElementById('closeBtn');
+          if (closeBtn) {
+            closeBtn.addEventListener('click', function() {
+              console.log('🖱️ Button clicked!');
+              closeAndReload();
+            });
+            console.log('✅ Button click listener attached');
+          } else {
+            console.error('❌ Button not found!');
           }
 
           // Auto-close after 5 seconds as fallback
