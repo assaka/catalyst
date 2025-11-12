@@ -333,17 +333,46 @@ class ShopifyImportService {
 
       const imageBuffer = Buffer.from(response.data);
 
-      // Determine file extension from URL or content-type
+      // Determine file extension and MIME type
       const urlExt = path.extname(new URL(imageUrl).pathname).toLowerCase();
-      const contentType = response.headers['content-type'];
-      const ext = urlExt || (contentType?.includes('jpeg') ? '.jpg' : contentType?.includes('png') ? '.png' : '.jpg');
+      const contentType = response.headers['content-type'] || response.headers['Content-Type'];
+
+      // Determine extension based on URL or content-type
+      let ext = urlExt;
+      let mimeType = contentType;
+
+      if (!ext || ext === '') {
+        if (contentType?.includes('png')) {
+          ext = '.png';
+        } else if (contentType?.includes('jpeg') || contentType?.includes('jpg')) {
+          ext = '.jpg';
+        } else if (contentType?.includes('webp')) {
+          ext = '.webp';
+        } else if (contentType?.includes('gif')) {
+          ext = '.gif';
+        } else {
+          ext = '.jpg'; // Default
+        }
+      }
+
+      // Ensure we have a valid MIME type
+      if (!mimeType || mimeType === 'undefined') {
+        // Determine from extension
+        if (ext === '.png') mimeType = 'image/png';
+        else if (ext === '.jpg' || ext === '.jpeg') mimeType = 'image/jpeg';
+        else if (ext === '.webp') mimeType = 'image/webp';
+        else if (ext === '.gif') mimeType = 'image/gif';
+        else mimeType = 'image/jpeg'; // Default
+      }
 
       // Generate filename: products/handle/image-0.jpg
       const filename = `products/${productHandle}/image-${index}${ext}`;
 
+      console.log(`Uploading image: ${filename} (${mimeType})`);
+
       // Upload to storage provider
       const uploadResult = await storageProvider.upload(imageBuffer, filename, {
-        contentType: contentType || 'image/jpeg',
+        contentType: mimeType,
         folder: 'products'
       });
 
