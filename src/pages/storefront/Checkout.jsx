@@ -1594,18 +1594,20 @@ export default function Checkout() {
                       <UserIcon className="w-6 h-6 text-gray-600" />
                     </div>
                     <div>
-                      <p className="font-medium text-gray-900">{t('checkout.guest_checkout', 'Guest Checkout')}</p>
-                      <p className="text-sm text-gray-600">{t('checkout.login_for_faster_checkout', 'Already have an account? Login for faster checkout')}</p>
+                      <div>
+                        <p className="font-medium text-gray-900">{t('checkout.guest_checkout', 'Guest Checkout')}</p>
+                        <p className="text-sm text-gray-600">{t('checkout.login_for_faster_checkout', 'Already have an account? Login for faster checkout')}</p>
+                      </div>
+                      <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => setShowLoginModal(true)}
+                          className="text-blue-600 hover:text-blue-700 border-blue-600"
+                      >
+                        {t('common.login', 'Login')}
+                      </Button>
                     </div>
                   </div>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setShowLoginModal(true)}
-                    className="text-blue-600 hover:text-blue-700 border-blue-600"
-                  >
-                    {t('common.login', 'Login')}
-                  </Button>
                 </div>
               </div>
             )}
