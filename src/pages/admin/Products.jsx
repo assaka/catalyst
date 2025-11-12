@@ -28,7 +28,8 @@ import {
   Languages,
   Globe,
   Save,
-  MoreVertical
+  MoreVertical,
+  Wand2
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -54,6 +55,7 @@ import {
   SelectTrigger,
   SelectValue
 } from "@/components/ui/select";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 import ProductForm from "@/components/admin/products/ProductForm";
 import ProductFilters from "@/components/admin/products/ProductFilters";
@@ -63,6 +65,7 @@ import { getCategoryName as getTranslatedCategoryName, getProductName, getProduc
 import { toast } from "sonner";
 import { useTranslation } from "@/contexts/TranslationContext.jsx";
 import { SaveButton } from "@/components/ui/save-button";
+import api from "@/utils/api";
 
 const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 
@@ -119,6 +122,7 @@ export default function Products() {
   const [selectedTranslationLanguages, setSelectedTranslationLanguages] = useState(['en', 'nl']);
   const [editingTranslation, setEditingTranslation] = useState({}); // { productId: { lang: 'value' } }
   const [failedImages, setFailedImages] = useState(new Set()); // Track failed image loads
+  const [translating, setTranslating] = useState({}); // { productId-langCode: boolean } for AI translation loading
 
   // FlashMessage state
   const [flashMessage, setFlashMessage] = useState(null);
@@ -579,6 +583,45 @@ export default function Products() {
     } catch (error) {
       console.error('Error saving translations:', error);
       toast.error('Failed to save translations');
+    }
+  };
+
+  // AI translate product name from English to target language
+  const handleAITranslate = async (product, toLang) => {
+    const storeId = getSelectedStoreId();
+    const sourceText = product.translations?.en?.name || product.name;
+
+    if (!sourceText || !sourceText.trim()) {
+      toast.error('No English product name found for translation');
+      return;
+    }
+
+    const translatingKey = `${product.id}-${toLang}`;
+    try {
+      setTranslating(prev => ({ ...prev, [translatingKey]: true }));
+
+      const response = await api.post('/translations/ai-translate', {
+        text: sourceText,
+        fromLang: 'en',
+        toLang,
+        storeId,
+        entityType: 'product'
+      });
+
+      if (response && response.success && response.data) {
+        // Update the editing translation state with the AI-translated text
+        handleTranslationEdit(product.id, toLang, response.data.translated);
+        toast.success(`Product name translated to ${toLang.toUpperCase()} (0.1 credits charged)`);
+      }
+    } catch (error) {
+      console.error('AI translate error:', error);
+      if (error.response?.status === 402) {
+        toast.error('Insufficient credits for translation');
+      } else {
+        toast.error('Failed to translate product name');
+      }
+    } finally {
+      setTranslating(prev => ({ ...prev, [translatingKey]: false }));
     }
   };
 
@@ -1101,6 +1144,7 @@ export default function Products() {
                                     const currentValue = editingTranslation[product.id]?.[langCode]
                                       ?? product.translations?.[langCode]?.name
                                       ?? '';
+                                    const translatingKey = `${product.id}-${langCode}`;
 
                                     return (
                                       <div key={langCode} className="flex items-center gap-2">
@@ -1115,6 +1159,27 @@ export default function Products() {
                                           className={`flex-1 text-sm ${isRTL ? 'text-right' : 'text-left'}`}
                                           placeholder={`${lang?.native_name || langCode} product name`}
                                         />
+                                        {langCode !== 'en' && (
+                                          <TooltipProvider>
+                                            <Tooltip>
+                                              <TooltipTrigger asChild>
+                                                <Button
+                                                  type="button"
+                                                  variant="ghost"
+                                                  size="sm"
+                                                  onClick={() => handleAITranslate(product, langCode)}
+                                                  disabled={translating[translatingKey] || !(product.translations?.en?.name || product.name)}
+                                                  className="flex-shrink-0 h-8 w-8 p-0"
+                                                >
+                                                  <Wand2 className={`w-4 h-4 ${translating[translatingKey] ? 'animate-spin' : ''}`} />
+                                                </Button>
+                                              </TooltipTrigger>
+                                              <TooltipContent>
+                                                <p>Cost: 0.1 credits per translation</p>
+                                              </TooltipContent>
+                                            </Tooltip>
+                                          </TooltipProvider>
+                                        )}
                                       </div>
                                     );
                                   })}
