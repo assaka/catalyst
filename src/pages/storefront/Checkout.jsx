@@ -258,6 +258,7 @@ export default function Checkout() {
         console.error('Failed to persist checkout data:', error);
       }
     }
+    }
   }, [
     shippingAddress,
     billingAddress,
