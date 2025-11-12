@@ -262,27 +262,13 @@ const SupabaseIntegration = ({ storeId, context = 'full' }) => {
             return;
           }
 
-          // SIMPLIFIED: Close on ANY message from callback page
-          console.log('✅ Received message from OAuth callback - closing popup and reloading');
+          // Received success message - let backend close the popup
+          console.log('✅ Received success message from OAuth callback');
           window.removeEventListener('message', messageHandler);
           clearInterval(checkClosed);
 
-          // Force close the popup window immediately
-          console.log('🔒 Attempting to close popup window...');
-          if (authWindow && !authWindow.closed) {
-            authWindow.close();
-            console.log('🔒 Window close called');
-
-            // Double-check it closed, try again if needed
-            setTimeout(() => {
-              if (authWindow && !authWindow.closed) {
-                console.log('🔒 Window still open, trying again...');
-                authWindow.close();
-              }
-            }, 100);
-          } else {
-            console.log('⚠️ Window already closed or not available');
-          }
+          // DON'T close the popup from here - let backend handle it so green flash is visible
+          console.log('⏳ Waiting for backend to close popup after showing success...');
 
           // Store success message in sessionStorage to show after reload
           sessionStorage.setItem('supabase_connection_success', 'Successfully connected to Supabase!');
