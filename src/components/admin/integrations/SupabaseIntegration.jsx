@@ -262,13 +262,22 @@ const SupabaseIntegration = ({ storeId, context = 'full' }) => {
             return;
           }
 
-          // Check if this is the success message - handle both direct and wrapped data
+          // Check if this is the success message - be very flexible with message structure
           const messageData = event.data?.data || event.data;
           const messageType = messageData?.type || event.data?.type;
 
-          console.log('📦 Parsed message:', { messageType, messageData });
+          // Also check if message has project field (indicates success)
+          const hasSuccessData = messageData?.project || event.data?.project;
 
-          if (messageType === 'supabase-oauth-success') {
+          console.log('📦 Parsed message:', {
+            messageType,
+            messageData,
+            hasSuccessData,
+            rawEventData: event.data
+          });
+
+          // Accept message if type matches OR if it has success data
+          if (messageType === 'supabase-oauth-success' || hasSuccessData) {
             console.log('✅ Supabase OAuth success:', messageData);
             window.removeEventListener('message', messageHandler);
             clearInterval(checkClosed);
