@@ -245,61 +245,31 @@ const SupabaseIntegration = ({ storeId, context = 'full' }) => {
             fullEvent: event
           });
 
-          // Verify origin - allow both backend and frontend URLs
-          const allowedOrigins = [
-            process.env.REACT_APP_API_URL,
-            'https://catalyst-backend-fzhu.onrender.com',
-            'https://catalyst-pearl.vercel.app',
-            'http://localhost:5000',
-            'http://localhost:3000'
-          ];
+          // ULTRA SIMPLE: Check if message has type='supabase-oauth-success'
+          const messageType = event.data?.type;
 
-          const originAllowed = allowedOrigins.some(origin => origin && event.origin.startsWith(origin));
-          console.log('🔐 Origin check:', { originAllowed, eventOrigin: event.origin, allowedOrigins });
-
-          if (!originAllowed) {
-            console.warn('⚠️ Origin not allowed, ignoring message');
-            return;
-          }
-
-          // Check if this is from the backend callback - if so, accept it
-          const isFromBackend = event.origin.includes('catalyst-backend') || event.origin.includes('localhost:5000');
-
-          // Also check message content as secondary validation
-          const messageData = event.data?.data || event.data;
-          const hasOAuthContent =
-            messageData?.type === 'supabase-oauth-success' ||
-            event.data?.type === 'supabase-oauth-success' ||
-            messageData?.project ||
-            event.data?.project;
-
-          console.log('📋 Message validation:', {
-            isFromBackend,
-            hasOAuthContent,
+          console.log('📋 Message check:', {
             eventOrigin: event.origin,
-            messageData: messageData,
-            rawData: event.data
+            messageType: messageType,
+            fullData: event.data
           });
 
-          // Accept if from backend OR has OAuth content
-          if (!isFromBackend && !hasOAuthContent) {
-            console.warn('⚠️ Not from backend and no OAuth content, ignoring');
+          // Only process if it's our OAuth success message
+          if (messageType !== 'supabase-oauth-success') {
+            console.log('⚠️ Not OAuth success message, ignoring');
             return;
           }
 
-          // Received success message - backend is showing green, we'll close after delay
-          console.log('✅ Received OAuth success message from callback');
+          // Received success message from button click
+          console.log('✅ Received OAuth success message - user clicked button');
           window.removeEventListener('message', messageHandler);
           clearInterval(checkClosed);
 
-          // Give backend time to show green (500ms), then close popup as backup
-          console.log('⏳ Letting backend show green screen for 600ms, then closing...');
-          setTimeout(() => {
-            if (authWindow && !authWindow.closed) {
-              console.log('🔒 Closing popup from frontend as backup...');
-              authWindow.close();
-            }
-          }, 600);
+          // Close popup immediately (button already sent message)
+          if (authWindow && !authWindow.closed) {
+            console.log('🔒 Closing popup...');
+            authWindow.close();
+          }
 
           // Store success message in sessionStorage to show after reload
           sessionStorage.setItem('supabase_connection_success', 'Successfully connected to Supabase!');
