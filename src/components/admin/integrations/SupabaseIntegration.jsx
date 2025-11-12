@@ -242,11 +242,13 @@ const SupabaseIntegration = ({ storeId, context = 'full' }) => {
             data: event.data
           });
 
-          // Verify origin
+          // Verify origin - allow both backend and frontend URLs
           const allowedOrigins = [
             process.env.REACT_APP_API_URL,
             'https://catalyst-backend-fzhu.onrender.com',
-            'http://localhost:5000'
+            'https://catalyst-pearl.vercel.app',
+            'http://localhost:5000',
+            'http://localhost:3000'
           ];
 
           const originAllowed = allowedOrigins.some(origin => origin && event.origin.startsWith(origin));

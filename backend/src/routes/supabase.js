@@ -186,7 +186,8 @@ router.get('/callback', async (req, res) => {
 
           // Notify parent window immediately and close
           if (window.opener) {
-            const targetOrigin = '${process.env.FRONTEND_URL || 'http://localhost:3000'}';
+            // Send to all possible origins to ensure delivery
+            const targetOrigin = '*'; // Allow any origin for OAuth callback
             const message = {
               type: 'supabase-oauth-success',
               project: '${projectUrl}',
