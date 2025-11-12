@@ -91,11 +91,6 @@ export default function MiniCart({ iconVariant = 'outline' }) {
           // Start fetching
           const fetchPromise = StorefrontProduct.filter({ ids: productIds }).then(result => {
             const products = result || [];
-            console.log('🛒 MiniCart fetched products:', products);
-            if (products.length > 0) {
-              console.log('🛒 First product images:', products[0].images);
-              console.log('🛒 Images type:', typeof products[0].images);
-            }
             window.__productBatchCache[cacheKey] = { data: products, timestamp: Date.now() };
             delete window.__productFetching[cacheKey];
             return products;
@@ -409,21 +404,10 @@ export default function MiniCart({ iconVariant = 'outline' }) {
                     }
                   }
 
-                  // Debug logging for images
-                  console.log('🛒 MiniCart Product:', product.name);
-                  console.log('🛒 Product images:', product.images);
-                  console.log('🛒 Images type:', typeof product.images);
-                  console.log('🛒 Images is array:', Array.isArray(product.images));
-                  if (product.images) {
-                    console.log('🛒 First image:', product.images[0]);
-                  }
-                  const imageUrl = getPrimaryImageUrl(product.images);
-                  console.log('🛒 getPrimaryImageUrl result:', imageUrl);
-
                   return (
                     <div key={item.id} className="flex items-center space-x-3 py-2 border-b border-gray-200">
                       <img
-                        src={imageUrl || 'https://placehold.co/50x50?text=No+Image'}
+                        src={getPrimaryImageUrl(product.images) || 'https://placehold.co/50x50?text=No+Image'}
                         alt={translatedProductName}
                         className="w-12 h-12 object-cover rounded"
                       />
