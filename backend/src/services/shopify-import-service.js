@@ -455,15 +455,22 @@ class ShopifyImportService {
       }
 
       // Save translations for name and description (default language: 'en')
-      await ProductTranslation.upsert({
-        product_id: savedProduct.id,
-        language_code: 'en',
-        name: product.title,
-        description: product.body_html || '',
-        short_description: product.body_html ? product.body_html.replace(/<[^>]*>/g, '').substring(0, 255) : ''
-      });
+      try {
+        await ProductTranslation.upsert({
+          product_id: savedProduct.id,
+          language_code: 'en',
+          name: product.title,
+          description: product.body_html || '',
+          short_description: product.body_html ? product.body_html.replace(/<[^>]*>/g, '').substring(0, 255) : ''
+        });
 
-      console.log(`✅ Saved translations for product: ${product.title}`);
+        console.log(`✅ Saved translations for product: ${product.title}`);
+      } catch (translationError) {
+        console.error(`Failed to save translations for ${product.title}:`, translationError.message);
+        // Don't fail the entire import if translations fail
+        // Check if 'en' language exists in languages table
+        console.warn('Ensure "en" language exists in languages table');
+      }
 
       return savedProduct;
     } catch (error) {

@@ -70,13 +70,18 @@ const ShopifyIntegration = () => {
 
       if (response.ok) {
         const data = await response.json();
-        setStorageConfigured(data.configured || data.hasProvider);
+        console.log('Storage status:', data);
+        const configured = data.configured || data.hasProvider || false;
+        setStorageConfigured(configured);
+        console.log('Storage configured:', configured);
       } else {
+        console.warn('Storage status check failed');
         setStorageConfigured(false);
       }
     } catch (error) {
       console.error('Error checking storage configuration:', error);
-      setStorageConfigured(false);
+      // Keep as null if check fails (don't assume it's not configured)
+      setStorageConfigured(null);
     }
   };
 
