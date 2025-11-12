@@ -6,6 +6,7 @@ const ShopifyImportService = require('../services/shopify-import-service');
 const IntegrationConfig = require('../models/IntegrationConfig');
 const { authMiddleware } = require('../middleware/auth');
 const { checkStoreOwnership } = require('../middleware/storeAuth');
+const jobManager = require('../core/BackgroundJobManager');
 
 // Middleware to check if user is authenticated and has store access
 const storeAuth = (req, res, next) => {
@@ -395,21 +396,35 @@ router.post('/import/collections',
       }
 
       const { dry_run = false, overwrite = false } = req.body;
-      
-      const importService = new ShopifyImportService(req.storeId);
-      const result = await importService.importCollections({
-        dryRun: dry_run,
-        overwrite: overwrite
+
+      // Schedule import as background job
+      const job = await jobManager.scheduleJob({
+        type: 'shopify:import:collections',
+        payload: {
+          storeId: req.storeId,
+          options: {
+            dryRun: dry_run,
+            overwrite: overwrite
+          }
+        },
+        priority: 'normal',
+        maxRetries: 2,
+        storeId: req.storeId,
+        userId: req.user.id,
+        metadata: {
+          importType: 'collections'
+        }
       });
 
       res.json({
-        success: result.success,
-        message: result.success ? 'Collections imported successfully' : result.message,
-        ...result
+        success: true,
+        message: 'Collections import job scheduled. Track progress via the job status endpoint.',
+        jobId: job.id,
+        statusUrl: `/api/background-jobs/${job.id}/status`
       });
 
     } catch (error) {
-      console.error('Collections import failed:', error);
+      console.error('Collections import job scheduling failed:', error);
       res.status(500).json({
         success: false,
         message: error.message
@@ -442,22 +457,36 @@ router.post('/import/products',
       }
 
       const { dry_run = false, limit = null, overwrite = false } = req.body;
-      
-      const importService = new ShopifyImportService(req.storeId);
-      const result = await importService.importProducts({
-        dryRun: dry_run,
-        limit: limit,
-        overwrite: overwrite
+
+      // Schedule import as background job
+      const job = await jobManager.scheduleJob({
+        type: 'shopify:import:products',
+        payload: {
+          storeId: req.storeId,
+          options: {
+            dryRun: dry_run,
+            limit: limit,
+            overwrite: overwrite
+          }
+        },
+        priority: 'normal',
+        maxRetries: 2,
+        storeId: req.storeId,
+        userId: req.user.id,
+        metadata: {
+          importType: 'products'
+        }
       });
 
       res.json({
-        success: result.success,
-        message: result.success ? 'Products imported successfully' : result.message,
-        ...result
+        success: true,
+        message: 'Products import job scheduled. Track progress via the job status endpoint.',
+        jobId: job.id,
+        statusUrl: `/api/background-jobs/${job.id}/status`
       });
 
     } catch (error) {
-      console.error('Products import failed:', error);
+      console.error('Products import job scheduling failed:', error);
       res.status(500).json({
         success: false,
         message: error.message
@@ -490,22 +519,36 @@ router.post('/import/full',
       }
 
       const { dry_run = false, product_limit = null, overwrite = false } = req.body;
-      
-      const importService = new ShopifyImportService(req.storeId);
-      const result = await importService.fullImport({
-        dryRun: dry_run,
-        limit: product_limit,
-        overwrite: overwrite
+
+      // Schedule full import as background job
+      const job = await jobManager.scheduleJob({
+        type: 'shopify:import:all',
+        payload: {
+          storeId: req.storeId,
+          options: {
+            dryRun: dry_run,
+            limit: product_limit,
+            overwrite: overwrite
+          }
+        },
+        priority: 'high', // Higher priority for full imports
+        maxRetries: 2,
+        storeId: req.storeId,
+        userId: req.user.id,
+        metadata: {
+          importType: 'full'
+        }
       });
 
       res.json({
-        success: result.success,
-        message: result.success ? 'Full import completed successfully' : 'Full import completed with errors',
-        ...result
+        success: true,
+        message: 'Full import job scheduled. This may take several minutes depending on your catalog size.',
+        jobId: job.id,
+        statusUrl: `/api/background-jobs/${job.id}/status`
       });
 
     } catch (error) {
-      console.error('Full import failed:', error);
+      console.error('Full import job scheduling failed:', error);
       res.status(500).json({
         success: false,
         message: error.message

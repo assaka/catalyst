@@ -88,6 +88,8 @@ const integrationRoutes = require('./routes/integrations');
 const supabaseRoutes = require('./routes/supabase');
 const supabaseSetupRoutes = require('./routes/supabase-setup');
 const shopifyRoutes = require('./routes/shopify');
+const amazonRoutes = require('./routes/amazon');
+const ebayRoutes = require('./routes/ebay');
 const imageRoutes = require('./routes/images');
 const cloudflareOAuthRoutes = require('./routes/cloudflare-oauth');
 const domainSettingsRoutes = require('./routes/domain-settings');
@@ -1023,6 +1025,8 @@ app.use('/api/integrations', authMiddleware, integrationRoutes);
 app.use('/api/supabase', supabaseRoutes);
 app.use('/api/supabase', supabaseSetupRoutes);
 app.use('/api/shopify', shopifyRoutes);
+app.use('/api/amazon', amazonRoutes);
+app.use('/api/ebay', ebayRoutes);
 app.use('/api/database-provisioning', authMiddleware, databaseProvisioningRoutes); // Master DB: provisioning, subscriptions, billing
 app.use('/api/custom-domains', customDomainsRoutes); // Custom domain management: DNS verification, SSL provisioning
 app.use('/api/images', authMiddleware, imageRoutes);

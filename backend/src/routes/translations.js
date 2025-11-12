@@ -7,6 +7,7 @@ const translationService = require('../services/translation-service');
 const creditService = require('../services/credit-service');
 const ServiceCreditCost = require('../models/ServiceCreditCost');
 const { cacheMiddleware } = require('../middleware/cacheMiddleware');
+const jobManager = require('../core/BackgroundJobManager');
 
 const router = express.Router();
 
@@ -800,20 +801,39 @@ router.post('/ui-labels/bulk-translate', authMiddleware, async (req, res) => {
       });
     }
 
-    // Start background translation process
-    console.log(`🚀 Starting background UI labels translation: ${fromLang} → ${toLang}`);
-    setImmediate(() => {
-      performUILabelsBulkTranslation(req.user.id, req.user.email, store_id, fromLang, toLang);
+    // Schedule background translation job (persistent queue)
+    console.log(`🚀 Scheduling UI labels translation job: ${fromLang} → ${toLang}`);
+
+    const job = await jobManager.scheduleJob({
+      type: 'translation:ui-labels:bulk',
+      payload: {
+        userId: req.user.id,
+        userEmail: req.user.email,
+        storeId: store_id,
+        fromLang,
+        toLang
+      },
+      priority: 'normal',
+      maxRetries: 2,
+      storeId: store_id,
+      userId: req.user.id,
+      metadata: {
+        fromLang,
+        toLang,
+        estimatedItems: totalItems
+      }
     });
 
-    // Return immediately
+    // Return immediately with job ID for progress tracking
     res.json({
       success: true,
-      message: 'Translation started in background. You will receive an email notification when complete (approximately 10 minutes).',
+      message: 'Translation started in background. You will receive an email notification when complete.',
       data: {
+        jobId: job.id,
         estimatedItems: totalItems,
         estimatedCost: estimatedCost,
-        estimatedMinutes: Math.ceil(totalItems / 10 * 3 / 60) // Rough estimate based on batch size and delays
+        estimatedMinutes: Math.ceil(totalItems / 10 * 3 / 60), // Rough estimate based on batch size and delays
+        statusUrl: `/api/background-jobs/${job.id}/status`
       }
     });
 

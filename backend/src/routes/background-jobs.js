@@ -123,13 +123,55 @@ router.post('/schedule', async (req, res) => {
 });
 
 /**
+ * Get job status (lightweight for polling)
+ * GET /api/background-jobs/:jobId/status
+ */
+router.get('/:jobId/status', async (req, res) => {
+  try {
+    const { jobId } = req.params;
+
+    const jobStatus = await jobManager.getJobStatus(jobId);
+
+    if (!jobStatus) {
+      return res.status(404).json({
+        success: false,
+        message: 'Job not found'
+      });
+    }
+
+    // Check store access if job has a store_id
+    if (jobStatus.store_id) {
+      const hasAccess = await checkStoreOwnership(req, res, () => {}, jobStatus.store_id);
+      if (!hasAccess) {
+        return res.status(403).json({
+          success: false,
+          message: 'Access denied to this job'
+        });
+      }
+    }
+
+    res.json({
+      success: true,
+      job: jobStatus
+    });
+  } catch (error) {
+    console.error('Error getting job status:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to get job status',
+      error: error.message
+    });
+  }
+});
+
+/**
  * Get job details with history
  * GET /api/background-jobs/:jobId
  */
 router.get('/:jobId', async (req, res) => {
   try {
     const { jobId } = req.params;
-    
+
     const job = await Job.findByPk(jobId);
     if (!job) {
       return res.status(404).json({
@@ -150,7 +192,7 @@ router.get('/:jobId', async (req, res) => {
     }
 
     const jobDetails = await jobManager.getJobDetails(jobId);
-    
+
     res.json({
       success: true,
       job: jobDetails

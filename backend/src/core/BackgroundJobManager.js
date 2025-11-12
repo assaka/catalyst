@@ -2,10 +2,13 @@ const { EventEmitter } = require('events');
 const Job = require('../models/Job');
 const JobHistory = require('../models/JobHistory');
 const { sequelize } = require('../database/connection');
+const bullMQManager = require('./BullMQManager');
 
 /**
  * Unified Background Job Manager
  * Handles all background jobs including Akeneo imports, plugin installations, etc.
+ *
+ * Now with BullMQ integration for persistent queues that survive deployments.
  */
 class BackgroundJobManager extends EventEmitter {
   constructor() {
@@ -19,6 +22,7 @@ class BackgroundJobManager extends EventEmitter {
     this.pollInterval = 5000; // 5 seconds
     this.shutdownTimeout = 30000; // 30 seconds
     this.initialized = false;
+    this.useBullMQ = false; // Will be set during initialization
   }
 
   /**
@@ -28,6 +32,14 @@ class BackgroundJobManager extends EventEmitter {
     if (this.initialized) return;
 
     console.log('🔧 Initializing Background Job Manager...');
+
+    // Try to initialize BullMQ
+    this.useBullMQ = await bullMQManager.initialize();
+    if (this.useBullMQ) {
+      console.log('✅ BullMQ initialized - using persistent queue');
+    } else {
+      console.log('ℹ️ BullMQ not available - using database queue');
+    }
 
     // Ensure database tables exist
     await this.ensureTablesExist();
@@ -80,6 +92,21 @@ class BackgroundJobManager extends EventEmitter {
     this.registerJobType('system:daily_credit_deduction', require('./jobs/DailyCreditDeductionJob'));
     this.registerJobType('system:dynamic_cron', require('./jobs/DynamicCronJob'));
     this.registerJobType('system:finalize_pending_orders', require('./jobs/FinalizePendingOrdersJob'));
+
+    // Translation jobs
+    this.registerJobType('translation:ui-labels:bulk', require('./jobs/UILabelsBulkTranslationJob'));
+
+    // Shopify import jobs
+    this.registerJobType('shopify:import:collections', require('./jobs/ShopifyImportCollectionsJob'));
+    this.registerJobType('shopify:import:products', require('./jobs/ShopifyImportProductsJob'));
+    this.registerJobType('shopify:import:all', require('./jobs/ShopifyImportAllJob'));
+
+    // Amazon export jobs
+    this.registerJobType('amazon:export:products', require('./jobs/AmazonExportProductsJob'));
+    this.registerJobType('amazon:sync:inventory', require('./jobs/AmazonSyncInventoryJob'));
+
+    // eBay export jobs
+    this.registerJobType('ebay:export:products', require('./jobs/EbayExportProductsJob'));
   }
 
   /**
@@ -87,6 +114,12 @@ class BackgroundJobManager extends EventEmitter {
    */
   registerJobType(type, handlerClass) {
     this.workers.set(type, handlerClass);
+
+    // Also register with BullMQ if available
+    if (this.useBullMQ) {
+      bullMQManager.registerJobType(type, handlerClass);
+    }
+
     console.log(`📝 Registered job type: ${type}`);
   }
 
@@ -111,6 +144,7 @@ class BackgroundJobManager extends EventEmitter {
 
     const scheduledAt = new Date(Date.now() + delay);
 
+    // Create job record in database (source of truth)
     const job = await Job.create({
       type,
       payload,
@@ -124,9 +158,26 @@ class BackgroundJobManager extends EventEmitter {
       metadata
     });
 
-    console.log(`📅 Job scheduled: ${type} (ID: ${job.id}) for ${scheduledAt.toISOString()}`);
-    this.emit('job:scheduled', job);
+    // If BullMQ is available, add to persistent queue
+    if (this.useBullMQ) {
+      try {
+        await bullMQManager.addJob(type, {
+          jobRecord: job.toJSON(),
+          jobId: job.id,
+        }, {
+          priority,
+          maxRetries,
+          scheduledAt,
+        });
+        console.log(`📅 Job scheduled in BullMQ: ${type} (ID: ${job.id})`);
+      } catch (error) {
+        console.error('❌ Failed to add job to BullMQ, will use database queue:', error.message);
+      }
+    } else {
+      console.log(`📅 Job scheduled in database: ${type} (ID: ${job.id}) for ${scheduledAt.toISOString()}`);
+    }
 
+    this.emit('job:scheduled', job);
     return job;
   }
 
@@ -176,9 +227,15 @@ class BackgroundJobManager extends EventEmitter {
     // Resume any jobs that were running when the server shut down
     await this.resumeInterruptedJobs();
 
-    // Start the main processing loop
-    this.processLoop();
-    
+    // If using BullMQ, start workers
+    if (this.useBullMQ) {
+      console.log('🚀 Starting BullMQ workers...');
+      await bullMQManager.startWorkers();
+    } else {
+      // Start the main processing loop (database queue)
+      this.processLoop();
+    }
+
     this.emit('manager:started');
   }
 
@@ -191,18 +248,24 @@ class BackgroundJobManager extends EventEmitter {
     console.log('⏹️ Stopping background job processor...');
     this.isRunning = false;
 
-    // Wait for current jobs to finish or timeout
-    const timeout = setTimeout(() => {
-      console.warn('⚠️ Force stopping job processor (timeout reached)');
-      this.processing.clear();
-    }, this.shutdownTimeout);
+    // If using BullMQ, close all connections
+    if (this.useBullMQ) {
+      await bullMQManager.close();
+    } else {
+      // Wait for current jobs to finish or timeout (database queue)
+      const timeout = setTimeout(() => {
+        console.warn('⚠️ Force stopping job processor (timeout reached)');
+        this.processing.clear();
+      }, this.shutdownTimeout);
 
-    // Wait for all jobs to finish
-    while (this.processing.size > 0) {
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      // Wait for all jobs to finish
+      while (this.processing.size > 0) {
+        await new Promise(resolve => setTimeout(resolve, 1000));
+      }
+
+      clearTimeout(timeout);
     }
 
-    clearTimeout(timeout);
     this.emit('manager:stopped');
     console.log('✅ Background job processor stopped');
   }
@@ -490,10 +553,36 @@ class BackgroundJobManager extends EventEmitter {
       order: [['executed_at', 'DESC']]
     });
 
+    // If using BullMQ, also get queue status
+    let queueStatus = null;
+    if (this.useBullMQ) {
+      try {
+        queueStatus = await bullMQManager.getJobStatus(job.type, jobId);
+      } catch (error) {
+        console.warn('Failed to get BullMQ status:', error.message);
+      }
+    }
+
     return {
       ...job.toJSON(),
-      history
+      history,
+      queueStatus
     };
+  }
+
+  /**
+   * Get job status for polling (lightweight)
+   */
+  async getJobStatus(jobId) {
+    const job = await Job.findByPk(jobId, {
+      attributes: ['id', 'type', 'status', 'progress', 'progress_message', 'result', 'last_error']
+    });
+
+    if (!job) {
+      return null;
+    }
+
+    return job.toJSON();
   }
 
   /**
