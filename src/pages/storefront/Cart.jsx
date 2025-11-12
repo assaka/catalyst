@@ -128,23 +128,23 @@ export default function Cart() {
             // Priority 3: Fetch from API (with deduplication)
             if (window.__slotConfigFetching[cacheKey]) {
                 // Already fetching - wait for it
-                const config = await window.__slotConfigFetching[cacheKey];
-                setCartLayoutConfig(config);
-                setConfigLoaded(true);
+                await window.__slotConfigFetching[cacheKey];
+                // After fetch completes, config will be in cache
+                const cachedAfterFetch = window.__slotConfigCache[cacheKey];
+                if (cachedAfterFetch) {
+                    setCartLayoutConfig(cachedAfterFetch.data);
+                    setConfigLoaded(true);
+                }
                 return;
             }
 
-            // Start fetching
-            const fetchPromise = (async () => {
-                const response = await slotConfigurationService.getPublishedConfiguration(store.id, 'cart');
-                delete window.__slotConfigFetching[cacheKey];
-                return response;
-            })();
-
+            // Start fetching (store the result in cache, not the promise)
+            const fetchPromise = slotConfigurationService.getPublishedConfiguration(store.id, 'cart');
             window.__slotConfigFetching[cacheKey] = fetchPromise;
 
             try {
                 const response = await fetchPromise;
+                delete window.__slotConfigFetching[cacheKey]; // Clear fetching flag
 
                 // Check for various "no published config" scenarios
                 if (response.success && response.data &&
@@ -179,6 +179,7 @@ export default function Cart() {
                     setConfigLoaded(true);
                 }
             } catch (error) {
+                delete window.__slotConfigFetching[cacheKey]; // Clear fetching flag
                 console.error('❌ CART: Error loading published slot configuration:', error);
 
                 // Fallback to cart-config.js
