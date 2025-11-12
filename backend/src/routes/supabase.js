@@ -159,7 +159,7 @@ router.get('/callback', async (req, res) => {
       }
     }
     
-    // Send simple success page that immediately notifies parent and closes
+    // Send minimal success page that closes instantly
     const projectUrl = result.project?.url || 'Connected';
     const userEmail = result.user?.email || '';
 
@@ -174,50 +174,14 @@ router.get('/callback', async (req, res) => {
       <!DOCTYPE html>
       <html>
       <head>
-        <title>Supabase Connected</title>
+        <title>Success</title>
         <style>
-          body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            height: 100vh;
-            margin: 0;
-            background: #f9fafb;
-          }
-          .container {
-            background: white;
-            padding: 2rem;
-            border-radius: 8px;
-            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-            text-align: center;
-            max-width: 400px;
-          }
-          .success {
-            color: #10b981;
-            font-size: 48px;
-            margin-bottom: 1rem;
-          }
-          h1 {
-            color: #1f2937;
-            margin-bottom: 0.5rem;
-            font-size: 20px;
-          }
-          p {
-            color: #6b7280;
-            margin-bottom: 1rem;
-            font-size: 14px;
-          }
+          body { margin: 0; background: #10b981; }
         </style>
       </head>
       <body>
-        <div class="container">
-          <div class="success">✓</div>
-          <h1>Success!</h1>
-          <p>Closing window...</p>
-        </div>
         <script>
-          // Notify parent window of success immediately
+          // Notify parent window immediately and close
           if (window.opener) {
             window.opener.postMessage({
               type: 'supabase-oauth-success',
@@ -225,21 +189,11 @@ router.get('/callback', async (req, res) => {
               userEmail: '${userEmail}',
               isLimitedScope: ${isLimitedScope}
             }, '${process.env.FRONTEND_URL || 'http://localhost:3000'}');
-
-            // Close immediately
-            setTimeout(() => {
-              window.close();
-            }, 100);
+            // Close instantly
+            window.close();
           } else {
-            // No opener, show manual close button
-            document.querySelector('.container').innerHTML =
-              '<div class="success">✓</div>' +
-              '<h1>Connection Successful!</h1>' +
-              '<p>Please close this window and return to the dashboard.</p>' +
-              '<button onclick="window.close();" style="' +
-              'background: #10b981; color: white; border: none; ' +
-              'padding: 10px 20px; border-radius: 6px; cursor: pointer; ' +
-              'font-size: 14px; margin-top: 10px;">Close Window</button>';
+            // No opener - show minimal message
+            document.body.innerHTML = '<div style="color:white;text-align:center;padding:2rem;font-family:sans-serif;"><h1>✓ Success!</h1><p>Please close this window.</p></div>';
           }
         </script>
       </body>
