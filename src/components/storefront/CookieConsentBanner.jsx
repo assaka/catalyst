@@ -253,7 +253,7 @@ export default function CookieConsentBanner() {
               <div className="flex items-center gap-2 mb-2">
                 <Shield className="w-5 h-5 text-blue-600" />
                 <h3 className="text-lg font-semibold">
-                  {showPreferences ? 'Manage Cookie Preferences' : 'Cookie Preferences'}
+                  {showPreferences ? t('cookie_consent.title.manage_preferences') : t('cookie_consent.title.preferences')}
                 </h3>
               </div>
               {cookieSettings.show_close_button && (

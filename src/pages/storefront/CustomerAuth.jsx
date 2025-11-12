@@ -8,8 +8,10 @@ import slotConfigurationService from '@/services/slotConfigurationService';
 import { UnifiedSlotRenderer } from '@/components/editor/slot/UnifiedSlotRenderer';
 import '@/components/editor/slot/AccountLoginSlotComponents'; // Register account/login components
 import { loginConfig } from '@/components/editor/slot/configs/login-config';
+import { useTranslation } from '@/contexts/TranslationContext';
 
 export default function CustomerAuth() {
+  const { t } = useTranslation();
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
   const [authLoading, setAuthLoading] = useState(false);
@@ -131,7 +133,7 @@ export default function CustomerAuth() {
         const storeId = store?.id;
 
         if (!storeId) {
-          setError("Store information not available. Please refresh the page.");
+          setError(t('customer_auth.error.store_not_available'));
           setAuthLoading(false);
           return;
         }
@@ -158,7 +160,7 @@ export default function CustomerAuth() {
       } else {
         // Registration
         if (formData.password !== formData.confirmPassword) {
-          setError("Passwords do not match");
+          setError(t('customer_auth.error.passwords_no_match'));
           return;
         }
 
@@ -166,7 +168,7 @@ export default function CustomerAuth() {
         const storeId = store?.id;
 
         if (!storeId) {
-          setError("Store information not available. Please refresh the page.");
+          setError(t('customer_auth.error.store_not_available'));
           setAuthLoading(false);
           return;
         }
@@ -188,7 +190,7 @@ export default function CustomerAuth() {
         // CustomerAuthAPI returns { success: true, data: { token, user } }
         if (response.success) {
           // Set success message for welcome email
-          setSuccess("Registration successful! A welcome email has been sent to your email address.");
+          setSuccess(t('customer_auth.success.registration'));
 
           // Clear logged out flag
           localStorage.removeItem('user_logged_out');
@@ -205,7 +207,8 @@ export default function CustomerAuth() {
     } catch (error) {
       console.error('Auth error:', error);
       // Use backend error message if available
-      const errorMessage = error.response?.data?.message || error.data?.message || error.message || `${isLogin ? 'Login' : 'Registration'} failed`;
+      const defaultMessage = isLogin ? t('customer_auth.error.login_failed') : t('customer_auth.error.registration_failed');
+      const errorMessage = error.response?.data?.message || error.data?.message || error.message || defaultMessage;
       setError(errorMessage);
     } finally {
       setAuthLoading(false);
@@ -247,9 +250,9 @@ export default function CustomerAuth() {
       ) : (
         <div className="max-w-md w-full mx-auto">
           <div className="bg-white rounded-lg shadow p-6">
-            <h2 className="text-2xl font-bold text-center mb-4">Customer Authentication</h2>
+            <h2 className="text-2xl font-bold text-center mb-4">{t('customer_auth.title')}</h2>
             <p className="text-gray-600 text-center">
-              Authentication configuration not available. Please contact support.
+              {t('customer_auth.error.config_not_available')}
             </p>
           </div>
         </div>
