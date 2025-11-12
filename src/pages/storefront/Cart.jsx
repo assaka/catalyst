@@ -1158,7 +1158,8 @@ export default function Cart() {
                                     ...item,
                                     product: item.product ? {
                                         ...item.product,
-                                        name: getProductName(item.product, getCurrentLanguage()) || item.product.name
+                                        name: getProductName(item.product, getCurrentLanguage()) || item.product.name,
+                                        image_url: item.product.images?.[0]?.url || item.product.image_url || item.product.image || ''
                                     } : item.product
                                 })),
                                 appliedCoupon,
