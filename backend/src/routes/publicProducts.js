@@ -200,14 +200,23 @@ router.get('/', cacheProducts(180), async (req, res) => {
     const productsWithAttributes = productsWithTranslations.map(productData => {
 
       // Ensure images is properly parsed as JSON array
+      console.log('🖼️ [Backend] Product:', productData.name, 'SKU:', productData.sku);
+      console.log('🖼️ [Backend] Images raw value:', productData.images);
+      console.log('🖼️ [Backend] Images type:', typeof productData.images);
+      console.log('🖼️ [Backend] Images is array:', Array.isArray(productData.images));
+
       if (productData.images && typeof productData.images === 'string') {
+        console.log('🖼️ [Backend] Images is string, parsing...');
         try {
           productData.images = JSON.parse(productData.images);
+          console.log('🖼️ [Backend] After parsing:', productData.images);
         } catch (e) {
-          console.error('Failed to parse product images:', e);
+          console.error('🖼️ [Backend] Failed to parse product images:', e);
           productData.images = [];
         }
       }
+
+      console.log('🖼️ [Backend] Final images value:', productData.images);
 
       // Format attributes for frontend
       if (productData.attributeValues && Array.isArray(productData.attributeValues)) {
@@ -322,14 +331,23 @@ router.get('/:id', cacheProduct(300), async (req, res) => {
     const productData = await applyProductTranslations(product, lang);
 
     // Ensure images is properly parsed as JSON array
+    console.log('🖼️ [Backend Single] Product:', productData.name, 'SKU:', productData.sku);
+    console.log('🖼️ [Backend Single] Images raw value:', productData.images);
+    console.log('🖼️ [Backend Single] Images type:', typeof productData.images);
+    console.log('🖼️ [Backend Single] Images is array:', Array.isArray(productData.images));
+
     if (productData.images && typeof productData.images === 'string') {
+      console.log('🖼️ [Backend Single] Images is string, parsing...');
       try {
         productData.images = JSON.parse(productData.images);
+        console.log('🖼️ [Backend Single] After parsing:', productData.images);
       } catch (e) {
-        console.error('Failed to parse product images:', e);
+        console.error('🖼️ [Backend Single] Failed to parse product images:', e);
         productData.images = [];
       }
     }
+
+    console.log('🖼️ [Backend Single] Final images value:', productData.images);
 
     // Collect attribute and attribute value IDs
     const attributeIds = new Set();
