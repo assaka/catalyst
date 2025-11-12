@@ -47,6 +47,7 @@ const ShopifyIntegration = () => {
   const [saveSuccess, setSaveSuccess] = useState(false);
   const [showInstructions, setShowInstructions] = useState(true);
   const [storageConfigured, setStorageConfigured] = useState(null);
+  const [storageProvider, setStorageProvider] = useState(null);
 
   useEffect(() => {
     console.log('ShopifyIntegration - storeId:', storeId);
@@ -73,10 +74,14 @@ const ShopifyIntegration = () => {
         console.log('Storage status:', data);
         const configured = data.configured || data.hasProvider || false;
         setStorageConfigured(configured);
-        console.log('Storage configured:', configured);
+        // Extract provider name (supabase, s3, gcs, local, etc.)
+        const provider = data.provider || data.integrationType || 'External URLs';
+        setStorageProvider(provider);
+        console.log('Storage configured:', configured, 'Provider:', provider);
       } else {
         console.warn('Storage status check failed');
         setStorageConfigured(false);
+        setStorageProvider('External URLs');
       }
     } catch (error) {
       console.error('Error checking storage configuration:', error);
@@ -584,27 +589,28 @@ const ShopifyIntegration = () => {
           </div>
         )}
 
-        {/* Media Storage Warning - Show when connected but storage not configured */}
-        {connectionStatus?.connected && (storageConfigured === false || storageConfigured === null) && (
-          <Alert className="border-yellow-200 bg-yellow-50">
-            <AlertCircle className="h-4 w-4 text-yellow-600" />
-            <AlertDescription className="text-yellow-800">
+        {/* Media Storage Info - Show storage provider being used */}
+        {connectionStatus?.connected && storageProvider && (
+          <Alert className={storageConfigured ? "border-blue-200 bg-blue-50" : "border-yellow-200 bg-yellow-50"}>
+            <Info className={`h-4 w-4 ${storageConfigured ? 'text-blue-600' : 'text-yellow-600'}`} />
+            <AlertDescription className={storageConfigured ? "text-blue-800" : "text-yellow-800"}>
               <div className="flex items-center justify-between">
                 <div>
-                  <strong>Media Storage Not Configured</strong>
-                  <p className="text-sm mt-1">
-                    Product images will be stored as external URLs. For better performance and reliability,
-                    configure a media storage provider (Supabase, S3, GCS, or Local).
-                  </p>
+                  <strong>Media will be stored on {storageProvider.charAt(0).toUpperCase() + storageProvider.slice(1)}</strong>
+                  {!storageConfigured && (
+                    <p className="text-sm mt-1">
+                      Images will use external Shopify URLs. Configure a storage provider for better performance.
+                    </p>
+                  )}
                 </div>
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={() => window.location.href = '/admin/store-database'}
+                  onClick={() => window.location.href = '/admin/media-storage'}
                   className="ml-4 whitespace-nowrap"
                 >
                   <Settings className="w-4 h-4 mr-2" />
-                  Configure Storage
+                  View Storage
                 </Button>
               </div>
             </AlertDescription>
@@ -617,11 +623,6 @@ const ShopifyIntegration = () => {
             <h3 className="text-lg font-semibold text-gray-900 mb-1">Import Data</h3>
             <p className="text-sm text-gray-600 mb-6">
               Import your Shopify data into SuprShop
-              {storageConfigured === false && (
-                <span className="block text-yellow-600 text-xs mt-1">
-                  ⚠️ Images will be stored as external URLs (storage not configured)
-                </span>
-              )}
             </p>
             <Tabs defaultValue="quick" className="w-full">
               <TabsList className="grid w-full grid-cols-2">
