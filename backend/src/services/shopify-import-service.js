@@ -3,6 +3,7 @@ const ShopifyOAuthToken = require('../models/ShopifyOAuthToken');
 const Category = require('../models/Category');
 const Product = require('../models/Product');
 const ProductTranslation = require('../models/ProductTranslation');
+const Language = require('../models/Language');
 const Attribute = require('../models/Attribute');
 const AttributeSet = require('../models/AttributeSet');
 const ImportStatistic = require('../models/ImportStatistic');
@@ -454,22 +455,32 @@ class ShopifyImportService {
         console.log(`Created product: ${product.title}`);
       }
 
+      // Ensure 'en' language exists before saving translations
+      await Language.findOrCreate({
+        where: { code: 'en' },
+        defaults: {
+          code: 'en',
+          name: 'English',
+          is_active: true
+        }
+      });
+
       // Save translations for name and description (default language: 'en')
       try {
-        await ProductTranslation.upsert({
+        const translationData = {
           product_id: savedProduct.id,
           language_code: 'en',
           name: product.title,
           description: product.body_html || '',
           short_description: product.body_html ? product.body_html.replace(/<[^>]*>/g, '').substring(0, 255) : ''
-        });
+        };
 
-        console.log(`✅ Saved translations for product: ${product.title}`);
+        await ProductTranslation.upsert(translationData);
+
+        console.log(`✅ Saved translations for product: ${product.title} (name: "${product.title}", desc length: ${(product.body_html || '').length})`);
       } catch (translationError) {
-        console.error(`Failed to save translations for ${product.title}:`, translationError.message);
-        // Don't fail the entire import if translations fail
-        // Check if 'en' language exists in languages table
-        console.warn('Ensure "en" language exists in languages table');
+        console.error(`❌ Failed to save translations for ${product.title}:`, translationError.message);
+        console.error('Translation error details:', translationError);
       }
 
       return savedProduct;
