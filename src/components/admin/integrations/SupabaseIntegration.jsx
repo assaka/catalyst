@@ -282,13 +282,19 @@ const SupabaseIntegration = ({ storeId, context = 'full' }) => {
             return;
           }
 
-          // Received success message - let backend close the popup
+          // Received success message - backend is showing green, we'll close after delay
           console.log('✅ Received OAuth success message from callback');
           window.removeEventListener('message', messageHandler);
           clearInterval(checkClosed);
 
-          // DON'T close the popup from here - let backend handle it so green flash is visible
-          console.log('⏳ Waiting for backend to close popup after showing success...');
+          // Give backend time to show green (500ms), then close popup as backup
+          console.log('⏳ Letting backend show green screen for 600ms, then closing...');
+          setTimeout(() => {
+            if (authWindow && !authWindow.closed) {
+              console.log('🔒 Closing popup from frontend as backup...');
+              authWindow.close();
+            }
+          }, 600);
 
           // Store success message in sessionStorage to show after reload
           sessionStorage.setItem('supabase_connection_success', 'Successfully connected to Supabase!');
