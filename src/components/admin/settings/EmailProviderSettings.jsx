@@ -147,7 +147,7 @@ export default function EmailProviderSettings({ storeEmail, storeName }) {
                     </div>
                     {provider.comingSoon && (
                       <Badge variant="outline" className="text-xs bg-yellow-50 text-yellow-700 border-yellow-300">
-                        Coming Soon
+                        Soon
                       </Badge>
                     )}
                     {provider.id === 'brevo' && isBrevoConnected && (
