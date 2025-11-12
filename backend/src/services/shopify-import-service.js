@@ -334,41 +334,46 @@ class ShopifyImportService {
       const imageBuffer = Buffer.from(response.data);
 
       // Determine file extension and MIME type
-      const urlExt = path.extname(new URL(imageUrl).pathname).toLowerCase();
-      const contentType = response.headers['content-type'] || response.headers['Content-Type'];
+      const urlPath = new URL(imageUrl).pathname;
+      const urlExt = path.extname(urlPath).toLowerCase();
+      const rawContentType = response.headers['content-type'] || response.headers['Content-Type'];
 
-      // Determine extension based on URL or content-type
+      // Determine extension from URL
       let ext = urlExt;
-      let mimeType = contentType;
-
       if (!ext || ext === '') {
-        if (contentType?.includes('png')) {
-          ext = '.png';
-        } else if (contentType?.includes('jpeg') || contentType?.includes('jpg')) {
-          ext = '.jpg';
-        } else if (contentType?.includes('webp')) {
-          ext = '.webp';
-        } else if (contentType?.includes('gif')) {
-          ext = '.gif';
-        } else {
-          ext = '.jpg'; // Default
-        }
+        // Try to detect from URL path
+        if (urlPath.includes('.png')) ext = '.png';
+        else if (urlPath.includes('.jpg') || urlPath.includes('.jpeg')) ext = '.jpg';
+        else if (urlPath.includes('.webp')) ext = '.webp';
+        else if (urlPath.includes('.gif')) ext = '.gif';
+        else ext = '.jpg'; // Default
       }
 
-      // Ensure we have a valid MIME type
-      if (!mimeType || mimeType === 'undefined') {
-        // Determine from extension
-        if (ext === '.png') mimeType = 'image/png';
-        else if (ext === '.jpg' || ext === '.jpeg') mimeType = 'image/jpeg';
-        else if (ext === '.webp') mimeType = 'image/webp';
-        else if (ext === '.gif') mimeType = 'image/gif';
-        else mimeType = 'image/jpeg'; // Default
+      // Determine MIME type
+      let mimeType;
+      if (ext === '.png') {
+        mimeType = 'image/png';
+      } else if (ext === '.jpg' || ext === '.jpeg') {
+        mimeType = 'image/jpeg';
+      } else if (ext === '.webp') {
+        mimeType = 'image/webp';
+      } else if (ext === '.gif') {
+        mimeType = 'image/gif';
+      } else {
+        mimeType = 'image/jpeg'; // Default
       }
+
+      console.log(`Detected: ext=${ext}, mimeType=${mimeType}, url=${imageUrl.substring(0, 80)}...`);
 
       // Generate filename: products/handle/image-0.jpg
       const filename = `products/${productHandle}/image-${index}${ext}`;
 
-      console.log(`Uploading image: ${filename} (${mimeType})`);
+      console.log(`Uploading image: ${filename} with MIME type: ${mimeType}`);
+
+      // Validate MIME type before upload
+      if (!mimeType || mimeType === 'undefined' || mimeType === undefined) {
+        throw new Error(`Invalid MIME type: ${mimeType}. Extension was: ${ext}`);
+      }
 
       // Upload to storage provider
       const uploadResult = await storageProvider.upload(imageBuffer, filename, {
