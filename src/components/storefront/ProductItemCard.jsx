@@ -29,7 +29,7 @@ const ProductItemCard = ({
   isEditorMode = false,
   onElementClick = null
 }) => {
-  const { t, translations } = useTranslation();
+  const { t, translations, currentLanguage } = useTranslation();
 
   // Local state for add to cart if not managed externally
   const [localIsAddingToCart, setLocalIsAddingToCart] = useState(false);
@@ -57,8 +57,8 @@ const ProductItemCard = ({
     product_card_add_to_cart = {}
   } = slotConfig;
 
-  // Get translated product name
-  const translatedProductName = getProductName(product, getCurrentLanguage()) || product.name;
+  // Get translated product name - use currentLanguage from context instead of getCurrentLanguage()
+  const translatedProductName = getProductName(product, currentLanguage) || product.name;
 
   // Merge configurations (card-specific takes precedence)
   const templateConfig = { ...productTemplate, ...product_card_template };
@@ -222,7 +222,7 @@ const ProductItemCard = ({
         window.dispatchEvent(new CustomEvent('showFlashMessage', {
           detail: {
             type: 'success',
-            message: `${translatedProductName} ${t('common.added_to_cart', 'added to cart successfully!')}`
+            message: `${translatedProductName} ${t('common.added_to_cart_success', 'added to cart successfully!')}`
           }
         }));
       } else {
