@@ -240,9 +240,6 @@ router.get('/callback', async (req, res) => {
         </div>
         <script>
           (function() {
-            console.log('🎯 OAuth callback page loaded');
-            console.log('🔍 Window opener exists:', !!window.opener);
-
             // Wait for DOM to be ready
             if (document.readyState === 'loading') {
               document.addEventListener('DOMContentLoaded', init);
@@ -251,82 +248,34 @@ router.get('/callback', async (req, res) => {
             }
 
             function init() {
-              console.log('📄 DOM ready, initializing...');
-
               const closeBtn = document.getElementById('closeBtn');
-              console.log('🔍 Button found:', !!closeBtn);
-              console.log('🔍 Button element:', closeBtn);
 
               if (closeBtn) {
-                // Log button properties
-                console.log('Button styles:', {
-                  display: closeBtn.style.display,
-                  visibility: closeBtn.style.visibility,
-                  pointerEvents: closeBtn.style.pointerEvents
-                });
-
-                // Test: Change button text on mouseover
-                closeBtn.addEventListener('mouseenter', function() {
-                  console.log('🖱️ Mouse entered button!');
-                });
-
-                closeBtn.addEventListener('mouseleave', function() {
-                  console.log('🖱️ Mouse left button!');
-                });
-
-                // Try multiple ways to attach the click handler
+                // Attach click handler
                 closeBtn.addEventListener('click', function(e) {
-                  console.log('🖱️ CLICK DETECTED via addEventListener!');
                   e.preventDefault();
-                  e.stopPropagation();
                   closeWindow();
-                }, { capture: true });
-
-                closeBtn.onclick = function(e) {
-                  console.log('🖱️ CLICK DETECTED via onclick!');
-                  closeWindow();
-                  return false;
-                };
-
-                // Also listen on document for any clicks
-                document.addEventListener('click', function(e) {
-                  console.log('🖱️ Document click detected, target:', e.target);
                 });
-
-                console.log('✅ All handlers attached');
-              } else {
-                console.error('❌ Button not found!');
               }
 
               // Auto-close after 5 seconds as fallback
               setTimeout(() => {
-                console.log('⏰ Auto-closing after 5 seconds...');
                 closeWindow();
               }, 5000);
             }
 
             function closeWindow() {
-              console.log('🔒 closeWindow() called');
-
               // Try to set sessionStorage in parent
               try {
                 if (window.opener && !window.opener.closed) {
                   window.opener.sessionStorage.setItem('supabase_connection_success', 'Successfully connected to Supabase!');
-                  console.log('✅ Session storage set');
                 }
               } catch (error) {
-                console.log('⚠️ Session storage failed:', error.message);
+                // Silent fail - frontend will handle via checkClosed
               }
 
               // Close window
-              console.log('⚡ Calling window.close()...');
               window.close();
-
-              // Fallback: try again after 100ms
-              setTimeout(() => {
-                console.log('🔄 Trying close again...');
-                window.close();
-              }, 100);
             }
           })();
         </script>

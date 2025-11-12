@@ -42,9 +42,7 @@ const SupabaseIntegration = ({ storeId, context = 'full' }) => {
 
   // Watch connecting state - reload when OAuth completes (connecting becomes false)
   useEffect(() => {
-    // Check if we just finished connecting (was true, now false)
     if (!connecting && sessionStorage.getItem('supabase_connection_success')) {
-      console.log('🔄 OAuth completed - reloading page...');
       window.location.reload();
     }
   }, [connecting]);
@@ -62,14 +60,12 @@ const SupabaseIntegration = ({ storeId, context = 'full' }) => {
   // Check for and clear logout flags on component mount
   useEffect(() => {
     if (localStorage.getItem('user_logged_out') === 'true') {
-      console.log('🔧 SupabaseIntegration: Clearing logout flag on mount');
       localStorage.removeItem('user_logged_out');
       apiClient.isLoggedOut = false;
     }
   }, []);
 
   useEffect(() => {
-    console.log('SupabaseIntegration mounted with storeId:', storeId);
     if (storeId && storeId !== 'undefined') {
       loadStatus();
     }
@@ -226,7 +222,6 @@ const SupabaseIntegration = ({ storeId, context = 'full' }) => {
       
       // Check for and clear any logout flags that might interfere
       if (localStorage.getItem('user_logged_out') === 'true') {
-        console.log('🔧 Clearing logout flag before Supabase connection');
         localStorage.removeItem('user_logged_out');
         apiClient.isLoggedOut = false;
       }
@@ -247,7 +242,6 @@ const SupabaseIntegration = ({ storeId, context = 'full' }) => {
         // Check if window is closed - when it closes, stop loading
         const checkClosed = setInterval(() => {
           if (authWindow.closed) {
-            console.log('🎉 Popup closed - stopping loader...');
             clearInterval(checkClosed);
 
             // Store success message for flash notification
