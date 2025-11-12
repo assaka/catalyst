@@ -1456,18 +1456,32 @@ export function UnifiedSlotRenderer({
  * getProductImageUrl(product, 1) // Second image (for gallery)
  */
 function getProductImageUrl(product, imageIndex = 0) {
+  console.log('🖼️ getProductImageUrl called:', {
+    productName: product?.name,
+    hasImages: !!product?.images,
+    imagesType: typeof product?.images,
+    imagesIsArray: Array.isArray(product?.images),
+    imagesLength: product?.images?.length,
+    imageIndex,
+    fullImages: product?.images
+  });
+
   if (!product || !product.images || !product.images[imageIndex]) {
+    console.log('🖼️ No image found, returning placeholder');
     return 'https://placehold.co/600x600?text=No+Image';
   }
 
   const image = product.images[imageIndex];
+  console.log('🖼️ Image at index', imageIndex, ':', image, 'type:', typeof image);
 
   if (typeof image === 'string') {
+    console.log('🖼️ Image is string, returning:', image);
     return image;
   }
 
   if (typeof image === 'object' && image !== null) {
     const url = image.url || image.src || image.path || image.image_url || image.uri || image.file_url;
+    console.log('🖼️ Image is object, extracted URL:', url);
     if (typeof url === 'string') {
       return url;
     }

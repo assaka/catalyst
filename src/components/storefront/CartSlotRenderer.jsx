@@ -49,14 +49,25 @@ export function CartSlotRenderer({
 
   // Helper function to extract image URL from various formats
   const getProductImageUrl = (product) => {
+    console.log('🖼️ CartSlotRenderer getProductImageUrl:', {
+      productName: product?.name,
+      hasImages: !!product?.images,
+      imagesType: typeof product?.images,
+      imagesIsArray: Array.isArray(product?.images),
+      images: product?.images
+    });
+
     if (!product || !product.images) {
+      console.log('🖼️ CartSlotRenderer: No images, returning placeholder');
       return 'https://placehold.co/100x100?text=No+Image';
     }
 
     const firstImage = product.images[0];
+    console.log('🖼️ CartSlotRenderer firstImage:', firstImage, 'type:', typeof firstImage);
 
     // If it's already a string URL
     if (typeof firstImage === 'string') {
+      console.log('🖼️ CartSlotRenderer: Image is string:', firstImage);
       return firstImage;
     }
 
@@ -67,6 +78,7 @@ export function CartSlotRenderer({
                           firstImage.path ||
                           firstImage.image_url ||
                           firstImage.uri;
+      console.log('🖼️ CartSlotRenderer: Extracted URL:', extractedUrl);
 
       return extractedUrl || 'https://placehold.co/100x100?text=No+Image';
     }

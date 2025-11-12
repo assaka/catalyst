@@ -2308,7 +2308,11 @@ export default function Checkout() {
                         return (
                           <div key={item.id} className="flex items-center space-x-3 py-3 border-b border-gray-100">
                             <img
-                              src={product.images?.[0] || 'https://placehold.co/60x60?text=No+Image'}
+                              src={(() => {
+                                const img = product.images?.[0];
+                                const url = typeof img === 'string' ? img : img?.url;
+                                return url || 'https://placehold.co/60x60?text=No+Image';
+                              })()}
                               alt={translatedProductName}
                               className="w-16 h-16 object-cover rounded-lg"
                             />
