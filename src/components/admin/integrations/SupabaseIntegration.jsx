@@ -262,8 +262,28 @@ const SupabaseIntegration = ({ storeId, context = 'full' }) => {
             return;
           }
 
+          // Check if this is actually our OAuth success message
+          // It must have type='supabase-oauth-success' OR have a 'project' field
+          const messageData = event.data?.data || event.data;
+          const isOAuthSuccess =
+            messageData?.type === 'supabase-oauth-success' ||
+            event.data?.type === 'supabase-oauth-success' ||
+            messageData?.project ||
+            event.data?.project;
+
+          console.log('📋 Message validation:', {
+            isOAuthSuccess,
+            hasType: messageData?.type || event.data?.type,
+            hasProject: messageData?.project || event.data?.project
+          });
+
+          if (!isOAuthSuccess) {
+            console.warn('⚠️ Not an OAuth success message, ignoring');
+            return;
+          }
+
           // Received success message - let backend close the popup
-          console.log('✅ Received success message from OAuth callback');
+          console.log('✅ Received OAuth success message from callback');
           window.removeEventListener('message', messageHandler);
           clearInterval(checkClosed);
 
