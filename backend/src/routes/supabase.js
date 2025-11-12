@@ -234,29 +234,20 @@ router.get('/callback', async (req, res) => {
           console.log('🔍 Window opener exists:', !!window.opener);
 
           function closeAndReload() {
-            if (window.opener) {
-              console.log('🔄 Setting session storage and reloading parent...');
+            console.log('🔒 Button clicked - closing popup...');
 
-              // Store success message in parent's sessionStorage
-              try {
+            // Try to set sessionStorage in parent (may fail due to cross-origin)
+            try {
+              if (window.opener) {
                 window.opener.sessionStorage.setItem('supabase_connection_success', 'Successfully connected to Supabase!');
                 console.log('✅ Session storage set in parent');
-              } catch (error) {
-                console.error('❌ Could not set session storage:', error);
               }
-
-              // Reload parent window directly
-              try {
-                window.opener.location.reload();
-                console.log('✅ Parent reload triggered');
-              } catch (error) {
-                console.error('❌ Could not reload parent:', error);
-              }
-
-              // Close this popup window
-              console.log('🔒 Closing popup window...');
-              setTimeout(() => window.close(), 100);
+            } catch (error) {
+              console.log('⚠️ Could not set session storage (cross-origin):', error.message);
             }
+
+            // Close this popup window - parent will detect close and reload
+            window.close();
           }
 
           // Auto-close after 5 seconds as fallback
