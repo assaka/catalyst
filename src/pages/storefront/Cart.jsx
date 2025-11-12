@@ -369,24 +369,39 @@ export default function Cart() {
                 return productId;
             }).filter(id => id !== null))];
 
-            // Batch Product Fetching
+            // Batch Product Fetching with request deduplication
             let products = [];
             try {
-                // Check global cache first (prevents duplicate fetch in Checkout)
                 const cacheKey = `products:${productIds.sort().join(',')}`;
-                if (window.__productBatchCache && window.__productBatchCache[cacheKey]) {
+
+                // Initialize global cache if needed
+                if (!window.__productBatchCache) window.__productBatchCache = {};
+                if (!window.__productFetching) window.__productFetching = {};
+
+                // Check cache first
+                if (window.__productBatchCache[cacheKey]) {
                     const cached = window.__productBatchCache[cacheKey];
-                    if (Date.now() - cached.timestamp < 30000) { // 30 second cache
+                    if (Date.now() - cached.timestamp < 30000) { // 30s cache
                         products = cached.data;
-                    } else {
-                        products = await StorefrontProduct.filter({ ids: productIds });
-                        if (!window.__productBatchCache) window.__productBatchCache = {};
-                        window.__productBatchCache[cacheKey] = { data: products, timestamp: Date.now() };
                     }
-                } else {
-                    products = await StorefrontProduct.filter({ ids: productIds });
-                    if (!window.__productBatchCache) window.__productBatchCache = {};
-                    window.__productBatchCache[cacheKey] = { data: products, timestamp: Date.now() };
+                }
+
+                // If not cached, check if already fetching
+                if (!products.length) {
+                    if (window.__productFetching[cacheKey]) {
+                        // Wait for the in-flight request
+                        products = await window.__productFetching[cacheKey];
+                    } else {
+                        // Start fetching
+                        const fetchPromise = StorefrontProduct.filter({ ids: productIds }).then(result => {
+                            const productsResult = result || [];
+                            window.__productBatchCache[cacheKey] = { data: productsResult, timestamp: Date.now() };
+                            delete window.__productFetching[cacheKey];
+                            return productsResult;
+                        });
+                        window.__productFetching[cacheKey] = fetchPromise;
+                        products = await fetchPromise;
+                    }
                 }
             } catch (error) {
                 console.error('Cart: Failed to fetch products:', error);
