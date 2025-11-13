@@ -402,10 +402,18 @@ router.get('/me', authMiddleware, async (req, res) => {
   try {
     // Return user data from JWT (matches old format exactly)
     // The old /me endpoint just returned req.user directly
-    res.json({
+    const response = {
       success: true,
       data: req.user
-    });
+    };
+
+    // DEBUG: Log what we're returning
+    console.log('=== /api/auth/me RESPONSE ===');
+    console.log('Response:', JSON.stringify(response, null, 2));
+    console.log('req.user keys:', Object.keys(req.user));
+    console.log('=============================');
+
+    res.json(response);
   } catch (error) {
     console.error('Get user error:', error);
     res.status(500).json({
