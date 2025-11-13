@@ -133,9 +133,11 @@ router.post('/register', async (req, res) => {
       message: 'User registered successfully. Please connect a database to activate your store.',
       data: {
         user,
-        store,
-        token: tokens.accessToken, // Match old format
-        refreshToken: tokens.refreshToken
+        token: tokens.accessToken,
+        refreshToken: tokens.refreshToken,
+        expiresIn: '7 days',
+        sessionRole: user.role,
+        sessionContext: 'dashboard'
       }
     });
   } catch (error) {
@@ -301,11 +303,20 @@ router.post('/login', async (req, res) => {
           first_name: user.first_name || user.firstName,
           last_name: user.last_name || user.lastName,
           role: user.role,
-          account_type: user.account_type || user.accountType
+          account_type: user.account_type || user.accountType,
+          phone: user.phone,
+          avatar_url: user.avatar_url,
+          is_active: user.is_active,
+          email_verified: user.email_verified,
+          credits: user.credits,
+          created_at: user.created_at,
+          updated_at: user.updated_at
         },
-        storeId,
-        token: tokens.accessToken, // Match frontend expectation
-        refreshToken: tokens.refreshToken
+        token: tokens.accessToken,
+        refreshToken: tokens.refreshToken,
+        expiresIn: '7 days', // Match old format
+        sessionRole: user.role, // Match old format
+        sessionContext: user.role === 'customer' ? 'storefront' : 'dashboard' // Match old format
       }
     });
   } catch (error) {
