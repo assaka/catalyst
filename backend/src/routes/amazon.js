@@ -2,7 +2,7 @@ const express = require('express');
 const router = express.Router();
 const { authMiddleware } = require('../middleware/auth');
 const { checkStoreOwnership } = require('../middleware/storeAuth');
-const MarketplaceCredential = require('../models/MarketplaceCredential');
+const IntegrationConfig = require('../models/IntegrationConfig');
 const jobManager = require('../core/BackgroundJobManager');
 
 router.use(authMiddleware);
@@ -14,36 +14,37 @@ router.post('/configure', checkStoreOwnership, async (req, res) => {
   try {
     const { store_id, credentials, marketplace_id, region, export_settings } = req.body;
 
-    const [credential, created] = await MarketplaceCredential.findOrCreate({
-      where: {
-        store_id,
-        marketplace: 'amazon'
+    const configData = {
+      sellerId: credentials.seller_id,
+      mwsAuthToken: credentials.mws_auth_token,
+      awsAccessKeyId: credentials.aws_access_key_id,
+      awsSecretAccessKey: credentials.aws_secret_access_key,
+      marketplaceId: marketplace_id || 'ATVPDKIKX0DER',
+      region: region || 'US',
+      exportSettings: export_settings || {
+        use_ai_optimization: true,
+        auto_translate: true,
+        include_variants: true,
+        export_out_of_stock: false,
+        price_adjustment_percent: 0
       },
-      defaults: {
-        credentials,
-        marketplace_id: marketplace_id || 'ATVPDKIKX0DER',
-        region: region || 'US',
-        export_settings: export_settings || {}
+      statistics: {
+        total_exports: 0,
+        successful_exports: 0,
+        failed_exports: 0,
+        total_products_synced: 0
       }
-    });
+    };
 
-    if (!created) {
-      credential.credentials = credentials;
-      credential.marketplace_id = marketplace_id;
-      credential.region = region;
-      if (export_settings) {
-        credential.export_settings = export_settings;
-      }
-      await credential.save();
-    }
+    const integration = await IntegrationConfig.createOrUpdate(store_id, 'amazon', configData);
 
     res.json({
       success: true,
       message: 'Amazon credentials configured successfully',
-      credential: {
-        id: credential.id,
-        marketplace: credential.marketplace,
-        status: credential.status
+      integration: {
+        id: integration.id,
+        integration_type: integration.integration_type,
+        is_active: integration.is_active
       }
     });
   } catch (error) {
@@ -118,9 +119,9 @@ router.get('/config', checkStoreOwnership, async (req, res) => {
   try {
     const { store_id } = req.query;
 
-    const credential = await MarketplaceCredential.findByStoreAndMarketplace(store_id, 'amazon');
+    const integration = await IntegrationConfig.findByStoreAndType(store_id, 'amazon');
 
-    if (!credential) {
+    if (!integration) {
       return res.json({
         success: true,
         configured: false
@@ -131,12 +132,12 @@ router.get('/config', checkStoreOwnership, async (req, res) => {
       success: true,
       configured: true,
       config: {
-        marketplace_id: credential.marketplace_id,
-        region: credential.region,
-        status: credential.status,
-        export_settings: credential.export_settings,
-        statistics: credential.statistics,
-        last_sync_at: credential.last_sync_at
+        marketplace_id: integration.config_data.marketplaceId,
+        region: integration.config_data.region,
+        status: integration.is_active ? 'active' : 'inactive',
+        export_settings: integration.config_data.exportSettings,
+        statistics: integration.config_data.statistics,
+        last_sync_at: integration.last_sync_at
       }
     });
   } catch (error) {

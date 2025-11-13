@@ -1,5 +1,5 @@
 const MarketplaceAIOptimizer = require('./marketplace-ai-optimizer');
-const MarketplaceCredential = require('../models/MarketplaceCredential');
+const IntegrationConfig = require('../models/IntegrationConfig');
 const Product = require('../models/Product');
 
 /**
@@ -9,25 +9,36 @@ const Product = require('../models/Product');
 class EbayExportService {
   constructor(storeId) {
     this.storeId = storeId;
-    this.credentials = null;
+    this.integration = null;
     this.aiOptimizer = new MarketplaceAIOptimizer();
   }
 
   async initialize() {
-    this.credentials = await MarketplaceCredential.findByStoreAndMarketplace(this.storeId, 'ebay');
+    this.integration = await IntegrationConfig.findByStoreAndType(this.storeId, 'ebay');
 
-    if (!this.credentials) {
-      throw new Error('eBay credentials not configured for this store');
+    if (!this.integration) {
+      throw new Error('eBay integration not configured for this store');
+    }
+
+    const config = this.integration.config_data;
+
+    // Validate required credentials
+    const requiredFields = ['appId', 'certId', 'devId', 'authToken'];
+    const missing = requiredFields.filter(field => !config[field]);
+
+    if (missing.length > 0) {
+      throw new Error(`Missing eBay credentials: ${missing.join(', ')}`);
     }
 
     return { success: true };
   }
 
   async exportProducts(productIds, options = {}) {
+    const exportSettings = this.integration?.config_data?.exportSettings || {};
     const {
-      useAIOptimization = this.credentials?.export_settings?.use_ai_optimization || false,
-      listingFormat = 'FixedPrice',
-      listingDuration = '30',
+      useAIOptimization = exportSettings.use_ai_optimization || false,
+      listingFormat = exportSettings.listing_format || 'FixedPrice',
+      listingDuration = exportSettings.listing_duration || '30',
       progressCallback = null
     } = options;
 
@@ -86,11 +97,19 @@ class EbayExportService {
       }
     }
 
-    await this.credentials.updateSyncStats({
-      increment_exports: true,
-      success: results.successful > 0,
-      total_products_synced: results.successful
-    });
+    // Update statistics
+    const stats = this.integration.config_data.statistics || {};
+    this.integration.config_data = {
+      ...this.integration.config_data,
+      statistics: {
+        ...stats,
+        total_exports: (stats.total_exports || 0) + 1,
+        successful_exports: (stats.successful_exports || 0) + (results.successful > 0 ? 1 : 0),
+        failed_exports: (stats.failed_exports || 0) + (results.failed > 0 ? 1 : 0),
+        total_products_synced: (stats.total_products_synced || 0) + results.successful
+      }
+    };
+    await this.integration.updateSyncStatus('success');
 
     return results;
   }

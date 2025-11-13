@@ -1,6 +1,6 @@
 const AmazonFeedGenerator = require('./amazon-feed-generator');
 const MarketplaceAIOptimizer = require('./marketplace-ai-optimizer');
-const MarketplaceCredential = require('../models/MarketplaceCredential');
+const IntegrationConfig = require('../models/IntegrationConfig');
 const Product = require('../models/Product');
 const translationService = require('./translation-service');
 
@@ -13,7 +13,7 @@ const translationService = require('./translation-service');
 class AmazonExportService {
   constructor(storeId) {
     this.storeId = storeId;
-    this.credentials = null;
+    this.integration = null;
     this.feedGenerator = null;
     this.aiOptimizer = new MarketplaceAIOptimizer();
   }
@@ -22,21 +22,25 @@ class AmazonExportService {
    * Initialize service with credentials
    */
   async initialize() {
-    this.credentials = await MarketplaceCredential.findByStoreAndMarketplace(this.storeId, 'amazon');
+    this.integration = await IntegrationConfig.findByStoreAndType(this.storeId, 'amazon');
 
-    if (!this.credentials) {
-      throw new Error('Amazon credentials not configured for this store');
+    if (!this.integration) {
+      throw new Error('Amazon integration not configured for this store');
     }
 
-    const validation = this.credentials.validateCredentials();
-    if (!validation.valid) {
-      throw new Error(`Missing Amazon credentials: ${validation.missing.join(', ')}`);
+    const config = this.integration.config_data;
+
+    // Validate required credentials
+    const requiredFields = ['sellerId', 'mwsAuthToken', 'awsAccessKeyId', 'awsSecretAccessKey'];
+    const missing = requiredFields.filter(field => !config[field]);
+
+    if (missing.length > 0) {
+      throw new Error(`Missing Amazon credentials: ${missing.join(', ')}`);
     }
 
-    const creds = this.credentials.credentials;
     this.feedGenerator = new AmazonFeedGenerator(
-      creds.seller_id,
-      this.credentials.marketplace_id || 'ATVPDKIKX0DER'
+      config.sellerId,
+      config.marketplaceId || 'ATVPDKIKX0DER'
     );
 
     return { success: true };
@@ -46,9 +50,10 @@ class AmazonExportService {
    * Export products to Amazon
    */
   async exportProducts(productIds, options = {}) {
+    const exportSettings = this.integration?.config_data?.exportSettings || {};
     const {
-      useAIOptimization = this.credentials?.export_settings?.use_ai_optimization || false,
-      autoTranslate = this.credentials?.export_settings?.auto_translate || false,
+      useAIOptimization = exportSettings.use_ai_optimization || false,
+      autoTranslate = exportSettings.auto_translate || false,
       targetLanguage = 'en',
       dryRun = false,
       progressCallback = null
@@ -116,7 +121,7 @@ class AmazonExportService {
           }
 
           const optimized = await this.aiOptimizer.optimizeForAmazon(transformed, {
-            targetAudience: this.credentials?.export_settings?.target_audience || 'general'
+            targetAudience: exportSettings.target_audience || 'general'
           });
 
           if (optimized.success) {
@@ -243,12 +248,18 @@ class AmazonExportService {
 
     // Update statistics
     if (!dryRun) {
-      await this.credentials.updateSyncStats({
-        increment_exports: true,
-        success: results.successful > 0,
-        failed: results.failed > 0,
-        total_products_synced: results.successful
-      });
+      const stats = this.integration.config_data.statistics || {};
+      this.integration.config_data = {
+        ...this.integration.config_data,
+        statistics: {
+          ...stats,
+          total_exports: (stats.total_exports || 0) + 1,
+          successful_exports: (stats.successful_exports || 0) + (results.successful > 0 ? 1 : 0),
+          failed_exports: (stats.failed_exports || 0) + (results.failed > 0 ? 1 : 0),
+          total_products_synced: (stats.total_products_synced || 0) + results.successful
+        }
+      };
+      await this.integration.updateSyncStatus('success');
     }
 
     return results;
@@ -258,7 +269,7 @@ class AmazonExportService {
    * Transform product from our format to Amazon format
    */
   async transformProduct(product) {
-    const exportSettings = this.credentials?.export_settings || {};
+    const exportSettings = this.integration?.config_data?.exportSettings || {};
 
     return {
       sku: product.sku || `AUTO-${product.id}`,

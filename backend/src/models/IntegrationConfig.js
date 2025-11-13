@@ -35,7 +35,14 @@ const IntegrationConfig = sequelize.define('IntegrationConfig', {
         'google-cloud-storage',
         'aws-s3',
         'cloudflare-r2',
-        'local-storage'
+        'local-storage',
+
+        // Marketplace integrations
+        'amazon',
+        'ebay',
+        'google-shopping',
+        'facebook',
+        'instagram'
       ]]
     }
   },
@@ -137,7 +144,14 @@ IntegrationConfig.getSensitiveFields = (integrationType) => {
     'google-cloud-storage': ['privateKey', 'credentials'],
     'aws-s3': ['accessKeyId', 'secretAccessKey', 'sessionToken'],
     'cloudflare-r2': ['accessKeyId', 'secretAccessKey'],
-    'local-storage': []
+    'local-storage': [],
+
+    // Marketplace integrations
+    amazon: ['mwsAuthToken', 'awsAccessKeyId', 'awsSecretAccessKey'],
+    ebay: ['appId', 'certId', 'devId', 'authToken'],
+    'google-shopping': ['apiKey'],
+    facebook: ['accessToken'],
+    instagram: ['accessToken']
   };
 
   return sensitiveFieldsMap[integrationType] || [];
