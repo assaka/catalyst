@@ -236,6 +236,7 @@ router.get('/dropdown', authMiddleware, async (req, res) => {
     const userId = req.user.id;
     const { masterSupabaseClient } = require('../database/masterConnection');
 
+    // Get stores from master DB (using Supabase client)
     const { data: stores, error } = await masterSupabaseClient
       .from('stores')
       .select('id, status, is_active, created_at')
@@ -246,16 +247,21 @@ router.get('/dropdown', authMiddleware, async (req, res) => {
       throw new Error(error.message);
     }
 
-    // Enrich with hostname info
-    const { StoreHostname } = require('../models/master');
+    // Enrich with hostname info (using Supabase client, not Sequelize model)
     const enrichedStores = await Promise.all(
       (stores || []).map(async (store) => {
-        const hostnames = await StoreHostname.findByStore(store.id);
-        const primaryHostname = hostnames.find(h => h.is_primary);
+        // Get hostname from master DB using Supabase client
+        const { data: hostnames } = await masterSupabaseClient
+          .from('store_hostnames')
+          .select('hostname, slug, is_primary')
+          .eq('store_id', store.id)
+          .order('is_primary', { ascending: false });
+
+        const primaryHostname = (hostnames || []).find(h => h.is_primary) || (hostnames || [])[0];
 
         // Get tenant store name if available
         let storeName = 'Unnamed Store';
-        let storeSlug = null;
+        let storeSlug = primaryHostname?.slug || null;
 
         if (store.is_active && store.status === 'active') {
           try {
@@ -278,7 +284,7 @@ router.get('/dropdown', authMiddleware, async (req, res) => {
         return {
           id: store.id,
           name: storeName,
-          slug: storeSlug || primaryHostname?.slug,
+          slug: storeSlug,
           status: store.status,
           is_active: store.is_active
         };
@@ -293,7 +299,8 @@ router.get('/dropdown', authMiddleware, async (req, res) => {
     console.error('Get stores dropdown error:', error);
     res.status(500).json({
       success: false,
-      error: 'Failed to get stores'
+      error: 'Failed to get stores',
+      details: error.message
     });
   }
 });

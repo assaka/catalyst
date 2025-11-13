@@ -368,39 +368,11 @@ router.post('/refresh', async (req, res) => {
  */
 router.get('/me', authMiddleware, async (req, res) => {
   try {
-    // req.user is populated by authMiddleware
-    const { data: user, error: userError } = await masterSupabaseClient
-      .from('users')
-      .select('*')
-      .eq('id', req.user.id)
-      .single();
-
-    if (userError || !user) {
-      return res.status(404).json({
-        success: false,
-        error: 'User not found'
-      });
-    }
-
-    // Get user's stores (using Supabase client)
-    const { data: stores, error: storesError } = await masterSupabaseClient
-      .from('stores')
-      .select('*')
-      .eq('user_id', user.id)
-      .order('created_at', { ascending: false });
-
-    // Remove sensitive fields
-    delete user.password;
-    delete user.email_verification_token;
-    delete user.password_reset_token;
-
+    // Return user data from JWT (matches old format exactly)
+    // The old /me endpoint just returned req.user directly
     res.json({
       success: true,
-      data: {
-        user,
-        stores: stores || [],
-        currentStoreId: req.user.store_id
-      }
+      data: req.user
     });
   } catch (error) {
     console.error('Get user error:', error);
