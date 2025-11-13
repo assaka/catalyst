@@ -23,57 +23,88 @@ const { createClient } = require('@supabase/supabase-js');
 // MASTER DATABASE CONNECTION (PostgreSQL/Supabase)
 // ============================================
 
-const masterSequelize = new Sequelize({
-  dialect: 'postgres',
-  host: process.env.MASTER_DB_HOST,
-  port: process.env.MASTER_DB_PORT || 5432,
-  database: process.env.MASTER_DB_NAME || 'postgres',
-  username: process.env.MASTER_DB_USER,
-  password: process.env.MASTER_DB_PASSWORD,
+// Use MASTER_DB_URL if available, otherwise fall back to individual components
+const masterDbUrl = process.env.MASTER_DB_URL;
+const useMasterDbUrl = !!masterDbUrl;
 
-  // Connection pool settings
-  pool: {
-    max: 20,          // Maximum connections in pool
-    min: 5,           // Minimum connections in pool
-    acquire: 30000,   // Maximum time to acquire connection (30s)
-    idle: 10000       // Maximum time connection can be idle (10s)
-  },
+const masterSequelize = useMasterDbUrl
+  ? new Sequelize(masterDbUrl, {
+      dialect: 'postgres',
+      logging: process.env.NODE_ENV === 'development' ? console.log : false,
+      timezone: '+00:00',
+      define: {
+        timestamps: true,
+        underscored: false,
+        freezeTableName: true
+      },
+      dialectOptions: process.env.NODE_ENV === 'production' ? {
+        ssl: {
+          require: true,
+          rejectUnauthorized: false
+        }
+      } : {},
 
-  // Logging
-  logging: process.env.NODE_ENV === 'development' ? console.log : false,
+      // Connection pool settings
+      pool: {
+        max: 20,          // Maximum connections in pool
+        min: 5,           // Minimum connections in pool
+        acquire: 30000,   // Maximum time to acquire connection (30s)
+        idle: 10000       // Maximum time connection can be idle (10s)
+      },
 
-  // Timezone
-  timezone: '+00:00',
-
-  // Additional options
-  define: {
-    timestamps: true,
-    underscored: false,
-    freezeTableName: true
-  },
-
-  // Retry logic
-  retry: {
-    max: 3,
-    match: [
-      /SequelizeConnectionError/,
-      /SequelizeConnectionRefusedError/,
-      /SequelizeHostNotFoundError/,
-      /SequelizeHostNotReachableError/,
-      /SequelizeInvalidConnectionError/,
-      /SequelizeConnectionTimedOutError/,
-      /TimeoutError/
-    ]
-  },
-
-  // SSL for production
-  dialectOptions: process.env.NODE_ENV === 'production' ? {
-    ssl: {
-      require: true,
-      rejectUnauthorized: false
-    }
-  } : {}
-});
+      // Retry logic
+      retry: {
+        max: 3,
+        match: [
+          /SequelizeConnectionError/,
+          /SequelizeConnectionRefusedError/,
+          /SequelizeHostNotFoundError/,
+          /SequelizeHostNotReachableError/,
+          /SequelizeInvalidConnectionError/,
+          /SequelizeConnectionTimedOutError/,
+          /TimeoutError/
+        ]
+      }
+    })
+  : new Sequelize({
+      dialect: 'postgres',
+      host: process.env.MASTER_DB_HOST,
+      port: process.env.MASTER_DB_PORT || 5432,
+      database: process.env.MASTER_DB_NAME || 'postgres',
+      username: process.env.MASTER_DB_USER,
+      password: process.env.MASTER_DB_PASSWORD,
+      pool: {
+        max: 20,
+        min: 5,
+        acquire: 30000,
+        idle: 10000
+      },
+      logging: process.env.NODE_ENV === 'development' ? console.log : false,
+      timezone: '+00:00',
+      define: {
+        timestamps: true,
+        underscored: false,
+        freezeTableName: true
+      },
+      retry: {
+        max: 3,
+        match: [
+          /SequelizeConnectionError/,
+          /SequelizeConnectionRefusedError/,
+          /SequelizeHostNotFoundError/,
+          /SequelizeHostNotReachableError/,
+          /SequelizeInvalidConnectionError/,
+          /SequelizeConnectionTimedOutError/,
+          /TimeoutError/
+        ]
+      },
+      dialectOptions: process.env.NODE_ENV === 'production' ? {
+        ssl: {
+          require: true,
+          rejectUnauthorized: false
+        }
+      } : {}
+    });
 
 // ============================================
 // SUPABASE CLIENT (if using Supabase for master DB)
