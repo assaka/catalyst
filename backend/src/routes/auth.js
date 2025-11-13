@@ -653,7 +653,20 @@ router.post('/login', [
     });
 
     // Update last login
-    await user.update({ last_login: new Date() });
+    if (user.update && typeof user.update === 'function') {
+      // Sequelize model (tenant DB)
+      await user.update({ last_login: new Date() });
+    } else if (user.account_type === 'agency') {
+      // Master DB user (plain object) - update via Supabase client
+      const { masterSupabaseClient } = require('../database/masterConnection');
+      await masterSupabaseClient
+        .from('users')
+        .update({ last_login: new Date().toISOString() })
+        .eq('id', user.id);
+
+      // Update local object
+      user.last_login = new Date().toISOString();
+    }
 
     // Generate token with remember me option
     const token = generateToken(user, rememberMe);
