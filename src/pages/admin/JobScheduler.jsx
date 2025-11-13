@@ -266,27 +266,296 @@ const JobScheduler = () => {
               <select
                 id="job_type"
                 value={formData.job_type}
-                onChange={(e) => setFormData({...formData, job_type: e.target.value})}
+                onChange={(e) => {
+                  setFormData({
+                    ...formData,
+                    job_type: e.target.value,
+                    configuration: {} // Reset config when type changes
+                  });
+                }}
                 className="w-full px-3 py-2 border rounded-md"
               >
-                <option value="webhook">Webhook (HTTP Request)</option>
-                <option value="api_call">API Call</option>
+                <option value="webhook">Webhook (External HTTP Request)</option>
+                <option value="api_call">API Call (Internal Route)</option>
                 <option value="database_query">Database Query</option>
                 <option value="email">Send Email</option>
                 <option value="cleanup">Cleanup Task</option>
               </select>
             </div>
 
+            {/* API Call Configuration */}
+            {formData.job_type === 'api_call' && (
+              <div className="space-y-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                <h4 className="font-semibold text-blue-900">API Call Configuration</h4>
+
+                <div>
+                  <Label htmlFor="api_url">API Route (Internal)</Label>
+                  <Input
+                    id="api_url"
+                    value={formData.configuration.url || ''}
+                    onChange={(e) => setFormData({
+                      ...formData,
+                      configuration: { ...formData.configuration, url: e.target.value }
+                    })}
+                    placeholder="/api/your-endpoint"
+                  />
+                  <p className="text-xs text-gray-600 mt-1">
+                    Example: /api/shopify/import/products or /api/my-plugin/sync
+                  </p>
+                </div>
+
+                <div>
+                  <Label htmlFor="api_method">HTTP Method</Label>
+                  <select
+                    id="api_method"
+                    value={formData.configuration.method || 'POST'}
+                    onChange={(e) => setFormData({
+                      ...formData,
+                      configuration: { ...formData.configuration, method: e.target.value }
+                    })}
+                    className="w-full px-3 py-2 border rounded-md"
+                  >
+                    <option value="GET">GET</option>
+                    <option value="POST">POST</option>
+                    <option value="PUT">PUT</option>
+                    <option value="PATCH">PATCH</option>
+                    <option value="DELETE">DELETE</option>
+                  </select>
+                </div>
+
+                <div>
+                  <Label htmlFor="api_headers">Headers (JSON)</Label>
+                  <Textarea
+                    id="api_headers"
+                    value={JSON.stringify(formData.configuration.headers || {}, null, 2)}
+                    onChange={(e) => {
+                      try {
+                        const headers = JSON.parse(e.target.value);
+                        setFormData({
+                          ...formData,
+                          configuration: { ...formData.configuration, headers }
+                        });
+                      } catch (err) {
+                        // Invalid JSON, ignore
+                      }
+                    }}
+                    placeholder='{\n  "Content-Type": "application/json"\n}'
+                    rows={3}
+                    className="font-mono text-sm"
+                  />
+                </div>
+
+                <div>
+                  <Label htmlFor="api_body">Request Body (JSON)</Label>
+                  <Textarea
+                    id="api_body"
+                    value={JSON.stringify(formData.configuration.body || {}, null, 2)}
+                    onChange={(e) => {
+                      try {
+                        const body = JSON.parse(e.target.value);
+                        setFormData({
+                          ...formData,
+                          configuration: { ...formData.configuration, body }
+                        });
+                      } catch (err) {
+                        // Invalid JSON, ignore
+                      }
+                    }}
+                    placeholder='{\n  "store_id": "uuid",\n  "action": "sync"\n}'
+                    rows={5}
+                    className="font-mono text-sm"
+                  />
+                  <p className="text-xs text-gray-600 mt-1">
+                    Only needed for POST, PUT, PATCH requests
+                  </p>
+                </div>
+              </div>
+            )}
+
+            {/* Webhook Configuration */}
             {formData.job_type === 'webhook' && (
-              <div>
-                <Label>Webhook URL</Label>
-                <Input
-                  placeholder="https://example.com/webhook"
-                  onChange={(e) => setFormData({
-                    ...formData,
-                    configuration: { ...formData.configuration, url: e.target.value }
-                  })}
-                />
+              <div className="space-y-4 p-4 bg-purple-50 border border-purple-200 rounded-lg">
+                <h4 className="font-semibold text-purple-900">Webhook Configuration</h4>
+
+                <div>
+                  <Label htmlFor="webhook_url">Webhook URL (External)</Label>
+                  <Input
+                    id="webhook_url"
+                    value={formData.configuration.url || ''}
+                    onChange={(e) => setFormData({
+                      ...formData,
+                      configuration: { ...formData.configuration, url: e.target.value }
+                    })}
+                    placeholder="https://example.com/webhook"
+                  />
+                  <p className="text-xs text-gray-600 mt-1">
+                    Full URL to external webhook endpoint
+                  </p>
+                </div>
+
+                <div>
+                  <Label htmlFor="webhook_method">HTTP Method</Label>
+                  <select
+                    id="webhook_method"
+                    value={formData.configuration.method || 'POST'}
+                    onChange={(e) => setFormData({
+                      ...formData,
+                      configuration: { ...formData.configuration, method: e.target.value }
+                    })}
+                    className="w-full px-3 py-2 border rounded-md"
+                  >
+                    <option value="GET">GET</option>
+                    <option value="POST">POST</option>
+                    <option value="PUT">PUT</option>
+                  </select>
+                </div>
+
+                <div>
+                  <Label htmlFor="webhook_headers">Headers (JSON)</Label>
+                  <Textarea
+                    id="webhook_headers"
+                    value={JSON.stringify(formData.configuration.headers || {}, null, 2)}
+                    onChange={(e) => {
+                      try {
+                        const headers = JSON.parse(e.target.value);
+                        setFormData({
+                          ...formData,
+                          configuration: { ...formData.configuration, headers }
+                        });
+                      } catch (err) {
+                        // Invalid JSON
+                      }
+                    }}
+                    placeholder='{\n  "Authorization": "Bearer token"\n}'
+                    rows={3}
+                    className="font-mono text-sm"
+                  />
+                </div>
+
+                <div>
+                  <Label htmlFor="webhook_body">Request Body (JSON)</Label>
+                  <Textarea
+                    id="webhook_body"
+                    value={JSON.stringify(formData.configuration.body || {}, null, 2)}
+                    onChange={(e) => {
+                      try {
+                        const body = JSON.parse(e.target.value);
+                        setFormData({
+                          ...formData,
+                          configuration: { ...formData.configuration, body }
+                        });
+                      } catch (err) {
+                        // Invalid JSON
+                      }
+                    }}
+                    placeholder='{\n  "event": "scheduled_task"\n}'
+                    rows={4}
+                    className="font-mono text-sm"
+                  />
+                </div>
+              </div>
+            )}
+
+            {/* Email Configuration */}
+            {formData.job_type === 'email' && (
+              <div className="space-y-4 p-4 bg-green-50 border border-green-200 rounded-lg">
+                <h4 className="font-semibold text-green-900">Email Configuration</h4>
+
+                <div>
+                  <Label htmlFor="email_to">To Email Address</Label>
+                  <Input
+                    id="email_to"
+                    type="email"
+                    value={formData.configuration.to || ''}
+                    onChange={(e) => setFormData({
+                      ...formData,
+                      configuration: { ...formData.configuration, to: e.target.value }
+                    })}
+                    placeholder="admin@example.com"
+                  />
+                </div>
+
+                <div>
+                  <Label htmlFor="email_subject">Email Subject</Label>
+                  <Input
+                    id="email_subject"
+                    value={formData.configuration.subject || ''}
+                    onChange={(e) => setFormData({
+                      ...formData,
+                      configuration: { ...formData.configuration, subject: e.target.value }
+                    })}
+                    placeholder="Daily Report"
+                  />
+                </div>
+
+                <div>
+                  <Label htmlFor="email_template">Email Template</Label>
+                  <Input
+                    id="email_template"
+                    value={formData.configuration.template || ''}
+                    onChange={(e) => setFormData({
+                      ...formData,
+                      configuration: { ...formData.configuration, template: e.target.value }
+                    })}
+                    placeholder="store-status-daily"
+                  />
+                  <p className="text-xs text-gray-600 mt-1">
+                    Email template ID from your email templates
+                  </p>
+                </div>
+
+                <div>
+                  <Label htmlFor="email_data">Template Data (JSON)</Label>
+                  <Textarea
+                    id="email_data"
+                    value={JSON.stringify(formData.configuration.data || {}, null, 2)}
+                    onChange={(e) => {
+                      try {
+                        const data = JSON.parse(e.target.value);
+                        setFormData({
+                          ...formData,
+                          configuration: { ...formData.configuration, data }
+                        });
+                      } catch (err) {
+                        // Invalid JSON
+                      }
+                    }}
+                    placeholder='{\n  "include_metrics": true\n}'
+                    rows={4}
+                    className="font-mono text-sm"
+                  />
+                </div>
+              </div>
+            )}
+
+            {/* Database Query Configuration */}
+            {formData.job_type === 'database_query' && (
+              <div className="space-y-4 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+                <h4 className="font-semibold text-yellow-900">Database Query Configuration</h4>
+                <Alert className="bg-yellow-100 border-yellow-300">
+                  <AlertCircle className="w-4 h-4" />
+                  <AlertDescription>
+                    <strong>Warning:</strong> Database queries run with full permissions. Use with caution!
+                  </AlertDescription>
+                </Alert>
+
+                <div>
+                  <Label htmlFor="db_query">SQL Query</Label>
+                  <Textarea
+                    id="db_query"
+                    value={formData.configuration.query || ''}
+                    onChange={(e) => setFormData({
+                      ...formData,
+                      configuration: { ...formData.configuration, query: e.target.value }
+                    })}
+                    placeholder="DELETE FROM temp_data WHERE created_at < NOW() - INTERVAL '30 days'"
+                    rows={6}
+                    className="font-mono text-sm"
+                  />
+                  <p className="text-xs text-gray-600 mt-1">
+                    Use for cleanup, data maintenance, or automated queries
+                  </p>
+                </div>
               </div>
             )}
 
