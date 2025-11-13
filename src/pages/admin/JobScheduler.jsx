@@ -49,17 +49,20 @@ const JobScheduler = () => {
       const token = localStorage.getItem('token');
       const storeId = localStorage.getItem('selectedStoreId');
 
-      // Note: You'll need to create this endpoint
-      const res = await fetch(`/api/cron-jobs?store_id=${storeId}`, {
+      const res = await fetch(`/api/cron-jobs?store_id=${storeId}&limit=100`, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
 
       if (res.ok) {
-        const data = await res.json();
-        setCronJobs(data.jobs || []);
+        const result = await res.json();
+        if (result.success) {
+          // API returns data.cron_jobs nested structure
+          setCronJobs(result.data?.cron_jobs || []);
+        }
       }
     } catch (error) {
       console.error('Failed to load cron jobs:', error);
+      setFlashMessage({ type: 'error', message: 'Failed to load cron jobs' });
     }
   };
 
