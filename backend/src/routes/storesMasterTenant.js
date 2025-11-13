@@ -228,6 +228,77 @@ router.post('/:id/connect-database', authMiddleware, requireStoreOwnership, asyn
 });
 
 /**
+ * GET /api/stores/dropdown
+ * Get stores for dropdown (simple format)
+ */
+router.get('/dropdown', authMiddleware, async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const { masterSupabaseClient } = require('../database/masterConnection');
+
+    const { data: stores, error } = await masterSupabaseClient
+      .from('stores')
+      .select('id, status, is_active, created_at')
+      .eq('user_id', userId)
+      .order('created_at', { ascending: false });
+
+    if (error) {
+      throw new Error(error.message);
+    }
+
+    // Enrich with hostname info
+    const { StoreHostname } = require('../models/master');
+    const enrichedStores = await Promise.all(
+      (stores || []).map(async (store) => {
+        const hostnames = await StoreHostname.findByStore(store.id);
+        const primaryHostname = hostnames.find(h => h.is_primary);
+
+        // Get tenant store name if available
+        let storeName = 'Unnamed Store';
+        let storeSlug = null;
+
+        if (store.is_active && store.status === 'active') {
+          try {
+            const tenantDb = await ConnectionManager.getStoreConnection(store.id);
+            const { data: tenantStore } = await tenantDb
+              .from('stores')
+              .select('name, slug')
+              .limit(1)
+              .single();
+
+            if (tenantStore) {
+              storeName = tenantStore.name;
+              storeSlug = tenantStore.slug;
+            }
+          } catch (err) {
+            console.warn('Failed to get tenant store data:', err.message);
+          }
+        }
+
+        return {
+          id: store.id,
+          name: storeName,
+          slug: storeSlug || primaryHostname?.slug,
+          status: store.status,
+          is_active: store.is_active
+        };
+      })
+    );
+
+    res.json({
+      success: true,
+      data: enrichedStores
+    });
+  } catch (error) {
+    console.error('Get stores dropdown error:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to get stores'
+    });
+  }
+});
+
+/**
  * GET /api/stores
  * Get all stores for current user
  */

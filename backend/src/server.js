@@ -1056,7 +1056,7 @@ const storesMasterTenantRoutes = require('./routes/storesMasterTenant');
 const creditsMasterTenantRoutes = require('./routes/creditsMasterTenant');
 const testMasterDbRoutes = require('./routes/testMasterDb');
 
-app.use('/api/stores', authMiddleware, storesMasterTenantRoutes); // Master-tenant store management (replaces old)
+app.use('/api/stores', storesMasterTenantRoutes); // Master-tenant store management (auth handled in routes)
 app.use('/api/credits', creditsMasterTenantRoutes); // Master-tenant credits (replaces old)
 app.use('/api/test', testMasterDbRoutes); // Test endpoint for master DB
 
