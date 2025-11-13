@@ -670,9 +670,13 @@ router.post('/login', [
       }
     });
   } catch (error) {
+    console.error('❌ LOGIN ERROR (POST /login):', error);
+    console.error('Error message:', error.message);
+    console.error('Error stack:', error.stack);
     res.status(500).json({
       success: false,
-      message: 'Server error'
+      message: 'Server error',
+      details: process.env.NODE_ENV === 'development' ? error.message : undefined
     });
   }
 });

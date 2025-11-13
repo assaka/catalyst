@@ -10,7 +10,7 @@ require('dotenv').config();
 
 const { sequelize } = require('./database/connection');
 const errorHandler = require('./middleware/errorHandler');
-const { authMiddleware } = require('./middleware/auth'); // Using original auth middleware
+const { authMiddleware } = require('./middleware/auth');
 
 // Import all models to ensure associations are loaded
 const models = require('./models');
@@ -391,7 +391,7 @@ app.get('/health/cache', async (req, res) => {
 });
 
 // API routes
-app.use('/api/auth', authRoutes); // Using original auth.js (modified for master-tenant)
+app.use('/api/auth', authRoutes); // Original auth.js (modified for master-tenant)
 app.use('/api/cache-test', cacheTestRoutes);
 
 // Public routes for guest access
