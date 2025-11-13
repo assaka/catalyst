@@ -98,16 +98,9 @@ router.get('/', async (req, res) => {
       where,
       limit: parseInt(limit),
       offset: parseInt(offset),
-      order: [[sort_by, sort_order.toUpperCase()]],
-      include: [
-        {
-          model: CronJobExecution,
-          as: 'executions',
-          limit: 5,
-          order: [['started_at', 'DESC']],
-          required: false
-        }
-      ]
+      order: [[sort_by, sort_order.toUpperCase()]]
+      // Note: Removed include with limit to avoid complex UNION queries
+      // Frontend can fetch executions separately if needed
     });
 
     res.json({
