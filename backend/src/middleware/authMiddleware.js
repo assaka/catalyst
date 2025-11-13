@@ -12,7 +12,7 @@
  */
 
 const { verifyToken, extractTokenFromHeader } = require('../utils/jwt');
-const { MasterUser } = require('../models/master');
+const { masterSupabaseClient } = require('../database/masterConnection');
 const ConnectionManager = require('../services/database/ConnectionManager');
 
 /**
@@ -54,10 +54,14 @@ async function authMiddleware(req, res, next) {
       });
     }
 
-    // 4. Verify user still exists and is active in master DB
-    const user = await MasterUser.findByPk(decoded.userId);
+    // 4. Verify user still exists and is active in master DB (using Supabase client)
+    const { data: user, error: userError } = await masterSupabaseClient
+      .from('users')
+      .select('id, is_active')
+      .eq('id', decoded.userId)
+      .single();
 
-    if (!user) {
+    if (userError || !user) {
       return res.status(401).json({
         success: false,
         error: 'User not found',
@@ -215,16 +219,15 @@ async function requireStoreOwnership(req, res, next) {
 
     // Check if user's authenticated storeId matches route param
     if (req.user.store_id !== storeId) {
-      // Alternatively, check if user owns this store in master DB
-      const { MasterStore } = require('../models/master');
-      const store = await MasterStore.findOne({
-        where: {
-          id: storeId,
-          user_id: req.user.id
-        }
-      });
+      // Alternatively, check if user owns this store in master DB (using Supabase client)
+      const { data: store, error: storeError } = await masterSupabaseClient
+        .from('stores')
+        .select('id')
+        .eq('id', storeId)
+        .eq('user_id', req.user.id)
+        .single();
 
-      if (!store) {
+      if (storeError || !store) {
         return res.status(403).json({
           success: false,
           error: 'You do not own this store',

@@ -13,10 +13,12 @@
 
 const express = require('express');
 const router = express.Router();
-const { MasterUser, MasterStore, StoreHostname, CreditBalance } = require('../models/master');
 const { generateTokenPair, refreshAccessToken } = require('../utils/jwt');
 const { authMiddleware } = require('../middleware/authMiddleware');
 const ConnectionManager = require('../services/database/ConnectionManager');
+const { masterSupabaseClient } = require('../database/masterConnection');
+const bcrypt = require('bcryptjs');
+const { v4: uuidv4 } = require('uuid');
 
 /**
  * POST /api/auth/register
@@ -34,9 +36,18 @@ router.post('/register', async (req, res) => {
       });
     }
 
-    // Check if user already exists
-    const existingUser = await MasterUser.findByEmail(email);
-    if (existingUser) {
+    // Check if user already exists (using Supabase client)
+    const { data: existingUsers, error: checkError } = await masterSupabaseClient
+      .from('users')
+      .select('id')
+      .eq('email', email)
+      .limit(1);
+
+    if (checkError) {
+      throw new Error(`Failed to check existing user: ${checkError.message}`);
+    }
+
+    if (existingUsers && existingUsers.length > 0) {
       return res.status(409).json({
         success: false,
         error: 'User with this email already exists',
@@ -44,44 +55,85 @@ router.post('/register', async (req, res) => {
       });
     }
 
-    // Create user in master DB
-    const user = await MasterUser.create({
-      email,
-      password, // Will be hashed by model hook
-      first_name: firstName,
-      last_name: lastName,
-      account_type: 'agency',
-      role: 'store_owner',
-      is_active: true,
-      email_verified: false // TODO: Send verification email
-    });
+    // Hash password
+    const hashedPassword = await bcrypt.hash(password, 10);
+
+    // Create user in master DB (using Supabase client)
+    const userId = uuidv4();
+    const { data: user, error: userError } = await masterSupabaseClient
+      .from('users')
+      .insert({
+        id: userId,
+        email,
+        password: hashedPassword,
+        first_name: firstName,
+        last_name: lastName,
+        account_type: 'agency',
+        role: 'store_owner',
+        is_active: true,
+        email_verified: false,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      })
+      .select()
+      .single();
+
+    if (userError) {
+      throw new Error(`Failed to create user: ${userError.message}`);
+    }
 
     // Create initial store in master DB
-    const store = await MasterStore.create({
-      user_id: user.id,
-      status: 'pending_database',
-      is_active: false
-    });
+    const storeId = uuidv4();
+    const { data: store, error: storeError } = await masterSupabaseClient
+      .from('stores')
+      .insert({
+        id: storeId,
+        user_id: userId,
+        status: 'pending_database',
+        is_active: false,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      })
+      .select()
+      .single();
+
+    if (storeError) {
+      throw new Error(`Failed to create store: ${storeError.message}`);
+    }
 
     // Initialize credit balance
-    await CreditBalance.create({
-      store_id: store.id,
-      balance: 0.00
-    });
+    const { error: balanceError } = await masterSupabaseClient
+      .from('credit_balances')
+      .insert({
+        id: uuidv4(),
+        store_id: storeId,
+        balance: 0.00,
+        reserved_balance: 0.00,
+        lifetime_purchased: 0.00,
+        lifetime_spent: 0.00,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      });
+
+    if (balanceError) {
+      console.warn('Failed to create credit balance:', balanceError.message);
+      // Don't fail registration if credit balance fails
+    }
 
     // Generate JWT tokens
-    const tokens = generateTokenPair(user, store.id);
+    const tokens = generateTokenPair(user, storeId);
+
+    // Remove sensitive fields
+    delete user.password;
+    delete user.email_verification_token;
+    delete user.password_reset_token;
 
     res.status(201).json({
       success: true,
       message: 'User registered successfully. Please connect a database to activate your store.',
       data: {
-        user: user.toJSON(),
-        store: {
-          id: store.id,
-          status: store.status,
-          is_active: store.is_active
-        },
+        user,
+        store,
         tokens
       }
     });
@@ -174,10 +226,14 @@ router.post('/login', async (req, res) => {
       }
     } else {
       // === MASTER LOGIN ===
-      // Query master DB for agency user
-      user = await MasterUser.findByEmail(email);
+      // Query master DB for agency user (using Supabase client)
+      const { data: users, error: userError } = await masterSupabaseClient
+        .from('users')
+        .select('*')
+        .eq('email', email)
+        .limit(1);
 
-      if (!user) {
+      if (userError || !users || users.length === 0) {
         return res.status(401).json({
           success: false,
           error: 'Invalid email or password',
@@ -185,8 +241,10 @@ router.post('/login', async (req, res) => {
         });
       }
 
+      user = users[0];
+
       // Verify password
-      const validPassword = await user.comparePassword(password);
+      const validPassword = await bcrypt.compare(password, user.password);
 
       if (!validPassword) {
         return res.status(401).json({
@@ -205,9 +263,15 @@ router.post('/login', async (req, res) => {
         });
       }
 
-      // Get user's first active store
-      const stores = await MasterStore.findByUser(user.id);
-      if (stores.length === 0) {
+      // Get user's first active store (using Supabase client)
+      const { data: stores, error: storesError } = await masterSupabaseClient
+        .from('stores')
+        .select('*')
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false })
+        .limit(1);
+
+      if (storesError || !stores || stores.length === 0) {
         return res.status(404).json({
           success: false,
           error: 'No store found for user',
@@ -303,27 +367,36 @@ router.post('/refresh', async (req, res) => {
 router.get('/me', authMiddleware, async (req, res) => {
   try {
     // req.user is populated by authMiddleware
-    const user = await MasterUser.findByPk(req.user.id);
+    const { data: user, error: userError } = await masterSupabaseClient
+      .from('users')
+      .select('*')
+      .eq('id', req.user.id)
+      .single();
 
-    if (!user) {
+    if (userError || !user) {
       return res.status(404).json({
         success: false,
         error: 'User not found'
       });
     }
 
-    // Get user's stores
-    const stores = await MasterStore.findByUser(user.id);
+    // Get user's stores (using Supabase client)
+    const { data: stores, error: storesError } = await masterSupabaseClient
+      .from('stores')
+      .select('*')
+      .eq('user_id', user.id)
+      .order('created_at', { ascending: false });
+
+    // Remove sensitive fields
+    delete user.password;
+    delete user.email_verification_token;
+    delete user.password_reset_token;
 
     res.json({
       success: true,
       data: {
-        user: user.toJSON(),
-        stores: stores.map(s => ({
-          id: s.id,
-          status: s.status,
-          is_active: s.is_active
-        })),
+        user,
+        stores: stores || [],
         currentStoreId: req.user.store_id
       }
     });
