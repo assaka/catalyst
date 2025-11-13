@@ -134,7 +134,8 @@ router.post('/register', async (req, res) => {
       data: {
         user,
         store,
-        tokens
+        token: tokens.accessToken, // Match old format
+        refreshToken: tokens.refreshToken
       }
     });
   } catch (error) {
@@ -303,7 +304,8 @@ router.post('/login', async (req, res) => {
           account_type: user.account_type || user.accountType
         },
         storeId,
-        tokens
+        token: tokens.accessToken, // Match frontend expectation
+        refreshToken: tokens.refreshToken
       }
     });
   } catch (error) {
