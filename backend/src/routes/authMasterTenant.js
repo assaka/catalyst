@@ -321,9 +321,30 @@ router.post('/login', async (req, res) => {
 /**
  * POST /api/auth/logout
  * Logout (client removes token, optional server-side blacklist)
+ * Made permissive - succeeds even without valid token
  */
-router.post('/logout', authMiddleware, async (req, res) => {
+router.post('/logout', async (req, res) => {
+  // Don't require auth - logout should always succeed
+  // Client-side clears token, server just acknowledges
   // TODO: Add token to blacklist (Redis) if needed
+
+  try {
+    // Optional: Log logout attempt if user is authenticated
+    const authHeader = req.headers.authorization;
+    if (authHeader) {
+      const { verifyToken, extractTokenFromHeader } = require('../utils/jwt');
+      try {
+        const token = extractTokenFromHeader(authHeader);
+        const decoded = verifyToken(token);
+        console.log(`User ${decoded.email} logged out`);
+      } catch (err) {
+        // Token invalid, that's ok
+      }
+    }
+  } catch (err) {
+    // Ignore errors
+  }
+
   res.json({
     success: true,
     message: 'Logged out successfully'
