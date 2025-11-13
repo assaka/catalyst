@@ -36,10 +36,9 @@ BEGIN
     store_id,
     is_active,
     is_paused,
-    is_core,
-    priority,
-    max_retries,
+    max_failures,
     timeout_seconds,
+    tags,
     created_at,
     updated_at
   ) VALUES (
@@ -68,10 +67,9 @@ BEGIN
     test_store_id,
     true, -- is_active
     false, -- is_paused
-    false, -- is_core (not a system job)
-    'normal',
-    3, -- max_retries
+    3, -- max_failures
     3600, -- 1 hour timeout
+    'shopify,import,automated',
     NOW(),
     NOW()
   )
@@ -113,10 +111,9 @@ BEGIN
       store_id,
       is_active,
       is_paused,
-      is_core,
-      priority,
-      max_retries,
+      max_failures,
       timeout_seconds,
+      tags,
       created_at,
       updated_at
     ) VALUES (
@@ -143,10 +140,9 @@ BEGIN
       test_store_id,
       true, -- is_active
       false, -- is_paused
-      false, -- is_core
-      'low', -- low priority (not urgent)
-      2, -- max_retries
+      2, -- max_failures
       300, -- 5 minute timeout
+      'email,automated,status',
       NOW(),
       NOW()
     )
