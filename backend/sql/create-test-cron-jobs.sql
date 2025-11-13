@@ -11,8 +11,8 @@ DECLARE
 BEGIN
   -- Get first user and store for testing
   -- Replace these with actual IDs in production
-  SELECT id INTO test_user_id FROM users LIMIT 1;
-  SELECT id INTO test_store_id FROM stores LIMIT 1;
+  SELECT id INTO test_user_id FROM users WHERE id = 'cbca0a20-973d-4a33-85fc-d84d461d1372';
+  SELECT id INTO test_store_id FROM stores WHERE id = '157d4590-49bf-4b0b-bd77-abe131909528';
 
   IF test_user_id IS NULL OR test_store_id IS NULL THEN
     RAISE EXCEPTION 'No user or store found. Create a user and store first.';
@@ -73,11 +73,6 @@ BEGIN
     NOW(),
     NOW()
   )
-  ON CONFLICT (name, store_id) DO UPDATE SET
-    cron_expression = EXCLUDED.cron_expression,
-    configuration = EXCLUDED.configuration,
-    is_active = EXCLUDED.is_active,
-    updated_at = NOW()
   RETURNING id INTO shopify_job_id;
 
   RAISE NOTICE '✅ Created Shopify hourly import job: %', shopify_job_id;
@@ -146,11 +141,6 @@ BEGIN
       NOW(),
       NOW()
     )
-    ON CONFLICT (name, store_id) DO UPDATE SET
-      cron_expression = EXCLUDED.cron_expression,
-      configuration = EXCLUDED.configuration,
-      is_active = EXCLUDED.is_active,
-      updated_at = NOW()
     RETURNING id INTO email_job_id;
 
     RAISE NOTICE '✅ Created hourly email job: %', email_job_id;
