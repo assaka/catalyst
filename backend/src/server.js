@@ -1053,6 +1053,18 @@ app.use('/api/extensions', extensionsRoutes); // Modern extension system API wit
 app.use('/api/slot-configurations', slotConfigurationRoutes); // Slot configuration versioning API
 app.use('/api/credits', creditRoutes); // Credit system: balance, purchases, usage tracking
 app.use('/api/service-credit-costs', serviceCreditCostsRoutes); // Service credit costs management (admin)
+
+// Master-Tenant Architecture Routes (NEW)
+const authMasterTenantRoutes = require('./routes/authMasterTenant');
+const storesMasterTenantRoutes = require('./routes/storesMasterTenant');
+const creditsMasterTenantRoutes = require('./routes/creditsMasterTenant');
+const testMasterDbRoutes = require('./routes/testMasterDb');
+
+app.use('/api/auth/mt', authMasterTenantRoutes); // Master-tenant auth (register, login)
+app.use('/api/stores/mt', storesMasterTenantRoutes); // Master-tenant store management
+app.use('/api/credits/mt', creditsMasterTenantRoutes); // Master-tenant credits
+app.use('/api/test', testMasterDbRoutes); // Test endpoint for master DB
+
 app.use('/api/email-templates', emailTemplatesRoutes); // Email template management with translations
 app.use('/api/pdf-templates', pdfTemplatesRoutes); // PDF template management for invoices, shipments
 app.use('/api/brevo', brevoOAuthRoutes); // Brevo email service OAuth and configuration

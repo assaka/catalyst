@@ -1,16 +1,17 @@
 const { Pool } = require('pg');
 const { createClient } = require('@supabase/supabase-js');
-const { IntegrationConfig } = require('../../models');
 const { Op } = require('sequelize');
 
 /**
  * ConnectionManager - Manages database connections for stores
  *
- * Handles:
- * - Master DB connection (platform data)
- * - Client DB connections (per-store data)
+ * UPDATED for Master-Tenant Architecture:
+ * - Master DB connection (platform data: users, stores, subscriptions, credits)
+ * - Tenant DB connections (per-store data: products, orders, customers)
  * - Connection pooling and caching
  * - Multi-database query routing
+ *
+ * Uses StoreDatabase model from master DB to fetch encrypted tenant credentials
  */
 class ConnectionManager {
   static connections = new Map();
@@ -18,12 +19,12 @@ class ConnectionManager {
 
   /**
    * Get the master database connection (platform DB)
-   * Contains: stores, users, subscriptions, billing, usage_metrics, etc.
+   * Contains: users (agencies), stores (minimal), subscriptions, credits, monitoring
    */
   static getMasterConnection() {
     if (!this.masterConnection) {
-      const { sequelize } = require('../../database/connection');
-      this.masterConnection = sequelize;
+      const { masterSequelize } = require('../../database/masterConnection');
+      this.masterConnection = masterSequelize;
     }
     return this.masterConnection;
   }
@@ -47,39 +48,34 @@ class ConnectionManager {
       return this.connections.get(storeId);
     }
 
-    // Get connection configuration from master DB
-    const config = await IntegrationConfig.findOne({
-      where: {
-        store_id: storeId,
-        integration_type: {
-          [Op.in]: [
-            'supabase-database',
-            'postgresql',
-            'mysql',
-            'supabase' // Legacy fallback
-          ]
-        },
-        is_active: true
-      }
-    });
+    // Get connection configuration from master DB (new StoreDatabase model)
+    const { StoreDatabase } = require('../../models/master');
+    const storeDb = await StoreDatabase.findByStoreId(storeId);
 
-    if (!config) {
+    if (!storeDb) {
       throw new Error(
         `No database configured for store ${storeId}. ` +
-        'Please configure a database integration first.'
+        'Please connect a database first.'
       );
     }
 
+    if (!storeDb.is_active) {
+      throw new Error(`Database for store ${storeId} is inactive`);
+    }
+
+    // Decrypt credentials from master DB
+    const credentials = storeDb.getCredentials();
+
     // Create connection based on database type
     const connection = await this._createConnection(
-      config.integration_type,
-      config.config_data,
+      storeDb.database_type,
+      credentials,
       storeId
     );
 
     // Test the connection
     try {
-      await this._testConnection(connection, config.integration_type);
+      await this._testConnection(connection, storeDb.database_type);
     } catch (error) {
       console.error(`Failed to connect to database for store ${storeId}:`, error.message);
       throw new Error(`Database connection failed: ${error.message}`);
@@ -89,7 +85,7 @@ class ConnectionManager {
     if (cache) {
       this.connections.set(storeId, {
         connection,
-        type: config.integration_type,
+        type: storeDb.database_type,
         createdAt: new Date()
       });
     }
@@ -98,20 +94,19 @@ class ConnectionManager {
   }
 
   /**
-   * Create a database connection based on integration type
+   * Create a database connection based on database type
    * @private
    */
-  static async _createConnection(type, config, storeId) {
+  static async _createConnection(type, credentials, storeId) {
     switch (type) {
-      case 'supabase-database':
-      case 'supabase': // Legacy
-        return this._createSupabaseConnection(config);
+      case 'supabase':
+        return this._createSupabaseConnection(credentials);
 
       case 'postgresql':
-        return this._createPostgreSQLConnection(config);
+        return this._createPostgreSQLConnection(credentials);
 
       case 'mysql':
-        return this._createMySQLConnection(config);
+        return this._createMySQLConnection(credentials);
 
       default:
         throw new Error(`Unknown database type: ${type}`);
@@ -194,14 +189,14 @@ class ConnectionManager {
    */
   static async _testConnection(connection, type) {
     switch (type) {
-      case 'supabase-database':
       case 'supabase':
-        // Test with a simple query
+        // Test with a simple query (stores table should exist in tenant DB)
         const { data, error } = await connection
-          .from('products')
+          .from('stores')
           .select('id')
           .limit(1);
-        if (error) throw error;
+        // PGRST116 = table not found (ok for new/empty DB)
+        if (error && error.code !== 'PGRST116') throw error;
         break;
 
       case 'postgresql':
@@ -261,27 +256,21 @@ class ConnectionManager {
    * @returns {Promise<Object>} Connection information (without sensitive data)
    */
   static async getConnectionInfo(storeId) {
-    const config = await IntegrationConfig.findOne({
-      where: {
-        store_id: storeId,
-        integration_type: {
-          [Op.in]: ['supabase-database', 'postgresql', 'mysql', 'supabase']
-        },
-        is_active: true
-      }
-    });
+    const { StoreDatabase } = require('../../models/master');
+    const storeDb = await StoreDatabase.findByStoreId(storeId);
 
-    if (!config) {
+    if (!storeDb) {
       return null;
     }
 
     return {
-      type: config.integration_type,
-      status: config.connection_status,
-      lastTested: config.connection_tested_at,
-      isActive: config.is_active,
-      // Don't expose sensitive connection details
-      hasConfiguration: !!config.config_data
+      type: storeDb.database_type,
+      status: storeDb.connection_status,
+      lastTested: storeDb.last_connection_test,
+      isActive: storeDb.is_active,
+      host: storeDb.host, // Non-sensitive
+      // Don't expose sensitive connection details (credentials are encrypted)
+      hasConfiguration: !!storeDb.connection_string_encrypted
     };
   }
 

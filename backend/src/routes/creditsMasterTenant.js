@@ -1,0 +1,364 @@
+/**
+ * Credits Routes (Master-Tenant Architecture)
+ *
+ * GET /api/credits/balance - Get current credit balance
+ * GET /api/credits/balance/cached - Get cached balance (fast)
+ * GET /api/credits/transactions - Get transaction history
+ * POST /api/credits/purchase - Purchase credits
+ * POST /api/credits/spend - Spend credits (internal use)
+ * POST /api/credits/sync - Sync balance to tenant cache
+ */
+
+const express = require('express');
+const router = express.Router();
+const { CreditBalance, CreditTransaction } = require('../models/master');
+const { authMiddleware } = require('../middleware/authMiddleware');
+const ConnectionManager = require('../services/database/ConnectionManager');
+
+/**
+ * GET /api/credits/balance
+ * Get current credit balance from master DB (source of truth)
+ */
+router.get('/balance', authMiddleware, async (req, res) => {
+  try {
+    const storeId = req.user.store_id;
+
+    // Query master DB for balance
+    const creditBalance = await CreditBalance.findByStore(storeId);
+
+    if (!creditBalance) {
+      // Create if doesn't exist
+      const newBalance = await CreditBalance.create({
+        store_id: storeId,
+        balance: 0.00
+      });
+
+      return res.json({
+        success: true,
+        data: {
+          balance: 0.00,
+          reserved: 0.00,
+          available: 0.00,
+          lifetime_purchased: 0.00,
+          lifetime_spent: 0.00
+        }
+      });
+    }
+
+    // Sync to tenant DB cache
+    try {
+      await syncBalanceToTenant(storeId, creditBalance.balance);
+    } catch (syncError) {
+      console.warn('Failed to sync balance to tenant:', syncError.message);
+    }
+
+    res.json({
+      success: true,
+      data: {
+        balance: parseFloat(creditBalance.balance),
+        reserved: parseFloat(creditBalance.reserved_balance),
+        available: creditBalance.getAvailableBalance(),
+        lifetime_purchased: parseFloat(creditBalance.lifetime_purchased),
+        lifetime_spent: parseFloat(creditBalance.lifetime_spent),
+        last_purchase: creditBalance.last_purchase_at,
+        last_spent: creditBalance.last_spent_at
+      }
+    });
+  } catch (error) {
+    console.error('Get balance error:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to get credit balance'
+    });
+  }
+});
+
+/**
+ * GET /api/credits/balance/cached
+ * Get cached balance from tenant DB (fast, may be stale)
+ */
+router.get('/balance/cached', authMiddleware, async (req, res) => {
+  try {
+    const storeId = req.user.store_id;
+
+    // Try to get from tenant DB cache
+    const tenantDb = await ConnectionManager.getStoreConnection(storeId);
+
+    const { data: cached, error } = await tenantDb
+      .from('credit_balance_cache')
+      .select('*')
+      .eq('store_id', storeId)
+      .single();
+
+    if (error || !cached) {
+      // Cache miss - redirect to fresh endpoint
+      return res.redirect('/api/credits/balance');
+    }
+
+    // Check if cache is stale (> 5 minutes)
+    const cacheAge = Date.now() - new Date(cached.last_synced_at).getTime();
+    const isStale = cacheAge > 5 * 60 * 1000;
+
+    if (isStale) {
+      // Redirect to fresh endpoint
+      return res.redirect('/api/credits/balance');
+    }
+
+    res.json({
+      success: true,
+      data: {
+        balance: parseFloat(cached.balance),
+        cached: true,
+        last_synced: cached.last_synced_at
+      }
+    });
+  } catch (error) {
+    console.error('Get cached balance error:', error);
+    // Fallback to fresh balance
+    return res.redirect('/api/credits/balance');
+  }
+});
+
+/**
+ * GET /api/credits/transactions
+ * Get credit transaction history
+ */
+router.get('/transactions', authMiddleware, async (req, res) => {
+  try {
+    const storeId = req.user.store_id;
+    const { limit = 50, offset = 0, type } = req.query;
+
+    const where = { store_id: storeId };
+    if (type) {
+      where.transaction_type = type;
+    }
+
+    const transactions = await CreditTransaction.findAll({
+      where,
+      order: [['created_at', 'DESC']],
+      limit: parseInt(limit),
+      offset: parseInt(offset)
+    });
+
+    const total = await CreditTransaction.count({ where });
+
+    res.json({
+      success: true,
+      data: {
+        transactions: transactions.map(t => ({
+          id: t.id,
+          amount: parseFloat(t.amount),
+          type: t.transaction_type,
+          description: t.description,
+          payment_method: t.payment_method,
+          payment_status: t.payment_status,
+          created_at: t.created_at
+        })),
+        pagination: {
+          total,
+          limit: parseInt(limit),
+          offset: parseInt(offset),
+          hasMore: parseInt(offset) + transactions.length < total
+        }
+      }
+    });
+  } catch (error) {
+    console.error('Get transactions error:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to get transactions'
+    });
+  }
+});
+
+/**
+ * POST /api/credits/purchase
+ * Purchase credits (Stripe integration)
+ */
+router.post('/purchase', authMiddleware, async (req, res) => {
+  try {
+    const storeId = req.user.store_id;
+    const { amount, paymentMethod = 'stripe', paymentProviderId } = req.body;
+
+    // Validate amount
+    if (!amount || amount <= 0) {
+      return res.status(400).json({
+        success: false,
+        error: 'Invalid amount'
+      });
+    }
+
+    // TODO: Process payment with Stripe
+    // const paymentIntent = await stripe.paymentIntents.create({...});
+    // const paymentProviderId = paymentIntent.id;
+
+    // Record transaction
+    const transaction = await CreditTransaction.recordPurchase(
+      storeId,
+      amount,
+      {
+        paymentMethod,
+        paymentProviderId: paymentProviderId || `test_${Date.now()}`,
+        paymentStatus: 'completed',
+        description: `Credit purchase: ${amount} credits`,
+        referenceId: null
+      }
+    );
+
+    // Update balance
+    const balance = await CreditBalance.addToStore(storeId, amount);
+
+    // Sync to tenant cache
+    await syncBalanceToTenant(storeId, balance.balance);
+
+    res.json({
+      success: true,
+      message: `Successfully purchased ${amount} credits`,
+      data: {
+        transaction: {
+          id: transaction.id,
+          amount: parseFloat(transaction.amount),
+          type: transaction.transaction_type
+        },
+        balance: {
+          current: parseFloat(balance.balance),
+          available: balance.getAvailableBalance()
+        }
+      }
+    });
+  } catch (error) {
+    console.error('Purchase credits error:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to purchase credits',
+      details: error.message
+    });
+  }
+});
+
+/**
+ * POST /api/credits/spend
+ * Spend credits (internal use - called by services)
+ */
+router.post('/spend', authMiddleware, async (req, res) => {
+  try {
+    const storeId = req.user.store_id;
+    const { amount, serviceKey, description } = req.body;
+
+    // Validate
+    if (!amount || amount <= 0) {
+      return res.status(400).json({
+        success: false,
+        error: 'Invalid amount'
+      });
+    }
+
+    // Get balance
+    const balance = await CreditBalance.findByStore(storeId);
+
+    if (!balance || !balance.hasSufficientBalance(amount)) {
+      return res.status(402).json({
+        success: false,
+        error: 'Insufficient credits',
+        code: 'INSUFFICIENT_CREDITS',
+        required: amount,
+        available: balance ? balance.getAvailableBalance() : 0
+      });
+    }
+
+    // Deduct credits
+    await balance.deductCredits(amount);
+
+    // Record in tenant DB spending log
+    const tenantDb = await ConnectionManager.getStoreConnection(storeId);
+    await tenantDb.from('credit_spending_log').insert({
+      store_id: storeId,
+      amount,
+      service_key: serviceKey,
+      description: description || 'Credit spent',
+      created_at: new Date().toISOString()
+    });
+
+    // Sync balance to tenant cache
+    await syncBalanceToTenant(storeId, balance.balance);
+
+    res.json({
+      success: true,
+      message: `${amount} credits spent successfully`,
+      data: {
+        amount_spent: amount,
+        new_balance: parseFloat(balance.balance),
+        available: balance.getAvailableBalance()
+      }
+    });
+  } catch (error) {
+    console.error('Spend credits error:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to spend credits',
+      details: error.message
+    });
+  }
+});
+
+/**
+ * POST /api/credits/sync
+ * Force sync balance from master to tenant cache
+ */
+router.post('/sync', authMiddleware, async (req, res) => {
+  try {
+    const storeId = req.user.store_id;
+
+    const balance = await CreditBalance.findByStore(storeId);
+
+    if (!balance) {
+      return res.status(404).json({
+        success: false,
+        error: 'Credit balance not found'
+      });
+    }
+
+    await syncBalanceToTenant(storeId, balance.balance);
+
+    res.json({
+      success: true,
+      message: 'Balance synced to tenant cache',
+      data: {
+        balance: parseFloat(balance.balance)
+      }
+    });
+  } catch (error) {
+    console.error('Sync balance error:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to sync balance'
+    });
+  }
+});
+
+/**
+ * Helper: Sync balance to tenant DB cache
+ * @private
+ */
+async function syncBalanceToTenant(storeId, balance) {
+  try {
+    const tenantDb = await ConnectionManager.getStoreConnection(storeId);
+
+    const { error } = await tenantDb
+      .from('credit_balance_cache')
+      .upsert({
+        store_id: storeId,
+        balance: parseFloat(balance),
+        last_synced_at: new Date().toISOString()
+      });
+
+    if (error) {
+      console.error('Sync to tenant failed:', error);
+    }
+  } catch (error) {
+    console.error('Sync to tenant error:', error);
+    // Don't throw - sync is optional
+  }
+}
+
+module.exports = router;
