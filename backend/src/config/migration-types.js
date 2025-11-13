@@ -19,7 +19,7 @@ const MIGRATION_TYPES = {
       'akeneo_mappings',
       'akeneo_custom_mappings',
       'akeneo_schedules',
-      'import_statistics'
+      'akeneo_import_statistics'
     ],
     dependencies: ['attributes', 'categories', 'attribute_sets'], // Must be migrated first
     estimated_size_mb: 50,

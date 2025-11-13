@@ -80,7 +80,7 @@ login_attempts
 store_teams
 store_invitations
 integration_configs
-import_statistics
+akeneo_import_statistics
 
 -- Plugin system
 plugins

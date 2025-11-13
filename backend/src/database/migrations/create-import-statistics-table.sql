@@ -1,5 +1,5 @@
--- Create import_statistics table to track Akeneo import results
-CREATE TABLE IF NOT EXISTS import_statistics (
+-- Create akeneo_import_statistics table to track Akeneo import results
+CREATE TABLE IF NOT EXISTS akeneo_import_statistics (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     store_id UUID NOT NULL REFERENCES stores(id) ON DELETE CASCADE,
     import_type VARCHAR(50) NOT NULL, -- 'categories', 'attributes', 'families', 'products'
@@ -23,10 +23,10 @@ CREATE TABLE IF NOT EXISTS import_statistics (
 );
 
 -- Create indexes for better performance
-CREATE INDEX IF NOT EXISTS idx_import_statistics_store_id ON import_statistics(store_id);
-CREATE INDEX IF NOT EXISTS idx_import_statistics_type ON import_statistics(import_type);
-CREATE INDEX IF NOT EXISTS idx_import_statistics_date ON import_statistics(import_date DESC);
-CREATE INDEX IF NOT EXISTS idx_import_statistics_store_type ON import_statistics(store_id, import_type);
+CREATE INDEX IF NOT EXISTS idx_akeneo_import_statistics_store_id ON akeneo_import_statistics(store_id);
+CREATE INDEX IF NOT EXISTS idx_akeneo_import_statistics_type ON akeneo_import_statistics(import_type);
+CREATE INDEX IF NOT EXISTS idx_akeneo_import_statistics_date ON akeneo_import_statistics(import_date DESC);
+CREATE INDEX IF NOT EXISTS idx_akeneo_import_statistics_store_type ON akeneo_import_statistics(store_id, import_type);
 
 -- Create a unique index to prevent duplicate stats for the same import session
-CREATE INDEX IF NOT EXISTS idx_import_statistics_unique ON import_statistics(store_id, import_type, import_date);
+CREATE INDEX IF NOT EXISTS idx_akeneo_import_statistics_unique ON akeneo_import_statistics(store_id, import_type, import_date);

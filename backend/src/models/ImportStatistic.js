@@ -67,7 +67,7 @@ const ImportStatistic = sequelize.define('ImportStatistic', {
     allowNull: true
   }
 }, {
-  tableName: 'import_statistics',
+  tableName: 'akeneo_import_statistics',
   timestamps: true,
   createdAt: 'created_at',
   updatedAt: 'updated_at'
