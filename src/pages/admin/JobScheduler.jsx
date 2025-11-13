@@ -209,10 +209,26 @@ const JobScheduler = () => {
       {showCreateForm && (
         <Card>
           <CardHeader>
-            <CardTitle>{editingJob ? 'Edit' : 'Create'} Cron Job</CardTitle>
-            <CardDescription>Schedule a recurring task</CardDescription>
+            <CardTitle>
+              {editingJob ? 'Edit' : 'Create'} Cron Job
+              {editingJob?.is_system && <Badge variant="secondary" className="ml-2">System Job</Badge>}
+            </CardTitle>
+            <CardDescription>
+              {editingJob?.is_system
+                ? 'System jobs are read-only and cannot be modified'
+                : 'Schedule a recurring task'}
+            </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
+            {/* Show alert for system jobs */}
+            {editingJob?.is_system && (
+              <Alert>
+                <AlertCircle className="w-4 h-4" />
+                <AlertDescription>
+                  This is a system job and cannot be edited. You can only view its configuration.
+                </AlertDescription>
+              </Alert>
+            )}
             <div>
               <Label htmlFor="name">Job Name</Label>
               <Input
@@ -220,6 +236,7 @@ const JobScheduler = () => {
                 value={formData.name}
                 onChange={(e) => setFormData({...formData, name: e.target.value})}
                 placeholder="e.g., Daily Inventory Sync"
+                disabled={editingJob?.is_system}
               />
             </div>
 
@@ -231,6 +248,7 @@ const JobScheduler = () => {
                 onChange={(e) => setFormData({...formData, description: e.target.value})}
                 placeholder="What does this job do?"
                 rows={2}
+                disabled={editingJob?.is_system}
               />
             </div>
 
@@ -283,8 +301,8 @@ const JobScheduler = () => {
               </select>
             </div>
 
-            {/* API Call Configuration */}
-            {formData.job_type === 'api_call' && (
+            {/* API Call Configuration - Only show if not a system job */}
+            {formData.job_type === 'api_call' && !editingJob?.is_system && (
               <div className="space-y-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
                 <h4 className="font-semibold text-blue-900">API Call Configuration</h4>
 
@@ -567,16 +585,30 @@ const JobScheduler = () => {
               <Label>Active (job will run on schedule)</Label>
             </div>
 
-            <div className="flex gap-2">
-              <SaveButton onClick={saveCronJob} label={editingJob ? 'Update Job' : 'Create Job'} />
+            {/* Only show save button for non-system jobs */}
+            {!editingJob?.is_system && (
+              <div className="flex gap-2">
+                <SaveButton onClick={saveCronJob} label={editingJob ? 'Update Job' : 'Create Job'} />
+                <Button variant="outline" onClick={() => {
+                  setShowCreateForm(false);
+                  setEditingJob(null);
+                  resetForm();
+                }}>
+                  Cancel
+                </Button>
+              </div>
+            )}
+
+            {/* For system jobs, only show close button */}
+            {editingJob?.is_system && (
               <Button variant="outline" onClick={() => {
                 setShowCreateForm(false);
                 setEditingJob(null);
                 resetForm();
               }}>
-                Cancel
+                Close
               </Button>
-            </div>
+            )}
           </CardContent>
         </Card>
       )}
@@ -592,6 +624,7 @@ const JobScheduler = () => {
                   <div>
                     <h3 className="font-semibold flex items-center gap-2">
                       {job.name}
+                      {job.is_system && <Badge variant="secondary">System</Badge>}
                       {job.plugin_id && <Badge variant="outline">Plugin</Badge>}
                     </h3>
                     <p className="text-sm text-gray-600">{job.description}</p>
@@ -610,25 +643,32 @@ const JobScheduler = () => {
                   </div>
                 </div>
                 <div className="flex items-center gap-2">
+                  {/* Allow toggling all jobs (both system and user) */}
                   <Button
                     variant="ghost"
                     size="sm"
                     onClick={() => toggleJobActive(job.id, job.is_active)}
+                    title={job.is_active ? 'Pause job' : 'Activate job'}
                   >
                     {job.is_active ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4" />}
                   </Button>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => {
-                      setEditingJob(job);
-                      setFormData(job);
-                      setShowCreateForm(true);
-                    }}
-                  >
-                    <Edit className="w-4 h-4" />
-                  </Button>
-                  {!job.is_core && (
+
+                  {/* Only allow editing non-system jobs */}
+                  {!job.is_system && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => {
+                        setEditingJob(job);
+                        setFormData(job);
+                        setShowCreateForm(true);
+                      }}
+                    >
+                      <Edit className="w-4 h-4" />
+                    </Button>
+                  )}
+                  {/* Only allow deleting non-system jobs */}
+                  {!job.is_system && (
                     <Button
                       variant="ghost"
                       size="sm"
@@ -636,6 +676,12 @@ const JobScheduler = () => {
                     >
                       <Trash2 className="w-4 h-4" />
                     </Button>
+                  )}
+                  {/* System jobs are read-only */}
+                  {job.is_system && (
+                    <Badge variant="secondary" className="text-xs">
+                      Read-only
+                    </Badge>
                   )}
                 </div>
               </div>

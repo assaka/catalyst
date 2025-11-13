@@ -81,6 +81,12 @@ const CronJob = sequelize.define('CronJob', {
     type: DataTypes.BOOLEAN,
     defaultValue: false
   },
+  is_system: {
+    type: DataTypes.BOOLEAN,
+    defaultValue: false,
+    allowNull: false,
+    comment: 'System jobs cannot be edited/deleted by users'
+  },
   
   // Execution tracking
   last_run_at: {
