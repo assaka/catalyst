@@ -54,10 +54,12 @@ async function authMiddleware(req, res, next) {
       });
     }
 
-    // 4. Verify user still exists and is active in master DB (using Supabase client)
+    // 4. Fetch FULL user object from master DB (matching old auth middleware)
+    const selectFields = 'id, email, first_name, last_name, phone, avatar_url, is_active, email_verified, last_login, role, account_type, created_at, updated_at, credits';
+
     const { data: user, error: userError } = await masterSupabaseClient
       .from('users')
-      .select('id, is_active')
+      .select(selectFields)
       .eq('id', decoded.userId)
       .single();
 
@@ -77,15 +79,10 @@ async function authMiddleware(req, res, next) {
       });
     }
 
-    // 5. Attach user info to request
+    // 5. Attach FULL user object to request (matches old auth middleware exactly)
     req.user = {
-      id: decoded.userId,
-      store_id: decoded.storeId,
-      email: decoded.email,
-      role: decoded.role,
-      account_type: decoded.accountType,
-      first_name: decoded.firstName,
-      last_name: decoded.lastName
+      ...user,
+      store_id: decoded.storeId // Add store_id from JWT (not in users table)
     };
 
     // 6. Optionally attach tenant DB connection
