@@ -46,8 +46,13 @@ const JobScheduler = () => {
 
   const loadCronJobs = async () => {
     try {
-      const token = localStorage.getItem('token');
+      const token = localStorage.getItem('store_owner_auth_token') || localStorage.getItem('token');
       const storeId = localStorage.getItem('selectedStoreId');
+
+      if (!token) {
+        setFlashMessage({ type: 'error', message: 'Not authenticated. Please log in.' });
+        return;
+      }
 
       const res = await fetch(`/api/cron-jobs?store_id=${storeId}&limit=100`, {
         headers: { 'Authorization': `Bearer ${token}` }
@@ -59,6 +64,9 @@ const JobScheduler = () => {
           // API returns data.cron_jobs nested structure
           setCronJobs(result.data?.cron_jobs || []);
         }
+      } else {
+        const error = await res.json();
+        setFlashMessage({ type: 'error', message: error.message || 'Failed to load cron jobs' });
       }
     } catch (error) {
       console.error('Failed to load cron jobs:', error);
@@ -68,7 +76,7 @@ const JobScheduler = () => {
 
   const saveCronJob = async () => {
     try {
-      const token = localStorage.getItem('token');
+      const token = localStorage.getItem('store_owner_auth_token') || localStorage.getItem('token');
       const storeId = localStorage.getItem('selectedStoreId');
 
       const url = editingJob
@@ -106,7 +114,7 @@ const JobScheduler = () => {
 
   const toggleJobActive = async (jobId, currentStatus) => {
     try {
-      const token = localStorage.getItem('token');
+      const token = localStorage.getItem('store_owner_auth_token') || localStorage.getItem('token');
       const res = await fetch(`/api/cron-jobs/${jobId}/toggle`, {
         method: 'POST',
         headers: {
@@ -129,7 +137,7 @@ const JobScheduler = () => {
     if (!confirm('Are you sure you want to delete this cron job?')) return;
 
     try {
-      const token = localStorage.getItem('token');
+      const token = localStorage.getItem('store_owner_auth_token') || localStorage.getItem('token');
       const res = await fetch(`/api/cron-jobs/${jobId}`, {
         method: 'DELETE',
         headers: { 'Authorization': `Bearer ${token}` }

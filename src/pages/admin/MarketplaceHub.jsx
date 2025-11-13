@@ -84,11 +84,12 @@ const MarketplaceHub = () => {
   const loadConfigurations = async () => {
     try {
       setLoading(true);
+      const token = localStorage.getItem('store_owner_auth_token') || localStorage.getItem('token');
       const storeId = localStorage.getItem('selectedStoreId');
 
       // Load Amazon config
       const amazonRes = await fetch(`/api/amazon/config?store_id=${storeId}`, {
-        headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
+        headers: { 'Authorization': `Bearer ${token}` }
       });
       const amazonData = await amazonRes.json();
       if (amazonData.configured) {
@@ -98,7 +99,7 @@ const MarketplaceHub = () => {
 
       // Load eBay config
       const ebayRes = await fetch(`/api/ebay/config?store_id=${storeId}`, {
-        headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
+        headers: { 'Authorization': `Bearer ${token}` }
       });
       const ebayData = await ebayRes.json();
       if (ebayData.configured) {
@@ -119,9 +120,10 @@ const MarketplaceHub = () => {
 
   const loadActiveJobs = async () => {
     try {
+      const token = localStorage.getItem('store_owner_auth_token') || localStorage.getItem('token');
       const storeId = localStorage.getItem('selectedStoreId');
       const res = await fetch(`/api/background-jobs/store/${storeId}?status=running`, {
-        headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
+        headers: { 'Authorization': `Bearer ${token}` }
       });
       const data = await res.json();
       if (data.success) {
@@ -135,12 +137,13 @@ const MarketplaceHub = () => {
 
   const saveAmazonConfig = async () => {
     try {
+      const token = localStorage.getItem('store_owner_auth_token') || localStorage.getItem('token');
       const storeId = localStorage.getItem('selectedStoreId');
       const res = await fetch('/api/amazon/configure', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
+          'Authorization': `Bearer ${token}`
         },
         body: JSON.stringify({
           store_id: storeId,
@@ -165,12 +168,13 @@ const MarketplaceHub = () => {
 
   const saveEbayConfig = async () => {
     try {
+      const token = localStorage.getItem('store_owner_auth_token') || localStorage.getItem('token');
       const storeId = localStorage.getItem('selectedStoreId');
       const res = await fetch('/api/ebay/configure', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
+          'Authorization': `Bearer ${token}`
         },
         body: JSON.stringify({
           store_id: storeId,
@@ -198,12 +202,13 @@ const MarketplaceHub = () => {
     }
 
     try {
+      const token = localStorage.getItem('store_owner_auth_token') || localStorage.getItem('token');
       const storeId = localStorage.getItem('selectedStoreId');
       const res = await fetch('/api/amazon/export', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
+          'Authorization': `Bearer ${token}`
         },
         body: JSON.stringify({
           store_id: storeId,
@@ -237,12 +242,13 @@ const MarketplaceHub = () => {
     }
 
     try {
+      const token = localStorage.getItem('store_owner_auth_token') || localStorage.getItem('token');
       const storeId = localStorage.getItem('selectedStoreId');
       const res = await fetch('/api/ebay/export', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
+          'Authorization': `Bearer ${token}`
         },
         body: JSON.stringify({
           store_id: storeId,

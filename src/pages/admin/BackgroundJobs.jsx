@@ -42,7 +42,7 @@ const BackgroundJobs = () => {
 
   const loadData = async () => {
     try {
-      const token = localStorage.getItem('token');
+      const token = localStorage.getItem('store_owner_auth_token') || localStorage.getItem('token');
       const storeId = localStorage.getItem('selectedStoreId');
 
       // Load queue status
@@ -70,7 +70,7 @@ const BackgroundJobs = () => {
 
   const cancelJob = async (jobId) => {
     try {
-      const token = localStorage.getItem('token');
+      const token = localStorage.getItem('store_owner_auth_token') || localStorage.getItem('token');
       const res = await fetch(`/api/background-jobs/${jobId}/cancel`, {
         method: 'POST',
         headers: { 'Authorization': `Bearer ${token}` }

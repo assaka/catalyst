@@ -36,7 +36,7 @@ const ImportExportJobs = () => {
 
   const loadData = async () => {
     try {
-      const token = localStorage.getItem('token');
+      const token = localStorage.getItem('store_owner_auth_token') || localStorage.getItem('token');
       const storeId = localStorage.getItem('selectedStoreId');
 
       // Load import/export jobs only
