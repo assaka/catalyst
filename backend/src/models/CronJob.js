@@ -343,4 +343,13 @@ CronJob.getStats = function(userId = null, storeId = null) {
   });
 };
 
+// Associations
+CronJob.associate = (models) => {
+  CronJob.hasMany(models.CronJobExecution, {
+    foreignKey: 'cron_job_id',
+    as: 'executions',
+    onDelete: 'CASCADE'
+  });
+};
+
 module.exports = CronJob;

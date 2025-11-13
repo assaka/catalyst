@@ -145,4 +145,12 @@ CronJobExecution.cleanup = function(olderThanDays = 90) {
   });
 };
 
+// Associations
+CronJobExecution.associate = (models) => {
+  CronJobExecution.belongsTo(models.CronJob, {
+    foreignKey: 'cron_job_id',
+    as: 'cronJob'
+  });
+};
+
 module.exports = CronJobExecution;

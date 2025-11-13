@@ -58,6 +58,8 @@ const CreditUsage = require('./CreditUsage');
 const ServiceCreditCost = require('./ServiceCreditCost');
 const Job = require('./Job');
 const JobHistory = require('./JobHistory');
+const CronJob = require('./CronJob');
+const CronJobExecution = require('./CronJobExecution');
 const SlotConfiguration = require('./SlotConfiguration');
 // Email system models
 const EmailTemplate = require('./EmailTemplate');
@@ -335,8 +337,16 @@ const defineAssociations = () => {
   Store.hasMany(Job, { foreignKey: 'store_id' });
   User.hasMany(Job, { foreignKey: 'user_id' });
 
-  // JobHistory associations  
+  // JobHistory associations
   JobHistory.belongsTo(Job, { foreignKey: 'job_id', as: 'job' });
+
+  // CronJob associations
+  CronJob.hasMany(CronJobExecution, { foreignKey: 'cron_job_id', as: 'executions', onDelete: 'CASCADE' });
+  CronJob.belongsTo(Store, { foreignKey: 'store_id' });
+  CronJob.belongsTo(User, { foreignKey: 'user_id' });
+
+  // CronJobExecution associations
+  CronJobExecution.belongsTo(CronJob, { foreignKey: 'cron_job_id', as: 'cronJob' });
 
   // AkeneoSchedule associations
   AkeneoSchedule.belongsTo(Store, { foreignKey: 'store_id' });
@@ -436,6 +446,8 @@ module.exports = {
   ServiceCreditCost,
   Job,
   JobHistory,
+  CronJob,
+  CronJobExecution,
   SlotConfiguration,
   // Email system models
   EmailTemplate,
