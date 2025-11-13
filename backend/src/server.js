@@ -10,7 +10,7 @@ require('dotenv').config();
 
 const { sequelize } = require('./database/connection');
 const errorHandler = require('./middleware/errorHandler');
-const { authMiddleware } = require('./middleware/auth');
+const { authMiddleware } = require('./middleware/authMiddleware');
 
 // Import all models to ensure associations are loaded
 const models = require('./models');
@@ -391,11 +391,12 @@ app.get('/health/cache', async (req, res) => {
 });
 
 // API routes
-app.use('/api/auth', authRoutes);
-app.use('/api/cache-test', cacheTestRoutes); // Test cache middleware
+const authMasterTenant = require('./routes/authMasterTenant');
+app.use('/api/auth', authMasterTenant);
+app.use('/api/cache-test', cacheTestRoutes);
 
 // Public routes for guest access
-app.use('/api/public/auth', authRoutes); // Public auth endpoints (login, register, etc.)
+app.use('/api/public/auth', authMasterTenant);
 app.use('/api/public/storefront/bootstrap', storefrontBootstrapRoutes); // Unified storefront initialization endpoint
 app.use('/api/public/page-bootstrap', pageBootstrapRoutes); // Page-specific bootstrap (product, category, checkout, homepage)
 app.use('/api/public/stores', storeRoutes);
@@ -689,9 +690,8 @@ app.get('/public/:storeSlug/sitemap.xml', async (req, res) => {
   }
 });
 
-// Authenticated routes (keep existing for admin/authenticated users)
+// Authenticated routes
 app.use('/api/users', authMiddleware, userRoutes);
-app.use('/api/stores', authMiddleware, storeRoutes);
 app.use('/api/products', productRoutes);
 app.use('/api/configurable-products', configurableProductRoutes);
 app.use('/api/categories', categoryRoutes);
@@ -1051,20 +1051,16 @@ app.use('/api/background-jobs', backgroundJobRoutes); // Background job manageme
 app.use('/api/cron-jobs', cronJobRoutes); // Dynamic cron job management routes
 app.use('/api/extensions', extensionsRoutes); // Modern extension system API with hook-based architecture
 app.use('/api/slot-configurations', slotConfigurationRoutes); // Slot configuration versioning API
-app.use('/api/credits', creditRoutes); // Credit system: balance, purchases, usage tracking
-app.use('/api/service-credit-costs', serviceCreditCostsRoutes); // Service credit costs management (admin)
-
-// Master-Tenant Architecture Routes (NEW)
-const authMasterTenantRoutes = require('./routes/authMasterTenant');
+// Master-Tenant Architecture Routes (NEW - replaces old systems)
 const storesMasterTenantRoutes = require('./routes/storesMasterTenant');
 const creditsMasterTenantRoutes = require('./routes/creditsMasterTenant');
 const testMasterDbRoutes = require('./routes/testMasterDb');
 
-app.use('/api/auth/mt', authMasterTenantRoutes); // Master-tenant auth (register, login)
-app.use('/api/stores/mt', storesMasterTenantRoutes); // Master-tenant store management
-app.use('/api/credits/mt', creditsMasterTenantRoutes); // Master-tenant credits
+app.use('/api/stores', authMiddleware, storesMasterTenantRoutes); // Master-tenant store management (replaces old)
+app.use('/api/credits', creditsMasterTenantRoutes); // Master-tenant credits (replaces old)
 app.use('/api/test', testMasterDbRoutes); // Test endpoint for master DB
 
+app.use('/api/service-credit-costs', serviceCreditCostsRoutes); // Service credit costs management (admin)
 app.use('/api/email-templates', emailTemplatesRoutes); // Email template management with translations
 app.use('/api/pdf-templates', pdfTemplatesRoutes); // PDF template management for invoices, shipments
 app.use('/api/brevo', brevoOAuthRoutes); // Brevo email service OAuth and configuration
