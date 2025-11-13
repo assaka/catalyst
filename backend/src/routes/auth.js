@@ -505,22 +505,68 @@ router.post('/login', [
 
     // Find users/customers with this email based on role
     let users = [];
-    
+
     if (role === 'customer') {
-      // Search in customers table
+      // Search in customers table (tenant DB)
       users = await Customer.findAll({ where: { email } });
     } else if (role === 'store_owner' || role === 'admin') {
-      // Search in users table
-      const whereClause = { email };
-      if (role) {
-        whereClause.role = role;
+      // Query MASTER DB for agency users (master-tenant architecture)
+      const { masterSupabaseClient } = require('../database/masterConnection');
+
+      const { data: masterUsers, error } = await masterSupabaseClient
+        .from('users')
+        .select('*')
+        .eq('email', email)
+        .eq('account_type', 'agency');
+
+      if (!error && masterUsers && masterUsers.length > 0) {
+        // Found in master DB - convert to model-like objects
+        users = masterUsers.map(u => ({
+          ...u,
+          comparePassword: async (candidatePassword) => {
+            const bcrypt = require('bcryptjs');
+            return bcrypt.compare(candidatePassword, u.password);
+          },
+          toJSON: () => {
+            const { password, email_verification_token, password_reset_token, ...rest } = u;
+            return rest;
+          }
+        }));
+      } else {
+        // Fallback to tenant DB for non-agency users
+        const whereClause = { email };
+        if (role) {
+          whereClause.role = role;
+        }
+        users = await User.findAll({ where: whereClause });
       }
-      users = await User.findAll({ where: whereClause });
     } else {
-      // No role specified - search both tables
-      const customerUsers = await Customer.findAll({ where: { email } });
-      const storeOwnerUsers = await User.findAll({ where: { email } });
-      users = [...customerUsers, ...storeOwnerUsers];
+      // No role specified - search master DB first, then tenant DB
+      const { masterSupabaseClient } = require('../database/masterConnection');
+      const { data: masterUsers } = await masterSupabaseClient
+        .from('users')
+        .select('*')
+        .eq('email', email)
+        .eq('account_type', 'agency');
+
+      if (masterUsers && masterUsers.length > 0) {
+        users = masterUsers.map(u => ({
+          ...u,
+          comparePassword: async (candidatePassword) => {
+            const bcrypt = require('bcryptjs');
+            return bcrypt.compare(candidatePassword, u.password);
+          },
+          toJSON: () => {
+            const { password, email_verification_token, password_reset_token, ...rest } = u;
+            return rest;
+          }
+        }));
+      } else {
+        // Search tenant DB
+        const customerUsers = await Customer.findAll({ where: { email } });
+        const storeOwnerUsers = await User.findAll({ where: { email } });
+        users = [...customerUsers, ...storeOwnerUsers];
+      }
     }
     
     if (!users || users.length === 0) {

@@ -19,20 +19,14 @@ const authMiddleware = async (req, res, next) => {
 
     // Determine which table to query based on role in JWT
     const isCustomer = decoded.role === 'customer';
-    const tableName = isCustomer ? 'customers' : 'users';
-    const ModelClass = isCustomer ? Customer : User;
+    const isAgency = decoded.account_type === 'agency' || decoded.accountType === 'agency';
 
-    // Try Supabase first
-    try {
-      // Build select statement based on table (customers have store_id, users don't)
-      const baseFields = 'id, email, first_name, last_name, phone, avatar_url, is_active, email_verified, last_login, role, account_type, created_at, updated_at';
-      const selectFields = isCustomer
-        ? `${baseFields}, store_id`
-        : `${baseFields}, credits`;
-
-      const { data: supabaseUser, error } = await supabase
-        .from(tableName)
-        .select(selectFields)
+    // For agency users, query MASTER DB
+    if (isAgency && !isCustomer) {
+      const { masterSupabaseClient } = require('../database/masterConnection');
+      const { data: masterUser, error } = await masterSupabaseClient
+        .from('users')
+        .select('id, email, first_name, last_name, phone, avatar_url, is_active, email_verified, last_login, role, account_type, created_at, updated_at, credits')
         .eq('id', decoded.id)
         .single();
 
@@ -40,10 +34,40 @@ const authMiddleware = async (req, res, next) => {
         throw error;
       }
 
-      user = supabaseUser;
-    } catch (supabaseError) {
-      // Fallback to Sequelize with appropriate model
-      user = await ModelClass.findByPk(decoded.id);
+      user = masterUser;
+
+      // Add store_id from JWT (not in master DB users table)
+      if (user && decoded.storeId) {
+        user.store_id = decoded.storeId;
+      }
+    } else {
+      // For customers and non-agency users, query TENANT DB
+      const tableName = isCustomer ? 'customers' : 'users';
+      const ModelClass = isCustomer ? Customer : User;
+
+      // Try Supabase first
+      try {
+        // Build select statement based on table (customers have store_id, users don't)
+        const baseFields = 'id, email, first_name, last_name, phone, avatar_url, is_active, email_verified, last_login, role, account_type, created_at, updated_at';
+        const selectFields = isCustomer
+          ? `${baseFields}, store_id`
+          : `${baseFields}, credits`;
+
+        const { data: supabaseUser, error } = await supabase
+          .from(tableName)
+          .select(selectFields)
+          .eq('id', decoded.id)
+          .single();
+
+        if (error && error.code !== 'PGRST116') {
+          throw error;
+        }
+
+        user = supabaseUser;
+      } catch (supabaseError) {
+        // Fallback to Sequelize with appropriate model
+        user = await ModelClass.findByPk(decoded.id);
+      }
     }
 
     if (!user) {
