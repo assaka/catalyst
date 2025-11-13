@@ -667,21 +667,32 @@ const JobScheduler = () => {
                       <Edit className="w-4 h-4" />
                     </Button>
                   )}
+                  {/* System jobs: View-only (Eye icon) */}
+                  {job.is_system && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => {
+                        setEditingJob(job);
+                        setFormData(job);
+                        setShowCreateForm(true);
+                      }}
+                      title="View system job (read-only)"
+                    >
+                      <Eye className="w-4 h-4" />
+                    </Button>
+                  )}
+
                   {/* Only allow deleting non-system jobs */}
                   {!job.is_system && (
                     <Button
                       variant="ghost"
                       size="sm"
                       onClick={() => deleteJob(job.id)}
+                      title="Delete job"
                     >
                       <Trash2 className="w-4 h-4" />
                     </Button>
-                  )}
-                  {/* System jobs are read-only */}
-                  {job.is_system && (
-                    <Badge variant="secondary" className="text-xs">
-                      Read-only
-                    </Badge>
                   )}
                 </div>
               </div>
