@@ -329,12 +329,15 @@ class ApiClient {
       }
       
       // ONLY transform responses for known list endpoints
-      const isListEndpoint = endpoint.includes('/list') || 
-                            endpoint.endsWith('s') && !endpoint.includes('/stats') && 
-                            !endpoint.includes('/status') && 
+      // Exclude POST/PUT/PATCH requests as they typically create/update single resources
+      const isListEndpoint = method === 'GET' && (
+                            endpoint.includes('/list') ||
+                            endpoint.endsWith('s') && !endpoint.includes('/stats') &&
+                            !endpoint.includes('/status') &&
                             !endpoint.includes('/config') &&
                             !endpoint.includes('/test') &&
-                            !endpoint.includes('/save');
+                            !endpoint.includes('/save')
+                            );
       
       // Special handling for storage endpoints - don't transform, return full response
       if (endpoint.includes('/storage/')) {
