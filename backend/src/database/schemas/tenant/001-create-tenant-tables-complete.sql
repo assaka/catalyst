@@ -385,17 +385,6 @@ CREATE TABLE IF NOT EXISTS canonical_urls (
   updated_at TIMESTAMP WITH TIME ZONE NOT NULL
 );
 
-CREATE TABLE IF NOT EXISTS cart_emails (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  email VARCHAR(255),
-  session_id VARCHAR(255),
-  cart_total NUMERIC,
-  cart_items_count INTEGER,
-  source VARCHAR(50) DEFAULT 'cart'::character varying,
-  subscribed BOOLEAN,
-  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
-);
-
 CREATE TABLE IF NOT EXISTS carts (
   id UUID PRIMARY KEY,
   session_id VARCHAR(255),
@@ -730,17 +719,6 @@ CREATE TABLE IF NOT EXISTS credit_usage (
   updated_at TIMESTAMP DEFAULT NOW()
 );
 
-CREATE TABLE IF NOT EXISTS credits (
-  id UUID PRIMARY KEY,
-  user_id UUID NOT NULL,
-  store_id UUID NOT NULL,
-  balance NUMERIC DEFAULT 0 NOT NULL,
-  total_purchased NUMERIC DEFAULT 0 NOT NULL,
-  total_used NUMERIC DEFAULT 0 NOT NULL,
-  created_at TIMESTAMP WITH TIME ZONE NOT NULL,
-  updated_at TIMESTAMP WITH TIME ZONE NOT NULL
-);
-
 CREATE TABLE IF NOT EXISTS cron_job_executions (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   cron_job_id UUID NOT NULL,
@@ -1058,33 +1036,6 @@ CREATE TABLE IF NOT EXISTS email_templates (
   default_html_content TEXT
 );
 
-CREATE TABLE IF NOT EXISTS file_baselines (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  file_path TEXT NOT NULL,
-  baseline_code TEXT NOT NULL,
-  code_hash TEXT NOT NULL,
-  version TEXT DEFAULT 'latest'::text,
-  file_type TEXT NOT NULL,
-  file_size INTEGER NOT NULL,
-  last_modified TIMESTAMP WITH TIME ZONE NOT NULL,
-  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
-);
-
-CREATE TABLE IF NOT EXISTS hamid_cart (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  user_id UUID,
-  session_id VARCHAR(255),
-  cart_subtotal NUMERIC DEFAULT 0.00,
-  cart_total NUMERIC DEFAULT 0.00,
-  user_agent TEXT,
-  ip_address VARCHAR(45),
-  referrer_url TEXT,
-  visited_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-  cart_items_count INTEGER
-);
-
 CREATE TABLE IF NOT EXISTS heatmap_aggregations (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   store_id UUID NOT NULL,
@@ -1317,21 +1268,21 @@ CREATE TABLE IF NOT EXISTS pdf_templates (
   updated_at TIMESTAMP DEFAULT NOW()
 );
 
-CREATE TABLE IF NOT EXISTS platform_admins (
-  id UUID PRIMARY KEY,
-  user_id UUID NOT NULL,
-  role VARCHAR(50) DEFAULT 'support'::character varying NOT NULL,
-  permissions JSONB DEFAULT '{}'::jsonb,
-  is_active BOOLEAN DEFAULT true,
-  last_login_at TIMESTAMP WITH TIME ZONE,
-  login_count INTEGER DEFAULT 0,
-  mfa_enabled BOOLEAN DEFAULT false,
-  mfa_secret VARCHAR(255),
-  notes TEXT,
-  metadata JSONB DEFAULT '{}'::jsonb,
-  created_at TIMESTAMP WITH TIME ZONE NOT NULL,
-  updated_at TIMESTAMP WITH TIME ZONE NOT NULL
-);
+-- CREATE TABLE IF NOT EXISTS platform_admins (
+--   id UUID PRIMARY KEY,
+--   user_id UUID NOT NULL,
+--   role VARCHAR(50) DEFAULT 'support'::character varying NOT NULL,
+--   permissions JSONB DEFAULT '{}'::jsonb,
+--   is_active BOOLEAN DEFAULT true,
+--   last_login_at TIMESTAMP WITH TIME ZONE,
+--   login_count INTEGER DEFAULT 0,
+--   mfa_enabled BOOLEAN DEFAULT false,
+--   mfa_secret VARCHAR(255),
+--   notes TEXT,
+--   metadata JSONB DEFAULT '{}'::jsonb,
+--   created_at TIMESTAMP WITH TIME ZONE NOT NULL,
+--   updated_at TIMESTAMP WITH TIME ZONE NOT NULL
+-- );
 
 CREATE TABLE IF NOT EXISTS plugin_admin_pages (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -1985,24 +1936,6 @@ CREATE TABLE IF NOT EXISTS seo_templates (
   template JSON DEFAULT '{}'::json
 );
 
-CREATE TABLE IF NOT EXISTS service_credit_costs (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  service_key VARCHAR(100) NOT NULL,
-  service_name VARCHAR(255) NOT NULL,
-  service_category service_category NOT NULL,
-  description TEXT,
-  cost_per_unit NUMERIC DEFAULT 0.0000 NOT NULL,
-  billing_type billing_type NOT NULL,
-  is_active BOOLEAN DEFAULT true NOT NULL,
-  is_visible BOOLEAN DEFAULT true NOT NULL,
-  metadata JSONB DEFAULT '{}'::jsonb,
-  display_order INTEGER DEFAULT 0,
-  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-  created_by UUID,
-  updated_by UUID
-);
-
 CREATE TABLE IF NOT EXISTS shipping_method_translations (
   shipping_method_id UUID PRIMARY KEY,
   language_code VARCHAR(10) PRIMARY KEY,
@@ -2151,30 +2084,30 @@ CREATE TABLE IF NOT EXISTS stores (
   published_at TIMESTAMP WITH TIME ZONE
 );
 
-CREATE TABLE IF NOT EXISTS subscriptions (
-  id UUID PRIMARY KEY,
-  store_id UUID NOT NULL,
-  plan_name VARCHAR(50) NOT NULL,
-  status VARCHAR(50) DEFAULT 'trial'::character varying NOT NULL,
-  price_monthly NUMERIC,
-  price_annual NUMERIC,
-  billing_cycle VARCHAR(20) DEFAULT 'monthly'::character varying,
-  currency VARCHAR(3) DEFAULT 'USD'::character varying,
-  max_products INTEGER,
-  max_orders_per_month INTEGER,
-  max_storage_gb INTEGER,
-  max_api_calls_per_month INTEGER,
-  max_admin_users INTEGER DEFAULT 5,
-  started_at TIMESTAMP WITH TIME ZONE NOT NULL,
-  trial_ends_at TIMESTAMP WITH TIME ZONE,
-  current_period_start TIMESTAMP WITH TIME ZONE,
-  current_period_end TIMESTAMP WITH TIME ZONE,
-  cancelled_at TIMESTAMP WITH TIME ZONE,
-  cancellation_reason TEXT,
-  metadata JSONB DEFAULT '{}'::jsonb,
-  created_at TIMESTAMP WITH TIME ZONE NOT NULL,
-  updated_at TIMESTAMP WITH TIME ZONE NOT NULL
-);
+-- CREATE TABLE IF NOT EXISTS subscriptions (
+--   id UUID PRIMARY KEY,
+--   store_id UUID NOT NULL,
+--   plan_name VARCHAR(50) NOT NULL,
+--   status VARCHAR(50) DEFAULT 'trial'::character varying NOT NULL,
+--   price_monthly NUMERIC,
+--   price_annual NUMERIC,
+--   billing_cycle VARCHAR(20) DEFAULT 'monthly'::character varying,
+--   currency VARCHAR(3) DEFAULT 'USD'::character varying,
+--   max_products INTEGER,
+--   max_orders_per_month INTEGER,
+--   max_storage_gb INTEGER,
+--   max_api_calls_per_month INTEGER,
+--   max_admin_users INTEGER DEFAULT 5,
+--   started_at TIMESTAMP WITH TIME ZONE NOT NULL,
+--   trial_ends_at TIMESTAMP WITH TIME ZONE,
+--   current_period_start TIMESTAMP WITH TIME ZONE,
+--   current_period_end TIMESTAMP WITH TIME ZONE,
+--   cancelled_at TIMESTAMP WITH TIME ZONE,
+--   cancellation_reason TEXT,
+--   metadata JSONB DEFAULT '{}'::jsonb,
+--   created_at TIMESTAMP WITH TIME ZONE NOT NULL,
+--   updated_at TIMESTAMP WITH TIME ZONE NOT NULL
+-- );
 
 CREATE TABLE IF NOT EXISTS supabase_oauth_tokens (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -2286,7 +2219,7 @@ CREATE TABLE IF NOT EXISTS users (
   last_login TIMESTAMP WITH TIME ZONE,
   role VARCHAR(20) DEFAULT 'customer'::character varying,
   account_type VARCHAR(20) DEFAULT 'individual'::character varying,
-  credits NUMERIC DEFAULT 0.00,
+--   credits NUMERIC DEFAULT 0.00,
   last_credit_deduction_date TIMESTAMP,
   created_at TIMESTAMP DEFAULT NOW(),
   updated_at TIMESTAMP DEFAULT NOW()
