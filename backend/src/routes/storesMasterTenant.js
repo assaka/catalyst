@@ -274,15 +274,27 @@ router.post('/:id/connect-database', authMiddleware, async (req, res) => {
       console.log('✅ Auto-provision mode validated - using OAuth API');
     }
 
-    // Get store from master DB
-    const store = await MasterStore.findByPk(storeId);
+    // Get store from master DB (use Supabase client to avoid Sequelize connection issues)
+    console.log('🔍 Fetching store from master DB via Supabase client...');
+    const { data: store, error: storeError } = await masterSupabaseClient
+      .from('stores')
+      .select('*')
+      .eq('id', storeId)
+      .single();
 
-    if (!store) {
+    if (storeError || !store) {
+      console.error('❌ Store not found:', storeError?.message);
       return res.status(404).json({
         success: false,
         error: 'Store not found'
       });
     }
+
+    console.log('✅ Store found:', {
+      id: store.id,
+      status: store.status,
+      is_active: store.is_active
+    });
 
     if (store.status !== 'pending_database') {
       return res.status(400).json({
@@ -292,8 +304,22 @@ router.post('/:id/connect-database', authMiddleware, async (req, res) => {
       });
     }
 
-    // Update store status to provisioning
-    await store.startProvisioning();
+    // Update store status to provisioning (use Supabase client)
+    console.log('🔄 Updating store status to provisioning...');
+    const { error: updateError } = await masterSupabaseClient
+      .from('stores')
+      .update({ status: 'provisioning', updated_at: new Date().toISOString() })
+      .eq('id', storeId);
+
+    if (updateError) {
+      console.error('❌ Failed to update store status:', updateError.message);
+      return res.status(500).json({
+        success: false,
+        error: 'Failed to update store status'
+      });
+    }
+
+    console.log('✅ Store status updated to provisioning');
 
     // 1. Validate and encrypt credentials
     if (!connectionString) {
@@ -375,7 +401,12 @@ router.post('/:id/connect-database', authMiddleware, async (req, res) => {
     );
 
     if (!provisioningResult.success) {
-      await store.update({ status: 'pending_database' });
+      // Revert store status using Supabase client
+      await masterSupabaseClient
+        .from('stores')
+        .update({ status: 'pending_database', updated_at: new Date().toISOString() })
+        .eq('id', storeId);
+
       return res.status(500).json({
         success: false,
         error: 'Failed to provision tenant database',
@@ -383,15 +414,31 @@ router.post('/:id/connect-database', authMiddleware, async (req, res) => {
       });
     }
 
-    // 5. Create hostname mapping
+    // 5. Create hostname mapping (use Supabase client)
     const slug = storeSlug || `store-${Date.now()}`;
     const hostname = `${slug}.catalyst.com`; // TODO: Use actual domain
 
-    await StoreHostname.createMapping(storeId, hostname, slug, {
-      isPrimary: true,
-      isCustomDomain: false,
-      sslEnabled: true
-    });
+    console.log('📍 Creating hostname mapping...');
+    const { v4: uuidv4 } = require('uuid');
+    const { error: hostnameError } = await masterSupabaseClient
+      .from('store_hostnames')
+      .insert({
+        id: uuidv4(),
+        store_id: storeId,
+        hostname,
+        slug,
+        is_primary: true,
+        is_custom_domain: false,
+        ssl_enabled: true,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      });
+
+    if (hostnameError) {
+      console.warn('⚠️ Failed to create hostname mapping:', hostnameError.message);
+    } else {
+      console.log('✅ Hostname mapping created');
+    }
 
     // 6. Save OAuth tokens to tenant DB (if from OAuth flow)
     if (useOAuth) {
@@ -458,17 +505,35 @@ router.post('/:id/connect-database', authMiddleware, async (req, res) => {
       }
     }
 
-    // 7. Activate store
-    await store.completeProvisioning();
+    // 7. Activate store (use Supabase client)
+    console.log('🎉 Activating store...');
+    const { error: activateError } = await masterSupabaseClient
+      .from('stores')
+      .update({
+        status: 'active',
+        is_active: true,
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', storeId);
+
+    if (activateError) {
+      console.error('❌ Failed to activate store:', activateError.message);
+      return res.status(500).json({
+        success: false,
+        error: 'Failed to activate store'
+      });
+    }
+
+    console.log('✅ Store activated successfully!');
 
     res.json({
       success: true,
       message: 'Database connected and store activated successfully!',
       data: {
         store: {
-          id: store.id,
-          status: store.status,
-          is_active: store.is_active
+          id: storeId,
+          status: 'active',
+          is_active: true
         },
         hostname,
         provisioning: provisioningResult
@@ -477,12 +542,13 @@ router.post('/:id/connect-database', authMiddleware, async (req, res) => {
   } catch (error) {
     console.error('Database connection error:', error);
 
-    // Revert store status
+    // Revert store status (use Supabase client)
     try {
-      const store = await MasterStore.findByPk(req.params.id);
-      if (store) {
-        await store.update({ status: 'pending_database' });
-      }
+      await masterSupabaseClient
+        .from('stores')
+        .update({ status: 'pending_database', updated_at: new Date().toISOString() })
+        .eq('id', req.params.id);
+      console.log('Store status reverted to pending_database');
     } catch (revertError) {
       console.error('Failed to revert store status:', revertError);
     }
