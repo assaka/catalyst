@@ -50,17 +50,39 @@ router.get('/oauth-status', authMiddleware, async (req, res) => {
     }
 
     console.log('Checking OAuth status for store:', storeId);
-    console.log('Global pendingOAuthTokens exists?', !!global.pendingOAuthTokens);
-    console.log('Map size:', global.pendingOAuthTokens ? global.pendingOAuthTokens.size : 0);
 
-    if (global.pendingOAuthTokens) {
-      console.log('All stored storeIds in memory:', Array.from(global.pendingOAuthTokens.keys()));
+    // Check Redis first (primary storage)
+    try {
+      const { getRedisClient } = require('../config/redis');
+      const redisClient = getRedisClient();
+
+      if (redisClient) {
+        const redisKey = `oauth:pending:${storeId}`;
+        const tokenDataStr = await redisClient.get(redisKey);
+
+        if (tokenDataStr) {
+          const tokenData = JSON.parse(tokenDataStr);
+          console.log('✅ OAuth tokens found in Redis');
+
+          return res.json({
+            success: true,
+            connected: true,
+            projectUrl: tokenData.project_url,
+            status: 'pending_provisioning',
+            message: 'OAuth completed. Waiting for database provisioning.'
+          });
+        } else {
+          console.log('Redis key not found:', redisKey);
+        }
+      }
+    } catch (redisError) {
+      console.log('Redis check failed:', redisError.message);
     }
 
-    // Check if OAuth tokens are in memory (for pending stores)
+    // Check memory as fallback (for pending stores)
     if (global.pendingOAuthTokens && global.pendingOAuthTokens.has(storeId)) {
       const tokenData = global.pendingOAuthTokens.get(storeId);
-      console.log('✅ OAuth tokens found in memory (pending provisioning)');
+      console.log('✅ OAuth tokens found in memory (fallback)');
 
       return res.json({
         success: true,

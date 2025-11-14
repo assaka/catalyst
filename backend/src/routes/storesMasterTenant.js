@@ -132,11 +132,35 @@ router.post('/:id/connect-database', authMiddleware, async (req, res) => {
 
     let projectUrl, serviceRoleKey, anonKey, connectionString;
 
-    // If using OAuth, get credentials from OAuth token
+    // If using OAuth, get credentials from Redis (or memory fallback)
     if (useOAuth) {
       console.log('Using OAuth credentials for store:', storeId);
-      const SupabaseOAuthToken = require('../models/SupabaseOAuthToken');
-      const oauthToken = await SupabaseOAuthToken.findOne({ where: { store_id: storeId } });
+
+      let oauthToken = null;
+
+      // Check Redis first
+      try {
+        const { getRedisClient } = require('../config/redis');
+        const redisClient = getRedisClient();
+
+        if (redisClient) {
+          const redisKey = `oauth:pending:${storeId}`;
+          const tokenDataStr = await redisClient.get(redisKey);
+
+          if (tokenDataStr) {
+            oauthToken = JSON.parse(tokenDataStr);
+            console.log('✅ OAuth tokens retrieved from Redis');
+          }
+        }
+      } catch (redisError) {
+        console.log('Redis retrieval failed:', redisError.message);
+      }
+
+      // Check memory fallback
+      if (!oauthToken && global.pendingOAuthTokens && global.pendingOAuthTokens.has(storeId)) {
+        oauthToken = global.pendingOAuthTokens.get(storeId);
+        console.log('✅ OAuth tokens retrieved from memory (fallback)');
+      }
 
       if (!oauthToken) {
         return res.status(400).json({
@@ -276,30 +300,63 @@ router.post('/:id/connect-database', authMiddleware, async (req, res) => {
     });
 
     // 6. Save OAuth tokens to tenant DB (if from OAuth flow)
-    if (useOAuth && global.pendingOAuthTokens && global.pendingOAuthTokens.has(storeId)) {
+    if (useOAuth) {
       try {
         console.log('💾 Saving OAuth tokens to tenant database post-provisioning...');
-        const oauthData = global.pendingOAuthTokens.get(storeId);
 
-        // Use tenant DB connection to save OAuth tokens
-        const { data: savedToken, error: tokenError } = await tenantDb
-          .from('supabase_oauth_tokens')
-          .insert({
-            id: require('uuid').v4(),
-            store_id: storeId,
-            ...oauthData,
-            created_at: new Date().toISOString(),
-            updated_at: new Date().toISOString()
-          })
-          .select()
-          .single();
+        // Get OAuth data from Redis first
+        let oauthData = null;
 
-        if (tokenError) {
-          console.warn('⚠️ Failed to save OAuth tokens to tenant DB:', tokenError.message);
+        const { getRedisClient } = require('../config/redis');
+        const redisClient = getRedisClient();
+
+        if (redisClient) {
+          const redisKey = `oauth:pending:${storeId}`;
+          const tokenDataStr = await redisClient.get(redisKey);
+
+          if (tokenDataStr) {
+            oauthData = JSON.parse(tokenDataStr);
+            console.log('✅ Retrieved OAuth tokens from Redis for saving');
+          }
+        }
+
+        // Fallback to memory
+        if (!oauthData && global.pendingOAuthTokens && global.pendingOAuthTokens.has(storeId)) {
+          oauthData = global.pendingOAuthTokens.get(storeId);
+          console.log('✅ Retrieved OAuth tokens from memory (fallback)');
+        }
+
+        if (oauthData) {
+          // Use tenant DB connection to save OAuth tokens
+          const { data: savedToken, error: tokenError } = await tenantDb
+            .from('supabase_oauth_tokens')
+            .insert({
+              id: require('uuid').v4(),
+              store_id: storeId,
+              ...oauthData,
+              created_at: new Date().toISOString(),
+              updated_at: new Date().toISOString()
+            })
+            .select()
+            .single();
+
+          if (tokenError) {
+            console.warn('⚠️ Failed to save OAuth tokens to tenant DB:', tokenError.message);
+          } else {
+            console.log('✅ OAuth tokens saved to tenant database');
+
+            // Clean up from both Redis and memory
+            if (redisClient) {
+              await redisClient.del(`oauth:pending:${storeId}`);
+              console.log('🧹 Cleaned up Redis key');
+            }
+            if (global.pendingOAuthTokens) {
+              global.pendingOAuthTokens.delete(storeId);
+              console.log('🧹 Cleaned up memory cache');
+            }
+          }
         } else {
-          console.log('✅ OAuth tokens saved to tenant database');
-          // Clean up from memory
-          global.pendingOAuthTokens.delete(storeId);
+          console.log('⚠️ No OAuth data found in Redis or memory - skipping save');
         }
       } catch (oauthSaveError) {
         console.warn('⚠️ Error saving OAuth tokens:', oauthSaveError.message);

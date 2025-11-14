@@ -197,11 +197,7 @@ class SupabaseIntegration {
         expires_at: tokenData.expires_at
       });
 
-      // STEP 1: ALWAYS store in memory FIRST (highest priority)
-      if (!global.pendingOAuthTokens) {
-        global.pendingOAuthTokens = new Map();
-      }
-
+      // STEP 1: ALWAYS store in Redis (persists across server restarts)
       const tokenDataToStore = {
         access_token: tokenData.access_token,
         refresh_token: tokenData.refresh_token,
@@ -214,11 +210,35 @@ class SupabaseIntegration {
         auth_url: tokenData.auth_url || null
       };
 
-      global.pendingOAuthTokens.set(storeId, tokenDataToStore);
+      try {
+        const { getRedisClient } = require('../../config/redis');
+        const redisClient = getRedisClient();
 
-      console.log('✅ OAuth tokens stored in memory');
-      console.log('📊 Memory cache size:', global.pendingOAuthTokens.size);
-      console.log('🔑 StoreId:', storeId);
+        if (redisClient) {
+          const redisKey = `oauth:pending:${storeId}`;
+          await redisClient.setEx(
+            redisKey,
+            600, // Expire after 10 minutes
+            JSON.stringify(tokenDataToStore)
+          );
+          console.log('✅ OAuth tokens stored in Redis');
+          console.log('🔑 Redis key:', redisKey);
+        } else {
+          console.warn('⚠️ Redis not available, using memory fallback');
+          if (!global.pendingOAuthTokens) {
+            global.pendingOAuthTokens = new Map();
+          }
+          global.pendingOAuthTokens.set(storeId, tokenDataToStore);
+          console.log('✅ OAuth tokens stored in memory (fallback)');
+        }
+      } catch (redisError) {
+        console.error('❌ Redis error, using memory fallback:', redisError.message);
+        if (!global.pendingOAuthTokens) {
+          global.pendingOAuthTokens = new Map();
+        }
+        global.pendingOAuthTokens.set(storeId, tokenDataToStore);
+        console.log('✅ OAuth tokens stored in memory (fallback)');
+      }
 
       return { 
         success: true, 
