@@ -1077,12 +1077,30 @@ export default function AuthMiddleware({ role = 'store_owner' }) {
               return;
             }
             
-            // For store owners, redirect directly to dashboard
-            console.log('✅ Store owner login successful, redirecting to dashboard...');
-            setTimeout(() => {
-              const dashboardUrl = createAdminUrl("DASHBOARD");
-              console.log('🔍 Redirecting to dashboard:', dashboardUrl);
-              navigate(dashboardUrl);
+            // For store owners, check if they have stores before redirecting
+            console.log('✅ Store owner login successful, checking store status...');
+            setTimeout(async () => {
+              try {
+                // Check if user has any stores
+                const storesResponse = await apiClient.get('/api/stores/mt/dropdown');
+
+                if (storesResponse?.data && storesResponse.data.length === 0) {
+                  // No stores - redirect to onboarding
+                  console.log('🔍 No stores found, redirecting to onboarding...');
+                  const onboardingUrl = createAdminUrl("StoreOnboarding");
+                  navigate(onboardingUrl || '/admin/store-onboarding');
+                } else {
+                  // Has stores - redirect to dashboard
+                  const dashboardUrl = createAdminUrl("DASHBOARD");
+                  console.log('🔍 Redirecting to dashboard:', dashboardUrl);
+                  navigate(dashboardUrl);
+                }
+              } catch (error) {
+                console.error('Error checking stores:', error);
+                // Fallback to dashboard on error
+                const dashboardUrl = createAdminUrl("DASHBOARD");
+                navigate(dashboardUrl);
+              }
             }, 100); // Small delay to ensure token is set
           }
         }
