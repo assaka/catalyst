@@ -111,10 +111,13 @@ export default function StoreOnboarding() {
       let oauthSucceeded = false;
 
       const handleOAuthMessage = (event) => {
+        console.log('📨 postMessage received:', event.data);
         // Accept messages from any origin for OAuth callback
         if (event.data && event.data.type === 'supabase-oauth-success') {
           console.log('✅ OAuth success message received via postMessage');
           oauthSucceeded = true;
+          // Set sessionStorage as well for the interval check
+          sessionStorage.setItem('supabase_connection_success', 'Successfully connected!');
         }
       };
 

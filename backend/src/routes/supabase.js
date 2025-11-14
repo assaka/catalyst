@@ -282,17 +282,30 @@ router.get('/callback', async (req, res) => {
             }
 
             function closeWindow() {
-              // Try to set sessionStorage in parent
+              // Use postMessage for cross-origin communication (more reliable)
               try {
                 if (window.opener && !window.opener.closed) {
-                  window.opener.sessionStorage.setItem('supabase_connection_success', 'Successfully connected to Supabase!');
+                  // Send message to parent window
+                  window.opener.postMessage({
+                    type: 'supabase-oauth-success',
+                    message: 'Successfully connected to Supabase!'
+                  }, '*'); // Use '*' to ensure message is sent regardless of origin
+
+                  // Also try sessionStorage as fallback
+                  try {
+                    window.opener.sessionStorage.setItem('supabase_connection_success', 'Successfully connected to Supabase!');
+                  } catch (e) {
+                    // postMessage is primary method
+                  }
                 }
               } catch (error) {
-                // Silent fail - frontend will handle via checkClosed
+                console.error('Error communicating with parent:', error);
               }
 
-              // Close window
-              window.close();
+              // Close window after short delay to ensure message is sent
+              setTimeout(() => {
+                window.close();
+              }, 100);
             }
           })();
         </script>
