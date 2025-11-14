@@ -155,13 +155,20 @@ router.get('/callback', async (req, res) => {
     
     console.log('Token exchange result:', result);
     
-    // Try to create buckets after successful connection
+    // Try to create buckets after successful connection (skip for pending stores)
     if (result.success) {
       try {
-        console.log('Attempting to create storage buckets...');
-        const bucketResult = await supabaseStorage.ensureBucketsExist(storeId);
-        if (bucketResult.success) {
-          console.log('Bucket creation result:', bucketResult.message);
+        const { MasterStore } = require('../models/master');
+        const store = await MasterStore.findByPk(storeId);
+
+        if (store && store.status === 'pending_database') {
+          console.log('⏭️ Skipping bucket creation - tenant DB not provisioned yet');
+        } else {
+          console.log('Attempting to create storage buckets...');
+          const bucketResult = await supabaseStorage.ensureBucketsExist(storeId);
+          if (bucketResult.success) {
+            console.log('Bucket creation result:', bucketResult.message);
+          }
         }
       } catch (bucketError) {
         console.log('Could not create buckets immediately:', bucketError.message);
