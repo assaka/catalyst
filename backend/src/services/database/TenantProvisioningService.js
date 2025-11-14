@@ -138,7 +138,14 @@ class TenantProvisioningService {
         throw new Error('Database connection string not found in stored credentials');
       }
 
-      // Create direct PostgreSQL client using connection string
+      // Check if connection string has valid password
+      if (credentials.connectionString.includes('[password]')) {
+        throw new Error('Database password not provided. Connection string contains placeholder.');
+      }
+
+      // Use direct PostgreSQL connection
+      console.log('Using direct PostgreSQL connection for provisioning...');
+
       const pgClient = new Client({
         connectionString: credentials.connectionString,
         ssl: { rejectUnauthorized: false }

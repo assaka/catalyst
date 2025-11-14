@@ -32,7 +32,8 @@ export default function StoreOnboarding() {
   const [completedSteps, setCompletedSteps] = useState([]);
 
   const [storeData, setStoreData] = useState({ name: '', slug: '' });
-  const [dbData, setDbData] = useState({ projectUrl: '', serviceRoleKey: '', connectionString: '' });
+  const [dbData, setDbData] = useState({ databasePassword: '' });
+  const [oauthCompleted, setOauthCompleted] = useState(false);
   const [stripeData, setStripeData] = useState({ publishableKey: '', secretKey: '' });
   const [creditData, setCreditData] = useState({ amount: 100 });
   const [profileData, setProfileData] = useState({ phone: '', companyName: '' });
@@ -116,25 +117,9 @@ export default function StoreOnboarding() {
           if (successMessage) {
             sessionStorage.removeItem('supabase_connection_success');
 
-            // Step 4: Trigger database provisioning
-            console.log('OAuth successful, triggering provisioning...');
-            try {
-              const provisionResponse = await apiClient.post(`/stores/${storeId}/connect-database`, {
-                storeName: storeData.name,
-                storeSlug: storeData.slug,
-                useOAuth: true
-              });
-
-              if (provisionResponse.success) {
-                setCompletedSteps([...completedSteps, 2]);
-                setSuccess('Database connected! 137 tables created & 6,598 rows seeded.');
-                setCurrentStep(3);
-              } else {
-                setError(provisionResponse.error || 'Failed to provision database');
-              }
-            } catch (provErr) {
-              setError(provErr.message || 'Failed to provision database');
-            }
+            // OAuth completed - now show password input
+            setOauthCompleted(true);
+            setSuccess('Supabase connected! Now enter your database password to complete setup.');
           } else {
             setError('OAuth was cancelled or failed');
           }
@@ -156,6 +141,34 @@ export default function StoreOnboarding() {
     } catch (err) {
       console.error('OAuth error:', err);
       setError(err.message || 'Failed to connect database');
+      setLoading(false);
+    }
+  };
+
+  const handleProvisionDatabase = async (e) => {
+    e.preventDefault();
+    setLoading(true);
+    setError('');
+    setSuccess('');
+
+    try {
+      const provisionResponse = await apiClient.post(`/stores/${storeId}/connect-database`, {
+        storeName: storeData.name,
+        storeSlug: storeData.slug,
+        useOAuth: true,
+        databasePassword: dbData.databasePassword
+      });
+
+      if (provisionResponse.success) {
+        setCompletedSteps([...completedSteps, 2]);
+        setSuccess('Database connected! 137 tables created & 6,598 rows seeded.');
+        setCurrentStep(3);
+      } else {
+        setError(provisionResponse.error || 'Failed to provision database');
+      }
+    } catch (err) {
+      setError(err.message || 'Failed to provision database');
+    } finally {
       setLoading(false);
     }
   };
@@ -309,7 +322,7 @@ export default function StoreOnboarding() {
           )}
 
           {/* Step 2: Connect Database */}
-          {currentStep === 2 && (
+          {currentStep === 2 && !oauthCompleted && (
             <form onSubmit={handleConnectDatabase} className="space-y-6">
               <div className="bg-gradient-to-br from-green-50 to-emerald-50 border-2 border-green-200 rounded-xl p-6 text-center">
                 <div className="w-20 h-20 bg-white rounded-full flex items-center justify-center mx-auto mb-4 shadow-lg">
@@ -333,19 +346,15 @@ export default function StoreOnboarding() {
                     </li>
                     <li className="flex items-start">
                       <CheckCircle2 className="w-4 h-4 mr-2 text-green-600 mt-0.5 flex-shrink-0" />
-                      <span>Select a Supabase project (or we'll create a new one)</span>
+                      <span>Select a Supabase project</span>
                     </li>
                     <li className="flex items-start">
                       <CheckCircle2 className="w-4 h-4 mr-2 text-green-600 mt-0.5 flex-shrink-0" />
-                      <span>Automatically create 137 tables</span>
+                      <span>Provide database password</span>
                     </li>
                     <li className="flex items-start">
                       <CheckCircle2 className="w-4 h-4 mr-2 text-green-600 mt-0.5 flex-shrink-0" />
-                      <span>Seed 6,598 rows of initial data</span>
-                    </li>
-                    <li className="flex items-start">
-                      <CheckCircle2 className="w-4 h-4 mr-2 text-green-600 mt-0.5 flex-shrink-0" />
-                      <span>Your store is ready in ~30 seconds!</span>
+                      <span>Automatically create 137 tables & seed 6,598 rows</span>
                     </li>
                   </ul>
                 </div>
@@ -359,12 +368,66 @@ export default function StoreOnboarding() {
                   {loading ? (
                     <>
                       <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                      {loading && 'Connecting...'}
+                      Connecting...
                     </>
                   ) : (
                     <>
                       <ExternalLink className="w-4 h-4 mr-2" />
                       Connect with Supabase
+                    </>
+                  )}
+                </Button>
+              </div>
+            </form>
+          )}
+
+          {/* Step 2b: Enter Database Password (after OAuth) */}
+          {currentStep === 2 && oauthCompleted && (
+            <form onSubmit={handleProvisionDatabase} className="space-y-6">
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                <h4 className="font-semibold text-blue-900 mb-2 flex items-center">
+                  <Sparkles className="w-4 h-4 mr-2" />
+                  One more step!
+                </h4>
+                <p className="text-sm text-blue-800 mb-2">
+                  To create your database tables and seed initial data, we need your database password.
+                </p>
+                <p className="text-xs text-blue-700">
+                  Find this in Supabase → Settings → Database → Database Password
+                </p>
+              </div>
+
+              <div>
+                <Label htmlFor="databasePassword">Database Password *</Label>
+                <Input
+                  id="databasePassword"
+                  type="password"
+                  placeholder="Your Supabase database password"
+                  value={dbData.databasePassword}
+                  onChange={(e) => setDbData({ databasePassword: e.target.value })}
+                  required
+                  autoFocus
+                  className="mt-2"
+                />
+                <p className="text-xs text-gray-500 mt-1">
+                  This is used only to run database migrations and is encrypted
+                </p>
+              </div>
+
+              <div className="flex gap-3">
+                <Button type="button" variant="outline" onClick={() => { setOauthCompleted(false); setError(''); }} disabled={loading}>
+                  <ArrowLeft className="w-4 h-4 mr-2" /> Back
+                </Button>
+                <Button type="submit" className="flex-1 bg-blue-600 hover:bg-blue-700" disabled={loading || !dbData.databasePassword}>
+                  {loading ? (
+                    <>
+                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                      Provisioning Database...
+                    </>
+                  ) : (
+                    <>
+                      <Database className="w-4 h-4 mr-2" />
+                      Provision Database
                     </>
                   )}
                 </Button>
