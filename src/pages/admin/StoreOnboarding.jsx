@@ -107,19 +107,36 @@ export default function StoreOnboarding() {
         throw new Error('Please allow popups for this site');
       }
 
-      // Step 3: Wait for OAuth to complete
+      // Step 3: Listen for OAuth success via postMessage
+      let oauthSucceeded = false;
+
+      const handleOAuthMessage = (event) => {
+        // Accept messages from any origin for OAuth callback
+        if (event.data && event.data.type === 'supabase-oauth-success') {
+          console.log('✅ OAuth success message received via postMessage');
+          oauthSucceeded = true;
+        }
+      };
+
+      window.addEventListener('message', handleOAuthMessage);
+
+      // Step 4: Wait for popup to close
       const checkClosed = setInterval(async () => {
         if (popup.closed) {
           clearInterval(checkClosed);
+          window.removeEventListener('message', handleOAuthMessage);
 
-          // Check if OAuth was successful
+          // Check if OAuth was successful (postMessage or sessionStorage)
           const successMessage = sessionStorage.getItem('supabase_connection_success');
-          if (successMessage) {
-            sessionStorage.removeItem('supabase_connection_success');
 
-            // OAuth completed - now show password input
+          if (oauthSucceeded || successMessage) {
+            if (successMessage) {
+              sessionStorage.removeItem('supabase_connection_success');
+            }
+
+            // OAuth completed - now show connection string input
             setOauthCompleted(true);
-            setSuccess('Supabase connected! Now enter your database password to complete setup.');
+            setSuccess('Supabase connected! Now enter your database connection string to complete setup.');
           } else {
             setError('OAuth was cancelled or failed');
           }
