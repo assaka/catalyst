@@ -60,7 +60,7 @@ export { default as ABTesting } from './admin/ABTesting';
 export { default as Billing } from './admin/Billing';
 export { default as UptimeReport } from './admin/UptimeReport';
 export { default as TeamPage } from './admin/TeamPage';
-export { default as Onboarding } from './admin/Onboarding';
+export { default as StoreOnboarding } from './admin/StoreOnboarding';
 export { default as ThemeLayout } from './admin/ThemeLayout';
 export { default as Translations } from './admin/Translations';
 export { default as Plugins } from './admin/Plugins';

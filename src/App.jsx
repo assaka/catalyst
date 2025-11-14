@@ -461,7 +461,7 @@ function App() {
           <Route path="/admin/billing" element={<PageWrapper Component={Pages.Billing} pageName="Billing" />} />
           <Route path="/admin/uptime-report" element={<PageWrapper Component={Pages.UptimeReport} pageName="UptimeReport" />} />
           <Route path="/admin/team" element={<PageWrapper Component={Pages.TeamPage} pageName="TeamPage" />} />
-          <Route path="/admin/onboarding" element={<PageWrapper Component={Pages.Onboarding} pageName="Onboarding" />} />
+          <Route path="/admin/store-onboarding" element={<PageWrapper Component={Pages.StoreOnboarding} pageName="StoreOnboarding" />} />
           <Route path="/admin/ai-context-window" element={<PageWrapper Component={Pages.AIContextWindow} pageName="AIContextWindow" />} />
           <Route path="/admin/translations" element={<PageWrapper Component={Pages.Translations} pageName="Translations" />} />
           <Route path="/admin/ai-studio" element={<PageWrapper Component={Pages.AIStudio} pageName="AIStudio" />} />
