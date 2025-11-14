@@ -152,40 +152,68 @@ router.post('/:id/connect-database', authMiddleware, async (req, res) => {
         const { getRedisClient } = require('../config/redis');
         const redisClient = getRedisClient();
 
+        console.log('🔍 Redis client available:', !!redisClient);
+
         if (redisClient) {
           const redisKey = `oauth:pending:${storeId}`;
+          console.log('🔍 Checking Redis key:', redisKey);
+
           const tokenDataStr = await redisClient.get(redisKey);
+          console.log('🔍 Redis get result:', tokenDataStr ? 'found' : 'not found');
 
           if (tokenDataStr) {
             oauthToken = JSON.parse(tokenDataStr);
-            console.log('✅ OAuth tokens retrieved from Redis');
+            console.log('✅ OAuth tokens retrieved from Redis:', {
+              has_access_token: !!oauthToken.access_token,
+              has_project_url: !!oauthToken.project_url,
+              has_service_role_key: !!oauthToken.service_role_key
+            });
+          } else {
+            console.log('❌ No data found in Redis for key:', redisKey);
           }
+        } else {
+          console.log('❌ Redis client not available');
         }
       } catch (redisError) {
-        console.log('Redis retrieval failed:', redisError.message);
+        console.error('❌ Redis retrieval error:', redisError.message);
       }
 
       // Check memory fallback
+      console.log('🔍 Checking memory fallback...');
+      console.log('  global.pendingOAuthTokens exists:', !!global.pendingOAuthTokens);
+      if (global.pendingOAuthTokens) {
+        console.log('  Map size:', global.pendingOAuthTokens.size);
+        console.log('  Has storeId?', global.pendingOAuthTokens.has(storeId));
+      }
+
       if (!oauthToken && global.pendingOAuthTokens && global.pendingOAuthTokens.has(storeId)) {
         oauthToken = global.pendingOAuthTokens.get(storeId);
         console.log('✅ OAuth tokens retrieved from memory (fallback)');
       }
 
       if (!oauthToken) {
+        console.error('❌ No OAuth token found in Redis OR memory for storeId:', storeId);
         return res.status(400).json({
           success: false,
-          error: 'No OAuth connection found. Please connect your Supabase account first.'
+          error: 'No OAuth connection found. Please connect your Supabase account first. Try OAuth again.'
         });
       }
 
+      console.log('✅ OAuth token retrieved:', {
+        project_url: oauthToken.project_url,
+        has_access_token: !!oauthToken.access_token,
+        has_service_role_key: !!oauthToken.service_role_key
+      });
+
       projectUrl = oauthToken.project_url;
-      serviceRoleKey = oauthToken.service_role_key;
+      serviceRoleKey = oauthToken.service_role_key || null; // Can be null for OAuth mode
       anonKey = oauthToken.anon_key;
       oauthAccessToken = oauthToken.access_token; // For running migrations via API
 
       // Extract project ID from project URL
       if (projectUrl) {
         projectId = new URL(projectUrl).hostname.split('.')[0];
+        console.log('📍 Project ID extracted:', projectId);
       }
 
       // If auto-provisioning, use OAuth API - no connection string needed
@@ -283,28 +311,29 @@ router.post('/:id/connect-database', authMiddleware, async (req, res) => {
       }
     }
 
-    const credentials = {
-      projectUrl,
-      serviceRoleKey: serviceRoleKey || 'oauth-mode', // Placeholder for OAuth mode
-      anonKey,
-      connectionString: connectionString || 'oauth-api-mode' // Placeholder for OAuth API mode
-    };
+    // For auto-provision OAuth mode, skip database credential storage
+    // We'll use the Management API which doesn't need database connection
+    let storeDb = null;
+    let tenantDb = null;
 
-    console.log('Creating StoreDatabase record with credentials:', {
-      projectUrl: credentials.projectUrl,
-      hasServiceRoleKey: !!serviceRoleKey,
-      hasConnectionString: !!connectionString,
-      mode: autoProvision ? 'OAuth API' : 'Direct PostgreSQL'
-    });
-
-    const storeDb = await StoreDatabase.createWithCredentials(
-      storeId,
-      'supabase',
-      credentials
-    );
-
-    // 2. Test connection (skip for auto-provision OAuth mode)
     if (!autoProvision) {
+      // Manual mode - store credentials and create connection
+      const credentials = {
+        projectUrl,
+        serviceRoleKey,
+        anonKey,
+        connectionString
+      };
+
+      console.log('Creating StoreDatabase record with credentials (manual mode)');
+
+      storeDb = await StoreDatabase.createWithCredentials(
+        storeId,
+        'supabase',
+        credentials
+      );
+
+      // Test connection
       const connectionTest = await storeDb.testConnection();
 
       if (!connectionTest) {
@@ -315,16 +344,14 @@ router.post('/:id/connect-database', authMiddleware, async (req, res) => {
           code: 'CONNECTION_FAILED'
         });
       }
-    } else {
-      console.log('⏭️ Skipping connection test - using OAuth API mode');
-    }
 
-    // 3. Get tenant DB connection (or skip if using OAuth API)
-    let tenantDb = null;
-    if (!autoProvision) {
+      // Get tenant DB connection
       tenantDb = await ConnectionManager.getStoreConnection(storeId);
     } else {
-      console.log('⏭️ Skipping ConnectionManager - using OAuth API for provisioning');
+      // Auto-provision OAuth mode
+      console.log('🚀 Auto-provision OAuth mode - skipping database connection setup');
+      console.log('   Will use Supabase Management API for migrations');
+      console.log('   Database credentials will be saved after provisioning succeeds');
     }
 
     // 4. Provision tenant database (create tables, seed data)
