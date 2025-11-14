@@ -50,15 +50,28 @@ export default function StoreOnboarding() {
     setError('');
 
     try {
+      console.log('Creating store with name:', storeData.name);
       const response = await apiClient.post('/stores', { name: storeData.name });
-      if (response.success) {
+      console.log('Store creation response:', response);
+
+      // Check if response has success property
+      if (response && response.success) {
+        console.log('Store created successfully, ID:', response.data.store.id);
+        setStoreId(response.data.store.id);
+        setCompletedSteps([1]);
+        setCurrentStep(2);
+      } else if (response && response.data && response.data.store && response.data.store.id) {
+        // Fallback: Response might not have success at top level
+        console.log('Store created (fallback check), ID:', response.data.store.id);
         setStoreId(response.data.store.id);
         setCompletedSteps([1]);
         setCurrentStep(2);
       } else {
-        setError(response.error || 'Failed to create store');
+        console.error('Unexpected response format:', response);
+        setError(response?.error || response?.message || 'Failed to create store');
       }
     } catch (err) {
+      console.error('Store creation error:', err);
       setError(err.message || 'Failed to create store');
     } finally {
       setLoading(false);
