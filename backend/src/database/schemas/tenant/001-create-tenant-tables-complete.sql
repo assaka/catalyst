@@ -7370,266 +7370,266 @@ GROUP BY vh.id;
 --
 -- Name: plugin_admin_pages plugin_admin_pages_updated_at; Type: TRIGGER; Schema: public; Owner: postgres
 --
-
-CREATE TRIGGER plugin_admin_pages_updated_at BEFORE UPDATE ON plugin_admin_pages FOR EACH ROW EXECUTE FUNCTION update_plugin_admin_pages_timestamp();
-
-
 --
--- Name: plugin_admin_scripts plugin_admin_scripts_updated_at; Type: TRIGGER; Schema: public; Owner: postgres
+-- CREATE TRIGGER plugin_admin_pages_updated_at BEFORE UPDATE ON plugin_admin_pages FOR EACH ROW EXECUTE FUNCTION update_plugin_admin_pages_timestamp();
 --
-
-CREATE TRIGGER plugin_admin_scripts_updated_at BEFORE UPDATE ON plugin_admin_scripts FOR EACH ROW EXECUTE FUNCTION update_plugin_admin_scripts_timestamp();
-
-
 --
--- Name: plugin_version_history trigger_auto_increment_snapshot_distance; Type: TRIGGER; Schema: public; Owner: postgres
+-- --
+-- -- Name: plugin_admin_scripts plugin_admin_scripts_updated_at; Type: TRIGGER; Schema: public; Owner: postgres
+-- --
 --
-
-CREATE TRIGGER trigger_auto_increment_snapshot_distance BEFORE INSERT ON plugin_version_history FOR EACH ROW EXECUTE FUNCTION auto_increment_snapshot_distance();
-
-
+-- CREATE TRIGGER plugin_admin_scripts_updated_at BEFORE UPDATE ON plugin_admin_scripts FOR EACH ROW EXECUTE FUNCTION update_plugin_admin_scripts_timestamp();
 --
--- Name: plugin_version_history trigger_ensure_single_current_version; Type: TRIGGER; Schema: public; Owner: postgres
 --
-
-CREATE TRIGGER trigger_ensure_single_current_version BEFORE INSERT OR UPDATE ON plugin_version_history FOR EACH ROW EXECUTE FUNCTION ensure_single_current_version();
-
-
+-- --
+-- -- Name: plugin_version_history trigger_auto_increment_snapshot_distance; Type: TRIGGER; Schema: public; Owner: postgres
+-- --
 --
--- Name: cms_blocks trigger_update_cms_blocks_updated_at; Type: TRIGGER; Schema: public; Owner: postgres
+-- CREATE TRIGGER trigger_auto_increment_snapshot_distance BEFORE INSERT ON plugin_version_history FOR EACH ROW EXECUTE FUNCTION auto_increment_snapshot_distance();
 --
-
-CREATE TRIGGER trigger_update_cms_blocks_updated_at BEFORE UPDATE ON cms_blocks FOR EACH ROW EXECUTE FUNCTION update_cms_blocks_updated_at();
-
 --
--- Name: ab_test_variants update_ab_test_variants_updated_at; Type: TRIGGER; Schema: public; Owner: postgres
+-- --
+-- -- Name: plugin_version_history trigger_ensure_single_current_version; Type: TRIGGER; Schema: public; Owner: postgres
+-- --
 --
-
-CREATE TRIGGER update_ab_test_variants_updated_at BEFORE UPDATE ON ab_test_variants FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
-
-
+-- CREATE TRIGGER trigger_ensure_single_current_version BEFORE INSERT OR UPDATE ON plugin_version_history FOR EACH ROW EXECUTE FUNCTION ensure_single_current_version();
 --
--- Name: attribute_sets update_attribute_sets_updated_at; Type: TRIGGER; Schema: public; Owner: postgres
 --
-
-CREATE TRIGGER update_attribute_sets_updated_at BEFORE UPDATE ON attribute_sets FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
-
-
+-- --
+-- -- Name: cms_blocks trigger_update_cms_blocks_updated_at; Type: TRIGGER; Schema: public; Owner: postgres
+-- --
 --
--- Name: attributes update_attributes_updated_at; Type: TRIGGER; Schema: public; Owner: postgres
+-- CREATE TRIGGER trigger_update_cms_blocks_updated_at BEFORE UPDATE ON cms_blocks FOR EACH ROW EXECUTE FUNCTION update_cms_blocks_updated_at();
 --
-
-CREATE TRIGGER update_attributes_updated_at BEFORE UPDATE ON attributes FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
-
-
+-- --
+-- -- Name: ab_test_variants update_ab_test_variants_updated_at; Type: TRIGGER; Schema: public; Owner: postgres
+-- --
 --
--- Name: brevo_configurations update_brevo_configurations_updated_at; Type: TRIGGER; Schema: public; Owner: postgres
+-- CREATE TRIGGER update_ab_test_variants_updated_at BEFORE UPDATE ON ab_test_variants FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 --
-
-CREATE TRIGGER update_brevo_configurations_updated_at BEFORE UPDATE ON brevo_configurations FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
-
-
 --
--- Name: cms_pages update_cms_pages_updated_at; Type: TRIGGER; Schema: public; Owner: postgres
+-- --
+-- -- Name: attribute_sets update_attribute_sets_updated_at; Type: TRIGGER; Schema: public; Owner: postgres
+-- --
 --
-
-CREATE TRIGGER update_cms_pages_updated_at BEFORE UPDATE ON cms_pages FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
-
-
+-- CREATE TRIGGER update_attribute_sets_updated_at BEFORE UPDATE ON attribute_sets FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 --
--- Name: coupons update_coupons_updated_at; Type: TRIGGER; Schema: public; Owner: postgres
 --
-
-CREATE TRIGGER update_coupons_updated_at BEFORE UPDATE ON coupons FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
-
-
+-- --
+-- -- Name: attributes update_attributes_updated_at; Type: TRIGGER; Schema: public; Owner: postgres
+-- --
 --
--- Name: credit_pricing update_credit_pricing_updated_at; Type: TRIGGER; Schema: public; Owner: postgres
+-- CREATE TRIGGER update_attributes_updated_at BEFORE UPDATE ON attributes FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 --
-
-CREATE TRIGGER update_credit_pricing_updated_at BEFORE UPDATE ON credit_pricing FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
-
-
 --
--- Name: credit_transactions update_credit_transactions_updated_at; Type: TRIGGER; Schema: public; Owner: postgres
+-- --
+-- -- Name: brevo_configurations update_brevo_configurations_updated_at; Type: TRIGGER; Schema: public; Owner: postgres
+-- --
 --
-
-CREATE TRIGGER update_credit_transactions_updated_at BEFORE UPDATE ON credit_transactions FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
-
-
+-- CREATE TRIGGER update_brevo_configurations_updated_at BEFORE UPDATE ON brevo_configurations FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 --
--- Name: cron_jobs update_cron_jobs_updated_at; Type: TRIGGER; Schema: public; Owner: postgres
 --
-
-CREATE TRIGGER update_cron_jobs_updated_at BEFORE UPDATE ON cron_jobs FOR EACH ROW EXECUTE FUNCTION update_cron_jobs_updated_at();
-
-
+-- --
+-- -- Name: cms_pages update_cms_pages_updated_at; Type: TRIGGER; Schema: public; Owner: postgres
+-- --
 --
--- Name: custom_option_rules update_custom_option_rules_updated_at; Type: TRIGGER; Schema: public; Owner: postgres
+-- CREATE TRIGGER update_cms_pages_updated_at BEFORE UPDATE ON cms_pages FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 --
-
-CREATE TRIGGER update_custom_option_rules_updated_at BEFORE UPDATE ON custom_option_rules FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
-
-
 --
--- Name: customers update_customers_updated_at; Type: TRIGGER; Schema: public; Owner: postgres
+-- --
+-- -- Name: coupons update_coupons_updated_at; Type: TRIGGER; Schema: public; Owner: postgres
+-- --
 --
-
-CREATE TRIGGER update_customers_updated_at BEFORE UPDATE ON customers FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
-
-
+-- CREATE TRIGGER update_coupons_updated_at BEFORE UPDATE ON coupons FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 --
--- Name: delivery_settings update_delivery_settings_updated_at; Type: TRIGGER; Schema: public; Owner: postgres
 --
-
-CREATE TRIGGER update_delivery_settings_updated_at BEFORE UPDATE ON delivery_settings FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
-
-
+-- --
+-- -- Name: credit_pricing update_credit_pricing_updated_at; Type: TRIGGER; Schema: public; Owner: postgres
+-- --
 --
--- Name: email_send_logs update_email_send_logs_updated_at; Type: TRIGGER; Schema: public; Owner: postgres
+-- CREATE TRIGGER update_credit_pricing_updated_at BEFORE UPDATE ON credit_pricing FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 --
-
-CREATE TRIGGER update_email_send_logs_updated_at BEFORE UPDATE ON email_send_logs FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
-
-
 --
--- Name: email_template_translations update_email_template_translations_updated_at; Type: TRIGGER; Schema: public; Owner: postgres
+-- --
+-- -- Name: credit_transactions update_credit_transactions_updated_at; Type: TRIGGER; Schema: public; Owner: postgres
+-- --
 --
-
-CREATE TRIGGER update_email_template_translations_updated_at BEFORE UPDATE ON email_template_translations FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
-
-
+-- CREATE TRIGGER update_credit_transactions_updated_at BEFORE UPDATE ON credit_transactions FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 --
--- Name: email_templates update_email_templates_updated_at; Type: TRIGGER; Schema: public; Owner: postgres
 --
-
-CREATE TRIGGER update_email_templates_updated_at BEFORE UPDATE ON email_templates FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
-
-
+-- --
+-- -- Name: cron_jobs update_cron_jobs_updated_at; Type: TRIGGER; Schema: public; Owner: postgres
+-- --
 --
--- Name: heatmap_aggregations update_heatmap_aggregations_timestamp; Type: TRIGGER; Schema: public; Owner: postgres
+-- CREATE TRIGGER update_cron_jobs_updated_at BEFORE UPDATE ON cron_jobs FOR EACH ROW EXECUTE FUNCTION update_cron_jobs_updated_at();
 --
-
-CREATE TRIGGER update_heatmap_aggregations_timestamp BEFORE UPDATE ON heatmap_aggregations FOR EACH ROW EXECUTE FUNCTION update_heatmap_timestamp();
-
-
 --
--- Name: heatmap_interactions update_heatmap_interactions_timestamp; Type: TRIGGER; Schema: public; Owner: postgres
+-- --
+-- -- Name: custom_option_rules update_custom_option_rules_updated_at; Type: TRIGGER; Schema: public; Owner: postgres
+-- --
 --
-
-CREATE TRIGGER update_heatmap_interactions_timestamp BEFORE UPDATE ON heatmap_interactions FOR EACH ROW EXECUTE FUNCTION update_heatmap_timestamp();
-
-
+-- CREATE TRIGGER update_custom_option_rules_updated_at BEFORE UPDATE ON custom_option_rules FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 --
--- Name: heatmap_sessions update_heatmap_sessions_timestamp; Type: TRIGGER; Schema: public; Owner: postgres
 --
-
-CREATE TRIGGER update_heatmap_sessions_timestamp BEFORE UPDATE ON heatmap_sessions FOR EACH ROW EXECUTE FUNCTION update_heatmap_timestamp();
-
-
+-- --
+-- -- Name: customers update_customers_updated_at; Type: TRIGGER; Schema: public; Owner: postgres
+-- --
 --
--- Name: jobs update_jobs_updated_at; Type: TRIGGER; Schema: public; Owner: postgres
+-- CREATE TRIGGER update_customers_updated_at BEFORE UPDATE ON customers FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 --
-
-CREATE TRIGGER update_jobs_updated_at BEFORE UPDATE ON jobs FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
-
-
 --
--- Name: admin_navigation_config update_navigation_config_updated_at; Type: TRIGGER; Schema: public; Owner: postgres
+-- --
+-- -- Name: delivery_settings update_delivery_settings_updated_at; Type: TRIGGER; Schema: public; Owner: postgres
+-- --
 --
-
-CREATE TRIGGER update_navigation_config_updated_at BEFORE UPDATE ON admin_navigation_config FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
-
-
+-- CREATE TRIGGER update_delivery_settings_updated_at BEFORE UPDATE ON delivery_settings FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 --
--- Name: pdf_template_translations update_pdf_template_translations_updated_at; Type: TRIGGER; Schema: public; Owner: postgres
 --
-
-CREATE TRIGGER update_pdf_template_translations_updated_at BEFORE UPDATE ON pdf_template_translations FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
-
-
+-- --
+-- -- Name: email_send_logs update_email_send_logs_updated_at; Type: TRIGGER; Schema: public; Owner: postgres
+-- --
 --
--- Name: plugin_data update_plugin_data_updated_at; Type: TRIGGER; Schema: public; Owner: postgres
+-- CREATE TRIGGER update_email_send_logs_updated_at BEFORE UPDATE ON email_send_logs FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 --
-
-CREATE TRIGGER update_plugin_data_updated_at BEFORE UPDATE ON plugin_data FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
-
-
 --
--- Name: plugin_events update_plugin_events_updated_at; Type: TRIGGER; Schema: public; Owner: postgres
+-- --
+-- -- Name: email_template_translations update_email_template_translations_updated_at; Type: TRIGGER; Schema: public; Owner: postgres
+-- --
 --
-
-CREATE TRIGGER update_plugin_events_updated_at BEFORE UPDATE ON plugin_events FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
-
-
+-- CREATE TRIGGER update_email_template_translations_updated_at BEFORE UPDATE ON email_template_translations FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 --
--- Name: plugin_hooks update_plugin_hooks_updated_at; Type: TRIGGER; Schema: public; Owner: postgres
 --
-
-CREATE TRIGGER update_plugin_hooks_updated_at BEFORE UPDATE ON plugin_hooks FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
-
-
+-- --
+-- -- Name: email_templates update_email_templates_updated_at; Type: TRIGGER; Schema: public; Owner: postgres
+-- --
 --
--- Name: plugin_scripts update_plugin_scripts_updated_at; Type: TRIGGER; Schema: public; Owner: postgres
+-- CREATE TRIGGER update_email_templates_updated_at BEFORE UPDATE ON email_templates FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 --
-
-CREATE TRIGGER update_plugin_scripts_updated_at BEFORE UPDATE ON plugin_scripts FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
-
-
 --
--- Name: products update_products_updated_at; Type: TRIGGER; Schema: public; Owner: postgres
+-- --
+-- -- Name: heatmap_aggregations update_heatmap_aggregations_timestamp; Type: TRIGGER; Schema: public; Owner: postgres
+-- --
 --
-
-CREATE TRIGGER update_products_updated_at BEFORE UPDATE ON products FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
-
-
+-- CREATE TRIGGER update_heatmap_aggregations_timestamp BEFORE UPDATE ON heatmap_aggregations FOR EACH ROW EXECUTE FUNCTION update_heatmap_timestamp();
 --
--- Name: redirects update_redirects_updated_at; Type: TRIGGER; Schema: public; Owner: postgres
 --
-
-CREATE TRIGGER update_redirects_updated_at BEFORE UPDATE ON redirects FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
-
-
+-- --
+-- -- Name: heatmap_interactions update_heatmap_interactions_timestamp; Type: TRIGGER; Schema: public; Owner: postgres
+-- --
 --
--- Name: shipping_methods update_shipping_methods_updated_at; Type: TRIGGER; Schema: public; Owner: postgres
+-- CREATE TRIGGER update_heatmap_interactions_timestamp BEFORE UPDATE ON heatmap_interactions FOR EACH ROW EXECUTE FUNCTION update_heatmap_timestamp();
 --
-
-CREATE TRIGGER update_shipping_methods_updated_at BEFORE UPDATE ON shipping_methods FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
-
-
 --
--- Name: shopify_oauth_tokens update_shopify_oauth_tokens_updated_at; Type: TRIGGER; Schema: public; Owner: postgres
+-- --
+-- -- Name: heatmap_sessions update_heatmap_sessions_timestamp; Type: TRIGGER; Schema: public; Owner: postgres
+-- --
 --
-
-CREATE TRIGGER update_shopify_oauth_tokens_updated_at BEFORE UPDATE ON shopify_oauth_tokens FOR EACH ROW EXECUTE FUNCTION update_shopify_oauth_tokens_updated_at();
-
-
+-- CREATE TRIGGER update_heatmap_sessions_timestamp BEFORE UPDATE ON heatmap_sessions FOR EACH ROW EXECUTE FUNCTION update_heatmap_timestamp();
 --
--- Name: stores update_stores_updated_at; Type: TRIGGER; Schema: public; Owner: postgres
 --
-
-CREATE TRIGGER update_stores_updated_at BEFORE UPDATE ON stores FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
-
-
+-- --
+-- -- Name: jobs update_jobs_updated_at; Type: TRIGGER; Schema: public; Owner: postgres
+-- --
 --
--- Name: supabase_oauth_tokens update_supabase_oauth_tokens_updated_at; Type: TRIGGER; Schema: public; Owner: postgres
+-- CREATE TRIGGER update_jobs_updated_at BEFORE UPDATE ON jobs FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 --
-
-CREATE TRIGGER update_supabase_oauth_tokens_updated_at BEFORE UPDATE ON supabase_oauth_tokens FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
-
-
 --
--- Name: taxes update_taxes_updated_at; Type: TRIGGER; Schema: public; Owner: postgres
+-- --
+-- -- Name: admin_navigation_config update_navigation_config_updated_at; Type: TRIGGER; Schema: public; Owner: postgres
+-- --
 --
-
-CREATE TRIGGER update_taxes_updated_at BEFORE UPDATE ON taxes FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
-
-
+-- CREATE TRIGGER update_navigation_config_updated_at BEFORE UPDATE ON admin_navigation_config FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 --
--- Name: users update_users_updated_at; Type: TRIGGER; Schema: public; Owner: postgres
 --
-
-CREATE TRIGGER update_users_updated_at BEFORE UPDATE ON users FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+-- --
+-- -- Name: pdf_template_translations update_pdf_template_translations_updated_at; Type: TRIGGER; Schema: public; Owner: postgres
+-- --
+--
+-- CREATE TRIGGER update_pdf_template_translations_updated_at BEFORE UPDATE ON pdf_template_translations FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+--
+--
+-- --
+-- -- Name: plugin_data update_plugin_data_updated_at; Type: TRIGGER; Schema: public; Owner: postgres
+-- --
+--
+-- CREATE TRIGGER update_plugin_data_updated_at BEFORE UPDATE ON plugin_data FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+--
+--
+-- --
+-- -- Name: plugin_events update_plugin_events_updated_at; Type: TRIGGER; Schema: public; Owner: postgres
+-- --
+--
+-- CREATE TRIGGER update_plugin_events_updated_at BEFORE UPDATE ON plugin_events FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+--
+--
+-- --
+-- -- Name: plugin_hooks update_plugin_hooks_updated_at; Type: TRIGGER; Schema: public; Owner: postgres
+-- --
+--
+-- CREATE TRIGGER update_plugin_hooks_updated_at BEFORE UPDATE ON plugin_hooks FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+--
+--
+-- --
+-- -- Name: plugin_scripts update_plugin_scripts_updated_at; Type: TRIGGER; Schema: public; Owner: postgres
+-- --
+--
+-- CREATE TRIGGER update_plugin_scripts_updated_at BEFORE UPDATE ON plugin_scripts FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+--
+--
+-- --
+-- -- Name: products update_products_updated_at; Type: TRIGGER; Schema: public; Owner: postgres
+-- --
+--
+-- CREATE TRIGGER update_products_updated_at BEFORE UPDATE ON products FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+--
+--
+-- --
+-- -- Name: redirects update_redirects_updated_at; Type: TRIGGER; Schema: public; Owner: postgres
+-- --
+--
+-- CREATE TRIGGER update_redirects_updated_at BEFORE UPDATE ON redirects FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+--
+--
+-- --
+-- -- Name: shipping_methods update_shipping_methods_updated_at; Type: TRIGGER; Schema: public; Owner: postgres
+-- --
+--
+-- CREATE TRIGGER update_shipping_methods_updated_at BEFORE UPDATE ON shipping_methods FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+--
+--
+-- --
+-- -- Name: shopify_oauth_tokens update_shopify_oauth_tokens_updated_at; Type: TRIGGER; Schema: public; Owner: postgres
+-- --
+--
+-- CREATE TRIGGER update_shopify_oauth_tokens_updated_at BEFORE UPDATE ON shopify_oauth_tokens FOR EACH ROW EXECUTE FUNCTION update_shopify_oauth_tokens_updated_at();
+--
+--
+-- --
+-- -- Name: stores update_stores_updated_at; Type: TRIGGER; Schema: public; Owner: postgres
+-- --
+--
+-- CREATE TRIGGER update_stores_updated_at BEFORE UPDATE ON stores FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+--
+--
+-- --
+-- -- Name: supabase_oauth_tokens update_supabase_oauth_tokens_updated_at; Type: TRIGGER; Schema: public; Owner: postgres
+-- --
+--
+-- CREATE TRIGGER update_supabase_oauth_tokens_updated_at BEFORE UPDATE ON supabase_oauth_tokens FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+--
+--
+-- --
+-- -- Name: taxes update_taxes_updated_at; Type: TRIGGER; Schema: public; Owner: postgres
+-- --
+--
+-- CREATE TRIGGER update_taxes_updated_at BEFORE UPDATE ON taxes FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+--
+--
+-- --
+-- -- Name: users update_users_updated_at; Type: TRIGGER; Schema: public; Owner: postgres
+-- --
+--
+-- CREATE TRIGGER update_users_updated_at BEFORE UPDATE ON users FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
 
 --
