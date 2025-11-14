@@ -7074,28 +7074,6 @@ CREATE INDEX pdf_templates_store_id ON pdf_templates USING btree (store_id);
 
 CREATE INDEX pdf_templates_template_type ON pdf_templates USING btree (template_type);
 
-
---
--- Name: platform_admins_is_active; Type: INDEX; Schema: public; Owner: postgres
---
-
-CREATE INDEX platform_admins_is_active ON platform_admins USING btree (is_active);
-
-
---
--- Name: platform_admins_role; Type: INDEX; Schema: public; Owner: postgres
---
-
-CREATE INDEX platform_admins_role ON platform_admins USING btree (role);
-
-
---
--- Name: platform_admins_user_id; Type: INDEX; Schema: public; Owner: postgres
---
-
-CREATE UNIQUE INDEX platform_admins_user_id ON platform_admins USING btree (user_id);
-
-
 --
 -- Name: plugin_configurations_health_status; Type: INDEX; Schema: public; Owner: postgres
 --
