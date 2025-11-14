@@ -270,7 +270,7 @@ router.post('/disconnect', authMiddleware, async (req, res) => {
     }
 
     // Remove stored credentials
-    const { SupabaseOAuthToken } = require('../models/master');
+    const SupabaseOAuthToken = require('../models/SupabaseOAuthToken');
     await SupabaseOAuthToken.destroy({
       where: { store_id }
     });

@@ -1,8 +1,8 @@
 const { DataTypes } = require('sequelize');
-const { masterSequelize } = require('../database/masterConnection');
+const { sequelize } = require('../database/connection');
 const crypto = require('crypto');
 
-const SupabaseOAuthToken = masterSequelize.define('SupabaseOAuthToken', {
+const SupabaseOAuthToken = sequelize.define('SupabaseOAuthToken', {
   id: {
     type: DataTypes.UUID,
     defaultValue: DataTypes.UUIDV4,

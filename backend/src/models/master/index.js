@@ -11,7 +11,6 @@ const StoreDatabase = require('./StoreDatabase');
 const StoreHostname = require('./StoreHostname');
 const CreditBalance = require('./CreditBalance');
 const CreditTransaction = require('./CreditTransaction');
-const SupabaseOAuthToken = require('../SupabaseOAuthToken');
 
 // Define associations
 function setupMasterAssociations() {
@@ -74,16 +73,6 @@ function setupMasterAssociations() {
     foreignKey: 'processed_by',
     as: 'processor'
   });
-
-  // Store → Supabase OAuth Token (one-to-one)
-  MasterStore.hasOne(SupabaseOAuthToken, {
-    foreignKey: 'store_id',
-    as: 'supabaseOAuth'
-  });
-  SupabaseOAuthToken.belongsTo(MasterStore, {
-    foreignKey: 'store_id',
-    as: 'store'
-  });
 }
 
 // Setup associations
@@ -97,6 +86,5 @@ module.exports = {
   StoreHostname,
   CreditBalance,
   CreditTransaction,
-  SupabaseOAuthToken,
   setupMasterAssociations
 };

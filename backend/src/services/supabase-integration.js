@@ -1,7 +1,7 @@
 const { createClient } = require('@supabase/supabase-js');
 const axios = require('axios');
 const { IntegrationConfig } = require('../models');
-const { SupabaseOAuthToken } = require('../models/master'); // OAuth tokens are in master DB
+const SupabaseOAuthToken = require('../models/SupabaseOAuthToken'); // OAuth tokens in tenant DB
 const SupabaseProjectKeys = require('../models/SupabaseProjectKeys');
 const supabaseStorage = require('./supabase-storage');
 
@@ -198,21 +198,49 @@ class SupabaseIntegration {
       });
 
       try {
-        // Ensure all required fields have valid values
-        const saveData = {
-          access_token: tokenData.access_token,
-          refresh_token: tokenData.refresh_token,
-          expires_at: tokenData.expires_at,
-          project_url: tokenData.project_url || 'https://pending-configuration.supabase.co',
-          anon_key: null,  // No longer used, set to null,
-          service_role_key: tokenData.service_role_key || null,
-          database_url: tokenData.database_url || null,
-          storage_url: tokenData.storage_url || null,
-          auth_url: tokenData.auth_url || null
-        };
-        
-        await SupabaseOAuthToken.createOrUpdate(storeId, saveData);
-        console.log('✅ Token saved successfully');
+        // Check if tenant DB exists before trying to save
+        const { MasterStore } = require('../models/master');
+        const store = await MasterStore.findByPk(storeId);
+
+        if (store && store.status === 'pending_database') {
+          console.log('⏭️ Skipping OAuth token save - tenant DB not provisioned yet');
+          console.log('   Tokens will be saved after tenant database provisioning completes');
+
+          // Store OAuth data temporarily for later use
+          if (!global.pendingOAuthTokens) {
+            global.pendingOAuthTokens = new Map();
+          }
+
+          global.pendingOAuthTokens.set(storeId, {
+            access_token: tokenData.access_token,
+            refresh_token: tokenData.refresh_token,
+            expires_at: tokenData.expires_at,
+            project_url: tokenData.project_url || 'https://pending-configuration.supabase.co',
+            anon_key: null,
+            service_role_key: tokenData.service_role_key || null,
+            database_url: tokenData.database_url || null,
+            storage_url: tokenData.storage_url || null,
+            auth_url: tokenData.auth_url || null
+          });
+
+          console.log('✅ OAuth tokens stored in memory for post-provisioning save');
+        } else {
+          // Store is already active, save to tenant DB
+          const saveData = {
+            access_token: tokenData.access_token,
+            refresh_token: tokenData.refresh_token,
+            expires_at: tokenData.expires_at,
+            project_url: tokenData.project_url || 'https://pending-configuration.supabase.co',
+            anon_key: null,  // No longer used, set to null,
+            service_role_key: tokenData.service_role_key || null,
+            database_url: tokenData.database_url || null,
+            storage_url: tokenData.storage_url || null,
+            auth_url: tokenData.auth_url || null
+          };
+
+          await SupabaseOAuthToken.createOrUpdate(storeId, saveData);
+          console.log('✅ Token saved to tenant database successfully');
+        }
       } catch (dbError) {
         console.error('Database save error:', {
           error: dbError.message,
@@ -225,9 +253,12 @@ class SupabaseIntegration {
             project_url: tokenData.project_url
           }
         });
-        
-        // If it's a validation error but we have tokens, continue anyway
-        if (dbError.name === 'SequelizeValidationError' && tokenData.access_token && tokenData.refresh_token) {
+
+        // If it's a connection error and store is pending, that's expected - skip save
+        if (dbError.name === 'SequelizeConnectionError' && dbError.message.includes('Tenant or user not found')) {
+          console.log('⏭️ Skipping token save - tenant database not provisioned yet');
+          // Don't throw, continue
+        } else if (dbError.name === 'SequelizeValidationError' && tokenData.access_token && tokenData.refresh_token) {
           console.log('Ignoring validation error since we have valid tokens - connection will work');
           // Don't throw, continue to save IntegrationConfig
         } else {

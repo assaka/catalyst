@@ -135,7 +135,7 @@ router.post('/:id/connect-database', authMiddleware, async (req, res) => {
     // If using OAuth, get credentials from OAuth token
     if (useOAuth) {
       console.log('Using OAuth credentials for store:', storeId);
-      const { SupabaseOAuthToken } = require('../models/master');
+      const SupabaseOAuthToken = require('../models/SupabaseOAuthToken');
       const oauthToken = await SupabaseOAuthToken.findOne({ where: { store_id: storeId } });
 
       if (!oauthToken) {
@@ -275,7 +275,39 @@ router.post('/:id/connect-database', authMiddleware, async (req, res) => {
       sslEnabled: true
     });
 
-    // 6. Activate store
+    // 6. Save OAuth tokens to tenant DB (if from OAuth flow)
+    if (useOAuth && global.pendingOAuthTokens && global.pendingOAuthTokens.has(storeId)) {
+      try {
+        console.log('💾 Saving OAuth tokens to tenant database post-provisioning...');
+        const oauthData = global.pendingOAuthTokens.get(storeId);
+
+        // Use tenant DB connection to save OAuth tokens
+        const { data: savedToken, error: tokenError } = await tenantDb
+          .from('supabase_oauth_tokens')
+          .insert({
+            id: require('uuid').v4(),
+            store_id: storeId,
+            ...oauthData,
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString()
+          })
+          .select()
+          .single();
+
+        if (tokenError) {
+          console.warn('⚠️ Failed to save OAuth tokens to tenant DB:', tokenError.message);
+        } else {
+          console.log('✅ OAuth tokens saved to tenant database');
+          // Clean up from memory
+          global.pendingOAuthTokens.delete(storeId);
+        }
+      } catch (oauthSaveError) {
+        console.warn('⚠️ Error saving OAuth tokens:', oauthSaveError.message);
+        // Non-blocking - continue with activation
+      }
+    }
+
+    // 7. Activate store
     await store.completeProvisioning();
 
     res.json({
