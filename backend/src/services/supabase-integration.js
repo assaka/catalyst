@@ -211,7 +211,7 @@ class SupabaseIntegration {
       };
 
       try {
-        const { getRedisClient } = require('../../config/redis');
+        const { getRedisClient } = require('../config/redis');
         const redisClient = getRedisClient();
 
         if (redisClient) {
