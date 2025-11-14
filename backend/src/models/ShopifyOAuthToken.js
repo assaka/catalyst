@@ -1,7 +1,7 @@
 const { DataTypes } = require('sequelize');
-const { sequelize } = require('../database/connection');
+const { masterSequelize } = require('../database/masterConnection');
 
-const ShopifyOAuthToken = sequelize.define('ShopifyOAuthToken', {
+const ShopifyOAuthToken = masterSequelize.define('ShopifyOAuthToken', {
   id: {
     type: DataTypes.UUID,
     defaultValue: DataTypes.UUIDV4,
