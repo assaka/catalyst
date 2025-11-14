@@ -5412,28 +5412,6 @@ CREATE INDEX idx_coupons_is_active ON coupons USING btree (is_active);
 
 CREATE INDEX idx_coupons_store_id ON coupons USING btree (store_id);
 
-
---
--- Name: idx_credit_pricing_active; Type: INDEX; Schema: public; Owner: postgres
---
-
-CREATE INDEX idx_credit_pricing_active ON credit_pricing USING btree (active);
-
-
---
--- Name: idx_credit_pricing_currency; Type: INDEX; Schema: public; Owner: postgres
---
-
-CREATE INDEX idx_credit_pricing_currency ON credit_pricing USING btree (currency);
-
-
---
--- Name: idx_credit_pricing_stripe_price_id; Type: INDEX; Schema: public; Owner: postgres
---
-
-CREATE INDEX idx_credit_pricing_stripe_price_id ON credit_pricing USING btree (stripe_price_id);
-
-
 --
 -- Name: idx_credit_transactions_status; Type: INDEX; Schema: public; Owner: postgres
 --
