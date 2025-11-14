@@ -4662,10 +4662,6 @@ CREATE UNIQUE INDEX canonical_urls_store_id_page_url ON canonical_urls USING btr
 --
 -- Name: category_translations_name_search_idx; Type: INDEX; Schema: public; Owner: postgres
 --
-
-CREATE INDEX category_translations_name_search_idx ON category_translations USING gin (to_tsvector('english'::regconfig, (name)::text));
-
-
 --
 -- Name: cms_blocks_identifier_store_id; Type: INDEX; Schema: public; Owner: postgres
 --
@@ -4676,9 +4672,6 @@ CREATE UNIQUE INDEX cms_blocks_identifier_store_id ON cms_blocks USING btree (id
 --
 -- Name: cms_page_translations_title_search_idx; Type: INDEX; Schema: public; Owner: postgres
 --
-
-CREATE INDEX cms_page_translations_title_search_idx ON cms_page_translations USING gin (to_tsvector('english'::regconfig, (title)::text));
-
 
 --
 -- Name: credit_transactions_status; Type: INDEX; Schema: public; Owner: postgres
@@ -5500,9 +5493,6 @@ CREATE INDEX idx_cron_jobs_store_id ON cron_jobs USING btree (store_id);
 -- Name: idx_cron_jobs_tags; Type: INDEX; Schema: public; Owner: postgres
 --
 
-CREATE INDEX idx_cron_jobs_tags ON cron_jobs USING gin (to_tsvector('english'::regconfig, (tags)::text));
-
-
 --
 -- Name: idx_cron_jobs_user_id; Type: INDEX; Schema: public; Owner: postgres
 --
@@ -5733,49 +5723,6 @@ CREATE INDEX idx_email_templates_identifier ON email_templates USING btree (iden
 
 CREATE INDEX idx_email_templates_store_id ON email_templates USING btree (store_id);
 
-
---
--- Name: idx_file_baselines_path; Type: INDEX; Schema: public; Owner: postgres
---
-
-CREATE INDEX idx_file_baselines_path ON file_baselines USING btree (file_path);
-
-
---
--- Name: idx_file_baselines_version; Type: INDEX; Schema: public; Owner: postgres
---
-
-CREATE INDEX idx_file_baselines_version ON file_baselines USING btree (version);
-
-
---
--- Name: idx_hamid_cart_created_at; Type: INDEX; Schema: public; Owner: postgres
---
-
-CREATE INDEX idx_hamid_cart_created_at ON hamid_cart USING btree (created_at DESC);
-
-
---
--- Name: idx_hamid_cart_session; Type: INDEX; Schema: public; Owner: postgres
---
-
-CREATE INDEX idx_hamid_cart_session ON hamid_cart USING btree (session_id);
-
-
---
--- Name: idx_hamid_cart_user; Type: INDEX; Schema: public; Owner: postgres
---
-
-CREATE INDEX idx_hamid_cart_user ON hamid_cart USING btree (user_id);
-
-
---
--- Name: idx_hamid_cart_visited_at; Type: INDEX; Schema: public; Owner: postgres
---
-
-CREATE INDEX idx_hamid_cart_visited_at ON hamid_cart USING btree (visited_at DESC);
-
-
 --
 -- Name: idx_heatmap_aggregations_lookup; Type: INDEX; Schema: public; Owner: postgres
 --
@@ -5982,10 +5929,6 @@ CREATE INDEX idx_media_assets_store_id ON media_assets USING btree (store_id);
 --
 -- Name: idx_media_assets_tags; Type: INDEX; Schema: public; Owner: postgres
 --
-
-CREATE INDEX idx_media_assets_tags ON media_assets USING gin (tags);
-
-
 --
 -- Name: idx_messages_conversation; Type: INDEX; Schema: public; Owner: postgres
 --
@@ -6059,9 +6002,6 @@ CREATE INDEX idx_parent_version ON slot_configurations USING btree (parent_versi
 --
 -- Name: idx_payment_methods_conditions; Type: INDEX; Schema: public; Owner: postgres
 --
-
-CREATE INDEX idx_payment_methods_conditions ON payment_methods USING gin (conditions);
-
 
 --
 -- Name: idx_payment_methods_payment_flow; Type: INDEX; Schema: public; Owner: postgres
@@ -6382,9 +6322,6 @@ CREATE INDEX idx_plugin_patch_component ON plugin_version_patches USING btree (c
 -- Name: idx_plugin_patch_operations; Type: INDEX; Schema: public; Owner: postgres
 --
 
-CREATE INDEX idx_plugin_patch_operations ON plugin_version_patches USING gin (patch_operations);
-
-
 --
 -- Name: idx_plugin_patch_plugin; Type: INDEX; Schema: public; Owner: postgres
 --
@@ -6472,9 +6409,6 @@ CREATE INDEX idx_plugin_snapshot_created_at ON plugin_version_snapshots USING bt
 --
 -- Name: idx_plugin_snapshot_data; Type: INDEX; Schema: public; Owner: postgres
 --
-
-CREATE INDEX idx_plugin_snapshot_data ON plugin_version_snapshots USING gin (snapshot_data);
-
 
 --
 -- Name: idx_plugin_snapshot_plugin; Type: INDEX; Schema: public; Owner: postgres
@@ -6613,15 +6547,8 @@ CREATE INDEX idx_product_translations_name ON product_translations USING btree (
 -- Name: idx_product_translations_search; Type: INDEX; Schema: public; Owner: postgres
 --
 
-CREATE INDEX idx_product_translations_search ON product_translations USING gin (to_tsvector('english'::regconfig, (((name)::text || ' '::text) || COALESCE(description, ''::text))));
-
-
 --
 -- Name: idx_product_variants_attribute_values; Type: INDEX; Schema: public; Owner: postgres
---
-
-CREATE INDEX idx_product_variants_attribute_values ON product_variants USING gin (attribute_values);
-
 
 --
 -- Name: idx_product_variants_parent; Type: INDEX; Schema: public; Owner: postgres
@@ -6642,13 +6569,6 @@ CREATE INDEX idx_product_variants_variant ON product_variants USING btree (varia
 --
 
 CREATE INDEX idx_products_active_visible ON products USING btree (store_id, status, visibility) WHERE (((status)::text = 'active'::text) AND ((visibility)::text = 'visible'::text));
-
-
---
--- Name: idx_products_category_ids; Type: INDEX; Schema: public; Owner: postgres
---
-
-CREATE INDEX idx_products_category_ids ON products USING gin (category_ids);
 
 
 --
@@ -6754,42 +6674,6 @@ CREATE UNIQUE INDEX idx_redirects_store_from_unique ON redirects USING btree (st
 --
 
 CREATE INDEX idx_redirects_store_id ON redirects USING btree (store_id);
-
-
---
--- Name: idx_service_credit_costs_active; Type: INDEX; Schema: public; Owner: postgres
---
-
-CREATE INDEX idx_service_credit_costs_active ON service_credit_costs USING btree (is_active);
-
-
---
--- Name: idx_service_credit_costs_category; Type: INDEX; Schema: public; Owner: postgres
---
-
-CREATE INDEX idx_service_credit_costs_category ON service_credit_costs USING btree (service_category);
-
-
---
--- Name: idx_service_credit_costs_display_order; Type: INDEX; Schema: public; Owner: postgres
---
-
-CREATE INDEX idx_service_credit_costs_display_order ON service_credit_costs USING btree (display_order);
-
-
---
--- Name: idx_service_credit_costs_key; Type: INDEX; Schema: public; Owner: postgres
---
-
-CREATE INDEX idx_service_credit_costs_key ON service_credit_costs USING btree (service_key);
-
-
---
--- Name: idx_shipping_methods_conditions; Type: INDEX; Schema: public; Owner: postgres
---
-
-CREATE INDEX idx_shipping_methods_conditions ON shipping_methods USING gin (conditions);
-
 
 --
 -- Name: idx_shipping_methods_is_active; Type: INDEX; Schema: public; Owner: postgres
@@ -7343,14 +7227,6 @@ CREATE UNIQUE INDEX product_labels_store_id_slug ON product_labels USING btree (
 
 CREATE UNIQUE INDEX product_tabs_store_id_slug ON product_tabs USING btree (store_id, slug);
 
-
---
--- Name: product_translations_name_search_idx; Type: INDEX; Schema: public; Owner: postgres
---
-
-CREATE INDEX product_translations_name_search_idx ON product_translations USING gin (to_tsvector('english'::regconfig, (name)::text));
-
-
 --
 -- Name: product_variants_parent_product_id; Type: INDEX; Schema: public; Owner: postgres
 --
@@ -7391,35 +7267,6 @@ CREATE UNIQUE INDEX redirects_store_id_from_url ON redirects USING btree (store_
 --
 
 CREATE UNIQUE INDEX seo_templates_store_id_name ON seo_templates USING btree (store_id, name);
-
-
---
--- Name: service_credit_costs_display_order; Type: INDEX; Schema: public; Owner: postgres
---
-
-CREATE INDEX service_credit_costs_display_order ON service_credit_costs USING btree (display_order);
-
-
---
--- Name: service_credit_costs_is_active; Type: INDEX; Schema: public; Owner: postgres
---
-
-CREATE INDEX service_credit_costs_is_active ON service_credit_costs USING btree (is_active);
-
-
---
--- Name: service_credit_costs_service_category; Type: INDEX; Schema: public; Owner: postgres
---
-
-CREATE INDEX service_credit_costs_service_category ON service_credit_costs USING btree (service_category);
-
-
---
--- Name: service_credit_costs_service_key; Type: INDEX; Schema: public; Owner: postgres
---
-
-CREATE INDEX service_credit_costs_service_key ON service_credit_costs USING btree (service_key);
-
 
 --
 -- Name: shopify_oauth_tokens_shop_domain; Type: INDEX; Schema: public; Owner: postgres
@@ -7734,14 +7581,6 @@ CREATE TRIGGER update_cms_pages_updated_at BEFORE UPDATE ON cms_pages FOR EACH R
 --
 
 CREATE TRIGGER update_coupons_updated_at BEFORE UPDATE ON coupons FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
-
-
---
--- Name: credit_pricing update_credit_pricing_updated_at; Type: TRIGGER; Schema: public; Owner: postgres
---
-
-CREATE TRIGGER update_credit_pricing_updated_at BEFORE UPDATE ON credit_pricing FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
-
 
 --
 -- Name: credit_transactions update_credit_transactions_updated_at; Type: TRIGGER; Schema: public; Owner: postgres
