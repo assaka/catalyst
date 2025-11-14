@@ -1082,7 +1082,7 @@ export default function AuthMiddleware({ role = 'store_owner' }) {
             setTimeout(async () => {
               try {
                 // Check if user has any stores
-                const storesResponse = await apiClient.get('/api/stores/mt/dropdown');
+                const storesResponse = await apiClient.get('/stores/dropdown');
 
                 if (storesResponse?.data && storesResponse.data.length === 0) {
                   // No stores - redirect to onboarding

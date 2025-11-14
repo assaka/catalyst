@@ -29,7 +29,7 @@ export function AdminLayoutWrapper({ children }) {
 
     try {
       // Check if user has any stores
-      const response = await apiClient.get('/api/stores/mt/dropdown');
+      const response = await apiClient.get('/stores/dropdown');
 
       if (response?.data && response.data.length === 0) {
         console.log('🔍 No stores found, redirecting to onboarding...');
