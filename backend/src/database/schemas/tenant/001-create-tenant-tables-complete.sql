@@ -871,7 +871,7 @@ CREATE TABLE IF NOT EXISTS attribute_sets (
 
 CREATE TABLE IF NOT EXISTS attribute_translations (
   attribute_id UUID PRIMARY KEY,
-  language_code VARCHAR(10) PRIMARY KEY,
+  language_code VARCHAR(10),
   label VARCHAR(255) NOT NULL,
   description TEXT,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW() NOT NULL,
@@ -880,7 +880,7 @@ CREATE TABLE IF NOT EXISTS attribute_translations (
 
 CREATE TABLE IF NOT EXISTS attribute_value_translations (
   attribute_value_id UUID PRIMARY KEY,
-  language_code VARCHAR(10) PRIMARY KEY,
+  language_code VARCHAR(10),
   value VARCHAR(255) NOT NULL,
   description TEXT,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW() NOT NULL,
@@ -1022,7 +1022,7 @@ CREATE TABLE IF NOT EXISTS categories (
 
 CREATE TABLE IF NOT EXISTS category_seo (
   category_id UUID PRIMARY KEY,
-  language_code VARCHAR(10) PRIMARY KEY,
+  language_code VARCHAR(10),
   meta_title VARCHAR(255),
   meta_description TEXT,
   meta_keywords VARCHAR(500),
@@ -1040,7 +1040,7 @@ CREATE TABLE IF NOT EXISTS category_seo (
 
 CREATE TABLE IF NOT EXISTS category_translations (
   category_id UUID PRIMARY KEY,
-  language_code VARCHAR(10) PRIMARY KEY,
+  language_code VARCHAR(10),
   name VARCHAR(255) NOT NULL,
   description TEXT,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW() NOT NULL,
@@ -1092,7 +1092,7 @@ CREATE TABLE IF NOT EXISTS chat_typing_indicators (
 
 CREATE TABLE IF NOT EXISTS cms_block_translations (
   cms_block_id UUID PRIMARY KEY,
-  language_code VARCHAR(10) PRIMARY KEY,
+  language_code VARCHAR(10),
   title VARCHAR(255),
   content TEXT,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW() NOT NULL,
@@ -1115,7 +1115,7 @@ CREATE TABLE IF NOT EXISTS cms_blocks (
 
 CREATE TABLE IF NOT EXISTS cms_page_seo (
   cms_page_id UUID PRIMARY KEY,
-  language_code VARCHAR(10) PRIMARY KEY,
+  language_code VARCHAR(10),
   meta_title VARCHAR(255),
   meta_description TEXT,
   meta_keywords VARCHAR(500),
@@ -1238,7 +1238,7 @@ CREATE TABLE IF NOT EXISTS cookie_consent_settings_translations (
 
 CREATE TABLE IF NOT EXISTS coupon_translations (
   coupon_id UUID PRIMARY KEY,
-  language_code VARCHAR(10) PRIMARY KEY,
+  language_code VARCHAR(10),
   name VARCHAR(255),
   description TEXT,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW() NOT NULL,
@@ -1810,7 +1810,7 @@ CREATE TABLE IF NOT EXISTS media_assets (
 
 CREATE TABLE IF NOT EXISTS payment_method_translations (
   payment_method_id UUID PRIMARY KEY,
-  language_code VARCHAR(10) PRIMARY KEY,
+  language_code VARCHAR(10),
   name VARCHAR(255) NOT NULL,
   description TEXT,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW() NOT NULL,
@@ -2265,7 +2265,7 @@ CREATE TABLE IF NOT EXISTS product_attribute_values (
 
 CREATE TABLE IF NOT EXISTS product_label_translations (
   product_label_id UUID PRIMARY KEY,
-  language_code VARCHAR(10) PRIMARY KEY,
+  language_code VARCHAR(10),
   name VARCHAR(255),
   text VARCHAR(255) NOT NULL,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW() NOT NULL,
@@ -2291,7 +2291,7 @@ CREATE TABLE IF NOT EXISTS product_labels (
 
 CREATE TABLE IF NOT EXISTS product_seo (
   product_id UUID PRIMARY KEY,
-  language_code VARCHAR(10) PRIMARY KEY,
+  language_code VARCHAR(10),
   meta_title VARCHAR(255),
   meta_description TEXT,
   meta_keywords VARCHAR(500),
@@ -2309,7 +2309,7 @@ CREATE TABLE IF NOT EXISTS product_seo (
 
 CREATE TABLE IF NOT EXISTS product_tab_translations (
   product_tab_id UUID PRIMARY KEY,
-  language_code VARCHAR(10) PRIMARY KEY,
+  language_code VARCHAR(10),
   name VARCHAR(255) NOT NULL,
   content TEXT,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW() NOT NULL,
@@ -2534,7 +2534,7 @@ CREATE TABLE IF NOT EXISTS seo_templates (
 
 CREATE TABLE IF NOT EXISTS shipping_method_translations (
   shipping_method_id UUID PRIMARY KEY,
-  language_code VARCHAR(10) PRIMARY KEY,
+  language_code VARCHAR(10),
   name VARCHAR(255) NOT NULL,
   description TEXT,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW() NOT NULL,
