@@ -15,11 +15,11 @@ import { handleLogout } from '@/utils/auth';
 import { createPageUrl, getExternalStoreUrl, getStoreBaseUrl } from '@/utils/urlUtils';
 import { Store } from '@/api/entities';
 
-const ModeHeader = ({ user, currentMode, showExtraButtons = false, extraButtons = null }) => {
+const ModeHeader = ({ user, currentMode, showExtraButtons = false, extraButtons = null, hideModeSwitcher = false, hideStoreSelector = false }) => {
   const navigate = useNavigate();
   const location = useLocation();
   const selectedStore = JSON.parse(localStorage.getItem('selectedStore') || '{}');
-  
+
   // Test comment to trigger deployment sync
 
   const switchToAdmin = () => {
@@ -51,56 +51,59 @@ const ModeHeader = ({ user, currentMode, showExtraButtons = false, extraButtons 
       {/* Mobile Header */}
       <div className="lg:hidden flex items-center justify-between h-16 px-4 bg-white border-b border-gray-200">
         <div className="flex items-center space-x-3">
-          <div className="flex items-center bg-gray-100 rounded-lg p-1">
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={switchToAdmin}
-              className={`px-3 py-1 text-xs font-medium rounded transition-colors ${
-                currentMode === 'admin' 
-                  ? 'bg-white shadow-sm text-gray-900' 
-                  : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
-              }`}
-            >
-              Admin
-            </Button>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={switchToEditor}
-              className={`px-3 py-1 text-xs font-medium rounded transition-colors ${
-                currentMode === 'editor' 
-                  ? 'bg-white shadow-sm text-gray-900' 
-                  : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
-              }`}
-            >
-              Editor
-            </Button>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={switchToPlugins}
-              className={`px-3 py-1 text-xs font-medium rounded transition-colors ${
-                currentMode === 'plugins'
-                  ? 'bg-white shadow-sm text-gray-900'
-                  : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
-              }`}
-            >
-              Plugins
-            </Button>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={switchToAIStudio}
-              className={`px-3 py-1 text-xs font-medium rounded transition-colors ${
-                currentMode === 'aistudio'
-                  ? 'bg-white shadow-sm text-gray-900'
-                  : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
-              }`}
-            >
-              AI Studio
-            </Button>
-          </div>
+          {/* Show mode switcher only if not on onboarding */}
+          {!hideModeSwitcher && (
+            <div className="flex items-center bg-gray-100 rounded-lg p-1">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={switchToAdmin}
+                className={`px-3 py-1 text-xs font-medium rounded transition-colors ${
+                  currentMode === 'admin'
+                    ? 'bg-white shadow-sm text-gray-900'
+                    : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+                }`}
+              >
+                Admin
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={switchToEditor}
+                className={`px-3 py-1 text-xs font-medium rounded transition-colors ${
+                  currentMode === 'editor'
+                    ? 'bg-white shadow-sm text-gray-900'
+                    : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+                }`}
+              >
+                Editor
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={switchToPlugins}
+                className={`px-3 py-1 text-xs font-medium rounded transition-colors ${
+                  currentMode === 'plugins'
+                    ? 'bg-white shadow-sm text-gray-900'
+                    : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+                }`}
+              >
+                Plugins
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={switchToAIStudio}
+                className={`px-3 py-1 text-xs font-medium rounded transition-colors ${
+                  currentMode === 'aistudio'
+                    ? 'bg-white shadow-sm text-gray-900'
+                    : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+                }`}
+              >
+                AI Studio
+              </Button>
+            </div>
+          )}
         </div>
         {showExtraButtons && (
           <div className="flex items-center space-x-2">
@@ -113,56 +116,59 @@ const ModeHeader = ({ user, currentMode, showExtraButtons = false, extraButtons 
       {/* Desktop Header with Store Selector */}
       <div className="w-full hidden lg:flex items-center justify-between h-16 px-6 bg-white border-b border-gray-200">
         <div className="flex items-center space-x-4">
-          <div className="flex items-center bg-gray-100 rounded-lg p-1">
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={switchToAdmin}
-              className={`px-4 py-2 text-sm font-medium rounded-md transition-colors ${
-                currentMode === 'admin' 
-                  ? 'bg-white shadow-sm text-gray-900' 
-                  : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
-              }`}
-            >
-              Admin
-            </Button>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={switchToEditor}
-              className={`px-4 py-2 text-sm font-medium rounded-md transition-colors ${
-                currentMode === 'editor' 
-                  ? 'bg-white shadow-sm text-gray-900' 
-                  : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
-              }`}
-            >
-              Editor
-            </Button>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={switchToPlugins}
-              className={`px-4 py-2 text-sm font-medium rounded-md transition-colors ${
-                currentMode === 'plugins'
-                  ? 'bg-white shadow-sm text-gray-900'
-                  : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
-              }`}
-            >
-              Plugins
-            </Button>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={switchToAIStudio}
-              className={`px-4 py-2 text-sm font-medium rounded-md transition-colors ${
-                currentMode === 'aistudio'
-                  ? 'bg-white shadow-sm text-gray-900'
-                  : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
-              }`}
-            >
-              AI Studio
-            </Button>
-          </div>
+          {/* Show mode switcher only if not on onboarding */}
+          {!hideModeSwitcher && (
+            <div className="flex items-center bg-gray-100 rounded-lg p-1">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={switchToAdmin}
+                className={`px-4 py-2 text-sm font-medium rounded-md transition-colors ${
+                  currentMode === 'admin'
+                    ? 'bg-white shadow-sm text-gray-900'
+                    : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+                }`}
+              >
+                Admin
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={switchToEditor}
+                className={`px-4 py-2 text-sm font-medium rounded-md transition-colors ${
+                  currentMode === 'editor'
+                    ? 'bg-white shadow-sm text-gray-900'
+                    : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+                }`}
+              >
+                Editor
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={switchToPlugins}
+                className={`px-4 py-2 text-sm font-medium rounded-md transition-colors ${
+                  currentMode === 'plugins'
+                    ? 'bg-white shadow-sm text-gray-900'
+                    : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+                }`}
+              >
+                Plugins
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={switchToAIStudio}
+                className={`px-4 py-2 text-sm font-medium rounded-md transition-colors ${
+                  currentMode === 'aistudio'
+                    ? 'bg-white shadow-sm text-gray-900'
+                    : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+                }`}
+              >
+                AI Studio
+              </Button>
+            </div>
+          )}
         </div>
         <div className="flex items-center space-x-4">
           {showExtraButtons && (
@@ -170,7 +176,8 @@ const ModeHeader = ({ user, currentMode, showExtraButtons = false, extraButtons 
               {extraButtons}
             </div>
           )}
-          <StoreSelector />
+          {/* Hide StoreSelector on onboarding */}
+          {!hideStoreSelector && <StoreSelector />}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="ghost" className="relative h-8 w-8 rounded-full">

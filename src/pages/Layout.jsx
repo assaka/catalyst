@@ -175,11 +175,6 @@ function LayoutInner({ children, currentPageName }) {
   }
   // End of new block
 
-  // Handle onboarding page - minimal layout (no sidebar, no header, no store selector)
-  if (currentPageName === 'StoreOnboarding' || location.pathname === '/admin/store-onboarding') {
-    return <>{children}</>;
-  }
-
   useEffect(() => {
     const loadData = async () => {
         await loadUserAndHandleCredits(); // Combined function
@@ -821,10 +816,12 @@ function LayoutInner({ children, currentPageName }) {
       )}
 
       <div className="flex-1 flex flex-col">
-        <ModeHeader 
+        <ModeHeader
           user={user}
           currentMode={currentMode}
           showExtraButtons={true}
+          hideModeSwitcher={isOnboardingPage}
+          hideStoreSelector={isOnboardingPage}
           extraButtons={
             showSidebar && (
               <Button
