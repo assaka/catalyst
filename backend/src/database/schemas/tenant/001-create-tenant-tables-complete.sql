@@ -1133,7 +1133,7 @@ CREATE TABLE IF NOT EXISTS cms_page_seo (
 
 CREATE TABLE IF NOT EXISTS cms_page_translations (
   cms_page_id UUID PRIMARY KEY,
-  language_code VARCHAR(10) PRIMARY KEY,
+  language_code VARCHAR(10),
   title VARCHAR(255) NOT NULL,
   content TEXT,
   excerpt TEXT,
@@ -2333,7 +2333,7 @@ CREATE TABLE IF NOT EXISTS product_tabs (
 
 CREATE TABLE IF NOT EXISTS product_translations (
   product_id UUID PRIMARY KEY,
-  language_code VARCHAR(10) PRIMARY KEY,
+  language_code VARCHAR(10),
   name VARCHAR(255) NOT NULL,
   description TEXT,
   short_description TEXT,
