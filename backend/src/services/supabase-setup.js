@@ -1,5 +1,5 @@
 const { createClient } = require('@supabase/supabase-js');
-const SupabaseOAuthToken = require('../models/SupabaseOAuthToken');
+const { SupabaseOAuthToken } = require('../models/master');
 
 class SupabaseSetupService {
   constructor() {

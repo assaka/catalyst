@@ -1,6 +1,7 @@
 const { createClient } = require('@supabase/supabase-js');
 const axios = require('axios');
-const { SupabaseOAuthToken, IntegrationConfig } = require('../models');
+const { IntegrationConfig } = require('../models');
+const { SupabaseOAuthToken } = require('../models/master'); // OAuth tokens are in master DB
 const SupabaseProjectKeys = require('../models/SupabaseProjectKeys');
 const supabaseStorage = require('./supabase-storage');
 

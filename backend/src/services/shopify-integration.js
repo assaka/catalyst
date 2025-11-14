@@ -1,6 +1,6 @@
 const axios = require('axios');
 const crypto = require('crypto');
-const ShopifyOAuthToken = require('../models/ShopifyOAuthToken');
+const { ShopifyOAuthToken } = require('../models/master');
 const IntegrationConfig = require('../models/IntegrationConfig');
 
 class ShopifyIntegration {

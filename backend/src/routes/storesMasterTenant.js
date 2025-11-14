@@ -135,7 +135,7 @@ router.post('/:id/connect-database', authMiddleware, async (req, res) => {
     // If using OAuth, get credentials from OAuth token
     if (useOAuth) {
       console.log('Using OAuth credentials for store:', storeId);
-      const SupabaseOAuthToken = require('../models/SupabaseOAuthToken');
+      const { SupabaseOAuthToken } = require('../models/master');
       const oauthToken = await SupabaseOAuthToken.findOne({ where: { store_id: storeId } });
 
       if (!oauthToken) {

@@ -595,7 +595,7 @@ router.get('/import/stats', storeAuth, async (req, res) => {
  */
 router.get('/shop-info', storeAuth, async (req, res) => {
   try {
-    const ShopifyOAuthToken = require('../models/ShopifyOAuthToken');
+    const { ShopifyOAuthToken } = require('../models/master');
     const tokenRecord = await ShopifyOAuthToken.findByStore(req.storeId);
     
     if (!tokenRecord) {
