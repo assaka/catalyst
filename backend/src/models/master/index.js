@@ -12,7 +12,6 @@ const StoreHostname = require('./StoreHostname');
 const CreditBalance = require('./CreditBalance');
 const CreditTransaction = require('./CreditTransaction');
 const SupabaseOAuthToken = require('../SupabaseOAuthToken');
-const ShopifyOAuthToken = require('../ShopifyOAuthToken');
 
 // Define associations
 function setupMasterAssociations() {
@@ -76,21 +75,12 @@ function setupMasterAssociations() {
     as: 'processor'
   });
 
-  // Store → OAuth Tokens (one-to-one)
+  // Store → Supabase OAuth Token (one-to-one)
   MasterStore.hasOne(SupabaseOAuthToken, {
     foreignKey: 'store_id',
     as: 'supabaseOAuth'
   });
   SupabaseOAuthToken.belongsTo(MasterStore, {
-    foreignKey: 'store_id',
-    as: 'store'
-  });
-
-  MasterStore.hasOne(ShopifyOAuthToken, {
-    foreignKey: 'store_id',
-    as: 'shopifyOAuth'
-  });
-  ShopifyOAuthToken.belongsTo(MasterStore, {
     foreignKey: 'store_id',
     as: 'store'
   });
@@ -108,6 +98,5 @@ module.exports = {
   CreditBalance,
   CreditTransaction,
   SupabaseOAuthToken,
-  ShopifyOAuthToken,
   setupMasterAssociations
 };

@@ -1,5 +1,5 @@
 const ShopifyClient = require('./shopify-client');
-const { ShopifyOAuthToken } = require('../models/master');
+const ShopifyOAuthToken = require('../models/ShopifyOAuthToken');
 const Category = require('../models/Category');
 const Product = require('../models/Product');
 const ProductTranslation = require('../models/ProductTranslation');
