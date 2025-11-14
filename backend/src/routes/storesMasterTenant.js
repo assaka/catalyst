@@ -204,13 +204,28 @@ router.post('/:id/connect-database', authMiddleware, async (req, res) => {
       connectionString = manualConnectionString;
     }
 
-    // Validate required fields
-    if (!projectUrl || !serviceRoleKey) {
+    // Validate required fields (relaxed for auto-provision OAuth mode)
+    if (!projectUrl) {
       return res.status(400).json({
         success: false,
-        error: 'Supabase projectUrl and serviceRoleKey are required'
+        error: 'Supabase projectUrl is required'
       });
     }
+
+    // For auto-provision mode, we use OAuth access_token instead of serviceRoleKey
+    if (!autoProvision && !serviceRoleKey) {
+      return res.status(400).json({
+        success: false,
+        error: 'Supabase serviceRoleKey is required (or use autoProvision mode with OAuth)'
+      });
+    }
+
+    console.log('✅ Credentials validated:', {
+      projectUrl: projectUrl ? 'present' : 'missing',
+      serviceRoleKey: serviceRoleKey ? 'present' : 'missing',
+      oauthAccessToken: oauthAccessToken ? 'present' : 'missing',
+      autoProvision: autoProvision
+    });
 
     // Get store from master DB
     const store = await MasterStore.findByPk(storeId);
@@ -251,10 +266,17 @@ router.post('/:id/connect-database', authMiddleware, async (req, res) => {
 
     const credentials = {
       projectUrl,
-      serviceRoleKey,
+      serviceRoleKey: serviceRoleKey || 'oauth-mode', // Placeholder for OAuth mode
       anonKey,
-      connectionString
+      connectionString: connectionString || 'oauth-api-mode' // Placeholder for OAuth API mode
     };
+
+    console.log('Creating StoreDatabase record with credentials:', {
+      projectUrl: credentials.projectUrl,
+      hasServiceRoleKey: !!serviceRoleKey,
+      hasConnectionString: !!connectionString,
+      mode: autoProvision ? 'OAuth API' : 'Direct PostgreSQL'
+    });
 
     const storeDb = await StoreDatabase.createWithCredentials(
       storeId,
