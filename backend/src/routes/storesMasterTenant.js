@@ -127,10 +127,11 @@ router.post('/:id/connect-database', authMiddleware, async (req, res) => {
       connectionString: manualConnectionString,
       storeName,
       storeSlug,
-      useOAuth
+      useOAuth,
+      autoProvision
     } = req.body;
 
-    let projectUrl, serviceRoleKey, anonKey, connectionString;
+    let projectUrl, serviceRoleKey, anonKey, connectionString, oauthAccessToken, projectId;
 
     // If using OAuth, get credentials from Redis (or memory fallback)
     if (useOAuth) {
@@ -172,17 +173,29 @@ router.post('/:id/connect-database', authMiddleware, async (req, res) => {
       projectUrl = oauthToken.project_url;
       serviceRoleKey = oauthToken.service_role_key;
       anonKey = oauthToken.anon_key;
+      oauthAccessToken = oauthToken.access_token; // For running migrations via API
 
-      // Use the connection string provided by the user (from request body)
-      if (!manualConnectionString) {
-        return res.status(400).json({
-          success: false,
-          error: 'Database connection string is required for provisioning'
-        });
+      // Extract project ID from project URL
+      if (projectUrl) {
+        projectId = new URL(projectUrl).hostname.split('.')[0];
       }
 
-      connectionString = manualConnectionString;
-      console.log('Using user-provided connection string for OAuth provisioning');
+      // If auto-provisioning, use OAuth API - no connection string needed
+      if (autoProvision) {
+        console.log('🚀 Auto-provisioning mode - will use Supabase Management API');
+        // Connection string not needed for OAuth API mode
+        connectionString = null;
+      } else {
+        // Manual provisioning - require connection string
+        if (!manualConnectionString) {
+          return res.status(400).json({
+            success: false,
+            error: 'Database connection string is required for provisioning'
+          });
+        }
+        connectionString = manualConnectionString;
+        console.log('Using user-provided connection string for OAuth provisioning');
+      }
     } else {
       // Use manual credentials
       projectUrl = manualProjectUrl;
@@ -249,20 +262,29 @@ router.post('/:id/connect-database', authMiddleware, async (req, res) => {
       credentials
     );
 
-    // 2. Test connection
-    const connectionTest = await storeDb.testConnection();
+    // 2. Test connection (skip for auto-provision OAuth mode)
+    if (!autoProvision) {
+      const connectionTest = await storeDb.testConnection();
 
-    if (!connectionTest) {
-      await store.update({ status: 'pending_database' });
-      return res.status(503).json({
-        success: false,
-        error: 'Failed to connect to database. Please check credentials.',
-        code: 'CONNECTION_FAILED'
-      });
+      if (!connectionTest) {
+        await store.update({ status: 'pending_database' });
+        return res.status(503).json({
+          success: false,
+          error: 'Failed to connect to database. Please check credentials.',
+          code: 'CONNECTION_FAILED'
+        });
+      }
+    } else {
+      console.log('⏭️ Skipping connection test - using OAuth API mode');
     }
 
-    // 3. Get tenant DB connection
-    const tenantDb = await ConnectionManager.getStoreConnection(storeId);
+    // 3. Get tenant DB connection (or skip if using OAuth API)
+    let tenantDb = null;
+    if (!autoProvision) {
+      tenantDb = await ConnectionManager.getStoreConnection(storeId);
+    } else {
+      console.log('⏭️ Skipping ConnectionManager - using OAuth API for provisioning');
+    }
 
     // 4. Provision tenant database (create tables, seed data)
     const provisioningResult = await TenantProvisioningService.provisionTenantDatabase(
@@ -276,7 +298,11 @@ router.post('/:id/connect-database', authMiddleware, async (req, res) => {
         userLastName: req.user.last_name,
         storeName: storeName || 'My Store',
         storeSlug: storeSlug || `store-${Date.now()}`,
-        force: false
+        force: false,
+        // OAuth credentials for API-based provisioning
+        oauthAccessToken: oauthAccessToken || null,
+        projectId: projectId || null,
+        autoProvision: autoProvision || false
       }
     );
 

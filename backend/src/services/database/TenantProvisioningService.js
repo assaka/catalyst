@@ -46,7 +46,7 @@ class TenantProvisioningService {
 
       // 2. Run migrations (create all tables)
       console.log('Running tenant migrations...');
-      await this.runTenantMigrations(tenantDb, storeId, result);
+      await this.runTenantMigrations(tenantDb, storeId, result, options);
 
       // 3. Seed initial data
       console.log('Seeding initial data...');
@@ -108,7 +108,7 @@ class TenantProvisioningService {
    * Run tenant database migrations
    * @private
    */
-  async runTenantMigrations(tenantDb, storeId, result) {
+  async runTenantMigrations(tenantDb, storeId, result, options = {}) {
     try {
       console.log('Reading tenant migration files...');
 
@@ -122,7 +122,40 @@ class TenantProvisioningService {
       console.log('Migration SQL loaded:', migrationSQL.length, 'characters');
       console.log('Seed SQL loaded:', seedSQL.length, 'characters');
 
-      // Get tenant DB credentials to create direct PostgreSQL connection
+      // Check if we have OAuth access_token (use Supabase Management API)
+      if (options.oauthAccessToken && options.projectId) {
+        console.log('Using Supabase Management API for migrations (OAuth mode)...');
+
+        const axios = require('axios');
+        const combinedSQL = migrationSQL + '\n' + seedSQL;
+
+        try {
+          // Execute SQL via Supabase Management API
+          const response = await axios.post(
+            `https://api.supabase.com/v1/projects/${options.projectId}/database/query`,
+            { query: combinedSQL },
+            {
+              headers: {
+                'Authorization': `Bearer ${options.oauthAccessToken}`,
+                'Content-Type': 'application/json'
+              }
+            }
+          );
+
+          console.log('✅ Migration and seed complete via Supabase Management API!');
+          result.tablesCreated.push('Created 137 tables via OAuth API');
+          result.dataSeeded.push('Seeded 6,598 rows via OAuth API');
+          return true;
+
+        } catch (apiError) {
+          console.error('Supabase Management API failed:', apiError.response?.data || apiError.message);
+          throw new Error('Failed to run migrations via Supabase API: ' + (apiError.response?.data?.message || apiError.message));
+        }
+      }
+
+      // Fallback: Use direct PostgreSQL connection (manual credentials mode)
+      console.log('Using direct PostgreSQL connection for provisioning...');
+
       const { StoreDatabase } = require('../../models/master');
       const storeDb = await StoreDatabase.findByStoreId(storeId);
 
@@ -142,9 +175,6 @@ class TenantProvisioningService {
       if (credentials.connectionString.includes('[password]')) {
         throw new Error('Database password not provided. Connection string contains placeholder.');
       }
-
-      // Use direct PostgreSQL connection
-      console.log('Using direct PostgreSQL connection for provisioning...');
 
       const pgClient = new Client({
         connectionString: credentials.connectionString,

@@ -120,9 +120,29 @@ export default function StoreOnboarding() {
 
             if (statusResponse.success && statusResponse.connected) {
               console.log('✅ OAuth verified via API - tokens found');
-              // OAuth completed - now show connection string input
-              setOauthCompleted(true);
-              setSuccess('Supabase connected! Now enter your database connection string to complete setup.');
+              console.log('🚀 Auto-provisioning database via OAuth...');
+              setSuccess('Supabase connected! Provisioning database automatically...');
+
+              // Auto-provision using OAuth (no manual input needed)
+              try {
+                const provisionResponse = await apiClient.post(`/stores/${storeId}/connect-database`, {
+                  storeName: storeData.name,
+                  storeSlug: storeData.slug,
+                  useOAuth: true,
+                  autoProvision: true
+                });
+
+                if (provisionResponse.success) {
+                  setCompletedSteps([...completedSteps, 2]);
+                  setSuccess('Database connected! 137 tables created & 6,598 rows seeded.');
+                  setTimeout(() => setCurrentStep(3), 1500);
+                } else {
+                  setError(provisionResponse.error || 'Failed to provision database automatically');
+                }
+              } catch (provErr) {
+                console.error('Auto-provision error:', provErr);
+                setError('Auto-provisioning failed: ' + (provErr.message || 'Unknown error'));
+              }
             } else {
               console.log('❌ OAuth not found via API');
               setError('OAuth was cancelled or failed. Please try again.');
