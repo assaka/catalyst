@@ -7234,21 +7234,6 @@ CREATE INDEX store_teams_store_id ON store_teams USING btree (store_id);
 
 CREATE INDEX store_teams_user_id ON store_teams USING btree (user_id);
 
-
---
--- Name: subscriptions_status; Type: INDEX; Schema: public; Owner: postgres
---
-
-CREATE INDEX subscriptions_status ON subscriptions USING btree (status);
-
-
---
--- Name: subscriptions_store_id; Type: INDEX; Schema: public; Owner: postgres
---
-
-CREATE INDEX subscriptions_store_id ON subscriptions USING btree (store_id);
-
-
 --
 -- Name: supabase_project_keys_store_id_project_id; Type: INDEX; Schema: public; Owner: postgres
 --
