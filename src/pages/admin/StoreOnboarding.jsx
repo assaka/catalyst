@@ -107,41 +107,29 @@ export default function StoreOnboarding() {
         throw new Error('Please allow popups for this site');
       }
 
-      // Step 3: Listen for OAuth success via postMessage
-      let oauthSucceeded = false;
-
-      const handleOAuthMessage = (event) => {
-        console.log('📨 postMessage received:', event.data);
-        // Accept messages from any origin for OAuth callback
-        if (event.data && event.data.type === 'supabase-oauth-success') {
-          console.log('✅ OAuth success message received via postMessage');
-          oauthSucceeded = true;
-          // Set sessionStorage as well for the interval check
-          sessionStorage.setItem('supabase_connection_success', 'Successfully connected!');
-        }
-      };
-
-      window.addEventListener('message', handleOAuthMessage);
-
-      // Step 4: Wait for popup to close
+      // Step 3: Wait for popup to close, then verify OAuth via API
       const checkClosed = setInterval(async () => {
         if (popup.closed) {
           clearInterval(checkClosed);
-          window.removeEventListener('message', handleOAuthMessage);
+          console.log('🔍 Popup closed, checking OAuth status via API...');
 
-          // Check if OAuth was successful (postMessage or sessionStorage)
-          const successMessage = sessionStorage.getItem('supabase_connection_success');
+          // Verify OAuth succeeded by checking database/memory state
+          try {
+            const statusResponse = await apiClient.get(`/supabase/oauth-status?storeId=${storeId}`);
+            console.log('OAuth status response:', statusResponse);
 
-          if (oauthSucceeded || successMessage) {
-            if (successMessage) {
-              sessionStorage.removeItem('supabase_connection_success');
+            if (statusResponse.success && statusResponse.connected) {
+              console.log('✅ OAuth verified via API - tokens found');
+              // OAuth completed - now show connection string input
+              setOauthCompleted(true);
+              setSuccess('Supabase connected! Now enter your database connection string to complete setup.');
+            } else {
+              console.log('❌ OAuth not found via API');
+              setError('OAuth was cancelled or failed. Please try again.');
             }
-
-            // OAuth completed - now show connection string input
-            setOauthCompleted(true);
-            setSuccess('Supabase connected! Now enter your database connection string to complete setup.');
-          } else {
-            setError('OAuth was cancelled or failed');
+          } catch (apiError) {
+            console.error('Error checking OAuth status:', apiError);
+            setError('Failed to verify OAuth connection. Please try again.');
           }
 
           setLoading(false);

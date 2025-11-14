@@ -37,6 +37,70 @@ const upload = multer({
 });
 
 
+// Check OAuth status (for onboarding - works with pending stores)
+router.get('/oauth-status', authMiddleware, async (req, res) => {
+  try {
+    const storeId = req.query.storeId;
+
+    if (!storeId) {
+      return res.status(400).json({
+        success: false,
+        error: 'Store ID is required'
+      });
+    }
+
+    console.log('Checking OAuth status for store:', storeId);
+
+    // Check if OAuth tokens are in memory (for pending stores)
+    if (global.pendingOAuthTokens && global.pendingOAuthTokens.has(storeId)) {
+      const tokenData = global.pendingOAuthTokens.get(storeId);
+      console.log('✅ OAuth tokens found in memory (pending provisioning)');
+
+      return res.json({
+        success: true,
+        connected: true,
+        projectUrl: tokenData.project_url,
+        status: 'pending_provisioning',
+        message: 'OAuth completed. Waiting for database provisioning.'
+      });
+    }
+
+    // Check if OAuth tokens exist in tenant DB (for active stores)
+    try {
+      const SupabaseOAuthToken = require('../models/SupabaseOAuthToken');
+      const token = await SupabaseOAuthToken.findByStore(storeId);
+
+      if (token) {
+        console.log('✅ OAuth tokens found in tenant database');
+        return res.json({
+          success: true,
+          connected: true,
+          projectUrl: token.project_url,
+          status: 'active',
+          message: 'OAuth tokens exist in database'
+        });
+      }
+    } catch (dbError) {
+      console.log('Tenant DB not accessible (expected for pending stores):', dbError.message);
+    }
+
+    // No OAuth connection found
+    console.log('❌ No OAuth connection found for store');
+    return res.json({
+      success: true,
+      connected: false,
+      message: 'No OAuth connection found'
+    });
+
+  } catch (error) {
+    console.error('Error checking OAuth status:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
 // Get connection status and ensure buckets exist
 router.get('/status', authMiddleware, storeResolver(), async (req, res) => {
   try {
