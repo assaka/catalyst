@@ -2832,1695 +2832,1693 @@ CREATE TABLE IF NOT EXISTS wishlists (
   updated_at TIMESTAMP WITH TIME ZONE NOT NULL
 );
 
-ALTER TABLE ONLY _migrations
-    ADD CONSTRAINT _migrations_pkey PRIMARY KEY (name);
-
-
+-- ALTER TABLE ONLY _migrations
+--     ADD CONSTRAINT _migrations_pkey PRIMARY KEY (name);
+-- --
+-- -- Name: ab_test_assignments ab_test_assignments_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+-- --
 --
--- Name: ab_test_assignments ab_test_assignments_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
---
-
-ALTER TABLE ONLY ab_test_assignments
-    ADD CONSTRAINT ab_test_assignments_pkey PRIMARY KEY (id);
-
-
+-- ALTER TABLE ONLY ab_test_assignments
+--     ADD CONSTRAINT ab_test_assignments_pkey PRIMARY KEY (id);
 --
--- Name: ab_test_variants ab_test_variants_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
---
-
-ALTER TABLE ONLY ab_test_variants
-    ADD CONSTRAINT ab_test_variants_pkey PRIMARY KEY (id);
-
-
 --
--- Name: ab_test_variants ab_test_variants_store_id_test_name_variant_name_key; Type: CONSTRAINT; Schema: public; Owner: postgres
---
-
-ALTER TABLE ONLY ab_test_variants
-    ADD CONSTRAINT ab_test_variants_store_id_test_name_variant_name_key UNIQUE (store_id, test_name, variant_name);
-
-
+-- --
+-- -- Name: ab_test_variants ab_test_variants_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+-- --
 --
--- Name: ab_tests ab_tests_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
---
-
-ALTER TABLE ONLY ab_tests
-    ADD CONSTRAINT ab_tests_pkey PRIMARY KEY (id);
-
-
+-- ALTER TABLE ONLY ab_test_variants
+--     ADD CONSTRAINT ab_test_variants_pkey PRIMARY KEY (id);
 --
--- Name: admin_navigation_config admin_navigation_config_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
---
-
-ALTER TABLE ONLY admin_navigation_config
-    ADD CONSTRAINT admin_navigation_config_pkey PRIMARY KEY (id);
-
-
 --
--- Name: admin_navigation_registry admin_navigation_registry_key_key; Type: CONSTRAINT; Schema: public; Owner: postgres
---
-
-ALTER TABLE ONLY admin_navigation_registry
-    ADD CONSTRAINT admin_navigation_registry_key_key UNIQUE (key);
-
-
+-- --
+-- -- Name: ab_test_variants ab_test_variants_store_id_test_name_variant_name_key; Type: CONSTRAINT; Schema: public; Owner: postgres
+-- --
 --
--- Name: admin_navigation_registry admin_navigation_registry_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
---
-
-ALTER TABLE ONLY admin_navigation_registry
-    ADD CONSTRAINT admin_navigation_registry_pkey PRIMARY KEY (id);
-
-
+-- ALTER TABLE ONLY ab_test_variants
+--     ADD CONSTRAINT ab_test_variants_store_id_test_name_variant_name_key UNIQUE (store_id, test_name, variant_name);
 --
--- Name: ai_code_patterns ai_code_patterns_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
---
-
-ALTER TABLE ONLY ai_code_patterns
-    ADD CONSTRAINT ai_code_patterns_pkey PRIMARY KEY (id);
-
-
 --
--- Name: ai_context_documents ai_context_documents_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
---
-
-ALTER TABLE ONLY ai_context_documents
-    ADD CONSTRAINT ai_context_documents_pkey PRIMARY KEY (id);
-
-
+-- --
+-- -- Name: ab_tests ab_tests_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+-- --
 --
--- Name: ai_context_usage ai_context_usage_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
---
-
-ALTER TABLE ONLY ai_context_usage
-    ADD CONSTRAINT ai_context_usage_pkey PRIMARY KEY (id);
-
-
+-- ALTER TABLE ONLY ab_tests
+--     ADD CONSTRAINT ab_tests_pkey PRIMARY KEY (id);
 --
--- Name: ai_plugin_examples ai_plugin_examples_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
---
-
-ALTER TABLE ONLY ai_plugin_examples
-    ADD CONSTRAINT ai_plugin_examples_pkey PRIMARY KEY (id);
-
-
 --
--- Name: ai_plugin_examples ai_plugin_examples_slug_key; Type: CONSTRAINT; Schema: public; Owner: postgres
---
-
-ALTER TABLE ONLY ai_plugin_examples
-    ADD CONSTRAINT ai_plugin_examples_slug_key UNIQUE (slug);
-
-
+-- --
+-- -- Name: admin_navigation_config admin_navigation_config_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+-- --
 --
--- Name: ai_usage_logs ai_usage_logs_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+-- ALTER TABLE ONLY admin_navigation_config
+--     ADD CONSTRAINT admin_navigation_config_pkey PRIMARY KEY (id);
 --
-
-ALTER TABLE ONLY ai_usage_logs
-    ADD CONSTRAINT ai_usage_logs_pkey PRIMARY KEY (id);
-
-
 --
--- Name: ai_user_preferences ai_user_preferences_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+-- --
+-- -- Name: admin_navigation_registry admin_navigation_registry_key_key; Type: CONSTRAINT; Schema: public; Owner: postgres
+-- --
 --
-
-ALTER TABLE ONLY ai_user_preferences
-    ADD CONSTRAINT ai_user_preferences_pkey PRIMARY KEY (id);
-
-
+-- ALTER TABLE ONLY admin_navigation_registry
+--     ADD CONSTRAINT admin_navigation_registry_key_key UNIQUE (key);
 --
--- Name: akeneo_custom_mappings akeneo_custom_mappings_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
-
-ALTER TABLE ONLY akeneo_custom_mappings
-    ADD CONSTRAINT akeneo_custom_mappings_pkey PRIMARY KEY (id);
-
-
+-- --
+-- -- Name: admin_navigation_registry admin_navigation_registry_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+-- --
 --
--- Name: akeneo_custom_mappings akeneo_custom_mappings_store_id_mapping_type_key; Type: CONSTRAINT; Schema: public; Owner: postgres
+-- ALTER TABLE ONLY admin_navigation_registry
+--     ADD CONSTRAINT admin_navigation_registry_pkey PRIMARY KEY (id);
 --
-
-ALTER TABLE ONLY akeneo_custom_mappings
-    ADD CONSTRAINT akeneo_custom_mappings_store_id_mapping_type_key UNIQUE (store_id, mapping_type);
-
-
 --
--- Name: akeneo_import_statistics akeneo_import_statistics_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+-- --
+-- -- Name: ai_code_patterns ai_code_patterns_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+-- --
 --
-
-ALTER TABLE ONLY akeneo_import_statistics
-    ADD CONSTRAINT akeneo_import_statistics_pkey PRIMARY KEY (id);
-
-
+-- ALTER TABLE ONLY ai_code_patterns
+--     ADD CONSTRAINT ai_code_patterns_pkey PRIMARY KEY (id);
 --
--- Name: akeneo_mappings akeneo_mappings_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
-
-ALTER TABLE ONLY akeneo_mappings
-    ADD CONSTRAINT akeneo_mappings_pkey PRIMARY KEY (id);
-
-
+-- --
+-- -- Name: ai_context_documents ai_context_documents_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+-- --
 --
--- Name: akeneo_schedules akeneo_schedules_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+-- ALTER TABLE ONLY ai_context_documents
+--     ADD CONSTRAINT ai_context_documents_pkey PRIMARY KEY (id);
 --
-
-ALTER TABLE ONLY akeneo_schedules
-    ADD CONSTRAINT akeneo_schedules_pkey PRIMARY KEY (id);
-
-
 --
--- Name: attribute_sets attribute_sets_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+-- --
+-- -- Name: ai_context_usage ai_context_usage_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+-- --
 --
-
-ALTER TABLE ONLY attribute_sets
-    ADD CONSTRAINT attribute_sets_pkey PRIMARY KEY (id);
-
-
+-- ALTER TABLE ONLY ai_context_usage
+--     ADD CONSTRAINT ai_context_usage_pkey PRIMARY KEY (id);
 --
--- Name: attribute_translations attribute_translations_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
-
-ALTER TABLE ONLY attribute_translations
-    ADD CONSTRAINT attribute_translations_pkey PRIMARY KEY (attribute_id, language_code);
-
-
+-- --
+-- -- Name: ai_plugin_examples ai_plugin_examples_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+-- --
 --
--- Name: attribute_value_translations attribute_value_translations_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+-- ALTER TABLE ONLY ai_plugin_examples
+--     ADD CONSTRAINT ai_plugin_examples_pkey PRIMARY KEY (id);
 --
-
-ALTER TABLE ONLY attribute_value_translations
-    ADD CONSTRAINT attribute_value_translations_pkey PRIMARY KEY (attribute_value_id, language_code);
-
-
 --
--- Name: attribute_values attribute_values_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+-- --
+-- -- Name: ai_plugin_examples ai_plugin_examples_slug_key; Type: CONSTRAINT; Schema: public; Owner: postgres
+-- --
 --
-
-ALTER TABLE ONLY attribute_values
-    ADD CONSTRAINT attribute_values_pkey PRIMARY KEY (id);
-
-
+-- ALTER TABLE ONLY ai_plugin_examples
+--     ADD CONSTRAINT ai_plugin_examples_slug_key UNIQUE (slug);
 --
--- Name: attributes attributes_code_key; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
-
-ALTER TABLE ONLY attributes
-    ADD CONSTRAINT attributes_code_key UNIQUE (code);
-
-
+-- --
+-- -- Name: ai_usage_logs ai_usage_logs_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+-- --
 --
--- Name: attributes attributes_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+-- ALTER TABLE ONLY ai_usage_logs
+--     ADD CONSTRAINT ai_usage_logs_pkey PRIMARY KEY (id);
 --
-
-ALTER TABLE ONLY attributes
-    ADD CONSTRAINT attributes_pkey PRIMARY KEY (id);
-
-
 --
--- Name: blacklist_countries blacklist_countries_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+-- --
+-- -- Name: ai_user_preferences ai_user_preferences_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+-- --
 --
-
-ALTER TABLE ONLY blacklist_countries
-    ADD CONSTRAINT blacklist_countries_pkey PRIMARY KEY (id);
-
-
+-- ALTER TABLE ONLY ai_user_preferences
+--     ADD CONSTRAINT ai_user_preferences_pkey PRIMARY KEY (id);
 --
--- Name: blacklist_countries blacklist_countries_store_id_country_code_key; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
-
-ALTER TABLE ONLY blacklist_countries
-    ADD CONSTRAINT blacklist_countries_store_id_country_code_key UNIQUE (store_id, country_code);
-
-
+-- --
+-- -- Name: akeneo_custom_mappings akeneo_custom_mappings_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+-- --
 --
--- Name: blacklist_emails blacklist_emails_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+-- ALTER TABLE ONLY akeneo_custom_mappings
+--     ADD CONSTRAINT akeneo_custom_mappings_pkey PRIMARY KEY (id);
 --
-
-ALTER TABLE ONLY blacklist_emails
-    ADD CONSTRAINT blacklist_emails_pkey PRIMARY KEY (id);
-
-
 --
--- Name: blacklist_emails blacklist_emails_store_id_email_key; Type: CONSTRAINT; Schema: public; Owner: postgres
+-- --
+-- -- Name: akeneo_custom_mappings akeneo_custom_mappings_store_id_mapping_type_key; Type: CONSTRAINT; Schema: public; Owner: postgres
+-- --
 --
-
-ALTER TABLE ONLY blacklist_emails
-    ADD CONSTRAINT blacklist_emails_store_id_email_key UNIQUE (store_id, email);
-
-
+-- ALTER TABLE ONLY akeneo_custom_mappings
+--     ADD CONSTRAINT akeneo_custom_mappings_store_id_mapping_type_key UNIQUE (store_id, mapping_type);
 --
--- Name: blacklist_ips blacklist_ips_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
-
-ALTER TABLE ONLY blacklist_ips
-    ADD CONSTRAINT blacklist_ips_pkey PRIMARY KEY (id);
-
-
+-- --
+-- -- Name: akeneo_import_statistics akeneo_import_statistics_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+-- --
 --
--- Name: blacklist_ips blacklist_ips_store_id_ip_address_key; Type: CONSTRAINT; Schema: public; Owner: postgres
+-- ALTER TABLE ONLY akeneo_import_statistics
+--     ADD CONSTRAINT akeneo_import_statistics_pkey PRIMARY KEY (id);
 --
-
-ALTER TABLE ONLY blacklist_ips
-    ADD CONSTRAINT blacklist_ips_store_id_ip_address_key UNIQUE (store_id, ip_address);
-
-
 --
--- Name: blacklist_settings blacklist_settings_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+-- --
+-- -- Name: akeneo_mappings akeneo_mappings_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+-- --
 --
-
-ALTER TABLE ONLY blacklist_settings
-    ADD CONSTRAINT blacklist_settings_pkey PRIMARY KEY (id);
-
-
+-- ALTER TABLE ONLY akeneo_mappings
+--     ADD CONSTRAINT akeneo_mappings_pkey PRIMARY KEY (id);
 --
--- Name: blacklist_settings blacklist_settings_store_id_key; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
-
-ALTER TABLE ONLY blacklist_settings
-    ADD CONSTRAINT blacklist_settings_store_id_key UNIQUE (store_id);
-
-
+-- --
+-- -- Name: akeneo_schedules akeneo_schedules_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+-- --
 --
--- Name: brevo_configurations brevo_configurations_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+-- ALTER TABLE ONLY akeneo_schedules
+--     ADD CONSTRAINT akeneo_schedules_pkey PRIMARY KEY (id);
 --
-
-ALTER TABLE ONLY brevo_configurations
-    ADD CONSTRAINT brevo_configurations_pkey PRIMARY KEY (id);
-
-
 --
--- Name: brevo_configurations brevo_configurations_store_id_key; Type: CONSTRAINT; Schema: public; Owner: postgres
+-- --
+-- -- Name: attribute_sets attribute_sets_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+-- --
 --
-
-ALTER TABLE ONLY brevo_configurations
-    ADD CONSTRAINT brevo_configurations_store_id_key UNIQUE (store_id);
-
-
+-- ALTER TABLE ONLY attribute_sets
+--     ADD CONSTRAINT attribute_sets_pkey PRIMARY KEY (id);
 --
--- Name: canonical_urls canonical_urls_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
-
-ALTER TABLE ONLY canonical_urls
-    ADD CONSTRAINT canonical_urls_pkey PRIMARY KEY (id);
-
-
+-- --
+-- -- Name: attribute_translations attribute_translations_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+-- --
 --
--- Name: cart_emails cart_emails_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+-- ALTER TABLE ONLY attribute_translations
+--     ADD CONSTRAINT attribute_translations_pkey PRIMARY KEY (attribute_id, language_code);
 --
-
-ALTER TABLE ONLY cart_emails
-    ADD CONSTRAINT cart_emails_pkey PRIMARY KEY (id);
-
-
 --
--- Name: carts carts_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+-- --
+-- -- Name: attribute_value_translations attribute_value_translations_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+-- --
 --
-
-ALTER TABLE ONLY carts
-    ADD CONSTRAINT carts_pkey PRIMARY KEY (id);
-
-
+-- ALTER TABLE ONLY attribute_value_translations
+--     ADD CONSTRAINT attribute_value_translations_pkey PRIMARY KEY (attribute_value_id, language_code);
 --
--- Name: categories categories_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
-
-ALTER TABLE ONLY categories
-    ADD CONSTRAINT categories_pkey PRIMARY KEY (id);
-
-
+-- --
+-- -- Name: attribute_values attribute_values_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+-- --
 --
--- Name: categories categories_store_id_slug_key; Type: CONSTRAINT; Schema: public; Owner: postgres
+-- ALTER TABLE ONLY attribute_values
+--     ADD CONSTRAINT attribute_values_pkey PRIMARY KEY (id);
 --
-
-ALTER TABLE ONLY categories
-    ADD CONSTRAINT categories_store_id_slug_key UNIQUE (store_id, slug);
-
-
 --
--- Name: category_seo category_seo_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+-- --
+-- -- Name: attributes attributes_code_key; Type: CONSTRAINT; Schema: public; Owner: postgres
+-- --
 --
-
-ALTER TABLE ONLY category_seo
-    ADD CONSTRAINT category_seo_pkey PRIMARY KEY (category_id, language_code);
-
-
+-- ALTER TABLE ONLY attributes
+--     ADD CONSTRAINT attributes_code_key UNIQUE (code);
 --
--- Name: category_translations category_translations_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
-
-ALTER TABLE ONLY category_translations
-    ADD CONSTRAINT category_translations_pkey PRIMARY KEY (category_id, language_code);
-
-
+-- --
+-- -- Name: attributes attributes_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+-- --
 --
--- Name: chat_agents chat_agents_email_key; Type: CONSTRAINT; Schema: public; Owner: postgres
+-- ALTER TABLE ONLY attributes
+--     ADD CONSTRAINT attributes_pkey PRIMARY KEY (id);
 --
-
-ALTER TABLE ONLY chat_agents
-    ADD CONSTRAINT chat_agents_email_key UNIQUE (email);
-
-
 --
--- Name: chat_agents chat_agents_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+-- --
+-- -- Name: blacklist_countries blacklist_countries_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+-- --
 --
-
-ALTER TABLE ONLY chat_agents
-    ADD CONSTRAINT chat_agents_pkey PRIMARY KEY (id);
-
-
+-- ALTER TABLE ONLY blacklist_countries
+--     ADD CONSTRAINT blacklist_countries_pkey PRIMARY KEY (id);
 --
--- Name: chat_conversations chat_conversations_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
-
-ALTER TABLE ONLY chat_conversations
-    ADD CONSTRAINT chat_conversations_pkey PRIMARY KEY (id);
-
-
+-- --
+-- -- Name: blacklist_countries blacklist_countries_store_id_country_code_key; Type: CONSTRAINT; Schema: public; Owner: postgres
+-- --
 --
--- Name: chat_messages chat_messages_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+-- ALTER TABLE ONLY blacklist_countries
+--     ADD CONSTRAINT blacklist_countries_store_id_country_code_key UNIQUE (store_id, country_code);
 --
-
-ALTER TABLE ONLY chat_messages
-    ADD CONSTRAINT chat_messages_pkey PRIMARY KEY (id);
-
-
 --
--- Name: chat_typing_indicators chat_typing_indicators_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+-- --
+-- -- Name: blacklist_emails blacklist_emails_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+-- --
 --
-
-ALTER TABLE ONLY chat_typing_indicators
-    ADD CONSTRAINT chat_typing_indicators_pkey PRIMARY KEY (id);
-
-
+-- ALTER TABLE ONLY blacklist_emails
+--     ADD CONSTRAINT blacklist_emails_pkey PRIMARY KEY (id);
 --
--- Name: cms_block_translations cms_block_translations_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
-
-ALTER TABLE ONLY cms_block_translations
-    ADD CONSTRAINT cms_block_translations_pkey PRIMARY KEY (cms_block_id, language_code);
-
-
+-- --
+-- -- Name: blacklist_emails blacklist_emails_store_id_email_key; Type: CONSTRAINT; Schema: public; Owner: postgres
+-- --
 --
--- Name: cms_blocks cms_blocks_identifier_store_id_unique; Type: CONSTRAINT; Schema: public; Owner: postgres
+-- ALTER TABLE ONLY blacklist_emails
+--     ADD CONSTRAINT blacklist_emails_store_id_email_key UNIQUE (store_id, email);
 --
-
-ALTER TABLE ONLY cms_blocks
-    ADD CONSTRAINT cms_blocks_identifier_store_id_unique UNIQUE (identifier, store_id);
-
-
 --
--- Name: cms_blocks cms_blocks_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+-- --
+-- -- Name: blacklist_ips blacklist_ips_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+-- --
 --
-
-ALTER TABLE ONLY cms_blocks
-    ADD CONSTRAINT cms_blocks_pkey PRIMARY KEY (id);
-
-
+-- ALTER TABLE ONLY blacklist_ips
+--     ADD CONSTRAINT blacklist_ips_pkey PRIMARY KEY (id);
 --
--- Name: cms_page_seo cms_page_seo_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
-
-ALTER TABLE ONLY cms_page_seo
-    ADD CONSTRAINT cms_page_seo_pkey PRIMARY KEY (cms_page_id, language_code);
-
-
+-- --
+-- -- Name: blacklist_ips blacklist_ips_store_id_ip_address_key; Type: CONSTRAINT; Schema: public; Owner: postgres
+-- --
 --
--- Name: cms_page_translations cms_page_translations_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+-- ALTER TABLE ONLY blacklist_ips
+--     ADD CONSTRAINT blacklist_ips_store_id_ip_address_key UNIQUE (store_id, ip_address);
 --
-
-ALTER TABLE ONLY cms_page_translations
-    ADD CONSTRAINT cms_page_translations_pkey PRIMARY KEY (cms_page_id, language_code);
-
-
 --
--- Name: cms_pages cms_pages_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+-- --
+-- -- Name: blacklist_settings blacklist_settings_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+-- --
 --
-
-ALTER TABLE ONLY cms_pages
-    ADD CONSTRAINT cms_pages_pkey PRIMARY KEY (id);
-
-
+-- ALTER TABLE ONLY blacklist_settings
+--     ADD CONSTRAINT blacklist_settings_pkey PRIMARY KEY (id);
 --
--- Name: cms_pages cms_pages_slug_key; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
-
-ALTER TABLE ONLY cms_pages
-    ADD CONSTRAINT cms_pages_slug_key UNIQUE (slug);
-
-
+-- --
+-- -- Name: blacklist_settings blacklist_settings_store_id_key; Type: CONSTRAINT; Schema: public; Owner: postgres
+-- --
 --
--- Name: consent_logs consent_logs_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+-- ALTER TABLE ONLY blacklist_settings
+--     ADD CONSTRAINT blacklist_settings_store_id_key UNIQUE (store_id);
 --
-
-ALTER TABLE ONLY consent_logs
-    ADD CONSTRAINT consent_logs_pkey PRIMARY KEY (id);
-
-
 --
--- Name: cookie_consent_settings cookie_consent_settings_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+-- --
+-- -- Name: brevo_configurations brevo_configurations_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+-- --
 --
-
-ALTER TABLE ONLY cookie_consent_settings
-    ADD CONSTRAINT cookie_consent_settings_pkey PRIMARY KEY (id);
-
-
+-- ALTER TABLE ONLY brevo_configurations
+--     ADD CONSTRAINT brevo_configurations_pkey PRIMARY KEY (id);
 --
--- Name: cookie_consent_settings_translations cookie_consent_settings_translations_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
-
-ALTER TABLE ONLY cookie_consent_settings_translations
-    ADD CONSTRAINT cookie_consent_settings_translations_pkey PRIMARY KEY (id);
-
-
+-- --
+-- -- Name: brevo_configurations brevo_configurations_store_id_key; Type: CONSTRAINT; Schema: public; Owner: postgres
+-- --
 --
--- Name: cookie_consent_settings_translations cookie_consent_settings_translations_unique; Type: CONSTRAINT; Schema: public; Owner: postgres
+-- ALTER TABLE ONLY brevo_configurations
+--     ADD CONSTRAINT brevo_configurations_store_id_key UNIQUE (store_id);
 --
-
-ALTER TABLE ONLY cookie_consent_settings_translations
-    ADD CONSTRAINT cookie_consent_settings_translations_unique UNIQUE (cookie_consent_settings_id, language_code);
-
-
 --
--- Name: coupon_translations coupon_translations_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+-- --
+-- -- Name: canonical_urls canonical_urls_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+-- --
 --
-
-ALTER TABLE ONLY coupon_translations
-    ADD CONSTRAINT coupon_translations_pkey PRIMARY KEY (coupon_id, language_code);
-
-
+-- ALTER TABLE ONLY canonical_urls
+--     ADD CONSTRAINT canonical_urls_pkey PRIMARY KEY (id);
 --
--- Name: coupons coupons_code_key; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
-
-ALTER TABLE ONLY coupons
-    ADD CONSTRAINT coupons_code_key UNIQUE (code);
-
-
+-- --
+-- -- Name: cart_emails cart_emails_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+-- --
 --
--- Name: coupons coupons_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+-- ALTER TABLE ONLY cart_emails
+--     ADD CONSTRAINT cart_emails_pkey PRIMARY KEY (id);
 --
-
-ALTER TABLE ONLY coupons
-    ADD CONSTRAINT coupons_pkey PRIMARY KEY (id);
-
-
 --
--- Name: credit_pricing credit_pricing_credits_currency_key; Type: CONSTRAINT; Schema: public; Owner: postgres
+-- --
+-- -- Name: carts carts_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+-- --
 --
-
-ALTER TABLE ONLY credit_pricing
-    ADD CONSTRAINT credit_pricing_credits_currency_key UNIQUE (credits, currency);
-
-
+-- ALTER TABLE ONLY carts
+--     ADD CONSTRAINT carts_pkey PRIMARY KEY (id);
 --
--- Name: credit_pricing credit_pricing_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
-
-ALTER TABLE ONLY credit_pricing
-    ADD CONSTRAINT credit_pricing_pkey PRIMARY KEY (id);
-
-
+-- --
+-- -- Name: categories categories_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+-- --
 --
--- Name: credit_transactions credit_transactions_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+-- ALTER TABLE ONLY categories
+--     ADD CONSTRAINT categories_pkey PRIMARY KEY (id);
 --
-
-ALTER TABLE ONLY credit_transactions
-    ADD CONSTRAINT credit_transactions_pkey PRIMARY KEY (id);
-
-
 --
--- Name: credit_usage credit_usage_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+-- --
+-- -- Name: categories categories_store_id_slug_key; Type: CONSTRAINT; Schema: public; Owner: postgres
+-- --
 --
-
-ALTER TABLE ONLY credit_usage
-    ADD CONSTRAINT credit_usage_pkey PRIMARY KEY (id);
-
-
+-- ALTER TABLE ONLY categories
+--     ADD CONSTRAINT categories_store_id_slug_key UNIQUE (store_id, slug);
 --
--- Name: credits credits_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
-
-ALTER TABLE ONLY credits
-    ADD CONSTRAINT credits_pkey PRIMARY KEY (id);
-
-
+-- --
+-- -- Name: category_seo category_seo_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+-- --
 --
--- Name: cron_job_executions cron_job_executions_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+-- ALTER TABLE ONLY category_seo
+--     ADD CONSTRAINT category_seo_pkey PRIMARY KEY (category_id, language_code);
 --
-
-ALTER TABLE ONLY cron_job_executions
-    ADD CONSTRAINT cron_job_executions_pkey PRIMARY KEY (id);
-
-
 --
--- Name: cron_job_types cron_job_types_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+-- --
+-- -- Name: category_translations category_translations_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+-- --
 --
-
-ALTER TABLE ONLY cron_job_types
-    ADD CONSTRAINT cron_job_types_pkey PRIMARY KEY (id);
-
-
+-- ALTER TABLE ONLY category_translations
+--     ADD CONSTRAINT category_translations_pkey PRIMARY KEY (category_id, language_code);
 --
--- Name: cron_job_types cron_job_types_type_name_key; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
-
-ALTER TABLE ONLY cron_job_types
-    ADD CONSTRAINT cron_job_types_type_name_key UNIQUE (type_name);
-
-
+-- --
+-- -- Name: chat_agents chat_agents_email_key; Type: CONSTRAINT; Schema: public; Owner: postgres
+-- --
 --
--- Name: cron_jobs cron_jobs_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+-- ALTER TABLE ONLY chat_agents
+--     ADD CONSTRAINT chat_agents_email_key UNIQUE (email);
 --
-
-ALTER TABLE ONLY cron_jobs
-    ADD CONSTRAINT cron_jobs_pkey PRIMARY KEY (id);
-
-
 --
--- Name: custom_analytics_events custom_analytics_events_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+-- --
+-- -- Name: chat_agents chat_agents_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+-- --
 --
-
-ALTER TABLE ONLY custom_analytics_events
-    ADD CONSTRAINT custom_analytics_events_pkey PRIMARY KEY (id);
-
-
+-- ALTER TABLE ONLY chat_agents
+--     ADD CONSTRAINT chat_agents_pkey PRIMARY KEY (id);
 --
--- Name: custom_domains custom_domains_domain_key; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
-
-ALTER TABLE ONLY custom_domains
-    ADD CONSTRAINT custom_domains_domain_key UNIQUE (domain);
-
-
+-- --
+-- -- Name: chat_conversations chat_conversations_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+-- --
 --
--- Name: custom_domains custom_domains_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+-- ALTER TABLE ONLY chat_conversations
+--     ADD CONSTRAINT chat_conversations_pkey PRIMARY KEY (id);
 --
-
-ALTER TABLE ONLY custom_domains
-    ADD CONSTRAINT custom_domains_pkey PRIMARY KEY (id);
-
-
 --
--- Name: custom_option_rules custom_option_rules_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+-- --
+-- -- Name: chat_messages chat_messages_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+-- --
 --
-
-ALTER TABLE ONLY custom_option_rules
-    ADD CONSTRAINT custom_option_rules_pkey PRIMARY KEY (id);
-
-
+-- ALTER TABLE ONLY chat_messages
+--     ADD CONSTRAINT chat_messages_pkey PRIMARY KEY (id);
 --
--- Name: custom_pricing_discounts custom_pricing_discounts_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
-
-ALTER TABLE ONLY custom_pricing_discounts
-    ADD CONSTRAINT custom_pricing_discounts_pkey PRIMARY KEY (id);
-
-
+-- --
+-- -- Name: chat_typing_indicators chat_typing_indicators_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+-- --
 --
--- Name: custom_pricing_logs custom_pricing_logs_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+-- ALTER TABLE ONLY chat_typing_indicators
+--     ADD CONSTRAINT chat_typing_indicators_pkey PRIMARY KEY (id);
 --
-
-ALTER TABLE ONLY custom_pricing_logs
-    ADD CONSTRAINT custom_pricing_logs_pkey PRIMARY KEY (id);
-
-
 --
--- Name: custom_pricing_rules custom_pricing_rules_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+-- --
+-- -- Name: cms_block_translations cms_block_translations_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+-- --
 --
-
-ALTER TABLE ONLY custom_pricing_rules
-    ADD CONSTRAINT custom_pricing_rules_pkey PRIMARY KEY (id);
-
-
+-- ALTER TABLE ONLY cms_block_translations
+--     ADD CONSTRAINT cms_block_translations_pkey PRIMARY KEY (cms_block_id, language_code);
 --
--- Name: customer_activities customer_activities_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
-
-ALTER TABLE ONLY customer_activities
-    ADD CONSTRAINT customer_activities_pkey PRIMARY KEY (id);
-
-
+-- --
+-- -- Name: cms_blocks cms_blocks_identifier_store_id_unique; Type: CONSTRAINT; Schema: public; Owner: postgres
+-- --
 --
--- Name: customer_addresses customer_addresses_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+-- ALTER TABLE ONLY cms_blocks
+--     ADD CONSTRAINT cms_blocks_identifier_store_id_unique UNIQUE (identifier, store_id);
 --
-
-ALTER TABLE ONLY customer_addresses
-    ADD CONSTRAINT customer_addresses_pkey PRIMARY KEY (id);
-
-
 --
--- Name: customers customers_email_unique; Type: CONSTRAINT; Schema: public; Owner: postgres
+-- --
+-- -- Name: cms_blocks cms_blocks_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+-- --
 --
-
-ALTER TABLE ONLY customers
-    ADD CONSTRAINT customers_email_unique UNIQUE (email);
-
-
+-- ALTER TABLE ONLY cms_blocks
+--     ADD CONSTRAINT cms_blocks_pkey PRIMARY KEY (id);
 --
--- Name: customers customers_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
-
-ALTER TABLE ONLY customers
-    ADD CONSTRAINT customers_pkey PRIMARY KEY (id);
-
-
+-- --
+-- -- Name: cms_page_seo cms_page_seo_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+-- --
 --
--- Name: delivery_settings delivery_settings_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+-- ALTER TABLE ONLY cms_page_seo
+--     ADD CONSTRAINT cms_page_seo_pkey PRIMARY KEY (cms_page_id, language_code);
 --
-
-ALTER TABLE ONLY delivery_settings
-    ADD CONSTRAINT delivery_settings_pkey PRIMARY KEY (id);
-
-
 --
--- Name: email_send_logs email_send_logs_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+-- --
+-- -- Name: cms_page_translations cms_page_translations_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+-- --
 --
-
-ALTER TABLE ONLY email_send_logs
-    ADD CONSTRAINT email_send_logs_pkey PRIMARY KEY (id);
-
-
+-- ALTER TABLE ONLY cms_page_translations
+--     ADD CONSTRAINT cms_page_translations_pkey PRIMARY KEY (cms_page_id, language_code);
 --
--- Name: email_template_translations email_template_translations_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
-
-ALTER TABLE ONLY email_template_translations
-    ADD CONSTRAINT email_template_translations_pkey PRIMARY KEY (id);
-
-
+-- --
+-- -- Name: cms_pages cms_pages_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+-- --
 --
--- Name: email_templates email_templates_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+-- ALTER TABLE ONLY cms_pages
+--     ADD CONSTRAINT cms_pages_pkey PRIMARY KEY (id);
 --
-
-ALTER TABLE ONLY email_templates
-    ADD CONSTRAINT email_templates_pkey PRIMARY KEY (id);
-
-
 --
--- Name: file_baselines file_baselines_file_path_key; Type: CONSTRAINT; Schema: public; Owner: postgres
+-- --
+-- -- Name: cms_pages cms_pages_slug_key; Type: CONSTRAINT; Schema: public; Owner: postgres
+-- --
 --
-
-ALTER TABLE ONLY file_baselines
-    ADD CONSTRAINT file_baselines_file_path_key UNIQUE (file_path);
-
-
+-- ALTER TABLE ONLY cms_pages
+--     ADD CONSTRAINT cms_pages_slug_key UNIQUE (slug);
 --
--- Name: file_baselines file_baselines_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
-
-ALTER TABLE ONLY file_baselines
-    ADD CONSTRAINT file_baselines_pkey PRIMARY KEY (id);
-
-
+-- --
+-- -- Name: consent_logs consent_logs_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+-- --
 --
--- Name: hamid_cart hamid_cart_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+-- ALTER TABLE ONLY consent_logs
+--     ADD CONSTRAINT consent_logs_pkey PRIMARY KEY (id);
 --
-
-ALTER TABLE ONLY hamid_cart
-    ADD CONSTRAINT hamid_cart_pkey PRIMARY KEY (id);
-
-
 --
--- Name: heatmap_aggregations heatmap_aggregations_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+-- --
+-- -- Name: cookie_consent_settings cookie_consent_settings_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+-- --
 --
-
-ALTER TABLE ONLY heatmap_aggregations
-    ADD CONSTRAINT heatmap_aggregations_pkey PRIMARY KEY (id);
-
-
+-- ALTER TABLE ONLY cookie_consent_settings
+--     ADD CONSTRAINT cookie_consent_settings_pkey PRIMARY KEY (id);
 --
--- Name: heatmap_aggregations heatmap_aggregations_store_id_page_url_aggregation_period_p_key; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
-
-ALTER TABLE ONLY heatmap_aggregations
-    ADD CONSTRAINT heatmap_aggregations_store_id_page_url_aggregation_period_p_key UNIQUE (store_id, page_url, aggregation_period, period_start, viewport_width, viewport_height, interaction_type, x_coordinate, y_coordinate);
-
-
+-- --
+-- -- Name: cookie_consent_settings_translations cookie_consent_settings_translations_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+-- --
 --
--- Name: heatmap_interactions heatmap_interactions_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+-- ALTER TABLE ONLY cookie_consent_settings_translations
+--     ADD CONSTRAINT cookie_consent_settings_translations_pkey PRIMARY KEY (id);
 --
-
-ALTER TABLE ONLY heatmap_interactions
-    ADD CONSTRAINT heatmap_interactions_pkey PRIMARY KEY (id);
-
-
 --
--- Name: heatmap_sessions heatmap_sessions_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+-- --
+-- -- Name: cookie_consent_settings_translations cookie_consent_settings_translations_unique; Type: CONSTRAINT; Schema: public; Owner: postgres
+-- --
 --
-
-ALTER TABLE ONLY heatmap_sessions
-    ADD CONSTRAINT heatmap_sessions_pkey PRIMARY KEY (id);
-
-
+-- ALTER TABLE ONLY cookie_consent_settings_translations
+--     ADD CONSTRAINT cookie_consent_settings_translations_unique UNIQUE (cookie_consent_settings_id, language_code);
 --
--- Name: heatmap_sessions heatmap_sessions_session_id_store_id_key; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
-
-ALTER TABLE ONLY heatmap_sessions
-    ADD CONSTRAINT heatmap_sessions_session_id_store_id_key UNIQUE (session_id, store_id);
-
-
+-- --
+-- -- Name: coupon_translations coupon_translations_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+-- --
 --
--- Name: integration_configs integration_configs_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+-- ALTER TABLE ONLY coupon_translations
+--     ADD CONSTRAINT coupon_translations_pkey PRIMARY KEY (coupon_id, language_code);
 --
-
-ALTER TABLE ONLY integration_configs
-    ADD CONSTRAINT integration_configs_pkey PRIMARY KEY (id);
-
-
 --
--- Name: job_history job_history_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+-- --
+-- -- Name: coupons coupons_code_key; Type: CONSTRAINT; Schema: public; Owner: postgres
+-- --
 --
-
-ALTER TABLE ONLY job_history
-    ADD CONSTRAINT job_history_pkey PRIMARY KEY (id);
-
-
+-- ALTER TABLE ONLY coupons
+--     ADD CONSTRAINT coupons_code_key UNIQUE (code);
 --
--- Name: jobs jobs_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
-
-ALTER TABLE ONLY jobs
-    ADD CONSTRAINT jobs_pkey PRIMARY KEY (id);
-
-
+-- --
+-- -- Name: coupons coupons_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+-- --
 --
--- Name: languages languages_code_key; Type: CONSTRAINT; Schema: public; Owner: postgres
+-- ALTER TABLE ONLY coupons
+--     ADD CONSTRAINT coupons_pkey PRIMARY KEY (id);
 --
-
-ALTER TABLE ONLY languages
-    ADD CONSTRAINT languages_code_key UNIQUE (code);
-
-
 --
--- Name: languages languages_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+-- --
+-- -- Name: credit_pricing credit_pricing_credits_currency_key; Type: CONSTRAINT; Schema: public; Owner: postgres
+-- --
 --
-
-ALTER TABLE ONLY languages
-    ADD CONSTRAINT languages_pkey PRIMARY KEY (id);
-
-
+-- ALTER TABLE ONLY credit_pricing
+--     ADD CONSTRAINT credit_pricing_credits_currency_key UNIQUE (credits, currency);
 --
--- Name: login_attempts login_attempts_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
-
-ALTER TABLE ONLY login_attempts
-    ADD CONSTRAINT login_attempts_pkey PRIMARY KEY (id);
-
-
+-- --
+-- -- Name: credit_pricing credit_pricing_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+-- --
 --
--- Name: media_assets media_assets_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+-- ALTER TABLE ONLY credit_pricing
+--     ADD CONSTRAINT credit_pricing_pkey PRIMARY KEY (id);
 --
-
-ALTER TABLE ONLY media_assets
-    ADD CONSTRAINT media_assets_pkey PRIMARY KEY (id);
-
-
 --
--- Name: media_assets media_assets_store_id_file_path_key; Type: CONSTRAINT; Schema: public; Owner: postgres
+-- --
+-- -- Name: credit_transactions credit_transactions_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+-- --
 --
-
-ALTER TABLE ONLY media_assets
-    ADD CONSTRAINT media_assets_store_id_file_path_key UNIQUE (store_id, file_path);
-
-
+-- ALTER TABLE ONLY credit_transactions
+--     ADD CONSTRAINT credit_transactions_pkey PRIMARY KEY (id);
 --
--- Name: payment_method_translations payment_method_translations_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
-
-ALTER TABLE ONLY payment_method_translations
-    ADD CONSTRAINT payment_method_translations_pkey PRIMARY KEY (payment_method_id, language_code);
-
-
+-- --
+-- -- Name: credit_usage credit_usage_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+-- --
 --
--- Name: payment_methods payment_methods_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+-- ALTER TABLE ONLY credit_usage
+--     ADD CONSTRAINT credit_usage_pkey PRIMARY KEY (id);
 --
-
-ALTER TABLE ONLY payment_methods
-    ADD CONSTRAINT payment_methods_pkey PRIMARY KEY (id);
-
-
 --
--- Name: pdf_template_translations pdf_template_translations_pdf_template_id_language_code_key; Type: CONSTRAINT; Schema: public; Owner: postgres
+-- --
+-- -- Name: credits credits_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+-- --
 --
-
-ALTER TABLE ONLY pdf_template_translations
-    ADD CONSTRAINT pdf_template_translations_pdf_template_id_language_code_key UNIQUE (pdf_template_id, language_code);
-
-
+-- ALTER TABLE ONLY credits
+--     ADD CONSTRAINT credits_pkey PRIMARY KEY (id);
 --
--- Name: pdf_template_translations pdf_template_translations_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
-
-ALTER TABLE ONLY pdf_template_translations
-    ADD CONSTRAINT pdf_template_translations_pkey PRIMARY KEY (id);
-
-
+-- --
+-- -- Name: cron_job_executions cron_job_executions_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+-- --
 --
--- Name: pdf_templates pdf_templates_identifier_store_id_key; Type: CONSTRAINT; Schema: public; Owner: postgres
+-- ALTER TABLE ONLY cron_job_executions
+--     ADD CONSTRAINT cron_job_executions_pkey PRIMARY KEY (id);
 --
-
-ALTER TABLE ONLY pdf_templates
-    ADD CONSTRAINT pdf_templates_identifier_store_id_key UNIQUE (identifier, store_id);
-
-
 --
--- Name: pdf_templates pdf_templates_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+-- --
+-- -- Name: cron_job_types cron_job_types_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+-- --
 --
-
-ALTER TABLE ONLY pdf_templates
-    ADD CONSTRAINT pdf_templates_pkey PRIMARY KEY (id);
-
-
+-- ALTER TABLE ONLY cron_job_types
+--     ADD CONSTRAINT cron_job_types_pkey PRIMARY KEY (id);
 --
--- Name: platform_admins platform_admins_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
-
-ALTER TABLE ONLY platform_admins
-    ADD CONSTRAINT platform_admins_pkey PRIMARY KEY (id);
-
-
+-- --
+-- -- Name: cron_job_types cron_job_types_type_name_key; Type: CONSTRAINT; Schema: public; Owner: postgres
+-- --
 --
--- Name: platform_admins platform_admins_user_id_key; Type: CONSTRAINT; Schema: public; Owner: postgres
+-- ALTER TABLE ONLY cron_job_types
+--     ADD CONSTRAINT cron_job_types_type_name_key UNIQUE (type_name);
 --
-
-ALTER TABLE ONLY platform_admins
-    ADD CONSTRAINT platform_admins_user_id_key UNIQUE (user_id);
-
-
 --
--- Name: plugin_admin_pages plugin_admin_pages_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+-- --
+-- -- Name: cron_jobs cron_jobs_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+-- --
 --
-
-ALTER TABLE ONLY plugin_admin_pages
-    ADD CONSTRAINT plugin_admin_pages_pkey PRIMARY KEY (id);
-
-
+-- ALTER TABLE ONLY cron_jobs
+--     ADD CONSTRAINT cron_jobs_pkey PRIMARY KEY (id);
 --
--- Name: plugin_admin_pages plugin_admin_pages_plugin_id_page_key_key; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
-
-ALTER TABLE ONLY plugin_admin_pages
-    ADD CONSTRAINT plugin_admin_pages_plugin_id_page_key_key UNIQUE (plugin_id, page_key);
-
-
+-- --
+-- -- Name: custom_analytics_events custom_analytics_events_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+-- --
 --
--- Name: plugin_admin_pages plugin_admin_pages_route_key; Type: CONSTRAINT; Schema: public; Owner: postgres
+-- ALTER TABLE ONLY custom_analytics_events
+--     ADD CONSTRAINT custom_analytics_events_pkey PRIMARY KEY (id);
 --
-
-ALTER TABLE ONLY plugin_admin_pages
-    ADD CONSTRAINT plugin_admin_pages_route_key UNIQUE (route);
-
-
 --
--- Name: plugin_admin_scripts plugin_admin_scripts_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+-- --
+-- -- Name: custom_domains custom_domains_domain_key; Type: CONSTRAINT; Schema: public; Owner: postgres
+-- --
 --
-
-ALTER TABLE ONLY plugin_admin_scripts
-    ADD CONSTRAINT plugin_admin_scripts_pkey PRIMARY KEY (id);
-
-
+-- ALTER TABLE ONLY custom_domains
+--     ADD CONSTRAINT custom_domains_domain_key UNIQUE (domain);
 --
--- Name: plugin_admin_scripts plugin_admin_scripts_plugin_id_script_name_key; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
-
-ALTER TABLE ONLY plugin_admin_scripts
-    ADD CONSTRAINT plugin_admin_scripts_plugin_id_script_name_key UNIQUE (plugin_id, script_name);
-
-
+-- --
+-- -- Name: custom_domains custom_domains_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+-- --
 --
--- Name: plugin_configurations plugin_configurations_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+-- ALTER TABLE ONLY custom_domains
+--     ADD CONSTRAINT custom_domains_pkey PRIMARY KEY (id);
 --
-
-ALTER TABLE ONLY plugin_configurations
-    ADD CONSTRAINT plugin_configurations_pkey PRIMARY KEY (id);
-
-
 --
--- Name: plugin_controllers plugin_controllers_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+-- --
+-- -- Name: custom_option_rules custom_option_rules_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+-- --
 --
-
-ALTER TABLE ONLY plugin_controllers
-    ADD CONSTRAINT plugin_controllers_pkey PRIMARY KEY (id);
-
-
+-- ALTER TABLE ONLY custom_option_rules
+--     ADD CONSTRAINT custom_option_rules_pkey PRIMARY KEY (id);
 --
--- Name: plugin_data plugin_data_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
-
-ALTER TABLE ONLY plugin_data
-    ADD CONSTRAINT plugin_data_pkey PRIMARY KEY (id);
-
-
+-- --
+-- -- Name: custom_pricing_discounts custom_pricing_discounts_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+-- --
 --
--- Name: plugin_dependencies plugin_dependencies_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+-- ALTER TABLE ONLY custom_pricing_discounts
+--     ADD CONSTRAINT custom_pricing_discounts_pkey PRIMARY KEY (id);
 --
-
-ALTER TABLE ONLY plugin_dependencies
-    ADD CONSTRAINT plugin_dependencies_pkey PRIMARY KEY (id);
-
-
 --
--- Name: plugin_dependencies plugin_dependencies_plugin_id_package_name_key; Type: CONSTRAINT; Schema: public; Owner: postgres
+-- --
+-- -- Name: custom_pricing_logs custom_pricing_logs_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+-- --
 --
-
-ALTER TABLE ONLY plugin_dependencies
-    ADD CONSTRAINT plugin_dependencies_plugin_id_package_name_key UNIQUE (plugin_id, package_name);
-
-
+-- ALTER TABLE ONLY custom_pricing_logs
+--     ADD CONSTRAINT custom_pricing_logs_pkey PRIMARY KEY (id);
 --
--- Name: plugin_docs plugin_docs_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
-
-ALTER TABLE ONLY plugin_docs
-    ADD CONSTRAINT plugin_docs_pkey PRIMARY KEY (id);
-
-
+-- --
+-- -- Name: custom_pricing_rules custom_pricing_rules_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+-- --
 --
--- Name: plugin_entities plugin_entities_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+-- ALTER TABLE ONLY custom_pricing_rules
+--     ADD CONSTRAINT custom_pricing_rules_pkey PRIMARY KEY (id);
 --
-
-ALTER TABLE ONLY plugin_entities
-    ADD CONSTRAINT plugin_entities_pkey PRIMARY KEY (id);
-
-
 --
--- Name: plugin_events plugin_events_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+-- --
+-- -- Name: customer_activities customer_activities_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+-- --
 --
-
-ALTER TABLE ONLY plugin_events
-    ADD CONSTRAINT plugin_events_pkey PRIMARY KEY (id);
-
-
+-- ALTER TABLE ONLY customer_activities
+--     ADD CONSTRAINT customer_activities_pkey PRIMARY KEY (id);
 --
--- Name: plugin_hooks plugin_hooks_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
-
-ALTER TABLE ONLY plugin_hooks
-    ADD CONSTRAINT plugin_hooks_pkey PRIMARY KEY (id);
-
-
+-- --
+-- -- Name: customer_addresses customer_addresses_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+-- --
 --
--- Name: plugin_marketplace plugin_marketplace_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+-- ALTER TABLE ONLY customer_addresses
+--     ADD CONSTRAINT customer_addresses_pkey PRIMARY KEY (id);
 --
-
-ALTER TABLE ONLY plugin_marketplace
-    ADD CONSTRAINT plugin_marketplace_pkey PRIMARY KEY (id);
-
-
 --
--- Name: plugin_marketplace plugin_marketplace_slug_key; Type: CONSTRAINT; Schema: public; Owner: postgres
+-- --
+-- -- Name: customers customers_email_unique; Type: CONSTRAINT; Schema: public; Owner: postgres
+-- --
 --
-
-ALTER TABLE ONLY plugin_marketplace
-    ADD CONSTRAINT plugin_marketplace_slug_key UNIQUE (slug);
-
-
+-- ALTER TABLE ONLY customers
+--     ADD CONSTRAINT customers_email_unique UNIQUE (email);
 --
--- Name: plugin_migrations plugin_migrations_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
-
-ALTER TABLE ONLY plugin_migrations
-    ADD CONSTRAINT plugin_migrations_pkey PRIMARY KEY (id);
-
-
+-- --
+-- -- Name: customers customers_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+-- --
 --
--- Name: plugin_registry plugin_registry_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+-- ALTER TABLE ONLY customers
+--     ADD CONSTRAINT customers_pkey PRIMARY KEY (id);
 --
-
-ALTER TABLE ONLY plugin_registry
-    ADD CONSTRAINT plugin_registry_pkey PRIMARY KEY (id);
-
-
 --
--- Name: plugin_scripts plugin_scripts_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+-- --
+-- -- Name: delivery_settings delivery_settings_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+-- --
 --
-
-ALTER TABLE ONLY plugin_scripts
-    ADD CONSTRAINT plugin_scripts_pkey PRIMARY KEY (id);
-
-
+-- ALTER TABLE ONLY delivery_settings
+--     ADD CONSTRAINT delivery_settings_pkey PRIMARY KEY (id);
 --
--- Name: plugin_version_comparisons plugin_version_comparisons_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
-
-ALTER TABLE ONLY plugin_version_comparisons
-    ADD CONSTRAINT plugin_version_comparisons_pkey PRIMARY KEY (id);
-
-
+-- --
+-- -- Name: email_send_logs email_send_logs_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+-- --
 --
--- Name: plugin_version_history plugin_version_history_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+-- ALTER TABLE ONLY email_send_logs
+--     ADD CONSTRAINT email_send_logs_pkey PRIMARY KEY (id);
 --
-
-ALTER TABLE ONLY plugin_version_history
-    ADD CONSTRAINT plugin_version_history_pkey PRIMARY KEY (id);
-
-
 --
--- Name: plugin_version_patches plugin_version_patches_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+-- --
+-- -- Name: email_template_translations email_template_translations_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+-- --
 --
-
-ALTER TABLE ONLY plugin_version_patches
-    ADD CONSTRAINT plugin_version_patches_pkey PRIMARY KEY (id);
-
-
+-- ALTER TABLE ONLY email_template_translations
+--     ADD CONSTRAINT email_template_translations_pkey PRIMARY KEY (id);
 --
--- Name: plugin_version_snapshots plugin_version_snapshots_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
-
-ALTER TABLE ONLY plugin_version_snapshots
-    ADD CONSTRAINT plugin_version_snapshots_pkey PRIMARY KEY (id);
-
-
+-- --
+-- -- Name: email_templates email_templates_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+-- --
 --
--- Name: plugin_version_snapshots plugin_version_snapshots_version_id_key; Type: CONSTRAINT; Schema: public; Owner: postgres
+-- ALTER TABLE ONLY email_templates
+--     ADD CONSTRAINT email_templates_pkey PRIMARY KEY (id);
 --
-
-ALTER TABLE ONLY plugin_version_snapshots
-    ADD CONSTRAINT plugin_version_snapshots_version_id_key UNIQUE (version_id);
-
-
 --
--- Name: plugin_version_tags plugin_version_tags_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+-- --
+-- -- Name: file_baselines file_baselines_file_path_key; Type: CONSTRAINT; Schema: public; Owner: postgres
+-- --
 --
-
-ALTER TABLE ONLY plugin_version_tags
-    ADD CONSTRAINT plugin_version_tags_pkey PRIMARY KEY (id);
-
-
+-- ALTER TABLE ONLY file_baselines
+--     ADD CONSTRAINT file_baselines_file_path_key UNIQUE (file_path);
 --
--- Name: plugin_widgets plugin_widgets_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
-
-ALTER TABLE ONLY plugin_widgets
-    ADD CONSTRAINT plugin_widgets_pkey PRIMARY KEY (id);
-
-
+-- --
+-- -- Name: file_baselines file_baselines_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+-- --
 --
--- Name: plugins plugins_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+-- ALTER TABLE ONLY file_baselines
+--     ADD CONSTRAINT file_baselines_pkey PRIMARY KEY (id);
 --
-
-ALTER TABLE ONLY plugins
-    ADD CONSTRAINT plugins_pkey PRIMARY KEY (id);
-
-
 --
--- Name: plugins plugins_slug_key; Type: CONSTRAINT; Schema: public; Owner: postgres
+-- --
+-- -- Name: hamid_cart hamid_cart_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+-- --
 --
-
-ALTER TABLE ONLY plugins
-    ADD CONSTRAINT plugins_slug_key UNIQUE (slug);
-
-
+-- ALTER TABLE ONLY hamid_cart
+--     ADD CONSTRAINT hamid_cart_pkey PRIMARY KEY (id);
 --
--- Name: product_attribute_values product_attribute_values_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
-
-ALTER TABLE ONLY product_attribute_values
-    ADD CONSTRAINT product_attribute_values_pkey PRIMARY KEY (id);
-
-
+-- --
+-- -- Name: heatmap_aggregations heatmap_aggregations_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+-- --
 --
--- Name: product_label_translations product_label_translations_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+-- ALTER TABLE ONLY heatmap_aggregations
+--     ADD CONSTRAINT heatmap_aggregations_pkey PRIMARY KEY (id);
 --
-
-ALTER TABLE ONLY product_label_translations
-    ADD CONSTRAINT product_label_translations_pkey PRIMARY KEY (product_label_id, language_code);
-
-
 --
--- Name: product_labels product_labels_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+-- --
+-- -- Name: heatmap_aggregations heatmap_aggregations_store_id_page_url_aggregation_period_p_key; Type: CONSTRAINT; Schema: public; Owner: postgres
+-- --
 --
-
-ALTER TABLE ONLY product_labels
-    ADD CONSTRAINT product_labels_pkey PRIMARY KEY (id);
-
-
+-- ALTER TABLE ONLY heatmap_aggregations
+--     ADD CONSTRAINT heatmap_aggregations_store_id_page_url_aggregation_period_p_key UNIQUE (store_id, page_url, aggregation_period, period_start, viewport_width, viewport_height, interaction_type, x_coordinate, y_coordinate);
 --
--- Name: product_seo product_seo_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
-
-ALTER TABLE ONLY product_seo
-    ADD CONSTRAINT product_seo_pkey PRIMARY KEY (product_id, language_code);
-
-
+-- --
+-- -- Name: heatmap_interactions heatmap_interactions_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+-- --
 --
--- Name: product_tab_translations product_tab_translations_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+-- ALTER TABLE ONLY heatmap_interactions
+--     ADD CONSTRAINT heatmap_interactions_pkey PRIMARY KEY (id);
 --
-
-ALTER TABLE ONLY product_tab_translations
-    ADD CONSTRAINT product_tab_translations_pkey PRIMARY KEY (product_tab_id, language_code);
-
-
 --
--- Name: product_tabs product_tabs_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+-- --
+-- -- Name: heatmap_sessions heatmap_sessions_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+-- --
 --
-
-ALTER TABLE ONLY product_tabs
-    ADD CONSTRAINT product_tabs_pkey PRIMARY KEY (id);
-
-
+-- ALTER TABLE ONLY heatmap_sessions
+--     ADD CONSTRAINT heatmap_sessions_pkey PRIMARY KEY (id);
 --
--- Name: product_translations product_translations_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
-
-ALTER TABLE ONLY product_translations
-    ADD CONSTRAINT product_translations_pkey PRIMARY KEY (product_id, language_code);
-
-
+-- --
+-- -- Name: heatmap_sessions heatmap_sessions_session_id_store_id_key; Type: CONSTRAINT; Schema: public; Owner: postgres
+-- --
 --
--- Name: product_variants product_variants_parent_product_id_variant_product_id_key; Type: CONSTRAINT; Schema: public; Owner: postgres
+-- ALTER TABLE ONLY heatmap_sessions
+--     ADD CONSTRAINT heatmap_sessions_session_id_store_id_key UNIQUE (session_id, store_id);
 --
-
-ALTER TABLE ONLY product_variants
-    ADD CONSTRAINT product_variants_parent_product_id_variant_product_id_key UNIQUE (parent_product_id, variant_product_id);
-
-
 --
--- Name: product_variants product_variants_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+-- --
+-- -- Name: integration_configs integration_configs_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+-- --
 --
-
-ALTER TABLE ONLY product_variants
-    ADD CONSTRAINT product_variants_pkey PRIMARY KEY (id);
-
-
+-- ALTER TABLE ONLY integration_configs
+--     ADD CONSTRAINT integration_configs_pkey PRIMARY KEY (id);
 --
--- Name: products products_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
-
-ALTER TABLE ONLY products
-    ADD CONSTRAINT products_pkey PRIMARY KEY (id);
-
-
+-- --
+-- -- Name: job_history job_history_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+-- --
 --
--- Name: products products_sku_key; Type: CONSTRAINT; Schema: public; Owner: postgres
+-- ALTER TABLE ONLY job_history
+--     ADD CONSTRAINT job_history_pkey PRIMARY KEY (id);
 --
-
-ALTER TABLE ONLY products
-    ADD CONSTRAINT products_sku_key UNIQUE (sku);
-
-
 --
--- Name: products products_slug_key; Type: CONSTRAINT; Schema: public; Owner: postgres
+-- --
+-- -- Name: jobs jobs_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+-- --
 --
-
-ALTER TABLE ONLY products
-    ADD CONSTRAINT products_slug_key UNIQUE (slug);
-
-
+-- ALTER TABLE ONLY jobs
+--     ADD CONSTRAINT jobs_pkey PRIMARY KEY (id);
 --
--- Name: redirects redirects_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
-
-ALTER TABLE ONLY redirects
-    ADD CONSTRAINT redirects_pkey PRIMARY KEY (id);
-
-
+-- --
+-- -- Name: languages languages_code_key; Type: CONSTRAINT; Schema: public; Owner: postgres
+-- --
 --
--- Name: redirects redirects_store_id_from_url_key; Type: CONSTRAINT; Schema: public; Owner: postgres
+-- ALTER TABLE ONLY languages
+--     ADD CONSTRAINT languages_code_key UNIQUE (code);
 --
-
-ALTER TABLE ONLY redirects
-    ADD CONSTRAINT redirects_store_id_from_url_key UNIQUE (store_id, from_url);
-
-
 --
--- Name: sales_invoices sales_invoices_invoice_number_key; Type: CONSTRAINT; Schema: public; Owner: postgres
+-- --
+-- -- Name: languages languages_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+-- --
 --
-
-ALTER TABLE ONLY sales_invoices
-    ADD CONSTRAINT sales_invoices_invoice_number_key UNIQUE (invoice_number);
-
-
+-- ALTER TABLE ONLY languages
+--     ADD CONSTRAINT languages_pkey PRIMARY KEY (id);
 --
--- Name: sales_invoices sales_invoices_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
-
-ALTER TABLE ONLY sales_invoices
-    ADD CONSTRAINT sales_invoices_pkey PRIMARY KEY (id);
-
-
+-- --
+-- -- Name: login_attempts login_attempts_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+-- --
 --
--- Name: sales_order_items sales_order_items_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+-- ALTER TABLE ONLY login_attempts
+--     ADD CONSTRAINT login_attempts_pkey PRIMARY KEY (id);
 --
-
-ALTER TABLE ONLY sales_order_items
-    ADD CONSTRAINT sales_order_items_pkey PRIMARY KEY (id);
-
-
 --
--- Name: sales_orders sales_orders_order_number_key; Type: CONSTRAINT; Schema: public; Owner: postgres
+-- --
+-- -- Name: media_assets media_assets_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+-- --
 --
-
-ALTER TABLE ONLY sales_orders
-    ADD CONSTRAINT sales_orders_order_number_key UNIQUE (order_number);
-
-
+-- ALTER TABLE ONLY media_assets
+--     ADD CONSTRAINT media_assets_pkey PRIMARY KEY (id);
 --
--- Name: sales_orders sales_orders_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
-
-ALTER TABLE ONLY sales_orders
-    ADD CONSTRAINT sales_orders_pkey PRIMARY KEY (id);
-
-
+-- --
+-- -- Name: media_assets media_assets_store_id_file_path_key; Type: CONSTRAINT; Schema: public; Owner: postgres
+-- --
 --
--- Name: sales_shipments sales_shipments_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+-- ALTER TABLE ONLY media_assets
+--     ADD CONSTRAINT media_assets_store_id_file_path_key UNIQUE (store_id, file_path);
 --
-
-ALTER TABLE ONLY sales_shipments
-    ADD CONSTRAINT sales_shipments_pkey PRIMARY KEY (id);
-
-
 --
--- Name: sales_shipments sales_shipments_shipment_number_key; Type: CONSTRAINT; Schema: public; Owner: postgres
+-- --
+-- -- Name: payment_method_translations payment_method_translations_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+-- --
 --
-
-ALTER TABLE ONLY sales_shipments
-    ADD CONSTRAINT sales_shipments_shipment_number_key UNIQUE (shipment_number);
-
-
+-- ALTER TABLE ONLY payment_method_translations
+--     ADD CONSTRAINT payment_method_translations_pkey PRIMARY KEY (payment_method_id, language_code);
 --
--- Name: seo_settings seo_settings_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
-
-ALTER TABLE ONLY seo_settings
-    ADD CONSTRAINT seo_settings_pkey PRIMARY KEY (id);
-
-
+-- --
+-- -- Name: payment_methods payment_methods_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+-- --
 --
--- Name: seo_settings seo_settings_store_id_key; Type: CONSTRAINT; Schema: public; Owner: postgres
+-- ALTER TABLE ONLY payment_methods
+--     ADD CONSTRAINT payment_methods_pkey PRIMARY KEY (id);
 --
-
-ALTER TABLE ONLY seo_settings
-    ADD CONSTRAINT seo_settings_store_id_key UNIQUE (store_id);
-
-
 --
--- Name: seo_templates seo_templates_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+-- --
+-- -- Name: pdf_template_translations pdf_template_translations_pdf_template_id_language_code_key; Type: CONSTRAINT; Schema: public; Owner: postgres
+-- --
 --
-
-ALTER TABLE ONLY seo_templates
-    ADD CONSTRAINT seo_templates_pkey PRIMARY KEY (id);
-
-
+-- ALTER TABLE ONLY pdf_template_translations
+--     ADD CONSTRAINT pdf_template_translations_pdf_template_id_language_code_key UNIQUE (pdf_template_id, language_code);
 --
--- Name: service_credit_costs service_credit_costs_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
-
-ALTER TABLE ONLY service_credit_costs
-    ADD CONSTRAINT service_credit_costs_pkey PRIMARY KEY (id);
-
-
+-- --
+-- -- Name: pdf_template_translations pdf_template_translations_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+-- --
 --
--- Name: service_credit_costs service_credit_costs_service_key_key; Type: CONSTRAINT; Schema: public; Owner: postgres
+-- ALTER TABLE ONLY pdf_template_translations
+--     ADD CONSTRAINT pdf_template_translations_pkey PRIMARY KEY (id);
 --
-
-ALTER TABLE ONLY service_credit_costs
-    ADD CONSTRAINT service_credit_costs_service_key_key UNIQUE (service_key);
-
-
 --
--- Name: shipping_method_translations shipping_method_translations_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+-- --
+-- -- Name: pdf_templates pdf_templates_identifier_store_id_key; Type: CONSTRAINT; Schema: public; Owner: postgres
+-- --
 --
-
-ALTER TABLE ONLY shipping_method_translations
-    ADD CONSTRAINT shipping_method_translations_pkey PRIMARY KEY (shipping_method_id, language_code);
-
-
+-- ALTER TABLE ONLY pdf_templates
+--     ADD CONSTRAINT pdf_templates_identifier_store_id_key UNIQUE (identifier, store_id);
 --
--- Name: shipping_methods shipping_methods_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
-
-ALTER TABLE ONLY shipping_methods
-    ADD CONSTRAINT shipping_methods_pkey PRIMARY KEY (id);
-
-
+-- --
+-- -- Name: pdf_templates pdf_templates_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+-- --
 --
--- Name: shopify_oauth_tokens shopify_oauth_tokens_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+-- ALTER TABLE ONLY pdf_templates
+--     ADD CONSTRAINT pdf_templates_pkey PRIMARY KEY (id);
 --
-
-ALTER TABLE ONLY shopify_oauth_tokens
-    ADD CONSTRAINT shopify_oauth_tokens_pkey PRIMARY KEY (id);
-
-
 --
--- Name: shopify_oauth_tokens shopify_oauth_tokens_shop_domain_key; Type: CONSTRAINT; Schema: public; Owner: postgres
+-- --
+-- -- Name: platform_admins platform_admins_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+-- --
 --
-
-ALTER TABLE ONLY shopify_oauth_tokens
-    ADD CONSTRAINT shopify_oauth_tokens_shop_domain_key UNIQUE (shop_domain);
-
-
+-- ALTER TABLE ONLY platform_admins
+--     ADD CONSTRAINT platform_admins_pkey PRIMARY KEY (id);
 --
--- Name: shopify_oauth_tokens shopify_oauth_tokens_store_id_key; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
-
-ALTER TABLE ONLY shopify_oauth_tokens
-    ADD CONSTRAINT shopify_oauth_tokens_store_id_key UNIQUE (store_id);
-
-
+-- --
+-- -- Name: platform_admins platform_admins_user_id_key; Type: CONSTRAINT; Schema: public; Owner: postgres
+-- --
 --
--- Name: slot_configurations slot_configurations_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+-- ALTER TABLE ONLY platform_admins
+--     ADD CONSTRAINT platform_admins_user_id_key UNIQUE (user_id);
 --
-
-ALTER TABLE ONLY slot_configurations
-    ADD CONSTRAINT slot_configurations_pkey PRIMARY KEY (id);
-
-
 --
--- Name: store_invitations store_invitations_invitation_token_key; Type: CONSTRAINT; Schema: public; Owner: postgres
+-- --
+-- -- Name: plugin_admin_pages plugin_admin_pages_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+-- --
 --
-
-ALTER TABLE ONLY store_invitations
-    ADD CONSTRAINT store_invitations_invitation_token_key UNIQUE (invitation_token);
-
-
+-- ALTER TABLE ONLY plugin_admin_pages
+--     ADD CONSTRAINT plugin_admin_pages_pkey PRIMARY KEY (id);
 --
--- Name: store_invitations store_invitations_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
-
-ALTER TABLE ONLY store_invitations
-    ADD CONSTRAINT store_invitations_pkey PRIMARY KEY (id);
-
-
+-- --
+-- -- Name: plugin_admin_pages plugin_admin_pages_plugin_id_page_key_key; Type: CONSTRAINT; Schema: public; Owner: postgres
+-- --
 --
--- Name: store_teams store_teams_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+-- ALTER TABLE ONLY plugin_admin_pages
+--     ADD CONSTRAINT plugin_admin_pages_plugin_id_page_key_key UNIQUE (plugin_id, page_key);
 --
-
-ALTER TABLE ONLY store_teams
-    ADD CONSTRAINT store_teams_pkey PRIMARY KEY (id);
-
-
 --
--- Name: store_teams store_teams_store_id_user_id_key; Type: CONSTRAINT; Schema: public; Owner: postgres
+-- --
+-- -- Name: plugin_admin_pages plugin_admin_pages_route_key; Type: CONSTRAINT; Schema: public; Owner: postgres
+-- --
 --
-
-ALTER TABLE ONLY store_teams
-    ADD CONSTRAINT store_teams_store_id_user_id_key UNIQUE (store_id, user_id);
-
-
+-- ALTER TABLE ONLY plugin_admin_pages
+--     ADD CONSTRAINT plugin_admin_pages_route_key UNIQUE (route);
 --
--- Name: store_uptime store_uptime_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
-
-ALTER TABLE ONLY store_uptime
-    ADD CONSTRAINT store_uptime_pkey PRIMARY KEY (id);
-
-
+-- --
+-- -- Name: plugin_admin_scripts plugin_admin_scripts_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+-- --
 --
--- Name: store_uptime store_uptime_store_id_charged_date_key; Type: CONSTRAINT; Schema: public; Owner: postgres
+-- ALTER TABLE ONLY plugin_admin_scripts
+--     ADD CONSTRAINT plugin_admin_scripts_pkey PRIMARY KEY (id);
 --
-
-ALTER TABLE ONLY store_uptime
-    ADD CONSTRAINT store_uptime_store_id_charged_date_key UNIQUE (store_id, charged_date);
-
-
 --
--- Name: stores stores_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+-- --
+-- -- Name: plugin_admin_scripts plugin_admin_scripts_plugin_id_script_name_key; Type: CONSTRAINT; Schema: public; Owner: postgres
+-- --
 --
-
-ALTER TABLE ONLY stores
-    ADD CONSTRAINT stores_pkey PRIMARY KEY (id);
-
+-- ALTER TABLE ONLY plugin_admin_scripts
+--     ADD CONSTRAINT plugin_admin_scripts_plugin_id_script_name_key UNIQUE (plugin_id, script_name);
 --
--- Name: subscriptions subscriptions_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
-
-ALTER TABLE ONLY subscriptions
-    ADD CONSTRAINT subscriptions_pkey PRIMARY KEY (id);
-
-
+-- --
+-- -- Name: plugin_configurations plugin_configurations_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+-- --
 --
--- Name: supabase_oauth_tokens supabase_oauth_tokens_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+-- ALTER TABLE ONLY plugin_configurations
+--     ADD CONSTRAINT plugin_configurations_pkey PRIMARY KEY (id);
 --
-
-ALTER TABLE ONLY supabase_oauth_tokens
-    ADD CONSTRAINT supabase_oauth_tokens_pkey PRIMARY KEY (id);
-
-
 --
--- Name: supabase_oauth_tokens supabase_oauth_tokens_store_id_key; Type: CONSTRAINT; Schema: public; Owner: postgres
+-- --
+-- -- Name: plugin_controllers plugin_controllers_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+-- --
 --
-
-ALTER TABLE ONLY supabase_oauth_tokens
-    ADD CONSTRAINT supabase_oauth_tokens_store_id_key UNIQUE (store_id);
-
-
+-- ALTER TABLE ONLY plugin_controllers
+--     ADD CONSTRAINT plugin_controllers_pkey PRIMARY KEY (id);
 --
--- Name: supabase_project_keys supabase_project_keys_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
-
-ALTER TABLE ONLY supabase_project_keys
-    ADD CONSTRAINT supabase_project_keys_pkey PRIMARY KEY (id);
-
-
+-- --
+-- -- Name: plugin_data plugin_data_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+-- --
 --
--- Name: supabase_project_keys supabase_project_keys_store_id_project_id_key; Type: CONSTRAINT; Schema: public; Owner: postgres
+-- ALTER TABLE ONLY plugin_data
+--     ADD CONSTRAINT plugin_data_pkey PRIMARY KEY (id);
 --
-
-ALTER TABLE ONLY supabase_project_keys
-    ADD CONSTRAINT supabase_project_keys_store_id_project_id_key UNIQUE (store_id, project_id);
-
-
 --
--- Name: taxes taxes_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+-- --
+-- -- Name: plugin_dependencies plugin_dependencies_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+-- --
 --
-
-ALTER TABLE ONLY taxes
-    ADD CONSTRAINT taxes_pkey PRIMARY KEY (id);
-
-
+-- ALTER TABLE ONLY plugin_dependencies
+--     ADD CONSTRAINT plugin_dependencies_pkey PRIMARY KEY (id);
 --
--- Name: translations_duplicate translations_duplicate_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
-
-ALTER TABLE ONLY translations_duplicate
-    ADD CONSTRAINT translations_duplicate_pkey PRIMARY KEY (id);
-
-
+-- --
+-- -- Name: plugin_dependencies plugin_dependencies_plugin_id_package_name_key; Type: CONSTRAINT; Schema: public; Owner: postgres
+-- --
 --
--- Name: translations translations_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+-- ALTER TABLE ONLY plugin_dependencies
+--     ADD CONSTRAINT plugin_dependencies_plugin_id_package_name_key UNIQUE (plugin_id, package_name);
 --
-
-ALTER TABLE ONLY translations
-    ADD CONSTRAINT translations_pkey PRIMARY KEY (id);
-
-
 --
--- Name: attribute_values unique_attribute_code; Type: CONSTRAINT; Schema: public; Owner: postgres
+-- --
+-- -- Name: plugin_docs plugin_docs_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+-- --
 --
-
-ALTER TABLE ONLY attribute_values
-    ADD CONSTRAINT unique_attribute_code UNIQUE (attribute_id, code);
-
-
+-- ALTER TABLE ONLY plugin_docs
+--     ADD CONSTRAINT plugin_docs_pkey PRIMARY KEY (id);
 --
--- Name: plugin_controllers unique_plugin_controller; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
-
-ALTER TABLE ONLY plugin_controllers
-    ADD CONSTRAINT unique_plugin_controller UNIQUE (plugin_id, method, path);
-
-
+-- --
+-- -- Name: plugin_entities plugin_entities_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+-- --
 --
--- Name: plugin_docs unique_plugin_doc; Type: CONSTRAINT; Schema: public; Owner: postgres
+-- ALTER TABLE ONLY plugin_entities
+--     ADD CONSTRAINT plugin_entities_pkey PRIMARY KEY (id);
 --
-
-ALTER TABLE ONLY plugin_docs
-    ADD CONSTRAINT unique_plugin_doc UNIQUE (plugin_id, doc_type);
-
-
 --
--- Name: plugin_entities unique_plugin_entity; Type: CONSTRAINT; Schema: public; Owner: postgres
+-- --
+-- -- Name: plugin_events plugin_events_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+-- --
 --
-
-ALTER TABLE ONLY plugin_entities
-    ADD CONSTRAINT unique_plugin_entity UNIQUE (plugin_id, entity_name);
-
-
+-- ALTER TABLE ONLY plugin_events
+--     ADD CONSTRAINT plugin_events_pkey PRIMARY KEY (id);
 --
--- Name: plugin_migrations unique_plugin_migration; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
-
-ALTER TABLE ONLY plugin_migrations
-    ADD CONSTRAINT unique_plugin_migration UNIQUE (plugin_id, migration_version);
-
-
+-- --
+-- -- Name: plugin_hooks plugin_hooks_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+-- --
 --
--- Name: plugin_entities unique_plugin_table; Type: CONSTRAINT; Schema: public; Owner: postgres
+-- ALTER TABLE ONLY plugin_hooks
+--     ADD CONSTRAINT plugin_hooks_pkey PRIMARY KEY (id);
 --
-
-ALTER TABLE ONLY plugin_entities
-    ADD CONSTRAINT unique_plugin_table UNIQUE (plugin_id, table_name);
-
-
 --
--- Name: plugin_version_tags unique_plugin_tag; Type: CONSTRAINT; Schema: public; Owner: postgres
+-- --
+-- -- Name: plugin_marketplace plugin_marketplace_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+-- --
 --
-
-ALTER TABLE ONLY plugin_version_tags
-    ADD CONSTRAINT unique_plugin_tag UNIQUE (plugin_id, tag_name);
-
-
+-- ALTER TABLE ONLY plugin_marketplace
+--     ADD CONSTRAINT plugin_marketplace_pkey PRIMARY KEY (id);
 --
--- Name: plugin_version_history unique_plugin_version; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
-
-ALTER TABLE ONLY plugin_version_history
-    ADD CONSTRAINT unique_plugin_version UNIQUE (plugin_id, version_number);
-
-
+-- --
+-- -- Name: plugin_marketplace plugin_marketplace_slug_key; Type: CONSTRAINT; Schema: public; Owner: postgres
+-- --
 --
--- Name: plugin_version_comparisons unique_version_comparison; Type: CONSTRAINT; Schema: public; Owner: postgres
+-- ALTER TABLE ONLY plugin_marketplace
+--     ADD CONSTRAINT plugin_marketplace_slug_key UNIQUE (slug);
 --
-
-ALTER TABLE ONLY plugin_version_comparisons
-    ADD CONSTRAINT unique_version_comparison UNIQUE (from_version_id, to_version_id);
-
-
 --
--- Name: admin_navigation_config uq_navigation_config_key; Type: CONSTRAINT; Schema: public; Owner: postgres
+-- --
+-- -- Name: plugin_migrations plugin_migrations_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+-- --
 --
-
-ALTER TABLE ONLY admin_navigation_config
-    ADD CONSTRAINT uq_navigation_config_key UNIQUE (nav_key);
-
-
+-- ALTER TABLE ONLY plugin_migrations
+--     ADD CONSTRAINT plugin_migrations_pkey PRIMARY KEY (id);
 --
--- Name: plugin_data uq_plugin_data_key; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
-
-ALTER TABLE ONLY plugin_data
-    ADD CONSTRAINT uq_plugin_data_key UNIQUE (plugin_id, data_key);
-
-
+-- --
+-- -- Name: plugin_registry plugin_registry_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+-- --
 --
--- Name: plugin_widgets uq_plugin_widget_id; Type: CONSTRAINT; Schema: public; Owner: postgres
+-- ALTER TABLE ONLY plugin_registry
+--     ADD CONSTRAINT plugin_registry_pkey PRIMARY KEY (id);
 --
-
-ALTER TABLE ONLY plugin_widgets
-    ADD CONSTRAINT uq_plugin_widget_id UNIQUE (plugin_id, widget_id);
-
-
 --
--- Name: usage_metrics usage_metrics_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+-- --
+-- -- Name: plugin_scripts plugin_scripts_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+-- --
 --
-
-ALTER TABLE ONLY usage_metrics
-    ADD CONSTRAINT usage_metrics_pkey PRIMARY KEY (id);
-
-
+-- ALTER TABLE ONLY plugin_scripts
+--     ADD CONSTRAINT plugin_scripts_pkey PRIMARY KEY (id);
 --
--- Name: users users_email_key; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
-
-ALTER TABLE ONLY users
-    ADD CONSTRAINT users_email_key UNIQUE (email);
-
-
+-- --
+-- -- Name: plugin_version_comparisons plugin_version_comparisons_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+-- --
 --
--- Name: users users_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+-- ALTER TABLE ONLY plugin_version_comparisons
+--     ADD CONSTRAINT plugin_version_comparisons_pkey PRIMARY KEY (id);
 --
-
-ALTER TABLE ONLY users
-    ADD CONSTRAINT users_pkey PRIMARY KEY (id);
-
-
 --
--- Name: wishlists wishlists_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+-- --
+-- -- Name: plugin_version_history plugin_version_history_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+-- --
 --
-
-ALTER TABLE ONLY wishlists
-    ADD CONSTRAINT wishlists_pkey PRIMARY KEY (id);
-
-
+-- ALTER TABLE ONLY plugin_version_history
+--     ADD CONSTRAINT plugin_version_history_pkey PRIMARY KEY (id);
 --
--- Name: messages messages_pkey; Type: CONSTRAINT; Schema: realtime; Owner: supabase_realtime_admin
 --
-
-ALTER TABLE ONLY realtime.messages
-    ADD CONSTRAINT messages_pkey PRIMARY KEY (id, inserted_at);
-
-
+-- --
+-- -- Name: plugin_version_patches plugin_version_patches_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+-- --
 --
--- Name: subscription pk_subscription; Type: CONSTRAINT; Schema: realtime; Owner: supabase_admin
+-- ALTER TABLE ONLY plugin_version_patches
+--     ADD CONSTRAINT plugin_version_patches_pkey PRIMARY KEY (id);
 --
-
-ALTER TABLE ONLY realtime.subscription
-    ADD CONSTRAINT pk_subscription PRIMARY KEY (id);
-
-
 --
--- Name: schema_migrations schema_migrations_pkey; Type: CONSTRAINT; Schema: realtime; Owner: supabase_admin
+-- --
+-- -- Name: plugin_version_snapshots plugin_version_snapshots_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+-- --
 --
-
-ALTER TABLE ONLY realtime.schema_migrations
-    ADD CONSTRAINT schema_migrations_pkey PRIMARY KEY (version);
-
-
+-- ALTER TABLE ONLY plugin_version_snapshots
+--     ADD CONSTRAINT plugin_version_snapshots_pkey PRIMARY KEY (id);
 --
--- Name: buckets_analytics buckets_analytics_pkey; Type: CONSTRAINT; Schema: storage; Owner: supabase_storage_admin
 --
-
-ALTER TABLE ONLY storage.buckets_analytics
-    ADD CONSTRAINT buckets_analytics_pkey PRIMARY KEY (id);
-
-
+-- --
+-- -- Name: plugin_version_snapshots plugin_version_snapshots_version_id_key; Type: CONSTRAINT; Schema: public; Owner: postgres
+-- --
 --
--- Name: buckets buckets_pkey; Type: CONSTRAINT; Schema: storage; Owner: supabase_storage_admin
+-- ALTER TABLE ONLY plugin_version_snapshots
+--     ADD CONSTRAINT plugin_version_snapshots_version_id_key UNIQUE (version_id);
 --
-
-ALTER TABLE ONLY storage.buckets
-    ADD CONSTRAINT buckets_pkey PRIMARY KEY (id);
-
-
 --
--- Name: migrations migrations_name_key; Type: CONSTRAINT; Schema: storage; Owner: supabase_storage_admin
+-- --
+-- -- Name: plugin_version_tags plugin_version_tags_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+-- --
 --
-
-ALTER TABLE ONLY storage.migrations
-    ADD CONSTRAINT migrations_name_key UNIQUE (name);
-
-
+-- ALTER TABLE ONLY plugin_version_tags
+--     ADD CONSTRAINT plugin_version_tags_pkey PRIMARY KEY (id);
 --
--- Name: migrations migrations_pkey; Type: CONSTRAINT; Schema: storage; Owner: supabase_storage_admin
 --
-
-ALTER TABLE ONLY storage.migrations
-    ADD CONSTRAINT migrations_pkey PRIMARY KEY (id);
-
-
+-- --
+-- -- Name: plugin_widgets plugin_widgets_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+-- --
 --
--- Name: objects objects_pkey; Type: CONSTRAINT; Schema: storage; Owner: supabase_storage_admin
+-- ALTER TABLE ONLY plugin_widgets
+--     ADD CONSTRAINT plugin_widgets_pkey PRIMARY KEY (id);
 --
-
-ALTER TABLE ONLY storage.objects
-    ADD CONSTRAINT objects_pkey PRIMARY KEY (id);
-
-
 --
--- Name: prefixes prefixes_pkey; Type: CONSTRAINT; Schema: storage; Owner: supabase_storage_admin
+-- --
+-- -- Name: plugins plugins_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+-- --
 --
-
-ALTER TABLE ONLY storage.prefixes
-    ADD CONSTRAINT prefixes_pkey PRIMARY KEY (bucket_id, level, name);
-
-
+-- ALTER TABLE ONLY plugins
+--     ADD CONSTRAINT plugins_pkey PRIMARY KEY (id);
 --
--- Name: s3_multipart_uploads_parts s3_multipart_uploads_parts_pkey; Type: CONSTRAINT; Schema: storage; Owner: supabase_storage_admin
 --
-
-ALTER TABLE ONLY storage.s3_multipart_uploads_parts
-    ADD CONSTRAINT s3_multipart_uploads_parts_pkey PRIMARY KEY (id);
-
-
+-- --
+-- -- Name: plugins plugins_slug_key; Type: CONSTRAINT; Schema: public; Owner: postgres
+-- --
 --
--- Name: s3_multipart_uploads s3_multipart_uploads_pkey; Type: CONSTRAINT; Schema: storage; Owner: supabase_storage_admin
+-- ALTER TABLE ONLY plugins
+--     ADD CONSTRAINT plugins_slug_key UNIQUE (slug);
 --
-
-ALTER TABLE ONLY storage.s3_multipart_uploads
-    ADD CONSTRAINT s3_multipart_uploads_pkey PRIMARY KEY (id);
+--
+-- --
+-- -- Name: product_attribute_values product_attribute_values_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+-- --
+--
+-- ALTER TABLE ONLY product_attribute_values
+--     ADD CONSTRAINT product_attribute_values_pkey PRIMARY KEY (id);
+--
+--
+-- --
+-- -- Name: product_label_translations product_label_translations_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+-- --
+--
+-- ALTER TABLE ONLY product_label_translations
+--     ADD CONSTRAINT product_label_translations_pkey PRIMARY KEY (product_label_id, language_code);
+--
+--
+-- --
+-- -- Name: product_labels product_labels_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+-- --
+--
+-- ALTER TABLE ONLY product_labels
+--     ADD CONSTRAINT product_labels_pkey PRIMARY KEY (id);
+--
+--
+-- --
+-- -- Name: product_seo product_seo_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+-- --
+--
+-- ALTER TABLE ONLY product_seo
+--     ADD CONSTRAINT product_seo_pkey PRIMARY KEY (product_id, language_code);
+--
+--
+-- --
+-- -- Name: product_tab_translations product_tab_translations_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+-- --
+--
+-- ALTER TABLE ONLY product_tab_translations
+--     ADD CONSTRAINT product_tab_translations_pkey PRIMARY KEY (product_tab_id, language_code);
+--
+--
+-- --
+-- -- Name: product_tabs product_tabs_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+-- --
+--
+-- ALTER TABLE ONLY product_tabs
+--     ADD CONSTRAINT product_tabs_pkey PRIMARY KEY (id);
+--
+--
+-- --
+-- -- Name: product_translations product_translations_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+-- --
+--
+-- ALTER TABLE ONLY product_translations
+--     ADD CONSTRAINT product_translations_pkey PRIMARY KEY (product_id, language_code);
+--
+--
+-- --
+-- -- Name: product_variants product_variants_parent_product_id_variant_product_id_key; Type: CONSTRAINT; Schema: public; Owner: postgres
+-- --
+--
+-- ALTER TABLE ONLY product_variants
+--     ADD CONSTRAINT product_variants_parent_product_id_variant_product_id_key UNIQUE (parent_product_id, variant_product_id);
+--
+--
+-- --
+-- -- Name: product_variants product_variants_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+-- --
+--
+-- ALTER TABLE ONLY product_variants
+--     ADD CONSTRAINT product_variants_pkey PRIMARY KEY (id);
+--
+--
+-- --
+-- -- Name: products products_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+-- --
+--
+-- ALTER TABLE ONLY products
+--     ADD CONSTRAINT products_pkey PRIMARY KEY (id);
+--
+--
+-- --
+-- -- Name: products products_sku_key; Type: CONSTRAINT; Schema: public; Owner: postgres
+-- --
+--
+-- ALTER TABLE ONLY products
+--     ADD CONSTRAINT products_sku_key UNIQUE (sku);
+--
+--
+-- --
+-- -- Name: products products_slug_key; Type: CONSTRAINT; Schema: public; Owner: postgres
+-- --
+--
+-- ALTER TABLE ONLY products
+--     ADD CONSTRAINT products_slug_key UNIQUE (slug);
+--
+--
+-- --
+-- -- Name: redirects redirects_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+-- --
+--
+-- ALTER TABLE ONLY redirects
+--     ADD CONSTRAINT redirects_pkey PRIMARY KEY (id);
+--
+--
+-- --
+-- -- Name: redirects redirects_store_id_from_url_key; Type: CONSTRAINT; Schema: public; Owner: postgres
+-- --
+--
+-- ALTER TABLE ONLY redirects
+--     ADD CONSTRAINT redirects_store_id_from_url_key UNIQUE (store_id, from_url);
+--
+--
+-- --
+-- -- Name: sales_invoices sales_invoices_invoice_number_key; Type: CONSTRAINT; Schema: public; Owner: postgres
+-- --
+--
+-- ALTER TABLE ONLY sales_invoices
+--     ADD CONSTRAINT sales_invoices_invoice_number_key UNIQUE (invoice_number);
+--
+--
+-- --
+-- -- Name: sales_invoices sales_invoices_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+-- --
+--
+-- ALTER TABLE ONLY sales_invoices
+--     ADD CONSTRAINT sales_invoices_pkey PRIMARY KEY (id);
+--
+--
+-- --
+-- -- Name: sales_order_items sales_order_items_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+-- --
+--
+-- ALTER TABLE ONLY sales_order_items
+--     ADD CONSTRAINT sales_order_items_pkey PRIMARY KEY (id);
+--
+--
+-- --
+-- -- Name: sales_orders sales_orders_order_number_key; Type: CONSTRAINT; Schema: public; Owner: postgres
+-- --
+--
+-- ALTER TABLE ONLY sales_orders
+--     ADD CONSTRAINT sales_orders_order_number_key UNIQUE (order_number);
+--
+--
+-- --
+-- -- Name: sales_orders sales_orders_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+-- --
+--
+-- ALTER TABLE ONLY sales_orders
+--     ADD CONSTRAINT sales_orders_pkey PRIMARY KEY (id);
+--
+--
+-- --
+-- -- Name: sales_shipments sales_shipments_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+-- --
+--
+-- ALTER TABLE ONLY sales_shipments
+--     ADD CONSTRAINT sales_shipments_pkey PRIMARY KEY (id);
+--
+--
+-- --
+-- -- Name: sales_shipments sales_shipments_shipment_number_key; Type: CONSTRAINT; Schema: public; Owner: postgres
+-- --
+--
+-- ALTER TABLE ONLY sales_shipments
+--     ADD CONSTRAINT sales_shipments_shipment_number_key UNIQUE (shipment_number);
+--
+--
+-- --
+-- -- Name: seo_settings seo_settings_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+-- --
+--
+-- ALTER TABLE ONLY seo_settings
+--     ADD CONSTRAINT seo_settings_pkey PRIMARY KEY (id);
+--
+--
+-- --
+-- -- Name: seo_settings seo_settings_store_id_key; Type: CONSTRAINT; Schema: public; Owner: postgres
+-- --
+--
+-- ALTER TABLE ONLY seo_settings
+--     ADD CONSTRAINT seo_settings_store_id_key UNIQUE (store_id);
+--
+--
+-- --
+-- -- Name: seo_templates seo_templates_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+-- --
+--
+-- ALTER TABLE ONLY seo_templates
+--     ADD CONSTRAINT seo_templates_pkey PRIMARY KEY (id);
+--
+--
+-- --
+-- -- Name: service_credit_costs service_credit_costs_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+-- --
+--
+-- ALTER TABLE ONLY service_credit_costs
+--     ADD CONSTRAINT service_credit_costs_pkey PRIMARY KEY (id);
+--
+--
+-- --
+-- -- Name: service_credit_costs service_credit_costs_service_key_key; Type: CONSTRAINT; Schema: public; Owner: postgres
+-- --
+--
+-- ALTER TABLE ONLY service_credit_costs
+--     ADD CONSTRAINT service_credit_costs_service_key_key UNIQUE (service_key);
+--
+--
+-- --
+-- -- Name: shipping_method_translations shipping_method_translations_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+-- --
+--
+-- ALTER TABLE ONLY shipping_method_translations
+--     ADD CONSTRAINT shipping_method_translations_pkey PRIMARY KEY (shipping_method_id, language_code);
+--
+--
+-- --
+-- -- Name: shipping_methods shipping_methods_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+-- --
+--
+-- ALTER TABLE ONLY shipping_methods
+--     ADD CONSTRAINT shipping_methods_pkey PRIMARY KEY (id);
+--
+--
+-- --
+-- -- Name: shopify_oauth_tokens shopify_oauth_tokens_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+-- --
+--
+-- ALTER TABLE ONLY shopify_oauth_tokens
+--     ADD CONSTRAINT shopify_oauth_tokens_pkey PRIMARY KEY (id);
+--
+--
+-- --
+-- -- Name: shopify_oauth_tokens shopify_oauth_tokens_shop_domain_key; Type: CONSTRAINT; Schema: public; Owner: postgres
+-- --
+--
+-- ALTER TABLE ONLY shopify_oauth_tokens
+--     ADD CONSTRAINT shopify_oauth_tokens_shop_domain_key UNIQUE (shop_domain);
+--
+--
+-- --
+-- -- Name: shopify_oauth_tokens shopify_oauth_tokens_store_id_key; Type: CONSTRAINT; Schema: public; Owner: postgres
+-- --
+--
+-- ALTER TABLE ONLY shopify_oauth_tokens
+--     ADD CONSTRAINT shopify_oauth_tokens_store_id_key UNIQUE (store_id);
+--
+--
+-- --
+-- -- Name: slot_configurations slot_configurations_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+-- --
+--
+-- ALTER TABLE ONLY slot_configurations
+--     ADD CONSTRAINT slot_configurations_pkey PRIMARY KEY (id);
+--
+--
+-- --
+-- -- Name: store_invitations store_invitations_invitation_token_key; Type: CONSTRAINT; Schema: public; Owner: postgres
+-- --
+--
+-- ALTER TABLE ONLY store_invitations
+--     ADD CONSTRAINT store_invitations_invitation_token_key UNIQUE (invitation_token);
+--
+--
+-- --
+-- -- Name: store_invitations store_invitations_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+-- --
+--
+-- ALTER TABLE ONLY store_invitations
+--     ADD CONSTRAINT store_invitations_pkey PRIMARY KEY (id);
+--
+--
+-- --
+-- -- Name: store_teams store_teams_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+-- --
+--
+-- ALTER TABLE ONLY store_teams
+--     ADD CONSTRAINT store_teams_pkey PRIMARY KEY (id);
+--
+--
+-- --
+-- -- Name: store_teams store_teams_store_id_user_id_key; Type: CONSTRAINT; Schema: public; Owner: postgres
+-- --
+--
+-- ALTER TABLE ONLY store_teams
+--     ADD CONSTRAINT store_teams_store_id_user_id_key UNIQUE (store_id, user_id);
+--
+--
+-- --
+-- -- Name: store_uptime store_uptime_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+-- --
+--
+-- ALTER TABLE ONLY store_uptime
+--     ADD CONSTRAINT store_uptime_pkey PRIMARY KEY (id);
+--
+--
+-- --
+-- -- Name: store_uptime store_uptime_store_id_charged_date_key; Type: CONSTRAINT; Schema: public; Owner: postgres
+-- --
+--
+-- ALTER TABLE ONLY store_uptime
+--     ADD CONSTRAINT store_uptime_store_id_charged_date_key UNIQUE (store_id, charged_date);
+--
+--
+-- --
+-- -- Name: stores stores_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+-- --
+--
+-- ALTER TABLE ONLY stores
+--     ADD CONSTRAINT stores_pkey PRIMARY KEY (id);
+--
+-- --
+-- -- Name: subscriptions subscriptions_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+-- --
+--
+-- ALTER TABLE ONLY subscriptions
+--     ADD CONSTRAINT subscriptions_pkey PRIMARY KEY (id);
+--
+--
+-- --
+-- -- Name: supabase_oauth_tokens supabase_oauth_tokens_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+-- --
+--
+-- ALTER TABLE ONLY supabase_oauth_tokens
+--     ADD CONSTRAINT supabase_oauth_tokens_pkey PRIMARY KEY (id);
+--
+--
+-- --
+-- -- Name: supabase_oauth_tokens supabase_oauth_tokens_store_id_key; Type: CONSTRAINT; Schema: public; Owner: postgres
+-- --
+--
+-- ALTER TABLE ONLY supabase_oauth_tokens
+--     ADD CONSTRAINT supabase_oauth_tokens_store_id_key UNIQUE (store_id);
+--
+--
+-- --
+-- -- Name: supabase_project_keys supabase_project_keys_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+-- --
+--
+-- ALTER TABLE ONLY supabase_project_keys
+--     ADD CONSTRAINT supabase_project_keys_pkey PRIMARY KEY (id);
+--
+--
+-- --
+-- -- Name: supabase_project_keys supabase_project_keys_store_id_project_id_key; Type: CONSTRAINT; Schema: public; Owner: postgres
+-- --
+--
+-- ALTER TABLE ONLY supabase_project_keys
+--     ADD CONSTRAINT supabase_project_keys_store_id_project_id_key UNIQUE (store_id, project_id);
+--
+--
+-- --
+-- -- Name: taxes taxes_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+-- --
+--
+-- ALTER TABLE ONLY taxes
+--     ADD CONSTRAINT taxes_pkey PRIMARY KEY (id);
+--
+--
+-- --
+-- -- Name: translations_duplicate translations_duplicate_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+-- --
+--
+-- ALTER TABLE ONLY translations_duplicate
+--     ADD CONSTRAINT translations_duplicate_pkey PRIMARY KEY (id);
+--
+--
+-- --
+-- -- Name: translations translations_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+-- --
+--
+-- ALTER TABLE ONLY translations
+--     ADD CONSTRAINT translations_pkey PRIMARY KEY (id);
+--
+--
+-- --
+-- -- Name: attribute_values unique_attribute_code; Type: CONSTRAINT; Schema: public; Owner: postgres
+-- --
+--
+-- ALTER TABLE ONLY attribute_values
+--     ADD CONSTRAINT unique_attribute_code UNIQUE (attribute_id, code);
+--
+--
+-- --
+-- -- Name: plugin_controllers unique_plugin_controller; Type: CONSTRAINT; Schema: public; Owner: postgres
+-- --
+--
+-- ALTER TABLE ONLY plugin_controllers
+--     ADD CONSTRAINT unique_plugin_controller UNIQUE (plugin_id, method, path);
+--
+--
+-- --
+-- -- Name: plugin_docs unique_plugin_doc; Type: CONSTRAINT; Schema: public; Owner: postgres
+-- --
+--
+-- ALTER TABLE ONLY plugin_docs
+--     ADD CONSTRAINT unique_plugin_doc UNIQUE (plugin_id, doc_type);
+--
+--
+-- --
+-- -- Name: plugin_entities unique_plugin_entity; Type: CONSTRAINT; Schema: public; Owner: postgres
+-- --
+--
+-- ALTER TABLE ONLY plugin_entities
+--     ADD CONSTRAINT unique_plugin_entity UNIQUE (plugin_id, entity_name);
+--
+--
+-- --
+-- -- Name: plugin_migrations unique_plugin_migration; Type: CONSTRAINT; Schema: public; Owner: postgres
+-- --
+--
+-- ALTER TABLE ONLY plugin_migrations
+--     ADD CONSTRAINT unique_plugin_migration UNIQUE (plugin_id, migration_version);
+--
+--
+-- --
+-- -- Name: plugin_entities unique_plugin_table; Type: CONSTRAINT; Schema: public; Owner: postgres
+-- --
+--
+-- ALTER TABLE ONLY plugin_entities
+--     ADD CONSTRAINT unique_plugin_table UNIQUE (plugin_id, table_name);
+--
+--
+-- --
+-- -- Name: plugin_version_tags unique_plugin_tag; Type: CONSTRAINT; Schema: public; Owner: postgres
+-- --
+--
+-- ALTER TABLE ONLY plugin_version_tags
+--     ADD CONSTRAINT unique_plugin_tag UNIQUE (plugin_id, tag_name);
+--
+--
+-- --
+-- -- Name: plugin_version_history unique_plugin_version; Type: CONSTRAINT; Schema: public; Owner: postgres
+-- --
+--
+-- ALTER TABLE ONLY plugin_version_history
+--     ADD CONSTRAINT unique_plugin_version UNIQUE (plugin_id, version_number);
+--
+--
+-- --
+-- -- Name: plugin_version_comparisons unique_version_comparison; Type: CONSTRAINT; Schema: public; Owner: postgres
+-- --
+--
+-- ALTER TABLE ONLY plugin_version_comparisons
+--     ADD CONSTRAINT unique_version_comparison UNIQUE (from_version_id, to_version_id);
+--
+--
+-- --
+-- -- Name: admin_navigation_config uq_navigation_config_key; Type: CONSTRAINT; Schema: public; Owner: postgres
+-- --
+--
+-- ALTER TABLE ONLY admin_navigation_config
+--     ADD CONSTRAINT uq_navigation_config_key UNIQUE (nav_key);
+--
+--
+-- --
+-- -- Name: plugin_data uq_plugin_data_key; Type: CONSTRAINT; Schema: public; Owner: postgres
+-- --
+--
+-- ALTER TABLE ONLY plugin_data
+--     ADD CONSTRAINT uq_plugin_data_key UNIQUE (plugin_id, data_key);
+--
+--
+-- --
+-- -- Name: plugin_widgets uq_plugin_widget_id; Type: CONSTRAINT; Schema: public; Owner: postgres
+-- --
+--
+-- ALTER TABLE ONLY plugin_widgets
+--     ADD CONSTRAINT uq_plugin_widget_id UNIQUE (plugin_id, widget_id);
+--
+--
+-- --
+-- -- Name: usage_metrics usage_metrics_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+-- --
+--
+-- ALTER TABLE ONLY usage_metrics
+--     ADD CONSTRAINT usage_metrics_pkey PRIMARY KEY (id);
+--
+--
+-- --
+-- -- Name: users users_email_key; Type: CONSTRAINT; Schema: public; Owner: postgres
+-- --
+--
+-- ALTER TABLE ONLY users
+--     ADD CONSTRAINT users_email_key UNIQUE (email);
+--
+--
+-- --
+-- -- Name: users users_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+-- --
+--
+-- ALTER TABLE ONLY users
+--     ADD CONSTRAINT users_pkey PRIMARY KEY (id);
+--
+--
+-- --
+-- -- Name: wishlists wishlists_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+-- --
+--
+-- ALTER TABLE ONLY wishlists
+--     ADD CONSTRAINT wishlists_pkey PRIMARY KEY (id);
+--
+--
+-- --
+-- -- Name: messages messages_pkey; Type: CONSTRAINT; Schema: realtime; Owner: supabase_realtime_admin
+-- --
+--
+-- ALTER TABLE ONLY realtime.messages
+--     ADD CONSTRAINT messages_pkey PRIMARY KEY (id, inserted_at);
+--
+--
+-- --
+-- -- Name: subscription pk_subscription; Type: CONSTRAINT; Schema: realtime; Owner: supabase_admin
+-- --
+--
+-- ALTER TABLE ONLY realtime.subscription
+--     ADD CONSTRAINT pk_subscription PRIMARY KEY (id);
+--
+--
+-- --
+-- -- Name: schema_migrations schema_migrations_pkey; Type: CONSTRAINT; Schema: realtime; Owner: supabase_admin
+-- --
+--
+-- ALTER TABLE ONLY realtime.schema_migrations
+--     ADD CONSTRAINT schema_migrations_pkey PRIMARY KEY (version);
+--
+--
+-- --
+-- -- Name: buckets_analytics buckets_analytics_pkey; Type: CONSTRAINT; Schema: storage; Owner: supabase_storage_admin
+-- --
+--
+-- ALTER TABLE ONLY storage.buckets_analytics
+--     ADD CONSTRAINT buckets_analytics_pkey PRIMARY KEY (id);
+--
+--
+-- --
+-- -- Name: buckets buckets_pkey; Type: CONSTRAINT; Schema: storage; Owner: supabase_storage_admin
+-- --
+--
+-- ALTER TABLE ONLY storage.buckets
+--     ADD CONSTRAINT buckets_pkey PRIMARY KEY (id);
+--
+--
+-- --
+-- -- Name: migrations migrations_name_key; Type: CONSTRAINT; Schema: storage; Owner: supabase_storage_admin
+-- --
+--
+-- ALTER TABLE ONLY storage.migrations
+--     ADD CONSTRAINT migrations_name_key UNIQUE (name);
+--
+--
+-- --
+-- -- Name: migrations migrations_pkey; Type: CONSTRAINT; Schema: storage; Owner: supabase_storage_admin
+-- --
+--
+-- ALTER TABLE ONLY storage.migrations
+--     ADD CONSTRAINT migrations_pkey PRIMARY KEY (id);
+--
+--
+-- --
+-- -- Name: objects objects_pkey; Type: CONSTRAINT; Schema: storage; Owner: supabase_storage_admin
+-- --
+--
+-- ALTER TABLE ONLY storage.objects
+--     ADD CONSTRAINT objects_pkey PRIMARY KEY (id);
+--
+--
+-- --
+-- -- Name: prefixes prefixes_pkey; Type: CONSTRAINT; Schema: storage; Owner: supabase_storage_admin
+-- --
+--
+-- ALTER TABLE ONLY storage.prefixes
+--     ADD CONSTRAINT prefixes_pkey PRIMARY KEY (bucket_id, level, name);
+--
+--
+-- --
+-- -- Name: s3_multipart_uploads_parts s3_multipart_uploads_parts_pkey; Type: CONSTRAINT; Schema: storage; Owner: supabase_storage_admin
+-- --
+--
+-- ALTER TABLE ONLY storage.s3_multipart_uploads_parts
+--     ADD CONSTRAINT s3_multipart_uploads_parts_pkey PRIMARY KEY (id);
+--
+--
+-- --
+-- -- Name: s3_multipart_uploads s3_multipart_uploads_pkey; Type: CONSTRAINT; Schema: storage; Owner: supabase_storage_admin
+-- --
+--
+-- ALTER TABLE ONLY storage.s3_multipart_uploads
+--     ADD CONSTRAINT s3_multipart_uploads_pkey PRIMARY KEY (id);
 
 
 --
@@ -8492,1534 +8490,1534 @@ ALTER TABLE ONLY auth.identities
 -- Name: mfa_amr_claims mfa_amr_claims_session_id_fkey; Type: FK CONSTRAINT; Schema: auth; Owner: supabase_auth_admin
 --
 
-ALTER TABLE ONLY auth.mfa_amr_claims
-    ADD CONSTRAINT mfa_amr_claims_session_id_fkey FOREIGN KEY (session_id) REFERENCES auth.sessions(id) ON DELETE CASCADE;
-
-
+-- ALTER TABLE ONLY auth.mfa_amr_claims
+--     ADD CONSTRAINT mfa_amr_claims_session_id_fkey FOREIGN KEY (session_id) REFERENCES auth.sessions(id) ON DELETE CASCADE;
 --
--- Name: mfa_challenges mfa_challenges_auth_factor_id_fkey; Type: FK CONSTRAINT; Schema: auth; Owner: supabase_auth_admin
---
-
-ALTER TABLE ONLY auth.mfa_challenges
-    ADD CONSTRAINT mfa_challenges_auth_factor_id_fkey FOREIGN KEY (factor_id) REFERENCES auth.mfa_factors(id) ON DELETE CASCADE;
-
-
 --
--- Name: mfa_factors mfa_factors_user_id_fkey; Type: FK CONSTRAINT; Schema: auth; Owner: supabase_auth_admin
---
-
-ALTER TABLE ONLY auth.mfa_factors
-    ADD CONSTRAINT mfa_factors_user_id_fkey FOREIGN KEY (user_id) REFERENCES auth.users(id) ON DELETE CASCADE;
-
-
+-- --
+-- -- Name: mfa_challenges mfa_challenges_auth_factor_id_fkey; Type: FK CONSTRAINT; Schema: auth; Owner: supabase_auth_admin
+-- --
 --
--- Name: oauth_authorizations oauth_authorizations_client_id_fkey; Type: FK CONSTRAINT; Schema: auth; Owner: supabase_auth_admin
---
-
-ALTER TABLE ONLY auth.oauth_authorizations
-    ADD CONSTRAINT oauth_authorizations_client_id_fkey FOREIGN KEY (client_id) REFERENCES auth.oauth_clients(id) ON DELETE CASCADE;
-
-
+-- ALTER TABLE ONLY auth.mfa_challenges
+--     ADD CONSTRAINT mfa_challenges_auth_factor_id_fkey FOREIGN KEY (factor_id) REFERENCES auth.mfa_factors(id) ON DELETE CASCADE;
 --
--- Name: oauth_authorizations oauth_authorizations_user_id_fkey; Type: FK CONSTRAINT; Schema: auth; Owner: supabase_auth_admin
---
-
-ALTER TABLE ONLY auth.oauth_authorizations
-    ADD CONSTRAINT oauth_authorizations_user_id_fkey FOREIGN KEY (user_id) REFERENCES auth.users(id) ON DELETE CASCADE;
-
-
 --
--- Name: oauth_consents oauth_consents_client_id_fkey; Type: FK CONSTRAINT; Schema: auth; Owner: supabase_auth_admin
---
-
-ALTER TABLE ONLY auth.oauth_consents
-    ADD CONSTRAINT oauth_consents_client_id_fkey FOREIGN KEY (client_id) REFERENCES auth.oauth_clients(id) ON DELETE CASCADE;
-
-
+-- --
+-- -- Name: mfa_factors mfa_factors_user_id_fkey; Type: FK CONSTRAINT; Schema: auth; Owner: supabase_auth_admin
+-- --
 --
--- Name: oauth_consents oauth_consents_user_id_fkey; Type: FK CONSTRAINT; Schema: auth; Owner: supabase_auth_admin
---
-
-ALTER TABLE ONLY auth.oauth_consents
-    ADD CONSTRAINT oauth_consents_user_id_fkey FOREIGN KEY (user_id) REFERENCES auth.users(id) ON DELETE CASCADE;
-
-
+-- ALTER TABLE ONLY auth.mfa_factors
+--     ADD CONSTRAINT mfa_factors_user_id_fkey FOREIGN KEY (user_id) REFERENCES auth.users(id) ON DELETE CASCADE;
 --
--- Name: one_time_tokens one_time_tokens_user_id_fkey; Type: FK CONSTRAINT; Schema: auth; Owner: supabase_auth_admin
---
-
-ALTER TABLE ONLY auth.one_time_tokens
-    ADD CONSTRAINT one_time_tokens_user_id_fkey FOREIGN KEY (user_id) REFERENCES auth.users(id) ON DELETE CASCADE;
-
-
 --
--- Name: refresh_tokens refresh_tokens_session_id_fkey; Type: FK CONSTRAINT; Schema: auth; Owner: supabase_auth_admin
---
-
-ALTER TABLE ONLY auth.refresh_tokens
-    ADD CONSTRAINT refresh_tokens_session_id_fkey FOREIGN KEY (session_id) REFERENCES auth.sessions(id) ON DELETE CASCADE;
-
-
+-- --
+-- -- Name: oauth_authorizations oauth_authorizations_client_id_fkey; Type: FK CONSTRAINT; Schema: auth; Owner: supabase_auth_admin
+-- --
 --
--- Name: saml_providers saml_providers_sso_provider_id_fkey; Type: FK CONSTRAINT; Schema: auth; Owner: supabase_auth_admin
---
-
-ALTER TABLE ONLY auth.saml_providers
-    ADD CONSTRAINT saml_providers_sso_provider_id_fkey FOREIGN KEY (sso_provider_id) REFERENCES auth.sso_providers(id) ON DELETE CASCADE;
-
-
+-- ALTER TABLE ONLY auth.oauth_authorizations
+--     ADD CONSTRAINT oauth_authorizations_client_id_fkey FOREIGN KEY (client_id) REFERENCES auth.oauth_clients(id) ON DELETE CASCADE;
 --
--- Name: saml_relay_states saml_relay_states_flow_state_id_fkey; Type: FK CONSTRAINT; Schema: auth; Owner: supabase_auth_admin
---
-
-ALTER TABLE ONLY auth.saml_relay_states
-    ADD CONSTRAINT saml_relay_states_flow_state_id_fkey FOREIGN KEY (flow_state_id) REFERENCES auth.flow_state(id) ON DELETE CASCADE;
-
-
 --
--- Name: saml_relay_states saml_relay_states_sso_provider_id_fkey; Type: FK CONSTRAINT; Schema: auth; Owner: supabase_auth_admin
---
-
-ALTER TABLE ONLY auth.saml_relay_states
-    ADD CONSTRAINT saml_relay_states_sso_provider_id_fkey FOREIGN KEY (sso_provider_id) REFERENCES auth.sso_providers(id) ON DELETE CASCADE;
-
-
+-- --
+-- -- Name: oauth_authorizations oauth_authorizations_user_id_fkey; Type: FK CONSTRAINT; Schema: auth; Owner: supabase_auth_admin
+-- --
 --
--- Name: sessions sessions_oauth_client_id_fkey; Type: FK CONSTRAINT; Schema: auth; Owner: supabase_auth_admin
---
-
-ALTER TABLE ONLY auth.sessions
-    ADD CONSTRAINT sessions_oauth_client_id_fkey FOREIGN KEY (oauth_client_id) REFERENCES auth.oauth_clients(id) ON DELETE CASCADE;
-
-
+-- ALTER TABLE ONLY auth.oauth_authorizations
+--     ADD CONSTRAINT oauth_authorizations_user_id_fkey FOREIGN KEY (user_id) REFERENCES auth.users(id) ON DELETE CASCADE;
 --
--- Name: sessions sessions_user_id_fkey; Type: FK CONSTRAINT; Schema: auth; Owner: supabase_auth_admin
 --
-
-ALTER TABLE ONLY auth.sessions
-    ADD CONSTRAINT sessions_user_id_fkey FOREIGN KEY (user_id) REFERENCES auth.users(id) ON DELETE CASCADE;
-
-
+-- --
+-- -- Name: oauth_consents oauth_consents_client_id_fkey; Type: FK CONSTRAINT; Schema: auth; Owner: supabase_auth_admin
+-- --
 --
--- Name: sso_domains sso_domains_sso_provider_id_fkey; Type: FK CONSTRAINT; Schema: auth; Owner: supabase_auth_admin
+-- ALTER TABLE ONLY auth.oauth_consents
+--     ADD CONSTRAINT oauth_consents_client_id_fkey FOREIGN KEY (client_id) REFERENCES auth.oauth_clients(id) ON DELETE CASCADE;
 --
-
-ALTER TABLE ONLY auth.sso_domains
-    ADD CONSTRAINT sso_domains_sso_provider_id_fkey FOREIGN KEY (sso_provider_id) REFERENCES auth.sso_providers(id) ON DELETE CASCADE;
-
-
 --
--- Name: ab_test_assignments ab_test_assignments_store_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+-- --
+-- -- Name: oauth_consents oauth_consents_user_id_fkey; Type: FK CONSTRAINT; Schema: auth; Owner: supabase_auth_admin
+-- --
 --
-
-ALTER TABLE ONLY ab_test_assignments
-    ADD CONSTRAINT ab_test_assignments_store_id_fkey FOREIGN KEY (store_id) REFERENCES stores(id) ON UPDATE CASCADE;
-
-
+-- ALTER TABLE ONLY auth.oauth_consents
+--     ADD CONSTRAINT oauth_consents_user_id_fkey FOREIGN KEY (user_id) REFERENCES auth.users(id) ON DELETE CASCADE;
 --
--- Name: ab_test_assignments ab_test_assignments_test_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
 --
-
-ALTER TABLE ONLY ab_test_assignments
-    ADD CONSTRAINT ab_test_assignments_test_id_fkey FOREIGN KEY (test_id) REFERENCES ab_tests(id) ON UPDATE CASCADE;
-
-
+-- --
+-- -- Name: one_time_tokens one_time_tokens_user_id_fkey; Type: FK CONSTRAINT; Schema: auth; Owner: supabase_auth_admin
+-- --
 --
--- Name: ab_test_assignments ab_test_assignments_user_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+-- ALTER TABLE ONLY auth.one_time_tokens
+--     ADD CONSTRAINT one_time_tokens_user_id_fkey FOREIGN KEY (user_id) REFERENCES auth.users(id) ON DELETE CASCADE;
 --
-
-ALTER TABLE ONLY ab_test_assignments
-    ADD CONSTRAINT ab_test_assignments_user_id_fkey FOREIGN KEY (user_id) REFERENCES users(id) ON UPDATE CASCADE ON DELETE SET NULL;
-
-
 --
--- Name: ab_test_variants ab_test_variants_store_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+-- --
+-- -- Name: refresh_tokens refresh_tokens_session_id_fkey; Type: FK CONSTRAINT; Schema: auth; Owner: supabase_auth_admin
+-- --
 --
-
-ALTER TABLE ONLY ab_test_variants
-    ADD CONSTRAINT ab_test_variants_store_id_fkey FOREIGN KEY (store_id) REFERENCES stores(id) ON DELETE CASCADE;
-
-
+-- ALTER TABLE ONLY auth.refresh_tokens
+--     ADD CONSTRAINT refresh_tokens_session_id_fkey FOREIGN KEY (session_id) REFERENCES auth.sessions(id) ON DELETE CASCADE;
 --
--- Name: ab_tests ab_tests_store_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
 --
-
-ALTER TABLE ONLY ab_tests
-    ADD CONSTRAINT ab_tests_store_id_fkey FOREIGN KEY (store_id) REFERENCES stores(id) ON UPDATE CASCADE;
-
-
+-- --
+-- -- Name: saml_providers saml_providers_sso_provider_id_fkey; Type: FK CONSTRAINT; Schema: auth; Owner: supabase_auth_admin
+-- --
 --
--- Name: ai_usage_logs ai_usage_logs_user_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+-- ALTER TABLE ONLY auth.saml_providers
+--     ADD CONSTRAINT saml_providers_sso_provider_id_fkey FOREIGN KEY (sso_provider_id) REFERENCES auth.sso_providers(id) ON DELETE CASCADE;
 --
-
-ALTER TABLE ONLY ai_usage_logs
-    ADD CONSTRAINT ai_usage_logs_user_id_fkey FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE;
-
-
 --
--- Name: akeneo_custom_mappings akeneo_custom_mappings_created_by_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+-- --
+-- -- Name: saml_relay_states saml_relay_states_flow_state_id_fkey; Type: FK CONSTRAINT; Schema: auth; Owner: supabase_auth_admin
+-- --
 --
-
-ALTER TABLE ONLY akeneo_custom_mappings
-    ADD CONSTRAINT akeneo_custom_mappings_created_by_fkey FOREIGN KEY (created_by) REFERENCES users(id) ON DELETE SET NULL;
-
-
+-- ALTER TABLE ONLY auth.saml_relay_states
+--     ADD CONSTRAINT saml_relay_states_flow_state_id_fkey FOREIGN KEY (flow_state_id) REFERENCES auth.flow_state(id) ON DELETE CASCADE;
 --
--- Name: akeneo_custom_mappings akeneo_custom_mappings_store_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
 --
-
-ALTER TABLE ONLY akeneo_custom_mappings
-    ADD CONSTRAINT akeneo_custom_mappings_store_id_fkey FOREIGN KEY (store_id) REFERENCES stores(id) ON DELETE CASCADE;
-
-
+-- --
+-- -- Name: saml_relay_states saml_relay_states_sso_provider_id_fkey; Type: FK CONSTRAINT; Schema: auth; Owner: supabase_auth_admin
+-- --
 --
--- Name: akeneo_custom_mappings akeneo_custom_mappings_updated_by_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+-- ALTER TABLE ONLY auth.saml_relay_states
+--     ADD CONSTRAINT saml_relay_states_sso_provider_id_fkey FOREIGN KEY (sso_provider_id) REFERENCES auth.sso_providers(id) ON DELETE CASCADE;
 --
-
-ALTER TABLE ONLY akeneo_custom_mappings
-    ADD CONSTRAINT akeneo_custom_mappings_updated_by_fkey FOREIGN KEY (updated_by) REFERENCES users(id) ON DELETE SET NULL;
-
-
 --
--- Name: akeneo_import_statistics akeneo_import_statistics_store_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+-- --
+-- -- Name: sessions sessions_oauth_client_id_fkey; Type: FK CONSTRAINT; Schema: auth; Owner: supabase_auth_admin
+-- --
 --
-
-ALTER TABLE ONLY akeneo_import_statistics
-    ADD CONSTRAINT akeneo_import_statistics_store_id_fkey FOREIGN KEY (store_id) REFERENCES stores(id) ON DELETE CASCADE;
-
-
+-- ALTER TABLE ONLY auth.sessions
+--     ADD CONSTRAINT sessions_oauth_client_id_fkey FOREIGN KEY (oauth_client_id) REFERENCES auth.oauth_clients(id) ON DELETE CASCADE;
 --
--- Name: akeneo_mappings akeneo_mappings_store_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
 --
-
-ALTER TABLE ONLY akeneo_mappings
-    ADD CONSTRAINT akeneo_mappings_store_id_fkey FOREIGN KEY (store_id) REFERENCES stores(id) ON DELETE CASCADE;
-
-
+-- --
+-- -- Name: sessions sessions_user_id_fkey; Type: FK CONSTRAINT; Schema: auth; Owner: supabase_auth_admin
+-- --
 --
--- Name: akeneo_schedules akeneo_schedules_store_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+-- ALTER TABLE ONLY auth.sessions
+--     ADD CONSTRAINT sessions_user_id_fkey FOREIGN KEY (user_id) REFERENCES auth.users(id) ON DELETE CASCADE;
 --
-
-ALTER TABLE ONLY akeneo_schedules
-    ADD CONSTRAINT akeneo_schedules_store_id_fkey FOREIGN KEY (store_id) REFERENCES stores(id) ON UPDATE CASCADE ON DELETE CASCADE;
-
-
 --
--- Name: attribute_sets attribute_sets_store_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+-- --
+-- -- Name: sso_domains sso_domains_sso_provider_id_fkey; Type: FK CONSTRAINT; Schema: auth; Owner: supabase_auth_admin
+-- --
 --
-
-ALTER TABLE ONLY attribute_sets
-    ADD CONSTRAINT attribute_sets_store_id_fkey FOREIGN KEY (store_id) REFERENCES stores(id) ON DELETE CASCADE;
-
-
+-- ALTER TABLE ONLY auth.sso_domains
+--     ADD CONSTRAINT sso_domains_sso_provider_id_fkey FOREIGN KEY (sso_provider_id) REFERENCES auth.sso_providers(id) ON DELETE CASCADE;
 --
--- Name: attribute_translations attribute_translations_attribute_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
 --
-
-ALTER TABLE ONLY attribute_translations
-    ADD CONSTRAINT attribute_translations_attribute_id_fkey FOREIGN KEY (attribute_id) REFERENCES attributes(id) ON UPDATE CASCADE ON DELETE CASCADE;
-
-
+-- --
+-- -- Name: ab_test_assignments ab_test_assignments_store_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+-- --
 --
--- Name: attribute_translations attribute_translations_language_code_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+-- ALTER TABLE ONLY ab_test_assignments
+--     ADD CONSTRAINT ab_test_assignments_store_id_fkey FOREIGN KEY (store_id) REFERENCES stores(id) ON UPDATE CASCADE;
 --
-
-ALTER TABLE ONLY attribute_translations
-    ADD CONSTRAINT attribute_translations_language_code_fkey FOREIGN KEY (language_code) REFERENCES languages(code) ON UPDATE CASCADE ON DELETE CASCADE;
-
-
 --
--- Name: attribute_value_translations attribute_value_translations_attribute_value_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+-- --
+-- -- Name: ab_test_assignments ab_test_assignments_test_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+-- --
 --
-
-ALTER TABLE ONLY attribute_value_translations
-    ADD CONSTRAINT attribute_value_translations_attribute_value_id_fkey FOREIGN KEY (attribute_value_id) REFERENCES attribute_values(id) ON UPDATE CASCADE ON DELETE CASCADE;
-
-
+-- ALTER TABLE ONLY ab_test_assignments
+--     ADD CONSTRAINT ab_test_assignments_test_id_fkey FOREIGN KEY (test_id) REFERENCES ab_tests(id) ON UPDATE CASCADE;
 --
--- Name: attribute_value_translations attribute_value_translations_language_code_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
 --
-
-ALTER TABLE ONLY attribute_value_translations
-    ADD CONSTRAINT attribute_value_translations_language_code_fkey FOREIGN KEY (language_code) REFERENCES languages(code) ON UPDATE CASCADE ON DELETE CASCADE;
-
-
+-- --
+-- -- Name: ab_test_assignments ab_test_assignments_user_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+-- --
 --
--- Name: attribute_values attribute_values_attribute_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+-- ALTER TABLE ONLY ab_test_assignments
+--     ADD CONSTRAINT ab_test_assignments_user_id_fkey FOREIGN KEY (user_id) REFERENCES users(id) ON UPDATE CASCADE ON DELETE SET NULL;
 --
-
-ALTER TABLE ONLY attribute_values
-    ADD CONSTRAINT attribute_values_attribute_id_fkey FOREIGN KEY (attribute_id) REFERENCES attributes(id) ON UPDATE CASCADE ON DELETE CASCADE;
-
-
 --
--- Name: attributes attributes_store_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+-- --
+-- -- Name: ab_test_variants ab_test_variants_store_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+-- --
 --
-
-ALTER TABLE ONLY attributes
-    ADD CONSTRAINT attributes_store_id_fkey FOREIGN KEY (store_id) REFERENCES stores(id) ON DELETE CASCADE;
-
-
+-- ALTER TABLE ONLY ab_test_variants
+--     ADD CONSTRAINT ab_test_variants_store_id_fkey FOREIGN KEY (store_id) REFERENCES stores(id) ON DELETE CASCADE;
 --
--- Name: blacklist_countries blacklist_countries_store_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
 --
-
-ALTER TABLE ONLY blacklist_countries
-    ADD CONSTRAINT blacklist_countries_store_id_fkey FOREIGN KEY (store_id) REFERENCES stores(id) ON DELETE CASCADE;
-
-
+-- --
+-- -- Name: ab_tests ab_tests_store_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+-- --
 --
--- Name: blacklist_emails blacklist_emails_store_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+-- ALTER TABLE ONLY ab_tests
+--     ADD CONSTRAINT ab_tests_store_id_fkey FOREIGN KEY (store_id) REFERENCES stores(id) ON UPDATE CASCADE;
 --
-
-ALTER TABLE ONLY blacklist_emails
-    ADD CONSTRAINT blacklist_emails_store_id_fkey FOREIGN KEY (store_id) REFERENCES stores(id) ON DELETE CASCADE;
-
-
 --
--- Name: blacklist_ips blacklist_ips_store_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+-- --
+-- -- Name: ai_usage_logs ai_usage_logs_user_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+-- --
 --
-
-ALTER TABLE ONLY blacklist_ips
-    ADD CONSTRAINT blacklist_ips_store_id_fkey FOREIGN KEY (store_id) REFERENCES stores(id) ON DELETE CASCADE;
-
-
+-- ALTER TABLE ONLY ai_usage_logs
+--     ADD CONSTRAINT ai_usage_logs_user_id_fkey FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE;
 --
--- Name: blacklist_settings blacklist_settings_store_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
 --
-
-ALTER TABLE ONLY blacklist_settings
-    ADD CONSTRAINT blacklist_settings_store_id_fkey FOREIGN KEY (store_id) REFERENCES stores(id) ON DELETE CASCADE;
-
-
+-- --
+-- -- Name: akeneo_custom_mappings akeneo_custom_mappings_created_by_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+-- --
 --
--- Name: brevo_configurations brevo_configurations_store_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+-- ALTER TABLE ONLY akeneo_custom_mappings
+--     ADD CONSTRAINT akeneo_custom_mappings_created_by_fkey FOREIGN KEY (created_by) REFERENCES users(id) ON DELETE SET NULL;
 --
-
-ALTER TABLE ONLY brevo_configurations
-    ADD CONSTRAINT brevo_configurations_store_id_fkey FOREIGN KEY (store_id) REFERENCES stores(id) ON UPDATE CASCADE;
-
-
 --
--- Name: canonical_urls canonical_urls_created_by_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+-- --
+-- -- Name: akeneo_custom_mappings akeneo_custom_mappings_store_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+-- --
 --
-
-ALTER TABLE ONLY canonical_urls
-    ADD CONSTRAINT canonical_urls_created_by_fkey FOREIGN KEY (created_by) REFERENCES users(id) ON UPDATE CASCADE ON DELETE SET NULL;
-
-
+-- ALTER TABLE ONLY akeneo_custom_mappings
+--     ADD CONSTRAINT akeneo_custom_mappings_store_id_fkey FOREIGN KEY (store_id) REFERENCES stores(id) ON DELETE CASCADE;
 --
--- Name: canonical_urls canonical_urls_store_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
 --
-
-ALTER TABLE ONLY canonical_urls
-    ADD CONSTRAINT canonical_urls_store_id_fkey FOREIGN KEY (store_id) REFERENCES stores(id) ON UPDATE CASCADE;
-
-
+-- --
+-- -- Name: akeneo_custom_mappings akeneo_custom_mappings_updated_by_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+-- --
 --
--- Name: carts carts_store_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+-- ALTER TABLE ONLY akeneo_custom_mappings
+--     ADD CONSTRAINT akeneo_custom_mappings_updated_by_fkey FOREIGN KEY (updated_by) REFERENCES users(id) ON DELETE SET NULL;
 --
-
-ALTER TABLE ONLY carts
-    ADD CONSTRAINT carts_store_id_fkey FOREIGN KEY (store_id) REFERENCES stores(id) ON UPDATE CASCADE;
-
-
 --
--- Name: carts carts_user_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+-- --
+-- -- Name: akeneo_import_statistics akeneo_import_statistics_store_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+-- --
 --
-
-ALTER TABLE ONLY carts
-    ADD CONSTRAINT carts_user_id_fkey FOREIGN KEY (user_id) REFERENCES users(id) ON UPDATE CASCADE ON DELETE SET NULL;
-
-
+-- ALTER TABLE ONLY akeneo_import_statistics
+--     ADD CONSTRAINT akeneo_import_statistics_store_id_fkey FOREIGN KEY (store_id) REFERENCES stores(id) ON DELETE CASCADE;
 --
--- Name: categories categories_parent_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
 --
-
-ALTER TABLE ONLY categories
-    ADD CONSTRAINT categories_parent_id_fkey FOREIGN KEY (parent_id) REFERENCES categories(id) ON DELETE CASCADE;
-
-
+-- --
+-- -- Name: akeneo_mappings akeneo_mappings_store_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+-- --
 --
--- Name: categories categories_store_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+-- ALTER TABLE ONLY akeneo_mappings
+--     ADD CONSTRAINT akeneo_mappings_store_id_fkey FOREIGN KEY (store_id) REFERENCES stores(id) ON DELETE CASCADE;
 --
-
-ALTER TABLE ONLY categories
-    ADD CONSTRAINT categories_store_id_fkey FOREIGN KEY (store_id) REFERENCES stores(id) ON DELETE CASCADE;
-
-
 --
--- Name: category_seo category_seo_category_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+-- --
+-- -- Name: akeneo_schedules akeneo_schedules_store_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+-- --
 --
-
-ALTER TABLE ONLY category_seo
-    ADD CONSTRAINT category_seo_category_id_fkey FOREIGN KEY (category_id) REFERENCES categories(id) ON UPDATE CASCADE ON DELETE CASCADE;
-
-
+-- ALTER TABLE ONLY akeneo_schedules
+--     ADD CONSTRAINT akeneo_schedules_store_id_fkey FOREIGN KEY (store_id) REFERENCES stores(id) ON UPDATE CASCADE ON DELETE CASCADE;
 --
--- Name: category_seo category_seo_language_code_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
 --
-
-ALTER TABLE ONLY category_seo
-    ADD CONSTRAINT category_seo_language_code_fkey FOREIGN KEY (language_code) REFERENCES languages(code) ON UPDATE CASCADE ON DELETE CASCADE;
-
-
+-- --
+-- -- Name: attribute_sets attribute_sets_store_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+-- --
 --
--- Name: category_translations category_translations_category_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+-- ALTER TABLE ONLY attribute_sets
+--     ADD CONSTRAINT attribute_sets_store_id_fkey FOREIGN KEY (store_id) REFERENCES stores(id) ON DELETE CASCADE;
 --
-
-ALTER TABLE ONLY category_translations
-    ADD CONSTRAINT category_translations_category_id_fkey FOREIGN KEY (category_id) REFERENCES categories(id) ON UPDATE CASCADE ON DELETE CASCADE;
-
-
 --
--- Name: category_translations category_translations_language_code_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+-- --
+-- -- Name: attribute_translations attribute_translations_attribute_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+-- --
 --
-
-ALTER TABLE ONLY category_translations
-    ADD CONSTRAINT category_translations_language_code_fkey FOREIGN KEY (language_code) REFERENCES languages(code) ON UPDATE CASCADE ON DELETE CASCADE;
-
-
+-- ALTER TABLE ONLY attribute_translations
+--     ADD CONSTRAINT attribute_translations_attribute_id_fkey FOREIGN KEY (attribute_id) REFERENCES attributes(id) ON UPDATE CASCADE ON DELETE CASCADE;
 --
--- Name: chat_messages chat_messages_conversation_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
 --
-
-ALTER TABLE ONLY chat_messages
-    ADD CONSTRAINT chat_messages_conversation_id_fkey FOREIGN KEY (conversation_id) REFERENCES chat_conversations(id) ON DELETE CASCADE;
-
-
+-- --
+-- -- Name: attribute_translations attribute_translations_language_code_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+-- --
 --
--- Name: chat_typing_indicators chat_typing_indicators_conversation_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+-- ALTER TABLE ONLY attribute_translations
+--     ADD CONSTRAINT attribute_translations_language_code_fkey FOREIGN KEY (language_code) REFERENCES languages(code) ON UPDATE CASCADE ON DELETE CASCADE;
 --
-
-ALTER TABLE ONLY chat_typing_indicators
-    ADD CONSTRAINT chat_typing_indicators_conversation_id_fkey FOREIGN KEY (conversation_id) REFERENCES chat_conversations(id) ON DELETE CASCADE;
-
-
 --
--- Name: cms_block_translations cms_block_translations_cms_block_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+-- --
+-- -- Name: attribute_value_translations attribute_value_translations_attribute_value_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+-- --
 --
-
-ALTER TABLE ONLY cms_block_translations
-    ADD CONSTRAINT cms_block_translations_cms_block_id_fkey FOREIGN KEY (cms_block_id) REFERENCES cms_blocks(id) ON UPDATE CASCADE ON DELETE CASCADE;
-
-
+-- ALTER TABLE ONLY attribute_value_translations
+--     ADD CONSTRAINT attribute_value_translations_attribute_value_id_fkey FOREIGN KEY (attribute_value_id) REFERENCES attribute_values(id) ON UPDATE CASCADE ON DELETE CASCADE;
 --
--- Name: cms_block_translations cms_block_translations_language_code_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
 --
-
-ALTER TABLE ONLY cms_block_translations
-    ADD CONSTRAINT cms_block_translations_language_code_fkey FOREIGN KEY (language_code) REFERENCES languages(code) ON UPDATE CASCADE ON DELETE CASCADE;
-
-
+-- --
+-- -- Name: attribute_value_translations attribute_value_translations_language_code_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+-- --
 --
--- Name: cms_blocks cms_blocks_store_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+-- ALTER TABLE ONLY attribute_value_translations
+--     ADD CONSTRAINT attribute_value_translations_language_code_fkey FOREIGN KEY (language_code) REFERENCES languages(code) ON UPDATE CASCADE ON DELETE CASCADE;
 --
-
-ALTER TABLE ONLY cms_blocks
-    ADD CONSTRAINT cms_blocks_store_id_fkey FOREIGN KEY (store_id) REFERENCES stores(id) ON UPDATE CASCADE ON DELETE CASCADE;
-
-
 --
--- Name: cms_page_seo cms_page_seo_cms_page_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+-- --
+-- -- Name: attribute_values attribute_values_attribute_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+-- --
 --
-
-ALTER TABLE ONLY cms_page_seo
-    ADD CONSTRAINT cms_page_seo_cms_page_id_fkey FOREIGN KEY (cms_page_id) REFERENCES cms_pages(id) ON UPDATE CASCADE ON DELETE CASCADE;
-
-
+-- ALTER TABLE ONLY attribute_values
+--     ADD CONSTRAINT attribute_values_attribute_id_fkey FOREIGN KEY (attribute_id) REFERENCES attributes(id) ON UPDATE CASCADE ON DELETE CASCADE;
 --
--- Name: cms_page_seo cms_page_seo_language_code_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
 --
-
-ALTER TABLE ONLY cms_page_seo
-    ADD CONSTRAINT cms_page_seo_language_code_fkey FOREIGN KEY (language_code) REFERENCES languages(code) ON UPDATE CASCADE ON DELETE CASCADE;
-
-
+-- --
+-- -- Name: attributes attributes_store_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+-- --
 --
--- Name: cms_page_translations cms_page_translations_cms_page_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+-- ALTER TABLE ONLY attributes
+--     ADD CONSTRAINT attributes_store_id_fkey FOREIGN KEY (store_id) REFERENCES stores(id) ON DELETE CASCADE;
 --
-
-ALTER TABLE ONLY cms_page_translations
-    ADD CONSTRAINT cms_page_translations_cms_page_id_fkey FOREIGN KEY (cms_page_id) REFERENCES cms_pages(id) ON UPDATE CASCADE ON DELETE CASCADE;
-
-
 --
--- Name: cms_page_translations cms_page_translations_language_code_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+-- --
+-- -- Name: blacklist_countries blacklist_countries_store_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+-- --
 --
-
-ALTER TABLE ONLY cms_page_translations
-    ADD CONSTRAINT cms_page_translations_language_code_fkey FOREIGN KEY (language_code) REFERENCES languages(code) ON UPDATE CASCADE ON DELETE CASCADE;
-
-
+-- ALTER TABLE ONLY blacklist_countries
+--     ADD CONSTRAINT blacklist_countries_store_id_fkey FOREIGN KEY (store_id) REFERENCES stores(id) ON DELETE CASCADE;
 --
--- Name: cms_pages cms_pages_store_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
 --
-
-ALTER TABLE ONLY cms_pages
-    ADD CONSTRAINT cms_pages_store_id_fkey FOREIGN KEY (store_id) REFERENCES stores(id) ON DELETE CASCADE;
-
-
+-- --
+-- -- Name: blacklist_emails blacklist_emails_store_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+-- --
 --
--- Name: consent_logs consent_logs_store_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+-- ALTER TABLE ONLY blacklist_emails
+--     ADD CONSTRAINT blacklist_emails_store_id_fkey FOREIGN KEY (store_id) REFERENCES stores(id) ON DELETE CASCADE;
 --
-
-ALTER TABLE ONLY consent_logs
-    ADD CONSTRAINT consent_logs_store_id_fkey FOREIGN KEY (store_id) REFERENCES stores(id) ON UPDATE CASCADE;
-
-
 --
--- Name: consent_logs consent_logs_user_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+-- --
+-- -- Name: blacklist_ips blacklist_ips_store_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+-- --
 --
-
-ALTER TABLE ONLY consent_logs
-    ADD CONSTRAINT consent_logs_user_id_fkey FOREIGN KEY (user_id) REFERENCES users(id) ON UPDATE CASCADE ON DELETE SET NULL;
-
-
+-- ALTER TABLE ONLY blacklist_ips
+--     ADD CONSTRAINT blacklist_ips_store_id_fkey FOREIGN KEY (store_id) REFERENCES stores(id) ON DELETE CASCADE;
 --
--- Name: cookie_consent_settings cookie_consent_settings_store_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
 --
-
-ALTER TABLE ONLY cookie_consent_settings
-    ADD CONSTRAINT cookie_consent_settings_store_id_fkey FOREIGN KEY (store_id) REFERENCES stores(id) ON UPDATE CASCADE;
-
-
+-- --
+-- -- Name: blacklist_settings blacklist_settings_store_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+-- --
 --
--- Name: coupon_translations coupon_translations_coupon_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+-- ALTER TABLE ONLY blacklist_settings
+--     ADD CONSTRAINT blacklist_settings_store_id_fkey FOREIGN KEY (store_id) REFERENCES stores(id) ON DELETE CASCADE;
 --
-
-ALTER TABLE ONLY coupon_translations
-    ADD CONSTRAINT coupon_translations_coupon_id_fkey FOREIGN KEY (coupon_id) REFERENCES coupons(id) ON UPDATE CASCADE ON DELETE CASCADE;
-
-
 --
--- Name: coupon_translations coupon_translations_language_code_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+-- --
+-- -- Name: brevo_configurations brevo_configurations_store_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+-- --
 --
-
-ALTER TABLE ONLY coupon_translations
-    ADD CONSTRAINT coupon_translations_language_code_fkey FOREIGN KEY (language_code) REFERENCES languages(code) ON UPDATE CASCADE ON DELETE CASCADE;
-
-
+-- ALTER TABLE ONLY brevo_configurations
+--     ADD CONSTRAINT brevo_configurations_store_id_fkey FOREIGN KEY (store_id) REFERENCES stores(id) ON UPDATE CASCADE;
 --
--- Name: coupons coupons_store_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
 --
-
-ALTER TABLE ONLY coupons
-    ADD CONSTRAINT coupons_store_id_fkey FOREIGN KEY (store_id) REFERENCES stores(id) ON DELETE CASCADE;
-
-
+-- --
+-- -- Name: canonical_urls canonical_urls_created_by_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+-- --
 --
--- Name: credit_transactions credit_transactions_store_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+-- ALTER TABLE ONLY canonical_urls
+--     ADD CONSTRAINT canonical_urls_created_by_fkey FOREIGN KEY (created_by) REFERENCES users(id) ON UPDATE CASCADE ON DELETE SET NULL;
 --
-
-ALTER TABLE ONLY credit_transactions
-    ADD CONSTRAINT credit_transactions_store_id_fkey FOREIGN KEY (store_id) REFERENCES stores(id) ON DELETE CASCADE;
-
-
 --
--- Name: credit_transactions credit_transactions_user_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+-- --
+-- -- Name: canonical_urls canonical_urls_store_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+-- --
 --
-
-ALTER TABLE ONLY credit_transactions
-    ADD CONSTRAINT credit_transactions_user_id_fkey FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE;
-
-
+-- ALTER TABLE ONLY canonical_urls
+--     ADD CONSTRAINT canonical_urls_store_id_fkey FOREIGN KEY (store_id) REFERENCES stores(id) ON UPDATE CASCADE;
 --
--- Name: credit_usage credit_usage_store_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
 --
-
-ALTER TABLE ONLY credit_usage
-    ADD CONSTRAINT credit_usage_store_id_fkey FOREIGN KEY (store_id) REFERENCES stores(id) ON DELETE CASCADE;
-
-
+-- --
+-- -- Name: carts carts_store_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+-- --
 --
--- Name: credit_usage credit_usage_user_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+-- ALTER TABLE ONLY carts
+--     ADD CONSTRAINT carts_store_id_fkey FOREIGN KEY (store_id) REFERENCES stores(id) ON UPDATE CASCADE;
 --
-
-ALTER TABLE ONLY credit_usage
-    ADD CONSTRAINT credit_usage_user_id_fkey FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE;
-
-
 --
--- Name: credits credits_store_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+-- --
+-- -- Name: carts carts_user_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+-- --
 --
-
-ALTER TABLE ONLY credits
-    ADD CONSTRAINT credits_store_id_fkey FOREIGN KEY (store_id) REFERENCES stores(id) ON UPDATE CASCADE;
-
-
+-- ALTER TABLE ONLY carts
+--     ADD CONSTRAINT carts_user_id_fkey FOREIGN KEY (user_id) REFERENCES users(id) ON UPDATE CASCADE ON DELETE SET NULL;
 --
--- Name: credits credits_user_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
 --
-
-ALTER TABLE ONLY credits
-    ADD CONSTRAINT credits_user_id_fkey FOREIGN KEY (user_id) REFERENCES users(id) ON UPDATE CASCADE;
-
-
+-- --
+-- -- Name: categories categories_parent_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+-- --
 --
--- Name: cron_job_executions cron_job_executions_cron_job_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+-- ALTER TABLE ONLY categories
+--     ADD CONSTRAINT categories_parent_id_fkey FOREIGN KEY (parent_id) REFERENCES categories(id) ON DELETE CASCADE;
 --
-
-ALTER TABLE ONLY cron_job_executions
-    ADD CONSTRAINT cron_job_executions_cron_job_id_fkey FOREIGN KEY (cron_job_id) REFERENCES cron_jobs(id) ON DELETE CASCADE;
-
-
 --
--- Name: cron_job_executions cron_job_executions_triggered_by_user_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+-- --
+-- -- Name: categories categories_store_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+-- --
 --
-
-ALTER TABLE ONLY cron_job_executions
-    ADD CONSTRAINT cron_job_executions_triggered_by_user_fkey FOREIGN KEY (triggered_by_user) REFERENCES users(id);
-
-
+-- ALTER TABLE ONLY categories
+--     ADD CONSTRAINT categories_store_id_fkey FOREIGN KEY (store_id) REFERENCES stores(id) ON DELETE CASCADE;
 --
--- Name: cron_jobs cron_jobs_store_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
 --
-
-ALTER TABLE ONLY cron_jobs
-    ADD CONSTRAINT cron_jobs_store_id_fkey FOREIGN KEY (store_id) REFERENCES stores(id) ON DELETE CASCADE;
-
-
+-- --
+-- -- Name: category_seo category_seo_category_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+-- --
 --
--- Name: cron_jobs cron_jobs_user_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+-- ALTER TABLE ONLY category_seo
+--     ADD CONSTRAINT category_seo_category_id_fkey FOREIGN KEY (category_id) REFERENCES categories(id) ON UPDATE CASCADE ON DELETE CASCADE;
 --
-
-ALTER TABLE ONLY cron_jobs
-    ADD CONSTRAINT cron_jobs_user_id_fkey FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE;
-
-
 --
--- Name: custom_analytics_events custom_analytics_events_store_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+-- --
+-- -- Name: category_seo category_seo_language_code_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+-- --
 --
-
-ALTER TABLE ONLY custom_analytics_events
-    ADD CONSTRAINT custom_analytics_events_store_id_fkey FOREIGN KEY (store_id) REFERENCES stores(id) ON UPDATE CASCADE;
-
-
+-- ALTER TABLE ONLY category_seo
+--     ADD CONSTRAINT category_seo_language_code_fkey FOREIGN KEY (language_code) REFERENCES languages(code) ON UPDATE CASCADE ON DELETE CASCADE;
 --
--- Name: custom_domains custom_domains_store_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
 --
-
-ALTER TABLE ONLY custom_domains
-    ADD CONSTRAINT custom_domains_store_id_fkey FOREIGN KEY (store_id) REFERENCES stores(id) ON UPDATE CASCADE;
-
-
+-- --
+-- -- Name: category_translations category_translations_category_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+-- --
 --
--- Name: custom_option_rules custom_option_rules_store_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+-- ALTER TABLE ONLY category_translations
+--     ADD CONSTRAINT category_translations_category_id_fkey FOREIGN KEY (category_id) REFERENCES categories(id) ON UPDATE CASCADE ON DELETE CASCADE;
 --
-
-ALTER TABLE ONLY custom_option_rules
-    ADD CONSTRAINT custom_option_rules_store_id_fkey FOREIGN KEY (store_id) REFERENCES stores(id) ON DELETE CASCADE;
-
-
 --
--- Name: custom_pricing_discounts custom_pricing_discounts_rule_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+-- --
+-- -- Name: category_translations category_translations_language_code_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+-- --
 --
-
-ALTER TABLE ONLY custom_pricing_discounts
-    ADD CONSTRAINT custom_pricing_discounts_rule_id_fkey FOREIGN KEY (rule_id) REFERENCES custom_pricing_rules(id) ON DELETE CASCADE;
-
-
+-- ALTER TABLE ONLY category_translations
+--     ADD CONSTRAINT category_translations_language_code_fkey FOREIGN KEY (language_code) REFERENCES languages(code) ON UPDATE CASCADE ON DELETE CASCADE;
 --
--- Name: custom_pricing_logs custom_pricing_logs_rule_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
 --
-
-ALTER TABLE ONLY custom_pricing_logs
-    ADD CONSTRAINT custom_pricing_logs_rule_id_fkey FOREIGN KEY (rule_id) REFERENCES custom_pricing_rules(id);
-
-
+-- --
+-- -- Name: chat_messages chat_messages_conversation_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+-- --
 --
--- Name: customer_activities customer_activities_product_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+-- ALTER TABLE ONLY chat_messages
+--     ADD CONSTRAINT chat_messages_conversation_id_fkey FOREIGN KEY (conversation_id) REFERENCES chat_conversations(id) ON DELETE CASCADE;
 --
-
-ALTER TABLE ONLY customer_activities
-    ADD CONSTRAINT customer_activities_product_id_fkey FOREIGN KEY (product_id) REFERENCES products(id) ON UPDATE CASCADE ON DELETE SET NULL;
-
-
 --
--- Name: customer_activities customer_activities_store_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+-- --
+-- -- Name: chat_typing_indicators chat_typing_indicators_conversation_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+-- --
 --
-
-ALTER TABLE ONLY customer_activities
-    ADD CONSTRAINT customer_activities_store_id_fkey FOREIGN KEY (store_id) REFERENCES stores(id) ON UPDATE CASCADE;
-
-
+-- ALTER TABLE ONLY chat_typing_indicators
+--     ADD CONSTRAINT chat_typing_indicators_conversation_id_fkey FOREIGN KEY (conversation_id) REFERENCES chat_conversations(id) ON DELETE CASCADE;
 --
--- Name: customer_activities customer_activities_user_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
 --
-
-ALTER TABLE ONLY customer_activities
-    ADD CONSTRAINT customer_activities_user_id_fkey FOREIGN KEY (user_id) REFERENCES users(id) ON UPDATE CASCADE ON DELETE SET NULL;
-
-
+-- --
+-- -- Name: cms_block_translations cms_block_translations_cms_block_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+-- --
 --
--- Name: customer_addresses customer_addresses_customer_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+-- ALTER TABLE ONLY cms_block_translations
+--     ADD CONSTRAINT cms_block_translations_cms_block_id_fkey FOREIGN KEY (cms_block_id) REFERENCES cms_blocks(id) ON UPDATE CASCADE ON DELETE CASCADE;
 --
-
-ALTER TABLE ONLY customer_addresses
-    ADD CONSTRAINT customer_addresses_customer_id_fkey FOREIGN KEY (customer_id) REFERENCES customers(id) ON UPDATE CASCADE ON DELETE SET NULL;
-
-
 --
--- Name: customer_addresses customer_addresses_user_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+-- --
+-- -- Name: cms_block_translations cms_block_translations_language_code_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+-- --
 --
-
-ALTER TABLE ONLY customer_addresses
-    ADD CONSTRAINT customer_addresses_user_id_fkey FOREIGN KEY (user_id) REFERENCES users(id) ON UPDATE CASCADE ON DELETE SET NULL;
-
-
+-- ALTER TABLE ONLY cms_block_translations
+--     ADD CONSTRAINT cms_block_translations_language_code_fkey FOREIGN KEY (language_code) REFERENCES languages(code) ON UPDATE CASCADE ON DELETE CASCADE;
 --
--- Name: customers customers_store_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
 --
-
-ALTER TABLE ONLY customers
-    ADD CONSTRAINT customers_store_id_fkey FOREIGN KEY (store_id) REFERENCES stores(id) ON DELETE CASCADE;
-
-
+-- --
+-- -- Name: cms_blocks cms_blocks_store_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+-- --
 --
--- Name: delivery_settings delivery_settings_store_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+-- ALTER TABLE ONLY cms_blocks
+--     ADD CONSTRAINT cms_blocks_store_id_fkey FOREIGN KEY (store_id) REFERENCES stores(id) ON UPDATE CASCADE ON DELETE CASCADE;
 --
-
-ALTER TABLE ONLY delivery_settings
-    ADD CONSTRAINT delivery_settings_store_id_fkey FOREIGN KEY (store_id) REFERENCES stores(id) ON DELETE CASCADE;
-
-
 --
--- Name: email_send_logs email_send_logs_email_template_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+-- --
+-- -- Name: cms_page_seo cms_page_seo_cms_page_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+-- --
 --
-
-ALTER TABLE ONLY email_send_logs
-    ADD CONSTRAINT email_send_logs_email_template_id_fkey FOREIGN KEY (email_template_id) REFERENCES email_templates(id) ON UPDATE CASCADE ON DELETE SET NULL;
-
-
+-- ALTER TABLE ONLY cms_page_seo
+--     ADD CONSTRAINT cms_page_seo_cms_page_id_fkey FOREIGN KEY (cms_page_id) REFERENCES cms_pages(id) ON UPDATE CASCADE ON DELETE CASCADE;
 --
--- Name: email_send_logs email_send_logs_store_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
 --
-
-ALTER TABLE ONLY email_send_logs
-    ADD CONSTRAINT email_send_logs_store_id_fkey FOREIGN KEY (store_id) REFERENCES stores(id) ON UPDATE CASCADE;
-
-
+-- --
+-- -- Name: cms_page_seo cms_page_seo_language_code_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+-- --
 --
--- Name: email_template_translations email_template_translations_email_template_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+-- ALTER TABLE ONLY cms_page_seo
+--     ADD CONSTRAINT cms_page_seo_language_code_fkey FOREIGN KEY (language_code) REFERENCES languages(code) ON UPDATE CASCADE ON DELETE CASCADE;
 --
-
-ALTER TABLE ONLY email_template_translations
-    ADD CONSTRAINT email_template_translations_email_template_id_fkey FOREIGN KEY (email_template_id) REFERENCES email_templates(id) ON UPDATE CASCADE ON DELETE CASCADE;
-
-
 --
--- Name: email_templates email_templates_store_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+-- --
+-- -- Name: cms_page_translations cms_page_translations_cms_page_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+-- --
 --
-
-ALTER TABLE ONLY email_templates
-    ADD CONSTRAINT email_templates_store_id_fkey FOREIGN KEY (store_id) REFERENCES stores(id) ON UPDATE CASCADE;
-
-
+-- ALTER TABLE ONLY cms_page_translations
+--     ADD CONSTRAINT cms_page_translations_cms_page_id_fkey FOREIGN KEY (cms_page_id) REFERENCES cms_pages(id) ON UPDATE CASCADE ON DELETE CASCADE;
 --
--- Name: cookie_consent_settings_translations fk_cookie_consent_settings; Type: FK CONSTRAINT; Schema: public; Owner: postgres
 --
-
-ALTER TABLE ONLY cookie_consent_settings_translations
-    ADD CONSTRAINT fk_cookie_consent_settings FOREIGN KEY (cookie_consent_settings_id) REFERENCES cookie_consent_settings(id) ON UPDATE CASCADE ON DELETE CASCADE;
-
-
+-- --
+-- -- Name: cms_page_translations cms_page_translations_language_code_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+-- --
 --
--- Name: admin_navigation_registry fk_navigation_parent; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+-- ALTER TABLE ONLY cms_page_translations
+--     ADD CONSTRAINT cms_page_translations_language_code_fkey FOREIGN KEY (language_code) REFERENCES languages(code) ON UPDATE CASCADE ON DELETE CASCADE;
 --
-
-ALTER TABLE ONLY admin_navigation_registry
-    ADD CONSTRAINT fk_navigation_parent FOREIGN KEY (parent_key) REFERENCES admin_navigation_registry(key) ON DELETE CASCADE;
-
-
 --
--- Name: plugin_version_comparisons fk_plugin_comparison_from; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+-- --
+-- -- Name: cms_pages cms_pages_store_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+-- --
 --
-
-ALTER TABLE ONLY plugin_version_comparisons
-    ADD CONSTRAINT fk_plugin_comparison_from FOREIGN KEY (from_version_id) REFERENCES plugin_version_history(id) ON DELETE CASCADE;
-
-
+-- ALTER TABLE ONLY cms_pages
+--     ADD CONSTRAINT cms_pages_store_id_fkey FOREIGN KEY (store_id) REFERENCES stores(id) ON DELETE CASCADE;
 --
--- Name: plugin_version_comparisons fk_plugin_comparison_plugin; Type: FK CONSTRAINT; Schema: public; Owner: postgres
 --
-
-ALTER TABLE ONLY plugin_version_comparisons
-    ADD CONSTRAINT fk_plugin_comparison_plugin FOREIGN KEY (plugin_id) REFERENCES plugin_registry(id) ON DELETE CASCADE;
-
-
+-- --
+-- -- Name: consent_logs consent_logs_store_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+-- --
 --
--- Name: plugin_version_comparisons fk_plugin_comparison_to; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+-- ALTER TABLE ONLY consent_logs
+--     ADD CONSTRAINT consent_logs_store_id_fkey FOREIGN KEY (store_id) REFERENCES stores(id) ON UPDATE CASCADE;
 --
-
-ALTER TABLE ONLY plugin_version_comparisons
-    ADD CONSTRAINT fk_plugin_comparison_to FOREIGN KEY (to_version_id) REFERENCES plugin_version_history(id) ON DELETE CASCADE;
-
-
 --
--- Name: plugin_controllers fk_plugin_controllers_plugin; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+-- --
+-- -- Name: consent_logs consent_logs_user_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+-- --
 --
-
-ALTER TABLE ONLY plugin_controllers
-    ADD CONSTRAINT fk_plugin_controllers_plugin FOREIGN KEY (plugin_id) REFERENCES plugin_registry(id) ON DELETE CASCADE;
-
-
+-- ALTER TABLE ONLY consent_logs
+--     ADD CONSTRAINT consent_logs_user_id_fkey FOREIGN KEY (user_id) REFERENCES users(id) ON UPDATE CASCADE ON DELETE SET NULL;
 --
--- Name: plugin_docs fk_plugin_docs_plugin; Type: FK CONSTRAINT; Schema: public; Owner: postgres
 --
-
-ALTER TABLE ONLY plugin_docs
-    ADD CONSTRAINT fk_plugin_docs_plugin FOREIGN KEY (plugin_id) REFERENCES plugin_registry(id) ON DELETE CASCADE;
-
-
+-- --
+-- -- Name: cookie_consent_settings cookie_consent_settings_store_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+-- --
 --
--- Name: plugin_entities fk_plugin_entities_plugin; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+-- ALTER TABLE ONLY cookie_consent_settings
+--     ADD CONSTRAINT cookie_consent_settings_store_id_fkey FOREIGN KEY (store_id) REFERENCES stores(id) ON UPDATE CASCADE;
 --
-
-ALTER TABLE ONLY plugin_entities
-    ADD CONSTRAINT fk_plugin_entities_plugin FOREIGN KEY (plugin_id) REFERENCES plugin_registry(id) ON DELETE CASCADE;
-
-
 --
--- Name: plugin_migrations fk_plugin_migrations_plugin; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+-- --
+-- -- Name: coupon_translations coupon_translations_coupon_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+-- --
 --
-
-ALTER TABLE ONLY plugin_migrations
-    ADD CONSTRAINT fk_plugin_migrations_plugin FOREIGN KEY (plugin_id) REFERENCES plugin_registry(id) ON DELETE CASCADE;
-
-
+-- ALTER TABLE ONLY coupon_translations
+--     ADD CONSTRAINT coupon_translations_coupon_id_fkey FOREIGN KEY (coupon_id) REFERENCES coupons(id) ON UPDATE CASCADE ON DELETE CASCADE;
 --
--- Name: plugin_version_patches fk_plugin_patch_plugin; Type: FK CONSTRAINT; Schema: public; Owner: postgres
 --
-
-ALTER TABLE ONLY plugin_version_patches
-    ADD CONSTRAINT fk_plugin_patch_plugin FOREIGN KEY (plugin_id) REFERENCES plugin_registry(id) ON DELETE CASCADE;
-
-
+-- --
+-- -- Name: coupon_translations coupon_translations_language_code_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+-- --
 --
--- Name: plugin_version_patches fk_plugin_patch_version; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+-- ALTER TABLE ONLY coupon_translations
+--     ADD CONSTRAINT coupon_translations_language_code_fkey FOREIGN KEY (language_code) REFERENCES languages(code) ON UPDATE CASCADE ON DELETE CASCADE;
 --
-
-ALTER TABLE ONLY plugin_version_patches
-    ADD CONSTRAINT fk_plugin_patch_version FOREIGN KEY (version_id) REFERENCES plugin_version_history(id) ON DELETE CASCADE;
-
-
 --
--- Name: plugin_version_snapshots fk_plugin_snapshot_plugin; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+-- --
+-- -- Name: coupons coupons_store_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+-- --
 --
-
-ALTER TABLE ONLY plugin_version_snapshots
-    ADD CONSTRAINT fk_plugin_snapshot_plugin FOREIGN KEY (plugin_id) REFERENCES plugin_registry(id) ON DELETE CASCADE;
-
-
+-- ALTER TABLE ONLY coupons
+--     ADD CONSTRAINT coupons_store_id_fkey FOREIGN KEY (store_id) REFERENCES stores(id) ON DELETE CASCADE;
 --
--- Name: plugin_version_snapshots fk_plugin_snapshot_version; Type: FK CONSTRAINT; Schema: public; Owner: postgres
 --
-
-ALTER TABLE ONLY plugin_version_snapshots
-    ADD CONSTRAINT fk_plugin_snapshot_version FOREIGN KEY (version_id) REFERENCES plugin_version_history(id) ON DELETE CASCADE;
-
-
+-- --
+-- -- Name: credit_transactions credit_transactions_store_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+-- --
 --
--- Name: plugin_version_tags fk_plugin_tag_plugin; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+-- ALTER TABLE ONLY credit_transactions
+--     ADD CONSTRAINT credit_transactions_store_id_fkey FOREIGN KEY (store_id) REFERENCES stores(id) ON DELETE CASCADE;
 --
-
-ALTER TABLE ONLY plugin_version_tags
-    ADD CONSTRAINT fk_plugin_tag_plugin FOREIGN KEY (plugin_id) REFERENCES plugin_registry(id) ON DELETE CASCADE;
-
-
 --
--- Name: plugin_version_tags fk_plugin_tag_version; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+-- --
+-- -- Name: credit_transactions credit_transactions_user_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+-- --
 --
-
-ALTER TABLE ONLY plugin_version_tags
-    ADD CONSTRAINT fk_plugin_tag_version FOREIGN KEY (version_id) REFERENCES plugin_version_history(id) ON DELETE CASCADE;
-
-
+-- ALTER TABLE ONLY credit_transactions
+--     ADD CONSTRAINT credit_transactions_user_id_fkey FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE;
 --
--- Name: plugin_version_history fk_plugin_version_parent; Type: FK CONSTRAINT; Schema: public; Owner: postgres
 --
-
-ALTER TABLE ONLY plugin_version_history
-    ADD CONSTRAINT fk_plugin_version_parent FOREIGN KEY (parent_version_id) REFERENCES plugin_version_history(id) ON DELETE SET NULL;
-
-
+-- --
+-- -- Name: credit_usage credit_usage_store_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+-- --
 --
--- Name: plugin_version_history fk_plugin_version_plugin; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+-- ALTER TABLE ONLY credit_usage
+--     ADD CONSTRAINT credit_usage_store_id_fkey FOREIGN KEY (store_id) REFERENCES stores(id) ON DELETE CASCADE;
 --
-
-ALTER TABLE ONLY plugin_version_history
-    ADD CONSTRAINT fk_plugin_version_plugin FOREIGN KEY (plugin_id) REFERENCES plugin_registry(id) ON DELETE CASCADE;
-
-
 --
--- Name: heatmap_aggregations heatmap_aggregations_store_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+-- --
+-- -- Name: credit_usage credit_usage_user_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+-- --
 --
-
-ALTER TABLE ONLY heatmap_aggregations
-    ADD CONSTRAINT heatmap_aggregations_store_id_fkey FOREIGN KEY (store_id) REFERENCES stores(id) ON DELETE CASCADE;
-
-
+-- ALTER TABLE ONLY credit_usage
+--     ADD CONSTRAINT credit_usage_user_id_fkey FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE;
 --
--- Name: heatmap_interactions heatmap_interactions_store_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
 --
-
-ALTER TABLE ONLY heatmap_interactions
-    ADD CONSTRAINT heatmap_interactions_store_id_fkey FOREIGN KEY (store_id) REFERENCES stores(id) ON DELETE CASCADE;
-
-
+-- --
+-- -- Name: credits credits_store_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+-- --
 --
--- Name: heatmap_interactions heatmap_interactions_user_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+-- ALTER TABLE ONLY credits
+--     ADD CONSTRAINT credits_store_id_fkey FOREIGN KEY (store_id) REFERENCES stores(id) ON UPDATE CASCADE;
 --
-
-ALTER TABLE ONLY heatmap_interactions
-    ADD CONSTRAINT heatmap_interactions_user_id_fkey FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL;
-
-
 --
--- Name: heatmap_sessions heatmap_sessions_store_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+-- --
+-- -- Name: credits credits_user_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+-- --
 --
-
-ALTER TABLE ONLY heatmap_sessions
-    ADD CONSTRAINT heatmap_sessions_store_id_fkey FOREIGN KEY (store_id) REFERENCES stores(id) ON DELETE CASCADE;
-
-
+-- ALTER TABLE ONLY credits
+--     ADD CONSTRAINT credits_user_id_fkey FOREIGN KEY (user_id) REFERENCES users(id) ON UPDATE CASCADE;
 --
--- Name: heatmap_sessions heatmap_sessions_user_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
 --
-
-ALTER TABLE ONLY heatmap_sessions
-    ADD CONSTRAINT heatmap_sessions_user_id_fkey FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL;
-
-
+-- --
+-- -- Name: cron_job_executions cron_job_executions_cron_job_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+-- --
 --
--- Name: integration_configs integration_configs_store_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+-- ALTER TABLE ONLY cron_job_executions
+--     ADD CONSTRAINT cron_job_executions_cron_job_id_fkey FOREIGN KEY (cron_job_id) REFERENCES cron_jobs(id) ON DELETE CASCADE;
 --
-
-ALTER TABLE ONLY integration_configs
-    ADD CONSTRAINT integration_configs_store_id_fkey FOREIGN KEY (store_id) REFERENCES stores(id);
-
-
 --
--- Name: job_history job_history_job_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+-- --
+-- -- Name: cron_job_executions cron_job_executions_triggered_by_user_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+-- --
 --
-
-ALTER TABLE ONLY job_history
-    ADD CONSTRAINT job_history_job_id_fkey FOREIGN KEY (job_id) REFERENCES jobs(id) ON DELETE CASCADE;
-
-
+-- ALTER TABLE ONLY cron_job_executions
+--     ADD CONSTRAINT cron_job_executions_triggered_by_user_fkey FOREIGN KEY (triggered_by_user) REFERENCES users(id);
 --
--- Name: jobs jobs_store_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
 --
-
-ALTER TABLE ONLY jobs
-    ADD CONSTRAINT jobs_store_id_fkey FOREIGN KEY (store_id) REFERENCES stores(id) ON DELETE CASCADE;
-
-
+-- --
+-- -- Name: cron_jobs cron_jobs_store_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+-- --
 --
--- Name: jobs jobs_user_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+-- ALTER TABLE ONLY cron_jobs
+--     ADD CONSTRAINT cron_jobs_store_id_fkey FOREIGN KEY (store_id) REFERENCES stores(id) ON DELETE CASCADE;
 --
-
-ALTER TABLE ONLY jobs
-    ADD CONSTRAINT jobs_user_id_fkey FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL;
-
-
 --
--- Name: media_assets media_assets_store_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+-- --
+-- -- Name: cron_jobs cron_jobs_user_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+-- --
 --
-
-ALTER TABLE ONLY media_assets
-    ADD CONSTRAINT media_assets_store_id_fkey FOREIGN KEY (store_id) REFERENCES stores(id) ON DELETE CASCADE;
-
-
+-- ALTER TABLE ONLY cron_jobs
+--     ADD CONSTRAINT cron_jobs_user_id_fkey FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE;
 --
--- Name: media_assets media_assets_uploaded_by_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
 --
-
-ALTER TABLE ONLY media_assets
-    ADD CONSTRAINT media_assets_uploaded_by_fkey FOREIGN KEY (uploaded_by) REFERENCES users(id);
-
-
+-- --
+-- -- Name: custom_analytics_events custom_analytics_events_store_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+-- --
 --
--- Name: payment_method_translations payment_method_translations_language_code_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+-- ALTER TABLE ONLY custom_analytics_events
+--     ADD CONSTRAINT custom_analytics_events_store_id_fkey FOREIGN KEY (store_id) REFERENCES stores(id) ON UPDATE CASCADE;
 --
-
-ALTER TABLE ONLY payment_method_translations
-    ADD CONSTRAINT payment_method_translations_language_code_fkey FOREIGN KEY (language_code) REFERENCES languages(code) ON UPDATE CASCADE ON DELETE CASCADE;
-
-
 --
--- Name: payment_method_translations payment_method_translations_payment_method_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+-- --
+-- -- Name: custom_domains custom_domains_store_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+-- --
 --
-
-ALTER TABLE ONLY payment_method_translations
-    ADD CONSTRAINT payment_method_translations_payment_method_id_fkey FOREIGN KEY (payment_method_id) REFERENCES payment_methods(id) ON UPDATE CASCADE ON DELETE CASCADE;
-
-
+-- ALTER TABLE ONLY custom_domains
+--     ADD CONSTRAINT custom_domains_store_id_fkey FOREIGN KEY (store_id) REFERENCES stores(id) ON UPDATE CASCADE;
 --
--- Name: payment_methods payment_methods_store_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
 --
-
-ALTER TABLE ONLY payment_methods
-    ADD CONSTRAINT payment_methods_store_id_fkey FOREIGN KEY (store_id) REFERENCES stores(id) ON UPDATE CASCADE;
-
-
+-- --
+-- -- Name: custom_option_rules custom_option_rules_store_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+-- --
 --
--- Name: pdf_template_translations pdf_template_translations_pdf_template_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+-- ALTER TABLE ONLY custom_option_rules
+--     ADD CONSTRAINT custom_option_rules_store_id_fkey FOREIGN KEY (store_id) REFERENCES stores(id) ON DELETE CASCADE;
 --
-
-ALTER TABLE ONLY pdf_template_translations
-    ADD CONSTRAINT pdf_template_translations_pdf_template_id_fkey FOREIGN KEY (pdf_template_id) REFERENCES pdf_templates(id) ON DELETE CASCADE;
-
-
 --
--- Name: pdf_templates pdf_templates_store_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+-- --
+-- -- Name: custom_pricing_discounts custom_pricing_discounts_rule_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+-- --
 --
-
-ALTER TABLE ONLY pdf_templates
-    ADD CONSTRAINT pdf_templates_store_id_fkey FOREIGN KEY (store_id) REFERENCES stores(id) ON DELETE CASCADE;
-
-
+-- ALTER TABLE ONLY custom_pricing_discounts
+--     ADD CONSTRAINT custom_pricing_discounts_rule_id_fkey FOREIGN KEY (rule_id) REFERENCES custom_pricing_rules(id) ON DELETE CASCADE;
 --
--- Name: platform_admins platform_admins_user_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
 --
-
-ALTER TABLE ONLY platform_admins
-    ADD CONSTRAINT platform_admins_user_id_fkey FOREIGN KEY (user_id) REFERENCES users(id) ON UPDATE CASCADE;
-
-
+-- --
+-- -- Name: custom_pricing_logs custom_pricing_logs_rule_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+-- --
 --
--- Name: plugin_configurations plugin_configurations_last_configured_by_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+-- ALTER TABLE ONLY custom_pricing_logs
+--     ADD CONSTRAINT custom_pricing_logs_rule_id_fkey FOREIGN KEY (rule_id) REFERENCES custom_pricing_rules(id);
 --
-
-ALTER TABLE ONLY plugin_configurations
-    ADD CONSTRAINT plugin_configurations_last_configured_by_fkey FOREIGN KEY (last_configured_by) REFERENCES users(id) ON UPDATE CASCADE ON DELETE SET NULL;
-
-
 --
--- Name: plugin_configurations plugin_configurations_store_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+-- --
+-- -- Name: customer_activities customer_activities_product_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+-- --
 --
-
-ALTER TABLE ONLY plugin_configurations
-    ADD CONSTRAINT plugin_configurations_store_id_fkey FOREIGN KEY (store_id) REFERENCES stores(id) ON UPDATE CASCADE ON DELETE SET NULL;
-
-
+-- ALTER TABLE ONLY customer_activities
+--     ADD CONSTRAINT customer_activities_product_id_fkey FOREIGN KEY (product_id) REFERENCES products(id) ON UPDATE CASCADE ON DELETE SET NULL;
 --
--- Name: plugin_marketplace plugin_marketplace_author_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
 --
-
-ALTER TABLE ONLY plugin_marketplace
-    ADD CONSTRAINT plugin_marketplace_author_id_fkey FOREIGN KEY (author_id) REFERENCES users(id);
-
-
+-- --
+-- -- Name: customer_activities customer_activities_store_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+-- --
 --
--- Name: plugin_registry plugin_registry_creator_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+-- ALTER TABLE ONLY customer_activities
+--     ADD CONSTRAINT customer_activities_store_id_fkey FOREIGN KEY (store_id) REFERENCES stores(id) ON UPDATE CASCADE;
 --
-
-ALTER TABLE ONLY plugin_registry
-    ADD CONSTRAINT plugin_registry_creator_id_fkey FOREIGN KEY (creator_id) REFERENCES users(id);
-
-
 --
--- Name: product_attribute_values product_attribute_values_attribute_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+-- --
+-- -- Name: customer_activities customer_activities_user_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+-- --
 --
-
-ALTER TABLE ONLY product_attribute_values
-    ADD CONSTRAINT product_attribute_values_attribute_id_fkey FOREIGN KEY (attribute_id) REFERENCES attributes(id) ON UPDATE CASCADE;
-
-
+-- ALTER TABLE ONLY customer_activities
+--     ADD CONSTRAINT customer_activities_user_id_fkey FOREIGN KEY (user_id) REFERENCES users(id) ON UPDATE CASCADE ON DELETE SET NULL;
 --
--- Name: product_attribute_values product_attribute_values_product_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
 --
-
-ALTER TABLE ONLY product_attribute_values
-    ADD CONSTRAINT product_attribute_values_product_id_fkey FOREIGN KEY (product_id) REFERENCES products(id) ON UPDATE CASCADE;
-
-
+-- --
+-- -- Name: customer_addresses customer_addresses_customer_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+-- --
 --
--- Name: product_attribute_values product_attribute_values_value_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+-- ALTER TABLE ONLY customer_addresses
+--     ADD CONSTRAINT customer_addresses_customer_id_fkey FOREIGN KEY (customer_id) REFERENCES customers(id) ON UPDATE CASCADE ON DELETE SET NULL;
 --
-
-ALTER TABLE ONLY product_attribute_values
-    ADD CONSTRAINT product_attribute_values_value_id_fkey FOREIGN KEY (value_id) REFERENCES attribute_values(id) ON UPDATE CASCADE ON DELETE SET NULL;
-
-
 --
--- Name: product_label_translations product_label_translations_language_code_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+-- --
+-- -- Name: customer_addresses customer_addresses_user_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+-- --
 --
-
-ALTER TABLE ONLY product_label_translations
-    ADD CONSTRAINT product_label_translations_language_code_fkey FOREIGN KEY (language_code) REFERENCES languages(code) ON UPDATE CASCADE ON DELETE CASCADE;
-
-
+-- ALTER TABLE ONLY customer_addresses
+--     ADD CONSTRAINT customer_addresses_user_id_fkey FOREIGN KEY (user_id) REFERENCES users(id) ON UPDATE CASCADE ON DELETE SET NULL;
 --
--- Name: product_label_translations product_label_translations_product_label_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
 --
-
-ALTER TABLE ONLY product_label_translations
-    ADD CONSTRAINT product_label_translations_product_label_id_fkey FOREIGN KEY (product_label_id) REFERENCES product_labels(id) ON UPDATE CASCADE ON DELETE CASCADE;
-
-
+-- --
+-- -- Name: customers customers_store_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+-- --
 --
--- Name: product_labels product_labels_store_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+-- ALTER TABLE ONLY customers
+--     ADD CONSTRAINT customers_store_id_fkey FOREIGN KEY (store_id) REFERENCES stores(id) ON DELETE CASCADE;
 --
-
-ALTER TABLE ONLY product_labels
-    ADD CONSTRAINT product_labels_store_id_fkey FOREIGN KEY (store_id) REFERENCES stores(id) ON UPDATE CASCADE;
-
-
 --
--- Name: product_seo product_seo_language_code_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+-- --
+-- -- Name: delivery_settings delivery_settings_store_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+-- --
 --
-
-ALTER TABLE ONLY product_seo
-    ADD CONSTRAINT product_seo_language_code_fkey FOREIGN KEY (language_code) REFERENCES languages(code) ON UPDATE CASCADE ON DELETE CASCADE;
-
-
+-- ALTER TABLE ONLY delivery_settings
+--     ADD CONSTRAINT delivery_settings_store_id_fkey FOREIGN KEY (store_id) REFERENCES stores(id) ON DELETE CASCADE;
 --
--- Name: product_seo product_seo_product_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
 --
-
-ALTER TABLE ONLY product_seo
-    ADD CONSTRAINT product_seo_product_id_fkey FOREIGN KEY (product_id) REFERENCES products(id) ON UPDATE CASCADE ON DELETE CASCADE;
-
-
+-- --
+-- -- Name: email_send_logs email_send_logs_email_template_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+-- --
 --
--- Name: product_tab_translations product_tab_translations_language_code_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+-- ALTER TABLE ONLY email_send_logs
+--     ADD CONSTRAINT email_send_logs_email_template_id_fkey FOREIGN KEY (email_template_id) REFERENCES email_templates(id) ON UPDATE CASCADE ON DELETE SET NULL;
 --
-
-ALTER TABLE ONLY product_tab_translations
-    ADD CONSTRAINT product_tab_translations_language_code_fkey FOREIGN KEY (language_code) REFERENCES languages(code) ON UPDATE CASCADE ON DELETE CASCADE;
-
-
 --
--- Name: product_tab_translations product_tab_translations_product_tab_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+-- --
+-- -- Name: email_send_logs email_send_logs_store_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+-- --
 --
-
-ALTER TABLE ONLY product_tab_translations
-    ADD CONSTRAINT product_tab_translations_product_tab_id_fkey FOREIGN KEY (product_tab_id) REFERENCES product_tabs(id) ON UPDATE CASCADE ON DELETE CASCADE;
-
-
+-- ALTER TABLE ONLY email_send_logs
+--     ADD CONSTRAINT email_send_logs_store_id_fkey FOREIGN KEY (store_id) REFERENCES stores(id) ON UPDATE CASCADE;
 --
--- Name: product_tabs product_tabs_store_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
 --
-
-ALTER TABLE ONLY product_tabs
-    ADD CONSTRAINT product_tabs_store_id_fkey FOREIGN KEY (store_id) REFERENCES stores(id) ON UPDATE CASCADE;
-
-
+-- --
+-- -- Name: email_template_translations email_template_translations_email_template_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+-- --
 --
--- Name: product_translations product_translations_language_code_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+-- ALTER TABLE ONLY email_template_translations
+--     ADD CONSTRAINT email_template_translations_email_template_id_fkey FOREIGN KEY (email_template_id) REFERENCES email_templates(id) ON UPDATE CASCADE ON DELETE CASCADE;
 --
-
-ALTER TABLE ONLY product_translations
-    ADD CONSTRAINT product_translations_language_code_fkey FOREIGN KEY (language_code) REFERENCES languages(code) ON UPDATE CASCADE ON DELETE CASCADE;
-
-
 --
--- Name: product_translations product_translations_product_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+-- --
+-- -- Name: email_templates email_templates_store_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+-- --
 --
-
-ALTER TABLE ONLY product_translations
-    ADD CONSTRAINT product_translations_product_id_fkey FOREIGN KEY (product_id) REFERENCES products(id) ON UPDATE CASCADE ON DELETE CASCADE;
-
-
+-- ALTER TABLE ONLY email_templates
+--     ADD CONSTRAINT email_templates_store_id_fkey FOREIGN KEY (store_id) REFERENCES stores(id) ON UPDATE CASCADE;
 --
--- Name: product_variants product_variants_parent_product_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
 --
-
-ALTER TABLE ONLY product_variants
-    ADD CONSTRAINT product_variants_parent_product_id_fkey FOREIGN KEY (parent_product_id) REFERENCES products(id) ON DELETE CASCADE;
-
-
+-- --
+-- -- Name: cookie_consent_settings_translations fk_cookie_consent_settings; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+-- --
 --
--- Name: product_variants product_variants_variant_product_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+-- ALTER TABLE ONLY cookie_consent_settings_translations
+--     ADD CONSTRAINT fk_cookie_consent_settings FOREIGN KEY (cookie_consent_settings_id) REFERENCES cookie_consent_settings(id) ON UPDATE CASCADE ON DELETE CASCADE;
 --
-
-ALTER TABLE ONLY product_variants
-    ADD CONSTRAINT product_variants_variant_product_id_fkey FOREIGN KEY (variant_product_id) REFERENCES products(id) ON DELETE CASCADE;
-
-
 --
--- Name: products products_attribute_set_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+-- --
+-- -- Name: admin_navigation_registry fk_navigation_parent; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+-- --
 --
-
-ALTER TABLE ONLY products
-    ADD CONSTRAINT products_attribute_set_id_fkey FOREIGN KEY (attribute_set_id) REFERENCES attribute_sets(id) ON DELETE SET NULL;
-
-
+-- ALTER TABLE ONLY admin_navigation_registry
+--     ADD CONSTRAINT fk_navigation_parent FOREIGN KEY (parent_key) REFERENCES admin_navigation_registry(key) ON DELETE CASCADE;
 --
--- Name: products products_parent_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
 --
-
-ALTER TABLE ONLY products
-    ADD CONSTRAINT products_parent_id_fkey FOREIGN KEY (parent_id) REFERENCES products(id) ON DELETE CASCADE;
-
-
+-- --
+-- -- Name: plugin_version_comparisons fk_plugin_comparison_from; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+-- --
 --
--- Name: products products_store_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+-- ALTER TABLE ONLY plugin_version_comparisons
+--     ADD CONSTRAINT fk_plugin_comparison_from FOREIGN KEY (from_version_id) REFERENCES plugin_version_history(id) ON DELETE CASCADE;
 --
-
-ALTER TABLE ONLY products
-    ADD CONSTRAINT products_store_id_fkey FOREIGN KEY (store_id) REFERENCES stores(id) ON DELETE CASCADE;
-
-
 --
--- Name: redirects redirects_store_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+-- --
+-- -- Name: plugin_version_comparisons fk_plugin_comparison_plugin; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+-- --
 --
-
-ALTER TABLE ONLY redirects
-    ADD CONSTRAINT redirects_store_id_fkey FOREIGN KEY (store_id) REFERENCES stores(id) ON DELETE CASCADE;
-
-
+-- ALTER TABLE ONLY plugin_version_comparisons
+--     ADD CONSTRAINT fk_plugin_comparison_plugin FOREIGN KEY (plugin_id) REFERENCES plugin_registry(id) ON DELETE CASCADE;
 --
--- Name: sales_invoices sales_invoices_order_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
 --
-
-ALTER TABLE ONLY sales_invoices
-    ADD CONSTRAINT sales_invoices_order_id_fkey FOREIGN KEY (order_id) REFERENCES sales_orders(id);
-
-
+-- --
+-- -- Name: plugin_version_comparisons fk_plugin_comparison_to; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+-- --
 --
--- Name: sales_invoices sales_invoices_store_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+-- ALTER TABLE ONLY plugin_version_comparisons
+--     ADD CONSTRAINT fk_plugin_comparison_to FOREIGN KEY (to_version_id) REFERENCES plugin_version_history(id) ON DELETE CASCADE;
 --
-
-ALTER TABLE ONLY sales_invoices
-    ADD CONSTRAINT sales_invoices_store_id_fkey FOREIGN KEY (store_id) REFERENCES stores(id);
-
-
 --
--- Name: sales_order_items sales_order_items_order_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+-- --
+-- -- Name: plugin_controllers fk_plugin_controllers_plugin; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+-- --
 --
-
-ALTER TABLE ONLY sales_order_items
-    ADD CONSTRAINT sales_order_items_order_id_fkey FOREIGN KEY (order_id) REFERENCES sales_orders(id) ON UPDATE CASCADE ON DELETE CASCADE;
-
-
+-- ALTER TABLE ONLY plugin_controllers
+--     ADD CONSTRAINT fk_plugin_controllers_plugin FOREIGN KEY (plugin_id) REFERENCES plugin_registry(id) ON DELETE CASCADE;
 --
--- Name: sales_order_items sales_order_items_product_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
 --
-
-ALTER TABLE ONLY sales_order_items
-    ADD CONSTRAINT sales_order_items_product_id_fkey FOREIGN KEY (product_id) REFERENCES products(id) ON UPDATE CASCADE ON DELETE CASCADE;
-
-
+-- --
+-- -- Name: plugin_docs fk_plugin_docs_plugin; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+-- --
 --
--- Name: sales_orders sales_orders_customer_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+-- ALTER TABLE ONLY plugin_docs
+--     ADD CONSTRAINT fk_plugin_docs_plugin FOREIGN KEY (plugin_id) REFERENCES plugin_registry(id) ON DELETE CASCADE;
 --
-
-ALTER TABLE ONLY sales_orders
-    ADD CONSTRAINT sales_orders_customer_id_fkey FOREIGN KEY (customer_id) REFERENCES customers(id) ON UPDATE CASCADE ON DELETE SET NULL;
-
-
 --
--- Name: sales_orders sales_orders_store_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+-- --
+-- -- Name: plugin_entities fk_plugin_entities_plugin; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+-- --
 --
-
-ALTER TABLE ONLY sales_orders
-    ADD CONSTRAINT sales_orders_store_id_fkey FOREIGN KEY (store_id) REFERENCES stores(id) ON UPDATE CASCADE ON DELETE CASCADE;
-
-
+-- ALTER TABLE ONLY plugin_entities
+--     ADD CONSTRAINT fk_plugin_entities_plugin FOREIGN KEY (plugin_id) REFERENCES plugin_registry(id) ON DELETE CASCADE;
 --
--- Name: sales_shipments sales_shipments_order_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
 --
-
-ALTER TABLE ONLY sales_shipments
-    ADD CONSTRAINT sales_shipments_order_id_fkey FOREIGN KEY (order_id) REFERENCES sales_orders(id);
-
-
+-- --
+-- -- Name: plugin_migrations fk_plugin_migrations_plugin; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+-- --
 --
--- Name: sales_shipments sales_shipments_store_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+-- ALTER TABLE ONLY plugin_migrations
+--     ADD CONSTRAINT fk_plugin_migrations_plugin FOREIGN KEY (plugin_id) REFERENCES plugin_registry(id) ON DELETE CASCADE;
 --
-
-ALTER TABLE ONLY sales_shipments
-    ADD CONSTRAINT sales_shipments_store_id_fkey FOREIGN KEY (store_id) REFERENCES stores(id);
-
-
 --
--- Name: seo_settings seo_settings_store_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+-- --
+-- -- Name: plugin_version_patches fk_plugin_patch_plugin; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+-- --
 --
-
-ALTER TABLE ONLY seo_settings
-    ADD CONSTRAINT seo_settings_store_id_fkey FOREIGN KEY (store_id) REFERENCES stores(id) ON UPDATE CASCADE;
-
-
+-- ALTER TABLE ONLY plugin_version_patches
+--     ADD CONSTRAINT fk_plugin_patch_plugin FOREIGN KEY (plugin_id) REFERENCES plugin_registry(id) ON DELETE CASCADE;
 --
--- Name: seo_templates seo_templates_store_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
 --
-
-ALTER TABLE ONLY seo_templates
-    ADD CONSTRAINT seo_templates_store_id_fkey FOREIGN KEY (store_id) REFERENCES stores(id) ON UPDATE CASCADE;
-
-
+-- --
+-- -- Name: plugin_version_patches fk_plugin_patch_version; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+-- --
 --
--- Name: shipping_method_translations shipping_method_translations_language_code_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+-- ALTER TABLE ONLY plugin_version_patches
+--     ADD CONSTRAINT fk_plugin_patch_version FOREIGN KEY (version_id) REFERENCES plugin_version_history(id) ON DELETE CASCADE;
 --
-
-ALTER TABLE ONLY shipping_method_translations
-    ADD CONSTRAINT shipping_method_translations_language_code_fkey FOREIGN KEY (language_code) REFERENCES languages(code) ON UPDATE CASCADE ON DELETE CASCADE;
-
-
 --
--- Name: shipping_method_translations shipping_method_translations_shipping_method_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+-- --
+-- -- Name: plugin_version_snapshots fk_plugin_snapshot_plugin; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+-- --
 --
-
-ALTER TABLE ONLY shipping_method_translations
-    ADD CONSTRAINT shipping_method_translations_shipping_method_id_fkey FOREIGN KEY (shipping_method_id) REFERENCES shipping_methods(id) ON UPDATE CASCADE ON DELETE CASCADE;
-
-
+-- ALTER TABLE ONLY plugin_version_snapshots
+--     ADD CONSTRAINT fk_plugin_snapshot_plugin FOREIGN KEY (plugin_id) REFERENCES plugin_registry(id) ON DELETE CASCADE;
 --
--- Name: shipping_methods shipping_methods_store_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
 --
-
-ALTER TABLE ONLY shipping_methods
-    ADD CONSTRAINT shipping_methods_store_id_fkey FOREIGN KEY (store_id) REFERENCES stores(id) ON DELETE CASCADE;
-
-
+-- --
+-- -- Name: plugin_version_snapshots fk_plugin_snapshot_version; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+-- --
 --
--- Name: shopify_oauth_tokens shopify_oauth_tokens_store_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+-- ALTER TABLE ONLY plugin_version_snapshots
+--     ADD CONSTRAINT fk_plugin_snapshot_version FOREIGN KEY (version_id) REFERENCES plugin_version_history(id) ON DELETE CASCADE;
 --
-
-ALTER TABLE ONLY shopify_oauth_tokens
-    ADD CONSTRAINT shopify_oauth_tokens_store_id_fkey FOREIGN KEY (store_id) REFERENCES stores(id) ON DELETE CASCADE;
-
-
 --
--- Name: slot_configurations slot_configurations_acceptance_published_by_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+-- --
+-- -- Name: plugin_version_tags fk_plugin_tag_plugin; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+-- --
 --
-
-ALTER TABLE ONLY slot_configurations
-    ADD CONSTRAINT slot_configurations_acceptance_published_by_fkey FOREIGN KEY (acceptance_published_by) REFERENCES users(id);
-
-
+-- ALTER TABLE ONLY plugin_version_tags
+--     ADD CONSTRAINT fk_plugin_tag_plugin FOREIGN KEY (plugin_id) REFERENCES plugin_registry(id) ON DELETE CASCADE;
 --
--- Name: slot_configurations slot_configurations_current_edit_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
 --
-
-ALTER TABLE ONLY slot_configurations
-    ADD CONSTRAINT slot_configurations_current_edit_id_fkey FOREIGN KEY (current_edit_id) REFERENCES slot_configurations(id);
-
-
+-- --
+-- -- Name: plugin_version_tags fk_plugin_tag_version; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+-- --
 --
--- Name: slot_configurations slot_configurations_parent_version_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+-- ALTER TABLE ONLY plugin_version_tags
+--     ADD CONSTRAINT fk_plugin_tag_version FOREIGN KEY (version_id) REFERENCES plugin_version_history(id) ON DELETE CASCADE;
 --
-
-ALTER TABLE ONLY slot_configurations
-    ADD CONSTRAINT slot_configurations_parent_version_id_fkey FOREIGN KEY (parent_version_id) REFERENCES slot_configurations(id);
-
-
 --
--- Name: slot_configurations slot_configurations_published_by_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+-- --
+-- -- Name: plugin_version_history fk_plugin_version_parent; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+-- --
 --
-
-ALTER TABLE ONLY slot_configurations
-    ADD CONSTRAINT slot_configurations_published_by_fkey FOREIGN KEY (published_by) REFERENCES users(id);
-
-
+-- ALTER TABLE ONLY plugin_version_history
+--     ADD CONSTRAINT fk_plugin_version_parent FOREIGN KEY (parent_version_id) REFERENCES plugin_version_history(id) ON DELETE SET NULL;
 --
--- Name: slot_configurations slot_configurations_store_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
 --
-
-ALTER TABLE ONLY slot_configurations
-    ADD CONSTRAINT slot_configurations_store_id_fkey FOREIGN KEY (store_id) REFERENCES stores(id) ON UPDATE CASCADE ON DELETE CASCADE;
-
-
+-- --
+-- -- Name: plugin_version_history fk_plugin_version_plugin; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+-- --
 --
--- Name: slot_configurations slot_configurations_user_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+-- ALTER TABLE ONLY plugin_version_history
+--     ADD CONSTRAINT fk_plugin_version_plugin FOREIGN KEY (plugin_id) REFERENCES plugin_registry(id) ON DELETE CASCADE;
 --
-
-ALTER TABLE ONLY slot_configurations
-    ADD CONSTRAINT slot_configurations_user_id_fkey FOREIGN KEY (user_id) REFERENCES users(id) ON UPDATE CASCADE ON DELETE CASCADE;
-
-
 --
--- Name: store_invitations store_invitations_accepted_by_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+-- --
+-- -- Name: heatmap_aggregations heatmap_aggregations_store_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+-- --
 --
-
-ALTER TABLE ONLY store_invitations
-    ADD CONSTRAINT store_invitations_accepted_by_fkey FOREIGN KEY (accepted_by) REFERENCES users(id);
-
-
+-- ALTER TABLE ONLY heatmap_aggregations
+--     ADD CONSTRAINT heatmap_aggregations_store_id_fkey FOREIGN KEY (store_id) REFERENCES stores(id) ON DELETE CASCADE;
 --
--- Name: store_invitations store_invitations_invited_by_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
 --
-
-ALTER TABLE ONLY store_invitations
-    ADD CONSTRAINT store_invitations_invited_by_fkey FOREIGN KEY (invited_by) REFERENCES users(id);
-
-
+-- --
+-- -- Name: heatmap_interactions heatmap_interactions_store_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+-- --
 --
--- Name: store_invitations store_invitations_store_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+-- ALTER TABLE ONLY heatmap_interactions
+--     ADD CONSTRAINT heatmap_interactions_store_id_fkey FOREIGN KEY (store_id) REFERENCES stores(id) ON DELETE CASCADE;
 --
-
-ALTER TABLE ONLY store_invitations
-    ADD CONSTRAINT store_invitations_store_id_fkey FOREIGN KEY (store_id) REFERENCES stores(id) ON UPDATE CASCADE ON DELETE CASCADE;
-
-
 --
--- Name: store_teams store_teams_invited_by_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+-- --
+-- -- Name: heatmap_interactions heatmap_interactions_user_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+-- --
 --
-
-ALTER TABLE ONLY store_teams
-    ADD CONSTRAINT store_teams_invited_by_fkey FOREIGN KEY (invited_by) REFERENCES users(id);
-
-
+-- ALTER TABLE ONLY heatmap_interactions
+--     ADD CONSTRAINT heatmap_interactions_user_id_fkey FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL;
 --
--- Name: store_teams store_teams_store_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
 --
-
-ALTER TABLE ONLY store_teams
-    ADD CONSTRAINT store_teams_store_id_fkey FOREIGN KEY (store_id) REFERENCES stores(id) ON UPDATE CASCADE ON DELETE CASCADE;
-
-
+-- --
+-- -- Name: heatmap_sessions heatmap_sessions_store_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+-- --
 --
--- Name: store_teams store_teams_user_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+-- ALTER TABLE ONLY heatmap_sessions
+--     ADD CONSTRAINT heatmap_sessions_store_id_fkey FOREIGN KEY (store_id) REFERENCES stores(id) ON DELETE CASCADE;
 --
-
-ALTER TABLE ONLY store_teams
-    ADD CONSTRAINT store_teams_user_id_fkey FOREIGN KEY (user_id) REFERENCES users(id) ON UPDATE CASCADE ON DELETE CASCADE;
-
-
 --
--- Name: store_uptime store_uptime_store_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+-- --
+-- -- Name: heatmap_sessions heatmap_sessions_user_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+-- --
 --
-
-ALTER TABLE ONLY store_uptime
-    ADD CONSTRAINT store_uptime_store_id_fkey FOREIGN KEY (store_id) REFERENCES stores(id) ON DELETE CASCADE;
-
-
+-- ALTER TABLE ONLY heatmap_sessions
+--     ADD CONSTRAINT heatmap_sessions_user_id_fkey FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL;
 --
--- Name: store_uptime store_uptime_user_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
 --
-
-ALTER TABLE ONLY store_uptime
-    ADD CONSTRAINT store_uptime_user_id_fkey FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE;
-
-
+-- --
+-- -- Name: integration_configs integration_configs_store_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+-- --
 --
--- Name: stores stores_user_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+-- ALTER TABLE ONLY integration_configs
+--     ADD CONSTRAINT integration_configs_store_id_fkey FOREIGN KEY (store_id) REFERENCES stores(id);
 --
-
-ALTER TABLE ONLY stores
-    ADD CONSTRAINT stores_user_id_fkey FOREIGN KEY (user_id) REFERENCES users(id) ON UPDATE CASCADE ON DELETE CASCADE;
-
-
 --
--- Name: subscriptions subscriptions_store_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+-- --
+-- -- Name: job_history job_history_job_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+-- --
 --
-
-ALTER TABLE ONLY subscriptions
-    ADD CONSTRAINT subscriptions_store_id_fkey FOREIGN KEY (store_id) REFERENCES stores(id) ON UPDATE CASCADE;
-
-
+-- ALTER TABLE ONLY job_history
+--     ADD CONSTRAINT job_history_job_id_fkey FOREIGN KEY (job_id) REFERENCES jobs(id) ON DELETE CASCADE;
 --
--- Name: supabase_oauth_tokens supabase_oauth_tokens_store_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
 --
-
-ALTER TABLE ONLY supabase_oauth_tokens
-    ADD CONSTRAINT supabase_oauth_tokens_store_id_fkey FOREIGN KEY (store_id) REFERENCES stores(id) ON DELETE CASCADE;
-
-
+-- --
+-- -- Name: jobs jobs_store_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+-- --
 --
--- Name: supabase_project_keys supabase_project_keys_store_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+-- ALTER TABLE ONLY jobs
+--     ADD CONSTRAINT jobs_store_id_fkey FOREIGN KEY (store_id) REFERENCES stores(id) ON DELETE CASCADE;
 --
-
-ALTER TABLE ONLY supabase_project_keys
-    ADD CONSTRAINT supabase_project_keys_store_id_fkey FOREIGN KEY (store_id) REFERENCES stores(id) ON DELETE CASCADE;
-
-
 --
--- Name: taxes taxes_store_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+-- --
+-- -- Name: jobs jobs_user_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+-- --
 --
-
-ALTER TABLE ONLY taxes
-    ADD CONSTRAINT taxes_store_id_fkey FOREIGN KEY (store_id) REFERENCES stores(id) ON DELETE CASCADE;
-
-
+-- ALTER TABLE ONLY jobs
+--     ADD CONSTRAINT jobs_user_id_fkey FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL;
 --
--- Name: translations_duplicate translations_duplicate_store_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
 --
-
-ALTER TABLE ONLY translations_duplicate
-    ADD CONSTRAINT translations_duplicate_store_id_fkey FOREIGN KEY (store_id) REFERENCES stores(id);
-
-
+-- --
+-- -- Name: media_assets media_assets_store_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+-- --
 --
--- Name: translations translations_store_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+-- ALTER TABLE ONLY media_assets
+--     ADD CONSTRAINT media_assets_store_id_fkey FOREIGN KEY (store_id) REFERENCES stores(id) ON DELETE CASCADE;
 --
-
-ALTER TABLE ONLY translations
-    ADD CONSTRAINT translations_store_id_fkey FOREIGN KEY (store_id) REFERENCES stores(id);
-
-
 --
--- Name: usage_metrics usage_metrics_store_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+-- --
+-- -- Name: media_assets media_assets_uploaded_by_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+-- --
 --
-
-ALTER TABLE ONLY usage_metrics
-    ADD CONSTRAINT usage_metrics_store_id_fkey FOREIGN KEY (store_id) REFERENCES stores(id) ON UPDATE CASCADE;
-
-
+-- ALTER TABLE ONLY media_assets
+--     ADD CONSTRAINT media_assets_uploaded_by_fkey FOREIGN KEY (uploaded_by) REFERENCES users(id);
 --
--- Name: wishlists wishlists_product_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
 --
-
-ALTER TABLE ONLY wishlists
-    ADD CONSTRAINT wishlists_product_id_fkey FOREIGN KEY (product_id) REFERENCES products(id) ON UPDATE CASCADE;
-
-
+-- --
+-- -- Name: payment_method_translations payment_method_translations_language_code_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+-- --
 --
--- Name: wishlists wishlists_store_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+-- ALTER TABLE ONLY payment_method_translations
+--     ADD CONSTRAINT payment_method_translations_language_code_fkey FOREIGN KEY (language_code) REFERENCES languages(code) ON UPDATE CASCADE ON DELETE CASCADE;
 --
-
-ALTER TABLE ONLY wishlists
-    ADD CONSTRAINT wishlists_store_id_fkey FOREIGN KEY (store_id) REFERENCES stores(id) ON UPDATE CASCADE;
-
-
 --
--- Name: wishlists wishlists_user_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+-- --
+-- -- Name: payment_method_translations payment_method_translations_payment_method_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+-- --
 --
-
-ALTER TABLE ONLY wishlists
-    ADD CONSTRAINT wishlists_user_id_fkey FOREIGN KEY (user_id) REFERENCES users(id) ON UPDATE CASCADE ON DELETE SET NULL;
-
-
+-- ALTER TABLE ONLY payment_method_translations
+--     ADD CONSTRAINT payment_method_translations_payment_method_id_fkey FOREIGN KEY (payment_method_id) REFERENCES payment_methods(id) ON UPDATE CASCADE ON DELETE CASCADE;
 --
--- Name: objects objects_bucketId_fkey; Type: FK CONSTRAINT; Schema: storage; Owner: supabase_storage_admin
 --
-
-ALTER TABLE ONLY storage.objects
-    ADD CONSTRAINT "objects_bucketId_fkey" FOREIGN KEY (bucket_id) REFERENCES storage.buckets(id);
-
-
+-- --
+-- -- Name: payment_methods payment_methods_store_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+-- --
 --
--- Name: prefixes prefixes_bucketId_fkey; Type: FK CONSTRAINT; Schema: storage; Owner: supabase_storage_admin
+-- ALTER TABLE ONLY payment_methods
+--     ADD CONSTRAINT payment_methods_store_id_fkey FOREIGN KEY (store_id) REFERENCES stores(id) ON UPDATE CASCADE;
 --
-
-ALTER TABLE ONLY storage.prefixes
-    ADD CONSTRAINT "prefixes_bucketId_fkey" FOREIGN KEY (bucket_id) REFERENCES storage.buckets(id);
-
-
 --
--- Name: s3_multipart_uploads s3_multipart_uploads_bucket_id_fkey; Type: FK CONSTRAINT; Schema: storage; Owner: supabase_storage_admin
+-- --
+-- -- Name: pdf_template_translations pdf_template_translations_pdf_template_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+-- --
 --
-
-ALTER TABLE ONLY storage.s3_multipart_uploads
-    ADD CONSTRAINT s3_multipart_uploads_bucket_id_fkey FOREIGN KEY (bucket_id) REFERENCES storage.buckets(id);
-
-
+-- ALTER TABLE ONLY pdf_template_translations
+--     ADD CONSTRAINT pdf_template_translations_pdf_template_id_fkey FOREIGN KEY (pdf_template_id) REFERENCES pdf_templates(id) ON DELETE CASCADE;
 --
--- Name: s3_multipart_uploads_parts s3_multipart_uploads_parts_bucket_id_fkey; Type: FK CONSTRAINT; Schema: storage; Owner: supabase_storage_admin
 --
-
-ALTER TABLE ONLY storage.s3_multipart_uploads_parts
-    ADD CONSTRAINT s3_multipart_uploads_parts_bucket_id_fkey FOREIGN KEY (bucket_id) REFERENCES storage.buckets(id);
-
-
+-- --
+-- -- Name: pdf_templates pdf_templates_store_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+-- --
 --
--- Name: s3_multipart_uploads_parts s3_multipart_uploads_parts_upload_id_fkey; Type: FK CONSTRAINT; Schema: storage; Owner: supabase_storage_admin
+-- ALTER TABLE ONLY pdf_templates
+--     ADD CONSTRAINT pdf_templates_store_id_fkey FOREIGN KEY (store_id) REFERENCES stores(id) ON DELETE CASCADE;
 --
-
-ALTER TABLE ONLY storage.s3_multipart_uploads_parts
-    ADD CONSTRAINT s3_multipart_uploads_parts_upload_id_fkey FOREIGN KEY (upload_id) REFERENCES storage.s3_multipart_uploads(id) ON DELETE CASCADE;
+--
+-- --
+-- -- Name: platform_admins platform_admins_user_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+-- --
+--
+-- ALTER TABLE ONLY platform_admins
+--     ADD CONSTRAINT platform_admins_user_id_fkey FOREIGN KEY (user_id) REFERENCES users(id) ON UPDATE CASCADE;
+--
+--
+-- --
+-- -- Name: plugin_configurations plugin_configurations_last_configured_by_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+-- --
+--
+-- ALTER TABLE ONLY plugin_configurations
+--     ADD CONSTRAINT plugin_configurations_last_configured_by_fkey FOREIGN KEY (last_configured_by) REFERENCES users(id) ON UPDATE CASCADE ON DELETE SET NULL;
+--
+--
+-- --
+-- -- Name: plugin_configurations plugin_configurations_store_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+-- --
+--
+-- ALTER TABLE ONLY plugin_configurations
+--     ADD CONSTRAINT plugin_configurations_store_id_fkey FOREIGN KEY (store_id) REFERENCES stores(id) ON UPDATE CASCADE ON DELETE SET NULL;
+--
+--
+-- --
+-- -- Name: plugin_marketplace plugin_marketplace_author_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+-- --
+--
+-- ALTER TABLE ONLY plugin_marketplace
+--     ADD CONSTRAINT plugin_marketplace_author_id_fkey FOREIGN KEY (author_id) REFERENCES users(id);
+--
+--
+-- --
+-- -- Name: plugin_registry plugin_registry_creator_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+-- --
+--
+-- ALTER TABLE ONLY plugin_registry
+--     ADD CONSTRAINT plugin_registry_creator_id_fkey FOREIGN KEY (creator_id) REFERENCES users(id);
+--
+--
+-- --
+-- -- Name: product_attribute_values product_attribute_values_attribute_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+-- --
+--
+-- ALTER TABLE ONLY product_attribute_values
+--     ADD CONSTRAINT product_attribute_values_attribute_id_fkey FOREIGN KEY (attribute_id) REFERENCES attributes(id) ON UPDATE CASCADE;
+--
+--
+-- --
+-- -- Name: product_attribute_values product_attribute_values_product_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+-- --
+--
+-- ALTER TABLE ONLY product_attribute_values
+--     ADD CONSTRAINT product_attribute_values_product_id_fkey FOREIGN KEY (product_id) REFERENCES products(id) ON UPDATE CASCADE;
+--
+--
+-- --
+-- -- Name: product_attribute_values product_attribute_values_value_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+-- --
+--
+-- ALTER TABLE ONLY product_attribute_values
+--     ADD CONSTRAINT product_attribute_values_value_id_fkey FOREIGN KEY (value_id) REFERENCES attribute_values(id) ON UPDATE CASCADE ON DELETE SET NULL;
+--
+--
+-- --
+-- -- Name: product_label_translations product_label_translations_language_code_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+-- --
+--
+-- ALTER TABLE ONLY product_label_translations
+--     ADD CONSTRAINT product_label_translations_language_code_fkey FOREIGN KEY (language_code) REFERENCES languages(code) ON UPDATE CASCADE ON DELETE CASCADE;
+--
+--
+-- --
+-- -- Name: product_label_translations product_label_translations_product_label_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+-- --
+--
+-- ALTER TABLE ONLY product_label_translations
+--     ADD CONSTRAINT product_label_translations_product_label_id_fkey FOREIGN KEY (product_label_id) REFERENCES product_labels(id) ON UPDATE CASCADE ON DELETE CASCADE;
+--
+--
+-- --
+-- -- Name: product_labels product_labels_store_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+-- --
+--
+-- ALTER TABLE ONLY product_labels
+--     ADD CONSTRAINT product_labels_store_id_fkey FOREIGN KEY (store_id) REFERENCES stores(id) ON UPDATE CASCADE;
+--
+--
+-- --
+-- -- Name: product_seo product_seo_language_code_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+-- --
+--
+-- ALTER TABLE ONLY product_seo
+--     ADD CONSTRAINT product_seo_language_code_fkey FOREIGN KEY (language_code) REFERENCES languages(code) ON UPDATE CASCADE ON DELETE CASCADE;
+--
+--
+-- --
+-- -- Name: product_seo product_seo_product_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+-- --
+--
+-- ALTER TABLE ONLY product_seo
+--     ADD CONSTRAINT product_seo_product_id_fkey FOREIGN KEY (product_id) REFERENCES products(id) ON UPDATE CASCADE ON DELETE CASCADE;
+--
+--
+-- --
+-- -- Name: product_tab_translations product_tab_translations_language_code_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+-- --
+--
+-- ALTER TABLE ONLY product_tab_translations
+--     ADD CONSTRAINT product_tab_translations_language_code_fkey FOREIGN KEY (language_code) REFERENCES languages(code) ON UPDATE CASCADE ON DELETE CASCADE;
+--
+--
+-- --
+-- -- Name: product_tab_translations product_tab_translations_product_tab_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+-- --
+--
+-- ALTER TABLE ONLY product_tab_translations
+--     ADD CONSTRAINT product_tab_translations_product_tab_id_fkey FOREIGN KEY (product_tab_id) REFERENCES product_tabs(id) ON UPDATE CASCADE ON DELETE CASCADE;
+--
+--
+-- --
+-- -- Name: product_tabs product_tabs_store_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+-- --
+--
+-- ALTER TABLE ONLY product_tabs
+--     ADD CONSTRAINT product_tabs_store_id_fkey FOREIGN KEY (store_id) REFERENCES stores(id) ON UPDATE CASCADE;
+--
+--
+-- --
+-- -- Name: product_translations product_translations_language_code_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+-- --
+--
+-- ALTER TABLE ONLY product_translations
+--     ADD CONSTRAINT product_translations_language_code_fkey FOREIGN KEY (language_code) REFERENCES languages(code) ON UPDATE CASCADE ON DELETE CASCADE;
+--
+--
+-- --
+-- -- Name: product_translations product_translations_product_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+-- --
+--
+-- ALTER TABLE ONLY product_translations
+--     ADD CONSTRAINT product_translations_product_id_fkey FOREIGN KEY (product_id) REFERENCES products(id) ON UPDATE CASCADE ON DELETE CASCADE;
+--
+--
+-- --
+-- -- Name: product_variants product_variants_parent_product_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+-- --
+--
+-- ALTER TABLE ONLY product_variants
+--     ADD CONSTRAINT product_variants_parent_product_id_fkey FOREIGN KEY (parent_product_id) REFERENCES products(id) ON DELETE CASCADE;
+--
+--
+-- --
+-- -- Name: product_variants product_variants_variant_product_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+-- --
+--
+-- ALTER TABLE ONLY product_variants
+--     ADD CONSTRAINT product_variants_variant_product_id_fkey FOREIGN KEY (variant_product_id) REFERENCES products(id) ON DELETE CASCADE;
+--
+--
+-- --
+-- -- Name: products products_attribute_set_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+-- --
+--
+-- ALTER TABLE ONLY products
+--     ADD CONSTRAINT products_attribute_set_id_fkey FOREIGN KEY (attribute_set_id) REFERENCES attribute_sets(id) ON DELETE SET NULL;
+--
+--
+-- --
+-- -- Name: products products_parent_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+-- --
+--
+-- ALTER TABLE ONLY products
+--     ADD CONSTRAINT products_parent_id_fkey FOREIGN KEY (parent_id) REFERENCES products(id) ON DELETE CASCADE;
+--
+--
+-- --
+-- -- Name: products products_store_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+-- --
+--
+-- ALTER TABLE ONLY products
+--     ADD CONSTRAINT products_store_id_fkey FOREIGN KEY (store_id) REFERENCES stores(id) ON DELETE CASCADE;
+--
+--
+-- --
+-- -- Name: redirects redirects_store_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+-- --
+--
+-- ALTER TABLE ONLY redirects
+--     ADD CONSTRAINT redirects_store_id_fkey FOREIGN KEY (store_id) REFERENCES stores(id) ON DELETE CASCADE;
+--
+--
+-- --
+-- -- Name: sales_invoices sales_invoices_order_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+-- --
+--
+-- ALTER TABLE ONLY sales_invoices
+--     ADD CONSTRAINT sales_invoices_order_id_fkey FOREIGN KEY (order_id) REFERENCES sales_orders(id);
+--
+--
+-- --
+-- -- Name: sales_invoices sales_invoices_store_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+-- --
+--
+-- ALTER TABLE ONLY sales_invoices
+--     ADD CONSTRAINT sales_invoices_store_id_fkey FOREIGN KEY (store_id) REFERENCES stores(id);
+--
+--
+-- --
+-- -- Name: sales_order_items sales_order_items_order_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+-- --
+--
+-- ALTER TABLE ONLY sales_order_items
+--     ADD CONSTRAINT sales_order_items_order_id_fkey FOREIGN KEY (order_id) REFERENCES sales_orders(id) ON UPDATE CASCADE ON DELETE CASCADE;
+--
+--
+-- --
+-- -- Name: sales_order_items sales_order_items_product_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+-- --
+--
+-- ALTER TABLE ONLY sales_order_items
+--     ADD CONSTRAINT sales_order_items_product_id_fkey FOREIGN KEY (product_id) REFERENCES products(id) ON UPDATE CASCADE ON DELETE CASCADE;
+--
+--
+-- --
+-- -- Name: sales_orders sales_orders_customer_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+-- --
+--
+-- ALTER TABLE ONLY sales_orders
+--     ADD CONSTRAINT sales_orders_customer_id_fkey FOREIGN KEY (customer_id) REFERENCES customers(id) ON UPDATE CASCADE ON DELETE SET NULL;
+--
+--
+-- --
+-- -- Name: sales_orders sales_orders_store_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+-- --
+--
+-- ALTER TABLE ONLY sales_orders
+--     ADD CONSTRAINT sales_orders_store_id_fkey FOREIGN KEY (store_id) REFERENCES stores(id) ON UPDATE CASCADE ON DELETE CASCADE;
+--
+--
+-- --
+-- -- Name: sales_shipments sales_shipments_order_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+-- --
+--
+-- ALTER TABLE ONLY sales_shipments
+--     ADD CONSTRAINT sales_shipments_order_id_fkey FOREIGN KEY (order_id) REFERENCES sales_orders(id);
+--
+--
+-- --
+-- -- Name: sales_shipments sales_shipments_store_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+-- --
+--
+-- ALTER TABLE ONLY sales_shipments
+--     ADD CONSTRAINT sales_shipments_store_id_fkey FOREIGN KEY (store_id) REFERENCES stores(id);
+--
+--
+-- --
+-- -- Name: seo_settings seo_settings_store_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+-- --
+--
+-- ALTER TABLE ONLY seo_settings
+--     ADD CONSTRAINT seo_settings_store_id_fkey FOREIGN KEY (store_id) REFERENCES stores(id) ON UPDATE CASCADE;
+--
+--
+-- --
+-- -- Name: seo_templates seo_templates_store_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+-- --
+--
+-- ALTER TABLE ONLY seo_templates
+--     ADD CONSTRAINT seo_templates_store_id_fkey FOREIGN KEY (store_id) REFERENCES stores(id) ON UPDATE CASCADE;
+--
+--
+-- --
+-- -- Name: shipping_method_translations shipping_method_translations_language_code_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+-- --
+--
+-- ALTER TABLE ONLY shipping_method_translations
+--     ADD CONSTRAINT shipping_method_translations_language_code_fkey FOREIGN KEY (language_code) REFERENCES languages(code) ON UPDATE CASCADE ON DELETE CASCADE;
+--
+--
+-- --
+-- -- Name: shipping_method_translations shipping_method_translations_shipping_method_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+-- --
+--
+-- ALTER TABLE ONLY shipping_method_translations
+--     ADD CONSTRAINT shipping_method_translations_shipping_method_id_fkey FOREIGN KEY (shipping_method_id) REFERENCES shipping_methods(id) ON UPDATE CASCADE ON DELETE CASCADE;
+--
+--
+-- --
+-- -- Name: shipping_methods shipping_methods_store_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+-- --
+--
+-- ALTER TABLE ONLY shipping_methods
+--     ADD CONSTRAINT shipping_methods_store_id_fkey FOREIGN KEY (store_id) REFERENCES stores(id) ON DELETE CASCADE;
+--
+--
+-- --
+-- -- Name: shopify_oauth_tokens shopify_oauth_tokens_store_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+-- --
+--
+-- ALTER TABLE ONLY shopify_oauth_tokens
+--     ADD CONSTRAINT shopify_oauth_tokens_store_id_fkey FOREIGN KEY (store_id) REFERENCES stores(id) ON DELETE CASCADE;
+--
+--
+-- --
+-- -- Name: slot_configurations slot_configurations_acceptance_published_by_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+-- --
+--
+-- ALTER TABLE ONLY slot_configurations
+--     ADD CONSTRAINT slot_configurations_acceptance_published_by_fkey FOREIGN KEY (acceptance_published_by) REFERENCES users(id);
+--
+--
+-- --
+-- -- Name: slot_configurations slot_configurations_current_edit_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+-- --
+--
+-- ALTER TABLE ONLY slot_configurations
+--     ADD CONSTRAINT slot_configurations_current_edit_id_fkey FOREIGN KEY (current_edit_id) REFERENCES slot_configurations(id);
+--
+--
+-- --
+-- -- Name: slot_configurations slot_configurations_parent_version_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+-- --
+--
+-- ALTER TABLE ONLY slot_configurations
+--     ADD CONSTRAINT slot_configurations_parent_version_id_fkey FOREIGN KEY (parent_version_id) REFERENCES slot_configurations(id);
+--
+--
+-- --
+-- -- Name: slot_configurations slot_configurations_published_by_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+-- --
+--
+-- ALTER TABLE ONLY slot_configurations
+--     ADD CONSTRAINT slot_configurations_published_by_fkey FOREIGN KEY (published_by) REFERENCES users(id);
+--
+--
+-- --
+-- -- Name: slot_configurations slot_configurations_store_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+-- --
+--
+-- ALTER TABLE ONLY slot_configurations
+--     ADD CONSTRAINT slot_configurations_store_id_fkey FOREIGN KEY (store_id) REFERENCES stores(id) ON UPDATE CASCADE ON DELETE CASCADE;
+--
+--
+-- --
+-- -- Name: slot_configurations slot_configurations_user_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+-- --
+--
+-- ALTER TABLE ONLY slot_configurations
+--     ADD CONSTRAINT slot_configurations_user_id_fkey FOREIGN KEY (user_id) REFERENCES users(id) ON UPDATE CASCADE ON DELETE CASCADE;
+--
+--
+-- --
+-- -- Name: store_invitations store_invitations_accepted_by_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+-- --
+--
+-- ALTER TABLE ONLY store_invitations
+--     ADD CONSTRAINT store_invitations_accepted_by_fkey FOREIGN KEY (accepted_by) REFERENCES users(id);
+--
+--
+-- --
+-- -- Name: store_invitations store_invitations_invited_by_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+-- --
+--
+-- ALTER TABLE ONLY store_invitations
+--     ADD CONSTRAINT store_invitations_invited_by_fkey FOREIGN KEY (invited_by) REFERENCES users(id);
+--
+--
+-- --
+-- -- Name: store_invitations store_invitations_store_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+-- --
+--
+-- ALTER TABLE ONLY store_invitations
+--     ADD CONSTRAINT store_invitations_store_id_fkey FOREIGN KEY (store_id) REFERENCES stores(id) ON UPDATE CASCADE ON DELETE CASCADE;
+--
+--
+-- --
+-- -- Name: store_teams store_teams_invited_by_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+-- --
+--
+-- ALTER TABLE ONLY store_teams
+--     ADD CONSTRAINT store_teams_invited_by_fkey FOREIGN KEY (invited_by) REFERENCES users(id);
+--
+--
+-- --
+-- -- Name: store_teams store_teams_store_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+-- --
+--
+-- ALTER TABLE ONLY store_teams
+--     ADD CONSTRAINT store_teams_store_id_fkey FOREIGN KEY (store_id) REFERENCES stores(id) ON UPDATE CASCADE ON DELETE CASCADE;
+--
+--
+-- --
+-- -- Name: store_teams store_teams_user_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+-- --
+--
+-- ALTER TABLE ONLY store_teams
+--     ADD CONSTRAINT store_teams_user_id_fkey FOREIGN KEY (user_id) REFERENCES users(id) ON UPDATE CASCADE ON DELETE CASCADE;
+--
+--
+-- --
+-- -- Name: store_uptime store_uptime_store_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+-- --
+--
+-- ALTER TABLE ONLY store_uptime
+--     ADD CONSTRAINT store_uptime_store_id_fkey FOREIGN KEY (store_id) REFERENCES stores(id) ON DELETE CASCADE;
+--
+--
+-- --
+-- -- Name: store_uptime store_uptime_user_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+-- --
+--
+-- ALTER TABLE ONLY store_uptime
+--     ADD CONSTRAINT store_uptime_user_id_fkey FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE;
+--
+--
+-- --
+-- -- Name: stores stores_user_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+-- --
+--
+-- ALTER TABLE ONLY stores
+--     ADD CONSTRAINT stores_user_id_fkey FOREIGN KEY (user_id) REFERENCES users(id) ON UPDATE CASCADE ON DELETE CASCADE;
+--
+--
+-- --
+-- -- Name: subscriptions subscriptions_store_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+-- --
+--
+-- ALTER TABLE ONLY subscriptions
+--     ADD CONSTRAINT subscriptions_store_id_fkey FOREIGN KEY (store_id) REFERENCES stores(id) ON UPDATE CASCADE;
+--
+--
+-- --
+-- -- Name: supabase_oauth_tokens supabase_oauth_tokens_store_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+-- --
+--
+-- ALTER TABLE ONLY supabase_oauth_tokens
+--     ADD CONSTRAINT supabase_oauth_tokens_store_id_fkey FOREIGN KEY (store_id) REFERENCES stores(id) ON DELETE CASCADE;
+--
+--
+-- --
+-- -- Name: supabase_project_keys supabase_project_keys_store_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+-- --
+--
+-- ALTER TABLE ONLY supabase_project_keys
+--     ADD CONSTRAINT supabase_project_keys_store_id_fkey FOREIGN KEY (store_id) REFERENCES stores(id) ON DELETE CASCADE;
+--
+--
+-- --
+-- -- Name: taxes taxes_store_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+-- --
+--
+-- ALTER TABLE ONLY taxes
+--     ADD CONSTRAINT taxes_store_id_fkey FOREIGN KEY (store_id) REFERENCES stores(id) ON DELETE CASCADE;
+--
+--
+-- --
+-- -- Name: translations_duplicate translations_duplicate_store_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+-- --
+--
+-- ALTER TABLE ONLY translations_duplicate
+--     ADD CONSTRAINT translations_duplicate_store_id_fkey FOREIGN KEY (store_id) REFERENCES stores(id);
+--
+--
+-- --
+-- -- Name: translations translations_store_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+-- --
+--
+-- ALTER TABLE ONLY translations
+--     ADD CONSTRAINT translations_store_id_fkey FOREIGN KEY (store_id) REFERENCES stores(id);
+--
+--
+-- --
+-- -- Name: usage_metrics usage_metrics_store_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+-- --
+--
+-- ALTER TABLE ONLY usage_metrics
+--     ADD CONSTRAINT usage_metrics_store_id_fkey FOREIGN KEY (store_id) REFERENCES stores(id) ON UPDATE CASCADE;
+--
+--
+-- --
+-- -- Name: wishlists wishlists_product_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+-- --
+--
+-- ALTER TABLE ONLY wishlists
+--     ADD CONSTRAINT wishlists_product_id_fkey FOREIGN KEY (product_id) REFERENCES products(id) ON UPDATE CASCADE;
+--
+--
+-- --
+-- -- Name: wishlists wishlists_store_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+-- --
+--
+-- ALTER TABLE ONLY wishlists
+--     ADD CONSTRAINT wishlists_store_id_fkey FOREIGN KEY (store_id) REFERENCES stores(id) ON UPDATE CASCADE;
+--
+--
+-- --
+-- -- Name: wishlists wishlists_user_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+-- --
+--
+-- ALTER TABLE ONLY wishlists
+--     ADD CONSTRAINT wishlists_user_id_fkey FOREIGN KEY (user_id) REFERENCES users(id) ON UPDATE CASCADE ON DELETE SET NULL;
+--
+--
+-- --
+-- -- Name: objects objects_bucketId_fkey; Type: FK CONSTRAINT; Schema: storage; Owner: supabase_storage_admin
+-- --
+--
+-- ALTER TABLE ONLY storage.objects
+--     ADD CONSTRAINT "objects_bucketId_fkey" FOREIGN KEY (bucket_id) REFERENCES storage.buckets(id);
+--
+--
+-- --
+-- -- Name: prefixes prefixes_bucketId_fkey; Type: FK CONSTRAINT; Schema: storage; Owner: supabase_storage_admin
+-- --
+--
+-- ALTER TABLE ONLY storage.prefixes
+--     ADD CONSTRAINT "prefixes_bucketId_fkey" FOREIGN KEY (bucket_id) REFERENCES storage.buckets(id);
+--
+--
+-- --
+-- -- Name: s3_multipart_uploads s3_multipart_uploads_bucket_id_fkey; Type: FK CONSTRAINT; Schema: storage; Owner: supabase_storage_admin
+-- --
+--
+-- ALTER TABLE ONLY storage.s3_multipart_uploads
+--     ADD CONSTRAINT s3_multipart_uploads_bucket_id_fkey FOREIGN KEY (bucket_id) REFERENCES storage.buckets(id);
+--
+--
+-- --
+-- -- Name: s3_multipart_uploads_parts s3_multipart_uploads_parts_bucket_id_fkey; Type: FK CONSTRAINT; Schema: storage; Owner: supabase_storage_admin
+-- --
+--
+-- ALTER TABLE ONLY storage.s3_multipart_uploads_parts
+--     ADD CONSTRAINT s3_multipart_uploads_parts_bucket_id_fkey FOREIGN KEY (bucket_id) REFERENCES storage.buckets(id);
+--
+--
+-- --
+-- -- Name: s3_multipart_uploads_parts s3_multipart_uploads_parts_upload_id_fkey; Type: FK CONSTRAINT; Schema: storage; Owner: supabase_storage_admin
+-- --
+--
+-- ALTER TABLE ONLY storage.s3_multipart_uploads_parts
+--     ADD CONSTRAINT s3_multipart_uploads_parts_upload_id_fkey FOREIGN KEY (upload_id) REFERENCES storage.s3_multipart_uploads(id) ON DELETE CASCADE;
 
