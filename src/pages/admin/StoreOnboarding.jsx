@@ -50,7 +50,7 @@ export default function StoreOnboarding() {
     setError('');
 
     try {
-      const response = await apiClient.post('/api/stores/mt', { name: storeData.name });
+      const response = await apiClient.post('/stores/mt', { name: storeData.name });
       if (response.success) {
         setStoreId(response.data.store.id);
         setCompletedSteps([1]);
@@ -72,7 +72,7 @@ export default function StoreOnboarding() {
     setSuccess('');
 
     try {
-      const response = await apiClient.post(`/api/stores/mt/${storeId}/connect-database`, {
+      const response = await apiClient.post(`/stores/mt/${storeId}/connect-database`, {
         projectUrl: dbData.projectUrl,
         serviceRoleKey: dbData.serviceRoleKey,
         storeName: storeData.name,

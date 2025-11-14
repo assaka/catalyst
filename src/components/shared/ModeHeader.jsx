@@ -51,6 +51,14 @@ const ModeHeader = ({ user, currentMode, showExtraButtons = false, extraButtons 
       {/* Mobile Header */}
       <div className="lg:hidden flex items-center justify-between h-16 px-4 bg-white border-b border-gray-200">
         <div className="flex items-center space-x-3">
+          {/* Show logo on onboarding (mobile) */}
+          {hideModeSwitcher && (
+            <div className="flex items-center space-x-2">
+              <ShoppingBag className="w-5 h-5 text-blue-600" />
+              <span className="text-lg font-bold text-gray-900">Catalyst</span>
+            </div>
+          )}
+
           {/* Show mode switcher only if not on onboarding */}
           {!hideModeSwitcher && (
             <div className="flex items-center bg-gray-100 rounded-lg p-1">
@@ -116,6 +124,14 @@ const ModeHeader = ({ user, currentMode, showExtraButtons = false, extraButtons 
       {/* Desktop Header with Store Selector */}
       <div className="w-full hidden lg:flex items-center justify-between h-16 px-6 bg-white border-b border-gray-200">
         <div className="flex items-center space-x-4">
+          {/* Show logo on onboarding */}
+          {hideModeSwitcher && (
+            <div className="flex items-center space-x-2">
+              <ShoppingBag className="w-6 h-6 text-blue-600" />
+              <span className="text-xl font-bold text-gray-900">Catalyst</span>
+            </div>
+          )}
+
           {/* Show mode switcher only if not on onboarding */}
           {!hideModeSwitcher && (
             <div className="flex items-center bg-gray-100 rounded-lg p-1">
