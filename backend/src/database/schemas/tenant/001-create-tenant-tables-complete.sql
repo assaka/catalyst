@@ -569,6 +569,14 @@ CREATE TYPE enum_stores_deployment_status AS ENUM (
     'failed'
 );
 
+CREATE TYPE enum_deployment_status AS ENUM (
+    'draft',
+    'deploying'
+    'deployed',
+    'published',
+    'failed'
+);
+
 CREATE TYPE enum_template_assets_asset_type AS ENUM (
     'javascript',
     'css',
@@ -2675,7 +2683,7 @@ CREATE TABLE IF NOT EXISTS stores (
   updated_at TIMESTAMP WITH TIME ZONE NOT NULL,
   stripe_account_id VARCHAR(255),
   user_id UUID NOT NULL,
-  deployment_status deployment_status_enum DEFAULT 'draft'::deployment_status_enum,
+  deployment_status enum_deployment_status DEFAULT 'draft'::enum_deployment_status,
   published BOOLEAN DEFAULT false,
   published_at TIMESTAMP WITH TIME ZONE
 );
