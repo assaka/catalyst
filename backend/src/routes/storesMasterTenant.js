@@ -17,6 +17,12 @@ const ConnectionManager = require('../services/database/ConnectionManager');
 const TenantProvisioningService = require('../services/database/TenantProvisioningService');
 const { encryptDatabaseCredentials } = require('../utils/encryption');
 
+// Master database models
+const MasterStore = require('../models/master/MasterStore');
+const StoreDatabase = require('../models/master/StoreDatabase');
+const StoreHostname = require('../models/master/StoreHostname');
+const CreditBalance = require('../models/master/CreditBalance');
+
 /**
  * POST /api/stores
  * Create a new store in master DB
