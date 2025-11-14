@@ -120,6 +120,14 @@ router.post('/', authMiddleware, async (req, res) => {
 router.post('/:id/connect-database', authMiddleware, async (req, res) => {
   try {
     const storeId = req.params.id;
+
+    console.log('📥 connect-database request:', {
+      storeId,
+      bodyKeys: Object.keys(req.body),
+      useOAuth: req.body.useOAuth,
+      autoProvision: req.body.autoProvision
+    });
+
     const {
       projectUrl: manualProjectUrl,
       serviceRoleKey: manualServiceKey,
@@ -204,28 +212,39 @@ router.post('/:id/connect-database', authMiddleware, async (req, res) => {
       connectionString = manualConnectionString;
     }
 
-    // Validate required fields (relaxed for auto-provision OAuth mode)
-    if (!projectUrl) {
-      return res.status(400).json({
-        success: false,
-        error: 'Supabase projectUrl is required'
-      });
-    }
-
-    // For auto-provision mode, we use OAuth access_token instead of serviceRoleKey
-    if (!autoProvision && !serviceRoleKey) {
-      return res.status(400).json({
-        success: false,
-        error: 'Supabase serviceRoleKey is required (or use autoProvision mode with OAuth)'
-      });
-    }
-
-    console.log('✅ Credentials validated:', {
+    console.log('🔍 Validation check:', {
       projectUrl: projectUrl ? 'present' : 'missing',
       serviceRoleKey: serviceRoleKey ? 'present' : 'missing',
       oauthAccessToken: oauthAccessToken ? 'present' : 'missing',
-      autoProvision: autoProvision
+      autoProvision: autoProvision,
+      useOAuth: useOAuth
     });
+
+    // Validate required fields
+    if (!autoProvision) {
+      // Manual mode - require both projectUrl and serviceRoleKey
+      if (!projectUrl || !serviceRoleKey) {
+        return res.status(400).json({
+          success: false,
+          error: 'Supabase projectUrl and serviceRoleKey are required for manual provisioning'
+        });
+      }
+    } else {
+      // Auto-provision OAuth mode - only require projectUrl and oauthAccessToken
+      if (!projectUrl) {
+        return res.status(400).json({
+          success: false,
+          error: 'Supabase projectUrl is required'
+        });
+      }
+      if (!oauthAccessToken) {
+        return res.status(400).json({
+          success: false,
+          error: 'OAuth access token is required for auto-provisioning'
+        });
+      }
+      console.log('✅ Auto-provision mode validated - using OAuth API');
+    }
 
     // Get store from master DB
     const store = await MasterStore.findByPk(storeId);
