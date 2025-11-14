@@ -153,9 +153,10 @@ router.post('/:id/connect-database', authMiddleware, async (req, res) => {
       // Build connection string with provided database password
       if (projectUrl && databasePassword) {
         const projectRef = new URL(projectUrl).hostname.split('.')[0];
-        // Use pooler connection for better performance
-        connectionString = `postgresql://postgres.${projectRef}:${encodeURIComponent(databasePassword)}@aws-0-us-east-1.pooler.supabase.com:6543/postgres`;
-        console.log('Built connection string for OAuth + password provisioning');
+        // Use direct database connection (not pooler) - more reliable for migrations
+        connectionString = `postgresql://postgres:${encodeURIComponent(databasePassword)}@db.${projectRef}.supabase.co:5432/postgres`;
+        console.log('Built direct connection string for OAuth + password provisioning');
+        console.log('Project ref:', projectRef);
       } else if (!databasePassword) {
         return res.status(400).json({
           success: false,
