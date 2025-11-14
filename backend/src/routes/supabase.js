@@ -50,6 +50,12 @@ router.get('/oauth-status', authMiddleware, async (req, res) => {
     }
 
     console.log('Checking OAuth status for store:', storeId);
+    console.log('Global pendingOAuthTokens exists?', !!global.pendingOAuthTokens);
+    console.log('Map size:', global.pendingOAuthTokens ? global.pendingOAuthTokens.size : 0);
+
+    if (global.pendingOAuthTokens) {
+      console.log('All stored storeIds in memory:', Array.from(global.pendingOAuthTokens.keys()));
+    }
 
     // Check if OAuth tokens are in memory (for pending stores)
     if (global.pendingOAuthTokens && global.pendingOAuthTokens.has(storeId)) {

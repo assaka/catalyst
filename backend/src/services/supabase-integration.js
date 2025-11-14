@@ -202,16 +202,24 @@ class SupabaseIntegration {
         const { MasterStore } = require('../models/master');
         const store = await MasterStore.findByPk(storeId);
 
+        console.log('🔍 Store status check:', {
+          storeId,
+          storeFound: !!store,
+          status: store?.status,
+          isActive: store?.is_active
+        });
+
         if (store && store.status === 'pending_database') {
           console.log('⏭️ Skipping OAuth token save - tenant DB not provisioned yet');
           console.log('   Tokens will be saved after tenant database provisioning completes');
 
           // Store OAuth data temporarily for later use
           if (!global.pendingOAuthTokens) {
+            console.log('📝 Initializing global.pendingOAuthTokens Map');
             global.pendingOAuthTokens = new Map();
           }
 
-          global.pendingOAuthTokens.set(storeId, {
+          const tokenDataToStore = {
             access_token: tokenData.access_token,
             refresh_token: tokenData.refresh_token,
             expires_at: tokenData.expires_at,
@@ -221,9 +229,13 @@ class SupabaseIntegration {
             database_url: tokenData.database_url || null,
             storage_url: tokenData.storage_url || null,
             auth_url: tokenData.auth_url || null
-          });
+          };
+
+          global.pendingOAuthTokens.set(storeId, tokenDataToStore);
 
           console.log('✅ OAuth tokens stored in memory for post-provisioning save');
+          console.log('📊 Memory cache now has', global.pendingOAuthTokens.size, 'entries');
+          console.log('🔑 Stored for storeId:', storeId);
         } else {
           // Store is already active, save to tenant DB
           const saveData = {
