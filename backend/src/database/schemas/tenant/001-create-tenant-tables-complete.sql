@@ -5266,21 +5266,6 @@ CREATE INDEX idx_brevo_configurations_active ON brevo_configurations USING btree
 
 CREATE INDEX idx_brevo_configurations_store_id ON brevo_configurations USING btree (store_id);
 
-
---
--- Name: idx_cart_emails_created_at; Type: INDEX; Schema: public; Owner: postgres
---
-
-CREATE INDEX idx_cart_emails_created_at ON cart_emails USING btree (created_at DESC);
-
-
---
--- Name: idx_cart_emails_email; Type: INDEX; Schema: public; Owner: postgres
---
-
-CREATE INDEX idx_cart_emails_email ON cart_emails USING btree (email);
-
-
 --
 -- Name: idx_categories_active_menu; Type: INDEX; Schema: public; Owner: postgres
 --
