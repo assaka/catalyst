@@ -266,42 +266,54 @@ class SupabaseIntegration {
         }
       }
 
-      // Also save to IntegrationConfig for consistency
-      const integrationConfig = await IntegrationConfig.createOrUpdate(storeId, 'supabase', {
-        projectUrl: projectData.project_url || 'pending_configuration',
-        connected: true,
-        connectedAt: new Date(),
-        userEmail: user?.email || ''
-      });
-      
-      // Update connection status to success
-      if (integrationConfig) {
-        await integrationConfig.update({
-          connection_status: 'success',
-          is_active: true
-        });
-      }
-      
-      console.log('✅ Integration config saved successfully with connected status');
-
-      // Automatically create storage buckets after successful authentication
+      // Also save to IntegrationConfig for consistency (only if tenant DB exists)
       try {
-        console.log('🪣 Creating default storage buckets...');
-        const bucketResult = await supabaseStorage.ensureBucketsExist(storeId);
-        
-        if (bucketResult.success) {
-          if (bucketResult.bucketsCreated && bucketResult.bucketsCreated.length > 0) {
-            console.log('✅ Created buckets:', bucketResult.bucketsCreated.join(', '));
-          } else {
-            console.log('✅ All required buckets already exist');
-          }
+        const { MasterStore } = require('../models/master');
+        const store = await MasterStore.findByPk(storeId);
+
+        if (store && store.status === 'pending_database') {
+          console.log('⏭️ Skipping IntegrationConfig save - tenant DB not provisioned yet');
         } else {
-          console.log('⚠️ Could not create buckets automatically:', bucketResult.message);
-          // Don't fail the OAuth flow, just log the warning
+          const integrationConfig = await IntegrationConfig.createOrUpdate(storeId, 'supabase', {
+            projectUrl: projectData.project_url || 'pending_configuration',
+            connected: true,
+            connectedAt: new Date(),
+            userEmail: user?.email || ''
+          });
+
+          // Update connection status to success
+          if (integrationConfig) {
+            await integrationConfig.update({
+              connection_status: 'success',
+              is_active: true
+            });
+          }
+
+          console.log('✅ Integration config saved successfully with connected status');
+
+          // Automatically create storage buckets after successful authentication
+          try {
+            console.log('🪣 Creating default storage buckets...');
+            const bucketResult = await supabaseStorage.ensureBucketsExist(storeId);
+
+            if (bucketResult.success) {
+              if (bucketResult.bucketsCreated && bucketResult.bucketsCreated.length > 0) {
+                console.log('✅ Created buckets:', bucketResult.bucketsCreated.join(', '));
+              } else {
+                console.log('✅ All required buckets already exist');
+              }
+            } else {
+              console.log('⚠️ Could not create buckets automatically:', bucketResult.message);
+              // Don't fail the OAuth flow, just log the warning
+            }
+          } catch (bucketError) {
+            console.error('⚠️ Error creating buckets (non-blocking):', bucketError.message);
+            // Don't fail the OAuth flow if bucket creation fails
+          }
         }
-      } catch (bucketError) {
-        console.error('⚠️ Error creating buckets (non-blocking):', bucketError.message);
-        // Don't fail the OAuth flow if bucket creation fails
+      } catch (configError) {
+        console.error('⚠️ Error saving integration config:', configError.message);
+        // Non-blocking - continue with OAuth
       }
 
       return { 
