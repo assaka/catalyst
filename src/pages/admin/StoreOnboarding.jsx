@@ -9,7 +9,7 @@ import { Progress } from '@/components/ui/progress';
 import { Separator } from '@/components/ui/separator';
 import {
   Store, Database, CreditCard, DollarSign, User as UserIcon,
-  CheckCircle2, Circle, Loader2, ExternalLink, ArrowRight, ArrowLeft, Sparkles
+  CheckCircle2, Circle, Loader2, ExternalLink, ArrowRight, ArrowLeft, Sparkles, AlertCircle
 } from 'lucide-react';
 import apiClient from '@/utils/api';
 import { User } from '@/api/entities';
