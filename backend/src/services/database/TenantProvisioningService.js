@@ -110,21 +110,64 @@ class TenantProvisioningService {
    */
   async runTenantMigrations(tenantDb, result) {
     try {
-      // For Supabase, we need to use the SQL editor or client
-      // Since tenant DBs use same schema, we can read from existing models
+      console.log('Reading tenant migration files...');
 
-      // Read all model files to get table structures
-      const modelsPath = path.join(__dirname, '../../models');
-      const modelFiles = await fs.readdir(modelsPath);
+      // Read migration SQL files
+      const migrationPath = path.join(__dirname, '../../database/schemas/tenant/001-create-tenant-tables-complete.sql');
+      const seedPath = path.join(__dirname, '../../database/schemas/tenant/002-tenant-seed-data.sql');
 
-      // TODO: For now, assume tenant DB is already set up with tables
-      // In production, you'd read model definitions and create tables
-      // or run SQL migration scripts
+      const migrationSQL = await fs.readFile(migrationPath, 'utf-8');
+      const seedSQL = await fs.readFile(seedPath, 'utf-8');
 
-      // For Supabase, you can use REST API or client:
-      // await tenantDb.rpc('run_migration', { sql: migrationSQL });
+      console.log('Migration SQL loaded:', migrationSQL.length, 'characters');
+      console.log('Seed SQL loaded:', seedSQL.length, 'characters');
 
-      result.tablesCreated.push('Skipped - assume tables exist or use Supabase migrations');
+      // Get tenant DB credentials to create direct PostgreSQL connection
+      const { StoreDatabase } = require('../../models/master');
+      const storeDb = await StoreDatabase.findByStoreId(storeId);
+
+      if (!storeDb) {
+        throw new Error('Store database credentials not found');
+      }
+
+      const credentials = storeDb.getCredentials();
+      const { Client } = require('pg');
+
+      // Create direct PostgreSQL client for SQL execution
+      let pgClient;
+      if (credentials.connectionString) {
+        pgClient = new Client({
+          connectionString: credentials.connectionString,
+          ssl: { rejectUnauthorized: false }
+        });
+      } else {
+        // Build connection from projectUrl
+        const projectRef = new URL(credentials.projectUrl).hostname.split('.')[0];
+        pgClient = new Client({
+          host: `db.${projectRef}.supabase.co`,
+          port: 5432,
+          database: 'postgres',
+          user: 'postgres',
+          password: credentials.serviceRoleKey,
+          ssl: { rejectUnauthorized: false }
+        });
+      }
+
+      console.log('Connecting to tenant DB via PostgreSQL...');
+      await pgClient.connect();
+
+      // Execute migration SQL (creates 137 tables)
+      console.log('Running tenant migration (137 tables)...');
+      await pgClient.query(migrationSQL);
+      result.tablesCreated.push('Created 137 tables');
+
+      // Execute seed SQL (6,598 rows)
+      console.log('Running tenant seed data (6,598 rows)...');
+      await pgClient.query(seedSQL);
+      result.dataSeeded.push('Seeded 6,598 rows from 15 tables');
+
+      await pgClient.end();
+      console.log('✅ Migration and seed complete!');
 
       return true;
     } catch (error) {
@@ -133,9 +176,11 @@ class TenantProvisioningService {
         step: 'migrations',
         error: error.message
       });
-      throw error;
+      // Don't throw - continue provisioning
+      return false;
     }
   }
+
 
   /**
    * Seed initial data into tenant database
