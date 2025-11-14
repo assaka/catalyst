@@ -454,26 +454,6 @@ CREATE TYPE enum_seo_templates_type AS ENUM (
     'blog_post'
 );
 
-CREATE TYPE enum_service_credit_costs_billing_type AS ENUM (
-    'per_day',
-    'per_use',
-    'per_month',
-    'per_hour',
-    'per_item',
-    'per_mb',
-    'flat_rate'
-);
-
-CREATE TYPE enum_service_credit_costs_service_category AS ENUM (
-    'store_operations',
-    'plugin_management',
-    'ai_services',
-    'data_migration',
-    'storage',
-    'akeneo_integration',
-    'other'
-);
-
 CREATE TYPE enum_shipping_methods_availability AS ENUM (
     'all',
     'specific_countries'
@@ -3115,14 +3095,7 @@ CREATE TABLE IF NOT EXISTS wishlists (
 -- ALTER TABLE ONLY canonical_urls
 --     ADD CONSTRAINT canonical_urls_pkey PRIMARY KEY (id);
 --
---
--- --
--- -- Name: cart_emails cart_emails_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
--- --
---
--- ALTER TABLE ONLY cart_emails
---     ADD CONSTRAINT cart_emails_pkey PRIMARY KEY (id);
---
+-
 --
 -- --
 -- -- Name: carts carts_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
@@ -3507,31 +3480,7 @@ CREATE TABLE IF NOT EXISTS wishlists (
 -- ALTER TABLE ONLY email_templates
 --     ADD CONSTRAINT email_templates_pkey PRIMARY KEY (id);
 --
---
--- --
--- -- Name: file_baselines file_baselines_file_path_key; Type: CONSTRAINT; Schema: public; Owner: postgres
--- --
---
--- ALTER TABLE ONLY file_baselines
---     ADD CONSTRAINT file_baselines_file_path_key UNIQUE (file_path);
---
---
--- --
--- -- Name: file_baselines file_baselines_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
--- --
---
--- ALTER TABLE ONLY file_baselines
---     ADD CONSTRAINT file_baselines_pkey PRIMARY KEY (id);
---
---
--- --
--- -- Name: hamid_cart hamid_cart_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
--- --
---
--- ALTER TABLE ONLY hamid_cart
---     ADD CONSTRAINT hamid_cart_pkey PRIMARY KEY (id);
---
---
+----
 -- --
 -- -- Name: heatmap_aggregations heatmap_aggregations_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
 -- --
@@ -4114,22 +4063,6 @@ CREATE TABLE IF NOT EXISTS wishlists (
 --
 -- ALTER TABLE ONLY seo_templates
 --     ADD CONSTRAINT seo_templates_pkey PRIMARY KEY (id);
---
---
--- --
--- -- Name: service_credit_costs service_credit_costs_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
--- --
---
--- ALTER TABLE ONLY service_credit_costs
---     ADD CONSTRAINT service_credit_costs_pkey PRIMARY KEY (id);
---
---
--- --
--- -- Name: service_credit_costs service_credit_costs_service_key_key; Type: CONSTRAINT; Schema: public; Owner: postgres
--- --
---
--- ALTER TABLE ONLY service_credit_costs
---     ADD CONSTRAINT service_credit_costs_service_key_key UNIQUE (service_key);
 --
 --
 -- --
@@ -7221,34 +7154,6 @@ CREATE UNIQUE INDEX seo_templates_store_id_name ON seo_templates USING btree (st
 
 
 --
--- Name: service_credit_costs_display_order; Type: INDEX; Schema: public; Owner: postgres
---
-
-CREATE INDEX service_credit_costs_display_order ON service_credit_costs USING btree (display_order);
-
-
---
--- Name: service_credit_costs_is_active; Type: INDEX; Schema: public; Owner: postgres
---
-
-CREATE INDEX service_credit_costs_is_active ON service_credit_costs USING btree (is_active);
-
-
---
--- Name: service_credit_costs_service_category; Type: INDEX; Schema: public; Owner: postgres
---
-
-CREATE INDEX service_credit_costs_service_category ON service_credit_costs USING btree (service_category);
-
-
---
--- Name: service_credit_costs_service_key; Type: INDEX; Schema: public; Owner: postgres
---
-
-CREATE INDEX service_credit_costs_service_key ON service_credit_costs USING btree (service_key);
-
-
---
 -- Name: shopify_oauth_tokens_shop_domain; Type: INDEX; Schema: public; Owner: postgres
 --
 
@@ -7512,14 +7417,6 @@ CREATE TRIGGER trigger_ensure_single_current_version BEFORE INSERT OR UPDATE ON 
 --
 
 CREATE TRIGGER trigger_update_cms_blocks_updated_at BEFORE UPDATE ON cms_blocks FOR EACH ROW EXECUTE FUNCTION update_cms_blocks_updated_at();
-
-
---
--- Name: service_credit_costs trigger_update_service_credit_costs_updated_at; Type: TRIGGER; Schema: public; Owner: postgres
---
-
-CREATE TRIGGER trigger_update_service_credit_costs_updated_at BEFORE UPDATE ON service_credit_costs FOR EACH ROW EXECUTE FUNCTION update_service_credit_costs_updated_at();
-
 
 --
 -- Name: ab_test_variants update_ab_test_variants_updated_at; Type: TRIGGER; Schema: public; Owner: postgres
