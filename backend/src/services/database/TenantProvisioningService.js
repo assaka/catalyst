@@ -133,25 +133,16 @@ class TenantProvisioningService {
       const credentials = storeDb.getCredentials();
       const { Client } = require('pg');
 
-      // Create direct PostgreSQL client for SQL execution
-      let pgClient;
-      if (credentials.connectionString) {
-        pgClient = new Client({
-          connectionString: credentials.connectionString,
-          ssl: { rejectUnauthorized: false }
-        });
-      } else {
-        // Build connection from projectUrl
-        const projectRef = new URL(credentials.projectUrl).hostname.split('.')[0];
-        pgClient = new Client({
-          host: `db.${projectRef}.supabase.co`,
-          port: 5432,
-          database: 'postgres',
-          user: 'postgres',
-          password: credentials.serviceRoleKey,
-          ssl: { rejectUnauthorized: false }
-        });
+      // Validate connection string exists
+      if (!credentials.connectionString) {
+        throw new Error('Database connection string not found in stored credentials');
       }
+
+      // Create direct PostgreSQL client using connection string
+      const pgClient = new Client({
+        connectionString: credentials.connectionString,
+        ssl: { rejectUnauthorized: false }
+      });
 
       console.log('Connecting to tenant DB via PostgreSQL...');
       await pgClient.connect();

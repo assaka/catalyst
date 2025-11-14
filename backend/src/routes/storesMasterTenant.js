@@ -158,12 +158,19 @@ router.post('/:id/connect-database', authMiddleware, async (req, res) => {
     // Update store status to provisioning
     await store.startProvisioning();
 
-    // 1. Encrypt and save credentials to master DB
+    // 1. Validate and encrypt credentials
+    if (!connectionString) {
+      return res.status(400).json({
+        success: false,
+        error: 'Database connection string is required. Please provide the PostgreSQL connection string from Supabase Settings → Database.'
+      });
+    }
+
     const credentials = {
       projectUrl,
       serviceRoleKey,
       anonKey,
-      connectionString: connectionString || `postgresql://postgres:${serviceRoleKey}@db.${new URL(projectUrl).hostname.split('.')[0]}.supabase.co:5432/postgres`
+      connectionString
     };
 
     const storeDb = await StoreDatabase.createWithCredentials(

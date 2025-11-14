@@ -32,7 +32,7 @@ export default function StoreOnboarding() {
   const [completedSteps, setCompletedSteps] = useState([]);
 
   const [storeData, setStoreData] = useState({ name: '', slug: '' });
-  const [dbData, setDbData] = useState({ projectUrl: '', serviceRoleKey: '' });
+  const [dbData, setDbData] = useState({ projectUrl: '', serviceRoleKey: '', connectionString: '' });
   const [stripeData, setStripeData] = useState({ publishableKey: '', secretKey: '' });
   const [creditData, setCreditData] = useState({ amount: 100 });
   const [profileData, setProfileData] = useState({ phone: '', companyName: '' });
@@ -85,6 +85,7 @@ export default function StoreOnboarding() {
       const response = await apiClient.post(`/stores/${storeId}/connect-database`, {
         projectUrl: dbData.projectUrl,
         serviceRoleKey: dbData.serviceRoleKey,
+        connectionString: dbData.connectionString,
         storeName: storeData.name,
         storeSlug: storeData.slug
       });
@@ -261,9 +262,10 @@ export default function StoreOnboarding() {
                 </h4>
                 <ol className="text-sm text-blue-800 space-y-1 list-decimal list-inside ml-2">
                   <li>Go to <a href="https://supabase.com" target="_blank" rel="noopener noreferrer" className="underline inline-flex items-center">supabase.com <ExternalLink className="w-3 h-3 ml-1" /></a></li>
-                  <li>Create a new project (choose same region as master DB)</li>
-                  <li>Go to Settings → API</li>
-                  <li>Copy Project URL and service_role key</li>
+                  <li>Create a new project (free tier works fine)</li>
+                  <li>Go to Settings → API → Copy Project URL and service_role key</li>
+                  <li>Go to Settings → Database → Copy Connection String (URI)</li>
+                  <li>Replace [YOUR-PASSWORD] in connection string with your database password</li>
                 </ol>
               </div>
 
@@ -294,11 +296,25 @@ export default function StoreOnboarding() {
                 <p className="text-xs text-red-600 mt-1">⚠️ Keep this secret! Never share publicly.</p>
               </div>
 
+              <div>
+                <Label htmlFor="connectionString">Database Connection String (URI) *</Label>
+                <Input
+                  id="connectionString"
+                  type="password"
+                  placeholder="postgresql://postgres.xxxxx:password@aws-0-region.pooler.supabase.com:6543/postgres"
+                  value={dbData.connectionString}
+                  onChange={(e) => setDbData({ ...dbData, connectionString: e.target.value })}
+                  required
+                  className="mt-2 font-mono text-xs"
+                />
+                <p className="text-xs text-amber-600 mt-1">💡 Make sure to replace [YOUR-PASSWORD] with your actual database password</p>
+              </div>
+
               <div className="flex gap-3">
                 <Button type="button" variant="outline" onClick={() => setCurrentStep(1)} disabled={loading}>
                   <ArrowLeft className="w-4 h-4 mr-2" /> Back
                 </Button>
-                <Button type="submit" className="flex-1" disabled={loading || !dbData.projectUrl || !dbData.serviceRoleKey}>
+                <Button type="submit" className="flex-1" disabled={loading || !dbData.projectUrl || !dbData.serviceRoleKey || !dbData.connectionString}>
                   {loading ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Connecting & Provisioning...</> : <>Connect Database <ArrowRight className="w-4 h-4 ml-2" /></>}
                 </Button>
               </div>
