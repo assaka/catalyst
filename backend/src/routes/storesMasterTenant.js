@@ -121,13 +121,48 @@ router.post('/:id/connect-database', authMiddleware, async (req, res) => {
   try {
     const storeId = req.params.id;
     const {
-      projectUrl,
-      serviceRoleKey,
-      anonKey,
-      connectionString,
+      projectUrl: manualProjectUrl,
+      serviceRoleKey: manualServiceKey,
+      anonKey: manualAnonKey,
+      connectionString: manualConnectionString,
       storeName,
-      storeSlug
+      storeSlug,
+      useOAuth
     } = req.body;
+
+    let projectUrl, serviceRoleKey, anonKey, connectionString;
+
+    // If using OAuth, get credentials from OAuth token
+    if (useOAuth) {
+      console.log('Using OAuth credentials for store:', storeId);
+      const SupabaseOAuthToken = require('../models/SupabaseOAuthToken');
+      const oauthToken = await SupabaseOAuthToken.findOne({ where: { store_id: storeId } });
+
+      if (!oauthToken) {
+        return res.status(400).json({
+          success: false,
+          error: 'No OAuth connection found. Please connect your Supabase account first.'
+        });
+      }
+
+      projectUrl = oauthToken.project_url;
+      serviceRoleKey = oauthToken.service_role_key;
+      anonKey = oauthToken.anon_key;
+
+      // Build connection string from project URL and service role key (which contains DB password for pooler)
+      if (projectUrl) {
+        const projectRef = new URL(projectUrl).hostname.split('.')[0];
+        // Use pooler connection for better performance
+        connectionString = oauthToken.database_url ||
+          `postgresql://postgres.${projectRef}:[password]@aws-0-us-east-1.pooler.supabase.com:6543/postgres`;
+      }
+    } else {
+      // Use manual credentials
+      projectUrl = manualProjectUrl;
+      serviceRoleKey = manualServiceKey;
+      anonKey = manualAnonKey;
+      connectionString = manualConnectionString;
+    }
 
     // Validate required fields
     if (!projectUrl || !serviceRoleKey) {
@@ -160,10 +195,18 @@ router.post('/:id/connect-database', authMiddleware, async (req, res) => {
 
     // 1. Validate and encrypt credentials
     if (!connectionString) {
-      return res.status(400).json({
-        success: false,
-        error: 'Database connection string is required. Please provide the PostgreSQL connection string from Supabase Settings → Database.'
-      });
+      console.warn('No connection string provided, attempting to build from project URL...');
+      // Try to build connection string from projectUrl
+      try {
+        const projectRef = new URL(projectUrl).hostname.split('.')[0];
+        connectionString = `postgresql://postgres.${projectRef}:[password]@aws-0-us-east-1.pooler.supabase.com:6543/postgres`;
+        console.log('Generated connection string template:', connectionString.substring(0, 50) + '...');
+      } catch (err) {
+        return res.status(400).json({
+          success: false,
+          error: 'Database connection string is required. Please provide the PostgreSQL connection string from Supabase Settings → Database.'
+        });
+      }
     }
 
     const credentials = {

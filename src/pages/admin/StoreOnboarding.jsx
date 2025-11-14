@@ -82,24 +82,80 @@ export default function StoreOnboarding() {
     setSuccess('');
 
     try {
-      const response = await apiClient.post(`/stores/${storeId}/connect-database`, {
-        projectUrl: dbData.projectUrl,
-        serviceRoleKey: dbData.serviceRoleKey,
-        connectionString: dbData.connectionString,
-        storeName: storeData.name,
-        storeSlug: storeData.slug
-      });
+      // Step 1: Initiate OAuth flow
+      console.log('Initiating Supabase OAuth...');
+      const oauthResponse = await apiClient.post(`/supabase/connect?storeId=${storeId}`);
 
-      if (response.success) {
-        setCompletedSteps([...completedSteps, 2]);
-        setSuccess('Database connected! 137 tables created & 6,598 rows seeded.');
-        setCurrentStep(3);
-      } else {
-        setError(response.error || 'Failed to connect database');
+      if (!oauthResponse.success || !oauthResponse.authUrl) {
+        throw new Error('Failed to get OAuth URL');
       }
+
+      // Step 2: Open OAuth popup
+      const width = 600;
+      const height = 700;
+      const left = window.screen.width / 2 - width / 2;
+      const top = window.screen.height / 2 - height / 2;
+
+      const popup = window.open(
+        oauthResponse.authUrl,
+        'Supabase OAuth',
+        `width=${width},height=${height},left=${left},top=${top}`
+      );
+
+      if (!popup) {
+        throw new Error('Please allow popups for this site');
+      }
+
+      // Step 3: Wait for OAuth to complete
+      const checkClosed = setInterval(async () => {
+        if (popup.closed) {
+          clearInterval(checkClosed);
+
+          // Check if OAuth was successful
+          const successMessage = sessionStorage.getItem('supabase_connection_success');
+          if (successMessage) {
+            sessionStorage.removeItem('supabase_connection_success');
+
+            // Step 4: Trigger database provisioning
+            console.log('OAuth successful, triggering provisioning...');
+            try {
+              const provisionResponse = await apiClient.post(`/stores/${storeId}/connect-database`, {
+                storeName: storeData.name,
+                storeSlug: storeData.slug,
+                useOAuth: true
+              });
+
+              if (provisionResponse.success) {
+                setCompletedSteps([...completedSteps, 2]);
+                setSuccess('Database connected! 137 tables created & 6,598 rows seeded.');
+                setCurrentStep(3);
+              } else {
+                setError(provisionResponse.error || 'Failed to provision database');
+              }
+            } catch (provErr) {
+              setError(provErr.message || 'Failed to provision database');
+            }
+          } else {
+            setError('OAuth was cancelled or failed');
+          }
+
+          setLoading(false);
+        }
+      }, 500);
+
+      // Timeout after 5 minutes
+      setTimeout(() => {
+        clearInterval(checkClosed);
+        if (!popup.closed) {
+          popup.close();
+          setError('OAuth timeout - please try again');
+          setLoading(false);
+        }
+      }, 300000);
+
     } catch (err) {
+      console.error('OAuth error:', err);
       setError(err.message || 'Failed to connect database');
-    } finally {
       setLoading(false);
     }
   };
@@ -255,67 +311,62 @@ export default function StoreOnboarding() {
           {/* Step 2: Connect Database */}
           {currentStep === 2 && (
             <form onSubmit={handleConnectDatabase} className="space-y-6">
-              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                <h4 className="font-semibold text-blue-900 mb-2 flex items-center">
-                  <Sparkles className="w-4 h-4 mr-2" />
-                  How to get Supabase credentials
-                </h4>
-                <ol className="text-sm text-blue-800 space-y-1 list-decimal list-inside ml-2">
-                  <li>Go to <a href="https://supabase.com" target="_blank" rel="noopener noreferrer" className="underline inline-flex items-center">supabase.com <ExternalLink className="w-3 h-3 ml-1" /></a></li>
-                  <li>Create a new project (free tier works fine)</li>
-                  <li>Go to Settings → API → Copy Project URL and service_role key</li>
-                  <li>Go to Settings → Database → Copy Connection String (URI)</li>
-                  <li>Replace [YOUR-PASSWORD] in connection string with your database password</li>
-                </ol>
-              </div>
-
-              <div>
-                <Label htmlFor="projectUrl">Supabase Project URL *</Label>
-                <Input
-                  id="projectUrl"
-                  type="url"
-                  placeholder="https://xxxxxxxxxxxxx.supabase.co"
-                  value={dbData.projectUrl}
-                  onChange={(e) => setDbData({ ...dbData, projectUrl: e.target.value })}
-                  required
-                  className="mt-2"
-                />
-              </div>
-
-              <div>
-                <Label htmlFor="serviceRoleKey">Service Role Key *</Label>
-                <Input
-                  id="serviceRoleKey"
-                  type="password"
-                  placeholder="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
-                  value={dbData.serviceRoleKey}
-                  onChange={(e) => setDbData({ ...dbData, serviceRoleKey: e.target.value })}
-                  required
-                  className="mt-2 font-mono text-sm"
-                />
-                <p className="text-xs text-red-600 mt-1">⚠️ Keep this secret! Never share publicly.</p>
-              </div>
-
-              <div>
-                <Label htmlFor="connectionString">Database Connection String (URI) *</Label>
-                <Input
-                  id="connectionString"
-                  type="password"
-                  placeholder="postgresql://postgres.xxxxx:password@aws-0-region.pooler.supabase.com:6543/postgres"
-                  value={dbData.connectionString}
-                  onChange={(e) => setDbData({ ...dbData, connectionString: e.target.value })}
-                  required
-                  className="mt-2 font-mono text-xs"
-                />
-                <p className="text-xs text-amber-600 mt-1">💡 Make sure to replace [YOUR-PASSWORD] with your actual database password</p>
+              <div className="bg-gradient-to-br from-green-50 to-emerald-50 border-2 border-green-200 rounded-xl p-6 text-center">
+                <div className="w-20 h-20 bg-white rounded-full flex items-center justify-center mx-auto mb-4 shadow-lg">
+                  <Database className="w-10 h-10 text-green-600" />
+                </div>
+                <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                  Connect Your Supabase Database
+                </h3>
+                <p className="text-gray-600 text-sm mb-4">
+                  We'll securely connect to your Supabase account using OAuth, create all necessary tables, and seed initial data automatically.
+                </p>
+                <div className="bg-white/80 rounded-lg p-4 mb-4">
+                  <h4 className="font-semibold text-gray-900 mb-2 flex items-center justify-center">
+                    <Sparkles className="w-4 h-4 mr-2 text-yellow-500" />
+                    What happens next?
+                  </h4>
+                  <ul className="text-sm text-gray-700 space-y-2 text-left max-w-md mx-auto">
+                    <li className="flex items-start">
+                      <CheckCircle2 className="w-4 h-4 mr-2 text-green-600 mt-0.5 flex-shrink-0" />
+                      <span>Authorize Catalyst to access your Supabase account</span>
+                    </li>
+                    <li className="flex items-start">
+                      <CheckCircle2 className="w-4 h-4 mr-2 text-green-600 mt-0.5 flex-shrink-0" />
+                      <span>Select a Supabase project (or we'll create a new one)</span>
+                    </li>
+                    <li className="flex items-start">
+                      <CheckCircle2 className="w-4 h-4 mr-2 text-green-600 mt-0.5 flex-shrink-0" />
+                      <span>Automatically create 137 tables</span>
+                    </li>
+                    <li className="flex items-start">
+                      <CheckCircle2 className="w-4 h-4 mr-2 text-green-600 mt-0.5 flex-shrink-0" />
+                      <span>Seed 6,598 rows of initial data</span>
+                    </li>
+                    <li className="flex items-start">
+                      <CheckCircle2 className="w-4 h-4 mr-2 text-green-600 mt-0.5 flex-shrink-0" />
+                      <span>Your store is ready in ~30 seconds!</span>
+                    </li>
+                  </ul>
+                </div>
               </div>
 
               <div className="flex gap-3">
                 <Button type="button" variant="outline" onClick={() => setCurrentStep(1)} disabled={loading}>
                   <ArrowLeft className="w-4 h-4 mr-2" /> Back
                 </Button>
-                <Button type="submit" className="flex-1" disabled={loading || !dbData.projectUrl || !dbData.serviceRoleKey || !dbData.connectionString}>
-                  {loading ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Connecting & Provisioning...</> : <>Connect Database <ArrowRight className="w-4 h-4 ml-2" /></>}
+                <Button type="submit" className="flex-1 bg-green-600 hover:bg-green-700" disabled={loading}>
+                  {loading ? (
+                    <>
+                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                      {loading && 'Connecting...'}
+                    </>
+                  ) : (
+                    <>
+                      <ExternalLink className="w-4 h-4 mr-2" />
+                      Connect with Supabase
+                    </>
+                  )}
                 </Button>
               </div>
             </form>
