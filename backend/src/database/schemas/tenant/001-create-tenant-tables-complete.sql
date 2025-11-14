@@ -1202,7 +1202,7 @@ CREATE TABLE IF NOT EXISTS media_assets (
   mime_type VARCHAR(100),
   file_size BIGINT,
   folder VARCHAR(100) DEFAULT 'library'::character varying,
-  tags ARRAY,
+  tags JSON DEFAULT '{}'::json,
   description TEXT,
   metadata JSONB DEFAULT '{}'::jsonb,
   uploaded_by UUID,
