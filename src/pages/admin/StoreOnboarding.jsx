@@ -11,7 +11,7 @@ import {
   Store, Database, CreditCard, DollarSign, User as UserIcon,
   CheckCircle2, Circle, Loader2, ExternalLink, ArrowRight, ArrowLeft, Sparkles
 } from 'lucide-react';
-import { api } from '@/services/api';
+import apiClient from '@/utils/api';
 import { User } from '@/api/entities';
 
 const STEPS = [
@@ -50,7 +50,7 @@ export default function StoreOnboarding() {
     setError('');
 
     try {
-      const response = await api.post('/api/stores/mt', { name: storeData.name });
+      const response = await apiClient.post('/api/stores/mt', { name: storeData.name });
       if (response.success) {
         setStoreId(response.data.store.id);
         setCompletedSteps([1]);
@@ -72,7 +72,7 @@ export default function StoreOnboarding() {
     setSuccess('');
 
     try {
-      const response = await api.post(`/api/stores/mt/${storeId}/connect-database`, {
+      const response = await apiClient.post(`/api/stores/mt/${storeId}/connect-database`, {
         projectUrl: dbData.projectUrl,
         serviceRoleKey: dbData.serviceRoleKey,
         storeName: storeData.name,
