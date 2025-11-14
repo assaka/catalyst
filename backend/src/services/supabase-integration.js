@@ -199,8 +199,23 @@ class SupabaseIntegration {
 
       try {
         // Check if tenant DB exists before trying to save
+        // Try Sequelize first
         const { MasterStore } = require('../models/master');
-        const store = await MasterStore.findByPk(storeId);
+        let store = await MasterStore.findByPk(storeId);
+
+        // Fallback to Supabase client if Sequelize fails
+        if (!store) {
+          console.log('⚠️ Store not found via Sequelize, trying Supabase client...');
+          const { masterSupabaseClient } = require('../../database/masterConnection');
+          const { data: storeData } = await masterSupabaseClient
+            .from('stores')
+            .select('*')
+            .eq('id', storeId)
+            .single();
+
+          store = storeData;
+          console.log('Store found via Supabase client:', !!storeData);
+        }
 
         console.log('🔍 Store status check:', {
           storeId,
