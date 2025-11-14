@@ -61,24 +61,34 @@ router.get('/status', authMiddleware, storeResolver(), async (req, res) => {
 });
 
 // Initialize OAuth flow
-router.post('/connect', authMiddleware, storeResolver(), async (req, res) => {
+router.post('/connect', authMiddleware, async (req, res) => {
   try {
-    console.log('Initiating Supabase OAuth connection for store:', req.storeId);
+    // Get storeId from query parameter (for onboarding) or from storeResolver
+    const storeId = req.query.storeId || req.storeId;
+
+    if (!storeId) {
+      return res.status(400).json({
+        success: false,
+        message: 'Store ID is required'
+      });
+    }
+
+    console.log('Initiating Supabase OAuth connection for store:', storeId);
     console.log('OAuth configuration status:', {
       clientIdConfigured: !!process.env.SUPABASE_OAUTH_CLIENT_ID,
       clientSecretConfigured: !!process.env.SUPABASE_OAUTH_CLIENT_SECRET,
       redirectUriConfigured: !!process.env.SUPABASE_OAUTH_REDIRECT_URI
     });
-    
+
     const state = uuidv4();
-    const authUrl = supabaseIntegration.getAuthorizationUrl(req.storeId, state);
+    const authUrl = supabaseIntegration.getAuthorizationUrl(storeId, state);
     console.log('Generated OAuth URL length:', authUrl.length);
-    
+
     // Store state in session or database for verification
     req.session = req.session || {};
     req.session.supabaseOAuthState = state;
-    req.session.supabaseOAuthStore = req.storeId;
-    
+    req.session.supabaseOAuthStore = storeId;
+
     res.json({
       success: true,
       authUrl,
