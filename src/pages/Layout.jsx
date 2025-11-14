@@ -175,6 +175,11 @@ function LayoutInner({ children, currentPageName }) {
   }
   // End of new block
 
+  // Handle onboarding page - minimal layout (no sidebar, no header, no store selector)
+  if (currentPageName === 'StoreOnboarding' || location.pathname === '/admin/store-onboarding') {
+    return <>{children}</>;
+  }
+
   useEffect(() => {
     const loadData = async () => {
         await loadUserAndHandleCredits(); // Combined function
@@ -352,7 +357,8 @@ function LayoutInner({ children, currentPageName }) {
   const isEditorPage = editorPages.includes(currentPageName) || location.pathname.startsWith('/editor/');
   const isPluginPage = pluginPages.includes(currentPageName) || location.pathname.startsWith('/plugins');
   const isAIStudioPage = aiStudioPages.includes(currentPageName) || location.pathname.startsWith('/admin/ai-studio');
-  const isAdminPage = !isPublicPage && !isStorefrontPage && !isCustomerDashboard && !isEditorPage && !isPluginPage && !isAIStudioPage;
+  const isOnboardingPage = currentPageName === 'StoreOnboarding' || location.pathname === '/admin/store-onboarding';
+  const isAdminPage = !isPublicPage && !isStorefrontPage && !isCustomerDashboard && !isEditorPage && !isPluginPage && !isAIStudioPage && !isOnboardingPage;
 
   // Determine current mode for ModeHeader
   const currentMode = isEditorPage ? 'editor' : isPluginPage ? 'plugins' : isAIStudioPage ? 'aistudio' : 'admin';
@@ -469,8 +475,8 @@ function LayoutInner({ children, currentPageName }) {
     setOpenGroups(prev => ({ ...prev, [groupName]: !prev[groupName] }));
   };
 
-  // Don't show sidebar for editor, plugin, and AI Studio modes
-  const showSidebar = !isEditorPage && !isPluginPage && !isAIStudioPage;
+  // Don't show sidebar for editor, plugin, AI Studio, and onboarding
+  const showSidebar = !isEditorPage && !isPluginPage && !isAIStudioPage && !isOnboardingPage;
 
   return (
     <StoreProvider>
