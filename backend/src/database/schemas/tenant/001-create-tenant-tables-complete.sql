@@ -1280,20 +1280,6 @@ CREATE TABLE IF NOT EXISTS coupons (
   translations JSON DEFAULT '{}'::json
 );
 
-CREATE TABLE IF NOT EXISTS credit_pricing (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  credits INTEGER NOT NULL,
-  amount NUMERIC NOT NULL,
-  currency VARCHAR(3) DEFAULT 'usd'::character varying NOT NULL,
-  stripe_price_id VARCHAR(255),
-  popular BOOLEAN DEFAULT false,
-  active BOOLEAN DEFAULT true,
-  display_order INTEGER DEFAULT 0,
-  metadata JSONB DEFAULT '{}'::jsonb,
-  created_at TIMESTAMP DEFAULT NOW(),
-  updated_at TIMESTAMP DEFAULT NOW()
-);
-
 CREATE TABLE IF NOT EXISTS credit_transactions (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id UUID NOT NULL,
@@ -4741,14 +4727,6 @@ CREATE INDEX credit_usage_usage_type ON credit_usage USING btree (usage_type);
 --
 
 CREATE INDEX credit_usage_user_id_store_id ON credit_usage USING btree (user_id, store_id);
-
-
---
--- Name: credits_user_id_store_id; Type: INDEX; Schema: public; Owner: postgres
---
-
-CREATE UNIQUE INDEX credits_user_id_store_id ON credits USING btree (user_id, store_id);
-
 
 --
 -- Name: custom_analytics_events_enabled; Type: INDEX; Schema: public; Owner: postgres
