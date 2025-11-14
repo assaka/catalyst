@@ -46,7 +46,7 @@ class TenantProvisioningService {
 
       // 2. Run migrations (create all tables)
       console.log('Running tenant migrations...');
-      await this.runTenantMigrations(tenantDb, result);
+      await this.runTenantMigrations(tenantDb, storeId, result);
 
       // 3. Seed initial data
       console.log('Seeding initial data...');
@@ -108,7 +108,7 @@ class TenantProvisioningService {
    * Run tenant database migrations
    * @private
    */
-  async runTenantMigrations(tenantDb, result) {
+  async runTenantMigrations(tenantDb, storeId, result) {
     try {
       console.log('Reading tenant migration files...');
 
