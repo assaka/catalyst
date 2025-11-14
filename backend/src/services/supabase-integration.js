@@ -197,151 +197,28 @@ class SupabaseIntegration {
         expires_at: tokenData.expires_at
       });
 
-      try {
-        // Check if tenant DB exists before trying to save
-        // Try Sequelize first
-        const { MasterStore } = require('../models/master');
-        let store = await MasterStore.findByPk(storeId);
-
-        // Fallback to Supabase client if Sequelize fails
-        if (!store) {
-          console.log('⚠️ Store not found via Sequelize, trying Supabase client...');
-          const { masterSupabaseClient } = require('../../database/masterConnection');
-          const { data: storeData } = await masterSupabaseClient
-            .from('stores')
-            .select('*')
-            .eq('id', storeId)
-            .single();
-
-          store = storeData;
-          console.log('Store found via Supabase client:', !!storeData);
-        }
-
-        console.log('🔍 Store status check:', {
-          storeId,
-          storeFound: !!store,
-          status: store?.status,
-          isActive: store?.is_active
-        });
-
-        if (store && store.status === 'pending_database') {
-          console.log('⏭️ Skipping OAuth token save - tenant DB not provisioned yet');
-          console.log('   Tokens will be saved after tenant database provisioning completes');
-
-          // Store OAuth data temporarily for later use
-          if (!global.pendingOAuthTokens) {
-            console.log('📝 Initializing global.pendingOAuthTokens Map');
-            global.pendingOAuthTokens = new Map();
-          }
-
-          const tokenDataToStore = {
-            access_token: tokenData.access_token,
-            refresh_token: tokenData.refresh_token,
-            expires_at: tokenData.expires_at,
-            project_url: tokenData.project_url || 'https://pending-configuration.supabase.co',
-            anon_key: null,
-            service_role_key: tokenData.service_role_key || null,
-            database_url: tokenData.database_url || null,
-            storage_url: tokenData.storage_url || null,
-            auth_url: tokenData.auth_url || null
-          };
-
-          global.pendingOAuthTokens.set(storeId, tokenDataToStore);
-
-          console.log('✅ OAuth tokens stored in memory for post-provisioning save');
-          console.log('📊 Memory cache now has', global.pendingOAuthTokens.size, 'entries');
-          console.log('🔑 Stored for storeId:', storeId);
-        } else {
-          // Store is already active, save to tenant DB
-          const saveData = {
-            access_token: tokenData.access_token,
-            refresh_token: tokenData.refresh_token,
-            expires_at: tokenData.expires_at,
-            project_url: tokenData.project_url || 'https://pending-configuration.supabase.co',
-            anon_key: null,  // No longer used, set to null,
-            service_role_key: tokenData.service_role_key || null,
-            database_url: tokenData.database_url || null,
-            storage_url: tokenData.storage_url || null,
-            auth_url: tokenData.auth_url || null
-          };
-
-          await SupabaseOAuthToken.createOrUpdate(storeId, saveData);
-          console.log('✅ Token saved to tenant database successfully');
-        }
-      } catch (dbError) {
-        console.error('Database save error:', {
-          error: dbError.message,
-          name: dbError.name,
-          errors: dbError.errors?.map(e => ({ field: e.path, message: e.message, value: e.value })),
-          tokenData: {
-            ...tokenData,
-            access_token: tokenData.access_token ? 'present' : 'missing',
-            refresh_token: tokenData.refresh_token ? 'present' : 'missing',
-            project_url: tokenData.project_url
-          }
-        });
-
-        // If it's a connection error and store is pending, that's expected - skip save
-        if (dbError.name === 'SequelizeConnectionError' && dbError.message.includes('Tenant or user not found')) {
-          console.log('⏭️ Skipping token save - tenant database not provisioned yet');
-          // Don't throw, continue
-        } else if (dbError.name === 'SequelizeValidationError' && tokenData.access_token && tokenData.refresh_token) {
-          console.log('Ignoring validation error since we have valid tokens - connection will work');
-          // Don't throw, continue to save IntegrationConfig
-        } else {
-          throw dbError;
-        }
+      // STEP 1: ALWAYS store in memory FIRST (highest priority)
+      if (!global.pendingOAuthTokens) {
+        global.pendingOAuthTokens = new Map();
       }
 
-      // Also save to IntegrationConfig for consistency (only if tenant DB exists)
-      try {
-        const { MasterStore } = require('../models/master');
-        const store = await MasterStore.findByPk(storeId);
+      const tokenDataToStore = {
+        access_token: tokenData.access_token,
+        refresh_token: tokenData.refresh_token,
+        expires_at: tokenData.expires_at,
+        project_url: tokenData.project_url || 'https://pending-configuration.supabase.co',
+        anon_key: null,
+        service_role_key: tokenData.service_role_key || null,
+        database_url: tokenData.database_url || null,
+        storage_url: tokenData.storage_url || null,
+        auth_url: tokenData.auth_url || null
+      };
 
-        if (store && store.status === 'pending_database') {
-          console.log('⏭️ Skipping IntegrationConfig save - tenant DB not provisioned yet');
-        } else {
-          const integrationConfig = await IntegrationConfig.createOrUpdate(storeId, 'supabase', {
-            projectUrl: projectData.project_url || 'pending_configuration',
-            connected: true,
-            connectedAt: new Date(),
-            userEmail: user?.email || ''
-          });
+      global.pendingOAuthTokens.set(storeId, tokenDataToStore);
 
-          // Update connection status to success
-          if (integrationConfig) {
-            await integrationConfig.update({
-              connection_status: 'success',
-              is_active: true
-            });
-          }
-
-          console.log('✅ Integration config saved successfully with connected status');
-
-          // Automatically create storage buckets after successful authentication
-          try {
-            console.log('🪣 Creating default storage buckets...');
-            const bucketResult = await supabaseStorage.ensureBucketsExist(storeId);
-
-            if (bucketResult.success) {
-              if (bucketResult.bucketsCreated && bucketResult.bucketsCreated.length > 0) {
-                console.log('✅ Created buckets:', bucketResult.bucketsCreated.join(', '));
-              } else {
-                console.log('✅ All required buckets already exist');
-              }
-            } else {
-              console.log('⚠️ Could not create buckets automatically:', bucketResult.message);
-              // Don't fail the OAuth flow, just log the warning
-            }
-          } catch (bucketError) {
-            console.error('⚠️ Error creating buckets (non-blocking):', bucketError.message);
-            // Don't fail the OAuth flow if bucket creation fails
-          }
-        }
-      } catch (configError) {
-        console.error('⚠️ Error saving integration config:', configError.message);
-        // Non-blocking - continue with OAuth
-      }
+      console.log('✅ OAuth tokens stored in memory');
+      console.log('📊 Memory cache size:', global.pendingOAuthTokens.size);
+      console.log('🔑 StoreId:', storeId);
 
       return { 
         success: true, 
