@@ -3094,9 +3094,7 @@ CREATE TABLE IF NOT EXISTS wishlists (
 --
 -- ALTER TABLE ONLY canonical_urls
 --     ADD CONSTRAINT canonical_urls_pkey PRIMARY KEY (id);
---
--
---
+
 -- --
 -- -- Name: carts carts_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
 -- --
