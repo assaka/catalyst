@@ -177,8 +177,12 @@ router.get('/callback', async (req, res) => {
     }
     
     // Send minimal success page that closes instantly
+    console.log('✅ OAuth callback successful - sending success HTML page');
     const projectUrl = result.project?.url || 'Connected';
     const userEmail = result.user?.email || '';
+
+    console.log('Project URL:', projectUrl);
+    console.log('User email:', userEmail);
 
     // Check if this is a limited scope connection
     const isLimitedScope = result.limitedScope ||
@@ -190,6 +194,7 @@ router.get('/callback', async (req, res) => {
     // Set CSP header to allow inline scripts
     res.setHeader('Content-Security-Policy', "script-src 'unsafe-inline' 'self'; style-src 'unsafe-inline' 'self';");
 
+    console.log('📤 Sending success HTML with postMessage script...');
     res.send(`
       <!DOCTYPE html>
       <html>
@@ -257,6 +262,10 @@ router.get('/callback', async (req, res) => {
         </div>
         <script>
           (function() {
+            console.log('🎯 OAuth success page loaded');
+            console.log('Has opener:', !!window.opener);
+            console.log('Opener closed:', window.opener ? window.opener.closed : 'N/A');
+
             // Wait for DOM to be ready
             if (document.readyState === 'loading') {
               document.addEventListener('DOMContentLoaded', init);
@@ -265,6 +274,7 @@ router.get('/callback', async (req, res) => {
             }
 
             function init() {
+              console.log('🚀 Initializing success page...');
               const closeBtn = document.getElementById('closeBtn');
 
               if (closeBtn) {
@@ -282,27 +292,37 @@ router.get('/callback', async (req, res) => {
             }
 
             function closeWindow() {
+              console.log('🔔 Attempting to notify parent window...');
+
               // Use postMessage for cross-origin communication (more reliable)
               try {
                 if (window.opener && !window.opener.closed) {
+                  console.log('📤 Sending postMessage to parent...');
+
                   // Send message to parent window
                   window.opener.postMessage({
                     type: 'supabase-oauth-success',
                     message: 'Successfully connected to Supabase!'
                   }, '*'); // Use '*' to ensure message is sent regardless of origin
 
+                  console.log('✅ postMessage sent');
+
                   // Also try sessionStorage as fallback
                   try {
                     window.opener.sessionStorage.setItem('supabase_connection_success', 'Successfully connected to Supabase!');
+                    console.log('✅ sessionStorage set');
                   } catch (e) {
-                    // postMessage is primary method
+                    console.log('⚠️ sessionStorage failed:', e.message);
                   }
+                } else {
+                  console.error('❌ No opener or opener is closed');
                 }
               } catch (error) {
-                console.error('Error communicating with parent:', error);
+                console.error('❌ Error communicating with parent:', error);
               }
 
               // Close window after short delay to ensure message is sent
+              console.log('🚪 Closing popup in 100ms...');
               setTimeout(() => {
                 window.close();
               }, 100);
