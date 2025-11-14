@@ -5733,49 +5733,6 @@ CREATE INDEX idx_email_templates_identifier ON email_templates USING btree (iden
 
 CREATE INDEX idx_email_templates_store_id ON email_templates USING btree (store_id);
 
-
---
--- Name: idx_file_baselines_path; Type: INDEX; Schema: public; Owner: postgres
---
-
-CREATE INDEX idx_file_baselines_path ON file_baselines USING btree (file_path);
-
-
---
--- Name: idx_file_baselines_version; Type: INDEX; Schema: public; Owner: postgres
---
-
-CREATE INDEX idx_file_baselines_version ON file_baselines USING btree (version);
-
-
---
--- Name: idx_hamid_cart_created_at; Type: INDEX; Schema: public; Owner: postgres
---
-
-CREATE INDEX idx_hamid_cart_created_at ON hamid_cart USING btree (created_at DESC);
-
-
---
--- Name: idx_hamid_cart_session; Type: INDEX; Schema: public; Owner: postgres
---
-
-CREATE INDEX idx_hamid_cart_session ON hamid_cart USING btree (session_id);
-
-
---
--- Name: idx_hamid_cart_user; Type: INDEX; Schema: public; Owner: postgres
---
-
-CREATE INDEX idx_hamid_cart_user ON hamid_cart USING btree (user_id);
-
-
---
--- Name: idx_hamid_cart_visited_at; Type: INDEX; Schema: public; Owner: postgres
---
-
-CREATE INDEX idx_hamid_cart_visited_at ON hamid_cart USING btree (visited_at DESC);
-
-
 --
 -- Name: idx_heatmap_aggregations_lookup; Type: INDEX; Schema: public; Owner: postgres
 --
@@ -6755,35 +6712,6 @@ CREATE UNIQUE INDEX idx_redirects_store_from_unique ON redirects USING btree (st
 
 CREATE INDEX idx_redirects_store_id ON redirects USING btree (store_id);
 
-
---
--- Name: idx_service_credit_costs_active; Type: INDEX; Schema: public; Owner: postgres
---
-
-CREATE INDEX idx_service_credit_costs_active ON service_credit_costs USING btree (is_active);
-
-
---
--- Name: idx_service_credit_costs_category; Type: INDEX; Schema: public; Owner: postgres
---
-
-CREATE INDEX idx_service_credit_costs_category ON service_credit_costs USING btree (service_category);
-
-
---
--- Name: idx_service_credit_costs_display_order; Type: INDEX; Schema: public; Owner: postgres
---
-
-CREATE INDEX idx_service_credit_costs_display_order ON service_credit_costs USING btree (display_order);
-
-
---
--- Name: idx_service_credit_costs_key; Type: INDEX; Schema: public; Owner: postgres
---
-
-CREATE INDEX idx_service_credit_costs_key ON service_credit_costs USING btree (service_key);
-
-
 --
 -- Name: idx_shipping_methods_conditions; Type: INDEX; Schema: public; Owner: postgres
 --
@@ -7392,35 +7320,6 @@ CREATE UNIQUE INDEX redirects_store_id_from_url ON redirects USING btree (store_
 
 CREATE UNIQUE INDEX seo_templates_store_id_name ON seo_templates USING btree (store_id, name);
 
-
---
--- Name: service_credit_costs_display_order; Type: INDEX; Schema: public; Owner: postgres
---
-
-CREATE INDEX service_credit_costs_display_order ON service_credit_costs USING btree (display_order);
-
-
---
--- Name: service_credit_costs_is_active; Type: INDEX; Schema: public; Owner: postgres
---
-
-CREATE INDEX service_credit_costs_is_active ON service_credit_costs USING btree (is_active);
-
-
---
--- Name: service_credit_costs_service_category; Type: INDEX; Schema: public; Owner: postgres
---
-
-CREATE INDEX service_credit_costs_service_category ON service_credit_costs USING btree (service_category);
-
-
---
--- Name: service_credit_costs_service_key; Type: INDEX; Schema: public; Owner: postgres
---
-
-CREATE INDEX service_credit_costs_service_key ON service_credit_costs USING btree (service_key);
-
-
 --
 -- Name: shopify_oauth_tokens_shop_domain; Type: INDEX; Schema: public; Owner: postgres
 --
@@ -7734,14 +7633,6 @@ CREATE TRIGGER update_cms_pages_updated_at BEFORE UPDATE ON cms_pages FOR EACH R
 --
 
 CREATE TRIGGER update_coupons_updated_at BEFORE UPDATE ON coupons FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
-
-
---
--- Name: credit_pricing update_credit_pricing_updated_at; Type: TRIGGER; Schema: public; Owner: postgres
---
-
-CREATE TRIGGER update_credit_pricing_updated_at BEFORE UPDATE ON credit_pricing FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
-
 
 --
 -- Name: credit_transactions update_credit_transactions_updated_at; Type: TRIGGER; Schema: public; Owner: postgres
