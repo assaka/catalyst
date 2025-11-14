@@ -32,7 +32,7 @@ export default function StoreOnboarding() {
   const [completedSteps, setCompletedSteps] = useState([]);
 
   const [storeData, setStoreData] = useState({ name: '', slug: '' });
-  const [dbData, setDbData] = useState({ databasePassword: '' });
+  const [dbData, setDbData] = useState({ connectionString: '' });
   const [oauthCompleted, setOauthCompleted] = useState(false);
   const [stripeData, setStripeData] = useState({ publishableKey: '', secretKey: '' });
   const [creditData, setCreditData] = useState({ amount: 100 });
@@ -156,7 +156,7 @@ export default function StoreOnboarding() {
         storeName: storeData.name,
         storeSlug: storeData.slug,
         useOAuth: true,
-        databasePassword: dbData.databasePassword
+        connectionString: dbData.connectionString
       });
 
       if (provisionResponse.success) {
@@ -381,7 +381,7 @@ export default function StoreOnboarding() {
             </form>
           )}
 
-          {/* Step 2b: Enter Database Password (after OAuth) */}
+          {/* Step 2b: Enter Connection String (after OAuth) */}
           {currentStep === 2 && oauthCompleted && (
             <form onSubmit={handleProvisionDatabase} className="space-y-6">
               <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
@@ -390,27 +390,30 @@ export default function StoreOnboarding() {
                   One more step!
                 </h4>
                 <p className="text-sm text-blue-800 mb-2">
-                  To create your database tables and seed initial data, we need your database password.
+                  To create your database tables and seed initial data, we need your database connection string.
                 </p>
-                <p className="text-xs text-blue-700">
-                  Find this in Supabase → Settings → Database → Database Password
-                </p>
+                <ol className="text-xs text-blue-700 space-y-1 list-decimal list-inside ml-2">
+                  <li>Go to Supabase → Settings → Database</li>
+                  <li>Copy the Connection String (URI)</li>
+                  <li>Replace [YOUR-PASSWORD] with your actual database password</li>
+                  <li>Paste the complete connection string below</li>
+                </ol>
               </div>
 
               <div>
-                <Label htmlFor="databasePassword">Database Password *</Label>
+                <Label htmlFor="connectionString">Database Connection String (URI) *</Label>
                 <Input
-                  id="databasePassword"
+                  id="connectionString"
                   type="password"
-                  placeholder="Your Supabase database password"
-                  value={dbData.databasePassword}
-                  onChange={(e) => setDbData({ databasePassword: e.target.value })}
+                  placeholder="postgresql://postgres.[PROJECT-REF]:[PASSWORD]@aws-0-[REGION].pooler.supabase.com:6543/postgres"
+                  value={dbData.connectionString}
+                  onChange={(e) => setDbData({ connectionString: e.target.value })}
                   required
                   autoFocus
-                  className="mt-2"
+                  className="mt-2 font-mono text-xs"
                 />
-                <p className="text-xs text-gray-500 mt-1">
-                  This is used only to run database migrations and is encrypted
+                <p className="text-xs text-amber-600 mt-1">
+                  💡 Make sure to replace [YOUR-PASSWORD] with your actual database password before pasting
                 </p>
               </div>
 
@@ -418,7 +421,7 @@ export default function StoreOnboarding() {
                 <Button type="button" variant="outline" onClick={() => { setOauthCompleted(false); setError(''); }} disabled={loading}>
                   <ArrowLeft className="w-4 h-4 mr-2" /> Back
                 </Button>
-                <Button type="submit" className="flex-1 bg-blue-600 hover:bg-blue-700" disabled={loading || !dbData.databasePassword}>
+                <Button type="submit" className="flex-1 bg-blue-600 hover:bg-blue-700" disabled={loading || !dbData.connectionString}>
                   {loading ? (
                     <>
                       <Loader2 className="w-4 h-4 mr-2 animate-spin" />

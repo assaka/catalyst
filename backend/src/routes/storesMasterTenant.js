@@ -127,8 +127,7 @@ router.post('/:id/connect-database', authMiddleware, async (req, res) => {
       connectionString: manualConnectionString,
       storeName,
       storeSlug,
-      useOAuth,
-      databasePassword
+      useOAuth
     } = req.body;
 
     let projectUrl, serviceRoleKey, anonKey, connectionString;
@@ -150,19 +149,16 @@ router.post('/:id/connect-database', authMiddleware, async (req, res) => {
       serviceRoleKey = oauthToken.service_role_key;
       anonKey = oauthToken.anon_key;
 
-      // Build connection string with provided database password
-      if (projectUrl && databasePassword) {
-        const projectRef = new URL(projectUrl).hostname.split('.')[0];
-        // Use direct database connection (not pooler) - more reliable for migrations
-        connectionString = `postgresql://postgres:${encodeURIComponent(databasePassword)}@db.${projectRef}.supabase.co:5432/postgres`;
-        console.log('Built direct connection string for OAuth + password provisioning');
-        console.log('Project ref:', projectRef);
-      } else if (!databasePassword) {
+      // Use the connection string provided by the user (from request body)
+      if (!manualConnectionString) {
         return res.status(400).json({
           success: false,
-          error: 'Database password is required for provisioning'
+          error: 'Database connection string is required for provisioning'
         });
       }
+
+      connectionString = manualConnectionString;
+      console.log('Using user-provided connection string for OAuth provisioning');
     } else {
       // Use manual credentials
       projectUrl = manualProjectUrl;
