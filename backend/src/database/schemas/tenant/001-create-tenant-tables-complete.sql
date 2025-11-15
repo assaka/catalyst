@@ -3,7 +3,7 @@
 -- Auto-generated from existing database
 -- ============================================
 
-CREATE TYPE enum_ab_tests_status AS ENUM (
+CREATE TYPE IF NOT EXISTS enum_ab_tests_status AS ENUM (
     'draft',
     'running',
     'paused',
@@ -11,19 +11,19 @@ CREATE TYPE enum_ab_tests_status AS ENUM (
     'archived'
 );
 
-CREATE TYPE enum_addresses_type AS ENUM (
+CREATE TYPE IF NOT EXISTS enum_addresses_type AS ENUM (
     'billing',
     'shipping',
     'both'
 );
 
-CREATE TYPE enum_akeneo_custom_mappings_mapping_type AS ENUM (
+CREATE TYPE IF NOT EXISTS enum_akeneo_custom_mappings_mapping_type AS ENUM (
     'attributes',
     'images',
     'files'
 );
 
-CREATE TYPE enum_akeneo_schedules_import_type AS ENUM (
+CREATE TYPE IF NOT EXISTS enum_akeneo_schedules_import_type AS ENUM (
     'attributes',
     'families',
     'categories',
@@ -31,7 +31,7 @@ CREATE TYPE enum_akeneo_schedules_import_type AS ENUM (
     'all'
 );
 
-CREATE TYPE enum_akeneo_schedules_schedule_type AS ENUM (
+CREATE TYPE IF NOT EXISTS enum_akeneo_schedules_schedule_type AS ENUM (
     'once',
     'hourly',
     'daily',
@@ -39,7 +39,7 @@ CREATE TYPE enum_akeneo_schedules_schedule_type AS ENUM (
     'monthly'
 );
 
-CREATE TYPE enum_akeneo_schedules_status AS ENUM (
+CREATE TYPE IF NOT EXISTS enum_akeneo_schedules_status AS ENUM (
     'scheduled',
     'running',
     'completed',
@@ -47,7 +47,7 @@ CREATE TYPE enum_akeneo_schedules_status AS ENUM (
     'paused'
 );
 
-CREATE TYPE enum_ast_diffs_change_type AS ENUM (
+CREATE TYPE IF NOT EXISTS enum_ast_diffs_change_type AS ENUM (
     'addition',
     'modification',
     'deletion',
@@ -55,20 +55,20 @@ CREATE TYPE enum_ast_diffs_change_type AS ENUM (
     'style'
 );
 
-CREATE TYPE enum_ast_diffs_status AS ENUM (
+CREATE TYPE IF NOT EXISTS enum_ast_diffs_status AS ENUM (
     'draft',
     'applied',
     'rejected',
     'reverted'
 );
 
-CREATE TYPE enum_attributes_filter_type AS ENUM (
+CREATE TYPE IF NOT EXISTS enum_attributes_filter_type AS ENUM (
     'multiselect',
     'slider',
     'select'
 );
 
-CREATE TYPE enum_attributes_type AS ENUM (
+CREATE TYPE IF NOT EXISTS enum_attributes_type AS ENUM (
     'text',
     'number',
     'select',
@@ -79,51 +79,51 @@ CREATE TYPE enum_attributes_type AS ENUM (
     'image'
 );
 
-CREATE TYPE enum_consent_logs_consent_method AS ENUM (
+CREATE TYPE IF NOT EXISTS enum_consent_logs_consent_method AS ENUM (
     'accept_all',
     'reject_all',
     'custom'
 );
 
-CREATE TYPE enum_cookie_consent_settings_banner_position AS ENUM (
+CREATE TYPE IF NOT EXISTS enum_cookie_consent_settings_banner_position AS ENUM (
     'top',
     'bottom',
     'center'
 );
 
-CREATE TYPE enum_cookie_consent_settings_theme AS ENUM (
+CREATE TYPE IF NOT EXISTS enum_cookie_consent_settings_theme AS ENUM (
     'light',
     'dark',
     'custom'
 );
 
-CREATE TYPE enum_coupons_discount_type AS ENUM (
+CREATE TYPE IF NOT EXISTS enum_coupons_discount_type AS ENUM (
     'fixed',
     'percentage',
     'buy_x_get_y',
     'free_shipping'
 );
 
-CREATE TYPE enum_credit_transactions_status AS ENUM (
+CREATE TYPE IF NOT EXISTS enum_credit_transactions_status AS ENUM (
     'pending',
     'completed',
     'failed',
     'refunded'
 );
 
-CREATE TYPE enum_credit_transactions_transaction_type AS ENUM (
+CREATE TYPE IF NOT EXISTS enum_credit_transactions_transaction_type AS ENUM (
     'purchase',
     'bonus',
     'refund'
 );
 
-CREATE TYPE enum_credit_usage_usage_type AS ENUM (
+CREATE TYPE IF NOT EXISTS enum_credit_usage_usage_type AS ENUM (
     'akeneo_schedule',
     'akeneo_manual',
     'other'
 );
 
-CREATE TYPE enum_custom_analytics_events_event_category AS ENUM (
+CREATE TYPE IF NOT EXISTS enum_custom_analytics_events_event_category AS ENUM (
     'ecommerce',
     'engagement',
     'conversion',
@@ -131,7 +131,7 @@ CREATE TYPE enum_custom_analytics_events_event_category AS ENUM (
     'custom'
 );
 
-CREATE TYPE enum_custom_analytics_events_trigger_type AS ENUM (
+CREATE TYPE IF NOT EXISTS enum_custom_analytics_events_trigger_type AS ENUM (
     'page_load',
     'click',
     'form_submit',
@@ -141,7 +141,7 @@ CREATE TYPE enum_custom_analytics_events_trigger_type AS ENUM (
     'automatic'
 );
 
-CREATE TYPE enum_custom_domains_ssl_status AS ENUM (
+CREATE TYPE IF NOT EXISTS enum_custom_domains_ssl_status AS ENUM (
     'pending',
     'active',
     'failed',
@@ -149,13 +149,13 @@ CREATE TYPE enum_custom_domains_ssl_status AS ENUM (
     'renewing'
 );
 
-CREATE TYPE enum_custom_domains_verification_method AS ENUM (
+CREATE TYPE IF NOT EXISTS enum_custom_domains_verification_method AS ENUM (
     'txt',
     'cname',
     'http'
 );
 
-CREATE TYPE enum_custom_domains_verification_status AS ENUM (
+CREATE TYPE IF NOT EXISTS enum_custom_domains_verification_status AS ENUM (
     'pending',
     'verifying',
     'verified',
@@ -163,7 +163,7 @@ CREATE TYPE enum_custom_domains_verification_status AS ENUM (
 );
 
 
-CREATE TYPE enum_customer_activities_activity_type AS ENUM (
+CREATE TYPE IF NOT EXISTS enum_customer_activities_activity_type AS ENUM (
     'page_view',
     'product_view',
     'add_to_cart',
@@ -173,25 +173,25 @@ CREATE TYPE enum_customer_activities_activity_type AS ENUM (
     'search'
 );
 
-CREATE TYPE enum_customer_activities_device_type AS ENUM (
+CREATE TYPE IF NOT EXISTS enum_customer_activities_device_type AS ENUM (
     'desktop',
     'tablet',
     'mobile'
 );
 
-CREATE TYPE enum_customer_addresses_type AS ENUM (
+CREATE TYPE IF NOT EXISTS enum_customer_addresses_type AS ENUM (
     'billing',
     'shipping',
     'both'
 );
 
-CREATE TYPE enum_customization_rollbacks_rollback_type AS ENUM (
+CREATE TYPE IF NOT EXISTS enum_customization_rollbacks_rollback_type AS ENUM (
     'full_rollback',
     'selective_rollback',
     'cherry_pick'
 );
 
-CREATE TYPE enum_customization_snapshots_change_type AS ENUM (
+CREATE TYPE IF NOT EXISTS enum_customization_snapshots_change_type AS ENUM (
     'initial',
     'ai_modification',
     'manual_edit',
@@ -199,18 +199,18 @@ CREATE TYPE enum_customization_snapshots_change_type AS ENUM (
     'merge'
 );
 
-CREATE TYPE enum_customization_snapshots_status AS ENUM (
+CREATE TYPE IF NOT EXISTS enum_customization_snapshots_status AS ENUM (
     'open',
     'finalized'
 );
 
-CREATE TYPE enum_heatmap_interactions_device_type AS ENUM (
+CREATE TYPE IF NOT EXISTS enum_heatmap_interactions_device_type AS ENUM (
     'desktop',
     'tablet',
     'mobile'
 );
 
-CREATE TYPE enum_heatmap_interactions_interaction_type AS ENUM (
+CREATE TYPE IF NOT EXISTS enum_heatmap_interactions_interaction_type AS ENUM (
     'click',
     'hover',
     'scroll',
@@ -220,13 +220,13 @@ CREATE TYPE enum_heatmap_interactions_interaction_type AS ENUM (
     'key_press'
 );
 
-CREATE TYPE enum_heatmap_sessions_device_type AS ENUM (
+CREATE TYPE IF NOT EXISTS enum_heatmap_sessions_device_type AS ENUM (
     'desktop',
     'tablet',
     'mobile'
 );
 
-CREATE TYPE enum_hybrid_customizations_deployment_status AS ENUM (
+CREATE TYPE IF NOT EXISTS enum_hybrid_customizations_deployment_status AS ENUM (
     'draft',
     'deployed',
     'failed',
@@ -234,26 +234,26 @@ CREATE TYPE enum_hybrid_customizations_deployment_status AS ENUM (
     'rolled_back'
 );
 
-CREATE TYPE enum_hybrid_customizations_status AS ENUM (
+CREATE TYPE IF NOT EXISTS enum_hybrid_customizations_status AS ENUM (
     'active',
     'archived',
     'rolled_back'
 );
 
-CREATE TYPE enum_integration_configs_connection_status AS ENUM (
+CREATE TYPE IF NOT EXISTS enum_integration_configs_connection_status AS ENUM (
     'untested',
     'success',
     'failed'
 );
 
-CREATE TYPE enum_integration_configs_sync_status AS ENUM (
+CREATE TYPE IF NOT EXISTS enum_integration_configs_sync_status AS ENUM (
     'idle',
     'syncing',
     'success',
     'error'
 );
 
-CREATE TYPE enum_job_history_status AS ENUM (
+CREATE TYPE IF NOT EXISTS enum_job_history_status AS ENUM (
     'started',
     'progress_update',
     'completed',
@@ -262,14 +262,14 @@ CREATE TYPE enum_job_history_status AS ENUM (
     'cancelled'
 );
 
-CREATE TYPE enum_jobs_priority AS ENUM (
+CREATE TYPE IF NOT EXISTS enum_jobs_priority AS ENUM (
     'low',
     'normal',
     'high',
     'urgent'
 );
 
-CREATE TYPE enum_jobs_status AS ENUM (
+CREATE TYPE IF NOT EXISTS enum_jobs_status AS ENUM (
     'pending',
     'running',
     'completed',
@@ -277,7 +277,7 @@ CREATE TYPE enum_jobs_status AS ENUM (
     'cancelled'
 );
 
-CREATE TYPE enum_marketplace_credentials_marketplace AS ENUM (
+CREATE TYPE IF NOT EXISTS enum_marketplace_credentials_marketplace AS ENUM (
     'amazon',
     'ebay',
     'google_shopping',
@@ -285,14 +285,14 @@ CREATE TYPE enum_marketplace_credentials_marketplace AS ENUM (
     'instagram'
 );
 
-CREATE TYPE enum_marketplace_credentials_status AS ENUM (
+CREATE TYPE IF NOT EXISTS enum_marketplace_credentials_status AS ENUM (
     'active',
     'inactive',
     'error',
     'testing'
 );
 
-CREATE TYPE enum_orders_fulfillment_status AS ENUM (
+CREATE TYPE IF NOT EXISTS enum_orders_fulfillment_status AS ENUM (
     'pending',
     'processing',
     'shipped',
@@ -300,7 +300,7 @@ CREATE TYPE enum_orders_fulfillment_status AS ENUM (
     'cancelled'
 );
 
-CREATE TYPE enum_orders_payment_status AS ENUM (
+CREATE TYPE IF NOT EXISTS enum_orders_payment_status AS ENUM (
     'pending',
     'paid',
     'partially_paid',
@@ -308,7 +308,7 @@ CREATE TYPE enum_orders_payment_status AS ENUM (
     'failed'
 );
 
-CREATE TYPE enum_orders_status AS ENUM (
+CREATE TYPE IF NOT EXISTS enum_orders_status AS ENUM (
     'pending',
     'processing',
     'shipped',
@@ -317,23 +317,23 @@ CREATE TYPE enum_orders_status AS ENUM (
     'refunded'
 );
 
-CREATE TYPE enum_payment_methods_availability AS ENUM (
+CREATE TYPE IF NOT EXISTS enum_payment_methods_availability AS ENUM (
     'all',
     'specific_countries'
 );
 
-CREATE TYPE enum_payment_methods_fee_type AS ENUM (
+CREATE TYPE IF NOT EXISTS enum_payment_methods_fee_type AS ENUM (
     'fixed',
     'percentage',
     'none'
 );
 
-CREATE TYPE enum_payment_methods_payment_flow AS ENUM (
+CREATE TYPE IF NOT EXISTS enum_payment_methods_payment_flow AS ENUM (
     'online',
     'offline'
 );
 
-CREATE TYPE enum_payment_methods_type AS ENUM (
+CREATE TYPE IF NOT EXISTS enum_payment_methods_type AS ENUM (
     'credit_card',
     'debit_card',
     'paypal',
@@ -343,7 +343,7 @@ CREATE TYPE enum_payment_methods_type AS ENUM (
     'other'
 );
 
-CREATE TYPE enum_product_labels_position AS ENUM (
+CREATE TYPE IF NOT EXISTS enum_product_labels_position AS ENUM (
     'top-left',
     'top-right',
     'top-center',
@@ -355,20 +355,20 @@ CREATE TYPE enum_product_labels_position AS ENUM (
     'bottom-center'
 );
 
-CREATE TYPE enum_product_tabs_tab_type AS ENUM (
+CREATE TYPE IF NOT EXISTS enum_product_tabs_tab_type AS ENUM (
     'text',
     'description',
     'attributes',
     'attribute_sets'
 );
 
-CREATE TYPE enum_products_status AS ENUM (
+CREATE TYPE IF NOT EXISTS enum_products_status AS ENUM (
     'draft',
     'active',
     'inactive'
 );
 
-CREATE TYPE enum_products_type AS ENUM (
+CREATE TYPE IF NOT EXISTS enum_products_type AS ENUM (
     'simple',
     'configurable',
     'bundle',
@@ -377,32 +377,32 @@ CREATE TYPE enum_products_type AS ENUM (
     'downloadable'
 );
 
-CREATE TYPE enum_products_visibility AS ENUM (
+CREATE TYPE IF NOT EXISTS enum_products_visibility AS ENUM (
     'visible',
     'hidden'
 );
 
-CREATE TYPE enum_redirects_entity_type AS ENUM (
+CREATE TYPE IF NOT EXISTS enum_redirects_entity_type AS ENUM (
     'category',
     'product',
     'cms_page'
 );
 
-CREATE TYPE enum_redirects_type AS ENUM (
+CREATE TYPE IF NOT EXISTS enum_redirects_type AS ENUM (
     '301',
     '302',
     '307',
     '308'
 );
 
-CREATE TYPE enum_sales_invoices_email_status AS ENUM (
+CREATE TYPE IF NOT EXISTS enum_sales_invoices_email_status AS ENUM (
     'sent',
     'failed',
     'bounced',
     'delivered'
 );
 
-CREATE TYPE enum_sales_orders_fulfillment_status AS ENUM (
+CREATE TYPE IF NOT EXISTS enum_sales_orders_fulfillment_status AS ENUM (
     'pending',
     'processing',
     'shipped',
@@ -410,7 +410,7 @@ CREATE TYPE enum_sales_orders_fulfillment_status AS ENUM (
     'cancelled'
 );
 
-CREATE TYPE enum_sales_orders_payment_status AS ENUM (
+CREATE TYPE IF NOT EXISTS enum_sales_orders_payment_status AS ENUM (
     'pending',
     'paid',
     'partially_paid',
@@ -418,7 +418,7 @@ CREATE TYPE enum_sales_orders_payment_status AS ENUM (
     'failed'
 );
 
-CREATE TYPE enum_sales_orders_status AS ENUM (
+CREATE TYPE IF NOT EXISTS enum_sales_orders_status AS ENUM (
     'pending',
     'processing',
     'shipped',
@@ -427,14 +427,14 @@ CREATE TYPE enum_sales_orders_status AS ENUM (
     'refunded'
 );
 
-CREATE TYPE enum_sales_shipments_email_status AS ENUM (
+CREATE TYPE IF NOT EXISTS enum_sales_shipments_email_status AS ENUM (
     'sent',
     'failed',
     'bounced',
     'delivered'
 );
 
-CREATE TYPE enum_seo_templates_page_type AS ENUM (
+CREATE TYPE IF NOT EXISTS enum_seo_templates_page_type AS ENUM (
     'home',
     'product',
     'category',
@@ -444,7 +444,7 @@ CREATE TYPE enum_seo_templates_page_type AS ENUM (
     'checkout'
 );
 
-CREATE TYPE enum_seo_templates_type AS ENUM (
+CREATE TYPE IF NOT EXISTS enum_seo_templates_type AS ENUM (
     'product',
     'category',
     'cms',
@@ -454,31 +454,31 @@ CREATE TYPE enum_seo_templates_type AS ENUM (
     'blog_post'
 );
 
-CREATE TYPE enum_shipping_methods_availability AS ENUM (
+CREATE TYPE IF NOT EXISTS enum_shipping_methods_availability AS ENUM (
     'all',
     'specific_countries'
 );
 
-CREATE TYPE enum_shipping_methods_type AS ENUM (
+CREATE TYPE IF NOT EXISTS enum_shipping_methods_type AS ENUM (
     'flat_rate',
     'free_shipping',
     'weight_based',
     'price_based'
 );
 
-CREATE TYPE enum_slot_configurations_status AS ENUM (
+CREATE TYPE IF NOT EXISTS enum_slot_configurations_status AS ENUM (
     'draft',
     'acceptance',
     'published',
     'reverted'
 );
 
-CREATE TYPE enum_snapshot_status AS ENUM (
+CREATE TYPE IF NOT EXISTS enum_snapshot_status AS ENUM (
     'open',
     'finalized'
 );
 
-CREATE TYPE enum_store_data_migrations_migration_status AS ENUM (
+CREATE TYPE IF NOT EXISTS enum_store_data_migrations_migration_status AS ENUM (
     'pending',
     'in_progress',
     'completed',
@@ -486,20 +486,20 @@ CREATE TYPE enum_store_data_migrations_migration_status AS ENUM (
     'paused'
 );
 
-CREATE TYPE enum_store_invitations_role AS ENUM (
+CREATE TYPE IF NOT EXISTS enum_store_invitations_role AS ENUM (
     'admin',
     'editor',
     'viewer'
 );
 
-CREATE TYPE enum_store_invitations_status AS ENUM (
+CREATE TYPE IF NOT EXISTS enum_store_invitations_status AS ENUM (
     'pending',
     'accepted',
     'expired',
     'cancelled'
 );
 
-CREATE TYPE enum_store_routes_route_type AS ENUM (
+CREATE TYPE IF NOT EXISTS enum_store_routes_route_type AS ENUM (
     'core',
     'custom',
     'cms_page',
@@ -507,34 +507,34 @@ CREATE TYPE enum_store_routes_route_type AS ENUM (
     'category'
 );
 
-CREATE TYPE enum_store_routes_target_type AS ENUM (
+CREATE TYPE IF NOT EXISTS enum_store_routes_target_type AS ENUM (
     'component',
     'cms_page',
     'external_url',
     'redirect'
 );
 
-CREATE TYPE enum_store_supabase_connections_connection_status AS ENUM (
+CREATE TYPE IF NOT EXISTS enum_store_supabase_connections_connection_status AS ENUM (
     'active',
     'inactive',
     'error'
 );
 
-CREATE TYPE enum_store_teams_role AS ENUM (
+CREATE TYPE IF NOT EXISTS enum_store_teams_role AS ENUM (
     'owner',
     'admin',
     'editor',
     'viewer'
 );
 
-CREATE TYPE enum_store_teams_status AS ENUM (
+CREATE TYPE IF NOT EXISTS enum_store_teams_status AS ENUM (
     'pending',
     'active',
     'suspended',
     'removed'
 );
 
-CREATE TYPE enum_store_templates_type AS ENUM (
+CREATE TYPE IF NOT EXISTS enum_store_templates_type AS ENUM (
     'category',
     'product',
     'checkout',
@@ -542,14 +542,14 @@ CREATE TYPE enum_store_templates_type AS ENUM (
     'custom'
 );
 
-CREATE TYPE enum_stores_deployment_status AS ENUM (
+CREATE TYPE IF NOT EXISTS enum_stores_deployment_status AS ENUM (
     'draft',
     'deployed',
     'published',
     'failed'
 );
 
-CREATE TYPE enum_deployment_status AS ENUM (
+CREATE TYPE IF NOT EXISTS enum_deployment_status AS ENUM (
     'draft',
     'deploying'
     'deployed',
@@ -557,7 +557,7 @@ CREATE TYPE enum_deployment_status AS ENUM (
     'failed'
 );
 
-CREATE TYPE enum_template_assets_asset_type AS ENUM (
+CREATE TYPE IF NOT EXISTS enum_template_assets_asset_type AS ENUM (
     'javascript',
     'css',
     'image',
@@ -565,19 +565,19 @@ CREATE TYPE enum_template_assets_asset_type AS ENUM (
     'other'
 );
 
-CREATE TYPE enum_users_account_type AS ENUM (
+CREATE TYPE IF NOT EXISTS enum_users_account_type AS ENUM (
     'agency',
     'individual',
     'customer'
 );
 
-CREATE TYPE enum_users_role AS ENUM (
+CREATE TYPE IF NOT EXISTS enum_users_role AS ENUM (
     'admin',
     'store_owner',
     'customer'
 );
 
-CREATE TYPE service_category AS ENUM (
+CREATE TYPE IF NOT EXISTS service_category AS ENUM (
     'store_operations',
     'plugin_management',
     'ai_services',
@@ -4454,77 +4454,77 @@ CREATE TABLE IF NOT EXISTS wishlists (
 -- Name: ab_test_assignments_assigned_at; Type: INDEX; Schema: public; Owner: postgres
 --
 
-CREATE INDEX ab_test_assignments_assigned_at ON ab_test_assignments USING btree (assigned_at);
+CREATE INDEX IF NOT EXISTS ab_test_assignments_assigned_at ON ab_test_assignments USING btree (assigned_at);
 
 
 --
 -- Name: ab_test_assignments_converted; Type: INDEX; Schema: public; Owner: postgres
 --
 
-CREATE INDEX ab_test_assignments_converted ON ab_test_assignments USING btree (converted);
+CREATE INDEX IF NOT EXISTS ab_test_assignments_converted ON ab_test_assignments USING btree (converted);
 
 
 --
 -- Name: ab_test_assignments_session_id; Type: INDEX; Schema: public; Owner: postgres
 --
 
-CREATE INDEX ab_test_assignments_session_id ON ab_test_assignments USING btree (session_id);
+CREATE INDEX IF NOT EXISTS ab_test_assignments_session_id ON ab_test_assignments USING btree (session_id);
 
 
 --
 -- Name: ab_test_assignments_store_id; Type: INDEX; Schema: public; Owner: postgres
 --
 
-CREATE INDEX ab_test_assignments_store_id ON ab_test_assignments USING btree (store_id);
+CREATE INDEX IF NOT EXISTS ab_test_assignments_store_id ON ab_test_assignments USING btree (store_id);
 
 
 --
 -- Name: ab_test_assignments_test_id; Type: INDEX; Schema: public; Owner: postgres
 --
 
-CREATE INDEX ab_test_assignments_test_id ON ab_test_assignments USING btree (test_id);
+CREATE INDEX IF NOT EXISTS ab_test_assignments_test_id ON ab_test_assignments USING btree (test_id);
 
 
 --
 -- Name: ab_test_assignments_user_id; Type: INDEX; Schema: public; Owner: postgres
 --
 
-CREATE INDEX ab_test_assignments_user_id ON ab_test_assignments USING btree (user_id);
+CREATE INDEX IF NOT EXISTS ab_test_assignments_user_id ON ab_test_assignments USING btree (user_id);
 
 
 --
 -- Name: ab_test_assignments_variant_id; Type: INDEX; Schema: public; Owner: postgres
 --
 
-CREATE INDEX ab_test_assignments_variant_id ON ab_test_assignments USING btree (variant_id);
+CREATE INDEX IF NOT EXISTS ab_test_assignments_variant_id ON ab_test_assignments USING btree (variant_id);
 
 
 --
 -- Name: ab_tests_end_date; Type: INDEX; Schema: public; Owner: postgres
 --
 
-CREATE INDEX ab_tests_end_date ON ab_tests USING btree (end_date);
+CREATE INDEX IF NOT EXISTS ab_tests_end_date ON ab_tests USING btree (end_date);
 
 
 --
 -- Name: ab_tests_start_date; Type: INDEX; Schema: public; Owner: postgres
 --
 
-CREATE INDEX ab_tests_start_date ON ab_tests USING btree (start_date);
+CREATE INDEX IF NOT EXISTS ab_tests_start_date ON ab_tests USING btree (start_date);
 
 
 --
 -- Name: ab_tests_status; Type: INDEX; Schema: public; Owner: postgres
 --
 
-CREATE INDEX ab_tests_status ON ab_tests USING btree (status);
+CREATE INDEX IF NOT EXISTS ab_tests_status ON ab_tests USING btree (status);
 
 
 --
 -- Name: ab_tests_store_id; Type: INDEX; Schema: public; Owner: postgres
 --
 
-CREATE INDEX ab_tests_store_id ON ab_tests USING btree (store_id);
+CREATE INDEX IF NOT EXISTS ab_tests_store_id ON ab_tests USING btree (store_id);
 
 
 --
@@ -4538,28 +4538,28 @@ CREATE UNIQUE INDEX akeneo_custom_mappings_store_id_mapping_type ON akeneo_custo
 -- Name: akeneo_schedules_is_active; Type: INDEX; Schema: public; Owner: postgres
 --
 
-CREATE INDEX akeneo_schedules_is_active ON akeneo_schedules USING btree (is_active);
+CREATE INDEX IF NOT EXISTS akeneo_schedules_is_active ON akeneo_schedules USING btree (is_active);
 
 
 --
 -- Name: akeneo_schedules_next_run; Type: INDEX; Schema: public; Owner: postgres
 --
 
-CREATE INDEX akeneo_schedules_next_run ON akeneo_schedules USING btree (next_run);
+CREATE INDEX IF NOT EXISTS akeneo_schedules_next_run ON akeneo_schedules USING btree (next_run);
 
 
 --
 -- Name: akeneo_schedules_store_id; Type: INDEX; Schema: public; Owner: postgres
 --
 
-CREATE INDEX akeneo_schedules_store_id ON akeneo_schedules USING btree (store_id);
+CREATE INDEX IF NOT EXISTS akeneo_schedules_store_id ON akeneo_schedules USING btree (store_id);
 
 
 --
 -- Name: attribute_values_attribute_id; Type: INDEX; Schema: public; Owner: postgres
 --
 
-CREATE INDEX attribute_values_attribute_id ON attribute_values USING btree (attribute_id);
+CREATE INDEX IF NOT EXISTS attribute_values_attribute_id ON attribute_values USING btree (attribute_id);
 
 
 --
@@ -4573,7 +4573,7 @@ CREATE UNIQUE INDEX attribute_values_attribute_id_code ON attribute_values USING
 -- Name: brevo_configurations_is_active; Type: INDEX; Schema: public; Owner: postgres
 --
 
-CREATE INDEX brevo_configurations_is_active ON brevo_configurations USING btree (is_active);
+CREATE INDEX IF NOT EXISTS brevo_configurations_is_active ON brevo_configurations USING btree (is_active);
 
 
 --
@@ -4608,83 +4608,83 @@ CREATE UNIQUE INDEX cms_blocks_identifier_store_id ON cms_blocks USING btree (id
 -- Name: credit_transactions_status; Type: INDEX; Schema: public; Owner: postgres
 --
 
-CREATE INDEX credit_transactions_status ON credit_transactions USING btree (status);
+CREATE INDEX IF NOT EXISTS credit_transactions_status ON credit_transactions USING btree (status);
 
 
 --
 -- Name: credit_transactions_stripe_payment_intent_id; Type: INDEX; Schema: public; Owner: postgres
 --
 
-CREATE INDEX credit_transactions_stripe_payment_intent_id ON credit_transactions USING btree (stripe_payment_intent_id);
+CREATE INDEX IF NOT EXISTS credit_transactions_stripe_payment_intent_id ON credit_transactions USING btree (stripe_payment_intent_id);
 
 
 --
 -- Name: credit_transactions_user_id; Type: INDEX; Schema: public; Owner: postgres
 --
 
-CREATE INDEX credit_transactions_user_id ON credit_transactions USING btree (user_id);
+CREATE INDEX IF NOT EXISTS credit_transactions_user_id ON credit_transactions USING btree (user_id);
 
 
 --
 -- Name: credit_usage_created_at; Type: INDEX; Schema: public; Owner: postgres
 --
 
-CREATE INDEX credit_usage_created_at ON credit_usage USING btree (created_at);
+CREATE INDEX IF NOT EXISTS credit_usage_created_at ON credit_usage USING btree (created_at);
 
 
 --
 -- Name: credit_usage_reference_id_reference_type; Type: INDEX; Schema: public; Owner: postgres
 --
 
-CREATE INDEX credit_usage_reference_id_reference_type ON credit_usage USING btree (reference_id, reference_type);
+CREATE INDEX IF NOT EXISTS credit_usage_reference_id_reference_type ON credit_usage USING btree (reference_id, reference_type);
 
 
 --
 -- Name: credit_usage_usage_type; Type: INDEX; Schema: public; Owner: postgres
 --
 
-CREATE INDEX credit_usage_usage_type ON credit_usage USING btree (usage_type);
+CREATE INDEX IF NOT EXISTS credit_usage_usage_type ON credit_usage USING btree (usage_type);
 
 
 --
 -- Name: credit_usage_user_id_store_id; Type: INDEX; Schema: public; Owner: postgres
 --
 
-CREATE INDEX credit_usage_user_id_store_id ON credit_usage USING btree (user_id, store_id);
+CREATE INDEX IF NOT EXISTS credit_usage_user_id_store_id ON credit_usage USING btree (user_id, store_id);
 
 --
 -- Name: custom_analytics_events_enabled; Type: INDEX; Schema: public; Owner: postgres
 --
 
-CREATE INDEX custom_analytics_events_enabled ON custom_analytics_events USING btree (enabled);
+CREATE INDEX IF NOT EXISTS custom_analytics_events_enabled ON custom_analytics_events USING btree (enabled);
 
 
 --
 -- Name: custom_analytics_events_event_category; Type: INDEX; Schema: public; Owner: postgres
 --
 
-CREATE INDEX custom_analytics_events_event_category ON custom_analytics_events USING btree (event_category);
+CREATE INDEX IF NOT EXISTS custom_analytics_events_event_category ON custom_analytics_events USING btree (event_category);
 
 
 --
 -- Name: custom_analytics_events_priority; Type: INDEX; Schema: public; Owner: postgres
 --
 
-CREATE INDEX custom_analytics_events_priority ON custom_analytics_events USING btree (priority);
+CREATE INDEX IF NOT EXISTS custom_analytics_events_priority ON custom_analytics_events USING btree (priority);
 
 
 --
 -- Name: custom_analytics_events_store_id; Type: INDEX; Schema: public; Owner: postgres
 --
 
-CREATE INDEX custom_analytics_events_store_id ON custom_analytics_events USING btree (store_id);
+CREATE INDEX IF NOT EXISTS custom_analytics_events_store_id ON custom_analytics_events USING btree (store_id);
 
 
 --
 -- Name: custom_analytics_events_trigger_type; Type: INDEX; Schema: public; Owner: postgres
 --
 
-CREATE INDEX custom_analytics_events_trigger_type ON custom_analytics_events USING btree (trigger_type);
+CREATE INDEX IF NOT EXISTS custom_analytics_events_trigger_type ON custom_analytics_events USING btree (trigger_type);
 
 
 --
@@ -4698,91 +4698,91 @@ CREATE UNIQUE INDEX custom_domains_domain ON custom_domains USING btree (domain)
 -- Name: custom_domains_is_active; Type: INDEX; Schema: public; Owner: postgres
 --
 
-CREATE INDEX custom_domains_is_active ON custom_domains USING btree (is_active);
+CREATE INDEX IF NOT EXISTS custom_domains_is_active ON custom_domains USING btree (is_active);
 
 
 --
 -- Name: custom_domains_is_primary; Type: INDEX; Schema: public; Owner: postgres
 --
 
-CREATE INDEX custom_domains_is_primary ON custom_domains USING btree (is_primary);
+CREATE INDEX IF NOT EXISTS custom_domains_is_primary ON custom_domains USING btree (is_primary);
 
 
 --
 -- Name: custom_domains_ssl_status; Type: INDEX; Schema: public; Owner: postgres
 --
 
-CREATE INDEX custom_domains_ssl_status ON custom_domains USING btree (ssl_status);
+CREATE INDEX IF NOT EXISTS custom_domains_ssl_status ON custom_domains USING btree (ssl_status);
 
 
 --
 -- Name: custom_domains_store_id; Type: INDEX; Schema: public; Owner: postgres
 --
 
-CREATE INDEX custom_domains_store_id ON custom_domains USING btree (store_id);
+CREATE INDEX IF NOT EXISTS custom_domains_store_id ON custom_domains USING btree (store_id);
 
 
 --
 -- Name: custom_domains_verification_status; Type: INDEX; Schema: public; Owner: postgres
 --
 
-CREATE INDEX custom_domains_verification_status ON custom_domains USING btree (verification_status);
+CREATE INDEX IF NOT EXISTS custom_domains_verification_status ON custom_domains USING btree (verification_status);
 
 
 --
 -- Name: customer_activities_city; Type: INDEX; Schema: public; Owner: postgres
 --
 
-CREATE INDEX customer_activities_city ON customer_activities USING btree (city);
+CREATE INDEX IF NOT EXISTS customer_activities_city ON customer_activities USING btree (city);
 
 
 --
 -- Name: customer_activities_country; Type: INDEX; Schema: public; Owner: postgres
 --
 
-CREATE INDEX customer_activities_country ON customer_activities USING btree (country);
+CREATE INDEX IF NOT EXISTS customer_activities_country ON customer_activities USING btree (country);
 
 
 --
 -- Name: customer_activities_created_at; Type: INDEX; Schema: public; Owner: postgres
 --
 
-CREATE INDEX customer_activities_created_at ON customer_activities USING btree (created_at);
+CREATE INDEX IF NOT EXISTS customer_activities_created_at ON customer_activities USING btree (created_at);
 
 
 --
 -- Name: customer_activities_device_type; Type: INDEX; Schema: public; Owner: postgres
 --
 
-CREATE INDEX customer_activities_device_type ON customer_activities USING btree (device_type);
+CREATE INDEX IF NOT EXISTS customer_activities_device_type ON customer_activities USING btree (device_type);
 
 
 --
 -- Name: customer_activities_language; Type: INDEX; Schema: public; Owner: postgres
 --
 
-CREATE INDEX customer_activities_language ON customer_activities USING btree (language);
+CREATE INDEX IF NOT EXISTS customer_activities_language ON customer_activities USING btree (language);
 
 
 --
 -- Name: customer_activities_session_id; Type: INDEX; Schema: public; Owner: postgres
 --
 
-CREATE INDEX customer_activities_session_id ON customer_activities USING btree (session_id);
+CREATE INDEX IF NOT EXISTS customer_activities_session_id ON customer_activities USING btree (session_id);
 
 
 --
 -- Name: customer_activities_store_id; Type: INDEX; Schema: public; Owner: postgres
 --
 
-CREATE INDEX customer_activities_store_id ON customer_activities USING btree (store_id);
+CREATE INDEX IF NOT EXISTS customer_activities_store_id ON customer_activities USING btree (store_id);
 
 
 --
 -- Name: customer_activities_utm_source; Type: INDEX; Schema: public; Owner: postgres
 --
 
-CREATE INDEX customer_activities_utm_source ON customer_activities USING btree (utm_source);
+CREATE INDEX IF NOT EXISTS customer_activities_utm_source ON customer_activities USING btree (utm_source);
 
 
 --
@@ -4796,49 +4796,49 @@ CREATE UNIQUE INDEX customers_store_id_email ON customers USING btree (store_id,
 -- Name: email_send_logs_brevo_message_id; Type: INDEX; Schema: public; Owner: postgres
 --
 
-CREATE INDEX email_send_logs_brevo_message_id ON email_send_logs USING btree (brevo_message_id);
+CREATE INDEX IF NOT EXISTS email_send_logs_brevo_message_id ON email_send_logs USING btree (brevo_message_id);
 
 
 --
 -- Name: email_send_logs_created_at; Type: INDEX; Schema: public; Owner: postgres
 --
 
-CREATE INDEX email_send_logs_created_at ON email_send_logs USING btree (created_at);
+CREATE INDEX IF NOT EXISTS email_send_logs_created_at ON email_send_logs USING btree (created_at);
 
 
 --
 -- Name: email_send_logs_email_template_id; Type: INDEX; Schema: public; Owner: postgres
 --
 
-CREATE INDEX email_send_logs_email_template_id ON email_send_logs USING btree (email_template_id);
+CREATE INDEX IF NOT EXISTS email_send_logs_email_template_id ON email_send_logs USING btree (email_template_id);
 
 
 --
 -- Name: email_send_logs_recipient_email; Type: INDEX; Schema: public; Owner: postgres
 --
 
-CREATE INDEX email_send_logs_recipient_email ON email_send_logs USING btree (recipient_email);
+CREATE INDEX IF NOT EXISTS email_send_logs_recipient_email ON email_send_logs USING btree (recipient_email);
 
 
 --
 -- Name: email_send_logs_status; Type: INDEX; Schema: public; Owner: postgres
 --
 
-CREATE INDEX email_send_logs_status ON email_send_logs USING btree (status);
+CREATE INDEX IF NOT EXISTS email_send_logs_status ON email_send_logs USING btree (status);
 
 
 --
 -- Name: email_send_logs_store_id; Type: INDEX; Schema: public; Owner: postgres
 --
 
-CREATE INDEX email_send_logs_store_id ON email_send_logs USING btree (store_id);
+CREATE INDEX IF NOT EXISTS email_send_logs_store_id ON email_send_logs USING btree (store_id);
 
 
 --
 -- Name: email_template_translations_email_template_id; Type: INDEX; Schema: public; Owner: postgres
 --
 
-CREATE INDEX email_template_translations_email_template_id ON email_template_translations USING btree (email_template_id);
+CREATE INDEX IF NOT EXISTS email_template_translations_email_template_id ON email_template_translations USING btree (email_template_id);
 
 
 --
@@ -4852,7 +4852,7 @@ CREATE UNIQUE INDEX email_template_translations_email_template_id_language_code 
 -- Name: email_template_translations_language_code; Type: INDEX; Schema: public; Owner: postgres
 --
 
-CREATE INDEX email_template_translations_language_code ON email_template_translations USING btree (language_code);
+CREATE INDEX IF NOT EXISTS email_template_translations_language_code ON email_template_translations USING btree (language_code);
 
 
 --
@@ -4866,217 +4866,217 @@ CREATE UNIQUE INDEX email_templates_identifier_store_id ON email_templates USING
 -- Name: email_templates_is_active; Type: INDEX; Schema: public; Owner: postgres
 --
 
-CREATE INDEX email_templates_is_active ON email_templates USING btree (is_active);
+CREATE INDEX IF NOT EXISTS email_templates_is_active ON email_templates USING btree (is_active);
 
 
 --
 -- Name: email_templates_store_id; Type: INDEX; Schema: public; Owner: postgres
 --
 
-CREATE INDEX email_templates_store_id ON email_templates USING btree (store_id);
+CREATE INDEX IF NOT EXISTS email_templates_store_id ON email_templates USING btree (store_id);
 
 
 --
 -- Name: idx_ai_code_patterns_framework; Type: INDEX; Schema: public; Owner: postgres
 --
 
-CREATE INDEX idx_ai_code_patterns_framework ON ai_code_patterns USING btree (framework);
+CREATE INDEX IF NOT EXISTS idx_ai_code_patterns_framework ON ai_code_patterns USING btree (framework);
 
 
 --
 -- Name: idx_ai_code_patterns_type; Type: INDEX; Schema: public; Owner: postgres
 --
 
-CREATE INDEX idx_ai_code_patterns_type ON ai_code_patterns USING btree (pattern_type, is_active);
+CREATE INDEX IF NOT EXISTS idx_ai_code_patterns_type ON ai_code_patterns USING btree (pattern_type, is_active);
 
 
 --
 -- Name: idx_ai_context_docs_category; Type: INDEX; Schema: public; Owner: postgres
 --
 
-CREATE INDEX idx_ai_context_docs_category ON ai_context_documents USING btree (category);
+CREATE INDEX IF NOT EXISTS idx_ai_context_docs_category ON ai_context_documents USING btree (category);
 
 
 --
 -- Name: idx_ai_context_docs_mode; Type: INDEX; Schema: public; Owner: postgres
 --
 
-CREATE INDEX idx_ai_context_docs_mode ON ai_context_documents USING btree (mode);
+CREATE INDEX IF NOT EXISTS idx_ai_context_docs_mode ON ai_context_documents USING btree (mode);
 
 
 --
 -- Name: idx_ai_context_docs_priority; Type: INDEX; Schema: public; Owner: postgres
 --
 
-CREATE INDEX idx_ai_context_docs_priority ON ai_context_documents USING btree (priority);
+CREATE INDEX IF NOT EXISTS idx_ai_context_docs_priority ON ai_context_documents USING btree (priority);
 
 
 --
 -- Name: idx_ai_context_docs_store; Type: INDEX; Schema: public; Owner: postgres
 --
 
-CREATE INDEX idx_ai_context_docs_store ON ai_context_documents USING btree (store_id);
+CREATE INDEX IF NOT EXISTS idx_ai_context_docs_store ON ai_context_documents USING btree (store_id);
 
 
 --
 -- Name: idx_ai_context_docs_type_active; Type: INDEX; Schema: public; Owner: postgres
 --
 
-CREATE INDEX idx_ai_context_docs_type_active ON ai_context_documents USING btree (type, is_active);
+CREATE INDEX IF NOT EXISTS idx_ai_context_docs_type_active ON ai_context_documents USING btree (type, is_active);
 
 
 --
 -- Name: idx_ai_context_usage_created; Type: INDEX; Schema: public; Owner: postgres
 --
 
-CREATE INDEX idx_ai_context_usage_created ON ai_context_usage USING btree (created_at);
+CREATE INDEX IF NOT EXISTS idx_ai_context_usage_created ON ai_context_usage USING btree (created_at);
 
 
 --
 -- Name: idx_ai_context_usage_document; Type: INDEX; Schema: public; Owner: postgres
 --
 
-CREATE INDEX idx_ai_context_usage_document ON ai_context_usage USING btree (document_id);
+CREATE INDEX IF NOT EXISTS idx_ai_context_usage_document ON ai_context_usage USING btree (document_id);
 
 
 --
 -- Name: idx_ai_context_usage_example; Type: INDEX; Schema: public; Owner: postgres
 --
 
-CREATE INDEX idx_ai_context_usage_example ON ai_context_usage USING btree (example_id);
+CREATE INDEX IF NOT EXISTS idx_ai_context_usage_example ON ai_context_usage USING btree (example_id);
 
 
 --
 -- Name: idx_ai_context_usage_pattern; Type: INDEX; Schema: public; Owner: postgres
 --
 
-CREATE INDEX idx_ai_context_usage_pattern ON ai_context_usage USING btree (pattern_id);
+CREATE INDEX IF NOT EXISTS idx_ai_context_usage_pattern ON ai_context_usage USING btree (pattern_id);
 
 
 --
 -- Name: idx_ai_plugin_examples_category; Type: INDEX; Schema: public; Owner: postgres
 --
 
-CREATE INDEX idx_ai_plugin_examples_category ON ai_plugin_examples USING btree (category, is_active);
+CREATE INDEX IF NOT EXISTS idx_ai_plugin_examples_category ON ai_plugin_examples USING btree (category, is_active);
 
 
 --
 -- Name: idx_ai_plugin_examples_complexity; Type: INDEX; Schema: public; Owner: postgres
 --
 
-CREATE INDEX idx_ai_plugin_examples_complexity ON ai_plugin_examples USING btree (complexity);
+CREATE INDEX IF NOT EXISTS idx_ai_plugin_examples_complexity ON ai_plugin_examples USING btree (complexity);
 
 
 --
 -- Name: idx_ai_plugin_examples_template; Type: INDEX; Schema: public; Owner: postgres
 --
 
-CREATE INDEX idx_ai_plugin_examples_template ON ai_plugin_examples USING btree (is_template);
+CREATE INDEX IF NOT EXISTS idx_ai_plugin_examples_template ON ai_plugin_examples USING btree (is_template);
 
 
 --
 -- Name: idx_ai_plugin_examples_usage; Type: INDEX; Schema: public; Owner: postgres
 --
 
-CREATE INDEX idx_ai_plugin_examples_usage ON ai_plugin_examples USING btree (usage_count);
+CREATE INDEX IF NOT EXISTS idx_ai_plugin_examples_usage ON ai_plugin_examples USING btree (usage_count);
 
 
 --
 -- Name: idx_ai_usage_logs_created_at; Type: INDEX; Schema: public; Owner: postgres
 --
 
-CREATE INDEX idx_ai_usage_logs_created_at ON ai_usage_logs USING btree (created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_ai_usage_logs_created_at ON ai_usage_logs USING btree (created_at DESC);
 
 
 --
 -- Name: idx_ai_usage_logs_user_id; Type: INDEX; Schema: public; Owner: postgres
 --
 
-CREATE INDEX idx_ai_usage_logs_user_id ON ai_usage_logs USING btree (user_id);
+CREATE INDEX IF NOT EXISTS idx_ai_usage_logs_user_id ON ai_usage_logs USING btree (user_id);
 
 
 --
 -- Name: idx_ai_user_prefs_session; Type: INDEX; Schema: public; Owner: postgres
 --
 
-CREATE INDEX idx_ai_user_prefs_session ON ai_user_preferences USING btree (session_id);
+CREATE INDEX IF NOT EXISTS idx_ai_user_prefs_session ON ai_user_preferences USING btree (session_id);
 
 
 --
 -- Name: idx_ai_user_prefs_store; Type: INDEX; Schema: public; Owner: postgres
 --
 
-CREATE INDEX idx_ai_user_prefs_store ON ai_user_preferences USING btree (store_id);
+CREATE INDEX IF NOT EXISTS idx_ai_user_prefs_store ON ai_user_preferences USING btree (store_id);
 
 
 --
 -- Name: idx_ai_user_prefs_user; Type: INDEX; Schema: public; Owner: postgres
 --
 
-CREATE INDEX idx_ai_user_prefs_user ON ai_user_preferences USING btree (user_id);
+CREATE INDEX IF NOT EXISTS idx_ai_user_prefs_user ON ai_user_preferences USING btree (user_id);
 
 
 --
 -- Name: idx_akeneo_custom_mappings_store_id; Type: INDEX; Schema: public; Owner: postgres
 --
 
-CREATE INDEX idx_akeneo_custom_mappings_store_id ON akeneo_custom_mappings USING btree (store_id);
+CREATE INDEX IF NOT EXISTS idx_akeneo_custom_mappings_store_id ON akeneo_custom_mappings USING btree (store_id);
 
 
 --
 -- Name: idx_akeneo_import_statistics_date; Type: INDEX; Schema: public; Owner: postgres
 --
 
-CREATE INDEX idx_akeneo_import_statistics_date ON akeneo_import_statistics USING btree (import_date DESC);
+CREATE INDEX IF NOT EXISTS idx_akeneo_import_statistics_date ON akeneo_import_statistics USING btree (import_date DESC);
 
 
 --
 -- Name: idx_akeneo_import_statistics_store_id; Type: INDEX; Schema: public; Owner: postgres
 --
 
-CREATE INDEX idx_akeneo_import_statistics_store_id ON akeneo_import_statistics USING btree (store_id);
+CREATE INDEX IF NOT EXISTS idx_akeneo_import_statistics_store_id ON akeneo_import_statistics USING btree (store_id);
 
 
 --
 -- Name: idx_akeneo_import_statistics_store_type; Type: INDEX; Schema: public; Owner: postgres
 --
 
-CREATE INDEX idx_akeneo_import_statistics_store_type ON akeneo_import_statistics USING btree (store_id, import_type);
+CREATE INDEX IF NOT EXISTS idx_akeneo_import_statistics_store_type ON akeneo_import_statistics USING btree (store_id, import_type);
 
 
 --
 -- Name: idx_akeneo_import_statistics_type; Type: INDEX; Schema: public; Owner: postgres
 --
 
-CREATE INDEX idx_akeneo_import_statistics_type ON akeneo_import_statistics USING btree (import_type);
+CREATE INDEX IF NOT EXISTS idx_akeneo_import_statistics_type ON akeneo_import_statistics USING btree (import_type);
 
 
 --
 -- Name: idx_akeneo_import_statistics_unique; Type: INDEX; Schema: public; Owner: postgres
 --
 
-CREATE INDEX idx_akeneo_import_statistics_unique ON akeneo_import_statistics USING btree (store_id, import_type, import_date);
+CREATE INDEX IF NOT EXISTS idx_akeneo_import_statistics_unique ON akeneo_import_statistics USING btree (store_id, import_type, import_date);
 
 
 --
 -- Name: idx_akeneo_mappings_entity; Type: INDEX; Schema: public; Owner: postgres
 --
 
-CREATE INDEX idx_akeneo_mappings_entity ON akeneo_mappings USING btree (entity_type, entity_id);
+CREATE INDEX IF NOT EXISTS idx_akeneo_mappings_entity ON akeneo_mappings USING btree (entity_type, entity_id);
 
 
 --
 -- Name: idx_akeneo_mappings_lookup; Type: INDEX; Schema: public; Owner: postgres
 --
 
-CREATE INDEX idx_akeneo_mappings_lookup ON akeneo_mappings USING btree (store_id, akeneo_code, akeneo_type, is_active);
+CREATE INDEX IF NOT EXISTS idx_akeneo_mappings_lookup ON akeneo_mappings USING btree (store_id, akeneo_code, akeneo_type, is_active);
 
 
 --
 -- Name: idx_akeneo_mappings_sort_order; Type: INDEX; Schema: public; Owner: postgres
 --
 
-CREATE INDEX idx_akeneo_mappings_sort_order ON akeneo_mappings USING btree (sort_order);
+CREATE INDEX IF NOT EXISTS idx_akeneo_mappings_sort_order ON akeneo_mappings USING btree (sort_order);
 
 
 --
@@ -5090,334 +5090,334 @@ CREATE UNIQUE INDEX idx_akeneo_mappings_unique ON akeneo_mappings USING btree (s
 -- Name: idx_akeneo_schedules_credit_cost; Type: INDEX; Schema: public; Owner: postgres
 --
 
-CREATE INDEX idx_akeneo_schedules_credit_cost ON akeneo_schedules USING btree (credit_cost);
+CREATE INDEX IF NOT EXISTS idx_akeneo_schedules_credit_cost ON akeneo_schedules USING btree (credit_cost);
 
 
 --
 -- Name: idx_akeneo_schedules_is_active; Type: INDEX; Schema: public; Owner: postgres
 --
 
-CREATE INDEX idx_akeneo_schedules_is_active ON akeneo_schedules USING btree (is_active);
+CREATE INDEX IF NOT EXISTS idx_akeneo_schedules_is_active ON akeneo_schedules USING btree (is_active);
 
 
 --
 -- Name: idx_akeneo_schedules_next_run; Type: INDEX; Schema: public; Owner: postgres
 --
 
-CREATE INDEX idx_akeneo_schedules_next_run ON akeneo_schedules USING btree (next_run);
+CREATE INDEX IF NOT EXISTS idx_akeneo_schedules_next_run ON akeneo_schedules USING btree (next_run);
 
 
 --
 -- Name: idx_akeneo_schedules_status; Type: INDEX; Schema: public; Owner: postgres
 --
 
-CREATE INDEX idx_akeneo_schedules_status ON akeneo_schedules USING btree (status);
+CREATE INDEX IF NOT EXISTS idx_akeneo_schedules_status ON akeneo_schedules USING btree (status);
 
 
 --
 -- Name: idx_akeneo_schedules_store_id; Type: INDEX; Schema: public; Owner: postgres
 --
 
-CREATE INDEX idx_akeneo_schedules_store_id ON akeneo_schedules USING btree (store_id);
+CREATE INDEX IF NOT EXISTS idx_akeneo_schedules_store_id ON akeneo_schedules USING btree (store_id);
 
 
 --
 -- Name: idx_attribute_sets_store_id; Type: INDEX; Schema: public; Owner: postgres
 --
 
-CREATE INDEX idx_attribute_sets_store_id ON attribute_sets USING btree (store_id);
+CREATE INDEX IF NOT EXISTS idx_attribute_sets_store_id ON attribute_sets USING btree (store_id);
 
 
 --
 -- Name: idx_attributes_code; Type: INDEX; Schema: public; Owner: postgres
 --
 
-CREATE INDEX idx_attributes_code ON attributes USING btree (code);
+CREATE INDEX IF NOT EXISTS idx_attributes_code ON attributes USING btree (code);
 
 
 --
 -- Name: idx_attributes_is_configurable; Type: INDEX; Schema: public; Owner: postgres
 --
 
-CREATE INDEX idx_attributes_is_configurable ON attributes USING btree (is_configurable) WHERE (is_configurable = true);
+CREATE INDEX IF NOT EXISTS idx_attributes_is_configurable ON attributes USING btree (is_configurable) WHERE (is_configurable = true);
 
 
 --
 -- Name: idx_attributes_store_id; Type: INDEX; Schema: public; Owner: postgres
 --
 
-CREATE INDEX idx_attributes_store_id ON attributes USING btree (store_id);
+CREATE INDEX IF NOT EXISTS idx_attributes_store_id ON attributes USING btree (store_id);
 
 
 --
 -- Name: idx_blacklist_countries_store_country; Type: INDEX; Schema: public; Owner: postgres
 --
 
-CREATE INDEX idx_blacklist_countries_store_country ON blacklist_countries USING btree (store_id, country_code);
+CREATE INDEX IF NOT EXISTS idx_blacklist_countries_store_country ON blacklist_countries USING btree (store_id, country_code);
 
 
 --
 -- Name: idx_blacklist_emails_store_email; Type: INDEX; Schema: public; Owner: postgres
 --
 
-CREATE INDEX idx_blacklist_emails_store_email ON blacklist_emails USING btree (store_id, email);
+CREATE INDEX IF NOT EXISTS idx_blacklist_emails_store_email ON blacklist_emails USING btree (store_id, email);
 
 
 --
 -- Name: idx_blacklist_ips_store_ip; Type: INDEX; Schema: public; Owner: postgres
 --
 
-CREATE INDEX idx_blacklist_ips_store_ip ON blacklist_ips USING btree (store_id, ip_address);
+CREATE INDEX IF NOT EXISTS idx_blacklist_ips_store_ip ON blacklist_ips USING btree (store_id, ip_address);
 
 
 --
 -- Name: idx_blacklist_settings_store; Type: INDEX; Schema: public; Owner: postgres
 --
 
-CREATE INDEX idx_blacklist_settings_store ON blacklist_settings USING btree (store_id);
+CREATE INDEX IF NOT EXISTS idx_blacklist_settings_store ON blacklist_settings USING btree (store_id);
 
 
 --
 -- Name: idx_brevo_configurations_active; Type: INDEX; Schema: public; Owner: postgres
 --
 
-CREATE INDEX idx_brevo_configurations_active ON brevo_configurations USING btree (is_active);
+CREATE INDEX IF NOT EXISTS idx_brevo_configurations_active ON brevo_configurations USING btree (is_active);
 
 
 --
 -- Name: idx_brevo_configurations_store_id; Type: INDEX; Schema: public; Owner: postgres
 --
 
-CREATE INDEX idx_brevo_configurations_store_id ON brevo_configurations USING btree (store_id);
+CREATE INDEX IF NOT EXISTS idx_brevo_configurations_store_id ON brevo_configurations USING btree (store_id);
 
 --
 -- Name: idx_categories_active_menu; Type: INDEX; Schema: public; Owner: postgres
 --
 
-CREATE INDEX idx_categories_active_menu ON categories USING btree (store_id, is_active, hide_in_menu, sort_order) WHERE ((is_active = true) AND (hide_in_menu = false));
+CREATE INDEX IF NOT EXISTS idx_categories_active_menu ON categories USING btree (store_id, is_active, hide_in_menu, sort_order) WHERE ((is_active = true) AND (hide_in_menu = false));
 
 
 --
 -- Name: idx_categories_akeneo_code; Type: INDEX; Schema: public; Owner: postgres
 --
 
-CREATE INDEX idx_categories_akeneo_code ON categories USING btree (akeneo_code);
+CREATE INDEX IF NOT EXISTS idx_categories_akeneo_code ON categories USING btree (akeneo_code);
 
 
 --
 -- Name: idx_categories_hide_in_menu; Type: INDEX; Schema: public; Owner: postgres
 --
 
-CREATE INDEX idx_categories_hide_in_menu ON categories USING btree (hide_in_menu);
+CREATE INDEX IF NOT EXISTS idx_categories_hide_in_menu ON categories USING btree (hide_in_menu);
 
 
 --
 -- Name: idx_categories_is_active; Type: INDEX; Schema: public; Owner: postgres
 --
 
-CREATE INDEX idx_categories_is_active ON categories USING btree (is_active);
+CREATE INDEX IF NOT EXISTS idx_categories_is_active ON categories USING btree (is_active);
 
 
 --
 -- Name: idx_categories_level; Type: INDEX; Schema: public; Owner: postgres
 --
 
-CREATE INDEX idx_categories_level ON categories USING btree (level);
+CREATE INDEX IF NOT EXISTS idx_categories_level ON categories USING btree (level);
 
 
 --
 -- Name: idx_categories_parent_id; Type: INDEX; Schema: public; Owner: postgres
 --
 
-CREATE INDEX idx_categories_parent_id ON categories USING btree (parent_id);
+CREATE INDEX IF NOT EXISTS idx_categories_parent_id ON categories USING btree (parent_id);
 
 
 --
 -- Name: idx_categories_slug; Type: INDEX; Schema: public; Owner: postgres
 --
 
-CREATE INDEX idx_categories_slug ON categories USING btree (slug);
+CREATE INDEX IF NOT EXISTS idx_categories_slug ON categories USING btree (slug);
 
 
 --
 -- Name: idx_categories_store_id; Type: INDEX; Schema: public; Owner: postgres
 --
 
-CREATE INDEX idx_categories_store_id ON categories USING btree (store_id);
+CREATE INDEX IF NOT EXISTS idx_categories_store_id ON categories USING btree (store_id);
 
 
 --
 -- Name: idx_category_translations_name; Type: INDEX; Schema: public; Owner: postgres
 --
 
-CREATE INDEX idx_category_translations_name ON category_translations USING btree (name);
+CREATE INDEX IF NOT EXISTS idx_category_translations_name ON category_translations USING btree (name);
 
 
 --
 -- Name: idx_cms_blocks_store_active; Type: INDEX; Schema: public; Owner: postgres
 --
 
-CREATE INDEX idx_cms_blocks_store_active ON cms_blocks USING btree (store_id, is_active);
+CREATE INDEX IF NOT EXISTS idx_cms_blocks_store_active ON cms_blocks USING btree (store_id, is_active);
 
 
 --
 -- Name: idx_cms_pages_is_active; Type: INDEX; Schema: public; Owner: postgres
 --
 
-CREATE INDEX idx_cms_pages_is_active ON cms_pages USING btree (is_active);
+CREATE INDEX IF NOT EXISTS idx_cms_pages_is_active ON cms_pages USING btree (is_active);
 
 
 --
 -- Name: idx_cms_pages_is_system; Type: INDEX; Schema: public; Owner: postgres
 --
 
-CREATE INDEX idx_cms_pages_is_system ON cms_pages USING btree (is_system);
+CREATE INDEX IF NOT EXISTS idx_cms_pages_is_system ON cms_pages USING btree (is_system);
 
 
 --
 -- Name: idx_cms_pages_slug; Type: INDEX; Schema: public; Owner: postgres
 --
 
-CREATE INDEX idx_cms_pages_slug ON cms_pages USING btree (slug);
+CREATE INDEX IF NOT EXISTS idx_cms_pages_slug ON cms_pages USING btree (slug);
 
 
 --
 -- Name: idx_cms_pages_store_id; Type: INDEX; Schema: public; Owner: postgres
 --
 
-CREATE INDEX idx_cms_pages_store_id ON cms_pages USING btree (store_id);
+CREATE INDEX IF NOT EXISTS idx_cms_pages_store_id ON cms_pages USING btree (store_id);
 
 
 --
 -- Name: idx_conversations_agent; Type: INDEX; Schema: public; Owner: postgres
 --
 
-CREATE INDEX idx_conversations_agent ON chat_conversations USING btree (assigned_agent_id);
+CREATE INDEX IF NOT EXISTS idx_conversations_agent ON chat_conversations USING btree (assigned_agent_id);
 
 
 --
 -- Name: idx_conversations_status; Type: INDEX; Schema: public; Owner: postgres
 --
 
-CREATE INDEX idx_conversations_status ON chat_conversations USING btree (status);
+CREATE INDEX IF NOT EXISTS idx_conversations_status ON chat_conversations USING btree (status);
 
 
 --
 -- Name: idx_cookie_consent_translations_language; Type: INDEX; Schema: public; Owner: postgres
 --
 
-CREATE INDEX idx_cookie_consent_translations_language ON cookie_consent_settings_translations USING btree (language_code);
+CREATE INDEX IF NOT EXISTS idx_cookie_consent_translations_language ON cookie_consent_settings_translations USING btree (language_code);
 
 
 --
 -- Name: idx_cookie_consent_translations_settings_id; Type: INDEX; Schema: public; Owner: postgres
 --
 
-CREATE INDEX idx_cookie_consent_translations_settings_id ON cookie_consent_settings_translations USING btree (cookie_consent_settings_id);
+CREATE INDEX IF NOT EXISTS idx_cookie_consent_translations_settings_id ON cookie_consent_settings_translations USING btree (cookie_consent_settings_id);
 
 
 --
 -- Name: idx_coupons_code; Type: INDEX; Schema: public; Owner: postgres
 --
 
-CREATE INDEX idx_coupons_code ON coupons USING btree (code);
+CREATE INDEX IF NOT EXISTS idx_coupons_code ON coupons USING btree (code);
 
 
 --
 -- Name: idx_coupons_is_active; Type: INDEX; Schema: public; Owner: postgres
 --
 
-CREATE INDEX idx_coupons_is_active ON coupons USING btree (is_active);
+CREATE INDEX IF NOT EXISTS idx_coupons_is_active ON coupons USING btree (is_active);
 
 
 --
 -- Name: idx_coupons_store_id; Type: INDEX; Schema: public; Owner: postgres
 --
 
-CREATE INDEX idx_coupons_store_id ON coupons USING btree (store_id);
+CREATE INDEX IF NOT EXISTS idx_coupons_store_id ON coupons USING btree (store_id);
 
 --
 -- Name: idx_credit_transactions_status; Type: INDEX; Schema: public; Owner: postgres
 --
 
-CREATE INDEX idx_credit_transactions_status ON credit_transactions USING btree (status);
+CREATE INDEX IF NOT EXISTS idx_credit_transactions_status ON credit_transactions USING btree (status);
 
 
 --
 -- Name: idx_credit_transactions_user; Type: INDEX; Schema: public; Owner: postgres
 --
 
-CREATE INDEX idx_credit_transactions_user ON credit_transactions USING btree (user_id);
+CREATE INDEX IF NOT EXISTS idx_credit_transactions_user ON credit_transactions USING btree (user_id);
 
 
 --
 -- Name: idx_credit_usage_created_at; Type: INDEX; Schema: public; Owner: postgres
 --
 
-CREATE INDEX idx_credit_usage_created_at ON credit_usage USING btree (created_at);
+CREATE INDEX IF NOT EXISTS idx_credit_usage_created_at ON credit_usage USING btree (created_at);
 
 
 --
 -- Name: idx_credit_usage_reference; Type: INDEX; Schema: public; Owner: postgres
 --
 
-CREATE INDEX idx_credit_usage_reference ON credit_usage USING btree (reference_id, reference_type);
+CREATE INDEX IF NOT EXISTS idx_credit_usage_reference ON credit_usage USING btree (reference_id, reference_type);
 
 
 --
 -- Name: idx_credit_usage_user_store; Type: INDEX; Schema: public; Owner: postgres
 --
 
-CREATE INDEX idx_credit_usage_user_store ON credit_usage USING btree (user_id, store_id);
+CREATE INDEX IF NOT EXISTS idx_credit_usage_user_store ON credit_usage USING btree (user_id, store_id);
 
 
 --
 -- Name: idx_cron_job_executions_cron_job_id; Type: INDEX; Schema: public; Owner: postgres
 --
 
-CREATE INDEX idx_cron_job_executions_cron_job_id ON cron_job_executions USING btree (cron_job_id);
+CREATE INDEX IF NOT EXISTS idx_cron_job_executions_cron_job_id ON cron_job_executions USING btree (cron_job_id);
 
 
 --
 -- Name: idx_cron_job_executions_started_at; Type: INDEX; Schema: public; Owner: postgres
 --
 
-CREATE INDEX idx_cron_job_executions_started_at ON cron_job_executions USING btree (started_at);
+CREATE INDEX IF NOT EXISTS idx_cron_job_executions_started_at ON cron_job_executions USING btree (started_at);
 
 
 --
 -- Name: idx_cron_job_executions_status; Type: INDEX; Schema: public; Owner: postgres
 --
 
-CREATE INDEX idx_cron_job_executions_status ON cron_job_executions USING btree (status);
+CREATE INDEX IF NOT EXISTS idx_cron_job_executions_status ON cron_job_executions USING btree (status);
 
 
 --
 -- Name: idx_cron_jobs_active; Type: INDEX; Schema: public; Owner: postgres
 --
 
-CREATE INDEX idx_cron_jobs_active ON cron_jobs USING btree (is_active);
+CREATE INDEX IF NOT EXISTS idx_cron_jobs_active ON cron_jobs USING btree (is_active);
 
 
 --
 -- Name: idx_cron_jobs_job_type; Type: INDEX; Schema: public; Owner: postgres
 --
 
-CREATE INDEX idx_cron_jobs_job_type ON cron_jobs USING btree (job_type);
+CREATE INDEX IF NOT EXISTS idx_cron_jobs_job_type ON cron_jobs USING btree (job_type);
 
 
 --
 -- Name: idx_cron_jobs_next_run; Type: INDEX; Schema: public; Owner: postgres
 --
 
-CREATE INDEX idx_cron_jobs_next_run ON cron_jobs USING btree (next_run_at) WHERE ((is_active = true) AND (is_paused = false));
+CREATE INDEX IF NOT EXISTS idx_cron_jobs_next_run ON cron_jobs USING btree (next_run_at) WHERE ((is_active = true) AND (is_paused = false));
 
 
 --
 -- Name: idx_cron_jobs_store_id; Type: INDEX; Schema: public; Owner: postgres
 --
 
-CREATE INDEX idx_cron_jobs_store_id ON cron_jobs USING btree (store_id);
+CREATE INDEX IF NOT EXISTS idx_cron_jobs_store_id ON cron_jobs USING btree (store_id);
 
 
 --
@@ -5428,21 +5428,21 @@ CREATE INDEX idx_cron_jobs_store_id ON cron_jobs USING btree (store_id);
 -- Name: idx_cron_jobs_user_id; Type: INDEX; Schema: public; Owner: postgres
 --
 
-CREATE INDEX idx_cron_jobs_user_id ON cron_jobs USING btree (user_id);
+CREATE INDEX IF NOT EXISTS idx_cron_jobs_user_id ON cron_jobs USING btree (user_id);
 
 
 --
 -- Name: idx_current_edit; Type: INDEX; Schema: public; Owner: postgres
 --
 
-CREATE INDEX idx_current_edit ON slot_configurations USING btree (current_edit_id);
+CREATE INDEX IF NOT EXISTS idx_current_edit ON slot_configurations USING btree (current_edit_id);
 
 
 --
 -- Name: idx_custom_domains_active_lookup; Type: INDEX; Schema: public; Owner: postgres
 --
 
-CREATE INDEX idx_custom_domains_active_lookup ON custom_domains USING btree (domain, store_id) WHERE ((is_active = true) AND (verification_status = 'verified'::enum_custom_domains_verification_status));
+CREATE INDEX IF NOT EXISTS idx_custom_domains_active_lookup ON custom_domains USING btree (domain, store_id) WHERE ((is_active = true) AND (verification_status = 'verified'::enum_custom_domains_verification_status));
 
 
 --
@@ -5456,1114 +5456,1114 @@ COMMENT ON INDEX idx_custom_domains_active_lookup IS 'Optimized partial index fo
 -- Name: idx_custom_option_rules_is_active; Type: INDEX; Schema: public; Owner: postgres
 --
 
-CREATE INDEX idx_custom_option_rules_is_active ON custom_option_rules USING btree (is_active);
+CREATE INDEX IF NOT EXISTS idx_custom_option_rules_is_active ON custom_option_rules USING btree (is_active);
 
 
 --
 -- Name: idx_custom_option_rules_store_id; Type: INDEX; Schema: public; Owner: postgres
 --
 
-CREATE INDEX idx_custom_option_rules_store_id ON custom_option_rules USING btree (store_id);
+CREATE INDEX IF NOT EXISTS idx_custom_option_rules_store_id ON custom_option_rules USING btree (store_id);
 
 
 --
 -- Name: idx_custom_pricing_logs_event_created; Type: INDEX; Schema: public; Owner: postgres
 --
 
-CREATE INDEX idx_custom_pricing_logs_event_created ON custom_pricing_logs USING btree (event_type, created_at);
+CREATE INDEX IF NOT EXISTS idx_custom_pricing_logs_event_created ON custom_pricing_logs USING btree (event_type, created_at);
 
 
 --
 -- Name: idx_custom_pricing_logs_rule_id; Type: INDEX; Schema: public; Owner: postgres
 --
 
-CREATE INDEX idx_custom_pricing_logs_rule_id ON custom_pricing_logs USING btree (rule_id);
+CREATE INDEX IF NOT EXISTS idx_custom_pricing_logs_rule_id ON custom_pricing_logs USING btree (rule_id);
 
 
 --
 -- Name: idx_custom_pricing_rules_store_id; Type: INDEX; Schema: public; Owner: postgres
 --
 
-CREATE INDEX idx_custom_pricing_rules_store_id ON custom_pricing_rules USING btree (store_id);
+CREATE INDEX IF NOT EXISTS idx_custom_pricing_rules_store_id ON custom_pricing_rules USING btree (store_id);
 
 
 --
 -- Name: idx_custom_pricing_rules_type_enabled; Type: INDEX; Schema: public; Owner: postgres
 --
 
-CREATE INDEX idx_custom_pricing_rules_type_enabled ON custom_pricing_rules USING btree (type, enabled);
+CREATE INDEX IF NOT EXISTS idx_custom_pricing_rules_type_enabled ON custom_pricing_rules USING btree (type, enabled);
 
 
 --
 -- Name: idx_customer_activities_city; Type: INDEX; Schema: public; Owner: postgres
 --
 
-CREATE INDEX idx_customer_activities_city ON customer_activities USING btree (city);
+CREATE INDEX IF NOT EXISTS idx_customer_activities_city ON customer_activities USING btree (city);
 
 
 --
 -- Name: idx_customer_activities_country; Type: INDEX; Schema: public; Owner: postgres
 --
 
-CREATE INDEX idx_customer_activities_country ON customer_activities USING btree (country);
+CREATE INDEX IF NOT EXISTS idx_customer_activities_country ON customer_activities USING btree (country);
 
 
 --
 -- Name: idx_customer_activities_device_type; Type: INDEX; Schema: public; Owner: postgres
 --
 
-CREATE INDEX idx_customer_activities_device_type ON customer_activities USING btree (device_type);
+CREATE INDEX IF NOT EXISTS idx_customer_activities_device_type ON customer_activities USING btree (device_type);
 
 
 --
 -- Name: idx_customer_activities_language; Type: INDEX; Schema: public; Owner: postgres
 --
 
-CREATE INDEX idx_customer_activities_language ON customer_activities USING btree (language);
+CREATE INDEX IF NOT EXISTS idx_customer_activities_language ON customer_activities USING btree (language);
 
 
 --
 -- Name: idx_customer_activities_utm_source; Type: INDEX; Schema: public; Owner: postgres
 --
 
-CREATE INDEX idx_customer_activities_utm_source ON customer_activities USING btree (utm_source);
+CREATE INDEX IF NOT EXISTS idx_customer_activities_utm_source ON customer_activities USING btree (utm_source);
 
 
 --
 -- Name: idx_customers_email; Type: INDEX; Schema: public; Owner: postgres
 --
 
-CREATE INDEX idx_customers_email ON customers USING btree (email);
+CREATE INDEX IF NOT EXISTS idx_customers_email ON customers USING btree (email);
 
 
 --
 -- Name: idx_customers_email_active; Type: INDEX; Schema: public; Owner: postgres
 --
 
-CREATE INDEX idx_customers_email_active ON customers USING btree (email, is_active);
+CREATE INDEX IF NOT EXISTS idx_customers_email_active ON customers USING btree (email, is_active);
 
 
 --
 -- Name: idx_customers_is_active; Type: INDEX; Schema: public; Owner: postgres
 --
 
-CREATE INDEX idx_customers_is_active ON customers USING btree (is_active);
+CREATE INDEX IF NOT EXISTS idx_customers_is_active ON customers USING btree (is_active);
 
 
 --
 -- Name: idx_customers_is_blacklisted; Type: INDEX; Schema: public; Owner: postgres
 --
 
-CREATE INDEX idx_customers_is_blacklisted ON customers USING btree (is_blacklisted);
+CREATE INDEX IF NOT EXISTS idx_customers_is_blacklisted ON customers USING btree (is_blacklisted);
 
 
 --
 -- Name: idx_customers_store_email; Type: INDEX; Schema: public; Owner: postgres
 --
 
-CREATE INDEX idx_customers_store_email ON customers USING btree (store_id, email);
+CREATE INDEX IF NOT EXISTS idx_customers_store_email ON customers USING btree (store_id, email);
 
 
 --
 -- Name: idx_customers_store_id; Type: INDEX; Schema: public; Owner: postgres
 --
 
-CREATE INDEX idx_customers_store_id ON customers USING btree (store_id);
+CREATE INDEX IF NOT EXISTS idx_customers_store_id ON customers USING btree (store_id);
 
 
 --
 -- Name: idx_delivery_settings_store_id; Type: INDEX; Schema: public; Owner: postgres
 --
 
-CREATE INDEX idx_delivery_settings_store_id ON delivery_settings USING btree (store_id);
+CREATE INDEX IF NOT EXISTS idx_delivery_settings_store_id ON delivery_settings USING btree (store_id);
 
 
 --
 -- Name: idx_email_send_logs_brevo_id; Type: INDEX; Schema: public; Owner: postgres
 --
 
-CREATE INDEX idx_email_send_logs_brevo_id ON email_send_logs USING btree (brevo_message_id);
+CREATE INDEX IF NOT EXISTS idx_email_send_logs_brevo_id ON email_send_logs USING btree (brevo_message_id);
 
 
 --
 -- Name: idx_email_send_logs_created_at; Type: INDEX; Schema: public; Owner: postgres
 --
 
-CREATE INDEX idx_email_send_logs_created_at ON email_send_logs USING btree (created_at);
+CREATE INDEX IF NOT EXISTS idx_email_send_logs_created_at ON email_send_logs USING btree (created_at);
 
 
 --
 -- Name: idx_email_send_logs_recipient; Type: INDEX; Schema: public; Owner: postgres
 --
 
-CREATE INDEX idx_email_send_logs_recipient ON email_send_logs USING btree (recipient_email);
+CREATE INDEX IF NOT EXISTS idx_email_send_logs_recipient ON email_send_logs USING btree (recipient_email);
 
 
 --
 -- Name: idx_email_send_logs_status; Type: INDEX; Schema: public; Owner: postgres
 --
 
-CREATE INDEX idx_email_send_logs_status ON email_send_logs USING btree (status);
+CREATE INDEX IF NOT EXISTS idx_email_send_logs_status ON email_send_logs USING btree (status);
 
 
 --
 -- Name: idx_email_send_logs_store_id; Type: INDEX; Schema: public; Owner: postgres
 --
 
-CREATE INDEX idx_email_send_logs_store_id ON email_send_logs USING btree (store_id);
+CREATE INDEX IF NOT EXISTS idx_email_send_logs_store_id ON email_send_logs USING btree (store_id);
 
 
 --
 -- Name: idx_email_send_logs_template_id; Type: INDEX; Schema: public; Owner: postgres
 --
 
-CREATE INDEX idx_email_send_logs_template_id ON email_send_logs USING btree (email_template_id);
+CREATE INDEX IF NOT EXISTS idx_email_send_logs_template_id ON email_send_logs USING btree (email_template_id);
 
 
 --
 -- Name: idx_email_template_translations_language; Type: INDEX; Schema: public; Owner: postgres
 --
 
-CREATE INDEX idx_email_template_translations_language ON email_template_translations USING btree (language_code);
+CREATE INDEX IF NOT EXISTS idx_email_template_translations_language ON email_template_translations USING btree (language_code);
 
 
 --
 -- Name: idx_email_template_translations_template_id; Type: INDEX; Schema: public; Owner: postgres
 --
 
-CREATE INDEX idx_email_template_translations_template_id ON email_template_translations USING btree (email_template_id);
+CREATE INDEX IF NOT EXISTS idx_email_template_translations_template_id ON email_template_translations USING btree (email_template_id);
 
 
 --
 -- Name: idx_email_templates_active; Type: INDEX; Schema: public; Owner: postgres
 --
 
-CREATE INDEX idx_email_templates_active ON email_templates USING btree (is_active);
+CREATE INDEX IF NOT EXISTS idx_email_templates_active ON email_templates USING btree (is_active);
 
 
 --
 -- Name: idx_email_templates_identifier; Type: INDEX; Schema: public; Owner: postgres
 --
 
-CREATE INDEX idx_email_templates_identifier ON email_templates USING btree (identifier);
+CREATE INDEX IF NOT EXISTS idx_email_templates_identifier ON email_templates USING btree (identifier);
 
 
 --
 -- Name: idx_email_templates_store_id; Type: INDEX; Schema: public; Owner: postgres
 --
 
-CREATE INDEX idx_email_templates_store_id ON email_templates USING btree (store_id);
+CREATE INDEX IF NOT EXISTS idx_email_templates_store_id ON email_templates USING btree (store_id);
 
 --
 -- Name: idx_heatmap_aggregations_lookup; Type: INDEX; Schema: public; Owner: postgres
 --
 
-CREATE INDEX idx_heatmap_aggregations_lookup ON heatmap_aggregations USING btree (store_id, page_url, aggregation_period, period_start);
+CREATE INDEX IF NOT EXISTS idx_heatmap_aggregations_lookup ON heatmap_aggregations USING btree (store_id, page_url, aggregation_period, period_start);
 
 
 --
 -- Name: idx_heatmap_coordinates; Type: INDEX; Schema: public; Owner: postgres
 --
 
-CREATE INDEX idx_heatmap_coordinates ON heatmap_interactions USING btree (store_id, page_url, interaction_type, x_coordinate, y_coordinate);
+CREATE INDEX IF NOT EXISTS idx_heatmap_coordinates ON heatmap_interactions USING btree (store_id, page_url, interaction_type, x_coordinate, y_coordinate);
 
 
 --
 -- Name: idx_heatmap_interactions_coordinates; Type: INDEX; Schema: public; Owner: postgres
 --
 
-CREATE INDEX idx_heatmap_interactions_coordinates ON heatmap_interactions USING btree (store_id, page_url, interaction_type, x_coordinate, y_coordinate);
+CREATE INDEX IF NOT EXISTS idx_heatmap_interactions_coordinates ON heatmap_interactions USING btree (store_id, page_url, interaction_type, x_coordinate, y_coordinate);
 
 
 --
 -- Name: idx_heatmap_interactions_session; Type: INDEX; Schema: public; Owner: postgres
 --
 
-CREATE INDEX idx_heatmap_interactions_session ON heatmap_interactions USING btree (session_id);
+CREATE INDEX IF NOT EXISTS idx_heatmap_interactions_session ON heatmap_interactions USING btree (session_id);
 
 
 --
 -- Name: idx_heatmap_interactions_store_page_time; Type: INDEX; Schema: public; Owner: postgres
 --
 
-CREATE INDEX idx_heatmap_interactions_store_page_time ON heatmap_interactions USING btree (store_id, page_url, timestamp_utc DESC);
+CREATE INDEX IF NOT EXISTS idx_heatmap_interactions_store_page_time ON heatmap_interactions USING btree (store_id, page_url, timestamp_utc DESC);
 
 
 --
 -- Name: idx_heatmap_interactions_viewport; Type: INDEX; Schema: public; Owner: postgres
 --
 
-CREATE INDEX idx_heatmap_interactions_viewport ON heatmap_interactions USING btree (viewport_width, viewport_height);
+CREATE INDEX IF NOT EXISTS idx_heatmap_interactions_viewport ON heatmap_interactions USING btree (viewport_width, viewport_height);
 
 
 --
 -- Name: idx_heatmap_session; Type: INDEX; Schema: public; Owner: postgres
 --
 
-CREATE INDEX idx_heatmap_session ON heatmap_interactions USING btree (session_id);
+CREATE INDEX IF NOT EXISTS idx_heatmap_session ON heatmap_interactions USING btree (session_id);
 
 
 --
 -- Name: idx_heatmap_sessions_session_id; Type: INDEX; Schema: public; Owner: postgres
 --
 
-CREATE INDEX idx_heatmap_sessions_session_id ON heatmap_sessions USING btree (session_id);
+CREATE INDEX IF NOT EXISTS idx_heatmap_sessions_session_id ON heatmap_sessions USING btree (session_id);
 
 
 --
 -- Name: idx_heatmap_sessions_store_time; Type: INDEX; Schema: public; Owner: postgres
 --
 
-CREATE INDEX idx_heatmap_sessions_store_time ON heatmap_sessions USING btree (store_id, session_start DESC);
+CREATE INDEX IF NOT EXISTS idx_heatmap_sessions_store_time ON heatmap_sessions USING btree (store_id, session_start DESC);
 
 
 --
 -- Name: idx_heatmap_store_page_time; Type: INDEX; Schema: public; Owner: postgres
 --
 
-CREATE INDEX idx_heatmap_store_page_time ON heatmap_interactions USING btree (store_id, page_url, timestamp_utc);
+CREATE INDEX IF NOT EXISTS idx_heatmap_store_page_time ON heatmap_interactions USING btree (store_id, page_url, timestamp_utc);
 
 
 --
 -- Name: idx_heatmap_viewport; Type: INDEX; Schema: public; Owner: postgres
 --
 
-CREATE INDEX idx_heatmap_viewport ON heatmap_interactions USING btree (viewport_width, viewport_height);
+CREATE INDEX IF NOT EXISTS idx_heatmap_viewport ON heatmap_interactions USING btree (viewport_width, viewport_height);
 
 
 --
 -- Name: idx_integration_configs_connection_status; Type: INDEX; Schema: public; Owner: postgres
 --
 
-CREATE INDEX idx_integration_configs_connection_status ON integration_configs USING btree (store_id, integration_type, connection_status);
+CREATE INDEX IF NOT EXISTS idx_integration_configs_connection_status ON integration_configs USING btree (store_id, integration_type, connection_status);
 
 
 --
 -- Name: idx_job_history_executed_at; Type: INDEX; Schema: public; Owner: postgres
 --
 
-CREATE INDEX idx_job_history_executed_at ON job_history USING btree (executed_at);
+CREATE INDEX IF NOT EXISTS idx_job_history_executed_at ON job_history USING btree (executed_at);
 
 
 --
 -- Name: idx_job_history_job_id; Type: INDEX; Schema: public; Owner: postgres
 --
 
-CREATE INDEX idx_job_history_job_id ON job_history USING btree (job_id);
+CREATE INDEX IF NOT EXISTS idx_job_history_job_id ON job_history USING btree (job_id);
 
 
 --
 -- Name: idx_job_history_status; Type: INDEX; Schema: public; Owner: postgres
 --
 
-CREATE INDEX idx_job_history_status ON job_history USING btree (status);
+CREATE INDEX IF NOT EXISTS idx_job_history_status ON job_history USING btree (status);
 
 
 --
 -- Name: idx_job_history_timeline; Type: INDEX; Schema: public; Owner: postgres
 --
 
-CREATE INDEX idx_job_history_timeline ON job_history USING btree (job_id, executed_at);
+CREATE INDEX IF NOT EXISTS idx_job_history_timeline ON job_history USING btree (job_id, executed_at);
 
 
 --
 -- Name: idx_jobs_created_at; Type: INDEX; Schema: public; Owner: postgres
 --
 
-CREATE INDEX idx_jobs_created_at ON jobs USING btree (created_at);
+CREATE INDEX IF NOT EXISTS idx_jobs_created_at ON jobs USING btree (created_at);
 
 
 --
 -- Name: idx_jobs_priority; Type: INDEX; Schema: public; Owner: postgres
 --
 
-CREATE INDEX idx_jobs_priority ON jobs USING btree (priority);
+CREATE INDEX IF NOT EXISTS idx_jobs_priority ON jobs USING btree (priority);
 
 
 --
 -- Name: idx_jobs_queue; Type: INDEX; Schema: public; Owner: postgres
 --
 
-CREATE INDEX idx_jobs_queue ON jobs USING btree (status, priority, scheduled_at);
+CREATE INDEX IF NOT EXISTS idx_jobs_queue ON jobs USING btree (status, priority, scheduled_at);
 
 
 --
 -- Name: idx_jobs_scheduled_at; Type: INDEX; Schema: public; Owner: postgres
 --
 
-CREATE INDEX idx_jobs_scheduled_at ON jobs USING btree (scheduled_at);
+CREATE INDEX IF NOT EXISTS idx_jobs_scheduled_at ON jobs USING btree (scheduled_at);
 
 
 --
 -- Name: idx_jobs_status; Type: INDEX; Schema: public; Owner: postgres
 --
 
-CREATE INDEX idx_jobs_status ON jobs USING btree (status);
+CREATE INDEX IF NOT EXISTS idx_jobs_status ON jobs USING btree (status);
 
 
 --
 -- Name: idx_jobs_store_id; Type: INDEX; Schema: public; Owner: postgres
 --
 
-CREATE INDEX idx_jobs_store_id ON jobs USING btree (store_id);
+CREATE INDEX IF NOT EXISTS idx_jobs_store_id ON jobs USING btree (store_id);
 
 
 --
 -- Name: idx_jobs_type; Type: INDEX; Schema: public; Owner: postgres
 --
 
-CREATE INDEX idx_jobs_type ON jobs USING btree (type);
+CREATE INDEX IF NOT EXISTS idx_jobs_type ON jobs USING btree (type);
 
 
 --
 -- Name: idx_jobs_user_id; Type: INDEX; Schema: public; Owner: postgres
 --
 
-CREATE INDEX idx_jobs_user_id ON jobs USING btree (user_id);
+CREATE INDEX IF NOT EXISTS idx_jobs_user_id ON jobs USING btree (user_id);
 
 
 --
 -- Name: idx_login_attempts_email_time; Type: INDEX; Schema: public; Owner: postgres
 --
 
-CREATE INDEX idx_login_attempts_email_time ON login_attempts USING btree (email, attempted_at);
+CREATE INDEX IF NOT EXISTS idx_login_attempts_email_time ON login_attempts USING btree (email, attempted_at);
 
 
 --
 -- Name: idx_login_attempts_ip_time; Type: INDEX; Schema: public; Owner: postgres
 --
 
-CREATE INDEX idx_login_attempts_ip_time ON login_attempts USING btree (ip_address, attempted_at);
+CREATE INDEX IF NOT EXISTS idx_login_attempts_ip_time ON login_attempts USING btree (ip_address, attempted_at);
 
 
 --
 -- Name: idx_media_assets_created_at; Type: INDEX; Schema: public; Owner: postgres
 --
 
-CREATE INDEX idx_media_assets_created_at ON media_assets USING btree (created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_media_assets_created_at ON media_assets USING btree (created_at DESC);
 
 
 --
 -- Name: idx_media_assets_folder; Type: INDEX; Schema: public; Owner: postgres
 --
 
-CREATE INDEX idx_media_assets_folder ON media_assets USING btree (folder);
+CREATE INDEX IF NOT EXISTS idx_media_assets_folder ON media_assets USING btree (folder);
 
 
 --
 -- Name: idx_media_assets_store_id; Type: INDEX; Schema: public; Owner: postgres
 --
 
-CREATE INDEX idx_media_assets_store_id ON media_assets USING btree (store_id);
+CREATE INDEX IF NOT EXISTS idx_media_assets_store_id ON media_assets USING btree (store_id);
 
 
 --
 -- Name: idx_messages_conversation; Type: INDEX; Schema: public; Owner: postgres
 --
 
-CREATE INDEX idx_messages_conversation ON chat_messages USING btree (conversation_id);
+CREATE INDEX IF NOT EXISTS idx_messages_conversation ON chat_messages USING btree (conversation_id);
 
 
 --
 -- Name: idx_migrations_executed_at; Type: INDEX; Schema: public; Owner: postgres
 --
 
-CREATE INDEX idx_migrations_executed_at ON _migrations USING btree (executed_at);
+CREATE INDEX IF NOT EXISTS idx_migrations_executed_at ON _migrations USING btree (executed_at);
 
 
 --
 -- Name: idx_migrations_filename; Type: INDEX; Schema: public; Owner: postgres
 --
 
-CREATE INDEX idx_migrations_filename ON _migrations USING btree (filename);
+CREATE INDEX IF NOT EXISTS idx_migrations_filename ON _migrations USING btree (filename);
 
 
 --
 -- Name: idx_navigation_config_hidden; Type: INDEX; Schema: public; Owner: postgres
 --
 
-CREATE INDEX idx_navigation_config_hidden ON admin_navigation_config USING btree (is_hidden);
+CREATE INDEX IF NOT EXISTS idx_navigation_config_hidden ON admin_navigation_config USING btree (is_hidden);
 
 
 --
 -- Name: idx_navigation_config_key; Type: INDEX; Schema: public; Owner: postgres
 --
 
-CREATE INDEX idx_navigation_config_key ON admin_navigation_config USING btree (nav_key);
+CREATE INDEX IF NOT EXISTS idx_navigation_config_key ON admin_navigation_config USING btree (nav_key);
 
 
 --
 -- Name: idx_navigation_registry_core; Type: INDEX; Schema: public; Owner: postgres
 --
 
-CREATE INDEX idx_navigation_registry_core ON admin_navigation_registry USING btree (is_core);
+CREATE INDEX IF NOT EXISTS idx_navigation_registry_core ON admin_navigation_registry USING btree (is_core);
 
 
 --
 -- Name: idx_navigation_registry_key; Type: INDEX; Schema: public; Owner: postgres
 --
 
-CREATE INDEX idx_navigation_registry_key ON admin_navigation_registry USING btree (key);
+CREATE INDEX IF NOT EXISTS idx_navigation_registry_key ON admin_navigation_registry USING btree (key);
 
 
 --
 -- Name: idx_navigation_registry_parent; Type: INDEX; Schema: public; Owner: postgres
 --
 
-CREATE INDEX idx_navigation_registry_parent ON admin_navigation_registry USING btree (parent_key);
+CREATE INDEX IF NOT EXISTS idx_navigation_registry_parent ON admin_navigation_registry USING btree (parent_key);
 
 
 --
 -- Name: idx_navigation_registry_plugin; Type: INDEX; Schema: public; Owner: postgres
 --
 
-CREATE INDEX idx_navigation_registry_plugin ON admin_navigation_registry USING btree (plugin_id);
+CREATE INDEX IF NOT EXISTS idx_navigation_registry_plugin ON admin_navigation_registry USING btree (plugin_id);
 
 
 --
 -- Name: idx_parent_version; Type: INDEX; Schema: public; Owner: postgres
 --
 
-CREATE INDEX idx_parent_version ON slot_configurations USING btree (parent_version_id);
+CREATE INDEX IF NOT EXISTS idx_parent_version ON slot_configurations USING btree (parent_version_id);
 
 --
 -- Name: idx_payment_methods_payment_flow; Type: INDEX; Schema: public; Owner: postgres
 --
 
-CREATE INDEX idx_payment_methods_payment_flow ON payment_methods USING btree (payment_flow);
+CREATE INDEX IF NOT EXISTS idx_payment_methods_payment_flow ON payment_methods USING btree (payment_flow);
 
 
 --
 -- Name: idx_pdf_template_translations_language; Type: INDEX; Schema: public; Owner: postgres
 --
 
-CREATE INDEX idx_pdf_template_translations_language ON pdf_template_translations USING btree (language_code);
+CREATE INDEX IF NOT EXISTS idx_pdf_template_translations_language ON pdf_template_translations USING btree (language_code);
 
 
 --
 -- Name: idx_pdf_template_translations_template_id; Type: INDEX; Schema: public; Owner: postgres
 --
 
-CREATE INDEX idx_pdf_template_translations_template_id ON pdf_template_translations USING btree (pdf_template_id);
+CREATE INDEX IF NOT EXISTS idx_pdf_template_translations_template_id ON pdf_template_translations USING btree (pdf_template_id);
 
 
 --
 -- Name: idx_pdf_templates_identifier; Type: INDEX; Schema: public; Owner: postgres
 --
 
-CREATE INDEX idx_pdf_templates_identifier ON pdf_templates USING btree (identifier);
+CREATE INDEX IF NOT EXISTS idx_pdf_templates_identifier ON pdf_templates USING btree (identifier);
 
 
 --
 -- Name: idx_pdf_templates_store_id; Type: INDEX; Schema: public; Owner: postgres
 --
 
-CREATE INDEX idx_pdf_templates_store_id ON pdf_templates USING btree (store_id);
+CREATE INDEX IF NOT EXISTS idx_pdf_templates_store_id ON pdf_templates USING btree (store_id);
 
 
 --
 -- Name: idx_pdf_templates_type; Type: INDEX; Schema: public; Owner: postgres
 --
 
-CREATE INDEX idx_pdf_templates_type ON pdf_templates USING btree (template_type);
+CREATE INDEX IF NOT EXISTS idx_pdf_templates_type ON pdf_templates USING btree (template_type);
 
 
 --
 -- Name: idx_plugin_admin_pages_enabled; Type: INDEX; Schema: public; Owner: postgres
 --
 
-CREATE INDEX idx_plugin_admin_pages_enabled ON plugin_admin_pages USING btree (is_enabled);
+CREATE INDEX IF NOT EXISTS idx_plugin_admin_pages_enabled ON plugin_admin_pages USING btree (is_enabled);
 
 
 --
 -- Name: idx_plugin_admin_pages_plugin; Type: INDEX; Schema: public; Owner: postgres
 --
 
-CREATE INDEX idx_plugin_admin_pages_plugin ON plugin_admin_pages USING btree (plugin_id);
+CREATE INDEX IF NOT EXISTS idx_plugin_admin_pages_plugin ON plugin_admin_pages USING btree (plugin_id);
 
 
 --
 -- Name: idx_plugin_admin_pages_route; Type: INDEX; Schema: public; Owner: postgres
 --
 
-CREATE INDEX idx_plugin_admin_pages_route ON plugin_admin_pages USING btree (route);
+CREATE INDEX IF NOT EXISTS idx_plugin_admin_pages_route ON plugin_admin_pages USING btree (route);
 
 
 --
 -- Name: idx_plugin_admin_scripts_enabled; Type: INDEX; Schema: public; Owner: postgres
 --
 
-CREATE INDEX idx_plugin_admin_scripts_enabled ON plugin_admin_scripts USING btree (is_enabled);
+CREATE INDEX IF NOT EXISTS idx_plugin_admin_scripts_enabled ON plugin_admin_scripts USING btree (is_enabled);
 
 
 --
 -- Name: idx_plugin_admin_scripts_order; Type: INDEX; Schema: public; Owner: postgres
 --
 
-CREATE INDEX idx_plugin_admin_scripts_order ON plugin_admin_scripts USING btree (load_order);
+CREATE INDEX IF NOT EXISTS idx_plugin_admin_scripts_order ON plugin_admin_scripts USING btree (load_order);
 
 
 --
 -- Name: idx_plugin_admin_scripts_plugin; Type: INDEX; Schema: public; Owner: postgres
 --
 
-CREATE INDEX idx_plugin_admin_scripts_plugin ON plugin_admin_scripts USING btree (plugin_id);
+CREATE INDEX IF NOT EXISTS idx_plugin_admin_scripts_plugin ON plugin_admin_scripts USING btree (plugin_id);
 
 
 --
 -- Name: idx_plugin_comparison_computed; Type: INDEX; Schema: public; Owner: postgres
 --
 
-CREATE INDEX idx_plugin_comparison_computed ON plugin_version_comparisons USING btree (computed_at DESC);
+CREATE INDEX IF NOT EXISTS idx_plugin_comparison_computed ON plugin_version_comparisons USING btree (computed_at DESC);
 
 
 --
 -- Name: idx_plugin_comparison_from; Type: INDEX; Schema: public; Owner: postgres
 --
 
-CREATE INDEX idx_plugin_comparison_from ON plugin_version_comparisons USING btree (from_version_id);
+CREATE INDEX IF NOT EXISTS idx_plugin_comparison_from ON plugin_version_comparisons USING btree (from_version_id);
 
 
 --
 -- Name: idx_plugin_comparison_plugin; Type: INDEX; Schema: public; Owner: postgres
 --
 
-CREATE INDEX idx_plugin_comparison_plugin ON plugin_version_comparisons USING btree (plugin_id);
+CREATE INDEX IF NOT EXISTS idx_plugin_comparison_plugin ON plugin_version_comparisons USING btree (plugin_id);
 
 
 --
 -- Name: idx_plugin_comparison_to; Type: INDEX; Schema: public; Owner: postgres
 --
 
-CREATE INDEX idx_plugin_comparison_to ON plugin_version_comparisons USING btree (to_version_id);
+CREATE INDEX IF NOT EXISTS idx_plugin_comparison_to ON plugin_version_comparisons USING btree (to_version_id);
 
 
 --
 -- Name: idx_plugin_controllers_enabled; Type: INDEX; Schema: public; Owner: postgres
 --
 
-CREATE INDEX idx_plugin_controllers_enabled ON plugin_controllers USING btree (is_enabled);
+CREATE INDEX IF NOT EXISTS idx_plugin_controllers_enabled ON plugin_controllers USING btree (is_enabled);
 
 
 --
 -- Name: idx_plugin_controllers_method_path; Type: INDEX; Schema: public; Owner: postgres
 --
 
-CREATE INDEX idx_plugin_controllers_method_path ON plugin_controllers USING btree (method, path);
+CREATE INDEX IF NOT EXISTS idx_plugin_controllers_method_path ON plugin_controllers USING btree (method, path);
 
 
 --
 -- Name: idx_plugin_controllers_plugin_id; Type: INDEX; Schema: public; Owner: postgres
 --
 
-CREATE INDEX idx_plugin_controllers_plugin_id ON plugin_controllers USING btree (plugin_id);
+CREATE INDEX IF NOT EXISTS idx_plugin_controllers_plugin_id ON plugin_controllers USING btree (plugin_id);
 
 
 --
 -- Name: idx_plugin_data_key; Type: INDEX; Schema: public; Owner: postgres
 --
 
-CREATE INDEX idx_plugin_data_key ON plugin_data USING btree (data_key);
+CREATE INDEX IF NOT EXISTS idx_plugin_data_key ON plugin_data USING btree (data_key);
 
 
 --
 -- Name: idx_plugin_data_plugin; Type: INDEX; Schema: public; Owner: postgres
 --
 
-CREATE INDEX idx_plugin_data_plugin ON plugin_data USING btree (plugin_id);
+CREATE INDEX IF NOT EXISTS idx_plugin_data_plugin ON plugin_data USING btree (plugin_id);
 
 
 --
 -- Name: idx_plugin_data_plugin_key; Type: INDEX; Schema: public; Owner: postgres
 --
 
-CREATE INDEX idx_plugin_data_plugin_key ON plugin_data USING btree (plugin_id, data_key);
+CREATE INDEX IF NOT EXISTS idx_plugin_data_plugin_key ON plugin_data USING btree (plugin_id, data_key);
 
 
 --
 -- Name: idx_plugin_dependencies_plugin_id; Type: INDEX; Schema: public; Owner: postgres
 --
 
-CREATE INDEX idx_plugin_dependencies_plugin_id ON plugin_dependencies USING btree (plugin_id);
+CREATE INDEX IF NOT EXISTS idx_plugin_dependencies_plugin_id ON plugin_dependencies USING btree (plugin_id);
 
 
 --
 -- Name: idx_plugin_docs_plugin_id; Type: INDEX; Schema: public; Owner: postgres
 --
 
-CREATE INDEX idx_plugin_docs_plugin_id ON plugin_docs USING btree (plugin_id);
+CREATE INDEX IF NOT EXISTS idx_plugin_docs_plugin_id ON plugin_docs USING btree (plugin_id);
 
 
 --
 -- Name: idx_plugin_docs_type; Type: INDEX; Schema: public; Owner: postgres
 --
 
-CREATE INDEX idx_plugin_docs_type ON plugin_docs USING btree (doc_type);
+CREATE INDEX IF NOT EXISTS idx_plugin_docs_type ON plugin_docs USING btree (doc_type);
 
 
 --
 -- Name: idx_plugin_docs_visible; Type: INDEX; Schema: public; Owner: postgres
 --
 
-CREATE INDEX idx_plugin_docs_visible ON plugin_docs USING btree (is_visible);
+CREATE INDEX IF NOT EXISTS idx_plugin_docs_visible ON plugin_docs USING btree (is_visible);
 
 
 --
 -- Name: idx_plugin_entities_migration_status; Type: INDEX; Schema: public; Owner: postgres
 --
 
-CREATE INDEX idx_plugin_entities_migration_status ON plugin_entities USING btree (migration_status);
+CREATE INDEX IF NOT EXISTS idx_plugin_entities_migration_status ON plugin_entities USING btree (migration_status);
 
 
 --
 -- Name: idx_plugin_entities_plugin_id; Type: INDEX; Schema: public; Owner: postgres
 --
 
-CREATE INDEX idx_plugin_entities_plugin_id ON plugin_entities USING btree (plugin_id);
+CREATE INDEX IF NOT EXISTS idx_plugin_entities_plugin_id ON plugin_entities USING btree (plugin_id);
 
 
 --
 -- Name: idx_plugin_entities_table_name; Type: INDEX; Schema: public; Owner: postgres
 --
 
-CREATE INDEX idx_plugin_entities_table_name ON plugin_entities USING btree (table_name);
+CREATE INDEX IF NOT EXISTS idx_plugin_entities_table_name ON plugin_entities USING btree (table_name);
 
 
 --
 -- Name: idx_plugin_events_enabled; Type: INDEX; Schema: public; Owner: postgres
 --
 
-CREATE INDEX idx_plugin_events_enabled ON plugin_events USING btree (is_enabled) WHERE (is_enabled = true);
+CREATE INDEX IF NOT EXISTS idx_plugin_events_enabled ON plugin_events USING btree (is_enabled) WHERE (is_enabled = true);
 
 
 --
 -- Name: idx_plugin_events_name; Type: INDEX; Schema: public; Owner: postgres
 --
 
-CREATE INDEX idx_plugin_events_name ON plugin_events USING btree (event_name);
+CREATE INDEX IF NOT EXISTS idx_plugin_events_name ON plugin_events USING btree (event_name);
 
 
 --
 -- Name: idx_plugin_events_plugin; Type: INDEX; Schema: public; Owner: postgres
 --
 
-CREATE INDEX idx_plugin_events_plugin ON plugin_events USING btree (plugin_id);
+CREATE INDEX IF NOT EXISTS idx_plugin_events_plugin ON plugin_events USING btree (plugin_id);
 
 
 --
 -- Name: idx_plugin_events_plugin_name; Type: INDEX; Schema: public; Owner: postgres
 --
 
-CREATE INDEX idx_plugin_events_plugin_name ON plugin_events USING btree (plugin_id, event_name);
+CREATE INDEX IF NOT EXISTS idx_plugin_events_plugin_name ON plugin_events USING btree (plugin_id, event_name);
 
 
 --
 -- Name: idx_plugin_hooks_enabled; Type: INDEX; Schema: public; Owner: postgres
 --
 
-CREATE INDEX idx_plugin_hooks_enabled ON plugin_hooks USING btree (is_enabled) WHERE (is_enabled = true);
+CREATE INDEX IF NOT EXISTS idx_plugin_hooks_enabled ON plugin_hooks USING btree (is_enabled) WHERE (is_enabled = true);
 
 
 --
 -- Name: idx_plugin_hooks_name; Type: INDEX; Schema: public; Owner: postgres
 --
 
-CREATE INDEX idx_plugin_hooks_name ON plugin_hooks USING btree (hook_name);
+CREATE INDEX IF NOT EXISTS idx_plugin_hooks_name ON plugin_hooks USING btree (hook_name);
 
 
 --
 -- Name: idx_plugin_hooks_plugin; Type: INDEX; Schema: public; Owner: postgres
 --
 
-CREATE INDEX idx_plugin_hooks_plugin ON plugin_hooks USING btree (plugin_id);
+CREATE INDEX IF NOT EXISTS idx_plugin_hooks_plugin ON plugin_hooks USING btree (plugin_id);
 
 
 --
 -- Name: idx_plugin_hooks_plugin_name; Type: INDEX; Schema: public; Owner: postgres
 --
 
-CREATE INDEX idx_plugin_hooks_plugin_name ON plugin_hooks USING btree (plugin_id, hook_name);
+CREATE INDEX IF NOT EXISTS idx_plugin_hooks_plugin_name ON plugin_hooks USING btree (plugin_id, hook_name);
 
 
 --
 -- Name: idx_plugin_marketplace_slug; Type: INDEX; Schema: public; Owner: postgres
 --
 
-CREATE INDEX idx_plugin_marketplace_slug ON plugin_marketplace USING btree (slug);
+CREATE INDEX IF NOT EXISTS idx_plugin_marketplace_slug ON plugin_marketplace USING btree (slug);
 
 
 --
 -- Name: idx_plugin_marketplace_status; Type: INDEX; Schema: public; Owner: postgres
 --
 
-CREATE INDEX idx_plugin_marketplace_status ON plugin_marketplace USING btree (status);
+CREATE INDEX IF NOT EXISTS idx_plugin_marketplace_status ON plugin_marketplace USING btree (status);
 
 
 --
 -- Name: idx_plugin_migrations_executed_at; Type: INDEX; Schema: public; Owner: postgres
 --
 
-CREATE INDEX idx_plugin_migrations_executed_at ON plugin_migrations USING btree (executed_at DESC);
+CREATE INDEX IF NOT EXISTS idx_plugin_migrations_executed_at ON plugin_migrations USING btree (executed_at DESC);
 
 
 --
 -- Name: idx_plugin_migrations_plugin_id; Type: INDEX; Schema: public; Owner: postgres
 --
 
-CREATE INDEX idx_plugin_migrations_plugin_id ON plugin_migrations USING btree (plugin_id);
+CREATE INDEX IF NOT EXISTS idx_plugin_migrations_plugin_id ON plugin_migrations USING btree (plugin_id);
 
 
 --
 -- Name: idx_plugin_migrations_status; Type: INDEX; Schema: public; Owner: postgres
 --
 
-CREATE INDEX idx_plugin_migrations_status ON plugin_migrations USING btree (status);
+CREATE INDEX IF NOT EXISTS idx_plugin_migrations_status ON plugin_migrations USING btree (status);
 
 
 --
 -- Name: idx_plugin_migrations_version; Type: INDEX; Schema: public; Owner: postgres
 --
 
-CREATE INDEX idx_plugin_migrations_version ON plugin_migrations USING btree (migration_version);
+CREATE INDEX IF NOT EXISTS idx_plugin_migrations_version ON plugin_migrations USING btree (migration_version);
 
 
 --
 -- Name: idx_plugin_patch_change_type; Type: INDEX; Schema: public; Owner: postgres
 --
 
-CREATE INDEX idx_plugin_patch_change_type ON plugin_version_patches USING btree (change_type);
+CREATE INDEX IF NOT EXISTS idx_plugin_patch_change_type ON plugin_version_patches USING btree (change_type);
 
 
 --
 -- Name: idx_plugin_patch_component; Type: INDEX; Schema: public; Owner: postgres
 --
 
-CREATE INDEX idx_plugin_patch_component ON plugin_version_patches USING btree (component_type, component_id);
+CREATE INDEX IF NOT EXISTS idx_plugin_patch_component ON plugin_version_patches USING btree (component_type, component_id);
 
 --
 -- Name: idx_plugin_patch_plugin; Type: INDEX; Schema: public; Owner: postgres
 --
 
-CREATE INDEX idx_plugin_patch_plugin ON plugin_version_patches USING btree (plugin_id);
+CREATE INDEX IF NOT EXISTS idx_plugin_patch_plugin ON plugin_version_patches USING btree (plugin_id);
 
 
 --
 -- Name: idx_plugin_patch_version; Type: INDEX; Schema: public; Owner: postgres
 --
 
-CREATE INDEX idx_plugin_patch_version ON plugin_version_patches USING btree (version_id);
+CREATE INDEX IF NOT EXISTS idx_plugin_patch_version ON plugin_version_patches USING btree (version_id);
 
 
 --
 -- Name: idx_plugin_registry_category; Type: INDEX; Schema: public; Owner: postgres
 --
 
-CREATE INDEX idx_plugin_registry_category ON plugin_registry USING btree (category);
+CREATE INDEX IF NOT EXISTS idx_plugin_registry_category ON plugin_registry USING btree (category);
 
 
 --
 -- Name: idx_plugin_registry_creator; Type: INDEX; Schema: public; Owner: postgres
 --
 
-CREATE INDEX idx_plugin_registry_creator ON plugin_registry USING btree (creator_id);
+CREATE INDEX IF NOT EXISTS idx_plugin_registry_creator ON plugin_registry USING btree (creator_id);
 
 
 --
 -- Name: idx_plugin_registry_deprecated; Type: INDEX; Schema: public; Owner: postgres
 --
 
-CREATE INDEX idx_plugin_registry_deprecated ON plugin_registry USING btree (deprecated_at);
+CREATE INDEX IF NOT EXISTS idx_plugin_registry_deprecated ON plugin_registry USING btree (deprecated_at);
 
 
 --
 -- Name: idx_plugin_registry_is_public; Type: INDEX; Schema: public; Owner: postgres
 --
 
-CREATE INDEX idx_plugin_registry_is_public ON plugin_registry USING btree (is_public);
+CREATE INDEX IF NOT EXISTS idx_plugin_registry_is_public ON plugin_registry USING btree (is_public);
 
 
 --
 -- Name: idx_plugin_registry_status; Type: INDEX; Schema: public; Owner: postgres
 --
 
-CREATE INDEX idx_plugin_registry_status ON plugin_registry USING btree (status);
+CREATE INDEX IF NOT EXISTS idx_plugin_registry_status ON plugin_registry USING btree (status);
 
 
 --
 -- Name: idx_plugin_scripts_enabled; Type: INDEX; Schema: public; Owner: postgres
 --
 
-CREATE INDEX idx_plugin_scripts_enabled ON plugin_scripts USING btree (is_enabled) WHERE (is_enabled = true);
+CREATE INDEX IF NOT EXISTS idx_plugin_scripts_enabled ON plugin_scripts USING btree (is_enabled) WHERE (is_enabled = true);
 
 
 --
 -- Name: idx_plugin_scripts_plugin; Type: INDEX; Schema: public; Owner: postgres
 --
 
-CREATE INDEX idx_plugin_scripts_plugin ON plugin_scripts USING btree (plugin_id);
+CREATE INDEX IF NOT EXISTS idx_plugin_scripts_plugin ON plugin_scripts USING btree (plugin_id);
 
 
 --
 -- Name: idx_plugin_scripts_plugin_id; Type: INDEX; Schema: public; Owner: postgres
 --
 
-CREATE INDEX idx_plugin_scripts_plugin_id ON plugin_scripts USING btree (plugin_id);
+CREATE INDEX IF NOT EXISTS idx_plugin_scripts_plugin_id ON plugin_scripts USING btree (plugin_id);
 
 
 --
 -- Name: idx_plugin_scripts_type_scope; Type: INDEX; Schema: public; Owner: postgres
 --
 
-CREATE INDEX idx_plugin_scripts_type_scope ON plugin_scripts USING btree (script_type, scope);
+CREATE INDEX IF NOT EXISTS idx_plugin_scripts_type_scope ON plugin_scripts USING btree (script_type, scope);
 
 
 --
 -- Name: idx_plugin_snapshot_created_at; Type: INDEX; Schema: public; Owner: postgres
 --
 
-CREATE INDEX idx_plugin_snapshot_created_at ON plugin_version_snapshots USING btree (created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_plugin_snapshot_created_at ON plugin_version_snapshots USING btree (created_at DESC);
 
 --
 -- Name: idx_plugin_snapshot_plugin; Type: INDEX; Schema: public; Owner: postgres
 --
 
-CREATE INDEX idx_plugin_snapshot_plugin ON plugin_version_snapshots USING btree (plugin_id);
+CREATE INDEX IF NOT EXISTS idx_plugin_snapshot_plugin ON plugin_version_snapshots USING btree (plugin_id);
 
 
 --
 -- Name: idx_plugin_snapshot_version; Type: INDEX; Schema: public; Owner: postgres
 --
 
-CREATE INDEX idx_plugin_snapshot_version ON plugin_version_snapshots USING btree (version_id);
+CREATE INDEX IF NOT EXISTS idx_plugin_snapshot_version ON plugin_version_snapshots USING btree (version_id);
 
 
 --
 -- Name: idx_plugin_tag_name; Type: INDEX; Schema: public; Owner: postgres
 --
 
-CREATE INDEX idx_plugin_tag_name ON plugin_version_tags USING btree (tag_name);
+CREATE INDEX IF NOT EXISTS idx_plugin_tag_name ON plugin_version_tags USING btree (tag_name);
 
 
 --
 -- Name: idx_plugin_tag_plugin; Type: INDEX; Schema: public; Owner: postgres
 --
 
-CREATE INDEX idx_plugin_tag_plugin ON plugin_version_tags USING btree (plugin_id);
+CREATE INDEX IF NOT EXISTS idx_plugin_tag_plugin ON plugin_version_tags USING btree (plugin_id);
 
 
 --
 -- Name: idx_plugin_tag_type; Type: INDEX; Schema: public; Owner: postgres
 --
 
-CREATE INDEX idx_plugin_tag_type ON plugin_version_tags USING btree (tag_type);
+CREATE INDEX IF NOT EXISTS idx_plugin_tag_type ON plugin_version_tags USING btree (tag_type);
 
 
 --
 -- Name: idx_plugin_tag_version; Type: INDEX; Schema: public; Owner: postgres
 --
 
-CREATE INDEX idx_plugin_tag_version ON plugin_version_tags USING btree (version_id);
+CREATE INDEX IF NOT EXISTS idx_plugin_tag_version ON plugin_version_tags USING btree (version_id);
 
 
 --
 -- Name: idx_plugin_version_created_at; Type: INDEX; Schema: public; Owner: postgres
 --
 
-CREATE INDEX idx_plugin_version_created_at ON plugin_version_history USING btree (created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_plugin_version_created_at ON plugin_version_history USING btree (created_at DESC);
 
 
 --
 -- Name: idx_plugin_version_is_current; Type: INDEX; Schema: public; Owner: postgres
 --
 
-CREATE INDEX idx_plugin_version_is_current ON plugin_version_history USING btree (is_current) WHERE (is_current = true);
+CREATE INDEX IF NOT EXISTS idx_plugin_version_is_current ON plugin_version_history USING btree (is_current) WHERE (is_current = true);
 
 
 --
 -- Name: idx_plugin_version_is_published; Type: INDEX; Schema: public; Owner: postgres
 --
 
-CREATE INDEX idx_plugin_version_is_published ON plugin_version_history USING btree (is_published) WHERE (is_published = true);
+CREATE INDEX IF NOT EXISTS idx_plugin_version_is_published ON plugin_version_history USING btree (is_published) WHERE (is_published = true);
 
 
 --
 -- Name: idx_plugin_version_parent; Type: INDEX; Schema: public; Owner: postgres
 --
 
-CREATE INDEX idx_plugin_version_parent ON plugin_version_history USING btree (parent_version_id);
+CREATE INDEX IF NOT EXISTS idx_plugin_version_parent ON plugin_version_history USING btree (parent_version_id);
 
 
 --
 -- Name: idx_plugin_version_plugin_id; Type: INDEX; Schema: public; Owner: postgres
 --
 
-CREATE INDEX idx_plugin_version_plugin_id ON plugin_version_history USING btree (plugin_id);
+CREATE INDEX IF NOT EXISTS idx_plugin_version_plugin_id ON plugin_version_history USING btree (plugin_id);
 
 
 --
 -- Name: idx_plugin_version_type; Type: INDEX; Schema: public; Owner: postgres
 --
 
-CREATE INDEX idx_plugin_version_type ON plugin_version_history USING btree (version_type);
+CREATE INDEX IF NOT EXISTS idx_plugin_version_type ON plugin_version_history USING btree (version_type);
 
 
 --
 -- Name: idx_plugin_widgets_plugin; Type: INDEX; Schema: public; Owner: postgres
 --
 
-CREATE INDEX idx_plugin_widgets_plugin ON plugin_widgets USING btree (plugin_id);
+CREATE INDEX IF NOT EXISTS idx_plugin_widgets_plugin ON plugin_widgets USING btree (plugin_id);
 
 
 --
 -- Name: idx_plugin_widgets_widget_id; Type: INDEX; Schema: public; Owner: postgres
 --
 
-CREATE INDEX idx_plugin_widgets_widget_id ON plugin_widgets USING btree (widget_id);
+CREATE INDEX IF NOT EXISTS idx_plugin_widgets_widget_id ON plugin_widgets USING btree (widget_id);
 
 
 --
 -- Name: idx_product_attribute_values_product; Type: INDEX; Schema: public; Owner: postgres
 --
 
-CREATE INDEX idx_product_attribute_values_product ON product_attribute_values USING btree (product_id, attribute_id);
+CREATE INDEX IF NOT EXISTS idx_product_attribute_values_product ON product_attribute_values USING btree (product_id, attribute_id);
 
 
 --
 -- Name: idx_product_attribute_values_value; Type: INDEX; Schema: public; Owner: postgres
 --
 
-CREATE INDEX idx_product_attribute_values_value ON product_attribute_values USING btree (attribute_id, value_id);
+CREATE INDEX IF NOT EXISTS idx_product_attribute_values_value ON product_attribute_values USING btree (attribute_id, value_id);
 
 
 --
 -- Name: idx_product_labels_sort_order; Type: INDEX; Schema: public; Owner: postgres
 --
 
-CREATE INDEX idx_product_labels_sort_order ON product_labels USING btree (sort_order);
+CREATE INDEX IF NOT EXISTS idx_product_labels_sort_order ON product_labels USING btree (sort_order);
 
 
 --
 -- Name: idx_product_tabs_tab_type; Type: INDEX; Schema: public; Owner: postgres
 --
 
-CREATE INDEX idx_product_tabs_tab_type ON product_tabs USING btree (tab_type);
+CREATE INDEX IF NOT EXISTS idx_product_tabs_tab_type ON product_tabs USING btree (tab_type);
 
 
 --
 -- Name: idx_product_translations_name; Type: INDEX; Schema: public; Owner: postgres
 --
 
-CREATE INDEX idx_product_translations_name ON product_translations USING btree (name);
+CREATE INDEX IF NOT EXISTS idx_product_translations_name ON product_translations USING btree (name);
 
 --
 -- Name: idx_product_variants_parent; Type: INDEX; Schema: public; Owner: postgres
 --
 
-CREATE INDEX idx_product_variants_parent ON product_variants USING btree (parent_product_id);
+CREATE INDEX IF NOT EXISTS idx_product_variants_parent ON product_variants USING btree (parent_product_id);
 
 
 --
 -- Name: idx_product_variants_variant; Type: INDEX; Schema: public; Owner: postgres
 --
 
-CREATE INDEX idx_product_variants_variant ON product_variants USING btree (variant_product_id);
+CREATE INDEX IF NOT EXISTS idx_product_variants_variant ON product_variants USING btree (variant_product_id);
 
 
 --
 -- Name: idx_products_active_visible; Type: INDEX; Schema: public; Owner: postgres
 --
 
-CREATE INDEX idx_products_active_visible ON products USING btree (store_id, status, visibility) WHERE (((status)::text = 'active'::text) AND ((visibility)::text = 'visible'::text));
+CREATE INDEX IF NOT EXISTS idx_products_active_visible ON products USING btree (store_id, status, visibility) WHERE (((status)::text = 'active'::text) AND ((visibility)::text = 'visible'::text));
 
 --
 -- Name: idx_products_external_id; Type: INDEX; Schema: public; Owner: postgres
 --
 
-CREATE INDEX idx_products_external_id ON products USING btree (external_id);
+CREATE INDEX IF NOT EXISTS idx_products_external_id ON products USING btree (external_id);
 
 
 --
 -- Name: idx_products_external_source; Type: INDEX; Schema: public; Owner: postgres
 --
 
-CREATE INDEX idx_products_external_source ON products USING btree (external_source);
+CREATE INDEX IF NOT EXISTS idx_products_external_source ON products USING btree (external_source);
 
 
 --
 -- Name: idx_products_featured; Type: INDEX; Schema: public; Owner: postgres
 --
 
-CREATE INDEX idx_products_featured ON products USING btree (featured);
+CREATE INDEX IF NOT EXISTS idx_products_featured ON products USING btree (featured);
 
 
 --
 -- Name: idx_products_parent_id; Type: INDEX; Schema: public; Owner: postgres
 --
 
-CREATE INDEX idx_products_parent_id ON products USING btree (parent_id);
+CREATE INDEX IF NOT EXISTS idx_products_parent_id ON products USING btree (parent_id);
 
 
 --
 -- Name: idx_products_price; Type: INDEX; Schema: public; Owner: postgres
 --
 
-CREATE INDEX idx_products_price ON products USING btree (price);
+CREATE INDEX IF NOT EXISTS idx_products_price ON products USING btree (price);
 
 
 --
 -- Name: idx_products_sku; Type: INDEX; Schema: public; Owner: postgres
 --
 
-CREATE INDEX idx_products_sku ON products USING btree (sku);
+CREATE INDEX IF NOT EXISTS idx_products_sku ON products USING btree (sku);
 
 
 --
 -- Name: idx_products_slug; Type: INDEX; Schema: public; Owner: postgres
 --
 
-CREATE INDEX idx_products_slug ON products USING btree (slug);
+CREATE INDEX IF NOT EXISTS idx_products_slug ON products USING btree (slug);
 
 
 --
 -- Name: idx_products_status; Type: INDEX; Schema: public; Owner: postgres
 --
 
-CREATE INDEX idx_products_status ON products USING btree (status);
+CREATE INDEX IF NOT EXISTS idx_products_status ON products USING btree (status);
 
 
 --
 -- Name: idx_products_stock; Type: INDEX; Schema: public; Owner: postgres
 --
 
-CREATE INDEX idx_products_stock ON products USING btree (manage_stock, stock_quantity, infinite_stock) WHERE (manage_stock = true);
+CREATE INDEX IF NOT EXISTS idx_products_stock ON products USING btree (manage_stock, stock_quantity, infinite_stock) WHERE (manage_stock = true);
 
 
 --
 -- Name: idx_products_store_id; Type: INDEX; Schema: public; Owner: postgres
 --
 
-CREATE INDEX idx_products_store_id ON products USING btree (store_id);
+CREATE INDEX IF NOT EXISTS idx_products_store_id ON products USING btree (store_id);
 
 
 --
 -- Name: idx_products_type; Type: INDEX; Schema: public; Owner: postgres
 --
 
-CREATE INDEX idx_products_type ON products USING btree (type);
+CREATE INDEX IF NOT EXISTS idx_products_type ON products USING btree (type);
 
 
 --
 -- Name: idx_redirects_from_url; Type: INDEX; Schema: public; Owner: postgres
 --
 
-CREATE INDEX idx_redirects_from_url ON redirects USING btree (from_url);
+CREATE INDEX IF NOT EXISTS idx_redirects_from_url ON redirects USING btree (from_url);
 
 
 --
 -- Name: idx_redirects_is_active; Type: INDEX; Schema: public; Owner: postgres
 --
 
-CREATE INDEX idx_redirects_is_active ON redirects USING btree (is_active);
+CREATE INDEX IF NOT EXISTS idx_redirects_is_active ON redirects USING btree (is_active);
 
 
 --
@@ -6577,258 +6577,258 @@ CREATE UNIQUE INDEX idx_redirects_store_from_unique ON redirects USING btree (st
 -- Name: idx_redirects_store_id; Type: INDEX; Schema: public; Owner: postgres
 --
 
-CREATE INDEX idx_redirects_store_id ON redirects USING btree (store_id);
+CREATE INDEX IF NOT EXISTS idx_redirects_store_id ON redirects USING btree (store_id);
 
 --
 -- Name: idx_shipping_methods_is_active; Type: INDEX; Schema: public; Owner: postgres
 --
 
-CREATE INDEX idx_shipping_methods_is_active ON shipping_methods USING btree (is_active);
+CREATE INDEX IF NOT EXISTS idx_shipping_methods_is_active ON shipping_methods USING btree (is_active);
 
 
 --
 -- Name: idx_shipping_methods_store_id; Type: INDEX; Schema: public; Owner: postgres
 --
 
-CREATE INDEX idx_shipping_methods_store_id ON shipping_methods USING btree (store_id);
+CREATE INDEX IF NOT EXISTS idx_shipping_methods_store_id ON shipping_methods USING btree (store_id);
 
 
 --
 -- Name: idx_shopify_oauth_tokens_client_id; Type: INDEX; Schema: public; Owner: postgres
 --
 
-CREATE INDEX idx_shopify_oauth_tokens_client_id ON shopify_oauth_tokens USING btree (client_id);
+CREATE INDEX IF NOT EXISTS idx_shopify_oauth_tokens_client_id ON shopify_oauth_tokens USING btree (client_id);
 
 
 --
 -- Name: idx_shopify_oauth_tokens_shop_domain; Type: INDEX; Schema: public; Owner: postgres
 --
 
-CREATE INDEX idx_shopify_oauth_tokens_shop_domain ON shopify_oauth_tokens USING btree (shop_domain);
+CREATE INDEX IF NOT EXISTS idx_shopify_oauth_tokens_shop_domain ON shopify_oauth_tokens USING btree (shop_domain);
 
 
 --
 -- Name: idx_shopify_oauth_tokens_store_id; Type: INDEX; Schema: public; Owner: postgres
 --
 
-CREATE INDEX idx_shopify_oauth_tokens_store_id ON shopify_oauth_tokens USING btree (store_id);
+CREATE INDEX IF NOT EXISTS idx_shopify_oauth_tokens_store_id ON shopify_oauth_tokens USING btree (store_id);
 
 
 --
 -- Name: idx_slot_configurations_is_active; Type: INDEX; Schema: public; Owner: postgres
 --
 
-CREATE INDEX idx_slot_configurations_is_active ON slot_configurations USING btree (is_active);
+CREATE INDEX IF NOT EXISTS idx_slot_configurations_is_active ON slot_configurations USING btree (is_active);
 
 
 --
 -- Name: idx_slot_configurations_store_id; Type: INDEX; Schema: public; Owner: postgres
 --
 
-CREATE INDEX idx_slot_configurations_store_id ON slot_configurations USING btree (store_id);
+CREATE INDEX IF NOT EXISTS idx_slot_configurations_store_id ON slot_configurations USING btree (store_id);
 
 
 --
 -- Name: idx_store_invitations_email; Type: INDEX; Schema: public; Owner: postgres
 --
 
-CREATE INDEX idx_store_invitations_email ON store_invitations USING btree (invited_email);
+CREATE INDEX IF NOT EXISTS idx_store_invitations_email ON store_invitations USING btree (invited_email);
 
 
 --
 -- Name: idx_store_invitations_status; Type: INDEX; Schema: public; Owner: postgres
 --
 
-CREATE INDEX idx_store_invitations_status ON store_invitations USING btree (status);
+CREATE INDEX IF NOT EXISTS idx_store_invitations_status ON store_invitations USING btree (status);
 
 
 --
 -- Name: idx_store_invitations_store_id; Type: INDEX; Schema: public; Owner: postgres
 --
 
-CREATE INDEX idx_store_invitations_store_id ON store_invitations USING btree (store_id);
+CREATE INDEX IF NOT EXISTS idx_store_invitations_store_id ON store_invitations USING btree (store_id);
 
 
 --
 -- Name: idx_store_invitations_token; Type: INDEX; Schema: public; Owner: postgres
 --
 
-CREATE INDEX idx_store_invitations_token ON store_invitations USING btree (invitation_token);
+CREATE INDEX IF NOT EXISTS idx_store_invitations_token ON store_invitations USING btree (invitation_token);
 
 
 --
 -- Name: idx_store_status_page_version; Type: INDEX; Schema: public; Owner: postgres
 --
 
-CREATE INDEX idx_store_status_page_version ON slot_configurations USING btree (store_id, status, page_type, version_number);
+CREATE INDEX IF NOT EXISTS idx_store_status_page_version ON slot_configurations USING btree (store_id, status, page_type, version_number);
 
 
 --
 -- Name: idx_store_teams_status; Type: INDEX; Schema: public; Owner: postgres
 --
 
-CREATE INDEX idx_store_teams_status ON store_teams USING btree (status);
+CREATE INDEX IF NOT EXISTS idx_store_teams_status ON store_teams USING btree (status);
 
 
 --
 -- Name: idx_store_teams_store_id; Type: INDEX; Schema: public; Owner: postgres
 --
 
-CREATE INDEX idx_store_teams_store_id ON store_teams USING btree (store_id);
+CREATE INDEX IF NOT EXISTS idx_store_teams_store_id ON store_teams USING btree (store_id);
 
 
 --
 -- Name: idx_store_teams_user_id; Type: INDEX; Schema: public; Owner: postgres
 --
 
-CREATE INDEX idx_store_teams_user_id ON store_teams USING btree (user_id);
+CREATE INDEX IF NOT EXISTS idx_store_teams_user_id ON store_teams USING btree (user_id);
 
 
 --
 -- Name: idx_store_uptime_charged_date; Type: INDEX; Schema: public; Owner: postgres
 --
 
-CREATE INDEX idx_store_uptime_charged_date ON store_uptime USING btree (charged_date);
+CREATE INDEX IF NOT EXISTS idx_store_uptime_charged_date ON store_uptime USING btree (charged_date);
 
 
 --
 -- Name: idx_store_uptime_created_at; Type: INDEX; Schema: public; Owner: postgres
 --
 
-CREATE INDEX idx_store_uptime_created_at ON store_uptime USING btree (created_at);
+CREATE INDEX IF NOT EXISTS idx_store_uptime_created_at ON store_uptime USING btree (created_at);
 
 
 --
 -- Name: idx_store_uptime_store_id; Type: INDEX; Schema: public; Owner: postgres
 --
 
-CREATE INDEX idx_store_uptime_store_id ON store_uptime USING btree (store_id);
+CREATE INDEX IF NOT EXISTS idx_store_uptime_store_id ON store_uptime USING btree (store_id);
 
 
 --
 -- Name: idx_store_uptime_user_id; Type: INDEX; Schema: public; Owner: postgres
 --
 
-CREATE INDEX idx_store_uptime_user_id ON store_uptime USING btree (user_id);
+CREATE INDEX IF NOT EXISTS idx_store_uptime_user_id ON store_uptime USING btree (user_id);
 
 
 --
 -- Name: idx_store_uptime_user_store; Type: INDEX; Schema: public; Owner: postgres
 --
 
-CREATE INDEX idx_store_uptime_user_store ON store_uptime USING btree (user_id, store_id);
+CREATE INDEX IF NOT EXISTS idx_store_uptime_user_store ON store_uptime USING btree (user_id, store_id);
 
 
 --
 -- Name: idx_stores_deployment_status; Type: INDEX; Schema: public; Owner: postgres
 --
 
-CREATE INDEX idx_stores_deployment_status ON stores USING btree (deployment_status);
+CREATE INDEX IF NOT EXISTS idx_stores_deployment_status ON stores USING btree (deployment_status);
 
 
 --
 -- Name: idx_stores_is_active; Type: INDEX; Schema: public; Owner: postgres
 --
 
-CREATE INDEX idx_stores_is_active ON stores USING btree (is_active);
+CREATE INDEX IF NOT EXISTS idx_stores_is_active ON stores USING btree (is_active);
 
 
 --
 -- Name: idx_stores_published; Type: INDEX; Schema: public; Owner: postgres
 --
 
-CREATE INDEX idx_stores_published ON stores USING btree (published);
+CREATE INDEX IF NOT EXISTS idx_stores_published ON stores USING btree (published);
 
 
 --
 -- Name: idx_stores_published_at; Type: INDEX; Schema: public; Owner: postgres
 --
 
-CREATE INDEX idx_stores_published_at ON stores USING btree (published_at);
+CREATE INDEX IF NOT EXISTS idx_stores_published_at ON stores USING btree (published_at);
 
 
 --
 -- Name: idx_stores_slug; Type: INDEX; Schema: public; Owner: postgres
 --
 
-CREATE INDEX idx_stores_slug ON stores USING btree (slug);
+CREATE INDEX IF NOT EXISTS idx_stores_slug ON stores USING btree (slug);
 
 
 --
 -- Name: idx_supabase_oauth_tokens_store_id; Type: INDEX; Schema: public; Owner: postgres
 --
 
-CREATE INDEX idx_supabase_oauth_tokens_store_id ON supabase_oauth_tokens USING btree (store_id);
+CREATE INDEX IF NOT EXISTS idx_supabase_oauth_tokens_store_id ON supabase_oauth_tokens USING btree (store_id);
 
 
 --
 -- Name: idx_supabase_project_keys_store_project; Type: INDEX; Schema: public; Owner: postgres
 --
 
-CREATE INDEX idx_supabase_project_keys_store_project ON supabase_project_keys USING btree (store_id, project_id);
+CREATE INDEX IF NOT EXISTS idx_supabase_project_keys_store_project ON supabase_project_keys USING btree (store_id, project_id);
 
 
 --
 -- Name: idx_taxes_is_active; Type: INDEX; Schema: public; Owner: postgres
 --
 
-CREATE INDEX idx_taxes_is_active ON taxes USING btree (is_active);
+CREATE INDEX IF NOT EXISTS idx_taxes_is_active ON taxes USING btree (is_active);
 
 
 --
 -- Name: idx_taxes_store_id; Type: INDEX; Schema: public; Owner: postgres
 --
 
-CREATE INDEX idx_taxes_store_id ON taxes USING btree (store_id);
+CREATE INDEX IF NOT EXISTS idx_taxes_store_id ON taxes USING btree (store_id);
 
 
 --
 -- Name: idx_translations_type; Type: INDEX; Schema: public; Owner: postgres
 --
 
-CREATE INDEX idx_translations_type ON translations USING btree (type);
+CREATE INDEX IF NOT EXISTS idx_translations_type ON translations USING btree (type);
 
 
 --
 -- Name: idx_typing_conversation; Type: INDEX; Schema: public; Owner: postgres
 --
 
-CREATE INDEX idx_typing_conversation ON chat_typing_indicators USING btree (conversation_id);
+CREATE INDEX IF NOT EXISTS idx_typing_conversation ON chat_typing_indicators USING btree (conversation_id);
 
 
 --
 -- Name: idx_user_store_status_page; Type: INDEX; Schema: public; Owner: postgres
 --
 
-CREATE INDEX idx_user_store_status_page ON slot_configurations USING btree (user_id, store_id, status, page_type);
+CREATE INDEX IF NOT EXISTS idx_user_store_status_page ON slot_configurations USING btree (user_id, store_id, status, page_type);
 
 
 --
 -- Name: idx_users_account_type; Type: INDEX; Schema: public; Owner: postgres
 --
 
-CREATE INDEX idx_users_account_type ON users USING btree (account_type);
+CREATE INDEX IF NOT EXISTS idx_users_account_type ON users USING btree (account_type);
 
 
 --
 -- Name: idx_users_email; Type: INDEX; Schema: public; Owner: postgres
 --
 
-CREATE INDEX idx_users_email ON users USING btree (email);
+CREATE INDEX IF NOT EXISTS idx_users_email ON users USING btree (email);
 
 
 --
 -- Name: idx_users_is_active; Type: INDEX; Schema: public; Owner: postgres
 --
 
-CREATE INDEX idx_users_is_active ON users USING btree (is_active);
+CREATE INDEX IF NOT EXISTS idx_users_is_active ON users USING btree (is_active);
 
 
 --
 -- Name: idx_users_role; Type: INDEX; Schema: public; Owner: postgres
 --
 
-CREATE INDEX idx_users_role ON users USING btree (role);
+CREATE INDEX IF NOT EXISTS idx_users_role ON users USING btree (role);
 
 
 --
@@ -6842,119 +6842,119 @@ CREATE UNIQUE INDEX integration_configs_store_id_integration_type ON integration
 -- Name: job_history_executed_at; Type: INDEX; Schema: public; Owner: postgres
 --
 
-CREATE INDEX job_history_executed_at ON job_history USING btree (executed_at);
+CREATE INDEX IF NOT EXISTS job_history_executed_at ON job_history USING btree (executed_at);
 
 
 --
 -- Name: job_history_job_id; Type: INDEX; Schema: public; Owner: postgres
 --
 
-CREATE INDEX job_history_job_id ON job_history USING btree (job_id);
+CREATE INDEX IF NOT EXISTS job_history_job_id ON job_history USING btree (job_id);
 
 
 --
 -- Name: job_history_job_id_executed_at; Type: INDEX; Schema: public; Owner: postgres
 --
 
-CREATE INDEX job_history_job_id_executed_at ON job_history USING btree (job_id, executed_at);
+CREATE INDEX IF NOT EXISTS job_history_job_id_executed_at ON job_history USING btree (job_id, executed_at);
 
 
 --
 -- Name: job_history_status; Type: INDEX; Schema: public; Owner: postgres
 --
 
-CREATE INDEX job_history_status ON job_history USING btree (status);
+CREATE INDEX IF NOT EXISTS job_history_status ON job_history USING btree (status);
 
 
 --
 -- Name: jobs_created_at; Type: INDEX; Schema: public; Owner: postgres
 --
 
-CREATE INDEX jobs_created_at ON jobs USING btree (created_at);
+CREATE INDEX IF NOT EXISTS jobs_created_at ON jobs USING btree (created_at);
 
 
 --
 -- Name: jobs_priority; Type: INDEX; Schema: public; Owner: postgres
 --
 
-CREATE INDEX jobs_priority ON jobs USING btree (priority);
+CREATE INDEX IF NOT EXISTS jobs_priority ON jobs USING btree (priority);
 
 
 --
 -- Name: jobs_scheduled_at; Type: INDEX; Schema: public; Owner: postgres
 --
 
-CREATE INDEX jobs_scheduled_at ON jobs USING btree (scheduled_at);
+CREATE INDEX IF NOT EXISTS jobs_scheduled_at ON jobs USING btree (scheduled_at);
 
 
 --
 -- Name: jobs_status; Type: INDEX; Schema: public; Owner: postgres
 --
 
-CREATE INDEX jobs_status ON jobs USING btree (status);
+CREATE INDEX IF NOT EXISTS jobs_status ON jobs USING btree (status);
 
 
 --
 -- Name: jobs_status_priority_scheduled_at; Type: INDEX; Schema: public; Owner: postgres
 --
 
-CREATE INDEX jobs_status_priority_scheduled_at ON jobs USING btree (status, priority, scheduled_at);
+CREATE INDEX IF NOT EXISTS jobs_status_priority_scheduled_at ON jobs USING btree (status, priority, scheduled_at);
 
 
 --
 -- Name: jobs_store_id; Type: INDEX; Schema: public; Owner: postgres
 --
 
-CREATE INDEX jobs_store_id ON jobs USING btree (store_id);
+CREATE INDEX IF NOT EXISTS jobs_store_id ON jobs USING btree (store_id);
 
 
 --
 -- Name: jobs_type; Type: INDEX; Schema: public; Owner: postgres
 --
 
-CREATE INDEX jobs_type ON jobs USING btree (type);
+CREATE INDEX IF NOT EXISTS jobs_type ON jobs USING btree (type);
 
 
 --
 -- Name: jobs_user_id; Type: INDEX; Schema: public; Owner: postgres
 --
 
-CREATE INDEX jobs_user_id ON jobs USING btree (user_id);
+CREATE INDEX IF NOT EXISTS jobs_user_id ON jobs USING btree (user_id);
 
 
 --
 -- Name: login_attempts_email_attempted_at; Type: INDEX; Schema: public; Owner: postgres
 --
 
-CREATE INDEX login_attempts_email_attempted_at ON login_attempts USING btree (email, attempted_at);
+CREATE INDEX IF NOT EXISTS login_attempts_email_attempted_at ON login_attempts USING btree (email, attempted_at);
 
 
 --
 -- Name: login_attempts_ip_address_attempted_at; Type: INDEX; Schema: public; Owner: postgres
 --
 
-CREATE INDEX login_attempts_ip_address_attempted_at ON login_attempts USING btree (ip_address, attempted_at);
+CREATE INDEX IF NOT EXISTS login_attempts_ip_address_attempted_at ON login_attempts USING btree (ip_address, attempted_at);
 
 
 --
 -- Name: media_assets_created_at; Type: INDEX; Schema: public; Owner: postgres
 --
 
-CREATE INDEX media_assets_created_at ON media_assets USING btree (created_at);
+CREATE INDEX IF NOT EXISTS media_assets_created_at ON media_assets USING btree (created_at);
 
 
 --
 -- Name: media_assets_folder; Type: INDEX; Schema: public; Owner: postgres
 --
 
-CREATE INDEX media_assets_folder ON media_assets USING btree (folder);
+CREATE INDEX IF NOT EXISTS media_assets_folder ON media_assets USING btree (folder);
 
 
 --
 -- Name: media_assets_store_id; Type: INDEX; Schema: public; Owner: postgres
 --
 
-CREATE INDEX media_assets_store_id ON media_assets USING btree (store_id);
+CREATE INDEX IF NOT EXISTS media_assets_store_id ON media_assets USING btree (store_id);
 
 
 --
@@ -6968,14 +6968,14 @@ CREATE UNIQUE INDEX media_assets_store_id_file_path ON media_assets USING btree 
 -- Name: pdf_template_translations_language_code; Type: INDEX; Schema: public; Owner: postgres
 --
 
-CREATE INDEX pdf_template_translations_language_code ON pdf_template_translations USING btree (language_code);
+CREATE INDEX IF NOT EXISTS pdf_template_translations_language_code ON pdf_template_translations USING btree (language_code);
 
 
 --
 -- Name: pdf_template_translations_pdf_template_id; Type: INDEX; Schema: public; Owner: postgres
 --
 
-CREATE INDEX pdf_template_translations_pdf_template_id ON pdf_template_translations USING btree (pdf_template_id);
+CREATE INDEX IF NOT EXISTS pdf_template_translations_pdf_template_id ON pdf_template_translations USING btree (pdf_template_id);
 
 
 --
@@ -6996,62 +6996,62 @@ CREATE UNIQUE INDEX pdf_templates_identifier_store_id ON pdf_templates USING btr
 -- Name: pdf_templates_store_id; Type: INDEX; Schema: public; Owner: postgres
 --
 
-CREATE INDEX pdf_templates_store_id ON pdf_templates USING btree (store_id);
+CREATE INDEX IF NOT EXISTS pdf_templates_store_id ON pdf_templates USING btree (store_id);
 
 
 --
 -- Name: pdf_templates_template_type; Type: INDEX; Schema: public; Owner: postgres
 --
 
-CREATE INDEX pdf_templates_template_type ON pdf_templates USING btree (template_type);
+CREATE INDEX IF NOT EXISTS pdf_templates_template_type ON pdf_templates USING btree (template_type);
 
 --
 -- Name: plugin_configurations_health_status; Type: INDEX; Schema: public; Owner: postgres
 --
 
-CREATE INDEX plugin_configurations_health_status ON plugin_configurations USING btree (health_status);
+CREATE INDEX IF NOT EXISTS plugin_configurations_health_status ON plugin_configurations USING btree (health_status);
 
 
 --
 -- Name: plugin_configurations_is_enabled; Type: INDEX; Schema: public; Owner: postgres
 --
 
-CREATE INDEX plugin_configurations_is_enabled ON plugin_configurations USING btree (is_enabled);
+CREATE INDEX IF NOT EXISTS plugin_configurations_is_enabled ON plugin_configurations USING btree (is_enabled);
 
 
 --
 -- Name: plugin_configurations_plugin_id; Type: INDEX; Schema: public; Owner: postgres
 --
 
-CREATE INDEX plugin_configurations_plugin_id ON plugin_configurations USING btree (plugin_id);
+CREATE INDEX IF NOT EXISTS plugin_configurations_plugin_id ON plugin_configurations USING btree (plugin_id);
 
 
 --
 -- Name: plugin_configurations_store_id; Type: INDEX; Schema: public; Owner: postgres
 --
 
-CREATE INDEX plugin_configurations_store_id ON plugin_configurations USING btree (store_id);
+CREATE INDEX IF NOT EXISTS plugin_configurations_store_id ON plugin_configurations USING btree (store_id);
 
 
 --
 -- Name: plugins_category; Type: INDEX; Schema: public; Owner: postgres
 --
 
-CREATE INDEX plugins_category ON plugins USING btree (category);
+CREATE INDEX IF NOT EXISTS plugins_category ON plugins USING btree (category);
 
 
 --
 -- Name: plugins_is_enabled; Type: INDEX; Schema: public; Owner: postgres
 --
 
-CREATE INDEX plugins_is_enabled ON plugins USING btree (is_enabled);
+CREATE INDEX IF NOT EXISTS plugins_is_enabled ON plugins USING btree (is_enabled);
 
 
 --
 -- Name: plugins_is_installed; Type: INDEX; Schema: public; Owner: postgres
 --
 
-CREATE INDEX plugins_is_installed ON plugins USING btree (is_installed);
+CREATE INDEX IF NOT EXISTS plugins_is_installed ON plugins USING btree (is_installed);
 
 
 --
@@ -7065,35 +7065,35 @@ CREATE UNIQUE INDEX plugins_slug ON plugins USING btree (slug);
 -- Name: plugins_source_type; Type: INDEX; Schema: public; Owner: postgres
 --
 
-CREATE INDEX plugins_source_type ON plugins USING btree (source_type);
+CREATE INDEX IF NOT EXISTS plugins_source_type ON plugins USING btree (source_type);
 
 
 --
 -- Name: plugins_status; Type: INDEX; Schema: public; Owner: postgres
 --
 
-CREATE INDEX plugins_status ON plugins USING btree (status);
+CREATE INDEX IF NOT EXISTS plugins_status ON plugins USING btree (status);
 
 
 --
 -- Name: product_attribute_values_attribute_id; Type: INDEX; Schema: public; Owner: postgres
 --
 
-CREATE INDEX product_attribute_values_attribute_id ON product_attribute_values USING btree (attribute_id);
+CREATE INDEX IF NOT EXISTS product_attribute_values_attribute_id ON product_attribute_values USING btree (attribute_id);
 
 
 --
 -- Name: product_attribute_values_product_id; Type: INDEX; Schema: public; Owner: postgres
 --
 
-CREATE INDEX product_attribute_values_product_id ON product_attribute_values USING btree (product_id);
+CREATE INDEX IF NOT EXISTS product_attribute_values_product_id ON product_attribute_values USING btree (product_id);
 
 
 --
 -- Name: product_attribute_values_value_id; Type: INDEX; Schema: public; Owner: postgres
 --
 
-CREATE INDEX product_attribute_values_value_id ON product_attribute_values USING btree (value_id);
+CREATE INDEX IF NOT EXISTS product_attribute_values_value_id ON product_attribute_values USING btree (value_id);
 
 
 --
@@ -7113,7 +7113,7 @@ CREATE UNIQUE INDEX product_tabs_store_id_slug ON product_tabs USING btree (stor
 -- Name: product_variants_parent_product_id; Type: INDEX; Schema: public; Owner: postgres
 --
 
-CREATE INDEX product_variants_parent_product_id ON product_variants USING btree (parent_product_id);
+CREATE INDEX IF NOT EXISTS product_variants_parent_product_id ON product_variants USING btree (parent_product_id);
 
 
 --
@@ -7127,14 +7127,14 @@ CREATE UNIQUE INDEX product_variants_parent_product_id_variant_product_id ON pro
 -- Name: product_variants_variant_product_id; Type: INDEX; Schema: public; Owner: postgres
 --
 
-CREATE INDEX product_variants_variant_product_id ON product_variants USING btree (variant_product_id);
+CREATE INDEX IF NOT EXISTS product_variants_variant_product_id ON product_variants USING btree (variant_product_id);
 
 
 --
 -- Name: redirects_entity_type_entity_id; Type: INDEX; Schema: public; Owner: postgres
 --
 
-CREATE INDEX redirects_entity_type_entity_id ON redirects USING btree (entity_type, entity_id);
+CREATE INDEX IF NOT EXISTS redirects_entity_type_entity_id ON redirects USING btree (entity_type, entity_id);
 
 
 --
@@ -7169,70 +7169,70 @@ CREATE UNIQUE INDEX shopify_oauth_tokens_store_id ON shopify_oauth_tokens USING 
 -- Name: slot_configurations_is_active; Type: INDEX; Schema: public; Owner: postgres
 --
 
-CREATE INDEX slot_configurations_is_active ON slot_configurations USING btree (is_active);
+CREATE INDEX IF NOT EXISTS slot_configurations_is_active ON slot_configurations USING btree (is_active);
 
 
 --
 -- Name: slot_configurations_store_id; Type: INDEX; Schema: public; Owner: postgres
 --
 
-CREATE INDEX slot_configurations_store_id ON slot_configurations USING btree (store_id);
+CREATE INDEX IF NOT EXISTS slot_configurations_store_id ON slot_configurations USING btree (store_id);
 
 
 --
 -- Name: store_invitations_expires_at; Type: INDEX; Schema: public; Owner: postgres
 --
 
-CREATE INDEX store_invitations_expires_at ON store_invitations USING btree (expires_at);
+CREATE INDEX IF NOT EXISTS store_invitations_expires_at ON store_invitations USING btree (expires_at);
 
 
 --
 -- Name: store_invitations_invitation_token; Type: INDEX; Schema: public; Owner: postgres
 --
 
-CREATE INDEX store_invitations_invitation_token ON store_invitations USING btree (invitation_token);
+CREATE INDEX IF NOT EXISTS store_invitations_invitation_token ON store_invitations USING btree (invitation_token);
 
 
 --
 -- Name: store_invitations_invited_email; Type: INDEX; Schema: public; Owner: postgres
 --
 
-CREATE INDEX store_invitations_invited_email ON store_invitations USING btree (invited_email);
+CREATE INDEX IF NOT EXISTS store_invitations_invited_email ON store_invitations USING btree (invited_email);
 
 
 --
 -- Name: store_invitations_status; Type: INDEX; Schema: public; Owner: postgres
 --
 
-CREATE INDEX store_invitations_status ON store_invitations USING btree (status);
+CREATE INDEX IF NOT EXISTS store_invitations_status ON store_invitations USING btree (status);
 
 
 --
 -- Name: store_invitations_store_id; Type: INDEX; Schema: public; Owner: postgres
 --
 
-CREATE INDEX store_invitations_store_id ON store_invitations USING btree (store_id);
+CREATE INDEX IF NOT EXISTS store_invitations_store_id ON store_invitations USING btree (store_id);
 
 
 --
 -- Name: store_teams_status; Type: INDEX; Schema: public; Owner: postgres
 --
 
-CREATE INDEX store_teams_status ON store_teams USING btree (status);
+CREATE INDEX IF NOT EXISTS store_teams_status ON store_teams USING btree (status);
 
 
 --
 -- Name: store_teams_store_id; Type: INDEX; Schema: public; Owner: postgres
 --
 
-CREATE INDEX store_teams_store_id ON store_teams USING btree (store_id);
+CREATE INDEX IF NOT EXISTS store_teams_store_id ON store_teams USING btree (store_id);
 
 
 --
 -- Name: store_teams_user_id; Type: INDEX; Schema: public; Owner: postgres
 --
 
-CREATE INDEX store_teams_user_id ON store_teams USING btree (user_id);
+CREATE INDEX IF NOT EXISTS store_teams_user_id ON store_teams USING btree (user_id);
 
 --
 -- Name: supabase_project_keys_store_id_project_id; Type: INDEX; Schema: public; Owner: postgres
@@ -7245,20 +7245,20 @@ CREATE UNIQUE INDEX supabase_project_keys_store_id_project_id ON supabase_projec
 -- Name: translations_category_index; Type: INDEX; Schema: public; Owner: postgres
 --
 
-CREATE INDEX translations_category_index ON translations USING btree (category);
+CREATE INDEX IF NOT EXISTS translations_category_index ON translations USING btree (category);
 
 --
 -- Name: translations_language_code_index; Type: INDEX; Schema: public; Owner: postgres
 --
 
-CREATE INDEX translations_language_code_index ON translations USING btree (language_code);
+CREATE INDEX IF NOT EXISTS translations_language_code_index ON translations USING btree (language_code);
 
 
 --
 -- Name: translations_store_id_index; Type: INDEX; Schema: public; Owner: postgres
 --
 
-CREATE INDEX translations_store_id_index ON translations USING btree (store_id);
+CREATE INDEX IF NOT EXISTS translations_store_id_index ON translations USING btree (store_id);
 
 
 --
@@ -7321,14 +7321,14 @@ CREATE UNIQUE INDEX unique_test_session ON ab_test_assignments USING btree (test
 -- Name: usage_metrics_metric_date; Type: INDEX; Schema: public; Owner: postgres
 --
 
-CREATE INDEX usage_metrics_metric_date ON usage_metrics USING btree (metric_date);
+CREATE INDEX IF NOT EXISTS usage_metrics_metric_date ON usage_metrics USING btree (metric_date);
 
 
 --
 -- Name: usage_metrics_store_id; Type: INDEX; Schema: public; Owner: postgres
 --
 
-CREATE INDEX usage_metrics_store_id ON usage_metrics USING btree (store_id);
+CREATE INDEX IF NOT EXISTS usage_metrics_store_id ON usage_metrics USING btree (store_id);
 
 
 --
