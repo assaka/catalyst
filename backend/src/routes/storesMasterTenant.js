@@ -400,12 +400,18 @@ router.post('/:id/connect-database', authMiddleware, async (req, res) => {
       }
     );
 
+    console.log('provisioningResult', provisioningResult);
+
+
     if (!provisioningResult.success) {
       // Revert store status using Supabase client
       await masterSupabaseClient
         .from('stores')
         .update({ status: 'pending_database', updated_at: new Date().toISOString() })
         .eq('id', storeId);
+
+      console.log('masterSupabaseClient storeId', storeId);
+      console.log('masterSupabaseClient', res);
 
       return res.status(500).json({
         success: false,
