@@ -45,7 +45,8 @@ class ConnectionManager {
 
     // Check cache first
     if (cache && this.connections.has(storeId)) {
-      return this.connections.get(storeId);
+      const cached = this.connections.get(storeId);
+      return cached.connection || cached; // Return just the connection, not the wrapper object
     }
 
     // Get connection configuration from master DB (use Supabase client to avoid Sequelize auth issues)
