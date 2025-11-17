@@ -945,6 +945,129 @@ router.patch('/:id', authMiddleware, async (req, res) => {
 });
 
 /**
+ * GET /api/stores/:id/settings
+ * Get store settings (from tenant DB)
+ */
+router.get('/:id/settings', authMiddleware, async (req, res) => {
+  try {
+    const storeId = req.params.id;
+
+    const store = await MasterStore.findByPk(storeId);
+
+    if (!store || !store.isOperational()) {
+      return res.status(400).json({
+        success: false,
+        error: 'Store is not operational'
+      });
+    }
+
+    // Get settings from tenant DB
+    const tenantDb = await ConnectionManager.getStoreConnection(storeId);
+
+    const { data, error } = await tenantDb
+      .from('stores')
+      .select('*')
+      .eq('id', storeId)
+      .single();
+
+    if (error) {
+      throw new Error(error.message);
+    }
+
+    res.json({
+      success: true,
+      data: data
+    });
+  } catch (error) {
+    console.error('Get store settings error:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to get store settings'
+    });
+  }
+});
+
+/**
+ * PUT /api/stores/:id/settings
+ * Update store settings (in tenant DB)
+ */
+router.put('/:id/settings', authMiddleware, async (req, res) => {
+  try {
+    const storeId = req.params.id;
+    const updates = req.body;
+
+    console.log('🐛 PUT /api/stores/:id/settings DEBUG:', {
+      storeId,
+      body: updates,
+      hasSettings: !!updates.settings,
+      settingsKeys: updates.settings ? Object.keys(updates.settings) : []
+    });
+
+    const store = await MasterStore.findByPk(storeId);
+
+    if (!store || !store.isOperational()) {
+      return res.status(400).json({
+        success: false,
+        error: 'Store is not operational'
+      });
+    }
+
+    // Get current store data from tenant DB
+    const tenantDb = await ConnectionManager.getStoreConnection(storeId);
+
+    const { data: currentStore, error: fetchError } = await tenantDb
+      .from('stores')
+      .select('*')
+      .eq('id', storeId)
+      .single();
+
+    if (fetchError) {
+      throw new Error(fetchError.message);
+    }
+
+    // Merge settings if provided
+    let finalUpdates = { ...updates };
+    if (updates.settings) {
+      const currentSettings = currentStore.settings || {};
+      const incomingSettings = updates.settings || {};
+      finalUpdates.settings = {
+        ...currentSettings,
+        ...incomingSettings
+      };
+      console.log('🔄 Merged settings:', finalUpdates.settings);
+    }
+
+    // Update in tenant DB
+    const { data, error } = await tenantDb
+      .from('stores')
+      .update(finalUpdates)
+      .eq('id', storeId)
+      .select()
+      .single();
+
+    if (error) {
+      throw new Error(error.message);
+    }
+
+    console.log('✅ Store settings updated successfully');
+
+    res.json({
+      success: true,
+      message: 'Store settings updated successfully',
+      data: data,
+      settings: data.settings
+    });
+  } catch (error) {
+    console.error('Update store settings error:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to update store settings',
+      message: error.message
+    });
+  }
+});
+
+/**
  * DELETE /api/stores/:id
  * Delete store (soft delete - suspend)
  */
