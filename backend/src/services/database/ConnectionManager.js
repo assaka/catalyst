@@ -48,9 +48,20 @@ class ConnectionManager {
       return this.connections.get(storeId);
     }
 
-    // Get connection configuration from master DB (new StoreDatabase model)
-    const { StoreDatabase } = require('../../models/master');
-    const storeDb = await StoreDatabase.findByStoreId(storeId);
+    // Get connection configuration from master DB (use Supabase client to avoid Sequelize auth issues)
+    const { masterSupabaseClient } = require('../../database/masterConnection');
+    const { decryptDatabaseCredentials } = require('../../utils/encryption');
+
+    const { data: storeDb, error } = await masterSupabaseClient
+      .from('store_databases')
+      .select('*')
+      .eq('store_id', storeId)
+      .eq('is_active', true)
+      .maybeSingle();
+
+    if (error) {
+      throw new Error(`Failed to fetch database config: ${error.message}`);
+    }
 
     if (!storeDb) {
       throw new Error(
@@ -64,7 +75,7 @@ class ConnectionManager {
     }
 
     // Decrypt credentials from master DB
-    const credentials = storeDb.getCredentials();
+    const credentials = decryptDatabaseCredentials(storeDb.connection_string_encrypted);
 
     // Create connection based on database type
     const connection = await this._createConnection(
