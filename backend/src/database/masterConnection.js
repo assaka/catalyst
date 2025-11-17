@@ -27,6 +27,9 @@ const { createClient } = require('@supabase/supabase-js');
 const masterDbUrl = process.env.MASTER_DB_URL;
 const useMasterDbUrl = !!masterDbUrl;
 
+console.log('🔧 [MASTER CONNECTION INIT] MASTER_DB_URL loaded:', masterDbUrl ? masterDbUrl.substring(0, 80) + '...' : 'NOT SET');
+console.log('🔧 [MASTER CONNECTION INIT] Will use URL-based connection:', useMasterDbUrl);
+
 const masterSequelize = useMasterDbUrl
   ? new Sequelize(masterDbUrl, {
       dialect: 'postgres',
