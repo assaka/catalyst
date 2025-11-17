@@ -1,6 +1,6 @@
 const express = require('express');
 const { body, validationResult } = require('express-validator');
-const { MasterUser } = require('../models/master'); // Use master DB for platform users
+const { masterSupabaseClient } = require('../database/masterConnection'); // Use Supabase client to avoid Sequelize auth issues
 const { authorize } = require('../middleware/auth');
 const router = express.Router();
 
@@ -12,32 +12,39 @@ router.get('/', authorize(['admin']), async (req, res) => {
     const { page = 1, limit = 10, role, search } = req.query;
     const offset = (page - 1) * limit;
 
-    const where = {};
-    if (role) where.role = role;
-    if (search) {
-      where[Op.or] = [
-        { first_name: { [Op.iLike]: `%${search}%` } },
-        { last_name: { [Op.iLike]: `%${search}%` } },
-        { email: { [Op.iLike]: `%${search}%` } }
-      ];
+    // Build Supabase query
+    let query = masterSupabaseClient.from('users').select('*', { count: 'exact' });
+
+    // Apply filters
+    if (role) {
+      query = query.eq('role', role);
     }
 
-    const { count, rows } = await MasterUser.findAndCountAll({
-      where,
-      limit: parseInt(limit),
-      offset: parseInt(offset),
-      order: [['created_at', 'DESC']]
-    });
+    if (search) {
+      // Search on email (Supabase doesn't support complex OR easily)
+      query = query.ilike('email', `%${search}%`);
+    }
+
+    // Apply pagination and ordering
+    query = query
+      .order('created_at', { ascending: false })
+      .range(offset, offset + parseInt(limit) - 1);
+
+    const { data: rows, error, count } = await query;
+
+    if (error) {
+      throw new Error(error.message);
+    }
 
     res.json({
       success: true,
       data: {
-        users: rows,
+        users: rows || [],
         pagination: {
           current_page: parseInt(page),
           per_page: parseInt(limit),
-          total: count,
-          total_pages: Math.ceil(count / limit)
+          total: count || 0,
+          total_pages: Math.ceil((count || 0) / limit)
         }
       }
     });
@@ -55,9 +62,13 @@ router.get('/', authorize(['admin']), async (req, res) => {
 // @access  Private
 router.get('/:id', async (req, res) => {
   try {
-    const user = await MasterUser.findByPk(req.params.id);
+    const { data: user, error } = await masterSupabaseClient
+      .from('users')
+      .select('*')
+      .eq('id', req.params.id)
+      .single();
 
-    if (!user) {
+    if (error || !user) {
       return res.status(404).json({
         success: false,
         message: 'User not found'
@@ -149,16 +160,27 @@ router.put('/:id', [
 // @access  Private (admin only)
 router.delete('/:id', authorize(['admin']), async (req, res) => {
   try {
-    const user = await MasterUser.findByPk(req.params.id);
-    
-    if (!user) {
+    const { data: user, error: findError } = await masterSupabaseClient
+      .from('users')
+      .select('*')
+      .eq('id', req.params.id)
+      .single();
+
+    if (findError || !user) {
       return res.status(404).json({
         success: false,
         message: 'User not found'
       });
     }
 
-    await user.destroy();
+    const { error: deleteError } = await masterSupabaseClient
+      .from('users')
+      .delete()
+      .eq('id', req.params.id);
+
+    if (deleteError) {
+      throw new Error(deleteError.message);
+    }
 
     res.json({
       success: true,
