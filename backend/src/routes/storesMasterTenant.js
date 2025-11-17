@@ -360,13 +360,12 @@ router.post('/:id/connect-database', authMiddleware, async (req, res) => {
       }
     }
 
-    // For auto-provision OAuth mode, skip database credential storage
-    // We'll use the Management API which doesn't need database connection
+    // Setup database credentials and connection
     let storeDb = null;
     let tenantDb = null;
 
     if (!autoProvision) {
-      // Manual mode - store credentials and create connection
+      // Manual mode - store credentials and create full PostgreSQL connection
       const credentials = {
         projectUrl,
         serviceRoleKey,
@@ -397,10 +396,47 @@ router.post('/:id/connect-database', authMiddleware, async (req, res) => {
       // Get tenant DB connection
       tenantDb = await ConnectionManager.getStoreConnection(storeId);
     } else {
-      // Auto-provision OAuth mode
-      console.log('🚀 Auto-provision OAuth mode - skipping database connection setup');
-      console.log('   Will use Supabase Management API for migrations');
-      console.log('   Database credentials will be saved after provisioning succeeds');
+      // Auto-provision OAuth mode - create Supabase client for tenant DB operations
+      console.log('🚀 Auto-provision OAuth mode - creating Supabase client for tenant');
+
+      // We have projectUrl from OAuth, but might not have serviceRoleKey
+      // For now, we can't create tenant records without serviceRoleKey
+      // So migrations+seed must handle everything
+
+      // Option: Use Management API to fetch serviceRoleKey
+      if (oauthAccessToken && projectId) {
+        try {
+          console.log('Attempting to fetch serviceRoleKey via Management API...');
+          const axios = require('axios');
+          const keysResponse = await axios.get(
+            `https://api.supabase.com/v1/projects/${projectId}/api-keys`,
+            {
+              headers: {
+                'Authorization': `Bearer ${oauthAccessToken}`,
+                'Content-Type': 'application/json'
+              }
+            }
+          );
+
+          if (keysResponse.data && keysResponse.data.service_role) {
+            serviceRoleKey = keysResponse.data.service_role;
+            console.log('✅ serviceRoleKey fetched via Management API');
+
+            // Create Supabase client for tenant operations
+            const { createClient } = require('@supabase/supabase-js');
+            tenantDb = createClient(projectUrl, serviceRoleKey, {
+              auth: {
+                persistSession: false,
+                autoRefreshToken: false
+              }
+            });
+            console.log('✅ Tenant Supabase client created');
+          }
+        } catch (keyError) {
+          console.warn('⚠️ Could not fetch serviceRoleKey:', keyError.message);
+          console.log('   Migrations must include all necessary data (store, user records)');
+        }
+      }
     }
 
     // 4. Provision tenant database (create tables, seed data)
