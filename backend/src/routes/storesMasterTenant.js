@@ -530,16 +530,34 @@ router.post('/:id/connect-database', authMiddleware, async (req, res) => {
       }
     }
 
-    // 4. Provision tenant database (create tables, seed data)
+    // 4. Get user password hash from master DB
+    console.log('🔍 Fetching user details from master DB for tenant provisioning...');
+    const { data: masterUser, error: userError } = await masterSupabaseClient
+      .from('users')
+      .select('password, first_name, last_name')
+      .eq('id', req.user.id)
+      .single();
+
+    if (userError) {
+      console.warn('⚠️ Could not fetch user from master DB:', userError.message);
+    }
+
+    console.log('✅ User data fetched:', {
+      hasPassword: !!masterUser?.password,
+      firstName: masterUser?.first_name,
+      lastName: masterUser?.last_name
+    });
+
+    // 5. Provision tenant database (create tables, seed data)
     const provisioningResult = await TenantProvisioningService.provisionTenantDatabase(
       tenantDb,
       storeId,
       {
         userId: req.user.id,
         userEmail: req.user.email,
-        userPasswordHash: req.user.password, // TODO: Get from master user
-        userFirstName: req.user.first_name,
-        userLastName: req.user.last_name,
+        userPasswordHash: masterUser?.password || null,
+        userFirstName: masterUser?.first_name || req.user.first_name,
+        userLastName: masterUser?.last_name || req.user.last_name,
         storeName: storeName || 'My Store',
         storeSlug: storeSlug || `store-${Date.now()}`,
         force: false,
