@@ -30,8 +30,9 @@ export default function StoreOnboarding() {
   const [completedSteps, setCompletedSteps] = useState([]);
 
   const [storeData, setStoreData] = useState({ name: '', slug: '' });
-  const [dbData, setDbData] = useState({ connectionString: '' });
+  const [dbData, setDbData] = useState({ connectionString: '', serviceRoleKey: '' });
   const [oauthCompleted, setOauthCompleted] = useState(false);
+  const [needsServiceKey, setNeedsServiceKey] = useState(false);
   const [stripeData, setStripeData] = useState({ publishableKey: '', secretKey: '' });
   const [creditData, setCreditData] = useState({ amount: 100 });
   const [profileData, setProfileData] = useState({ phone: '', companyName: '' });
@@ -118,36 +119,10 @@ export default function StoreOnboarding() {
 
             if (statusResponse.success && statusResponse.connected) {
               console.log('✅ OAuth verified via API - tokens found');
-              console.log('🚀 Auto-provisioning database via OAuth...');
-              setSuccess('Supabase connected! Provisioning database automatically...');
-
-              // Auto-provision using OAuth (no manual input needed)
-              try {
-                const provisionResponse = await apiClient.post(`/stores/${storeId}/connect-database`, {
-                  storeName: storeData.name,
-                  storeSlug: storeData.slug,
-                  useOAuth: true,
-                  autoProvision: true
-                });
-
-                if (provisionResponse.success) {
-                  setCompletedSteps([...completedSteps, 2]);
-
-                  // Show appropriate message
-                  if (provisionResponse.alreadyProvisioned) {
-                    setSuccess('Database is already set up! Moving to next step...');
-                  } else {
-                    setSuccess('Database is ready and data inserted.');
-                  }
-
-                  setTimeout(() => setCurrentStep(3), 1500);
-                } else {
-                  setError(provisionResponse.error || 'Failed to provision database automatically');
-                }
-              } catch (provErr) {
-                console.error('Auto-provision error:', provErr);
-                setError('Auto-provisioning failed: ' + (provErr.message || 'Unknown error'));
-              }
+              setOauthCompleted(true);
+              setNeedsServiceKey(true);
+              setSuccess('Supabase connected! Please provide your Service Role Key to complete setup.');
+              setLoading(false);
             } else {
               console.log('❌ OAuth not found via API');
               setError('OAuth was cancelled or failed. Please try again.');
@@ -184,18 +159,25 @@ export default function StoreOnboarding() {
     setError('');
     setSuccess('');
 
+    if (!dbData.serviceRoleKey) {
+      setError('Please provide your Supabase Service Role Key');
+      setLoading(false);
+      return;
+    }
+
     try {
       const provisionResponse = await apiClient.post(`/stores/${storeId}/connect-database`, {
         storeName: storeData.name,
         storeSlug: storeData.slug,
         useOAuth: true,
-        connectionString: dbData.connectionString
+        autoProvision: true,
+        serviceRoleKey: dbData.serviceRoleKey
       });
 
       if (provisionResponse.success) {
         setCompletedSteps([...completedSteps, 2]);
-        setSuccess('Database connected and data seeded.');
-        setCurrentStep(3);
+        setSuccess('Database connected and provisioned successfully!');
+        setTimeout(() => setCurrentStep(3), 1500);
       } else {
         setError(provisionResponse.error || 'Failed to provision database');
       }
@@ -394,10 +376,6 @@ export default function StoreOnboarding() {
                       <CheckCircle2 className="w-4 h-4 mr-2 text-green-600 mt-0.5 flex-shrink-0" />
                       <span><strong>Sit back & relax</strong> while we build your entire database</span>
                     </li>
-                    <li className="flex items-start">
-                      <CheckCircle2 className="w-4 h-4 mr-2 text-green-600 mt-0.5 flex-shrink-0" />
-                      <span><strong>Launch ready!</strong> 137 tables + 6,598 data rows seeded</span>
-                    </li>
                   </ul>
                 </div>
               </div>
@@ -424,7 +402,7 @@ export default function StoreOnboarding() {
           )}
 
           {/* Step 2b: Enter Connection String (after OAuth) */}
-          {currentStep === 2 && oauthCompleted && (
+          {currentStep === 2 && oauthCompleted && needsServiceKey && (
             <form onSubmit={handleProvisionDatabase} className="space-y-6">
               <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
                 <h4 className="font-semibold text-blue-900 mb-2 flex items-center">
@@ -432,24 +410,24 @@ export default function StoreOnboarding() {
                   One more step!
                 </h4>
                 <p className="text-sm text-blue-800 mb-2">
-                  To create your database tables and seed initial data, we need your database connection string.
+                  To complete the setup, we need your Supabase Service Role Key.
                 </p>
                 <ol className="text-xs text-blue-700 space-y-1 list-decimal list-inside ml-2">
-                  <li>Go to Supabase → Settings → Database</li>
-                  <li>Copy the Connection String (URI)</li>
-                  <li>Replace [YOUR-PASSWORD] with your actual database password</li>
-                  <li>Paste the complete connection string below</li>
+                  <li>Go to your Supabase Dashboard → Settings → API</li>
+                  <li>Find the "service_role" key under "Project API keys"</li>
+                  <li>Copy the service_role key (starts with "eyJh...")</li>
+                  <li>Paste it in the field below</li>
                 </ol>
               </div>
 
               <div>
-                <Label htmlFor="connectionString">Database Connection String (URI) *</Label>
+                <Label htmlFor="serviceRoleKey">Supabase Service Role Key *</Label>
                 <Input
-                  id="connectionString"
+                  id="serviceRoleKey"
                   type="password"
-                  placeholder="postgresql://postgres.[PROJECT-REF]:[PASSWORD]@aws-0-[REGION].pooler.supabase.com:6543/postgres"
-                  value={dbData.connectionString}
-                  onChange={(e) => setDbData({ connectionString: e.target.value })}
+                  placeholder="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+                  value={dbData.serviceRoleKey}
+                  onChange={(e) => setDbData({ ...dbData, serviceRoleKey: e.target.value })}
                   required
                   autoFocus
                   className="mt-2 font-mono text-xs"

@@ -139,6 +139,9 @@ router.post('/:id/connect-database', authMiddleware, async (req, res) => {
       autoProvision
     } = req.body;
 
+    console.log('🔍 Request body keys:', Object.keys(req.body));
+    console.log('🔍 serviceRoleKey provided:', !!manualServiceKey);
+
     let projectUrl, serviceRoleKey, anonKey, connectionString, oauthAccessToken, projectId;
 
     // If using OAuth, get credentials from Redis (or memory fallback)
@@ -206,9 +209,11 @@ router.post('/:id/connect-database', authMiddleware, async (req, res) => {
       });
 
       projectUrl = oauthToken.project_url;
-      serviceRoleKey = oauthToken.service_role_key || null; // Can be null for OAuth mode
+      serviceRoleKey = manualServiceKey || oauthToken.service_role_key || null; // Use manual if provided
       anonKey = oauthToken.anon_key;
       oauthAccessToken = oauthToken.access_token; // For running migrations via API
+
+      console.log('🔑 ServiceRoleKey source:', manualServiceKey ? 'Manual (from frontend)' : (oauthToken.service_role_key ? 'OAuth token' : 'None'));
 
       // Extract project ID from project URL
       if (projectUrl) {
@@ -403,10 +408,40 @@ router.post('/:id/connect-database', authMiddleware, async (req, res) => {
       // For now, we can't create tenant records without serviceRoleKey
       // So migrations+seed must handle everything
 
-      // Option: Use Management API to fetch serviceRoleKey
-      if (oauthAccessToken && projectId) {
+      // If serviceRoleKey already provided (manual input), skip Management API fetch
+      if (serviceRoleKey) {
+        console.log('✅ serviceRoleKey provided manually - skipping Management API fetch');
+
+        // Create Supabase client for tenant operations
+        const { createClient } = require('@supabase/supabase-js');
+        tenantDb = createClient(projectUrl, serviceRoleKey, {
+          auth: {
+            persistSession: false,
+            autoRefreshToken: false
+          }
+        });
+        console.log('✅ Tenant Supabase client created');
+
+        // CRITICAL: Store credentials in store_databases table for ConnectionManager
+        console.log('📝 Creating StoreDatabase record with manual serviceRoleKey...');
+        const credentials = {
+          projectUrl,
+          serviceRoleKey,
+          anonKey,
+          connectionString: connectionString || null
+        };
+
+        storeDb = await StoreDatabase.createWithCredentials(
+          storeId,
+          'supabase',
+          credentials
+        );
+        console.log('✅ StoreDatabase record created - ConnectionManager can now fetch tenant data');
+      }
+      // Option: Use Management API to fetch serviceRoleKey if not provided
+      else if (oauthAccessToken && projectId) {
         try {
-          console.log('Attempting to fetch serviceRoleKey via Management API...');
+          console.log('🔍 serviceRoleKey not provided - attempting to fetch via Management API...');
           const axios = require('axios');
 
           // Try multiple endpoints to get service_role key
