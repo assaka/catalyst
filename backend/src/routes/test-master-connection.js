@@ -6,6 +6,8 @@
 const express = require('express');
 const router = express.Router();
 const { Sequelize } = require('sequelize');
+const { masterSupabaseClient } = require('../database/masterConnection');
+const { encryptDatabaseCredentials } = require('../utils/encryption');
 
 router.get('/', async (req, res) => {
   const results = {
@@ -142,6 +144,111 @@ router.get('/', async (req, res) => {
     }
 
     await sequelize.close();
+
+    // ============================================
+    // SUPABASE CLIENT TESTS (NEW APPROACH)
+    // ============================================
+
+    // Test 7: Test Supabase client connection
+    try {
+      const { data: supabaseStores, error: supabaseError } = await masterSupabaseClient
+        .from('stores')
+        .select('id')
+        .limit(1);
+
+      if (supabaseError) {
+        results.tests.push({
+          name: 'Supabase client query stores',
+          status: 'FAIL',
+          error: supabaseError.message
+        });
+      } else {
+        results.tests.push({
+          name: 'Supabase client query stores',
+          status: 'PASS',
+          details: `Supabase client working, found ${supabaseStores?.length || 0} stores`
+        });
+      }
+    } catch (supabaseError) {
+      results.tests.push({
+        name: 'Supabase client query stores',
+        status: 'FAIL',
+        error: supabaseError.message
+      });
+    }
+
+    // Test 8: Test Supabase client INSERT into store_databases (with immediate delete)
+    try {
+      const { v4: uuidv4 } = require('uuid');
+
+      // Get a store ID to use
+      const { data: testStores } = await masterSupabaseClient
+        .from('stores')
+        .select('id')
+        .limit(1);
+
+      if (testStores && testStores.length > 0) {
+        const testId = uuidv4();
+        const testStoreId = testStores[0].id;
+
+        // Encrypt test credentials
+        const testCredentials = encryptDatabaseCredentials({
+          projectUrl: 'https://test.supabase.co',
+          serviceRoleKey: 'test-key-12345',
+          anonKey: 'test-anon-key',
+          connectionString: null
+        });
+
+        // Insert
+        const { data: insertedRecord, error: insertError } = await masterSupabaseClient
+          .from('store_databases')
+          .insert({
+            id: testId,
+            store_id: testStoreId,
+            database_type: 'supabase',
+            connection_string_encrypted: testCredentials,
+            host: 'test.supabase.co',
+            is_active: false,
+            connection_status: 'pending'
+          })
+          .select()
+          .single();
+
+        if (insertError) {
+          results.tests.push({
+            name: 'Supabase client INSERT into store_databases',
+            status: 'FAIL',
+            error: insertError.message,
+            errorCode: insertError.code,
+            details: insertError.details || insertError.hint || insertError.message
+          });
+        } else {
+          // Delete the test record
+          await masterSupabaseClient
+            .from('store_databases')
+            .delete()
+            .eq('id', testId);
+
+          results.tests.push({
+            name: 'Supabase client INSERT into store_databases',
+            status: 'PASS',
+            details: 'INSERT test successful (record deleted after)'
+          });
+        }
+      } else {
+        results.tests.push({
+          name: 'Supabase client INSERT into store_databases',
+          status: 'SKIP',
+          details: 'No stores found to test with'
+        });
+      }
+    } catch (supabaseInsertError) {
+      results.tests.push({
+        name: 'Supabase client INSERT into store_databases',
+        status: 'FAIL',
+        error: supabaseInsertError.message
+      });
+    }
 
     // Summary
     const passed = results.tests.filter(t => t.status === 'PASS').length;
