@@ -1,5 +1,5 @@
 // Import from master models for store ownership checks (master-tenant architecture)
-const { Store: MasterStore } = require('../models/master');
+const { MasterStore } = require('../models/master');
 const { StoreTeam } = require('../models');
 
 /**
