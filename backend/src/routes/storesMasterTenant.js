@@ -702,22 +702,43 @@ router.get('/dropdown', authMiddleware, async (req, res) => {
         let storeName = 'Unnamed Store';
         let storeSlug = primaryHostname?.slug || null;
 
+        console.log(`[Dropdown] Processing store ${store.id}:`, {
+          is_active: store.is_active,
+          status: store.status,
+          will_query_tenant: store.is_active && store.status === 'active'
+        });
+
         if (store.is_active && store.status === 'active') {
           try {
+            console.log(`[Dropdown] Getting tenant connection for store ${store.id}...`);
             const tenantDb = await ConnectionManager.getStoreConnection(store.id);
-            const { data: tenantStore } = await tenantDb
+            console.log(`[Dropdown] Tenant connection obtained, querying stores table...`);
+
+            const { data: tenantStore, error: queryError } = await tenantDb
               .from('stores')
               .select('name, slug')
               .limit(1)
               .single();
 
+            console.log(`[Dropdown] Query result:`, {
+              has_data: !!tenantStore,
+              data: tenantStore,
+              error: queryError?.message
+            });
+
             if (tenantStore) {
               storeName = tenantStore.name;
               storeSlug = tenantStore.slug;
+              console.log(`[Dropdown] ✅ Store name set to: ${storeName}`);
+            } else {
+              console.warn(`[Dropdown] ⚠️ No tenant store data returned`);
             }
           } catch (err) {
-            console.warn('Failed to get tenant store data:', err.message);
+            console.error(`[Dropdown] ❌ Failed to get tenant store data for ${store.id}:`, err.message);
+            console.error(`[Dropdown] Error stack:`, err.stack);
           }
+        } else {
+          console.log(`[Dropdown] ⏭️ Skipping tenant query - store not active`);
         }
 
         return {
