@@ -1,4 +1,6 @@
-const { Store, StoreTeam } = require('../models');
+// Import from master models for store ownership checks (master-tenant architecture)
+const { Store: MasterStore } = require('../models/master');
+const { StoreTeam } = require('../models');
 
 /**
  * Helper function to check if user is a team member with specific permissions
@@ -105,11 +107,11 @@ const checkStoreOwnership = async (req, res, next) => {
       return next();
     }
 
-    // Find the store
-    const store = await Store.findByPk(storeId);
-    
+    // Find the store in MASTER database (where ownership is tracked)
+    const store = await MasterStore.findByPk(storeId);
+
     if (!store) {
-      console.log('❌ Store not found:', storeId);
+      console.log('❌ Store not found in master DB:', storeId);
       return res.status(404).json({
         success: false,
         message: 'Store not found'
@@ -182,7 +184,8 @@ const checkResourceOwnership = (modelName) => {
 
       const resource = await Model.findByPk(resourceId, {
         include: [{
-          model: Store,
+          model: MasterStore,
+          as: 'Store',
           attributes: ['id', 'user_id']
         }]
       });
