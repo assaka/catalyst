@@ -1,5 +1,5 @@
 // Import from master models for store ownership checks (master-tenant architecture)
-const { MasterStore } = require('../models/master');
+const { masterSupabaseClient } = require('../database/masterConnection');
 const { StoreTeam } = require('../models');
 
 /**
@@ -108,10 +108,14 @@ const checkStoreOwnership = async (req, res, next) => {
     }
 
     // Find the store in MASTER database (where ownership is tracked)
-    const store = await MasterStore.findByPk(storeId);
+    const { data: store, error: storeError } = await masterSupabaseClient
+      .from('stores')
+      .select('*')
+      .eq('id', storeId)
+      .single();
 
-    if (!store) {
-      console.log('❌ Store not found in master DB:', storeId);
+    if (storeError || !store) {
+      console.log('❌ Store not found in master DB:', storeId, storeError?.message);
       return res.status(404).json({
         success: false,
         message: 'Store not found'
