@@ -50,7 +50,7 @@ class TenantProvisioningService {
 
       // 3. Seed initial data
       console.log('Seeding initial data...');
-      await this.seedInitialData(tenantDb, storeId, options, result);
+      // await this.seedInitialData(tenantDb, storeId, options, result);
 
       // 4. Create store record in tenant DB
       console.log('Creating store record...');
@@ -127,9 +127,26 @@ class TenantProvisioningService {
         console.log('Using Supabase Management API for migrations (OAuth mode)...');
 
         const axios = require('axios');
-        const combinedSQL = migrationSQL + '\n' + seedSQL;
+        let combinedSQL = migrationSQL + '\n' + seedSQL;
 
         try {
+          // Fix SQL syntax for PostgreSQL compatibility
+          console.log('🔧 Fixing CREATE TYPE IF NOT EXISTS syntax...');
+
+          // Replace CREATE TYPE IF NOT EXISTS with DO block that handles duplicates
+          combinedSQL = combinedSQL.replace(
+            /CREATE TYPE IF NOT EXISTS\s+(\w+)\s+AS\s+ENUM\s*\(([\s\S]*?)\);/gi,
+            (match, typeName, enumValues) => {
+              return `DO $$ BEGIN
+    CREATE TYPE ${typeName} AS ENUM (${enumValues});
+EXCEPTION
+    WHEN duplicate_object THEN null;
+END $$;`;
+            }
+          );
+
+          console.log('✅ SQL syntax fixed for PostgreSQL compatibility');
+
           // Execute SQL via Supabase Management API
           const response = await axios.post(
             `https://api.supabase.com/v1/projects/${options.projectId}/database/query`,
@@ -138,7 +155,10 @@ class TenantProvisioningService {
               headers: {
                 'Authorization': `Bearer ${options.oauthAccessToken}`,
                 'Content-Type': 'application/json'
-              }
+              },
+              maxBodyLength: Infinity,
+              maxContentLength: Infinity,
+              timeout: 120000 // 2 minutes for large SQL execution
             }
           );
 
