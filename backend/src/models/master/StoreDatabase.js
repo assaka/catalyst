@@ -236,7 +236,15 @@ StoreDatabase.createWithCredentials = async function(storeId, databaseType, cred
     storeDb.setCredentials(credentials);
 
     console.log('🔧 Credentials set, saving to master DB...');
-    await storeDb.save();
+    console.log('🔧 Sequelize connection config:', {
+      dialect: this.sequelize.options.dialect,
+      database: this.sequelize.config.database,
+      host: this.sequelize.config.host,
+      username: this.sequelize.config.username ? '***' : 'not set'
+    });
+
+    // Enable SQL logging for this operation
+    await storeDb.save({ logging: console.log });
 
     console.log('✅ StoreDatabase record saved successfully:', storeDb.id);
     return storeDb;
