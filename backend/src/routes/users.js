@@ -1,6 +1,6 @@
 const express = require('express');
 const { body, validationResult } = require('express-validator');
-const { User } = require('../models');
+const { MasterUser } = require('../models/master'); // Use master DB for platform users
 const { authorize } = require('../middleware/auth');
 const router = express.Router();
 
@@ -22,7 +22,7 @@ router.get('/', authorize(['admin']), async (req, res) => {
       ];
     }
 
-    const { count, rows } = await User.findAndCountAll({
+    const { count, rows } = await MasterUser.findAndCountAll({
       where,
       limit: parseInt(limit),
       offset: parseInt(offset),
@@ -55,8 +55,8 @@ router.get('/', authorize(['admin']), async (req, res) => {
 // @access  Private
 router.get('/:id', async (req, res) => {
   try {
-    const user = await User.findByPk(req.params.id);
-    
+    const user = await MasterUser.findByPk(req.params.id);
+
     if (!user) {
       return res.status(404).json({
         success: false,
@@ -102,7 +102,7 @@ router.put('/:id', [
       });
     }
 
-    const user = await User.findByPk(req.params.id);
+    const user = await MasterUser.findByPk(req.params.id);
     
     if (!user) {
       return res.status(404).json({
@@ -149,7 +149,7 @@ router.put('/:id', [
 // @access  Private (admin only)
 router.delete('/:id', authorize(['admin']), async (req, res) => {
   try {
-    const user = await User.findByPk(req.params.id);
+    const user = await MasterUser.findByPk(req.params.id);
     
     if (!user) {
       return res.status(404).json({
