@@ -218,10 +218,20 @@ export default function StoreOnboarding() {
         // Continue anyway - user can update profile later from settings
       }
 
+      // Clear old store selection data before redirecting
+      localStorage.removeItem('selectedStoreId');
+      localStorage.removeItem('selectedStoreName');
+      localStorage.removeItem('selectedStoreSlug');
+      console.log('🧹 Cleared old store selection from localStorage');
+
       setSuccess('🎉 Store created successfully! Redirecting to dashboard...');
       setTimeout(() => window.location.href = '/admin/dashboard', 2000);
     } catch (err) {
       // Fallback - always redirect to dashboard
+      localStorage.removeItem('selectedStoreId');
+      localStorage.removeItem('selectedStoreName');
+      localStorage.removeItem('selectedStoreSlug');
+
       setSuccess('Store setup complete! Redirecting...');
       setTimeout(() => window.location.href = '/admin/dashboard', 2000);
     } finally {
