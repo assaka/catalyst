@@ -137,7 +137,7 @@ export default function StoreOnboarding() {
                   if (provisionResponse.alreadyProvisioned) {
                     setSuccess('Database is already set up! Moving to next step...');
                   } else {
-                    setSuccess('Database connected! 137 tables created & 6,598 rows seeded.');
+                    setSuccess('🎉 Success! Your store is ready with 137 tables & 6,598 products pre-loaded!');
                   }
 
                   setTimeout(() => setCurrentStep(3), 1500);
