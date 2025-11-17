@@ -533,12 +533,9 @@ router.post('/login', [
           }
         }));
       } else {
-        // Fallback to tenant DB for non-agency users
-        const whereClause = { email };
-        if (role) {
-          whereClause.role = role;
-        }
-        users = await User.findAll({ where: whereClause });
+        // No fallback - store_owner/admin must exist in master DB
+        console.log('⚠️ No users found in master DB for:', email, role);
+        users = [];
       }
     } else {
       // No role specified - search master DB first, then tenant DB
@@ -562,10 +559,9 @@ router.post('/login', [
           }
         }));
       } else {
-        // Search tenant DB
-        const customerUsers = await Customer.findAll({ where: { email } });
-        const storeOwnerUsers = await User.findAll({ where: { email } });
-        users = [...customerUsers, ...storeOwnerUsers];
+        // No users found in master DB - agency users must be in master DB
+        console.log('⚠️ No agency users found in master DB for:', email);
+        users = [];
       }
     }
     
