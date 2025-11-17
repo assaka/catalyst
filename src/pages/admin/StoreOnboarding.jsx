@@ -468,8 +468,14 @@ export default function StoreOnboarding() {
           {/* Step 3: Complete Profile */}
           {currentStep === 3 && (
             <form onSubmit={handleCompleteProfile} className="space-y-6">
+              <div className="bg-gray-50 rounded-lg p-4 mb-4">
+                <p className="text-sm text-gray-600">
+                  Complete your profile information to personalize your experience. All fields are optional.
+                </p>
+              </div>
+
               <div>
-                <Label htmlFor="companyName">Company / Business Name</Label>
+                <Label htmlFor="companyName">Company / Business Name <span className="text-gray-400 text-sm">(optional)</span></Label>
                 <Input
                   id="companyName"
                   placeholder="Acme Inc."
@@ -480,7 +486,7 @@ export default function StoreOnboarding() {
               </div>
 
               <div>
-                <Label htmlFor="phone">Phone Number</Label>
+                <Label htmlFor="phone">Phone Number <span className="text-gray-400 text-sm">(optional)</span></Label>
                 <Input
                   id="phone"
                   type="tel"
