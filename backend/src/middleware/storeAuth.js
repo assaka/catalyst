@@ -112,7 +112,7 @@ const checkStoreOwnership = async (req, res, next) => {
       .from('stores')
       .select('*')
       .eq('id', storeId)
-      .single();
+      .maybeSingle();
 
     if (storeError || !store) {
       console.log('❌ Store not found in master DB:', storeId, storeError?.message);

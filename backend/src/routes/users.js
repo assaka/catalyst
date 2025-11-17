@@ -113,9 +113,13 @@ router.put('/:id', [
       });
     }
 
-    const user = await MasterUser.findByPk(req.params.id);
-    
-    if (!user) {
+    const { data: user, error: findError } = await masterSupabaseClient
+      .from('users')
+      .select('*')
+      .eq('id', req.params.id)
+      .maybeSingle();
+
+    if (findError || !user) {
       return res.status(404).json({
         success: false,
         message: 'User not found'
@@ -131,20 +135,29 @@ router.put('/:id', [
     }
 
     const { email, first_name, last_name, phone, is_active, role } = req.body;
-    
+
     // Only admin can update role and is_active
-    const updateData = { email, first_name, last_name, phone };
+    const updateData = { email, first_name, last_name, phone, updated_at: new Date().toISOString() };
     if (req.user.role === 'admin') {
       if (is_active !== undefined) updateData.is_active = is_active;
       if (role !== undefined) updateData.role = role;
     }
 
-    await user.update(updateData);
+    const { data: updatedUser, error: updateError } = await masterSupabaseClient
+      .from('users')
+      .update(updateData)
+      .eq('id', req.params.id)
+      .select()
+      .single();
+
+    if (updateError) {
+      throw new Error(updateError.message);
+    }
 
     res.json({
       success: true,
       message: 'User updated successfully',
-      data: user
+      data: updatedUser
     });
   } catch (error) {
     console.error('Update user error:', error);
