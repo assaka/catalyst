@@ -588,31 +588,9 @@ router.post('/:id/connect-database', authMiddleware, async (req, res) => {
       });
     }
 
-    // 5. Create hostname mapping (use Supabase client)
-    const slug = storeSlug || `store-${Date.now()}`;
-    const hostname = `${slug}.catalyst.com`; // TODO: Use actual domain
-
-    console.log('📍 Creating hostname mapping...');
-    const { v4: uuidv4 } = require('uuid');
-    const { error: hostnameError } = await masterSupabaseClient
-      .from('store_hostnames')
-      .insert({
-        id: uuidv4(),
-        store_id: storeId,
-        hostname,
-        slug,
-        is_primary: true,
-        is_custom_domain: false,
-        ssl_enabled: true,
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString()
-      });
-
-    if (hostnameError) {
-      console.warn('⚠️ Failed to create hostname mapping:', hostnameError.message);
-    } else {
-      console.log('✅ Hostname mapping created');
-    }
+    // 5. Hostname mapping (skipped - using custom_domains table instead)
+    console.log('⏭️ Skipping hostname mapping (using custom_domains table)');
+    const hostname = null; // No longer used
 
     // 6. Save OAuth tokens to tenant DB (if from OAuth flow)
     if (useOAuth) {
@@ -758,18 +736,9 @@ router.get('/dropdown', authMiddleware, async (req, res) => {
     // Enrich with hostname info (using Supabase client, not Sequelize model)
     const enrichedStores = await Promise.all(
       (stores || []).map(async (store) => {
-        // Get hostname from master DB using Supabase client
-        const { data: hostnames } = await masterSupabaseClient
-          .from('store_hostnames')
-          .select('hostname, slug, is_primary')
-          .eq('store_id', store.id)
-          .order('is_primary', { ascending: false });
-
-        const primaryHostname = (hostnames || []).find(h => h.is_primary) || (hostnames || [])[0];
-
-        // Get tenant store name if available
+        // Get tenant store name and slug (skip store_hostnames - not used in this setup)
         let storeName = 'Unnamed Store';
-        let storeSlug = primaryHostname?.slug || null;
+        let storeSlug = null;
 
         console.log(`[Dropdown] Processing store ${store.id}:`, {
           is_active: store.is_active,
