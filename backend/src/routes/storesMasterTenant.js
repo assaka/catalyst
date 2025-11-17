@@ -751,14 +751,28 @@ router.get('/dropdown', authMiddleware, async (req, res) => {
             console.log(`[Dropdown] Getting tenant connection for store ${store.id}...`);
             const tenantDb = await ConnectionManager.getStoreConnection(store.id);
             console.log(`[Dropdown] Tenant connection obtained, querying stores table...`);
+            console.log(`[Dropdown] Looking for store with ID: ${store.id}`);
 
+            // First check if ANY stores exist in tenant DB
+            const { data: allStores, error: allStoresError } = await tenantDb
+              .from('stores')
+              .select('id, name, slug')
+              .limit(5);
+
+            console.log(`[Dropdown] All stores in tenant DB:`, {
+              count: allStores?.length || 0,
+              stores: allStores,
+              error: allStoresError?.message
+            });
+
+            // Now query for the specific store
             const { data: tenantStore, error: queryError } = await tenantDb
               .from('stores')
               .select('name, slug')
               .eq('id', store.id)
               .maybeSingle();
 
-            console.log(`[Dropdown] Query result:`, {
+            console.log(`[Dropdown] Query result for ${store.id}:`, {
               has_data: !!tenantStore,
               data: tenantStore,
               error: queryError?.message
@@ -854,29 +868,42 @@ router.get('/:id', authMiddleware, async (req, res) => {
   try {
     const storeId = req.params.id;
 
-    // Get from master DB
-    const store = await MasterStore.findByPk(storeId);
+    // Get from master DB using Supabase client
+    const { data: store, error: storeError } = await masterSupabaseClient
+      .from('stores')
+      .select('*')
+      .eq('id', storeId)
+      .maybeSingle();
 
-    if (!store) {
+    if (storeError || !store) {
       return res.status(404).json({
         success: false,
         error: 'Store not found'
       });
     }
 
-    // Get hostname
-    const hostnames = await StoreHostname.findByStore(storeId);
-    const primaryHostname = hostnames.find(h => h.is_primary);
+    // Get hostname (skipped - using custom_domains instead)
+    const primaryHostname = null;
 
-    // Get connection info
-    const connectionInfo = await ConnectionManager.getConnectionInfo(storeId);
+    // Get connection info (skipped - causes Sequelize issues)
+    const connectionInfo = null;
 
-    // Get credit balance
-    const creditBalance = await CreditBalance.findByStore(storeId);
+    // Get credit balance using Supabase client
+    let creditBalance = null;
+    try {
+      const { data: balance } = await masterSupabaseClient
+        .from('credit_balances')
+        .select('*')
+        .eq('store_id', storeId)
+        .maybeSingle();
+      creditBalance = balance;
+    } catch (err) {
+      console.warn('Could not fetch credit balance:', err.message);
+    }
 
     // Get tenant data if store is active
     let tenantStoreData = null;
-    if (store.isOperational()) {
+    if (store.status === 'active' && store.is_active) {
       try {
         const tenantDb = await ConnectionManager.getStoreConnection(storeId);
         const { data } = await tenantDb
@@ -929,9 +956,15 @@ router.patch('/:id', authMiddleware, async (req, res) => {
     const storeId = req.params.id;
     const updates = req.body;
 
-    const store = await MasterStore.findByPk(storeId);
+    // Get store from master DB using Supabase client
+    const { data: store, error: storeError } = await masterSupabaseClient
+      .from('stores')
+      .select('*')
+      .eq('id', storeId)
+      .maybeSingle();
 
-    if (!store || !store.isOperational()) {
+    // Check if store is operational (status='active' and is_active=true)
+    if (storeError || !store || store.status !== 'active' || !store.is_active) {
       return res.status(400).json({
         success: false,
         error: 'Store is not operational'
@@ -974,9 +1007,15 @@ router.get('/:id/settings', authMiddleware, async (req, res) => {
   try {
     const storeId = req.params.id;
 
-    const store = await MasterStore.findByPk(storeId);
+    // Get store from master DB using Supabase client
+    const { data: store, error: storeError } = await masterSupabaseClient
+      .from('stores')
+      .select('*')
+      .eq('id', storeId)
+      .maybeSingle();
 
-    if (!store || !store.isOperational()) {
+    // Check if store is operational (status='active' and is_active=true)
+    if (storeError || !store || store.status !== 'active' || !store.is_active) {
       return res.status(400).json({
         success: false,
         error: 'Store is not operational'
@@ -1025,9 +1064,15 @@ router.put('/:id/settings', authMiddleware, async (req, res) => {
       settingsKeys: updates.settings ? Object.keys(updates.settings) : []
     });
 
-    const store = await MasterStore.findByPk(storeId);
+    // Get store from master DB using Supabase client
+    const { data: store, error: storeError } = await masterSupabaseClient
+      .from('stores')
+      .select('*')
+      .eq('id', storeId)
+      .maybeSingle();
 
-    if (!store || !store.isOperational()) {
+    // Check if store is operational (status='active' and is_active=true)
+    if (storeError || !store || store.status !== 'active' || !store.is_active) {
       return res.status(400).json({
         success: false,
         error: 'Store is not operational'
@@ -1097,9 +1142,14 @@ router.delete('/:id', authMiddleware, async (req, res) => {
   try {
     const storeId = req.params.id;
 
-    const store = await MasterStore.findByPk(storeId);
+    // Get store from master DB using Supabase client
+    const { data: store, error: storeError } = await masterSupabaseClient
+      .from('stores')
+      .select('*')
+      .eq('id', storeId)
+      .maybeSingle();
 
-    if (!store) {
+    if (storeError || !store) {
       return res.status(404).json({
         success: false,
         error: 'Store not found'
@@ -1107,7 +1157,18 @@ router.delete('/:id', authMiddleware, async (req, res) => {
     }
 
     // Soft delete - suspend the store
-    await store.suspend('User requested deletion');
+    const { error: suspendError } = await masterSupabaseClient
+      .from('stores')
+      .update({
+        status: 'suspended',
+        is_active: false,
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', storeId);
+
+    if (suspendError) {
+      throw new Error(suspendError.message);
+    }
 
     res.json({
       success: true,
