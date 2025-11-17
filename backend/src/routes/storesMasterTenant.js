@@ -469,6 +469,22 @@ router.post('/:id/connect-database', authMiddleware, async (req, res) => {
               }
             });
             console.log('✅ Tenant Supabase client created');
+
+            // CRITICAL: Store credentials in store_databases table for ConnectionManager
+            console.log('📝 Creating StoreDatabase record for auto-provision mode...');
+            const credentials = {
+              projectUrl,
+              serviceRoleKey,
+              anonKey,
+              connectionString: connectionString || null
+            };
+
+            storeDb = await StoreDatabase.createWithCredentials(
+              storeId,
+              'supabase',
+              credentials
+            );
+            console.log('✅ StoreDatabase record created - ConnectionManager can now fetch tenant data');
           } else {
             console.error('❌ Could not fetch serviceRoleKey from any endpoint');
             console.log('   OAuth app needs "secrets:read" and "api_keys:read" scopes');
