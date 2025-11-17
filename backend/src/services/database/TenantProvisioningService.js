@@ -52,22 +52,34 @@ class TenantProvisioningService {
       console.log('Seeding initial data...');
       // await this.seedInitialData(tenantDb, storeId, options, result);
 
-      // 4. Create store record in tenant DB (only if tenantDb available)
+      // 4. Create store record in tenant DB
       if (tenantDb) {
-        console.log('Creating store record...');
+        // Use Supabase client
+        console.log('Creating store record via Supabase client...');
         await this.createStoreRecord(tenantDb, storeId, options, result);
+      } else if (options.oauthAccessToken && options.projectId) {
+        // Use Management API to execute SQL
+        console.log('Creating store record via Management API SQL...');
+        await this.createStoreRecordViaAPI(options.oauthAccessToken, options.projectId, storeId, options, result);
       } else {
-        console.log('⏭️ Skipping store record creation - tenantDb not available (migrations should include store data)');
-        result.dataSeeded.push('Store record (included in seed data)');
+        console.warn('⚠️ Cannot create store record - no tenantDb or OAuth credentials');
+        result.errors.push({ step: 'create_store', error: 'No database client available' });
       }
 
-      // 5. Create agency user record in tenant DB (only if tenantDb available)
+      // 5. Create agency user record in tenant DB
       if (tenantDb && options.userId && options.userEmail) {
-        console.log('Creating user record...');
+        // Use Supabase client
+        console.log('Creating user record via Supabase client...');
         await this.createUserRecord(tenantDb, options, result);
-      } else if (!tenantDb) {
-        console.log('⏭️ Skipping user record creation - tenantDb not available (migrations should include user data)');
-        result.dataSeeded.push('User record (included in seed data)');
+      } else if (options.oauthAccessToken && options.projectId && options.userId && options.userEmail) {
+        // Use Management API to execute SQL
+        console.log('Creating user record via Management API SQL...');
+        await this.createUserRecordViaAPI(options.oauthAccessToken, options.projectId, options, result);
+      } else if (!options.userId || !options.userEmail) {
+        console.log('⏭️ Skipping user record creation - no user data provided');
+      } else {
+        console.warn('⚠️ Cannot create user record - no tenantDb or OAuth credentials');
+        result.errors.push({ step: 'create_user', error: 'No database client available' });
       }
 
       console.log(`✅ Tenant provisioning complete for store ${storeId}`);
@@ -377,6 +389,105 @@ END $$;`;
       .toLowerCase()
       .replace(/[^a-z0-9]+/g, '-')
       .replace(/^-|-$/g, '');
+  }
+
+  /**
+   * Create store record via Management API SQL
+   * @private
+   */
+  async createStoreRecordViaAPI(oauthAccessToken, projectId, storeId, options, result) {
+    try {
+      const axios = require('axios');
+
+      const insertSQL = `
+INSERT INTO stores (id, user_id, name, slug, currency, timezone, is_active, settings, created_at, updated_at)
+VALUES (
+  '${storeId}',
+  '${options.userId}',
+  '${(options.storeName || 'My Store').replace(/'/g, "''")}',
+  '${this.generateSlug(options.storeName)}',
+  '${options.currency || 'USD'}',
+  '${options.timezone || 'UTC'}',
+  true,
+  '${JSON.stringify(options.settings || {})}'::jsonb,
+  NOW(),
+  NOW()
+) ON CONFLICT (id) DO NOTHING;
+      `;
+
+      await axios.post(
+        `https://api.supabase.com/v1/projects/${projectId}/database/query`,
+        { query: insertSQL },
+        {
+          headers: {
+            'Authorization': `Bearer ${oauthAccessToken}`,
+            'Content-Type': 'application/json'
+          }
+        }
+      );
+
+      console.log('✅ Store record created via Management API');
+      result.dataSeeded.push('Store record (via API)');
+      return true;
+    } catch (error) {
+      console.error('Store creation via API error:', error.response?.data || error.message);
+      result.errors.push({
+        step: 'create_store',
+        error: error.message
+      });
+      // Don't throw - non-blocking
+      return false;
+    }
+  }
+
+  /**
+   * Create user record via Management API SQL
+   * @private
+   */
+  async createUserRecordViaAPI(oauthAccessToken, projectId, options, result) {
+    try {
+      const axios = require('axios');
+
+      const insertSQL = `
+INSERT INTO users (id, email, password, first_name, last_name, role, account_type, is_active, email_verified, created_at, updated_at)
+VALUES (
+  '${options.userId}',
+  '${options.userEmail}',
+  '${options.userPasswordHash || 'oauth-user'}',
+  '${(options.userFirstName || '').replace(/'/g, "''")}',
+  '${(options.userLastName || '').replace(/'/g, "''")}',
+  'admin',
+  'agency',
+  true,
+  true,
+  NOW(),
+  NOW()
+) ON CONFLICT (id) DO NOTHING;
+      `;
+
+      await axios.post(
+        `https://api.supabase.com/v1/projects/${projectId}/database/query`,
+        { query: insertSQL },
+        {
+          headers: {
+            'Authorization': `Bearer ${oauthAccessToken}`,
+            'Content-Type': 'application/json'
+          }
+        }
+      );
+
+      console.log('✅ User record created via Management API');
+      result.dataSeeded.push('User record (via API)');
+      return true;
+    } catch (error) {
+      console.error('User creation via API error:', error.response?.data || error.message);
+      result.errors.push({
+        step: 'create_user',
+        error: error.message
+      });
+      // Don't throw - non-blocking
+      return false;
+    }
   }
 
   /**
