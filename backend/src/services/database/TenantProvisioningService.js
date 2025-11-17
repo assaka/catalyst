@@ -147,14 +147,12 @@ class TenantProvisioningService {
         console.log('Using Supabase Management API for migrations (OAuth mode)...');
 
         const axios = require('axios');
-        let combinedSQL = migrationSQL + '\n' + seedSQL;
 
         try {
           // Fix SQL syntax for PostgreSQL compatibility
-          console.log('🔧 Fixing CREATE TYPE IF NOT EXISTS syntax...');
+          console.log('🔧 Fixing CREATE TYPE IF NOT EXISTS syntax in migrations...');
 
-          // Replace CREATE TYPE IF NOT EXISTS with DO block that handles duplicates
-          combinedSQL = combinedSQL.replace(
+          let fixedMigrationSQL = migrationSQL.replace(
             /CREATE TYPE IF NOT EXISTS\s+(\w+)\s+AS\s+ENUM\s*\(([\s\S]*?)\);/gi,
             (match, typeName, enumValues) => {
               return `DO $$ BEGIN
@@ -165,26 +163,47 @@ END $$;`;
             }
           );
 
-          console.log('✅ SQL syntax fixed for PostgreSQL compatibility');
+          console.log('✅ Migration SQL syntax fixed');
+          console.log('📊 Migration SQL size:', (fixedMigrationSQL.length / 1024).toFixed(2), 'KB');
 
-          // Execute SQL via Supabase Management API
-          const response = await axios.post(
+          // Execute migrations first (creates 137 tables)
+          console.log('📤 Running migrations via Management API...');
+          await axios.post(
             `https://api.supabase.com/v1/projects/${options.projectId}/database/query`,
-            { query: combinedSQL },
+            { query: fixedMigrationSQL },
             {
               headers: {
                 'Authorization': `Bearer ${options.oauthAccessToken}`,
                 'Content-Type': 'application/json'
               },
               maxBodyLength: Infinity,
-              maxContentLength: Infinity,
-              timeout: 120000 // 2 minutes for large SQL execution
+              timeout: 120000
             }
           );
 
-          console.log('✅ Migration and seed complete via Supabase Management API!');
+          console.log('✅ Migrations complete - 137 tables created');
           result.tablesCreated.push('Created 137 tables via OAuth API');
+
+          // Execute seed data separately (6,598 rows - large file)
+          console.log('📊 Seed SQL size:', (seedSQL.length / 1024).toFixed(2), 'KB');
+          console.log('📤 Running seed data via Management API...');
+
+          await axios.post(
+            `https://api.supabase.com/v1/projects/${options.projectId}/database/query`,
+            { query: seedSQL },
+            {
+              headers: {
+                'Authorization': `Bearer ${options.oauthAccessToken}`,
+                'Content-Type': 'application/json'
+              },
+              maxBodyLength: Infinity,
+              timeout: 180000 // 3 minutes for seed data
+            }
+          );
+
+          console.log('✅ Seed data complete - 6,598 rows inserted');
           result.dataSeeded.push('Seeded 6,598 rows via OAuth API');
+
           return true;
 
         } catch (apiError) {
