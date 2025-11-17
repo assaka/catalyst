@@ -36,11 +36,12 @@ class TenantProvisioningService {
       // 1. Check if already provisioned
       const alreadyProvisioned = await this.checkIfProvisioned(tenantDb);
       if (alreadyProvisioned && !options.force) {
-        console.log('Tenant database already provisioned');
+        console.log('✅ Tenant database already provisioned - skipping');
         return {
           ...result,
+          success: true,
           alreadyProvisioned: true,
-          message: 'Database already provisioned'
+          message: 'Database is already set up and ready to use'
         };
       }
 

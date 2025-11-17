@@ -17098,9 +17098,3 @@ VALUES
   ('a4f14db8-44cc-4cac-902b-3010c8d6be84', 'checkout.valid_email_required', 'en', 'Valid email required', 'checkout', '2025-11-07T18:34:17.198Z', '2025-11-12T22:28:53.341Z', 'system', '157d4590-49bf-4b0b-bd77-abe131909528'),
   ('ffb275f5-5dae-4a72-bd1e-27a5feb386fb', 'checkout.valid_email_required', 'en', 'Valid email required', 'checkout', '2025-11-07T18:34:17.198Z', '2025-11-12T22:28:53.341Z', 'system', '66a80282-7f9f-41ef-a1a4-e96330aec679')
 ON CONFLICT DO NOTHING;
-
-
--- ============================================
--- SEED DATA COMPLETE
--- 15 tables seeded
--- ============================================
