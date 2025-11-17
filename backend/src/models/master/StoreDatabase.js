@@ -219,15 +219,34 @@ StoreDatabase.findAllActive = async function() {
  * @returns {Promise<StoreDatabase>}
  */
 StoreDatabase.createWithCredentials = async function(storeId, databaseType, credentials) {
-  const storeDb = this.build({
-    store_id: storeId,
-    database_type: databaseType
-  });
+  try {
+    console.log('🔧 StoreDatabase.createWithCredentials called:', {
+      storeId,
+      databaseType,
+      hasProjectUrl: !!credentials.projectUrl,
+      hasServiceRoleKey: !!credentials.serviceRoleKey
+    });
 
-  storeDb.setCredentials(credentials);
-  await storeDb.save();
+    const storeDb = this.build({
+      store_id: storeId,
+      database_type: databaseType
+    });
 
-  return storeDb;
+    console.log('🔧 Built StoreDatabase instance, setting credentials...');
+    storeDb.setCredentials(credentials);
+
+    console.log('🔧 Credentials set, saving to master DB...');
+    await storeDb.save();
+
+    console.log('✅ StoreDatabase record saved successfully:', storeDb.id);
+    return storeDb;
+  } catch (error) {
+    console.error('❌ StoreDatabase.createWithCredentials error:', error);
+    console.error('Error name:', error.name);
+    console.error('Error message:', error.message);
+    console.error('Error stack:', error.stack);
+    throw error;
+  }
 };
 
 module.exports = StoreDatabase;
