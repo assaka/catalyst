@@ -276,14 +276,37 @@ router.post('/:id/connect-database', authMiddleware, async (req, res) => {
 
     // Get store from master DB (use Supabase client to avoid Sequelize connection issues)
     console.log('🔍 Fetching store from master DB via Supabase client...');
+    console.log('   StoreId:', storeId);
+    console.log('   masterSupabaseClient available:', !!masterSupabaseClient);
+
     const { data: store, error: storeError } = await masterSupabaseClient
       .from('stores')
       .select('*')
       .eq('id', storeId)
       .single();
 
+    console.log('🔍 Store query result:', {
+      found: !!store,
+      error: storeError?.message || 'none',
+      errorCode: storeError?.code,
+      errorDetails: storeError?.details
+    });
+
     if (storeError || !store) {
       console.error('❌ Store not found:', storeError?.message);
+      console.error('   Error details:', JSON.stringify(storeError, null, 2));
+
+      // Try to list all stores to debug
+      try {
+        const { data: allStores } = await masterSupabaseClient
+          .from('stores')
+          .select('id')
+          .limit(5);
+        console.log('   All stores in master DB (first 5):', allStores?.map(s => s.id));
+      } catch (listError) {
+        console.error('   Could not list stores:', listError.message);
+      }
+
       return res.status(404).json({
         success: false,
         error: 'Store not found'
