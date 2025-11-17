@@ -217,7 +217,7 @@ export default function StoreOnboarding() {
     setError('');
 
     try {
-      await User.updateMyUserData({
+      await User.updateProfile({
         phone: profileData.phone,
         company_name: profileData.companyName
       });
