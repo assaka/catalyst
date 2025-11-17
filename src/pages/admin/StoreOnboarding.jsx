@@ -132,7 +132,14 @@ export default function StoreOnboarding() {
 
                 if (provisionResponse.success) {
                   setCompletedSteps([...completedSteps, 2]);
-                  setSuccess('Database connected! 137 tables created & 6,598 rows seeded.');
+
+                  // Show appropriate message
+                  if (provisionResponse.alreadyProvisioned) {
+                    setSuccess('Database is already set up! Moving to next step...');
+                  } else {
+                    setSuccess('Database connected! 137 tables created & 6,598 rows seeded.');
+                  }
+
                   setTimeout(() => setCurrentStep(3), 1500);
                 } else {
                   setError(provisionResponse.error || 'Failed to provision database automatically');
@@ -363,24 +370,24 @@ export default function StoreOnboarding() {
                 <div className="bg-white/80 rounded-lg p-4 mb-4">
                   <h4 className="font-semibold text-gray-900 mb-2 flex items-center justify-center">
                     <Sparkles className="w-4 h-4 mr-2 text-yellow-500" />
-                    What happens next?
+                    Your store is just 3 clicks away!
                   </h4>
                   <ul className="text-sm text-gray-700 space-y-2 text-left max-w-md mx-auto">
                     <li className="flex items-start">
                       <CheckCircle2 className="w-4 h-4 mr-2 text-green-600 mt-0.5 flex-shrink-0" />
-                      <span>Authorize Catalyst to access your Supabase account</span>
+                      <span><strong>Connect instantly</strong> with secure OAuth authorization</span>
                     </li>
                     <li className="flex items-start">
                       <CheckCircle2 className="w-4 h-4 mr-2 text-green-600 mt-0.5 flex-shrink-0" />
-                      <span>Select a Supabase project</span>
+                      <span><strong>Choose your project</strong> from your Supabase account</span>
                     </li>
                     <li className="flex items-start">
                       <CheckCircle2 className="w-4 h-4 mr-2 text-green-600 mt-0.5 flex-shrink-0" />
-                      <span>Provide database password</span>
+                      <span><strong>Sit back & relax</strong> while we build your entire database</span>
                     </li>
                     <li className="flex items-start">
                       <CheckCircle2 className="w-4 h-4 mr-2 text-green-600 mt-0.5 flex-shrink-0" />
-                      <span>Automatically create 137 tables & seed 6,598 rows</span>
+                      <span><strong>Launch ready!</strong> 137 tables + 6,598 products pre-loaded</span>
                     </li>
                   </ul>
                 </div>
