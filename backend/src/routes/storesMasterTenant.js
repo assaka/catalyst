@@ -755,8 +755,8 @@ router.get('/dropdown', authMiddleware, async (req, res) => {
             const { data: tenantStore, error: queryError } = await tenantDb
               .from('stores')
               .select('name, slug')
-              .limit(1)
-              .single();
+              .eq('id', store.id)
+              .maybeSingle();
 
             console.log(`[Dropdown] Query result:`, {
               has_data: !!tenantStore,
