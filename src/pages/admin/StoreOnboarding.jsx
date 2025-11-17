@@ -137,7 +137,7 @@ export default function StoreOnboarding() {
                   if (provisionResponse.alreadyProvisioned) {
                     setSuccess('Database is already set up! Moving to next step...');
                   } else {
-                    setSuccess('🎉 Success! Your store is ready with 137 tables & 6,598 products pre-loaded!');
+                    setSuccess('Database connected and data inserted.');
                   }
 
                   setTimeout(() => setCurrentStep(3), 1500);
@@ -229,7 +229,7 @@ export default function StoreOnboarding() {
         company_name: profileData.companyName
       });
 
-      setSuccess('Setup complete! Redirecting...');
+      setSuccess('🎉 Store is created successfully! Redirecting...');
       setTimeout(() => window.location.href = '/admin/dashboard', 2000);
     } catch (err) {
       setError(err.message || 'Failed to update profile');
@@ -387,7 +387,7 @@ export default function StoreOnboarding() {
                     </li>
                     <li className="flex items-start">
                       <CheckCircle2 className="w-4 h-4 mr-2 text-green-600 mt-0.5 flex-shrink-0" />
-                      <span><strong>Launch ready!</strong> 137 tables + 6,598 products pre-loaded</span>
+                      <span><strong>Launch ready!</strong> 137 tables + 6,598 data rows seeded</span>
                     </li>
                   </ul>
                 </div>
