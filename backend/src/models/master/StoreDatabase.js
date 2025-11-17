@@ -216,7 +216,7 @@ StoreDatabase.findAllActive = async function() {
  * @param {string} storeId - Store UUID
  * @param {string} databaseType - Database type
  * @param {Object} credentials - Credentials object
- * @returns {Promise<StoreDatabase>}
+ * @returns {Promise<Object>} Created record (Supabase format)
  */
 StoreDatabase.createWithCredentials = async function(storeId, databaseType, credentials) {
   try {
@@ -227,32 +227,53 @@ StoreDatabase.createWithCredentials = async function(storeId, databaseType, cred
       hasServiceRoleKey: !!credentials.serviceRoleKey
     });
 
-    const storeDb = this.build({
-      store_id: storeId,
-      database_type: databaseType
-    });
+    // Use Supabase client instead of Sequelize to avoid connection issues
+    const { masterSupabaseClient } = require('../../database/masterConnection');
+    const { v4: uuidv4 } = require('uuid');
 
-    console.log('🔧 Built StoreDatabase instance, setting credentials...');
-    storeDb.setCredentials(credentials);
+    // Encrypt credentials
+    console.log('🔧 Encrypting credentials...');
+    const encryptedCredentials = encryptDatabaseCredentials(credentials);
 
-    console.log('🔧 Credentials set, saving to master DB...');
-    console.log('🔧 Sequelize connection config:', {
-      dialect: this.sequelize.options.dialect,
-      database: this.sequelize.config.database,
-      host: this.sequelize.config.host,
-      username: this.sequelize.config.username ? '***' : 'not set'
-    });
+    // Extract host from projectUrl
+    let host = null;
+    if (credentials.projectUrl) {
+      try {
+        host = new URL(credentials.projectUrl).hostname;
+      } catch (e) {
+        console.warn('Could not parse projectUrl:', e.message);
+      }
+    }
 
-    // Enable SQL logging for this operation
-    await storeDb.save({ logging: console.log });
+    // Create record via Supabase client
+    console.log('🔧 Creating record in master DB via Supabase client...');
+    const { data, error } = await masterSupabaseClient
+      .from('store_databases')
+      .insert({
+        id: uuidv4(),
+        store_id: storeId,
+        database_type: databaseType,
+        connection_string_encrypted: encryptedCredentials,
+        host: host,
+        port: null,
+        database_name: 'postgres',
+        is_active: true,
+        connection_status: 'pending',
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      })
+      .select()
+      .single();
 
-    console.log('✅ StoreDatabase record saved successfully:', storeDb.id);
-    return storeDb;
+    if (error) {
+      throw new Error(`Failed to create store_databases record: ${error.message}`);
+    }
+
+    console.log('✅ StoreDatabase record created successfully:', data.id);
+    return data;
   } catch (error) {
     console.error('❌ StoreDatabase.createWithCredentials error:', error);
-    console.error('Error name:', error.name);
     console.error('Error message:', error.message);
-    console.error('Error stack:', error.stack);
     throw error;
   }
 };
