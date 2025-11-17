@@ -438,10 +438,10 @@ export default function StoreOnboarding() {
               </div>
 
               <div className="flex gap-3">
-                <Button type="button" variant="outline" onClick={() => { setOauthCompleted(false); setError(''); }} disabled={loading}>
+                <Button type="button" variant="outline" onClick={() => { setOauthCompleted(false); setNeedsServiceKey(false); setError(''); }} disabled={loading}>
                   <ArrowLeft className="w-4 h-4 mr-2" /> Back
                 </Button>
-                <Button type="submit" className="flex-1 bg-blue-600 hover:bg-blue-700" disabled={loading || !dbData.connectionString}>
+                <Button type="submit" className="flex-1 bg-blue-600 hover:bg-blue-700" disabled={loading || !dbData.serviceRoleKey}>
                   {loading ? (
                     <>
                       <Loader2 className="w-4 h-4 mr-2 animate-spin" />
