@@ -137,7 +137,7 @@ export default function StoreOnboarding() {
                   if (provisionResponse.alreadyProvisioned) {
                     setSuccess('Database is already set up! Moving to next step...');
                   } else {
-                    setSuccess('Database connected and data inserted.');
+                    setSuccess('Database is ready and data inserted.');
                   }
 
                   setTimeout(() => setCurrentStep(3), 1500);
@@ -194,7 +194,7 @@ export default function StoreOnboarding() {
 
       if (provisionResponse.success) {
         setCompletedSteps([...completedSteps, 2]);
-        setSuccess('Database connected! 137 tables created & 6,598 rows seeded.');
+        setSuccess('Database connected and data seeded.');
         setCurrentStep(3);
       } else {
         setError(provisionResponse.error || 'Failed to provision database');
