@@ -61,89 +61,100 @@ router.get('/', async (req, res) => {
         error: authError.message,
         details: authError.original?.message || authError.message
       });
+      // Don't return early - continue to Supabase client tests
       await sequelize.close();
-      return res.json(results);
     }
 
-    // Test 4: Query stores table
-    try {
-      const [stores] = await sequelize.query('SELECT COUNT(*) as count FROM stores');
-      results.tests.push({
-        name: 'Query stores table',
-        status: 'PASS',
-        details: `Found ${stores[0].count} stores`
-      });
-    } catch (queryError) {
-      results.tests.push({
-        name: 'Query stores table',
-        status: 'FAIL',
-        error: queryError.message
-      });
-    }
+    // Only run remaining Sequelize tests if authentication passed
+    const sequelizeAuthPassed = results.tests.find(t => t.name === 'Database authentication')?.status === 'PASS';
 
-    // Test 5: Query store_databases table
-    try {
-      const [dbs] = await sequelize.query('SELECT COUNT(*) as count FROM store_databases');
-      results.tests.push({
-        name: 'Query store_databases table',
-        status: 'PASS',
-        details: `Found ${dbs[0].count} records`
-      });
-    } catch (queryError) {
-      results.tests.push({
-        name: 'Query store_databases table',
-        status: 'FAIL',
-        error: queryError.message
-      });
-    }
-
-    // Test 6: Test INSERT (with rollback)
-    const transaction = await sequelize.transaction();
-    try {
-      // Get a store ID to use as foreign key
-      const [stores] = await sequelize.query('SELECT id FROM stores LIMIT 1', { transaction });
-
-      if (stores.length > 0) {
-        const storeId = stores[0].id;
-
-        // Try to insert a test record
-        await sequelize.query(
-          `INSERT INTO store_databases (id, store_id, database_type, connection_string_encrypted)
-           VALUES (gen_random_uuid(), :storeId, 'supabase', 'test-encrypted-data')`,
-          {
-            replacements: { storeId },
-            transaction
-          }
-        );
-
+    if (sequelizeAuthPassed) {
+      // Test 4: Query stores table
+      try {
+        const [stores] = await sequelize.query('SELECT COUNT(*) as count FROM stores');
         results.tests.push({
-          name: 'Test INSERT into store_databases',
+          name: 'Query stores table',
           status: 'PASS',
-          details: 'INSERT test successful (rolled back)'
+          details: `Found ${stores[0].count} stores`
         });
-      } else {
+      } catch (queryError) {
         results.tests.push({
-          name: 'Test INSERT into store_databases',
-          status: 'SKIP',
-          details: 'No stores found to test with'
+          name: 'Query stores table',
+          status: 'FAIL',
+          error: queryError.message
         });
       }
 
-      // Rollback - we don't want to actually insert
-      await transaction.rollback();
+      // Test 5: Query store_databases table
+      try {
+        const [dbs] = await sequelize.query('SELECT COUNT(*) as count FROM store_databases');
+        results.tests.push({
+          name: 'Query store_databases table',
+          status: 'PASS',
+          details: `Found ${dbs[0].count} records`
+        });
+      } catch (queryError) {
+        results.tests.push({
+          name: 'Query store_databases table',
+          status: 'FAIL',
+          error: queryError.message
+        });
+      }
 
-    } catch (insertError) {
-      await transaction.rollback();
+      // Test 6: Test INSERT (with rollback)
+      const transaction = await sequelize.transaction();
+      try {
+        // Get a store ID to use as foreign key
+        const [stores] = await sequelize.query('SELECT id FROM stores LIMIT 1', { transaction });
+
+        if (stores.length > 0) {
+          const storeId = stores[0].id;
+
+          // Try to insert a test record
+          await sequelize.query(
+            `INSERT INTO store_databases (id, store_id, database_type, connection_string_encrypted)
+             VALUES (gen_random_uuid(), :storeId, 'supabase', 'test-encrypted-data')`,
+            {
+              replacements: { storeId },
+              transaction
+            }
+          );
+
+          results.tests.push({
+            name: 'Test INSERT into store_databases',
+            status: 'PASS',
+            details: 'INSERT test successful (rolled back)'
+          });
+        } else {
+          results.tests.push({
+            name: 'Test INSERT into store_databases',
+            status: 'SKIP',
+            details: 'No stores found to test with'
+          });
+        }
+
+        // Rollback - we don't want to actually insert
+        await transaction.rollback();
+
+      } catch (insertError) {
+        await transaction.rollback();
+        results.tests.push({
+          name: 'Test INSERT into store_databases',
+          status: 'FAIL',
+          error: insertError.message,
+          errorCode: insertError.original?.code,
+          details: insertError.original?.message || insertError.message
+        });
+      }
+
+      await sequelize.close();
+    } else {
       results.tests.push({
-        name: 'Test INSERT into store_databases',
-        status: 'FAIL',
-        error: insertError.message,
-        errorCode: insertError.original?.code,
-        details: insertError.original?.message || insertError.message
+        name: 'Sequelize tests 4-6',
+        status: 'SKIP',
+        details: 'Skipped because authentication failed'
       });
     }
-
-    await sequelize.close();
 
     // ============================================
     // SUPABASE CLIENT TESTS (NEW APPROACH)
