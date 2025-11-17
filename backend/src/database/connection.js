@@ -25,8 +25,14 @@ let sequelize;
 
 // Create sequelize instance with enhanced configuration
 const createSequelizeConnection = async () => {
-  const databaseUrl = process.env.SUPABASE_DB_URL || process.env.DATABASE_URL;
-  
+  // DEPRECATED: Old env vars - use MASTER_DB_URL for new master-tenant architecture
+  console.warn('⚠️  DEPRECATED: connection.js uses old database connection.');
+  console.warn('⚠️  For master DB, use masterSequelize from masterConnection.js');
+  console.warn('⚠️  For tenant DB, use ConnectionManager.getStoreConnection()');
+
+  // Use MASTER_DB_URL if available, otherwise fall back to old vars (deprecated)
+  const databaseUrl = process.env.MASTER_DB_URL || process.env.SUPABASE_DB_URL || process.env.DATABASE_URL;
+
   if (!databaseUrl) {
     console.warn('⚠️  No database URL provided. Using SQLite for development.');
     return new Sequelize({
@@ -40,6 +46,8 @@ const createSequelizeConnection = async () => {
       }
     });
   }
+
+  console.log('📍 Default Sequelize using:', databaseUrl.substring(0, 50) + '...');
 
   // Try to get enhanced configuration first, fallback to basic
   try {
