@@ -408,18 +408,56 @@ router.post('/:id/connect-database', authMiddleware, async (req, res) => {
         try {
           console.log('Attempting to fetch serviceRoleKey via Management API...');
           const axios = require('axios');
-          const keysResponse = await axios.get(
-            `https://api.supabase.com/v1/projects/${projectId}/api-keys`,
-            {
-              headers: {
-                'Authorization': `Bearer ${oauthAccessToken}`,
-                'Content-Type': 'application/json'
-              }
-            }
-          );
 
-          if (keysResponse.data && keysResponse.data.service_role) {
-            serviceRoleKey = keysResponse.data.service_role;
+          // Try multiple endpoints to get service_role key
+          let fetchedKey = null;
+
+          // Attempt 1: /api-keys endpoint
+          try {
+            const keysResponse = await axios.get(
+              `https://api.supabase.com/v1/projects/${projectId}/api-keys`,
+              {
+                headers: {
+                  'Authorization': `Bearer ${oauthAccessToken}`,
+                  'Content-Type': 'application/json'
+                }
+              }
+            );
+
+            console.log('API keys response:', keysResponse.data);
+
+            if (Array.isArray(keysResponse.data)) {
+              const serviceKey = keysResponse.data.find(k => k.name === 'service_role');
+              fetchedKey = serviceKey?.api_key;
+            } else if (keysResponse.data && keysResponse.data.service_role) {
+              fetchedKey = keysResponse.data.service_role;
+            }
+          } catch (err1) {
+            console.warn('Attempt 1 failed:', err1.response?.data || err1.message);
+          }
+
+          // Attempt 2: /settings endpoint
+          if (!fetchedKey) {
+            try {
+              const settingsResponse = await axios.get(
+                `https://api.supabase.com/v1/projects/${projectId}`,
+                {
+                  headers: {
+                    'Authorization': `Bearer ${oauthAccessToken}`,
+                    'Content-Type': 'application/json'
+                  }
+                }
+              );
+
+              console.log('Project settings response:', settingsResponse.data);
+              fetchedKey = settingsResponse.data?.service_api_keys?.service_role;
+            } catch (err2) {
+              console.warn('Attempt 2 failed:', err2.response?.data || err2.message);
+            }
+          }
+
+          if (fetchedKey) {
+            serviceRoleKey = fetchedKey;
             console.log('✅ serviceRoleKey fetched via Management API');
 
             // Create Supabase client for tenant operations
@@ -431,10 +469,12 @@ router.post('/:id/connect-database', authMiddleware, async (req, res) => {
               }
             });
             console.log('✅ Tenant Supabase client created');
+          } else {
+            console.error('❌ Could not fetch serviceRoleKey from any endpoint');
+            console.log('   OAuth app needs "secrets:read" and "api_keys:read" scopes');
           }
         } catch (keyError) {
-          console.warn('⚠️ Could not fetch serviceRoleKey:', keyError.message);
-          console.log('   Migrations must include all necessary data (store, user records)');
+          console.error('⚠️ Error fetching serviceRoleKey:', keyError.message);
         }
       }
     }

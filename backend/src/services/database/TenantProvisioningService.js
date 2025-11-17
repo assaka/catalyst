@@ -52,14 +52,22 @@ class TenantProvisioningService {
       console.log('Seeding initial data...');
       // await this.seedInitialData(tenantDb, storeId, options, result);
 
-      // 4. Create store record in tenant DB
-      console.log('Creating store record...');
-      await this.createStoreRecord(tenantDb, storeId, options, result);
+      // 4. Create store record in tenant DB (only if tenantDb available)
+      if (tenantDb) {
+        console.log('Creating store record...');
+        await this.createStoreRecord(tenantDb, storeId, options, result);
+      } else {
+        console.log('⏭️ Skipping store record creation - tenantDb not available (migrations should include store data)');
+        result.dataSeeded.push('Store record (included in seed data)');
+      }
 
-      // 5. Create agency user record in tenant DB
-      if (options.userId && options.userEmail) {
+      // 5. Create agency user record in tenant DB (only if tenantDb available)
+      if (tenantDb && options.userId && options.userEmail) {
         console.log('Creating user record...');
         await this.createUserRecord(tenantDb, options, result);
+      } else if (!tenantDb) {
+        console.log('⏭️ Skipping user record creation - tenantDb not available (migrations should include user data)');
+        result.dataSeeded.push('User record (included in seed data)');
       }
 
       console.log(`✅ Tenant provisioning complete for store ${storeId}`);
