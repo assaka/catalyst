@@ -1058,6 +1058,7 @@ const testMasterDbRoutes = require('./routes/testMasterDb');
 app.use('/api/stores', storesMasterTenantRoutes); // Master-tenant store management (auth handled in routes)
 app.use('/api/credits', creditsMasterTenantRoutes); // Master-tenant credits (replaces old)
 app.use('/api/test', testMasterDbRoutes); // Test endpoint for master DB
+app.use('/api/test-master-connection', require('./routes/test-master-connection')); // Test Sequelize connection
 
 app.use('/api/service-credit-costs', serviceCreditCostsRoutes); // Service credit costs management (admin)
 app.use('/api/email-templates', emailTemplatesRoutes); // Email template management with translations
