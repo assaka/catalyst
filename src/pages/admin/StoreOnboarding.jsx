@@ -17,9 +17,7 @@ import { User } from '@/api/entities';
 const STEPS = [
   { id: 1, title: 'Create Store', description: 'Name your store', icon: Store, required: true },
   { id: 2, title: 'Connect Database', description: 'Connect Supabase', icon: Database, required: true },
-  { id: 3, title: 'Setup Stripe', description: 'Payment processing', icon: CreditCard, required: false },
-  { id: 4, title: 'Purchase Credits', description: 'Buy platform credits', icon: DollarSign, required: false },
-  { id: 5, title: 'Complete Profile', description: 'Your information', icon: UserIcon, required: true },
+  { id: 3, title: 'Complete Profile', description: 'Your information', icon: UserIcon, required: true },
 ];
 
 export default function StoreOnboarding() {
@@ -466,94 +464,9 @@ export default function StoreOnboarding() {
             </form>
           )}
 
-          {/* Step 3: Setup Stripe */}
+
+          {/* Step 3: Complete Profile */}
           {currentStep === 3 && (
-            <form onSubmit={handleSetupStripe} className="space-y-6">
-              <div className="bg-gray-50 rounded-lg p-4 mb-4">
-                <p className="text-sm text-gray-600">
-                  Connect Stripe to accept payments in your store. You can skip this and set it up later in Settings.
-                </p>
-              </div>
-
-              <div>
-                <Label htmlFor="stripePublishable">Publishable Key</Label>
-                <Input
-                  id="stripePublishable"
-                  placeholder="pk_test_..."
-                  value={stripeData.publishableKey}
-                  onChange={(e) => setStripeData({ ...stripeData, publishableKey: e.target.value })}
-                  className="mt-2 font-mono text-sm"
-                />
-              </div>
-
-              <div>
-                <Label htmlFor="stripeSecret">Secret Key</Label>
-                <Input
-                  id="stripeSecret"
-                  type="password"
-                  placeholder="sk_test_..."
-                  value={stripeData.secretKey}
-                  onChange={(e) => setStripeData({ ...stripeData, secretKey: e.target.value })}
-                  className="mt-2 font-mono text-sm"
-                />
-              </div>
-
-              <div className="flex gap-3">
-                <Button type="button" variant="outline" onClick={() => setCurrentStep(2)} disabled={loading}>
-                  <ArrowLeft className="w-4 h-4 mr-2" /> Back
-                </Button>
-                <Button type="button" variant="ghost" onClick={handleSkip} disabled={loading} className="flex-1">
-                  Skip for Now
-                </Button>
-                <Button type="submit" disabled={loading}>
-                  {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Save Stripe Keys'}
-                </Button>
-              </div>
-            </form>
-          )}
-
-          {/* Step 4: Purchase Credits */}
-          {currentStep === 4 && (
-            <form onSubmit={handlePurchaseCredits} className="space-y-6">
-              <div className="bg-purple-50 rounded-lg p-4 mb-4">
-                <p className="text-sm text-purple-900">
-                  Platform credits are used for AI features, translations, imports/exports, and plugin marketplace purchases.
-                </p>
-              </div>
-
-              <div>
-                <Label htmlFor="creditAmount">Credit Amount</Label>
-                <Input
-                  id="creditAmount"
-                  type="number"
-                  min="10"
-                  step="10"
-                  placeholder="100"
-                  value={creditData.amount}
-                  onChange={(e) => setCreditData({ amount: parseInt(e.target.value) })}
-                  className="mt-2"
-                />
-                <p className="text-sm text-gray-500 mt-1">
-                  ${(creditData.amount * 0.10).toFixed(2)} USD (${0.10} per credit)
-                </p>
-              </div>
-
-              <div className="flex gap-3">
-                <Button type="button" variant="outline" onClick={() => setCurrentStep(3)} disabled={loading}>
-                  <ArrowLeft className="w-4 h-4 mr-2" /> Back
-                </Button>
-                <Button type="button" variant="ghost" onClick={handleSkip} disabled={loading} className="flex-1">
-                  Skip - Start with 0 Credits
-                </Button>
-                <Button type="submit" disabled={loading}>
-                  Purchase Credits
-                </Button>
-              </div>
-            </form>
-          )}
-
-          {/* Step 5: Complete Profile */}
-          {currentStep === 5 && (
             <form onSubmit={handleCompleteProfile} className="space-y-6">
               <div>
                 <Label htmlFor="companyName">Company / Business Name</Label>
@@ -579,7 +492,7 @@ export default function StoreOnboarding() {
               </div>
 
               <div className="flex gap-3">
-                <Button type="button" variant="outline" onClick={() => setCurrentStep(4)} disabled={loading}>
+                <Button type="button" variant="outline" onClick={() => setCurrentStep(2)} disabled={loading}>
                   <ArrowLeft className="w-4 h-4 mr-2" /> Back
                 </Button>
                 <Button type="submit" className="flex-1" disabled={loading}>
