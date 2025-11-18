@@ -162,12 +162,14 @@ router.post('/',
 
     const { store_id, translations, formData_translations, name, description, ...productData } = req.body;
 
+    console.log('🔍 Product creation - Full request body:', JSON.stringify(req.body, null, 2));
     console.log('🔍 Product creation - separating fields:', {
       hasTranslations: !!translations,
       hasFormDataTranslations: !!formData_translations,
       hasName: !!name,
       hasDescription: !!description,
-      productDataKeys: Object.keys(productData)
+      productDataKeys: Object.keys(productData),
+      translationsData: translations
     });
 
     // Store ownership check is now handled by middleware
@@ -195,12 +197,27 @@ router.post('/',
     console.log('✅ Product created:', product.id);
 
     // Handle translations if provided
-    if (translations && typeof translations === 'object') {
-      console.log('📝 Saving translations for languages:', Object.keys(translations));
+    const translationsToSave = translations || {};
 
-      for (const [langCode, transData] of Object.entries(translations)) {
+    // If name/description are provided directly, save as default language translation
+    if (name || description) {
+      const defaultLang = 'en'; // TODO: Get from store settings
+      if (!translationsToSave[defaultLang]) {
+        translationsToSave[defaultLang] = {};
+      }
+      if (name) translationsToSave[defaultLang].name = name;
+      if (description) translationsToSave[defaultLang].description = description;
+      console.log('📝 Added direct name/description to default language:', defaultLang);
+    }
+
+    if (Object.keys(translationsToSave).length > 0) {
+      console.log('📝 Saving translations for languages:', Object.keys(translationsToSave));
+
+      for (const [langCode, transData] of Object.entries(translationsToSave)) {
         if (transData && Object.keys(transData).length > 0) {
-          const { error: transError } = await tenantDb
+          console.log(`📝 Saving translation for ${langCode}:`, transData);
+
+          const { data: savedTrans, error: transError } = await tenantDb
             .from('product_translations')
             .insert({
               product_id: product.id,
@@ -216,11 +233,14 @@ router.post('/',
 
           if (transError) {
             console.error('❌ Error saving translation for', langCode, ':', transError);
+            console.error('❌ Translation error details:', JSON.stringify(transError, null, 2));
           } else {
-            console.log('✅ Saved translation for', langCode);
+            console.log('✅ Saved translation for', langCode, ':', savedTrans);
           }
         }
       }
+    } else {
+      console.log('⚠️ No translations to save');
     }
 
     res.status(201).json({
