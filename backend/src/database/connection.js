@@ -17,10 +17,29 @@ const createSequelizeConnection = async () => {
   console.warn('⚠️  For master DB, use masterSequelize from masterConnection.js');
   console.warn('⚠️  For tenant DB, use ConnectionManager.getStoreConnection()');
 
-  // DEPRECATED: This file should not be used in master-tenant architecture
-  // Use masterSequelize or masterSupabaseClient for master DB
-  // Use ConnectionManager.getStoreConnection() for tenant DB
-  throw new Error('DEPRECATED: Use masterSequelize/masterSupabaseClient or ConnectionManager instead of default connection');
+  // TEMPORARY: Throw error to identify what still uses this
+  // Most code should use masterSequelize or ConnectionManager
+  console.error('⚠️ WARNING: createSequelizeConnection() called - legacy code detected');
+  console.error('⚠️ Stack trace to identify caller:');
+  console.trace();
+
+  // For now, use DATABASE_URL to keep storefront working during migration
+  const legacyUrl = process.env.DATABASE_URL;
+  if (!legacyUrl) {
+    throw new Error('DATABASE_URL required for legacy queries. Migrate to masterSequelize/ConnectionManager.');
+  }
+
+  console.log('📍 Using legacy DATABASE_URL:', legacyUrl.substring(0, 50) + '...');
+  return new Sequelize(legacyUrl, {
+    dialect: 'postgres',
+    logging: false,
+    dialectOptions: {
+      ssl: process.env.NODE_ENV === 'production' ? {
+        require: true,
+        rejectUnauthorized: false
+      } : false
+    }
+  });
 
   if (!databaseUrl) {
     console.warn('⚠️  No database URL provided. Using SQLite for development.');
@@ -73,12 +92,13 @@ const createSequelizeConnection = async () => {
 };
 
 // Initialize sequelize connection synchronously with database URL
-// DEPRECATED: This default connection should NOT be used
-// Use masterSequelize for master DB or ConnectionManager for tenant DB
-console.error('⚠️ [DEPRECATED] connection.js is deprecated in master-tenant architecture');
-console.error('⚠️ Use masterSequelize or ConnectionManager.getStoreConnection() instead');
+// TEMPORARY: Allows DATABASE_URL for legacy storefront/tenant queries during migration
+// Admin routes should use masterSequelize/masterSupabaseClient or ConnectionManager
+console.warn('⚠️ [LEGACY] Default Sequelize connection initialized');
+console.warn('⚠️ This should only be used by legacy storefront code during migration');
 
-const databaseUrl = null; // Force no default connection
+const databaseUrl = process.env.DATABASE_URL;
+console.log('📍 Legacy Sequelize connection:', databaseUrl ? 'DATABASE_URL found' : 'NOT SET - will use SQLite');
 
 if (!databaseUrl) {
   console.warn('⚠️  No database URL provided. Using SQLite for development.');
