@@ -113,7 +113,7 @@ router.get('/', async (req, res) => {
 router.get('/by-slug/:slug/full', async (req, res) => {
   try {
     const { slug } = req.params;
-    const { store_id } = req.query;
+    const store_id = req.headers['x-store-id'] || req.query.store_id;
     const lang = getLanguageFromRequest(req);
 
     if (!store_id) {
@@ -162,14 +162,60 @@ router.get('/by-slug/:slug/full', async (req, res) => {
       description: reqLang?.description || enLang?.description || null
     };
 
-    // TODO: Load products for this category
-    // For now, skip complex product loading - can add later
+    // 2. Load products for this category
+    const { data: products, error: prodsError } = await tenantDb
+      .from('products')
+      .select('*')
+      .eq('store_id', store_id)
+      .eq('status', 'active')
+      .eq('visibility', 'visible')
+      .contains('category_ids', [category.id])
+      .order('created_at', { ascending: false })
+      .limit(100);
+
+    if (prodsError) {
+      console.error('Error loading category products:', prodsError.message);
+    }
+
+    // Load product translations
+    const productIds = (products || []).map(p => p.id);
+    let productTranslations = [];
+
+    if (productIds.length > 0) {
+      const { data: prodTrans } = await tenantDb
+        .from('product_translations')
+        .select('*')
+        .in('product_id', productIds)
+        .in('language_code', [lang, 'en']);
+
+      productTranslations = prodTrans || [];
+    }
+
+    // Build product translation map
+    const prodTransMap = {};
+    productTranslations.forEach(t => {
+      if (!prodTransMap[t.product_id]) prodTransMap[t.product_id] = {};
+      prodTransMap[t.product_id][t.language_code] = t;
+    });
+
+    // Apply translations to products
+    const productsWithTrans = (products || []).map(p => {
+      const trans = prodTransMap[p.id];
+      const reqLang = trans?.[lang];
+      const enLang = trans?.['en'];
+
+      return {
+        ...p,
+        name: reqLang?.name || enLang?.name || p.name,
+        description: reqLang?.description || enLang?.description || p.description
+      };
+    });
 
     res.json({
       success: true,
       data: {
         category: categoryWithTrans,
-        products: [] // TODO: Load products
+        products: productsWithTrans
       }
     });
   } catch (error) {
@@ -181,11 +227,12 @@ router.get('/by-slug/:slug/full', async (req, res) => {
   }
 });
 
-// Legacy route structure - keeping for compatibility
-router.get('/by-slug-old/:slug/full', async (req, res) => {
+// @route   GET /api/public/categories/:id
+// @desc    Get single category by ID (no authentication required)
+// @access  Public
+router.get('/:id', async (req, res) => {
   try {
-    const { slug } = req.params;
-    const { store_id } = req.query;
+    const store_id = req.headers['x-store-id'] || req.query.store_id;
 
     if (!store_id) {
       return res.status(400).json({
@@ -194,182 +241,48 @@ router.get('/by-slug-old/:slug/full', async (req, res) => {
       });
     }
 
+    const lang = getLanguageFromRequest(req);
     const tenantDb = await ConnectionManager.getStoreConnection(store_id);
 
-    // OLD IMPLEMENTATION - using Sequelize models (deprecated)
-    const Category = require('../models').Category;
-    const category = await Category.findOne({
-      where: {
-        store_id,
-        slug,
-        is_active: true,
-        hide_in_menu: false
-      }
-    });
+    // Get category
+    const { data: category, error: catError } = await tenantDb
+      .from('categories')
+      .select('*')
+      .eq('id', req.params.id)
+      .eq('is_active', true)
+      .maybeSingle();
 
-    if (!category) {
+    if (catError || !category) {
       return res.status(404).json({
         success: false,
         message: 'Category not found'
       });
     }
 
-    // Apply category translations
-    const categoryWithTranslations = await getCategoryById(category.id, lang);
+    // Load translation
+    const { data: categoryTrans } = await tenantDb
+      .from('category_translations')
+      .select('*')
+      .eq('category_id', category.id)
+      .in('language_code', [lang, 'en']);
 
-    // 2. Get all products in this category
-    const { Product, ProductAttributeValue, Attribute, AttributeValue } = require('../models');
-    const { applyProductTranslationsToMany } = require('../utils/productHelpers');
-    const { getAttributesWithTranslations, getAttributeValuesWithTranslations } = require('../utils/attributeHelpers');
-
-    const products = await Product.findAll({
-      where: {
-        store_id,
-        status: 'active',
-        visibility: 'visible',
-        category_ids: {
-          [Op.contains]: [category.id]
-        }
-      },
-      attributes: { exclude: ['translations'] },
-      include: [
-        {
-          model: ProductAttributeValue,
-          as: 'attributeValues',
-          include: [
-            {
-              model: Attribute,
-              attributes: ['id', 'code', 'type']
-            },
-            {
-              model: AttributeValue,
-              as: 'value',
-              attributes: ['id', 'code', 'metadata']
-            }
-          ]
-        }
-      ],
-      order: [['created_at', 'DESC']]
+    const transMap = {};
+    (categoryTrans || []).forEach(t => {
+      transMap[t.language_code] = t;
     });
 
-    // Apply product translations
-    const productsWithTranslations = await applyProductTranslationsToMany(products, lang);
+    const reqLang = transMap[lang];
+    const enLang = transMap['en'];
 
-    // Collect attribute and value IDs for bulk translation lookup
-    const attributeIds = new Set();
-    const attributeValueIds = new Set();
-
-    productsWithTranslations.forEach(product => {
-      if (product.attributeValues && Array.isArray(product.attributeValues)) {
-        product.attributeValues.forEach(pav => {
-          if (pav.Attribute) attributeIds.add(pav.Attribute.id);
-          if (pav.value_id && pav.value) attributeValueIds.add(pav.value.id);
-        });
-      }
-    });
-
-    // Fetch attribute translations in bulk
-    const [attributeTranslations, valueTranslations] = await Promise.all([
-      attributeIds.size > 0 ? getAttributesWithTranslations({ id: Array.from(attributeIds) }) : [],
-      attributeValueIds.size > 0 ? getAttributeValuesWithTranslations({ id: Array.from(attributeValueIds) }) : []
-    ]);
-
-    // Create lookup maps
-    const attrTransMap = new Map(attributeTranslations.map(attr => [attr.id, attr.translations]));
-    const valTransMap = new Map(valueTranslations.map(val => [val.id, val.translations]));
-
-    // Format products with attributes and translations
-    const productsWithAttributes = productsWithTranslations.map(productData => {
-      // Ensure images is properly parsed as JSON array
-      if (productData.images && typeof productData.images === 'string') {
-        try {
-          productData.images = JSON.parse(productData.images);
-        } catch (e) {
-          console.error('Failed to parse product images:', e);
-          productData.images = [];
-        }
-      }
-
-      // Format attributes for frontend
-      if (productData.attributeValues && Array.isArray(productData.attributeValues)) {
-        productData.attributes = productData.attributeValues.map(pav => {
-          const attr = pav.Attribute;
-          if (!attr) return null;
-
-          const attrTranslations = attrTransMap.get(attr.id) || {};
-          const attrLabel = attrTranslations[lang]?.label || attrTranslations.en?.label || attr.code;
-
-          let value, valueLabel, metadata = null;
-
-          if (pav.value_id && pav.value) {
-            value = pav.value.code;
-            const valTranslations = valTransMap.get(pav.value.id) || {};
-            valueLabel = valTranslations[lang]?.label || valTranslations.en?.label || pav.value.code;
-            metadata = pav.value.metadata || null;
-          } else {
-            value = pav.text_value || pav.number_value || pav.date_value || pav.boolean_value;
-            valueLabel = String(value);
-          }
-
-          return {
-            id: attr.id,
-            code: attr.code,
-            label: attrLabel,
-            value: valueLabel,
-            rawValue: value,
-            type: attr.type,
-            metadata
-          };
-        }).filter(Boolean);
-      } else {
-        productData.attributes = [];
-      }
-
-      delete productData.attributeValues;
-      return productData;
-    });
-
-    // Apply cache headers based on store settings
-    await applyCacheHeaders(res, store_id);
-
-    // Return structured response
-    res.json({
-      success: true,
-      data: {
-        category: categoryWithTranslations,
-        products: productsWithAttributes,
-        total: productsWithAttributes.length
-      }
-    });
-
-  } catch (error) {
-    console.error('Get category with products error:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Server error',
-      error: error.message
-    });
-  }
-});
-
-// @route   GET /api/public/categories/:id
-// @desc    Get single category by ID (no authentication required)
-// @access  Public
-router.get('/:id', async (req, res) => {
-  try {
-    const lang = getLanguageFromRequest(req);
-    const category = await getCategoryById(req.params.id, lang);
-
-    if (!category || !category.is_active) {
-      return res.status(404).json({
-        success: false,
-        message: 'Category not found'
-      });
-    }
+    const categoryWithTrans = {
+      ...category,
+      name: reqLang?.name || enLang?.name || category.slug || category.name,
+      description: reqLang?.description || enLang?.description || null
+    };
 
     res.json({
       success: true,
-      data: category
+      data: categoryWithTrans
     });
   } catch (error) {
     console.error('Get public category error:', error);
