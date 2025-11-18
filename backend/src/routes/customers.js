@@ -1,9 +1,8 @@
 const express = require('express');
-const { Customer } = require('../models');
+const ConnectionManager = require('../services/database/ConnectionManager');
 const { authMiddleware } = require('../middleware/auth');
 const { storeOwnerOnly } = require('../middleware/auth');
 const { enforceCustomerStoreBinding } = require('../middleware/customerStoreAuth');
-const { Op } = require('sequelize');
 
 const router = express.Router();
 
@@ -22,36 +21,65 @@ router.get('/', storeOwnerOnly, async (req, res) => {
     }
 
     const offset = (page - 1) * limit;
-    const whereClause = { store_id };
+    const tenantDb = await ConnectionManager.getStoreConnection(store_id);
+
+    // Build base query
+    let query = tenantDb
+      .from('customers')
+      .select('*')
+      .eq('store_id', store_id);
 
     // Add search functionality
     if (search) {
-      whereClause[Op.or] = [
-        { email: { [Op.iLike]: `%${search}%` } },
-        { first_name: { [Op.iLike]: `%${search}%` } },
-        { last_name: { [Op.iLike]: `%${search}%` } }
-      ];
+      query = tenantDb
+        .from('customers')
+        .select('*')
+        .eq('store_id', store_id)
+        .or(`email.ilike.%${search}%,first_name.ilike.%${search}%,last_name.ilike.%${search}%`);
     }
 
-    const customers = await Customer.findAndCountAll({
-      where: whereClause,
-      order: [[sort_by, sort_order.toUpperCase()]],
-      limit: parseInt(limit),
-      offset: parseInt(offset)
-    });
+    // Apply sorting and pagination
+    query = query
+      .order(sort_by, { ascending: sort_order.toUpperCase() === 'ASC' })
+      .range(offset, offset + parseInt(limit) - 1);
+
+    const { data: customers, error } = await query;
+
+    if (error) {
+      console.error('Error fetching customers:', error);
+      return res.status(500).json({
+        success: false,
+        message: 'Error fetching customers',
+        error: error.message
+      });
+    }
+
+    // Get total count
+    const countQuery = search
+      ? tenantDb
+          .from('customers')
+          .select('*', { count: 'exact', head: true })
+          .eq('store_id', store_id)
+          .or(`email.ilike.%${search}%,first_name.ilike.%${search}%,last_name.ilike.%${search}%`)
+      : tenantDb
+          .from('customers')
+          .select('*', { count: 'exact', head: true })
+          .eq('store_id', store_id);
+
+    const { count: totalCount } = await countQuery;
 
     // Enhance customer data with addresses
-    const { Order, Address } = require('../models');
-    const enhancedCustomers = await Promise.all(customers.rows.map(async (customer) => {
-      const customerData = customer.toJSON();
+    const enhancedCustomers = await Promise.all(customers.map(async (customer) => {
+      const customerData = { ...customer };
 
-      // For registered customers, fetch from addresses table
+      // For registered customers, fetch from customer_addresses table
       if (customer.customer_type === 'registered') {
-        const addresses = await Address.findAll({
-          where: { customer_id: customer.id }
-        });
+        const { data: addresses } = await tenantDb
+          .from('customer_addresses')
+          .select('*')
+          .eq('customer_id', customer.id);
 
-        if (addresses.length > 0) {
+        if (addresses && addresses.length > 0) {
           const shippingAddr = addresses.find(a => a.type === 'shipping' || a.type === 'both');
           const billingAddr = addresses.find(a => a.type === 'billing' || a.type === 'both');
 
@@ -74,11 +102,13 @@ router.get('/', storeOwnerOnly, async (req, res) => {
         }
       } else {
         // For guest customers (no password), fetch address from last order
-        const lastOrder = await Order.findOne({
-          where: { customer_id: customer.id },
-          order: [['created_at', 'DESC']],
-          attributes: ['shipping_address', 'billing_address']
-        });
+        const { data: lastOrder } = await tenantDb
+          .from('sales_orders')
+          .select('shipping_address, billing_address')
+          .eq('customer_id', customer.id)
+          .order('created_at', { ascending: false })
+          .limit(1)
+          .maybeSingle();
 
         if (lastOrder) {
           customerData.address_data = {
@@ -97,8 +127,8 @@ router.get('/', storeOwnerOnly, async (req, res) => {
         customers: enhancedCustomers,
         pagination: {
           current_page: parseInt(page),
-          total_pages: Math.ceil(customers.count / limit),
-          total_items: customers.count,
+          total_pages: Math.ceil((totalCount || 0) / limit),
+          total_items: totalCount || 0,
           items_per_page: parseInt(limit)
         }
       }
@@ -107,7 +137,8 @@ router.get('/', storeOwnerOnly, async (req, res) => {
     console.error('Get customers error:', error);
     res.status(500).json({
       success: false,
-      message: 'Server error'
+      message: 'Server error',
+      error: error.message
     });
   }
 });
@@ -117,9 +148,24 @@ router.get('/', storeOwnerOnly, async (req, res) => {
 // @access  Private
 router.get('/:id', authMiddleware, enforceCustomerStoreBinding, async (req, res) => {
   try {
-    const customer = await Customer.findByPk(req.params.id);
+    const store_id = req.query.store_id || req.headers['x-store-id'] || req.customerStoreId;
 
-    if (!customer) {
+    if (!store_id) {
+      return res.status(400).json({
+        success: false,
+        message: 'store_id is required'
+      });
+    }
+
+    const tenantDb = await ConnectionManager.getStoreConnection(store_id);
+
+    const { data: customer, error } = await tenantDb
+      .from('customers')
+      .select('*')
+      .eq('id', req.params.id)
+      .single();
+
+    if (error || !customer) {
       return res.status(404).json({
         success: false,
         message: 'Customer not found'
@@ -150,7 +196,8 @@ router.get('/:id', authMiddleware, enforceCustomerStoreBinding, async (req, res)
     console.error('Get customer error:', error);
     res.status(500).json({
       success: false,
-      message: 'Server error'
+      message: 'Server error',
+      error: error.message
     });
   }
 });
@@ -160,7 +207,37 @@ router.get('/:id', authMiddleware, enforceCustomerStoreBinding, async (req, res)
 // @access  Private
 router.post('/', authMiddleware, async (req, res) => {
   try {
-    const customer = await Customer.create(req.body);
+    const { store_id, ...customerData } = req.body;
+
+    if (!store_id) {
+      return res.status(400).json({
+        success: false,
+        message: 'store_id is required'
+      });
+    }
+
+    const tenantDb = await ConnectionManager.getStoreConnection(store_id);
+
+    const { data: customer, error } = await tenantDb
+      .from('customers')
+      .insert({
+        ...customerData,
+        store_id,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      })
+      .select()
+      .single();
+
+    if (error) {
+      console.error('Error creating customer:', error);
+      return res.status(500).json({
+        success: false,
+        message: 'Error creating customer',
+        error: error.message
+      });
+    }
+
     res.status(201).json({
       success: true,
       data: customer
@@ -169,7 +246,8 @@ router.post('/', authMiddleware, async (req, res) => {
     console.error('Create customer error:', error);
     res.status(500).json({
       success: false,
-      message: 'Server error'
+      message: 'Server error',
+      error: error.message
     });
   }
 });
@@ -179,9 +257,25 @@ router.post('/', authMiddleware, async (req, res) => {
 // @access  Private
 router.put('/:id', authMiddleware, enforceCustomerStoreBinding, async (req, res) => {
   try {
-    const customer = await Customer.findByPk(req.params.id);
+    const store_id = req.query.store_id || req.headers['x-store-id'] || req.customerStoreId;
 
-    if (!customer) {
+    if (!store_id) {
+      return res.status(400).json({
+        success: false,
+        message: 'store_id is required'
+      });
+    }
+
+    const tenantDb = await ConnectionManager.getStoreConnection(store_id);
+
+    // Check if customer exists
+    const { data: customer, error: checkError } = await tenantDb
+      .from('customers')
+      .select('*')
+      .eq('id', req.params.id)
+      .single();
+
+    if (checkError || !customer) {
       return res.status(404).json({
         success: false,
         message: 'Customer not found'
@@ -213,67 +307,105 @@ router.put('/:id', authMiddleware, enforceCustomerStoreBinding, async (req, res)
     }
 
     // Extract address_data before updating customer
-    const { address_data, ...customerData } = req.body;
+    const { address_data, ...updateData } = req.body;
 
     // Update customer basic info
-    await customer.update(customerData);
+    const { data: updatedCustomer, error: updateError } = await tenantDb
+      .from('customers')
+      .update({
+        ...updateData,
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', req.params.id)
+      .select()
+      .single();
+
+    if (updateError) {
+      console.error('Error updating customer:', updateError);
+      return res.status(500).json({
+        success: false,
+        message: 'Error updating customer',
+        error: updateError.message
+      });
+    }
 
     // Handle address updates for registered customers only
     if (address_data && customer.customer_type === 'registered') {
-      const { Address } = require('../models');
-
       // Update or create shipping address
       if (address_data.shipping_address) {
-        const existingShipping = await Address.findOne({
-          where: { customer_id: customer.id, type: 'shipping' }
-        });
+        const { data: existingShipping } = await tenantDb
+          .from('customer_addresses')
+          .select('*')
+          .eq('customer_id', customer.id)
+          .eq('type', 'shipping')
+          .maybeSingle();
 
         if (existingShipping) {
-          await existingShipping.update({
-            ...address_data.shipping_address,
-            full_name: `${customer.first_name} ${customer.last_name}`
-          });
+          await tenantDb
+            .from('customer_addresses')
+            .update({
+              ...address_data.shipping_address,
+              full_name: `${customer.first_name} ${customer.last_name}`,
+              updated_at: new Date().toISOString()
+            })
+            .eq('id', existingShipping.id);
         } else {
-          await Address.create({
-            customer_id: customer.id,
-            type: 'shipping',
-            full_name: `${customer.first_name} ${customer.last_name}`,
-            ...address_data.shipping_address
-          });
+          await tenantDb
+            .from('customer_addresses')
+            .insert({
+              customer_id: customer.id,
+              type: 'shipping',
+              full_name: `${customer.first_name} ${customer.last_name}`,
+              ...address_data.shipping_address,
+              created_at: new Date().toISOString(),
+              updated_at: new Date().toISOString()
+            });
         }
       }
 
       // Update or create billing address if provided
       if (address_data.billing_address) {
-        const existingBilling = await Address.findOne({
-          where: { customer_id: customer.id, type: 'billing' }
-        });
+        const { data: existingBilling } = await tenantDb
+          .from('customer_addresses')
+          .select('*')
+          .eq('customer_id', customer.id)
+          .eq('type', 'billing')
+          .maybeSingle();
 
         if (existingBilling) {
-          await existingBilling.update({
-            ...address_data.billing_address,
-            full_name: `${customer.first_name} ${customer.last_name}`
-          });
+          await tenantDb
+            .from('customer_addresses')
+            .update({
+              ...address_data.billing_address,
+              full_name: `${customer.first_name} ${customer.last_name}`,
+              updated_at: new Date().toISOString()
+            })
+            .eq('id', existingBilling.id);
         } else {
-          await Address.create({
-            customer_id: customer.id,
-            type: 'billing',
-            full_name: `${customer.first_name} ${customer.last_name}`,
-            ...address_data.billing_address
-          });
+          await tenantDb
+            .from('customer_addresses')
+            .insert({
+              customer_id: customer.id,
+              type: 'billing',
+              full_name: `${customer.first_name} ${customer.last_name}`,
+              ...address_data.billing_address,
+              created_at: new Date().toISOString(),
+              updated_at: new Date().toISOString()
+            });
         }
       }
     }
 
     res.json({
       success: true,
-      data: customer
+      data: updatedCustomer
     });
   } catch (error) {
     console.error('Update customer error:', error);
     res.status(500).json({
       success: false,
-      message: 'Server error'
+      message: 'Server error',
+      error: error.message
     });
   }
 });
@@ -283,16 +415,45 @@ router.put('/:id', authMiddleware, enforceCustomerStoreBinding, async (req, res)
 // @access  Private
 router.delete('/:id', authMiddleware, async (req, res) => {
   try {
-    const customer = await Customer.findByPk(req.params.id);
+    const store_id = req.query.store_id || req.headers['x-store-id'];
 
-    if (!customer) {
+    if (!store_id) {
+      return res.status(400).json({
+        success: false,
+        message: 'store_id is required'
+      });
+    }
+
+    const tenantDb = await ConnectionManager.getStoreConnection(store_id);
+
+    // Check if customer exists
+    const { data: customer, error: checkError } = await tenantDb
+      .from('customers')
+      .select('*')
+      .eq('id', req.params.id)
+      .single();
+
+    if (checkError || !customer) {
       return res.status(404).json({
         success: false,
         message: 'Customer not found'
       });
     }
 
-    await customer.destroy();
+    const { error } = await tenantDb
+      .from('customers')
+      .delete()
+      .eq('id', req.params.id);
+
+    if (error) {
+      console.error('Error deleting customer:', error);
+      return res.status(500).json({
+        success: false,
+        message: 'Error deleting customer',
+        error: error.message
+      });
+    }
+
     res.json({
       success: true,
       message: 'Customer deleted successfully'
@@ -301,7 +462,8 @@ router.delete('/:id', authMiddleware, async (req, res) => {
     console.error('Delete customer error:', error);
     res.status(500).json({
       success: false,
-      message: 'Server error'
+      message: 'Server error',
+      error: error.message
     });
   }
 });
@@ -312,9 +474,25 @@ router.delete('/:id', authMiddleware, async (req, res) => {
 router.put('/:id/blacklist', storeOwnerOnly, async (req, res) => {
   try {
     const { is_blacklisted, blacklist_reason } = req.body;
-    const customer = await Customer.findByPk(req.params.id);
+    const { store_id } = req.query;
 
-    if (!customer) {
+    if (!store_id) {
+      return res.status(400).json({
+        success: false,
+        message: 'store_id is required'
+      });
+    }
+
+    const tenantDb = await ConnectionManager.getStoreConnection(store_id);
+
+    // Get customer
+    const { data: customer, error: checkError } = await tenantDb
+      .from('customers')
+      .select('*')
+      .eq('id', req.params.id)
+      .single();
+
+    if (checkError || !customer) {
       return res.status(404).json({
         success: false,
         message: 'Customer not found'
@@ -322,7 +500,6 @@ router.put('/:id/blacklist', storeOwnerOnly, async (req, res) => {
     }
 
     // Verify customer belongs to the store
-    const { store_id } = req.query;
     if (customer.store_id !== store_id) {
       return res.status(403).json({
         success: false,
@@ -331,60 +508,62 @@ router.put('/:id/blacklist', storeOwnerOnly, async (req, res) => {
     }
 
     // Update blacklist status
-    await customer.update({
-      is_blacklisted: is_blacklisted,
-      blacklist_reason: is_blacklisted ? blacklist_reason : null,
-      blacklisted_at: is_blacklisted ? new Date() : null
-    });
+    const { data: updatedCustomer, error: updateError } = await tenantDb
+      .from('customers')
+      .update({
+        is_blacklisted: is_blacklisted,
+        blacklist_reason: is_blacklisted ? blacklist_reason : null,
+        blacklisted_at: is_blacklisted ? new Date().toISOString() : null,
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', req.params.id)
+      .select()
+      .single();
 
-    // Also add/remove email from blacklist_emails table
-    const { BlacklistEmail } = require('../models');
-
-    if (is_blacklisted && customer.email) {
-      // Add email to blacklist
-      try {
-        await BlacklistEmail.findOrCreate({
-          where: {
-            store_id: store_id,
-            email: customer.email.toLowerCase()
-          },
-          defaults: {
-            store_id: store_id,
-            email: customer.email.toLowerCase(),
-            reason: blacklist_reason || 'Customer blacklisted',
-            created_by: req.user?.id
-          }
-        });
-      } catch (emailError) {
-        // Email might already exist, ignore
-      }
-    } else if (!is_blacklisted && customer.email) {
-      // Remove email from blacklist
-      try {
-        await BlacklistEmail.destroy({
-          where: {
-            store_id: store_id,
-            email: customer.email.toLowerCase()
-          }
-        });
-      } catch (emailError) {
-        // Ignore error if email doesn't exist
-      }
+    if (updateError) {
+      console.error('Error updating blacklist status:', updateError);
+      return res.status(500).json({
+        success: false,
+        message: 'Error updating blacklist status',
+        error: updateError.message
+      });
     }
 
-    // Reload to get fresh data
-    await customer.reload();
+    // Also add/remove email from blacklist_emails table
+    if (is_blacklisted && customer.email) {
+      // Add email to blacklist (upsert)
+      await tenantDb
+        .from('blacklist_emails')
+        .upsert({
+          store_id: store_id,
+          email: customer.email.toLowerCase(),
+          reason: blacklist_reason || 'Customer blacklisted',
+          created_by: req.user?.id,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        }, {
+          onConflict: 'store_id,email'
+        });
+    } else if (!is_blacklisted && customer.email) {
+      // Remove email from blacklist
+      await tenantDb
+        .from('blacklist_emails')
+        .delete()
+        .eq('store_id', store_id)
+        .eq('email', customer.email.toLowerCase());
+    }
 
     res.json({
       success: true,
-      data: customer,
+      data: updatedCustomer,
       message: is_blacklisted ? 'Customer blacklisted successfully' : 'Customer removed from blacklist successfully'
     });
   } catch (error) {
     console.error('Blacklist customer error:', error);
     res.status(500).json({
       success: false,
-      message: 'Server error'
+      message: 'Server error',
+      error: error.message
     });
   }
 });
