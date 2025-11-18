@@ -2,19 +2,28 @@
 const express = require('express');
 const router = express.Router();
 const AdminNavigationService = require('../services/AdminNavigationService');
-const { sequelize } = require('../database/connection');
+const ConnectionManager = require('../services/database/ConnectionManager');
 
 /**
  * GET /api/admin/navigation
- * Get complete navigation tree for the current tenant
+ * Get complete navigation tree for the current tenant DB
  */
 router.get('/navigation', async (req, res) => {
   try {
+    const { store_id } = req.query;
 
-    // ALWAYS use AdminNavigationService to include plugin navigation
-    const tenantId = req.user?.tenantId || 'default-tenant';
+    if (!store_id) {
+      return res.status(400).json({
+        success: false,
+        message: 'store_id is required'
+      });
+    }
 
-    const navigation = await AdminNavigationService.getNavigationForTenant(tenantId);
+    // Get tenant DB connection
+    const tenantDb = await ConnectionManager.getStoreConnection(store_id);
+
+    // Pass tenantDb to service
+    const navigation = await AdminNavigationService.getNavigationForTenant(store_id, tenantDb);
 
     res.json({
       success: true,
@@ -30,11 +39,21 @@ router.get('/navigation', async (req, res) => {
 
 /**
  * POST /api/admin/navigation/seed
- * Seed core navigation items (run once)
+ * Seed core navigation items (run once) in tenant DB
  */
 router.post('/navigation/seed', async (req, res) => {
   try {
-    await AdminNavigationService.seedCoreNavigation();
+    const { store_id } = req.body;
+
+    if (!store_id) {
+      return res.status(400).json({
+        success: false,
+        message: 'store_id is required'
+      });
+    }
+
+    const tenantDb = await ConnectionManager.getStoreConnection(store_id);
+    await AdminNavigationService.seedCoreNavigation(tenantDb);
 
     res.json({
       success: true,
