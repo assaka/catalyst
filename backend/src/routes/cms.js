@@ -1,48 +1,80 @@
 const express = require('express');
 const { body, validationResult } = require('express-validator');
-const { CmsPage, Store } = require('../models');
-const { Op } = require('sequelize');
+const ConnectionManager = require('../services/database/ConnectionManager');
 const translationService = require('../services/translation-service');
 const creditService = require('../services/credit-service');
+const { getLanguageFromRequest } = require('../utils/languageUtils');
 const {
-  getCMSPagesWithAllTranslations,
   getCMSPageWithAllTranslations,
+  getCMSPagesWithAllTranslations,
   saveCMSPageTranslations
-} = require('../utils/cmsHelpers');
+} = require('../utils/cmsTenantHelpers');
 const router = express.Router();
 
 // Basic CRUD operations for CMS pages
 router.get('/', async (req, res) => {
   try {
-    const { page = 1, limit = 10, store_id } = req.query;
+    const store_id = req.headers['x-store-id'] || req.query.store_id;
 
-    const where = {};
-    if (req.user.role !== 'admin') {
-      const { getUserStoresForDropdown } = require('../utils/storeAccess');
-      const accessibleStores = await getUserStoresForDropdown(req.user.id);
-      const storeIds = accessibleStores.map(store => store.id);
-      where.store_id = { [Op.in]: storeIds };
+    if (!store_id) {
+      return res.status(400).json({
+        success: false,
+        message: 'store_id is required'
+      });
     }
 
-    if (store_id) where.store_id = store_id;
-
-    // Use helper to get pages with all translations
-    const allPages = await getCMSPagesWithAllTranslations(where);
-
-    // Manually paginate the results
+    const { page = 1, limit = 10 } = req.query;
     const offset = (page - 1) * limit;
-    const paginatedPages = allPages.slice(offset, offset + parseInt(limit));
-    const count = allPages.length;
+
+    const tenantDb = await ConnectionManager.getStoreConnection(store_id);
+
+    // Get pages
+    const { data: pages, error: pagesError, count } = await tenantDb
+      .from('cms_pages')
+      .select('*', { count: 'exact' })
+      .eq('store_id', store_id)
+      .order('created_at', { ascending: false })
+      .range(offset, offset + parseInt(limit) - 1);
+
+    if (pagesError) {
+      throw new Error(pagesError.message);
+    }
+
+    // Load all translations for pages
+    const pageIds = (pages || []).map(p => p.id);
+    let translations = [];
+
+    if (pageIds.length > 0) {
+      const { data: trans } = await tenantDb
+        .from('cms_page_translations')
+        .select('*')
+        .in('cms_page_id', pageIds);
+
+      translations = trans || [];
+    }
+
+    // Group translations by page
+    const transByPage = {};
+    translations.forEach(t => {
+      if (!transByPage[t.cms_page_id]) transByPage[t.cms_page_id] = {};
+      transByPage[t.cms_page_id][t.language_code] = t;
+    });
+
+    // Add translations to pages
+    const pagesWithTranslations = (pages || []).map(page => ({
+      ...page,
+      translations: transByPage[page.id] || {}
+    }));
 
     res.json({
       success: true,
       data: {
-        pages: paginatedPages,
+        pages: pagesWithTranslations,
         pagination: {
           current_page: parseInt(page),
           per_page: parseInt(limit),
-          total: count,
-          total_pages: Math.ceil(count / limit)
+          total: count || 0,
+          total_pages: Math.ceil((count || 0) / limit)
         }
       }
     });
@@ -54,8 +86,17 @@ router.get('/', async (req, res) => {
 
 router.get('/:id', async (req, res) => {
   try {
+    const store_id = req.headers['x-store-id'] || req.query.store_id;
+
+    if (!store_id) {
+      return res.status(400).json({
+        success: false,
+        message: 'store_id is required'
+      });
+    }
+
     // Use helper to get page with all translations
-    const page = await getCMSPageWithAllTranslations(req.params.id);
+    const page = await getCMSPageWithAllTranslations(store_id, req.params.id);
 
     if (!page) return res.status(404).json({ success: false, message: 'Page not found' });
 
@@ -78,13 +119,14 @@ router.get('/:id', async (req, res) => {
 router.post('/', async (req, res) => {
   try {
     const { store_id, translations, ...pageData } = req.body;
-    const store = await Store.findByPk(store_id);
 
-    if (!store) return res.status(404).json({ success: false, message: 'Store not found' });
+    if (!store_id) {
+      return res.status(400).json({ success: false, message: 'store_id is required' });
+    }
 
     if (req.user.role !== 'admin') {
       const { checkUserStoreAccess } = require('../utils/storeAccess');
-      const access = await checkUserStoreAccess(req.user.id, store.id);
+      const access = await checkUserStoreAccess(req.user.id, store_id);
 
       if (!access) {
         return res.status(403).json({ success: false, message: 'Access denied' });
@@ -93,18 +135,34 @@ router.post('/', async (req, res) => {
 
     console.log('Creating CMS page with data:', JSON.stringify({ ...pageData, store_id }, null, 2));
 
+    const tenantDb = await ConnectionManager.getStoreConnection(store_id);
+
     // Create the page without translations
-    const page = await CmsPage.create({ ...pageData, store_id });
+    const { data: page, error: pageError } = await tenantDb
+      .from('cms_pages')
+      .insert({
+        ...pageData,
+        store_id,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      })
+      .select()
+      .single();
+
+    if (pageError) {
+      throw new Error(pageError.message);
+    }
+
     console.log('CMS page created successfully:', page.id);
 
     // Save translations to normalized table
     if (translations) {
-      await saveCMSPageTranslations(page.id, translations);
+      await saveCMSPageTranslations(store_id, page.id, translations);
       console.log('CMS page translations saved successfully');
     }
 
     // Fetch page with all translations to return
-    const pageWithTranslations = await getCMSPageWithAllTranslations(page.id);
+    const pageWithTranslations = await getCMSPageWithAllTranslations(store_id, page.id);
 
     res.status(201).json({ success: true, message: 'Page created successfully', data: pageWithTranslations });
   } catch (error) {
@@ -117,9 +175,28 @@ router.post('/', async (req, res) => {
 
 router.put('/:id', async (req, res) => {
   try {
-    const page = await CmsPage.findByPk(req.params.id);
+    const store_id = req.headers['x-store-id'] || req.body.store_id;
 
-    if (!page) return res.status(404).json({ success: false, message: 'Page not found' });
+    if (!store_id) {
+      return res.status(400).json({
+        success: false,
+        message: 'store_id is required'
+      });
+    }
+
+    const tenantDb = await ConnectionManager.getStoreConnection(store_id);
+
+    // Get the page first to check if it exists
+    const { data: page, error: fetchError } = await tenantDb
+      .from('cms_pages')
+      .select('*')
+      .eq('id', req.params.id)
+      .eq('store_id', store_id)
+      .single();
+
+    if (fetchError || !page) {
+      return res.status(404).json({ success: false, message: 'Page not found' });
+    }
 
     if (req.user.role !== 'admin') {
       const { checkUserStoreAccess } = require('../utils/storeAccess');
@@ -135,17 +212,29 @@ router.put('/:id', async (req, res) => {
     console.log('Updating CMS page:', req.params.id, 'with data:', JSON.stringify(pageData, null, 2));
 
     // Update page without translations
-    await page.update(pageData);
-    console.log('CMS page updated successfully:', page.id);
+    const { error: updateError } = await tenantDb
+      .from('cms_pages')
+      .update({
+        ...pageData,
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', req.params.id)
+      .eq('store_id', store_id);
+
+    if (updateError) {
+      throw new Error(updateError.message);
+    }
+
+    console.log('CMS page updated successfully:', req.params.id);
 
     // Save translations to normalized table
     if (translations) {
-      await saveCMSPageTranslations(page.id, translations);
+      await saveCMSPageTranslations(store_id, req.params.id, translations);
       console.log('CMS page translations saved successfully');
     }
 
     // Fetch page with all translations to return
-    const pageWithTranslations = await getCMSPageWithAllTranslations(page.id);
+    const pageWithTranslations = await getCMSPageWithAllTranslations(store_id, req.params.id);
 
     res.json({ success: true, message: 'Page updated successfully', data: pageWithTranslations });
   } catch (error) {
@@ -158,9 +247,28 @@ router.put('/:id', async (req, res) => {
 
 router.delete('/:id', async (req, res) => {
   try {
-    const page = await CmsPage.findByPk(req.params.id);
+    const store_id = req.headers['x-store-id'] || req.query.store_id;
 
-    if (!page) return res.status(404).json({ success: false, message: 'Page not found' });
+    if (!store_id) {
+      return res.status(400).json({
+        success: false,
+        message: 'store_id is required'
+      });
+    }
+
+    const tenantDb = await ConnectionManager.getStoreConnection(store_id);
+
+    // Get the page first to check if it exists
+    const { data: page, error: fetchError } = await tenantDb
+      .from('cms_pages')
+      .select('*')
+      .eq('id', req.params.id)
+      .eq('store_id', store_id)
+      .single();
+
+    if (fetchError || !page) {
+      return res.status(404).json({ success: false, message: 'Page not found' });
+    }
 
     // Prevent deletion of system pages
     if (page.is_system) {
@@ -179,10 +287,27 @@ router.delete('/:id', async (req, res) => {
       }
     }
 
-    await page.destroy();
+    // Delete translations first
+    await tenantDb
+      .from('cms_page_translations')
+      .delete()
+      .eq('cms_page_id', req.params.id);
+
+    // Delete the page
+    const { error: deleteError } = await tenantDb
+      .from('cms_pages')
+      .delete()
+      .eq('id', req.params.id)
+      .eq('store_id', store_id);
+
+    if (deleteError) {
+      throw new Error(deleteError.message);
+    }
+
     res.json({ success: true, message: 'Page deleted successfully' });
   } catch (error) {
-    res.status(500).json({ success: false, message: 'Server error' });
+    console.error('Error deleting CMS page:', error);
+    res.status(500).json({ success: false, message: 'Server error', error: error.message });
   }
 });
 
@@ -203,7 +328,17 @@ router.post('/:id/translate', [
     }
 
     const { fromLang, toLang } = req.body;
-    const page = await CmsPage.findByPk(req.params.id);
+    const store_id = req.headers['x-store-id'] || req.body.store_id;
+
+    if (!store_id) {
+      return res.status(400).json({
+        success: false,
+        message: 'store_id is required'
+      });
+    }
+
+    // Get the page with all translations
+    const page = await getCMSPageWithAllTranslations(store_id, req.params.id);
 
     if (!page) {
       return res.status(404).json({
@@ -283,7 +418,7 @@ router.post('/bulk-translate', [
     }
 
     // Get all pages for this store with all translations
-    const pages = await getCMSPagesWithAllTranslations({ store_id });
+    const pages = await getCMSPagesWithAllTranslations(store_id, { store_id });
 
     if (pages.length === 0) {
       return res.json({
@@ -420,7 +555,7 @@ router.post('/bulk-translate', [
 // @access  Private (requires store access)
 router.post('/create-system-pages', async (req, res) => {
   try {
-    const { store_id } = req.body;
+    const { store_id, store_name } = req.body;
 
     if (!store_id) {
       return res.status(400).json({
@@ -442,18 +577,22 @@ router.post('/create-system-pages', async (req, res) => {
       }
     }
 
-    // Get the store
-    const store = await Store.findByPk(store_id);
-    if (!store) {
-      return res.status(404).json({
-        success: false,
-        message: 'Store not found'
-      });
+    // Get store name if not provided
+    let storeName = store_name;
+    if (!storeName) {
+      const tenantDb = await ConnectionManager.getStoreConnection(store_id);
+      const { data: storeData } = await tenantDb
+        .from('stores')
+        .select('name')
+        .eq('id', store_id)
+        .single();
+
+      storeName = storeData?.name || 'Our Store';
     }
 
     // Create system pages using the utility function
-    const { createSystemPages } = require('../utils/createSystemPages');
-    const createdPages = await createSystemPages(store, CmsPage);
+    const { createSystemPagesForTenant } = require('../utils/createSystemPages');
+    const createdPages = await createSystemPagesForTenant(store_id, storeName);
 
     res.json({
       success: true,
