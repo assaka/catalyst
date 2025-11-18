@@ -1,6 +1,7 @@
 const express = require('express');
 const { body, validationResult } = require('express-validator');
-const { Product, ProductVariant, Attribute, Store } = require('../models');
+const ConnectionManager = require('../services/database/ConnectionManager');
+const { Product: MasterProduct } = require('../models'); // For getting store_id
 const { Op } = require('sequelize');
 const router = express.Router();
 
@@ -27,6 +28,22 @@ router.post('/:id/variants',
           errors: errors.array()
         });
       }
+
+      // Get store_id from master Product
+      const masterProduct = await MasterProduct.findByPk(req.params.id, {
+        attributes: ['id', 'store_id', 'type']
+      });
+
+      if (!masterProduct) {
+        return res.status(404).json({
+          success: false,
+          message: 'Product not found'
+        });
+      }
+
+      // Get tenant connection and models
+      const connection = await ConnectionManager.getConnection(masterProduct.store_id);
+      const { Product, ProductVariant, Store } = connection.models;
 
       const parentProduct = await Product.findByPk(req.params.id, {
         include: [{
@@ -162,6 +179,22 @@ router.post('/:id/variants',
 // @access  Private
 router.get('/:id/variants', authMiddleware, authorize(['admin', 'store_owner']), async (req, res) => {
   try {
+    // Get store_id from master Product
+    const masterProduct = await MasterProduct.findByPk(req.params.id, {
+      attributes: ['id', 'store_id']
+    });
+
+    if (!masterProduct) {
+      return res.status(404).json({
+        success: false,
+        message: 'Product not found'
+      });
+    }
+
+    // Get tenant connection and models
+    const connection = await ConnectionManager.getConnection(masterProduct.store_id);
+    const { Product, ProductVariant, Store } = connection.models;
+
     const parentProduct = await Product.findByPk(req.params.id, {
       include: [{
         model: Store,
@@ -238,6 +271,22 @@ router.put('/:id/variants/:variantId',
         });
       }
 
+      // Get store_id from master Product
+      const masterProduct = await MasterProduct.findByPk(req.params.id, {
+        attributes: ['id', 'store_id']
+      });
+
+      if (!masterProduct) {
+        return res.status(404).json({
+          success: false,
+          message: 'Product not found'
+        });
+      }
+
+      // Get tenant connection and models
+      const connection = await ConnectionManager.getConnection(masterProduct.store_id);
+      const { ProductVariant } = connection.models;
+
       const variantRelation = await ProductVariant.findOne({
         where: {
           parent_product_id: req.params.id,
@@ -278,6 +327,22 @@ router.delete('/:id/variants/:variantId',
   checkResourceOwnership('Product'),
   async (req, res) => {
     try {
+      // Get store_id from master Product
+      const masterProduct = await MasterProduct.findByPk(req.params.id, {
+        attributes: ['id', 'store_id']
+      });
+
+      if (!masterProduct) {
+        return res.status(404).json({
+          success: false,
+          message: 'Product not found'
+        });
+      }
+
+      // Get tenant connection and models
+      const connection = await ConnectionManager.getConnection(masterProduct.store_id);
+      const { Product, ProductVariant } = connection.models;
+
       const variantRelation = await ProductVariant.findOne({
         where: {
           parent_product_id: req.params.id,
@@ -334,6 +399,22 @@ router.put('/:id/configurable-attributes',
           errors: errors.array()
         });
       }
+
+      // Get store_id from master Product
+      const masterProduct = await MasterProduct.findByPk(req.params.id, {
+        attributes: ['id', 'store_id']
+      });
+
+      if (!masterProduct) {
+        return res.status(404).json({
+          success: false,
+          message: 'Product not found'
+        });
+      }
+
+      // Get tenant connection and models
+      const connection = await ConnectionManager.getConnection(masterProduct.store_id);
+      const { Product, Attribute, Store } = connection.models;
 
       const product = await Product.findByPk(req.params.id, {
         include: [{
@@ -396,6 +477,22 @@ router.put('/:id/configurable-attributes',
 // @access  Public
 router.get('/:id/public-variants', async (req, res) => {
   try {
+    // Get store_id from master Product
+    const masterProduct = await MasterProduct.findByPk(req.params.id, {
+      attributes: ['id', 'store_id']
+    });
+
+    if (!masterProduct) {
+      return res.status(404).json({
+        success: false,
+        message: 'Product not found'
+      });
+    }
+
+    // Get tenant connection and models
+    const connection = await ConnectionManager.getConnection(masterProduct.store_id);
+    const { Product, ProductVariant, Store } = connection.models;
+
     const parentProduct = await Product.findByPk(req.params.id, {
       include: [{
         model: Store,
@@ -493,6 +590,22 @@ router.get('/:id/public-variants', async (req, res) => {
 // @access  Private
 router.get('/:id/available-variants', authMiddleware, authorize(['admin', 'store_owner']), async (req, res) => {
   try {
+    // Get store_id from master Product
+    const masterProduct = await MasterProduct.findByPk(req.params.id, {
+      attributes: ['id', 'store_id']
+    });
+
+    if (!masterProduct) {
+      return res.status(404).json({
+        success: false,
+        message: 'Product not found'
+      });
+    }
+
+    // Get tenant connection and models
+    const connection = await ConnectionManager.getConnection(masterProduct.store_id);
+    const { Product, ProductVariant, Store } = connection.models;
+
     const parentProduct = await Product.findByPk(req.params.id, {
       include: [{
         model: Store,

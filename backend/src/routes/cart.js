@@ -1,5 +1,5 @@
 const express = require('express');
-const { Cart, SlotConfiguration, Product } = require('../models');
+const ConnectionManager = require('../services/database/ConnectionManager');
 const { authMiddleware } = require('../middleware/auth');
 
 const router = express.Router();
@@ -39,11 +39,22 @@ const getAvailableQuantity = (product) => {
 // Debug endpoint - can be removed in production
 router.get('/debug', async (req, res) => {
   try {
+    const { store_id } = req.query;
+
+    if (!store_id) {
+      return res.status(400).json({
+        success: false,
+        message: 'store_id is required'
+      });
+    }
+
+    const connection = await ConnectionManager.getConnection(store_id);
+    const { Cart, Store } = connection.models;
+
     const cartCount = await Cart.count();
-    const { Store } = require('../models');
-    const stores = await Store.findAll({ 
+    const stores = await Store.findAll({
       attributes: ['id', 'name', 'slug'],
-      limit: 5 
+      limit: 5
     });
 
     res.json({
@@ -73,14 +84,24 @@ router.get('/', async (req, res) => {
       });
     }
 
+    if (!store_id) {
+      return res.status(400).json({
+        success: false,
+        message: 'store_id is required'
+      });
+    }
+
+    // Get tenant connection and models
+    const connection = await ConnectionManager.getConnection(store_id);
+    const { Cart } = connection.models;
+    const { Op } = require('sequelize');
+
     let cart = null;
 
     // CRITICAL: When both session_id and user_id are provided, check for cart merging FIRST
     // This handles the case where a user logs in while having items in their guest cart
     if (session_id && user_id) {
       try {
-        const { Op } = require('sequelize');
-
         // Look for both guest cart (by session_id) and user cart (by user_id)
         const bothWhere = {
           [Op.or]: [

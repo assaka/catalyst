@@ -1,5 +1,5 @@
 const express = require('express');
-const { CustomerActivity } = require('../models');
+const ConnectionManager = require('../services/database/ConnectionManager');
 const { Op } = require('sequelize');
 const { analyticsLimiter, publicReadLimiter } = require('../middleware/rateLimiters');
 const { validateRequest, customerActivitySchema } = require('../validation/analyticsSchemas');
@@ -21,16 +21,27 @@ router.use(attachGeoLocation); // Add geographic data
 // @access  Public (Rate Limited)
 router.get('/', publicReadLimiter, async (req, res) => {
   try {
-    const { 
-      session_id, 
-      store_id, 
-      user_id, 
-      activity_type, 
-      page = 1, 
+    const {
+      session_id,
+      store_id,
+      user_id,
+      activity_type,
+      page = 1,
       limit = 50,
       start_date,
       end_date
     } = req.query;
+
+    if (!store_id) {
+      return res.status(400).json({
+        success: false,
+        message: 'store_id is required'
+      });
+    }
+
+    // Get tenant connection and models
+    const connection = await ConnectionManager.getConnection(store_id);
+    const { CustomerActivity } = connection.models;
 
     const whereClause = {};
     if (session_id) whereClause.session_id = session_id;

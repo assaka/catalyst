@@ -5,7 +5,7 @@
 
 const express = require('express');
 const router = express.Router();
-const { CustomerActivity } = require('../models');
+const ConnectionManager = require('../services/database/ConnectionManager');
 const { Op } = require('sequelize');
 const { authMiddleware } = require('../middleware/auth');
 const { checkStoreOwnership } = require('../middleware/storeAuth');
@@ -17,6 +17,8 @@ const { checkStoreOwnership } = require('../middleware/storeAuth');
 router.get('/:storeId/realtime', async (req, res) => {
   try {
     const { storeId } = req.params;
+    const connection = await ConnectionManager.getConnection(storeId);
+    const { CustomerActivity } = connection.models;
     const fiveMinutesAgo = new Date(Date.now() - 5 * 60 * 1000);
 
     // Get unique sessions in last 5 minutes (limit to 5000 recent activities)
@@ -70,6 +72,8 @@ router.get('/:storeId/realtime', async (req, res) => {
 router.get('/:storeId/sessions', async (req, res) => {
   try {
     const { storeId } = req.params;
+    const connection = await ConnectionManager.getConnection(storeId);
+    const { CustomerActivity } = connection.models;
     const { start_date, end_date, limit = 10000 } = req.query; // Default limit: 10,000 activities
 
     const whereClause = { store_id: storeId };
@@ -229,6 +233,8 @@ router.get('/:storeId/sessions', async (req, res) => {
 router.get('/:storeId/timeseries', async (req, res) => {
   try {
     const { storeId } = req.params;
+    const connection = await ConnectionManager.getConnection(storeId);
+    const { CustomerActivity } = connection.models;
     const { start_date, end_date, interval = 'hour' } = req.query;
 
     const whereClause = { store_id: storeId };
@@ -315,6 +321,8 @@ router.get('/:storeId/timeseries', async (req, res) => {
 router.get('/:storeId/top-products', async (req, res) => {
   try {
     const { storeId } = req.params;
+    const connection = await ConnectionManager.getConnection(storeId);
+    const { CustomerActivity } = connection.models;
     const { start_date, end_date, metric = 'views', limit = 10 } = req.query;
 
     const whereClause = { store_id: storeId };
