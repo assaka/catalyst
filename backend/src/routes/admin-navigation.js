@@ -10,12 +10,13 @@ const ConnectionManager = require('../services/database/ConnectionManager');
  */
 router.get('/navigation', async (req, res) => {
   try {
-    const { store_id } = req.query;
+    // Get store_id from header (frontend sends X-Store-Id)
+    const store_id = req.headers['x-store-id'] || req.query.store_id;
 
     if (!store_id) {
       return res.status(400).json({
         success: false,
-        message: 'store_id is required'
+        message: 'store_id is required (X-Store-Id header or query param)'
       });
     }
 
