@@ -690,6 +690,42 @@ router.post('/', authorize(['admin', 'store_owner']), [
     const store = await Store.create(storeData);
     console.log('Store created successfully:', store.id);
 
+    // Create default root category for the new store
+    try {
+      const { createCategoryWithTranslations } = require('../utils/categoryTenantHelpers');
+
+      const defaultRootCategory = await createCategoryWithTranslations(
+        store.id,
+        {
+          slug: 'root',
+          parent_id: null,
+          is_active: true,
+          hide_in_menu: false,
+          sort_order: 0
+        },
+        {
+          en: {
+            name: 'Root Category',
+            description: 'Default root category for store navigation'
+          }
+        }
+      );
+
+      // Update store settings with the root category ID
+      await store.update({
+        settings: {
+          ...store.settings,
+          rootCategoryId: defaultRootCategory.id,
+          excludeRootFromMenu: true
+        }
+      });
+
+      console.log('Default root category created:', defaultRootCategory.id);
+    } catch (categoryError) {
+      console.error('Error creating default root category:', categoryError);
+      // Don't fail store creation if category creation fails
+    }
+
     res.status(201).json({
       success: true,
       message: 'Store created successfully',

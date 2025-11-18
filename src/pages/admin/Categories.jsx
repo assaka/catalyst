@@ -982,6 +982,81 @@ export default function Categories() {
                     </div>
                   </div>
                 )}
+
+                {/* Manage Root Categories */}
+                <div className="mt-6 pt-6 border-t">
+                  <div className="flex items-center justify-between mb-4">
+                    <h4 className="text-md font-semibold">Manage Root Categories</h4>
+                    <Button
+                      onClick={() => {
+                        setSelectedCategory(null);
+                        setIsEditing(false);
+                        setShowCategoryForm(true);
+                      }}
+                      className="flex items-center gap-2"
+                      size="sm"
+                    >
+                      <Plus className="w-4 h-4" />
+                      Create Root Category
+                    </Button>
+                  </div>
+
+                  {/* Root Categories List */}
+                  {rootCategories.length > 0 ? (
+                    <div className="space-y-2">
+                      {rootCategories.map((category) => (
+                        <div
+                          key={category.id}
+                          className="flex items-center justify-between p-3 border rounded-lg hover:bg-gray-50 transition-colors"
+                        >
+                          <div className="flex-1">
+                            <div className="font-medium">{getCategoryName(category)}</div>
+                            <div className="text-sm text-gray-500">
+                              {category.slug || 'No slug'}
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <Button
+                              onClick={() => {
+                                setSelectedCategory(category);
+                                setIsEditing(true);
+                                setShowCategoryForm(true);
+                              }}
+                              variant="outline"
+                              size="sm"
+                            >
+                              <Edit className="w-4 h-4" />
+                            </Button>
+                            <Button
+                              onClick={async () => {
+                                if (window.confirm(`Are you sure you want to delete "${getCategoryName(category)}"? This will also delete all its subcategories.`)) {
+                                  try {
+                                    await Category.delete(category.id);
+                                    toast.success('Category deleted successfully');
+                                    await loadCategories();
+                                  } catch (error) {
+                                    console.error('Error deleting category:', error);
+                                    toast.error('Failed to delete category');
+                                  }
+                                }
+                              }}
+                              variant="outline"
+                              size="sm"
+                              className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </Button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="text-center py-8 text-gray-500">
+                      <p>No root categories found</p>
+                      <p className="text-sm">Click "Create Root Category" to add one</p>
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
           </CardContent>
