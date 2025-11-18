@@ -1,7 +1,7 @@
 const express = require('express');
 const { getLanguageFromRequest } = require('../utils/languageUtils');
-const { getShippingMethodsWithTranslations } = require('../utils/shippingMethodHelpers');
 const { evaluateConditions } = require('../utils/conditionEvaluator');
+const ConnectionManager = require('../services/database/ConnectionManager');
 const router = express.Router();
 
 // @route   GET /api/public/shipping
@@ -10,21 +10,61 @@ const router = express.Router();
 router.get('/', async (req, res) => {
   try {
     const { store_id, country, product_ids } = req.query;
-    
+
     if (!store_id) {
-      return res.status(400).json({ 
-        success: false, 
-        message: 'store_id is required' 
+      return res.status(400).json({
+        success: false,
+        message: 'store_id is required'
       });
     }
 
-    const where = {
-      store_id: store_id,
-      is_active: true  // Only show active shipping methods
-    };
-
+    const tenantDb = await ConnectionManager.getStoreConnection(store_id);
     const lang = getLanguageFromRequest(req);
-    const shippingMethods = await getShippingMethodsWithTranslations(where, { lang });
+
+    // Get shipping methods with translations
+    const { data: shippingMethods, error } = await tenantDb
+      .from('shipping_methods')
+      .select(`
+        shipping_methods.id,
+        shipping_methods.store_id,
+        shipping_methods.is_active,
+        shipping_methods.type,
+        shipping_methods.flat_rate_cost,
+        shipping_methods.free_shipping_min_order,
+        shipping_methods.weight_ranges,
+        shipping_methods.price_ranges,
+        shipping_methods.availability,
+        shipping_methods.countries,
+        shipping_methods.conditions,
+        shipping_methods.min_delivery_days,
+        shipping_methods.max_delivery_days,
+        shipping_methods.sort_order,
+        shipping_methods.created_at,
+        shipping_methods.updated_at,
+        COALESCE(smt.name, shipping_methods.name) as name,
+        COALESCE(smt.description, shipping_methods.description) as description
+      `)
+      .leftJoin(
+        'shipping_method_translations as smt',
+        'shipping_methods.id',
+        'smt.shipping_method_id'
+      )
+      .where('shipping_methods.store_id', '=', store_id)
+      .where('shipping_methods.is_active', '=', true)
+      .where((builder) => {
+        builder.where('smt.language_code', '=', lang).orWhereNull('smt.language_code');
+      })
+      .order('shipping_methods.sort_order', { ascending: true })
+      .order('shipping_methods.name', { ascending: true });
+
+    if (error) {
+      console.error('Error fetching shipping methods:', error);
+      return res.status(500).json({
+        success: false,
+        message: 'Failed to fetch shipping methods',
+        error: error.message
+      });
+    }
     
     // Filter by country if provided
     let filteredMethods = shippingMethods;
