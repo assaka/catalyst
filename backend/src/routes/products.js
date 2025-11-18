@@ -1,6 +1,6 @@
 const express = require('express');
 const { body, validationResult } = require('express-validator');
-const { Product, Store } = require('../models');
+const ConnectionManager = require('../services/database/ConnectionManager');
 const { Op } = require('sequelize');
 const translationService = require('../services/translation-service');
 const creditService = require('../services/credit-service');
@@ -186,7 +186,19 @@ router.post('/',
 
     // Store ownership check is now handled by middleware
 
-    const product = await Product.create(req.body);
+    // Get tenant database connection
+    const tenantDb = await ConnectionManager.getStoreConnection(store_id);
+
+    // Insert product using Supabase client
+    const { data: product, error } = await tenantDb
+      .from('products')
+      .insert(req.body)
+      .select()
+      .single();
+
+    if (error) {
+      throw error;
+    }
 
     res.status(201).json({
       success: true,
@@ -200,22 +212,17 @@ router.post('/',
     let statusCode = 500;
     let message = 'Server error';
 
-    if (error.name === 'SequelizeUniqueConstraintError') {
+    // Supabase/Postgres error handling
+    if (error.code === '23505') { // Unique constraint violation
       statusCode = 409;
-      const field = error.errors[0]?.path;
-      const value = error.errors[0]?.value;
-
-      if (field === 'sku' || error.message.includes('products_sku_store_id_key')) {
-        message = `A product with SKU "${value || req.body.sku}" already exists in this store`;
-      } else if (field === 'slug' || error.message.includes('products_slug_store_id_key')) {
-        message = `A product with slug "${value || req.body.slug}" already exists in this store`;
+      if (error.message.includes('products_sku_store_id_key')) {
+        message = `A product with SKU "${req.body.sku}" already exists in this store`;
+      } else if (error.message.includes('products_slug_store_id_key')) {
+        message = `A product with slug "${req.body.slug}" already exists in this store`;
       } else {
         message = 'A product with these values already exists';
       }
-    } else if (error.name === 'SequelizeValidationError') {
-      statusCode = 400;
-      message = error.errors.map(e => e.message).join(', ');
-    } else if (error.name === 'SequelizeForeignKeyConstraintError') {
+    } else if (error.code === '23503') { // Foreign key constraint violation
       statusCode = 400;
       message = 'Invalid reference: Please ensure all product settings are valid';
     } else if (error.message) {
