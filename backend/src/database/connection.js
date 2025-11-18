@@ -30,8 +30,10 @@ const createSequelizeConnection = async () => {
   console.warn('⚠️  For master DB, use masterSequelize from masterConnection.js');
   console.warn('⚠️  For tenant DB, use ConnectionManager.getStoreConnection()');
 
-  // Use MASTER_DB_URL if available, otherwise fall back to old vars (deprecated)
-  const databaseUrl = process.env.MASTER_DB_URL || process.env.SUPABASE_DB_URL || process.env.DATABASE_URL;
+  // DEPRECATED: This file should not be used in master-tenant architecture
+  // Use masterSequelize or masterSupabaseClient for master DB
+  // Use ConnectionManager.getStoreConnection() for tenant DB
+  throw new Error('DEPRECATED: Use masterSequelize/masterSupabaseClient or ConnectionManager instead of default connection');
 
   if (!databaseUrl) {
     console.warn('⚠️  No database URL provided. Using SQLite for development.');
@@ -84,7 +86,12 @@ const createSequelizeConnection = async () => {
 };
 
 // Initialize sequelize connection synchronously with database URL
-const databaseUrl = process.env.SUPABASE_DB_URL || process.env.DATABASE_URL;
+// DEPRECATED: This default connection should NOT be used
+// Use masterSequelize for master DB or ConnectionManager for tenant DB
+console.error('⚠️ [DEPRECATED] connection.js is deprecated in master-tenant architecture');
+console.error('⚠️ Use masterSequelize or ConnectionManager.getStoreConnection() instead');
+
+const databaseUrl = null; // Force no default connection
 
 if (!databaseUrl) {
   console.warn('⚠️  No database URL provided. Using SQLite for development.');
