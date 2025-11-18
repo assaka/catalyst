@@ -7,6 +7,8 @@ const { getLanguageFromRequest } = require('../utils/languageUtils');
 const { applyCacheHeaders } = require('../utils/cacheUtils');
 const { applyProductTranslationsToMany } = require('../utils/productHelpers');
 const { cacheMiddleware } = require('../middleware/cacheMiddleware');
+const { masterSupabaseClient } = require('../database/masterConnection');
+const ConnectionManager = require('../services/database/ConnectionManager');
 const jwt = require('jsonwebtoken');
 const router = express.Router();
 
@@ -74,17 +76,42 @@ router.get('/', cacheMiddleware({
       }
     }
 
-    // CRITICAL FIX: Fetch store ONCE to prevent database lock errors
-    const store = await Store.findOne({
-      where: { slug, is_active: true }
-    });
+    // CRITICAL FIX: Fetch store from master DB by slug, then get tenant DB connection
+    console.log('🔍 Looking up store by slug in master DB:', slug);
+    const { data: masterStore, error: masterError } = await masterSupabaseClient
+      .from('stores')
+      .select('id, slug, status, is_active')
+      .eq('slug', slug)
+      .eq('is_active', true)
+      .maybeSingle();
 
-    if (!store) {
+    if (masterError || !masterStore) {
+      console.log('❌ Store not found in master DB for slug:', slug);
       return res.status(404).json({
         success: false,
         message: 'Store not found'
       });
     }
+
+    console.log('✅ Found store in master DB:', masterStore.id);
+
+    // Get full store data from tenant DB
+    const tenantDb = await ConnectionManager.getStoreConnection(masterStore.id);
+    const { data: store, error: tenantError } = await tenantDb
+      .from('stores')
+      .select('*')
+      .eq('id', masterStore.id)
+      .single();
+
+    if (tenantError || !store) {
+      console.error('❌ Failed to get store from tenant DB:', tenantError?.message);
+      return res.status(500).json({
+        success: false,
+        message: 'Store configuration error'
+      });
+    }
+
+    console.log('✅ Loaded store from tenant DB:', store.name);
 
     // Execute all other queries in parallel using store.id (NO more store queries!)
     const [

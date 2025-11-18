@@ -657,13 +657,15 @@ router.post('/:id/connect-database', authMiddleware, async (req, res) => {
       }
     }
 
-    // 7. Activate store (use Supabase client)
-    console.log('🎉 Activating store...');
+    // 7. Activate store and save slug (use Supabase client)
+    console.log('🎉 Activating store and saving slug...');
+    const slug = storeSlug || `store-${Date.now()}`;
     const { error: activateError } = await masterSupabaseClient
       .from('stores')
       .update({
         status: 'active',
         is_active: true,
+        slug: slug,
         updated_at: new Date().toISOString()
       })
       .eq('id', storeId);
