@@ -60,12 +60,90 @@ router.get('/', authMiddleware, async (req, res) => {
       throw new Error(error.message);
     }
 
-    // Simplified response - TODO: Add translation and value lookups
-    // For now, return basic attributes data
+    // Load translations for attributes
+    const attributeIds = (rows || []).map(a => a.id);
+    let attrTranslations = [];
+
+    if (attributeIds.length > 0) {
+      const { data: trans } = await tenantDb
+        .from('attribute_translations')
+        .select('*')
+        .in('attribute_id', attributeIds)
+        .in('language_code', [req.query.lang || 'en', 'en']);
+
+      attrTranslations = trans || [];
+    }
+
+    // Build translation map
+    const attrTransMap = {};
+    attrTranslations.forEach(t => {
+      if (!attrTransMap[t.attribute_id]) attrTransMap[t.attribute_id] = {};
+      attrTransMap[t.attribute_id][t.language_code] = t;
+    });
+
+    // Load attribute values for select/multiselect attributes
+    const attributesWithValues = await Promise.all((rows || []).map(async (attr) => {
+      const lang = req.query.lang || 'en';
+      const trans = attrTransMap[attr.id];
+      const reqLang = trans?.[lang];
+      const enLang = trans?.['en'];
+
+      const attrWithTrans = {
+        ...attr,
+        translations: trans || {},
+        label: reqLang?.label || enLang?.label || attr.code
+      };
+
+      // Load values for select/multiselect types
+      if (attr.type === 'select' || attr.type === 'multiselect') {
+        const { data: values } = await tenantDb
+          .from('attribute_values')
+          .select('*')
+          .eq('attribute_id', attr.id)
+          .order('sort_order', { ascending: true });
+
+        // Load value translations
+        const valueIds = (values || []).map(v => v.id);
+        let valueTrans = [];
+
+        if (valueIds.length > 0) {
+          const { data: vt } = await tenantDb
+            .from('attribute_value_translations')
+            .select('*')
+            .in('attribute_value_id', valueIds)
+            .in('language_code', [lang, 'en']);
+
+          valueTrans = vt || [];
+        }
+
+        // Build value translation map
+        const valTransMap = {};
+        valueTrans.forEach(t => {
+          if (!valTransMap[t.attribute_value_id]) valTransMap[t.attribute_value_id] = {};
+          valTransMap[t.attribute_value_id][t.language_code] = t;
+        });
+
+        // Apply translations to values
+        attrWithTrans.values = (values || []).map(v => {
+          const vTrans = valTransMap[v.id];
+          const vReqLang = vTrans?.[lang];
+          const vEnLang = vTrans?.['en'];
+
+          return {
+            ...v,
+            translations: vTrans || {},
+            label: vReqLang?.label || vEnLang?.label || v.code
+          };
+        });
+      }
+
+      return attrWithTrans;
+    }));
+
     res.json({
       success: true,
       data: {
-        attributes: rows || [],
+        attributes: attributesWithValues,
         pagination: {
           current_page: parseInt(page),
           per_page: parseInt(limit),
@@ -100,12 +178,69 @@ router.get('/:id', async (req, res) => {
       return res.status(404).json({ success: false, message: 'Attribute not found' });
     }
 
-    // TODO: Add translation and value lookups
-    const attributeData = attribute;
+    const lang = req.query.lang || 'en';
+
+    // Load translations
+    const { data: attrTrans } = await tenantDb
+      .from('attribute_translations')
+      .select('*')
+      .eq('attribute_id', attribute.id)
+      .in('language_code', [lang, 'en']);
+
+    const transMap = {};
+    (attrTrans || []).forEach(t => {
+      transMap[t.language_code] = t;
+    });
+
+    const reqLang = transMap[lang];
+    const enLang = transMap['en'];
+
+    const attributeData = {
+      ...attribute,
+      translations: transMap,
+      label: reqLang?.label || enLang?.label || attribute.code
+    };
+
+    // Load values if select/multiselect
+    if (attribute.type === 'select' || attribute.type === 'multiselect') {
+      const { data: values } = await tenantDb
+        .from('attribute_values')
+        .select('*')
+        .eq('attribute_id', attribute.id)
+        .order('sort_order', { ascending: true });
+
+      // Load value translations
+      const valueIds = (values || []).map(v => v.id);
+
+      if (valueIds.length > 0) {
+        const { data: valTrans } = await tenantDb
+          .from('attribute_value_translations')
+          .select('*')
+          .in('attribute_value_id', valueIds)
+          .in('language_code', [lang, 'en']);
+
+        const valTransMap = {};
+        (valTrans || []).forEach(t => {
+          if (!valTransMap[t.attribute_value_id]) valTransMap[t.attribute_value_id] = {};
+          valTransMap[t.attribute_value_id][t.language_code] = t;
+        });
+
+        attributeData.values = (values || []).map(v => {
+          const vTrans = valTransMap[v.id];
+          const vReqLang = vTrans?.[lang];
+          const vEnLang = vTrans?.['en'];
+
+          return {
+            ...v,
+            translations: vTrans || {},
+            label: vReqLang?.label || vEnLang?.label || v.code
+          };
+        });
+      }
+    }
 
     console.log('📝 Backend: Loaded attribute with translations:', {
       id: attributeData.id,
-      name: attributeData.name,
       code: attributeData.code,
       translations: attributeData.translations,
       translationKeys: Object.keys(attributeData.translations || {})
