@@ -113,9 +113,9 @@ router.get('/', cacheMiddleware({
 
     console.log('✅ Loaded store from tenant DB:', store.name);
 
-    // Execute all other queries in parallel using store.id (NO more store queries!)
+    // Execute all other queries in parallel using tenantDb connection
     const [
-      languages,
+      languagesResult,
       translationsResult,
       categoriesResult,
       wishlistResult,
@@ -123,14 +123,27 @@ router.get('/', cacheMiddleware({
       seoSettingsResult,
       seoTemplatesResult
     ] = await Promise.all([
-      // 1. Get all active languages
-      Language.findAll({
-        where: { is_active: true },
-        order: [['name', 'ASC']]
-      }),
+      // 1. Get all active languages from tenant DB
+      (async () => {
+        try {
+          const { data, error } = await tenantDb.from('languages').select('*').eq('is_active', true).order('name', { ascending: true });
+          if (error) throw error;
+          return data || [];
+        } catch (err) {
+          console.error('❌ Bootstrap: Failed to fetch languages:', err.message);
+          return [];
+        }
+      })(),
 
       // 2. Get UI translations using store.id (no duplicate query!)
-      translationService.getUILabels(store.id, language),
+      (async () => {
+        try {
+          return await translationService.getUILabels(store.id, language);
+        } catch (err) {
+          console.error('❌ Bootstrap: Failed to fetch translations:', err.message);
+          return {};
+        }
+      })(),
 
       // 3. Get categories using store.id (no duplicate query!)
       getCategoriesWithTranslations(
