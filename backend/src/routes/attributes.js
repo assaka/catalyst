@@ -278,26 +278,49 @@ router.post('/', async (req, res) => {
 
 router.put('/:id', async (req, res) => {
   try {
-    const attribute = await Attribute.findByPk(req.params.id, {
-      include: [{ model: Store, attributes: ['id', 'name', 'user_id'] }]
-    });
+    const store_id = req.headers['x-store-id'] || req.query.store_id || req.body.store_id;
 
-    if (!attribute) return res.status(404).json({ success: false, message: 'Attribute not found' });
+    if (!store_id) {
+      return res.status(400).json({ success: false, message: 'store_id is required' });
+    }
 
+    // Check store access
     if (req.user.role !== 'admin') {
       const { checkUserStoreAccess } = require('../utils/storeAccess');
-      const access = await checkUserStoreAccess(req.user.id, attribute.Store.id);
+      const access = await checkUserStoreAccess(req.user.id, store_id);
 
       if (!access) {
         return res.status(403).json({ success: false, message: 'Access denied' });
       }
     }
 
+    const tenantDb = await ConnectionManager.getStoreConnection(store_id);
+
+    // Get attribute from tenant DB
+    const { data: attribute, error: fetchError } = await tenantDb
+      .from('attributes')
+      .select('*')
+      .eq('id', req.params.id)
+      .eq('store_id', store_id)
+      .single();
+
+    if (fetchError || !attribute) {
+      return res.status(404).json({ success: false, message: 'Attribute not found' });
+    }
+
     // Extract translations from request body
     const { translations, ...attributeData } = req.body;
 
     // Update attribute fields (excluding translations)
-    await attribute.update(attributeData);
+    const { error: updateError } = await tenantDb
+      .from('attributes')
+      .update(attributeData)
+      .eq('id', req.params.id)
+      .eq('store_id', store_id);
+
+    if (updateError) {
+      throw updateError;
+    }
 
     // Save translations to normalized table if provided
     if (translations && typeof translations === 'object') {
@@ -316,22 +339,47 @@ router.put('/:id', async (req, res) => {
 
 router.delete('/:id', async (req, res) => {
   try {
-    const attribute = await Attribute.findByPk(req.params.id, {
-      include: [{ model: Store, attributes: ['id', 'name', 'user_id'] }]
-    });
+    const store_id = req.headers['x-store-id'] || req.query.store_id;
 
-    if (!attribute) return res.status(404).json({ success: false, message: 'Attribute not found' });
+    if (!store_id) {
+      return res.status(400).json({ success: false, message: 'store_id is required' });
+    }
 
+    // Check store access
     if (req.user.role !== 'admin') {
       const { checkUserStoreAccess } = require('../utils/storeAccess');
-      const access = await checkUserStoreAccess(req.user.id, attribute.Store.id);
+      const access = await checkUserStoreAccess(req.user.id, store_id);
 
       if (!access) {
         return res.status(403).json({ success: false, message: 'Access denied' });
       }
     }
 
-    await attribute.destroy();
+    const tenantDb = await ConnectionManager.getStoreConnection(store_id);
+
+    // Check if attribute exists
+    const { data: attribute, error: fetchError } = await tenantDb
+      .from('attributes')
+      .select('id')
+      .eq('id', req.params.id)
+      .eq('store_id', store_id)
+      .single();
+
+    if (fetchError || !attribute) {
+      return res.status(404).json({ success: false, message: 'Attribute not found' });
+    }
+
+    // Delete attribute
+    const { error: deleteError } = await tenantDb
+      .from('attributes')
+      .delete()
+      .eq('id', req.params.id)
+      .eq('store_id', store_id);
+
+    if (deleteError) {
+      throw deleteError;
+    }
+
     res.json({ success: true, message: 'Attribute deleted successfully' });
   } catch (error) {
     res.status(500).json({ success: false, message: 'Server error' });
