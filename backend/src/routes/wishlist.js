@@ -1,5 +1,5 @@
 const express = require('express');
-const { Wishlist } = require('../models');
+const ConnectionManager = require('../services/database/ConnectionManager');
 const { getLanguageFromRequest } = require('../utils/languageUtils');
 const { applyProductTranslationsToMany } = require('../utils/productHelpers');
 
@@ -10,7 +10,7 @@ const router = express.Router();
 // @access  Public
 router.get('/', async (req, res) => {
   try {
-    const { session_id, user_id } = req.query;
+    const { session_id, user_id, store_id } = req.query;
 
     if (!session_id && !user_id) {
       return res.status(400).json({
@@ -18,6 +18,17 @@ router.get('/', async (req, res) => {
         message: 'session_id or user_id is required'
       });
     }
+
+    if (!store_id) {
+      return res.status(400).json({
+        success: false,
+        message: 'store_id is required'
+      });
+    }
+
+    // Get tenant connection and models
+    const connection = await ConnectionManager.getConnection(store_id);
+    const { Wishlist, Product } = connection.models;
 
     const whereClause = {};
     if (session_id) whereClause.session_id = session_id;
@@ -27,7 +38,7 @@ router.get('/', async (req, res) => {
       where: whereClause,
       include: [
         {
-          model: require('../models').Product,
+          model: Product,
           attributes: ['id', 'price', 'images', 'slug']
         }
       ],
@@ -74,6 +85,10 @@ router.post('/', async (req, res) => {
       });
     }
 
+    // Get tenant connection and models
+    const connection = await ConnectionManager.getConnection(store_id);
+    const { Wishlist } = connection.models;
+
     // Check if item already exists
     const whereClause = { product_id };
     if (user_id) {
@@ -116,6 +131,19 @@ router.post('/', async (req, res) => {
 // @access  Public
 router.delete('/:id', async (req, res) => {
   try {
+    const { store_id } = req.query;
+
+    if (!store_id) {
+      return res.status(400).json({
+        success: false,
+        message: 'store_id is required'
+      });
+    }
+
+    // Get tenant connection and models
+    const connection = await ConnectionManager.getConnection(store_id);
+    const { Wishlist } = connection.models;
+
     const wishlistItem = await Wishlist.findByPk(req.params.id);
 
     if (!wishlistItem) {
@@ -145,7 +173,7 @@ router.delete('/:id', async (req, res) => {
 // @access  Public
 router.delete('/', async (req, res) => {
   try {
-    const { session_id } = req.query;
+    const { session_id, store_id } = req.query;
 
     if (!session_id) {
       return res.status(400).json({
@@ -153,6 +181,17 @@ router.delete('/', async (req, res) => {
         message: 'session_id is required'
       });
     }
+
+    if (!store_id) {
+      return res.status(400).json({
+        success: false,
+        message: 'store_id is required'
+      });
+    }
+
+    // Get tenant connection and models
+    const connection = await ConnectionManager.getConnection(store_id);
+    const { Wishlist } = connection.models;
 
     await Wishlist.destroy({ where: { session_id } });
 

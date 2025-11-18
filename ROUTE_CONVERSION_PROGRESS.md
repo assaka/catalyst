@@ -10,13 +10,13 @@ Converting all backend routes from direct database connections to ConnectionMana
 ## Conversion Statistics
 
 - **Total Routes:** 108
-- **Converted:** 32 ✅
-- **Remaining:** 76 ❌
-- **Progress:** 30%
+- **Converted:** 33 ✅
+- **Remaining:** 75 ❌
+- **Progress:** 31%
 
 ---
 
-## ✅ CONVERTED ROUTES (32)
+## ✅ CONVERTED ROUTES (33)
 
 ### Core Admin Routes
 - [x] admin-navigation.js
@@ -110,9 +110,9 @@ Converting all backend routes from direct database connections to ConnectionMana
 ### 🟢 LOWER PRIORITY - Storefront & Public Routes
 
 #### Shopping Features
-- [x] cart.js (partially converted - needs completion)
-- [ ] wishlist.js
-- [ ] addresses.js
+- [x] cart.js
+- [x] wishlist.js
+- [ ] addresses.js (may be master DB, not tenant - needs review)
 
 #### Content & SEO
 - [ ] canonical-urls.js
