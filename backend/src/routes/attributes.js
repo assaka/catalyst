@@ -101,8 +101,7 @@ router.get('/:id', async (req, res) => {
     }
 
     // TODO: Add translation and value lookups
-    const attributeData = attribute
-    };
+    const attributeData = attribute;
 
     console.log('📝 Backend: Loaded attribute with translations:', {
       id: attributeData.id,
