@@ -1,7 +1,6 @@
 const express = require('express');
 const { body, validationResult } = require('express-validator');
-const { Attribute, AttributeValue, Store, AttributeSet } = require('../models');
-const { Op } = require('sequelize');
+const ConnectionManager = require('../services/database/ConnectionManager');
 const translationService = require('../services/translation-service');
 const creditService = require('../services/credit-service');
 const {
@@ -19,136 +18,59 @@ const { authMiddleware, authorize } = require('../middleware/auth');
 // Basic CRUD operations for attributes
 router.get('/', authMiddleware, async (req, res) => {
   try {
-    const { page = 1, limit = 100, store_id, search, attribute_set_id, exclude_assigned, is_filterable } = req.query;
+    const store_id = req.headers['x-store-id'] || req.query.store_id;
+
+    if (!store_id) {
+      return res.status(400).json({
+        success: false,
+        message: 'store_id is required'
+      });
+    }
+
+    const { page = 1, limit = 100, search, attribute_set_id, exclude_assigned, is_filterable } = req.query;
     const offset = (page - 1) * limit;
 
-    const where = {};
+    const tenantDb = await ConnectionManager.getStoreConnection(store_id);
 
-    // Authenticated access
-    if (req.user.role !== 'admin') {
-      const { getUserStoresForDropdown } = require('../utils/storeAccess');
-      const accessibleStores = await getUserStoresForDropdown(req.user.id);
-      const storeIds = accessibleStores.map(store => store.id);
-      where.store_id = { [Op.in]: storeIds };
-    }
+    // Build Supabase query
+    let query = tenantDb.from('attributes').select('*', { count: 'exact' }).eq('store_id', store_id);
 
-    if (store_id) where.store_id = store_id;
-
-    // Filter by is_filterable if provided
+    // Filter by is_filterable
     if (is_filterable !== undefined) {
-      where.is_filterable = is_filterable === 'true' || is_filterable === true;
+      query = query.eq('is_filterable', is_filterable === 'true' || is_filterable === true);
     }
 
-    // Add search functionality
+    // Search functionality (simplified - searches name and code)
     if (search) {
-      where[Op.or] = [
-        { name: { [Op.iLike]: `%${search}%` } },
-        { code: { [Op.iLike]: `%${search}%` } }
-      ];
+      query = query.or(`name.ilike.%${search}%,code.ilike.%${search}%`);
     }
 
-    // Add attribute set filtering
-    if (attribute_set_id) {
-      // Find the attribute set and filter by its attribute_ids
-      const attributeSet = await AttributeSet.findByPk(attribute_set_id);
-      if (attributeSet && Array.isArray(attributeSet.attribute_ids) && attributeSet.attribute_ids.length > 0) {
-        where.id = { [Op.in]: attributeSet.attribute_ids };
-      } else {
-        // If attribute set has no attributes, return empty result
-        where.id = { [Op.in]: [] };
-      }
-    } else if (exclude_assigned === 'true') {
-      // Get all assigned attribute IDs from all attribute sets in this store
-      const attributeSets = await AttributeSet.findAll({
-        where: { store_id: where.store_id || store_id },
-        attributes: ['attribute_ids']
-      });
-      
-      const assignedIds = [];
-      attributeSets.forEach(set => {
-        if (Array.isArray(set.attribute_ids)) {
-          assignedIds.push(...set.attribute_ids);
-        }
-      });
-      
-      // Remove duplicates
-      const uniqueAssignedIds = [...new Set(assignedIds)];
-      
-      if (uniqueAssignedIds.length > 0) {
-        where.id = { [Op.notIn]: uniqueAssignedIds };
-      }
-      // If no attributes are assigned to any set, show all attributes (no additional filter)
+    // TODO: Implement attribute_set_id and exclude_assigned filters
+    // These require additional queries to attribute_sets table
+
+    // Apply pagination and ordering
+    query = query
+      .order('sort_order', { ascending: true })
+      .order('name', { ascending: true })
+      .range(offset, offset + parseInt(limit) - 1);
+
+    const { data: rows, error, count } = await query;
+
+    if (error) {
+      throw new Error(error.message);
     }
 
-    const { count, rows } = await Attribute.findAndCountAll({
-      where,
-      limit: parseInt(limit),
-      offset: parseInt(offset),
-      order: [['sort_order', 'ASC'], ['name', 'ASC']],
-      attributes: { exclude: ['translations'] }, // Exclude translations JSON column - using normalized table
-      include: [{ model: Store, attributes: ['id', 'name'] }]
-    });
-
-    // Get attribute IDs for translation lookup
-    const attributeIds = rows.map(attr => attr.id);
-
-    // Fetch translations from normalized tables
-    const attributesWithTranslations = attributeIds.length > 0
-      ? await getAttributesWithTranslations({ id: { [Op.in]: attributeIds } })
-      : [];
-
-    // Create a map for quick lookup
-    const translationsMap = new Map(
-      attributesWithTranslations.map(attr => [attr.id, attr.translations])
-    );
-
-    // Fetch attribute values for select/multiselect attributes
-    // For filterable attributes, always include all values (no limit)
-    const attributesWithValues = await Promise.all(rows.map(async (attr) => {
-      const attrData = attr.toJSON();
-
-      // Replace translations with normalized data
-      attrData.translations = translationsMap.get(attr.id) || {};
-
-      if (attr.type === 'select' || attr.type === 'multiselect') {
-        const values = await AttributeValue.findAll({
-          where: { attribute_id: attr.id },
-          order: [['sort_order', 'ASC'], ['code', 'ASC']],
-          attributes: { exclude: ['translations'] } // Exclude translations JSON column - using normalized table
-          // No limit - authenticated requests get all values
-        });
-
-        // Get value IDs for translation lookup
-        const valueIds = values.map(v => v.id);
-        const valuesWithTranslations = valueIds.length > 0
-          ? await getAttributeValuesWithTranslations({ id: { [Op.in]: valueIds } })
-          : [];
-
-        // Create translation map for values
-        const valueTranslationsMap = new Map(
-          valuesWithTranslations.map(val => [val.id, val.translations])
-        );
-
-        // Merge translations into values
-        attrData.values = values.map(v => {
-          const valData = v.toJSON();
-          valData.translations = valueTranslationsMap.get(v.id) || {};
-          return valData;
-        });
-      }
-      return attrData;
-    }));
-
-    // Return wrapped response for authenticated requests
+    // Simplified response - TODO: Add translation and value lookups
+    // For now, return basic attributes data
     res.json({
       success: true,
       data: {
-        attributes: attributesWithValues,
+        attributes: rows || [],
         pagination: {
           current_page: parseInt(page),
           per_page: parseInt(limit),
-          total: count,
-          total_pages: Math.ceil(count / limit)
+          total: count || 0,
+          total_pages: Math.ceil((count || 0) / limit)
         }
       }
     });
@@ -160,32 +82,26 @@ router.get('/', authMiddleware, async (req, res) => {
 
 router.get('/:id', async (req, res) => {
   try {
-    const attribute = await Attribute.findByPk(req.params.id, {
-      include: [{ model: Store, attributes: ['id', 'name', 'user_id'] }]
-    });
+    const store_id = req.headers['x-store-id'] || req.query.store_id;
 
-    if (!attribute) return res.status(404).json({ success: false, message: 'Attribute not found' });
-
-    if (req.user.role !== 'admin') {
-      const { checkUserStoreAccess } = require('../utils/storeAccess');
-      const access = await checkUserStoreAccess(req.user.id, attribute.Store.id);
-
-      if (!access) {
-        return res.status(403).json({ success: false, message: 'Access denied' });
-      }
+    if (!store_id) {
+      return res.status(400).json({ success: false, message: 'store_id is required' });
     }
 
-    // Fetch translations from normalized tables
-    const attributeWithTranslations = await getAttributeWithValues(attribute.id);
+    const tenantDb = await ConnectionManager.getStoreConnection(store_id);
 
-    if (!attributeWithTranslations) {
+    const { data: attribute, error } = await tenantDb
+      .from('attributes')
+      .select('*')
+      .eq('id', req.params.id)
+      .maybeSingle();
+
+    if (error || !attribute) {
       return res.status(404).json({ success: false, message: 'Attribute not found' });
     }
 
-    // Merge with Sequelize data to include Store
-    const attributeData = {
-      ...attributeWithTranslations,
-      Store: attribute.Store
+    // TODO: Add translation and value lookups
+    const attributeData = attribute
     };
 
     console.log('📝 Backend: Loaded attribute with translations:', {
