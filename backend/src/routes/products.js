@@ -224,10 +224,7 @@ router.post('/',
               language_code: langCode,
               name: transData.name || null,
               description: transData.description || null,
-              short_description: transData.short_description || null,
-              meta_title: transData.meta_title || null,
-              meta_description: transData.meta_description || null,
-              meta_keywords: transData.meta_keywords || null
+              short_description: transData.short_description || null
             })
             .select();
 
