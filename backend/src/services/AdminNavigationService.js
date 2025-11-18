@@ -1,21 +1,26 @@
 // backend/src/services/AdminNavigationService.js
-const { sequelize } = require('../database/connection');
 
 class AdminNavigationService {
 
   /**
    * Get complete navigation for a tenant
    * Merges: Master registry + Tenant config + Installed plugins
+   * @param {string} storeId - Store ID
+   * @param {Object} tenantDb - Supabase client connection to tenant DB
    */
-  async getNavigationForTenant(tenantId) {
+  async getNavigationForTenant(storeId, tenantDb) {
     try {
 
-      // 1. Get tenant's installed & active plugins from BOTH tables
-      const installedPlugins = await sequelize.query(`
-        SELECT id
-        FROM plugins
-        WHERE status = 'installed' AND is_enabled = true
-      `, { type: sequelize.QueryTypes.SELECT });
+      // 1. Get tenant's installed & active plugins
+      const { data: installedPlugins, error: pluginsError } = await tenantDb
+        .from('plugins')
+        .select('id')
+        .eq('status', 'installed')
+        .eq('is_enabled', true);
+
+      if (pluginsError) {
+        console.error('Error fetching plugins:', pluginsError.message);
+      }
 
       const pluginIds = installedPlugins.map(p => p.id);
 
