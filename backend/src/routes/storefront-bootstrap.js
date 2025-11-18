@@ -1,11 +1,7 @@
 const express = require('express');
-const { Store, Language, Category, Wishlist, User, SeoSettings, SeoTemplate } = require('../models');
-const SlotConfiguration = require('../models/SlotConfiguration');
+const { User } = require('../models');
 const translationService = require('../services/translation-service');
-const { getCategoriesWithTranslations } = require('../utils/categoryHelpers');
-const { getLanguageFromRequest } = require('../utils/languageUtils');
 const { applyCacheHeaders } = require('../utils/cacheUtils');
-const { applyProductTranslationsToMany } = require('../utils/productHelpers');
 const { cacheMiddleware } = require('../middleware/cacheMiddleware');
 const { masterSupabaseClient } = require('../database/masterConnection');
 const ConnectionManager = require('../services/database/ConnectionManager');
@@ -126,7 +122,11 @@ router.get('/', cacheMiddleware({
       // 1. Get all active languages from tenant DB
       (async () => {
         try {
-          const { data, error } = await tenantDb.from('languages').select('*').eq('is_active', true).order('name', { ascending: true });
+          const { data, error } = await tenantDb
+            .from('languages')
+            .select('*')
+            .eq('is_active', true)
+            .order('name', { ascending: true });
           if (error) throw error;
           return data || [];
         } catch (err) {
@@ -135,7 +135,7 @@ router.get('/', cacheMiddleware({
         }
       })(),
 
-      // 2. Get UI translations using store.id (no duplicate query!)
+      // 2. Get UI translations using store.id
       (async () => {
         try {
           return await translationService.getUILabels(store.id, language);
@@ -145,18 +145,68 @@ router.get('/', cacheMiddleware({
         }
       })(),
 
-      // 3. Get categories using store.id (no duplicate query!)
-      getCategoriesWithTranslations(
-        {
-          store_id: store.id,
-          is_active: true,
-          hide_in_menu: false
-        },
-        language,
-        { limit: 1000, offset: 0 }
-      ),
+      // 3. Get categories with translations using tenantDb
+      (async () => {
+        try {
+          // Since getCategoriesWithTranslations uses old sequelize connection,
+          // we need to fetch categories directly from tenantDb
+          const { data: categories, error: catError } = await tenantDb
+            .from('categories')
+            .select('*')
+            .eq('store_id', store.id)
+            .eq('is_active', true)
+            .eq('hide_in_menu', false)
+            .order('sort_order', { ascending: true })
+            .limit(1000);
 
-      // 5. Get wishlist (if session_id, user_id, or auth provided)
+          if (catError) throw catError;
+
+          if (!categories || categories.length === 0) {
+            return { rows: [], count: 0 };
+          }
+
+          // Get category translations
+          const categoryIds = categories.map(c => c.id);
+          const { data: translations, error: transError } = await tenantDb
+            .from('category_translations')
+            .select('*')
+            .in('category_id', categoryIds)
+            .in('language_code', [language, 'en']);
+
+          if (transError) {
+            console.warn('⚠️ Failed to fetch category translations:', transError.message);
+          }
+
+          // Build translation map
+          const translationMap = {};
+          (translations || []).forEach(t => {
+            if (!translationMap[t.category_id]) {
+              translationMap[t.category_id] = {};
+            }
+            translationMap[t.category_id][t.language_code] = t;
+          });
+
+          // Apply translations to categories
+          const categoriesWithTranslations = categories.map(cat => {
+            const trans = translationMap[cat.id];
+            const requestedLang = trans?.[language];
+            const englishLang = trans?.['en'];
+
+            return {
+              ...cat,
+              name: requestedLang?.name || englishLang?.name || cat.slug,
+              description: requestedLang?.description || englishLang?.description || null
+            };
+          });
+
+          return { rows: categoriesWithTranslations, count: categoriesWithTranslations.length };
+        } catch (err) {
+          console.error('❌ Bootstrap: Failed to fetch categories:', err.message);
+          return { rows: [], count: 0 };
+        }
+      })(),
+
+      // 4. Get wishlist (if session_id, user_id, or auth provided)
       (async () => {
         const effectiveUserId = authenticatedUser?.id || user_id;
         const effectiveSessionId = session_id;
@@ -166,91 +216,168 @@ router.get('/', cacheMiddleware({
         }
 
         try {
-          const whereClause = {};
-          if (effectiveUserId) whereClause.user_id = effectiveUserId;
-          if (effectiveSessionId) whereClause.session_id = effectiveSessionId;
+          // Build query for wishlist
+          let wishlistQuery = tenantDb
+            .from('wishlists')
+            .select('*')
+            .order('added_at', { ascending: false });
 
-          const wishlist = await Wishlist.findAll({
-            where: whereClause,
-            include: [
-              {
-                model: require('../models').Product,
-                attributes: ['id', 'price', 'images', 'slug', 'name']
-              }
-            ],
-            order: [['added_at', 'DESC']]
+          if (effectiveUserId && effectiveSessionId) {
+            wishlistQuery = wishlistQuery.or(`user_id.eq.${effectiveUserId},session_id.eq.${effectiveSessionId}`);
+          } else if (effectiveUserId) {
+            wishlistQuery = wishlistQuery.eq('user_id', effectiveUserId);
+          } else if (effectiveSessionId) {
+            wishlistQuery = wishlistQuery.eq('session_id', effectiveSessionId);
+          }
+
+          const { data: wishlistItems, error: wishlistError } = await wishlistQuery;
+
+          if (wishlistError) throw wishlistError;
+          if (!wishlistItems || wishlistItems.length === 0) return [];
+
+          // Get products for wishlist items
+          const productIds = wishlistItems.map(w => w.product_id);
+          const { data: products, error: productsError } = await tenantDb
+            .from('products')
+            .select('id, price, images, slug, name')
+            .in('id', productIds);
+
+          if (productsError) {
+            console.warn('⚠️ Failed to fetch wishlist products:', productsError.message);
+            return wishlistItems.map(w => ({ ...w, Product: null }));
+          }
+
+          // Get product translations
+          const { data: productTranslations, error: transError } = await tenantDb
+            .from('product_translations')
+            .select('*')
+            .in('product_id', productIds)
+            .in('language_code', [language, 'en']);
+
+          if (transError) {
+            console.warn('⚠️ Failed to fetch product translations:', transError.message);
+          }
+
+          // Build translation map
+          const transMap = {};
+          (productTranslations || []).forEach(t => {
+            if (!transMap[t.product_id]) {
+              transMap[t.product_id] = {};
+            }
+            transMap[t.product_id][t.language_code] = t;
           });
 
-          // Apply translations to products in wishlist
-          const wishlistWithTranslations = await Promise.all(
-            wishlist.map(async (item) => {
-              const itemData = item.toJSON();
-              if (itemData.Product) {
-                const [productWithTranslation] = await applyProductTranslationsToMany([itemData.Product], language);
-                itemData.Product = productWithTranslation;
-              }
-              return itemData;
-            })
-          );
+          // Apply translations to products
+          const productsWithTrans = products.map(p => {
+            const trans = transMap[p.id];
+            const requestedLang = trans?.[language];
+            const englishLang = trans?.['en'];
 
-          return wishlistWithTranslations;
+            return {
+              ...p,
+              name: requestedLang?.name || englishLang?.name || '',
+              description: requestedLang?.description || englishLang?.description || '',
+              short_description: requestedLang?.short_description || englishLang?.short_description || ''
+            };
+          });
+
+          // Build product map
+          const productMap = {};
+          productsWithTrans.forEach(p => {
+            productMap[p.id] = p;
+          });
+
+          // Combine wishlist items with products
+          return wishlistItems.map(item => ({
+            ...item,
+            Product: productMap[item.product_id] || null
+          }));
         } catch (error) {
-          console.error('Error fetching wishlist in bootstrap:', error);
+          console.error('❌ Bootstrap: Error fetching wishlist:', error.message);
           return [];
         }
       })(),
 
-      // 4. Get header slot configuration using store.id (no duplicate query!)
+      // 5. Get header slot configuration from tenantDb
       (async () => {
         try {
           // First try to find published version
-          let configuration = await SlotConfiguration.findLatestPublished(store.id, 'header');
+          const { data: publishedConfig, error: pubError } = await tenantDb
+            .from('slot_configurations')
+            .select('*')
+            .eq('store_id', store.id)
+            .eq('page_type', 'header')
+            .eq('status', 'published')
+            .order('version_number', { ascending: false })
+            .limit(1)
+            .maybeSingle();
 
-          // If no published version, try to find draft
-          if (!configuration) {
-            configuration = await SlotConfiguration.findOne({
-              where: {
-                store_id: store.id,
-                status: 'draft',
-                page_type: 'header'
-              },
-              order: [['version_number', 'DESC']]
-            });
+          if (pubError && pubError.code !== 'PGRST116') {
+            console.warn('⚠️ Error fetching published header config:', pubError.message);
           }
 
-          return configuration;
+          if (publishedConfig) {
+            return publishedConfig;
+          }
+
+          // If no published version, try to find draft
+          const { data: draftConfig, error: draftError } = await tenantDb
+            .from('slot_configurations')
+            .select('*')
+            .eq('store_id', store.id)
+            .eq('page_type', 'header')
+            .eq('status', 'draft')
+            .order('version_number', { ascending: false })
+            .limit(1)
+            .maybeSingle();
+
+          if (draftError && draftError.code !== 'PGRST116') {
+            console.warn('⚠️ Error fetching draft header config:', draftError.message);
+          }
+
+          return draftConfig || null;
         } catch (error) {
-          console.error('Error fetching header slot config in bootstrap:', error);
+          console.error('❌ Bootstrap: Error fetching header slot config:', error.message);
           return null;
         }
       })(),
 
-      // 5. Get SEO settings using store.id (no duplicate query!)
+      // 6. Get SEO settings from tenantDb
       (async () => {
         try {
-          const seoSettings = await SeoSettings.findOne({
-            where: { store_id: store.id }
-          });
-          return seoSettings;
+          const { data, error } = await tenantDb
+            .from('seo_settings')
+            .select('*')
+            .eq('store_id', store.id)
+            .maybeSingle();
+
+          if (error && error.code !== 'PGRST116') {
+            console.warn('⚠️ Error fetching SEO settings:', error.message);
+            return null;
+          }
+
+          return data || null;
         } catch (error) {
-          console.error('Error fetching SEO settings in bootstrap:', error);
+          console.error('❌ Bootstrap: Error fetching SEO settings:', error.message);
           return null;
         }
       })(),
 
-      // 6. Get active SEO templates using store.id (no duplicate query!)
+      // 7. Get active SEO templates from tenantDb
       (async () => {
         try {
-          const templates = await SeoTemplate.findAll({
-            where: {
-              store_id: store.id,
-              is_active: true
-            },
-            order: [['sort_order', 'ASC'], ['type', 'ASC']]
-          });
-          return templates;
+          const { data, error } = await tenantDb
+            .from('seo_templates')
+            .select('*')
+            .eq('store_id', store.id)
+            .eq('is_active', true)
+            .order('sort_order', { ascending: true })
+            .order('type', { ascending: true });
+
+          if (error) throw error;
+          return data || [];
         } catch (error) {
-          console.error('Error fetching SEO templates in bootstrap:', error);
+          console.error('❌ Bootstrap: Error fetching SEO templates:', error.message);
           return [];
         }
       })()
@@ -268,7 +395,7 @@ router.get('/', cacheMiddleware({
       success: true,
       data: {
         store: store,
-        languages: languages,
+        languages: languagesResult || [],
         translations: {
           language: language,
           labels: translationsResult.labels || {},
