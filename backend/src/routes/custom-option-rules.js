@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const { supabase } = require('../database/connection');
+const ConnectionManager = require('../services/database/ConnectionManager');
 const { authMiddleware } = require('../middleware/auth');
 const translationService = require('../services/translation-service');
 const creditService = require('../services/credit-service');
@@ -27,37 +27,43 @@ router.get('/health', async (req, res) => {
 router.get('/', async (req, res) => {
   try {
     const { store_id, order_by = '-created_at', limit, offset } = req.query;
-    
-    let query = supabase
+
+    if (!store_id) {
+      return res.status(400).json({ error: 'store_id is required' });
+    }
+
+    const tenantDb = await ConnectionManager.getStoreConnection(store_id);
+
+    let query = tenantDb
       .from('custom_option_rules')
       .select('*');
-    
+
     if (store_id) {
       query = query.eq('store_id', store_id);
     }
-    
+
     // Handle ordering
     if (order_by) {
       const isDesc = order_by.startsWith('-');
       const field = isDesc ? order_by.substring(1) : order_by;
       query = query.order(field, { ascending: !isDesc });
     }
-    
+
     if (limit) {
       query = query.limit(parseInt(limit));
     }
-    
+
     if (offset) {
       query = query.range(parseInt(offset), parseInt(offset) + parseInt(limit || 50) - 1);
     }
-    
+
     const { data, error } = await query;
-    
+
     if (error) {
       console.error('Error fetching custom option rules:', error);
       return res.status(500).json({ error: error.message });
     }
-    
+
     res.json(data || []);
   } catch (error) {
     console.error('Error in GET /custom-option-rules:', error);
@@ -69,13 +75,20 @@ router.get('/', async (req, res) => {
 router.get('/:id', async (req, res) => {
   try {
     const { id } = req.params;
-    
-    const { data, error } = await supabase
+    const store_id = req.headers['x-store-id'] || req.query.store_id;
+
+    if (!store_id) {
+      return res.status(400).json({ error: 'store_id is required' });
+    }
+
+    const tenantDb = await ConnectionManager.getStoreConnection(store_id);
+
+    const { data, error } = await tenantDb
       .from('custom_option_rules')
       .select('*')
       .eq('id', id)
       .single();
-    
+
     if (error) {
       if (error.code === 'PGRST116') {
         return res.status(404).json({ error: 'Custom option rule not found' });
@@ -83,7 +96,7 @@ router.get('/:id', async (req, res) => {
       console.error('Error fetching custom option rule:', error);
       return res.status(500).json({ error: error.message });
     }
-    
+
     res.json(data);
   } catch (error) {
     console.error('Error in GET /custom-option-rules/:id:', error);
@@ -110,6 +123,8 @@ router.post('/', async (req, res) => {
       });
     }
 
+    const tenantDb = await ConnectionManager.getStoreConnection(store_id);
+
     const ruleData = {
       name,
       display_label,
@@ -121,18 +136,18 @@ router.post('/', async (req, res) => {
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString()
     };
-    
-    const { data, error } = await supabase
+
+    const { data, error } = await tenantDb
       .from('custom_option_rules')
       .insert([ruleData])
       .select()
       .single();
-    
+
     if (error) {
       console.error('Error creating custom option rule:', error);
       return res.status(500).json({ error: error.message });
     }
-    
+
     res.status(201).json(data);
   } catch (error) {
     console.error('Error in POST /custom-option-rules:', error);
@@ -154,6 +169,12 @@ router.put('/:id', async (req, res) => {
       translations
     } = req.body;
 
+    if (!store_id) {
+      return res.status(400).json({ error: 'store_id is required' });
+    }
+
+    const tenantDb = await ConnectionManager.getStoreConnection(store_id);
+
     const updateData = {
       updated_at: new Date().toISOString()
     };
@@ -166,14 +187,14 @@ router.put('/:id', async (req, res) => {
     if (optional_product_ids !== undefined) updateData.optional_product_ids = optional_product_ids;
     if (store_id !== undefined) updateData.store_id = store_id;
     if (translations !== undefined) updateData.translations = translations;
-    
-    const { data, error } = await supabase
+
+    const { data, error } = await tenantDb
       .from('custom_option_rules')
       .update(updateData)
       .eq('id', id)
       .select()
       .single();
-    
+
     if (error) {
       if (error.code === 'PGRST116') {
         return res.status(404).json({ error: 'Custom option rule not found' });
@@ -181,7 +202,7 @@ router.put('/:id', async (req, res) => {
       console.error('Error updating custom option rule:', error);
       return res.status(500).json({ error: error.message });
     }
-    
+
     res.json(data);
   } catch (error) {
     console.error('Error in PUT /custom-option-rules/:id:', error);
@@ -193,17 +214,24 @@ router.put('/:id', async (req, res) => {
 router.delete('/:id', async (req, res) => {
   try {
     const { id } = req.params;
-    
-    const { error } = await supabase
+    const store_id = req.headers['x-store-id'] || req.query.store_id;
+
+    if (!store_id) {
+      return res.status(400).json({ error: 'store_id is required' });
+    }
+
+    const tenantDb = await ConnectionManager.getStoreConnection(store_id);
+
+    const { error } = await tenantDb
       .from('custom_option_rules')
       .delete()
       .eq('id', id);
-    
+
     if (error) {
       console.error('Error deleting custom option rule:', error);
       return res.status(500).json({ error: error.message });
     }
-    
+
     res.json({ message: 'Custom option rule deleted successfully' });
   } catch (error) {
     console.error('Error in DELETE /custom-option-rules/:id:', error);
@@ -225,8 +253,10 @@ router.post('/bulk-translate', async (req, res) => {
       });
     }
 
+    const tenantDb = await ConnectionManager.getStoreConnection(store_id);
+
     // Get all custom option rules for this store
-    const { data: rules, error } = await supabase
+    const { data: rules, error } = await tenantDb
       .from('custom_option_rules')
       .select('*')
       .eq('store_id', store_id);
@@ -312,7 +342,7 @@ router.post('/bulk-translate', async (req, res) => {
         const translations = rule.translations || {};
         translations[toLang] = translatedData;
 
-        const { error: updateError } = await supabase
+        const { error: updateError } = await tenantDb
           .from('custom_option_rules')
           .update({
             translations,
