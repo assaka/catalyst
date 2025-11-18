@@ -1,12 +1,16 @@
 const express = require('express');
 const router = express.Router();
-const { Product, Category, CmsPage, SeoSettings, Store } = require('../models');
+const ConnectionManager = require('../services/database/ConnectionManager');
 
 /**
  * Generate XML sitemap content
  */
 async function generateSitemapXml(storeId, baseUrl) {
   try {
+    // Get tenant connection
+    const connection = await ConnectionManager.getConnection(storeId);
+    const { Product, Category, CmsPage, SeoSettings } = connection.models;
+
     // Get SEO settings for the store
     const seoSettings = await SeoSettings.findOne({
       where: { store_id: storeId }
@@ -129,6 +133,10 @@ router.get('/:storeId', async (req, res) => {
 
     console.log(`[Sitemap] Serving sitemap.xml for store: ${storeId}`);
 
+    // Get tenant connection
+    const connection = await ConnectionManager.getConnection(storeId);
+    const { Store } = connection.models;
+
     // Find the store
     const store = await Store.findByPk(storeId);
 
@@ -179,8 +187,9 @@ router.get('/store/:storeSlug', async (req, res) => {
 
     console.log(`[Sitemap] Serving sitemap.xml for store slug: ${storeSlug}`);
 
-    // Find the store by slug
-    const store = await Store.findOne({
+    // First, we need to get the store from the master DB to find the store_id
+    const { Store: MasterStore } = require('../models');
+    const store = await MasterStore.findOne({
       where: { slug: storeSlug }
     });
 

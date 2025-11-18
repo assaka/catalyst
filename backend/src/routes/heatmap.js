@@ -1,8 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const { Op } = require('sequelize');
-const HeatmapInteraction = require('../models/HeatmapInteraction');
-const HeatmapSession = require('../models/HeatmapSession');
+const ConnectionManager = require('../services/database/ConnectionManager');
 const { authMiddleware } = require('../middleware/auth');
 const { checkStoreOwnership } = require('../middleware/storeAuth');
 const { heatmapLimiter, publicReadLimiter } = require('../middleware/rateLimiters');
@@ -151,6 +150,10 @@ router.get('/data/:storeId', authMiddleware, checkStoreOwnership, async (req, re
       });
     }
 
+    // Get tenant connection
+    const connection = await ConnectionManager.getConnection(storeId);
+    const { HeatmapInteraction } = connection.models;
+
     const options = {
       startDate: start_date ? new Date(start_date) : undefined,
       endDate: end_date ? new Date(end_date) : undefined,
@@ -187,6 +190,10 @@ router.get('/analytics/:storeId', authMiddleware, checkStoreOwnership, async (re
       device_type
     } = req.query;
 
+    // Get tenant connection
+    const connection = await ConnectionManager.getConnection(storeId);
+    const { HeatmapSession } = connection.models;
+
     const options = {
       startDate: start_date ? new Date(start_date) : undefined,
       endDate: end_date ? new Date(end_date) : undefined,
@@ -217,6 +224,10 @@ router.get('/realtime/:storeId', authMiddleware, checkStoreOwnership, async (req
     const timeWindow = parseInt(time_window);
 
     const startTime = new Date(Date.now() - timeWindow);
+
+    // Get tenant connection
+    const connection = await ConnectionManager.getConnection(storeId);
+    const { HeatmapInteraction } = connection.models;
 
     const stats = await HeatmapInteraction.findAll({
       where: {
@@ -258,6 +269,10 @@ router.get('/summary/:storeId', authMiddleware, checkStoreOwnership, async (req,
       group_by = 'page_url'
     } = req.query;
 
+    // Get tenant connection
+    const connection = await ConnectionManager.getConnection(storeId);
+    const { HeatmapInteraction } = connection.models;
+
     const options = {
       startDate: start_date ? new Date(start_date) : undefined,
       endDate: end_date ? new Date(end_date) : undefined,
@@ -290,6 +305,10 @@ router.get('/top-pages/:storeId', authMiddleware, checkStoreOwnership, async (re
       end_date,
       limit = 10
     } = req.query;
+
+    // Get tenant connection
+    const connection = await ConnectionManager.getConnection(storeId);
+    const { HeatmapSession } = connection.models;
 
     const options = {
       startDate: start_date ? new Date(start_date) : undefined,
@@ -334,6 +353,10 @@ router.get('/interactions/:storeId', authMiddleware, checkStoreOwnership, async 
         error: 'page_url parameter is required'
       });
     }
+
+    // Get tenant connection
+    const connection = await ConnectionManager.getConnection(storeId);
+    const { HeatmapInteraction } = connection.models;
 
     const whereClause = {
       store_id: storeId,
@@ -393,6 +416,10 @@ router.get('/element-rankings/:storeId', authMiddleware, checkStoreOwnership, as
         error: 'page_url parameter is required'
       });
     }
+
+    // Get tenant connection
+    const connection = await ConnectionManager.getConnection(storeId);
+    const { HeatmapInteraction } = connection.models;
 
     const whereClause = {
       store_id: storeId,
@@ -455,6 +482,10 @@ router.get('/sessions/:storeId', authMiddleware, checkStoreOwnership, async (req
       limit = 50,
       offset = 0
     } = req.query;
+
+    // Get tenant connection
+    const connection = await ConnectionManager.getConnection(storeId);
+    const { HeatmapInteraction } = connection.models;
 
     const whereClause = {
       store_id: storeId
@@ -523,6 +554,10 @@ router.get('/sessions/:storeId', authMiddleware, checkStoreOwnership, async (req
 router.get('/sessions/:storeId/:sessionId', authMiddleware, checkStoreOwnership, async (req, res) => {
   try {
     const { storeId, sessionId } = req.params;
+
+    // Get tenant connection
+    const connection = await ConnectionManager.getConnection(storeId);
+    const { HeatmapInteraction } = connection.models;
 
     // Get all interactions for this session
     const interactions = await HeatmapInteraction.findAll({
@@ -613,6 +648,10 @@ router.get('/time-on-page/:storeId', authMiddleware, checkStoreOwnership, async 
         error: 'page_url parameter is required'
       });
     }
+
+    // Get tenant connection
+    const connection = await ConnectionManager.getConnection(storeId);
+    const { HeatmapInteraction } = connection.models;
 
     const whereClause = {
       store_id: storeId
@@ -753,6 +792,10 @@ router.get('/scroll-depth/:storeId', authMiddleware, checkStoreOwnership, async 
         error: 'page_url parameter is required'
       });
     }
+
+    // Get tenant connection
+    const connection = await ConnectionManager.getConnection(storeId);
+    const { HeatmapInteraction } = connection.models;
 
     const whereClause = {
       store_id: storeId,
@@ -994,6 +1037,10 @@ router.delete('/cleanup/:storeId', authMiddleware, checkStoreOwnership, async (r
         error: 'Insufficient permissions for data cleanup'
       });
     }
+
+    // Get tenant connection
+    const connection = await ConnectionManager.getConnection(storeId);
+    const { HeatmapInteraction, HeatmapSession } = connection.models;
 
     const retentionDays = parseInt(retention_days);
     const cutoffDate = new Date(Date.now() - (retentionDays * 24 * 60 * 60 * 1000));

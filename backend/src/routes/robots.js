@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const { SeoSettings } = require('../models');
+const ConnectionManager = require('../services/database/ConnectionManager');
 
 /**
  * GET /api/robots/:storeId
@@ -9,9 +9,13 @@ const { SeoSettings } = require('../models');
 router.get('/:storeId', async (req, res) => {
   try {
     const { storeId } = req.params;
-    
+
     console.log(`[Robots] Serving robots.txt for store: ${storeId}`);
-    
+
+    // Get tenant connection
+    const connection = await ConnectionManager.getConnection(storeId);
+    const { SeoSettings } = connection.models;
+
     // Find SEO settings for the store
     const seoSettings = await SeoSettings.findOne({
       where: { store_id: storeId }
@@ -66,22 +70,26 @@ Disallow: /admin/`);
 router.get('/store/:storeSlug', async (req, res) => {
   try {
     const { storeSlug } = req.params;
-    
+
     console.log(`[Robots] Serving robots.txt for store slug: ${storeSlug}`);
-    
-    // First find the store by slug to get the store_id
-    const { Store } = require('../models');
-    const store = await Store.findOne({
+
+    // First find the store by slug to get the store_id from master DB
+    const { Store: MasterStore } = require('../models');
+    const store = await MasterStore.findOne({
       where: { slug: storeSlug }
     });
-    
+
     if (!store) {
       console.warn(`[Robots] Store not found for slug: ${storeSlug}`);
       return res.status(404).set({
         'Content-Type': 'text/plain; charset=utf-8'
       }).send('# Store not found\nUser-agent: *\nDisallow: /');
     }
-    
+
+    // Get tenant connection
+    const connection = await ConnectionManager.getConnection(store.id);
+    const { SeoSettings } = connection.models;
+
     // Find SEO settings for the store
     const seoSettings = await SeoSettings.findOne({
       where: { store_id: store.id }
