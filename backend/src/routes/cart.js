@@ -273,6 +273,10 @@ router.post('/', async (req, res) => {
       });
     }
 
+    // Get tenant connection and models
+    const connection = await ConnectionManager.getConnection(store_id);
+    const { Cart, Product } = connection.models;
+
     // Build where clause to find existing cart - CRITICAL: include store_id
     const whereClause = {};
     if (user_id) {
@@ -418,6 +422,19 @@ router.post('/', async (req, res) => {
 // @access  Public
 router.put('/:id', async (req, res) => {
   try {
+    const { store_id } = req.body;
+
+    if (!store_id) {
+      return res.status(400).json({
+        success: false,
+        message: 'store_id is required'
+      });
+    }
+
+    // Get tenant connection and models
+    const connection = await ConnectionManager.getConnection(store_id);
+    const { Cart } = connection.models;
+
     const cart = await Cart.findByPk(req.params.id);
 
     if (!cart) {
@@ -446,7 +463,7 @@ router.put('/:id', async (req, res) => {
 // @access  Public
 router.delete('/', async (req, res) => {
   try {
-    const { session_id } = req.query;
+    const { session_id, store_id } = req.query;
 
     if (!session_id) {
       return res.status(400).json({
@@ -454,6 +471,17 @@ router.delete('/', async (req, res) => {
         message: 'session_id is required'
       });
     }
+
+    if (!store_id) {
+      return res.status(400).json({
+        success: false,
+        message: 'store_id is required'
+      });
+    }
+
+    // Get tenant connection and models
+    const connection = await ConnectionManager.getConnection(store_id);
+    const { Cart } = connection.models;
 
     await Cart.destroy({ where: { session_id } });
 
