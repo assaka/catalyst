@@ -1,7 +1,6 @@
 const express = require('express');
 const { body, validationResult } = require('express-validator');
-const { PaymentMethod, Store } = require('../models');
-const { Op } = require('sequelize');
+const ConnectionManager = require('../services/database/ConnectionManager');
 const router = express.Router();
 
 // Helper function to check store access (ownership or team membership)
@@ -21,45 +20,83 @@ router.get('/', async (req, res) => {
     const { page = 1, limit = 10, store_id, search } = req.query;
     const offset = (page - 1) * limit;
 
-    const where = {};
-    
-    // Filter by store access (ownership + team membership)
+    if (!store_id) {
+      return res.status(400).json({
+        success: false,
+        message: 'store_id is required'
+      });
+    }
+
+    // Check store access
     if (req.user.role !== 'admin') {
-      const { getUserStoresForDropdown } = require('../utils/storeAccess');
-      const accessibleStores = await getUserStoresForDropdown(req.user.id);
-      const storeIds = accessibleStores.map(store => store.id);
-      where.store_id = { [Op.in]: storeIds };
+      const { checkUserStoreAccess } = require('../utils/storeAccess');
+      const access = await checkUserStoreAccess(req.user.id, store_id);
+
+      if (!access) {
+        return res.status(403).json({
+          success: false,
+          message: 'Access denied'
+        });
+      }
     }
 
-    if (store_id) where.store_id = store_id;
+    const tenantDb = await ConnectionManager.getStoreConnection(store_id);
+
+    // Build query
+    let query = tenantDb
+      .from('payment_methods')
+      .select('*')
+      .eq('store_id', store_id)
+      .order('sort_order', { ascending: true })
+      .order('name', { ascending: true })
+      .range(offset, offset + parseInt(limit) - 1);
+
+    // Add search functionality if provided
     if (search) {
-      where[Op.or] = [
-        { name: { [Op.iLike]: `%${search}%` } },
-        { code: { [Op.iLike]: `%${search}%` } },
-        { description: { [Op.iLike]: `%${search}%` } }
-      ];
+      query = tenantDb
+        .from('payment_methods')
+        .select('*')
+        .eq('store_id', store_id)
+        .or(`name.ilike.%${search}%,code.ilike.%${search}%,description.ilike.%${search}%`)
+        .order('sort_order', { ascending: true })
+        .order('name', { ascending: true })
+        .range(offset, offset + parseInt(limit) - 1);
     }
 
-    const { count, rows } = await PaymentMethod.findAndCountAll({
-      where,
-      limit: parseInt(limit),
-      offset: parseInt(offset),
-      order: [['sort_order', 'ASC'], ['name', 'ASC']],
-      include: [{
-        model: Store,
-        attributes: ['id', 'name']
-      }]
-    });
+    const { data: rows, error } = await query;
+
+    if (error) {
+      console.error('Error fetching payment methods:', error);
+      return res.status(500).json({
+        success: false,
+        message: 'Error fetching payment methods',
+        error: error.message
+      });
+    }
+
+    // Get total count
+    const countQuery = search
+      ? tenantDb
+          .from('payment_methods')
+          .select('*', { count: 'exact', head: true })
+          .eq('store_id', store_id)
+          .or(`name.ilike.%${search}%,code.ilike.%${search}%,description.ilike.%${search}%`)
+      : tenantDb
+          .from('payment_methods')
+          .select('*', { count: 'exact', head: true })
+          .eq('store_id', store_id);
+
+    const { count } = await countQuery;
 
     res.json({
       success: true,
       data: {
-        payment_methods: rows,
+        payment_methods: rows || [],
         pagination: {
           current_page: parseInt(page),
           per_page: parseInt(limit),
-          total: count,
-          total_pages: Math.ceil(count / limit)
+          total: count || 0,
+          total_pages: Math.ceil((count || 0) / limit)
         }
       }
     });
@@ -67,7 +104,8 @@ router.get('/', async (req, res) => {
     console.error('Get payment methods error:', error);
     res.status(500).json({
       success: false,
-      message: 'Server error'
+      message: 'Server error',
+      error: error.message
     });
   }
 });
@@ -77,14 +115,25 @@ router.get('/', async (req, res) => {
 // @access  Private
 router.get('/:id', async (req, res) => {
   try {
-    const method = await PaymentMethod.findByPk(req.params.id, {
-      include: [{
-        model: Store,
-        attributes: ['id', 'name', 'user_id']
-      }]
-    });
-    
-    if (!method) {
+    const store_id = req.query.store_id || req.headers['x-store-id'];
+
+    if (!store_id) {
+      return res.status(400).json({
+        success: false,
+        message: 'store_id is required'
+      });
+    }
+
+    const tenantDb = await ConnectionManager.getStoreConnection(store_id);
+
+    const { data: method, error } = await tenantDb
+      .from('payment_methods')
+      .select('*')
+      .eq('id', req.params.id)
+      .eq('store_id', store_id)
+      .single();
+
+    if (error || !method) {
       return res.status(404).json({
         success: false,
         message: 'Payment method not found'
@@ -94,8 +143,8 @@ router.get('/:id', async (req, res) => {
     // Check store access
     if (req.user.role !== 'admin') {
       const { checkUserStoreAccess } = require('../utils/storeAccess');
-      const access = await checkUserStoreAccess(req.user.id, method.Store.id);
-      
+      const access = await checkUserStoreAccess(req.user.id, method.store_id);
+
       if (!access) {
         return res.status(403).json({
           success: false,
@@ -112,7 +161,8 @@ router.get('/:id', async (req, res) => {
     console.error('Get payment method error:', error);
     res.status(500).json({
       success: false,
-      message: 'Server error'
+      message: 'Server error',
+      error: error.message
     });
   }
 });
@@ -134,7 +184,7 @@ router.post('/', [
       });
     }
 
-    const { store_id } = req.body;
+    const { store_id, ...methodData } = req.body;
 
     // Check store access
     const hasAccess = await checkStoreAccess(store_id, req.user.id, req.user.role);
@@ -145,7 +195,27 @@ router.post('/', [
       });
     }
 
-    const method = await PaymentMethod.create(req.body);
+    const tenantDb = await ConnectionManager.getStoreConnection(store_id);
+
+    const { data: method, error } = await tenantDb
+      .from('payment_methods')
+      .insert({
+        ...methodData,
+        store_id,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      })
+      .select()
+      .single();
+
+    if (error) {
+      console.error('Error creating payment method:', error);
+      return res.status(500).json({
+        success: false,
+        message: 'Error creating payment method',
+        error: error.message
+      });
+    }
 
     res.status(201).json({
       success: true,
@@ -156,7 +226,8 @@ router.post('/', [
     console.error('Create payment method error:', error);
     res.status(500).json({
       success: false,
-      message: 'Server error'
+      message: 'Server error',
+      error: error.message
     });
   }
 });
@@ -177,14 +248,26 @@ router.put('/:id', [
       });
     }
 
-    const method = await PaymentMethod.findByPk(req.params.id, {
-      include: [{
-        model: Store,
-        attributes: ['id', 'name', 'user_id']
-      }]
-    });
-    
-    if (!method) {
+    const store_id = req.body.store_id || req.query.store_id || req.headers['x-store-id'];
+
+    if (!store_id) {
+      return res.status(400).json({
+        success: false,
+        message: 'store_id is required'
+      });
+    }
+
+    const tenantDb = await ConnectionManager.getStoreConnection(store_id);
+
+    // Check if payment method exists
+    const { data: existing, error: checkError } = await tenantDb
+      .from('payment_methods')
+      .select('*')
+      .eq('id', req.params.id)
+      .eq('store_id', store_id)
+      .single();
+
+    if (checkError || !existing) {
       return res.status(404).json({
         success: false,
         message: 'Payment method not found'
@@ -194,8 +277,8 @@ router.put('/:id', [
     // Check store access
     if (req.user.role !== 'admin') {
       const { checkUserStoreAccess } = require('../utils/storeAccess');
-      const access = await checkUserStoreAccess(req.user.id, method.Store.id);
-      
+      const access = await checkUserStoreAccess(req.user.id, existing.store_id);
+
       if (!access) {
         return res.status(403).json({
           success: false,
@@ -204,7 +287,24 @@ router.put('/:id', [
       }
     }
 
-    await method.update(req.body);
+    const { data: method, error } = await tenantDb
+      .from('payment_methods')
+      .update({
+        ...req.body,
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', req.params.id)
+      .select()
+      .single();
+
+    if (error) {
+      console.error('Error updating payment method:', error);
+      return res.status(500).json({
+        success: false,
+        message: 'Error updating payment method',
+        error: error.message
+      });
+    }
 
     res.json({
       success: true,
@@ -215,7 +315,8 @@ router.put('/:id', [
     console.error('Update payment method error:', error);
     res.status(500).json({
       success: false,
-      message: 'Server error'
+      message: 'Server error',
+      error: error.message
     });
   }
 });
@@ -225,14 +326,26 @@ router.put('/:id', [
 // @access  Private
 router.delete('/:id', async (req, res) => {
   try {
-    const method = await PaymentMethod.findByPk(req.params.id, {
-      include: [{
-        model: Store,
-        attributes: ['id', 'name', 'user_id']
-      }]
-    });
-    
-    if (!method) {
+    const store_id = req.query.store_id || req.headers['x-store-id'];
+
+    if (!store_id) {
+      return res.status(400).json({
+        success: false,
+        message: 'store_id is required'
+      });
+    }
+
+    const tenantDb = await ConnectionManager.getStoreConnection(store_id);
+
+    // Check if payment method exists
+    const { data: existing, error: checkError } = await tenantDb
+      .from('payment_methods')
+      .select('*')
+      .eq('id', req.params.id)
+      .eq('store_id', store_id)
+      .single();
+
+    if (checkError || !existing) {
       return res.status(404).json({
         success: false,
         message: 'Payment method not found'
@@ -242,8 +355,8 @@ router.delete('/:id', async (req, res) => {
     // Check store access
     if (req.user.role !== 'admin') {
       const { checkUserStoreAccess } = require('../utils/storeAccess');
-      const access = await checkUserStoreAccess(req.user.id, method.Store.id);
-      
+      const access = await checkUserStoreAccess(req.user.id, existing.store_id);
+
       if (!access) {
         return res.status(403).json({
           success: false,
@@ -252,7 +365,19 @@ router.delete('/:id', async (req, res) => {
       }
     }
 
-    await method.destroy();
+    const { error } = await tenantDb
+      .from('payment_methods')
+      .delete()
+      .eq('id', req.params.id);
+
+    if (error) {
+      console.error('Error deleting payment method:', error);
+      return res.status(500).json({
+        success: false,
+        message: 'Error deleting payment method',
+        error: error.message
+      });
+    }
 
     res.json({
       success: true,
@@ -262,7 +387,8 @@ router.delete('/:id', async (req, res) => {
     console.error('Delete payment method error:', error);
     res.status(500).json({
       success: false,
-      message: 'Server error'
+      message: 'Server error',
+      error: error.message
     });
   }
 });
