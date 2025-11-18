@@ -1,9 +1,6 @@
 const express = require('express');
 const { body, validationResult } = require('express-validator');
-const { Order, OrderItem, Store, Product, Customer } = require('../models');
-const Invoice = require('../models/Invoice');
-const Shipment = require('../models/Shipment');
-const { Op } = require('sequelize');
+const ConnectionManager = require('../services/database/ConnectionManager');
 const { authMiddleware } = require('../middleware/auth');
 const { validateCustomerOrderAccess } = require('../middleware/customerStoreAuth');
 const emailService = require('../services/email-service');
@@ -33,75 +30,79 @@ router.get('/test', (req, res) => {
 router.get('/by-payment-reference/:paymentReference', cacheOrder(60), async (req, res) => {
   try {
     const { paymentReference } = req.params;
-    const { QueryTypes } = require('sequelize');
-    const { sequelize } = require('../database/connection');
-    
-    // Fetch order with items using efficient JOIN query
-    const rows = await sequelize.query(`
-      SELECT 
-        o.*,
-        s.name as store_name,
-        oi.id as item_id,
-        oi.product_id,
-        oi.product_name,
-        oi.product_sku,
-        oi.quantity,
-        oi.unit_price,
-        oi.total_price,
-        oi.selected_options,
-        p.name as product_db_name,
-        p.sku as product_db_sku
-      FROM sales_orders o
-      LEFT JOIN stores s ON o.store_id = s.id
-      LEFT JOIN sales_order_items oi ON o.id = oi.order_id
-      LEFT JOIN products p ON oi.product_id = p.id
-      WHERE o.payment_reference = :ref OR o.stripe_payment_intent_id = :ref OR o.stripe_session_id = :ref
-      ORDER BY oi.created_at ASC
-    `, {
-      replacements: { ref: paymentReference },
-      type: QueryTypes.SELECT
-    });
+    const store_id = req.headers['x-store-id'] || req.query.store_id;
 
-    if (!rows.length) {
+    if (!store_id) {
+      return res.status(400).json({
+        success: false,
+        message: 'store_id is required'
+      });
+    }
+
+    const tenantDb = await ConnectionManager.getStoreConnection(store_id);
+
+    // Find order by payment reference
+    const { data: order, error: orderError } = await tenantDb
+      .from('sales_orders')
+      .select('*')
+      .or(`payment_reference.eq.${paymentReference},stripe_payment_intent_id.eq.${paymentReference},stripe_session_id.eq.${paymentReference}`)
+      .maybeSingle();
+
+    if (orderError || !order) {
       return res.status(404).json({
         success: false,
         message: 'Order not found'
       });
     }
 
-    // Build response from query results
-    const first = rows[0];
-    const order = {
-      ...first,
-      Store: first.store_name ? { id: first.store_id, name: first.store_name } : null,
-      OrderItems: rows
-        .filter(row => row.item_id)
-        .map(row => ({
-          id: row.item_id,
-          product_id: row.product_id,
-          product_name: row.product_name,
-          product_sku: row.product_sku,
-          quantity: row.quantity,
-          unit_price: row.unit_price,
-          total_price: row.total_price,
-          selected_options: row.selected_options,
-          Product: row.product_db_name ? {
-            id: row.product_id,
-            name: row.product_db_name,
-            sku: row.product_db_sku
-          } : null
-        }))
-    };
+    // Load order items
+    const { data: orderItems } = await tenantDb
+      .from('sales_order_items')
+      .select('*')
+      .eq('order_id', order.id)
+      .order('created_at', { ascending: true });
 
-    // Clean up internal fields
-    delete order.store_name;
-    delete order.item_id;
-    delete order.product_db_name;
-    delete order.product_db_sku;
+    // Load products for order items
+    const productIds = (orderItems || []).map(item => item.product_id).filter(Boolean);
+    let products = [];
+
+    if (productIds.length > 0) {
+      const { data: prods } = await tenantDb
+        .from('products')
+        .select('id, name, sku')
+        .in('id', productIds);
+
+      products = prods || [];
+    }
+
+    const productMap = new Map(products.map(p => [p.id, p]));
+
+    // Build response
+    const orderResponse = {
+      ...order,
+      OrderItems: (orderItems || []).map(item => {
+        const product = productMap.get(item.product_id);
+        return {
+          id: item.id,
+          product_id: item.product_id,
+          product_name: item.product_name,
+          product_sku: item.product_sku,
+          quantity: item.quantity,
+          unit_price: item.unit_price,
+          total_price: item.total_price,
+          selected_options: item.selected_options,
+          Product: product ? {
+            id: product.id,
+            name: product.name,
+            sku: product.sku
+          } : null
+        };
+      })
+    };
 
     res.json({
       success: true,
-      data: order
+      data: orderResponse
     });
 
   } catch (error) {
@@ -756,48 +757,75 @@ router.get('/my-orders', authMiddleware, async (req, res) => {
 // @access  Private
 router.get('/', async (req, res) => {
   try {
-    const { page = 1, limit = 10, store_id, status } = req.query;
-    const offset = (page - 1) * limit;
+    const store_id = req.headers['x-store-id'] || req.query.store_id;
 
-    const where = {};
-    
-    // Filter by store access (ownership + team membership)
-    if (req.user.role !== 'admin') {
-      const { getUserStoresForDropdown } = require('../utils/storeAccess');
-      const accessibleStores = await getUserStoresForDropdown(req.user.id);
-      const storeIds = accessibleStores.map(store => store.id);
-      where.store_id = { [Op.in]: storeIds };
+    if (!store_id) {
+      return res.status(400).json({
+        success: false,
+        message: 'store_id is required'
+      });
     }
 
-    if (store_id) where.store_id = store_id;
-    if (status) where.status = status;
+    const { page = 1, limit = 10, status } = req.query;
+    const offset = (page - 1) * limit;
 
-    const { count, rows } = await Order.findAndCountAll({
-      where,
-      limit: parseInt(limit),
-      offset: parseInt(offset),
-      order: [['created_at', 'DESC']],
-      include: [
-        {
-          model: Store,
-          attributes: ['id', 'name']
-        },
-        {
-          model: OrderItem,
-          include: [{ model: Product, attributes: ['id', 'sku'] }]
-        }
-      ]
+    const tenantDb = await ConnectionManager.getStoreConnection(store_id);
+
+    // Build query
+    let query = tenantDb
+      .from('sales_orders')
+      .select('*', { count: 'exact' })
+      .eq('store_id', store_id);
+
+    if (status) {
+      query = query.eq('status', status);
+    }
+
+    query = query
+      .order('created_at', { ascending: false })
+      .range(offset, offset + parseInt(limit) - 1);
+
+    const { data: orders, error, count } = await query;
+
+    if (error) {
+      throw new Error(error.message);
+    }
+
+    // Load order items for all orders
+    const orderIds = (orders || []).map(o => o.id);
+    let orderItems = [];
+
+    if (orderIds.length > 0) {
+      const { data: items } = await tenantDb
+        .from('sales_order_items')
+        .select('*')
+        .in('order_id', orderIds);
+
+      orderItems = items || [];
+    }
+
+    // Group items by order
+    const itemsByOrder = {};
+    orderItems.forEach(item => {
+      if (!itemsByOrder[item.order_id]) itemsByOrder[item.order_id] = [];
+      itemsByOrder[item.order_id].push(item);
     });
+
+    // Add items to orders
+    const ordersWithItems = (orders || []).map(order => ({
+      ...order,
+      OrderItems: itemsByOrder[order.id] || []
+    }));
 
     res.json({
       success: true,
       data: {
-        orders: rows,
+        orders: ordersWithItems,
         pagination: {
           current_page: parseInt(page),
           per_page: parseInt(limit),
-          total: count,
-          total_pages: Math.ceil(count / limit)
+          total: count || 0,
+          total_pages: Math.ceil((count || 0) / limit)
         }
       }
     });
@@ -815,25 +843,37 @@ router.get('/', async (req, res) => {
 // @access  Private
 router.get('/:id', async (req, res) => {
   try {
-    const order = await Order.findByPk(req.params.id, {
-      include: [
-        {
-          model: Store,
-          attributes: ['id', 'name', 'user_id']
-        },
-        {
-          model: OrderItem,
-          include: [{ model: Product, attributes: ['id', 'sku'] }]
-        }
-      ]
-    });
-    
-    if (!order) {
+    const store_id = req.headers['x-store-id'] || req.query.store_id;
+
+    if (!store_id) {
+      return res.status(400).json({
+        success: false,
+        message: 'store_id is required'
+      });
+    }
+
+    const tenantDb = await ConnectionManager.getStoreConnection(store_id);
+
+    const { data: order, error: orderError } = await tenantDb
+      .from('sales_orders')
+      .select('*')
+      .eq('id', req.params.id)
+      .maybeSingle();
+
+    if (orderError || !order) {
       return res.status(404).json({
         success: false,
         message: 'Order not found'
       });
     }
+
+    // Load order items
+    const { data: orderItems } = await tenantDb
+      .from('sales_order_items')
+      .select('*')
+      .eq('order_id', order.id);
+
+    order.OrderItems = orderItems || [];
 
     // Check store access
     if (req.user.role !== 'admin') {
