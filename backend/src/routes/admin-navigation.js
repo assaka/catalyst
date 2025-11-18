@@ -76,122 +76,102 @@ router.put('/plugins/:pluginId/navigation', async (req, res) => {
   try {
     const { pluginId } = req.params;
     const { adminNavigation } = req.body;
+    const store_id = req.headers['x-store-id'] || req.query.store_id;
+
+    if (!store_id) {
+      return res.status(400).json({
+        success: false,
+        message: 'store_id is required (X-Store-Id header or query param)'
+      });
+    }
+
+    const tenantDb = await ConnectionManager.getStoreConnection(store_id);
 
     // 1. Update the manifest in the plugins table
-    await sequelize.query(
-      `UPDATE plugins
-       SET manifest = jsonb_set(
-         COALESCE(manifest, '{}'::jsonb),
-         '{adminNavigation}',
-         $1::jsonb
-       ),
-       updated_at = CURRENT_TIMESTAMP
-       WHERE id = $2`,
-      {
-        bind: [JSON.stringify(adminNavigation), pluginId],
-        type: sequelize.QueryTypes.UPDATE
-      }
-    );
+    await tenantDb
+      .from('plugins')
+      .update({
+        manifest: tenantDb.raw(`jsonb_set(COALESCE(manifest, '{}'::jsonb), '{adminNavigation}', ?::jsonb)`, [JSON.stringify(adminNavigation)]),
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', pluginId);
 
     // Also update plugin_registry table
-    await sequelize.query(
-      `UPDATE plugin_registry
-       SET manifest = jsonb_set(
-         COALESCE(manifest, '{}'::jsonb),
-         '{adminNavigation}',
-         $1::jsonb
-       ),
-       updated_at = CURRENT_TIMESTAMP
-       WHERE id = $2`,
-      {
-        bind: [JSON.stringify(adminNavigation), pluginId],
-        type: sequelize.QueryTypes.UPDATE
-      }
-    );
+    await tenantDb
+      .from('plugin_registry')
+      .update({
+        manifest: tenantDb.raw(`jsonb_set(COALESCE(manifest, '{}'::jsonb), '{adminNavigation}', ?::jsonb)`, [JSON.stringify(adminNavigation)]),
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', pluginId);
 
     // 2. Handle admin_navigation_registry
     if (adminNavigation.enabled) {
       // Get plugin info for navigation entry
-      const pluginInfo = await sequelize.query(
-        `SELECT name, manifest FROM plugins WHERE id = $1`,
-        {
-          bind: [pluginId],
-          type: sequelize.QueryTypes.SELECT
-        }
-      );
+      const { data: pluginInfo, error: pluginError } = await tenantDb
+        .from('plugins')
+        .select('name, manifest')
+        .eq('id', pluginId)
+        .maybeSingle();
 
-      if (pluginInfo.length > 0) {
-        const plugin = pluginInfo[0];
-        const manifest = plugin.manifest || {};
+      if (pluginError) {
+        console.error('Error fetching plugin:', pluginError.message);
+      }
+
+      if (pluginInfo) {
+        const manifest = pluginInfo.manifest || {};
 
         // Calculate order_position
-        // Priority: 1) Use direct order if provided, 2) Calculate from relativeToKey, 3) Use default
         let orderPosition;
 
         if (adminNavigation.order !== undefined && adminNavigation.order !== null) {
-          // Use the direct order number if provided
           orderPosition = adminNavigation.order;
         } else if (adminNavigation.relativeToKey && adminNavigation.position) {
           // Calculate based on relativeToKey and position
-          const relativeItem = await sequelize.query(
-            `SELECT order_position FROM admin_navigation_registry WHERE key = $1`,
-            {
-              bind: [adminNavigation.relativeToKey],
-              type: sequelize.QueryTypes.SELECT
-            }
-          );
+          const { data: relativeItem } = await tenantDb
+            .from('admin_navigation_registry')
+            .select('order_position')
+            .eq('key', adminNavigation.relativeToKey)
+            .maybeSingle();
 
-          if (relativeItem.length > 0) {
+          if (relativeItem) {
             if (adminNavigation.position === 'before') {
-              orderPosition = relativeItem[0].order_position - 0.5;
+              orderPosition = relativeItem.order_position - 0.5;
             } else {
-              orderPosition = relativeItem[0].order_position + 0.5;
+              orderPosition = relativeItem.order_position + 0.5;
             }
           } else {
-            orderPosition = 100; // fallback if relative item not found
+            orderPosition = 100;
           }
         } else {
-          // Use default
           orderPosition = 100;
         }
 
         // Upsert into admin_navigation_registry
-        await sequelize.query(
-          `INSERT INTO admin_navigation_registry
-           (key, label, icon, route, parent_key, order_position, is_visible, is_core, plugin_id, category, created_at, updated_at)
-           VALUES ($1, $2, $3, $4, $5, $6, true, false, $7, 'plugins', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
-           ON CONFLICT (key)
-           DO UPDATE SET
-             label = EXCLUDED.label,
-             icon = EXCLUDED.icon,
-             route = EXCLUDED.route,
-             parent_key = EXCLUDED.parent_key,
-             order_position = EXCLUDED.order_position,
-             is_visible = EXCLUDED.is_visible,
-             updated_at = CURRENT_TIMESTAMP`,
-          {
-            bind: [
-              `plugin-${pluginId}`,
-              adminNavigation.label || manifest.name || plugin.name,
-              adminNavigation.icon || manifest.icon || 'Package',
-              adminNavigation.route || `/admin/plugins/${pluginId}`,
-              adminNavigation.parentKey || null,
-              orderPosition,
-              pluginId
-            ],
-            type: sequelize.QueryTypes.UPDATE
-          }
-        );
+        await tenantDb
+          .from('admin_navigation_registry')
+          .upsert({
+            key: `plugin-${pluginId}`,
+            label: adminNavigation.label || manifest.name || pluginInfo.name,
+            icon: adminNavigation.icon || manifest.icon || 'Package',
+            route: adminNavigation.route || `/admin/plugins/${pluginId}`,
+            parent_key: adminNavigation.parentKey || null,
+            order_position: orderPosition,
+            is_visible: true,
+            is_core: false,
+            plugin_id: pluginId,
+            category: 'plugins',
+            updated_at: new Date().toISOString()
+          }, {
+            onConflict: 'key'
+          });
       }
     } else {
       // Navigation disabled - remove from registry
-      await sequelize.query(
-        `DELETE FROM admin_navigation_registry WHERE key = $1`,
-        {
-          bind: [`plugin-${pluginId}`],
-          type: sequelize.QueryTypes.DELETE
-        }
-      );
+      await tenantDb
+        .from('admin_navigation_registry')
+        .delete()
+        .eq('key', `plugin-${pluginId}`);
     }
 
     res.json({
@@ -213,6 +193,14 @@ router.put('/plugins/:pluginId/navigation', async (req, res) => {
 router.post('/navigation/reorder', async (req, res) => {
   try {
     const { items } = req.body;
+    const store_id = req.headers['x-store-id'] || req.query.store_id;
+
+    if (!store_id) {
+      return res.status(400).json({
+        success: false,
+        message: 'store_id is required (X-Store-Id header or query param)'
+      });
+    }
 
     if (!items || !Array.isArray(items)) {
       return res.status(400).json({
@@ -220,6 +208,8 @@ router.post('/navigation/reorder', async (req, res) => {
         error: 'Items array is required'
       });
     }
+
+    const tenantDb = await ConnectionManager.getStoreConnection(store_id);
 
     // Update each navigation item
     for (const item of items) {
@@ -240,41 +230,34 @@ router.post('/navigation/reorder', async (req, res) => {
         // Extract plugin ID from key (format: plugin-{pluginId})
         const pluginId = item.key.replace('plugin-', '');
 
-        await sequelize.query(
-          `INSERT INTO admin_navigation_registry
-           (key, label, icon, route, parent_key, order_position, is_visible, is_core, plugin_id, category, created_at, updated_at)
-           VALUES ($1, $2, $3, $4, $5, $6, $7, false, $8, 'plugins', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
-           ON CONFLICT (key)
-           DO UPDATE SET
-             order_position = EXCLUDED.order_position,
-             is_visible = EXCLUDED.is_visible,
-             parent_key = EXCLUDED.parent_key,
-             updated_at = CURRENT_TIMESTAMP`,
-          {
-            bind: [
-              item.key,
-              item.label || 'Plugin Item',
-              item.icon || 'Package',
-              item.route || '/admin',
-              parentKey,
-              orderPosition,
-              isVisible,
-              pluginId
-            ],
-            type: sequelize.QueryTypes.UPDATE
-          }
-        );
+        await tenantDb
+          .from('admin_navigation_registry')
+          .upsert({
+            key: item.key,
+            label: item.label || 'Plugin Item',
+            icon: item.icon || 'Package',
+            route: item.route || '/admin',
+            parent_key: parentKey,
+            order_position: orderPosition,
+            is_visible: isVisible,
+            is_core: false,
+            plugin_id: pluginId,
+            category: 'plugins',
+            updated_at: new Date().toISOString()
+          }, {
+            onConflict: 'key'
+          });
       } else {
         // For core items, just UPDATE
-        const result = await sequelize.query(
-          `UPDATE admin_navigation_registry
-           SET order_position = $1, is_visible = $2, parent_key = $3, updated_at = CURRENT_TIMESTAMP
-           WHERE key = $4`,
-          {
-            bind: [orderPosition, isVisible, parentKey, item.key],
-            type: sequelize.QueryTypes.UPDATE
-          }
-        );
+        await tenantDb
+          .from('admin_navigation_registry')
+          .update({
+            order_position: orderPosition,
+            is_visible: isVisible,
+            parent_key: parentKey,
+            updated_at: new Date().toISOString()
+          })
+          .eq('key', item.key);
       }
     }
 

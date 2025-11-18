@@ -2,7 +2,6 @@ const express = require('express');
 const router = express.Router();
 const pluginManager = require('../core/PluginManager');
 const { authMiddleware } = require('../middleware/auth');
-const { sequelize } = require('../database/connection');
 
 /**
  * GET /api/plugins/test
@@ -350,17 +349,26 @@ router.patch('/:id/visibility', async (req, res) => {
     const { id } = req.params;
     const { is_public } = req.body;
     const userId = req.user.id;
+    const store_id = req.headers['x-store-id'] || req.query.store_id;
+
+    if (!store_id) {
+      return res.status(400).json({
+        success: false,
+        message: 'store_id is required (X-Store-Id header or query param)'
+      });
+    }
+
+    const ConnectionManager = require('../services/database/ConnectionManager');
+    const tenantDb = await ConnectionManager.getStoreConnection(store_id);
 
     // Verify ownership
-    const [pluginResult] = await sequelize.query(
-      'SELECT id, name, creator_id FROM plugin_registry WHERE id = :id',
-      {
-        replacements: { id },
-        type: sequelize.QueryTypes.SELECT
-      }
-    );
+    const { data: pluginResult, error: pluginError } = await tenantDb
+      .from('plugin_registry')
+      .select('id, name, creator_id')
+      .eq('id', id)
+      .maybeSingle();
 
-    if (!pluginResult) {
+    if (pluginError || !pluginResult) {
       return res.status(404).json({
         success: false,
         error: 'Plugin not found'
@@ -375,13 +383,13 @@ router.patch('/:id/visibility', async (req, res) => {
     }
 
     // Update visibility
-    await sequelize.query(
-      'UPDATE plugin_registry SET is_public = :is_public, updated_at = CURRENT_TIMESTAMP WHERE id = :id',
-      {
-        replacements: { is_public, id },
-        type: sequelize.QueryTypes.UPDATE
-      }
-    );
+    await tenantDb
+      .from('plugin_registry')
+      .update({
+        is_public,
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', id);
 
     res.json({
       success: true,
@@ -405,17 +413,26 @@ router.post('/:id/deprecate', async (req, res) => {
     const { id } = req.params;
     const { reason } = req.body;
     const userId = req.user.id;
+    const store_id = req.headers['x-store-id'] || req.query.store_id;
+
+    if (!store_id) {
+      return res.status(400).json({
+        success: false,
+        message: 'store_id is required (X-Store-Id header or query param)'
+      });
+    }
+
+    const ConnectionManager = require('../services/database/ConnectionManager');
+    const tenantDb = await ConnectionManager.getStoreConnection(store_id);
 
     // Verify ownership and public status
-    const [pluginResult] = await sequelize.query(
-      'SELECT id, creator_id, is_public, name FROM plugin_registry WHERE id = :id',
-      {
-        replacements: { id },
-        type: sequelize.QueryTypes.SELECT
-      }
-    );
+    const { data: pluginResult, error: pluginError } = await tenantDb
+      .from('plugin_registry')
+      .select('id, creator_id, is_public, name')
+      .eq('id', id)
+      .maybeSingle();
 
-    if (!pluginResult) {
+    if (pluginError || !pluginResult) {
       return res.status(404).json({
         success: false,
         error: 'Plugin not found'
@@ -437,13 +454,14 @@ router.post('/:id/deprecate', async (req, res) => {
     }
 
     // Deprecate plugin
-    await sequelize.query(
-      'UPDATE plugin_registry SET deprecated_at = CURRENT_TIMESTAMP, deprecation_reason = :reason, updated_at = CURRENT_TIMESTAMP WHERE id = :id',
-      {
-        replacements: { reason: reason || 'Plugin deprecated by creator', id },
-        type: sequelize.QueryTypes.UPDATE
-      }
-    );
+    await tenantDb
+      .from('plugin_registry')
+      .update({
+        deprecated_at: new Date().toISOString(),
+        deprecation_reason: reason || 'Plugin deprecated by creator',
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', id);
 
     res.json({
       success: true,
@@ -466,17 +484,26 @@ router.delete('/:id', async (req, res) => {
   try {
     const { id } = req.params;
     const userId = req.user.id;
+    const store_id = req.headers['x-store-id'] || req.query.store_id;
+
+    if (!store_id) {
+      return res.status(400).json({
+        success: false,
+        message: 'store_id is required (X-Store-Id header or query param)'
+      });
+    }
+
+    const ConnectionManager = require('../services/database/ConnectionManager');
+    const tenantDb = await ConnectionManager.getStoreConnection(store_id);
 
     // Verify ownership and private status
-    const [pluginResult] = await sequelize.query(
-      'SELECT id, creator_id, is_public, name FROM plugin_registry WHERE id = :id',
-      {
-        replacements: { id },
-        type: sequelize.QueryTypes.SELECT
-      }
-    );
+    const { data: pluginResult, error: pluginError } = await tenantDb
+      .from('plugin_registry')
+      .select('id, creator_id, is_public, name')
+      .eq('id', id)
+      .maybeSingle();
 
-    if (!pluginResult) {
+    if (pluginError || !pluginResult) {
       return res.status(404).json({
         success: false,
         error: 'Plugin not found'
@@ -497,73 +524,60 @@ router.delete('/:id', async (req, res) => {
       });
     }
 
-    // Delete from all plugin_* tables
-    // Note: Most tables have ON DELETE CASCADE, but we explicitly delete to ensure cleanup
-    const deletionSteps = [
-      // Tables referencing plugin_registry (VARCHAR id)
-      'DELETE FROM plugin_docs WHERE plugin_id = :id',
-      'DELETE FROM plugin_migrations WHERE plugin_id = :id',
-      'DELETE FROM plugin_controllers WHERE plugin_id = :id',
-      'DELETE FROM plugin_entities WHERE plugin_id = :id',
-      'DELETE FROM plugin_dependencies WHERE plugin_id = :id',
-      'DELETE FROM plugin_scripts WHERE plugin_id = :id',
-
-      // Final deletion from plugin_registry
-      'DELETE FROM plugin_registry WHERE id = :id'
+    // Delete from all plugin_* tables (Supabase should handle CASCADE, but we delete explicitly)
+    const tables = [
+      'plugin_docs',
+      'plugin_migrations',
+      'plugin_controllers',
+      'plugin_entities',
+      'plugin_dependencies',
+      'plugin_scripts'
     ];
 
-    // Execute all deletions
-    for (const query of deletionSteps) {
+    for (const table of tables) {
       try {
-        await sequelize.query(query, {
-          replacements: { id },
-          type: sequelize.QueryTypes.DELETE
-        });
+        await tenantDb.from(table).delete().eq('plugin_id', id);
       } catch (error) {
-        console.warn(`Warning during deletion: ${error.message}`);
-        // Continue with other deletions even if one fails
+        console.warn(`Warning during deletion from ${table}:`, error.message);
       }
     }
 
+    // Delete from plugin_registry
+    await tenantDb.from('plugin_registry').delete().eq('id', id);
+
     // Also check and delete from UUID-based plugins table if exists
     try {
-      const [uuidPlugin] = await sequelize.query(
-        'SELECT id FROM plugins WHERE slug = :slug',
-        {
-          replacements: { slug: id },
-          type: sequelize.QueryTypes.SELECT
-        }
-      );
+      const { data: uuidPlugin } = await tenantDb
+        .from('plugins')
+        .select('id')
+        .eq('slug', id)
+        .maybeSingle();
 
       if (uuidPlugin) {
-        const uuidDeletionSteps = [
-          // Tables referencing plugins (UUID id)
-          'DELETE FROM plugin_configurations WHERE plugin_id = :uuid',
-          'DELETE FROM plugin_data WHERE plugin_id = :uuid',
-          'DELETE FROM plugin_routes WHERE plugin_id = :uuid',
-          'DELETE FROM plugin_admin_pages WHERE plugin_id = :uuid',
-          'DELETE FROM plugin_widgets WHERE plugin_id = :uuid',
-          'DELETE FROM plugin_events WHERE plugin_id = :uuid',
-          'DELETE FROM plugin_event_listeners WHERE plugin_id = :uuid',
-          'DELETE FROM plugin_hooks WHERE plugin_id = :uuid',
-
-          // Final deletion from plugins table
-          'DELETE FROM plugins WHERE id = :uuid'
+        const uuidTables = [
+          'plugin_configurations',
+          'plugin_data',
+          'plugin_routes',
+          'plugin_admin_pages',
+          'plugin_widgets',
+          'plugin_events',
+          'plugin_event_listeners',
+          'plugin_hooks'
         ];
 
-        for (const query of uuidDeletionSteps) {
+        for (const table of uuidTables) {
           try {
-            await sequelize.query(query, {
-              replacements: { uuid: uuidPlugin.id },
-              type: sequelize.QueryTypes.DELETE
-            });
+            await tenantDb.from(table).delete().eq('plugin_id', uuidPlugin.id);
           } catch (error) {
-            console.warn(`Warning during UUID plugin deletion: ${error.message}`);
+            console.warn(`Warning during UUID plugin deletion from ${table}:`, error.message);
           }
         }
+
+        // Delete from plugins table
+        await tenantDb.from('plugins').delete().eq('id', uuidPlugin.id);
       }
     } catch (error) {
-      console.warn(`Could not check UUID plugins table: ${error.message}`);
+      console.warn(`Could not check UUID plugins table:`, error.message);
     }
 
     res.json({

@@ -22,19 +22,19 @@ class AdminNavigationService {
         console.error('Error fetching plugins:', pluginsError.message);
       }
 
-      const pluginIds = installedPlugins.map(p => p.id);
+      const pluginIds = (installedPlugins || []).map(p => p.id);
 
       // 2a. Get active file-based plugins with adminNavigation from manifest
-      const fileBasedPlugins = await sequelize.query(`
-        SELECT
-          id,
-          name,
-          manifest->>'adminNavigation' as admin_nav
-        FROM plugins
-        WHERE status = 'installed'
-          AND is_enabled = true
-          AND manifest->>'adminNavigation' IS NOT NULL
-      `, { type: sequelize.QueryTypes.SELECT });
+      const { data: fileBasedPlugins, error: filePluginsError } = await tenantDb
+        .from('plugins')
+        .select('id, name, manifest')
+        .eq('status', 'installed')
+        .eq('is_enabled', true)
+        .not('manifest->adminNavigation', 'is', null);
+
+      if (filePluginsError) {
+        console.error('Error fetching file-based plugins:', filePluginsError.message);
+      }
 
       // Parse adminNavigation from file-based plugins
       const fileBasedNavItems = fileBasedPlugins
@@ -63,23 +63,23 @@ class AdminNavigationService {
         })
         .filter(Boolean);
 
-      // 2b. Get active plugins from plugin_registry with adminNavigation
-      const registryPlugins = await sequelize.query(`
-        SELECT
-          id,
-          name,
-          manifest->>'adminNavigation' as admin_nav
-        FROM plugin_registry
-        WHERE status = 'active'
-          AND manifest->>'adminNavigation' IS NOT NULL
-      `, { type: sequelize.QueryTypes.SELECT });
+      // 2b. Get active plugins from plugin_registry with adminNavigation (from tenant DB)
+      const { data: registryPlugins, error: registryError } = await tenantDb
+        .from('plugin_registry')
+        .select('id, name, manifest')
+        .eq('status', 'active')
+        .not('manifest->adminNavigation', 'is', null);
+
+      if (registryError) {
+        console.error('Error fetching plugin_registry:', registryError.message);
+      }
 
       // Parse adminNavigation from registry plugins
-      const registryNavItems = registryPlugins
-        .filter(p => p.admin_nav)
+      const registryNavItems = (registryPlugins || [])
+        .filter(p => p.manifest?.adminNavigation)
         .map(p => {
           try {
-            const nav = JSON.parse(p.admin_nav);
+            const nav = p.manifest.adminNavigation;
             if (nav && nav.enabled) {
               return {
                 key: `plugin-${p.id}`,
@@ -101,32 +101,37 @@ class AdminNavigationService {
         })
         .filter(Boolean);
 
-      // 3. Get navigation items from master registry
+      // 3. Get navigation items from tenant's admin_navigation_registry
       // Include: Core items + items from tenant's installed plugins
-      const navQuery = pluginIds.length > 0
-        ? `SELECT * FROM admin_navigation_registry
-           WHERE (is_core = true OR plugin_id = ANY($1))
-             AND is_visible = true
-           ORDER BY order_position ASC`
-        : `SELECT * FROM admin_navigation_registry
-           WHERE is_core = true AND is_visible = true
-           ORDER BY order_position ASC`;
+      let navItemsQuery = tenantDb
+        .from('admin_navigation_registry')
+        .select('*')
+        .eq('is_visible', true)
+        .order('order_position', { ascending: true });
 
-      const navItems = await sequelize.query(
-        navQuery,
-        pluginIds.length > 0 ? {
-          bind: [pluginIds],
-          type: sequelize.QueryTypes.SELECT
-        } : { type: sequelize.QueryTypes.SELECT }
-      );
+      if (pluginIds.length > 0) {
+        navItemsQuery = navItemsQuery.or(`is_core.eq.true,plugin_id.in.(${pluginIds.join(',')})`);
+      } else {
+        navItemsQuery = navItemsQuery.eq('is_core', true);
+      }
 
-      // 4. Merge ALL plugin nav items with master registry
-      const allNavItems = [...navItems, ...fileBasedNavItems, ...registryNavItems];
+      const { data: navItems, error: navError } = await navItemsQuery;
+
+      if (navError) {
+        console.error('Error fetching navigation items:', navError.message);
+      }
+
+      // 4. Merge ALL plugin nav items with registry
+      const allNavItems = [...(navItems || []), ...fileBasedNavItems, ...registryNavItems];
 
       // 5. Get tenant's customizations
-      const tenantConfig = await sequelize.query(`
-        SELECT * FROM admin_navigation_config
-      `, { type: sequelize.QueryTypes.SELECT })
+      const { data: tenantConfig, error: configError } = await tenantDb
+        .from('admin_navigation_config')
+        .select('*');
+
+      if (configError) {
+        console.error('Error fetching navigation config:', configError.message);
+      }
 
       // 6. Merge and apply customizations
       const merged = this.mergeNavigation(
@@ -241,32 +246,27 @@ class AdminNavigationService {
   }
 
   /**
-   * Register plugin navigation items in master DB
+   * Register plugin navigation items in tenant DB
    * Called during plugin installation
    */
-  async registerPluginNavigation(pluginId, navItems) {
+  async registerPluginNavigation(pluginId, navItems, tenantDb) {
     for (const item of navItems) {
-      await sequelize.query(`
-        INSERT INTO admin_navigation_registry
-        (key, label, icon, route, parent_key, order_position, is_core, plugin_id, category)
-        VALUES ($1, $2, $3, $4, $5, $6, false, $7, $8)
-        ON CONFLICT (key) DO UPDATE SET
-          label = EXCLUDED.label,
-          icon = EXCLUDED.icon,
-          route = EXCLUDED.route,
-          updated_at = NOW()
-      `, {
-        bind: [
-          item.key,
-          item.label,
-          item.icon,
-          item.route,
-          item.parentKey || null,
-          item.order || 100,
-          pluginId,
-          item.category || 'plugins'
-        ]
-      });
+      await tenantDb
+        .from('admin_navigation_registry')
+        .upsert({
+          key: item.key,
+          label: item.label,
+          icon: item.icon,
+          route: item.route,
+          parent_key: item.parentKey || null,
+          order_position: item.order || 100,
+          is_core: false,
+          plugin_id: pluginId,
+          category: item.category || 'plugins',
+          updated_at: new Date().toISOString()
+        }, {
+          onConflict: 'key'
+        });
     }
   }
 
@@ -274,23 +274,29 @@ class AdminNavigationService {
    * Enable plugin navigation for tenant
    * Called during plugin installation
    */
-  async enablePluginNavigationForTenant(tenantId, navKeys) {
+  async enablePluginNavigationForTenant(tenantDb, navKeys) {
     for (const key of navKeys) {
-      await sequelize.query(`
-        INSERT INTO admin_navigation_config (nav_key, is_hidden)
-        VALUES ($1, false)
-        ON CONFLICT (nav_key) DO NOTHING
-      `, {
-        bind: [key]
-      });
+      const { error } = await tenantDb
+        .from('admin_navigation_config')
+        .upsert({
+          nav_key: key,
+          is_hidden: false
+        }, {
+          onConflict: 'nav_key',
+          ignoreDuplicates: true
+        });
+
+      if (error) {
+        console.error(`Error enabling navigation for key ${key}:`, error.message);
+      }
     }
   }
 
   /**
    * Seed core navigation items
-   * Run once to populate master DB
+   * Run once to populate tenant DB
    */
-  async seedCoreNavigation() {
+  async seedCoreNavigation(tenantDb) {
     const coreItems = [
       { key: 'dashboard', label: 'Dashboard', icon: 'Home', route: '/admin', order: 1, category: 'main' },
       { key: 'products', label: 'Products', icon: 'Package', route: '/admin/products', order: 2, category: 'main' },
@@ -303,14 +309,24 @@ class AdminNavigationService {
     ];
 
     for (const item of coreItems) {
-      await sequelize.query(`
-        INSERT INTO admin_navigation_registry
-        (key, label, icon, route, order_position, is_core, category)
-        VALUES ($1, $2, $3, $4, $5, true, $6)
-        ON CONFLICT (key) DO NOTHING
-      `, {
-        bind: [item.key, item.label, item.icon, item.route, item.order, item.category]
-      });
+      const { error } = await tenantDb
+        .from('admin_navigation_registry')
+        .upsert({
+          key: item.key,
+          label: item.label,
+          icon: item.icon,
+          route: item.route,
+          order_position: item.order,
+          is_core: true,
+          category: item.category
+        }, {
+          onConflict: 'key',
+          ignoreDuplicates: true
+        });
+
+      if (error) {
+        console.error(`Error seeding navigation item ${item.key}:`, error.message);
+      }
     }
 
   }
