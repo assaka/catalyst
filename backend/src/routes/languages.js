@@ -1,29 +1,42 @@
 const express = require('express');
-const { Language } = require('../models');
+const ConnectionManager = require('../services/database/ConnectionManager');
 const { authMiddleware } = require('../middleware/auth');
 
 const router = express.Router();
 
 // @route   GET /api/languages
-// @desc    Get all languages
+// @desc    Get all languages from tenant DB
 // @access  Public
 router.get('/', async (req, res) => {
   try {
-    const { is_active } = req.query;
-    const whereClause = {};
+    const { store_id, is_active } = req.query;
 
-    if (is_active !== undefined) {
-      whereClause.is_active = is_active === 'true';
+    if (!store_id) {
+      return res.status(400).json({
+        success: false,
+        message: 'store_id is required'
+      });
     }
 
-    const languages = await Language.findAll({
-      where: whereClause,
-      order: [['name', 'ASC']]
-    });
+    // Get tenant DB connection
+    const tenantDb = await ConnectionManager.getStoreConnection(store_id);
+
+    // Build query
+    let query = tenantDb.from('languages').select('*').order('name', { ascending: true });
+
+    if (is_active !== undefined) {
+      query = query.eq('is_active', is_active === 'true');
+    }
+
+    const { data: languages, error } = await query;
+
+    if (error) {
+      throw new Error(error.message);
+    }
 
     res.json({
       success: true,
-      data: { languages }
+      data: { languages: languages || [] }
     });
   } catch (error) {
     console.error('Get languages error:', error);
@@ -35,13 +48,28 @@ router.get('/', async (req, res) => {
 });
 
 // @route   GET /api/languages/:id
-// @desc    Get single language
+// @desc    Get single language from tenant DB
 // @access  Public
 router.get('/:id', async (req, res) => {
   try {
-    const language = await Language.findByPk(req.params.id);
+    const { store_id } = req.query;
 
-    if (!language) {
+    if (!store_id) {
+      return res.status(400).json({
+        success: false,
+        message: 'store_id is required'
+      });
+    }
+
+    const tenantDb = await ConnectionManager.getStoreConnection(store_id);
+
+    const { data: language, error } = await tenantDb
+      .from('languages')
+      .select('*')
+      .eq('id', req.params.id)
+      .maybeSingle();
+
+    if (error || !language) {
       return res.status(404).json({
         success: false,
         message: 'Language not found'
