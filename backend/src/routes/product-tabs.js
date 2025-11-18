@@ -1,6 +1,6 @@
 const express = require('express');
 const { body, validationResult } = require('express-validator');
-const { Store } = require('../models');
+const ConnectionManager = require('../services/database/ConnectionManager');
 const { authMiddleware } = require('../middleware/auth');
 const translationService = require('../services/translation-service');
 const creditService = require('../services/credit-service');
@@ -45,7 +45,7 @@ router.get('/', authMiddleware, async (req, res) => {
     }
 
     // Authenticated requests get all translations
-    const productTabs = await getProductTabsWithTranslations(whereClause, lang, true); // true = include all translations
+    const productTabs = await getProductTabsWithTranslations(store_id, whereClause, lang, true); // true = include all translations
 
     console.log('📋 Product Tabs (Admin): Retrieved', productTabs.length, 'tabs for language:', lang);
     if (productTabs.length > 0) {
@@ -75,7 +75,16 @@ router.get('/', authMiddleware, async (req, res) => {
 // @access  Private
 router.get('/:id', authMiddleware, async (req, res) => {
   try {
-    const productTab = await getProductTabWithAllTranslations(req.params.id);
+    const store_id = req.headers['x-store-id'] || req.query.store_id;
+
+    if (!store_id) {
+      return res.status(400).json({
+        success: false,
+        message: 'Store ID is required'
+      });
+    }
+
+    const productTab = await getProductTabWithAllTranslations(store_id, req.params.id);
 
     if (!productTab) {
       return res.status(404).json({
@@ -129,19 +138,11 @@ router.post('/', authMiddleware, [
 
     const { store_id, name, tab_type, content, attribute_ids, attribute_set_ids, sort_order, is_active } = req.body;
 
-    // Check store ownership
-    const store = await Store.findByPk(store_id);
-    if (!store) {
-      return res.status(404).json({
-        success: false,
-        message: 'Store not found'
-      });
-    }
-
+    // Check store access
     if (req.user.role !== 'admin') {
       const { checkUserStoreAccess } = require('../utils/storeAccess');
-      const access = await checkUserStoreAccess(req.user.id, store.id);
-      
+      const access = await checkUserStoreAccess(req.user.id, store_id);
+
       if (!access) {
         return res.status(403).json({
           success: false,
@@ -215,8 +216,17 @@ router.put('/:id', authMiddleware, [
       });
     }
 
+    const store_id = req.headers['x-store-id'] || req.query.store_id;
+
+    if (!store_id) {
+      return res.status(400).json({
+        success: false,
+        message: 'Store ID is required'
+      });
+    }
+
     // Check if tab exists
-    const existingTab = await getProductTabById(req.params.id);
+    const existingTab = await getProductTabById(store_id, req.params.id);
     if (!existingTab) {
       return res.status(404).json({
         success: false,
@@ -227,7 +237,7 @@ router.put('/:id', authMiddleware, [
     // Check store access
     if (req.user.role !== 'admin') {
       const { checkUserStoreAccess } = require('../utils/storeAccess');
-      const access = await checkUserStoreAccess(req.user.id, existingTab.store_id);
+      const access = await checkUserStoreAccess(req.user.id, store_id);
 
       if (!access) {
         return res.status(403).json({
@@ -248,7 +258,7 @@ router.put('/:id', authMiddleware, [
     // Extract translations from request body
     const { translations, ...tabData } = req.body;
 
-    const productTab = await updateProductTabWithTranslations(req.params.id, tabData, translations || {});
+    const productTab = await updateProductTabWithTranslations(store_id, req.params.id, tabData, translations || {});
 
     console.log('✅ Backend: Product tab updated:', {
       id: productTab.id,
@@ -275,7 +285,16 @@ router.put('/:id', authMiddleware, [
 // @access  Private
 router.delete('/:id', authMiddleware, async (req, res) => {
   try {
-    const productTab = await getProductTabById(req.params.id);
+    const store_id = req.headers['x-store-id'] || req.query.store_id;
+
+    if (!store_id) {
+      return res.status(400).json({
+        success: false,
+        message: 'Store ID is required'
+      });
+    }
+
+    const productTab = await getProductTabById(store_id, req.params.id);
 
     if (!productTab) {
       return res.status(404).json({
@@ -287,7 +306,7 @@ router.delete('/:id', authMiddleware, async (req, res) => {
     // Check store access
     if (req.user.role !== 'admin') {
       const { checkUserStoreAccess } = require('../utils/storeAccess');
-      const access = await checkUserStoreAccess(req.user.id, productTab.store_id);
+      const access = await checkUserStoreAccess(req.user.id, store_id);
 
       if (!access) {
         return res.status(403).json({
@@ -297,7 +316,7 @@ router.delete('/:id', authMiddleware, async (req, res) => {
       }
     }
 
-    await deleteProductTab(req.params.id);
+    await deleteProductTab(store_id, req.params.id);
 
     res.json({
       success: true,
@@ -329,7 +348,16 @@ router.post('/:id/translate', authMiddleware, [
     }
 
     const { fromLang, toLang } = req.body;
-    const productTab = await getProductTabById(req.params.id);
+    const store_id = req.headers['x-store-id'] || req.query.store_id;
+
+    if (!store_id) {
+      return res.status(400).json({
+        success: false,
+        message: 'Store ID is required'
+      });
+    }
+
+    const productTab = await getProductTabById(store_id, req.params.id);
 
     if (!productTab) {
       return res.status(404).json({
@@ -341,7 +369,7 @@ router.post('/:id/translate', authMiddleware, [
     // Check store access
     if (req.user.role !== 'admin') {
       const { checkUserStoreAccess } = require('../utils/storeAccess');
-      const access = await checkUserStoreAccess(req.user.id, productTab.store_id);
+      const access = await checkUserStoreAccess(req.user.id, store_id);
 
       if (!access) {
         return res.status(403).json({
@@ -351,8 +379,11 @@ router.post('/:id/translate', authMiddleware, [
       }
     }
 
+    // Fetch tab with all translations
+    const tabWithTranslations = await getProductTabWithAllTranslations(store_id, req.params.id);
+
     // Check if source translation exists
-    if (!productTab.translations || !productTab.translations[fromLang]) {
+    if (!tabWithTranslations.translations || !tabWithTranslations.translations[fromLang]) {
       return res.status(400).json({
         success: false,
         message: `No ${fromLang} translation found for this product tab`
@@ -360,7 +391,7 @@ router.post('/:id/translate', authMiddleware, [
     }
 
     // Get source translation
-    const sourceTranslation = productTab.translations[fromLang];
+    const sourceTranslation = tabWithTranslations.translations[fromLang];
     const translatedData = {};
 
     // Translate each field using AI
@@ -371,10 +402,11 @@ router.post('/:id/translate', authMiddleware, [
     }
 
     // Save the translation using normalized tables
-    const translations = productTab.translations || {};
+    const translations = tabWithTranslations.translations || {};
     translations[toLang] = translatedData;
 
     const updatedTab = await updateProductTabWithTranslations(
+      store_id,
       req.params.id,
       {},
       translations
@@ -432,7 +464,7 @@ router.post('/bulk-translate', authMiddleware, [
 
     // Get all product tabs for this store with ALL translations
     // allTranslations=true returns: { translations: { en: {...}, nl: {...} } }
-    const tabs = await getProductTabsWithTranslations({ store_id }, 'en', true);
+    const tabs = await getProductTabsWithTranslations(store_id, { store_id }, 'en', true);
 
     console.log(`📦 Loaded ${tabs.length} tabs from database with ALL translations`);
     if (tabs.length > 0) {
@@ -561,7 +593,7 @@ router.post('/bulk-translate', authMiddleware, [
         translations[toLang] = translatedData;
 
         console.log(`   💾 Saving to database... tab_id=${tab.id}`);
-        await updateProductTabWithTranslations(tab.id, {}, translations);
+        await updateProductTabWithTranslations(store_id, tab.id, {}, translations);
         console.log(`   ✅ Database updated successfully`);
 
         console.log(`✅ Successfully translated tab "${tabName}"`);
