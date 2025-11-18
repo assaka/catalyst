@@ -3,7 +3,7 @@ const express = require('express');
 const router = express.Router();
 const PluginExecutor = require('../core/PluginExecutor');
 const PluginPurchaseService = require('../services/PluginPurchaseService');
-const { sequelize } = require('../database/connection');
+const ConnectionManager = require('../services/database/ConnectionManager');
 
 /**
  * GET /api/plugins
@@ -262,35 +262,44 @@ router.get('/installed', async (req, res) => {
  */
 router.get('/active', async (req, res) => {
   try {
+    const store_id = req.headers['x-store-id'] || req.query.store_id;
+
+    if (!store_id) {
+      return res.status(400).json({
+        success: false,
+        message: 'store_id is required'
+      });
+    }
+
+    const tenantDb = await ConnectionManager.getStoreConnection(store_id);
+
     // Get active plugins from plugin_registry table (exclude starter templates)
-    const plugins = await sequelize.query(`
-      SELECT
-        id, name, version, description, author, category, status, type,
-        manifest, created_at, updated_at
-      FROM plugin_registry
-      WHERE status = 'active'
-        AND (is_starter_template = false OR is_starter_template IS NULL)
-      ORDER BY created_at DESC
-    `, {
-      type: sequelize.QueryTypes.SELECT
-    });
+    const { data: plugins, error: pluginsError } = await tenantDb
+      .from('plugin_registry')
+      .select('id, name, version, description, author, category, status, type, manifest, created_at, updated_at')
+      .eq('status', 'active')
+      .or('is_starter_template.eq.false,is_starter_template.is.null')
+      .order('created_at', { ascending: false });
+
+    if (pluginsError) {
+      throw new Error(pluginsError.message);
+    }
 
     // Load hooks and events for each plugin from normalized tables
-    const pluginsWithData = await Promise.all(plugins.map(async (plugin) => {
+    const pluginsWithData = await Promise.all((plugins || []).map(async (plugin) => {
       // Load hooks from plugin_hooks table (normalized structure)
       let hooks = [];
       try {
-        const hooksResult = await sequelize.query(`
-          SELECT hook_name, handler_function, priority, is_enabled
-          FROM plugin_hooks
-          WHERE plugin_id = $1 AND is_enabled = true
-          ORDER BY priority ASC
-        `, {
-          bind: [plugin.id],
-          type: sequelize.QueryTypes.SELECT
-        });
+        const { data: hooksResult, error: hooksError } = await tenantDb
+          .from('plugin_hooks')
+          .select('hook_name, handler_function, priority, is_enabled')
+          .eq('plugin_id', plugin.id)
+          .eq('is_enabled', true)
+          .order('priority', { ascending: true });
 
-        hooks = hooksResult.map(h => ({
+        if (hooksError) throw hooksError;
+
+        hooks = (hooksResult || []).map(h => ({
           hook_name: h.hook_name,
           handler_code: h.handler_function,
           priority: h.priority || 10,
@@ -303,38 +312,37 @@ router.get('/active', async (req, res) => {
       // Load events from normalized plugin_events table
       let events = [];
       try {
-        const eventsResult = await sequelize.query(`
-          SELECT event_name, listener_function, priority, is_enabled
-          FROM plugin_events
-          WHERE plugin_id = $1 AND is_enabled = true
-          ORDER BY priority ASC
-        `, {
-          bind: [plugin.id],
-          type: sequelize.QueryTypes.SELECT
-        });
+        const { data: eventsResult, error: eventsError } = await tenantDb
+          .from('plugin_events')
+          .select('event_name, listener_function, priority, is_enabled')
+          .eq('plugin_id', plugin.id)
+          .eq('is_enabled', true)
+          .order('priority', { ascending: true });
 
-        events = eventsResult.map(e => ({
+        if (eventsError) throw eventsError;
+
+        events = (eventsResult || []).map(e => ({
           event_name: e.event_name,
           listener_code: e.listener_function,
           priority: e.priority || 10,
           enabled: e.is_enabled !== false
         }));
       } catch (eventError) {
-        //
+        // Events are optional
       }
 
       // Load frontend scripts from plugin_scripts table
       let frontendScripts = [];
       try {
-        const scriptsResult = await sequelize.query(`
-          SELECT name, content, type, load_order
-          FROM plugin_scripts
-          WHERE plugin_id = $1 AND scope = 'frontend' AND is_enabled = true
-          ORDER BY load_order ASC
-        `, {
-          bind: [plugin.id],
-          type: sequelize.QueryTypes.SELECT
-        });
+        const { data: scriptsResult, error: scriptsError } = await tenantDb
+          .from('plugin_scripts')
+          .select('name, content, type, load_order')
+          .eq('plugin_id', plugin.id)
+          .eq('scope', 'frontend')
+          .eq('is_enabled', true)
+          .order('load_order', { ascending: true });
+
+        if (scriptsError) throw scriptsError;
 
         frontendScripts = scriptsResult || [];
       } catch (scriptError) {
